@@ -40,12 +40,13 @@ def _pyrosetta_init(seed: int, receptor: str, peptide: str, mode: str) -> Any:
 
 
 def _score_pose(pyrosetta: Any, pose: Any, interface: str) -> dict[str, float | None]:
+    from pyrosetta.rosetta.core.pose import DockingPartners
     from pyrosetta.rosetta.protocols.analysis import InterfaceAnalyzerMover
 
     scorefxn = pyrosetta.create_score_function("ref2015")
     scorefxn(pose)
-    analyzer = InterfaceAnalyzerMover()
-    analyzer.set_interface(interface)
+    partners = DockingPartners.docking_partners_from_string(interface)
+    analyzer = InterfaceAnalyzerMover(partners)
     analyzer.set_scorefunction(scorefxn)
     analyzer.set_pack_input(False)
     analyzer.set_pack_separated(True)
@@ -61,14 +62,14 @@ def _score_pose(pyrosetta: Any, pose: Any, interface: str) -> dict[str, float | 
 
     return {
         "total_score": float(scorefxn(pose)),
-        "dG_separated": first("dG_separated"),
+        "dG_separated": float(analyzer.get_interface_dG()),
         "dG_separated_per_dSASA_x100": first("dG_separated/dSASAx100"),
-        "dSASA_int": first("dSASA_int"),
+        "dSASA_int": float(analyzer.get_interface_delta_sasa()),
         "interface_hbonds": first("hbonds_int", "I_hb"),
-        "packstat": first("packstat", "I_pack"),
-        "interface_score": first("I_sc", "dG_cross"),
+        "packstat": float(analyzer.get_interface_packstat()),
+        "interface_score": float(analyzer.get_crossterm_interface_energy()),
         "reweighted_sc": first("reweighted_sc"),
-        "delta_unsat_hbonds": first("delta_unsatHbonds"),
+        "delta_unsat_hbonds": float(analyzer.get_interface_delta_hbond_unsat()),
     }
 
 
