@@ -4,6 +4,7 @@ These rules apply to every Codex change in this repository.
 
 ## Git workflow
 
+- The canonical remote is `https://github.com/StevenLuan904/AMPgent.git`.
 - `main` is the releasable branch. Do not develop directly on it after the initial repository
   bootstrap.
 - Use short-lived branches named `agent/<scope>`; keep each branch focused on one coherent change.
@@ -13,6 +14,20 @@ These rules apply to every Codex change in this repository.
   machine-specific configuration, model weights, databases, caches, or generated experiment output.
 - Use concise commit subjects. Never force-push shared branches or rewrite published history.
 - Run `ruff check src tests` and `pytest -q` before merging. Record any unavoidable skipped check.
+
+## GitHub access
+
+- Prefer GitHub CLI (`gh`) for authentication, pull requests, and GitHub Release objects.
+- If `winget` and `gh` are unavailable, use Git for Windows with Git Credential Manager for normal
+  `git push` and tag publication. Browser authentication is acceptable.
+- Never read, print, persist, or repurpose a credential-manager token for direct API calls.
+- A connected GitHub app may not have access to a private repository. Verify the actual Git remote
+  with `git remote -v`, `git ls-remote`, and the pushed commit rather than assuming connector access.
+- An annotated Git tag is a valid source version but is not the same object as a GitHub Releases
+  page. Create the latter with authenticated `gh` or the GitHub UI when required, and report the
+  distinction explicitly.
+- Do not block source commits or branch pushes merely because Release/PR convenience tooling is
+  absent. Push the recoverable Git state first, then finish the GitHub UI object when access permits.
 
 ## Releases
 
@@ -34,4 +49,3 @@ These rules apply to every Codex change in this repository.
 - Follow `docs/runbook.md` for commands and `docs/metric-contract.md` for scientific admission rules.
   PepPAP remains frozen; Boltz-2 is a structural-confidence lane, not an admitted peptide-affinity
   estimator.
-
