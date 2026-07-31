@@ -155,6 +155,7 @@ def submit_rosetta_validation(
         with TemporaryDirectory(prefix="pepagent-rosetta-validation-") as temporary:
             temporary_root = Path(temporary)
             for case_spec in selected_cases:
+                source_database = case_spec.get("source_database", "RCSB PDB")
                 response = await asyncio.to_thread(
                     httpx.get, case_spec["source_uri"], timeout=60.0
                 )
@@ -188,7 +189,7 @@ def submit_rosetta_validation(
                         "name": f"{case_spec['pdb_id']} modeled receptor",
                         "sequence": receptor_sequence,
                         "accession": case_spec["pdb_id"],
-                        "source_database": "RCSB PDB",
+                        "source_database": source_database,
                         "source_uri": case_spec["source_uri"],
                         "source_version": actual_sha256,
                     },
@@ -269,7 +270,7 @@ def submit_rosetta_validation(
                             media_type=stored.media_type,
                             storage_uri=stored.uri,
                             metadata_json={
-                                "source": "RCSB PDB",
+                                "source": source_database,
                                 "pdb_id": case_spec["pdb_id"],
                             },
                         )

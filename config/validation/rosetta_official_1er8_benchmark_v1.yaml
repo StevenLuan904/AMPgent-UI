@@ -1,0 +1,40 @@
+schema_version: 1
+suite_id: rosetta-flexpepdock-official-1er8-v1
+retrieved_at: 2026-07-31T17:50:00+08:00
+source_policy:
+  coordinate_source: RosettaCommons FlexPepDock integration-test input
+  preparation: official ATOM-only benchmark complex; receptor chain A before peptide chain B
+  score_function: ref2015
+  prepack: true
+  pack_separated: true
+  production_nstruct: 200
+  parallel_decoys: 8
+  smoke_nstruct: 1
+  seed: 20260731
+cases:
+  - pdb_id: 1ER8
+    title: Rosetta FlexPepDock integration-test complex derived from endothiapepsin–H-77
+    source_database: RosettaCommons/rosetta
+    source_uri: https://raw.githubusercontent.com/RosettaCommons/rosetta/main/tests/integration/tests/flexpepdock/input/1ER8.pdb
+    source_sha256: 47de41c87cbf53cb06a67f0ac3e8e834c63f27a0c7b94d8178be36c5ec6bd125
+    experimental_method: X-RAY DIFFRACTION-derived benchmark input
+    resolution_angstrom: 2.0
+    receptor_chains: [A]
+    peptide_chain: B
+    modeled_peptide_sequence: HPFHLLVY
+    modeled_peptide_length: 8
+    benchmark_provenance:
+      - https://github.com/RosettaCommons/rosetta/blob/main/tests/integration/tests/flexpepdock/input/1ER8.pdb
+      - https://docs.rosettacommons.org/docs/latest/application_documentation/docking/flex-pep-dock
+      - https://doi.org/10.1371/journal.pcbi.1005905
+    coordinate_curation_note: >-
+      This is Rosetta's own executable benchmark input. The RCSB legacy file contains
+      non-standard DHI and additional numbered residues; stripping those records does
+      not reproduce this benchmark complex and is retained as a separate failed run.
+admission_checks:
+  - exact source and prepared-coordinate hashes are persisted
+  - prepack and every refinement decoy have a deterministic seed
+  - every decoy reports dG_separated in REU and peptide backbone RMSD in angstrom
+  - repeated same-seed smoke runs are numerically reproducible
+  - native-start refinement retains at least one near-native peptide pose
+  - no result is converted to Kd or labelled kcal/mol
