@@ -99,7 +99,21 @@ def main() -> None:
 
     confidence_files = sorted(prediction_dir.rglob("confidence_*_model_0.json"))
     if not confidence_files:
-        raise FileNotFoundError("Boltz-2 produced no confidence JSON")
+        manifest_files = sorted(prediction_dir.rglob("manifest.json"))
+        manifests = [
+            path.read_text(encoding="utf-8", errors="replace")[-2000:]
+            for path in manifest_files
+        ]
+        msa_errors = []
+        for path in prediction_dir.rglob("out.tar.gz"):
+            header = path.read_bytes()[:2]
+            if header != b"\x1f\x8b":
+                msa_errors.append(path.read_text(encoding="utf-8", errors="replace")[-2000:])
+        raise FileNotFoundError(
+            "Boltz-2 produced no confidence JSON; "
+            f"manifests={manifests!r}; non_gzip_msa_responses={msa_errors!r}; "
+            f"stdout_tail={completed.stdout[-2000:]!r}; stderr_tail={completed.stderr[-2000:]!r}"
+        )
     confidence = json.loads(confidence_files[0].read_text(encoding="utf-8"))
     artifacts = [
         str(path.relative_to(args.work_dir))

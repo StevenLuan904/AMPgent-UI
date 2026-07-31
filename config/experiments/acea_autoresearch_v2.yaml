@@ -24,7 +24,9 @@ boltz_use_potentials: true
 boltz_no_kernels: true
 boltz_force_pocket: false
 pocket_max_distance_angstrom: 8.0
-use_msa_server: true
+# The public ColabFold-compatible endpoint returned a reproducible 404 payload on
+# 2026-08-01. Keep the target MSA explicitly empty for this versioned fallback run.
+use_msa_server: false
 interface_contact_distance_angstrom: 5.0
 interface_clash_distance_angstrom: 1.5
 interface_min_pocket_contacts: 2
