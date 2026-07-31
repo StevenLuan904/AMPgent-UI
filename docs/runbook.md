@@ -10,6 +10,18 @@ $env:PEPAGENT_WORKER_ROLE='control'
 .\.venv-local\Scripts\python -m pepagent.workers.temporal_worker
 ```
 
+Import the versioned pocket catalog after migrations. The command is idempotent: changed source
+records create new immutable evidence rows, while an unchanged catalog does not duplicate them.
+
+```powershell
+.\.venv-local\Scripts\python -m pepagent.cli import-pockets config\pockets\mvp_v2_pocket_catalog.yaml
+Invoke-RestMethod http://127.0.0.1:8080/v1/targets/by-accession/P0A9G6/pockets
+```
+
+Only records with `conditioning_enabled=true` may supply Boltz pocket constraints. Evidence grade
+and conditioning priority are separate fields; a high-grade composite or payload interface can
+still be excluded.
+
 Run the Temporal and object-store reverse tunnels in separate supervised terminals:
 
 ```powershell
@@ -39,6 +51,18 @@ gpu-synth -RemoteCommand 'bash /sdd_data/pepagent/platform/current/deploy/remote
 gpu-synth -RemoteCommand 'bash /sdd_data/pepagent/platform/current/deploy/remote/start_worker_synth.sh boltz2 6'
 ```
 
+Bootstrap and launch the Rosetta CPU worker only from the pinned quarterly wheel. The bootstrap
+script rejects a wheel whose SHA-256 differs from the committed release identity.
+
+```powershell
+gpu-synth -RemoteCommand 'bash /sdd_data/pepagent/platform/current/deploy/remote/bootstrap_pyrosetta_synth.sh'
+gpu-synth -RemoteCommand 'bash /sdd_data/pepagent/platform/current/deploy/remote/start_worker_synth.sh rosetta cpu'
+```
+
+`PEPAGENT_ROSETTA_CONCURRENCY` may be set explicitly after checking CPU load and memory. It controls
+concurrent Temporal activities, not the number of decoys. Keep the default of one on shared or
+uninspected hosts.
+
 ## Submit and inspect
 
 ```powershell
@@ -50,6 +74,22 @@ Invoke-RestMethod http://127.0.0.1:8080/v1/runs/<run-id>/evidence
 
 `POST /v1/runs/<run-id>/replay` creates a child run with the original raw specification and hash.
 An old run containing a now-frozen evaluator is rejected rather than silently migrated.
+
+Formal Rosetta validation imports exact public coordinates, verifies the committed source hash,
+requires at least 200 decoys and starts a dedicated durable workflow. Never edit a failed run or
+replace its source artifact; submit a new, separately identified suite instead.
+
+```powershell
+.\.venv-local\Scripts\python -m pepagent.cli submit-rosetta-validation `
+  config\validation\rosetta_public_complexes_v1.yaml --case 2DS8
+.\.venv-local\Scripts\python -m pepagent.cli submit-rosetta-validation `
+  config\validation\rosetta_official_1er8_benchmark_v1.yaml --case 1ER8
+.\.venv-local\Scripts\python -m pepagent.cli summarize-rosetta-validation <succeeded-run-id>
+```
+
+The summary command recomputes native-start recovery and ranking diagnostics from the immutable raw
+evaluation in PostgreSQL. These diagnostics validate execution and near-native refinement; they are
+not new candidate-ranking metrics and do not calibrate REU to experimental affinity.
 
 ## Model admission
 

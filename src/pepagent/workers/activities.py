@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import importlib.metadata
 import json
 import sys
 import uuid
@@ -494,6 +495,263 @@ async def persist_boltz2_evidence(request: dict[str, Any]) -> dict[str, Any]:
             "boltz2",
             "complex-confidence evidence persisted",
         )
+        result["tool_call_id"] = str(call.id)
+    return result
+
+
+@activity.defn(name="select_rosetta_inputs")
+async def select_rosetta_inputs(request: dict[str, Any]) -> list[dict[str, Any]]:
+    threshold = float(request["pair_iptm_min"])
+    top_k = int(request["top_k"])
+    eligible = [
+        structure
+        for structure in request["structures"]
+        if structure["boltz2"].get("pair_iptm") is not None
+        and float(structure["boltz2"]["pair_iptm"]) >= threshold
+    ]
+    selected = sorted(
+        eligible,
+        key=lambda item: float(item["boltz2"]["pair_iptm"]),
+        reverse=True,
+    )[:top_k]
+    async with SessionFactory() as session, session.begin():
+        repository = ExperimentRepository(session)
+        for structure in selected:
+            await repository.transition_candidate(
+                uuid.UUID(structure["candidate"]["id"]),
+                CandidateStatus.ROSETTA_QUEUED,
+                "selection-policy",
+                f"pair-ipTM >= {threshold} and within Rosetta top-{top_k}",
+            )
+    return selected
+
+
+def _select_boltz_structure_artifact(structure: dict[str, Any]) -> dict[str, Any]:
+    artifacts = structure["provenance"]["engine_artifacts"]
+    candidates = [
+        artifact
+        for artifact in artifacts
+        if Path(artifact["path"]).suffix.lower() in {".cif", ".pdb"}
+        and "model_0" in Path(artifact["path"]).name
+    ]
+    if not candidates:
+        candidates = [
+            artifact
+            for artifact in artifacts
+            if Path(artifact["path"]).suffix.lower() in {".cif", ".pdb"}
+        ]
+    if not candidates:
+        raise FileNotFoundError("Boltz evidence contains no complex coordinate artifact")
+    return sorted(candidates, key=lambda item: item["path"])[0]
+
+
+def _convert_structure_to_pdb(source: Path, destination: Path) -> None:
+    if source.suffix.lower() == ".pdb":
+        destination.write_bytes(source.read_bytes())
+        return
+    import gemmi
+
+    structure = gemmi.read_structure(str(source))
+    structure.write_pdb(str(destination))
+
+
+@activity.defn(name="score_rosetta_complex")
+async def score_rosetta_complex(request: dict[str, Any]) -> dict[str, Any]:
+    settings = get_settings()
+    structure = request["structure"]
+    candidate = structure["candidate"]
+    spec = request["spec"]
+    validation_case = request.get("validation_case")
+    lane = "rosetta-validation" if validation_case else "rosetta"
+    work_dir = Path(settings.work_root) / request["run_id"] / lane / candidate["id"]
+    coordinate_artifact = _select_boltz_structure_artifact(structure)
+    coordinate_bytes = await asyncio.to_thread(
+        ContentAddressedObjectStore().get_bytes, coordinate_artifact["uri"]
+    )
+    source_path = work_dir / f"boltz-input{Path(coordinate_artifact['path']).suffix.lower()}"
+    await asyncio.to_thread(work_dir.mkdir, parents=True, exist_ok=True)
+    await asyncio.to_thread(source_path.write_bytes, coordinate_bytes)
+    input_pdb = work_dir / "boltz-input.pdb"
+    await asyncio.to_thread(_convert_structure_to_pdb, source_path, input_pdb)
+
+    receptor_chains = (
+        list(validation_case["receptor_chains"]) if validation_case else ["A"]
+    )
+    peptide_chain = validation_case["peptide_chain"] if validation_case else "B"
+    payload = {
+        "receptor_chains": receptor_chains,
+        "peptide_chain": peptide_chain,
+        "nstruct": int(spec.get("rosetta_nstruct", 200)),
+        "parallel_decoys": int(
+            spec.get("rosetta_parallel_decoys", 8 if validation_case else 1)
+        ),
+        "seed": int(spec["seed"]),
+        "score_function": spec.get("rosetta_score_function", "ref2015"),
+        "source_structure_sha256": coordinate_artifact["sha256"],
+        "source_tool_call_id": structure["tool_call_id"],
+    }
+    if validation_case:
+        payload["native_structure"] = str(input_pdb)
+        payload["validation_case"] = validation_case
+    engine_dir = work_dir / "engine"
+    result = await _run_json_cli(
+        "pepagent.model_workers.rosetta_cli",
+        payload,
+        work_dir,
+        "--work-dir",
+        str(engine_dir),
+        "--input-structure",
+        str(input_pdb),
+    )
+    raw_artifact = await _store_json(result)
+    engine_artifacts: list[dict[str, Any]] = []
+    for relative_path in result["artifacts"]:
+        path = engine_dir / relative_path
+        if path.is_file():
+            stored = await _store_file(path)
+            engine_artifacts.append({"path": relative_path, **asdict(stored)})
+    environment_sha256, environment = fingerprint_runtime()
+    environment_artifact = await _store_json(environment)
+    return {
+        "candidate": candidate,
+        "input": payload,
+        "parameters": {
+            "score_function": payload["score_function"],
+            "nstruct": payload["nstruct"],
+            "parallel_decoys": payload["parallel_decoys"],
+            "prepack": True,
+            "pack_input": False,
+            "pack_separated": True,
+            "primary_aggregation": result["primary_aggregation"],
+            "validation_case": validation_case,
+        },
+        "rosetta": result,
+        "provenance": {
+            "tool_name": "pyrosetta-flexpepdock-interface-analyzer",
+            "tool_version": importlib.metadata.version("pyrosetta"),
+            "model_uri": (
+                "https://west.rosettacommons.org/pyrosetta/quarterly/release/"
+                "pyrosetta-2026.29%2Breleasequarterly.80a0635615-"
+                "cp311-cp311-linux_x86_64.whl"
+            ),
+            "weights_sha256": settings.pyrosetta_wheel_sha256,
+            "environment_sha256": environment_sha256,
+            "environment": environment,
+            "attempt": activity.info().attempt,
+            "parent_tool_call_id": structure["tool_call_id"],
+            "source_coordinate_artifact": coordinate_artifact,
+            "raw_output_artifact": asdict(raw_artifact),
+            "environment_artifact": asdict(environment_artifact),
+            "engine_artifacts": engine_artifacts,
+        },
+    }
+
+
+@activity.defn(name="persist_rosetta_evidence")
+async def persist_rosetta_evidence(request: dict[str, Any]) -> dict[str, Any]:
+    run_id = uuid.UUID(request["run_id"])
+    result = request["rosetta_result"]
+    provenance = result["provenance"]
+    candidate_id = uuid.UUID(result["candidate"]["id"])
+    async with SessionFactory() as session, session.begin():
+        repository = ExperimentRepository(session)
+        call = await repository.record_completed_tool_call(
+            run_id,
+            provenance["tool_name"],
+            provenance["tool_version"],
+            provenance["environment_sha256"],
+            result["input"],
+            result["parameters"],
+            result["rosetta"],
+            weights_sha256=provenance["weights_sha256"],
+            model_uri=provenance["model_uri"],
+            random_seed=result["input"]["seed"],
+            attempt=provenance["attempt"],
+        )
+        await repository.record_tool_dependency(
+            call.id,
+            uuid.UUID(provenance["parent_tool_call_id"]),
+            "refines",
+        )
+        await _register_artifact(
+            session,
+            call.id,
+            provenance["raw_output_artifact"],
+            "raw_output",
+            {"tool": "rosetta", "candidate_id": str(candidate_id)},
+        )
+        await _register_artifact(
+            session,
+            call.id,
+            provenance["environment_artifact"],
+            "environment_manifest",
+            {"tool": "rosetta", "kind": "runtime_environment"},
+        )
+        for index, artifact_payload in enumerate(provenance["engine_artifacts"]):
+            await _register_artifact(
+                session,
+                call.id,
+                artifact_payload,
+                f"engine_output_{index}",
+                {
+                    "tool": "rosetta",
+                    "candidate_id": str(candidate_id),
+                    "relative_path": artifact_payload["path"],
+                },
+            )
+
+        rosetta = result["rosetta"]
+        metrics = {
+            MetricName.ROSETTA_DG_SEPARATED_REU: rosetta["primary_dG_separated_reu"],
+            MetricName.ROSETTA_DG_MINIMUM_REU: rosetta["dG_separated_reu"]["minimum"],
+            MetricName.ROSETTA_PEPTIDE_BB_RMSD_ANGSTROM: (
+                rosetta["peptide_bb_rmsd_angstrom"]["median"]
+            ),
+            MetricName.ROSETTA_INTERFACE_SCORE: rosetta["best_decoy"].get(
+                "interface_score"
+            ),
+            MetricName.ROSETTA_REWEIGHTED_SCORE: rosetta["best_decoy"].get(
+                "reweighted_sc"
+            ),
+            MetricName.ROSETTA_INTERFACE_HBONDS: rosetta["best_decoy"].get(
+                "interface_hbonds"
+            ),
+            MetricName.ROSETTA_BURIED_SURFACE_AREA: rosetta["best_decoy"].get(
+                "dSASA_int"
+            ),
+        }
+        for metric_name, value in metrics.items():
+            if value is None:
+                continue
+            unit = (
+                "angstrom"
+                if metric_name == MetricName.ROSETTA_PEPTIDE_BB_RMSD_ANGSTROM
+                else (
+                    "angstrom^2"
+                    if metric_name == MetricName.ROSETTA_BURIED_SURFACE_AREA
+                    else (
+                        "count"
+                        if metric_name == MetricName.ROSETTA_INTERFACE_HBONDS
+                        else "REU"
+                    )
+                )
+            )
+            await repository.record_evaluation(
+                candidate_id,
+                call.id,
+                metric_name,
+                float(value),
+                unit,
+                rosetta,
+                limitations=rosetta["limitations"],
+            )
+        await repository.transition_candidate(
+            candidate_id,
+            CandidateStatus.ROSETTA_SCORED,
+            "rosetta",
+            "FlexPepDock refinement and InterfaceAnalyzer dG evidence persisted",
+        )
+        result["tool_call_id"] = str(call.id)
     return result
 
 
@@ -517,6 +775,7 @@ async def finalize_run(request: dict[str, Any]) -> dict[str, Any]:
             "temporal",
             {
                 "structure_count": len(request["structures"]),
+                "rosetta_count": len(request.get("rosetta_results", [])),
                 "affinity_count": 0,
                 "affinity_lane": "not_admitted",
             },

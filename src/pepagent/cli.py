@@ -1,14 +1,29 @@
 import asyncio
+import importlib.metadata
 import json
+import uuid
+from dataclasses import asdict
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import httpx
 import typer
 import yaml
+from sqlalchemy import select
+from temporalio.client import Client
 
-from pepagent.domain.schemas import ExperimentSpec
+from pepagent.db.models import Artifact, Candidate, Evaluation, EvidenceArtifact, ExperimentRun
+from pepagent.db.repository import ExperimentRepository
+from pepagent.db.session import SessionFactory
+from pepagent.domain.enums import CandidateStatus
+from pepagent.domain.schemas import ExperimentSpec, PocketCatalogSpec
+from pepagent.pockets.catalog import import_pocket_catalog
+from pepagent.provenance.hashing import sha256_bytes, sha256_json
 from pepagent.registry.service import register_local_model_release
 from pepagent.settings import get_settings
+from pepagent.storage.object_store import ContentAddressedObjectStore
+from pepagent.structures.pdb import atom_chain_sequence
+from pepagent.validation.rosetta import summarize_native_start_validation
 
 app = typer.Typer(no_args_is_help=True, help="Operate the PepAgent control plane.")
 
@@ -91,6 +106,280 @@ def register_boltz2(release_dir: Path) -> None:
             admission_status="admitted",
         )
     )
+    typer.echo(json.dumps(result, ensure_ascii=False, indent=2))
+
+
+@app.command("import-pockets")
+def import_pockets(catalog_path: Path) -> None:
+    """Import a versioned, multi-source target-pocket evidence catalog."""
+    catalog = PocketCatalogSpec.model_validate(_load_mapping(catalog_path))
+
+    async def _run() -> dict:
+        async with SessionFactory() as session, session.begin():
+            return await import_pocket_catalog(session, catalog)
+
+    result = asyncio.run(_run())
+    typer.echo(json.dumps(result, ensure_ascii=False, indent=2))
+
+
+@app.command("summarize-rosetta-validation")
+def summarize_rosetta_validation(run_id: list[uuid.UUID]) -> None:
+    """Recompute native-start validation checks from immutable Rosetta evaluation payloads."""
+
+    async def _run() -> list[dict]:
+        summaries: list[dict] = []
+        async with SessionFactory() as session:
+            for identifier in run_id:
+                run = await session.get(ExperimentRun, identifier)
+                if run is None:
+                    raise typer.BadParameter(f"run not found: {identifier}")
+                evaluation = await session.scalar(
+                    select(Evaluation)
+                    .join(Candidate, Evaluation.candidate_id == Candidate.id)
+                    .where(
+                        Candidate.run_id == identifier,
+                        Evaluation.metric_name == "rosetta_dg_separated_reu",
+                    )
+                )
+                if evaluation is None:
+                    raise typer.BadParameter(
+                        f"run has no completed Rosetta dG evaluation: {identifier}"
+                    )
+                validation = run.spec_json.get("validation", {})
+                summaries.append(
+                    {
+                        "run_id": str(identifier),
+                        "run_status": run.status,
+                        "suite_id": validation.get("suite_id"),
+                        "pdb_id": validation.get("case", {}).get("pdb_id"),
+                        "tool_call_id": str(evaluation.tool_call_id),
+                        **summarize_native_start_validation(evaluation.raw_json),
+                    }
+                )
+        return summaries
+
+    typer.echo(json.dumps(asyncio.run(_run()), ensure_ascii=False, indent=2, sort_keys=True))
+
+
+@app.command("submit-rosetta-validation")
+def submit_rosetta_validation(
+    suite_path: Path,
+    nstruct: int | None = typer.Option(
+        None, min=200, help="Override production decoy count; never below 200."
+    ),
+    case: list[str] | None = typer.Option(  # noqa: B008
+        None, "--case", help="Submit only the named PDB case; repeat for multiple cases."
+    ),
+) -> None:
+    """Stage public complexes as immutable evidence and launch durable Rosetta runs."""
+    suite = _load_mapping(suite_path)
+    suite_digest = sha256_bytes(suite_path.read_bytes())
+    production_nstruct = nstruct or int(suite["source_policy"]["production_nstruct"])
+    if production_nstruct < 200:
+        raise typer.BadParameter("decision-bearing validation requires at least 200 decoys")
+    requested_cases = {name.upper() for name in case or []}
+    selected_cases = [
+        item
+        for item in suite["cases"]
+        if not requested_cases or item["pdb_id"].upper() in requested_cases
+    ]
+    found_cases = {item["pdb_id"].upper() for item in selected_cases}
+    if missing := requested_cases - found_cases:
+        raise typer.BadParameter(f"unknown validation cases: {sorted(missing)}")
+
+    async def _run() -> list[dict]:
+        settings = get_settings()
+        temporal = await Client.connect(
+            settings.temporal_address, namespace=settings.temporal_namespace
+        )
+        staged: list[dict] = []
+        with TemporaryDirectory(prefix="pepagent-rosetta-validation-") as temporary:
+            temporary_root = Path(temporary)
+            for case_spec in selected_cases:
+                source_database = case_spec.get("source_database", "RCSB PDB")
+                if source_database == "RCSB PDB":
+                    retrieval_tool = "rcsb-pdb-retrieval"
+                    retrieval_adapter = "pepagent-rcsb-pdb-retrieval-v1"
+                else:
+                    retrieval_tool = "pdb-coordinate-retrieval"
+                    retrieval_adapter = "pepagent-pdb-coordinate-retrieval-v1"
+                response = await asyncio.to_thread(
+                    httpx.get, case_spec["source_uri"], timeout=60.0
+                )
+                response.raise_for_status()
+                source_bytes = response.content
+                actual_sha256 = sha256_bytes(source_bytes)
+                if actual_sha256 != case_spec["source_sha256"]:
+                    raise OSError(
+                        f"{case_spec['pdb_id']} source hash mismatch: "
+                        f"{actual_sha256} != {case_spec['source_sha256']}"
+                    )
+                source_path = temporary_root / f"{case_spec['pdb_id']}.pdb"
+                source_path.write_bytes(source_bytes)
+                receptor_sequence = atom_chain_sequence(
+                    source_path, list(case_spec["receptor_chains"])
+                )
+                peptide_sequence = atom_chain_sequence(
+                    source_path, [case_spec["peptide_chain"]]
+                )
+                if peptide_sequence != case_spec["modeled_peptide_sequence"]:
+                    raise ValueError(
+                        f"{case_spec['pdb_id']} modeled peptide changed: {peptide_sequence}"
+                    )
+                stored = await asyncio.to_thread(
+                    ContentAddressedObjectStore().put_bytes,
+                    source_bytes,
+                    "chemical/x-pdb",
+                )
+                spec = ExperimentSpec(
+                    target={
+                        "name": f"{case_spec['pdb_id']} modeled receptor",
+                        "sequence": receptor_sequence,
+                        "accession": case_spec["pdb_id"],
+                        "source_database": source_database,
+                        "source_uri": case_spec["source_uri"],
+                        "source_version": actual_sha256,
+                    },
+                    peptide_lengths=[len(peptide_sequence)],
+                    candidates_per_length=1,
+                    structure_top_k=1,
+                    generations=1,
+                    seed=int(suite["source_policy"]["seed"]),
+                    use_msa_server=False,
+                    rosetta_enabled=True,
+                    rosetta_top_k=1,
+                    rosetta_nstruct=production_nstruct,
+                    rosetta_parallel_decoys=int(
+                        suite["source_policy"].get("parallel_decoys", 1)
+                    ),
+                    rosetta_pair_iptm_min=0,
+                    rosetta_score_function=suite["source_policy"]["score_function"],
+                )
+                raw_spec = spec.model_dump(mode="json")
+                raw_spec["validation"] = {
+                    "suite_id": suite["suite_id"],
+                    "suite_sha256": suite_digest,
+                    "case": case_spec,
+                }
+                async with SessionFactory() as session, session.begin():
+                    repository = ExperimentRepository(session)
+                    run = await repository.create_run(
+                        spec,
+                        actor="rosetta-validation-cli",
+                        raw_spec_payload=raw_spec,
+                    )
+                    candidate = await repository.add_candidate(
+                        run.id,
+                        peptide_sequence,
+                        generation=0,
+                        proposal_rank=1,
+                        metadata={
+                            "validation_suite": suite["suite_id"],
+                            "pdb_id": case_spec["pdb_id"],
+                            "native_start": True,
+                        },
+                    )
+                    await repository.transition_candidate(
+                        candidate.id,
+                        CandidateStatus.ROSETTA_QUEUED,
+                        "rosetta-validation-cli",
+                        "public native complex staged for protocol validation",
+                    )
+                    retrieval_environment = sha256_json(
+                        {
+                            "adapter": retrieval_adapter,
+                            "httpx": importlib.metadata.version("httpx"),
+                        }
+                    )
+                    source_call = await repository.record_completed_tool_call(
+                        run.id,
+                        retrieval_tool,
+                        "v1",
+                        retrieval_environment,
+                        {
+                            "source_uri": case_spec["source_uri"],
+                            "expected_sha256": case_spec["source_sha256"],
+                        },
+                        {"exact_hash_required": True},
+                        {
+                            "sha256": stored.sha256,
+                            "size_bytes": stored.size_bytes,
+                            "storage_uri": stored.uri,
+                        },
+                    )
+                    artifact = await session.scalar(
+                        select(Artifact).where(Artifact.sha256 == stored.sha256)
+                    )
+                    if artifact is None:
+                        artifact = Artifact(
+                            sha256=stored.sha256,
+                            size_bytes=stored.size_bytes,
+                            media_type=stored.media_type,
+                            storage_uri=stored.uri,
+                            metadata_json={
+                                "source": source_database,
+                                "pdb_id": case_spec["pdb_id"],
+                            },
+                        )
+                        session.add(artifact)
+                        await session.flush()
+                    link = await session.get(
+                        EvidenceArtifact,
+                        {
+                            "tool_call_id": source_call.id,
+                            "artifact_id": artifact.id,
+                            "role": "source_complex",
+                        },
+                    )
+                    if link is None:
+                        session.add(
+                            EvidenceArtifact(
+                                tool_call_id=source_call.id,
+                                artifact_id=artifact.id,
+                                role="source_complex",
+                            )
+                        )
+                workflow_id = (
+                    f"rosetta-validation-{suite['suite_id']}-{case_spec['pdb_id']}-{run.id}"
+                )
+                await temporal.start_workflow(
+                    "RosettaValidationWorkflow",
+                    {
+                        "run_id": str(run.id),
+                        "spec": spec.model_dump(mode="json"),
+                        "validation_case": case_spec,
+                        "structure": {
+                            "candidate": {
+                                "id": str(candidate.id),
+                                "sequence": candidate.sequence,
+                            },
+                            "tool_call_id": str(source_call.id),
+                            "provenance": {
+                                "engine_artifacts": [
+                                    {
+                                        "path": f"{case_spec['pdb_id']}.pdb",
+                                        **asdict(stored),
+                                    }
+                                ]
+                            },
+                        },
+                    },
+                    id=workflow_id,
+                    task_queue="pepagent-control",
+                )
+                staged.append(
+                    {
+                        "pdb_id": case_spec["pdb_id"],
+                        "run_id": str(run.id),
+                        "candidate_id": str(candidate.id),
+                        "source_tool_call_id": str(source_call.id),
+                        "workflow_id": workflow_id,
+                        "source_sha256": actual_sha256,
+                    }
+                )
+        return staged
+
+    result = asyncio.run(_run())
     typer.echo(json.dumps(result, ensure_ascii=False, indent=2))
 
 

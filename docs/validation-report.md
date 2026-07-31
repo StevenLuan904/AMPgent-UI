@@ -39,11 +39,85 @@ Verdict: do not optimize against PPI-Affinity in MVP v1. If the service becomes 
 its model/service version, submitted PDB hash and returned raw report as external evidence. Promote
 it only if a replayable release is obtained.
 
-## Rosetta FlexPepDock: deferred P1
+## Rosetta FlexPepDock: MVP-v2 formal validation
 
-Rosetta `dG_separated`, `I_sc`, `reweighted_sc`, interface hydrogen bonds and buried surface area are
-valid relative structural-ranking features for top Boltz-2 poses. Rosetta energy units are not
-converted to Kd.
+The admitted implementation uses PyRosetta
+`2026.29+releasequarterly.80a0635615`, wheel SHA-256
+`25254a10363eb5bdc0e1f3f36cbf846cb513958281041dd2b1b259610de2e733`, `ref2015`,
+FlexPepDock prepack/refinement and InterfaceAnalyzer. Per-decoy `dG_separated` comes from the typed
+InterfaceAnalyzer getter. The standard FlexPepDock `reweighted_sc` is reconstructed as total score
++ isolated peptide score + cross-interface score and is used to rank decoys. The primary run value
+is the median `dG_separated` among the ten best reweighted decoys; the full distribution and minimum
+are also retained.
+
+An exact-seed 2DS8 engineering replay passed byte-for-byte after canonicalizing the absolute output
+path that Rosetta writes into PDB energy-table footers. Both runs produced the same result JSON,
+prepacked PDB and refined PDB. The single-decoy smoke value was `-18.2969842019 REU` with peptide
+backbone RMSD `1.0856442212 Å`. This proves deterministic execution, not affinity calibration.
+
+The first complete formal case is 2DS8, run
+`aa60bfad-97f4-44b0-a0b1-969d985fe5fe`. It produced 200/200 valid decoys and completed as
+`succeeded`. The primary top-ten median was `-32.9330883679 REU`; the all-decoy median and minimum
+were `-30.6040018248` and `-33.0551035168 REU`. Peptide backbone RMSD had minimum/median/maximum
+`0.3752/0.5629/2.5055 Å`; 73.0% of decoys were within 1 Å and 94.5% within 2 Å. The best
+`reweighted_sc` decoy had RMSD `0.4515 Å`, and the top-ten RMSD median was `0.4349 Å`. This is a
+positive native-start recovery and ranking check for this public complex, not an experimental
+affinity calibration.
+
+The 2DS8 database record contains seven evaluations, the explicit
+`rcsb-pdb-retrieval -> refines -> pyrosetta-flexpepdock-interface-analyzer` dependency, and 406
+artifact links representing 405 unique content hashes. Its raw output SHA-256 is
+`2d771d16a44bae38f0973ae60d9236df656650affedea1fb58832eb17fa6ec89`; its environment SHA-256 is
+`61dd0ef4792617951ad1d47040b2178ed1aeb90629dae1ec5b9d224d30421c6a`.
+
+The second complete case is 1NVR, run
+`6e5405f4-b1c1-4087-88be-dfdb5e76e346`. It also produced 200/200 valid decoys and completed as
+`succeeded`. Primary top-ten median dG was `-26.8628380275 REU`; the all-decoy median and minimum
+were `-25.2700130881` and `-28.9568627008 REU`. Peptide backbone RMSD had
+minimum/median/maximum `0.3739/0.5477/0.9344 Å`: every decoy remained within 1 Å, the best
+`reweighted_sc` decoy was at `0.5665 Å`, and the top-ten RMSD median was `0.5073 Å`. The
+reweighted-score/RMSD Spearman coefficient was only `0.3529`, which is interpreted with the narrow
+all-near-native RMSD range rather than presented as a broad docking-discrimination claim.
+
+The 1NVR record contains seven evaluations, 406 artifact links (405 unique hashes, 79,072,545
+linked bytes), and the explicit retrieval-to-refinement dependency. Its raw output SHA-256 is
+`f1ce0aa60e31a623df37e2d6dc4f76372b210431091437264cefaddcd926021e`.
+
+The third complete case is Rosetta's official 1ER8 integration-test input, run
+`5a121752-b844-4278-bfc5-a3149f4d1a1b`. It produced 200/200 valid decoys and completed as
+`succeeded` on its first activity attempt. Primary top-ten median dG was `-50.3949700709 REU`; the
+all-decoy median and minimum were `-37.8839060798` and `-55.1126706484 REU`. Peptide backbone RMSD
+had minimum/median/maximum `0.5042/1.0156/2.7461 Å`; 46.5% of decoys were within 1 Å and 98.5%
+within 2 Å. The best `reweighted_sc` decoy had RMSD `1.4532 Å`, while the top-ten RMSD median was
+`0.7603 Å`. The weak reweighted-score/RMSD Spearman coefficient (`0.1794`) means this case supports
+near-native recovery but not a claim that the energy function globally ranks RMSD.
+
+The official 1ER8 record contains seven evaluations, 406 artifact links (405 unique hashes,
+87,896,713 linked bytes), and the explicit retrieval-to-refinement dependency. Its raw output
+SHA-256 is `bc61cf41e9042dcda949d824a3d61ee913ead698fe4e5994cc45d89c6f6c53b3`.
+The source tool call has the legacy name `rcsb-pdb-retrieval`, but its immutable input, target
+metadata and artifact metadata all identify `RosettaCommons/rosetta`, the exact GitHub URL and
+source hash. The importer now assigns the generic `pdb-coordinate-retrieval` name to future
+non-RCSB sources; the completed record was not rewritten.
+
+The raw RCSB 1ER8 coordinate experiment is intentionally retained as failed evidence. Its replacement
+run `10bc074c-2126-4218-8ca3-10af3cc8c279` reproducibly reached Rosetta's internal
+`PackstatCalculator` pose-size assertion during FlexPepDock prepack. The legacy RCSB coordinates
+contain non-standard DHI and additional numbered receptor residues; deleting unsupported records
+does not reproduce Rosetta's published 1ER8 benchmark input. The official Rosetta input has its own
+source URL and SHA-256
+`47de41c87cbf53cb06a67f0ac3e8e834c63f27a0c7b94d8178be36c5ec6bd125`, and passed an isolated
+prepack before the replacement formal run was submitted. No historical run or source artifact was
+overwritten.
+
+Rosetta energy units are never converted to kcal/mol, Kd or a claim of absolute binding affinity.
+The visual snapshot auditor is a separately deployed, non-blocking auxiliary module. The formal
+Rosetta workflow never invokes it, waits for it or consumes its output as a decision metric. Final
+MVP-v2 admission verdict: **admit Rosetta FlexPepDock/InterfaceAnalyzer as a high-cost relative
+structural rescoring lane for already plausible, pocket-localized protein-peptide poses**. All three
+public native-start cases completed with exact source/environment evidence, 200 decoys and a
+near-native refined ensemble. Do not use the metric as an absolute affinity or Kd predictor, and do
+not treat these native-start tests as evidence for blind pocket discovery.
 
 ## AceA durable MVP run
 

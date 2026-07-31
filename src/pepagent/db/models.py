@@ -31,6 +31,7 @@ class Target(Base, TimestampMixin):
     sequence: Mapped[str] = mapped_column(Text, nullable=False)
     sequence_sha256: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
     metadata_json: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    pockets: Mapped[list["TargetPocket"]] = relationship(back_populates="target")
 
 
 class ExperimentRun(Base, TimestampMixin):
@@ -97,6 +98,26 @@ class ToolCall(Base):
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     output_sha256: Mapped[str | None] = mapped_column(String(64))
     error_json: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+
+
+class ToolCallDependency(Base):
+    """Typed edge between two persisted experiment attempts."""
+
+    __tablename__ = "tool_call_dependencies"
+    __table_args__ = (
+        Index("ix_tool_call_dependency_parent", "parent_tool_call_id"),
+    )
+
+    child_tool_call_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("tool_calls.id"), primary_key=True
+    )
+    parent_tool_call_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("tool_calls.id"), primary_key=True
+    )
+    relation_type: Mapped[str] = mapped_column(String(64), primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
 
 
 class Evaluation(Base):
@@ -188,18 +209,63 @@ class EvidenceArtifact(Base):
     role: Mapped[str] = mapped_column(String(64), primary_key=True)
 
 
-class PocketEvidence(Base, TimestampMixin):
-    __tablename__ = "pocket_evidence"
+class TargetPocket(Base, TimestampMixin):
+    __tablename__ = "target_pockets"
+    __table_args__ = (
+        UniqueConstraint("target_id", "pocket_key", name="uq_target_pocket_key"),
+        Index("ix_target_pocket_conditioning", "conditioning_enabled", "evidence_score"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     target_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("targets.id"), nullable=False)
+    pocket_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    pocket_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    functional_role: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String(64), nullable=False)
+    evidence_grade: Mapped[str] = mapped_column(String(8), nullable=False)
+    evidence_score: Mapped[float] = mapped_column(Float, nullable=False)
+    conditioning_priority: Mapped[str] = mapped_column(String(32), nullable=False)
+    conditioning_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    residue_indices: Mapped[list[int]] = mapped_column(JSONB, default=list, nullable=False)
+    context_json: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    limitations_json: Mapped[list[str]] = mapped_column(JSONB, default=list, nullable=False)
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+
+    target: Mapped[Target] = relationship(back_populates="pockets")
+    evidence: Mapped[list["PocketEvidence"]] = relationship(back_populates="pocket")
+
+
+class PocketEvidence(Base, TimestampMixin):
+    __tablename__ = "pocket_evidence"
+    __table_args__ = (
+        Index("ix_pocket_evidence_pocket", "pocket_id"),
+        UniqueConstraint("evidence_sha256", name="uq_pocket_evidence_sha256"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    target_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("targets.id"), nullable=False)
+    pocket_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("target_pockets.id"))
+    evidence_kind: Mapped[str] = mapped_column(String(64), nullable=False, default="legacy")
+    evidence_grade: Mapped[str] = mapped_column(String(8), nullable=False, default="U")
     source_type: Mapped[str] = mapped_column(String(64), nullable=False)
     source_uri: Mapped[str] = mapped_column(Text, nullable=False)
+    source_accession: Mapped[str | None] = mapped_column(String(128))
     source_version: Mapped[str | None] = mapped_column(String(128))
+    source_revision_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    retrieved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    chain_ids: Mapped[list[str]] = mapped_column(JSONB, default=list, nullable=False)
+    source_residue_indices: Mapped[list[int]] = mapped_column(JSONB, default=list, nullable=False)
     residue_indices: Mapped[list[int]] = mapped_column(JSONB, default=list, nullable=False)
     confidence: Mapped[float | None] = mapped_column(Float)
+    experimental_method: Mapped[str | None] = mapped_column(String(128))
+    resolution_angstrom: Mapped[float | None] = mapped_column(Float)
+    mapping_json: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    limitations_json: Mapped[list[str]] = mapped_column(JSONB, default=list, nullable=False)
     evidence_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     evidence_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+
+    pocket: Mapped[TargetPocket | None] = relationship(back_populates="evidence")
 
 
 class LifecycleEvent(Base):
