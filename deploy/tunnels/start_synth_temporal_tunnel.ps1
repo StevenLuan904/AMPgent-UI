@@ -2,7 +2,8 @@
 param(
     [int]$LocalPort = 7233,
     [int]$RemotePort = 17233,
-    [int]$ConnectTimeout = 15
+    [int]$ConnectTimeout = 15,
+    [int]$RetryDelaySeconds = 10
 )
 
 $ErrorActionPreference = 'Stop'
@@ -44,8 +45,12 @@ try {
         '-R', "127.0.0.1`:$RemotePort`:127.0.0.1`:$LocalPort",
         'synth@192.168.99.2'
     )
-    & ssh @arguments
-    if ($LASTEXITCODE -ne 0) { throw "Temporal tunnel exited with code $LASTEXITCODE" }
+    while ($true) {
+        & ssh @arguments
+        $exitCode = $LASTEXITCODE
+        Write-Warning "Temporal tunnel exited with code $exitCode; reconnecting in $RetryDelaySeconds seconds"
+        Start-Sleep -Seconds $RetryDelaySeconds
+    }
 } finally {
     foreach ($name in @(
         'REMOTE_GPU_JUMP_PASSWORD', 'REMOTE_GPU_TARGET_PASSWORD',
@@ -55,4 +60,3 @@ try {
         Remove-Item "Env:$name" -ErrorAction SilentlyContinue
     }
 }
-

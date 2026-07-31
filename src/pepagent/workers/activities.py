@@ -3,6 +3,8 @@ from __future__ import annotations
 import asyncio
 import importlib.metadata
 import json
+import os
+import signal
 import sys
 import uuid
 from dataclasses import asdict
@@ -30,6 +32,32 @@ from pepagent.structures.interface import (
 )
 
 
+async def _terminate_subprocess_tree(process: asyncio.subprocess.Process) -> None:
+    """Stop a model subprocess and its descendants after activity cancellation."""
+    if process.returncode is not None:
+        return
+    try:
+        if os.name == "posix":
+            os.killpg(process.pid, signal.SIGTERM)
+        else:
+            process.terminate()
+    except ProcessLookupError:
+        return
+    try:
+        await asyncio.wait_for(process.wait(), timeout=10)
+        return
+    except TimeoutError:
+        pass
+    try:
+        if os.name == "posix":
+            os.killpg(process.pid, signal.SIGKILL)
+        else:
+            process.kill()
+    except ProcessLookupError:
+        return
+    await process.wait()
+
+
 async def _run_json_cli(module: str, request: dict[str, Any], work_dir: Path, *extra: str) -> dict:
     await asyncio.to_thread(work_dir.mkdir, parents=True, exist_ok=True)
     request_path = work_dir / "request.json"
@@ -50,22 +78,27 @@ async def _run_json_cli(module: str, request: dict[str, Any], work_dir: Path, *e
         *extra,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.STDOUT,
+        start_new_session=os.name == "posix",
     )
     output_tail: list[str] = []
-    while True:
-        try:
-            line = await asyncio.wait_for(process.stdout.readline(), timeout=30)
-        except TimeoutError:
+    try:
+        while True:
+            try:
+                line = await asyncio.wait_for(process.stdout.readline(), timeout=30)
+            except TimeoutError:
+                activity.heartbeat({"module": module, "status": "running"})
+                continue
+            if not line:
+                break
+            decoded = line.decode(errors="replace").rstrip()
+            output_tail.append(decoded)
+            output_tail = output_tail[-200:]
+            activity.logger.info(decoded)
             activity.heartbeat({"module": module, "status": "running"})
-            continue
-        if not line:
-            break
-        decoded = line.decode(errors="replace").rstrip()
-        output_tail.append(decoded)
-        output_tail = output_tail[-200:]
-        activity.logger.info(decoded)
-        activity.heartbeat({"module": module, "status": "running"})
-    return_code = await process.wait()
+        return_code = await process.wait()
+    except BaseException:
+        await _terminate_subprocess_tree(process)
+        raise
     if return_code != 0:
         diagnostic = "\n".join(output_tail[-20:])[-8000:]
         raise RuntimeError(f"{module} exited with code {return_code}\n{diagnostic}")
