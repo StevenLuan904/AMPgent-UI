@@ -33,10 +33,6 @@
 
 ## 输出应该是什么
 
-输出核心不是“有/没有问题”的标签，而是一组可定位的空间 `finding`。每个 finding 必须能落到具体结构、seed、chain、残基、原子或官能团，给出笛卡尔坐标、实际距离/角度/二面角、参考范围、超出量、计算方法和自然语言解释。完整契约见 [空间结构问题 Finding 契约](spatial-finding-contract.zh-CN.md)。
-
-精确数值只能来自坐标计算；Codex 负责结合 pocket、催化位点、多 seed 和 snapshot 解释其生物学含义。若视觉上发现疑点但没有对应数值，输出 `needs_measurement` 并要求补算，不能从图片猜测 Å 或角度。
-
 Codex 输出固定 schema，同时保留未经改写的原始回复：
 
 - `flags`：off-pocket、gross clash、single-point attachment、low-confidence adsorption、

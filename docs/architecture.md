@@ -89,12 +89,6 @@ The snapshot critic is a separate auxiliary service, not a Temporal activity in 
 workflow. It subscribes to completed structure artifacts asynchronously. Its absence, failure or
 latency cannot block candidate promotion, Rosetta scoring or another research round.
 
-Its primary output is a collection of addressable spatial findings rather than a binary label or
-scalar. Deterministic coordinate tools own atom identities, Cartesian coordinates, distances,
-angles, torsions, thresholds, and deviations; the multimodal critic explains those measurements in
-pocket and biological context. A visual suspicion without coordinate evidence is emitted only as
-`needs_measurement`, never as an invented numeric claim.
-
 ## Candidate lifecycle
 
 ```mermaid
