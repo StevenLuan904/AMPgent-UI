@@ -14,6 +14,7 @@ from pepagent.db.models import (
     LifecycleEvent,
     Target,
     ToolCall,
+    ToolCallDependency,
 )
 from pepagent.domain.enums import CandidateStatus, EvaluationStatus, RunStatus
 from pepagent.domain.schemas import ExperimentSpec
@@ -298,3 +299,30 @@ class ExperimentRepository:
             },
         )
         return evaluation
+
+    async def record_tool_dependency(
+        self,
+        child_tool_call_id: uuid.UUID,
+        parent_tool_call_id: uuid.UUID,
+        relation_type: str,
+    ) -> ToolCallDependency:
+        if child_tool_call_id == parent_tool_call_id:
+            raise ValueError("a tool call cannot depend on itself")
+        child = await self.session.get(ToolCall, child_tool_call_id)
+        parent = await self.session.get(ToolCall, parent_tool_call_id)
+        if child is None or parent is None:
+            raise KeyError("both child and parent tool calls must exist")
+        if child.run_id != parent.run_id:
+            raise ValueError("tool-call dependency edges cannot cross experiment runs")
+        key = {
+            "child_tool_call_id": child_tool_call_id,
+            "parent_tool_call_id": parent_tool_call_id,
+            "relation_type": relation_type,
+        }
+        existing = await self.session.get(ToolCallDependency, key)
+        if existing is not None:
+            return existing
+        dependency = ToolCallDependency(**key)
+        self.session.add(dependency)
+        await self.session.flush()
+        return dependency

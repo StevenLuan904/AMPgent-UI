@@ -188,13 +188,27 @@ def _run(args: argparse.Namespace) -> None:
         )
         decoys.append(metrics)
 
-    ranked = sorted(
+    ranked_by_dg = sorted(
         decoys,
         key=lambda item: (
             item["dG_separated"] is None,
             item["dG_separated"] if item["dG_separated"] is not None else float("inf"),
         ),
     )
+    rank_metric = (
+        "reweighted_sc"
+        if all(item.get("reweighted_sc") is not None for item in decoys)
+        else "total_score"
+    )
+    ranked = sorted(decoys, key=lambda item: float(item[rank_metric]))
+    top_count = min(10, len(ranked))
+    top_dgs = [
+        float(item["dG_separated"])
+        for item in ranked[:top_count]
+        if item["dG_separated"] is not None
+    ]
+    if not top_dgs:
+        raise RuntimeError("InterfaceAnalyzer produced no dG_separated values")
     dgs = [float(item["dG_separated"]) for item in decoys if item["dG_separated"] is not None]
     rmsds = [float(item["peptide_bb_rmsd"]) for item in decoys]
     result = {
@@ -213,8 +227,15 @@ def _run(args: argparse.Namespace) -> None:
         "native_sha256": sha256_file(native),
         "atom_counts": atom_counts,
         "dG_separated_reu": _summary(dgs),
+        "primary_dG_separated_reu": float(statistics.median(top_dgs)),
+        "primary_aggregation": {
+            "rank_metric": rank_metric,
+            "top_decoy_count": top_count,
+            "aggregation": "median",
+        },
         "peptide_bb_rmsd_angstrom": _summary(rmsds),
         "best_decoy": ranked[0],
+        "minimum_dG_decoy": ranked_by_dg[0],
         "decoys": decoys,
         "artifacts": [
             str(path.relative_to(args.work_dir))

@@ -42,6 +42,11 @@ class ExperimentSpec(BaseModel):
     boltz_use_potentials: bool = True
     boltz_no_kernels: bool = True
     use_msa_server: bool = True
+    rosetta_enabled: bool = False
+    rosetta_top_k: int = Field(default=1, ge=1)
+    rosetta_nstruct: int = Field(default=200, ge=1)
+    rosetta_pair_iptm_min: float = Field(default=0.5, ge=0, le=1)
+    rosetta_score_function: str = "ref2015"
     affinity_evaluators: list[str] = Field(
         default_factory=list,
         description=(
@@ -55,6 +60,23 @@ class ExperimentSpec(BaseModel):
         if "peppap" in {name.lower() for name in value}:
             raise ValueError("PepPAP is frozen and is not admitted to the experiment workflow")
         return value
+
+    @field_validator("rosetta_score_function")
+    @classmethod
+    def require_calibrated_rosetta_score_function(cls, value: str) -> str:
+        if value != "ref2015":
+            raise ValueError("MVP-v2 admits only the versioned ref2015 Rosetta protocol")
+        return value
+
+    @model_validator(mode="after")
+    def validate_rosetta_protocol(self) -> "ExperimentSpec":
+        if self.rosetta_enabled and self.rosetta_nstruct < 200:
+            raise ValueError(
+                "decision-bearing FlexPepDock runs require at least 200 refinement decoys"
+            )
+        if self.rosetta_top_k > self.structure_top_k:
+            raise ValueError("rosetta_top_k cannot exceed structure_top_k")
+        return self
 
 
 class CandidateRecord(BaseModel):

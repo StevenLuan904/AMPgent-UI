@@ -56,9 +56,52 @@ class PeptideDesignWorkflow:
                     retry_policy=retry,
                 )
                 structures.append(structure)
+            rosetta_results: list[dict[str, Any]] = []
+            if request["spec"].get("rosetta_enabled", False):
+                rosetta_inputs = await workflow.execute_activity(
+                    "select_rosetta_inputs",
+                    {
+                        "structures": structures,
+                        "pair_iptm_min": request["spec"].get(
+                            "rosetta_pair_iptm_min", 0.5
+                        ),
+                        "top_k": request["spec"].get("rosetta_top_k", 1),
+                    },
+                    task_queue="pepagent-control",
+                    start_to_close_timeout=timedelta(minutes=5),
+                    retry_policy=retry,
+                )
+                for structure in rosetta_inputs:
+                    rosetta_result = await workflow.execute_activity(
+                        "score_rosetta_complex",
+                        {
+                            "run_id": request["run_id"],
+                            "spec": request["spec"],
+                            "structure": structure,
+                        },
+                        task_queue="pepagent-cpu-rosetta",
+                        start_to_close_timeout=timedelta(hours=48),
+                        heartbeat_timeout=timedelta(minutes=5),
+                        retry_policy=retry,
+                    )
+                    rosetta_result = await workflow.execute_activity(
+                        "persist_rosetta_evidence",
+                        {
+                            "run_id": request["run_id"],
+                            "rosetta_result": rosetta_result,
+                        },
+                        task_queue="pepagent-control",
+                        start_to_close_timeout=timedelta(hours=2),
+                        retry_policy=retry,
+                    )
+                    rosetta_results.append(rosetta_result)
             return await workflow.execute_activity(
                 "finalize_run",
-                {"run_id": request["run_id"], "structures": structures},
+                {
+                    "run_id": request["run_id"],
+                    "structures": structures,
+                    "rosetta_results": rosetta_results,
+                },
                 task_queue="pepagent-control",
                 start_to_close_timeout=timedelta(minutes=5),
                 retry_policy=retry,

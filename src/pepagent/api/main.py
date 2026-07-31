@@ -25,6 +25,7 @@ from pepagent.db.models import (
     Target,
     TargetPocket,
     ToolCall,
+    ToolCallDependency,
 )
 from pepagent.db.repository import ExperimentRepository
 from pepagent.db.session import get_session
@@ -154,6 +155,18 @@ async def get_run_evidence(run_id: uuid.UUID, session: SessionDep) -> dict:
             select(ToolCall).where(ToolCall.run_id == run_id).order_by(ToolCall.queued_at)
         )
     )
+    dependencies = list(
+        await session.scalars(
+            select(ToolCallDependency)
+            .join(ToolCall, ToolCallDependency.child_tool_call_id == ToolCall.id)
+            .where(ToolCall.run_id == run_id)
+            .order_by(
+                ToolCallDependency.child_tool_call_id,
+                ToolCallDependency.parent_tool_call_id,
+                ToolCallDependency.relation_type,
+            )
+        )
+    )
     call_payloads: list[dict] = []
     for call in calls:
         artifacts = list(
@@ -204,6 +217,14 @@ async def get_run_evidence(run_id: uuid.UUID, session: SessionDep) -> dict:
         "run_id": run_id,
         "spec_sha256": run.spec_sha256,
         "tool_calls": call_payloads,
+        "dependencies": [
+            {
+                "child_tool_call_id": edge.child_tool_call_id,
+                "parent_tool_call_id": edge.parent_tool_call_id,
+                "relation_type": edge.relation_type,
+            }
+            for edge in dependencies
+        ],
         "evaluations": [
             {
                 "id": evaluation.id,

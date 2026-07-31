@@ -100,6 +100,26 @@ class ToolCall(Base):
     error_json: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
 
 
+class ToolCallDependency(Base):
+    """Typed edge between two persisted experiment attempts."""
+
+    __tablename__ = "tool_call_dependencies"
+    __table_args__ = (
+        Index("ix_tool_call_dependency_parent", "parent_tool_call_id"),
+    )
+
+    child_tool_call_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("tool_calls.id"), primary_key=True
+    )
+    parent_tool_call_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("tool_calls.id"), primary_key=True
+    )
+    relation_type: Mapped[str] = mapped_column(String(64), primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
 class Evaluation(Base):
     __tablename__ = "evaluations"
     __table_args__ = (

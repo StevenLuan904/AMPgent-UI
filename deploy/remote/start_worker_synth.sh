@@ -2,19 +2,30 @@
 set -euo pipefail
 
 if [[ $# -ne 2 ]]; then
-  echo "usage: start_worker_synth.sh <pepmlm|boltz2> <gpu-id>" >&2
+  echo "usage: start_worker_synth.sh <pepmlm|boltz2|rosetta> <gpu-id|cpu>" >&2
   exit 2
 fi
 ROLE="$1"
 GPU_ID="$2"
 case "$ROLE" in
   pepmlm|boltz2) ;;
+  rosetta) ;;
   *) echo "unsupported worker role: $ROLE" >&2; exit 2 ;;
 esac
-[[ "$GPU_ID" =~ ^[0-7]$ ]] || { echo "GPU ID must be 0-7" >&2; exit 2; }
+if [[ "$ROLE" = "rosetta" ]]; then
+  [[ "$GPU_ID" = "cpu" ]] || { echo "Rosetta worker resource must be cpu" >&2; exit 2; }
+else
+  [[ "$GPU_ID" =~ ^[0-7]$ ]] || { echo "GPU ID must be 0-7" >&2; exit 2; }
+fi
 
 ROOT="/sdd_data/pepagent"
-PYTHON="$ROOT/envs/gpu-worker-py311-v1/bin/python"
+if [[ "$ROLE" = "rosetta" ]]; then
+  PYTHON="$ROOT/envs/pyrosetta-quarterly-py311-v1/bin/python"
+  CUDA_DEVICE=""
+else
+  PYTHON="$ROOT/envs/gpu-worker-py311-v1/bin/python"
+  CUDA_DEVICE="$GPU_ID"
+fi
 RELEASE_SHA256="$(basename "$(readlink -f "$ROOT/platform/current")")"
 [[ "$RELEASE_SHA256" =~ ^[0-9a-f]{64}$ ]] || {
   echo "active platform release is not content-addressed: $RELEASE_SHA256" >&2
@@ -32,7 +43,7 @@ fi
 STAMP="$(date +%Y%m%d-%H%M%S)"
 LOG_FILE="$RUN_DIR/worker-$STAMP.log"
 nohup env \
-  CUDA_VISIBLE_DEVICES="$GPU_ID" \
+  CUDA_VISIBLE_DEVICES="$CUDA_DEVICE" \
   PYTHONUNBUFFERED=1 \
   PEPAGENT_WORKER_ROLE="$ROLE" \
   PEPAGENT_WORKER_MAX_CONCURRENT_ACTIVITIES=1 \

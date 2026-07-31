@@ -30,6 +30,7 @@ class Settings(BaseSettings):
         "090e82ac8c92f5e943fa1b39e7410a44027bea7243c0bbb3caa67a77fc1428e1"
     )
     boltz2_cache_path: str = "./var/models/boltz2"
+    pyrosetta_release: str = "quarterly"
 
 
 @lru_cache

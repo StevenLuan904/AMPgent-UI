@@ -74,22 +74,24 @@ MVP-v2 的成功标准不是“预测出一个神奇数字”，而是相对盲�
 
 停止条件是预算耗尽、连续多轮无 Pareto 改善、候选多样性坍缩，或结构不确定性始终无法下降。所有失败候选仍保留，避免下一轮重复探索。
 
-## Snapshot 检查有没有意义
+## 独立视觉辅助模块（不属于主 Auto Research）
 
 **有意义，但现在没有资格成为 metric 或自动晋级闸门。** 它最合适的角色是 shadow-mode 的 Codex structure critic：发现固定 scalar 没覆盖的失败模式、解释异常、提出下一轮应补算什么。它不能预测 Kd，不能替代坐标计算，也不能凭“看起来不错”改变候选分数。
 
 原因很实际：三维渲染能让 Codex 同时看到全局落位、表面互补、长肽尾部、域碰撞和置信度分布，适合发现“各项数字勉强过线但整体明显不合理”的组合异常；但截图丢失精确距离、遮挡背面原子，并强烈依赖相机、颜色和表面表示。现有多模态模型在化学视觉任务上有能力，但公开基准也显示视觉—语言融合仍会出现稳定而自信的错误，不能未经本项目校准就充当科学评分器。
 
-所以 MVP-v2 采用两条并行证据，而不是人眼 in loop：
+视觉模块与主 Auto Research 分开开发、分开部署、分开失败。主流程不调用视觉模块，也不等待其结果；视觉模块只能订阅已经完成的结构 artifact，异步产生辅助审阅。
 
-1. **坐标审计是主证据和晋级门。** 直接从 CIF/PDB 计算：
+主 Auto Research 的结构晋级只采用坐标和能量证据：
+
+- **坐标审计是主证据和晋级门。** 直接从 CIF/PDB 计算：
 
 - 多种子姿势聚类，以及口袋接触在重复采样中的出现频率；
 - 目标口袋覆盖率、非目标表面接触率和锚点残基埋藏情况；
 - 原子碰撞、氢键、盐桥、疏水接触、界面埋藏面积和形状互补；
 - 肽是否异常自折叠、穿模、贴在低置信无序区，或只靠一个偶然接触挂住；
 
-2. **Codex snapshot critic 是辅助证据节点。** 输入不是一张随意截图，而是确定性生成的 evidence bundle：全局复合物、口袋近景、正交视角、分子表面、接触/残基标注、置信度着色和 contact map，并同时提供 pocket evidence card 与坐标审计表。Codex 输出固定 schema 的 `flags / evidence / uncertainty / suggested_next_action`，例如 off-pocket、gross clash、仅单点悬挂、低置信区吸附、跨域穿插或视角不足。
+- **Codex snapshot critic 是独立辅助证据。** 输入不是一张随意截图，而是确定性生成的 evidence bundle：全局复合物、口袋近景、正交视角、分子表面、接触/残基标注、置信度着色和 contact map，并同时提供 pocket evidence card 与坐标审计表。Codex 输出固定 schema 的 `flags / evidence / uncertainty / suggested_next_action`，例如 off-pocket、gross clash、仅单点悬挂、低置信区吸附、跨域穿插或视角不足。
 
 Snapshot critic 先以 shadow mode 运行，不参与 Pareto 分数。是否晋升为规则，必须先做一个小型验证集：已知 protein–peptide complex、人工制造的 off-pocket/clash/遮挡负例，以及坐标规则难判的边界例。比较“坐标审计”“snapshot only”“两者合并”的错误发现率、重复调用一致性和假阳性。只有合并通道对坐标审计有稳定增益时才保留；否则 snapshot 只作为报告，不进入循环决策。
 

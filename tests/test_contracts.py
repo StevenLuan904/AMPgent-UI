@@ -58,6 +58,16 @@ def test_peppap_is_frozen_out_of_active_contract() -> None:
         )
 
 
+def test_decision_bearing_rosetta_requires_200_decoys() -> None:
+    with pytest.raises(ValueError, match="at least 200"):
+        ExperimentSpec(
+            target=TargetSpec(name="target", sequence="ACDE"),
+            structure_top_k=1,
+            rosetta_enabled=True,
+            rosetta_nstruct=20,
+        )
+
+
 def test_runtime_manifest_records_exact_platform_release(monkeypatch: pytest.MonkeyPatch) -> None:
     release = "a" * 64
     monkeypatch.setenv("PEPAGENT_PLATFORM_RELEASE_SHA256", release)

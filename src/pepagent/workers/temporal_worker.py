@@ -11,7 +11,10 @@ from pepagent.workers.activities import (
     mark_run_started,
     persist_and_select_candidates,
     persist_boltz2_evidence,
+    persist_rosetta_evidence,
     predict_boltz2_complex,
+    score_rosetta_complex,
+    select_rosetta_inputs,
 )
 from pepagent.workflows.design import PeptideDesignWorkflow
 
@@ -23,12 +26,15 @@ ROLE_CONFIG = {
             mark_run_failed,
             persist_and_select_candidates,
             persist_boltz2_evidence,
+            select_rosetta_inputs,
+            persist_rosetta_evidence,
             finalize_run,
         ],
         [PeptideDesignWorkflow],
     ),
     "pepmlm": ("pepagent-gpu-pepmlm", [generate_with_pepmlm], []),
     "boltz2": ("pepagent-gpu-boltz2", [predict_boltz2_complex], []),
+    "rosetta": ("pepagent-cpu-rosetta", [score_rosetta_complex], []),
 }
 
 

@@ -76,6 +76,10 @@ versioned protein-peptide validation set shows stable incremental value over coo
 alone. Every review stores model snapshot, prompt schema/hash, render recipe and camera parameters,
 image hashes, structured output and raw response.
 
+The snapshot critic is a separate auxiliary service, not a Temporal activity in the Auto Research
+workflow. It subscribes to completed structure artifacts asynchronously. Its absence, failure or
+latency cannot block candidate promotion, Rosetta scoring or another research round.
+
 ## Candidate lifecycle
 
 ```mermaid
