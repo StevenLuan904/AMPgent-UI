@@ -39,7 +39,7 @@ Verdict: do not optimize against PPI-Affinity in MVP v1. If the service becomes 
 its model/service version, submitted PDB hash and returned raw report as external evidence. Promote
 it only if a replayable release is obtained.
 
-## Rosetta FlexPepDock: MVP-v2 validation in progress
+## Rosetta FlexPepDock: MVP-v2 formal validation
 
 The admitted implementation uses PyRosetta
 `2026.29+releasequarterly.80a0635615`, wheel SHA-256
@@ -55,15 +55,42 @@ path that Rosetta writes into PDB energy-table footers. Both runs produced the s
 prepacked PDB and refined PDB. The single-decoy smoke value was `-18.2969842019 REU` with peptide
 backbone RMSD `1.0856442212 Å`. This proves deterministic execution, not affinity calibration.
 
-Three durable native-start validation runs are executing with 200 independently seeded decoys each:
+The first complete formal case is 2DS8, run
+`aa60bfad-97f4-44b0-a0b1-969d985fe5fe`. It produced 200/200 valid decoys and completed as
+`succeeded`. The primary top-ten median was `-32.9330883679 REU`; the all-decoy median and minimum
+were `-30.6040018248` and `-33.0551035168 REU`. Peptide backbone RMSD had minimum/median/maximum
+`0.3752/0.5629/2.5055 Å`; 73.0% of decoys were within 1 Å and 94.5% within 2 Å. The best
+`reweighted_sc` decoy had RMSD `0.4515 Å`, and the top-ten RMSD median was `0.4349 Å`. This is a
+positive native-start recovery and ranking check for this public complex, not an experimental
+affinity calibration.
 
-- 1ER8: `b82e3cfb-5e52-4d49-96ed-281a9d0fe740`;
+The 2DS8 database record contains seven evaluations, the explicit
+`rcsb-pdb-retrieval -> refines -> pyrosetta-flexpepdock-interface-analyzer` dependency, and 406
+artifact links representing 405 unique content hashes. Its raw output SHA-256 is
+`2d771d16a44bae38f0973ae60d9236df656650affedea1fb58832eb17fa6ec89`; its environment SHA-256 is
+`61dd0ef4792617951ad1d47040b2178ed1aeb90629dae1ec5b9d224d30421c6a`.
+
+Two further durable native-start cases are running with 200 independently seeded decoys:
+
 - 1NVR: `6e5405f4-b1c1-4087-88be-dfdb5e76e346`;
-- 2DS8: `aa60bfad-97f4-44b0-a0b1-969d985fe5fe`.
+- Rosetta's official 1ER8 integration-test input:
+  `5a121752-b844-4278-bfc5-a3149f4d1a1b`.
+
+The raw RCSB 1ER8 coordinate experiment is intentionally retained as failed evidence. Its replacement
+run `10bc074c-2126-4218-8ca3-10af3cc8c279` reproducibly reached Rosetta's internal
+`PackstatCalculator` pose-size assertion during FlexPepDock prepack. The legacy RCSB coordinates
+contain non-standard DHI and additional numbered receptor residues; deleting unsupported records
+does not reproduce Rosetta's published 1ER8 benchmark input. The official Rosetta input has its own
+source URL and SHA-256
+`47de41c87cbf53cb06a67f0ac3e8e834c63f27a0c7b94d8178be36c5ec6bd125`, and passed an isolated
+prepack before the replacement formal run was submitted. No historical run or source artifact was
+overwritten.
 
 Rosetta energy units are never converted to kcal/mol, Kd or a claim of absolute binding affinity.
-This section must not be marked admitted until all three runs, artifact uploads and database evidence
-queries complete.
+The visual snapshot auditor is a separately deployed, non-blocking auxiliary module. The formal
+Rosetta workflow never invokes it, waits for it or consumes its output as a decision metric. Final
+admission remains pending until the two running cases, artifact uploads and database evidence queries
+complete.
 
 ## AceA durable MVP run
 
