@@ -13,6 +13,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from temporalio.client import Client
 
 from pepagent.db.models import (
+    AgentDecision,
+    AgentDecisionToolCallEdge,
     Artifact,
     Candidate,
     Evaluation,
@@ -71,7 +73,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="PepAgent control plane", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="PepAgent control plane", version="0.3.0", lifespan=lifespan)
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
 
@@ -81,9 +83,7 @@ async def healthz() -> dict[str, str]:
 
 
 @app.post("/v1/runs", response_model=RunCreated, status_code=status.HTTP_202_ACCEPTED)
-async def create_run(
-    spec: ExperimentSpec, session: SessionDep
-) -> RunCreated:
+async def create_run(spec: ExperimentSpec, session: SessionDep) -> RunCreated:
     async with session.begin():
         run = await ExperimentRepository(session).create_run(spec)
     workflow_id = f"pepagent-run-{run.id}"
@@ -133,9 +133,7 @@ async def get_run(run_id: uuid.UUID, session: SessionDep) -> dict:
 
 
 @app.get("/v1/runs/{run_id}/candidates", response_model=list[CandidateRecord])
-async def get_candidates(
-    run_id: uuid.UUID, session: SessionDep
-) -> list[Candidate]:
+async def get_candidates(run_id: uuid.UUID, session: SessionDep) -> list[Candidate]:
     return list(
         await session.scalars(
             select(Candidate)
@@ -213,6 +211,25 @@ async def get_run_evidence(run_id: uuid.UUID, session: SessionDep) -> dict:
             .order_by(Candidate.proposal_rank, Evaluation.metric_name)
         )
     )
+    decisions = list(
+        await session.scalars(
+            select(AgentDecision)
+            .where(AgentDecision.run_id == run_id)
+            .order_by(AgentDecision.generation, AgentDecision.created_at)
+        )
+    )
+    decision_edges = list(
+        await session.scalars(
+            select(AgentDecisionToolCallEdge)
+            .join(AgentDecision, AgentDecisionToolCallEdge.decision_id == AgentDecision.id)
+            .where(AgentDecision.run_id == run_id)
+            .order_by(
+                AgentDecisionToolCallEdge.decision_id,
+                AgentDecisionToolCallEdge.direction,
+                AgentDecisionToolCallEdge.relation_type,
+            )
+        )
+    )
     return {
         "run_id": run_id,
         "spec_sha256": run.spec_sha256,
@@ -240,6 +257,35 @@ async def get_run_evidence(run_id: uuid.UUID, session: SessionDep) -> dict:
                 "limitations": evaluation.limitations_json,
             }
             for evaluation, candidate in evaluations
+        ],
+        "agent_decisions": [
+            {
+                "id": decision.id,
+                "generation": decision.generation,
+                "decision_type": decision.decision_type,
+                "agent_name": decision.agent_name,
+                "agent_version": decision.agent_version,
+                "model_name": decision.model_name,
+                "prompt_text": decision.prompt_text,
+                "response_text": decision.response_text,
+                "prompt_sha256": decision.prompt_sha256,
+                "response_sha256": decision.response_sha256,
+                "structured": decision.structured_json,
+                "status": decision.status,
+                "prompt_artifact_id": decision.prompt_artifact_id,
+                "response_artifact_id": decision.response_artifact_id,
+                "created_at": decision.created_at,
+            }
+            for decision in decisions
+        ],
+        "agent_decision_edges": [
+            {
+                "decision_id": edge.decision_id,
+                "tool_call_id": edge.tool_call_id,
+                "direction": edge.direction,
+                "relation_type": edge.relation_type,
+            }
+            for edge in decision_edges
         ],
     }
 

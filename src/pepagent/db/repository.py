@@ -8,6 +8,8 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pepagent.db.models import (
+    AgentDecision,
+    AgentDecisionToolCallEdge,
     Candidate,
     Evaluation,
     ExperimentRun,
@@ -104,10 +106,10 @@ class ExperimentRepository:
         run = await self.session.get(ExperimentRun, run_id, with_for_update=True)
         if run is None:
             raise KeyError(f"run not found: {run_id}")
-        if (
-            run.temporal_workflow_id == workflow_id
-            and run.status in {RunStatus.RUNNING, RunStatus.SUCCEEDED}
-        ):
+        if run.temporal_workflow_id == workflow_id and run.status in {
+            RunStatus.RUNNING,
+            RunStatus.SUCCEEDED,
+        }:
             return
         run.status = RunStatus.RUNNING
         run.temporal_workflow_id = workflow_id
@@ -130,9 +132,7 @@ class ExperimentRepository:
         normalized = "".join(sequence.split()).upper()
         digest = sha256_text(normalized)
         existing = await self.session.scalar(
-            select(Candidate).where(
-                Candidate.run_id == run_id, Candidate.sequence_sha256 == digest
-            )
+            select(Candidate).where(Candidate.run_id == run_id, Candidate.sequence_sha256 == digest)
         )
         if existing is not None:
             if existing.generator_call_id is None and generator_call_id is not None:
@@ -326,3 +326,80 @@ class ExperimentRepository:
         self.session.add(dependency)
         await self.session.flush()
         return dependency
+
+    async def record_agent_decision(
+        self,
+        run_id: uuid.UUID,
+        generation: int,
+        decision_type: str,
+        agent_name: str,
+        agent_version: str,
+        prompt_text: str,
+        response_text: str,
+        structured: dict[str, Any],
+        *,
+        model_name: str | None = None,
+        prompt_artifact_id: uuid.UUID | None = None,
+        response_artifact_id: uuid.UUID | None = None,
+    ) -> AgentDecision:
+        decision = AgentDecision(
+            run_id=run_id,
+            generation=generation,
+            decision_type=decision_type,
+            agent_name=agent_name,
+            agent_version=agent_version,
+            model_name=model_name,
+            prompt_text=prompt_text,
+            response_text=response_text,
+            prompt_sha256=sha256_text(prompt_text),
+            response_sha256=sha256_text(response_text),
+            structured_json=structured,
+            status="succeeded",
+            prompt_artifact_id=prompt_artifact_id,
+            response_artifact_id=response_artifact_id,
+        )
+        self.session.add(decision)
+        await self.session.flush()
+        await self.append_event(
+            "run",
+            run_id,
+            "agent_decision.recorded",
+            agent_name,
+            {
+                "decision_id": str(decision.id),
+                "generation": generation,
+                "decision_type": decision_type,
+                "prompt_sha256": decision.prompt_sha256,
+                "response_sha256": decision.response_sha256,
+            },
+        )
+        return decision
+
+    async def record_agent_tool_edge(
+        self,
+        decision_id: uuid.UUID,
+        tool_call_id: uuid.UUID,
+        direction: str,
+        relation_type: str,
+    ) -> AgentDecisionToolCallEdge:
+        if direction not in {"input", "output"}:
+            raise ValueError("Agent edge direction must be input or output")
+        decision = await self.session.get(AgentDecision, decision_id)
+        tool_call = await self.session.get(ToolCall, tool_call_id)
+        if decision is None or tool_call is None:
+            raise KeyError("Agent decision and tool call must both exist")
+        if decision.run_id != tool_call.run_id:
+            raise ValueError("Agent decision edges cannot cross experiment runs")
+        key = {
+            "decision_id": decision_id,
+            "tool_call_id": tool_call_id,
+            "direction": direction,
+            "relation_type": relation_type,
+        }
+        existing = await self.session.get(AgentDecisionToolCallEdge, key)
+        if existing is not None:
+            return existing
+        edge = AgentDecisionToolCallEdge(**key)
+        self.session.add(edge)
+        await self.session.flush()
+        return edge

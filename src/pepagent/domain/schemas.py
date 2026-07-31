@@ -33,21 +33,39 @@ class ExperimentSpec(BaseModel):
     candidates_per_length: int = 64
     structure_top_k: int = 8
     generations: int = 2
+    autoresearch_enabled: bool = False
     seed: int = 20260731
     pepmlm_model: str = "ChatterjeeLab/PepMLM-650M"
     boltz_method: str = "boltz2"
     diffusion_samples: int = 5
+    boltz_seeds_per_candidate: int = Field(default=1, ge=1, le=16)
     boltz_recycling_steps: int = 3
     boltz_sampling_steps: int = 200
     boltz_use_potentials: bool = True
     boltz_no_kernels: bool = True
     use_msa_server: bool = True
+    boltz_force_pocket: bool = False
+    pocket_max_distance_angstrom: float = Field(default=8.0, gt=0)
+    interface_contact_distance_angstrom: float = Field(default=5.0, gt=0)
+    interface_clash_distance_angstrom: float = Field(default=1.5, gt=0)
+    interface_min_pocket_contacts: int = Field(default=1, ge=1)
+    interface_min_seed_consistency: float = Field(default=0.5, ge=0, le=1)
+    interface_min_pair_iptm_median: float = Field(default=0.2, ge=0, le=1)
+    interface_pose_cluster_rmsd_angstrom: float = Field(default=4.0, gt=0)
+    interface_min_pose_cluster_fraction: float = Field(default=0.5, ge=0, le=1)
+    maximum_sequence_similarity: float = Field(default=0.75, ge=0, le=1)
+    elite_parent_count: int = Field(default=3, ge=1)
+    mutation_children_per_parent: int = Field(default=3, ge=1)
+    mutation_count_min: int = Field(default=1, ge=1)
+    mutation_count_max: int = Field(default=3, ge=1)
+    exploration_candidates_per_length: int = Field(default=2, ge=0)
     rosetta_enabled: bool = False
     rosetta_top_k: int = Field(default=1, ge=1)
     rosetta_nstruct: int = Field(default=200, ge=1)
     rosetta_parallel_decoys: int = Field(default=1, ge=1, le=16)
     rosetta_pair_iptm_min: float = Field(default=0.5, ge=0, le=1)
     rosetta_score_function: str = "ref2015"
+    exploratory_rosetta_slots: int = Field(default=0, ge=0, le=1)
     affinity_evaluators: list[str] = Field(
         default_factory=list,
         description=(
@@ -77,6 +95,17 @@ class ExperimentSpec(BaseModel):
             )
         if self.rosetta_top_k > self.structure_top_k:
             raise ValueError("rosetta_top_k cannot exceed structure_top_k")
+        if self.mutation_count_max < self.mutation_count_min:
+            raise ValueError("mutation_count_max cannot be below mutation_count_min")
+        if self.autoresearch_enabled:
+            if self.generations < 3:
+                raise ValueError("MVP-v2 Auto Research requires at least three generations")
+            if not self.target.pocket_residues:
+                raise ValueError("MVP-v2 Auto Research requires versioned pocket residues")
+            if self.boltz_seeds_per_candidate < 2:
+                raise ValueError("MVP-v2 Auto Research requires multiple independent Boltz seeds")
+            if not self.rosetta_enabled:
+                raise ValueError("MVP-v2 Auto Research requires the admitted Rosetta lane")
         return self
 
 

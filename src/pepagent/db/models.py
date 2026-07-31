@@ -104,9 +104,7 @@ class ToolCallDependency(Base):
     """Typed edge between two persisted experiment attempts."""
 
     __tablename__ = "tool_call_dependencies"
-    __table_args__ = (
-        Index("ix_tool_call_dependency_parent", "parent_tool_call_id"),
-    )
+    __table_args__ = (Index("ix_tool_call_dependency_parent", "parent_tool_call_id"),)
 
     child_tool_call_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("tool_calls.id"), primary_key=True
@@ -114,6 +112,48 @@ class ToolCallDependency(Base):
     parent_tool_call_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("tool_calls.id"), primary_key=True
     )
+    relation_type: Mapped[str] = mapped_column(String(64), primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class AgentDecision(Base):
+    """Immutable original Agent record plus its machine-executable projection."""
+
+    __tablename__ = "agent_decisions"
+    __table_args__ = (Index("ix_agent_decision_run_generation", "run_id", "generation"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    run_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("experiment_runs.id"), nullable=False)
+    generation: Mapped[int] = mapped_column(Integer, nullable=False)
+    decision_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    agent_name: Mapped[str] = mapped_column(String(128), nullable=False)
+    agent_version: Mapped[str] = mapped_column(String(128), nullable=False)
+    model_name: Mapped[str | None] = mapped_column(String(128))
+    prompt_text: Mapped[str] = mapped_column(Text, nullable=False)
+    response_text: Mapped[str] = mapped_column(Text, nullable=False)
+    prompt_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    response_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    structured_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    prompt_artifact_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("artifacts.id"))
+    response_artifact_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("artifacts.id"))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class AgentDecisionToolCallEdge(Base):
+    """Typed graph edge between an Agent decision and an operation attempt."""
+
+    __tablename__ = "agent_decision_tool_call_edges"
+
+    decision_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("agent_decisions.id"), primary_key=True
+    )
+    tool_call_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tool_calls.id"), primary_key=True)
+    direction: Mapped[str] = mapped_column(String(16), primary_key=True)
     relation_type: Mapped[str] = mapped_column(String(64), primary_key=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -202,9 +242,7 @@ class ModelReleaseArtifact(Base):
 class EvidenceArtifact(Base):
     __tablename__ = "evidence_artifacts"
 
-    tool_call_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("tool_calls.id"), primary_key=True
-    )
+    tool_call_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tool_calls.id"), primary_key=True)
     artifact_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("artifacts.id"), primary_key=True)
     role: Mapped[str] = mapped_column(String(64), primary_key=True)
 

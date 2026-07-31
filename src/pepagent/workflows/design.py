@@ -23,84 +23,170 @@ class PeptideDesignWorkflow:
                 start_to_close_timeout=timedelta(minutes=2),
                 retry_policy=retry,
             )
-            generated = await workflow.execute_activity(
-                "generate_with_pepmlm",
-                request,
-                task_queue="pepagent-gpu-pepmlm",
-                start_to_close_timeout=timedelta(hours=2),
-                heartbeat_timeout=timedelta(minutes=5),
-                retry_policy=retry,
-            )
-            selected = await workflow.execute_activity(
-                "persist_and_select_candidates",
-                {"run_id": request["run_id"], "generated": generated, "spec": request["spec"]},
-                task_queue="pepagent-control",
-                start_to_close_timeout=timedelta(minutes=5),
-                retry_policy=retry,
-            )
-            structures: list[dict[str, Any]] = []
-            for candidate in selected:
-                structure = await workflow.execute_activity(
-                    "predict_boltz2_complex",
-                    {"run_id": request["run_id"], "spec": request["spec"], "candidate": candidate},
-                    task_queue="pepagent-gpu-boltz2",
+            spec = request["spec"]
+            autoresearch = bool(spec.get("autoresearch_enabled", False))
+            generation_count = int(spec["generations"]) if autoresearch else 1
+            parents: list[dict[str, Any]] = []
+            decision_id: str | None = None
+            all_structures: list[dict[str, Any]] = []
+            all_rosetta_results: list[dict[str, Any]] = []
+            agent_decision_count = 0
+            for generation in range(generation_count):
+                generated = await workflow.execute_activity(
+                    "generate_with_pepmlm",
+                    {
+                        **request,
+                        "generation": generation,
+                        "parents": parents,
+                        "decision_id": decision_id,
+                    },
+                    task_queue="pepagent-gpu-pepmlm",
                     start_to_close_timeout=timedelta(hours=4),
                     heartbeat_timeout=timedelta(minutes=5),
                     retry_policy=retry,
                 )
-                structure = await workflow.execute_activity(
-                    "persist_boltz2_evidence",
-                    {"run_id": request["run_id"], "structure": structure},
+                selected = await workflow.execute_activity(
+                    "persist_and_select_candidates",
+                    {
+                        "run_id": request["run_id"],
+                        "generated": generated,
+                        "spec": spec,
+                        "generation": generation,
+                        "parents": parents,
+                        "decision_id": decision_id,
+                    },
                     task_queue="pepagent-control",
                     start_to_close_timeout=timedelta(minutes=10),
                     retry_policy=retry,
                 )
-                structures.append(structure)
-            rosetta_results: list[dict[str, Any]] = []
-            if request["spec"].get("rosetta_enabled", False):
-                rosetta_inputs = await workflow.execute_activity(
-                    "select_rosetta_inputs",
-                    {
-                        "structures": structures,
-                        "pair_iptm_min": request["spec"].get(
-                            "rosetta_pair_iptm_min", 0.5
-                        ),
-                        "top_k": request["spec"].get("rosetta_top_k", 1),
-                    },
-                    task_queue="pepagent-control",
-                    start_to_close_timeout=timedelta(minutes=5),
-                    retry_policy=retry,
-                )
-                for structure in rosetta_inputs:
-                    rosetta_result = await workflow.execute_activity(
-                        "score_rosetta_complex",
+                round_structures: list[dict[str, Any]] = []
+                ensembles: list[dict[str, Any]] = []
+                seed_count = int(spec.get("boltz_seeds_per_candidate", 1))
+                for candidate_index, candidate in enumerate(selected):
+                    candidate_structures: list[dict[str, Any]] = []
+                    for seed_index in range(seed_count):
+                        structure_seed = (
+                            int(spec["seed"])
+                            + generation * 1_000_000
+                            + candidate_index * 10_000
+                            + seed_index
+                        )
+                        structure = await workflow.execute_activity(
+                            "predict_boltz2_complex",
+                            {
+                                "run_id": request["run_id"],
+                                "spec": spec,
+                                "candidate": candidate,
+                                "seed": structure_seed,
+                            },
+                            task_queue="pepagent-gpu-boltz2",
+                            start_to_close_timeout=timedelta(hours=6),
+                            heartbeat_timeout=timedelta(minutes=5),
+                            retry_policy=retry,
+                        )
+                        structure = await workflow.execute_activity(
+                            "persist_boltz2_evidence",
+                            {"run_id": request["run_id"], "structure": structure},
+                            task_queue="pepagent-control",
+                            start_to_close_timeout=timedelta(minutes=15),
+                            retry_policy=retry,
+                        )
+                        candidate_structures.append(structure)
+                        round_structures.append(structure)
+                    if autoresearch:
+                        audit = await workflow.execute_activity(
+                            "audit_structure_ensemble",
+                            {
+                                "run_id": request["run_id"],
+                                "spec": spec,
+                                "generation": generation,
+                                "structures": candidate_structures,
+                            },
+                            task_queue="pepagent-control",
+                            start_to_close_timeout=timedelta(minutes=30),
+                            retry_policy=retry,
+                        )
+                        audit = await workflow.execute_activity(
+                            "persist_interface_audit",
+                            {"run_id": request["run_id"], "audit_result": audit},
+                            task_queue="pepagent-control",
+                            start_to_close_timeout=timedelta(minutes=15),
+                            retry_policy=retry,
+                        )
+                        ensembles.append(audit)
+                all_structures.extend(round_structures)
+                round_rosetta_results: list[dict[str, Any]] = []
+                if spec.get("rosetta_enabled", False):
+                    selection_request = (
                         {
-                            "run_id": request["run_id"],
-                            "spec": request["spec"],
-                            "structure": structure,
-                        },
-                        task_queue="pepagent-cpu-rosetta",
-                        start_to_close_timeout=timedelta(hours=48),
-                        heartbeat_timeout=timedelta(minutes=5),
+                            "ensembles": ensembles,
+                            "top_k": spec.get("rosetta_top_k", 1),
+                            "exploratory_slots": spec.get("exploratory_rosetta_slots", 0),
+                        }
+                        if autoresearch
+                        else {
+                            "structures": round_structures,
+                            "pair_iptm_min": spec.get("rosetta_pair_iptm_min", 0.5),
+                            "top_k": spec.get("rosetta_top_k", 1),
+                        }
+                    )
+                    rosetta_inputs = await workflow.execute_activity(
+                        "select_rosetta_inputs",
+                        selection_request,
+                        task_queue="pepagent-control",
+                        start_to_close_timeout=timedelta(minutes=5),
                         retry_policy=retry,
                     )
-                    rosetta_result = await workflow.execute_activity(
-                        "persist_rosetta_evidence",
+                    for rosetta_index, structure in enumerate(rosetta_inputs):
+                        rosetta_result = await workflow.execute_activity(
+                            "score_rosetta_complex",
+                            {
+                                "run_id": request["run_id"],
+                                "spec": spec,
+                                "structure": structure,
+                                "seed": int(spec["seed"]) + generation * 1_000_000 + rosetta_index,
+                            },
+                            task_queue="pepagent-cpu-rosetta",
+                            start_to_close_timeout=timedelta(hours=72),
+                            heartbeat_timeout=timedelta(minutes=5),
+                            retry_policy=retry,
+                        )
+                        rosetta_result = await workflow.execute_activity(
+                            "persist_rosetta_evidence",
+                            {
+                                "run_id": request["run_id"],
+                                "rosetta_result": rosetta_result,
+                            },
+                            task_queue="pepagent-control",
+                            start_to_close_timeout=timedelta(hours=2),
+                            retry_policy=retry,
+                        )
+                        round_rosetta_results.append(rosetta_result)
+                    all_rosetta_results.extend(round_rosetta_results)
+                if autoresearch:
+                    decision = await workflow.execute_activity(
+                        "select_next_generation",
                         {
                             "run_id": request["run_id"],
-                            "rosetta_result": rosetta_result,
+                            "generation": generation,
+                            "spec": spec,
+                            "final_generation": generation == generation_count - 1,
                         },
                         task_queue="pepagent-control",
-                        start_to_close_timeout=timedelta(hours=2),
+                        start_to_close_timeout=timedelta(minutes=15),
                         retry_policy=retry,
                     )
-                    rosetta_results.append(rosetta_result)
+                    parents = decision["parents"]
+                    decision_id = decision["decision_id"]
+                    agent_decision_count += 1
             return await workflow.execute_activity(
                 "finalize_run",
                 {
                     "run_id": request["run_id"],
-                    "structures": structures,
-                    "rosetta_results": rosetta_results,
+                    "structures": all_structures,
+                    "rosetta_results": all_rosetta_results,
+                    "generation_count": generation_count,
+                    "agent_decision_count": agent_decision_count,
                 },
                 task_queue="pepagent-control",
                 start_to_close_timeout=timedelta(minutes=5),

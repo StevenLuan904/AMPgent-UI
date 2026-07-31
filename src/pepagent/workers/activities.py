@@ -8,20 +8,26 @@ import uuid
 from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
+from statistics import median
 from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from temporalio import activity
 
-from pepagent.db.models import Artifact, Candidate, EvidenceArtifact, ExperimentRun
+from pepagent.db.models import Artifact, Candidate, Evaluation, EvidenceArtifact, ExperimentRun
 from pepagent.db.repository import ExperimentRepository
 from pepagent.db.session import SessionFactory
 from pepagent.domain.enums import CandidateStatus, MetricName, RunStatus
 from pepagent.provenance.environment import fingerprint_runtime
 from pepagent.provenance.hashing import sha256_file, sha256_json
+from pepagent.selection import cheap_diverse_selection, diversity_constrained_elites
 from pepagent.settings import get_settings
 from pepagent.storage.object_store import ContentAddressedObjectStore, StoredObject
+from pepagent.structures.interface import (
+    audit_protein_peptide_interface,
+    pose_cluster_fraction,
+)
 
 
 async def _run_json_cli(module: str, request: dict[str, Any], work_dir: Path, *extra: str) -> dict:
@@ -62,17 +68,15 @@ async def _run_json_cli(module: str, request: dict[str, Any], work_dir: Path, *e
     return_code = await process.wait()
     if return_code != 0:
         diagnostic = "\n".join(output_tail[-20:])[-8000:]
-        raise RuntimeError(
-            f"{module} exited with code {return_code}\n{diagnostic}"
-        )
+        raise RuntimeError(f"{module} exited with code {return_code}\n{diagnostic}")
     output = await asyncio.to_thread(output_path.read_text, encoding="utf-8")
     return json.loads(output)
 
 
 async def _store_json(payload: dict[str, Any]) -> StoredObject:
-    encoded = json.dumps(
-        payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")
-    ).encode("utf-8")
+    encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode(
+        "utf-8"
+    )
     return await asyncio.to_thread(
         ContentAddressedObjectStore().put_bytes, encoded, "application/json"
     )
@@ -80,6 +84,14 @@ async def _store_json(payload: dict[str, Any]) -> StoredObject:
 
 async def _store_file(path: Path) -> StoredObject:
     return await asyncio.to_thread(ContentAddressedObjectStore().put_file, path)
+
+
+async def _store_text(payload: str) -> StoredObject:
+    return await asyncio.to_thread(
+        ContentAddressedObjectStore().put_bytes,
+        payload.encode("utf-8"),
+        "text/plain; charset=utf-8",
+    )
 
 
 async def _verify_pepmlm_release(model_path: str, expected_sha256: str) -> None:
@@ -118,14 +130,14 @@ def _boltz_weight_manifest(cache_path: str) -> list[dict[str, Any]]:
     return [
         {
             "path": str(path.relative_to(cache_dir)),
-            "role": (
-                "molecular_resource_archive" if path.name == "mols.tar" else "weights"
-            ),
+            "role": ("molecular_resource_archive" if path.name == "mols.tar" else "weights"),
             "size_bytes": path.stat().st_size,
             "sha256": sha256_file(path),
         }
         for path in candidates
     ]
+
+
 async def _register_artifact(
     session: AsyncSession,
     tool_call_id: uuid.UUID,
@@ -151,9 +163,26 @@ async def _register_artifact(
         {"tool_call_id": tool_call_id, "artifact_id": artifact.id, "role": role},
     )
     if link is None:
-        session.add(
-            EvidenceArtifact(tool_call_id=tool_call_id, artifact_id=artifact.id, role=role)
+        session.add(EvidenceArtifact(tool_call_id=tool_call_id, artifact_id=artifact.id, role=role))
+    return artifact
+
+
+async def _register_stored_artifact(
+    session: AsyncSession, stored_payload: dict[str, Any], metadata: dict[str, Any]
+) -> Artifact:
+    artifact = await session.scalar(
+        select(Artifact).where(Artifact.sha256 == stored_payload["sha256"])
+    )
+    if artifact is None:
+        artifact = Artifact(
+            sha256=stored_payload["sha256"],
+            size_bytes=stored_payload["size_bytes"],
+            media_type=stored_payload["media_type"],
+            storage_uri=stored_payload["uri"],
+            metadata_json=metadata,
         )
+        session.add(artifact)
+        await session.flush()
     return artifact
 
 
@@ -194,26 +223,58 @@ async def mark_run_failed(request: dict[str, Any]) -> None:
 async def generate_with_pepmlm(request: dict[str, Any]) -> list[dict[str, Any]]:
     settings = get_settings()
     spec = request["spec"]
-    await _verify_pepmlm_release(
-        settings.pepmlm_model_path, settings.pepmlm_weights_sha256
-    )
+    await _verify_pepmlm_release(settings.pepmlm_model_path, settings.pepmlm_weights_sha256)
     environment_sha256, environment = fingerprint_runtime()
     batches: list[dict[str, Any]] = []
+    generation = int(request.get("generation", 0))
+    parents = request.get("parents", [])
+    payloads: list[tuple[str, dict[str, Any]]] = []
+    if generation > 0 and parents:
+        payloads.append(
+            (
+                "mutations",
+                {
+                    "target_sequence": spec["target"]["sequence"],
+                    "parent_sequences": [parent["sequence"] for parent in parents],
+                    "children_per_parent": spec.get("mutation_children_per_parent", 3),
+                    "mutation_count_min": spec.get("mutation_count_min", 1),
+                    "mutation_count_max": spec.get("mutation_count_max", 3),
+                    "seed": spec["seed"] + generation * 1_000_000,
+                    "model": settings.pepmlm_model_path,
+                    "revision": settings.pepmlm_model_revision,
+                    "top_k": 5,
+                    "temperature": 1.0,
+                },
+            )
+        )
     for length_index, length in enumerate(spec["peptide_lengths"]):
+        count = (
+            spec["candidates_per_length"]
+            if generation == 0
+            else spec.get("exploration_candidates_per_length", 2)
+        )
+        if count == 0:
+            continue
         payload = {
             "target_sequence": spec["target"]["sequence"],
             "peptide_length": length,
-            "count": spec["candidates_per_length"],
-            "seed": spec["seed"] + length_index * 100_000,
+            "count": count,
+            "seed": spec["seed"] + generation * 1_000_000 + (length_index + 1) * 100_000,
             "model": settings.pepmlm_model_path,
             "revision": settings.pepmlm_model_revision,
             "top_k": 3,
             "temperature": 1.0,
         }
+        payloads.append((f"de-novo-{length}", payload))
+    for batch_name, payload in payloads:
         result = await _run_json_cli(
             "pepagent.model_workers.pepmlm_cli",
             payload,
-            Path(settings.work_root) / request["run_id"] / "pepmlm" / str(length),
+            Path(settings.work_root)
+            / request["run_id"]
+            / "pepmlm"
+            / f"generation-{generation}"
+            / batch_name,
         )
         raw_artifact = await _store_json(result)
         environment_artifact = await _store_json(environment)
@@ -225,9 +286,10 @@ async def generate_with_pepmlm(request: dict[str, Any]) -> list[dict[str, Any]]:
             {
                 "input": recorded_input,
                 "parameters": {
-                    "peptide_length": length,
-                    "count": spec["candidates_per_length"],
-                    "top_k": 3,
+                    "generation": generation,
+                    "proposal_mode": result["proposal_mode"],
+                    "requested_count": result["requested_count"],
+                    "top_k": payload["top_k"],
                     "temperature": 1.0,
                 },
                 "result": result,
@@ -252,6 +314,9 @@ async def generate_with_pepmlm(request: dict[str, Any]) -> list[dict[str, Any]]:
 @activity.defn(name="persist_and_select_candidates")
 async def persist_and_select_candidates(request: dict[str, Any]) -> list[dict[str, Any]]:
     run_id = uuid.UUID(request["run_id"])
+    generation = int(request.get("generation", 0))
+    parents_by_sequence = {parent["sequence"]: parent for parent in request.get("parents", [])}
+    decision_id = request.get("decision_id")
     persisted: list[dict[str, Any]] = []
     async with SessionFactory() as session, session.begin():
         repository = ExperimentRepository(session)
@@ -270,6 +335,10 @@ async def persist_and_select_candidates(request: dict[str, Any]) -> list[dict[st
                 random_seed=provenance["random_seed"],
                 attempt=provenance["attempt"],
             )
+            if decision_id:
+                await repository.record_agent_tool_edge(
+                    uuid.UUID(decision_id), call.id, "output", "proposes"
+                )
             await _register_artifact(
                 session,
                 call.id,
@@ -288,24 +357,27 @@ async def persist_and_select_candidates(request: dict[str, Any]) -> list[dict[st
                 {"tool": "pepmlm", "kind": "runtime_environment"},
             )
             for item in batch["result"]["candidates"]:
+                parent = parents_by_sequence.get(item.get("parent_sequence"))
                 candidate = await repository.add_candidate(
                     run_id,
                     item["sequence"],
-                    generation=0,
+                    generation=generation,
                     proposal_rank=0,
                     generator_call_id=call.id,
+                    parent_id=uuid.UUID(parent["id"]) if parent else None,
                     metadata={
-                        "per_residue_log_probabilities": item[
-                            "per_residue_log_probabilities"
-                        ],
+                        "per_residue_log_probabilities": item["per_residue_log_probabilities"],
                         "seed": item["seed"],
+                        "proposal_mode": item.get("proposal_mode", "de_novo"),
+                        "mutation_positions": item.get("mutation_positions", []),
+                        "parent_sequence_sha256": (
+                            parent.get("sequence_sha256") if parent else None
+                        ),
                     },
                 )
                 raw_metric = {
                     "seed": item["seed"],
-                    "per_residue_log_probabilities": item[
-                        "per_residue_log_probabilities"
-                    ],
+                    "per_residue_log_probabilities": item["per_residue_log_probabilities"],
                 }
                 await repository.record_evaluation(
                     candidate.id,
@@ -331,19 +403,23 @@ async def persist_and_select_candidates(request: dict[str, Any]) -> list[dict[st
                 )
                 persisted.append({"id": str(candidate.id), **item})
 
-        persisted.sort(key=lambda item: item["conditional_ppl"])
+        persisted.sort(key=lambda item: (item["conditional_ppl"], item["sequence"]))
         for rank, item in enumerate(persisted, start=1):
             candidate = await session.get(Candidate, uuid.UUID(item["id"]))
             if candidate is None:
                 raise KeyError(f"candidate not found: {item['id']}")
             candidate.proposal_rank = rank
-        selected = persisted[: int(request["spec"]["structure_top_k"])]
+        selected = cheap_diverse_selection(
+            persisted,
+            int(request["spec"]["structure_top_k"]),
+            float(request["spec"].get("maximum_sequence_similarity", 0.75)),
+        )
         for item in selected:
             await repository.transition_candidate(
                 uuid.UUID(item["id"]),
                 CandidateStatus.STRUCTURE_QUEUED,
                 "selection-policy",
-                "selected by ascending conditional PPL",
+                "selected by ascending conditional PPL with a deterministic sequence-diversity cap",
             )
     return selected
 
@@ -353,18 +429,23 @@ async def predict_boltz2_complex(request: dict[str, Any]) -> dict[str, Any]:
     settings = get_settings()
     candidate = request["candidate"]
     spec = request["spec"]
-    work_dir = Path(settings.work_root) / request["run_id"] / "boltz2" / candidate["id"]
+    seed = int(request.get("seed", spec["seed"]))
+    work_dir = (
+        Path(settings.work_root) / request["run_id"] / "boltz2" / candidate["id"] / f"seed-{seed}"
+    )
     payload = {
         "target_sequence": spec["target"]["sequence"],
         "peptide_sequence": candidate["sequence"],
         "pocket_residues": spec["target"].get("pocket_residues", []),
+        "pocket_max_distance": spec.get("pocket_max_distance_angstrom", 8.0),
+        "force_pocket": spec.get("boltz_force_pocket", False),
         "diffusion_samples": spec["diffusion_samples"],
         "recycling_steps": spec.get("boltz_recycling_steps", 3),
         "sampling_steps": spec.get("boltz_sampling_steps", 200),
         "use_potentials": spec.get("boltz_use_potentials", True),
         "no_kernels": spec.get("boltz_no_kernels", True),
         "use_msa_server": spec.get("use_msa_server", True),
-        "seed": spec["seed"],
+        "seed": seed,
     }
     result = await _run_json_cli(
         "pepagent.model_workers.boltz2_cli",
@@ -375,9 +456,7 @@ async def predict_boltz2_complex(request: dict[str, Any]) -> dict[str, Any]:
         "--cache-dir",
         settings.boltz2_cache_path,
     )
-    weight_manifest = await asyncio.to_thread(
-        _boltz_weight_manifest, settings.boltz2_cache_path
-    )
+    weight_manifest = await asyncio.to_thread(_boltz_weight_manifest, settings.boltz2_cache_path)
     weights_sha256 = sha256_json(weight_manifest)
     weight_manifest_artifact = await _store_json({"files": weight_manifest})
     raw_artifact = await _store_json(result)
@@ -501,6 +580,53 @@ async def persist_boltz2_evidence(request: dict[str, Any]) -> dict[str, Any]:
 
 @activity.defn(name="select_rosetta_inputs")
 async def select_rosetta_inputs(request: dict[str, Any]) -> list[dict[str, Any]]:
+    if "ensembles" in request:
+        ensembles = request["ensembles"]
+        top_k = int(request["top_k"])
+        admitted = [item for item in ensembles if item["audit"]["gate_pass"]]
+        admitted.sort(
+            key=lambda item: (
+                item["audit"]["pocket_contact_consistency"],
+                item["audit"]["pair_iptm_median"],
+            ),
+            reverse=True,
+        )
+        chosen = admitted[:top_k]
+        selected_ids = {item["candidate"]["id"] for item in chosen}
+        exploratory_slots = int(request.get("exploratory_slots", 0))
+        if exploratory_slots and len(chosen) < top_k + exploratory_slots:
+            exploratory = sorted(
+                (item for item in ensembles if item["candidate"]["id"] not in selected_ids),
+                key=lambda item: (
+                    item["audit"]["pocket_contact_consistency"],
+                    item["audit"]["pair_iptm_median"],
+                ),
+                reverse=True,
+            )[:exploratory_slots]
+            for item in exploratory:
+                item["rosetta_selection_mode"] = "exploratory_gate_failure"
+            chosen.extend(exploratory)
+        async with SessionFactory() as session, session.begin():
+            repository = ExperimentRepository(session)
+            for item in chosen:
+                mode = item.get("rosetta_selection_mode", "admitted_structure_gate")
+                await repository.transition_candidate(
+                    uuid.UUID(item["candidate"]["id"]),
+                    CandidateStatus.ROSETTA_QUEUED,
+                    "selection-policy",
+                    f"selected for FlexPepDock: {mode}",
+                )
+        return [
+            {
+                **item["representative"],
+                "interface_audit": item["audit"],
+                "interface_audit_tool_call_id": item["tool_call_id"],
+                "rosetta_selection_mode": item.get(
+                    "rosetta_selection_mode", "admitted_structure_gate"
+                ),
+            }
+            for item in chosen
+        ]
     threshold = float(request["pair_iptm_min"])
     top_k = int(request["top_k"])
     eligible = [
@@ -555,6 +681,189 @@ def _convert_structure_to_pdb(source: Path, destination: Path) -> None:
     structure.write_pdb(str(destination))
 
 
+@activity.defn(name="audit_structure_ensemble")
+async def audit_structure_ensemble(request: dict[str, Any]) -> dict[str, Any]:
+    settings = get_settings()
+    spec = request["spec"]
+    structures = request["structures"]
+    candidate = structures[0]["candidate"]
+    work_dir = Path(settings.work_root) / request["run_id"] / "interface-audit" / candidate["id"]
+    await asyncio.to_thread(work_dir.mkdir, parents=True, exist_ok=True)
+    pose_paths: list[Path] = []
+    sample_audits: list[dict[str, Any]] = []
+    for index, structure in enumerate(structures):
+        coordinate_artifact = _select_boltz_structure_artifact(structure)
+        coordinate_bytes = await asyncio.to_thread(
+            ContentAddressedObjectStore().get_bytes, coordinate_artifact["uri"]
+        )
+        suffix = Path(coordinate_artifact["path"]).suffix.lower()
+        source = work_dir / f"sample-{index}{suffix}"
+        destination = work_dir / f"sample-{index}.pdb"
+        await asyncio.to_thread(source.write_bytes, coordinate_bytes)
+        await asyncio.to_thread(_convert_structure_to_pdb, source, destination)
+        pose_paths.append(destination)
+        coordinate_audit = await asyncio.to_thread(
+            audit_protein_peptide_interface,
+            destination,
+            spec["target"].get("pocket_residues", []),
+            float(spec.get("interface_contact_distance_angstrom", 5.0)),
+            float(spec.get("interface_clash_distance_angstrom", 1.5)),
+        )
+        sample_audits.append(
+            {
+                "seed": structure["input"]["seed"],
+                "tool_call_id": structure["tool_call_id"],
+                "coordinate_artifact": coordinate_artifact,
+                "pair_iptm": structure["boltz2"].get("pair_iptm"),
+                **coordinate_audit,
+            }
+        )
+    pose_consistency = await asyncio.to_thread(
+        pose_cluster_fraction,
+        pose_paths,
+        float(spec.get("interface_pose_cluster_rmsd_angstrom", 4.0)),
+    )
+    required_contacts = int(spec.get("interface_min_pocket_contacts", 1))
+    contact_consistency = sum(
+        audit["pocket_contact_count"] >= required_contacts for audit in sample_audits
+    ) / len(sample_audits)
+    pair_values = [
+        float(audit["pair_iptm"]) for audit in sample_audits if audit["pair_iptm"] is not None
+    ]
+    pair_median = median(pair_values) if pair_values else 0.0
+    gate_checks = {
+        "pocket_contact_consistency": contact_consistency
+        >= float(spec.get("interface_min_seed_consistency", 0.5)),
+        "pair_iptm_median": pair_median >= float(spec.get("interface_min_pair_iptm_median", 0.2)),
+        "pose_cluster_fraction": pose_consistency["largest_cluster_fraction"]
+        >= float(spec.get("interface_min_pose_cluster_fraction", 0.5)),
+        "no_cross_chain_clash": all(
+            audit["cross_chain_clash_count"] == 0 for audit in sample_audits
+        ),
+    }
+    representative_index = max(
+        range(len(sample_audits)),
+        key=lambda index: (
+            sample_audits[index]["pocket_contact_count"],
+            sample_audits[index]["pair_iptm"] or 0.0,
+            -sample_audits[index]["cross_chain_clash_count"],
+        ),
+    )
+    result = {
+        "schema_version": "1.0",
+        "candidate_id": candidate["id"],
+        "generation": request["generation"],
+        "sample_count": len(sample_audits),
+        "sample_audits": sample_audits,
+        "pocket_contact_consistency": contact_consistency,
+        "pair_iptm_median": pair_median,
+        "pose_consistency": pose_consistency,
+        "gate_checks": gate_checks,
+        "gate_pass": all(gate_checks.values()),
+        "representative_index": representative_index,
+    }
+    raw_artifact = await _store_json(result)
+    environment_sha256, environment = fingerprint_runtime()
+    environment_artifact = await _store_json(environment)
+    return {
+        "candidate": candidate,
+        "structures": structures,
+        "representative": structures[representative_index],
+        "audit": result,
+        "input": {
+            "candidate_id": candidate["id"],
+            "structure_tool_call_ids": [item["tool_call_id"] for item in structures],
+            "pocket_residues": spec["target"].get("pocket_residues", []),
+        },
+        "parameters": {
+            key: spec.get(key)
+            for key in (
+                "interface_contact_distance_angstrom",
+                "interface_clash_distance_angstrom",
+                "interface_min_pocket_contacts",
+                "interface_min_seed_consistency",
+                "interface_min_pair_iptm_median",
+                "interface_pose_cluster_rmsd_angstrom",
+                "interface_min_pose_cluster_fraction",
+            )
+        },
+        "provenance": {
+            "tool_name": "coordinate-interface-audit",
+            "tool_version": "1.0.0",
+            "environment_sha256": environment_sha256,
+            "attempt": activity.info().attempt,
+            "parent_tool_call_ids": [item["tool_call_id"] for item in structures],
+            "raw_output_artifact": asdict(raw_artifact),
+            "environment_artifact": asdict(environment_artifact),
+        },
+    }
+
+
+@activity.defn(name="persist_interface_audit")
+async def persist_interface_audit(request: dict[str, Any]) -> dict[str, Any]:
+    run_id = uuid.UUID(request["run_id"])
+    result = request["audit_result"]
+    provenance = result["provenance"]
+    candidate_id = uuid.UUID(result["candidate"]["id"])
+    async with SessionFactory() as session, session.begin():
+        repository = ExperimentRepository(session)
+        call = await repository.record_completed_tool_call(
+            run_id,
+            provenance["tool_name"],
+            provenance["tool_version"],
+            provenance["environment_sha256"],
+            result["input"],
+            result["parameters"],
+            result["audit"],
+            attempt=provenance["attempt"],
+        )
+        for parent in provenance["parent_tool_call_ids"]:
+            await repository.record_tool_dependency(call.id, uuid.UUID(parent), "audits")
+        await _register_artifact(
+            session,
+            call.id,
+            provenance["raw_output_artifact"],
+            "raw_output",
+            {"tool": "coordinate-interface-audit", "candidate_id": str(candidate_id)},
+        )
+        await _register_artifact(
+            session,
+            call.id,
+            provenance["environment_artifact"],
+            "environment_manifest",
+            {"tool": "coordinate-interface-audit"},
+        )
+        audit = result["audit"]
+        representative = audit["sample_audits"][audit["representative_index"]]
+        metrics = {
+            MetricName.BOLTZ2_PAIR_IPTM_MEDIAN: audit["pair_iptm_median"],
+            MetricName.POCKET_CONTACT_COUNT: representative["pocket_contact_count"],
+            MetricName.POCKET_CONTACT_CONSISTENCY: audit["pocket_contact_consistency"],
+            MetricName.POCKET_COVERAGE_FRACTION: representative["pocket_coverage_fraction"],
+            MetricName.OFF_POCKET_CONTACT_FRACTION: representative["off_pocket_contact_fraction"],
+            MetricName.INTERFACE_MIN_DISTANCE_ANGSTROM: representative[
+                "minimum_interface_distance_angstrom"
+            ],
+            MetricName.INTERFACE_CLASH_COUNT: representative["cross_chain_clash_count"],
+            MetricName.POSE_CLUSTER_FRACTION: audit["pose_consistency"]["largest_cluster_fraction"],
+            MetricName.INTERFACE_GATE_PASS: int(audit["gate_pass"]),
+        }
+        for metric_name, value in metrics.items():
+            unit = (
+                "angstrom"
+                if metric_name == MetricName.INTERFACE_MIN_DISTANCE_ANGSTROM
+                else "count"
+                if metric_name
+                in {MetricName.POCKET_CONTACT_COUNT, MetricName.INTERFACE_CLASH_COUNT}
+                else "dimensionless"
+            )
+            await repository.record_evaluation(
+                candidate_id, call.id, metric_name, float(value), unit, audit
+            )
+        result["tool_call_id"] = str(call.id)
+    return result
+
+
 @activity.defn(name="score_rosetta_complex")
 async def score_rosetta_complex(request: dict[str, Any]) -> dict[str, Any]:
     settings = get_settings()
@@ -574,18 +883,14 @@ async def score_rosetta_complex(request: dict[str, Any]) -> dict[str, Any]:
     input_pdb = work_dir / "boltz-input.pdb"
     await asyncio.to_thread(_convert_structure_to_pdb, source_path, input_pdb)
 
-    receptor_chains = (
-        list(validation_case["receptor_chains"]) if validation_case else ["A"]
-    )
+    receptor_chains = list(validation_case["receptor_chains"]) if validation_case else ["A"]
     peptide_chain = validation_case["peptide_chain"] if validation_case else "B"
     payload = {
         "receptor_chains": receptor_chains,
         "peptide_chain": peptide_chain,
         "nstruct": int(spec.get("rosetta_nstruct", 200)),
-        "parallel_decoys": int(
-            spec.get("rosetta_parallel_decoys", 8 if validation_case else 1)
-        ),
-        "seed": int(spec["seed"]),
+        "parallel_decoys": int(spec.get("rosetta_parallel_decoys", 8 if validation_case else 1)),
+        "seed": int(request.get("seed", spec["seed"])),
         "score_function": spec.get("rosetta_score_function", "ref2015"),
         "source_structure_sha256": coordinate_artifact["sha256"],
         "source_tool_call_id": structure["tool_call_id"],
@@ -639,6 +944,7 @@ async def score_rosetta_complex(request: dict[str, Any]) -> dict[str, Any]:
             "environment": environment,
             "attempt": activity.info().attempt,
             "parent_tool_call_id": structure["tool_call_id"],
+            "interface_audit_tool_call_id": structure.get("interface_audit_tool_call_id"),
             "source_coordinate_artifact": coordinate_artifact,
             "raw_output_artifact": asdict(raw_artifact),
             "environment_artifact": asdict(environment_artifact),
@@ -673,6 +979,12 @@ async def persist_rosetta_evidence(request: dict[str, Any]) -> dict[str, Any]:
             uuid.UUID(provenance["parent_tool_call_id"]),
             "refines",
         )
+        if provenance.get("interface_audit_tool_call_id"):
+            await repository.record_tool_dependency(
+                call.id,
+                uuid.UUID(provenance["interface_audit_tool_call_id"]),
+                "authorized_by_interface_audit",
+            )
         await _register_artifact(
             session,
             call.id,
@@ -707,18 +1019,10 @@ async def persist_rosetta_evidence(request: dict[str, Any]) -> dict[str, Any]:
             MetricName.ROSETTA_PEPTIDE_BB_RMSD_ANGSTROM: (
                 rosetta["peptide_bb_rmsd_angstrom"]["median"]
             ),
-            MetricName.ROSETTA_INTERFACE_SCORE: rosetta["best_decoy"].get(
-                "interface_score"
-            ),
-            MetricName.ROSETTA_REWEIGHTED_SCORE: rosetta["best_decoy"].get(
-                "reweighted_sc"
-            ),
-            MetricName.ROSETTA_INTERFACE_HBONDS: rosetta["best_decoy"].get(
-                "interface_hbonds"
-            ),
-            MetricName.ROSETTA_BURIED_SURFACE_AREA: rosetta["best_decoy"].get(
-                "dSASA_int"
-            ),
+            MetricName.ROSETTA_INTERFACE_SCORE: rosetta["best_decoy"].get("interface_score"),
+            MetricName.ROSETTA_REWEIGHTED_SCORE: rosetta["best_decoy"].get("reweighted_sc"),
+            MetricName.ROSETTA_INTERFACE_HBONDS: rosetta["best_decoy"].get("interface_hbonds"),
+            MetricName.ROSETTA_BURIED_SURFACE_AREA: rosetta["best_decoy"].get("dSASA_int"),
         }
         for metric_name, value in metrics.items():
             if value is None:
@@ -729,11 +1033,7 @@ async def persist_rosetta_evidence(request: dict[str, Any]) -> dict[str, Any]:
                 else (
                     "angstrom^2"
                     if metric_name == MetricName.ROSETTA_BURIED_SURFACE_AREA
-                    else (
-                        "count"
-                        if metric_name == MetricName.ROSETTA_INTERFACE_HBONDS
-                        else "REU"
-                    )
+                    else ("count" if metric_name == MetricName.ROSETTA_INTERFACE_HBONDS else "REU")
                 )
             )
             await repository.record_evaluation(
@@ -753,6 +1053,157 @@ async def persist_rosetta_evidence(request: dict[str, Any]) -> dict[str, Any]:
         )
         result["tool_call_id"] = str(call.id)
     return result
+
+
+@activity.defn(name="select_next_generation")
+async def select_next_generation(request: dict[str, Any]) -> dict[str, Any]:
+    """Run the versioned diversity-constrained elitist Research Director policy."""
+    run_id = uuid.UUID(request["run_id"])
+    generation = int(request["generation"])
+    spec = request["spec"]
+    async with SessionFactory() as session, session.begin():
+        repository = ExperimentRepository(session)
+        candidates = list(
+            await session.scalars(
+                select(Candidate)
+                .where(Candidate.run_id == run_id, Candidate.generation == generation)
+                .order_by(Candidate.proposal_rank, Candidate.id)
+            )
+        )
+        candidate_ids = [candidate.id for candidate in candidates]
+        evaluations = list(
+            await session.scalars(
+                select(Evaluation).where(Evaluation.candidate_id.in_(candidate_ids))
+            )
+        )
+        metrics_by_candidate: dict[uuid.UUID, dict[str, float]] = {
+            candidate.id: {} for candidate in candidates
+        }
+        evidence_calls: set[uuid.UUID] = set()
+        for evaluation in evaluations:
+            if evaluation.numeric_value is not None:
+                metrics_by_candidate[evaluation.candidate_id][evaluation.metric_name] = float(
+                    evaluation.numeric_value
+                )
+            evidence_calls.add(evaluation.tool_call_id)
+        observed = [
+            {
+                "id": str(candidate.id),
+                "sequence": candidate.sequence,
+                "sequence_sha256": candidate.sequence_sha256,
+                "generation": candidate.generation,
+                "status": candidate.status,
+                "metrics": metrics_by_candidate[candidate.id],
+            }
+            for candidate in candidates
+        ]
+        elites = diversity_constrained_elites(
+            observed,
+            int(spec.get("elite_parent_count", 3)),
+            float(spec.get("maximum_sequence_similarity", 0.75)),
+        )
+        if not elites:
+            raise RuntimeError("Research Director could not select any next-generation parent")
+        selected_ids = {uuid.UUID(item["id"]) for item in elites}
+        for candidate in candidates:
+            if candidate.id in selected_ids:
+                await repository.transition_candidate(
+                    candidate.id,
+                    CandidateStatus.SELECTED,
+                    "research-director-policy-v1",
+                    "retained as a diversity-constrained elite parent",
+                )
+            elif candidate.status not in {
+                CandidateStatus.ROSETTA_QUEUED,
+                CandidateStatus.FAILED,
+            }:
+                await repository.transition_candidate(
+                    candidate.id,
+                    CandidateStatus.REJECTED,
+                    "research-director-policy-v1",
+                    "not retained in the generation elite archive",
+                )
+        prompt_payload = {
+            "policy": "diversity-constrained-elitism-v1",
+            "generation": generation,
+            "maximum_sequence_similarity": spec.get("maximum_sequence_similarity", 0.75),
+            "elite_parent_count": spec.get("elite_parent_count", 3),
+            "staged_order": [
+                "interface_gate_pass",
+                "rosetta_dg_when_available_after_gate",
+                "pocket_contact_consistency",
+                "boltz2_pair_iptm_median",
+                "conditional_ppl",
+            ],
+            "candidates": observed,
+        }
+        prompt_text = json.dumps(prompt_payload, ensure_ascii=False, indent=2, sort_keys=True)
+        structured = {
+            "schema_version": "1.0",
+            "decision_type": "select_next_generation_parents",
+            "generation": generation,
+            "selected_parent_ids": [item["id"] for item in elites],
+            "rejected_candidate_ids": [
+                str(candidate.id) for candidate in candidates if candidate.id not in selected_ids
+            ],
+            "selection_policy": "diversity-constrained-elitism-v1",
+            "next_action": "generate_mutations_and_de_novo_exploration",
+        }
+        response_lines = [
+            f"Generation {generation}: selected {len(elites)} parent candidates with "
+            "diversity-constrained elitism.",
+            "Evidence order was fixed before execution: structure gate, optional Rosetta "
+            "refinement, pocket consistency, pair-ipTM median, then PepMLM PPL.",
+        ]
+        response_lines.extend(
+            f"SELECT {item['id']} {item['sequence']} metrics="
+            f"{json.dumps(item['metrics'], ensure_ascii=False, sort_keys=True)}"
+            for item in elites
+        )
+        response_text = "\n".join(response_lines)
+        prompt_stored = await _store_text(prompt_text)
+        response_stored = await _store_text(response_text)
+        prompt_artifact = await _register_stored_artifact(
+            session,
+            asdict(prompt_stored),
+            {"kind": "agent_prompt_original", "generation": generation},
+        )
+        response_artifact = await _register_stored_artifact(
+            session,
+            asdict(response_stored),
+            {"kind": "agent_response_original", "generation": generation},
+        )
+        decision = await repository.record_agent_decision(
+            run_id,
+            generation,
+            "select_next_generation_parents",
+            "research-director-policy",
+            "diversity-constrained-elitism-v1",
+            prompt_text,
+            response_text,
+            structured,
+            prompt_artifact_id=prompt_artifact.id,
+            response_artifact_id=response_artifact.id,
+        )
+        for tool_call_id in sorted(evidence_calls, key=str):
+            await repository.record_agent_tool_edge(decision.id, tool_call_id, "input", "observes")
+        await repository.append_event(
+            "run",
+            run_id,
+            "generation.completed",
+            "research-director-policy-v1",
+            {
+                "generation": generation,
+                "candidate_count": len(candidates),
+                "selected_parent_ids": [item["id"] for item in elites],
+                "decision_id": str(decision.id),
+            },
+        )
+        return {
+            "decision_id": str(decision.id),
+            "parents": elites,
+            "generation": generation,
+        }
 
 
 @activity.defn(name="finalize_run")
@@ -776,6 +1227,8 @@ async def finalize_run(request: dict[str, Any]) -> dict[str, Any]:
             {
                 "structure_count": len(request["structures"]),
                 "rosetta_count": len(request.get("rosetta_results", [])),
+                "generation_count": request.get("generation_count", 1),
+                "agent_decision_count": request.get("agent_decision_count", 0),
                 "affinity_count": 0,
                 "affinity_lane": "not_admitted",
             },

@@ -1,5 +1,39 @@
 # 结论与 MVP-v2
 
+## 版本口径修正
+
+过去文档把“Rosetta metric 接入与三个公开复合物验证”提前称为 MVP-v2，这是不准确的。
+从现在起统一使用以下名称：
+
+| 产品里程碑 | 已完成内容 | 准确边界 |
+| --- | --- | --- |
+| MVP-v1 | PepMLM 条件生成、PPL、单次 Boltz-2 结构 smoke test、PostgreSQL/MinIO/Temporal 最小证据链 | 单轮系统跑通；没有 pocket 条件、多种子结构、Rosetta 或迭代研究。 |
+| MVP-v1.5 | Rosetta FlexPepDock/InterfaceAnalyzer metric 接入，三个公开 protein–peptide complex 的 native-start 验证，pocket evidence catalog 和工具依赖边 | 证明 Rosetta metric 可执行、可复现；没有运行生成—评估—选择—再生成闭环。 |
+| MVP-v2 | 多轮 pocket-aware Auto Research | 必须真实完成父子生成、多种子 Boltz-2、坐标界面审计、FlexPepDock/dG、下一代选择和至少三轮迭代，才允许宣布完成。 |
+
+已经发布的 Git tag `v0.2.0` 是不可变源码版本，不改写、不删除；它在产品里程碑上的准确名称是
+**MVP-v1.5 Rosetta Metric Validation**。Git 版本号与研究里程碑名称分别保存，避免修改历史实验引用。
+
+## 当前 MVP-v2 实施方案
+
+MVP-v2 首场正式实验使用 E. coli K-12 AceA 催化 Mg²⁺/异柠檬酸口袋作为工程与机制
+pilot。它验证“能否围绕有证据的代谢酶口袋持续改进短肽结构候选”，不把计算命中直接称为
+抗持留菌药物或 AceA 抑制剂。
+
+每轮固定执行：
+
+1. Round 0 由 PepMLM 生成多个长度的初始种群；后续轮次同时包含父代定向掩码突变和固定比例的全新探索序列。
+2. PPL、重复和序列相似性只做低成本筛选，不作为最终结合结论。
+3. 每个入围候选执行多个独立 seed 的 Boltz-2 protein–peptide complex sampling；每个 seed 是独立 tool-call 节点。
+4. 坐标界面审计直接计算 pocket contact、off-pocket contact、原子碰撞和跨 seed 姿势一致性；结构闸门失败者不得包装成命中。
+5. 每轮只有结构可信的少量候选，以及至多一个明确标记为 exploratory 的审计候选，进入 `prepack → FlexPepDock → InterfaceAnalyzer dG`。
+6. 下一代采用**多样性约束精英保留**：先按硬闸门和分层证据排序，再对序列做确定性相似性聚类，每个相似邻域只保留最好的父代；不使用 Pareto 作为产品术语，也不在 MVP-v2 引入 PPO/REINFORCE。
+7. 至少完成三轮；即使分数没有改善，也必须保存完整负结果并报告“工程闭环成功、科学搜索未改善”。
+
+Agent 决策是正式实验节点，不是散落日志。数据库同时保存未经改写的 prompt/response `TEXT`、
+原文 SHA-256、结构化 JSONB、Agent/策略版本和对应 artifact；通过 `observes / proposes /
+authorizes / rejects` 等有向边连接上游 tool call 与下游操作。原文永不因结构化解析而重写。
+
 ## 结论
 
 MVP 已经证明一件重要的事：这不是“聊天生成几条肽”的玩具流程，而是一条能中断恢复、能追溯模型与权重、能保存候选生命周期和原始证据的实验流水线。
@@ -65,14 +99,14 @@ MVP-v2 的成功标准不是“预测出一个神奇数字”，而是相对盲�
 
 每轮不是把一个总分越刷越高，而是执行：
 
-1. 从当前 Pareto 前沿选择父候选，同时保留一定探索配额。
+1. 从多样性约束精英档案选择父候选，同时保留固定探索配额。
 2. PepMLM 生成定向突变与新候选，固定并记录随机种子、父子关系和生成轮次。
 3. 先做 PPL、重复序列、长度和多样性筛选；通过者进入多种子 Boltz-2 peptide–protein 复合物共结构采样，肽作为第二条 protein chain，affinity head 保持硬禁用。
 4. 用“结构集合一致性 + 口袋界面几何”晋级，不接受单次偶然的漂亮结构。
 5. 只让少量可信姿势进入 FlexPepDock 局部精修和相对能量复排。
-6. 新候选只有在硬约束全部通过，并改善 Pareto 前沿或不确定性时才成为下一轮父代。
+6. 新候选只有在硬约束通过，并在自己的序列邻域中提供更好分层证据时才成为下一轮父代。
 
-停止条件是预算耗尽、连续多轮无 Pareto 改善、候选多样性坍缩，或结构不确定性始终无法下降。所有失败候选仍保留，避免下一轮重复探索。
+停止条件是预算耗尽、连续多轮无质量改善、候选多样性坍缩，或结构不确定性始终无法下降。所有失败候选仍保留，避免下一轮重复探索。
 
 ## 独立视觉辅助模块（不属于主 Auto Research）
 
@@ -93,7 +127,7 @@ MVP-v2 的成功标准不是“预测出一个神奇数字”，而是相对盲�
 
 - **Codex snapshot critic 是独立辅助证据。** 输入不是一张随意截图，而是确定性生成的 evidence bundle：全局复合物、口袋近景、正交视角、分子表面、接触/残基标注、置信度着色和 contact map，并同时提供 pocket evidence card 与坐标审计表。Codex 输出固定 schema 的 `flags / evidence / uncertainty / suggested_next_action`，例如 off-pocket、gross clash、仅单点悬挂、低置信区吸附、跨域穿插或视角不足。
 
-Snapshot critic 先以 shadow mode 运行，不参与 Pareto 分数。是否晋升为规则，必须先做一个小型验证集：已知 protein–peptide complex、人工制造的 off-pocket/clash/遮挡负例，以及坐标规则难判的边界例。比较“坐标审计”“snapshot only”“两者合并”的错误发现率、重复调用一致性和假阳性。只有合并通道对坐标审计有稳定增益时才保留；否则 snapshot 只作为报告，不进入循环决策。
+Snapshot critic 先以 shadow mode 运行，不参与主选择分数。是否晋升为规则，必须先做一个小型验证集：已知 protein–peptide complex、人工制造的 off-pocket/clash/遮挡负例，以及坐标规则难判的边界例。比较“坐标审计”“snapshot only”“两者合并”的错误发现率、重复调用一致性和假阳性。只有合并通道对坐标审计有稳定增益时才保留；否则 snapshot 只作为报告，不进入循环决策。
 
 这项判断参考了公开多模态化学基准对视觉推理脆弱性的结果：[Communications Chemistry 2025](https://www.nature.com/articles/s42004-025-01782-x)。OpenAI 接口可以在一次请求中提供多张原始细节图片，因此工程上可实现固定多视角 evidence bundle：[OpenAI Images and Vision](https://developers.openai.com/api/docs/guides/images-vision)。
 
@@ -112,7 +146,7 @@ PostgreSQL 是节点、边和生命周期的真相源；MinIO 保存按内容寻
 
 Rosetta 不能救活一个低 pair-ipTM、采样不一致或根本没进目标口袋的姿势。计算预算应优先保证第 4 步有足够重复，再把第 5 步用在最前面的少量候选；两类分数分别保存，不提前揉成一个伪精确总分。
 
-## MVP-v2 Rosetta 实施结论（2026-07-31）
+## MVP-v1.5 Rosetta Metric 实施结论（2026-07-31）
 
 Rosetta 高精度复排已经从“计划”变成可运行模块。正式实现固定使用 PyRosetta
 `2026.29+releasequarterly.80a0635615`、`ref2015`、FlexPepDock prepack/refinement 和
@@ -130,7 +164,8 @@ packstat、肽骨架 RMSD 和全部 PDB/JSON 都进入 PostgreSQL/MinIO。REU �
 
 结论要说准：这三例证明了实现可复现、证据链完整，并且从已知口袋附近出发可以保留/恢复近天然
 肽构象；它们没有证明 Rosetta dG 是实验结合自由能，也没有证明系统能盲找口袋。MVP-v2 因此
-接纳 Rosetta 作为“高成本、后置、同靶点相对复排器”，不接纳为 Kd 预测器。
+MVP-v1.5 因此接纳 Rosetta 作为“高成本、后置、同靶点相对复排器”，不接纳为 Kd
+预测器。它是 MVP-v2 的已验证 metric 前置条件，不是 MVP-v2 Auto Research 已完成的证据。
 
 视觉 snapshot 模块保持完全解耦：主 Auto Research workflow 不调用、不等待，也不读取其结论
 作为 metric 或晋级条件。未来可以把它做成异步 shadow critic，但当前 Rosetta 的正式验证没有
