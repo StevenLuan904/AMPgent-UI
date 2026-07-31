@@ -83,10 +83,22 @@ The 1NVR record contains seven evaluations, 406 artifact links (405 unique hashe
 linked bytes), and the explicit retrieval-to-refinement dependency. Its raw output SHA-256 is
 `f1ce0aa60e31a623df37e2d6dc4f76372b210431091437264cefaddcd926021e`.
 
-One further durable native-start case is running with 200 independently seeded decoys:
+The third complete case is Rosetta's official 1ER8 integration-test input, run
+`5a121752-b844-4278-bfc5-a3149f4d1a1b`. It produced 200/200 valid decoys and completed as
+`succeeded` on its first activity attempt. Primary top-ten median dG was `-50.3949700709 REU`; the
+all-decoy median and minimum were `-37.8839060798` and `-55.1126706484 REU`. Peptide backbone RMSD
+had minimum/median/maximum `0.5042/1.0156/2.7461 Å`; 46.5% of decoys were within 1 Å and 98.5%
+within 2 Å. The best `reweighted_sc` decoy had RMSD `1.4532 Å`, while the top-ten RMSD median was
+`0.7603 Å`. The weak reweighted-score/RMSD Spearman coefficient (`0.1794`) means this case supports
+near-native recovery but not a claim that the energy function globally ranks RMSD.
 
-- Rosetta's official 1ER8 integration-test input:
-  `5a121752-b844-4278-bfc5-a3149f4d1a1b`.
+The official 1ER8 record contains seven evaluations, 406 artifact links (405 unique hashes,
+87,896,713 linked bytes), and the explicit retrieval-to-refinement dependency. Its raw output
+SHA-256 is `bc61cf41e9042dcda949d824a3d61ee913ead698fe4e5994cc45d89c6f6c53b3`.
+The source tool call has the legacy name `rcsb-pdb-retrieval`, but its immutable input, target
+metadata and artifact metadata all identify `RosettaCommons/rosetta`, the exact GitHub URL and
+source hash. The importer now assigns the generic `pdb-coordinate-retrieval` name to future
+non-RCSB sources; the completed record was not rewritten.
 
 The raw RCSB 1ER8 coordinate experiment is intentionally retained as failed evidence. Its replacement
 run `10bc074c-2126-4218-8ca3-10af3cc8c279` reproducibly reached Rosetta's internal
@@ -101,8 +113,11 @@ overwritten.
 Rosetta energy units are never converted to kcal/mol, Kd or a claim of absolute binding affinity.
 The visual snapshot auditor is a separately deployed, non-blocking auxiliary module. The formal
 Rosetta workflow never invokes it, waits for it or consumes its output as a decision metric. Final
-admission remains pending until the two running cases, artifact uploads and database evidence queries
-complete.
+MVP-v2 admission verdict: **admit Rosetta FlexPepDock/InterfaceAnalyzer as a high-cost relative
+structural rescoring lane for already plausible, pocket-localized protein-peptide poses**. All three
+public native-start cases completed with exact source/environment evidence, 200 decoys and a
+near-native refined ensemble. Do not use the metric as an absolute affinity or Kd predictor, and do
+not treat these native-start tests as evidence for blind pocket discovery.
 
 ## AceA durable MVP run
 

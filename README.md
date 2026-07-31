@@ -9,10 +9,10 @@ it does not keep canonical experiment state in chat history or ad-hoc output fol
 2. PostgreSQL assigns immutable candidate identities and records lifecycle events.
 3. The lowest-PPL candidates enter Boltz-2 peptide–protein complex prediction.
 4. Boltz-2 reports peptide-protein complex confidence; its affinity head is not used for peptides.
-5. No absolute-affinity evaluator is admitted in the active MVP. PepPAP is frozen and retained only
-   as rejected historical validation evidence. PPI-Affinity remains outside the workflow until a
-   versioned, replayable implementation is available. Optional Rosetta FlexPepDock is a P1 relative
-   structural rescorer and never a Kd calculator.
+5. No absolute-affinity evaluator is admitted. PepPAP is frozen and PPI-Affinity remains outside the
+   workflow. MVP-v2 admits Rosetta FlexPepDock/InterfaceAnalyzer only as a high-cost relative
+   structural rescorer for already plausible pocket-localized poses; its REU values are never
+   presented as experimental affinity or Kd.
 6. Every admitted model call stores inputs, environment, weight hashes, raw outputs and parsed metrics in
    content-addressed storage, referenced by PostgreSQL. Temporal owns retries and recovery.
 
@@ -23,7 +23,8 @@ it does not keep canonical experiment state in chat history or ad-hoc output fol
 - Temporal: durable multi-stage workflows, retry policy and resumption after process failure.
 - MLflow: model releases and calibration experiments; it is not the candidate database.
 - FastAPI: run submission and evidence queries.
-- GPU workers: isolated PepMLM and Boltz-2 task queues. There is no active affinity worker lane.
+- Model workers: isolated PepMLM and Boltz-2 GPU queues plus a dedicated Rosetta CPU queue. There is
+  no absolute-affinity worker lane.
 
 ## Local control-plane bootstrap
 

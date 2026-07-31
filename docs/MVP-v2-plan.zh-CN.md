@@ -111,3 +111,27 @@ PostgreSQL 是节点、边和生命周期的真相源；MinIO 保存按内容寻
 - **第 5 步（FlexPepDock）**回答“在已经可信的局部姿势附近，哪条肽的界面经过高分辨率精修后相对更好”。它是精修与复排器。
 
 Rosetta 不能救活一个低 pair-ipTM、采样不一致或根本没进目标口袋的姿势。计算预算应优先保证第 4 步有足够重复，再把第 5 步用在最前面的少量候选；两类分数分别保存，不提前揉成一个伪精确总分。
+
+## MVP-v2 Rosetta 实施结论（2026-07-31）
+
+Rosetta 高精度复排已经从“计划”变成可运行模块。正式实现固定使用 PyRosetta
+`2026.29+releasequarterly.80a0635615`、`ref2015`、FlexPepDock prepack/refinement 和
+InterfaceAnalyzer。每个候选产生 200 个独立 seed 的 decoy，先按标准 `reweighted_sc` 排序，
+主指标取前 10 个 decoy 的 `dG_separated` 中位数；完整分布、最小值、界面能、氢键、埋藏面积、
+packstat、肽骨架 RMSD 和全部 PDB/JSON 都进入 PostgreSQL/MinIO。REU 不换算 kcal/mol 或 Kd。
+
+三组公开短肽复合物核对均已完成：
+
+| 复合物 | 正式 run | 主 dG（REU） | RMSD 中位数 | ≤2 Å |
+| --- | --- | ---: | ---: | ---: |
+| 2DS8 | `aa60bfad-97f4-44b0-a0b1-969d985fe5fe` | -32.9331 | 0.5629 Å | 94.5% |
+| 1NVR | `6e5405f4-b1c1-4087-88be-dfdb5e76e346` | -26.8628 | 0.5477 Å | 100% |
+| Rosetta 官方 1ER8 benchmark input | `5a121752-b844-4278-bfc5-a3149f4d1a1b` | -50.3950 | 1.0156 Å | 98.5% |
+
+结论要说准：这三例证明了实现可复现、证据链完整，并且从已知口袋附近出发可以保留/恢复近天然
+肽构象；它们没有证明 Rosetta dG 是实验结合自由能，也没有证明系统能盲找口袋。MVP-v2 因此
+接纳 Rosetta 作为“高成本、后置、同靶点相对复排器”，不接纳为 Kd 预测器。
+
+视觉 snapshot 模块保持完全解耦：主 Auto Research workflow 不调用、不等待，也不读取其结论
+作为 metric 或晋级条件。未来可以把它做成异步 shadow critic，但当前 Rosetta 的正式验证没有
+依赖任何人工或 Codex 看图判断。
