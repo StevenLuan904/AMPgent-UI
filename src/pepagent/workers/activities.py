@@ -583,7 +583,7 @@ async def score_rosetta_complex(request: dict[str, Any]) -> dict[str, Any]:
         "peptide_chain": peptide_chain,
         "nstruct": int(spec.get("rosetta_nstruct", 200)),
         "parallel_decoys": int(
-            spec.get("rosetta_parallel_decoys", 4 if validation_case else 1)
+            spec.get("rosetta_parallel_decoys", 8 if validation_case else 1)
         ),
         "seed": int(spec["seed"]),
         "score_function": spec.get("rosetta_score_function", "ref2015"),

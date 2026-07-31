@@ -39,11 +39,31 @@ Verdict: do not optimize against PPI-Affinity in MVP v1. If the service becomes 
 its model/service version, submitted PDB hash and returned raw report as external evidence. Promote
 it only if a replayable release is obtained.
 
-## Rosetta FlexPepDock: deferred P1
+## Rosetta FlexPepDock: MVP-v2 validation in progress
 
-Rosetta `dG_separated`, `I_sc`, `reweighted_sc`, interface hydrogen bonds and buried surface area are
-valid relative structural-ranking features for top Boltz-2 poses. Rosetta energy units are not
-converted to Kd.
+The admitted implementation uses PyRosetta
+`2026.29+releasequarterly.80a0635615`, wheel SHA-256
+`25254a10363eb5bdc0e1f3f36cbf846cb513958281041dd2b1b259610de2e733`, `ref2015`,
+FlexPepDock prepack/refinement and InterfaceAnalyzer. Per-decoy `dG_separated` comes from the typed
+InterfaceAnalyzer getter. The standard FlexPepDock `reweighted_sc` is reconstructed as total score
++ isolated peptide score + cross-interface score and is used to rank decoys. The primary run value
+is the median `dG_separated` among the ten best reweighted decoys; the full distribution and minimum
+are also retained.
+
+An exact-seed 2DS8 engineering replay passed byte-for-byte after canonicalizing the absolute output
+path that Rosetta writes into PDB energy-table footers. Both runs produced the same result JSON,
+prepacked PDB and refined PDB. The single-decoy smoke value was `-18.2969842019 REU` with peptide
+backbone RMSD `1.0856442212 Å`. This proves deterministic execution, not affinity calibration.
+
+Three durable native-start validation runs are executing with 200 independently seeded decoys each:
+
+- 1ER8: `b82e3cfb-5e52-4d49-96ed-281a9d0fe740`;
+- 1NVR: `6e5405f4-b1c1-4087-88be-dfdb5e76e346`;
+- 2DS8: `aa60bfad-97f4-44b0-a0b1-969d985fe5fe`.
+
+Rosetta energy units are never converted to kcal/mol, Kd or a claim of absolute binding affinity.
+This section must not be marked admitted until all three runs, artifact uploads and database evidence
+queries complete.
 
 ## AceA durable MVP run
 
