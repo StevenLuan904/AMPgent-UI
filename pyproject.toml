@@ -1,0 +1,51 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pepagent-platform"
+version = "0.1.0"
+description = "Persistent, provenance-first peptide design agent platform"
+requires-python = ">=3.11"
+dependencies = [
+  "alembic>=1.13,<2",
+  "asyncpg>=0.29,<1",
+  "boto3>=1.34,<2",
+  "fastapi>=0.115,<1",
+  "httpx>=0.27,<1",
+  "mlflow>=2.18,<4",
+  "numpy>=1.26,<3",
+  "psycopg[binary]>=3.2,<4",
+  "pydantic>=2.9,<3",
+  "pydantic-settings>=2.5,<3",
+  "python-multipart>=0.0.12,<1",
+  "pyyaml>=6.0,<7",
+  "sqlalchemy>=2.0,<3",
+  "structlog>=24.4,<26",
+  "temporalio>=1.8,<2",
+  "typer>=0.12,<1",
+  "uvicorn[standard]>=0.30,<1",
+]
+
+[project.optional-dependencies]
+pepmlm = ["accelerate>=1.0,<2", "torch==2.6.0", "transformers==4.57.6"]
+dev = ["mypy>=1.12,<2", "pytest>=8.3,<9", "pytest-asyncio>=0.24,<1", "ruff>=0.7,<1"]
+
+[project.scripts]
+pepagent = "pepagent.cli:app"
+pepagent-api = "pepagent.api.main:run"
+pepagent-worker = "pepagent.workers.temporal_worker:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pepagent"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

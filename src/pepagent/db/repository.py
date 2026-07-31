@@ -1,0 +1,300 @@
+from __future__ import annotations
+
+import uuid
+from datetime import UTC, datetime
+from typing import Any
+
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from pepagent.db.models import (
+    Candidate,
+    Evaluation,
+    ExperimentRun,
+    LifecycleEvent,
+    Target,
+    ToolCall,
+)
+from pepagent.domain.enums import CandidateStatus, EvaluationStatus, RunStatus
+from pepagent.domain.schemas import ExperimentSpec
+from pepagent.provenance.hashing import sha256_json, sha256_text
+
+
+class ExperimentRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+
+    async def create_run(
+        self,
+        spec: ExperimentSpec,
+        actor: str = "api",
+        parent_run_id: uuid.UUID | None = None,
+        raw_spec_payload: dict[str, Any] | None = None,
+    ) -> ExperimentRun:
+        target_digest = sha256_text(spec.target.sequence)
+        target = await self.session.scalar(
+            select(Target).where(Target.sequence_sha256 == target_digest)
+        )
+        if target is None:
+            target = Target(
+                name=spec.target.name,
+                organism=spec.target.organism,
+                accession=spec.target.accession,
+                sequence=spec.target.sequence,
+                sequence_sha256=target_digest,
+                metadata_json={
+                    "pocket_residues": spec.target.pocket_residues,
+                    "source_database": spec.target.source_database,
+                    "source_uri": spec.target.source_uri,
+                    "source_version": spec.target.source_version,
+                    "source_retrieved_at": (
+                        spec.target.source_retrieved_at.isoformat()
+                        if spec.target.source_retrieved_at
+                        else None
+                    ),
+                },
+            )
+            self.session.add(target)
+            await self.session.flush()
+
+        payload = raw_spec_payload if raw_spec_payload is not None else spec.model_dump(mode="json")
+        run = ExperimentRun(
+            target_id=target.id,
+            spec_json=payload,
+            spec_sha256=sha256_json(payload),
+            status=RunStatus.CREATED,
+            parent_run_id=parent_run_id,
+        )
+        self.session.add(run)
+        await self.session.flush()
+        await self.append_event("run", run.id, "run.created", actor, payload)
+        return run
+
+    async def append_event(
+        self,
+        aggregate_type: str,
+        aggregate_id: uuid.UUID,
+        event_type: str,
+        actor: str,
+        payload: dict[str, Any],
+    ) -> LifecycleEvent:
+        last = await self.session.scalar(
+            select(func.max(LifecycleEvent.sequence_no)).where(
+                LifecycleEvent.aggregate_type == aggregate_type,
+                LifecycleEvent.aggregate_id == aggregate_id,
+            )
+        )
+        event = LifecycleEvent(
+            aggregate_type=aggregate_type,
+            aggregate_id=aggregate_id,
+            sequence_no=(last or 0) + 1,
+            event_type=event_type,
+            actor=actor,
+            payload_json=payload,
+            payload_sha256=sha256_json(payload),
+        )
+        self.session.add(event)
+        await self.session.flush()
+        return event
+
+    async def mark_run_started(
+        self, run_id: uuid.UUID, workflow_id: str, temporal_run_id: str | None
+    ) -> None:
+        run = await self.session.get(ExperimentRun, run_id, with_for_update=True)
+        if run is None:
+            raise KeyError(f"run not found: {run_id}")
+        if (
+            run.temporal_workflow_id == workflow_id
+            and run.status in {RunStatus.RUNNING, RunStatus.SUCCEEDED}
+        ):
+            return
+        run.status = RunStatus.RUNNING
+        run.temporal_workflow_id = workflow_id
+        run.temporal_run_id = temporal_run_id
+        run.started_at = datetime.now(UTC)
+        await self.append_event(
+            "run", run.id, "run.started", "temporal", {"workflow_id": workflow_id}
+        )
+
+    async def add_candidate(
+        self,
+        run_id: uuid.UUID,
+        sequence: str,
+        generation: int,
+        proposal_rank: int,
+        generator_call_id: uuid.UUID | None = None,
+        parent_id: uuid.UUID | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> Candidate:
+        normalized = "".join(sequence.split()).upper()
+        digest = sha256_text(normalized)
+        existing = await self.session.scalar(
+            select(Candidate).where(
+                Candidate.run_id == run_id, Candidate.sequence_sha256 == digest
+            )
+        )
+        if existing is not None:
+            if existing.generator_call_id is None and generator_call_id is not None:
+                existing.generator_call_id = generator_call_id
+            return existing
+        candidate = Candidate(
+            run_id=run_id,
+            sequence=normalized,
+            sequence_sha256=digest,
+            generation=generation,
+            parent_id=parent_id,
+            status=CandidateStatus.GENERATED,
+            proposal_rank=proposal_rank,
+            generator_call_id=generator_call_id,
+            metadata_json=metadata or {},
+        )
+        self.session.add(candidate)
+        await self.session.flush()
+        await self.append_event(
+            "candidate",
+            candidate.id,
+            "candidate.generated",
+            "pepmlm",
+            {"run_id": str(run_id), "sequence_sha256": digest, "generation": generation},
+        )
+        return candidate
+
+    async def transition_candidate(
+        self,
+        candidate_id: uuid.UUID,
+        new_status: CandidateStatus,
+        actor: str,
+        reason: str,
+    ) -> None:
+        candidate = await self.session.get(Candidate, candidate_id, with_for_update=True)
+        if candidate is None:
+            raise KeyError(f"candidate not found: {candidate_id}")
+        old_status = candidate.status
+        if old_status == new_status:
+            return
+        candidate.status = new_status
+        await self.append_event(
+            "candidate",
+            candidate.id,
+            "candidate.status_changed",
+            actor,
+            {"from": old_status, "to": new_status, "reason": reason},
+        )
+
+    async def record_completed_tool_call(
+        self,
+        run_id: uuid.UUID,
+        tool_name: str,
+        tool_version: str,
+        environment_sha256: str,
+        input_payload: dict[str, Any],
+        parameters: dict[str, Any],
+        output_payload: dict[str, Any],
+        weights_sha256: str | None = None,
+        model_uri: str | None = None,
+        random_seed: int | None = None,
+        attempt: int = 1,
+    ) -> ToolCall:
+        input_sha256 = sha256_json(input_payload)
+        output_sha256 = sha256_json(output_payload)
+        idempotency_key = sha256_json(
+            {
+                "run_id": str(run_id),
+                "tool_name": tool_name,
+                "tool_version": tool_version,
+                "environment_sha256": environment_sha256,
+                "weights_sha256": weights_sha256,
+                "input_sha256": input_sha256,
+                "parameters": parameters,
+                "random_seed": random_seed,
+            }
+        )
+        existing = await self.session.scalar(
+            select(ToolCall).where(ToolCall.idempotency_key == idempotency_key)
+        )
+        if existing is not None:
+            return existing
+        now = datetime.now(UTC)
+        call = ToolCall(
+            run_id=run_id,
+            tool_name=tool_name,
+            tool_version=tool_version,
+            model_uri=model_uri,
+            weights_sha256=weights_sha256,
+            environment_sha256=environment_sha256,
+            idempotency_key=idempotency_key,
+            input_sha256=input_sha256,
+            input_json=input_payload,
+            parameters_json=parameters,
+            random_seed=random_seed,
+            status=EvaluationStatus.SUCCEEDED,
+            attempt=attempt,
+            queued_at=now,
+            started_at=now,
+            finished_at=now,
+            output_sha256=output_sha256,
+        )
+        self.session.add(call)
+        await self.session.flush()
+        await self.append_event(
+            "run",
+            run_id,
+            "tool_call.succeeded",
+            tool_name,
+            {
+                "tool_call_id": str(call.id),
+                "idempotency_key": idempotency_key,
+                "input_sha256": input_sha256,
+                "output_sha256": output_sha256,
+            },
+        )
+        return call
+
+    async def record_evaluation(
+        self,
+        candidate_id: uuid.UUID,
+        tool_call_id: uuid.UUID,
+        metric_name: str,
+        numeric_value: float | None,
+        unit: str | None,
+        raw: dict[str, Any],
+        *,
+        text_value: str | None = None,
+        out_of_domain: bool = False,
+        limitations: list[str] | None = None,
+    ) -> Evaluation:
+        existing = await self.session.scalar(
+            select(Evaluation).where(
+                Evaluation.candidate_id == candidate_id,
+                Evaluation.metric_name == metric_name,
+                Evaluation.tool_call_id == tool_call_id,
+            )
+        )
+        if existing is not None:
+            return existing
+        evaluation = Evaluation(
+            candidate_id=candidate_id,
+            tool_call_id=tool_call_id,
+            metric_name=metric_name,
+            numeric_value=numeric_value,
+            text_value=text_value,
+            unit=unit,
+            status=EvaluationStatus.SUCCEEDED,
+            out_of_domain=out_of_domain,
+            limitations_json=limitations or [],
+            raw_json=raw,
+        )
+        self.session.add(evaluation)
+        await self.session.flush()
+        await self.append_event(
+            "candidate",
+            candidate_id,
+            "evaluation.recorded",
+            "metric-worker",
+            {
+                "evaluation_id": str(evaluation.id),
+                "metric_name": metric_name,
+                "tool_call_id": str(tool_call_id),
+            },
+        )
+        return evaluation

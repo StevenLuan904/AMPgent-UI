@@ -1,0 +1,34 @@
+schema_version: 1
+models:
+  pepmlm:
+    source: https://huggingface.co/ChatterjeeLab/PepMLM-650M
+    revision: 898fca941a9057aebdd1a6164b5ee09a1a71780e
+    role: conditional_generator_and_pseudo_perplexity
+  boltz2:
+    source: https://github.com/jwohlwend/boltz
+    revision: b1ebfc46ecf57f5414e0d1a6f9027bbb122c53bc
+    role: peptide_protein_complex_structure_confidence
+    weights_source: https://huggingface.co/boltz-community/boltz-2
+    structure_weights_sha256: 090e82ac8c92f5e943fa1b39e7410a44027bea7243c0bbb3caa67a77fc1428e1
+    affinity_head: disabled_for_peptide_chain
+    affinity_checkpoint: not_downloaded_zero_byte_disabled_sentinel
+  peppap:
+    source: https://github.com/ChunhuaLab/PepPAP
+    revision: 5255d72873e1bf307b33d356a7ca143cb6102fdc
+    weights: https://huggingface.co/SXH01/PepPAP
+    weights_revision: 2481e8cdbe9b1e400c0a82c02d5e44488fa5784c
+    role: historical_validation_only
+    lifecycle_status: frozen_rejected
+    admitted_to_workflow: false
+    frozen_at: 2026-07-31
+    decision: "Do not run, rank, import, or optimize against PepPAP. Preserve prior evidence for audit only."
+    calibration: unverified_for_new_target_families
+  ppi_affinity:
+    source: https://protdcal.zmb.uni-due.de/PPIAffinity
+    publication: https://doi.org/10.1021/acs.jproteome.2c00020
+    role: external_structure_based_cross_check
+    automation_status: blocked_no_public_versioned_weights
+  rosetta_flexpepdock:
+    role: optional_top_pose_structural_rescorer
+    optimization_stage: p1
+    kd_conversion: forbidden
