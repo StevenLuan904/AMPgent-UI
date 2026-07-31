@@ -98,7 +98,9 @@ def mutate_one(
     masked = encoded.clone()
     masked[0, selected_positions] = tokenizer.mask_token_id
     with torch.inference_mode():
-        logits = model(masked).logits[0, selected_positions] / temperature
+        # Advanced indexing inside inference mode returns an inference tensor. Clone before the
+        # deliberate in-place exclusion below so parent-masked mutation works on PyTorch 2.6+.
+        logits = (model(masked).logits[0, selected_positions] / temperature).clone()
     logits[torch.arange(mutation_count, device=model.device), original_tokens] = -torch.inf
     top_logits, top_indices = logits.topk(top_k, dim=-1)
     sampled = Categorical(logits=top_logits).sample()
