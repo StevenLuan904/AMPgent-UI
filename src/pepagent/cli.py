@@ -1,6 +1,7 @@
 import asyncio
 import importlib.metadata
 import json
+import uuid
 from dataclasses import asdict
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -11,7 +12,7 @@ import yaml
 from sqlalchemy import select
 from temporalio.client import Client
 
-from pepagent.db.models import Artifact, EvidenceArtifact
+from pepagent.db.models import Artifact, Candidate, Evaluation, EvidenceArtifact, ExperimentRun
 from pepagent.db.repository import ExperimentRepository
 from pepagent.db.session import SessionFactory
 from pepagent.domain.enums import CandidateStatus
@@ -22,6 +23,7 @@ from pepagent.registry.service import register_local_model_release
 from pepagent.settings import get_settings
 from pepagent.storage.object_store import ContentAddressedObjectStore
 from pepagent.structures.pdb import atom_chain_sequence
+from pepagent.validation.rosetta import summarize_native_start_validation
 
 app = typer.Typer(no_args_is_help=True, help="Operate the PepAgent control plane.")
 
@@ -118,6 +120,45 @@ def import_pockets(catalog_path: Path) -> None:
 
     result = asyncio.run(_run())
     typer.echo(json.dumps(result, ensure_ascii=False, indent=2))
+
+
+@app.command("summarize-rosetta-validation")
+def summarize_rosetta_validation(run_id: list[uuid.UUID]) -> None:
+    """Recompute native-start validation checks from immutable Rosetta evaluation payloads."""
+
+    async def _run() -> list[dict]:
+        summaries: list[dict] = []
+        async with SessionFactory() as session:
+            for identifier in run_id:
+                run = await session.get(ExperimentRun, identifier)
+                if run is None:
+                    raise typer.BadParameter(f"run not found: {identifier}")
+                evaluation = await session.scalar(
+                    select(Evaluation)
+                    .join(Candidate, Evaluation.candidate_id == Candidate.id)
+                    .where(
+                        Candidate.run_id == identifier,
+                        Evaluation.metric_name == "rosetta_dg_separated_reu",
+                    )
+                )
+                if evaluation is None:
+                    raise typer.BadParameter(
+                        f"run has no completed Rosetta dG evaluation: {identifier}"
+                    )
+                validation = run.spec_json.get("validation", {})
+                summaries.append(
+                    {
+                        "run_id": str(identifier),
+                        "run_status": run.status,
+                        "suite_id": validation.get("suite_id"),
+                        "pdb_id": validation.get("case", {}).get("pdb_id"),
+                        "tool_call_id": str(evaluation.tool_call_id),
+                        **summarize_native_start_validation(evaluation.raw_json),
+                    }
+                )
+        return summaries
+
+    typer.echo(json.dumps(asyncio.run(_run()), ensure_ascii=False, indent=2, sort_keys=True))
 
 
 @app.command("submit-rosetta-validation")
