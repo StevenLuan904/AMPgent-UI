@@ -18,4 +18,3 @@ async def test_terminate_subprocess_tree_stops_running_process() -> None:
     await _terminate_subprocess_tree(process)
 
     assert process.returncode is not None
-
