@@ -17,6 +17,16 @@ from pepagent.structures.pdb import (
 ADAPTER_VERSION = "pepagent-pyrosetta-flexpepdock-v1"
 
 
+def _canonicalize_dumped_pdb(path: Path) -> None:
+    """Remove work-directory identity embedded by Rosetta's energy-table footer."""
+    output: list[str] = []
+    for line in path.read_text(encoding="ascii").splitlines():
+        if line.startswith(("#BEGIN_POSE_ENERGIES_TABLE ", "#END_POSE_ENERGIES_TABLE ")):
+            line = f"{line.split(' ', 1)[0]} {path.name}"
+        output.append(line)
+    path.write_text("\n".join(output) + "\n", encoding="ascii")
+
+
 def _pyrosetta_init(seed: int, receptor: str, peptide: str, mode: str) -> Any:
     import pyrosetta
 
@@ -84,6 +94,7 @@ def _run_stage(args: argparse.Namespace) -> None:
     protocol.apply(pose)
     args.output_structure.parent.mkdir(parents=True, exist_ok=True)
     pose.dump_pdb(str(args.output_structure))
+    _canonicalize_dumped_pdb(args.output_structure)
     if args.stage == "refine":
         metrics = _score_pose(
             pyrosetta, pose, f"{''.join(args.receptor_chain)}_{args.peptide_chain}"
