@@ -75,6 +75,22 @@ Invoke-RestMethod http://127.0.0.1:8080/v1/runs/<run-id>/evidence
 `POST /v1/runs/<run-id>/replay` creates a child run with the original raw specification and hash.
 An old run containing a now-frozen evaluator is rejected rather than silently migrated.
 
+Formal Rosetta validation imports exact public coordinates, verifies the committed source hash,
+requires at least 200 decoys and starts a dedicated durable workflow. Never edit a failed run or
+replace its source artifact; submit a new, separately identified suite instead.
+
+```powershell
+.\.venv-local\Scripts\python -m pepagent.cli submit-rosetta-validation `
+  config\validation\rosetta_public_complexes_v1.yaml --case 2DS8
+.\.venv-local\Scripts\python -m pepagent.cli submit-rosetta-validation `
+  config\validation\rosetta_official_1er8_benchmark_v1.yaml --case 1ER8
+.\.venv-local\Scripts\python -m pepagent.cli summarize-rosetta-validation <succeeded-run-id>
+```
+
+The summary command recomputes native-start recovery and ranking diagnostics from the immutable raw
+evaluation in PostgreSQL. These diagnostics validate execution and near-native refinement; they are
+not new candidate-ranking metrics and do not calibrate REU to experimental affinity.
+
 ## Model admission
 
 ```powershell
