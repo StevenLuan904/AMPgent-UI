@@ -36,6 +36,10 @@ No absolute-affinity metric is admitted in MVP v1. PepPAP is frozen. PPI-Affinit
 the workflow until versioned code and weights are replayable. Rosetta FlexPepDock is a later P1
 relative structural rescorer.
 
+The Boltz-2 structure lane and affinity lane are separate capabilities. A peptide is represented as
+a second protein chain for complex co-structure prediction; the official protein-small-molecule
+affinity head remains hard-disabled. Structure confidence is never relabelled as peptide affinity.
+
 ## Non-negotiable evidence invariants
 
 - A candidate sequence is unique within a run by SHA-256.
@@ -48,6 +52,29 @@ relative structural rescorer.
 - Workflow retries may re-execute computation but cannot duplicate canonical evidence.
 - A replay run keeps `parent_run_id` and the exact original `spec_json`/`spec_sha256`.
 - Model releases must pass an admission gate before an MLflow `admitted` alias is assigned.
+
+## Experiment-attempt graph contract
+
+The product graph UI is deferred, but its canonical graph must be created by execution rather than
+reconstructed from logs. Generation, screening, each structure sample, coordinate audit, snapshot
+render, Codex snapshot review, Rosetta decoy aggregation and promotion decision are separate attempt
+nodes. An attempt stores immutable input/output hashes, exact tool/model/prompt/render versions,
+parameters, seed, status, timestamps, retries and artifact references. A many-to-many dependency
+edge records relations such as `generated_from`, `evaluates`, `renders`, `reviews`, `refines` and
+`selected_by`.
+
+PostgreSQL owns nodes, edges and lifecycle state; MinIO owns the content-addressed bytes; Temporal
+owns execution state and monitoring. A future graph is only a projection of those records.
+
+## Snapshot-critic admission
+
+Coordinate-derived interface checks remain the structural promotion gate. A deterministic
+multi-view render bundle may be reviewed by a pinned multimodal Codex model as a shadow-mode critic
+to detect and explain gross or combined failure modes. The review is evidence, not a fitness metric:
+it cannot report affinity or silently change a score. It becomes decision-bearing only after a
+versioned protein-peptide validation set shows stable incremental value over coordinate checks
+alone. Every review stores model snapshot, prompt schema/hash, render recipe and camera parameters,
+image hashes, structured output and raw response.
 
 ## Candidate lifecycle
 

@@ -30,6 +30,9 @@
 ### Boltz-2 (structure only)
 
 - Outputs: complex structure, confidence score, ipTM, pairwise ipTM, and complex ipLDDT.
+- A peptide is encoded as a second protein chain for peptide-protein complex co-structure
+  prediction. This is supported by the biomolecular/multichain structure model and must not be
+  confused with the separate affinity head.
 - The affinity head is not called for a peptide represented as a protein chain. Boltz-2 affinity
   is documented for a single small-molecule ligand and is outside this peptide use case.
 - Pinned Boltz 2.2.1 downloads its affinity checkpoint unconditionally. The project adapter creates
@@ -45,6 +48,19 @@
   hydrogen bonds, buried surface area, the refined pose, Rosetta commit/release and flags.
 - Decision role: relative ranking within the same target and protocol. Rosetta energy units are
   not converted into Kd and are never labelled as experimental binding free energy.
+- MVP-v1 execution status: not run. Metric enums and this contract are schema preparation, not
+  evidence that Rosetta, FlexPepDock or `dG_separated` was executed.
+
+### Codex snapshot critic (provisional P1 shadow evidence)
+
+- Inputs: a deterministic multi-view render bundle, pocket evidence card, contact map, confidence
+  overlays and coordinate-derived audit table for one exact structure artifact.
+- Outputs: structured failure flags, cited visual/coordinate evidence, uncertainty and a suggested
+  next action. The exact model snapshot, prompt/render hashes, camera parameters, image hashes and
+  raw response are mandatory.
+- Decision role: none until a versioned protein-peptide validation set demonstrates reproducible
+  incremental error detection over coordinate checks alone. It is not an affinity estimator,
+  scalar metric or substitute for atomic-coordinate analysis.
 
 ## Promotion rule
 

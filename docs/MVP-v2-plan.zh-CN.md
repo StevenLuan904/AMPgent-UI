@@ -10,6 +10,35 @@ MVP 已经证明一件重要的事：这不是“聊天生成几条肽”的玩�
 
 这恰好说明证据闸门有效。PepPAP 已冻结；现阶段不接入任何不可复现或未经本项目校准的亲和力模型。
 
+## MVP-v1 到底完成了什么
+
+下表只写实际执行结果，不把“代码里预留了字段”或“文档里讨论过”算成已实现。
+
+| 工具 / metric | MVP-v1 状态 | 实际用途与结果 |
+| --- | --- | --- |
+| PepMLM-650M | **已接入并跑通** | 目标序列条件生成；记录 conditional NLL 和 pseudo-PPL。AceA 共生成 4 条 12 aa 肽，最优候选 PPL `5.9315`。PPL 只表示符合模型学到的 target–peptide 条件分布，不是亲和力。 |
+| Boltz-2 structure model | **已接入并跑通** | 把靶蛋白和肽都表示为 protein chain，做蛋白—肽复合物共结构预测；记录 confidence、ipTM、protein–peptide pair-ipTM、complex ipLDDT 和 CIF。首轮仅 1 个 diffusion sample，pair-ipTM `0.1402`，未通过。 |
+| Boltz-2 affinity head | **明确禁用** | 官方把 affinity prediction 定义为 protein–small-molecule；不能拿来给 peptide chain 报 Kd。 |
+| PepPAP | **只复现官方样例，随后冻结** | 官方 1G6R 示例数值复现成功，证明软件可回放；因实现异常和跨靶点有效性无校准，不进入生成、排序或新实验。 |
+| PPI-Affinity | **未接入** | 公共服务验证时不可用，也未找到可下载、版本化的权重与推理包。 |
+| Rosetta FlexPepDock / Rosetta dG | **没有运行** | 当前只有 P1 设计、metric 枚举和数据契约；没有 Rosetta 安装证据、tool call、refined pose 或 `dG_separated` 结果。不能说 MVP-v1 做过 Rosetta dG。 |
+| 口袋条件、界面坐标审计、snapshot critic | **未运行** | 首轮是无 pocket constraint、无 MSA server 的盲测 smoke test；这些属于 v2。 |
+
+MVP-v1 的核心产物不是一个好候选，而是一个可恢复、可重放、不会把低可信结构包装成“命中”的最小系统。完整运行事实与哈希见 [validation-report.md](validation-report.md)。
+
+## Boltz-2 的边界：结构可以，肽 Kd 不可以
+
+这里需要纠正一个容易混淆的说法：Boltz-2 **不只会做蛋白—小分子 complex**。它的结构模型支持多链生物分子复合物；本项目可把短肽作为第二条 protein chain，做 peptide–protein **复合物共结构预测**。Boltz-2 也已被用于大规模 protein–protein complex prediction。官方发布说明同时明确把新增 affinity prediction 写成 **protein–small-molecule**。
+
+因此 v2 节点必须命名为“Boltz-2 peptide–protein complex structure sampling”，不要笼统写成 folding，也不要把两条能力混在一起：
+
+- 允许：复合物坐标、confidence、ipTM、pair-ipTM、ipLDDT、接触条件和结构模板；
+- 禁止：用 affinity head 给 peptide chain 预测 Kd；
+- 禁止：把 pair-ipTM 或任一结构置信度改名为亲和力；
+- 必须：先用已知 protein–peptide 复合物做本项目域内校验，再决定晋级阈值。
+
+依据：[Boltz-2 官方 release](https://github.com/jwohlwend/boltz/releases)把 affinity 限定为 protein–small-molecule，并列出 multimeric template/contact conditioning；[Boltz-2 human interactome 工作](https://pmc.ncbi.nlm.nih.gov/articles/PMC12236519.1/)则直接展示了 protein–protein complex prediction 的用途。
+
 ## MVP-v2 只增加五件事
 
 1. **口袋证据卡**：Agent 对每个靶点检索结构、配体、催化残基和文献，保存来源、日期、结构版本与残基编号；没有可靠口袋时明确标记为盲预测。
@@ -38,24 +67,39 @@ MVP-v2 的成功标准不是“预测出一个神奇数字”，而是相对盲�
 
 1. 从当前 Pareto 前沿选择父候选，同时保留一定探索配额。
 2. PepMLM 生成定向突变与新候选，固定并记录随机种子、父子关系和生成轮次。
-3. 先做 PPL、重复序列、长度和多样性筛选；通过者进入多种子 Boltz-2 结构采样。
+3. 先做 PPL、重复序列、长度和多样性筛选；通过者进入多种子 Boltz-2 peptide–protein 复合物共结构采样，肽作为第二条 protein chain，affinity head 保持硬禁用。
 4. 用“结构集合一致性 + 口袋界面几何”晋级，不接受单次偶然的漂亮结构。
 5. 只让少量可信姿势进入 FlexPepDock 局部精修和相对能量复排。
 6. 新候选只有在硬约束全部通过，并改善 Pareto 前沿或不确定性时才成为下一轮父代。
 
 停止条件是预算耗尽、连续多轮无 Pareto 改善、候选多样性坍缩，或结构不确定性始终无法下降。所有失败候选仍保留，避免下一轮重复探索。
 
-## 结构不能只看一个 scalar
+## Snapshot 检查有没有意义
 
-专业流程会看结构，但不应让“人眼觉得像”成为不可复现的主评分器。MVP-v2 应先做可计算的坐标级界面审计：
+**有意义，但现在没有资格成为 metric 或自动晋级闸门。** 它最合适的角色是 shadow-mode 的 Codex structure critic：发现固定 scalar 没覆盖的失败模式、解释异常、提出下一轮应补算什么。它不能预测 Kd，不能替代坐标计算，也不能凭“看起来不错”改变候选分数。
+
+原因很实际：三维渲染能让 Codex 同时看到全局落位、表面互补、长肽尾部、域碰撞和置信度分布，适合发现“各项数字勉强过线但整体明显不合理”的组合异常；但截图丢失精确距离、遮挡背面原子，并强烈依赖相机、颜色和表面表示。现有多模态模型在化学视觉任务上有能力，但公开基准也显示视觉—语言融合仍会出现稳定而自信的错误，不能未经本项目校准就充当科学评分器。
+
+所以 MVP-v2 采用两条并行证据，而不是人眼 in loop：
+
+1. **坐标审计是主证据和晋级门。** 直接从 CIF/PDB 计算：
 
 - 多种子姿势聚类，以及口袋接触在重复采样中的出现频率；
 - 目标口袋覆盖率、非目标表面接触率和锚点残基埋藏情况；
 - 原子碰撞、氢键、盐桥、疏水接触、界面埋藏面积和形状互补；
 - 肽是否异常自折叠、穿模、贴在低置信无序区，或只靠一个偶然接触挂住；
-- 输出 residue–residue contact map、三维快照和置信度着色，供专家复核前几名及异常样本。
 
-因此需要的是**结构解析算法 + 自动可视化报告**，不是另训一个看截图的视觉模型。人眼复核保留为终审和发现新失败模式的手段，但不得悄悄改分；专家判断必须记录为带理由、带截图哈希的审阅事件。
+2. **Codex snapshot critic 是辅助证据节点。** 输入不是一张随意截图，而是确定性生成的 evidence bundle：全局复合物、口袋近景、正交视角、分子表面、接触/残基标注、置信度着色和 contact map，并同时提供 pocket evidence card 与坐标审计表。Codex 输出固定 schema 的 `flags / evidence / uncertainty / suggested_next_action`，例如 off-pocket、gross clash、仅单点悬挂、低置信区吸附、跨域穿插或视角不足。
+
+Snapshot critic 先以 shadow mode 运行，不参与 Pareto 分数。是否晋升为规则，必须先做一个小型验证集：已知 protein–peptide complex、人工制造的 off-pocket/clash/遮挡负例，以及坐标规则难判的边界例。比较“坐标审计”“snapshot only”“两者合并”的错误发现率、重复调用一致性和假阳性。只有合并通道对坐标审计有稳定增益时才保留；否则 snapshot 只作为报告，不进入循环决策。
+
+这项判断参考了公开多模态化学基准对视觉推理脆弱性的结果：[Communications Chemistry 2025](https://www.nature.com/articles/s42004-025-01782-x)。OpenAI 接口可以在一次请求中提供多张原始细节图片，因此工程上可实现固定多视角 evidence bundle：[OpenAI Images and Vision](https://developers.openai.com/api/docs/guides/images-vision)。
+
+## 可溯源和未来流程 graph
+
+产品版 graph 现在不做 UI，但底层数据契约现在就要满足。每次生成、筛选、结构 sample、坐标审计、snapshot render、Codex review、FlexPepDock decoy 和晋级决策都是独立 attempt 节点；节点必须保存状态、时间、输入/输出哈希、代码与环境、权重、随机种子、参数和原始 artifact。节点之间使用显式多父依赖边，例如 `generated_from / evaluates / renders / reviews / refines / selected_by`。
+
+PostgreSQL 是节点、边和生命周期的真相源；MinIO 保存按内容寻址的结构、图片、日志和原始响应；Temporal 保存执行、重试、心跳与恢复。未来 graph 页面只是这些记录的投影，不能另建一套不可回放的前端状态。Snapshot review 还必须保存模型精确版本、prompt template 哈希、render recipe/相机参数、全部图片哈希、结构化结论与原始响应；否则它不算实验节点。
 
 ## 第 4 步和第 5 步的关系
 
