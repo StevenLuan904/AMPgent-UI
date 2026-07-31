@@ -66,6 +66,15 @@ edge records relations such as `generated_from`, `evaluates`, `renders`, `review
 PostgreSQL owns nodes, edges and lifecycle state; MinIO owns the content-addressed bytes; Temporal
 owns execution state and monitoring. A future graph is only a projection of those records.
 
+## Watchdog supervision
+
+The research director does not busy-poll long compute. An independent watchdog observes Temporal
+heartbeats and retries, new PostgreSQL evidence, real worker subprocesses, and artifact freshness.
+It wakes the director only at generation boundaries, terminal failures, scientifically abnormal
+outputs, or final completion. A `running` state without fresh evidence is treated as possible
+stagnation. The watchdog cannot change scores, parents, or an experiment specification; any
+spec-changing recovery creates a new versioned run while preserving the failed branch.
+
 ## Snapshot-critic admission
 
 Coordinate-derived interface checks remain the structural promotion gate. A deterministic
