@@ -126,6 +126,9 @@ def submit_rosetta_validation(
     nstruct: int | None = typer.Option(
         None, min=200, help="Override production decoy count; never below 200."
     ),
+    case: list[str] | None = typer.Option(  # noqa: B008
+        None, "--case", help="Submit only the named PDB case; repeat for multiple cases."
+    ),
 ) -> None:
     """Stage public complexes as immutable evidence and launch durable Rosetta runs."""
     suite = _load_mapping(suite_path)
@@ -133,6 +136,15 @@ def submit_rosetta_validation(
     production_nstruct = nstruct or int(suite["source_policy"]["production_nstruct"])
     if production_nstruct < 200:
         raise typer.BadParameter("decision-bearing validation requires at least 200 decoys")
+    requested_cases = {name.upper() for name in case or []}
+    selected_cases = [
+        item
+        for item in suite["cases"]
+        if not requested_cases or item["pdb_id"].upper() in requested_cases
+    ]
+    found_cases = {item["pdb_id"].upper() for item in selected_cases}
+    if missing := requested_cases - found_cases:
+        raise typer.BadParameter(f"unknown validation cases: {sorted(missing)}")
 
     async def _run() -> list[dict]:
         settings = get_settings()
@@ -142,27 +154,29 @@ def submit_rosetta_validation(
         staged: list[dict] = []
         with TemporaryDirectory(prefix="pepagent-rosetta-validation-") as temporary:
             temporary_root = Path(temporary)
-            for case in suite["cases"]:
+            for case_spec in selected_cases:
                 response = await asyncio.to_thread(
-                    httpx.get, case["source_uri"], timeout=60.0
+                    httpx.get, case_spec["source_uri"], timeout=60.0
                 )
                 response.raise_for_status()
                 source_bytes = response.content
                 actual_sha256 = sha256_bytes(source_bytes)
-                if actual_sha256 != case["source_sha256"]:
+                if actual_sha256 != case_spec["source_sha256"]:
                     raise OSError(
-                        f"{case['pdb_id']} source hash mismatch: "
-                        f"{actual_sha256} != {case['source_sha256']}"
+                        f"{case_spec['pdb_id']} source hash mismatch: "
+                        f"{actual_sha256} != {case_spec['source_sha256']}"
                     )
-                source_path = temporary_root / f"{case['pdb_id']}.pdb"
+                source_path = temporary_root / f"{case_spec['pdb_id']}.pdb"
                 source_path.write_bytes(source_bytes)
                 receptor_sequence = atom_chain_sequence(
-                    source_path, list(case["receptor_chains"])
+                    source_path, list(case_spec["receptor_chains"])
                 )
-                peptide_sequence = atom_chain_sequence(source_path, [case["peptide_chain"]])
-                if peptide_sequence != case["modeled_peptide_sequence"]:
+                peptide_sequence = atom_chain_sequence(
+                    source_path, [case_spec["peptide_chain"]]
+                )
+                if peptide_sequence != case_spec["modeled_peptide_sequence"]:
                     raise ValueError(
-                        f"{case['pdb_id']} modeled peptide changed: {peptide_sequence}"
+                        f"{case_spec['pdb_id']} modeled peptide changed: {peptide_sequence}"
                     )
                 stored = await asyncio.to_thread(
                     ContentAddressedObjectStore().put_bytes,
@@ -171,11 +185,11 @@ def submit_rosetta_validation(
                 )
                 spec = ExperimentSpec(
                     target={
-                        "name": f"{case['pdb_id']} modeled receptor",
+                        "name": f"{case_spec['pdb_id']} modeled receptor",
                         "sequence": receptor_sequence,
-                        "accession": case["pdb_id"],
+                        "accession": case_spec["pdb_id"],
                         "source_database": "RCSB PDB",
-                        "source_uri": case["source_uri"],
+                        "source_uri": case_spec["source_uri"],
                         "source_version": actual_sha256,
                     },
                     peptide_lengths=[len(peptide_sequence)],
@@ -197,7 +211,7 @@ def submit_rosetta_validation(
                 raw_spec["validation"] = {
                     "suite_id": suite["suite_id"],
                     "suite_sha256": suite_digest,
-                    "case": case,
+                    "case": case_spec,
                 }
                 async with SessionFactory() as session, session.begin():
                     repository = ExperimentRepository(session)
@@ -213,7 +227,7 @@ def submit_rosetta_validation(
                         proposal_rank=1,
                         metadata={
                             "validation_suite": suite["suite_id"],
-                            "pdb_id": case["pdb_id"],
+                            "pdb_id": case_spec["pdb_id"],
                             "native_start": True,
                         },
                     )
@@ -235,8 +249,8 @@ def submit_rosetta_validation(
                         "v1",
                         retrieval_environment,
                         {
-                            "source_uri": case["source_uri"],
-                            "expected_sha256": case["source_sha256"],
+                            "source_uri": case_spec["source_uri"],
+                            "expected_sha256": case_spec["source_sha256"],
                         },
                         {"exact_hash_required": True},
                         {
@@ -256,7 +270,7 @@ def submit_rosetta_validation(
                             storage_uri=stored.uri,
                             metadata_json={
                                 "source": "RCSB PDB",
-                                "pdb_id": case["pdb_id"],
+                                "pdb_id": case_spec["pdb_id"],
                             },
                         )
                         session.add(artifact)
@@ -278,14 +292,14 @@ def submit_rosetta_validation(
                             )
                         )
                 workflow_id = (
-                    f"rosetta-validation-{suite['suite_id']}-{case['pdb_id']}-{run.id}"
+                    f"rosetta-validation-{suite['suite_id']}-{case_spec['pdb_id']}-{run.id}"
                 )
                 await temporal.start_workflow(
                     "RosettaValidationWorkflow",
                     {
                         "run_id": str(run.id),
                         "spec": spec.model_dump(mode="json"),
-                        "validation_case": case,
+                        "validation_case": case_spec,
                         "structure": {
                             "candidate": {
                                 "id": str(candidate.id),
@@ -294,7 +308,10 @@ def submit_rosetta_validation(
                             "tool_call_id": str(source_call.id),
                             "provenance": {
                                 "engine_artifacts": [
-                                    {"path": f"{case['pdb_id']}.pdb", **asdict(stored)}
+                                    {
+                                        "path": f"{case_spec['pdb_id']}.pdb",
+                                        **asdict(stored),
+                                    }
                                 ]
                             },
                         },
@@ -304,7 +321,7 @@ def submit_rosetta_validation(
                 )
                 staged.append(
                     {
-                        "pdb_id": case["pdb_id"],
+                        "pdb_id": case_spec["pdb_id"],
                         "run_id": str(run.id),
                         "candidate_id": str(candidate.id),
                         "source_tool_call_id": str(source_call.id),
