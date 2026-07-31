@@ -187,6 +187,9 @@ def submit_rosetta_validation(
                     rosetta_enabled=True,
                     rosetta_top_k=1,
                     rosetta_nstruct=production_nstruct,
+                    rosetta_parallel_decoys=int(
+                        suite["source_policy"].get("parallel_decoys", 1)
+                    ),
                     rosetta_pair_iptm_min=0,
                     rosetta_score_function=suite["source_policy"]["score_function"],
                 )

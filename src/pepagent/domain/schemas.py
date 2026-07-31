@@ -45,6 +45,7 @@ class ExperimentSpec(BaseModel):
     rosetta_enabled: bool = False
     rosetta_top_k: int = Field(default=1, ge=1)
     rosetta_nstruct: int = Field(default=200, ge=1)
+    rosetta_parallel_decoys: int = Field(default=1, ge=1, le=16)
     rosetta_pair_iptm_min: float = Field(default=0.5, ge=0, le=1)
     rosetta_score_function: str = "ref2015"
     affinity_evaluators: list[str] = Field(

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import json
 import statistics
 import subprocess
@@ -14,7 +15,7 @@ from pepagent.structures.pdb import (
     prepare_protein_peptide_pdb,
 )
 
-ADAPTER_VERSION = "pepagent-pyrosetta-flexpepdock-v1"
+ADAPTER_VERSION = "pepagent-pyrosetta-flexpepdock-v2"
 
 
 def _canonicalize_dumped_pdb(path: Path) -> None:
@@ -133,9 +134,12 @@ def _run(args: argparse.Namespace) -> None:
     receptor_chains = [str(chain) for chain in request["receptor_chains"]]
     peptide_chain = str(request["peptide_chain"])
     nstruct = int(request.get("nstruct", 20))
+    parallel_decoys = int(request.get("parallel_decoys", 1))
     seed = int(request["seed"])
     if nstruct < 1:
         raise ValueError("nstruct must be positive")
+    if parallel_decoys < 1:
+        raise ValueError("parallel_decoys must be positive")
 
     args.work_dir.mkdir(parents=True, exist_ok=True)
     prepared = args.work_dir / "input.prepared.pdb"
@@ -170,8 +174,7 @@ def _run(args: argparse.Namespace) -> None:
         ]
     )
 
-    decoys: list[dict[str, Any]] = []
-    for index in range(nstruct):
+    def refine_one(index: int) -> dict[str, Any]:
         decoy_seed = seed + index + 1
         decoy_path = args.work_dir / "decoys" / f"decoy_{index + 1:04d}.pdb"
         metric_path = args.work_dir / "decoys" / f"decoy_{index + 1:04d}.json"
@@ -203,7 +206,12 @@ def _run(args: argparse.Namespace) -> None:
                 ),
             }
         )
-        decoys.append(metrics)
+        return metrics
+
+    with concurrent.futures.ThreadPoolExecutor(
+        max_workers=min(parallel_decoys, nstruct)
+    ) as executor:
+        decoys = list(executor.map(refine_one, range(nstruct)))
 
     ranked_by_dg = sorted(
         decoys,
@@ -236,6 +244,7 @@ def _run(args: argparse.Namespace) -> None:
         "interface": f"{''.join(receptor_chains)}_{peptide_chain}",
         "seed": seed,
         "nstruct": nstruct,
+        "parallel_decoys": parallel_decoys,
         "pack_input": False,
         "pack_separated": True,
         "input_sha256": sha256_file(args.input_structure),

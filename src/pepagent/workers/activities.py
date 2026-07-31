@@ -582,6 +582,9 @@ async def score_rosetta_complex(request: dict[str, Any]) -> dict[str, Any]:
         "receptor_chains": receptor_chains,
         "peptide_chain": peptide_chain,
         "nstruct": int(spec.get("rosetta_nstruct", 200)),
+        "parallel_decoys": int(
+            spec.get("rosetta_parallel_decoys", 4 if validation_case else 1)
+        ),
         "seed": int(spec["seed"]),
         "score_function": spec.get("rosetta_score_function", "ref2015"),
         "source_structure_sha256": coordinate_artifact["sha256"],
@@ -615,6 +618,7 @@ async def score_rosetta_complex(request: dict[str, Any]) -> dict[str, Any]:
         "parameters": {
             "score_function": payload["score_function"],
             "nstruct": payload["nstruct"],
+            "parallel_decoys": payload["parallel_decoys"],
             "prepack": True,
             "pack_input": False,
             "pack_separated": True,
