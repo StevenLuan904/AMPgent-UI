@@ -197,6 +197,12 @@ def submit_rosetta_validation(
             temporary_root = Path(temporary)
             for case_spec in selected_cases:
                 source_database = case_spec.get("source_database", "RCSB PDB")
+                if source_database == "RCSB PDB":
+                    retrieval_tool = "rcsb-pdb-retrieval"
+                    retrieval_adapter = "pepagent-rcsb-pdb-retrieval-v1"
+                else:
+                    retrieval_tool = "pdb-coordinate-retrieval"
+                    retrieval_adapter = "pepagent-pdb-coordinate-retrieval-v1"
                 response = await asyncio.to_thread(
                     httpx.get, case_spec["source_uri"], timeout=60.0
                 )
@@ -281,13 +287,13 @@ def submit_rosetta_validation(
                     )
                     retrieval_environment = sha256_json(
                         {
-                            "adapter": "pepagent-rcsb-pdb-retrieval-v1",
+                            "adapter": retrieval_adapter,
                             "httpx": importlib.metadata.version("httpx"),
                         }
                     )
                     source_call = await repository.record_completed_tool_call(
                         run.id,
-                        "rcsb-pdb-retrieval",
+                        retrieval_tool,
                         "v1",
                         retrieval_environment,
                         {
