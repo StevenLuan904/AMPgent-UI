@@ -119,3 +119,64 @@ class PeptideDesignWorkflow:
                 retry_policy=retry,
             )
             raise
+
+
+@workflow.defn(name="RosettaValidationWorkflow")
+class RosettaValidationWorkflow:
+    """Durable public-complex validation without invoking the generation lane."""
+
+    @workflow.run
+    async def run(self, request: dict[str, Any]) -> dict[str, Any]:
+        retry = RetryPolicy(
+            initial_interval=timedelta(seconds=10),
+            backoff_coefficient=2.0,
+            maximum_interval=timedelta(minutes=10),
+            maximum_attempts=5,
+        )
+        try:
+            await workflow.execute_activity(
+                "mark_run_started",
+                {"run_id": request["run_id"], "workflow_id": workflow.info().workflow_id},
+                task_queue="pepagent-control",
+                start_to_close_timeout=timedelta(minutes=2),
+                retry_policy=retry,
+            )
+            result = await workflow.execute_activity(
+                "score_rosetta_complex",
+                request,
+                task_queue="pepagent-cpu-rosetta",
+                start_to_close_timeout=timedelta(hours=72),
+                heartbeat_timeout=timedelta(minutes=5),
+                retry_policy=retry,
+            )
+            result = await workflow.execute_activity(
+                "persist_rosetta_evidence",
+                {"run_id": request["run_id"], "rosetta_result": result},
+                task_queue="pepagent-control",
+                start_to_close_timeout=timedelta(hours=2),
+                retry_policy=retry,
+            )
+            return await workflow.execute_activity(
+                "finalize_run",
+                {
+                    "run_id": request["run_id"],
+                    "structures": [],
+                    "rosetta_results": [result],
+                },
+                task_queue="pepagent-control",
+                start_to_close_timeout=timedelta(minutes=5),
+                retry_policy=retry,
+            )
+        except Exception as error:
+            await workflow.execute_activity(
+                "mark_run_failed",
+                {
+                    "run_id": request["run_id"],
+                    "error_type": type(error).__name__,
+                    "error": str(error),
+                },
+                task_queue="pepagent-control",
+                start_to_close_timeout=timedelta(minutes=5),
+                retry_policy=retry,
+            )
+            raise

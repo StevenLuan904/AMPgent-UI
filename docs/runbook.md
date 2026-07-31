@@ -51,6 +51,14 @@ gpu-synth -RemoteCommand 'bash /sdd_data/pepagent/platform/current/deploy/remote
 gpu-synth -RemoteCommand 'bash /sdd_data/pepagent/platform/current/deploy/remote/start_worker_synth.sh boltz2 6'
 ```
 
+Bootstrap and launch the Rosetta CPU worker only from the pinned quarterly wheel. The bootstrap
+script rejects a wheel whose SHA-256 differs from the committed release identity.
+
+```powershell
+gpu-synth -RemoteCommand 'bash /sdd_data/pepagent/platform/current/deploy/remote/bootstrap_pyrosetta_synth.sh'
+gpu-synth -RemoteCommand 'bash /sdd_data/pepagent/platform/current/deploy/remote/start_worker_synth.sh rosetta cpu'
+```
+
 ## Submit and inspect
 
 ```powershell

@@ -6,6 +6,52 @@ from pathlib import Path
 import numpy as np
 
 BACKBONE_ATOMS = frozenset({"N", "CA", "C", "O"})
+STANDARD_RESIDUES = {
+    "ALA": "A",
+    "ARG": "R",
+    "ASN": "N",
+    "ASP": "D",
+    "CYS": "C",
+    "GLN": "Q",
+    "GLU": "E",
+    "GLY": "G",
+    "HIS": "H",
+    "ILE": "I",
+    "LEU": "L",
+    "LYS": "K",
+    "MET": "M",
+    "PHE": "F",
+    "PRO": "P",
+    "SER": "S",
+    "THR": "T",
+    "TRP": "W",
+    "TYR": "Y",
+    "VAL": "V",
+}
+
+
+def atom_chain_sequence(source: Path, chains: list[str]) -> str:
+    """Return the modeled standard-residue sequence in first-model ATOM order."""
+    requested = set(chains)
+    residues: list[str] = []
+    seen: set[tuple[str, str, str]] = set()
+    for line in source.read_text(encoding="ascii", errors="replace").splitlines():
+        record = line[:6].strip()
+        if record == "ENDMDL":
+            break
+        if record != "ATOM" or len(line) < 27 or line[21:22] not in requested:
+            continue
+        key = (line[21:22], line[22:26].strip(), line[26:27])
+        if key in seen:
+            continue
+        residue = line[17:20].strip()
+        if residue not in STANDARD_RESIDUES:
+            raise ValueError(f"non-standard modeled residue {residue!r} at {key}")
+        seen.add(key)
+        residues.append(STANDARD_RESIDUES[residue])
+    if not residues:
+        raise ValueError(f"chains contain no modeled standard residues: {chains}")
+    return "".join(residues)
 
 
 def prepare_protein_peptide_pdb(

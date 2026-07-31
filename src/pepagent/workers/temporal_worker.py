@@ -16,7 +16,7 @@ from pepagent.workers.activities import (
     score_rosetta_complex,
     select_rosetta_inputs,
 )
-from pepagent.workflows.design import PeptideDesignWorkflow
+from pepagent.workflows.design import PeptideDesignWorkflow, RosettaValidationWorkflow
 
 ROLE_CONFIG = {
     "control": (
@@ -30,7 +30,7 @@ ROLE_CONFIG = {
             persist_rosetta_evidence,
             finalize_run,
         ],
-        [PeptideDesignWorkflow],
+        [PeptideDesignWorkflow, RosettaValidationWorkflow],
     ),
     "pepmlm": ("pepagent-gpu-pepmlm", [generate_with_pepmlm], []),
     "boltz2": ("pepagent-gpu-boltz2", [predict_boltz2_complex], []),

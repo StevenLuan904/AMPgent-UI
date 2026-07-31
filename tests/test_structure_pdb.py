@@ -3,6 +3,7 @@ from pathlib import Path
 import numpy as np
 
 from pepagent.structures.pdb import (
+    atom_chain_sequence,
     peptide_backbone_rmsd_after_receptor_alignment,
     prepare_protein_peptide_pdb,
 )
@@ -67,3 +68,21 @@ def test_peptide_rmsd_aligns_on_receptor(tmp_path: Path) -> None:
     model.write_text("\n".join(model_atoms) + "\n", encoding="ascii")
     rmsd = peptide_backbone_rmsd_after_receptor_alignment(model, native, ["A"], "B")
     assert rmsd < 1e-6
+
+
+def test_atom_chain_sequence_uses_each_modeled_residue_once(tmp_path: Path) -> None:
+    source = tmp_path / "source.pdb"
+    source.write_text(
+        "\n".join(
+            [
+                _atom(1, "N", 1, "A", (0, 0, 0)),
+                _atom(2, "CA", 1, "A", (1, 0, 0)),
+                _atom(3, "N", 2, "A", (2, 0, 0)),
+                _atom(4, "N", 1, "B", (3, 0, 0)),
+            ]
+        ),
+        encoding="ascii",
+    )
+
+    assert atom_chain_sequence(source, ["A"]) == "AA"
+    assert atom_chain_sequence(source, ["B"]) == "A"

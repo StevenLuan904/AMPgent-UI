@@ -561,7 +561,9 @@ async def score_rosetta_complex(request: dict[str, Any]) -> dict[str, Any]:
     structure = request["structure"]
     candidate = structure["candidate"]
     spec = request["spec"]
-    work_dir = Path(settings.work_root) / request["run_id"] / "rosetta" / candidate["id"]
+    validation_case = request.get("validation_case")
+    lane = "rosetta-validation" if validation_case else "rosetta"
+    work_dir = Path(settings.work_root) / request["run_id"] / lane / candidate["id"]
     coordinate_artifact = _select_boltz_structure_artifact(structure)
     coordinate_bytes = await asyncio.to_thread(
         ContentAddressedObjectStore().get_bytes, coordinate_artifact["uri"]
@@ -572,15 +574,22 @@ async def score_rosetta_complex(request: dict[str, Any]) -> dict[str, Any]:
     input_pdb = work_dir / "boltz-input.pdb"
     await asyncio.to_thread(_convert_structure_to_pdb, source_path, input_pdb)
 
+    receptor_chains = (
+        list(validation_case["receptor_chains"]) if validation_case else ["A"]
+    )
+    peptide_chain = validation_case["peptide_chain"] if validation_case else "B"
     payload = {
-        "receptor_chains": ["A"],
-        "peptide_chain": "B",
+        "receptor_chains": receptor_chains,
+        "peptide_chain": peptide_chain,
         "nstruct": int(spec.get("rosetta_nstruct", 200)),
         "seed": int(spec["seed"]),
         "score_function": spec.get("rosetta_score_function", "ref2015"),
         "source_structure_sha256": coordinate_artifact["sha256"],
         "source_tool_call_id": structure["tool_call_id"],
     }
+    if validation_case:
+        payload["native_structure"] = str(input_pdb)
+        payload["validation_case"] = validation_case
     engine_dir = work_dir / "engine"
     result = await _run_json_cli(
         "pepagent.model_workers.rosetta_cli",
@@ -610,12 +619,18 @@ async def score_rosetta_complex(request: dict[str, Any]) -> dict[str, Any]:
             "pack_input": False,
             "pack_separated": True,
             "primary_aggregation": result["primary_aggregation"],
+            "validation_case": validation_case,
         },
         "rosetta": result,
         "provenance": {
             "tool_name": "pyrosetta-flexpepdock-interface-analyzer",
             "tool_version": importlib.metadata.version("pyrosetta"),
-            "model_uri": "https://west.rosettacommons.org/pyrosetta/quarterly/release",
+            "model_uri": (
+                "https://west.rosettacommons.org/pyrosetta/quarterly/release/"
+                "pyrosetta-2026.29%2Breleasequarterly.80a0635615-"
+                "cp311-cp311-linux_x86_64.whl"
+            ),
+            "weights_sha256": settings.pyrosetta_wheel_sha256,
             "environment_sha256": environment_sha256,
             "environment": environment,
             "attempt": activity.info().attempt,
@@ -644,6 +659,7 @@ async def persist_rosetta_evidence(request: dict[str, Any]) -> dict[str, Any]:
             result["input"],
             result["parameters"],
             result["rosetta"],
+            weights_sha256=provenance["weights_sha256"],
             model_uri=provenance["model_uri"],
             random_seed=result["input"]["seed"],
             attempt=provenance["attempt"],
