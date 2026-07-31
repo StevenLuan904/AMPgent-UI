@@ -70,9 +70,21 @@ artifact links representing 405 unique content hashes. Its raw output SHA-256 is
 `2d771d16a44bae38f0973ae60d9236df656650affedea1fb58832eb17fa6ec89`; its environment SHA-256 is
 `61dd0ef4792617951ad1d47040b2178ed1aeb90629dae1ec5b9d224d30421c6a`.
 
-Two further durable native-start cases are running with 200 independently seeded decoys:
+The second complete case is 1NVR, run
+`6e5405f4-b1c1-4087-88be-dfdb5e76e346`. It also produced 200/200 valid decoys and completed as
+`succeeded`. Primary top-ten median dG was `-26.8628380275 REU`; the all-decoy median and minimum
+were `-25.2700130881` and `-28.9568627008 REU`. Peptide backbone RMSD had
+minimum/median/maximum `0.3739/0.5477/0.9344 Å`: every decoy remained within 1 Å, the best
+`reweighted_sc` decoy was at `0.5665 Å`, and the top-ten RMSD median was `0.5073 Å`. The
+reweighted-score/RMSD Spearman coefficient was only `0.3529`, which is interpreted with the narrow
+all-near-native RMSD range rather than presented as a broad docking-discrimination claim.
 
-- 1NVR: `6e5405f4-b1c1-4087-88be-dfdb5e76e346`;
+The 1NVR record contains seven evaluations, 406 artifact links (405 unique hashes, 79,072,545
+linked bytes), and the explicit retrieval-to-refinement dependency. Its raw output SHA-256 is
+`f1ce0aa60e31a623df37e2d6dc4f76372b210431091437264cefaddcd926021e`.
+
+One further durable native-start case is running with 200 independently seeded decoys:
+
 - Rosetta's official 1ER8 integration-test input:
   `5a121752-b844-4278-bfc5-a3149f4d1a1b`.
 
