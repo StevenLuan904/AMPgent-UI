@@ -10,6 +10,18 @@ $env:PEPAGENT_WORKER_ROLE='control'
 .\.venv-local\Scripts\python -m pepagent.workers.temporal_worker
 ```
 
+Import the versioned pocket catalog after migrations. The command is idempotent: changed source
+records create new immutable evidence rows, while an unchanged catalog does not duplicate them.
+
+```powershell
+.\.venv-local\Scripts\python -m pepagent.cli import-pockets config\pockets\mvp_v2_pocket_catalog.yaml
+Invoke-RestMethod http://127.0.0.1:8080/v1/targets/by-accession/P0A9G6/pockets
+```
+
+Only records with `conditioning_enabled=true` may supply Boltz pocket constraints. Evidence grade
+and conditioning priority are separate fields; a high-grade composite or payload interface can
+still be excluded.
+
 Run the Temporal and object-store reverse tunnels in separate supervised terminals:
 
 ```powershell

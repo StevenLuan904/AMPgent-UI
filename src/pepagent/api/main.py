@@ -21,6 +21,9 @@ from pepagent.db.models import (
     LifecycleEvent,
     ModelRelease,
     ModelReleaseArtifact,
+    PocketEvidence,
+    Target,
+    TargetPocket,
     ToolCall,
 )
 from pepagent.db.repository import ExperimentRepository
@@ -261,6 +264,85 @@ async def list_model_releases(session: SessionDep) -> list[dict]:
             }
         )
     return payload
+
+
+@app.get("/v1/targets/by-accession/{accession}/pockets")
+async def get_target_pockets(accession: str, session: SessionDep) -> dict:
+    target = await session.scalar(select(Target).where(Target.accession == accession))
+    if target is None:
+        raise HTTPException(status_code=404, detail="target not found")
+    pockets = list(
+        await session.scalars(
+            select(TargetPocket)
+            .where(TargetPocket.target_id == target.id)
+            .order_by(
+                TargetPocket.conditioning_enabled.desc(),
+                TargetPocket.evidence_score.desc(),
+                TargetPocket.pocket_key,
+            )
+        )
+    )
+    payload: list[dict] = []
+    for pocket in pockets:
+        evidence = list(
+            await session.scalars(
+                select(PocketEvidence)
+                .where(PocketEvidence.pocket_id == pocket.id)
+                .order_by(PocketEvidence.confidence.desc(), PocketEvidence.created_at)
+            )
+        )
+        payload.append(
+            {
+                "id": pocket.id,
+                "key": pocket.pocket_key,
+                "name": pocket.name,
+                "type": pocket.pocket_type,
+                "functional_role": pocket.functional_role,
+                "status": pocket.status,
+                "evidence_grade": pocket.evidence_grade,
+                "evidence_score": pocket.evidence_score,
+                "conditioning_priority": pocket.conditioning_priority,
+                "conditioning_enabled": pocket.conditioning_enabled,
+                "residue_indices": pocket.residue_indices,
+                "context": pocket.context_json,
+                "limitations": pocket.limitations_json,
+                "evidence": [
+                    {
+                        "id": item.id,
+                        "kind": item.evidence_kind,
+                        "grade": item.evidence_grade,
+                        "source_type": item.source_type,
+                        "source_uri": item.source_uri,
+                        "source_accession": item.source_accession,
+                        "source_version": item.source_version,
+                        "source_revision_date": item.source_revision_date,
+                        "retrieved_at": item.retrieved_at,
+                        "chain_ids": item.chain_ids,
+                        "source_residue_indices": item.source_residue_indices,
+                        "target_residue_indices": item.residue_indices,
+                        "confidence": item.confidence,
+                        "experimental_method": item.experimental_method,
+                        "resolution_angstrom": item.resolution_angstrom,
+                        "mapping": item.mapping_json,
+                        "limitations": item.limitations_json,
+                        "details": item.evidence_json,
+                        "evidence_sha256": item.evidence_sha256,
+                    }
+                    for item in evidence
+                ],
+            }
+        )
+    return {
+        "target": {
+            "id": target.id,
+            "name": target.name,
+            "organism": target.organism,
+            "accession": target.accession,
+            "sequence_sha256": target.sequence_sha256,
+            "metadata": target.metadata_json,
+        },
+        "pockets": payload,
+    }
 
 
 @app.post(

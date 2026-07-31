@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class TargetSpec(BaseModel):
@@ -110,3 +110,101 @@ class AffinityPrediction(BaseModel):
     out_of_domain: bool = False
     limitations: list[str] = Field(default_factory=list)
     raw: dict[str, Any] = Field(default_factory=dict)
+
+
+class PocketEvidenceSpec(BaseModel):
+    evidence_kind: str
+    evidence_grade: str
+    source_type: str
+    source_uri: str
+    source_accession: str | None = None
+    source_version: str | None = None
+    source_revision_date: datetime | None = None
+    retrieved_at: datetime
+    chain_ids: list[str] = Field(default_factory=list)
+    source_residue_indices: list[int] = Field(default_factory=list)
+    target_residue_indices: list[int] = Field(default_factory=list)
+    confidence: float = Field(ge=0, le=1)
+    experimental_method: str | None = None
+    resolution_angstrom: float | None = Field(default=None, gt=0)
+    mapping: dict[str, Any] = Field(default_factory=dict)
+    limitations: list[str] = Field(default_factory=list)
+    details: dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator("evidence_grade")
+    @classmethod
+    def validate_evidence_grade(cls, value: str) -> str:
+        if value not in {"A", "B", "C", "D", "U"}:
+            raise ValueError("evidence_grade must be one of A, B, C, D, U")
+        return value
+
+
+class TargetPocketSpec(BaseModel):
+    key: str
+    name: str
+    pocket_type: str
+    functional_role: str
+    status: str
+    evidence_grade: str
+    evidence_score: float = Field(ge=0, le=1)
+    conditioning_priority: str
+    conditioning_enabled: bool
+    residue_indices: list[int] = Field(default_factory=list)
+    context: dict[str, Any] = Field(default_factory=dict)
+    limitations: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    evidence: list[PocketEvidenceSpec] = Field(default_factory=list)
+
+    @field_validator("evidence_grade")
+    @classmethod
+    def validate_evidence_grade(cls, value: str) -> str:
+        if value not in {"A", "B", "C", "D", "U"}:
+            raise ValueError("evidence_grade must be one of A, B, C, D, U")
+        return value
+
+
+class PocketCatalogTargetSpec(BaseModel):
+    name: str
+    organism: str
+    accession: str
+    sequence: str
+    role: str
+    source_database: str
+    source_uri: str
+    source_version: str
+    source_retrieved_at: datetime
+    source_document_sha256: str | None = None
+    pockets: list[TargetPocketSpec]
+
+    @field_validator("sequence")
+    @classmethod
+    def normalize_sequence(cls, value: str) -> str:
+        return TargetSpec.normalize_sequence(value)
+
+    @model_validator(mode="after")
+    def validate_residue_numbering(self) -> "PocketCatalogTargetSpec":
+        length = len(self.sequence)
+        for pocket in self.pockets:
+            invalid = [index for index in pocket.residue_indices if index < 1 or index > length]
+            if invalid:
+                raise ValueError(
+                    f"{self.accession}/{pocket.key} has residues outside 1..{length}: {invalid}"
+                )
+            for evidence in pocket.evidence:
+                invalid = [
+                    index
+                    for index in evidence.target_residue_indices
+                    if index < 1 or index > length
+                ]
+                if invalid:
+                    raise ValueError(
+                        f"{self.accession}/{pocket.key} evidence has invalid target residues: "
+                        f"{invalid}"
+                    )
+        return self
+
+
+class PocketCatalogSpec(BaseModel):
+    catalog_version: str
+    grading_rubric: dict[str, str]
+    targets: list[PocketCatalogTargetSpec]

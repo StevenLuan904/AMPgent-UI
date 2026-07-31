@@ -6,7 +6,9 @@ import httpx
 import typer
 import yaml
 
-from pepagent.domain.schemas import ExperimentSpec
+from pepagent.db.session import SessionFactory
+from pepagent.domain.schemas import ExperimentSpec, PocketCatalogSpec
+from pepagent.pockets.catalog import import_pocket_catalog
 from pepagent.registry.service import register_local_model_release
 from pepagent.settings import get_settings
 
@@ -91,6 +93,19 @@ def register_boltz2(release_dir: Path) -> None:
             admission_status="admitted",
         )
     )
+    typer.echo(json.dumps(result, ensure_ascii=False, indent=2))
+
+
+@app.command("import-pockets")
+def import_pockets(catalog_path: Path) -> None:
+    """Import a versioned, multi-source target-pocket evidence catalog."""
+    catalog = PocketCatalogSpec.model_validate(_load_mapping(catalog_path))
+
+    async def _run() -> dict:
+        async with SessionFactory() as session, session.begin():
+            return await import_pocket_catalog(session, catalog)
+
+    result = asyncio.run(_run())
     typer.echo(json.dumps(result, ensure_ascii=False, indent=2))
 
 

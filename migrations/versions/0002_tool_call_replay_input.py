@@ -11,6 +11,9 @@ depends_on = None
 
 
 def upgrade() -> None:
+    columns = {column["name"] for column in sa.inspect(op.get_bind()).get_columns("tool_calls")}
+    if "input_json" in columns:
+        return
     op.add_column(
         "tool_calls",
         sa.Column(

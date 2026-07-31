@@ -1,0 +1,465 @@
+catalog_version: "2026-07-31.1"
+grading_rubric:
+  A: "Direct experimental evidence on the exact target sequence or exact construct."
+  B: "Experimental evidence transferred from a near-identical homolog/construct with explicit residue mapping."
+  C: "Experimental interface evidence transferred across species or an incomplete mapping."
+  D: "Computational prediction only."
+  U: "No defensible pocket or interface assignment."
+
+targets:
+  - name: "Isocitrate lyase AceA"
+    organism: "Escherichia coli K-12"
+    accession: "P0A9G6"
+    role: "antibiotic_target"
+    source_database: "UniProtKB/Swiss-Prot"
+    source_uri: "https://www.uniprot.org/uniprotkb/P0A9G6/entry"
+    source_version: "entry 145; sequence 1"
+    source_retrieved_at: "2026-07-31T00:00:00Z"
+    sequence: >-
+      MKTRTQQIEELQKEWTQPRWEGITRPYSAEDVVKLRGSVNPECTLAQLGAAKMWRLLHGESKKGYINSLGALTGGQALQQAKAGIEAVYLSGWQVAADANLAASMYPDQSLYPANSVPAVVERINNTFRRADQIQWSAGIEPGDPRYVDYFLPIVADAEAGFGGVLNAFELMKAMIEAGAAAVHFEDQLASVKKCGHMGGKVLVPTQEAIQKLVAARLAADVTGVPTLLVARTDADAADLITSDCDPYDSEFITGERTSEGFFRTHAGIEQAISRGLAYAPYADLVWCETSTPDLELARRFAQAIHAKYPGKLLAYNCSPSFNWQKNLDDKTIASFQQQLSDMGYKFQFITLAGIHSMWFNMFDLANAYAQGEGMKHYVEKVQQPEFAAAKDGYTFVSHQQEVGTGYFDKVTTIIQGGTSSVTALTGSTEESQF
+    pockets:
+      - key: "catalytic_mg_isocitrate_site"
+        name: "AceA catalytic Mg2+/isocitrate site"
+        pocket_type: "enzyme_active_site"
+        functional_role: "Cleaves isocitrate into succinate and glyoxylate; Cys195 is catalytic."
+        status: "experimentally_supported_open_state"
+        evidence_grade: "A"
+        evidence_score: 0.91
+        conditioning_priority: "primary"
+        conditioning_enabled: true
+        residue_indices: [89, 91, 92, 93, 108, 157, 159, 184, 186, 193, 194, 195, 196, 197, 232, 287, 289, 317, 318, 319, 320, 321, 351, 352, 356]
+        context:
+          oligomeric_state: "tetramer"
+          preferred_structure: "1IGW biological assembly"
+          required_components: ["Mg2+"]
+          gating_loop: "catalytic loop around residues 184-197 is open/disordered in 1IGW"
+        limitations:
+          - "1IGW contains the engineered A219C mutation."
+          - "The catalytic loop is not captured in a closed substrate-bound E. coli state."
+          - "A short peptide may not enter the narrow catalytic site without steric conflict."
+        evidence:
+          - evidence_kind: "exact_target_liganded_structure"
+            evidence_grade: "A"
+            source_type: "RCSB_PDB"
+            source_uri: "https://www.rcsb.org/structure/1IGW"
+            source_accession: "1IGW"
+            source_version: "2.0"
+            source_revision_date: "2023-11-15T00:00:00Z"
+            retrieved_at: "2026-07-31T00:00:00Z"
+            chain_ids: ["A", "B", "C", "D"]
+            source_residue_indices: [89, 91, 92, 93, 108, 157, 159, 184, 186, 232, 287, 289, 317, 351, 352]
+            target_residue_indices: [89, 91, 92, 93, 108, 157, 159, 184, 186, 232, 287, 289, 317, 351, 352]
+            confidence: 0.88
+            experimental_method: "X-RAY DIFFRACTION"
+            resolution_angstrom: 2.1
+            mapping:
+              identity: 1.0
+              rule: "PDB auth residue equals P0A9G6 residue"
+              ligand_contacts_cutoff_angstrom: 5.0
+              ligands: ["MG", "PYR"]
+            limitations:
+              - "A219C engineered mutation."
+              - "Pyruvate/Mg contacts do not fully resolve the mobile catalytic loop."
+            details:
+              title: "Crystal Structure of the Isocitrate Lyase from the A219C mutant of Escherichia coli"
+              pdb_contact_method: "RCSB ModelServer residueInteraction"
+          - evidence_kind: "exact_target_curated_function_and_mutagenesis"
+            evidence_grade: "A"
+            source_type: "UniProtKB_Swiss-Prot"
+            source_uri: "https://www.uniprot.org/uniprotkb/P0A9G6/entry"
+            source_accession: "P0A9G6"
+            source_version: "entry 145; sequence 1"
+            source_revision_date: "2026-06-10T00:00:00Z"
+            retrieved_at: "2026-07-31T00:00:00Z"
+            source_residue_indices: [91, 92, 93, 157, 195, 196, 197, 232, 317, 318, 319, 320, 321, 351]
+            target_residue_indices: [91, 92, 93, 157, 195, 196, 197, 232, 317, 318, 319, 320, 321, 351]
+            confidence: 0.96
+            mapping:
+              identity: 1.0
+              evidence_codes: ["ECO:0000269", "ECO:0000250"]
+            details:
+              catalytic_residue: "Cys195 proton acceptor; mutation causes a large activity decrease"
+              supporting_pubmed: ["7826335", "11526312"]
+
+  - name: "DNA gyrase subunit A"
+    organism: "Escherichia coli K-12 MG1655"
+    accession: "NP_416734.1"
+    role: "antibiotic_target"
+    source_database: "NCBI RefSeq"
+    source_uri: "https://www.ncbi.nlm.nih.gov/protein/NP_416734.1"
+    source_version: "NP_416734.1"
+    source_retrieved_at: "2026-07-31T00:00:00Z"
+    source_document_sha256: "2a6133bcf634d02e77dfeaa10f842bd83787969297b614f6fbe2432e171d1b54"
+    sequence: >-
+      MSDLAREITPVNIEEELKSSYLDYAMSVIVGRALPDVRDGLKPVHRRVLYAMNVLGNDWNKAYKKSARVVGDVIGKYHPHGDSAVYDTIVRMAQPFSLRYMLVDGQGNFGSIDGDSAAAMRYTEIRLAKIAHELMADLEKETVDFVDNYDGTEKIPDVMPTKIPNLLVNGSSGIAVGMATNIPPHNLTEVINGCLAYIDDEDISIEGLMEHIPGPDFPTAAIINGRRGIEEAYRTGRGKVYIRARAEVEVDAKTGRETIIVHEIPYQVNKARLIEKIAELVKEKRVEGISALRDESDKDGMRIVIEVKRDAVGEVVLNNLYSQTQLQVSFGINMVALHHGQPKIMNLKDIIAAFVRHRREVVTRRTIFELRKARDRAHILEALAVALANIDPIIELIRHAPTPAEAKTALVANPWQLGNVAAMLERAGDDAARPEWLEPEFGVRDGLYYLTEQQAQAILDLRLQKLTGLEHEKLLDEYKELLDQIAELLRILGSADRLMEVIREELELVREQFGDKRRTEITANSADINLEDLITQEDVVVTLSHQGYVKYQPLSEYEAQRRGGKGKSAARIKEEDFIDRLLVANTHDHILCFSSRGRVYSMKVYQLPEATRGARGRPIVNLLPLEQDERITAILPVTEFEEGVKVFMATANGTVKKTVLTEFNRLRTAGKVAIKLVDGDELIGVDLTSGEDEVMLFSAEGKVVRFKESSVRAMGCNTTGVRGIRLGEGDKVVSLIVPRGDGAILTATQNGYGKRTAVAEYPTKSRATKGVISIKVTERNGLVVGAVQVDDCDQIMMITDAGTLVRTRVSEISIVGRNTQGVILIRTAEDENVVGLQRVAEPVDEEDLDTIDGSAAEGDDEIAPEVDVDDEPEEE
+    pockets:
+      - key: "lei800_allosteric_dna_surface"
+        name: "LEI-800 GyrA allosteric pocket"
+        pocket_type: "allosteric_surface_pocket"
+        functional_role: "A horseshoe-like hydrophobic pocket on the DNA-binding surface, distinct from fluoroquinolones."
+        status: "direct_experimental_complex"
+        evidence_grade: "A"
+        evidence_score: 0.94
+        conditioning_priority: "primary"
+        conditioning_enabled: true
+        residue_indices: [40, 41, 42, 45, 88, 91, 92, 96, 97, 98, 102, 111, 112, 165, 169, 170, 171, 172, 266, 267, 268, 269]
+        context:
+          preferred_structure: "8QQI biological assembly"
+          required_components: ["GyrA dimer", "GyrB", "DNA"]
+          pocket_is_composite: true
+        limitations:
+          - "The ligand also contacts DNA; monomer-only peptide prediction changes the pocket geometry."
+          - "Evidence is for a small hydrophobic molecule, not a peptide."
+        evidence:
+          - evidence_kind: "exact_sequence_region_liganded_structure"
+            evidence_grade: "A"
+            source_type: "RCSB_PDB"
+            source_uri: "https://www.rcsb.org/structure/8QQI"
+            source_accession: "8QQI"
+            source_version: "1.3"
+            source_revision_date: "2025-07-02T00:00:00Z"
+            retrieved_at: "2026-07-31T00:00:00Z"
+            chain_ids: ["A", "C"]
+            source_residue_indices: [40, 41, 42, 45, 88, 91, 92, 96, 97, 98, 102, 111, 112, 165, 169, 170, 171, 172, 266, 267, 268, 269]
+            target_residue_indices: [40, 41, 42, 45, 88, 91, 92, 96, 97, 98, 102, 111, 112, 165, 169, 170, 171, 172, 266, 267, 268, 269]
+            confidence: 0.94
+            experimental_method: "ELECTRON MICROSCOPY"
+            resolution_angstrom: 2.9
+            mapping:
+              identity_in_modeled_region: 1.0
+              modeled_target_region: [8, 524]
+              ligand_contacts_cutoff_angstrom: 5.0
+              ligand: "LRL (LEI-800)"
+            details:
+              title: "E. coli DNA gyrase in complex with substrate DNA and LEI-800"
+          - evidence_kind: "exact_target_curated_catalysis"
+            evidence_grade: "A"
+            source_type: "UniProtKB_Swiss-Prot"
+            source_uri: "https://www.uniprot.org/uniprotkb/P0AES4/entry"
+            source_accession: "P0AES4"
+            source_version: "entry 172; sequence 1"
+            source_revision_date: "2026-06-10T00:00:00Z"
+            retrieved_at: "2026-07-31T00:00:00Z"
+            source_residue_indices: [83, 122]
+            target_residue_indices: [83, 122]
+            confidence: 0.96
+            mapping:
+              refseq_equivalent: "NP_416734.1"
+            details:
+              active_site: "Tyr122 forms the phosphotyrosine DNA intermediate"
+              resistance_site: "Ser83 fluoroquinolone resistance"
+              supporting_pubmed: ["3031051", "1850970"]
+
+      - key: "fluoroquinolone_cleavage_complex"
+        name: "GyrA fluoroquinolone cleavage-complex site"
+        pocket_type: "composite_protein_dna_site"
+        functional_role: "Stabilizes the cleaved GyrA-DNA intermediate and blocks religation."
+        status: "direct_experimental_complex"
+        evidence_grade: "A"
+        evidence_score: 0.95
+        conditioning_priority: "secondary"
+        conditioning_enabled: false
+        residue_indices: [83, 87, 121, 122]
+        context:
+          preferred_structure: "9GGQ biological assembly"
+          required_components: ["GyrA dimer", "GyrB", "cleaved DNA", "Mg2+"]
+          pocket_is_composite: true
+        limitations:
+          - "This is not a pocket on an isolated GyrA monomer."
+          - "Peptide conditioning requires explicit DNA and both GyrA chains; current MVP input does not encode that complex."
+        evidence:
+          - evidence_kind: "exact_target_liganded_structure"
+            evidence_grade: "A"
+            source_type: "RCSB_PDB"
+            source_uri: "https://www.rcsb.org/structure/9GGQ"
+            source_accession: "9GGQ"
+            source_version: "1.3"
+            source_revision_date: "2025-07-02T00:00:00Z"
+            retrieved_at: "2026-07-31T00:00:00Z"
+            chain_ids: ["A", "C"]
+            source_residue_indices: [83, 121, 122]
+            target_residue_indices: [83, 121, 122]
+            confidence: 0.95
+            experimental_method: "ELECTRON MICROSCOPY"
+            resolution_angstrom: 2.6
+            mapping:
+              identity: 1.0
+              ligand_contacts_cutoff_angstrom: 5.0
+              ligand: "MFX"
+            details:
+              title: "E. coli gyrase holocomplex with cleaved DNA and moxifloxacin"
+
+  - name: "PBP2a family beta-lactam-resistant peptidoglycan transpeptidase, partial"
+    organism: "Staphylococcus epidermidis"
+    accession: "WP_308061015.1"
+    role: "antibiotic_target"
+    source_database: "NCBI RefSeq"
+    source_uri: "https://www.ncbi.nlm.nih.gov/protein/WP_308061015.1"
+    source_version: "WP_308061015.1"
+    source_retrieved_at: "2026-07-31T00:00:00Z"
+    source_document_sha256: "2a6133bcf634d02e77dfeaa10f842bd83787969297b614f6fbe2432e171d1b54"
+    sequence: >-
+      AIEDKNFKQVYKDSSYISKSDNGEVEMTERPIKIYNSLGVKDINIQDRKIKKVSKNKKRVDAQYKIKTNYGNIDRNVQFNFVKEDGMWKLDWDHSVIIPGMQKDQSIHIENLKSERGKILDRNNVELANTGTAYEIGIVPKNVSKKDYKAIAKELSISEDYIKQQMDQNWVQDDTFVPLKTVKKMDEYLSDFAKKFHLTTNETESRNYPLGKATSHLLGYVGPINSEELKQKEYKGYKDDAVIGKKGLEKLYDKKLQHEDGYRVTIVDDNSNTIAHTLIEKKKKDGKDIQLTIDAKVQKSIYNNMKNDYGSGTAIHPQTGELLALVSTPSYDVYPFMYGMSNEEYNKLTEDKKEPLLNKFQITTSPGSTQKILTAMIGLNNKTLDDKTSYKIDGKGWQKDKSWGGYNVTRYEVVNGNIDLKQAIESSDNIFFARVALELGSKKFEKGMKKLGVGEDIPSDYPFYNAQISNKNLDNEILLADSGYGQGEILINPVQILSIYSALENNGNINAPHLLKDTKNKVWKKNIISKENINLLTDGMQQVVNKTHKEDIYRSYANLIGKSGTAELKMKQGETGRQIGWFISYDKDNPNMMMAINVKDVQDKGMASYNAKISGKVYDELYENGNKKYDIDE
+    pockets:
+      - key: "ceftaroline_muramate_allosteric_site"
+        name: "PBP2a ceftaroline/muramate allosteric domain"
+        pocket_type: "allosteric_surface_site"
+        functional_role: "Binding propagates a long-range conformational change that opens the transpeptidase active site."
+        status: "near_identical_homolog_transfer"
+        evidence_grade: "B"
+        evidence_score: 0.88
+        conditioning_priority: "primary"
+        conditioning_enabled: true
+        residue_indices: [69, 70, 109, 110, 111, 112, 113, 114, 115, 116, 130, 131, 204, 205, 206, 221, 222, 223, 238, 240, 242, 258, 259, 262, 263, 271, 272, 273, 274, 337, 338]
+        context:
+          preferred_structure: "3ZFZ chain A/B"
+          mapping_rule: "WP target index = 3ZFZ auth residue - 35"
+          sequence_identity: 1.0
+          aligned_region: "WP 1-633 equals 3ZFZ construct sequence positions 10-642"
+        limitations:
+          - "Structure is S. aureus PBP2a, transferred to the sequence-identical S. epidermidis partial protein."
+          - "The allosteric region is broad and conformational; use an ensemble, not a single residue centroid."
+        evidence:
+          - evidence_kind: "near_identical_homolog_liganded_structure"
+            evidence_grade: "B"
+            source_type: "RCSB_PDB"
+            source_uri: "https://www.rcsb.org/structure/3ZFZ"
+            source_accession: "3ZFZ"
+            source_version: "1.4"
+            source_revision_date: "2024-10-16T00:00:00Z"
+            retrieved_at: "2026-07-31T00:00:00Z"
+            chain_ids: ["A", "B"]
+            source_residue_indices: [104, 105, 144, 145, 146, 147, 148, 149, 150, 151, 165, 166, 239, 240, 241, 256, 257, 258, 273, 275, 277, 293, 294, 297, 298, 306, 307, 308, 309, 372, 373]
+            target_residue_indices: [69, 70, 109, 110, 111, 112, 113, 114, 115, 116, 130, 131, 204, 205, 206, 221, 222, 223, 238, 240, 242, 258, 259, 262, 263, 271, 272, 273, 274, 337, 338]
+            confidence: 0.88
+            experimental_method: "X-RAY DIFFRACTION"
+            resolution_angstrom: 2.25
+            mapping:
+              source_species: "Staphylococcus aureus Mu50"
+              target_species: "Staphylococcus epidermidis"
+              identity_in_aligned_region: 1.0
+              target_index_offset_from_pdb_auth: -35
+              ligands: ["1W8 ceftaroline", "MUR"]
+              ligand_contacts_cutoff_angstrom: 5.0
+            details:
+              title: "Ceftaroline-acyl PBP2a with non-covalent ceftaroline and muramic acid"
+              mechanism: "allosteric site is approximately 60 Å from the active site"
+          - evidence_kind: "structure_guided_mutagenesis_and_mechanism"
+            evidence_grade: "B"
+            source_type: "peer_reviewed_article"
+            source_uri: "https://pmc.ncbi.nlm.nih.gov/articles/PMC3800995/"
+            source_accession: "PMCID:PMC3800995"
+            source_version: "PNAS 2013"
+            retrieved_at: "2026-07-31T00:00:00Z"
+            source_residue_indices: [104, 105, 146, 150, 239, 241, 273, 275, 294, 298]
+            target_residue_indices: [69, 70, 111, 115, 204, 206, 238, 240, 259, 263]
+            confidence: 0.86
+            mapping:
+              target_index_offset_from_source: -35
+            details:
+              title: "How allosteric control of PBP2a enables methicillin resistance and physiological function"
+
+      - key: "transpeptidase_active_site"
+        name: "PBP2a transpeptidase active site"
+        pocket_type: "enzyme_active_site"
+        functional_role: "Catalytic Ser403 performs DD-transpeptidation and is acylated by beta-lactams."
+        status: "near_identical_homolog_transfer"
+        evidence_grade: "B"
+        evidence_score: 0.9
+        conditioning_priority: "secondary"
+        conditioning_enabled: true
+        residue_indices: [365, 367, 368, 371, 411, 412, 426, 427, 429, 484, 485, 486, 547, 548, 562, 563, 564, 565, 566, 567, 578, 606, 607]
+        context:
+          preferred_structure: "3ZFZ"
+          catalytic_residue_target_number: 368
+          catalytic_residue_source_number: 403
+          mapping_rule: "WP target index = 3ZFZ auth residue - 35"
+        limitations:
+          - "The active site is normally closed/narrow and beta-lactam inhibition is covalent."
+          - "Rosetta scores cannot model the beta-lactam acylation mechanism as peptide affinity."
+        evidence:
+          - evidence_kind: "near_identical_homolog_covalent_complex"
+            evidence_grade: "B"
+            source_type: "RCSB_PDB"
+            source_uri: "https://www.rcsb.org/structure/3ZFZ"
+            source_accession: "3ZFZ"
+            source_version: "1.4"
+            source_revision_date: "2024-10-16T00:00:00Z"
+            retrieved_at: "2026-07-31T00:00:00Z"
+            chain_ids: ["A"]
+            source_residue_indices: [400, 402, 403, 406, 446, 447, 461, 462, 464, 519, 520, 521, 582, 583, 597, 598, 599, 600, 601, 602, 613, 641, 642]
+            target_residue_indices: [365, 367, 368, 371, 411, 412, 426, 427, 429, 484, 485, 486, 547, 548, 562, 563, 564, 565, 566, 567, 578, 606, 607]
+            confidence: 0.9
+            experimental_method: "X-RAY DIFFRACTION"
+            resolution_angstrom: 2.25
+            mapping:
+              identity_in_aligned_region: 1.0
+              target_index_offset_from_pdb_auth: -35
+              ligand: "AI8 covalently bound ceftaroline"
+              ligand_contacts_cutoff_angstrom: 5.0
+            details:
+              catalytic_residue: "source Ser403 maps to target Ser368"
+
+  - name: "Vascular endothelial growth factor A, long form"
+    organism: "Mus musculus"
+    accession: "NP_001020421.2"
+    role: "healing_payload"
+    source_database: "NCBI RefSeq"
+    source_uri: "https://www.ncbi.nlm.nih.gov/protein/NP_001020421.2"
+    source_version: "NP_001020421.2 from NM_001025250.3"
+    source_retrieved_at: "2026-07-31T00:00:00Z"
+    source_document_sha256: "2a6133bcf634d02e77dfeaa10f842bd83787969297b614f6fbe2432e171d1b54"
+    sequence: >-
+      MTDRQTDTAPSPSAHLLAGGLPTVDAAASREEPKPAPGGGVEGVGARGIARKLFVQLLGSSRSVVAVVCAAGDKPIGAGRSASSGLEKPGPEKRGEEEKEEERGPQWALGSQEPSSWTGEAAVCADSAPAARAPQAPARASVPEGRGARQGAQESGLPRSPSRRGSASRAGPGRASETMNFLLSWVHWTLALLLYLHHAKWSQAAPTTEGEQKSHEVIKFMDVYQRSYCRPIETLVDIFQEYPDEIEYIFKPSCVPLMRCAGCCNDEALECVPTSESNITMQIMRIKPHQSQHIGEMSFLQHSRCECRPKKDRTKPEKKSVRGKGKGQKRKRKKSRFKSWSVHCEPCSERRKHLFVQDPQTCKCSCKNTDSRCKARQLELNERTCRCDKPRR
+    pockets:
+      - key: "vegfr2_binding_interface"
+        name: "VEGFA–VEGFR2 protein interface"
+        pocket_type: "protein_receptor_interface"
+        functional_role: "VEGFA receptor-binding surface; this is a payload-function interface, not an antibacterial peptide pocket."
+        status: "homolog_interface_mapping_pending"
+        evidence_grade: "C"
+        evidence_score: 0.62
+        conditioning_priority: "excluded"
+        conditioning_enabled: false
+        residue_indices: []
+        context:
+          reference_structure: "3V2A"
+          intended_use: "payload integrity check"
+        limitations:
+          - "Human VEGFA complex transferred to a mouse long-form precursor."
+          - "Mature-chain and isoform numbering must be mapped before residue constraints are used."
+        evidence:
+          - evidence_kind: "cross_species_receptor_complex"
+            evidence_grade: "C"
+            source_type: "RCSB_PDB"
+            source_uri: "https://www.rcsb.org/structure/3V2A"
+            source_accession: "3V2A"
+            source_version: "1.4"
+            source_revision_date: "2024-11-20T00:00:00Z"
+            retrieved_at: "2026-07-31T00:00:00Z"
+            chain_ids: ["A"]
+            confidence: 0.62
+            experimental_method: "X-RAY DIFFRACTION"
+            resolution_angstrom: 3.204
+            mapping:
+              source_species: "Homo sapiens"
+              target_species: "Mus musculus"
+              mapping_status: "mature-chain mapping pending"
+            limitations:
+              - "Not admitted for antibacterial peptide generation."
+            details:
+              title: "VEGFR-2/VEGF-A complex structure"
+
+  - name: "Fibroblast growth factor 2"
+    organism: "Mus musculus"
+    accession: "NP_032032.1"
+    role: "healing_payload"
+    source_database: "NCBI RefSeq"
+    source_uri: "https://www.ncbi.nlm.nih.gov/protein/NP_032032.1"
+    source_version: "NP_032032.1 from NM_008006.2"
+    source_retrieved_at: "2026-07-31T00:00:00Z"
+    source_document_sha256: "2a6133bcf634d02e77dfeaa10f842bd83787969297b614f6fbe2432e171d1b54"
+    sequence: >-
+      MAASGITSLPALPEDGGAAFPPGHFKDPKRLYCKNGGFFLRIHPDGRVDGVREKSDPHVKLQLQAEERGVVSIKGVCANRYLAMKEDGRLLASKCVTEECFFFERLESNNYNTYRSRKYSSWYVALKRTGQYKLGSKTGPGQKAILFLPMSAKS
+    pockets:
+      - key: "fgfr1_heparin_interface"
+        name: "FGF2–FGFR1–heparin composite interface"
+        pocket_type: "protein_receptor_glycan_interface"
+        functional_role: "FGFR1 activation and heparan-sulfate-assisted dimerization; used to protect payload function."
+        status: "homolog_interface_mapping_pending"
+        evidence_grade: "C"
+        evidence_score: 0.66
+        conditioning_priority: "excluded"
+        conditioning_enabled: false
+        residue_indices: [35, 127, 128, 133]
+        context:
+          reference_structure: "1FQ9"
+          intended_use: "payload integrity check"
+        limitations:
+          - "The reference complex is human and contains engineered mutations."
+          - "This is a broad ternary interface, not a single ligand pocket."
+        evidence:
+          - evidence_kind: "cross_species_ternary_receptor_complex"
+            evidence_grade: "C"
+            source_type: "RCSB_PDB"
+            source_uri: "https://www.rcsb.org/structure/1FQ9"
+            source_accession: "1FQ9"
+            source_version: "3.1"
+            source_revision_date: "2024-10-30T00:00:00Z"
+            retrieved_at: "2026-07-31T00:00:00Z"
+            confidence: 0.66
+            experimental_method: "X-RAY DIFFRACTION"
+            resolution_angstrom: 3.0
+            mapping:
+              source_species: "Homo sapiens"
+              target_species: "Mus musculus"
+              components: ["FGF2", "FGFR1", "heparin"]
+            limitations:
+              - "Not admitted for antibacterial peptide generation."
+            details:
+              title: "Crystal structure of a ternary FGF2-FGFR1-heparin complex"
+          - evidence_kind: "cross_species_curated_interface_annotation"
+            evidence_grade: "C"
+            source_type: "UniProtKB_Swiss-Prot"
+            source_uri: "https://www.uniprot.org/uniprotkb/P15655/entry"
+            source_accession: "P15655"
+            source_version: "entry 215; sequence 1"
+            source_revision_date: "2026-06-10T00:00:00Z"
+            retrieved_at: "2026-07-31T00:00:00Z"
+            source_residue_indices: [35, 127, 128, 133]
+            target_residue_indices: [35, 127, 128, 133]
+            confidence: 0.7
+            mapping:
+              identity: 1.0
+            details:
+              annotation: "Residues 127, 128 and 133 are important for integrin interaction."
+
+  - name: "Angiopoietin-1 isoform 2 precursor"
+    organism: "Mus musculus"
+    accession: "NP_001272991.1"
+    role: "healing_payload"
+    source_database: "NCBI RefSeq"
+    source_uri: "https://www.ncbi.nlm.nih.gov/protein/NP_001272991.1"
+    source_version: "NP_001272991.1 from NM_001286062.1"
+    source_retrieved_at: "2026-07-31T00:00:00Z"
+    source_document_sha256: "2a6133bcf634d02e77dfeaa10f842bd83787969297b614f6fbe2432e171d1b54"
+    sequence: >-
+      MTVFLSFAFFAAILTHIGCSNQRRNPENGGRRYNRIQHGQCAYTFILPEHDGNCRESATEQYNTNALQRDAPHVEPDFSSQKLQHLEHVMENYTQWLQKLENYIVENMKSEMAQIQQNAVQNHTATMLEIGTSLLSQTAEQTRKLTDVETQVLNQTSRLEIQLLENSLSTYKLEKQLLQQTNEILKIHEKNSLLEHKILEMEGKHKEELDTLKEEKENLQGLVSRQTFIIQELEKQLSRATNNNSILQKQQLELMDTVHNLISLCTKEVLLKGGKREEEKPFRDCADVYQAGFNKSGIYTIYFNNMPEPKKVFCNMDVNGGGWTVIQHREDGSLDFQRGWKEYKMGFGNPSGEYWLGNEFIFAITSQRQYMLRIELMDWEGNRAYSQYDRFHIGNEKQNYRLYLKGHTGTAGKQSSLILHGADFSTKDADNDNCMCKCALMLTGGWWFDACGPSNLNGMFYTAGQNHGKLNGIKWHYFKGPSYSLRSTTMMIRPLDF
+    pockets:
+      - key: "tie2_binding_interface"
+        name: "ANGPT1–TIE2 receptor interface"
+        pocket_type: "protein_receptor_interface"
+        functional_role: "TIE2-binding fibrinogen-like domain; used to protect payload receptor activity."
+        status: "homolog_interface_mapping_pending"
+        evidence_grade: "C"
+        evidence_score: 0.58
+        conditioning_priority: "excluded"
+        conditioning_enabled: false
+        residue_indices: []
+        context:
+          reference_structure: "4K0V"
+          intended_use: "payload integrity check"
+        limitations:
+          - "Human ANGPT1-to-mouse isoform-2 residue mapping is not yet curated."
+          - "4K0V is a low-resolution protein-protein interface, not a small pocket."
+        evidence:
+          - evidence_kind: "cross_species_receptor_complex"
+            evidence_grade: "C"
+            source_type: "RCSB_PDB"
+            source_uri: "https://www.rcsb.org/structure/4K0V"
+            source_accession: "4K0V"
+            source_version: "1.3"
+            source_revision_date: "2024-11-06T00:00:00Z"
+            retrieved_at: "2026-07-31T00:00:00Z"
+            chain_ids: ["B"]
+            confidence: 0.58
+            experimental_method: "X-RAY DIFFRACTION"
+            resolution_angstrom: 4.51
+            mapping:
+              source_species: "Homo sapiens"
+              target_species: "Mus musculus"
+              mapping_status: "fibrinogen-like domain mapping pending"
+            limitations:
+              - "Not admitted for antibacterial peptide generation."
+            details:
+              title: "Structural basis for angiopoietin-1 mediated signaling initiation"

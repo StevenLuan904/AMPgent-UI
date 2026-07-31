@@ -1,6 +1,7 @@
 import pytest
+import yaml
 
-from pepagent.domain.schemas import ExperimentSpec, TargetSpec
+from pepagent.domain.schemas import ExperimentSpec, PocketCatalogSpec, TargetSpec
 from pepagent.model_workers.boltz2_cli import build_input
 from pepagent.provenance.environment import runtime_manifest
 from pepagent.provenance.hashing import sha256_json
@@ -71,3 +72,19 @@ def test_boltz_execution_manifest_includes_molecular_resources(tmp_path) -> None
         ("boltz2_conf.ckpt", "weights"),
         ("mols.tar", "molecular_resource_archive"),
     ]
+
+
+def test_mvp_v2_pocket_catalog_is_versioned_and_role_aware() -> None:
+    with open("config/pockets/mvp_v2_pocket_catalog.yaml", encoding="utf-8") as stream:
+        catalog = PocketCatalogSpec.model_validate(yaml.safe_load(stream))
+
+    assert catalog.catalog_version == "2026-07-31.1"
+    assert len(catalog.targets) == 6
+    targets = {target.accession: target for target in catalog.targets}
+    assert targets["P0A9G6"].pockets[0].conditioning_priority == "primary"
+    pbp_pockets = {pocket.key: pocket for pocket in targets["WP_308061015.1"].pockets}
+    assert 368 in pbp_pockets["transpeptidase_active_site"].residue_indices
+    assert pbp_pockets["ceftaroline_muramate_allosteric_site"].conditioning_enabled is True
+    for accession in ("NP_001020421.2", "NP_032032.1", "NP_001272991.1"):
+        assert targets[accession].role == "healing_payload"
+        assert all(not pocket.conditioning_enabled for pocket in targets[accession].pockets)
