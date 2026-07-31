@@ -41,4 +41,8 @@ Watchdog 可以重启同版本 worker、恢复隧道和触发确定性的健康�
 
 当前使用两层监督：Temporal 负责节点级重试与恢复；绑定当前 Codex 任务的 heartbeat 定期核对 Temporal、PostgreSQL 和真实 worker 进度。产品化时增加 `watchdog_checkpoint` 与 `watchdog_alert` 节点，并通过 `observes / detects / wakes / recovers` 边连接被观察的 workflow、activity 和 Agent 决策。
 
-验收标准是：停止 Codex 会话后实验仍继续；杀掉一个 worker 后任务不丢；制造假心跳或无产物停滞时能报警；恢复后旧失败证据仍可查询。
+Watchdog 的终点不是“一个 workflow 完成”。每次多轮研究循环结束后，它还要唤醒研究 Agent 比较各 generation 的主指标、结构一致性、Rosetta 相对复排、序列多样性和淘汰原因。若没有真实改善或没有可信候选，研究 Agent 必须定位生成、选择、口袋条件、结构 gate、采样或精修中的最小问题，版本化修改流程并启动新 run。旧 run 保留为负结果和新实验的上游证据。
+
+因此长期状态机是 `运行 → 评估 → 诊断 → 改进流程 → 新 run`，而不是 `运行 → completed → 停止`。只有出现相对前代明确改善、跨 seed 结构证据一致、Rosetta 相对复排支持并保有多样性的候选，同时工程证据链完整，Watchdog 才允许结束并进入发布。
+
+验收标准是：停止 Codex 会话后实验仍继续；杀掉一个 worker 后任务不丢；制造假心跳或无产物停滞时能报警；恢复后旧失败证据仍可查询；结果不佳时能够形成可验证的流程假设、启动下一版循环，而不是重复相同 run。
