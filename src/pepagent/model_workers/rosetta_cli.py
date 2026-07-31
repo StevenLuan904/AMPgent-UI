@@ -70,15 +70,20 @@ def _score_pose(pyrosetta: Any, pose: Any, interface: str) -> dict[str, float | 
                 return scores[name]
         return None
 
+    total_score = float(scorefxn(pose))
+    peptide_score = float(analyzer.get_side2_score())
+    interface_score = float(analyzer.get_crossterm_interface_energy())
     return {
-        "total_score": float(scorefxn(pose)),
+        "total_score": total_score,
+        "peptide_score": peptide_score,
         "dG_separated": float(analyzer.get_interface_dG()),
         "dG_separated_per_dSASA_x100": first("dG_separated/dSASAx100"),
         "dSASA_int": float(analyzer.get_interface_delta_sasa()),
         "interface_hbonds": first("hbonds_int", "I_hb"),
         "packstat": float(analyzer.get_interface_packstat()),
-        "interface_score": float(analyzer.get_crossterm_interface_energy()),
-        "reweighted_sc": first("reweighted_sc"),
+        "interface_score": interface_score,
+        # FlexPepDock's standard ranking score is total + peptide + interface score.
+        "reweighted_sc": total_score + peptide_score + interface_score,
         "delta_unsat_hbonds": float(analyzer.get_interface_delta_hbond_unsat()),
     }
 
