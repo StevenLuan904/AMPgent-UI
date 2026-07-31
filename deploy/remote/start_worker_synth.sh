@@ -14,8 +14,14 @@ case "$ROLE" in
 esac
 if [[ "$ROLE" = "rosetta" ]]; then
   [[ "$GPU_ID" = "cpu" ]] || { echo "Rosetta worker resource must be cpu" >&2; exit 2; }
+  MAX_CONCURRENT="${PEPAGENT_ROSETTA_CONCURRENCY:-1}"
+  [[ "$MAX_CONCURRENT" =~ ^[1-9][0-9]*$ ]] || {
+    echo "PEPAGENT_ROSETTA_CONCURRENCY must be a positive integer" >&2
+    exit 2
+  }
 else
   [[ "$GPU_ID" =~ ^[0-7]$ ]] || { echo "GPU ID must be 0-7" >&2; exit 2; }
+  MAX_CONCURRENT=1
 fi
 
 ROOT="/sdd_data/pepagent"
@@ -46,7 +52,7 @@ nohup env \
   CUDA_VISIBLE_DEVICES="$CUDA_DEVICE" \
   PYTHONUNBUFFERED=1 \
   PEPAGENT_WORKER_ROLE="$ROLE" \
-  PEPAGENT_WORKER_MAX_CONCURRENT_ACTIVITIES=1 \
+  PEPAGENT_WORKER_MAX_CONCURRENT_ACTIVITIES="$MAX_CONCURRENT" \
   PEPAGENT_PLATFORM_RELEASE_SHA256="$RELEASE_SHA256" \
   PEPAGENT_TEMPORAL_ADDRESS=127.0.0.1:17233 \
   PEPAGENT_S3_ENDPOINT=http://127.0.0.1:19000 \

@@ -59,6 +59,10 @@ gpu-synth -RemoteCommand 'bash /sdd_data/pepagent/platform/current/deploy/remote
 gpu-synth -RemoteCommand 'bash /sdd_data/pepagent/platform/current/deploy/remote/start_worker_synth.sh rosetta cpu'
 ```
 
+`PEPAGENT_ROSETTA_CONCURRENCY` may be set explicitly after checking CPU load and memory. It controls
+concurrent Temporal activities, not the number of decoys. Keep the default of one on shared or
+uninspected hosts.
+
 ## Submit and inspect
 
 ```powershell
