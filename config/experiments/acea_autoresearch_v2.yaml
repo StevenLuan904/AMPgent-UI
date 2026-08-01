@@ -22,7 +22,7 @@ boltz_recycling_steps: 3
 boltz_sampling_steps: 200
 boltz_use_potentials: true
 boltz_no_kernels: true
-boltz_force_pocket: false
+boltz_force_pocket: true
 pocket_max_distance_angstrom: 8.0
 # The public ColabFold-compatible endpoint returned a reproducible 404 payload on
 # 2026-08-01. Keep the target MSA explicitly empty for this versioned fallback run.
@@ -33,7 +33,9 @@ interface_min_pocket_contacts: 2
 interface_min_seed_consistency: 0.67
 interface_min_pair_iptm_median: 0.15
 interface_pose_cluster_rmsd_angstrom: 4.0
-interface_min_pose_cluster_fraction: 0.67
+# Two agreeing poses out of three is the intended minimum. 0.67 accidentally
+# required 3/3 because the exact fraction is 0.666666...
+interface_min_pose_cluster_fraction: 0.6666666666666666
 maximum_sequence_similarity: 0.75
 elite_parent_count: 3
 mutation_children_per_parent: 3

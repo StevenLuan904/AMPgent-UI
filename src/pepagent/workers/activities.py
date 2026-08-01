@@ -1143,7 +1143,7 @@ async def select_next_generation(request: dict[str, Any]) -> dict[str, Any]:
                 await repository.transition_candidate(
                     candidate.id,
                     CandidateStatus.SELECTED,
-                    "research-director-policy-v1",
+                    "research-director-policy-v2",
                     "retained as a diversity-constrained elite parent",
                 )
             elif candidate.status not in {
@@ -1153,17 +1153,17 @@ async def select_next_generation(request: dict[str, Any]) -> dict[str, Any]:
                 await repository.transition_candidate(
                     candidate.id,
                     CandidateStatus.REJECTED,
-                    "research-director-policy-v1",
+                    "research-director-policy-v2",
                     "not retained in the generation elite archive",
                 )
         prompt_payload = {
-            "policy": "diversity-constrained-elitism-v1",
+            "policy": "diversity-constrained-elitism-v2",
             "generation": generation,
             "maximum_sequence_similarity": spec.get("maximum_sequence_similarity", 0.75),
             "elite_parent_count": spec.get("elite_parent_count", 3),
             "staged_order": [
                 "interface_gate_pass",
-                "rosetta_dg_when_available_after_gate",
+                "favorable_rosetta_dg_after_gate",
                 "pocket_contact_consistency",
                 "boltz2_pair_iptm_median",
                 "conditional_ppl",
@@ -1179,7 +1179,7 @@ async def select_next_generation(request: dict[str, Any]) -> dict[str, Any]:
             "rejected_candidate_ids": [
                 str(candidate.id) for candidate in candidates if candidate.id not in selected_ids
             ],
-            "selection_policy": "diversity-constrained-elitism-v1",
+            "selection_policy": "diversity-constrained-elitism-v2",
             "next_action": "generate_mutations_and_de_novo_exploration",
         }
         response_lines = [
@@ -1211,7 +1211,7 @@ async def select_next_generation(request: dict[str, Any]) -> dict[str, Any]:
             generation,
             "select_next_generation_parents",
             "research-director-policy",
-            "diversity-constrained-elitism-v1",
+            "diversity-constrained-elitism-v2",
             prompt_text,
             response_text,
             structured,

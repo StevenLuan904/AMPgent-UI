@@ -72,6 +72,34 @@ def test_elite_order_requires_structure_gate_before_rosetta() -> None:
     assert diversity_constrained_elites(candidates, 1, 0.8)[0]["id"] == "passed-gate"
 
 
+def test_unfavorable_rosetta_result_does_not_receive_an_evidence_presence_bonus() -> None:
+    candidates = [
+        {
+            "id": "expensive-negative-result",
+            "sequence": "AAAAAAAAAA",
+            "metrics": {
+                "interface_gate_pass": 0,
+                "rosetta_dg_separated_reu": 17.4,
+                "pocket_contact_consistency": 1.0,
+                "boltz2_pair_iptm_median": 0.20,
+                "conditional_ppl": 4.7,
+            },
+        },
+        {
+            "id": "stronger-structure-without-rosetta",
+            "sequence": "RRRRRRRRRR",
+            "metrics": {
+                "interface_gate_pass": 0,
+                "pocket_contact_consistency": 1.0,
+                "boltz2_pair_iptm_median": 0.24,
+                "conditional_ppl": 5.0,
+            },
+        },
+    ]
+    selected = diversity_constrained_elites(candidates, 1, 0.8)
+    assert selected[0]["id"] == "stronger-structure-without-rosetta"
+
+
 def test_coordinate_interface_audit_and_pose_consistency(tmp_path: Path) -> None:
     first = tmp_path / "first.pdb"
     second = tmp_path / "second.pdb"

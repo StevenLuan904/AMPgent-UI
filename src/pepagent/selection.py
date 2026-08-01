@@ -52,14 +52,17 @@ def research_quality_key(candidate: dict[str, Any]) -> tuple[Any, ...]:
     metrics = candidate.get("metrics", {})
     gate_pass = float(metrics.get("interface_gate_pass", 0.0)) >= 0.5
     rosetta = metrics.get("rosetta_dg_separated_reu")
+    favorable_rosetta = rosetta is not None and float(rosetta) < 0.0
     pocket_consistency = float(metrics.get("pocket_contact_consistency", 0.0))
     pair_iptm = float(metrics.get("boltz2_pair_iptm_median", 0.0))
     ppl = float(metrics.get("conditional_ppl", float("inf")))
-    # Higher tuples are better. Rosetta only refines ordering after the structure gate.
+    # Higher tuples are better. A computed but unfavorable Rosetta result must not
+    # outrank an otherwise stronger candidate merely because it was the one expensive
+    # candidate selected for refinement.
     return (
         int(gate_pass),
-        int(rosetta is not None),
-        -float(rosetta) if rosetta is not None else float("-inf"),
+        int(favorable_rosetta),
+        -float(rosetta) if favorable_rosetta else float("-inf"),
         pocket_consistency,
         pair_iptm,
         -ppl,
