@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+import yaml
 from pydantic import ValidationError
 
 from pepagent.domain.schemas import ExperimentSpec
@@ -128,3 +129,16 @@ def test_autoresearch_contract_rejects_single_seed() -> None:
                 "rosetta_enabled": True,
             }
         )
+
+
+def test_acea_v3_is_an_exploitation_biased_four_generation_run() -> None:
+    spec_path = (
+        Path(__file__).parents[1] / "config" / "experiments" / "acea_autoresearch_v3.yaml"
+    )
+    spec = ExperimentSpec.model_validate(yaml.safe_load(spec_path.read_text(encoding="utf-8")))
+    assert spec.generations == 4
+    assert spec.mutation_children_per_parent == 4
+    assert spec.exploration_candidates_per_length == 1
+    assert spec.boltz_force_pocket is True
+    assert spec.interface_min_pose_cluster_fraction == pytest.approx(2 / 3)
+    assert spec.rosetta_nstruct == 200
