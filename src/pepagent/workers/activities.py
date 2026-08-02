@@ -20,10 +20,19 @@ from temporalio import activity
 from pepagent.db.models import Artifact, Candidate, Evaluation, EvidenceArtifact, ExperimentRun
 from pepagent.db.repository import ExperimentRepository
 from pepagent.db.session import SessionFactory
+from pepagent.developability import (
+    HYDROPHOBIC_RESIDUES,
+    SEQUENCE_DEVELOPABILITY_VERSION,
+    sequence_developability_metrics,
+)
 from pepagent.domain.enums import CandidateStatus, MetricName, RunStatus
 from pepagent.provenance.environment import fingerprint_runtime
 from pepagent.provenance.hashing import sha256_file, sha256_json
-from pepagent.selection import cheap_diverse_selection, diversity_constrained_elites
+from pepagent.selection import (
+    cheap_diverse_selection,
+    diversity_constrained_elites,
+    qualification_violations,
+)
 from pepagent.settings import get_settings
 from pepagent.storage.object_store import ContentAddressedObjectStore, StoredObject
 from pepagent.structures.interface import (
@@ -420,6 +429,43 @@ async def persist_and_select_candidates(request: dict[str, Any]) -> list[dict[st
                     "nats_per_residue",
                     raw_metric,
                 )
+                developability = sequence_developability_metrics(item["sequence"])
+                developability_call = await repository.record_completed_tool_call(
+                    run_id,
+                    "sequence-developability-audit",
+                    SEQUENCE_DEVELOPABILITY_VERSION,
+                    provenance["environment_sha256"],
+                    {"sequence": item["sequence"]},
+                    {
+                        "hydrophobic_residues": "".join(sorted(HYDROPHOBIC_RESIDUES)),
+                        "method": "transparent-sequence-screen",
+                    },
+                    developability,
+                    model_uri="deterministic://sequence-developability-audit",
+                )
+                if decision_id:
+                    await repository.record_agent_tool_edge(
+                        uuid.UUID(decision_id),
+                        developability_call.id,
+                        "output",
+                        "evaluates",
+                    )
+                for metric_name in (
+                    MetricName.HYDROPHOBIC_FRACTION,
+                    MetricName.MAXIMUM_HYDROPHOBIC_RUN,
+                    MetricName.MAXIMUM_IDENTICAL_RESIDUE_RUN,
+                ):
+                    await repository.record_evaluation(
+                        candidate.id,
+                        developability_call.id,
+                        metric_name,
+                        float(developability[metric_name]),
+                        "fraction"
+                        if metric_name == MetricName.HYDROPHOBIC_FRACTION
+                        else "residues",
+                        developability,
+                        limitations=developability["limitations"],
+                    )
                 await repository.record_evaluation(
                     candidate.id,
                     call.id,
@@ -434,7 +480,25 @@ async def persist_and_select_candidates(request: dict[str, Any]) -> list[dict[st
                     "pepmlm",
                     "conditional likelihood evidence persisted",
                 )
-                persisted.append({"id": str(candidate.id), **item})
+                persisted.append(
+                    {
+                        "id": str(candidate.id),
+                        **item,
+                        "metrics": {
+                            "conditional_ppl": float(item["conditional_ppl"]),
+                            "conditional_nll": float(item["conditional_nll"]),
+                            "hydrophobic_fraction": float(
+                                developability["hydrophobic_fraction"]
+                            ),
+                            "maximum_hydrophobic_run": float(
+                                developability["maximum_hydrophobic_run"]
+                            ),
+                            "maximum_identical_residue_run": float(
+                                developability["maximum_identical_residue_run"]
+                            ),
+                        },
+                    }
+                )
 
         persisted.sort(key=lambda item: (item["conditional_ppl"], item["sequence"]))
         for rank, item in enumerate(persisted, start=1):
@@ -446,13 +510,14 @@ async def persist_and_select_candidates(request: dict[str, Any]) -> list[dict[st
             persisted,
             int(request["spec"]["structure_top_k"]),
             float(request["spec"].get("maximum_sequence_similarity", 0.75)),
+            request["spec"].get("metric_policy"),
         )
         for item in selected:
             await repository.transition_candidate(
                 uuid.UUID(item["id"]),
                 CandidateStatus.STRUCTURE_QUEUED,
-                "selection-policy",
-                "selected by ascending conditional PPL with a deterministic sequence-diversity cap",
+                "metric-role-policy-v1",
+                "passed proposal qualifications and ranked within the diversity constraint",
             )
     return selected
 
@@ -1094,6 +1159,8 @@ async def select_next_generation(request: dict[str, Any]) -> dict[str, Any]:
     run_id = uuid.UUID(request["run_id"])
     generation = int(request["generation"])
     spec = request["spec"]
+    final_generation = bool(request.get("final_generation", False))
+    selection_stage = "final" if final_generation else "research"
     async with SessionFactory() as session, session.begin():
         repository = ExperimentRepository(session)
         candidates = list(
@@ -1134,8 +1201,10 @@ async def select_next_generation(request: dict[str, Any]) -> dict[str, Any]:
             observed,
             int(spec.get("elite_parent_count", 3)),
             float(spec.get("maximum_sequence_similarity", 0.75)),
+            spec.get("metric_policy"),
+            selection_stage,
         )
-        if not elites:
+        if not elites and not final_generation:
             raise RuntimeError("Research Director could not select any next-generation parent")
         selected_ids = {uuid.UUID(item["id"]) for item in elites}
         for candidate in candidates:
@@ -1157,36 +1226,55 @@ async def select_next_generation(request: dict[str, Any]) -> dict[str, Any]:
                     "not retained in the generation elite archive",
                 )
         prompt_payload = {
-            "policy": "diversity-constrained-elitism-v2",
+            "policy": "metric-role-policy-v1",
+            "stage": selection_stage,
             "generation": generation,
             "maximum_sequence_similarity": spec.get("maximum_sequence_similarity", 0.75),
             "elite_parent_count": spec.get("elite_parent_count", 3),
-            "staged_order": [
+            "legacy_staged_order": [
                 "interface_gate_pass",
                 "favorable_rosetta_dg_after_gate",
                 "pocket_contact_consistency",
                 "boltz2_pair_iptm_median",
                 "conditional_ppl",
             ],
+            "metric_policy": spec.get("metric_policy", []),
+            "qualification_violations": {
+                item["id"]: qualification_violations(
+                    item, spec.get("metric_policy"), selection_stage
+                )
+                for item in observed
+            },
             "candidates": observed,
         }
         prompt_text = json.dumps(prompt_payload, ensure_ascii=False, indent=2, sort_keys=True)
         structured = {
             "schema_version": "1.0",
-            "decision_type": "select_next_generation_parents",
+            "decision_type": (
+                "select_final_qualified_candidates"
+                if final_generation
+                else "select_next_generation_parents"
+            ),
             "generation": generation,
             "selected_parent_ids": [item["id"] for item in elites],
             "rejected_candidate_ids": [
                 str(candidate.id) for candidate in candidates if candidate.id not in selected_ids
             ],
-            "selection_policy": "diversity-constrained-elitism-v2",
-            "next_action": "generate_mutations_and_de_novo_exploration",
+            "selection_policy": "metric-role-policy-v1",
+            "next_action": (
+                "scientific_acceptance_complete"
+                if final_generation and elites
+                else "no_qualified_hit"
+                if final_generation
+                else "generate_mutations_and_de_novo_exploration"
+            ),
         }
         response_lines = [
-            f"Generation {generation}: selected {len(elites)} parent candidates with "
-            "diversity-constrained elitism.",
-            "Evidence order was fixed before execution: structure gate, optional Rosetta "
-            "refinement, pocket consistency, pair-ipTM median, then PepMLM PPL.",
+            f"Generation {generation}: selected {len(elites)} "
+            f"{'qualified final candidates' if final_generation else 'parent candidates'} "
+            "under the diversity constraint.",
+            "Qualification rules were applied before objectives; failed hard constraints "
+            "could not be compensated by a stronger objective.",
         ]
         response_lines.extend(
             f"SELECT {item['id']} {item['sequence']} metrics="
@@ -1209,9 +1297,13 @@ async def select_next_generation(request: dict[str, Any]) -> dict[str, Any]:
         decision = await repository.record_agent_decision(
             run_id,
             generation,
-            "select_next_generation_parents",
+            (
+                "select_final_qualified_candidates"
+                if final_generation
+                else "select_next_generation_parents"
+            ),
             "research-director-policy",
-            "diversity-constrained-elitism-v2",
+            "metric-role-policy-v1",
             prompt_text,
             response_text,
             structured,

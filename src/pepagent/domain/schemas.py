@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -25,6 +25,37 @@ class TargetSpec(BaseModel):
         if invalid:
             raise ValueError(f"invalid amino-acid symbols: {invalid}")
         return normalized
+
+
+class MetricPolicyRule(BaseModel):
+    metric_name: str
+    role: Literal["qualification", "objective", "diversity", "diagnostic"]
+    direction: Literal["minimize", "maximize"] | None = None
+    minimum: float | None = None
+    maximum: float | None = None
+    hard: bool = True
+    missing_policy: Literal["fail", "worst", "ignore"] = "fail"
+    priority: int = Field(default=100, ge=0)
+    stages: list[Literal["proposal", "research", "final"]] = Field(
+        default_factory=lambda: ["research", "final"]
+    )
+    rationale: str
+
+    @model_validator(mode="after")
+    def validate_role_contract(self) -> "MetricPolicyRule":
+        if self.role == "objective" and self.direction is None:
+            raise ValueError("objective rules require minimize or maximize direction")
+        if self.role in {"qualification", "diversity"}:
+            if self.minimum is None and self.maximum is None:
+                raise ValueError(f"{self.role} rules require a minimum or maximum")
+        if self.role in {"qualification", "diversity"} and self.direction is not None:
+            raise ValueError(f"{self.role} rules do not use optimization direction")
+        if self.minimum is not None and self.maximum is not None:
+            if self.minimum > self.maximum:
+                raise ValueError("metric-rule minimum cannot exceed maximum")
+        if not self.stages:
+            raise ValueError("metric rules must apply to at least one selection stage")
+        return self
 
 
 class ExperimentSpec(BaseModel):
@@ -66,6 +97,7 @@ class ExperimentSpec(BaseModel):
     rosetta_pair_iptm_min: float = Field(default=0.5, ge=0, le=1)
     rosetta_score_function: str = "ref2015"
     exploratory_rosetta_slots: int = Field(default=0, ge=0, le=1)
+    metric_policy: list[MetricPolicyRule] = Field(default_factory=list)
     affinity_evaluators: list[str] = Field(
         default_factory=list,
         description=(
@@ -106,6 +138,13 @@ class ExperimentSpec(BaseModel):
                 raise ValueError("MVP-v2 Auto Research requires multiple independent Boltz seeds")
             if not self.rosetta_enabled:
                 raise ValueError("MVP-v2 Auto Research requires the admitted Rosetta lane")
+        diversity_rules = [
+            rule
+            for rule in self.metric_policy
+            if rule.role == "diversity" and rule.metric_name == "sequence_similarity"
+        ]
+        if len(diversity_rules) > 1:
+            raise ValueError("metric_policy admits at most one sequence_similarity rule")
         return self
 
 

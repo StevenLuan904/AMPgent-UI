@@ -4,10 +4,12 @@ import pytest
 import yaml
 from pydantic import ValidationError
 
+from pepagent.developability import sequence_developability_metrics
 from pepagent.domain.schemas import ExperimentSpec
 from pepagent.selection import (
     cheap_diverse_selection,
     diversity_constrained_elites,
+    qualification_violations,
     sequence_distance,
 )
 from pepagent.structures.interface import (
@@ -101,6 +103,101 @@ def test_unfavorable_rosetta_result_does_not_receive_an_evidence_presence_bonus(
     assert selected[0]["id"] == "stronger-structure-without-rosetta"
 
 
+def test_polyvaline_sequence_fails_non_compensatory_developability_rules() -> None:
+    metrics = sequence_developability_metrics("KSAVVVVVVNGA")
+    assert metrics["maximum_identical_residue_run"] == 6
+    assert metrics["maximum_hydrophobic_run"] == 7
+    assert metrics["hydrophobic_fraction"] == pytest.approx(8 / 12)
+    candidate = {"sequence": "KSAVVVVVVNGA", "metrics": metrics}
+    rules = [
+        {
+            "metric_name": "maximum_hydrophobic_run",
+            "role": "qualification",
+            "maximum": 4,
+            "hard": True,
+            "stages": ["proposal"],
+        },
+        {
+            "metric_name": "hydrophobic_fraction",
+            "role": "qualification",
+            "maximum": 0.60,
+            "hard": True,
+            "stages": ["proposal"],
+        },
+    ]
+    violations = qualification_violations(candidate, rules, "proposal")
+    assert {item["metric_name"] for item in violations} == {
+        "maximum_hydrophobic_run",
+        "hydrophobic_fraction",
+    }
+
+
+def test_proposal_gate_rejects_polyvaline_despite_better_ppl() -> None:
+    policy = [
+        {
+            "metric_name": "maximum_identical_residue_run",
+            "role": "qualification",
+            "maximum": 4,
+            "hard": True,
+            "stages": ["proposal"],
+        },
+        {
+            "metric_name": "conditional_ppl",
+            "role": "objective",
+            "direction": "minimize",
+            "priority": 10,
+            "stages": ["proposal"],
+        },
+    ]
+    proposals = [
+        {
+            "sequence": "KSAVVVVVVNGA",
+            "conditional_ppl": 1.0,
+            "metrics": {"maximum_identical_residue_run": 6, "conditional_ppl": 1.0},
+        },
+        {
+            "sequence": "KASVNVSPRA",
+            "conditional_ppl": 6.0,
+            "metrics": {"maximum_identical_residue_run": 1, "conditional_ppl": 6.0},
+        },
+    ]
+    selected = cheap_diverse_selection(proposals, 1, 0.8, policy)
+    assert selected[0]["sequence"] == "KASVNVSPRA"
+
+
+def test_qualification_cannot_be_compensated_by_better_objective() -> None:
+    policy = [
+        {
+            "metric_name": "maximum_hydrophobic_run",
+            "role": "qualification",
+            "maximum": 4,
+            "hard": True,
+            "stages": ["research"],
+        },
+        {
+            "metric_name": "affinity_proxy",
+            "role": "objective",
+            "direction": "minimize",
+            "priority": 10,
+            "stages": ["research"],
+        },
+    ]
+    candidates = [
+        {
+            "id": "infeasible",
+            "sequence": "VVVVVVAAAA",
+            "metrics": {"maximum_hydrophobic_run": 6, "affinity_proxy": -100},
+        },
+        {
+            "id": "feasible",
+            "sequence": "KASVNVSPRA",
+            "metrics": {"maximum_hydrophobic_run": 2, "affinity_proxy": -1},
+        },
+    ]
+    selected = diversity_constrained_elites(candidates, 1, 0.8, policy)
+    assert selected[0]["id"] == "feasible"
+
+
 def test_coordinate_interface_audit_and_pose_consistency(tmp_path: Path) -> None:
     first = tmp_path / "first.pdb"
     second = tmp_path / "second.pdb"
@@ -142,3 +239,16 @@ def test_acea_v3_is_an_exploitation_biased_four_generation_run() -> None:
     assert spec.boltz_force_pocket is True
     assert spec.interface_min_pose_cluster_fraction == pytest.approx(2 / 3)
     assert spec.rosetta_nstruct == 200
+
+
+def test_acea_v4_declares_metric_roles_and_stability_qualification() -> None:
+    spec_path = (
+        Path(__file__).parents[1] / "config" / "experiments" / "acea_autoresearch_v4.yaml"
+    )
+    spec = ExperimentSpec.model_validate(yaml.safe_load(spec_path.read_text(encoding="utf-8")))
+    roles = {rule.metric_name: rule.role for rule in spec.metric_policy}
+    assert roles["maximum_hydrophobic_run"] == "qualification"
+    assert roles["maximum_identical_residue_run"] == "qualification"
+    assert roles["hydrophobic_fraction"] == "qualification"
+    assert roles["rosetta_dg_separated_reu"] == "objective"
+    assert roles["sequence_similarity"] == "diversity"

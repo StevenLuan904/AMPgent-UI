@@ -34,6 +34,9 @@ class EvaluationStatus(StrEnum):
 class MetricName(StrEnum):
     CONDITIONAL_NLL = "conditional_nll"
     CONDITIONAL_PPL = "conditional_ppl"
+    HYDROPHOBIC_FRACTION = "hydrophobic_fraction"
+    MAXIMUM_HYDROPHOBIC_RUN = "maximum_hydrophobic_run"
+    MAXIMUM_IDENTICAL_RESIDUE_RUN = "maximum_identical_residue_run"
     BOLTZ2_CONFIDENCE = "boltz2_confidence"
     BOLTZ2_IPTM = "boltz2_iptm"
     BOLTZ2_PAIR_IPTM = "boltz2_pair_iptm"
