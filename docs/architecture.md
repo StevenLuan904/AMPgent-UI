@@ -75,6 +75,62 @@ outputs, or final completion. A `running` state without fresh evidence is treate
 stagnation. The watchdog cannot change scores, parents, or an experiment specification; any
 spec-changing recovery creates a new versioned run while preserving the failed branch.
 
+## Search-regime diagnosis and escalation
+
+Repeated local iterations are not evidence that sequence space has been adequately explored. The
+research harness must distinguish three different explanations for a plateau:
+
+1. **selection-limited**: proposals are diverse, but a selection policy or qualification removes
+   useful regions;
+2. **evaluator-limited**: sequence diversity is adequate, but structure seeds are noisy or every
+   candidate fails the same pocket/interface test;
+3. **generator-limited**: independent seeds repeatedly emit the same motifs and lineages, so local
+   mutation is searching a narrow learned output distribution.
+
+Every generation must persist a search-regime report in addition to candidate scores. Its minimum
+diagnostics are proposal-attempt yield, exact-duplicate rate, unique-sequence fraction,
+length-stratified residue entropy, dominant-motif and largest-sequence-cluster fractions, median
+pairwise similarity, distance from parents, parent-lineage concentration, qualification-pass
+fraction, structure-gate-pass fraction and quality improvement relative to the preceding
+generation and preceding versioned run. Diagnostics are computed before and after qualification so
+the system can tell generator collapse from a narrow feasible region.
+
+Thresholds and patience are experiment-policy fields, not constants hidden in selection code. A
+typical escalation trigger requires both (a) no meaningful improvement for at least two completed
+generation/run comparisons and (b) at least two independent narrowness signals, such as high
+duplicate/cluster concentration, low residue entropy or very small parent distance. A plateau alone
+does not prove generator collapse. Conversely, a high unique count alone does not prove useful
+coverage if all sequences share the same motif or lineage.
+
+The controller uses a versioned escalation ladder:
+
+- **E0 -- local exploitation**: current sampler, small parent mutations and the normal de-novo
+  quota.
+- **E1 -- distribution broadening**: increase temperature and token support (`top_k`/`top_p`),
+  expand mutation count and peptide-length strata, raise the independent de-novo quota, and retain
+  a fixed budget per proposal lane before objective ranking.
+- **E2 -- heterogeneous proposal mixture**: combine parent mutation, high-entropy de-novo PepMLM,
+  explicitly composition-constrained proposals, motif-penalized resampling and an independent
+  baseline generator. Each lane keeps its own provenance and minimum screening quota so the
+  incumbent model cannot suppress challengers solely through its own PPL.
+- **E3 -- generator challenge**: run a bounded head-to-head experiment against a different model,
+  checkpoint or conditioning representation using identical downstream qualifications and
+  structure budgets. Compare feasible yield, coverage and downstream hit rate, not only PPL.
+- **E4 -- model/conditioning redesign**: only after the challenge demonstrates a systematic output
+  defect, change training data, fine-tuning, pocket conditioning or generator family. This is a new
+  model-release admission task, never an in-place parameter tweak.
+
+An escalation changes scientific intent and therefore always creates a new hashed experiment spec,
+new run and explicit `supersedes`/`tests_hypothesis` edges. The plateaued run remains immutable
+negative evidence. Codex or a future knowledge base may explain failure patterns and propose the
+next ladder step, but code validates the trigger inputs, enforces qualification rules and records
+the comparison. Prompts cannot waive a hard constraint.
+
+The phrase “space exploration is complete” is permitted only after at least one broadened or
+independent proposal lane has failed to add feasible sequence clusters or improve downstream
+evidence. Failure of several near-identical PepMLM runs establishes a narrow-generator result, not
+exhaustion of peptide sequence space.
+
 ## Snapshot-critic admission
 
 Coordinate-derived interface checks remain the structural promotion gate. A deterministic

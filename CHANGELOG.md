@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- Replaced the incomplete stability proxy path with the exact Guruprasad instability index from
+  Biopython ProtParam, cross-checked against the 919 pMHCDiff implementation. The metric is a hard,
+  lower-is-better qualification in the versioned AceA v5 experiment while hydrophobic and
+  low-complexity qualifications remain independent.
+- Added a task-independent search-regime architecture: persisted distribution diagnostics,
+  plateau-versus-collapse discrimination and a versioned E0--E4 escalation ladder from sampler
+  broadening through independent-generator challenge and model redesign.
+
 ## v0.2.0 — MVP-v2
 
 - Added a dedicated, durable Rosetta CPU lane using pinned PyRosetta 2026.29, FlexPepDock

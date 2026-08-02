@@ -22,6 +22,7 @@ from pepagent.db.repository import ExperimentRepository
 from pepagent.db.session import SessionFactory
 from pepagent.developability import (
     HYDROPHOBIC_RESIDUES,
+    INSTABILITY_METHOD,
     SEQUENCE_DEVELOPABILITY_VERSION,
     sequence_developability_metrics,
 )
@@ -284,8 +285,8 @@ async def generate_with_pepmlm(request: dict[str, Any]) -> list[dict[str, Any]]:
                     "seed": spec["seed"] + generation * 1_000_000,
                     "model": settings.pepmlm_model_path,
                     "revision": settings.pepmlm_model_revision,
-                    "top_k": 5,
-                    "temperature": 1.0,
+                    "top_k": spec.get("pepmlm_mutation_top_k", 5),
+                    "temperature": spec.get("pepmlm_temperature", 1.0),
                 },
             )
         )
@@ -304,8 +305,8 @@ async def generate_with_pepmlm(request: dict[str, Any]) -> list[dict[str, Any]]:
             "seed": spec["seed"] + generation * 1_000_000 + (length_index + 1) * 100_000,
             "model": settings.pepmlm_model_path,
             "revision": settings.pepmlm_model_revision,
-            "top_k": 3,
-            "temperature": 1.0,
+            "top_k": spec.get("pepmlm_de_novo_top_k", 3),
+            "temperature": spec.get("pepmlm_temperature", 1.0),
         }
         payloads.append((f"de-novo-{length}", payload))
     for batch_name, payload in payloads:
@@ -332,7 +333,7 @@ async def generate_with_pepmlm(request: dict[str, Any]) -> list[dict[str, Any]]:
                     "proposal_mode": result["proposal_mode"],
                     "requested_count": result["requested_count"],
                     "top_k": payload["top_k"],
-                    "temperature": 1.0,
+                    "temperature": payload["temperature"],
                 },
                 "result": result,
                 "provenance": {
@@ -438,7 +439,8 @@ async def persist_and_select_candidates(request: dict[str, Any]) -> list[dict[st
                     {"sequence": item["sequence"]},
                     {
                         "hydrophobic_residues": "".join(sorted(HYDROPHOBIC_RESIDUES)),
-                        "method": "transparent-sequence-screen",
+                        "method": "sequence-developability-and-instability-screen",
+                        "instability_method": INSTABILITY_METHOD,
                     },
                     developability,
                     model_uri="deterministic://sequence-developability-audit",
@@ -451,6 +453,7 @@ async def persist_and_select_candidates(request: dict[str, Any]) -> list[dict[st
                         "evaluates",
                     )
                 for metric_name in (
+                    MetricName.INSTABILITY_INDEX,
                     MetricName.HYDROPHOBIC_FRACTION,
                     MetricName.MAXIMUM_HYDROPHOBIC_RUN,
                     MetricName.MAXIMUM_IDENTICAL_RESIDUE_RUN,
@@ -462,7 +465,13 @@ async def persist_and_select_candidates(request: dict[str, Any]) -> list[dict[st
                         float(developability[metric_name]),
                         "fraction"
                         if metric_name == MetricName.HYDROPHOBIC_FRACTION
-                        else "residues",
+                        else "residues"
+                        if metric_name
+                        in {
+                            MetricName.MAXIMUM_HYDROPHOBIC_RUN,
+                            MetricName.MAXIMUM_IDENTICAL_RESIDUE_RUN,
+                        }
+                        else "dimensionless",
                         developability,
                         limitations=developability["limitations"],
                     )
@@ -487,6 +496,7 @@ async def persist_and_select_candidates(request: dict[str, Any]) -> list[dict[st
                         "metrics": {
                             "conditional_ppl": float(item["conditional_ppl"]),
                             "conditional_nll": float(item["conditional_nll"]),
+                            "instability_index": float(developability["instability_index"]),
                             "hydrophobic_fraction": float(
                                 developability["hydrophobic_fraction"]
                             ),

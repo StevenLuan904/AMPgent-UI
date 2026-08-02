@@ -105,6 +105,7 @@ def test_unfavorable_rosetta_result_does_not_receive_an_evidence_presence_bonus(
 
 def test_polyvaline_sequence_fails_non_compensatory_developability_rules() -> None:
     metrics = sequence_developability_metrics("KSAVVVVVVNGA")
+    assert metrics["instability_index"] == pytest.approx(-10.433333333333334)
     assert metrics["maximum_identical_residue_run"] == 6
     assert metrics["maximum_hydrophobic_run"] == 7
     assert metrics["hydrophobic_fraction"] == pytest.approx(8 / 12)
@@ -130,6 +131,32 @@ def test_polyvaline_sequence_fails_non_compensatory_developability_rules() -> No
         "maximum_hydrophobic_run",
         "hydrophobic_fraction",
     }
+
+
+def test_instability_index_matches_919_biopython_reference_and_is_a_qualification() -> None:
+    metrics = sequence_developability_metrics("KASVNVSPRA")
+    assert metrics["instability_index"] == pytest.approx(45.4)
+    assert metrics["instability_method"].startswith("Guruprasad-Reddy-Pandit-1990")
+    candidate = {"sequence": "KASVNVSPRA", "metrics": metrics}
+    violations = qualification_violations(
+        candidate,
+        [
+            {
+                "metric_name": "instability_index",
+                "role": "qualification",
+                "maximum": 40.0,
+                "hard": True,
+                "stages": ["proposal"],
+            }
+        ],
+        "proposal",
+    )
+    assert [item["metric_name"] for item in violations] == ["instability_index"]
+
+
+def test_developability_rejects_noncanonical_residues_before_protparam() -> None:
+    with pytest.raises(ValueError, match="non-canonical"):
+        sequence_developability_metrics("KASX")
 
 
 def test_proposal_gate_rejects_polyvaline_despite_better_ppl() -> None:
@@ -252,3 +279,22 @@ def test_acea_v4_declares_metric_roles_and_stability_qualification() -> None:
     assert roles["hydrophobic_fraction"] == "qualification"
     assert roles["rosetta_dg_separated_reu"] == "objective"
     assert roles["sequence_similarity"] == "diversity"
+
+
+def test_acea_v5_adds_guruprasad_instability_as_a_hard_qualification() -> None:
+    spec_path = (
+        Path(__file__).parents[1] / "config" / "experiments" / "acea_autoresearch_v5.yaml"
+    )
+    spec = ExperimentSpec.model_validate(yaml.safe_load(spec_path.read_text(encoding="utf-8")))
+    rules = {rule.metric_name: rule for rule in spec.metric_policy}
+    instability = rules["instability_index"]
+    assert instability.role == "qualification"
+    assert instability.maximum == pytest.approx(40.0)
+    assert instability.hard is True
+    assert instability.stages == ["proposal", "research", "final"]
+    assert spec.search_regime == "E1"
+    assert spec.pepmlm_de_novo_top_k == 10
+    assert spec.pepmlm_mutation_top_k == 10
+    assert spec.pepmlm_temperature == pytest.approx(1.35)
+    assert spec.mutation_count_max == 6
+    assert spec.exploration_candidates_per_length == 3

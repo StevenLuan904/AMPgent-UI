@@ -67,6 +67,10 @@ class ExperimentSpec(BaseModel):
     autoresearch_enabled: bool = False
     seed: int = 20260731
     pepmlm_model: str = "ChatterjeeLab/PepMLM-650M"
+    search_regime: Literal["E0", "E1", "E2", "E3", "E4"] = "E0"
+    pepmlm_de_novo_top_k: int = Field(default=3, ge=1, le=20)
+    pepmlm_mutation_top_k: int = Field(default=5, ge=1, le=20)
+    pepmlm_temperature: float = Field(default=1.0, ge=0.1, le=3.0)
     boltz_method: str = "boltz2"
     diffusion_samples: int = 5
     boltz_seeds_per_candidate: int = Field(default=1, ge=1, le=16)

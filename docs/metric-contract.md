@@ -87,14 +87,27 @@ fixed weighted sum.
 
 ### Sequence developability versus stability
 
-The deterministic `sequence-developability-audit` records hydrophobic fraction, the longest
-contiguous hydrophobic run, and the longest identical-residue run. These are early low-complexity
-and aggregation/solubility risk flags, not experimental
-claims about solubility, plasma half-life, protease resistance, chemical degradation, or
-conformational stability. Those meanings of stability require separate admitted evaluators or
-assays with their own provenance.
+The deterministic `sequence-developability-audit` records the Guruprasad instability index through
+Biopython `ProteinAnalysis.instability_index()`, hydrophobic fraction, the longest contiguous
+hydrophobic run, and the longest identical-residue run. The implementation was cross-checked
+against `/data0/luanhaoyang/FlexStruct/pMHCDiff_v2/result_analysis/pmhc_seq_analysis_acc.py` on the
+919 server. The exact Biopython version, method name, normalized sequence and tool version are part
+of the persisted output.
 
-The AceA v4 policy provisionally requires a maximum hydrophobic run of four and a hydrophobic
+The instability index is lower-is-better and the conventional classification treats values above
+40 as unstable. AceA v5 therefore uses `instability_index <= 40` as a non-compensatory,
+missing-is-failure qualification. Passing by a larger margin does not improve rank. The original
+Guruprasad model correlated dipeptide composition with *in-vivo protein stability*; for 10--15 aa
+peptides it remains a sequence-derived proxy, not a measurement of chemical degradation,
+proteolysis, plasma half-life, aggregation, solubility or conformational stability. Those claims
+require separate admitted evaluators or assays.
+
+The hydrophobic and low-complexity metrics remain independent qualifications rather than being
+replaced by instability index. This matters because the Guruprasad score for a homopolymer-like or
+very hydrophobic short peptide can be numerically low. One proxy is not allowed to cancel a failure
+in another developability dimension.
+
+The AceA v4/v5 policy provisionally requires a maximum hydrophobic run of four and a hydrophobic
 fraction no greater than 0.60. These are task-level aqueous-peptide guardrails and must be calibrated
 against a future project dataset; they are not universal peptide laws. The sequence
 `KSAVVVVVVNGA` has six consecutive valines embedded in a seven-residue hydrophobic run and has a
@@ -108,5 +121,8 @@ Scientific basis and limitations:
   (Chen et al., J Biol Chem 2007, PMID 17158938).
 - Charge distribution and hydrophobic residue content jointly changed aggregation and mammalian
   membrane damage in designed peptides (Yin et al., J Biol Chem 2012, PMID 22253439).
+- The instability index is the dipeptide-composition method of Guruprasad, Reddy and Pandit
+  (Protein Engineering 1990, PMID 2075190), executed through the documented Biopython ProtParam
+  implementation.
 - These studies support a warning and qualification policy, but do not validate the exact AceA
   thresholds or turn sequence heuristics into measured stability.
