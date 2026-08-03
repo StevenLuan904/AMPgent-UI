@@ -1,0 +1,133 @@
+target:
+  name: Escherichia coli K-12 isocitrate lyase AceA
+  sequence: MKTRTQQIEELQKEWTQPRWEGITRPYSAEDVVKLRGSVNPECTLAQLGAAKMWRLLHGESKKGYINSLGALTGGQALQQAKAGIEAVYLSGWQVAADANLAASMYPDQSLYPANSVPAVVERINNTFRRADQIQWSAGIEPGDPRYVDYFLPIVADAEAGFGGVLNAFELMKAMIEAGAAAVHFEDQLASVKKCGHMGGKVLVPTQEAIQKLVAARLAADVTGVPTLLVARTDADAADLITSDCDPYDSEFITGERTSEGFFRTHAGIEQAISRGLAYAPYADLVWCETSTPDLELARRFAQAIHAKYPGKLLAYNCSPSFNWQKNLDDKTIASFQQQLSDMGYKFQFITLAGIHSMWFNMFDLANAYAQGEGMKHYVEKVQQPEFAAAKDGYTFVSHQQEVGTGYFDKVTTIIQGGTSSVTALTGSTEESQF
+  organism: Escherichia coli K-12
+  accession: P0A9G6
+  source_database: UniProtKB/Swiss-Prot
+  source_uri: https://rest.uniprot.org/uniprotkb/P0A9G6.fasta
+  source_version: entry 145; sequence 1
+  source_retrieved_at: 2026-07-31T00:00:00Z
+  pocket_residues: [89, 91, 92, 93, 108, 157, 159, 184, 186, 193, 194, 195, 196, 197, 232, 287, 289, 317, 318, 319, 320, 321, 351, 352, 356]
+peptide_lengths: [10, 12, 15]
+candidates_per_length: 14
+generations: 4
+autoresearch_enabled: true
+seed: 20260804
+pepmlm_model: ChatterjeeLab/PepMLM-650M
+search_regime: E1
+pepmlm_de_novo_top_k: 10
+pepmlm_mutation_top_k: 10
+pepmlm_temperature: 1.35
+mutation_children_per_parent: 5
+mutation_count_min: 2
+mutation_count_max: 6
+exploration_candidates_per_length: 4
+maximum_sequence_similarity: 0.75
+elite_parent_count: 4
+
+structure_protocol: diagnostic_fast
+structure_top_k: 4
+search_structure_comprehensive_count: 2
+search_structure_diversity_count: 2
+final_structure_candidate_count: 8
+boltz_method: boltz2
+diffusion_samples: 1
+boltz_seeds_per_candidate: 1
+boltz_recycling_steps: 3
+boltz_sampling_steps: 200
+boltz_use_potentials: true
+boltz_no_kernels: true
+boltz_force_pocket: true
+use_msa_server: false
+pocket_max_distance_angstrom: 8.0
+interface_contact_distance_angstrom: 5.0
+interface_clash_distance_angstrom: 1.5
+interface_min_pocket_contacts: 2
+interface_min_pair_iptm_median: 0.15
+severe_structure_clash_count: 25
+
+# Final-generation local-energy shadow metrics only. FlexPepDock performs one
+# required prepack; InterfaceAnalyzer then uses pack_input=false and
+# pack_separated=false for every decoy. Formal Rosetta validation remains a
+# separate 200-decoy workflow under the same scoring convention.
+rosetta_enabled: true
+rosetta_top_k: 3
+rosetta_nstruct: 8
+rosetta_parallel_decoys: 8
+rosetta_score_function: ref2015
+exploratory_rosetta_slots: 0
+affinity_evaluators: []
+
+metric_policy:
+  - metric_name: instability_index
+    role: qualification
+    maximum: 40.0
+    hard: true
+    missing_policy: fail
+    stages: [proposal, research, final]
+    rationale: Guruprasad/Biopython intrinsic-instability qualification.
+  - metric_name: maximum_identical_residue_run
+    role: qualification
+    maximum: 4
+    hard: true
+    missing_policy: fail
+    stages: [proposal, research, final]
+    rationale: Reject extreme low-complexity proposals.
+  - metric_name: maximum_hydrophobic_run
+    role: qualification
+    maximum: 4
+    hard: true
+    missing_policy: fail
+    stages: [proposal, research, final]
+    rationale: Provisional aggregation and solubility guardrail.
+  - metric_name: hydrophobic_fraction
+    role: qualification
+    maximum: 0.60
+    hard: true
+    missing_policy: fail
+    stages: [proposal, research, final]
+    rationale: Provisional task-specific developability window.
+  - metric_name: sequence_similarity
+    role: diversity
+    maximum: 0.75
+    hard: true
+    missing_policy: fail
+    stages: [proposal, research, final]
+    rationale: Maintain sequence-space coverage.
+  - metric_name: conditional_ppl
+    role: objective
+    direction: minimize
+    priority: 10
+    missing_policy: worst
+    stages: [proposal, research, final]
+    rationale: Language-model plausibility; structure remains diagnostic.
+  - metric_name: structure_available
+    role: diagnostic
+    hard: false
+    missing_policy: ignore
+    stages: [research, final]
+    rationale: Availability is evidence metadata, never a sequence qualification.
+  - metric_name: boltz2_pair_iptm_median
+    role: diagnostic
+    hard: false
+    missing_policy: ignore
+    stages: [research, final]
+    rationale: Single-seed predicted-complex confidence diagnostic.
+  - metric_name: pocket_contact_count
+    role: diagnostic
+    hard: false
+    missing_policy: ignore
+    stages: [research, final]
+    rationale: Single-pose pocket-contact diagnostic.
+  - metric_name: interface_clash_count
+    role: diagnostic
+    hard: false
+    missing_policy: ignore
+    stages: [research, final]
+    rationale: Coordinate sanity and conflict diagnostic.
+  - metric_name: rosetta_dg_separated_reu
+    role: diagnostic
+    hard: false
+    missing_policy: ignore
+    stages: [final]
+    rationale: Eight-decoy local-energy shadow metric without separated-state repacking.

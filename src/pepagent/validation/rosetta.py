@@ -5,6 +5,16 @@ import statistics
 from typing import Any
 
 
+def validate_rosetta_protocol_policy(source_policy: dict[str, Any]) -> None:
+    """Reject validation suites that do not match the active scoring protocol."""
+    if source_policy.get("prepack") is not True:
+        raise ValueError("FlexPepDock validation requires one prepack before refinement")
+    if source_policy.get("pack_separated") is not False:
+        raise ValueError(
+            "active InterfaceAnalyzer protocol requires pack_separated=false"
+        )
+
+
 def _average_ranks(values: list[float]) -> list[float]:
     order = sorted(range(len(values)), key=values.__getitem__)
     ranks = [0.0] * len(values)

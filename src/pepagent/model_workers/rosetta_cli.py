@@ -15,7 +15,8 @@ from pepagent.structures.pdb import (
     prepare_protein_peptide_pdb,
 )
 
-ADAPTER_VERSION = "pepagent-pyrosetta-flexpepdock-v2"
+ADAPTER_VERSION = "pepagent-pyrosetta-flexpepdock-v3"
+PACK_SEPARATED = False
 
 
 def _canonicalize_dumped_pdb(path: Path) -> None:
@@ -60,7 +61,7 @@ def _score_pose(pyrosetta: Any, pose: Any, interface: str) -> dict[str, float | 
     analyzer = InterfaceAnalyzerMover(partners)
     analyzer.set_scorefunction(scorefxn)
     analyzer.set_pack_input(False)
-    analyzer.set_pack_separated(True)
+    analyzer.set_pack_separated(PACK_SEPARATED)
     analyzer.set_compute_packstat(True)
     analyzer.apply(pose)
     scores = {str(key): float(value) for key, value in pose.scores.items()}
@@ -246,7 +247,7 @@ def _run(args: argparse.Namespace) -> None:
         "nstruct": nstruct,
         "parallel_decoys": parallel_decoys,
         "pack_input": False,
-        "pack_separated": True,
+        "pack_separated": PACK_SEPARATED,
         "input_sha256": sha256_file(args.input_structure),
         "prepared_input_sha256": sha256_file(prepared),
         "prepacked_input_sha256": sha256_file(prepacked),

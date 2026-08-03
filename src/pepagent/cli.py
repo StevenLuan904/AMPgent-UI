@@ -23,7 +23,10 @@ from pepagent.registry.service import register_local_model_release
 from pepagent.settings import get_settings
 from pepagent.storage.object_store import ContentAddressedObjectStore
 from pepagent.structures.pdb import atom_chain_sequence
-from pepagent.validation.rosetta import summarize_native_start_validation
+from pepagent.validation.rosetta import (
+    summarize_native_start_validation,
+    validate_rosetta_protocol_policy,
+)
 
 app = typer.Typer(no_args_is_help=True, help="Operate the PepAgent control plane.")
 
@@ -173,6 +176,10 @@ def submit_rosetta_validation(
 ) -> None:
     """Stage public complexes as immutable evidence and launch durable Rosetta runs."""
     suite = _load_mapping(suite_path)
+    try:
+        validate_rosetta_protocol_policy(suite["source_policy"])
+    except ValueError as error:
+        raise typer.BadParameter(str(error)) from error
     suite_digest = sha256_bytes(suite_path.read_bytes())
     production_nstruct = nstruct or int(suite["source_policy"]["production_nstruct"])
     if production_nstruct < 200:

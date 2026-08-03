@@ -137,3 +137,8 @@ but the predicted structural hypothesis is not corroborated.
 Accordingly, the historical `dG_separated=-5.018 REU` example is recorded as local Rosetta
 energy support with conflicting Boltz structural evidence--neither a valid hit nor a wholly
 invalid peptide candidate.
+
+The Rosetta protocol identity includes `pack_separated`. New adapter-v3 evidence uses
+`pack_separated=false` for every InterfaceAnalyzer call while retaining one input prepack before
+FlexPepDock. Historical `true` results are a separate metric population and are never pooled with
+new results.

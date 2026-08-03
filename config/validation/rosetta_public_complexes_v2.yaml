@@ -1,0 +1,51 @@
+schema_version: 1
+suite_id: rosetta-flexpepdock-public-v2-pack-separated-false
+retrieved_at: 2026-07-31T16:27:02+08:00
+source_policy:
+  coordinate_source: RCSB PDB legacy PDB download
+  preparation: first model; selected ATOM records; altloc blank/A; receptor chains before peptide
+  score_function: ref2015
+  prepack: true
+  pack_separated: false
+  production_nstruct: 200
+  parallel_decoys: 8
+  smoke_nstruct: 1
+  seed: 20260731
+cases:
+  - pdb_id: 1ER8
+    title: Endothiapepsin bound to peptide inhibitor H-77
+    source_uri: https://files.rcsb.org/download/1ER8.pdb
+    source_sha256: 3d0034d72fdcd57032646f8ae0d0168be4826c3fb89018699ff09f62624b2c97
+    experimental_method: X-RAY DIFFRACTION
+    resolution_angstrom: 2.0
+    receptor_chains: [E]
+    peptide_chain: I
+    modeled_peptide_sequence: PFHLLVY
+    modeled_peptide_length: 7
+  - pdb_id: 1NVR
+    title: CHK1 kinase domain bound to peptide ASVSA
+    source_uri: https://files.rcsb.org/download/1NVR.pdb
+    source_sha256: ba6311075da30f81e6b0917930e7d9d5d29ff16f57e4e507aed54ad1418b9d01
+    experimental_method: X-RAY DIFFRACTION
+    resolution_angstrom: 1.8
+    receptor_chains: [A]
+    peptide_chain: B
+    modeled_peptide_sequence: ASVSA
+    modeled_peptide_length: 5
+  - pdb_id: 2DS8
+    title: ClpX zinc-binding domain bound to SspB-tail peptide
+    source_uri: https://files.rcsb.org/download/2DS8.pdb
+    source_sha256: bab57bea6602a9863e142458b5fecb4760a92de5996c076b035913536b971d67
+    experimental_method: X-RAY DIFFRACTION
+    resolution_angstrom: 1.6
+    receptor_chains: [B]
+    peptide_chain: P
+    modeled_peptide_sequence: ALRVVK
+    modeled_peptide_length: 6
+admission_checks:
+  - exact source and prepared-coordinate hashes are persisted
+  - prepack and every refinement decoy have a deterministic seed
+  - InterfaceAnalyzer records pack_separated=false
+  - every decoy reports dG_separated in REU and peptide backbone RMSD in angstrom
+  - native-start refinement retains at least one near-native peptide pose
+  - no result is converted to Kd or labelled kcal/mol

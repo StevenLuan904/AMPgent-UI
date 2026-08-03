@@ -185,3 +185,8 @@ failures, and even these do not reject the peptide sequence.
 Eight-decoy results from a Boltz pose are explicitly `shadow_diagnostic` evidence. The separate
 `RosettaValidationWorkflow` retains the >=200-decoy contract for formal same-protocol relative
 reranking and public-complex validation. Neither lane is calibrated experimental affinity.
+
+All new InterfaceAnalyzer evaluations use `pack_input=false` and `pack_separated=false` after a
+single required FlexPepDock prepack stage. FlexPepDock has already optimized each bound decoy; the
+separated partners are scored without another side-chain packing operation. Historical
+`pack_separated=true` evidence remains immutable and must not be pooled with the new v3 adapter.

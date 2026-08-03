@@ -1173,7 +1173,7 @@ async def score_rosetta_complex(request: dict[str, Any]) -> dict[str, Any]:
             "parallel_decoys": payload["parallel_decoys"],
             "prepack": True,
             "pack_input": False,
-            "pack_separated": True,
+            "pack_separated": False,
             "primary_aggregation": result["primary_aggregation"],
             "validation_case": validation_case,
             "evidence_grade": (

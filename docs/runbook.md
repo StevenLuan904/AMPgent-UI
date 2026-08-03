@@ -81,9 +81,9 @@ replace its source artifact; submit a new, separately identified suite instead.
 
 ```powershell
 .\.venv-local\Scripts\python -m pepagent.cli submit-rosetta-validation `
-  config\validation\rosetta_public_complexes_v1.yaml --case 2DS8
+  config\validation\rosetta_public_complexes_v2.yaml --case 2DS8
 .\.venv-local\Scripts\python -m pepagent.cli submit-rosetta-validation `
-  config\validation\rosetta_official_1er8_benchmark_v1.yaml --case 1ER8
+  config\validation\rosetta_official_1er8_benchmark_v2.yaml --case 1ER8
 .\.venv-local\Scripts\python -m pepagent.cli summarize-rosetta-validation <succeeded-run-id>
 ```
 
