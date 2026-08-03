@@ -82,3 +82,12 @@ only: the public assay organisms and conditions are not the LLAMP E. coli endpoi
 cannot establish calibration. LLAMP therefore remains final-stage soft evidence and never a hard
 qualification gate. Its PolyForm Noncommercial license also confines the installed runtime to
 noncommercial research unless separately reviewed.
+
+AMPlify 2.0.1 is reproduced in a separate Python 3.6 CPU environment using the exact Bioconda
+artifact, entry script, and five balanced-ensemble weight hashes from the handoff. On full-length
+melittin it reports AMP probability `0.9995996`; all five submodels independently report values
+above `0.998`. This supports the expected generic AMP-positive direction and validates the strict
+sequence/ID output contract. It does not calibrate the probability, establish AceA binding, or
+justify a hard gate, so `amp_likeness` remains final-stage soft evidence. The runtime keeps the
+released `probability > 0.5` label rule and rejects sequences outside its 2-200 canonical-residue
+domain as unavailable without affecting sequence eligibility.

@@ -9,6 +9,10 @@ import yaml
 
 from pepagent.domain.schemas import ExperimentSpec, TargetSpec
 from pepagent.handoff_metrics import normalize_metric_records, physicochemical_descriptors
+from pepagent.model_workers.amplify_metric_cli import (
+    parse_tsv as parse_amplify_tsv,
+)
+from pepagent.model_workers.amplify_metric_cli import validate_sequence as amplify_domain
 from pepagent.model_workers.llamp_metric_cli import validate_sequence
 from pepagent.model_workers.macrel_metric_cli import (
     expected_macrel_sequence,
@@ -197,6 +201,54 @@ def test_llamp_adapter_enforces_released_sequence_domain(
     sequence: str, expected: str | None
 ) -> None:
     assert validate_sequence(sequence) == expected
+
+
+@pytest.mark.parametrize(
+    ("sequence", "expected"),
+    [
+        ("GIGAVLKVLTTGLPALISWIKRKRQQ", None),
+        ("A", "outside released AMPlify 2-200 residue domain"),
+        ("KLLKX", "non-standard or empty peptide sequence"),
+    ],
+)
+def test_amplify_adapter_enforces_released_sequence_domain(
+    sequence: str, expected: str | None
+) -> None:
+    assert amplify_domain(sequence) == expected
+
+
+def test_amplify_adapter_parses_exact_sequence_and_released_threshold(
+    tmp_path: Path,
+) -> None:
+    output = tmp_path / "amplify.tsv"
+    output.write_text(
+        "Sequence_ID\tSequence\tProbability_score\tPrediction\t"
+        "Sub_model_1_probability_score\tSub_model_2_probability_score\t"
+        "Sub_model_3_probability_score\tSub_model_4_probability_score\t"
+        "Sub_model_5_probability_score\n"
+        "candidate-1\tKLLK\t0.75\tAMP\t0.7\t0.8\t0.75\t0.76\t0.74\n",
+        encoding="utf-8",
+    )
+
+    parsed = parse_amplify_tsv(output, {"candidate-1": "KLLK"})
+
+    assert parsed["candidate-1"]["amplify_probability"] == 0.75
+    assert parsed["candidate-1"]["amplify_label"] == "AMP"
+
+
+def test_amplify_adapter_rejects_label_threshold_mismatch(tmp_path: Path) -> None:
+    output = tmp_path / "amplify.tsv"
+    output.write_text(
+        "Sequence_ID\tSequence\tProbability_score\tPrediction\t"
+        "Sub_model_1_probability_score\tSub_model_2_probability_score\t"
+        "Sub_model_3_probability_score\tSub_model_4_probability_score\t"
+        "Sub_model_5_probability_score\n"
+        "candidate-1\tKLLK\t0.75\tnon-AMP\t0.7\t0.8\t0.75\t0.76\t0.74\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="label/threshold mismatch"):
+        parse_amplify_tsv(output, {"candidate-1": "KLLK"})
 
 
 @pytest.mark.parametrize(

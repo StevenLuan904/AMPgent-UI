@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "metric_plugin": "amp_likeness",
+  "decision_role": "soft_supporting_evidence_only",
+  "source": {
+    "repository": "https://github.com/bcgsc/AMPlify",
+    "commit": "3a07713c25b8a21ef66d31d10e121989d26d9320",
+    "license": "GPL-3.0",
+    "entry_script_sha256": "68fdcf72745cd911d2d50624b619ccf322c08992c31d663c10539c1bd75ea0f6"
+  },
+  "distribution": {
+    "uri": "https://conda.anaconda.org/bioconda/noarch/amplify-2.0.1-py36hdfd78af_2.conda",
+    "build": "amplify-2.0.1-py36hdfd78af_2",
+    "sha256": "2ea5787986fca6f6f25091ecd1689a303964480ee86c5bf3fb274318338e7f6e"
+  },
+  "balanced_model_weights_sha256": {
+    "AMPlify_balanced_model_weights_1.h5": "f9a0bf942a3ea6b01579295c6e4b87125e0a05c5a373de0fb54c5c5eb8280cf2",
+    "AMPlify_balanced_model_weights_2.h5": "f3542737840254e4135ef238413c8dac67cc5ddde9782004d7ad42cac35cf0a5",
+    "AMPlify_balanced_model_weights_3.h5": "b6644c510b57d202fa08330af402e6d2c76735cf577a3d7832a3cb1175de5bd3",
+    "AMPlify_balanced_model_weights_4.h5": "1718d26c4ba00e93ba65329995bdb52f6f449d7e379ba891371436258f82d87a",
+    "AMPlify_balanced_model_weights_5.h5": "cbb8012d0a31c2076591b3e6e0f300e63bae0d485b63a46d4f9dcc84e7b36446"
+  },
+  "runtime": {
+    "environment": "isolated CPU conda-forge/bioconda environment",
+    "python": "3.6.15",
+    "tensorflow": "1.10.0",
+    "keras": "2.2.4",
+    "numpy": "1.16.6",
+    "h5py": "2.10.0",
+    "biopython": "1.79",
+    "pandas": "1.1.5",
+    "scikit_learn": "0.24.1",
+    "scipy": "1.5.3"
+  },
+  "protocol": {
+    "model": "balanced",
+    "ensemble_members": 5,
+    "released_sequence_domain": "2-200 standard amino-acid residues",
+    "label_threshold": "AMP if ensemble probability > 0.5"
+  },
+  "public_control": {
+    "suite": "handoff-metrics-public-complex-melittin-8ahs-v1",
+    "report_sha256": "68d1b318b6b0a9393eb3b289c35e427a64964fd6f80cee7e37c7730e83735ac9",
+    "amplify_probability": 0.9995996,
+    "amplify_label": "AMP",
+    "submodel_probabilities": [0.99992466, 0.9981719, 0.99991053, 0.99999106, 0.9999997],
+    "qualitative_direction_reproduced": true,
+    "scientific_status": "supported_as_plumbing_only"
+  },
+  "limitations": [
+    "One public positive control establishes sequence-matched execution and qualitative direction, not calibration.",
+    "AMPlify predicts generic AMP-likeness and is not an AceA-binding, organism-specific potency, toxicity, or developability endpoint.",
+    "The exact historical dependency solve was not reusable on this platform; code, weights and core ML packages are pinned, while low-level transitive builds may differ.",
+    "The output remains soft evidence and cannot become a hard qualification gate."
+  ]
+}
