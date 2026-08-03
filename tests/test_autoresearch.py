@@ -8,12 +8,14 @@ from pepagent.developability import sequence_developability_metrics
 from pepagent.domain.schemas import ExperimentSpec
 from pepagent.selection import (
     cheap_diverse_selection,
+    diagnostic_representative_selection,
     diversity_constrained_elites,
     qualification_violations,
     sequence_distance,
 )
 from pepagent.structures.interface import (
     audit_protein_peptide_interface,
+    classify_structure_support,
     pose_cluster_fraction,
 )
 
@@ -255,6 +257,72 @@ def test_autoresearch_contract_rejects_single_seed() -> None:
         )
 
 
+def test_fast_protocol_admits_one_seed_and_eight_shadow_decoys() -> None:
+    spec = ExperimentSpec.model_validate(
+        {
+            "target": {
+                "name": "target",
+                "sequence": "ACDEFGHIKLMNPQRSTVWY",
+                "pocket_residues": [1],
+            },
+            "autoresearch_enabled": True,
+            "structure_protocol": "diagnostic_fast",
+            "generations": 3,
+            "boltz_seeds_per_candidate": 1,
+            "rosetta_enabled": True,
+            "rosetta_nstruct": 8,
+        }
+    )
+    assert spec.structure_protocol == "diagnostic_fast"
+    assert spec.rosetta_nstruct == 8
+
+
+def test_fast_structure_support_distinguishes_weak_conflict_and_unavailable() -> None:
+    weak = classify_structure_support(
+        structure_available=True,
+        pair_iptm=0.10,
+        pocket_contact_count=0,
+        clash_count=0,
+        severe_clash_count=25,
+        minimum_pair_iptm=0.15,
+        minimum_pocket_contacts=2,
+    )
+    conflict = classify_structure_support(
+        structure_available=True,
+        pair_iptm=0.10,
+        pocket_contact_count=0,
+        clash_count=0,
+        severe_clash_count=25,
+        minimum_pair_iptm=0.15,
+        minimum_pocket_contacts=2,
+        rosetta_dg=-5.018,
+    )
+    unavailable = classify_structure_support(
+        structure_available=False,
+        pair_iptm=None,
+        pocket_contact_count=None,
+        clash_count=None,
+        severe_clash_count=25,
+        minimum_pair_iptm=0.15,
+        minimum_pocket_contacts=2,
+    )
+    assert weak["label"] == "weak"
+    assert conflict["label"] == "conflicting"
+    assert unavailable["label"] == "unavailable"
+
+
+def test_fast_search_representatives_mix_property_leaders_and_diversity() -> None:
+    candidates = [
+        {"sequence": "AAAAAAAAAA", "conditional_ppl": 1.0},
+        {"sequence": "AAAAAAAATA", "conditional_ppl": 1.1},
+        {"sequence": "RRRRRRRRRR", "conditional_ppl": 2.0},
+        {"sequence": "GGGGGGGGGG", "conditional_ppl": 3.0},
+    ]
+    selected = diagnostic_representative_selection(candidates, 2, 2, 0.90)
+    assert selected[0]["sequence"] == "AAAAAAAAAA"
+    assert {item["sequence"] for item in selected} >= {"RRRRRRRRRR", "GGGGGGGGGG"}
+
+
 def test_acea_v3_is_an_exploitation_biased_four_generation_run() -> None:
     spec_path = (
         Path(__file__).parents[1] / "config" / "experiments" / "acea_autoresearch_v3.yaml"
@@ -298,3 +366,20 @@ def test_acea_v5_adds_guruprasad_instability_as_a_hard_qualification() -> None:
     assert spec.pepmlm_temperature == pytest.approx(1.35)
     assert spec.mutation_count_max == 6
     assert spec.exploration_candidates_per_length == 3
+
+
+def test_acea_v6_uses_fast_diagnostic_structure_budget() -> None:
+    spec_path = (
+        Path(__file__).parents[1] / "config" / "experiments" / "acea_autoresearch_v6.yaml"
+    )
+    spec = ExperimentSpec.model_validate(yaml.safe_load(spec_path.read_text(encoding="utf-8")))
+    roles = {rule.metric_name: rule.role for rule in spec.metric_policy}
+    assert spec.structure_protocol == "diagnostic_fast"
+    assert spec.search_structure_comprehensive_count == 2
+    assert spec.search_structure_diversity_count == 2
+    assert spec.final_structure_candidate_count == 8
+    assert spec.boltz_seeds_per_candidate == 1
+    assert spec.rosetta_top_k == 3
+    assert spec.rosetta_nstruct == 8
+    assert "interface_gate_pass" not in roles
+    assert roles["rosetta_dg_separated_reu"] == "diagnostic"

@@ -174,6 +174,47 @@ def cheap_diverse_selection(
     return selected
 
 
+def diagnostic_representative_selection(
+    candidates: list[dict[str, Any]],
+    comprehensive_count: int,
+    diversity_count: int,
+    maximum_similarity: float,
+    metric_policy: list[dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
+    """Choose property leaders plus deliberately distant diagnostic representatives."""
+    ranked = cheap_diverse_selection(
+        candidates,
+        max(len(candidates), comprehensive_count),
+        1.0,
+        metric_policy,
+    )
+    selected = ranked[:comprehensive_count]
+    remaining = [item for item in ranked if item not in selected]
+    while remaining and len(selected) < comprehensive_count + diversity_count:
+        if not selected:
+            chosen = remaining[0]
+        else:
+            chosen = max(
+                remaining,
+                key=lambda item: (
+                    min(
+                        sequence_distance(item["sequence"], incumbent["sequence"])
+                        for incumbent in selected
+                    ),
+                    -float(item.get("conditional_ppl", float("inf"))),
+                    item["sequence"],
+                ),
+            )
+        if all(
+            sequence_similarity(chosen["sequence"], incumbent["sequence"])
+            <= maximum_similarity
+            for incumbent in selected
+        ):
+            selected.append(chosen)
+        remaining.remove(chosen)
+    return selected
+
+
 def research_quality_key(candidate: dict[str, Any]) -> tuple[Any, ...]:
     """A staged comparator; no weighted pseudo-precision and no Pareto terminology."""
     metrics = candidate.get("metrics", {})

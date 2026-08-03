@@ -25,6 +25,7 @@ class PeptideDesignWorkflow:
             )
             spec = request["spec"]
             autoresearch = bool(spec.get("autoresearch_enabled", False))
+            diagnostic_fast = spec.get("structure_protocol") == "diagnostic_fast"
             generation_count = int(spec["generations"]) if autoresearch else 1
             parents: list[dict[str, Any]] = []
             decision_id: str | None = None
@@ -61,7 +62,7 @@ class PeptideDesignWorkflow:
                 )
                 round_structures: list[dict[str, Any]] = []
                 ensembles: list[dict[str, Any]] = []
-                seed_count = int(spec.get("boltz_seeds_per_candidate", 1))
+                seed_count = 1 if diagnostic_fast else int(spec.get("boltz_seeds_per_candidate", 1))
                 for candidate_index, candidate in enumerate(selected):
                     candidate_structures: list[dict[str, Any]] = []
                     for seed_index in range(seed_count):
@@ -71,19 +72,37 @@ class PeptideDesignWorkflow:
                             + candidate_index * 10_000
                             + seed_index
                         )
-                        structure = await workflow.execute_activity(
-                            "predict_boltz2_complex",
-                            {
-                                "run_id": request["run_id"],
-                                "spec": spec,
-                                "candidate": candidate,
-                                "seed": structure_seed,
-                            },
-                            task_queue="pepagent-gpu-boltz2",
-                            start_to_close_timeout=timedelta(hours=6),
-                            heartbeat_timeout=timedelta(minutes=5),
-                            retry_policy=retry,
-                        )
+                        try:
+                            structure = await workflow.execute_activity(
+                                "predict_boltz2_complex",
+                                {
+                                    "run_id": request["run_id"],
+                                    "spec": spec,
+                                    "candidate": candidate,
+                                    "seed": structure_seed,
+                                },
+                                task_queue="pepagent-gpu-boltz2",
+                                start_to_close_timeout=timedelta(hours=6),
+                                heartbeat_timeout=timedelta(minutes=5),
+                                retry_policy=retry,
+                            )
+                        except Exception as error:
+                            if not diagnostic_fast:
+                                raise
+                            await workflow.execute_activity(
+                                "persist_structure_unavailable",
+                                {
+                                    "run_id": request["run_id"],
+                                    "candidate": candidate,
+                                    "reason": "boltz_prediction_or_coordinate_failure",
+                                    "error_type": type(error).__name__,
+                                    "error": str(error),
+                                },
+                                task_queue="pepagent-control",
+                                start_to_close_timeout=timedelta(minutes=5),
+                                retry_policy=retry,
+                            )
+                            continue
                         structure = await workflow.execute_activity(
                             "persist_boltz2_evidence",
                             {"run_id": request["run_id"], "structure": structure},
@@ -93,7 +112,7 @@ class PeptideDesignWorkflow:
                         )
                         candidate_structures.append(structure)
                         round_structures.append(structure)
-                    if autoresearch:
+                    if autoresearch and candidate_structures:
                         audit = await workflow.execute_activity(
                             "audit_structure_ensemble",
                             {
@@ -116,12 +135,16 @@ class PeptideDesignWorkflow:
                         ensembles.append(audit)
                 all_structures.extend(round_structures)
                 round_rosetta_results: list[dict[str, Any]] = []
-                if spec.get("rosetta_enabled", False):
+                run_rosetta = spec.get("rosetta_enabled", False) and (
+                    not diagnostic_fast or generation == generation_count - 1
+                )
+                if run_rosetta:
                     selection_request = (
                         {
                             "ensembles": ensembles,
                             "top_k": spec.get("rosetta_top_k", 1),
                             "exploratory_slots": spec.get("exploratory_rosetta_slots", 0),
+                            "mode": "diagnostic_shadow" if diagnostic_fast else "legacy_gate",
                         }
                         if autoresearch
                         else {

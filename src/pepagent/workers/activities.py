@@ -31,6 +31,7 @@ from pepagent.provenance.environment import fingerprint_runtime
 from pepagent.provenance.hashing import sha256_file, sha256_json
 from pepagent.selection import (
     cheap_diverse_selection,
+    diagnostic_representative_selection,
     diversity_constrained_elites,
     qualification_violations,
 )
@@ -38,6 +39,7 @@ from pepagent.settings import get_settings
 from pepagent.storage.object_store import ContentAddressedObjectStore, StoredObject
 from pepagent.structures.interface import (
     audit_protein_peptide_interface,
+    classify_structure_support,
     pose_cluster_fraction,
 )
 
@@ -516,12 +518,31 @@ async def persist_and_select_candidates(request: dict[str, Any]) -> list[dict[st
             if candidate is None:
                 raise KeyError(f"candidate not found: {item['id']}")
             candidate.proposal_rank = rank
-        selected = cheap_diverse_selection(
-            persisted,
-            int(request["spec"]["structure_top_k"]),
-            float(request["spec"].get("maximum_sequence_similarity", 0.75)),
-            request["spec"].get("metric_policy"),
-        )
+        spec = request["spec"]
+        if spec.get("structure_protocol") == "diagnostic_fast":
+            final_generation = generation == int(spec["generations"]) - 1
+            if final_generation:
+                selected = cheap_diverse_selection(
+                    persisted,
+                    int(spec.get("final_structure_candidate_count", 8)),
+                    float(spec.get("maximum_sequence_similarity", 0.75)),
+                    spec.get("metric_policy"),
+                )
+            else:
+                selected = diagnostic_representative_selection(
+                    persisted,
+                    int(spec.get("search_structure_comprehensive_count", 2)),
+                    int(spec.get("search_structure_diversity_count", 2)),
+                    float(spec.get("maximum_sequence_similarity", 0.75)),
+                    spec.get("metric_policy"),
+                )
+        else:
+            selected = cheap_diverse_selection(
+                persisted,
+                int(spec["structure_top_k"]),
+                float(spec.get("maximum_sequence_similarity", 0.75)),
+                spec.get("metric_policy"),
+            )
         for item in selected:
             await repository.transition_candidate(
                 uuid.UUID(item["id"]),
@@ -604,6 +625,57 @@ async def predict_boltz2_complex(request: dict[str, Any]) -> dict[str, Any]:
             "engine_artifacts": engine_artifacts,
         },
     }
+
+
+@activity.defn(name="persist_structure_unavailable")
+async def persist_structure_unavailable(request: dict[str, Any]) -> dict[str, Any]:
+    """Preserve a structural diagnostic failure without rejecting the peptide sequence."""
+    run_id = uuid.UUID(request["run_id"])
+    candidate = request["candidate"]
+    raw = {
+        "structure_available": False,
+        "structure_support": {"label": "unavailable", "reasons": [request["reason"]]},
+        "error_type": request.get("error_type"),
+        "error": request.get("error"),
+    }
+    environment_sha256, _ = fingerprint_runtime()
+    async with SessionFactory() as session, session.begin():
+        repository = ExperimentRepository(session)
+        call = await repository.record_completed_tool_call(
+            run_id,
+            "structure-unavailable-recorder",
+            "1.0.0",
+            environment_sha256,
+            {"candidate_id": candidate["id"]},
+            {"policy": "diagnostic-fast-no-sequence-rejection"},
+            raw,
+            model_uri="deterministic://structure-unavailable-recorder",
+        )
+        await repository.record_evaluation(
+            uuid.UUID(candidate["id"]),
+            call.id,
+            MetricName.STRUCTURE_AVAILABLE,
+            0.0,
+            "dimensionless",
+            raw,
+        )
+        await repository.record_evaluation(
+            uuid.UUID(candidate["id"]),
+            call.id,
+            MetricName.STRUCTURE_SUPPORT,
+            None,
+            None,
+            raw,
+            text_value="unavailable",
+            limitations=["structural calculation unavailable; sequence remains eligible"],
+        )
+        await repository.transition_candidate(
+            uuid.UUID(candidate["id"]),
+            CandidateStatus.STRUCTURE_SCORED,
+            "diagnostic-fast",
+            "structure unavailable; preserved as a non-eliminating diagnostic",
+        )
+    return {"candidate": candidate, "audit": raw, "tool_call_id": str(call.id)}
 
 
 @activity.defn(name="persist_boltz2_evidence")
@@ -691,10 +763,20 @@ async def select_rosetta_inputs(request: dict[str, Any]) -> list[dict[str, Any]]
     if "ensembles" in request:
         ensembles = request["ensembles"]
         top_k = int(request["top_k"])
-        admitted = [item for item in ensembles if item["audit"]["gate_pass"]]
+        diagnostic_shadow = request.get("mode") == "diagnostic_shadow"
+        admitted = (
+            [
+                item
+                for item in ensembles
+                if item["audit"].get("structure_available")
+                and item["audit"].get("structure_support", {}).get("label") != "unavailable"
+            ]
+            if diagnostic_shadow
+            else [item for item in ensembles if item["audit"]["gate_pass"]]
+        )
         admitted.sort(
             key=lambda item: (
-                item["audit"]["pocket_contact_consistency"],
+                item["audit"].get("pocket_contact_consistency") or 0.0,
                 item["audit"]["pair_iptm_median"],
             ),
             reverse=True,
@@ -717,7 +799,11 @@ async def select_rosetta_inputs(request: dict[str, Any]) -> list[dict[str, Any]]
         async with SessionFactory() as session, session.begin():
             repository = ExperimentRepository(session)
             for item in chosen:
-                mode = item.get("rosetta_selection_mode", "admitted_structure_gate")
+                mode = (
+                    "diagnostic_shadow_tiebreak"
+                    if diagnostic_shadow
+                    else item.get("rosetta_selection_mode", "admitted_structure_gate")
+                )
                 await repository.transition_candidate(
                     uuid.UUID(item["candidate"]["id"]),
                     CandidateStatus.ROSETTA_QUEUED,
@@ -729,8 +815,10 @@ async def select_rosetta_inputs(request: dict[str, Any]) -> list[dict[str, Any]]
                 **item["representative"],
                 "interface_audit": item["audit"],
                 "interface_audit_tool_call_id": item["tool_call_id"],
-                "rosetta_selection_mode": item.get(
-                    "rosetta_selection_mode", "admitted_structure_gate"
+                "rosetta_selection_mode": (
+                    "diagnostic_shadow_tiebreak"
+                    if diagnostic_shadow
+                    else item.get("rosetta_selection_mode", "admitted_structure_gate")
                 ),
             }
             for item in chosen
@@ -826,24 +914,32 @@ async def audit_structure_ensemble(request: dict[str, Any]) -> dict[str, Any]:
                 **coordinate_audit,
             }
         )
-    pose_consistency = await asyncio.to_thread(
-        pose_cluster_fraction,
-        pose_paths,
-        float(spec.get("interface_pose_cluster_rmsd_angstrom", 4.0)),
+    pose_consistency = (
+        await asyncio.to_thread(
+            pose_cluster_fraction,
+            pose_paths,
+            float(spec.get("interface_pose_cluster_rmsd_angstrom", 4.0)),
+        )
+        if len(pose_paths) > 1
+        else None
     )
     required_contacts = int(spec.get("interface_min_pocket_contacts", 1))
-    contact_consistency = sum(
-        audit["pocket_contact_count"] >= required_contacts for audit in sample_audits
-    ) / len(sample_audits)
+    contact_consistency = (
+        sum(audit["pocket_contact_count"] >= required_contacts for audit in sample_audits)
+        / len(sample_audits)
+        if len(sample_audits) > 1
+        else None
+    )
     pair_values = [
         float(audit["pair_iptm"]) for audit in sample_audits if audit["pair_iptm"] is not None
     ]
     pair_median = median(pair_values) if pair_values else 0.0
     gate_checks = {
-        "pocket_contact_consistency": contact_consistency
-        >= float(spec.get("interface_min_seed_consistency", 0.5)),
+        "pocket_contact_consistency": contact_consistency is not None
+        and contact_consistency >= float(spec.get("interface_min_seed_consistency", 0.5)),
         "pair_iptm_median": pair_median >= float(spec.get("interface_min_pair_iptm_median", 0.2)),
-        "pose_cluster_fraction": pose_consistency["largest_cluster_fraction"]
+        "pose_cluster_fraction": pose_consistency is not None
+        and pose_consistency["largest_cluster_fraction"]
         >= float(spec.get("interface_min_pose_cluster_fraction", 0.5)),
         "no_cross_chain_clash": all(
             audit["cross_chain_clash_count"] == 0 for audit in sample_audits
@@ -857,6 +953,17 @@ async def audit_structure_ensemble(request: dict[str, Any]) -> dict[str, Any]:
             -sample_audits[index]["cross_chain_clash_count"],
         ),
     )
+    representative = sample_audits[representative_index]
+    support = classify_structure_support(
+        structure_available=True,
+        pair_iptm=representative["pair_iptm"],
+        pocket_contact_count=representative["pocket_contact_count"],
+        clash_count=representative["cross_chain_clash_count"],
+        severe_clash_count=int(spec.get("severe_structure_clash_count", 25)),
+        minimum_pair_iptm=float(spec.get("interface_min_pair_iptm_median", 0.2)),
+        minimum_pocket_contacts=required_contacts,
+    )
+    diagnostic_fast = spec.get("structure_protocol") == "diagnostic_fast"
     result = {
         "schema_version": "1.0",
         "candidate_id": candidate["id"],
@@ -866,8 +973,11 @@ async def audit_structure_ensemble(request: dict[str, Any]) -> dict[str, Any]:
         "pocket_contact_consistency": contact_consistency,
         "pair_iptm_median": pair_median,
         "pose_consistency": pose_consistency,
+        "structure_available": True,
+        "structure_support": support,
         "gate_checks": gate_checks,
-        "gate_pass": all(gate_checks.values()),
+        "gate_pass": None if diagnostic_fast else all(gate_checks.values()),
+        "gate_policy": "diagnostic_only" if diagnostic_fast else "legacy_hard_gate",
         "representative_index": representative_index,
     }
     raw_artifact = await _store_json(result)
@@ -945,6 +1055,7 @@ async def persist_interface_audit(request: dict[str, Any]) -> dict[str, Any]:
         representative = audit["sample_audits"][audit["representative_index"]]
         metrics = {
             MetricName.BOLTZ2_PAIR_IPTM_MEDIAN: audit["pair_iptm_median"],
+            MetricName.STRUCTURE_AVAILABLE: int(audit["structure_available"]),
             MetricName.POCKET_CONTACT_COUNT: representative["pocket_contact_count"],
             MetricName.POCKET_CONTACT_CONSISTENCY: audit["pocket_contact_consistency"],
             MetricName.POCKET_COVERAGE_FRACTION: representative["pocket_coverage_fraction"],
@@ -953,10 +1064,18 @@ async def persist_interface_audit(request: dict[str, Any]) -> dict[str, Any]:
                 "minimum_interface_distance_angstrom"
             ],
             MetricName.INTERFACE_CLASH_COUNT: representative["cross_chain_clash_count"],
-            MetricName.POSE_CLUSTER_FRACTION: audit["pose_consistency"]["largest_cluster_fraction"],
-            MetricName.INTERFACE_GATE_PASS: int(audit["gate_pass"]),
+            MetricName.POSE_CLUSTER_FRACTION: (
+                audit["pose_consistency"]["largest_cluster_fraction"]
+                if audit["pose_consistency"] is not None
+                else None
+            ),
+            MetricName.INTERFACE_GATE_PASS: (
+                int(audit["gate_pass"]) if audit["gate_pass"] is not None else None
+            ),
         }
         for metric_name, value in metrics.items():
+            if value is None:
+                continue
             unit = (
                 "angstrom"
                 if metric_name == MetricName.INTERFACE_MIN_DISTANCE_ANGSTROM
@@ -968,6 +1087,20 @@ async def persist_interface_audit(request: dict[str, Any]) -> dict[str, Any]:
             await repository.record_evaluation(
                 candidate_id, call.id, metric_name, float(value), unit, audit
             )
+        await repository.record_evaluation(
+            candidate_id,
+            call.id,
+            MetricName.STRUCTURE_SUPPORT,
+            None,
+            None,
+            audit,
+            text_value=audit["structure_support"]["label"],
+            limitations=(
+                ["single Boltz pose; pose and contact consistency are not estimable"]
+                if audit["sample_count"] == 1
+                else []
+            ),
+        )
         result["tool_call_id"] = str(call.id)
     return result
 
@@ -1016,6 +1149,11 @@ async def score_rosetta_complex(request: dict[str, Any]) -> dict[str, Any]:
         "--input-structure",
         str(input_pdb),
     )
+    if spec.get("structure_protocol") == "diagnostic_fast":
+        result.setdefault("limitations", []).append(
+            "Eight-or-fewer decoys from a predicted Boltz pose are a shadow local-energy "
+            "diagnostic, not decision-grade affinity or uncertainty estimation."
+        )
     raw_artifact = await _store_json(result)
     engine_artifacts: list[dict[str, Any]] = []
     for relative_path in result["artifacts"]:
@@ -1027,6 +1165,7 @@ async def score_rosetta_complex(request: dict[str, Any]) -> dict[str, Any]:
     environment_artifact = await _store_json(environment)
     return {
         "candidate": candidate,
+        "interface_audit": structure.get("interface_audit"),
         "input": payload,
         "parameters": {
             "score_function": payload["score_function"],
@@ -1037,6 +1176,22 @@ async def score_rosetta_complex(request: dict[str, Any]) -> dict[str, Any]:
             "pack_separated": True,
             "primary_aggregation": result["primary_aggregation"],
             "validation_case": validation_case,
+            "evidence_grade": (
+                "shadow_diagnostic"
+                if spec.get("structure_protocol") == "diagnostic_fast"
+                else "formal_relative_reranking"
+            ),
+            "support_thresholds": {
+                "severe_structure_clash_count": int(
+                    spec.get("severe_structure_clash_count", 25)
+                ),
+                "interface_min_pair_iptm_median": float(
+                    spec.get("interface_min_pair_iptm_median", 0.2)
+                ),
+                "interface_min_pocket_contacts": int(
+                    spec.get("interface_min_pocket_contacts", 1)
+                ),
+            },
         },
         "rosetta": result,
         "provenance": {
@@ -1151,6 +1306,32 @@ async def persist_rosetta_evidence(request: dict[str, Any]) -> dict[str, Any]:
                 float(value),
                 unit,
                 rosetta,
+                limitations=rosetta["limitations"],
+            )
+        if result.get("interface_audit") is not None:
+            interface_audit = result["interface_audit"]
+            thresholds = result["parameters"]["support_thresholds"]
+            representative = interface_audit["sample_audits"][
+                interface_audit["representative_index"]
+            ]
+            support = classify_structure_support(
+                structure_available=bool(interface_audit.get("structure_available", True)),
+                pair_iptm=representative.get("pair_iptm"),
+                pocket_contact_count=representative.get("pocket_contact_count"),
+                clash_count=representative.get("cross_chain_clash_count"),
+                severe_clash_count=thresholds["severe_structure_clash_count"],
+                minimum_pair_iptm=thresholds["interface_min_pair_iptm_median"],
+                minimum_pocket_contacts=thresholds["interface_min_pocket_contacts"],
+                rosetta_dg=rosetta["primary_dG_separated_reu"],
+            )
+            await repository.record_evaluation(
+                candidate_id,
+                call.id,
+                MetricName.STRUCTURE_SUPPORT,
+                None,
+                None,
+                {"structure_support": support, "interface_audit": interface_audit},
+                text_value=support["label"],
                 limitations=rosetta["limitations"],
             )
         await repository.transition_candidate(

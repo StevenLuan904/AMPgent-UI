@@ -164,3 +164,24 @@ GPU workers connect outward only through two loopback-bound reverse SSH forwards
 MinIO S3 API. SSH authentication uses the installed DPAPI/ASKPASS helper. Remote worker concurrency
 is one activity per process and each role is pinned to an explicitly selected GPU. PostgreSQL is not
 exposed to the GPU server; control activities perform canonical database writes locally.
+# Fast diagnostic structure protocol
+
+Production sequence search uses `structure_protocol: diagnostic_fast` to allocate compute to
+sequence and functional-property exploration instead of refining uncertain predicted poses to
+spurious numerical precision. Each non-final generation sends two property leaders and two
+sequence-diversity representatives to one Boltz seed each. The final generation sends 5--10
+qualified, mutually diverse candidates to one seed each; at most three receive eight
+FlexPepDock decoys as a shadow tie-break diagnostic. Rosetta does not run in intermediate
+generations.
+
+The coordinate evidence is decomposed into `structure_available`, `pair_iptm`,
+`pocket_contact_count`, `pocket_contact_consistency`, `pose_cluster_fraction`, `clash_count`,
+and `rosetta_dg`. Single-seed runs deliberately leave cross-seed consistency and pose-cluster
+metrics missing rather than reporting a vacuous value of 1. Structural evidence is summarized
+as `positive`, `weak`, `conflicting`, or `unavailable`; it is not a qualification gate. Only
+corrupt coordinates, chain-parsing failures, or severe atomic overlap are structural calculation
+failures, and even these do not reject the peptide sequence.
+
+Eight-decoy results from a Boltz pose are explicitly `shadow_diagnostic` evidence. The separate
+`RosettaValidationWorkflow` retains the >=200-decoy contract for formal same-protocol relative
+reranking and public-complex validation. Neither lane is calibrated experimental affinity.

@@ -98,3 +98,43 @@ def pose_cluster_fraction(paths: list[Path], threshold_angstrom: float) -> dict[
         "pairwise_rmsd_angstrom": pairwise,
         "threshold_angstrom": threshold_angstrom,
     }
+
+
+def classify_structure_support(
+    *,
+    structure_available: bool,
+    pair_iptm: float | None,
+    pocket_contact_count: int | None,
+    clash_count: int | None,
+    severe_clash_count: int,
+    minimum_pair_iptm: float,
+    minimum_pocket_contacts: int,
+    rosetta_dg: float | None = None,
+) -> dict[str, Any]:
+    """Classify uncertain structural evidence without turning it into a sequence gate."""
+    reasons: list[str] = []
+    if not structure_available:
+        return {"label": "unavailable", "reasons": ["coordinates_unavailable"]}
+    if clash_count is not None and clash_count >= severe_clash_count:
+        reasons.append("severe_cross_chain_overlap")
+        return {"label": "conflicting", "reasons": reasons}
+    boltz_positive = (
+        pair_iptm is not None
+        and pair_iptm >= minimum_pair_iptm
+        and pocket_contact_count is not None
+        and pocket_contact_count >= minimum_pocket_contacts
+    )
+    if rosetta_dg is not None and rosetta_dg < 0 and not boltz_positive:
+        return {
+            "label": "conflicting",
+            "reasons": ["favorable_local_rosetta_energy_but_weak_boltz_support"],
+        }
+    if boltz_positive:
+        return {"label": "positive", "reasons": ["single_pose_geometry_support"]}
+    if pair_iptm is None:
+        reasons.append("pair_iptm_unavailable")
+    elif pair_iptm < minimum_pair_iptm:
+        reasons.append("low_pair_iptm")
+    if not pocket_contact_count:
+        reasons.append("no_pocket_contact")
+    return {"label": "weak", "reasons": reasons or ["limited_single_pose_support"]}

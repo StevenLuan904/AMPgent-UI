@@ -126,3 +126,14 @@ Scientific basis and limitations:
   implementation.
 - These studies support a warning and qualification policy, but do not validate the exact AceA
   thresholds or turn sequence heuristics into measured stability.
+# Structural support is diagnostic
+
+`interface_gate_pass` is a legacy ensemble-protocol field and is not emitted by the fast
+protocol. Fast-search structure outputs are independent diagnostics. The text-valued
+`structure_support` classification is one of `positive`, `weak`, `conflicting`, or
+`unavailable`; none is a hard sequence qualification. A favorable small-ensemble Rosetta dG
+combined with weak or inconsistent Boltz geometry is `conflicting`: local energy support exists,
+but the predicted structural hypothesis is not corroborated.
+Accordingly, the historical `dG_separated=-5.018 REU` example is recorded as local Rosetta
+energy support with conflicting Boltz structural evidence--neither a valid hit nor a wholly
+invalid peptide candidate.

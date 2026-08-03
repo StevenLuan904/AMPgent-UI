@@ -65,6 +65,13 @@ class ExperimentSpec(BaseModel):
     structure_top_k: int = 8
     generations: int = 2
     autoresearch_enabled: bool = False
+    structure_protocol: Literal["legacy_ensemble_gate", "diagnostic_fast"] = (
+        "legacy_ensemble_gate"
+    )
+    search_structure_comprehensive_count: int = Field(default=2, ge=0, le=10)
+    search_structure_diversity_count: int = Field(default=2, ge=0, le=10)
+    final_structure_candidate_count: int = Field(default=8, ge=1, le=10)
+    severe_structure_clash_count: int = Field(default=25, ge=1)
     seed: int = 20260731
     pepmlm_model: str = "ChatterjeeLab/PepMLM-650M"
     search_regime: Literal["E0", "E1", "E2", "E3", "E4"] = "E0"
@@ -125,11 +132,15 @@ class ExperimentSpec(BaseModel):
 
     @model_validator(mode="after")
     def validate_rosetta_protocol(self) -> "ExperimentSpec":
-        if self.rosetta_enabled and self.rosetta_nstruct < 200:
+        if (
+            self.rosetta_enabled
+            and self.structure_protocol == "legacy_ensemble_gate"
+            and self.rosetta_nstruct < 200
+        ):
             raise ValueError(
                 "decision-bearing FlexPepDock runs require at least 200 refinement decoys"
             )
-        if self.rosetta_top_k > self.structure_top_k:
+        if self.rosetta_top_k > max(self.structure_top_k, self.final_structure_candidate_count):
             raise ValueError("rosetta_top_k cannot exceed structure_top_k")
         if self.mutation_count_max < self.mutation_count_min:
             raise ValueError("mutation_count_max cannot be below mutation_count_min")
@@ -138,10 +149,26 @@ class ExperimentSpec(BaseModel):
                 raise ValueError("MVP-v2 Auto Research requires at least three generations")
             if not self.target.pocket_residues:
                 raise ValueError("MVP-v2 Auto Research requires versioned pocket residues")
-            if self.boltz_seeds_per_candidate < 2:
+            if (
+                self.structure_protocol == "legacy_ensemble_gate"
+                and self.boltz_seeds_per_candidate < 2
+            ):
                 raise ValueError("MVP-v2 Auto Research requires multiple independent Boltz seeds")
-            if not self.rosetta_enabled:
+            if self.structure_protocol == "legacy_ensemble_gate" and not self.rosetta_enabled:
                 raise ValueError("MVP-v2 Auto Research requires the admitted Rosetta lane")
+            if self.structure_protocol == "diagnostic_fast":
+                representative_count = (
+                    self.search_structure_comprehensive_count
+                    + self.search_structure_diversity_count
+                )
+                if representative_count < 1:
+                    raise ValueError("diagnostic_fast requires at least one search representative")
+                if self.boltz_seeds_per_candidate != 1:
+                    raise ValueError(
+                        "diagnostic_fast requires exactly one Boltz seed per candidate"
+                    )
+                if self.rosetta_enabled and self.rosetta_nstruct > 8:
+                    raise ValueError("diagnostic_fast permits at most eight shadow Rosetta decoys")
         diversity_rules = [
             rule
             for rule in self.metric_policy

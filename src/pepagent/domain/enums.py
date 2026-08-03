@@ -50,6 +50,8 @@ class MetricName(StrEnum):
     INTERFACE_MIN_DISTANCE_ANGSTROM = "interface_min_distance_angstrom"
     INTERFACE_CLASH_COUNT = "interface_clash_count"
     POSE_CLUSTER_FRACTION = "pose_cluster_fraction"
+    STRUCTURE_AVAILABLE = "structure_available"
+    STRUCTURE_SUPPORT = "structure_support"
     INTERFACE_GATE_PASS = "interface_gate_pass"
     PEPPAP_PKD_PKI = "peppap_pkd_pki"
     PEPPAP_DELTA_G_KCAL_MOL = "peppap_delta_g_kcal_mol"
