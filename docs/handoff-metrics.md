@@ -61,3 +61,9 @@ cytotoxicity, and antimicrobial MIC range. Natural melittin is C-terminally amid
 chemistry must be declared in the descriptor configuration. The control tests data flow and whether
 metric directions are qualitatively sensible; one peptide cannot calibrate a model or validate use
 as a hard decision gate.
+
+The first isolated external replay enables only Macrel 1.6.1 at commit `8c1f732`. Its two ONNX
+asset hashes exactly match the handoff manifest. On full-length amidated melittin from the 8AHS
+control it reports AMP probability `0.812` and hemolysis probability `0.990` (`high`), matching the
+known qualitative direction. This admits Macrel only as soft evidence; it does not validate the
+threshold, substitute for an assay, or activate HemoPI2 by implication.

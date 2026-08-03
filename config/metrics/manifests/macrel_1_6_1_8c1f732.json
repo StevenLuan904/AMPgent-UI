@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "metric_plugin": "hemolysis_risk",
+  "decision_role": "soft_supporting_evidence_only",
+  "source": {
+    "repository": "https://github.com/BigDataBiology/Macrel",
+    "commit": "8c1f7321618ccde2a28b960d32525620d2c737e3",
+    "version": "1.6.1",
+    "license": "MIT"
+  },
+  "model_assets": [
+    {
+      "file": "AMP.onnx.gz",
+      "sha256": "0a674ef6f774c26e6d2f80d550df3fc54973ae05bfeee1b9dfd905e027a4a388"
+    },
+    {
+      "file": "Hemo.onnx.gz",
+      "sha256": "6c68af240d43f6fde2eff64645f7f5cedf215b619e510b75c47b257b0713e8b1"
+    }
+  ],
+  "model_asset_manifest_sha256": "0d19dcbfa1f8254e482d889b7e2e1be398bb77f692bd27ab43278da29545cf83",
+  "runtime": {
+    "python": "3.11.10",
+    "macrel": "1.6.1",
+    "numpy": "2.4.6",
+    "onnxruntime": "1.28.0",
+    "pandas": "3.0.5",
+    "pyrodigal": "3.7.1"
+  },
+  "public_control": {
+    "suite": "handoff-metrics-public-complex-melittin-8ahs-v1",
+    "report_sha256": "7dbdb209f2f517397e7f44dac20734c42638c3968f7a214d5bbc0f94e8d57dbf",
+    "amp_probability": 0.812,
+    "hemolysis_probability": 0.99,
+    "hemolysis_label": "high",
+    "expected_direction_reproduced": true
+  },
+  "limitations": [
+    "The public control validates execution and expected qualitative direction, not calibration.",
+    "Macrel is not an AceA binding, MIC, or experimental hemolysis assay.",
+    "The handoff warned that the official 0.5 threshold overcalled hemolysis on one cross-source dataset."
+  ]
+}

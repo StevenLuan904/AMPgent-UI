@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gzip
 import sys
 from pathlib import Path
 
@@ -8,6 +9,10 @@ import yaml
 
 from pepagent.domain.schemas import ExperimentSpec, TargetSpec
 from pepagent.handoff_metrics import normalize_metric_records, physicochemical_descriptors
+from pepagent.model_workers.macrel_metric_cli import (
+    expected_macrel_sequence,
+    parse_prediction_rows,
+)
 from pepagent.model_workers.sequence_metrics_cli import evaluate
 from pepagent.validation import handoff as handoff_validation
 from pepagent.workers.temporal_worker import ROLE_CONFIG
@@ -158,6 +163,25 @@ def test_external_adapter_retry_cannot_reuse_stale_predictions(tmp_path: Path) -
     assert result["status"] == "unavailable"
     assert result["reason"] == "external adapter exited with code 0"
     assert not (work_dir / "predictions.csv").exists()
+
+
+def test_macrel_adapter_parses_comments_and_declares_n_terminal_met_normalization(
+    tmp_path: Path,
+) -> None:
+    prediction_path = tmp_path / "macrel.out.prediction.gz"
+    with gzip.open(prediction_path, "wt", encoding="utf-8", newline="") as stream:
+        stream.write("# macrel 1.6.1\n")
+        stream.write("Access\tSequence\tAMP_probability\n")
+        stream.write("candidate-1\tKLLK\t0.812\n")
+
+    assert parse_prediction_rows(prediction_path) == [
+        {"Access": "candidate-1", "Sequence": "KLLK", "AMP_probability": "0.812"}
+    ]
+    assert expected_macrel_sequence("MKLLK") == (
+        "KLLK",
+        "Macrel removed the N-terminal M",
+    )
+    assert expected_macrel_sequence("KLLK") == ("KLLK", "")
 
 
 @pytest.mark.parametrize(
