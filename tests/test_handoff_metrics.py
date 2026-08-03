@@ -15,6 +15,7 @@ from pepagent.model_workers.macrel_metric_cli import (
 )
 from pepagent.model_workers.sequence_metrics_cli import evaluate
 from pepagent.validation import handoff as handoff_validation
+from pepagent.validation.handoff import assess_qualitative_checks
 from pepagent.workers.temporal_worker import ROLE_CONFIG
 
 
@@ -130,8 +131,7 @@ def test_external_adapter_retry_cannot_reuse_stale_predictions(tmp_path: Path) -
     work_dir = tmp_path / "adapter-work"
     work_dir.mkdir()
     (work_dir / "predictions.csv").write_text(
-        "candidate_id,sequence,amplify_probability,amplify_label\n"
-        "candidate-1,KLLK,0.99,AMP\n",
+        "candidate_id,sequence,amplify_probability,amplify_label\ncandidate-1,KLLK,0.99,AMP\n",
         encoding="utf-8",
     )
     registry_path = tmp_path / "registry.yaml"
@@ -302,3 +302,45 @@ def test_public_complex_validation_uses_full_sequence_for_metrics(
         {"id": "pdb-8ahs-auth-chain-c", "sequence": full_sequence}
     ]
     assert result["descriptor_reproduced"] is True
+
+
+def test_public_control_separates_runtime_success_from_scientific_conflict() -> None:
+    checks = [
+        {
+            "name": "toxicity_direction",
+            "plugin": "toxicity_risk",
+            "metric_name": "toxinpred3_label",
+            "operator": "eq",
+            "value": "Toxin",
+            "expected": "toxic-risk direction",
+        },
+        {
+            "name": "mic_available",
+            "plugin": "mic_potency",
+            "metric_name": "llamp_predicted_mic_um",
+            "operator": "finite",
+            "expected": "finite prediction",
+        },
+    ]
+    results = {
+        "toxicity_risk": {
+            "status": "complete",
+            "records": [
+                {
+                    "observations": [
+                        {
+                            "metric_name": "toxinpred3_label",
+                            "numeric_value": None,
+                            "text_value": "Non-Toxin",
+                        }
+                    ]
+                }
+            ],
+        },
+        "mic_potency": {"status": "unavailable", "records": []},
+    }
+
+    assessments = assess_qualitative_checks(checks, results)
+
+    assert assessments["toxicity_direction"]["status"] == "conflicting"
+    assert assessments["mic_available"]["status"] == "unavailable"

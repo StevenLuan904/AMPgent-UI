@@ -93,6 +93,36 @@ qualitative_acceptance:
   mic_potency: finite prediction expected; no numeric calibration claim from one case
   serum_half_life: shadow output only; no pass/fail expectation
   aggregation_apr: shadow output only; no pass/fail expectation
+qualitative_checks:
+  - name: macrel_amp_direction
+    plugin: hemolysis_risk
+    metric_name: macrel_amp_probability
+    operator: ge
+    value: 0.5
+    expected: generic AMP-positive direction
+  - name: macrel_hemolysis_direction
+    plugin: hemolysis_risk
+    metric_name: macrel_hemolysis_probability
+    operator: ge
+    value: 0.5
+    expected: high hemolysis-risk direction
+  - name: toxinpred3_toxicity_direction
+    plugin: toxicity_risk
+    metric_name: toxinpred3_label
+    operator: eq
+    value: Toxin
+    expected: toxic-risk direction
+  - name: amplify_amp_direction
+    plugin: amp_likeness
+    metric_name: amplify_probability
+    operator: ge
+    value: 0.5
+    expected: generic AMP-positive direction
+  - name: llamp_mic_finite
+    plugin: mic_potency
+    metric_name: llamp_predicted_mic_um
+    operator: finite
+    expected: finite prediction; no calibration claim
 limitations:
   - One positive-control peptide validates plumbing and qualitative direction, not calibration.
   - The calmodulin-bound pose is not melittin's bacterial-membrane mechanism of action.

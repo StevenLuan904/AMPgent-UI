@@ -494,8 +494,10 @@ def validate_handoff_metrics(
     summary_keys = (
         "suite_id",
         "overall_status",
+        "scientific_status",
         "metric_statuses",
         "descriptor_reproduced",
+        "qualitative_checks",
     )
     typer.echo(
         json.dumps(

@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "metric_plugin": "toxicity_risk",
+  "decision_role": "soft_supporting_evidence_only",
+  "source": {
+    "repository": "https://github.com/raghavagps/toxinpred3",
+    "commit": "dcdba833cd48cc8a2090ac90f3319fd9bcb87a1c",
+    "implementation": "corrected_v0.2",
+    "license": "GPL-3.0"
+  },
+  "model_asset": {
+    "zip_sha256": "8358c20393adbb7c7ac4915628b6ba13a83e6be0b6cb704071700d6b4dbe6ce6",
+    "file": "toxinpred3.0_model.pkl",
+    "sha256": "bacaef2ff40136babe98edcde861ea79d62ea3420a6b1b5d36019fa0ddc2db3b"
+  },
+  "runtime": {
+    "python": "3.9.23",
+    "joblib": "1.5.1",
+    "numpy": "1.26.4",
+    "scikit_learn": "1.0.2",
+    "scipy": "1.13.1",
+    "threadpoolctl": "3.6.0"
+  },
+  "public_control": {
+    "suite": "handoff-metrics-public-complex-melittin-8ahs-v1",
+    "report_sha256": "92d81a01605f6e9e470cf76e8128d2eca670e0a9fd42c9ac00b9f9b8d52eba4c",
+    "ml_score": 0.82,
+    "negative_motif_match": true,
+    "hybrid_score": 0.32,
+    "prediction": "Non-Toxin",
+    "expected_direction_reproduced": false,
+    "scientific_status": "conflicting"
+  },
+  "limitations": [
+    "The corrected runner fixes one-record array shape and batch-dependent motif scoring.",
+    "Melittin conflicts with the expected experimental toxicity direction on this endpoint.",
+    "The model is not assay-matched and must not be promoted to a hard gate."
+  ]
+}

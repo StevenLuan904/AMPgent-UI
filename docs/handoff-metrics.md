@@ -67,3 +67,9 @@ asset hashes exactly match the handoff manifest. On full-length amidated melitti
 control it reports AMP probability `0.812` and hemolysis probability `0.990` (`high`), matching the
 known qualitative direction. This admits Macrel only as soft evidence; it does not validate the
 threshold, substitute for an assay, or activate HemoPI2 by implication.
+
+The corrected ToxinPred3 v0.2 runner also reproduces its pinned model and runtime, but the same
+control exposes a scientific conflict: melittin receives ML score `0.820`, then a negative literal
+motif lowers the hybrid score to `0.320` and the released threshold labels it `Non-Toxin`. The
+validation report therefore separates runtime `complete` from scientific `conflicting`. The result
+is retained as negative admission evidence and ToxinPred3 remains soft-only.
