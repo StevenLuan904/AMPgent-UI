@@ -6,6 +6,7 @@ from temporalio.worker import Worker
 from pepagent.settings import get_settings
 from pepagent.workers.activities import (
     audit_structure_ensemble,
+    evaluate_optional_sequence_metric,
     export_bulk_rosetta_csv,
     finalize_run,
     generate_with_pepmlm,
@@ -15,6 +16,8 @@ from pepagent.workers.activities import (
     persist_boltz2_evidence,
     persist_bulk_evaluation_failure,
     persist_interface_audit,
+    persist_optional_metric_failure,
+    persist_optional_sequence_metric,
     persist_rosetta_evidence,
     persist_structure_unavailable,
     predict_boltz2_complex,
@@ -36,6 +39,8 @@ ROLE_CONFIG = {
             mark_run_started,
             mark_run_failed,
             persist_and_select_candidates,
+            persist_optional_sequence_metric,
+            persist_optional_metric_failure,
             persist_boltz2_evidence,
             audit_structure_ensemble,
             persist_interface_audit,
@@ -57,6 +62,11 @@ ROLE_CONFIG = {
     "pepmlm": ("pepagent-gpu-pepmlm", [generate_with_pepmlm], []),
     "boltz2": ("pepagent-gpu-boltz2", [predict_boltz2_complex], []),
     "rosetta": ("pepagent-cpu-rosetta", [score_rosetta_complex], []),
+    "metrics": (
+        "pepagent-cpu-metrics",
+        [evaluate_optional_sequence_metric],
+        [],
+    ),
 }
 
 

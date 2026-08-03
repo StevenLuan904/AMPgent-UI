@@ -49,7 +49,7 @@ class PeptideDesignWorkflow:
                     heartbeat_timeout=timedelta(minutes=5),
                     retry_policy=retry,
                 )
-                selected = await workflow.execute_activity(
+                persisted_batch = await workflow.execute_activity(
                     "persist_and_select_candidates",
                     {
                         "run_id": request["run_id"],
@@ -63,6 +63,66 @@ class PeptideDesignWorkflow:
                     start_to_close_timeout=timedelta(minutes=10),
                     retry_policy=retry,
                 )
+                # Historical activity results were a plain selected-candidate list.
+                # Accept that shape so archived/in-flight pre-metric workflow histories
+                # remain replayable after this worker revision is deployed.
+                if isinstance(persisted_batch, list):
+                    selected = persisted_batch
+                    all_candidates = persisted_batch
+                else:
+                    selected = persisted_batch["structure_candidates"]
+                    all_candidates = persisted_batch["all_candidates"]
+                metric_stage = (
+                    "final" if generation == generation_count - 1 else "research"
+                )
+                for plugin in spec.get("optional_metrics", []):
+                    if not plugin.get("enabled", True) or metric_stage not in plugin["stages"]:
+                        continue
+                    try:
+                        metric_result = await workflow.execute_activity(
+                            "evaluate_optional_sequence_metric",
+                            {
+                                "run_id": request["run_id"],
+                                "generation": generation,
+                                "stage": metric_stage,
+                                "plugin": plugin,
+                                "candidates": all_candidates,
+                            },
+                            task_queue="pepagent-cpu-metrics",
+                            start_to_close_timeout=timedelta(hours=6),
+                            heartbeat_timeout=timedelta(minutes=5),
+                            retry_policy=retry,
+                        )
+                        await workflow.execute_activity(
+                            "persist_optional_sequence_metric",
+                            {
+                                "run_id": request["run_id"],
+                                "generation": generation,
+                                "plugin": plugin,
+                                "candidates": all_candidates,
+                                "metric_result": metric_result,
+                            },
+                            task_queue="pepagent-control",
+                            start_to_close_timeout=timedelta(minutes=30),
+                            retry_policy=retry,
+                        )
+                    except Exception as error:
+                        if plugin.get("failure_policy", "record_unavailable") == "fail_run":
+                            raise
+                        await workflow.execute_activity(
+                            "persist_optional_metric_failure",
+                            {
+                                "run_id": request["run_id"],
+                                "generation": generation,
+                                "plugin": plugin,
+                                "candidates": all_candidates,
+                                "error_type": type(error).__name__,
+                                "error": str(error),
+                            },
+                            task_queue="pepagent-control",
+                            start_to_close_timeout=timedelta(minutes=10),
+                            retry_policy=retry,
+                        )
                 round_structures: list[dict[str, Any]] = []
                 ensembles: list[dict[str, Any]] = []
                 seed_count = 1 if diagnostic_fast else int(spec.get("boltz_seeds_per_candidate", 1))

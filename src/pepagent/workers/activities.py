@@ -27,6 +27,7 @@ from pepagent.developability import (
     sequence_developability_metrics,
 )
 from pepagent.domain.enums import CandidateStatus, MetricName, RunStatus
+from pepagent.handoff_metrics import HANDOFF_METRIC_VERSION
 from pepagent.provenance.environment import fingerprint_runtime
 from pepagent.provenance.hashing import sha256_file, sha256_json
 from pepagent.reporting import (
@@ -362,7 +363,7 @@ async def generate_with_pepmlm(request: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 @activity.defn(name="persist_and_select_candidates")
-async def persist_and_select_candidates(request: dict[str, Any]) -> list[dict[str, Any]]:
+async def persist_and_select_candidates(request: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
     run_id = uuid.UUID(request["run_id"])
     generation = int(request.get("generation", 0))
     parents_by_sequence = {parent["sequence"]: parent for parent in request.get("parents", [])}
@@ -555,7 +556,255 @@ async def persist_and_select_candidates(request: dict[str, Any]) -> list[dict[st
                 "metric-role-policy-v1",
                 "passed proposal qualifications and ranked within the diversity constraint",
             )
-    return selected
+    metric_candidates = list({item["id"]: item for item in persisted}.values())
+    metric_candidates.sort(key=lambda item: (item["conditional_ppl"], item["sequence"]))
+    return {"structure_candidates": selected, "all_candidates": metric_candidates}
+
+
+@activity.defn(name="evaluate_optional_sequence_metric")
+async def evaluate_optional_sequence_metric(request: dict[str, Any]) -> dict[str, Any]:
+    """Run one optional metric plugin in an isolated metric-worker subprocess."""
+    settings = get_settings()
+    plugin_name = request["plugin"]["name"]
+    work_dir = (
+        Path(settings.work_root)
+        / request["run_id"]
+        / "optional-metrics"
+        / f"generation-{request['generation']}"
+        / plugin_name
+    )
+    result = await _run_json_cli(
+        "pepagent.model_workers.sequence_metrics_cli",
+        request,
+        work_dir,
+        "--work-dir",
+        str(work_dir / "adapter"),
+        "--registry",
+        settings.metric_adapter_registry_path,
+    )
+    environment_sha256, environment = fingerprint_runtime()
+    raw_artifact = await _store_json(result)
+    environment_artifact = await _store_json(environment)
+    return {
+        "result": result,
+        "provenance": {
+            "tool_name": f"handoff-metric-{plugin_name}",
+            "tool_version": result.get("adapter_version") or HANDOFF_METRIC_VERSION,
+            "model_uri": result.get("model_uri") or f"metric://{plugin_name}",
+            "weights_sha256": result.get("weights_sha256"),
+            "environment_sha256": environment_sha256,
+            "environment": environment,
+            "attempt": activity.info().attempt,
+            "raw_output_artifact": asdict(raw_artifact),
+            "environment_artifact": asdict(environment_artifact),
+        },
+    }
+
+
+@activity.defn(name="persist_optional_sequence_metric")
+async def persist_optional_sequence_metric(request: dict[str, Any]) -> dict[str, Any]:
+    """Persist normalized metric observations and immutable raw adapter evidence."""
+    run_id = uuid.UUID(request["run_id"])
+    result = request["metric_result"]["result"]
+    provenance = request["metric_result"]["provenance"]
+    plugin = result["plugin"]
+    limitations = [
+        f"handoff reliability: {result['contract']['reliability']}",
+        f"configured trust: {plugin['trust']}",
+        *result.get("limitations", []),
+    ]
+    async with SessionFactory() as session, session.begin():
+        repository = ExperimentRepository(session)
+        call = await repository.record_completed_tool_call(
+            run_id,
+            provenance["tool_name"],
+            provenance["tool_version"],
+            provenance["environment_sha256"],
+            {
+                "generation": request["generation"],
+                "candidate_ids": [item["id"] for item in request["candidates"]],
+            },
+            {
+                "plugin": plugin,
+                "contract_reliability": result["contract"]["reliability"],
+                "registry_sha256": result.get("registry_sha256"),
+            },
+            result,
+            weights_sha256=provenance.get("weights_sha256"),
+            model_uri=provenance["model_uri"],
+            attempt=provenance["attempt"],
+        )
+        await _register_artifact(
+            session,
+            call.id,
+            provenance["raw_output_artifact"],
+            "raw_output",
+            {"kind": "optional_metric_bundle", "plugin": plugin["name"]},
+        )
+        await _register_artifact(
+            session,
+            call.id,
+            provenance["environment_artifact"],
+            "environment_manifest",
+            {"kind": "runtime_environment", "plugin": plugin["name"]},
+        )
+        candidates_by_id = {
+            str(candidate.id): candidate
+            for candidate in await session.scalars(
+                select(Candidate).where(Candidate.run_id == run_id)
+            )
+        }
+        recorded = 0
+        if result["status"] == "complete":
+            for record in result["records"]:
+                candidate = candidates_by_id.get(record["candidate_id"])
+                if candidate is None:
+                    raise KeyError(f"metric candidate not found: {record['candidate_id']}")
+                if candidate.sequence != record["sequence"]:
+                    raise ValueError(
+                        f"metric sequence mismatch for candidate {record['candidate_id']}"
+                    )
+                record_succeeded = record.get("status") in {"complete", "ok", "success"}
+                for observation in record["observations"]:
+                    await repository.record_evaluation(
+                        candidate.id,
+                        call.id,
+                        observation["metric_name"],
+                        observation["numeric_value"],
+                        observation["unit"],
+                        {
+                            "plugin": plugin,
+                            "contract": result["contract"],
+                            "adapter_version": result.get("adapter_version"),
+                            "raw_row": record["raw"],
+                        },
+                        text_value=observation["text_value"],
+                        out_of_domain=not record_succeeded,
+                        limitations=limitations,
+                    )
+                    recorded += 1
+                if not record_succeeded:
+                    await repository.record_evaluation(
+                        candidate.id,
+                        call.id,
+                        f"{plugin['name']}_status",
+                        None,
+                        None,
+                        {
+                            "plugin": plugin,
+                            "status": record.get("status"),
+                            "raw_row": record["raw"],
+                            "sequence_remains_eligible": True,
+                        },
+                        text_value="unavailable",
+                        out_of_domain=True,
+                        limitations=[
+                            *limitations,
+                            "Candidate-level metric failure preserved sequence eligibility.",
+                        ],
+                    )
+                    recorded += 1
+        else:
+            for item in request["candidates"]:
+                candidate = candidates_by_id[item["id"]]
+                await repository.record_evaluation(
+                    candidate.id,
+                    call.id,
+                    f"{plugin['name']}_status",
+                    None,
+                    None,
+                    {
+                        "plugin": plugin,
+                        "status": result["status"],
+                        "reason": result.get("reason"),
+                        "sequence_remains_eligible": True,
+                    },
+                    text_value="unavailable",
+                    out_of_domain=True,
+                    limitations=[
+                        *limitations,
+                        "Metric unavailable; candidate eligibility was preserved.",
+                    ],
+                )
+                recorded += 1
+        await repository.append_event(
+            "run",
+            run_id,
+            "optional_metric.completed",
+            provenance["tool_name"],
+            {
+                "plugin": plugin["name"],
+                "generation": request["generation"],
+                "status": result["status"],
+                "evaluation_count": recorded,
+                "tool_call_id": str(call.id),
+            },
+        )
+    return {
+        "plugin": plugin["name"],
+        "status": result["status"],
+        "evaluation_count": recorded,
+        "tool_call_id": str(call.id),
+    }
+
+
+@activity.defn(name="persist_optional_metric_failure")
+async def persist_optional_metric_failure(request: dict[str, Any]) -> dict[str, Any]:
+    """Record a metric runtime failure without changing candidate eligibility."""
+    run_id = uuid.UUID(request["run_id"])
+    plugin = request["plugin"]
+    environment_sha256, _ = fingerprint_runtime()
+    raw = {
+        "status": "unavailable",
+        "plugin": plugin,
+        "generation": request["generation"],
+        "error_type": request["error_type"],
+        "error": request["error"][:8000],
+        "sequence_remains_eligible": True,
+    }
+    async with SessionFactory() as session, session.begin():
+        repository = ExperimentRepository(session)
+        call = await repository.record_completed_tool_call(
+            run_id,
+            f"handoff-metric-{plugin['name']}-failure-recorder",
+            HANDOFF_METRIC_VERSION,
+            environment_sha256,
+            {
+                "generation": request["generation"],
+                "candidate_ids": [item["id"] for item in request["candidates"]],
+            },
+            {"failure_policy": "record_unavailable"},
+            raw,
+            model_uri=f"deterministic://handoff-metric-{plugin['name']}-failure-recorder",
+        )
+        for item in request["candidates"]:
+            await repository.record_evaluation(
+                uuid.UUID(item["id"]),
+                call.id,
+                f"{plugin['name']}_status",
+                None,
+                None,
+                raw,
+                text_value="unavailable",
+                out_of_domain=True,
+                limitations=[
+                    "Optional metric runtime failed; candidate eligibility was preserved.",
+                    f"configured trust: {plugin['trust']}",
+                ],
+            )
+        await repository.append_event(
+            "run",
+            run_id,
+            "optional_metric.unavailable",
+            f"handoff-metric-{plugin['name']}-failure-recorder",
+            {
+                "plugin": plugin["name"],
+                "generation": request["generation"],
+                "candidate_count": len(request["candidates"]),
+                "tool_call_id": str(call.id),
+            },
+        )
+    return {"plugin": plugin["name"], "status": "unavailable"}
 
 
 @activity.defn(name="predict_boltz2_complex")

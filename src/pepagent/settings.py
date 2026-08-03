@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     worker_role: str = "control"
     worker_max_concurrent_activities: int = 1
     work_root: str = "./var/work"
+    metric_adapter_registry_path: str = "./config/metrics/runtime.local.yaml"
     pepmlm_model_path: str = "ChatterjeeLab/PepMLM-650M"
     pepmlm_model_revision: str = "898fca941a9057aebdd1a6164b5ee09a1a71780e"
     pepmlm_weights_sha256: str = (

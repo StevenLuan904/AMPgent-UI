@@ -19,6 +19,33 @@ BULK_ROSETTA_CSV_COLUMNS = [
     "hydrophobic_fraction",
     "maximum_hydrophobic_run",
     "maximum_identical_residue_run",
+    "molecular_weight_da",
+    "net_charge_ph7_4",
+    "isoelectric_point",
+    "hydrophobic_ratio_modlamp",
+    "hydrophobic_moment_eisenberg",
+    "hemopi2_hemolysis_score",
+    "hemopi2_hemolysis_label",
+    "macrel_amp_probability",
+    "macrel_hemolysis_probability",
+    "macrel_hemolysis_label",
+    "hemolysis_consensus_decision",
+    "toxinpred3_ml_score",
+    "toxinpred3_hybrid_score",
+    "toxinpred3_label",
+    "llamp_log10_mic_um",
+    "llamp_predicted_mic_um",
+    "amplify_probability",
+    "amplify_label",
+    "mmseqs_nearest_identity",
+    "mmseqs_nearest_query_coverage",
+    "mmseqs_nearest_target_coverage",
+    "mmseqs_nearest_evalue",
+    "esm2_nearest_cosine_similarity",
+    "peptiverse_predicted_log1p_half_life_hours",
+    "peptiverse_predicted_half_life_hours",
+    "aggrescanai_apr_mean",
+    "aggrescanai_apr_max",
     "nearest_selected_sequence_similarity",
     "boltz2_pair_iptm",
     "boltz2_pair_iptm_median",
@@ -74,6 +101,10 @@ def build_bulk_rosetta_rows(
             evaluation = metric_values.get(metric_name)
             return evaluation.numeric_value if evaluation is not None else None
 
+        def text_value(metric_name: str, metric_values: dict[str, Any] = metrics) -> str | None:
+            evaluation = metric_values.get(metric_name)
+            return evaluation.text_value if evaluation is not None else None
+
         structure_support = metrics.get(MetricName.STRUCTURE_SUPPORT)
         similarities = [
             sequence_similarity(candidate.sequence, other.sequence)
@@ -97,6 +128,49 @@ def build_bulk_rosetta_rows(
                 "maximum_identical_residue_run": numeric(
                     MetricName.MAXIMUM_IDENTICAL_RESIDUE_RUN
                 ),
+                "molecular_weight_da": numeric("molecular_weight_da"),
+                "net_charge_ph7_4": numeric("net_charge_ph7_4"),
+                "isoelectric_point": numeric("isoelectric_point"),
+                "hydrophobic_ratio_modlamp": numeric("hydrophobic_ratio_modlamp"),
+                "hydrophobic_moment_eisenberg": numeric(
+                    "hydrophobic_moment_eisenberg"
+                ),
+                "hemopi2_hemolysis_score": numeric("hemopi2_hemolysis_score"),
+                "hemopi2_hemolysis_label": text_value("hemopi2_hemolysis_label"),
+                "macrel_amp_probability": numeric("macrel_amp_probability"),
+                "macrel_hemolysis_probability": numeric(
+                    "macrel_hemolysis_probability"
+                ),
+                "macrel_hemolysis_label": text_value("macrel_hemolysis_label"),
+                "hemolysis_consensus_decision": text_value(
+                    "hemolysis_consensus_decision"
+                ),
+                "toxinpred3_ml_score": numeric("toxinpred3_ml_score"),
+                "toxinpred3_hybrid_score": numeric("toxinpred3_hybrid_score"),
+                "toxinpred3_label": text_value("toxinpred3_label"),
+                "llamp_log10_mic_um": numeric("llamp_log10_mic_um"),
+                "llamp_predicted_mic_um": numeric("llamp_predicted_mic_um"),
+                "amplify_probability": numeric("amplify_probability"),
+                "amplify_label": text_value("amplify_label"),
+                "mmseqs_nearest_identity": numeric("mmseqs_nearest_identity"),
+                "mmseqs_nearest_query_coverage": numeric(
+                    "mmseqs_nearest_query_coverage"
+                ),
+                "mmseqs_nearest_target_coverage": numeric(
+                    "mmseqs_nearest_target_coverage"
+                ),
+                "mmseqs_nearest_evalue": numeric("mmseqs_nearest_evalue"),
+                "esm2_nearest_cosine_similarity": numeric(
+                    "esm2_nearest_cosine_similarity"
+                ),
+                "peptiverse_predicted_log1p_half_life_hours": numeric(
+                    "peptiverse_predicted_log1p_half_life_hours"
+                ),
+                "peptiverse_predicted_half_life_hours": numeric(
+                    "peptiverse_predicted_half_life_hours"
+                ),
+                "aggrescanai_apr_mean": numeric("aggrescanai_apr_mean"),
+                "aggrescanai_apr_max": numeric("aggrescanai_apr_max"),
                 "nearest_selected_sequence_similarity": max(similarities, default=0.0),
                 "boltz2_pair_iptm": numeric(MetricName.BOLTZ2_PAIR_IPTM),
                 "boltz2_pair_iptm_median": numeric(MetricName.BOLTZ2_PAIR_IPTM_MEDIAN),

@@ -1,0 +1,101 @@
+schema_version: 1
+suite_id: handoff-metrics-public-complex-melittin-8ahs-v1
+locked_at: 2026-08-04T00:00:00+08:00
+case:
+  pdb_id: 8AHS
+  title: Human Ca2+/calmodulin in complex with bee-venom melittin
+  source_uri: https://files.rcsb.org/download/8AHS.pdb
+  source_sha256: e7f8a6c5e96b17d04980745e876d27c69beb7a8003c34f5b73423963d30526c4
+  pdb_doi: https://doi.org/10.2210/pdb8AHS/pdb
+  experimental_method: X-RAY DIFFRACTION
+  resolution_angstrom: 2.48
+  receptor_chain: A
+  receptor_name: human calmodulin-1
+  peptide_chain: C
+  peptide_name: melittin
+  peptide_sequence: GIGAVLKVLTTGLPALISWIKRKRQQ
+  modeled_peptide_sequence: IGAVLKVLTTGLPALISWIKRKR
+  modeled_residue_range: [2, 24]
+  peptide_length: 26
+  peptide_chemistry:
+    n_terminus: free
+    c_terminus: amidated
+    noncanonical_residues: []
+  structure_primary_source:
+    citation: Durvanger Z et al. J Biol Chem. 2023;299:104596.
+    pubmed_id: 36906144
+    doi: https://doi.org/10.1016/j.jbc.2023.104596
+  property_primary_source:
+    citation: Askari P et al. BMC Pharmacol Toxicol. 2021;22:42.
+    pubmed_id: 34261542
+    doi: https://doi.org/10.1186/s40360-021-00503-z
+    source_uri: https://pubmed.ncbi.nlm.nih.gov/34261542/
+    experimental_context:
+      antimicrobial_mic_range_ug_ml: [8, 32]
+      organisms: [Acinetobacter baumannii, MRSA, KPC-producing Klebsiella pneumoniae]
+      human_rbc_hd50_ug_ml: 0.44
+      human_primary_fibroblast_ic50_ug_ml: 6.45
+      mouse_intraperitoneal_ld50_mg_kg: 4.98
+descriptor_reference:
+  implementation: modlamp==4.3.2
+  ph: 7.4
+  c_terminal_amidated: true
+  hydrophobic_moment_angle_degrees: 100
+  molecular_weight_da: 2846.48
+  net_charge_ph7_4: 5.988
+  isoelectric_point: 13.71875
+  hydrophobic_ratio_modlamp: 0.4230769230769231
+  hydrophobic_moment_eisenberg: 0.3589698816442937
+metrics:
+  - name: physicochemical_developability
+    enabled: true
+    trust: descriptor
+    stages: [final]
+    failure_policy: record_unavailable
+    parameters:
+      ph: 7.4
+      c_terminal_amidated: true
+      hydrophobic_moment_angle: 100
+  - name: hemolysis_risk
+    enabled: true
+    trust: soft
+    stages: [final]
+    failure_policy: record_unavailable
+  - name: toxicity_risk
+    enabled: true
+    trust: soft
+    stages: [final]
+    failure_policy: record_unavailable
+  - name: mic_potency
+    enabled: true
+    trust: soft
+    stages: [final]
+    failure_policy: record_unavailable
+  - name: amp_likeness
+    enabled: true
+    trust: soft
+    stages: [final]
+    failure_policy: record_unavailable
+  - name: serum_half_life
+    enabled: true
+    trust: shadow
+    stages: [final]
+    failure_policy: record_unavailable
+  - name: aggregation_apr
+    enabled: true
+    trust: shadow
+    stages: [final]
+    failure_policy: record_unavailable
+qualitative_acceptance:
+  hemolysis_risk: high-risk signal expected
+  toxicity_risk: toxic signal expected
+  amp_likeness: AMP-positive signal expected
+  mic_potency: finite prediction expected; no numeric calibration claim from one case
+  serum_half_life: shadow output only; no pass/fail expectation
+  aggregation_apr: shadow output only; no pass/fail expectation
+limitations:
+  - One positive-control peptide validates plumbing and qualitative direction, not calibration.
+  - The calmodulin-bound pose is not melittin's bacterial-membrane mechanism of action.
+  - Assay values are context-specific and must not be treated as universal labels.
+  - External metric adapters remain unavailable until source, weights, license, and runtime are locked.
+  - PDB ATOM records omit melittin Gly1 and Gln25-Gln26; metrics use the deposited full sequence.

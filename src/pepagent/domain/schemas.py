@@ -4,6 +4,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from pepagent.handoff_metrics import METRIC_PLUGIN_CONTRACTS
+
 
 class TargetSpec(BaseModel):
     name: str
@@ -55,6 +57,49 @@ class MetricPolicyRule(BaseModel):
                 raise ValueError("metric-rule minimum cannot exceed maximum")
         if not self.stages:
             raise ValueError("metric rules must apply to at least one selection stage")
+        return self
+
+
+class OptionalMetricSpec(BaseModel):
+    name: Literal[
+        "physicochemical_developability",
+        "hemolysis_risk",
+        "toxicity_risk",
+        "mic_potency",
+        "amp_likeness",
+        "sequence_novelty",
+        "serum_half_life",
+        "aggregation_apr",
+    ]
+    enabled: bool = True
+    trust: Literal["descriptor", "soft", "shadow"]
+    stages: list[Literal["proposal", "research", "final"]] = Field(
+        default_factory=lambda: ["research", "final"]
+    )
+    failure_policy: Literal["record_unavailable", "fail_run"] = "record_unavailable"
+    parameters: dict[str, bool | int | float | str] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def validate_handoff_contract(self) -> "OptionalMetricSpec":
+        if not self.stages:
+            raise ValueError("optional metric must run in at least one stage")
+        maximum = METRIC_PLUGIN_CONTRACTS[self.name]["maximum_trust"]
+        allowed = {
+            "descriptor": {"descriptor"},
+            "soft": {"soft", "shadow"},
+            "shadow": {"shadow"},
+        }[maximum]
+        if self.trust not in allowed:
+            raise ValueError(
+                f"{self.name} permits trust {sorted(allowed)}, not {self.trust!r}"
+            )
+        if self.name == "physicochemical_developability":
+            permitted = {"ph", "c_terminal_amidated", "hydrophobic_moment_angle"}
+            unknown = set(self.parameters) - permitted
+            if unknown:
+                raise ValueError(
+                    f"unknown physicochemical parameter(s): {sorted(unknown)}"
+                )
         return self
 
 
@@ -112,6 +157,7 @@ class ExperimentSpec(BaseModel):
     bulk_rosetta_candidate_limit: int = Field(default=250, ge=1, le=500)
     bulk_csv_report_threshold: int = Field(default=200, ge=1, le=500)
     bulk_evaluation_concurrency: int = Field(default=4, ge=1, le=8)
+    optional_metrics: list[OptionalMetricSpec] = Field(default_factory=list)
     metric_policy: list[MetricPolicyRule] = Field(default_factory=list)
     affinity_evaluators: list[str] = Field(
         default_factory=list,
@@ -186,6 +232,27 @@ class ExperimentSpec(BaseModel):
         ]
         if len(diversity_rules) > 1:
             raise ValueError("metric_policy admits at most one sequence_similarity rule")
+        enabled_plugins = [metric for metric in self.optional_metrics if metric.enabled]
+        plugin_names = [metric.name for metric in enabled_plugins]
+        if len(plugin_names) != len(set(plugin_names)):
+            raise ValueError("optional_metrics cannot enable the same plugin more than once")
+        output_to_plugin = {
+            output_name: plugin
+            for plugin in enabled_plugins
+            for output_name in METRIC_PLUGIN_CONTRACTS[plugin.name]["outputs"]
+        }
+        for rule in self.metric_policy:
+            plugin = output_to_plugin.get(rule.metric_name)
+            if plugin is None:
+                continue
+            if plugin.trust == "shadow" and rule.role != "diagnostic":
+                raise ValueError(
+                    f"shadow metric {rule.metric_name} cannot enter Agent selection"
+                )
+            if plugin.trust == "soft" and rule.role in {"qualification", "diversity"}:
+                raise ValueError(
+                    f"soft metric {rule.metric_name} cannot be a hard selection gate"
+                )
         return self
 
 

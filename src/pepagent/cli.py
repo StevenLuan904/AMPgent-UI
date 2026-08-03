@@ -24,6 +24,7 @@ from pepagent.reporting import build_bulk_rosetta_rows, render_bulk_rosetta_csv
 from pepagent.settings import get_settings
 from pepagent.storage.object_store import ContentAddressedObjectStore
 from pepagent.structures.pdb import atom_chain_sequence
+from pepagent.validation.handoff import validate_handoff_metric_control
 from pepagent.validation.rosetta import (
     summarize_native_start_validation,
     validate_rosetta_protocol_policy,
@@ -462,6 +463,47 @@ def submit_rosetta_validation(
 
     result = asyncio.run(_run())
     typer.echo(json.dumps(result, ensure_ascii=False, indent=2))
+
+
+@app.command("validate-handoff-metrics")
+def validate_handoff_metrics(
+    suite_path: Path,
+    output_path: Path,
+    registry_path: Path | None = typer.Option(None),  # noqa: B008
+) -> None:
+    """Replay optional metrics against a hash-locked public complex control."""
+    suite = _load_mapping(suite_path)
+    case = suite["case"]
+    with TemporaryDirectory(prefix="pepagent-handoff-metric-validation-") as temporary:
+        temporary_root = Path(temporary)
+        response = httpx.get(case["source_uri"], timeout=60.0)
+        response.raise_for_status()
+        source_path = temporary_root / f"{case['pdb_id']}.pdb"
+        source_path.write_bytes(response.content)
+        result = validate_handoff_metric_control(
+            suite,
+            source_path,
+            temporary_root / "metric-work",
+            registry_path,
+        )
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(
+        json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    summary_keys = (
+        "suite_id",
+        "overall_status",
+        "metric_statuses",
+        "descriptor_reproduced",
+    )
+    typer.echo(
+        json.dumps(
+            {key: result[key] for key in summary_keys},
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
 
 
 if __name__ == "__main__":

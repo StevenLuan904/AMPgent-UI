@@ -1,0 +1,67 @@
+# Copy this file to the untracked runtime.local.yaml on a metric worker only after
+# the corresponding third-party source, weights, license, and environment are locked.
+# Commands receive batch CSV input and must emit exactly one row per candidate_id.
+adapters:
+  hemolysis_risk:
+    enabled: false
+    version: handoff-2026.08.04
+    model_uri: registry://replace-with-locked-hemopi2-macrel-release
+    weights_sha256: null
+    command: [replace-with-python, replace-with-adapter, --input, "{input}", --output, "{output}"]
+    timeout_seconds: 1800
+    limitations:
+      - HemoPI2 and Macrel branches are retained separately; this is soft evidence only.
+  toxicity_risk:
+    enabled: false
+    version: handoff-2026.08.04-corrected
+    model_uri: registry://replace-with-locked-toxinpred3-release
+    weights_sha256: null
+    command: [replace-with-python, replace-with-adapter, --input, "{input}", --output, "{output}"]
+    timeout_seconds: 1800
+    limitations:
+      - ToxinPred3 endpoints are not assay-matched to the project and remain soft evidence.
+  mic_potency:
+    enabled: false
+    version: handoff-2026.08.04
+    model_uri: registry://replace-with-locked-llamp-release
+    weights_sha256: null
+    command: [replace-with-python, replace-with-adapter, --input, "{input}", --output, "{output}"]
+    timeout_seconds: 3600
+    limitations:
+      - Author test was reproduced but not similarity-isolated; values remain soft predictions.
+  amp_likeness:
+    enabled: false
+    version: handoff-2026.08.04
+    model_uri: registry://replace-with-locked-amplify-release
+    weights_sha256: null
+    command: [replace-with-python, replace-with-adapter, --input, "{input}", --output, "{output}"]
+    timeout_seconds: 1800
+    limitations:
+      - Local cross-check is small; probability is soft supporting evidence.
+  sequence_novelty:
+    enabled: false
+    version: handoff-2026.08.04
+    model_uri: registry://replace-with-locked-mmseqs-database-snapshot
+    weights_sha256: null
+    command: [replace-with-python, replace-with-adapter, --input, "{input}", --output, "{output}"]
+    timeout_seconds: 3600
+    limitations:
+      - Identity is descriptive and only reproducible against an immutable reference snapshot.
+  serum_half_life:
+    enabled: false
+    version: handoff-2026.08.04
+    model_uri: registry://replace-with-locked-peptiverse-release
+    weights_sha256: null
+    command: [replace-with-python, replace-with-adapter, --input, "{input}", --output, "{output}"]
+    timeout_seconds: 3600
+    limitations:
+      - Training replay only; this metric is shadow evidence.
+  aggregation_apr:
+    enabled: false
+    version: handoff-2026.08.04
+    model_uri: registry://replace-with-licensed-aggrescanai-release
+    weights_sha256: null
+    command: [replace-with-python, replace-with-adapter, --input, "{input}", --output, "{output}"]
+    timeout_seconds: 1800
+    limitations:
+      - No short-AMP validation and license is unresolved; this metric is shadow evidence.
