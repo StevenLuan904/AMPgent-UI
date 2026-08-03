@@ -277,6 +277,35 @@ def test_fast_protocol_admits_one_seed_and_eight_shadow_decoys() -> None:
     assert spec.rosetta_nstruct == 8
 
 
+def test_bulk_rosetta_requires_autoresearch_and_caps_decoys() -> None:
+    base = {
+        "target": {
+            "name": "target",
+            "sequence": "ACDEFGHIKLMNPQRSTVWY",
+            "pocket_residues": [1],
+        },
+        "structure_protocol": "diagnostic_fast",
+        "boltz_seeds_per_candidate": 1,
+        "generations": 4,
+        "bulk_rosetta_all_qualified": True,
+        "bulk_rosetta_candidate_limit": 250,
+        "bulk_csv_report_threshold": 200,
+    }
+    with pytest.raises(ValidationError, match="requires Auto Research"):
+        ExperimentSpec.model_validate(base)
+    with pytest.raises(ValidationError, match="at most eight decoys"):
+        ExperimentSpec.model_validate(
+            {**base, "autoresearch_enabled": True, "rosetta_nstruct": 9}
+        )
+    spec = ExperimentSpec.model_validate(
+        {**base, "autoresearch_enabled": True, "rosetta_nstruct": 8}
+    )
+    assert spec.bulk_rosetta_all_qualified is True
+    assert spec.bulk_rosetta_candidate_limit == 250
+    assert spec.bulk_csv_report_threshold == 200
+    assert spec.bulk_evaluation_concurrency == 4
+
+
 def test_fast_structure_support_distinguishes_weak_conflict_and_unavailable() -> None:
     weak = classify_structure_support(
         structure_available=True,
@@ -383,3 +412,17 @@ def test_acea_v6_uses_fast_diagnostic_structure_budget() -> None:
     assert spec.rosetta_nstruct == 8
     assert "interface_gate_pass" not in roles
     assert roles["rosetta_dg_separated_reu"] == "diagnostic"
+
+
+def test_acea_v8_uses_natural_search_budget_and_reporting_threshold() -> None:
+    spec_path = (
+        Path(__file__).parents[1] / "config" / "experiments" / "acea_autoresearch_v8.yaml"
+    )
+    spec = ExperimentSpec.model_validate(yaml.safe_load(spec_path.read_text(encoding="utf-8")))
+    assert spec.candidates_per_length == 14
+    assert spec.elite_parent_count == 4
+    assert spec.mutation_children_per_parent == 5
+    assert spec.exploration_candidates_per_length == 4
+    assert spec.bulk_rosetta_all_qualified is True
+    assert spec.bulk_rosetta_candidate_limit == 250
+    assert spec.bulk_csv_report_threshold == 200

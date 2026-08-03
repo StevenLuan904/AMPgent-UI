@@ -15,11 +15,12 @@ from temporalio.client import Client
 from pepagent.db.models import Artifact, Candidate, Evaluation, EvidenceArtifact, ExperimentRun
 from pepagent.db.repository import ExperimentRepository
 from pepagent.db.session import SessionFactory
-from pepagent.domain.enums import CandidateStatus
+from pepagent.domain.enums import CandidateStatus, MetricName
 from pepagent.domain.schemas import ExperimentSpec, PocketCatalogSpec
 from pepagent.pockets.catalog import import_pocket_catalog
 from pepagent.provenance.hashing import sha256_bytes, sha256_json
 from pepagent.registry.service import register_local_model_release
+from pepagent.reporting import build_bulk_rosetta_rows, render_bulk_rosetta_csv
 from pepagent.settings import get_settings
 from pepagent.storage.object_store import ContentAddressedObjectStore
 from pepagent.structures.pdb import atom_chain_sequence
@@ -61,6 +62,79 @@ def show_run(
     response = httpx.get(f"{api}/v1/runs/{run_id}", timeout=15.0)
     response.raise_for_status()
     typer.echo(json.dumps(response.json(), ensure_ascii=False, indent=2))
+
+
+@app.command("export-bulk-rosetta-report")
+def export_bulk_rosetta_report(
+    output_path: Path,
+    minimum_rows: int = typer.Option(200, min=1, help="Natural accumulation milestone."),
+    allow_partial: bool = typer.Option(
+        False, help="Export before the milestone for an explicitly requested interim snapshot."
+    ),
+) -> None:
+    """Export unique, protocol-compatible completed Rosetta rows accumulated across runs."""
+
+    async def _run() -> list[dict]:
+        async with SessionFactory() as session:
+            pairs = (
+                await session.execute(
+                    select(Candidate, Evaluation)
+                    .join(Evaluation, Evaluation.candidate_id == Candidate.id)
+                    .where(Evaluation.metric_name == MetricName.ROSETTA_DG_SEPARATED_REU)
+                    .order_by(Evaluation.created_at.desc(), Evaluation.id.desc())
+                )
+            ).all()
+            chosen_by_sequence: dict[str, tuple[Candidate, Evaluation]] = {}
+            for candidate, evaluation in pairs:
+                raw = evaluation.raw_json
+                compatible = (
+                    evaluation.numeric_value is not None
+                    and raw.get("adapter_version") == "pepagent-pyrosetta-flexpepdock-v3"
+                    and bool(raw.get("prepacked_input_sha256"))
+                    and raw.get("pack_input") is False
+                    and raw.get("pack_separated") is False
+                )
+                if compatible:
+                    chosen_by_sequence.setdefault(candidate.sequence, (candidate, evaluation))
+            candidates = [candidate for candidate, _ in chosen_by_sequence.values()]
+            chosen_dg_evaluation_ids = {
+                evaluation.id for _, evaluation in chosen_by_sequence.values()
+            }
+            candidate_ids = [candidate.id for candidate in candidates]
+            evaluations = (
+                list(
+                    await session.scalars(
+                        select(Evaluation)
+                        .where(Evaluation.candidate_id.in_(candidate_ids))
+                        .order_by(Evaluation.created_at, Evaluation.id)
+                    )
+                )
+                if candidate_ids
+                else []
+            )
+            evaluations = [
+                evaluation
+                for evaluation in evaluations
+                if evaluation.metric_name != MetricName.ROSETTA_DG_SEPARATED_REU
+                or evaluation.id in chosen_dg_evaluation_ids
+            ]
+            return build_bulk_rosetta_rows(candidates, evaluations)
+
+    rows = asyncio.run(_run())
+    if len(rows) < minimum_rows and not allow_partial:
+        raise typer.BadParameter(
+            f"only {len(rows)} unique compatible rows are complete; "
+            f"the reporting milestone is {minimum_rows}"
+        )
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_bytes(render_bulk_rosetta_csv(rows))
+    typer.echo(
+        json.dumps(
+            {"output_path": str(output_path.resolve()), "row_count": len(rows)},
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
 
 
 @app.command()

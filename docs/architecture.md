@@ -190,3 +190,25 @@ All new InterfaceAnalyzer evaluations use `pack_input=false` and `pack_separated
 single required FlexPepDock prepack stage. FlexPepDock has already optimized each bound decoy; the
 separated partners are scored without another side-chain packing operation. Historical
 `pack_separated=true` evidence remains immutable and must not be pooled with the new v3 adapter.
+
+### Bulk Rosetta evidence export
+
+When a study explicitly requests a broad preliminary table, the search workflow may enable a
+post-generation bulk lane. It first applies the same non-compensatory developability and stability
+qualifications, then enforces the configured sequence-similarity ceiling over all candidates
+naturally produced across generations. Every qualifying diverse candidate enters the lane, subject
+only to a configurable operational safety cap; the generator is never expanded to fill a reporting
+quota. Each selected sequence receives one independent Boltz starting pose, a coordinate audit, and
+eight FlexPepDock decoys under adapter v3. Candidates run as durable child workflows in bounded
+batches; GPU Boltz workers and CPU Rosetta activities can therefore overlap without turning GPU
+availability into a fictitious Rosetta accelerator.
+
+The bulk lane is exhaustive over the selected cohort, not decision-grade affinity estimation. Its
+CSV is an immutable MinIO artifact linked to a versioned export tool call. Rows include sequence,
+qualification metrics, diversity context, Boltz/interface diagnostics, Rosetta metrics, decoy count,
+adapter version, prepack state, and `pack_separated`. Failed computations remain explicit rows rather
+than silently disappearing.
+
+Protocol-compatible completed rows may accumulate across versioned runs. A threshold such as 200
+rows triggers a stage-report CSV; it is a reporting milestone, not a per-run target or scientific
+stopping rule.

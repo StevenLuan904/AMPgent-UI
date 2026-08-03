@@ -61,7 +61,12 @@ gpu-synth -RemoteCommand 'bash /sdd_data/pepagent/platform/current/deploy/remote
 
 `PEPAGENT_ROSETTA_CONCURRENCY` may be set explicitly after checking CPU load and memory. It controls
 concurrent Temporal activities, not the number of decoys. Keep the default of one on shared or
-uninspected hosts.
+uninspected hosts. For a versioned bulk diagnostic, verify at least 32 genuinely idle CPU cores and
+sufficient memory, then launch the Rosetta worker with concurrency four. Each activity can itself
+spawn eight decoy processes. Additional Boltz workers can use the optional launcher instance name,
+for example `start_worker_synth.sh boltz2 5 bulk-2`; never assign a GPU already owned by another user
+process. A CSV threshold such as 200 is only a cross-run reporting milestone; do not expand search
+budgets to fill it.
 
 ## Submit and inspect
 

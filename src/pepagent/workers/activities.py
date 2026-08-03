@@ -29,6 +29,11 @@ from pepagent.developability import (
 from pepagent.domain.enums import CandidateStatus, MetricName, RunStatus
 from pepagent.provenance.environment import fingerprint_runtime
 from pepagent.provenance.hashing import sha256_file, sha256_json
+from pepagent.reporting import (
+    BULK_ROSETTA_CSV_COLUMNS,
+    build_bulk_rosetta_rows,
+    render_bulk_rosetta_csv,
+)
 from pepagent.selection import (
     cheap_diverse_selection,
     diagnostic_representative_selection,
@@ -1522,6 +1527,247 @@ async def select_next_generation(request: dict[str, Any]) -> dict[str, Any]:
         }
 
 
+@activity.defn(name="select_bulk_evaluation_candidates")
+async def select_bulk_evaluation_candidates(request: dict[str, Any]) -> dict[str, Any]:
+    """Select a qualification-first, diversity-constrained post-search cohort."""
+    run_id = uuid.UUID(request["run_id"])
+    spec = request["spec"]
+    candidate_limit = int(spec.get("bulk_rosetta_candidate_limit", 250))
+    async with SessionFactory() as session, session.begin():
+        repository = ExperimentRepository(session)
+        candidates = list(
+            await session.scalars(
+                select(Candidate)
+                .where(Candidate.run_id == run_id)
+                .order_by(Candidate.generation, Candidate.proposal_rank, Candidate.id)
+            )
+        )
+        candidate_ids = [candidate.id for candidate in candidates]
+        evaluations = list(
+            await session.scalars(
+                select(Evaluation)
+                .where(Evaluation.candidate_id.in_(candidate_ids))
+                .order_by(Evaluation.created_at, Evaluation.id)
+            )
+        )
+        metrics_by_candidate: dict[uuid.UUID, dict[str, float]] = {
+            candidate.id: {} for candidate in candidates
+        }
+        evidence_calls: set[uuid.UUID] = set()
+        for evaluation in evaluations:
+            if evaluation.numeric_value is not None:
+                metrics_by_candidate[evaluation.candidate_id][evaluation.metric_name] = float(
+                    evaluation.numeric_value
+                )
+            evidence_calls.add(evaluation.tool_call_id)
+        observed = [
+            {
+                "id": str(candidate.id),
+                "sequence": candidate.sequence,
+                "sequence_sha256": candidate.sequence_sha256,
+                "generation": candidate.generation,
+                "metrics": metrics_by_candidate[candidate.id],
+                "conditional_ppl": metrics_by_candidate[candidate.id].get(
+                    MetricName.CONDITIONAL_PPL, float("inf")
+                ),
+            }
+            for candidate in candidates
+        ]
+        selected = cheap_diverse_selection(
+            observed,
+            candidate_limit,
+            float(spec.get("maximum_sequence_similarity", 0.75)),
+            spec.get("metric_policy"),
+        )
+        for rank, item in enumerate(selected, start=1):
+            candidate = await session.get(Candidate, uuid.UUID(item["id"]))
+            if candidate is None:
+                raise KeyError(f"candidate not found: {item['id']}")
+            candidate.metadata_json = {
+                **candidate.metadata_json,
+                "bulk_rosetta": {
+                    "selected": True,
+                    "rank": rank,
+                    "candidate_limit": candidate_limit,
+                    "protocol": "single-seed-boltz-plus-eight-decoy-rosetta-v1",
+                },
+            }
+            await repository.transition_candidate(
+                candidate.id,
+                CandidateStatus.STRUCTURE_QUEUED,
+                "bulk-rosetta-selection-v1",
+                "selected after non-compensatory qualifications and diversity filtering",
+            )
+        prompt_payload = {
+            "policy": "bulk-rosetta-selection-v1",
+            "candidate_limit": candidate_limit,
+            "maximum_sequence_similarity": spec.get("maximum_sequence_similarity", 0.75),
+            "metric_policy": spec.get("metric_policy", []),
+            "candidate_count": len(observed),
+            "selected_candidate_ids": [item["id"] for item in selected],
+        }
+        prompt_text = json.dumps(prompt_payload, ensure_ascii=False, indent=2, sort_keys=True)
+        response_text = (
+            f"Selected {len(selected)} naturally produced qualified candidates from "
+            f"{len(observed)} observed candidates (safety cap {candidate_limit}); no quota filling."
+        )
+        prompt_stored = await _store_text(prompt_text)
+        response_stored = await _store_text(response_text)
+        prompt_artifact = await _register_stored_artifact(
+            session, asdict(prompt_stored), {"kind": "bulk_rosetta_selection_prompt"}
+        )
+        response_artifact = await _register_stored_artifact(
+            session, asdict(response_stored), {"kind": "bulk_rosetta_selection_response"}
+        )
+        decision = await repository.record_agent_decision(
+            run_id,
+            int(spec["generations"]),
+            "select_bulk_rosetta_cohort",
+            "bulk-rosetta-selection-policy",
+            "bulk-rosetta-selection-v1",
+            prompt_text,
+            response_text,
+            {
+                "candidate_limit": candidate_limit,
+                "selected_count": len(selected),
+                "selected_candidate_ids": [item["id"] for item in selected],
+            },
+            prompt_artifact_id=prompt_artifact.id,
+            response_artifact_id=response_artifact.id,
+        )
+        for tool_call_id in sorted(evidence_calls, key=str):
+            await repository.record_agent_tool_edge(
+                decision.id, tool_call_id, "input", "qualifies_bulk_cohort"
+            )
+        await repository.append_event(
+            "run",
+            run_id,
+            "bulk_rosetta.cohort_selected",
+            "bulk-rosetta-selection-v1",
+            {
+                "candidate_limit": candidate_limit,
+                "selected_count": len(selected),
+                "decision_id": str(decision.id),
+            },
+        )
+    return {
+        "candidate_limit": candidate_limit,
+        "selected_count": len(selected),
+        "decision_id": str(decision.id),
+        "candidates": selected,
+    }
+
+
+@activity.defn(name="persist_bulk_evaluation_failure")
+async def persist_bulk_evaluation_failure(request: dict[str, Any]) -> dict[str, Any]:
+    """Persist a failed bulk attempt without turning it into a sequence rejection."""
+    run_id = uuid.UUID(request["run_id"])
+    candidate_id = uuid.UUID(request["candidate"]["id"])
+    raw = {
+        "status": "failed",
+        "stage": request["stage"],
+        "error_type": request.get("error_type"),
+        "error": request.get("error"),
+        "sequence_remains_eligible": True,
+    }
+    environment_sha256, _ = fingerprint_runtime()
+    async with SessionFactory() as session, session.begin():
+        repository = ExperimentRepository(session)
+        call = await repository.record_completed_tool_call(
+            run_id,
+            "bulk-rosetta-failure-recorder",
+            "1.0.0",
+            environment_sha256,
+            {"candidate_id": str(candidate_id), "stage": request["stage"]},
+            {"policy": "preserve-failure-without-sequence-rejection"},
+            raw,
+            model_uri="deterministic://bulk-rosetta-failure-recorder",
+        )
+        await repository.record_evaluation(
+            candidate_id,
+            call.id,
+            "bulk_rosetta_status",
+            None,
+            None,
+            raw,
+            text_value="failed",
+            limitations=["bulk structural evaluation failed; sequence was not rejected"],
+        )
+    return {"candidate_id": str(candidate_id), **raw, "tool_call_id": str(call.id)}
+
+
+@activity.defn(name="export_bulk_rosetta_csv")
+async def export_bulk_rosetta_csv(request: dict[str, Any]) -> dict[str, Any]:
+    """Export the selected cohort and its immutable metric evidence as CSV."""
+    run_id = uuid.UUID(request["run_id"])
+    selected = request["candidates"]
+    candidate_ids = [uuid.UUID(item["id"]) for item in selected]
+    result_status = {item["candidate_id"]: item["status"] for item in request["results"]}
+    async with SessionFactory() as session, session.begin():
+        repository = ExperimentRepository(session)
+        candidates = list(
+            await session.scalars(
+                select(Candidate)
+                .where(Candidate.id.in_(candidate_ids))
+                .order_by(Candidate.generation, Candidate.proposal_rank, Candidate.id)
+            )
+        )
+        evaluations = list(
+            await session.scalars(
+                select(Evaluation)
+                .where(Evaluation.candidate_id.in_(candidate_ids))
+                .order_by(Evaluation.created_at, Evaluation.id)
+            )
+        )
+        rows = build_bulk_rosetta_rows(candidates, evaluations, result_status)
+        payload = render_bulk_rosetta_csv(rows)
+        stored = await asyncio.to_thread(
+            ContentAddressedObjectStore().put_bytes, payload, "text/csv; charset=utf-8"
+        )
+        completed_count = sum(row["rosetta_dg_separated_reu"] is not None for row in rows)
+        output = {
+            "row_count": len(rows),
+            "completed_dg_count": completed_count,
+            "artifact": asdict(stored),
+            "columns": BULK_ROSETTA_CSV_COLUMNS,
+        }
+        environment_sha256, _ = fingerprint_runtime()
+        call = await repository.record_completed_tool_call(
+            run_id,
+            "bulk-rosetta-csv-export",
+            "1.0.0",
+            environment_sha256,
+            {"candidate_ids": [str(candidate_id) for candidate_id in candidate_ids]},
+            {
+                "format": "csv",
+                "sort": "rosetta_dg_separated_reu_ascending_missing_last",
+                "pack_separated": False,
+            },
+            output,
+            model_uri="deterministic://bulk-rosetta-csv-export",
+        )
+        await _register_artifact(
+            session,
+            call.id,
+            asdict(stored),
+            "candidate_results_csv",
+            {"row_count": len(rows), "completed_dg_count": completed_count},
+        )
+        await repository.append_event(
+            "run",
+            run_id,
+            "bulk_rosetta.csv_exported",
+            "bulk-rosetta-csv-export",
+            {
+                "row_count": len(rows),
+                "completed_dg_count": completed_count,
+                "artifact_sha256": stored.sha256,
+                "tool_call_id": str(call.id),
+            },
+        )
+    return {**output, "tool_call_id": str(call.id)}
+
+
 @activity.defn(name="finalize_run")
 async def finalize_run(request: dict[str, Any]) -> dict[str, Any]:
     run_id = uuid.UUID(request["run_id"])
@@ -1545,6 +1791,12 @@ async def finalize_run(request: dict[str, Any]) -> dict[str, Any]:
                 "rosetta_count": len(request.get("rosetta_results", [])),
                 "generation_count": request.get("generation_count", 1),
                 "agent_decision_count": request.get("agent_decision_count", 0),
+                "bulk_rosetta_count": request.get("bulk_rosetta_count", 0),
+                "bulk_rosetta_candidate_limit": request.get(
+                    "bulk_rosetta_candidate_limit", 0
+                ),
+                "bulk_csv_report_threshold": request.get("bulk_csv_report_threshold", 200),
+                "bulk_csv": request.get("bulk_csv"),
                 "affinity_count": 0,
                 "affinity_lane": "not_admitted",
             },

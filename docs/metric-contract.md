@@ -142,3 +142,13 @@ The Rosetta protocol identity includes `pack_separated`. New adapter-v3 evidence
 `pack_separated=false` for every InterfaceAnalyzer call while retaining one input prepack before
 FlexPepDock. Historical `true` results are a separate metric population and are never pooled with
 new results.
+
+For bulk preliminary reporting, every selected CSV row must have an attempted single-seed Boltz and
+eight-decoy FlexPepDock evaluation. `bulk_status` distinguishes completed dG evidence from preserved
+calculation failures. A negative `dG_separated` remains a local-energy diagnostic in REU; it does not
+override instability, developability, or diversity qualifications and must not be reported as Kd or
+experimental binding free energy.
+
+The reporting threshold is evaluated across naturally accumulated, protocol-compatible completed
+rows. It must never be used as a generation quota or justify relaxing qualification and diversity
+rules.

@@ -1,12 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ $# -ne 2 ]]; then
-  echo "usage: start_worker_synth.sh <pepmlm|boltz2|rosetta> <gpu-id|cpu>" >&2
+if [[ $# -lt 2 || $# -gt 3 ]]; then
+  echo "usage: start_worker_synth.sh <pepmlm|boltz2|rosetta> <gpu-id|cpu> [instance]" >&2
   exit 2
 fi
 ROLE="$1"
 GPU_ID="$2"
+INSTANCE="${3:-primary}"
+[[ "$INSTANCE" =~ ^[A-Za-z0-9_-]+$ ]] || {
+  echo "worker instance must contain only letters, digits, underscore or dash" >&2
+  exit 2
+}
 case "$ROLE" in
   pepmlm|boltz2) ;;
   rosetta) ;;
@@ -37,7 +42,7 @@ RELEASE_SHA256="$(basename "$(readlink -f "$ROOT/platform/current")")"
   echo "active platform release is not content-addressed: $RELEASE_SHA256" >&2
   exit 3
 }
-RUN_DIR="$ROOT/runs/workers/$ROLE"
+RUN_DIR="$ROOT/runs/workers/$ROLE/$INSTANCE"
 PID_FILE="$RUN_DIR/worker.pid"
 mkdir -p "$RUN_DIR" "$ROOT/work" "$ROOT/models/boltz2/cache"
 
@@ -64,4 +69,4 @@ nohup env \
 PID="$!"
 printf '%s\n' "$PID" > "$PID_FILE"
 printf '%s\n' "$LOG_FILE" > "$RUN_DIR/latest-log"
-echo "started role=$ROLE gpu=$GPU_ID pid=$PID log=$LOG_FILE"
+echo "started role=$ROLE instance=$INSTANCE gpu=$GPU_ID pid=$PID log=$LOG_FILE"

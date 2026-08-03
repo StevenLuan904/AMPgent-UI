@@ -1,3 +1,4 @@
+import asyncio
 from datetime import timedelta
 from typing import Any
 
@@ -31,6 +32,8 @@ class PeptideDesignWorkflow:
             decision_id: str | None = None
             all_structures: list[dict[str, Any]] = []
             all_rosetta_results: list[dict[str, Any]] = []
+            bulk_results: list[dict[str, Any]] = []
+            bulk_csv: dict[str, Any] | None = None
             agent_decision_count = 0
             for generation in range(generation_count):
                 generated = await workflow.execute_activity(
@@ -202,6 +205,53 @@ class PeptideDesignWorkflow:
                     parents = decision["parents"]
                     decision_id = decision["decision_id"]
                     agent_decision_count += 1
+            bulk_enabled = bool(spec.get("bulk_rosetta_all_qualified", False))
+            bulk_candidate_limit = int(spec.get("bulk_rosetta_candidate_limit", 250))
+            if bulk_enabled:
+                cohort = await workflow.execute_activity(
+                    "select_bulk_evaluation_candidates",
+                    {"run_id": request["run_id"], "spec": spec},
+                    task_queue="pepagent-control",
+                    start_to_close_timeout=timedelta(minutes=30),
+                    retry_policy=retry,
+                )
+                batch_size = int(spec.get("bulk_evaluation_concurrency", 4))
+                candidates = cohort["candidates"]
+                for batch_start in range(0, len(candidates), batch_size):
+                    batch = candidates[batch_start : batch_start + batch_size]
+                    batch_results = await asyncio.gather(
+                        *(
+                            workflow.execute_child_workflow(
+                                "BulkCandidateEvaluationWorkflow",
+                                {
+                                    "run_id": request["run_id"],
+                                    "spec": spec,
+                                    "candidate": candidate,
+                                    "seed": int(spec["seed"])
+                                    + 100_000_000
+                                    + (batch_start + offset) * 10_000,
+                                },
+                                id=(
+                                    f"pepagent-bulk-{request['run_id']}-"
+                                    f"{candidate['id']}"
+                                ),
+                                task_queue="pepagent-control",
+                            )
+                            for offset, candidate in enumerate(batch)
+                        )
+                    )
+                    bulk_results.extend(batch_results)
+                bulk_csv = await workflow.execute_activity(
+                    "export_bulk_rosetta_csv",
+                    {
+                        "run_id": request["run_id"],
+                        "candidates": candidates,
+                        "results": bulk_results,
+                    },
+                    task_queue="pepagent-control",
+                    start_to_close_timeout=timedelta(hours=2),
+                    retry_policy=retry,
+                )
             return await workflow.execute_activity(
                 "finalize_run",
                 {
@@ -210,6 +260,14 @@ class PeptideDesignWorkflow:
                     "rosetta_results": all_rosetta_results,
                     "generation_count": generation_count,
                     "agent_decision_count": agent_decision_count,
+                    "bulk_rosetta_count": sum(
+                        item["status"] == "succeeded" for item in bulk_results
+                    ),
+                    "bulk_rosetta_candidate_limit": bulk_candidate_limit,
+                    "bulk_csv_report_threshold": int(
+                        spec.get("bulk_csv_report_threshold", 200)
+                    ),
+                    "bulk_csv": bulk_csv,
                 },
                 task_queue="pepagent-control",
                 start_to_close_timeout=timedelta(minutes=5),
@@ -228,6 +286,131 @@ class PeptideDesignWorkflow:
                 retry_policy=retry,
             )
             raise
+
+
+@workflow.defn(name="BulkCandidateEvaluationWorkflow")
+class BulkCandidateEvaluationWorkflow:
+    """Durably evaluate one bulk candidate from Boltz through shadow Rosetta."""
+
+    @workflow.run
+    async def run(self, request: dict[str, Any]) -> dict[str, Any]:
+        retry = RetryPolicy(
+            initial_interval=timedelta(seconds=10),
+            backoff_coefficient=2.0,
+            maximum_interval=timedelta(minutes=10),
+            maximum_attempts=5,
+        )
+        candidate = request["candidate"]
+
+        async def preserve_failure(stage: str, error: Exception) -> dict[str, Any]:
+            await workflow.execute_activity(
+                "persist_bulk_evaluation_failure",
+                {
+                    "run_id": request["run_id"],
+                    "candidate": candidate,
+                    "stage": stage,
+                    "error_type": type(error).__name__,
+                    "error": str(error),
+                },
+                task_queue="pepagent-control",
+                start_to_close_timeout=timedelta(minutes=5),
+                retry_policy=retry,
+            )
+            return {
+                "candidate_id": candidate["id"],
+                "status": "failed",
+                "stage": stage,
+            }
+
+        try:
+            structure = await workflow.execute_activity(
+                "predict_boltz2_complex",
+                {
+                    "run_id": request["run_id"],
+                    "spec": request["spec"],
+                    "candidate": candidate,
+                    "seed": request["seed"],
+                },
+                task_queue="pepagent-gpu-boltz2",
+                start_to_close_timeout=timedelta(hours=6),
+                heartbeat_timeout=timedelta(minutes=5),
+                retry_policy=retry,
+            )
+            structure = await workflow.execute_activity(
+                "persist_boltz2_evidence",
+                {"run_id": request["run_id"], "structure": structure},
+                task_queue="pepagent-control",
+                start_to_close_timeout=timedelta(minutes=15),
+                retry_policy=retry,
+            )
+        except Exception as error:
+            return await preserve_failure("boltz2", error)
+
+        try:
+            audit = await workflow.execute_activity(
+                "audit_structure_ensemble",
+                {
+                    "run_id": request["run_id"],
+                    "spec": request["spec"],
+                    "generation": candidate["generation"],
+                    "structures": [structure],
+                },
+                task_queue="pepagent-control",
+                start_to_close_timeout=timedelta(minutes=30),
+                retry_policy=retry,
+            )
+            audit = await workflow.execute_activity(
+                "persist_interface_audit",
+                {"run_id": request["run_id"], "audit_result": audit},
+                task_queue="pepagent-control",
+                start_to_close_timeout=timedelta(minutes=15),
+                retry_policy=retry,
+            )
+            rosetta_inputs = await workflow.execute_activity(
+                "select_rosetta_inputs",
+                {
+                    "ensembles": [audit],
+                    "top_k": 1,
+                    "exploratory_slots": 0,
+                    "mode": "diagnostic_shadow",
+                },
+                task_queue="pepagent-control",
+                start_to_close_timeout=timedelta(minutes=5),
+                retry_policy=retry,
+            )
+            if not rosetta_inputs:
+                raise RuntimeError("bulk candidate produced no usable coordinate structure")
+        except Exception as error:
+            return await preserve_failure("coordinate_audit", error)
+
+        try:
+            rosetta_result = await workflow.execute_activity(
+                "score_rosetta_complex",
+                {
+                    "run_id": request["run_id"],
+                    "spec": request["spec"],
+                    "structure": rosetta_inputs[0],
+                    "seed": int(request["seed"]) + 1,
+                },
+                task_queue="pepagent-cpu-rosetta",
+                start_to_close_timeout=timedelta(hours=72),
+                heartbeat_timeout=timedelta(minutes=5),
+                retry_policy=retry,
+            )
+            rosetta_result = await workflow.execute_activity(
+                "persist_rosetta_evidence",
+                {"run_id": request["run_id"], "rosetta_result": rosetta_result},
+                task_queue="pepagent-control",
+                start_to_close_timeout=timedelta(hours=2),
+                retry_policy=retry,
+            )
+        except Exception as error:
+            return await preserve_failure("rosetta", error)
+        return {
+            "candidate_id": candidate["id"],
+            "status": "succeeded",
+            "rosetta_tool_call_id": rosetta_result["tool_call_id"],
+        }
 
 
 @workflow.defn(name="RosettaValidationWorkflow")

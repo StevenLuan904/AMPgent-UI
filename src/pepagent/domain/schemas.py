@@ -108,6 +108,10 @@ class ExperimentSpec(BaseModel):
     rosetta_pair_iptm_min: float = Field(default=0.5, ge=0, le=1)
     rosetta_score_function: str = "ref2015"
     exploratory_rosetta_slots: int = Field(default=0, ge=0, le=1)
+    bulk_rosetta_all_qualified: bool = False
+    bulk_rosetta_candidate_limit: int = Field(default=250, ge=1, le=500)
+    bulk_csv_report_threshold: int = Field(default=200, ge=1, le=500)
+    bulk_evaluation_concurrency: int = Field(default=4, ge=1, le=8)
     metric_policy: list[MetricPolicyRule] = Field(default_factory=list)
     affinity_evaluators: list[str] = Field(
         default_factory=list,
@@ -169,6 +173,12 @@ class ExperimentSpec(BaseModel):
                     )
                 if self.rosetta_enabled and self.rosetta_nstruct > 8:
                     raise ValueError("diagnostic_fast permits at most eight shadow Rosetta decoys")
+                if self.bulk_rosetta_all_qualified and self.rosetta_nstruct > 8:
+                    raise ValueError(
+                        "bulk diagnostic Rosetta permits at most eight decoys per candidate"
+                    )
+        if self.bulk_rosetta_all_qualified and not self.autoresearch_enabled:
+            raise ValueError("bulk Rosetta evaluation requires Auto Research")
         diversity_rules = [
             rule
             for rule in self.metric_policy

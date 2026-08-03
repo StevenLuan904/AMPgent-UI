@@ -6,21 +6,28 @@ from temporalio.worker import Worker
 from pepagent.settings import get_settings
 from pepagent.workers.activities import (
     audit_structure_ensemble,
+    export_bulk_rosetta_csv,
     finalize_run,
     generate_with_pepmlm,
     mark_run_failed,
     mark_run_started,
     persist_and_select_candidates,
     persist_boltz2_evidence,
+    persist_bulk_evaluation_failure,
     persist_interface_audit,
     persist_rosetta_evidence,
     persist_structure_unavailable,
     predict_boltz2_complex,
     score_rosetta_complex,
+    select_bulk_evaluation_candidates,
     select_next_generation,
     select_rosetta_inputs,
 )
-from pepagent.workflows.design import PeptideDesignWorkflow, RosettaValidationWorkflow
+from pepagent.workflows.design import (
+    BulkCandidateEvaluationWorkflow,
+    PeptideDesignWorkflow,
+    RosettaValidationWorkflow,
+)
 
 ROLE_CONFIG = {
     "control": (
@@ -33,12 +40,19 @@ ROLE_CONFIG = {
             audit_structure_ensemble,
             persist_interface_audit,
             persist_structure_unavailable,
+            persist_bulk_evaluation_failure,
+            select_bulk_evaluation_candidates,
+            export_bulk_rosetta_csv,
             select_rosetta_inputs,
             persist_rosetta_evidence,
             select_next_generation,
             finalize_run,
         ],
-        [PeptideDesignWorkflow, RosettaValidationWorkflow],
+        [
+            PeptideDesignWorkflow,
+            BulkCandidateEvaluationWorkflow,
+            RosettaValidationWorkflow,
+        ],
     ),
     "pepmlm": ("pepagent-gpu-pepmlm", [generate_with_pepmlm], []),
     "boltz2": ("pepagent-gpu-boltz2", [predict_boltz2_complex], []),
