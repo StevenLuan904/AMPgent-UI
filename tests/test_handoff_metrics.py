@@ -9,6 +9,7 @@ import yaml
 
 from pepagent.domain.schemas import ExperimentSpec, TargetSpec
 from pepagent.handoff_metrics import normalize_metric_records, physicochemical_descriptors
+from pepagent.model_workers.llamp_metric_cli import validate_sequence
 from pepagent.model_workers.macrel_metric_cli import (
     expected_macrel_sequence,
     parse_prediction_rows,
@@ -182,6 +183,20 @@ def test_macrel_adapter_parses_comments_and_declares_n_terminal_met_normalizatio
         "Macrel removed the N-terminal M",
     )
     assert expected_macrel_sequence("KLLK") == ("KLLK", "")
+
+
+@pytest.mark.parametrize(
+    ("sequence", "expected"),
+    [
+        ("GIGAVLKVLTTGLPALISWIKRKRQQ", None),
+        ("KLLK", "outside released LLAMP 5-50 residue domain"),
+        ("KLLKX", "non-standard or empty peptide sequence"),
+    ],
+)
+def test_llamp_adapter_enforces_released_sequence_domain(
+    sequence: str, expected: str | None
+) -> None:
+    assert validate_sequence(sequence) == expected
 
 
 @pytest.mark.parametrize(

@@ -73,3 +73,12 @@ control exposes a scientific conflict: melittin receives ML score `0.820`, then 
 motif lowers the hybrid score to `0.320` and the released threshold labels it `Non-Toxin`. The
 validation report therefore separates runtime `complete` from scientific `conflicting`. The result
 is retained as negative admission evidence and ToxinPred3 remains soft-only.
+
+LLAMP is reproduced in a separate Python 3.9 CPU environment from source commit `bb48daa`, the
+exact peptide-tuned ESM-2 revision `16b0dddc`, the handoff checkpoint, and the locked E. coli genome
+features. Every model/config/checkpoint/feature hash matches the handoff. On full-length melittin it
+returns `log10(MIC/uM) = 0.60234`, or `4.0026 uM`. This validates finite, sequence-matched inference
+only: the public assay organisms and conditions are not the LLAMP E. coli endpoint, and one control
+cannot establish calibration. LLAMP therefore remains final-stage soft evidence and never a hard
+qualification gate. Its PolyForm Noncommercial license also confines the installed runtime to
+noncommercial research unless separately reviewed.

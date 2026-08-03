@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "metric_plugin": "mic_potency",
+  "decision_role": "soft_supporting_evidence_only",
+  "source": {
+    "repository": "https://github.com/GIST-CSBL/LLAMP",
+    "commit": "bb48daaa94b947edac46e498dec741911cf98edc",
+    "license": "PolyForm Noncommercial License 1.0.0",
+    "model_py_sha256_lf": "a034460f214787114fde38f939b4feafa6710aa62b7b28a69709b03efa64eb1f",
+    "model_py_sha256_crlf_handoff": "9a620a22058128ed61b98eb707614a301eaa9be1b53873de804d28dac48d575f"
+  },
+  "base_model": {
+    "repository": "https://huggingface.co/Daehun/peptide_tuned_ESM-2",
+    "revision": "16b0dddc26541a33740a1bf084a7030b373622d5",
+    "weights_sha256": "f23fc9291d8df70ef00fafb8c7fe4ed91d1eac0ffc8653898c87024e86365d02",
+    "config_sha256": "20e97e4c6a228e6b4f59002710cbff704be3551b9f26a1b4599238cf80d7e804"
+  },
+  "llamp_checkpoint": {
+    "google_drive_file_id": "1hmfL7uRZsHo4pn0o0nqaqPcntxGJIhE7",
+    "sha256": "be331f32d8df620a955dfd86647cedd81f91fd315e5a8cefbc1cdd66c43f7f6e"
+  },
+  "genome_features": {
+    "species": "Escherichia coli",
+    "sha256": "2d71635dbc8769f92177ca20e3e60ad4b79544d51f0570e7c2f89fcdb0b02df7"
+  },
+  "runtime": {
+    "python": "3.9.23",
+    "torch": "1.13.1+cpu",
+    "transformers": "4.44.0",
+    "numpy": "1.23.5",
+    "pandas": "2.2.2",
+    "scikit_learn": "1.2.2",
+    "scipy": "1.10.1"
+  },
+  "public_control": {
+    "suite": "handoff-metrics-public-complex-melittin-8ahs-v1",
+    "report_sha256": "3b9f9d79875413612b255306110fb4d7aa38d7ab84c1e8110f6508acde5679f2",
+    "log10_mic_um": 0.6023434400558472,
+    "predicted_mic_um": 4.00261151138992,
+    "finite_output_reproduced": true,
+    "scientific_status": "supported_as_plumbing_only"
+  },
+  "limitations": [
+    "The public control establishes finite, sequence-matched inference, not numerical calibration.",
+    "LLAMP estimates heterogeneous species-conditioned MIC and is not an AceA-binding endpoint.",
+    "The author test was not similarity-isolated from training data.",
+    "Predicted micromolar values must not be compared to mass-concentration assays without chemistry and assay-context normalization.",
+    "The noncommercial license must be reviewed before any use beyond noncommercial research."
+  ]
+}

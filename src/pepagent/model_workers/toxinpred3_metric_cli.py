@@ -80,9 +80,10 @@ def evaluate(
         probabilities = classifier.predict_proba(matrix)[:, -1]
         positive_motifs = load_literal_motifs(positive_motif_path)
         negative_motifs = load_literal_motifs(negative_motif_path)
-        for (candidate_id, sequence), probability in zip(
-            normalized, probabilities, strict=True
-        ):
+        if len(probabilities) != len(normalized):
+            raise RuntimeError("ToxinPred3 prediction count does not match input count")
+        for index, (candidate_id, sequence) in enumerate(normalized):
+            probability = probabilities[index]
             ml_score = float(probability)
             positive_match = any(motif in sequence for motif in positive_motifs)
             negative_match = any(motif in sequence for motif in negative_motifs)

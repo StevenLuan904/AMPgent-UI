@@ -77,9 +77,9 @@ optional_metrics:
       ph: 7.4
       c_terminal_amidated: false
       hydrophobic_moment_angle: 100
-  # External predictors are deliberately final-stage soft evidence. Their
-  # adapters remain unavailable until source, weights, license, and environment
-  # hashes are locked in the separate runtime registry.
+  # External predictors are deliberately final-stage soft evidence. Each stays
+  # unavailable unless a deployment explicitly enables a source-, weight-,
+  # license-, and environment-locked adapter in its separate runtime registry.
   - name: hemolysis_risk
     enabled: true
     trust: soft
