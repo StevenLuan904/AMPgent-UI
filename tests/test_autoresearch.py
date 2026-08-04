@@ -10,6 +10,7 @@ from pepagent.selection import (
     cheap_diverse_selection,
     diagnostic_representative_selection,
     diversity_constrained_elites,
+    hard_qualification_violations,
     qualification_violations,
     sequence_distance,
 )
@@ -159,6 +160,87 @@ def test_instability_index_matches_919_biopython_reference_and_is_a_qualificatio
 def test_developability_rejects_noncanonical_residues_before_protparam() -> None:
     with pytest.raises(ValueError, match="non-canonical"):
         sequence_developability_metrics("KASX")
+
+
+def test_canonical_amp_descriptors_are_recorded_in_the_proposal_lane() -> None:
+    metrics = sequence_developability_metrics("KWKLFKKIGAVLKVL")
+    assert metrics["molecular_weight_da"] == pytest.approx(1771.2821)
+    assert metrics["net_charge_ph7_4"] == pytest.approx(4.5449249042)
+    assert metrics["isoelectric_point"] == pytest.approx(10.6024866104)
+    assert metrics["gravy"] == pytest.approx(0.54)
+    assert metrics["hydrophobic_moment_eisenberg"] == pytest.approx(0.4139307319)
+    assert metrics["cationic_residue_fraction"] == pytest.approx(1 / 3)
+    assert "alpha-helical projection" in " ".join(metrics["limitations"])
+
+
+def test_soft_amp_window_is_preferred_without_rejecting_a_candidate() -> None:
+    policy = [
+        {
+            "metric_name": "net_charge_ph7_4",
+            "role": "qualification",
+            "minimum": 1.0,
+            "hard": False,
+            "missing_policy": "fail",
+            "stages": ["proposal"],
+        },
+        {
+            "metric_name": "conditional_ppl",
+            "role": "objective",
+            "direction": "minimize",
+            "priority": 10,
+            "stages": ["proposal"],
+        },
+    ]
+    proposals = [
+        {
+            "sequence": "DDAAALLVVV",
+            "conditional_ppl": 1.0,
+            "metrics": {"net_charge_ph7_4": -2.0, "conditional_ppl": 1.0},
+        },
+        {
+            "sequence": "KASVNVSPRA",
+            "conditional_ppl": 6.0,
+            "metrics": {"net_charge_ph7_4": 1.5, "conditional_ppl": 6.0},
+        },
+    ]
+    selected = cheap_diverse_selection(proposals, 2, 1.0, policy)
+    assert [item["sequence"] for item in selected] == [
+        "KASVNVSPRA",
+        "DDAAALLVVV",
+    ]
+
+
+def test_v10_uses_amp_descriptors_and_excludes_unvalidated_predictors() -> None:
+    config_path = (
+        Path(__file__).parents[1] / "config" / "experiments" / "acea_autoresearch_v10.yaml"
+    )
+    payload = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    spec = ExperimentSpec.model_validate(payload)
+    enabled = {metric.name for metric in spec.optional_metrics if metric.enabled}
+    assert enabled == {"hemolysis_risk", "amp_likeness"}
+    rules = {rule.metric_name: rule for rule in spec.metric_policy}
+    assert rules["maximum_identical_residue_run"].hard is True
+    assert rules["hydrophobic_fraction"].role == "diagnostic"
+    assert rules["maximum_hydrophobic_run"].role == "diagnostic"
+    assert rules["instability_index"].hard is False
+    assert rules["net_charge_ph7_4"].hard is False
+    assert rules["gravy"].hard is False
+    assert rules["hydrophobic_moment_eisenberg"].hard is False
+
+
+def test_8ahs_melittin_control_is_profiled_but_not_rejected() -> None:
+    sequence = "GIGAVLKVLTTGLPALISWIKRKRQQ"
+    metrics = sequence_developability_metrics(sequence)
+    config_path = (
+        Path(__file__).parents[1] / "config" / "experiments" / "acea_autoresearch_v10.yaml"
+    )
+    policy = yaml.safe_load(config_path.read_text(encoding="utf-8"))["metric_policy"]
+    candidate = {"sequence": sequence, "metrics": metrics}
+    assert metrics["net_charge_ph7_4"] == pytest.approx(4.5498858531)
+    assert metrics["gravy"] == pytest.approx(0.2730769231)
+    assert metrics["hydrophobic_moment_eisenberg"] == pytest.approx(0.3589698816)
+    assert metrics["instability_index"] > 40.0
+    assert hard_qualification_violations(candidate, policy, "proposal") == []
 
 
 def test_proposal_gate_rejects_polyvaline_despite_better_ppl() -> None:

@@ -1,0 +1,202 @@
+target:
+  name: Escherichia coli K-12 isocitrate lyase AceA
+  sequence: MKTRTQQIEELQKEWTQPRWEGITRPYSAEDVVKLRGSVNPECTLAQLGAAKMWRLLHGESKKGYINSLGALTGGQALQQAKAGIEAVYLSGWQVAADANLAASMYPDQSLYPANSVPAVVERINNTFRRADQIQWSAGIEPGDPRYVDYFLPIVADAEAGFGGVLNAFELMKAMIEAGAAAVHFEDQLASVKKCGHMGGKVLVPTQEAIQKLVAARLAADVTGVPTLLVARTDADAADLITSDCDPYDSEFITGERTSEGFFRTHAGIEQAISRGLAYAPYADLVWCETSTPDLELARRFAQAIHAKYPGKLLAYNCSPSFNWQKNLDDKTIASFQQQLSDMGYKFQFITLAGIHSMWFNMFDLANAYAQGEGMKHYVEKVQQPEFAAAKDGYTFVSHQQEVGTGYFDKVTTIIQGGTSSVTALTGSTEESQF
+  organism: Escherichia coli K-12
+  accession: P0A9G6
+  source_database: UniProtKB/Swiss-Prot
+  source_uri: https://rest.uniprot.org/uniprotkb/P0A9G6.fasta
+  source_version: entry 145; sequence 1
+  source_retrieved_at: 2026-07-31T00:00:00Z
+  pocket_residues: [89, 91, 92, 93, 108, 157, 159, 184, 186, 193, 194, 195, 196, 197, 232, 287, 289, 317, 318, 319, 320, 321, 351, 352, 356]
+peptide_lengths: [10, 12, 15]
+candidates_per_length: 14
+generations: 4
+autoresearch_enabled: true
+seed: 20260807
+pepmlm_model: ChatterjeeLab/PepMLM-650M
+search_regime: E1
+pepmlm_de_novo_top_k: 10
+pepmlm_mutation_top_k: 10
+pepmlm_temperature: 1.35
+mutation_children_per_parent: 5
+mutation_count_min: 2
+mutation_count_max: 6
+exploration_candidates_per_length: 4
+maximum_sequence_similarity: 0.75
+elite_parent_count: 4
+
+structure_protocol: diagnostic_fast
+structure_top_k: 4
+search_structure_comprehensive_count: 2
+search_structure_diversity_count: 2
+final_structure_candidate_count: 8
+boltz_method: boltz2
+diffusion_samples: 1
+boltz_seeds_per_candidate: 1
+boltz_recycling_steps: 3
+boltz_sampling_steps: 200
+boltz_use_potentials: true
+boltz_no_kernels: true
+boltz_force_pocket: true
+use_msa_server: false
+pocket_max_distance_angstrom: 8.0
+interface_contact_distance_angstrom: 5.0
+interface_clash_distance_angstrom: 1.5
+interface_min_pocket_contacts: 2
+interface_min_pair_iptm_median: 0.15
+severe_structure_clash_count: 25
+
+rosetta_enabled: false
+rosetta_top_k: 3
+rosetta_nstruct: 8
+rosetta_parallel_decoys: 8
+bulk_rosetta_all_qualified: true
+bulk_rosetta_candidate_limit: 250
+bulk_csv_report_threshold: 200
+bulk_evaluation_concurrency: 4
+rosetta_score_function: ref2015
+exploratory_rosetta_slots: 0
+affinity_evaluators: []
+
+# Only independently published AMP classifiers remain active. Macrel carries the
+# primary soft AMP/hemolysis evidence; AMPlify is an independent final-stage check.
+# Neither is a qualification gate. ToxinPred3, LLAMP, serum-half-life, and APR
+# predictors are excluded from this workflow after local conflict or insufficient
+# domain validation. Their historical evidence and adapters remain preserved.
+optional_metrics:
+  - name: hemolysis_risk
+    enabled: true
+    trust: soft
+    stages: [research, final]
+    failure_policy: record_unavailable
+  - name: amp_likeness
+    enabled: true
+    trust: soft
+    stages: [final]
+    failure_policy: record_unavailable
+  # Activate only against a frozen, deduplicated experimental AMP reference set.
+  - name: sequence_novelty
+    enabled: false
+    trust: descriptor
+    stages: [final]
+    failure_policy: record_unavailable
+
+metric_policy:
+  # This is the only custom sequence hard gate retained: it prevents obvious
+  # low-complexity generator collapse, rather than claiming AMP biology.
+  - metric_name: maximum_identical_residue_run
+    role: qualification
+    maximum: 4
+    hard: true
+    missing_policy: fail
+    stages: [proposal, research, final]
+    rationale: Catastrophic low-complexity generation guard, not an AMP score.
+
+  # Canonical AMP physicochemical priors are deliberately soft. They influence
+  # ordering before PepMLM PPL but never erase a sequence or assert activity.
+  - metric_name: net_charge_ph7_4
+    role: qualification
+    minimum: 1.0
+    hard: false
+    missing_policy: fail
+    stages: [proposal, research, final]
+    rationale: Soft cationic-AMP prior; neutral and anionic AMP classes still remain eligible.
+  - metric_name: gravy
+    role: qualification
+    minimum: -1.0
+    maximum: 1.0
+    hard: false
+    missing_policy: fail
+    stages: [proposal, research, final]
+    rationale: Broad ProtParam hydropathy envelope; avoids unbounded hydrophobic optimization.
+  - metric_name: hydrophobic_moment_eisenberg
+    role: qualification
+    minimum: 0.20
+    hard: false
+    missing_policy: fail
+    stages: [proposal, research, final]
+    rationale: Soft amphipathic alpha-helical projection; not a secondary-structure claim.
+  - metric_name: instability_index
+    role: qualification
+    maximum: 40.0
+    hard: false
+    missing_policy: fail
+    stages: [proposal, research, final]
+    rationale: Widely used protein proxy, demoted because it is not calibrated for 10-15 aa peptides.
+
+  - metric_name: sequence_similarity
+    role: diversity
+    maximum: 0.75
+    hard: true
+    missing_policy: fail
+    stages: [proposal, research, final]
+    rationale: Maintain sequence-space coverage.
+  - metric_name: conditional_ppl
+    role: objective
+    direction: minimize
+    priority: 10
+    missing_policy: worst
+    stages: [proposal, research, final]
+    rationale: Language-model plausibility after hard and soft qualification tiers.
+
+  # Old task-tuned hydrophobic heuristics remain visible only for audit.
+  - metric_name: hydrophobic_fraction
+    role: diagnostic
+    hard: false
+    missing_policy: ignore
+    stages: [proposal, research, final]
+    rationale: Legacy custom descriptor; no longer a universal AMP qualification.
+  - metric_name: maximum_hydrophobic_run
+    role: diagnostic
+    hard: false
+    missing_policy: ignore
+    stages: [proposal, research, final]
+    rationale: Legacy custom descriptor; retained only for transparent risk review.
+  - metric_name: molecular_weight_da
+    role: diagnostic
+    hard: false
+    missing_policy: ignore
+    stages: [proposal, research, final]
+    rationale: Standard ProtParam descriptor; peptide lengths already constrain its range.
+  - metric_name: isoelectric_point
+    role: diagnostic
+    hard: false
+    missing_policy: ignore
+    stages: [proposal, research, final]
+    rationale: Standard ProtParam descriptor reported without monotonic optimization.
+  - metric_name: cationic_residue_fraction
+    role: diagnostic
+    hard: false
+    missing_policy: ignore
+    stages: [proposal, research, final]
+    rationale: Transparent K/R composition descriptor used for AMP distribution comparison.
+  - metric_name: structure_available
+    role: diagnostic
+    hard: false
+    missing_policy: ignore
+    stages: [research, final]
+    rationale: Availability is evidence metadata, never a sequence qualification.
+  - metric_name: boltz2_pair_iptm_median
+    role: diagnostic
+    hard: false
+    missing_policy: ignore
+    stages: [research, final]
+    rationale: Single-seed predicted-complex confidence diagnostic.
+  - metric_name: pocket_contact_count
+    role: diagnostic
+    hard: false
+    missing_policy: ignore
+    stages: [research, final]
+    rationale: Single-pose pocket-contact diagnostic.
+  - metric_name: interface_clash_count
+    role: diagnostic
+    hard: false
+    missing_policy: ignore
+    stages: [research, final]
+    rationale: Coordinate sanity and conflict diagnostic.
+  - metric_name: rosetta_dg_separated_reu
+    role: diagnostic
+    hard: false
+    missing_policy: ignore
+    stages: [final]
+    rationale: Eight-decoy local-energy shadow metric; REU is not quantitative affinity.

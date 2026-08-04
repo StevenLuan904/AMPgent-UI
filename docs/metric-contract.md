@@ -85,6 +85,41 @@ Missing-data behavior is explicit (`fail`, `worst`, or `ignore`). A high objecti
 compensate for a failed hard qualification. This is feasibility-first constrained selection, not a
 fixed weighted sum.
 
+### AMP physicochemical profile versus "realism"
+
+There is no admitted scalar metric for peptide "realism." PepMLM likelihood measures model
+plausibility, not antimicrobial biology, and a hand-written weighted score would hide trade-offs.
+Version 10 therefore persists a recognized descriptor panel in the proposal lane: sequence length,
+molecular weight, net charge at pH 7.4, isoelectric point, ProtParam GRAVY, K/R fraction, and the
+Eisenberg hydrophobic moment under an idealized 100-degree alpha-helical projection. Molecular
+weight, charge, pI, and GRAVY use the pinned Biopython ProtParam implementation; hydrophobic moment
+uses pinned modlAMP 4.3.2.
+
+Net charge, GRAVY, hydrophobic moment, and instability are *soft qualification intervals*: a
+candidate inside all intervals is ordered ahead of a candidate outside one or more intervals, but
+no sequence is rejected for a soft violation. This encodes a cationic, amphipathic AMP prior without
+pretending that all AMP classes share one physicochemical law. Passing farther inside a window does
+not improve rank, so the agent cannot maximize charge or hydrophobicity without bound.
+
+The only sequence-level hard guard retained is the maximum identical-residue run. Its purpose is to
+detect obvious low-complexity generator collapse, not to measure AMP activity. Hydrophobic fraction
+and maximum hydrophobic run remain recorded for backward-compatible audit but are diagnostics, not
+universal qualifications. The instability index is also demoted from hard to soft because its
+protein-derived threshold was not calibrated for 10--15 aa peptides.
+
+Macrel is primary soft model evidence for AMP likeness and hemolysis; AMPlify is an independent
+final-stage soft cross-check. Neither may hard-gate a sequence. ToxinPred3 and LLAMP are excluded
+from the active v10 workflow because the public melittin control exposed a direction conflict for
+ToxinPred3 and no target-specific calibration exists for LLAMP. Serum-half-life and aggregation
+predictors are likewise excluded pending peptide-domain validation. Their adapters and negative
+evidence remain preserved for audit rather than being deleted.
+
+A stronger future "real AMP likeness" assessment must compare this panel against a frozen,
+deduplicated experimental AMP reference distribution and report per-feature distances plus nearest
+neighbors. It must not collapse those distances into an unexplained scalar. Foldseek remains
+inactive until a suitable peptide-structure reference set exists; target-specific MIC becomes
+admissible only after training and held-out validation on target-specific measured MIC data.
+
 ### Sequence developability versus stability
 
 The deterministic `sequence-developability-audit` records the Guruprasad instability index through
@@ -95,17 +130,17 @@ against `/data0/luanhaoyang/FlexStruct/pMHCDiff_v2/result_analysis/pmhc_seq_anal
 of the persisted output.
 
 The instability index is lower-is-better and the conventional classification treats values above
-40 as unstable. AceA v5 therefore uses `instability_index <= 40` as a non-compensatory,
-missing-is-failure qualification. Passing by a larger margin does not improve rank. The original
+40 as unstable. Historical AceA v5--v9 configurations used `instability_index <= 40` as a hard
+qualification; v10 retains the same boundary only as a soft preference. The original
 Guruprasad model correlated dipeptide composition with *in-vivo protein stability*; for 10--15 aa
 peptides it remains a sequence-derived proxy, not a measurement of chemical degradation,
 proteolysis, plasma half-life, aggregation, solubility or conformational stability. Those claims
 require separate admitted evaluators or assays.
 
-The hydrophobic and low-complexity metrics remain independent qualifications rather than being
-replaced by instability index. This matters because the Guruprasad score for a homopolymer-like or
-very hydrophobic short peptide can be numerically low. One proxy is not allowed to cancel a failure
-in another developability dimension.
+The legacy hydrophobic and low-complexity descriptors remain visible because the Guruprasad score
+for a homopolymer-like or very hydrophobic short peptide can be numerically low. In v10 only the
+identical-residue run is a hard generator-quality guard; hydrophobic fraction and contiguous run
+are diagnostics.
 
 The AceA v4/v5 policy provisionally requires a maximum hydrophobic run of four and a hydrophobic
 fraction no greater than 0.60. These are task-level aqueous-peptide guardrails and must be calibrated

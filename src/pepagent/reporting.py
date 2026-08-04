@@ -22,6 +22,8 @@ BULK_ROSETTA_CSV_COLUMNS = [
     "molecular_weight_da",
     "net_charge_ph7_4",
     "isoelectric_point",
+    "gravy",
+    "cationic_residue_fraction",
     "hydrophobic_ratio_modlamp",
     "hydrophobic_moment_eisenberg",
     "hemopi2_hemolysis_score",
@@ -131,6 +133,10 @@ def build_bulk_rosetta_rows(
                 "molecular_weight_da": numeric("molecular_weight_da"),
                 "net_charge_ph7_4": numeric("net_charge_ph7_4"),
                 "isoelectric_point": numeric("isoelectric_point"),
+                "gravy": numeric("gravy"),
+                "cationic_residue_fraction": numeric(
+                    "cationic_residue_fraction"
+                ),
                 "hydrophobic_ratio_modlamp": numeric("hydrophobic_ratio_modlamp"),
                 "hydrophobic_moment_eisenberg": numeric(
                     "hydrophobic_moment_eisenberg"

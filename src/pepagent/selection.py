@@ -93,9 +93,12 @@ def policy_quality_key(
     candidate: dict[str, Any], metric_policy: list[dict[str, Any]], stage: str
 ) -> tuple[Any, ...]:
     hard_violations = hard_qualification_violations(candidate, metric_policy, stage)
+    all_violations = qualification_violations(candidate, metric_policy, stage)
+    soft_violation_count = len(all_violations) - len(hard_violations)
     return (
         int(not hard_violations),
         -len(hard_violations),
+        -soft_violation_count,
         *_objective_key(candidate, metric_policy, stage),
         candidate["sequence"],
     )

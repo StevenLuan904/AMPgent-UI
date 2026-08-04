@@ -465,21 +465,28 @@ async def persist_and_select_candidates(request: dict[str, Any]) -> dict[str, li
                     MetricName.HYDROPHOBIC_FRACTION,
                     MetricName.MAXIMUM_HYDROPHOBIC_RUN,
                     MetricName.MAXIMUM_IDENTICAL_RESIDUE_RUN,
+                    MetricName.MOLECULAR_WEIGHT_DA,
+                    MetricName.NET_CHARGE_PH7_4,
+                    MetricName.ISOELECTRIC_POINT,
+                    MetricName.GRAVY,
+                    MetricName.HYDROPHOBIC_MOMENT_EISENBERG,
+                    MetricName.CATIONIC_RESIDUE_FRACTION,
                 ):
+                    units = {
+                        MetricName.HYDROPHOBIC_FRACTION: "fraction",
+                        MetricName.CATIONIC_RESIDUE_FRACTION: "fraction",
+                        MetricName.MAXIMUM_HYDROPHOBIC_RUN: "residues",
+                        MetricName.MAXIMUM_IDENTICAL_RESIDUE_RUN: "residues",
+                        MetricName.MOLECULAR_WEIGHT_DA: "Da",
+                        MetricName.NET_CHARGE_PH7_4: "elementary_charge",
+                        MetricName.ISOELECTRIC_POINT: "pH",
+                    }
                     await repository.record_evaluation(
                         candidate.id,
                         developability_call.id,
                         metric_name,
                         float(developability[metric_name]),
-                        "fraction"
-                        if metric_name == MetricName.HYDROPHOBIC_FRACTION
-                        else "residues"
-                        if metric_name
-                        in {
-                            MetricName.MAXIMUM_HYDROPHOBIC_RUN,
-                            MetricName.MAXIMUM_IDENTICAL_RESIDUE_RUN,
-                        }
-                        else "dimensionless",
+                        units.get(metric_name, "dimensionless"),
                         developability,
                         limitations=developability["limitations"],
                     )
@@ -513,6 +520,22 @@ async def persist_and_select_candidates(request: dict[str, Any]) -> dict[str, li
                             ),
                             "maximum_identical_residue_run": float(
                                 developability["maximum_identical_residue_run"]
+                            ),
+                            "molecular_weight_da": float(
+                                developability["molecular_weight_da"]
+                            ),
+                            "net_charge_ph7_4": float(
+                                developability["net_charge_ph7_4"]
+                            ),
+                            "isoelectric_point": float(
+                                developability["isoelectric_point"]
+                            ),
+                            "gravy": float(developability["gravy"]),
+                            "hydrophobic_moment_eisenberg": float(
+                                developability["hydrophobic_moment_eisenberg"]
+                            ),
+                            "cationic_residue_fraction": float(
+                                developability["cationic_residue_fraction"]
                             ),
                         },
                     }
