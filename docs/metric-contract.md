@@ -108,11 +108,20 @@ universal qualifications. The instability index is also demoted from hard to sof
 protein-derived threshold was not calibrated for 10--15 aa peptides.
 
 Macrel is primary soft model evidence for AMP likeness and hemolysis; AMPlify is an independent
-final-stage soft cross-check. Neither may hard-gate a sequence. ToxinPred3 and LLAMP are excluded
-from the active v10 workflow because the public melittin control exposed a direction conflict for
-ToxinPred3 and no target-specific calibration exists for LLAMP. Serum-half-life and aggregation
-predictors are likewise excluded pending peptide-domain validation. Their adapters and negative
-evidence remain preserved for audit rather than being deleted.
+final-stage soft cross-check. ToxinPred3 is retained as required toxicity evidence, while its
+melittin direction conflict is permanently attached as a limitation. None may hard-gate a sequence.
+
+MIC is a multi-model evidence family. LLAMP reports an E. coli species-conditioned estimate;
+AMP-READ reports a generic mixed-species estimate and exposes its CNN, Transformer, Attention, and
+LSTM component predictions. Results are stored in separate columns and are never silently averaged
+across model families. Both remain soft because neither local comparison is similarity-isolated or
+calibrated to this project's assay. A model is admitted only when inference code and exact weights
+are publicly downloadable and hash-locked. BERT-AmPEP60 and esAMPMIC remain candidate adapters, not
+active evidence: the former's public SharePoint links currently return an HTML access page rather
+than checkpoints, while the latter's Git LFS weight endpoint did not complete during admission.
+
+Serum-half-life and aggregation predictors remain excluded pending peptide-domain validation. Their
+adapters and negative evidence remain preserved for audit rather than being deleted.
 
 A stronger future "real AMP likeness" assessment must compare this panel against a frozen,
 deduplicated experimental AMP reference distribution and report per-feature distances plus nearest

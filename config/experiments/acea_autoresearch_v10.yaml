@@ -58,11 +58,8 @@ rosetta_score_function: ref2015
 exploratory_rosetta_slots: 0
 affinity_evaluators: []
 
-# Only independently published AMP classifiers remain active. Macrel carries the
-# primary soft AMP/hemolysis evidence; AMPlify is an independent final-stage check.
-# Neither is a qualification gate. ToxinPred3, LLAMP, serum-half-life, and APR
-# predictors are excluded from this workflow after local conflict or insufficient
-# domain validation. Their historical evidence and adapters remain preserved.
+# Independently published AMP, toxicity, and MIC models run side-by-side as soft
+# evidence. Conflicts are preserved rather than averaged away. None is a hard gate.
 optional_metrics:
   - name: hemolysis_risk
     enabled: true
@@ -73,6 +70,24 @@ optional_metrics:
     enabled: true
     trust: soft
     stages: [final]
+    failure_policy: record_unavailable
+  - name: toxicity_risk
+    enabled: true
+    trust: soft
+    stages: [research, final]
+    failure_policy: record_unavailable
+  # LLAMP is E. coli species-conditioned. AMP-READ is a generic mixed-species
+  # four-model ensemble. Their MIC outputs are different endpoints and remain
+  # separate columns; disagreement is scientific evidence, not an averaging error.
+  - name: mic_potency
+    enabled: true
+    trust: soft
+    stages: [research, final]
+    failure_policy: record_unavailable
+  - name: mic_potency_amp_read
+    enabled: true
+    trust: soft
+    stages: [research, final]
     failure_policy: record_unavailable
   # Activate only against a frozen, deduplicated experimental AMP reference set.
   - name: sequence_novelty

@@ -29,6 +29,15 @@ adapters:
     timeout_seconds: 3600
     limitations:
       - Author test was reproduced but not similarity-isolated; values remain soft predictions.
+  mic_potency_amp_read:
+    enabled: false
+    version: handoff-2026.08.04
+    model_uri: registry://replace-with-locked-amp-read-release
+    weights_sha256: null
+    command: [replace-with-python, replace-with-adapter, --input, "{input}", --output, "{output}"]
+    timeout_seconds: 3600
+    limitations:
+      - Generic mixed-species MIC and component outputs remain separate from target-conditioned MIC.
   amp_likeness:
     enabled: false
     version: handoff-2026.08.04

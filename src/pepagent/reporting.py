@@ -37,6 +37,12 @@ BULK_ROSETTA_CSV_COLUMNS = [
     "toxinpred3_label",
     "llamp_log10_mic_um",
     "llamp_predicted_mic_um",
+    "amp_read_log10_mic_um",
+    "amp_read_predicted_mic_um",
+    "amp_read_cnn_log10_mic_um",
+    "amp_read_transformer_log10_mic_um",
+    "amp_read_attention_log10_mic_um",
+    "amp_read_lstm_log10_mic_um",
     "amplify_probability",
     "amplify_label",
     "mmseqs_nearest_identity",
@@ -156,6 +162,22 @@ def build_bulk_rosetta_rows(
                 "toxinpred3_label": text_value("toxinpred3_label"),
                 "llamp_log10_mic_um": numeric("llamp_log10_mic_um"),
                 "llamp_predicted_mic_um": numeric("llamp_predicted_mic_um"),
+                "amp_read_log10_mic_um": numeric("amp_read_log10_mic_um"),
+                "amp_read_predicted_mic_um": numeric(
+                    "amp_read_predicted_mic_um"
+                ),
+                "amp_read_cnn_log10_mic_um": numeric(
+                    "amp_read_cnn_log10_mic_um"
+                ),
+                "amp_read_transformer_log10_mic_um": numeric(
+                    "amp_read_transformer_log10_mic_um"
+                ),
+                "amp_read_attention_log10_mic_um": numeric(
+                    "amp_read_attention_log10_mic_um"
+                ),
+                "amp_read_lstm_log10_mic_um": numeric(
+                    "amp_read_lstm_log10_mic_um"
+                ),
                 "amplify_probability": numeric("amplify_probability"),
                 "amplify_label": text_value("amplify_label"),
                 "mmseqs_nearest_identity": numeric("mmseqs_nearest_identity"),

@@ -69,6 +69,44 @@ METRIC_PLUGIN_CONTRACTS: dict[str, dict[str, Any]] = {
             ),
         },
     },
+    "mic_potency_amp_read": {
+        "default_trust": "soft",
+        "maximum_trust": "soft",
+        "reliability": "R3-generic-mixed-species-no-similarity-isolated-local-test",
+        "provider": "external",
+        "outputs": {
+            "amp_read_log10_mic_um": (
+                "amp_read_log10_mic_um",
+                "log10(umol/L)",
+                "numeric",
+            ),
+            "amp_read_predicted_mic_um": (
+                "amp_read_predicted_mic_um",
+                "umol/L",
+                "numeric",
+            ),
+            "amp_read_cnn_log10_mic_um": (
+                "amp_read_cnn_log10_mic_um",
+                "log10(umol/L)",
+                "numeric",
+            ),
+            "amp_read_transformer_log10_mic_um": (
+                "amp_read_transformer_log10_mic_um",
+                "log10(umol/L)",
+                "numeric",
+            ),
+            "amp_read_attention_log10_mic_um": (
+                "amp_read_attention_log10_mic_um",
+                "log10(umol/L)",
+                "numeric",
+            ),
+            "amp_read_lstm_log10_mic_um": (
+                "amp_read_lstm_log10_mic_um",
+                "log10(umol/L)",
+                "numeric",
+            ),
+        },
+    },
     "amp_likeness": {
         "default_trust": "soft",
         "maximum_trust": "soft",

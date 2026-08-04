@@ -66,6 +66,7 @@ class OptionalMetricSpec(BaseModel):
         "hemolysis_risk",
         "toxicity_risk",
         "mic_potency",
+        "mic_potency_amp_read",
         "amp_likeness",
         "sequence_novelty",
         "serum_half_life",

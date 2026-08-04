@@ -210,14 +210,20 @@ def test_soft_amp_window_is_preferred_without_rejecting_a_candidate() -> None:
     ]
 
 
-def test_v10_uses_amp_descriptors_and_excludes_unvalidated_predictors() -> None:
+def test_v10_uses_amp_descriptors_and_parallel_soft_predictors() -> None:
     config_path = (
         Path(__file__).parents[1] / "config" / "experiments" / "acea_autoresearch_v10.yaml"
     )
     payload = yaml.safe_load(config_path.read_text(encoding="utf-8"))
     spec = ExperimentSpec.model_validate(payload)
     enabled = {metric.name for metric in spec.optional_metrics if metric.enabled}
-    assert enabled == {"hemolysis_risk", "amp_likeness"}
+    assert enabled == {
+        "hemolysis_risk",
+        "amp_likeness",
+        "toxicity_risk",
+        "mic_potency",
+        "mic_potency_amp_read",
+    }
     rules = {rule.metric_name: rule for rule in spec.metric_policy}
     assert rules["maximum_identical_residue_run"].hard is True
     assert rules["hydrophobic_fraction"].role == "diagnostic"

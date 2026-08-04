@@ -9,6 +9,9 @@ import yaml
 
 from pepagent.domain.schemas import ExperimentSpec, TargetSpec
 from pepagent.handoff_metrics import normalize_metric_records, physicochemical_descriptors
+from pepagent.model_workers.amp_read_metric_cli import (
+    validate_sequence as amp_read_domain,
+)
 from pepagent.model_workers.amplify_metric_cli import (
     parse_tsv as parse_amplify_tsv,
 )
@@ -130,6 +133,41 @@ def test_missing_external_adapter_is_unavailable_without_failing_candidates(
     )
     assert result["status"] == "unavailable"
     assert result["records"] == []
+
+
+def test_amp_read_contract_keeps_ensemble_and_component_mic_outputs_separate() -> None:
+    records = normalize_metric_records(
+        "mic_potency_amp_read",
+        [
+            {
+                "candidate_id": "melittin",
+                "sequence": "GIGAVLKVLTTGLPALISWIKRKRQQ",
+                "status": "success",
+                "amp_read_log10_mic_um": 1.0543,
+                "amp_read_predicted_mic_um": 11.332,
+                "amp_read_cnn_log10_mic_um": 1.0687,
+                "amp_read_transformer_log10_mic_um": 0.9363,
+                "amp_read_attention_log10_mic_um": 0.9944,
+                "amp_read_lstm_log10_mic_um": 1.2179,
+            }
+        ],
+    )
+    observations = {
+        item["metric_name"]: item["numeric_value"]
+        for item in records[0]["observations"]
+    }
+    assert observations["amp_read_predicted_mic_um"] == pytest.approx(11.332)
+    assert observations["amp_read_cnn_log10_mic_um"] == pytest.approx(1.0687)
+    assert observations["amp_read_transformer_log10_mic_um"] == pytest.approx(
+        0.9363
+    )
+
+
+def test_amp_read_domain_rejects_noncanonical_and_overlength_sequences() -> None:
+    assert amp_read_domain("GIGAVLKVLTTGLPALISWIKRKRQQ") is None
+    assert amp_read_domain("A" * 100) is None
+    assert "maximum length" in (amp_read_domain("A" * 101) or "")
+    assert "non-standard" in (amp_read_domain("AX") or "")
 
 
 def test_external_adapter_retry_cannot_reuse_stale_predictions(tmp_path: Path) -> None:

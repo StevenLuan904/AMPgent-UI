@@ -8,6 +8,8 @@
 - Added proposal-stage AMP physicochemical descriptors (molecular weight, pI, charge at pH 7.4,
   GRAVY, K/R fraction, and Eisenberg hydrophobic moment), soft qualification ordering, and an AceA
   v10 policy that demotes uncalibrated short-peptide heuristics and excludes unsupported predictors.
+- Restored ToxinPred3 as conflict-preserving soft evidence and upgraded MIC evaluation to parallel,
+  separately reported LLAMP and open-weight AMP-READ inference without cross-model averaging.
 - Added a task-independent search-regime architecture: persisted distribution diagnostics,
   plateau-versus-collapse discrimination and a versioned E0--E4 escalation ladder from sampler
   broadening through independent-generator challenge and model redesign.
