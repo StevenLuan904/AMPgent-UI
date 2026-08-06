@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="/sdd_data/pepagent"
+ROOT="${PEPAGENT_ROOT:-/sdd_data/pepagent}"
 UV_VERSION="0.11.12"
 UV_HOME="$ROOT/runtime/uv-$UV_VERSION"
 INSTALLER="$ROOT/bootstrap/uv-installer-$UV_VERSION.sh"

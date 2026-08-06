@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="/sdd_data/pepagent"
+ROOT="${PEPAGENT_ROOT:-/sdd_data/pepagent}"
 UV="$ROOT/runtime/uv-0.11.12/bin/uv"
 PYTHON="$ROOT/runtime/python/cpython-3.11.10-linux-x86_64-gnu/bin/python3.11"
 ENV_DIR="$ROOT/envs/gpu-worker-py311-v1"

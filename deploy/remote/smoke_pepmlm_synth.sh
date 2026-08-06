@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="/sdd_data/pepagent"
+ROOT="${PEPAGENT_ROOT:-/sdd_data/pepagent}"
 WORK="$ROOT/runs/pepmlm-smoke-v1"
 MODEL="$ROOT/models/PepMLM-650M/898fca941a9057aebdd1a6164b5ee09a1a71780e"
 PYTHON="$ROOT/envs/gpu-worker-py311-v1/bin/python"

@@ -25,11 +25,20 @@ if [[ "$ROLE" = "rosetta" ]]; then
     exit 2
   }
 else
-  [[ "$GPU_ID" =~ ^[0-7]$ ]] || { echo "GPU ID must be 0-7" >&2; exit 2; }
+  [[ "$GPU_ID" =~ ^[0-9]+$ ]] || { echo "GPU ID must be a non-negative integer" >&2; exit 2; }
+  nvidia-smi -i "$GPU_ID" --query-gpu=index --format=csv,noheader,nounits >/dev/null 2>&1 || {
+    echo "GPU ID does not exist: $GPU_ID" >&2
+    exit 2
+  }
+  OCCUPANTS="$(nvidia-smi -i "$GPU_ID" --query-compute-apps=pid --format=csv,noheader,nounits 2>/dev/null | tr -d '[:space:]')"
+  [[ -z "$OCCUPANTS" ]] || {
+    echo "GPU $GPU_ID already has compute processes; refusing to start worker" >&2
+    exit 21
+  }
   MAX_CONCURRENT=1
 fi
 
-ROOT="/sdd_data/pepagent"
+ROOT="${PEPAGENT_ROOT:-/sdd_data/pepagent}"
 if [[ "$ROLE" = "rosetta" ]]; then
   PYTHON="$ROOT/envs/pyrosetta-quarterly-py311-v1/bin/python"
   CUDA_DEVICE=""

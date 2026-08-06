@@ -6,7 +6,7 @@ if [[ $# -ne 1 || ! "$1" =~ ^[0-9a-f]{64}$ ]]; then
   exit 2
 fi
 
-ROOT="/sdd_data/pepagent"
+ROOT="${PEPAGENT_ROOT:-/sdd_data/pepagent}"
 DIGEST="$1"
 ARCHIVE="$ROOT/bootstrap/platform-$DIGEST.tar.gz"
 RELEASE="$ROOT/platform/releases/$DIGEST"

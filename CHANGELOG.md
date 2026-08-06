@@ -10,6 +10,8 @@
   v10 policy that demotes uncalibrated short-peptide heuristics and excludes unsupported predictors.
 - Restored ToxinPred3 as conflict-preserving soft evidence and upgraded MIC evaluation to parallel,
   separately reported LLAMP and open-weight AMP-READ inference without cross-model averaging.
+- Generalized GPU worker deployment roots for data0/data1 hosts, added fail-closed GPU occupancy
+  checks, and extended the public melittin replay to cover AMP-READ alongside LLAMP.
 - Added a task-independent search-regime architecture: persisted distribution diagnostics,
   plateau-versus-collapse discrimination and a versioned E0--E4 escalation ladder from sampler
   broadening through independent-generator challenge and model redesign.

@@ -71,6 +71,11 @@ metrics:
     trust: soft
     stages: [final]
     failure_policy: record_unavailable
+  - name: mic_potency_amp_read
+    enabled: true
+    trust: soft
+    stages: [final]
+    failure_policy: record_unavailable
   - name: amp_likeness
     enabled: true
     trust: soft
@@ -91,6 +96,7 @@ qualitative_acceptance:
   toxicity_risk: toxic signal expected
   amp_likeness: AMP-positive signal expected
   mic_potency: finite prediction expected; no numeric calibration claim from one case
+  mic_potency_amp_read: finite prediction expected; endpoint remains separate from LLAMP
   serum_half_life: shadow output only; no pass/fail expectation
   aggregation_apr: shadow output only; no pass/fail expectation
 qualitative_checks:
@@ -123,6 +129,11 @@ qualitative_checks:
     metric_name: llamp_predicted_mic_um
     operator: finite
     expected: finite prediction; no calibration claim
+  - name: amp_read_mic_finite
+    plugin: mic_potency_amp_read
+    metric_name: amp_read_predicted_mic_um
+    operator: finite
+    expected: finite generic mixed-species prediction; no cross-model averaging
 limitations:
   - One positive-control peptide validates plumbing and qualitative direction, not calibration.
   - The calmodulin-bound pose is not melittin's bacterial-membrane mechanism of action.
