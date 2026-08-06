@@ -47,6 +47,7 @@ from pepagent.selection import (
     cheap_diverse_selection,
     diagnostic_representative_selection,
     diversity_constrained_elites,
+    progressive_evaluation_plan,
     qualification_violations,
 )
 from pepagent.settings import get_settings
@@ -262,7 +263,7 @@ async def mark_run_failed(request: dict[str, Any]) -> None:
         )
         if run is None:
             raise KeyError(f"run not found: {run_id}")
-        if run.status in {RunStatus.FAILED, RunStatus.SUCCEEDED}:
+        if run.status in {RunStatus.FAILED, RunStatus.SUCCEEDED, RunStatus.CANCELLED}:
             return
         run.status = RunStatus.FAILED
         run.finished_at = datetime.now(UTC)
@@ -274,6 +275,44 @@ async def mark_run_failed(request: dict[str, Any]) -> None:
             {
                 "error_type": request["error_type"],
                 "error": request["error"][:4000],
+            },
+        )
+
+
+@activity.defn(name="mark_run_cancelled")
+async def mark_run_cancelled(request: dict[str, Any]) -> None:
+    """Reconcile a Temporal cancellation into durable run and candidate state."""
+    run_id = uuid.UUID(request["run_id"])
+    async with SessionFactory() as session, session.begin():
+        run = await session.scalar(
+            select(ExperimentRun).where(ExperimentRun.id == run_id).with_for_update()
+        )
+        if run is None:
+            raise KeyError(f"run not found: {run_id}")
+        if run.status in {RunStatus.CANCELLED, RunStatus.SUCCEEDED, RunStatus.FAILED}:
+            return
+        queued = list(
+            await session.scalars(
+                select(Candidate).where(
+                    Candidate.run_id == run_id,
+                    Candidate.status.in_(
+                        [CandidateStatus.STRUCTURE_QUEUED, CandidateStatus.ROSETTA_QUEUED]
+                    ),
+                )
+            )
+        )
+        for candidate in queued:
+            candidate.status = CandidateStatus.CANCELLED
+        run.status = RunStatus.CANCELLED
+        run.finished_at = datetime.now(UTC)
+        await ExperimentRepository(session).append_event(
+            "run",
+            run_id,
+            "run.cancelled",
+            "temporal",
+            {
+                "reason": request.get("reason") or "workflow_cancelled",
+                "cancelled_candidate_count": len(queued),
             },
         )
 
@@ -561,7 +600,11 @@ async def persist_and_select_candidates(request: dict[str, Any]) -> dict[str, li
                 raise KeyError(f"candidate not found: {item['id']}")
             candidate.proposal_rank = rank
         spec = request["spec"]
-        if spec.get("structure_protocol") == "diagnostic_fast":
+        if spec.get("evaluation_ladder_mode") == "lightweight_first":
+            # Optional sequence metrics are persisted after this activity. Expensive
+            # representatives must therefore be chosen by the Research Director later.
+            selected = []
+        elif spec.get("structure_protocol") == "diagnostic_fast":
             final_generation = generation == int(spec["generations"]) - 1
             if final_generation:
                 selected = cheap_diverse_selection(
@@ -1728,6 +1771,16 @@ async def select_next_generation(request: dict[str, Any]) -> dict[str, Any]:
         )
         if not elites and not final_generation:
             raise RuntimeError("Research Director could not select any next-generation parent")
+        qualified_elite_count = sum(
+            not qualification_violations(item, spec.get("metric_policy"), selection_stage)
+            for item in elites
+        )
+        evaluation_plan = progressive_evaluation_plan(
+            spec,
+            generation,
+            final_generation,
+            qualified_elite_count,
+        )
         selected_ids = {uuid.UUID(item["id"]) for item in elites}
         for item in elites:
             candidate_id = uuid.UUID(item["id"])
@@ -1793,6 +1846,7 @@ async def select_next_generation(request: dict[str, Any]) -> dict[str, Any]:
             "candidates": observed,
             "candidate_assessments": candidate_assessments,
             "mutation_briefs": [item["mutation_brief"] for item in elites],
+            "evaluation_plan": evaluation_plan,
         }
         prompt_text = json.dumps(prompt_payload, ensure_ascii=False, indent=2, sort_keys=True)
         structured = {
@@ -1818,6 +1872,7 @@ async def select_next_generation(request: dict[str, Any]) -> dict[str, Any]:
             "mutation_briefs": [item["mutation_brief"] for item in elites],
             "policy_sha256": canonical_sha256(policy_snapshot),
             "candidate_assessments": candidate_assessments,
+            "evaluation_plan": evaluation_plan,
         }
         response_lines = [
             f"Generation {generation}: selected {len(elites)} "
@@ -1825,6 +1880,8 @@ async def select_next_generation(request: dict[str, Any]) -> dict[str, Any]:
             "under the diversity constraint.",
             "Qualification rules were applied before objectives; failed hard constraints "
             "could not be compensated by a stronger objective.",
+            "EVALUATION_LADDER "
+            + json.dumps(evaluation_plan, ensure_ascii=False, sort_keys=True),
         ]
         response_lines.extend(
             f"SELECT {item['id']} {item['sequence']} metrics="
@@ -1897,6 +1954,7 @@ async def select_next_generation(request: dict[str, Any]) -> dict[str, Any]:
             "decision_id": str(decision.id),
             "parents": elites,
             "generation": generation,
+            "evaluation_plan": evaluation_plan,
         }
 
 

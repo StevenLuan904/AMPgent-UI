@@ -27,6 +27,7 @@ class PeptideDesignWorkflow:
             spec = request["spec"]
             autoresearch = bool(spec.get("autoresearch_enabled", False))
             diagnostic_fast = spec.get("structure_protocol") == "diagnostic_fast"
+            progressive = spec.get("evaluation_ladder_mode") == "lightweight_first"
             generation_count = int(spec["generations"]) if autoresearch else 1
             parents: list[dict[str, Any]] = []
             decision_id: str | None = None
@@ -123,6 +124,25 @@ class PeptideDesignWorkflow:
                             start_to_close_timeout=timedelta(minutes=10),
                             retry_policy=retry,
                         )
+                evaluation_plan: dict[str, Any] | None = None
+                if autoresearch and progressive:
+                    decision = await workflow.execute_activity(
+                        "select_next_generation",
+                        {
+                            "run_id": request["run_id"],
+                            "generation": generation,
+                            "spec": spec,
+                            "final_generation": generation == generation_count - 1,
+                        },
+                        task_queue="pepagent-control",
+                        start_to_close_timeout=timedelta(minutes=15),
+                        retry_policy=retry,
+                    )
+                    parents = decision["parents"]
+                    decision_id = decision["decision_id"]
+                    evaluation_plan = decision["evaluation_plan"]
+                    agent_decision_count += 1
+                    selected = parents if evaluation_plan["run_structure"] else []
                 round_structures: list[dict[str, Any]] = []
                 ensembles: list[dict[str, Any]] = []
                 seed_count = 1 if diagnostic_fast else int(spec.get("boltz_seeds_per_candidate", 1))
@@ -198,8 +218,11 @@ class PeptideDesignWorkflow:
                         ensembles.append(audit)
                 all_structures.extend(round_structures)
                 round_rosetta_results: list[dict[str, Any]] = []
-                run_rosetta = spec.get("rosetta_enabled", False) and (
-                    not diagnostic_fast or generation == generation_count - 1
+                run_rosetta = (
+                    bool(evaluation_plan["run_rosetta"])
+                    if progressive and evaluation_plan is not None
+                    else spec.get("rosetta_enabled", False)
+                    and (not diagnostic_fast or generation == generation_count - 1)
                 )
                 if run_rosetta:
                     selection_request = (
@@ -249,7 +272,7 @@ class PeptideDesignWorkflow:
                         )
                         round_rosetta_results.append(rosetta_result)
                     all_rosetta_results.extend(round_rosetta_results)
-                if autoresearch:
+                if autoresearch and not progressive:
                     decision = await workflow.execute_activity(
                         "select_next_generation",
                         {
@@ -333,6 +356,20 @@ class PeptideDesignWorkflow:
                 start_to_close_timeout=timedelta(minutes=5),
                 retry_policy=retry,
             )
+        except asyncio.CancelledError:
+            await asyncio.shield(
+                workflow.execute_activity(
+                    "mark_run_cancelled",
+                    {
+                        "run_id": request["run_id"],
+                        "reason": workflow.cancellation_reason() or "workflow_cancelled",
+                    },
+                    task_queue="pepagent-control",
+                    start_to_close_timeout=timedelta(minutes=5),
+                    retry_policy=retry,
+                )
+            )
+            raise
         except Exception as error:
             await workflow.execute_activity(
                 "mark_run_failed",

@@ -136,6 +136,16 @@ class ExperimentSpec(BaseModel):
     structure_top_k: int = 8
     generations: int = 2
     autoresearch_enabled: bool = False
+    evaluation_ladder_mode: Literal["legacy", "lightweight_first"] = "legacy"
+    structure_escalation_policy: Literal[
+        "always", "late_elite", "agent_triggered", "manual"
+    ] = "always"
+    structure_start_generation: int = Field(default=0, ge=0)
+    structure_trigger_min_qualified_elites: int = Field(default=1, ge=1, le=10)
+    rosetta_escalation_policy: Literal[
+        "legacy", "final_elite", "late_elite", "agent_triggered", "manual"
+    ] = "legacy"
+    rosetta_start_generation: int = Field(default=0, ge=0)
     structure_protocol: Literal["legacy_ensemble_gate", "diagnostic_fast"] = (
         "legacy_ensemble_gate"
     )
@@ -282,7 +292,10 @@ class ExperimentSpec(BaseModel):
                 raise ValueError(
                     f"shadow metric {rule.metric_name} cannot enter Agent selection"
                 )
-            if plugin.trust == "soft" and rule.role in {"qualification", "diversity"}:
+            if plugin.trust == "soft" and (
+                rule.role == "diversity"
+                or (rule.role == "qualification" and rule.hard)
+            ):
                 raise ValueError(
                     f"soft metric {rule.metric_name} cannot be a hard selection gate"
                 )

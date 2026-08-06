@@ -11,6 +11,7 @@ from pepagent.selection import (
     diagnostic_representative_selection,
     diversity_constrained_elites,
     hard_qualification_violations,
+    progressive_evaluation_plan,
     qualification_violations,
     sequence_distance,
 )
@@ -19,6 +20,64 @@ from pepagent.structures.interface import (
     classify_structure_support,
     pose_cluster_fraction,
 )
+
+
+def test_progressive_evaluation_ladder_holds_expensive_tiers_until_justified() -> None:
+    manual = progressive_evaluation_plan(
+        {
+            "evaluation_ladder_mode": "lightweight_first",
+            "structure_escalation_policy": "manual",
+            "rosetta_escalation_policy": "manual",
+            "rosetta_enabled": False,
+        },
+        generation=5,
+        final_generation=True,
+        qualified_elite_count=4,
+    )
+    assert manual["run_structure"] is False
+    assert manual["run_rosetta"] is False
+
+    agent = progressive_evaluation_plan(
+        {
+            "evaluation_ladder_mode": "lightweight_first",
+            "structure_escalation_policy": "agent_triggered",
+            "structure_start_generation": 2,
+            "structure_trigger_min_qualified_elites": 2,
+            "rosetta_escalation_policy": "final_elite",
+            "rosetta_start_generation": 3,
+            "rosetta_enabled": True,
+        },
+        generation=2,
+        final_generation=False,
+        qualified_elite_count=2,
+    )
+    assert agent["run_structure"] is True
+    assert agent["run_rosetta"] is False
+
+
+def test_acea_v11_is_lightweight_first_and_uses_multiple_soft_amp_signals() -> None:
+    spec_path = (
+        Path(__file__).parents[1]
+        / "config"
+        / "experiments"
+        / "acea_autoresearch_v11_lightweight.yaml"
+    )
+    spec = ExperimentSpec.model_validate(yaml.safe_load(spec_path.read_text(encoding="utf-8")))
+    rules = {rule.metric_name: rule for rule in spec.metric_policy}
+    assert spec.evaluation_ladder_mode == "lightweight_first"
+    assert spec.structure_escalation_policy == "manual"
+    assert spec.rosetta_escalation_policy == "manual"
+    assert spec.bulk_rosetta_all_qualified is False
+    for metric_name in (
+        "macrel_amp_probability",
+        "amplify_probability",
+        "llamp_log10_mic_um",
+        "amp_read_log10_mic_um",
+        "toxinpred3_ml_score",
+        "macrel_hemolysis_probability",
+    ):
+        assert rules[metric_name].role == "qualification"
+        assert rules[metric_name].hard is False
 
 
 def _atom(serial: int, atom: str, residue: str, chain: str, index: int, x: float) -> str:

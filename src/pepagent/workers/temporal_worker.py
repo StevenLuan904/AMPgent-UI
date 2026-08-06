@@ -10,6 +10,7 @@ from pepagent.workers.activities import (
     export_bulk_rosetta_csv,
     finalize_run,
     generate_with_pepmlm,
+    mark_run_cancelled,
     mark_run_failed,
     mark_run_started,
     persist_and_select_candidates,
@@ -38,6 +39,7 @@ ROLE_CONFIG = {
         [
             mark_run_started,
             mark_run_failed,
+            mark_run_cancelled,
             persist_and_select_candidates,
             persist_optional_sequence_metric,
             persist_optional_metric_failure,

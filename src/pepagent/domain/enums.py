@@ -21,6 +21,7 @@ class CandidateStatus(StrEnum):
     MUTATED = "mutated"
     REJECTED = "rejected"
     FAILED = "failed"
+    CANCELLED = "cancelled"
 
 
 class EvaluationStatus(StrEnum):

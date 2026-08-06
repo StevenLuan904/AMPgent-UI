@@ -3,6 +3,86 @@ from __future__ import annotations
 from typing import Any
 
 
+def progressive_evaluation_plan(
+    spec: dict[str, Any],
+    generation: int,
+    final_generation: bool,
+    qualified_elite_count: int,
+) -> dict[str, Any]:
+    """Choose the next evidence tier without conflating cheap and expensive metrics."""
+    structure_policy = spec.get("structure_escalation_policy", "always")
+    structure_start = int(spec.get("structure_start_generation", 0))
+    minimum_elites = int(spec.get("structure_trigger_min_qualified_elites", 1))
+    structure_reasons: list[str] = []
+    if structure_policy == "manual":
+        run_structure = False
+        structure_reasons.append("manual_hold")
+    elif structure_policy == "always":
+        run_structure = True
+        structure_reasons.append("legacy_always")
+    elif generation < structure_start:
+        run_structure = False
+        structure_reasons.append("before_structure_start_generation")
+    elif structure_policy == "late_elite":
+        run_structure = True
+        structure_reasons.append("late_elite_stage_reached")
+    else:
+        run_structure = final_generation or qualified_elite_count >= minimum_elites
+        structure_reasons.append(
+            "final_elite_confirmation"
+            if final_generation
+            else "lightweight_consensus_reached"
+            if run_structure
+            else "lightweight_consensus_not_reached"
+        )
+
+    rosetta_policy = spec.get("rosetta_escalation_policy", "legacy")
+    rosetta_start = int(spec.get("rosetta_start_generation", 0))
+    rosetta_enabled = bool(spec.get("rosetta_enabled", False))
+    rosetta_reasons: list[str] = []
+    if not rosetta_enabled or rosetta_policy == "manual":
+        run_rosetta = False
+        rosetta_reasons.append("disabled_or_manual_hold")
+    elif not run_structure:
+        run_rosetta = False
+        rosetta_reasons.append("structure_tier_not_run")
+    elif rosetta_policy == "legacy":
+        run_rosetta = True
+        rosetta_reasons.append("legacy_enabled")
+    elif generation < rosetta_start:
+        run_rosetta = False
+        rosetta_reasons.append("before_rosetta_start_generation")
+    elif rosetta_policy == "final_elite":
+        run_rosetta = final_generation
+        rosetta_reasons.append(
+            "final_elite_confirmation" if run_rosetta else "not_final_generation"
+        )
+    elif rosetta_policy == "late_elite":
+        run_rosetta = True
+        rosetta_reasons.append("late_elite_stage_reached")
+    else:
+        run_rosetta = final_generation or qualified_elite_count >= minimum_elites
+        rosetta_reasons.append(
+            "agent_escalation_criterion_met"
+            if run_rosetta
+            else "agent_escalation_criterion_not_met"
+        )
+    return {
+        "schema_version": "1.0",
+        "ladder_mode": spec.get("evaluation_ladder_mode", "legacy"),
+        "generation": generation,
+        "final_generation": final_generation,
+        "qualified_elite_count": qualified_elite_count,
+        "minimum_qualified_elites": minimum_elites,
+        "run_structure": run_structure,
+        "structure_policy": structure_policy,
+        "structure_reasons": structure_reasons,
+        "run_rosetta": run_rosetta,
+        "rosetta_policy": rosetta_policy,
+        "rosetta_reasons": rosetta_reasons,
+    }
+
+
 def _rules_for_stage(
     metric_policy: list[dict[str, Any]] | None, stage: str, role: str | None = None
 ) -> list[dict[str, Any]]:

@@ -1,0 +1,197 @@
+target:
+  name: Escherichia coli K-12 isocitrate lyase AceA
+  sequence: MKTRTQQIEELQKEWTQPRWEGITRPYSAEDVVKLRGSVNPECTLAQLGAAKMWRLLHGESKKGYINSLGALTGGQALQQAKAGIEAVYLSGWQVAADANLAASMYPDQSLYPANSVPAVVERINNTFRRADQIQWSAGIEPGDPRYVDYFLPIVADAEAGFGGVLNAFELMKAMIEAGAAAVHFEDQLASVKKCGHMGGKVLVPTQEAIQKLVAARLAADVTGVPTLLVARTDADAADLITSDCDPYDSEFITGERTSEGFFRTHAGIEQAISRGLAYAPYADLVWCETSTPDLELARRFAQAIHAKYPGKLLAYNCSPSFNWQKNLDDKTIASFQQQLSDMGYKFQFITLAGIHSMWFNMFDLANAYAQGEGMKHYVEKVQQPEFAAAKDGYTFVSHQQEVGTGYFDKVTTIIQGGTSSVTALTGSTEESQF
+  organism: Escherichia coli K-12
+  accession: P0A9G6
+  source_database: UniProtKB/Swiss-Prot
+  source_uri: https://rest.uniprot.org/uniprotkb/P0A9G6.fasta
+  source_version: entry 145; sequence 1
+  source_retrieved_at: 2026-07-31T00:00:00Z
+  pocket_residues: [89, 91, 92, 93, 108, 157, 159, 184, 186, 193, 194, 195, 196, 197, 232, 287, 289, 317, 318, 319, 320, 321, 351, 352, 356]
+
+peptide_lengths: [10, 12, 15]
+candidates_per_length: 14
+generations: 6
+autoresearch_enabled: true
+seed: 20260808
+pepmlm_model: ChatterjeeLab/PepMLM-650M
+search_regime: E1
+pepmlm_de_novo_top_k: 10
+pepmlm_mutation_top_k: 10
+pepmlm_temperature: 1.35
+mutation_children_per_parent: 5
+mutation_count_min: 2
+mutation_count_max: 6
+exploration_candidates_per_length: 4
+maximum_sequence_similarity: 0.75
+elite_parent_count: 4
+
+# Manual early-search phase: all decisions use sequence/physicochemical/open-weight
+# AMP, MIC, toxicity and hemolysis evidence. A later versioned run may change these
+# policies to agent_triggered or final_elite without altering this run's provenance.
+evaluation_ladder_mode: lightweight_first
+structure_escalation_policy: manual
+structure_start_generation: 3
+structure_trigger_min_qualified_elites: 2
+rosetta_escalation_policy: manual
+rosetta_start_generation: 4
+
+structure_protocol: diagnostic_fast
+structure_top_k: 4
+search_structure_comprehensive_count: 2
+search_structure_diversity_count: 2
+final_structure_candidate_count: 8
+boltz_method: boltz2
+diffusion_samples: 1
+boltz_seeds_per_candidate: 1
+boltz_recycling_steps: 3
+boltz_sampling_steps: 200
+boltz_use_potentials: true
+boltz_no_kernels: true
+boltz_force_pocket: true
+use_msa_server: false
+
+rosetta_enabled: false
+rosetta_top_k: 3
+rosetta_nstruct: 8
+rosetta_parallel_decoys: 8
+bulk_rosetta_all_qualified: false
+bulk_rosetta_candidate_limit: 250
+bulk_csv_report_threshold: 200
+bulk_evaluation_concurrency: 4
+rosetta_score_function: ref2015
+exploratory_rosetta_slots: 0
+affinity_evaluators: []
+
+optional_metrics:
+  - name: hemolysis_risk
+    enabled: true
+    trust: soft
+    stages: [research, final]
+    failure_policy: record_unavailable
+  - name: amp_likeness
+    enabled: true
+    trust: soft
+    stages: [research, final]
+    failure_policy: record_unavailable
+  - name: toxicity_risk
+    enabled: true
+    trust: soft
+    stages: [research, final]
+    failure_policy: record_unavailable
+  - name: mic_potency
+    enabled: true
+    trust: soft
+    stages: [research, final]
+    failure_policy: record_unavailable
+  - name: mic_potency_amp_read
+    enabled: true
+    trust: soft
+    stages: [research, final]
+    failure_policy: record_unavailable
+
+metric_policy:
+  - metric_name: maximum_identical_residue_run
+    role: qualification
+    maximum: 4
+    hard: true
+    missing_policy: fail
+    stages: [proposal, research, final]
+    rationale: Catastrophic low-complexity guard only.
+  - metric_name: net_charge_ph7_4
+    role: qualification
+    minimum: 1.0
+    hard: false
+    missing_policy: fail
+    stages: [proposal, research, final]
+    rationale: Soft cationic AMP prior.
+  - metric_name: gravy
+    role: qualification
+    minimum: -1.0
+    maximum: 1.0
+    hard: false
+    missing_policy: fail
+    stages: [proposal, research, final]
+    rationale: Broad hydropathy envelope.
+  - metric_name: hydrophobic_moment_eisenberg
+    role: qualification
+    minimum: 0.20
+    hard: false
+    missing_policy: fail
+    stages: [proposal, research, final]
+    rationale: Soft amphipathic prior.
+  - metric_name: instability_index
+    role: qualification
+    maximum: 40.0
+    hard: false
+    missing_policy: fail
+    stages: [proposal, research, final]
+    rationale: Peptide development proxy, not an experimental stability claim.
+  - metric_name: macrel_amp_probability
+    role: qualification
+    minimum: 0.50
+    hard: false
+    missing_policy: fail
+    stages: [research, final]
+    rationale: Open model AMP evidence; soft because probability is not activity.
+  - metric_name: amplify_probability
+    role: qualification
+    minimum: 0.50
+    hard: false
+    missing_policy: fail
+    stages: [research, final]
+    rationale: Independent open-weight AMP classifier consensus.
+  - metric_name: llamp_log10_mic_um
+    role: qualification
+    maximum: 2.0
+    hard: false
+    missing_policy: fail
+    stages: [research, final]
+    rationale: E. coli-conditioned MIC hypothesis; lower is preferred but not calibrated.
+  - metric_name: amp_read_log10_mic_um
+    role: qualification
+    maximum: 2.5
+    hard: false
+    missing_policy: fail
+    stages: [research, final]
+    rationale: Independent generic MIC hypothesis retained separately from LLAMP.
+  - metric_name: toxinpred3_ml_score
+    role: qualification
+    maximum: 0.50
+    hard: false
+    missing_policy: fail
+    stages: [research, final]
+    rationale: Toxicity evidence is soft due known melittin-direction conflict.
+  - metric_name: macrel_hemolysis_probability
+    role: qualification
+    maximum: 0.50
+    hard: false
+    missing_policy: fail
+    stages: [research, final]
+    rationale: Hemolysis-risk evidence; never a hard deletion gate.
+  - metric_name: sequence_similarity
+    role: diversity
+    maximum: 0.75
+    hard: true
+    missing_policy: fail
+    stages: [proposal, research, final]
+    rationale: Maintain sequence-space coverage.
+  - metric_name: conditional_ppl
+    role: objective
+    direction: minimize
+    priority: 10
+    missing_policy: worst
+    stages: [proposal, research, final]
+    rationale: PepMLM plausibility breaks ties after lightweight qualification consensus.
+  - metric_name: structure_available
+    role: diagnostic
+    hard: false
+    missing_policy: ignore
+    stages: [research, final]
+    rationale: Expensive tier is intentionally held during this phase.
+  - metric_name: rosetta_dg_separated_reu
+    role: diagnostic
+    hard: false
+    missing_policy: ignore
+    stages: [final]
+    rationale: Deferred shadow evidence; REU is not quantitative affinity.

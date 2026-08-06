@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+- Added a configurable lightweight-first evaluation ladder. Open sequence AMP,
+  MIC, toxicity, hemolysis, physicochemical, and PepMLM evidence can drive
+  early selection before any structure work is authorized.
+- Added `manual`, `late_elite`, and evidence-triggered structure escalation,
+  with an independently configurable Rosetta escalation tier. Every Research
+  Director decision now records the chosen tier and its reasons alongside the
+  evidence hashes.
+- Added durable Temporal cancellation reconciliation so cancelled runs and
+  still-queued candidates cannot remain incorrectly marked as running.
+- Added `acea_autoresearch_v11_lightweight.yaml`, which intentionally holds
+  Boltz and Rosetta while six lightweight generations optimize multiple soft
+  AMP/MIC/safety signals without treating any predictor as experimental truth.
+
 - Replaced the incomplete stability proxy path with the exact Guruprasad instability index from
   Biopython ProtParam, cross-checked against the 919 pMHCDiff implementation. The metric is a hard,
   lower-is-better qualification in the historical AceA v5 experiment.
