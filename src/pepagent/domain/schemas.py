@@ -1,3 +1,4 @@
+import hashlib
 from datetime import datetime
 from typing import Any, Literal
 from uuid import UUID
@@ -129,6 +130,40 @@ class MutationKnowledgeCard(BaseModel):
         return self
 
 
+class InitialParentSpec(BaseModel):
+    source_run_id: UUID
+    source_candidate_id: UUID
+    sequence: str
+    sequence_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    evidence_sha256: list[str] = Field(min_length=1)
+    selection_rationale: str = Field(min_length=1)
+
+    @field_validator("sequence")
+    @classmethod
+    def normalize_sequence(cls, value: str) -> str:
+        return TargetSpec.normalize_sequence(value)
+
+    @field_validator("evidence_sha256")
+    @classmethod
+    def validate_evidence_hashes(cls, value: list[str]) -> list[str]:
+        if any(
+            len(item) != 64
+            or any(char not in "0123456789abcdef" for char in item)
+            for item in value
+        ):
+            raise ValueError("initial parent evidence hashes must be lowercase SHA-256")
+        if len(value) != len(set(value)):
+            raise ValueError("initial parent evidence hashes must be unique")
+        return value
+
+    @model_validator(mode="after")
+    def require_matching_sequence_hash(self) -> "InitialParentSpec":
+        actual = hashlib.sha256(self.sequence.encode("utf-8")).hexdigest()
+        if actual != self.sequence_sha256:
+            raise ValueError("initial parent sequence_sha256 does not match sequence")
+        return self
+
+
 class ExperimentSpec(BaseModel):
     target: TargetSpec
     peptide_lengths: list[int] = Field(default_factory=lambda: [12, 16, 20])
@@ -184,6 +219,7 @@ class ExperimentSpec(BaseModel):
     interface_min_pose_cluster_fraction: float = Field(default=0.5, ge=0, le=1)
     maximum_sequence_similarity: float = Field(default=0.75, ge=0, le=1)
     elite_parent_count: int = Field(default=3, ge=1)
+    initial_parents: list[InitialParentSpec] = Field(default_factory=list)
     mutation_children_per_parent: int = Field(default=3, ge=1)
     mutation_count_min: int = Field(default=1, ge=1)
     mutation_count_max: int = Field(default=3, ge=1)
@@ -243,6 +279,9 @@ class ExperimentSpec(BaseModel):
             raise ValueError("rosetta_top_k cannot exceed structure_top_k")
         if self.mutation_count_max < self.mutation_count_min:
             raise ValueError("mutation_count_max cannot be below mutation_count_min")
+        parent_sequences = [parent.sequence for parent in self.initial_parents]
+        if len(parent_sequences) != len(set(parent_sequences)):
+            raise ValueError("initial parent sequences must be unique")
         if self.autoresearch_enabled:
             if self.generations < 3:
                 raise ValueError("MVP-v2 Auto Research requires at least three generations")

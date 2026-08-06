@@ -6,6 +6,20 @@ from temporalio import workflow
 from temporalio.common import RetryPolicy
 
 
+def seed_parent_payloads(spec: dict[str, Any]) -> list[dict[str, Any]]:
+    return [
+        {
+            "id": parent["source_candidate_id"],
+            "source_run_id": parent["source_run_id"],
+            "sequence": parent["sequence"],
+            "sequence_sha256": parent["sequence_sha256"],
+            "evidence_sha256": parent["evidence_sha256"],
+            "selection_rationale": parent["selection_rationale"],
+        }
+        for parent in spec.get("initial_parents", [])
+    ]
+
+
 @workflow.defn(name="PeptideDesignWorkflow")
 class PeptideDesignWorkflow:
     @workflow.run
@@ -29,7 +43,7 @@ class PeptideDesignWorkflow:
             diagnostic_fast = spec.get("structure_protocol") == "diagnostic_fast"
             progressive = spec.get("evaluation_ladder_mode") == "lightweight_first"
             generation_count = int(spec["generations"]) if autoresearch else 1
-            parents: list[dict[str, Any]] = []
+            parents: list[dict[str, Any]] = seed_parent_payloads(spec)
             decision_id: str | None = None
             all_structures: list[dict[str, Any]] = []
             all_rosetta_results: list[dict[str, Any]] = []

@@ -328,7 +328,7 @@ async def generate_with_pepmlm(request: dict[str, Any]) -> list[dict[str, Any]]:
     generation = int(request.get("generation", 0))
     parents = request.get("parents", [])
     payloads: list[tuple[str, dict[str, Any]]] = []
-    if generation > 0 and parents:
+    if parents:
         payloads.append(
             (
                 "mutations",
@@ -347,6 +347,16 @@ async def generate_with_pepmlm(request: dict[str, Any]) -> list[dict[str, Any]]:
                         parent["mutation_brief"]
                         for parent in parents
                         if parent.get("mutation_brief") is not None
+                    ],
+                    "parent_sources": [
+                        {
+                            "source_run_id": parent.get("source_run_id"),
+                            "source_candidate_id": parent["id"],
+                            "sequence_sha256": parent.get("sequence_sha256"),
+                            "evidence_sha256": parent.get("evidence_sha256", []),
+                            "selection_rationale": parent.get("selection_rationale"),
+                        }
+                        for parent in parents
                     ],
                 },
             )
@@ -474,9 +484,18 @@ async def persist_and_select_candidates(request: dict[str, Any]) -> dict[str, li
                         "seed": item["seed"],
                         "proposal_mode": item.get("proposal_mode", "de_novo"),
                         "mutation_positions": item.get("mutation_positions", []),
-                        "parent_sequence_sha256": (
-                            parent.get("sequence_sha256") if parent else None
-                        ),
+                          "parent_sequence_sha256": (
+                              parent.get("sequence_sha256") if parent else None
+                          ),
+                          "parent_source_run_id": (
+                              parent.get("source_run_id") if parent else None
+                          ),
+                          "parent_evidence_sha256": (
+                              parent.get("evidence_sha256", []) if parent else []
+                          ),
+                          "parent_selection_rationale": (
+                              parent.get("selection_rationale") if parent else None
+                          ),
                     },
                 )
                 raw_metric = {

@@ -1,12 +1,20 @@
+import hashlib
+
 import pytest
 import yaml
 
-from pepagent.domain.schemas import ExperimentSpec, PocketCatalogSpec, TargetSpec
+from pepagent.domain.schemas import (
+    ExperimentSpec,
+    InitialParentSpec,
+    PocketCatalogSpec,
+    TargetSpec,
+)
 from pepagent.model_workers.boltz2_cli import build_input
 from pepagent.provenance.environment import runtime_manifest
 from pepagent.provenance.hashing import sha256_json
 from pepagent.workers.activities import _boltz_weight_manifest
 from pepagent.workers.temporal_worker import ROLE_CONFIG
+from pepagent.workflows.design import seed_parent_payloads
 
 
 def test_spec_normalizes_sequence_and_hash_is_canonical() -> None:
@@ -21,6 +29,40 @@ def test_spec_normalizes_sequence_and_hash_is_canonical() -> None:
 def test_spec_rejects_noncanonical_residues() -> None:
     with pytest.raises(ValueError, match="invalid amino-acid"):
         TargetSpec(name="target", sequence="ACDX")
+
+
+def test_initial_parent_requires_exact_sequence_and_evidence_hashes() -> None:
+    with pytest.raises(ValueError, match="does not match"):
+        InitialParentSpec(
+            source_run_id="00000000-0000-0000-0000-000000000001",
+            source_candidate_id="00000000-0000-0000-0000-000000000002",
+            sequence="KLLK",
+            sequence_sha256="0" * 64,
+            evidence_sha256=["1" * 64],
+            selection_rationale="activity lead",
+        )
+
+
+def test_seed_parent_payload_preserves_cross_run_provenance() -> None:
+    sequence = "KLLK"
+    digest = hashlib.sha256(sequence.encode()).hexdigest()
+    spec = ExperimentSpec(
+        target=TargetSpec(name="target", sequence="ACDE"),
+        initial_parents=[
+            InitialParentSpec(
+                source_run_id="00000000-0000-0000-0000-000000000001",
+                source_candidate_id="00000000-0000-0000-0000-000000000002",
+                sequence=sequence,
+                sequence_sha256=digest,
+                evidence_sha256=["a" * 64],
+                selection_rationale="structure lead",
+            )
+        ],
+    )
+    parent = seed_parent_payloads(spec.model_dump(mode="json"))[0]
+    assert parent["id"] == "00000000-0000-0000-0000-000000000002"
+    assert parent["source_run_id"] == "00000000-0000-0000-0000-000000000001"
+    assert parent["evidence_sha256"] == ["a" * 64]
 
 
 def test_boltz_input_represents_peptide_as_protein_chain_without_affinity() -> None:
