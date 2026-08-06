@@ -42,12 +42,21 @@ def normalize_knowledge_cards(cards: list[dict[str, Any]] | None) -> list[dict[s
         ]
     normalized: list[dict[str, Any]] = []
     for index, card in enumerate(cards):
+        source_type = str(card.get("source_type") or "external_evidence")
+        is_model_prior = source_type == "llm_internal_knowledge"
         content = {
             "item_id": str(card.get("item_id") or f"knowledge-card-{index + 1}"),
             "status": "available",
             "text": str(card["text"]),
+            "source_type": source_type,
+            "external_citation_available": not is_model_prior,
+            "epistemic_status": (
+                "uncited_model_prior" if is_model_prior else "externally_attributed"
+            ),
             "source_uri": card.get("source_uri"),
             "source_locator": card.get("source_locator"),
+            "model_name": card.get("model_name") if is_model_prior else None,
+            "model_revision": card.get("model_revision") if is_model_prior else None,
         }
         normalized.append({**content, "source_sha256": canonical_sha256(content)})
     return normalized
@@ -84,7 +93,10 @@ def build_mutation_brief(
     cards = normalize_knowledge_cards(knowledge_cards)
     guidance_lines = ["[1. Knowledge cards]"]
     guidance_lines.extend(
-        f"- {item['item_id']}: {item['text']} [source_sha256={item['source_sha256']}]"
+        f"- {item['item_id']}: {item['text']} "
+        f"[source_type={item.get('source_type', 'system_placeholder')}; "
+        f"external_citation_available={item.get('external_citation_available', False)}; "
+        f"source_sha256={item['source_sha256']}]"
         for item in cards
     )
     guidance_lines.append("[2. Physicochemical and model/script analysis]")

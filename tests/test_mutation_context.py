@@ -63,6 +63,26 @@ def test_knowledge_hash_is_per_atomic_card_not_per_collection() -> None:
     assert all(len(card["source_sha256"]) == 64 for card in cards)
 
 
+def test_llm_internal_knowledge_is_allowed_but_never_masquerades_as_a_citation() -> None:
+    cards = normalize_knowledge_cards(
+        [
+            {
+                "item_id": "agent-prior-1",
+                "text": "Cationic amphipathic peptides often interact with bacterial membranes.",
+                "source_type": "llm_internal_knowledge",
+                "model_name": "example-model",
+                "model_revision": "example-revision",
+            }
+        ]
+    )
+    card = cards[0]
+    assert card["source_type"] == "llm_internal_knowledge"
+    assert card["external_citation_available"] is False
+    assert card["epistemic_status"] == "uncited_model_prior"
+    assert card["model_name"] == "example-model"
+    assert len(card["source_sha256"]) == 64
+
+
 def test_mutation_brief_fails_closed_when_a_metric_has_no_evidence_hash() -> None:
     with pytest.raises(ValueError, match="no content-addressed evidence"):
         build_mutation_brief(
@@ -82,5 +102,19 @@ def test_knowledge_cards_are_atomic_and_require_text() -> None:
             {
                 "target": {"name": "target", "sequence": "ACDEFGHIK"},
                 "mutation_knowledge_cards": [{"item_id": "missing-text"}],
+            }
+        )
+
+    with pytest.raises(ValidationError, match="model_name and model_revision"):
+        ExperimentSpec.model_validate(
+            {
+                "target": {"name": "target", "sequence": "ACDEFGHIK"},
+                "mutation_knowledge_cards": [
+                    {
+                        "item_id": "uncited-prior",
+                        "text": "a model prior",
+                        "source_type": "llm_internal_knowledge",
+                    }
+                ],
             }
         )

@@ -107,8 +107,26 @@ class OptionalMetricSpec(BaseModel):
 class MutationKnowledgeCard(BaseModel):
     item_id: str = Field(min_length=1)
     text: str = Field(min_length=1)
+    source_type: Literal["external_evidence", "llm_internal_knowledge"] = (
+        "external_evidence"
+    )
     source_uri: str | None = None
     source_locator: str | None = None
+    model_name: str | None = None
+    model_revision: str | None = None
+
+    @model_validator(mode="after")
+    def require_declared_origin(self) -> "MutationKnowledgeCard":
+        if self.source_type == "llm_internal_knowledge":
+            if not self.model_name or not self.model_revision:
+                raise ValueError(
+                    "LLM internal knowledge requires model_name and model_revision"
+                )
+        elif not self.source_uri and not self.source_locator:
+            raise ValueError(
+                "external knowledge requires source_uri or source_locator"
+            )
+        return self
 
 
 class ExperimentSpec(BaseModel):
