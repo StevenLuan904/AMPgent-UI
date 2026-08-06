@@ -104,6 +104,13 @@ class OptionalMetricSpec(BaseModel):
         return self
 
 
+class MutationKnowledgeCard(BaseModel):
+    item_id: str = Field(min_length=1)
+    text: str = Field(min_length=1)
+    source_uri: str | None = None
+    source_locator: str | None = None
+
+
 class ExperimentSpec(BaseModel):
     target: TargetSpec
     peptide_lengths: list[int] = Field(default_factory=lambda: [12, 16, 20])
@@ -147,6 +154,13 @@ class ExperimentSpec(BaseModel):
     mutation_count_min: int = Field(default=1, ge=1)
     mutation_count_max: int = Field(default=3, ge=1)
     exploration_candidates_per_length: int = Field(default=2, ge=0)
+    mutation_knowledge_cards: list[MutationKnowledgeCard] = Field(
+        default_factory=list,
+        description=(
+            "Versioned, atomic knowledge items supplied to the mutation Director. "
+            "Each item is content-addressed independently when the decision is recorded."
+        ),
+    )
     rosetta_enabled: bool = False
     rosetta_top_k: int = Field(default=1, ge=1)
     rosetta_nstruct: int = Field(default=200, ge=1)

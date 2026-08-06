@@ -204,6 +204,7 @@ def main() -> None:
             seen.add(result["sequence"])
             results.append(result)
 
+    mutation_briefs = request.get("mutation_briefs", [])
     output = {
         "schema_version": "1.0",
         "model": model_name,
@@ -213,6 +214,14 @@ def main() -> None:
         "generated_count": len(results),
         "attempts": attempts,
         "proposal_mode": "parent_masked_mutation" if parents else "de_novo",
+        "mutation_guidance_receipt": {
+            "brief_sha256s": [item["brief_sha256"] for item in mutation_briefs],
+            "natural_language_consumed": False,
+            "reason": (
+                "PepMLM is a masked language model; advisory evidence is recorded for "
+                "the Director but is not silently treated as a sampling control."
+            ),
+        },
         "candidates": results,
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)

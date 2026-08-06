@@ -17,7 +17,14 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from temporalio import activity
 
-from pepagent.db.models import Artifact, Candidate, Evaluation, EvidenceArtifact, ExperimentRun
+from pepagent.db.models import (
+    Artifact,
+    Candidate,
+    Evaluation,
+    EvidenceArtifact,
+    ExperimentRun,
+    ToolCall,
+)
 from pepagent.db.repository import ExperimentRepository
 from pepagent.db.session import SessionFactory
 from pepagent.developability import (
@@ -28,6 +35,7 @@ from pepagent.developability import (
 )
 from pepagent.domain.enums import CandidateStatus, MetricName, RunStatus
 from pepagent.handoff_metrics import HANDOFF_METRIC_VERSION
+from pepagent.mutation_context import build_mutation_brief, canonical_sha256, evidence_hashes
 from pepagent.provenance.environment import fingerprint_runtime
 from pepagent.provenance.hashing import sha256_file, sha256_json
 from pepagent.reporting import (
@@ -295,6 +303,11 @@ async def generate_with_pepmlm(request: dict[str, Any]) -> list[dict[str, Any]]:
                     "revision": settings.pepmlm_model_revision,
                     "top_k": spec.get("pepmlm_mutation_top_k", 5),
                     "temperature": spec.get("pepmlm_temperature", 1.0),
+                    "mutation_briefs": [
+                        parent["mutation_brief"]
+                        for parent in parents
+                        if parent.get("mutation_brief") is not None
+                    ],
                 },
             )
         )
@@ -1648,12 +1661,53 @@ async def select_next_generation(request: dict[str, Any]) -> dict[str, Any]:
             candidate.id: {} for candidate in candidates
         }
         evidence_calls: set[uuid.UUID] = set()
+        metric_evidence: dict[uuid.UUID, dict[str, list[dict[str, Any]]]] = {
+            candidate.id: {} for candidate in candidates
+        }
+        tool_call_ids = {evaluation.tool_call_id for evaluation in evaluations}
+        tool_calls = {
+            tool_call.id: tool_call
+            for tool_call in await session.scalars(
+                select(ToolCall).where(ToolCall.id.in_(tool_call_ids))
+            )
+        }
         for evaluation in evaluations:
             if evaluation.numeric_value is not None:
                 metrics_by_candidate[evaluation.candidate_id][evaluation.metric_name] = float(
                     evaluation.numeric_value
                 )
             evidence_calls.add(evaluation.tool_call_id)
+            tool_call = tool_calls[evaluation.tool_call_id]
+            if not tool_call.output_sha256:
+                raise RuntimeError(
+                    "Agent evidence must have an explicit output SHA-256: "
+                    f"tool_call={tool_call.id} metric={evaluation.metric_name}"
+                )
+            atomic_evidence = {
+                "candidate_id": str(evaluation.candidate_id),
+                "metric_name": evaluation.metric_name,
+                "numeric_value": evaluation.numeric_value,
+                "text_value": evaluation.text_value,
+                "unit": evaluation.unit,
+                "status": evaluation.status,
+                "out_of_domain": evaluation.out_of_domain,
+                "limitations": evaluation.limitations_json,
+                "source_sha256": tool_call.output_sha256,
+                "tool_call_id": str(tool_call.id),
+            }
+            metric_evidence[evaluation.candidate_id].setdefault(
+                evaluation.metric_name, []
+            ).append(
+                {
+                    "source_type": "tool_call_output",
+                    "source_sha256": tool_call.output_sha256,
+                    "evidence_sha256": canonical_sha256(atomic_evidence),
+                    "tool_call_id": str(tool_call.id),
+                    "tool_name": tool_call.tool_name,
+                    "tool_version": tool_call.tool_version,
+                    "weights_sha256": tool_call.weights_sha256,
+                }
+            )
         observed = [
             {
                 "id": str(candidate.id),
@@ -1675,6 +1729,13 @@ async def select_next_generation(request: dict[str, Any]) -> dict[str, Any]:
         if not elites and not final_generation:
             raise RuntimeError("Research Director could not select any next-generation parent")
         selected_ids = {uuid.UUID(item["id"]) for item in elites}
+        for item in elites:
+            candidate_id = uuid.UUID(item["id"])
+            item["mutation_brief"] = build_mutation_brief(
+                item,
+                metric_evidence[candidate_id],
+                spec.get("mutation_knowledge_cards"),
+            )
         for candidate in candidates:
             if candidate.id in selected_ids:
                 await repository.transition_candidate(
@@ -1693,12 +1754,34 @@ async def select_next_generation(request: dict[str, Any]) -> dict[str, Any]:
                     "research-director-policy-v2",
                     "not retained in the generation elite archive",
                 )
-        prompt_payload = {
+        qualification_by_candidate = {
+            item["id"]: qualification_violations(
+                item, spec.get("metric_policy"), selection_stage
+            )
+            for item in observed
+        }
+        policy_snapshot = {
             "policy": "metric-role-policy-v1",
             "stage": selection_stage,
-            "generation": generation,
             "maximum_sequence_similarity": spec.get("maximum_sequence_similarity", 0.75),
             "elite_parent_count": spec.get("elite_parent_count", 3),
+            "metric_policy": spec.get("metric_policy", []),
+        }
+        candidate_assessments = [
+            {
+                "candidate_id": item["id"],
+                "sequence_sha256": item["sequence_sha256"],
+                "outcome": "selected" if uuid.UUID(item["id"]) in selected_ids else "rejected",
+                "qualification_violations": qualification_by_candidate[item["id"]],
+                "metrics": item["metrics"],
+                "metric_evidence": metric_evidence[uuid.UUID(item["id"])],
+            }
+            for item in observed
+        ]
+        prompt_payload = {
+            **policy_snapshot,
+            "policy_sha256": canonical_sha256(policy_snapshot),
+            "generation": generation,
             "legacy_staged_order": [
                 "interface_gate_pass",
                 "favorable_rosetta_dg_after_gate",
@@ -1706,14 +1789,10 @@ async def select_next_generation(request: dict[str, Any]) -> dict[str, Any]:
                 "boltz2_pair_iptm_median",
                 "conditional_ppl",
             ],
-            "metric_policy": spec.get("metric_policy", []),
-            "qualification_violations": {
-                item["id"]: qualification_violations(
-                    item, spec.get("metric_policy"), selection_stage
-                )
-                for item in observed
-            },
+            "qualification_violations": qualification_by_candidate,
             "candidates": observed,
+            "candidate_assessments": candidate_assessments,
+            "mutation_briefs": [item["mutation_brief"] for item in elites],
         }
         prompt_text = json.dumps(prompt_payload, ensure_ascii=False, indent=2, sort_keys=True)
         structured = {
@@ -1736,6 +1815,9 @@ async def select_next_generation(request: dict[str, Any]) -> dict[str, Any]:
                 if final_generation
                 else "generate_mutations_and_de_novo_exploration"
             ),
+            "mutation_briefs": [item["mutation_brief"] for item in elites],
+            "policy_sha256": canonical_sha256(policy_snapshot),
+            "candidate_assessments": candidate_assessments,
         }
         response_lines = [
             f"Generation {generation}: selected {len(elites)} "
@@ -1746,8 +1828,27 @@ async def select_next_generation(request: dict[str, Any]) -> dict[str, Any]:
         ]
         response_lines.extend(
             f"SELECT {item['id']} {item['sequence']} metrics="
-            f"{json.dumps(item['metrics'], ensure_ascii=False, sort_keys=True)}"
+            f"{json.dumps(item['metrics'], ensure_ascii=False, sort_keys=True)} "
+            f"mutation_brief_sha256={item['mutation_brief']['brief_sha256']} "
+            f"evidence_sha256s={','.join(evidence_hashes(item['mutation_brief']))}"
             for item in elites
+        )
+        response_lines.extend(
+            f"AUDIT {item['candidate_id']} outcome={item['outcome']} "
+            f"sequence_sha256={item['sequence_sha256']} "
+            f"qualification_violations="
+            f"{json.dumps(item['qualification_violations'], ensure_ascii=False, sort_keys=True)} "
+            "evidence_sha256s="
+            + ",".join(
+                sorted(
+                    {
+                        ref["evidence_sha256"]
+                        for refs in item["metric_evidence"].values()
+                        for ref in refs
+                    }
+                )
+            )
+            for item in candidate_assessments
         )
         response_text = "\n".join(response_lines)
         prompt_stored = await _store_text(prompt_text)
