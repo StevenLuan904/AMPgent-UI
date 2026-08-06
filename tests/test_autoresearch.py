@@ -13,6 +13,7 @@ from pepagent.selection import (
     hard_qualification_violations,
     progressive_evaluation_plan,
     qualification_violations,
+    research_iteration_directive,
     sequence_distance,
 )
 from pepagent.structures.interface import (
@@ -55,6 +56,31 @@ def test_progressive_evaluation_ladder_holds_expensive_tiers_until_justified() -
     assert agent["run_rosetta"] is False
 
 
+def test_persistent_harness_advances_an_imperfect_final_frontier() -> None:
+    directive = research_iteration_directive(
+        {
+            "research_iteration_policy": "evidence_driven_continue",
+            "imperfect_frontier_action": "escalate_representatives",
+        },
+        final_generation=True,
+        selected_count=4,
+        qualified_elite_count=0,
+    )
+    assert directive["continuation_required"] is True
+    assert directive["versioned_continuation_required"] is True
+    assert directive["advance_imperfect_frontier"] is True
+    assert directive["next_action"] == "escalate_representatives"
+    assert directive["preserve_negative_evidence"] is True
+
+
+def test_legacy_harness_remains_budget_terminal() -> None:
+    directive = research_iteration_directive(
+        {}, final_generation=True, selected_count=4, qualified_elite_count=0
+    )
+    assert directive["continuation_required"] is False
+    assert directive["next_action"] == "no_qualified_hit"
+
+
 def test_acea_v11_is_lightweight_first_and_uses_multiple_soft_amp_signals() -> None:
     spec_path = (
         Path(__file__).parents[1]
@@ -78,6 +104,23 @@ def test_acea_v11_is_lightweight_first_and_uses_multiple_soft_amp_signals() -> N
     ):
         assert rules[metric_name].role == "qualification"
         assert rules[metric_name].hard is False
+
+
+def test_acea_v12_structure_validation_is_persistent_and_bounded() -> None:
+    spec_path = (
+        Path(__file__).parents[1]
+        / "config"
+        / "experiments"
+        / "acea_structure_validation_v12.yaml"
+    )
+    spec = ExperimentSpec.model_validate(yaml.safe_load(spec_path.read_text(encoding="utf-8")))
+    assert spec.research_iteration_policy == "evidence_driven_continue"
+    assert spec.imperfect_frontier_action == "escalate_representatives"
+    assert spec.structure_protocol == "diagnostic_fast"
+    assert spec.boltz_seeds_per_candidate == 1
+    assert spec.rosetta_enabled is True
+    assert spec.rosetta_nstruct == 8
+    assert spec.bulk_evaluation_concurrency == 4
 
 
 def _atom(serial: int, atom: str, residue: str, chain: str, index: int, x: float) -> str:

@@ -510,6 +510,100 @@ class BulkCandidateEvaluationWorkflow:
         }
 
 
+@workflow.defn(name="CandidateStructureValidationWorkflow")
+class CandidateStructureValidationWorkflow:
+    """Validate an explicitly imported candidate cohort against one target."""
+
+    @workflow.run
+    async def run(self, request: dict[str, Any]) -> dict[str, Any]:
+        retry = RetryPolicy(
+            initial_interval=timedelta(seconds=10),
+            backoff_coefficient=2.0,
+            maximum_interval=timedelta(minutes=10),
+            maximum_attempts=5,
+        )
+        try:
+            await workflow.execute_activity(
+                "mark_run_started",
+                {"run_id": request["run_id"], "workflow_id": workflow.info().workflow_id},
+                task_queue="pepagent-control",
+                start_to_close_timeout=timedelta(minutes=2),
+                retry_policy=retry,
+            )
+            results: list[dict[str, Any]] = []
+            candidates = request["candidates"]
+            concurrency = int(request["spec"].get("bulk_evaluation_concurrency", 4))
+            for batch_start in range(0, len(candidates), concurrency):
+                batch = candidates[batch_start : batch_start + concurrency]
+                results.extend(
+                    await asyncio.gather(
+                        *(
+                            workflow.execute_child_workflow(
+                                "BulkCandidateEvaluationWorkflow",
+                                {
+                                    "run_id": request["run_id"],
+                                    "spec": request["spec"],
+                                    "candidate": candidate,
+                                    "seed": int(request["spec"]["seed"])
+                                    + (batch_start + offset) * 10_000,
+                                },
+                                id=(
+                                    f"pepagent-structure-validation-{request['run_id']}-"
+                                    f"{candidate['id']}"
+                                ),
+                                task_queue="pepagent-control",
+                            )
+                            for offset, candidate in enumerate(batch)
+                        )
+                    )
+                )
+            await workflow.execute_activity(
+                "finalize_run",
+                {
+                    "run_id": request["run_id"],
+                    "structures": [],
+                    "rosetta_results": [],
+                    "generation_count": 0,
+                    "agent_decision_count": 0,
+                    "bulk_rosetta_count": sum(
+                        item.get("status") == "succeeded" for item in results
+                    ),
+                    "bulk_rosetta_candidate_limit": len(candidates),
+                    "bulk_csv_report_threshold": int(
+                        request["spec"].get("bulk_csv_report_threshold", 200)
+                    ),
+                },
+                task_queue="pepagent-control",
+                start_to_close_timeout=timedelta(minutes=5),
+                retry_policy=retry,
+            )
+            return {"run_id": request["run_id"], "results": results}
+        except asyncio.CancelledError:
+            await asyncio.shield(
+                workflow.execute_activity(
+                    "mark_run_cancelled",
+                    {"run_id": request["run_id"], "reason": "workflow_cancelled"},
+                    task_queue="pepagent-control",
+                    start_to_close_timeout=timedelta(minutes=5),
+                    retry_policy=retry,
+                )
+            )
+            raise
+        except Exception as error:
+            await workflow.execute_activity(
+                "mark_run_failed",
+                {
+                    "run_id": request["run_id"],
+                    "error_type": type(error).__name__,
+                    "error": str(error),
+                },
+                task_queue="pepagent-control",
+                start_to_close_timeout=timedelta(minutes=5),
+                retry_policy=retry,
+            )
+            raise
+
+
 @workflow.defn(name="RosettaValidationWorkflow")
 class RosettaValidationWorkflow:
     """Durable public-complex validation without invoking the generation lane."""

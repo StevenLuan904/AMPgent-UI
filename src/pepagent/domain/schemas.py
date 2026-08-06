@@ -136,6 +136,12 @@ class ExperimentSpec(BaseModel):
     structure_top_k: int = 8
     generations: int = 2
     autoresearch_enabled: bool = False
+    research_iteration_policy: Literal[
+        "budget_terminal", "evidence_driven_continue"
+    ] = "budget_terminal"
+    imperfect_frontier_action: Literal[
+        "continue_lightweight", "escalate_representatives"
+    ] = "continue_lightweight"
     evaluation_ladder_mode: Literal["legacy", "lightweight_first"] = "legacy"
     structure_escalation_policy: Literal[
         "always", "late_elite", "agent_triggered", "manual"

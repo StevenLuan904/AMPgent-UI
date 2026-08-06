@@ -128,6 +128,7 @@ class ExperimentRepository:
         generator_call_id: uuid.UUID | None = None,
         parent_id: uuid.UUID | None = None,
         metadata: dict[str, Any] | None = None,
+        actor: str = "pepmlm",
     ) -> Candidate:
         normalized = "".join(sequence.split()).upper()
         digest = sha256_text(normalized)
@@ -155,7 +156,7 @@ class ExperimentRepository:
             "candidate",
             candidate.id,
             "candidate.generated",
-            "pepmlm",
+            actor,
             {"run_id": str(run_id), "sequence_sha256": digest, "generation": generation},
         )
         return candidate

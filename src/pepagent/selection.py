@@ -3,6 +3,63 @@ from __future__ import annotations
 from typing import Any
 
 
+def research_iteration_directive(
+    spec: dict[str, Any],
+    *,
+    final_generation: bool,
+    selected_count: int,
+    qualified_elite_count: int,
+) -> dict[str, Any]:
+    """Make a generation budget a checkpoint rather than an implicit scientific stop."""
+    policy = spec.get("research_iteration_policy", "budget_terminal")
+    persistent = policy == "evidence_driven_continue"
+    if not final_generation:
+        next_action = "generate_mutations_and_de_novo_exploration"
+        continuation_required = True
+        reason = "generation_checkpoint"
+    elif persistent:
+        continuation_required = True
+        if qualified_elite_count:
+            next_action = "escalate_best_supported_diverse_candidates"
+            reason = "qualified_lightweight_evidence_requires_target_validation"
+        elif selected_count:
+            next_action = spec.get(
+                "imperfect_frontier_action", "continue_lightweight"
+            )
+            reason = "imperfect_frontier_is_evidence_not_a_stop_condition"
+        else:
+            next_action = "diagnose_generator_or_evaluator_and_continue_versioned_research"
+            reason = "no_selectable_candidate_requires_diagnosis"
+    else:
+        continuation_required = False
+        next_action = (
+            "scientific_acceptance_complete"
+            if qualified_elite_count
+            else "no_qualified_hit"
+        )
+        reason = "configured_budget_terminal"
+    return {
+        "schema_version": "1.0",
+        "policy": policy,
+        "continuation_required": continuation_required,
+        "next_action": next_action,
+        "reason": reason,
+        "advance_imperfect_frontier": persistent,
+        "preserve_negative_evidence": True,
+        "versioned_continuation_required": persistent and final_generation,
+        "scientific_safeguards": [
+            "do_not_claim_success_without_supporting_evidence",
+            "do_not_conflate_model_estimates_with_experiments",
+            "do_not_cross_resource_or_integrity_safety_boundaries",
+        ],
+        "stop_conditions": [
+            "explicit_user_stop",
+            "unresolved_data_integrity_or_resource_safety_block",
+            "scientific_acceptance_with_required_evidence_tiers_complete",
+        ],
+    }
+
+
 def progressive_evaluation_plan(
     spec: dict[str, Any],
     generation: int,

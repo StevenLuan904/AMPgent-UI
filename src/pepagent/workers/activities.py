@@ -49,6 +49,7 @@ from pepagent.selection import (
     diversity_constrained_elites,
     progressive_evaluation_plan,
     qualification_violations,
+    research_iteration_directive,
 )
 from pepagent.settings import get_settings
 from pepagent.storage.object_store import ContentAddressedObjectStore, StoredObject
@@ -1781,6 +1782,12 @@ async def select_next_generation(request: dict[str, Any]) -> dict[str, Any]:
             final_generation,
             qualified_elite_count,
         )
+        iteration_directive = research_iteration_directive(
+            spec,
+            final_generation=final_generation,
+            selected_count=len(elites),
+            qualified_elite_count=qualified_elite_count,
+        )
         selected_ids = {uuid.UUID(item["id"]) for item in elites}
         for item in elites:
             candidate_id = uuid.UUID(item["id"])
@@ -1847,6 +1854,7 @@ async def select_next_generation(request: dict[str, Any]) -> dict[str, Any]:
             "candidate_assessments": candidate_assessments,
             "mutation_briefs": [item["mutation_brief"] for item in elites],
             "evaluation_plan": evaluation_plan,
+            "iteration_directive": iteration_directive,
         }
         prompt_text = json.dumps(prompt_payload, ensure_ascii=False, indent=2, sort_keys=True)
         structured = {
@@ -1862,17 +1870,12 @@ async def select_next_generation(request: dict[str, Any]) -> dict[str, Any]:
                 str(candidate.id) for candidate in candidates if candidate.id not in selected_ids
             ],
             "selection_policy": "metric-role-policy-v1",
-            "next_action": (
-                "scientific_acceptance_complete"
-                if final_generation and elites
-                else "no_qualified_hit"
-                if final_generation
-                else "generate_mutations_and_de_novo_exploration"
-            ),
+            "next_action": iteration_directive["next_action"],
             "mutation_briefs": [item["mutation_brief"] for item in elites],
             "policy_sha256": canonical_sha256(policy_snapshot),
             "candidate_assessments": candidate_assessments,
             "evaluation_plan": evaluation_plan,
+            "iteration_directive": iteration_directive,
         }
         response_lines = [
             f"Generation {generation}: selected {len(elites)} "
@@ -1882,6 +1885,8 @@ async def select_next_generation(request: dict[str, Any]) -> dict[str, Any]:
             "could not be compensated by a stronger objective.",
             "EVALUATION_LADDER "
             + json.dumps(evaluation_plan, ensure_ascii=False, sort_keys=True),
+            "ITERATION_DIRECTIVE "
+            + json.dumps(iteration_directive, ensure_ascii=False, sort_keys=True),
         ]
         response_lines.extend(
             f"SELECT {item['id']} {item['sequence']} metrics="

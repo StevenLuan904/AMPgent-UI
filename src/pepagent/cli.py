@@ -12,13 +12,20 @@ import yaml
 from sqlalchemy import select
 from temporalio.client import Client
 
-from pepagent.db.models import Artifact, Candidate, Evaluation, EvidenceArtifact, ExperimentRun
+from pepagent.db.models import (
+    Artifact,
+    Candidate,
+    Evaluation,
+    EvidenceArtifact,
+    ExperimentRun,
+    Target,
+)
 from pepagent.db.repository import ExperimentRepository
 from pepagent.db.session import SessionFactory
 from pepagent.domain.enums import CandidateStatus, MetricName
 from pepagent.domain.schemas import ExperimentSpec, PocketCatalogSpec
 from pepagent.pockets.catalog import import_pocket_catalog
-from pepagent.provenance.hashing import sha256_bytes, sha256_json
+from pepagent.provenance.hashing import sha256_bytes, sha256_json, sha256_text
 from pepagent.registry.service import register_local_model_release
 from pepagent.reporting import build_bulk_rosetta_rows, render_bulk_rosetta_csv
 from pepagent.settings import get_settings
@@ -146,6 +153,120 @@ def health(
     response = httpx.get(f"{api}/healthz", timeout=10.0)
     response.raise_for_status()
     typer.echo(json.dumps(response.json(), ensure_ascii=False))
+
+
+@app.command("submit-candidate-structure-validation")
+def submit_candidate_structure_validation(manifest_path: Path) -> None:
+    """Import an immutable candidate cohort and run durable Boltz/Rosetta validation."""
+    manifest = _load_mapping(manifest_path)
+    spec_path = Path(manifest["spec_path"])
+    if not spec_path.is_absolute():
+        spec_path = manifest_path.parent / spec_path
+    spec = ExperimentSpec.model_validate(_load_mapping(spec_path.resolve()))
+    source_run_id = uuid.UUID(manifest["source_run_id"])
+    source_candidate_ids = [uuid.UUID(value) for value in manifest["source_candidate_ids"]]
+
+    async def _run() -> dict:
+        settings = get_settings()
+        temporal = await Client.connect(
+            settings.temporal_address, namespace=settings.temporal_namespace
+        )
+        async with SessionFactory() as session, session.begin():
+            source_run = await session.get(ExperimentRun, source_run_id)
+            if source_run is None:
+                raise KeyError(f"source run not found: {source_run_id}")
+            source_target = await session.get(Target, source_run.target_id)
+            target_mismatch = source_target is None or (
+                source_target.sequence_sha256 != sha256_text(spec.target.sequence)
+            )
+            if target_mismatch:
+                raise ValueError(
+                    "source candidates and validation spec must reference the same target"
+                )
+            source_candidates = list(
+                await session.scalars(
+                    select(Candidate)
+                    .where(
+                        Candidate.run_id == source_run_id,
+                        Candidate.id.in_(source_candidate_ids),
+                    )
+                    .order_by(Candidate.proposal_rank, Candidate.id)
+                )
+            )
+            found = {candidate.id for candidate in source_candidates}
+            missing = [str(value) for value in source_candidate_ids if value not in found]
+            if missing:
+                raise KeyError(f"source candidates not found in source run: {missing}")
+            source_candidates.sort(key=lambda item: source_candidate_ids.index(item.id))
+            source_refs = [
+                {
+                    "source_run_id": str(source_run_id),
+                    "source_candidate_id": str(candidate.id),
+                    "sequence": candidate.sequence,
+                    "sequence_sha256": candidate.sequence_sha256,
+                }
+                for candidate in source_candidates
+            ]
+            raw_spec = {
+                **spec.model_dump(mode="json"),
+                "run_mode": "candidate_structure_validation",
+                "source_candidates": source_refs,
+                "manifest_sha256": sha256_json(manifest),
+            }
+            repository = ExperimentRepository(session)
+            run = await repository.create_run(
+                spec,
+                actor="candidate-structure-validation-cli",
+                parent_run_id=source_run_id,
+                raw_spec_payload=raw_spec,
+            )
+            environment_sha256 = sha256_json(
+                {"adapter": "candidate-structure-validation-import-v1"}
+            )
+            import_call = await repository.record_completed_tool_call(
+                run.id,
+                "candidate-structure-validation-import",
+                "v1",
+                environment_sha256,
+                {"source_candidates": source_refs},
+                {"exact_sequence_hash_required": True, "same_target_required": True},
+                {"imported_candidates": source_refs},
+                model_uri="deterministic://candidate-structure-validation-import",
+            )
+            staged: list[dict] = []
+            for rank, source in enumerate(source_candidates):
+                candidate = await repository.add_candidate(
+                    run.id,
+                    source.sequence,
+                    generation=0,
+                    proposal_rank=rank,
+                    generator_call_id=import_call.id,
+                    metadata={
+                        "source_run_id": str(source_run_id),
+                        "source_candidate_id": str(source.id),
+                        "source_sequence_sha256": source.sequence_sha256,
+                        "import_tool_call_id": str(import_call.id),
+                    },
+                    actor="candidate-structure-validation-import",
+                )
+                staged.append(
+                    {
+                        "id": str(candidate.id),
+                        "sequence": candidate.sequence,
+                        "sequence_sha256": candidate.sequence_sha256,
+                        "generation": 0,
+                    }
+                )
+        workflow_id = f"pepagent-structure-validation-{run.id}"
+        await temporal.start_workflow(
+            "CandidateStructureValidationWorkflow",
+            {"run_id": str(run.id), "spec": spec.model_dump(mode="json"), "candidates": staged},
+            id=workflow_id,
+            task_queue="pepagent-control",
+        )
+        return {"run_id": str(run.id), "workflow_id": workflow_id, "candidates": staged}
+
+    typer.echo(json.dumps(asyncio.run(_run()), ensure_ascii=False, indent=2))
 
 
 @app.command("register-pepmlm")

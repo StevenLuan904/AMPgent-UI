@@ -29,6 +29,7 @@ from pepagent.workers.activities import (
 )
 from pepagent.workflows.design import (
     BulkCandidateEvaluationWorkflow,
+    CandidateStructureValidationWorkflow,
     PeptideDesignWorkflow,
     RosettaValidationWorkflow,
 )
@@ -58,6 +59,7 @@ ROLE_CONFIG = {
         [
             PeptideDesignWorkflow,
             BulkCandidateEvaluationWorkflow,
+            CandidateStructureValidationWorkflow,
             RosettaValidationWorkflow,
         ],
     ),
