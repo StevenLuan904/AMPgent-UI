@@ -63,6 +63,7 @@ def test_seed_parent_payload_preserves_cross_run_provenance() -> None:
     assert parent["id"] == "00000000-0000-0000-0000-000000000002"
     assert parent["source_run_id"] == "00000000-0000-0000-0000-000000000001"
     assert parent["evidence_sha256"] == ["a" * 64]
+    assert spec.iteration_parent_run_id is None
 
 
 def test_boltz_input_represents_peptide_as_protein_chain_without_affinity() -> None:

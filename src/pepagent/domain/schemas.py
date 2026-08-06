@@ -166,6 +166,7 @@ class InitialParentSpec(BaseModel):
 
 class ExperimentSpec(BaseModel):
     target: TargetSpec
+    iteration_parent_run_id: UUID | None = None
     peptide_lengths: list[int] = Field(default_factory=lambda: [12, 16, 20])
     candidates_per_length: int = 64
     structure_top_k: int = 8

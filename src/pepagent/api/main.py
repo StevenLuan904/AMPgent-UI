@@ -85,7 +85,10 @@ async def healthz() -> dict[str, str]:
 @app.post("/v1/runs", response_model=RunCreated, status_code=status.HTTP_202_ACCEPTED)
 async def create_run(spec: ExperimentSpec, session: SessionDep) -> RunCreated:
     async with session.begin():
-        run = await ExperimentRepository(session).create_run(spec)
+        run = await ExperimentRepository(session).create_run(
+            spec,
+            parent_run_id=spec.iteration_parent_run_id,
+        )
     workflow_id = f"pepagent-run-{run.id}"
     await app.state.temporal.start_workflow(
         "PeptideDesignWorkflow",
