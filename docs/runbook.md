@@ -80,6 +80,12 @@ Invoke-RestMethod http://127.0.0.1:8080/v1/runs/<run-id>/evidence
 `POST /v1/runs/<run-id>/replay` creates a child run with the original raw specification and hash.
 An old run containing a now-frozen evaluator is rejected rather than silently migrated.
 
+For cross-run experience accumulation, query `research_experience_records_v1` and
+`research_experience_edges_v1`. Both expose an explicit immutable target identity while preserving
+the original run, candidate, tool, decision and artifact identifiers. See
+`docs/research-experience-ledger.md`; analysis code must not infer a target from the current
+workflow or from a peptide sequence alone.
+
 Formal Rosetta validation imports exact public coordinates, verifies the committed source hash,
 requires at least 200 decoys and starts a dedicated durable workflow. Never edit a failed run or
 replace its source artifact; submit a new, separately identified suite instead.
