@@ -437,28 +437,32 @@ class BulkCandidateEvaluationWorkflow:
                 "stage": stage,
             }
 
+        structures: list[dict[str, Any]] = []
+        seed_count = int(request["spec"].get("boltz_seeds_per_candidate", 1))
         try:
-            structure = await workflow.execute_activity(
-                "predict_boltz2_complex",
-                {
-                    "run_id": request["run_id"],
-                    "spec": request["spec"],
-                    "candidate": candidate,
-                    "seed": request["seed"],
-                },
-                task_queue="pepagent-gpu-boltz2",
-                versioning_intent=workflow.VersioningIntent.DEFAULT,
-                start_to_close_timeout=timedelta(hours=6),
-                heartbeat_timeout=timedelta(minutes=5),
-                retry_policy=retry,
-            )
-            structure = await workflow.execute_activity(
-                "persist_boltz2_evidence",
-                {"run_id": request["run_id"], "structure": structure},
-                task_queue="pepagent-control",
-                start_to_close_timeout=timedelta(minutes=15),
-                retry_policy=retry,
-            )
+            for seed_index in range(seed_count):
+                structure = await workflow.execute_activity(
+                    "predict_boltz2_complex",
+                    {
+                        "run_id": request["run_id"],
+                        "spec": request["spec"],
+                        "candidate": candidate,
+                        "seed": int(request["seed"]) + seed_index,
+                    },
+                    task_queue="pepagent-gpu-boltz2",
+                    versioning_intent=workflow.VersioningIntent.DEFAULT,
+                    start_to_close_timeout=timedelta(hours=6),
+                    heartbeat_timeout=timedelta(minutes=5),
+                    retry_policy=retry,
+                )
+                structure = await workflow.execute_activity(
+                    "persist_boltz2_evidence",
+                    {"run_id": request["run_id"], "structure": structure},
+                    task_queue="pepagent-control",
+                    start_to_close_timeout=timedelta(minutes=15),
+                    retry_policy=retry,
+                )
+                structures.append(structure)
         except Exception as error:
             return await preserve_failure("boltz2", error)
 
@@ -469,7 +473,7 @@ class BulkCandidateEvaluationWorkflow:
                     "run_id": request["run_id"],
                     "spec": request["spec"],
                     "generation": candidate["generation"],
-                    "structures": [structure],
+                    "structures": structures,
                 },
                 task_queue="pepagent-control",
                 start_to_close_timeout=timedelta(minutes=30),

@@ -26,3 +26,19 @@ def test_cross_queue_activities_use_target_queue_default_build() -> None:
         )
 
     assert cross_queue_calls == 7
+
+
+def test_bulk_candidate_validation_honors_configured_boltz_seed_count() -> None:
+    workflow_source = Path("src/pepagent/workflows/design.py").read_text(encoding="utf-8")
+    tree = ast.parse(workflow_source)
+    bulk_workflow = next(
+        node
+        for node in tree.body
+        if isinstance(node, ast.ClassDef) and node.name == "BulkCandidateEvaluationWorkflow"
+    )
+    rendered = ast.unparse(bulk_workflow)
+
+    assert "boltz_seeds_per_candidate" in rendered
+    assert "for seed_index in range(seed_count)" in rendered
+    assert "int(request['seed']) + seed_index" in rendered
+    assert "'structures': structures" in rendered
