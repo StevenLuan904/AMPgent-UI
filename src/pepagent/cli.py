@@ -327,6 +327,13 @@ def submit_sequence_binding_proxy_calibration(manifest_path: Path) -> None:
         raise typer.BadParameter("target panel requires at least two decoy targets")
     if len({target["sequence_sha256"] for target in targets}) != len(targets):
         raise typer.BadParameter("target panel sequences must be unique")
+    for index, target in enumerate(targets):
+        if target["control_type"] == "composition_shuffle" and sorted(
+            target["sequence"]
+        ) != sorted(primary[0]["sequence"]):
+            raise typer.BadParameter(
+                f"target_panel[{index}] is not composition-matched to the primary"
+            )
     target_panel_sha256 = sha256_json(targets)
 
     candidate_entries: list[dict] = []
@@ -348,10 +355,22 @@ def submit_sequence_binding_proxy_calibration(manifest_path: Path) -> None:
                 "source_run_id": source_run_id,
                 "source_candidate_id": source_candidate_id,
                 "cohort_role": str(raw["cohort_role"]),
+                "composition_reference_sequence_sha256": raw.get(
+                    "composition_reference_sequence_sha256"
+                ),
             }
         )
     if len({item["sequence_sha256"] for item in candidate_entries}) != len(candidate_entries):
         raise typer.BadParameter("calibration candidate sequences must be unique")
+    candidate_by_sha = {item["sequence_sha256"]: item for item in candidate_entries}
+    for index, entry in enumerate(candidate_entries):
+        if entry["cohort_role"] != "composition_matched_scramble_control":
+            continue
+        reference = candidate_by_sha.get(entry["composition_reference_sequence_sha256"])
+        if reference is None or sorted(reference["sequence"]) != sorted(entry["sequence"]):
+            raise typer.BadParameter(
+                f"candidates[{index}] scramble control is not composition-matched"
+            )
 
     async def _run() -> dict:
         settings = get_settings()
