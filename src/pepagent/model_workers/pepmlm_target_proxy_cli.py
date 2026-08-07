@@ -23,6 +23,13 @@ def _require_sequence_sha256(sequence: str, expected: str, *, field: str) -> Non
         raise ValueError(f"{field} sequence_sha256 mismatch: expected {expected}, got {actual}")
 
 
+def target_panel_sha256(targets: list[dict[str, Any]]) -> str:
+    encoded = json.dumps(
+        targets, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
 def summarize_target_specific_delta_nll(
     peptide: dict[str, Any], target_scores: list[dict[str, Any]]
 ) -> dict[str, Any]:
@@ -104,6 +111,12 @@ def main() -> None:
         targets.append(target)
     if len({item["sequence_sha256"] for item in targets}) != len(targets):
         raise ValueError("target control sequences must be unique")
+    actual_panel_sha256 = target_panel_sha256(targets)
+    if actual_panel_sha256 != request["target_panel_sha256"]:
+        raise ValueError(
+            "target_panel_sha256 mismatch: "
+            f"expected {request['target_panel_sha256']}, got {actual_panel_sha256}"
+        )
 
     peptides: list[dict[str, Any]] = []
     for index, raw in enumerate(request["peptides"]):
@@ -155,7 +168,7 @@ def main() -> None:
         "model": model_name,
         "revision": revision,
         "device": device,
-        "target_panel_sha256": request["target_panel_sha256"],
+        "target_panel_sha256": actual_panel_sha256,
         "targets": targets,
         "results": results,
     }

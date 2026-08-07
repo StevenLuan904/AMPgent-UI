@@ -5,6 +5,7 @@ import pytest
 from pepagent.model_workers.pepmlm_target_proxy_cli import (
     _require_sequence_sha256,
     summarize_target_specific_delta_nll,
+    target_panel_sha256,
 )
 
 
@@ -53,3 +54,22 @@ def test_target_specific_delta_nll_requires_controls() -> None:
 def test_proxy_rejects_sequence_hash_mismatch() -> None:
     with pytest.raises(ValueError, match="sequence_sha256 mismatch"):
         _require_sequence_sha256("AAAA", "0" * 64, field="peptide")
+
+
+def test_target_panel_hash_is_order_and_content_sensitive() -> None:
+    panel = [
+        {
+            "accession": "primary",
+            "sequence": "AAAA",
+            "sequence_sha256": hashlib.sha256(b"AAAA").hexdigest(),
+            "control_type": "primary",
+        },
+        {
+            "accession": "decoy",
+            "sequence": "CCCC",
+            "sequence_sha256": hashlib.sha256(b"CCCC").hexdigest(),
+            "control_type": "unrelated",
+        },
+    ]
+
+    assert target_panel_sha256(panel) != target_panel_sha256(list(reversed(panel)))
