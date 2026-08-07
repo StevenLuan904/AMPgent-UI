@@ -1679,6 +1679,10 @@ async def persist_rosetta_evidence(request: dict[str, Any]) -> dict[str, Any]:
                 minimum_pocket_contacts=thresholds["interface_min_pocket_contacts"],
                 rosetta_dg=rosetta["primary_dG_separated_reu"],
             )
+            support = reconcile_ensemble_structure_support(
+                support,
+                interface_audit.get("gate_checks", {}),
+            )
             await repository.record_evaluation(
                 candidate_id,
                 call.id,

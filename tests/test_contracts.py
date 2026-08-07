@@ -1,4 +1,5 @@
 import hashlib
+import inspect
 from pathlib import Path
 
 import pytest
@@ -13,7 +14,7 @@ from pepagent.domain.schemas import (
 from pepagent.model_workers.boltz2_cli import build_input
 from pepagent.provenance.environment import runtime_manifest
 from pepagent.provenance.hashing import sha256_json
-from pepagent.workers.activities import _boltz_weight_manifest
+from pepagent.workers.activities import _boltz_weight_manifest, persist_rosetta_evidence
 from pepagent.workers.temporal_worker import ROLE_CONFIG
 from pepagent.workflows.design import seed_parent_payloads
 
@@ -121,6 +122,12 @@ def test_runtime_manifest_records_exact_platform_release(monkeypatch: pytest.Mon
 def test_remote_worker_imports_code_from_active_content_addressed_release() -> None:
     script = Path("deploy/remote/start_worker_synth.sh").read_text(encoding="utf-8")
     assert 'PYTHONPATH="$ROOT/platform/current/src"' in script
+
+
+def test_rosetta_persistence_preserves_ensemble_gate_failures() -> None:
+    source = inspect.getsource(persist_rosetta_evidence)
+    assert "reconcile_ensemble_structure_support" in source
+    assert 'interface_audit.get("gate_checks", {})' in source
 
 
 def test_boltz_execution_manifest_includes_molecular_resources(tmp_path) -> None:
