@@ -1318,8 +1318,7 @@ async def audit_structure_ensemble(request: dict[str, Any]) -> dict[str, Any]:
         minimum_pocket_contacts=required_contacts,
     )
     diagnostic_fast = spec.get("structure_protocol") == "diagnostic_fast"
-    if not diagnostic_fast:
-        support = reconcile_ensemble_structure_support(support, gate_checks)
+    support = reconcile_ensemble_structure_support(support, gate_checks)
     result = {
         "schema_version": "1.0",
         "candidate_id": candidate["id"],
