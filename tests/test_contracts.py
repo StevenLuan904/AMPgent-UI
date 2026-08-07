@@ -1,4 +1,5 @@
 import hashlib
+from pathlib import Path
 
 import pytest
 import yaml
@@ -115,6 +116,11 @@ def test_runtime_manifest_records_exact_platform_release(monkeypatch: pytest.Mon
     release = "a" * 64
     monkeypatch.setenv("PEPAGENT_PLATFORM_RELEASE_SHA256", release)
     assert runtime_manifest()["application"]["release_sha256"] == release
+
+
+def test_remote_worker_imports_code_from_active_content_addressed_release() -> None:
+    script = Path("deploy/remote/start_worker_synth.sh").read_text(encoding="utf-8")
+    assert 'PYTHONPATH="$ROOT/platform/current/src"' in script
 
 
 def test_boltz_execution_manifest_includes_molecular_resources(tmp_path) -> None:
