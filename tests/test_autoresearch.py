@@ -20,6 +20,7 @@ from pepagent.structures.interface import (
     audit_protein_peptide_interface,
     classify_structure_support,
     pose_cluster_fraction,
+    reconcile_ensemble_structure_support,
 )
 
 
@@ -528,6 +529,20 @@ def test_fast_structure_support_distinguishes_weak_conflict_and_unavailable() ->
     assert weak["label"] == "weak"
     assert conflict["label"] == "conflicting"
     assert unavailable["label"] == "unavailable"
+
+
+def test_ensemble_gate_failure_overrides_positive_representative_label() -> None:
+    support = reconcile_ensemble_structure_support(
+        {"label": "positive", "reasons": ["single_pose_geometry_support"]},
+        {
+            "pocket_contact_consistency": True,
+            "pair_iptm_median": True,
+            "pose_cluster_fraction": False,
+            "no_cross_chain_clash": True,
+        },
+    )
+    assert support["label"] == "conflicting"
+    assert "failed_pose_cluster_fraction" in support["reasons"]
 
 
 def test_fast_search_representatives_mix_property_leaders_and_diversity() -> None:

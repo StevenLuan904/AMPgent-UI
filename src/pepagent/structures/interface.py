@@ -138,3 +138,20 @@ def classify_structure_support(
     if not pocket_contact_count:
         reasons.append("no_pocket_contact")
     return {"label": "weak", "reasons": reasons or ["limited_single_pose_support"]}
+
+
+def reconcile_ensemble_structure_support(
+    support: dict[str, Any],
+    gate_checks: dict[str, bool],
+) -> dict[str, Any]:
+    """Prevent a favorable representative pose from hiding failed ensemble checks."""
+    failed_checks = [name for name, passed in gate_checks.items() if not passed]
+    if support.get("label") != "positive" or not failed_checks:
+        return support
+    return {
+        "label": "conflicting",
+        "reasons": [
+            "single_pose_geometry_support_but_ensemble_gate_failed",
+            *(f"failed_{name}" for name in failed_checks),
+        ],
+    }
