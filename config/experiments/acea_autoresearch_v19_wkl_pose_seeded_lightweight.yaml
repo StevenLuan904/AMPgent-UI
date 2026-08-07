@@ -1,0 +1,111 @@
+target:
+  name: Escherichia coli K-12 isocitrate lyase AceA
+  sequence: MKTRTQQIEELQKEWTQPRWEGITRPYSAEDVVKLRGSVNPECTLAQLGAAKMWRLLHGESKKGYINSLGALTGGQALQQAKAGIEAVYLSGWQVAADANLAASMYPDQSLYPANSVPAVVERINNTFRRADQIQWSAGIEPGDPRYVDYFLPIVADAEAGFGGVLNAFELMKAMIEAGAAAVHFEDQLASVKKCGHMGGKVLVPTQEAIQKLVAARLAADVTGVPTLLVARTDADAADLITSDCDPYDSEFITGERTSEGFFRTHAGIEQAISRGLAYAPYADLVWCETSTPDLELARRFAQAIHAKYPGKLLAYNCSPSFNWQKNLDDKTIASFQQQLSDMGYKFQFITLAGIHSMWFNMFDLANAYAQGEGMKHYVEKVQQPEFAAAKDGYTFVSHQQEVGTGYFDKVTTIIQGGTSSVTALTGSTEESQF
+  organism: Escherichia coli K-12
+  accession: P0A9G6
+  source_database: UniProtKB/Swiss-Prot
+  source_uri: https://rest.uniprot.org/uniprotkb/P0A9G6.fasta
+  source_version: entry 145; sequence 1
+  source_retrieved_at: 2026-07-31T00:00:00Z
+  pocket_residues: [89, 91, 92, 93, 108, 157, 159, 184, 186, 193, 194, 195, 196, 197, 232, 287, 289, 317, 318, 319, 320, 321, 351, 352, 356]
+
+iteration_parent_run_id: 044275ab-0046-48f1-bd73-64e088418abc
+peptide_lengths: [12, 15, 18]
+candidates_per_length: 12
+generations: 6
+autoresearch_enabled: true
+research_iteration_policy: evidence_driven_continue
+imperfect_frontier_action: continue_lightweight
+seed: 20260819
+pepmlm_model: ChatterjeeLab/PepMLM-650M
+search_regime: E1
+pepmlm_de_novo_top_k: 12
+pepmlm_mutation_top_k: 12
+pepmlm_temperature: 1.05
+mutation_children_per_parent: 12
+mutation_count_min: 1
+mutation_count_max: 3
+exploration_candidates_per_length: 4
+maximum_sequence_similarity: 0.75
+elite_parent_count: 6
+
+initial_parents:
+  - source_run_id: 044275ab-0046-48f1-bd73-64e088418abc
+    source_candidate_id: 09a3261c-75ac-43e6-95e1-3ee53fce457f
+    sequence: WKLVDIAGRVARNHG
+    sequence_sha256: 9d721d2d8d09d231c0ebb23624dd451fc29660a62a4b29444ccc2b5ad01878bc
+    evidence_sha256:
+      - 83c8fc75538723ee30cf5f238a451af6864e1a4903bb9ea9625f5a98124fcfd7
+      - 5252ef301a3fcde68fdcc4081400f2874b896e3ff4636ac90b1acf77baca14db
+    selection_rationale: High-precision lead with reproducible pair-ipTM above the comparator and stronger robust Rosetta interface evidence, but only a 2/5 pose cluster; preserve as a hypothesis, not a binding claim.
+  - source_run_id: 044275ab-0046-48f1-bd73-64e088418abc
+    source_candidate_id: 85b2aadf-a140-418b-9b2c-120c227c1dba
+    sequence: RKLGSIVDRVAAWHA
+    sequence_sha256: a7cc2010a342a6a3b96870c1090238243e338c7dbfa91fcab793ef02396d534c
+    evidence_sha256:
+      - 422fcfd99bb1a9f81df3d7f242a25f44223c523826d8e61fc7c95321ed579f42
+      - a5b841c61dfb1dd9c20fb48031675706f4faccd5cac2ad4603e85ecb7742d135
+    selection_rationale: Same-run comparator retained to preserve sequence diversity and expose whether WKL-derived improvements are family-specific.
+
+mutation_knowledge_cards:
+  - item_id: v18-high-precision-ensemble-audit
+    text: WKL had median pair-ipTM 0.2075 with four of five seeds above 0.20, complete pocket-contact consistency, no clashes, and a 2/5 pose cluster. RKL had median 0.1703 and a 1/5 pose cluster. Favor conservative WKL neighborhoods, but do not treat either pose as established binding.
+    source_type: external_evidence
+    source_locator: sha256:83c8fc75538723ee30cf5f238a451af6864e1a4903bb9ea9625f5a98124fcfd7
+  - item_id: v18-high-precision-rosetta-audit
+    text: In the same 200-decoy adapter-v3 protocol, WKL had primary dG -54.0 REU, interface score -62.1, nine interface hydrogen bonds, and BSA 2692, while RKL had -47.9, -46.5, four, and 2357. These are relative computational evidence only; the absolute best RKL decoy was slightly lower.
+    source_type: external_evidence
+    source_locator: sha256:5252ef301a3fcde68fdcc4081400f2874b896e3ff4636ac90b1acf77baca14db
+  - item_id: v19-agent-prior-pose-stability-search
+    text: Explore conservative one-to-three-residue neighborhoods around WKL while retaining de novo controls. Prioritize multi-model AMP, MIC, toxicity, hemolysis, physicochemical plausibility, and diversity before escalating only mature representatives to multi-seed structure testing.
+    source_type: llm_internal_knowledge
+    model_name: gpt-5
+    model_revision: "2026-08-07"
+
+evaluation_ladder_mode: lightweight_first
+structure_escalation_policy: manual
+structure_start_generation: 5
+structure_trigger_min_qualified_elites: 3
+rosetta_escalation_policy: manual
+rosetta_start_generation: 5
+structure_protocol: diagnostic_fast
+structure_top_k: 4
+boltz_method: boltz2
+boltz_seeds_per_candidate: 1
+boltz_recycling_steps: 3
+boltz_sampling_steps: 200
+boltz_use_potentials: true
+boltz_no_kernels: true
+boltz_force_pocket: true
+use_msa_server: false
+rosetta_enabled: false
+rosetta_top_k: 3
+rosetta_nstruct: 8
+rosetta_parallel_decoys: 8
+bulk_rosetta_all_qualified: false
+exploratory_rosetta_slots: 0
+affinity_evaluators: []
+
+optional_metrics:
+  - {name: hemolysis_risk, enabled: true, trust: soft, stages: [research, final], failure_policy: record_unavailable}
+  - {name: amp_likeness, enabled: true, trust: soft, stages: [research, final], failure_policy: record_unavailable}
+  - {name: toxicity_risk, enabled: true, trust: soft, stages: [research, final], failure_policy: record_unavailable}
+  - {name: mic_potency, enabled: true, trust: soft, stages: [research, final], failure_policy: record_unavailable}
+  - {name: mic_potency_amp_read, enabled: true, trust: soft, stages: [research, final], failure_policy: record_unavailable}
+
+metric_policy:
+  - {metric_name: maximum_identical_residue_run, role: qualification, maximum: 4, hard: true, missing_policy: fail, stages: [proposal, research, final], rationale: Catastrophic low-complexity guard only.}
+  - {metric_name: net_charge_ph7_4, role: qualification, minimum: 1.0, hard: false, missing_policy: fail, stages: [proposal, research, final], rationale: Soft cationic AMP prior.}
+  - {metric_name: gravy, role: qualification, minimum: -1.0, maximum: 1.0, hard: false, missing_policy: fail, stages: [proposal, research, final], rationale: Broad hydropathy envelope.}
+  - {metric_name: hydrophobic_moment_eisenberg, role: qualification, minimum: 0.20, hard: false, missing_policy: fail, stages: [proposal, research, final], rationale: Soft amphipathic prior.}
+  - {metric_name: instability_index, role: qualification, maximum: 40.0, hard: false, missing_policy: fail, stages: [proposal, research, final], rationale: Peptide development proxy.}
+  - {metric_name: macrel_amp_probability, role: qualification, minimum: 0.50, hard: false, missing_policy: fail, stages: [research, final], rationale: Open-model AMP evidence.}
+  - {metric_name: amplify_probability, role: qualification, minimum: 0.50, hard: false, missing_policy: fail, stages: [research, final], rationale: Independent open-weight AMP evidence.}
+  - {metric_name: llamp_log10_mic_um, role: qualification, maximum: 2.0, hard: false, missing_policy: fail, stages: [research, final], rationale: E. coli-conditioned MIC hypothesis.}
+  - {metric_name: amp_read_log10_mic_um, role: qualification, maximum: 2.5, hard: false, missing_policy: fail, stages: [research, final], rationale: Independent generic MIC hypothesis.}
+  - {metric_name: toxinpred3_ml_score, role: qualification, maximum: 0.50, hard: false, missing_policy: fail, stages: [research, final], rationale: Soft toxicity evidence with known conflict.}
+  - {metric_name: macrel_hemolysis_probability, role: qualification, maximum: 0.50, hard: false, missing_policy: fail, stages: [research, final], rationale: Prefer safer candidates without erasing the activity frontier.}
+  - {metric_name: sequence_similarity, role: diversity, maximum: 0.75, hard: true, missing_policy: fail, stages: [proposal, research, final], rationale: Maintain sequence-space coverage.}
+  - {metric_name: conditional_ppl, role: objective, direction: minimize, priority: 10, missing_policy: worst, stages: [proposal, research, final], rationale: Plausibility tie-breaker after soft qualification.}
+  - {metric_name: structure_available, role: diagnostic, hard: false, missing_policy: ignore, stages: [research, final], rationale: Structure is deliberately deferred until diverse lightweight elites mature.}
+  - {metric_name: rosetta_dg_separated_reu, role: diagnostic, hard: false, missing_policy: ignore, stages: [final], rationale: Deferred same-protocol shadow evidence only.}
