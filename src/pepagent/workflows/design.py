@@ -678,6 +678,17 @@ class SequenceBindingProxyCalibrationWorkflow:
                 retry_policy=retry,
             )
             return {"run_id": request["run_id"], **persisted}
+        except asyncio.CancelledError:
+            await asyncio.shield(
+                workflow.execute_activity(
+                    "mark_run_cancelled",
+                    {"run_id": request["run_id"], "reason": "workflow_cancelled"},
+                    task_queue="pepagent-control",
+                    start_to_close_timeout=timedelta(minutes=5),
+                    retry_policy=retry,
+                )
+            )
+            raise
         except Exception as error:
             await workflow.execute_activity(
                 "mark_run_failed",
