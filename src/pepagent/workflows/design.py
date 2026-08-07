@@ -628,6 +628,71 @@ class CandidateStructureValidationWorkflow:
             raise
 
 
+@workflow.defn(name="SequenceBindingProxyCalibrationWorkflow")
+class SequenceBindingProxyCalibrationWorkflow:
+    """Run a low-confidence target-conditioned sequence proxy on an imported cohort."""
+
+    @workflow.run
+    async def run(self, request: dict[str, Any]) -> dict[str, Any]:
+        retry = RetryPolicy(
+            initial_interval=timedelta(seconds=10),
+            backoff_coefficient=2.0,
+            maximum_interval=timedelta(minutes=10),
+            maximum_attempts=5,
+        )
+        try:
+            await workflow.execute_activity(
+                "mark_run_started",
+                {"run_id": request["run_id"], "workflow_id": workflow.info().workflow_id},
+                task_queue="pepagent-control",
+                start_to_close_timeout=timedelta(minutes=2),
+                retry_policy=retry,
+            )
+            scored = await workflow.execute_activity(
+                "score_target_specific_pepmlm_proxy",
+                request,
+                task_queue="pepagent-gpu-pepmlm",
+                versioning_intent=workflow.VersioningIntent.DEFAULT,
+                start_to_close_timeout=timedelta(hours=8),
+                heartbeat_timeout=timedelta(minutes=5),
+                retry_policy=retry,
+            )
+            persisted = await workflow.execute_activity(
+                "persist_target_specific_pepmlm_proxy",
+                {"run_id": request["run_id"], "scored": scored},
+                task_queue="pepagent-control",
+                start_to_close_timeout=timedelta(minutes=10),
+                retry_policy=retry,
+            )
+            await workflow.execute_activity(
+                "finalize_run",
+                {
+                    "run_id": request["run_id"],
+                    "structures": [],
+                    "rosetta_results": [],
+                    "generation_count": 0,
+                    "agent_decision_count": 0,
+                },
+                task_queue="pepagent-control",
+                start_to_close_timeout=timedelta(minutes=5),
+                retry_policy=retry,
+            )
+            return {"run_id": request["run_id"], **persisted}
+        except Exception as error:
+            await workflow.execute_activity(
+                "mark_run_failed",
+                {
+                    "run_id": request["run_id"],
+                    "error_type": type(error).__name__,
+                    "error": str(error),
+                },
+                task_queue="pepagent-control",
+                start_to_close_timeout=timedelta(minutes=5),
+                retry_policy=retry,
+            )
+            raise
+
+
 @workflow.defn(name="RosettaValidationWorkflow")
 class RosettaValidationWorkflow:
     """Durable public-complex validation without invoking the generation lane."""

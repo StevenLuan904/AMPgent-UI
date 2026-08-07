@@ -426,6 +426,136 @@ async def generate_with_pepmlm(request: dict[str, Any]) -> list[dict[str, Any]]:
     return batches
 
 
+@activity.defn(name="score_target_specific_pepmlm_proxy")
+async def score_target_specific_pepmlm_proxy(request: dict[str, Any]) -> dict[str, Any]:
+    """Score a fixed candidate cohort against one primary and an immutable decoy panel."""
+    settings = get_settings()
+    await _verify_pepmlm_release(settings.pepmlm_model_path, settings.pepmlm_weights_sha256)
+    environment_sha256, environment = fingerprint_runtime()
+    payload = {
+        "peptides": request["peptides"],
+        "targets": request["targets"],
+        "target_panel_sha256": request["target_panel_sha256"],
+        "model": settings.pepmlm_model_path,
+        "revision": settings.pepmlm_model_revision,
+    }
+    result = await _run_json_cli(
+        "pepagent.model_workers.pepmlm_target_proxy_cli",
+        payload,
+        Path(settings.work_root) / request["run_id"] / "pepmlm-target-proxy",
+    )
+    raw_artifact = await _store_json(result)
+    environment_artifact = await _store_json(environment)
+    return {
+        "input": {
+            **payload,
+            "model": request.get("model_name", "ChatterjeeLab/PepMLM-650M"),
+        },
+        "parameters": {
+            "metric": "target_specific_delta_nll",
+            "definition": "median(decoy_target_nll)-primary_target_nll",
+            "confidence": "low",
+            "rank_only": True,
+            "admission_status": "out_of_domain",
+            "independence": "not_independent_from_pepmlm_generation_or_ppl",
+        },
+        "result": result,
+        "provenance": {
+            "tool_name": "pepmlm-target-specific-delta-nll",
+            "tool_version": "v1",
+            "model_uri": "hf://ChatterjeeLab/PepMLM-650M",
+            "weights_sha256": settings.pepmlm_weights_sha256,
+            "environment_sha256": environment_sha256,
+            "environment": environment,
+            "attempt": activity.info().attempt,
+            "raw_output_artifact": asdict(raw_artifact),
+            "environment_artifact": asdict(environment_artifact),
+            "execution_model_path": settings.pepmlm_model_path,
+        },
+    }
+
+
+@activity.defn(name="persist_target_specific_pepmlm_proxy")
+async def persist_target_specific_pepmlm_proxy(request: dict[str, Any]) -> dict[str, Any]:
+    run_id = uuid.UUID(request["run_id"])
+    scored = request["scored"]
+    provenance = scored["provenance"]
+    async with SessionFactory() as session, session.begin():
+        repository = ExperimentRepository(session)
+        call = await repository.record_completed_tool_call(
+            run_id,
+            provenance["tool_name"],
+            provenance["tool_version"],
+            provenance["environment_sha256"],
+            scored["input"],
+            scored["parameters"],
+            scored["result"],
+            weights_sha256=provenance["weights_sha256"],
+            model_uri=provenance["model_uri"],
+            attempt=provenance["attempt"],
+        )
+        await _register_artifact(
+            session,
+            call.id,
+            provenance["raw_output_artifact"],
+            "raw_output",
+            {
+                "tool": provenance["tool_name"],
+                "target_panel_sha256": scored["result"]["target_panel_sha256"],
+            },
+        )
+        await _register_artifact(
+            session,
+            call.id,
+            provenance["environment_artifact"],
+            "environment_manifest",
+            {"tool": provenance["tool_name"], "kind": "runtime_environment"},
+        )
+        candidate_by_sha = {
+            candidate.sequence_sha256: candidate
+            for candidate in await session.scalars(
+                select(Candidate).where(Candidate.run_id == run_id)
+            )
+        }
+        persisted: list[dict[str, Any]] = []
+        for result in scored["result"]["results"]:
+            candidate = candidate_by_sha.get(result["sequence_sha256"])
+            if candidate is None:
+                raise KeyError(
+                    "proxy result does not resolve to a candidate in the same run: "
+                    f"{result['sequence_sha256']}"
+                )
+            await repository.record_evaluation(
+                candidate.id,
+                call.id,
+                MetricName.TARGET_SPECIFIC_DELTA_NLL,
+                float(result["target_specific_delta_nll"]),
+                "nats_per_residue_difference",
+                result,
+                out_of_domain=True,
+                limitations=[
+                    "low-confidence sequence-conditioning proxy; rank-only",
+                    "not a binding probability or affinity estimate",
+                    "not independent from PepMLM generation or conditional PPL",
+                    "cannot override conflicting or negative structural evidence",
+                ],
+            )
+            await repository.transition_candidate(
+                candidate.id,
+                CandidateStatus.PPL_SCORED,
+                provenance["tool_name"],
+                "out-of-domain target-specific sequence proxy persisted",
+            )
+            persisted.append(
+                {
+                    "candidate_id": str(candidate.id),
+                    "sequence_sha256": candidate.sequence_sha256,
+                    "target_specific_delta_nll": result["target_specific_delta_nll"],
+                }
+            )
+    return {"tool_call_id": str(call.id), "results": persisted}
+
+
 @activity.defn(name="persist_and_select_candidates")
 async def persist_and_select_candidates(request: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
     run_id = uuid.UUID(request["run_id"])

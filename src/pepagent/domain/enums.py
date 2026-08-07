@@ -35,6 +35,7 @@ class EvaluationStatus(StrEnum):
 class MetricName(StrEnum):
     CONDITIONAL_NLL = "conditional_nll"
     CONDITIONAL_PPL = "conditional_ppl"
+    TARGET_SPECIFIC_DELTA_NLL = "target_specific_delta_nll"
     INSTABILITY_INDEX = "instability_index"
     HYDROPHOBIC_FRACTION = "hydrophobic_fraction"
     MAXIMUM_HYDROPHOBIC_RUN = "maximum_hydrophobic_run"

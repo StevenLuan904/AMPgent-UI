@@ -21,8 +21,10 @@ from pepagent.workers.activities import (
     persist_optional_sequence_metric,
     persist_rosetta_evidence,
     persist_structure_unavailable,
+    persist_target_specific_pepmlm_proxy,
     predict_boltz2_complex,
     score_rosetta_complex,
+    score_target_specific_pepmlm_proxy,
     select_bulk_evaluation_candidates,
     select_next_generation,
     select_rosetta_inputs,
@@ -32,6 +34,7 @@ from pepagent.workflows.design import (
     CandidateStructureValidationWorkflow,
     PeptideDesignWorkflow,
     RosettaValidationWorkflow,
+    SequenceBindingProxyCalibrationWorkflow,
 )
 
 ROLE_CONFIG = {
@@ -53,6 +56,7 @@ ROLE_CONFIG = {
             export_bulk_rosetta_csv,
             select_rosetta_inputs,
             persist_rosetta_evidence,
+            persist_target_specific_pepmlm_proxy,
             select_next_generation,
             finalize_run,
         ],
@@ -61,9 +65,14 @@ ROLE_CONFIG = {
             BulkCandidateEvaluationWorkflow,
             CandidateStructureValidationWorkflow,
             RosettaValidationWorkflow,
+            SequenceBindingProxyCalibrationWorkflow,
         ],
     ),
-    "pepmlm": ("pepagent-gpu-pepmlm", [generate_with_pepmlm], []),
+    "pepmlm": (
+        "pepagent-gpu-pepmlm",
+        [generate_with_pepmlm, score_target_specific_pepmlm_proxy],
+        [],
+    ),
     "boltz2": ("pepagent-gpu-boltz2", [predict_boltz2_complex], []),
     "rosetta": ("pepagent-cpu-rosetta", [score_rosetta_complex], []),
     "metrics": (

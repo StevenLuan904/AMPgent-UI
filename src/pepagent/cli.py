@@ -288,6 +288,191 @@ def register_pepmlm(model_dir: Path) -> None:
     typer.echo(json.dumps(result, ensure_ascii=False, indent=2))
 
 
+@app.command("submit-sequence-binding-proxy-calibration")
+def submit_sequence_binding_proxy_calibration(manifest_path: Path) -> None:
+    """Import a fixed cohort and run the low-confidence target-conditioned PepMLM proxy."""
+    manifest = _load_mapping(manifest_path)
+    spec_path = Path(manifest["spec_path"])
+    if not spec_path.is_absolute():
+        spec_path = manifest_path.parent / spec_path
+    spec = ExperimentSpec.model_validate(_load_mapping(spec_path.resolve()))
+    parent_run_id = uuid.UUID(manifest["parent_run_id"])
+
+    targets: list[dict] = []
+    for index, raw in enumerate(manifest["target_panel"]):
+        sequence = "".join(str(raw["sequence"]).split()).upper()
+        sequence_sha256 = sha256_text(sequence)
+        if sequence_sha256 != raw["sequence_sha256"]:
+            raise typer.BadParameter(f"target_panel[{index}] sequence SHA-256 mismatch")
+        control_type = raw["control_type"]
+        if control_type not in {"primary", "unrelated", "composition_shuffle"}:
+            raise typer.BadParameter(f"target_panel[{index}] has invalid control_type")
+        targets.append(
+            {
+                "accession": str(raw["accession"]),
+                "sequence": sequence,
+                "sequence_sha256": sequence_sha256,
+                "control_type": control_type,
+                "source": raw.get("source"),
+                "source_version": raw.get("source_version"),
+            }
+        )
+    primary = [target for target in targets if target["control_type"] == "primary"]
+    decoys = [target for target in targets if target["control_type"] != "primary"]
+    if len(primary) != 1 or primary[0]["sequence"] != spec.target.sequence:
+        raise typer.BadParameter(
+            "target panel must contain exactly one primary matching spec.target"
+        )
+    if len(decoys) < 2:
+        raise typer.BadParameter("target panel requires at least two decoy targets")
+    if len({target["sequence_sha256"] for target in targets}) != len(targets):
+        raise typer.BadParameter("target panel sequences must be unique")
+    target_panel_sha256 = sha256_json(targets)
+
+    candidate_entries: list[dict] = []
+    for index, raw in enumerate(manifest["candidates"]):
+        sequence = "".join(str(raw["sequence"]).split()).upper()
+        sequence_sha256 = sha256_text(sequence)
+        if sequence_sha256 != raw["sequence_sha256"]:
+            raise typer.BadParameter(f"candidates[{index}] sequence SHA-256 mismatch")
+        source_run_id = raw.get("source_run_id")
+        source_candidate_id = raw.get("source_candidate_id")
+        if bool(source_run_id) != bool(source_candidate_id):
+            raise typer.BadParameter(
+                f"candidates[{index}] must provide both source IDs or neither"
+            )
+        candidate_entries.append(
+            {
+                "sequence": sequence,
+                "sequence_sha256": sequence_sha256,
+                "source_run_id": source_run_id,
+                "source_candidate_id": source_candidate_id,
+                "cohort_role": str(raw["cohort_role"]),
+            }
+        )
+    if len({item["sequence_sha256"] for item in candidate_entries}) != len(candidate_entries):
+        raise typer.BadParameter("calibration candidate sequences must be unique")
+
+    async def _run() -> dict:
+        settings = get_settings()
+        temporal = await Client.connect(
+            settings.temporal_address, namespace=settings.temporal_namespace
+        )
+        async with SessionFactory() as session, session.begin():
+            parent_run = await session.get(ExperimentRun, parent_run_id)
+            if parent_run is None:
+                raise KeyError(f"parent run not found: {parent_run_id}")
+            parent_target = await session.get(Target, parent_run.target_id)
+            if parent_target is None or parent_target.sequence_sha256 != sha256_text(
+                spec.target.sequence
+            ):
+                raise ValueError("parent run and proxy calibration spec must share the target")
+            for entry in candidate_entries:
+                if not entry["source_candidate_id"]:
+                    continue
+                source = await session.get(Candidate, uuid.UUID(entry["source_candidate_id"]))
+                if (
+                    source is None
+                    or source.run_id != uuid.UUID(entry["source_run_id"])
+                    or source.sequence_sha256 != entry["sequence_sha256"]
+                ):
+                    raise ValueError(
+                        "source candidate identity or sequence mismatch: "
+                        f"{entry['source_candidate_id']}"
+                    )
+                source_run = await session.get(ExperimentRun, source.run_id)
+                if source_run is None or source_run.target_id != parent_run.target_id:
+                    raise ValueError("source candidate target differs from calibration target")
+
+            raw_spec = {
+                **spec.model_dump(mode="json"),
+                "run_mode": "sequence_binding_proxy_calibration",
+                "parent_run_id": str(parent_run_id),
+                "target_panel": targets,
+                "target_panel_sha256": target_panel_sha256,
+                "calibration_candidates": candidate_entries,
+                "manifest_sha256": sha256_json(manifest),
+                "scientific_contract": {
+                    "confidence": "low",
+                    "rank_only": True,
+                    "admission_status": "out_of_domain",
+                    "not_binding_probability": True,
+                    "not_affinity": True,
+                    "cannot_override_structure_evidence": True,
+                    "not_independent_from_pepmlm_generation_or_ppl": True,
+                },
+            }
+            repository = ExperimentRepository(session)
+            run = await repository.create_run(
+                spec,
+                actor="sequence-binding-proxy-calibration-cli",
+                parent_run_id=parent_run_id,
+                raw_spec_payload=raw_spec,
+            )
+            import_result = {
+                "candidates": candidate_entries,
+                "target_panel_sha256": target_panel_sha256,
+            }
+            import_call = await repository.record_completed_tool_call(
+                run.id,
+                "sequence-binding-proxy-calibration-import",
+                "v1",
+                sha256_json({"adapter": "sequence-binding-proxy-calibration-import-v1"}),
+                import_result,
+                {
+                    "exact_sequence_hash_required": True,
+                    "same_target_required": True,
+                    "fixed_target_panel_required": True,
+                },
+                import_result,
+                model_uri="deterministic://sequence-binding-proxy-calibration-import",
+            )
+            staged: list[dict] = []
+            for rank, entry in enumerate(candidate_entries, start=1):
+                candidate = await repository.add_candidate(
+                    run.id,
+                    entry["sequence"],
+                    generation=0,
+                    proposal_rank=rank,
+                    generator_call_id=import_call.id,
+                    metadata={
+                        **entry,
+                        "import_tool_call_id": str(import_call.id),
+                        "target_panel_sha256": target_panel_sha256,
+                    },
+                    actor="sequence-binding-proxy-calibration-import",
+                )
+                staged.append(
+                    {
+                        "id": str(candidate.id),
+                        "sequence": candidate.sequence,
+                        "sequence_sha256": candidate.sequence_sha256,
+                        "cohort_role": entry["cohort_role"],
+                    }
+                )
+        workflow_id = f"pepagent-sequence-binding-proxy-{run.id}"
+        await temporal.start_workflow(
+            "SequenceBindingProxyCalibrationWorkflow",
+            {
+                "run_id": str(run.id),
+                "model_name": spec.pepmlm_model,
+                "peptides": staged,
+                "targets": targets,
+                "target_panel_sha256": target_panel_sha256,
+            },
+            id=workflow_id,
+            task_queue="pepagent-control",
+        )
+        return {
+            "run_id": str(run.id),
+            "workflow_id": workflow_id,
+            "target_panel_sha256": target_panel_sha256,
+            "candidates": staged,
+        }
+
+    typer.echo(json.dumps(asyncio.run(_run()), ensure_ascii=False, indent=2))
+
+
 @app.command("register-boltz2")
 def register_boltz2(release_dir: Path) -> None:
     """Register the structure-only Boltz-2 release after verifying its checkpoint."""

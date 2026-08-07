@@ -25,7 +25,7 @@ def test_cross_queue_activities_use_target_queue_default_build() -> None:
             "workflow.VersioningIntent.DEFAULT"
         )
 
-    assert cross_queue_calls == 7
+    assert cross_queue_calls == 8
 
 
 def test_bulk_candidate_validation_honors_configured_boltz_seed_count() -> None:
