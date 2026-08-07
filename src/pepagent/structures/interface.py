@@ -146,12 +146,18 @@ def reconcile_ensemble_structure_support(
 ) -> dict[str, Any]:
     """Prevent a favorable representative pose from hiding failed ensemble checks."""
     failed_checks = [name for name, passed in gate_checks.items() if not passed]
-    if support.get("label") != "positive" or not failed_checks:
+    if not failed_checks:
         return support
+    representative_reason = (
+        "single_pose_geometry_support_but_ensemble_gate_failed"
+        if support.get("label") == "positive"
+        else "representative_support_and_ensemble_gate_conflict"
+    )
     return {
         "label": "conflicting",
         "reasons": [
-            "single_pose_geometry_support_but_ensemble_gate_failed",
+            representative_reason,
+            *support.get("reasons", []),
             *(f"failed_{name}" for name in failed_checks),
         ],
     }

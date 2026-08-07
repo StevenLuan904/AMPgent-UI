@@ -545,6 +545,22 @@ def test_ensemble_gate_failure_overrides_positive_representative_label() -> None
     assert "failed_pose_cluster_fraction" in support["reasons"]
 
 
+def test_ensemble_gate_failure_records_failed_checks_for_weak_support() -> None:
+    support = reconcile_ensemble_structure_support(
+        {"label": "weak", "reasons": ["pair_iptm_below_threshold"]},
+        {
+            "pocket_contact_consistency": True,
+            "pair_iptm_median": False,
+            "pose_cluster_fraction": False,
+            "no_cross_chain_clash": True,
+        },
+    )
+    assert support["label"] == "conflicting"
+    assert "pair_iptm_below_threshold" in support["reasons"]
+    assert "failed_pair_iptm_median" in support["reasons"]
+    assert "failed_pose_cluster_fraction" in support["reasons"]
+
+
 def test_fast_search_representatives_mix_property_leaders_and_diversity() -> None:
     candidates = [
         {"sequence": "AAAAAAAAAA", "conditional_ppl": 1.0},
