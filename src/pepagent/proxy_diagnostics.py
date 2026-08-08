@@ -26,6 +26,11 @@ def summarize_composition_pair_panel_robustness(
             raise ValueError("result sequence_sha256 values must be unique")
         results_by_sha[sequence_sha256] = result
 
+    registered_scramble_sha256 = {
+        sequence_sha256
+        for sequence_sha256, candidate in candidates_by_sha.items()
+        if candidate.get("composition_reference_sequence_sha256") is not None
+    }
     pairs: list[dict[str, Any]] = []
     seen_parent_sha256: set[str] = set()
     for scramble_sha256, scramble in candidates_by_sha.items():
@@ -33,6 +38,10 @@ def summarize_composition_pair_panel_robustness(
         if parent_sha256 is None:
             continue
         parent_sha256 = str(parent_sha256)
+        if parent_sha256 == scramble_sha256:
+            raise ValueError("a registered scramble cannot reference itself")
+        if parent_sha256 in registered_scramble_sha256:
+            raise ValueError("a composition reference must be an unpaired parent")
         if parent_sha256 in seen_parent_sha256:
             raise ValueError("each parent must have exactly one registered scramble")
         seen_parent_sha256.add(parent_sha256)

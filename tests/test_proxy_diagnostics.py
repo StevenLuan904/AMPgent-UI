@@ -124,3 +124,41 @@ def test_pair_robustness_rejects_non_finite_loo_scores(value: float) -> None:
             ],
             [parent, scramble],
         )
+
+
+def test_pair_robustness_rejects_self_referencing_scramble() -> None:
+    with pytest.raises(ValueError, match="cannot reference itself"):
+        summarize_composition_pair_panel_robustness(
+            [
+                {
+                    "sequence": "AACC",
+                    "sequence_sha256": "candidate",
+                    "composition_reference_sequence_sha256": "candidate",
+                }
+            ],
+            [_result("candidate", 0.7, [0.8, 0.6])],
+        )
+
+
+def test_pair_robustness_rejects_scramble_chain_as_parent() -> None:
+    with pytest.raises(ValueError, match="must be an unpaired parent"):
+        summarize_composition_pair_panel_robustness(
+            [
+                {"sequence": "AACC", "sequence_sha256": "root"},
+                {
+                    "sequence": "CACA",
+                    "sequence_sha256": "middle",
+                    "composition_reference_sequence_sha256": "root",
+                },
+                {
+                    "sequence": "ACAC",
+                    "sequence_sha256": "leaf",
+                    "composition_reference_sequence_sha256": "middle",
+                },
+            ],
+            [
+                _result("root", 0.7, [0.8, 0.6]),
+                _result("middle", 0.4, [0.5, 0.3]),
+                _result("leaf", 0.2, [0.3, 0.1]),
+            ],
+        )
