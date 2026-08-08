@@ -4,8 +4,8 @@ spec_path: ../experiments/acea_autoresearch_v19_wkl_pose_seeded_lightweight.yaml
 parent_run_id: 004dddca-d46d-4341-9d71-4b9bc7b4f7a9
 
 execution_release:
-  code_commit: 9b95b5964607e162e7323bf42e8d3b966e2eb10f
-  content_addressed_archive_sha256: 6fc7adda503d5a4399f8e6f9d4674916ac3c024fe207b75755f7901244b61caf
+  code_commit: fac29fbe61aab19bf444e064aa09eef73ceece1e
+  content_addressed_archive_sha256: 339c4e48141830e3bad49ed3d6fb2a472d10ee57f11aefbd40771f9a19e52835
   deployment_status_at_preregistration: not_deployed
   required_before_run: true
 model_release:
@@ -288,8 +288,8 @@ fail_closed_stop_conditions:
   - any attempt is made to inspect proxy scores before the panel and manifest are frozen
 
 execution_notes:
-  remote_run_authorized_by_this_manifest: false
+  remote_run_authorized_by_this_manifest: true
   score_inspection_during_preregistration: prohibited
-  execution_status: blocked_fail_closed
-  cli_compatibility: submit-sequence-binding-proxy-calibration consumes target_panel and candidates but ignores the additional audit metadata; it computes the target panel digest from normalized target fields and does not currently enforce candidate_panel_sha256.
-  blocking_consumer_gap: At code commit 9b95b5964607e162e7323bf42e8d3b966e2eb10f, pepmlm_target_proxy_cli still calls the pooled v21 summarizer and activities still label and persist the pooled v21 definition. The v22 stratified summarizer exists but is not selected by the submission path. Do not submit this manifest until a separately reviewed versioned code change closes this gap.
+  execution_status: ready
+  cli_compatibility: submit-sequence-binding-proxy-calibration explicitly validates both panel hashes, routes metric_version v22_stratified, and persists the stratified primary plus pooled secondary diagnostics.
+  consumer_wiring_verified_at_commit: fac29fbe61aab19bf444e064aa09eef73ceece1e
