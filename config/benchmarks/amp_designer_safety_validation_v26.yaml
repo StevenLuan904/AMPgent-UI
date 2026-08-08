@@ -1,0 +1,84 @@
+validation_id: amp_designer_safety_validation_v26
+version: v26.0.0-preregistered
+execution_status: archive_pending
+track: frozen_cohort_external_safety_validation
+reference_benchmark_id: amp_designer_de_novo_v25
+reference_code_revision: 7ed12e959cd1c4fdb14399f7539eb025a7fc8c4c
+reference_results_immutable: true
+
+input_cohort:
+  path: reports/amp_generator_v25_candidate_metrics_20260809.csv
+  sha256: fac36b6dbbf4c7525ab7982f054c3c3b02632e0760b938b137d719f1a22a7b12
+  row_count: 300
+  sequence_column: sequence
+  sequence_sha256_column: sequence_sha256
+  selection_forbidden: true
+
+validator_name: HemoPI2
+paper_uri: https://doi.org/10.1038/s42003-025-07615-w
+paper_venue: Communications Biology
+archive:
+  record_uri: https://zenodo.org/records/14676712
+  record_id: 14676712
+  record_doi: 10.5281/zenodo.14676712
+  record_license: CC-BY-4.0
+  archive_name: hemopi2.zip
+  size_bytes: 85723584
+  upstream_digest: md5:d85ca641f1d72ff75b7851c270dc6d44
+  local_sha256: null
+  extracted_inventory_sha256: null
+  serialized_model_format: pickle
+  untrusted_deserialization: true
+
+training_overlap_audit:
+  - dataset_name: cross_val_dataset.csv
+    size_bytes: 41446
+    upstream_digest: md5:73087fc770af8cbdc1021c040ec9601d
+    row_count: 1540
+    exact_sequence_overlap_count: 0
+  - dataset_name: independent_dataset.csv
+    size_bytes: 10432
+    upstream_digest: md5:55de6e07dbf1d3a33e4ed02960f2674a
+    row_count: 386
+    exact_sequence_overlap_count: 0
+
+expected_output_columns:
+  - candidate_id
+  - sequence
+  - sequence_sha256
+  - hemopi2_classification_score
+  - hemopi2_classification_label
+  - hemopi2_hc50_um
+  - validator_version
+  - evidence_scope
+expected_output_rows: 300
+isolated_execution_required: true
+network_disabled_during_inference: true
+
+scientific_contract:
+  frozen_full_cohort_no_filtering: true
+  validator_not_used_for_generation: true
+  no_existing_metric_used_for_selection: true
+  no_binding_or_affinity_claim: true
+  soft_prediction_not_experimental_evidence: true
+  no_reference_result_rewrite: true
+
+decision_scope:
+  evidence_class: independent_model_family_soft_safety_validation
+  allowed_claim: external_model_agreement_or_disagreement_on_predicted_hemolysis_risk
+  forbidden_claims:
+    - experimentally safe or hemolytic
+    - AceA binding or affinity
+    - global generator winner
+    - candidate selection within v26
+
+fail_closed:
+  - Stop before extraction on Zenodo record, archive name, size, or upstream MD5 mismatch.
+  - Stop before deserialization until archive SHA-256 and extracted inventory SHA-256 are frozen.
+  - Stop if static inventory reveals undeclared executable hooks, unexpected model files, path traversal, links, or archive members outside the isolated workspace.
+  - Stop unless the isolated environment is dependency-locked and inference networking is disabled.
+  - Stop if the frozen input SHA-256, row count, order, sequence, or per-row sequence SHA-256 differs.
+  - Stop if any input row is filtered, reordered, replaced, deduplicated, or omitted.
+  - Stop if classification or HC50 output is missing, non-finite, duplicated, or not one-to-one with all 300 inputs.
+  - Stop if ConsAMPHemo or any other unlicensed validator is introduced.
+  - Stop if outputs are used as experimental evidence, binding evidence, or to rewrite v25.

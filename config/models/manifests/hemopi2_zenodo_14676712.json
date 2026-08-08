@@ -1,0 +1,48 @@
+{
+  "manifest_version": "v26.0.0-preregistered-not-ready",
+  "retrieved_at": "2026-08-09",
+  "paper": {
+    "title": "Prediction of hemolytic peptides and their hemolytic concentration",
+    "venue": "Communications Biology",
+    "publication_year": 2025,
+    "doi": "10.1038/s42003-025-07615-w"
+  },
+  "record": {
+    "uri": "https://zenodo.org/records/14676712",
+    "api_uri": "https://zenodo.org/api/records/14676712",
+    "record_id": 14676712,
+    "doi": "10.5281/zenodo.14676712",
+    "metadata_license": "CC-BY-4.0",
+    "archive": {
+      "path": "hemopi2.zip",
+      "size_bytes": 85723584,
+      "upstream_digest": "md5:d85ca641f1d72ff75b7851c270dc6d44",
+      "local_sha256": null,
+      "extracted_inventory_sha256": null
+    },
+    "datasets": [
+      {
+        "path": "cross_val_dataset.csv",
+        "size_bytes": 41446,
+        "upstream_digest": "md5:73087fc770af8cbdc1021c040ec9601d"
+      },
+      {
+        "path": "independent_dataset.csv",
+        "size_bytes": 10432,
+        "upstream_digest": "md5:55de6e07dbf1d3a33e4ed02960f2674a"
+      }
+    ]
+  },
+  "security_gate": {
+    "status": "blocked_pending_archive_sha256_and_static_inventory",
+    "archive_downloaded": false,
+    "model_run_started": false,
+    "serialized_model_format": "pickle",
+    "untrusted_deserialization": true,
+    "isolated_environment_required": true,
+    "network_disabled_during_inference": true,
+    "require_archive_digest_before_extraction": true,
+    "require_static_inventory_before_deserialization": true,
+    "require_local_sha256_before_ready": true
+  }
+}
