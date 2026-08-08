@@ -1,0 +1,179 @@
+benchmark_id: amp_generator_hydramp_analogue_v24
+version: v24.0.0
+execution_status: preregistered_development
+track: parent_optimization
+
+generator:
+  generator_id: hydramp
+  source_uri: https://github.com/szczurek-lab/hydramp
+  source_revision: 6590d2f4c2963f25d30669052a4c4a857e0e7279
+  license: MIT
+  generation_mode: parent_optimization
+  amp_condition: 1
+  mic_condition: 1
+  internal_amp_classifier_calls_allowed: false
+  internal_mic_classifier_calls_allowed: false
+  weights:
+    - path: zenodo-7420278/models.zip
+      size_bytes: 437523333
+      upstream_digest: md5:31ffa0b335ad63b8d863129f698bdc2f
+      sha256: c2bf137ebe546fee8750b8c174486f1a9804e21a394a389a4f83d0bc6d743420
+
+# These anchors were selected once from the frozen v23 HydrAMP cohort. The
+# four ordered slots prevent a weighted score or manual cherry-picking.
+parent_selection:
+  source_benchmark_id: amp_generator_de_novo_v23
+  source_generator_id: hydramp
+  eligibility_max_macrel_hemolysis_probability: 0.5
+  eligibility_max_toxinpred3_ml_score: 0.5
+  anchors_per_source_seed: 4
+  slots_in_order:
+    - max_amp_probability
+    - min_llamp_mic
+    - min_amp_read_mic
+    - min_hemolysis_above_median_amp
+  duplicate_slot_policy: take_next_eligible_unselected
+  score_aggregation: none
+
+parents:
+  - parent_id: hydramp-parent-001
+    source_benchmark_id: amp_generator_de_novo_v23
+    source_candidate_id: hydramp-20260809-062
+    source_seed: 20260809
+    selection_slot: max_amp_probability
+    sequence: AVKREKYQKELAMMMAGVKRKKKWW
+    sequence_sha256: 2a0bbbb5a578709faef7a139c4384086b22ed4b164a9711f139d188fcd101747
+  - parent_id: hydramp-parent-002
+    source_benchmark_id: amp_generator_de_novo_v23
+    source_candidate_id: hydramp-20260809-026
+    source_seed: 20260809
+    selection_slot: min_llamp_mic
+    sequence: NWELRQDKWWWKLRWKWRKAE
+    sequence_sha256: 307ea170b002e422e60e6cfee83e7f7b70d131e989c5f027af7b9ca0853eda2f
+  - parent_id: hydramp-parent-003
+    source_benchmark_id: amp_generator_de_novo_v23
+    source_candidate_id: hydramp-20260809-067
+    source_seed: 20260809
+    selection_slot: min_amp_read_mic
+    sequence: IKAHYWNKLWWWKKEADAA
+    sequence_sha256: afa3e6f3636612afb3e82d000d004a5268a5d9f196084a348d913ba1bce54530
+  - parent_id: hydramp-parent-004
+    source_benchmark_id: amp_generator_de_novo_v23
+    source_candidate_id: hydramp-20260809-052
+    source_seed: 20260809
+    selection_slot: min_hemolysis_above_median_amp
+    sequence: PGHDSVGGDENKFIHKKNR
+    sequence_sha256: e81f4c6c5a8d5229d399e4ab8925149a6dfc10aa45d40af0e1852593cafef537
+  - parent_id: hydramp-parent-005
+    source_benchmark_id: amp_generator_de_novo_v23
+    source_candidate_id: hydramp-20260810-072
+    source_seed: 20260810
+    selection_slot: max_amp_probability
+    sequence: FRYRRRFFYRYYCSDEEDAA
+    sequence_sha256: 5360cd9a5cd2235575ccd1446fc7982f39b95ce5afe77a7d3cdfd463693d59b2
+  - parent_id: hydramp-parent-006
+    source_benchmark_id: amp_generator_de_novo_v23
+    source_candidate_id: hydramp-20260810-030
+    source_seed: 20260810
+    selection_slot: min_llamp_mic
+    sequence: DGRRYRIPVYCYLWRAK
+    sequence_sha256: ad9249bc07275c43d8edc975eba85f22abda95274403193ac7acf0452561b51e
+  - parent_id: hydramp-parent-007
+    source_benchmark_id: amp_generator_de_novo_v23
+    source_candidate_id: hydramp-20260810-093
+    source_seed: 20260810
+    selection_slot: min_amp_read_mic
+    sequence: GFRYRRYWEDLNNWKKRY
+    sequence_sha256: ab49c0f7cb816f8e687fdc03fe1d6122467c0d7e3cf5b3e3465d429cbbde8bad
+  - parent_id: hydramp-parent-008
+    source_benchmark_id: amp_generator_de_novo_v23
+    source_candidate_id: hydramp-20260810-011
+    source_seed: 20260810
+    selection_slot: min_hemolysis_above_median_amp
+    sequence: GWDKEHSKEEEKLLVKK
+    sequence_sha256: 87719a5103365aa0cf624a1e93c965749fe3e4f47351129461e80bf383023711
+  - parent_id: hydramp-parent-009
+    source_benchmark_id: amp_generator_de_novo_v23
+    source_candidate_id: hydramp-20260811-009
+    source_seed: 20260811
+    selection_slot: max_amp_probability
+    sequence: FLKRRWWWFMADAVRA
+    sequence_sha256: c50d39ef6a149a2e3a661629436508275cae119fbda3205dfd3234e3da4b74c2
+  - parent_id: hydramp-parent-010
+    source_benchmark_id: amp_generator_de_novo_v23
+    source_candidate_id: hydramp-20260811-043
+    source_seed: 20260811
+    selection_slot: min_llamp_mic
+    sequence: SWWKWYSSVMAHTLAAAGAASEDAK
+    sequence_sha256: 53059aefe2fc20495f5099c07cf9870cab561ed411c5692ec465ca12ade1154c
+  - parent_id: hydramp-parent-011
+    source_benchmark_id: amp_generator_de_novo_v23
+    source_candidate_id: hydramp-20260811-037
+    source_seed: 20260811
+    selection_slot: min_amp_read_mic
+    sequence: FWLNALDKKILEDSGMLKAM
+    sequence_sha256: 4232ff9d42d418f03962ab2d683e64abbd950fd2340436c90c3d966ae55d7393
+  - parent_id: hydramp-parent-012
+    source_benchmark_id: amp_generator_de_novo_v23
+    source_candidate_id: hydramp-20260811-094
+    source_seed: 20260811
+    selection_slot: min_hemolysis_above_median_amp
+    sequence: MADTMDHKKFFSAMMAMMM
+    sequence_sha256: fb8a2a0fc9cc1df59d27f87247f1174d2abf0e69de050e37f89c0d7331fc203c
+
+development_seeds: [20260821, 20260822]
+confirmation_seed: 20260823
+development_temperatures: [0.5, 2.0, 5.0]
+confirmation_temperature_policy: freeze_pareto_selected_development_temperature_before_confirmation
+raw_proposals_per_parent_temperature_seed: 64
+selected_valid_unique_per_parent_temperature_seed: 16
+minimum_length: 10
+maximum_length: 25
+selection_rule: raw_order_first_k_valid_unique
+missing_policy: retain_shortfall_no_refill
+cell_seed_derivation: sha256-v1
+
+essential_metrics:
+  - macrel_amp_probability
+  - llamp_predicted_mic_um
+  - amp_read_predicted_mic_um
+  - macrel_hemolysis_probability
+  - toxinpred3_ml_score
+optional_metrics:
+  - amplify_probability
+  - net_charge_ph7_4
+  - hydrophobic_ratio_modlamp
+  - hydrophobic_moment_eisenberg
+  - target_specific_delta_nll
+
+safety_noninferiority:
+  paired_median_macrel_hemolysis_margin: 0.05
+  paired_median_toxinpred3_ml_margin: 0.05
+development_decision_rule: safety_gate_then_pareto_activity_mic_then_lower_temperature_tiebreak
+confirmation_rule:
+  bootstrap_unit: parent
+  confidence_level: 0.9
+  required_signals:
+    - lower_ci_paired_delta_macrel_amp_probability_gt_0
+    - upper_ci_paired_delta_mean_log10_mic_lt_0
+    - upper_ci_paired_delta_macrel_hemolysis_le_0_05
+    - upper_ci_paired_delta_toxinpred3_ml_le_0_05
+  binding_claim_allowed: false
+
+fail_closed_conditions:
+  - any_internal_amp_or_mic_classifier_call
+  - model_or_weight_sha_mismatch
+  - parent_sequence_or_sha_mismatch
+  - seed_temperature_or_raw_budget_mismatch
+  - any_essential_metric_unavailable
+  - any_nonfinite_essential_metric
+  - valid_unique_yield_below_0_5_in_any_cell
+  - confirmation_temperature_not_frozen_before_confirmation_seed
+
+scientific_contract:
+  v23_outputs_immutable: true
+  raw_outputs_frozen_before_metrics: true
+  no_score_based_refill: true
+  generator_internal_scores_not_used: true
+  pepmlm_diagnostic_only: true
+  no_binding_or_affinity_claim: true

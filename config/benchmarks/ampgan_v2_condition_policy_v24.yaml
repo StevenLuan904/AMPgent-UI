@@ -1,0 +1,94 @@
+benchmark_id: ampgan_v2_condition_policy_v24
+version: v24.0.0
+execution_status: preregistered_ready
+generator_id: ampgan_v2
+track: de_novo_condition_policy
+source_revision: 1009476bdb988707ff260def863d694549dc18b0
+condition_policy_version: ampgan-v2-v24-condition-policy-v1
+internal_score_filtering_enabled: false
+full_condition_matrix_built_before_pool_indexing: true
+
+weights:
+  saved_model_sha256: a5e7cafa16c33010bd0fe22747c89f05d74f8781deac9eeeb91c6e4c371177e2
+  variables_shard_0_sha256: df6b16408b05f21a6fdb1d675c12562257d619382d08af2fad391d7ed847084a
+  variables_shard_1_sha256: 012fc17624f1fe6b0441622bebc71ee968e4d7db80bb7910e22af93b49d69890
+  variables_index_sha256: 7936298d0a7ac1802bbedc726d29e27911c3aa60778ac97395a24d5f82456902
+
+condition_source_inputs:
+  - path: data/dbaasp/clean.csv
+    size_bytes: 728902
+    sha256: 71b41e999dc257fb3c2b3ceaa8a744d56f3e3a10b29259c386b865e1a76ef250
+  - path: data/avpdb/AVPdb_data.tsv
+    size_bytes: 731264
+    sha256: af33d4f78a973cc7780ff7f429931333adaa6c3817d21aea29e53fc32d908f5c
+  - path: data/avpdb/targets_mapping.json
+    size_bytes: 1423
+    sha256: 2746f3a2cbf9c10963d21e06767475f61e982c2e34785c06a4ac67140bb2c57c
+
+condition_pools:
+  - pool_id: uniform_all
+    expected_count: 6558
+    expected_sha256: 55eafc0460677d45fc0402f8f169fb6ae7f8ecb6a6a48c2a146c1d611505cd25
+  - pool_id: uniform_short
+    expected_count: 4988
+    expected_sha256: 34ac812d0ebe8acce69962b6d232c7a02d3a4d7e08ab127e2ce09ff162eb3ce9
+  - pool_id: bacterial_nomammal_short
+    expected_count: 1644
+    expected_sha256: c60d2f7c4cfc069355813f656789731b2d5aac78958aa4ef23746e9c6f811553
+  - pool_id: bacterial_nomammal_short_low_mic
+    expected_count: 426
+    expected_sha256: 35c2f1be87978d0d68b717f615a941c00b3e09fcb8e8645426f9a3c1de835b93
+    mic50_interval: "[0,17.9868929]"
+  - pool_id: bacterial_nomammal_short_mid_mic
+    expected_count: 455
+    expected_sha256: 04188f2beefa755e45657023ab92af21e1a60052f6cc12ff7fdabd1ffcd8d5ba
+    mic50_interval: "(17.9868929,57.5996376]"
+
+development:
+  seeds: [20260821, 20260822, 20260823]
+  arms:
+    - uniform_all
+    - uniform_short
+    - bacterial_nomammal_short
+    - bacterial_nomammal_short_low_mic
+    - bacterial_nomammal_short_mid_mic
+  raw_proposal_budget_per_arm_seed: 1000
+  selected_valid_unique_per_arm_seed: 100
+  selection_rule: raw_order_first_k_valid_unique
+  missing_policy: retain_shortfall_no_refill
+  rng_contract: independent_condition_and_latent_streams_common_latent_across_arms
+
+confirmation:
+  baseline_arm: uniform_short
+  holdout_seeds: [20260901, 20260902, 20260903, 20260904, 20260905]
+  raw_proposal_budget_per_arm_seed: 1000
+  selected_valid_unique_per_arm_seed: 100
+  promote_only_if:
+    safety_improves_in_at_least_n_seeds: 4
+    seed_count: 5
+    median_macrel_hemolysis_probability_improvement_at_least: 0.10
+    median_toxinpred3_ml_score_improvement_at_least: 0.05
+    median_macrel_amp_probability_drop_at_most: 0.10
+    median_llamp_log10_mic_degradation_at_most: 0.30
+    median_amp_read_log10_mic_degradation_at_most: 0.30
+    valid_unique_yield_drop_at_most: 0.05
+
+scientific_contract:
+  no_generator_internal_amp_or_mic_score_filtering: true
+  no_discriminator_filtering: true
+  no_score_based_refill: true
+  no_v23_mutation_or_rerun: true
+  no_binding_or_affinity_claim: true
+  structure_enabled: false
+  pepmlm_used_for_winner_selection: false
+  posthoc_v23_condition_reconstruction_is_motivation_only: true
+
+fail_closed_if:
+  - source_revision_or_weight_sha_changes
+  - condition_source_input_sha_or_size_changes
+  - any_frozen_pool_count_or_sha_changes
+  - full_condition_matrix_is_not_built_before_pool_indexing
+  - condition_vector_shape_or_binary_encoding_is_invalid
+  - output_count_differs_from_raw_budget
+  - any_generator_internal_score_filters_or_refills_outputs
+  - any_primary_external_metric_is_unavailable
