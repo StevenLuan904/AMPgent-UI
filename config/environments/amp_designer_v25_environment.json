@@ -1,0 +1,36 @@
+{
+  "environment_id": "amp-designer-v25-cpu-win-amd64-py39",
+  "status": "preregistered_not_installed",
+  "platform": "Windows-amd64",
+  "python": {
+    "version": "3.9.23",
+    "implementation": "CPython",
+    "source_runtime": "var/metric-runtimes/llamp-py39/Scripts/python.exe"
+  },
+  "device": {
+    "type": "cpu",
+    "cuda": null,
+    "cudnn": null
+  },
+  "requirements_lock": "config/environments/amp_designer_v25_requirements.lock",
+  "required_versions": {
+    "torch": "1.13.1+cpu",
+    "transformers": "4.44.0",
+    "tokenizers": "0.19.1",
+    "numpy": "1.23.5"
+  },
+  "determinism_contract": {
+    "python_rng_seeded": true,
+    "numpy_rng_seeded": true,
+    "torch_rng_seeded": true,
+    "fixed_device": "cpu",
+    "fixed_batch_size": 100,
+    "ordered_smoke_hash_must_repeat": true
+  },
+  "installation_gate": {
+    "runtime_path": "var/generator-runtimes/amp-designer-py39",
+    "must_be_isolated": true,
+    "must_match_full_lock_before_smoke": true,
+    "must_not_modify_metric_runtimes": true
+  }
+}

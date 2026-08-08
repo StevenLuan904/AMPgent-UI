@@ -22,6 +22,12 @@ MODEL_MANIFEST_PATH = (
     / "manifests"
     / "amp_designer_zenodo_15051980.json"
 )
+ENVIRONMENT_PATH = (
+    Path(__file__).parents[1]
+    / "config"
+    / "environments"
+    / "amp_designer_v25_environment.json"
+)
 
 
 def _payload() -> dict:
@@ -105,3 +111,16 @@ def test_v25_model_manifest_allowlist_matches_benchmark_and_is_not_ready() -> No
     ]
     assert all(item["local_sha256"] is None for item in weights["allowlist"])
     assert model_manifest["execution_gate"]["status"] == "weights_pending"
+
+
+def test_v25_environment_is_cpu_frozen_before_installation() -> None:
+    environment = json.loads(ENVIRONMENT_PATH.read_text(encoding="utf-8"))
+    assert environment["status"] == "preregistered_not_installed"
+    assert environment["device"]["type"] == "cpu"
+    assert environment["required_versions"] == {
+        "torch": "1.13.1+cpu",
+        "transformers": "4.44.0",
+        "tokenizers": "0.19.1",
+        "numpy": "1.23.5",
+    }
+    assert environment["determinism_contract"]["fixed_batch_size"] == 100
