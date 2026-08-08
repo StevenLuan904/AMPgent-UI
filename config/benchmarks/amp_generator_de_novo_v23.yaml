@@ -1,0 +1,161 @@
+benchmark_id: amp_generator_de_novo_v23
+version: v23.0.0
+execution_status: completed
+track: de_novo
+
+# This is a short-AMP benchmark aligned to the skin AMP project. Models are not
+# allowed to refill after invalid, duplicate, or out-of-range raw proposals.
+seeds: [20260809, 20260810, 20260811]
+raw_proposal_budget_per_seed: 1000
+selected_valid_unique_per_seed: 100
+minimum_length: 10
+maximum_length: 25
+canonical_amino_acids: ACDEFGHIKLMNPQRSTVWY
+selection_rule: raw_order_first_k_valid_unique
+missing_policy: retain_shortfall_no_refill
+ranking_method: pareto_then_lexicographic
+bootstrap_unit: generator_seed
+structure_enabled: false
+
+generators:
+  - generator_id: hydramp
+    display_name: HydrAMP
+    paper_title: HydrAMP - a deep generative model for antimicrobial peptide discovery
+    venue: Nature Communications
+    publication_year: 2023
+    paper_uri: https://www.nature.com/articles/s41467-023-36994-z
+    source_uri: https://github.com/szczurek-lab/hydramp
+    source_revision: 6590d2f4c2963f25d30669052a4c4a857e0e7279
+    license: MIT
+    generation_mode: de_novo
+    internal_score_filtering_enabled: false
+    weights:
+      - path: zenodo-7420278/models.zip
+        size_bytes: 437523333
+        upstream_digest: md5:31ffa0b335ad63b8d863129f698bdc2f
+        sha256: c2bf137ebe546fee8750b8c174486f1a9804e21a394a389a4f83d0bc6d743420
+    limitations:
+      - The released model was trained for peptides shorter than 25 residues.
+      - Its internal AMP and MIC classifiers are recorded but disabled for raw-cohort selection.
+      - TensorFlow 2.2-era dependencies require an isolated legacy environment.
+
+  - generator_id: deep_amp
+    display_name: Deep_AMP VAE
+    paper_title: Cell-free biosynthesis combined with deep learning accelerates de novo-development of antimicrobial peptides
+    venue: Nature Communications
+    publication_year: 2023
+    paper_uri: https://www.nature.com/articles/s41467-023-42434-9
+    source_uri: https://github.com/amirpandi/Deep_AMP
+    source_revision: a44465f704f3224120fd3b1c0bc2d5823a1181c8
+    license: MIT
+    generation_mode: de_novo
+    internal_score_filtering_enabled: false
+    weights:
+      - path: VAE_v2_decoder/keras_metadata.pb
+        size_bytes: 25041
+        sha256: 5b2f6e805771e55ca7a569e2812dc59b342b74180343e309f79beaed766d09a9
+      - path: VAE_v2_decoder/saved_model.pb
+        size_bytes: 989052
+        sha256: 362927d690ee6e7405c78eac554086c4aced96fa538b3aa01bae5e86b064bd70
+      - path: VAE_v2_decoder/variables/variables.data-00000-of-00001
+        size_bytes: 3616903
+        sha256: 267e414f06e52e4fd095a05dddf67b4d463bcbedac35d4025d9811893417ef3e
+      - path: VAE_v2_decoder/variables/variables.index
+        size_bytes: 1106
+        sha256: caf2333b4ebc69abbce7ece80f534c4301d0dee16a27f946c2928f8fc22acd67
+    limitations:
+      - The paper's laboratory prioritization used its own MIC regressor; that score is disabled here.
+      - The decoder can emit noncanonical B or internal padding symbols, which count against raw yield.
+      - The original experimental campaign emphasized longer peptides than this short-AMP benchmark.
+
+  - generator_id: ampgan_v2
+    display_name: AMPGAN v2
+    paper_title: AMPGAN v2 - Machine Learning-Guided Design of Antimicrobial Peptides
+    venue: Journal of Chemical Information and Modeling
+    publication_year: 2021
+    paper_uri: https://pubs.acs.org/doi/10.1021/acs.jcim.0c01441
+    source_uri: https://gitlab.com/vail-uvm/amp-gan
+    source_revision: 1009476bdb988707ff260def863d694549dc18b0
+    license: MIT
+    generation_mode: de_novo
+    internal_score_filtering_enabled: false
+    weights:
+      - path: gan_1606/saved_model.pb
+        size_bytes: 1344320
+        upstream_digest: git-lfs-sha256:a5e7cafa16c33010bd0fe22747c89f05d74f8781deac9eeeb91c6e4c371177e2
+        sha256: a5e7cafa16c33010bd0fe22747c89f05d74f8781deac9eeeb91c6e4c371177e2
+      - path: gan_1606/variables/variables.data-00000-of-00002
+        size_bytes: 53347
+        upstream_digest: git-lfs-sha256:df6b16408b05f21a6fdb1d675c12562257d619382d08af2fad391d7ed847084a
+        sha256: df6b16408b05f21a6fdb1d675c12562257d619382d08af2fad391d7ed847084a
+      - path: gan_1606/variables/variables.data-00001-of-00002
+        size_bytes: 12982248
+        upstream_digest: git-lfs-sha256:012fc17624f1fe6b0441622bebc71ee968e4d7db80bb7910e22af93b49d69890
+        sha256: 012fc17624f1fe6b0441622bebc71ee968e4d7db80bb7910e22af93b49d69890
+      - path: gan_1606/variables/variables.index
+        size_bytes: 12646
+        upstream_digest: git-lfs-sha256:7936298d0a7ac1802bbedc726d29e27911c3aa60778ac97395a24d5f82456902
+        sha256: 7936298d0a7ac1802bbedc726d29e27911c3aa60778ac97395a24d5f82456902
+    limitations:
+      - The released model uses TensorFlow 2.2 and VailTools in an isolated legacy environment.
+      - Only positive AMP training-condition vectors are sampled; no post-generation classifier filter is used.
+      - Conditioning metadata are retained but do not enter the cross-generator winner rule.
+
+metrics:
+  - name: valid_unique_yield
+    role: qualification
+    direction: maximize
+    evidence_class: descriptor
+  - name: net_charge_ph7_4
+    role: profile
+    direction: none
+    evidence_class: descriptor
+  - name: hydrophobic_ratio_modlamp
+    role: profile
+    direction: none
+    evidence_class: descriptor
+  - name: hydrophobic_moment_eisenberg
+    role: profile
+    direction: none
+    evidence_class: descriptor
+  - name: amplify_probability
+    role: profile
+    direction: maximize
+    evidence_class: soft
+  - name: macrel_amp_probability
+    role: profile
+    direction: maximize
+    evidence_class: soft
+  - name: llamp_predicted_mic_um
+    role: profile
+    direction: minimize
+    evidence_class: soft
+  - name: amp_read_predicted_mic_um
+    role: profile
+    direction: minimize
+    evidence_class: soft
+  - name: toxinpred3_ml_score
+    role: safety
+    direction: minimize
+    evidence_class: soft
+  - name: macrel_hemolysis_probability
+    role: safety
+    direction: minimize
+    evidence_class: soft
+  - name: target_specific_delta_nll
+    role: diagnostic
+    direction: maximize
+    evidence_class: low_confidence_proxy
+
+scientific_contract:
+  raw_outputs_frozen_before_metrics: true
+  no_score_based_refill: true
+  generator_internal_scores_not_used_for_selection: true
+  pepmlm_not_used_to_select_winner: true
+  no_binding_or_affinity_claim: true
+
+winner_rule_notes:
+  - No weighted composite score is permitted.
+  - Compare qualification and safety first, then activity and MIC profiles by generator-seed medians.
+  - Use Pareto dominance; unresolved near-equality is a tie, not a forced rank.
+  - Select two generators for deeper iteration only after all three seeds and all admitted metrics complete.
