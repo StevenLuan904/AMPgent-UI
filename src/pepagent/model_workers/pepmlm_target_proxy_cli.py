@@ -1,6 +1,7 @@
 import argparse
 import hashlib
 import json
+import math
 import statistics
 from pathlib import Path
 from typing import Any
@@ -74,6 +75,109 @@ def summarize_target_specific_delta_nll(
             "target_specific_delta_nll_range": max(leave_one_out_deltas)
             - min(leave_one_out_deltas),
             "leave_one_decoy_out": leave_one_decoy_out,
+        },
+        "target_scores": target_scores,
+        "interpretation": {
+            "direction": "higher_values_rank_as_more_primary_target_conditioned",
+            "confidence": "low",
+            "admission_status": "out_of_domain",
+            "evidence_kind": "sequence_binding_proxy",
+            "rank_only": True,
+            "is_binding_probability": False,
+            "is_affinity": False,
+            "may_override_structure_evidence": False,
+            "independence": "not_independent_from_pepmlm_generation_or_ppl",
+        },
+    }
+
+
+def summarize_stratified_target_specific_delta_nll(
+    peptide: dict[str, Any], target_scores: list[dict[str, Any]]
+) -> dict[str, Any]:
+    """Summarize the preregistered v22, control-type-stratified proxy.
+
+    This is deliberately separate from ``summarize_target_specific_delta_nll`` so
+    callers of the pooled v21 metric retain its existing behavior and schema.
+    """
+    allowed_control_types = {"primary", "unrelated", "composition_shuffle"}
+    unknown_control_types = {
+        item.get("control_type")
+        for item in target_scores
+        if item.get("control_type") not in allowed_control_types
+    }
+    if unknown_control_types:
+        raise ValueError(
+            "unknown control_type(s): "
+            + ", ".join(sorted(repr(value) for value in unknown_control_types))
+        )
+
+    normalized_scores: list[tuple[dict[str, Any], float]] = []
+    for item in target_scores:
+        conditional_nll = float(item["conditional_nll"])
+        if not math.isfinite(conditional_nll):
+            raise ValueError("conditional_nll must be finite")
+        normalized_scores.append((item, conditional_nll))
+
+    primary_nlls = [
+        value
+        for item, value in normalized_scores
+        if item["control_type"] == "primary"
+    ]
+    if len(primary_nlls) != 1:
+        raise ValueError("exactly one primary target is required")
+
+    strata: dict[str, list[float]] = {
+        control_type: [
+            value
+            for item, value in normalized_scores
+            if item["control_type"] == control_type
+        ]
+        for control_type in ("unrelated", "composition_shuffle")
+    }
+    for control_type, values in strata.items():
+        if len(values) < 2:
+            raise ValueError(
+                f"at least two {control_type} control targets are required"
+            )
+
+    primary_nll = primary_nlls[0]
+    stratum_medians = {
+        control_type: float(statistics.median(values))
+        for control_type, values in strata.items()
+    }
+    stratified_control_nll = 0.5 * (
+        stratum_medians["unrelated"] + stratum_medians["composition_shuffle"]
+    )
+    pooled_median = float(
+        statistics.median(strata["unrelated"] + strata["composition_shuffle"])
+    )
+    type_deltas = {
+        control_type: median - primary_nll
+        for control_type, median in stratum_medians.items()
+    }
+
+    return {
+        "sequence": peptide["sequence"],
+        "sequence_sha256": peptide["sequence_sha256"],
+        "metric_version": "v22_stratified",
+        "primary_target_nll": primary_nll,
+        "control_type_nll_medians": stratum_medians,
+        "stratified_control_target_nll": stratified_control_nll,
+        "target_specific_delta_nll": stratified_control_nll - primary_nll,
+        "pooled_v21_compatible_secondary": {
+            "method": "median(all_control_target_nlls)-primary_target_nll",
+            "secondary": True,
+            "decoy_target_nll_median": pooled_median,
+            "target_specific_delta_nll": pooled_median - primary_nll,
+        },
+        "control_type_sensitivity": {
+            "method": "control_type_median_minus_primary_target_nll",
+            "diagnostic_only": True,
+            "target_specific_delta_nll_by_control_type": type_deltas,
+            "target_specific_delta_nll_min": min(type_deltas.values()),
+            "target_specific_delta_nll_max": max(type_deltas.values()),
+            "target_specific_delta_nll_range": max(type_deltas.values())
+            - min(type_deltas.values()),
         },
         "target_scores": target_scores,
         "interpretation": {
