@@ -34,9 +34,9 @@ def _payload() -> dict:
     return yaml.safe_load(CONFIG_PATH.read_text(encoding="utf-8"))
 
 
-def test_v25_preregistration_is_ready_and_append_only() -> None:
+def test_v25_challenger_is_completed_and_append_only() -> None:
     manifest = GeneratorChallengerManifest.model_validate(_payload())
-    assert manifest.execution_status == "ready"
+    assert manifest.execution_status == "completed"
     assert manifest.reference_results_immutable is True
     assert manifest.generator.internal_score_filtering_enabled is False
     assert manifest.sampling.temperature is None
@@ -47,6 +47,9 @@ def test_v25_preregistration_is_ready_and_append_only() -> None:
     assert manifest.sampling.batches_per_seed == 10
     assert manifest.smoke_validation is not None
     assert manifest.smoke_validation.outputs_identical is True
+    assert manifest.completion is not None
+    assert manifest.completion.candidate_count == 300
+    assert manifest.completion.promoted_to_followup_validation is True
 
 
 def test_v25_declared_weights_exactly_match_allowlist_and_exclude_regressors() -> None:

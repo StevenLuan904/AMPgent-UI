@@ -31,6 +31,8 @@ def _fixture(tmp_path: Path) -> tuple[GeneratorChallengerManifest, Path, Path]:
     payload["sampling"]["batch_size"] = 10
     payload["sampling"]["batches_per_seed"] = 10
     payload["smoke_validation"]["raw_records_per_repetition"] = 100
+    payload["execution_status"] = "ready"
+    payload.pop("completion")
     manifest = GeneratorChallengerManifest.model_validate(payload)
     selected_path = tmp_path / "selected.csv"
     with selected_path.open("w", encoding="utf-8-sig", newline="") as stream:

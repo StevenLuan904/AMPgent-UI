@@ -1,6 +1,6 @@
 benchmark_id: amp_designer_de_novo_v25
 version: v25.0.0
-execution_status: ready
+execution_status: completed
 track: de_novo_challenger
 reference_benchmark_id: amp_generator_de_novo_v23
 reference_benchmark_revision: 0df27e2d5d97de55a2afd3a9d9357a0160855bd8
@@ -67,6 +67,18 @@ smoke_validation:
   ordered_output_sha256: a303c3955b1e2f27a5646eec96865faf4bc4fe79391e2b6d284049d02987aa1b
   outputs_identical: true
   valid_unique_yield: 0.838
+
+completion:
+  code_revision: 65d20ac34cfece3ddc6aeb2f9c450e3765792278
+  raw_freeze_manifest_sha256: 046564c828b974acc23d10a25e6f167a392c61bd068d967402ebcf19501fe04d
+  candidate_count: 300
+  candidate_metrics_sha256: fac36b6dbbf4c7525ab7982f054c3c3b02632e0760b938b137d719f1a22a7b12
+  seed_summary_sha256: aff302040167f73d67e41c95b57461f180bb5dfc311e4d79743ecd82be5d9a0f
+  scorecard_sha256: 375cf01f2d03800d29d943fa2d1a6f638c1e310497e3439e5aca83bd1bf86fd3
+  decision_sha256: ad97bd589fc1968cc701e7db417bd7ff44b549cfb777826a196805905c507586
+  all_essential_complete: true
+  promoted_to_followup_validation: true
+  claim_scope: soft_prediction_non_dominated_profile_only
 
 weight_download_allowlist: [config.json, pytorch_model.bin]
 weight_download_denylist: [Ecoli_regress.pth, Paeruginosa_regress.pth, Saureus_regress.pth]

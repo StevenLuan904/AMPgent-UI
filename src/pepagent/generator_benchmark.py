@@ -161,6 +161,19 @@ class ChallengerSmokeSpec(BaseModel):
     valid_unique_yield: float = Field(ge=0.0, le=1.0)
 
 
+class ChallengerCompletionSpec(BaseModel):
+    code_revision: str = Field(pattern=r"^[0-9a-f]{40}$")
+    raw_freeze_manifest_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    candidate_count: int = Field(ge=1)
+    candidate_metrics_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    seed_summary_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    scorecard_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    decision_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    all_essential_complete: bool
+    promoted_to_followup_validation: bool
+    claim_scope: Literal["soft_prediction_non_dominated_profile_only"]
+
+
 class GeneratorChallengerManifest(BaseModel):
     """Append-only single-generator challenge against a frozen benchmark."""
 
@@ -185,6 +198,7 @@ class GeneratorChallengerManifest(BaseModel):
     structure_enabled: bool = False
     sampling: ChallengerSamplingSpec
     smoke_validation: ChallengerSmokeSpec | None = None
+    completion: ChallengerCompletionSpec | None = None
     metrics: list[BenchmarkMetricSpec] = Field(min_length=1)
     weight_download_allowlist: list[str] = Field(min_length=1)
     weight_download_denylist: list[str] = Field(min_length=1)
@@ -239,6 +253,14 @@ class GeneratorChallengerManifest(BaseModel):
                 != self.raw_proposal_budget_per_seed
             ):
                 raise ValueError("smoke raw count must equal the formal raw budget")
+        if self.execution_status == "completed":
+            if self.completion is None:
+                raise ValueError("completed challenger requires completion provenance")
+            expected_candidates = len(self.seeds) * self.selected_valid_unique_per_seed
+            if self.completion.candidate_count != expected_candidates:
+                raise ValueError("completion candidate count does not match the contract")
+            if self.completion.all_essential_complete is not True:
+                raise ValueError("completed challenger requires all essential metrics")
         metric_names = [item.name for item in self.metrics]
         if len(metric_names) != len(set(metric_names)):
             raise ValueError("challenger metric names must be unique")
