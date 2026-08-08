@@ -43,6 +43,16 @@ adapter_contract:
   allowed_model_paths:
     - hemopi2/Model/hemopi2_ml_clf.sav
     - hemopi2/Model/HemoPI2_reg.sav
+  pickle_global_allowlist:
+    - numpy.core.multiarray._reconstruct
+    - numpy.core.multiarray.scalar
+    - numpy.dtype
+    - numpy.ndarray
+    - sklearn.ensemble._forest.RandomForestClassifier
+    - sklearn.ensemble._forest.RandomForestRegressor
+    - sklearn.tree._classes.DecisionTreeClassifier
+    - sklearn.tree._classes.DecisionTreeRegressor
+    - sklearn.tree._tree.Tree
   upstream_cli_execution_forbidden: true
   shell_execution_forbidden: true
   merci_disabled: true

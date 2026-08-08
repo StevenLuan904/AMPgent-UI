@@ -87,6 +87,13 @@ def test_v26_rejects_expanding_the_adapter_surface() -> None:
             SafetyValidationManifest.model_validate(payload)
 
 
+def test_v26_rejects_pickle_global_allowlist_drift() -> None:
+    payload = deepcopy(_payload())
+    payload["adapter_contract"]["pickle_global_allowlist"].append("builtins.eval")
+    with pytest.raises(ValueError, match="pickle global allowlist"):
+        SafetyValidationManifest.model_validate(payload)
+
+
 def test_v26_rejects_partial_cohort_or_selection() -> None:
     payload = deepcopy(_payload())
     payload["input_cohort"]["selection_forbidden"] = False

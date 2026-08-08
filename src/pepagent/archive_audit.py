@@ -51,20 +51,39 @@ def scan_pickle_opcodes(payload: bytes) -> dict[str, Any]:
 
     counts: Counter[str] = Counter()
     globals_seen: set[str] = set()
-    recent_strings: deque[str] = deque(maxlen=2)
+    recent_symbols: deque[str] = deque(maxlen=2)
+    memo: dict[int, str | None] = {}
+    current_symbol: str | None = None
     for opcode, argument, _position in pickletools.genops(payload):
         counts[opcode.name] += 1
         if opcode.name in {"BINUNICODE", "SHORT_BINUNICODE", "UNICODE"}:
-            recent_strings.append(str(argument))
-        elif opcode.name == "GLOBAL":
-            globals_seen.add(str(argument).replace(" ", ".", 1))
-            recent_strings.clear()
-        elif opcode.name == "STACK_GLOBAL":
-            if len(recent_strings) == 2:
-                globals_seen.add(f"{recent_strings[0]}.{recent_strings[1]}")
+            current_symbol = str(argument)
+            recent_symbols.append(current_symbol)
+        elif opcode.name == "MEMOIZE":
+            memo[len(memo)] = current_symbol
+        elif opcode.name in {"BINPUT", "LONG_BINPUT", "PUT"}:
+            memo[int(argument)] = current_symbol
+        elif opcode.name in {"BINGET", "LONG_BINGET", "GET"}:
+            current_symbol = memo.get(int(argument))
+            if current_symbol is None:
+                recent_symbols.clear()
             else:
-                globals_seen.add("<memoized-or-unresolved-stack-global>")
-            recent_strings.clear()
+                recent_symbols.append(current_symbol)
+        elif opcode.name == "GLOBAL":
+            current_symbol = str(argument).replace(" ", ".", 1)
+            globals_seen.add(current_symbol)
+            recent_symbols.clear()
+        elif opcode.name == "STACK_GLOBAL":
+            if len(recent_symbols) == 2:
+                current_symbol = f"{recent_symbols[0]}.{recent_symbols[1]}"
+                globals_seen.add(current_symbol)
+            else:
+                current_symbol = None
+                globals_seen.add("<unresolved-stack-global>")
+            recent_symbols.clear()
+        elif opcode.name not in {"PROTO", "FRAME"}:
+            current_symbol = None
+            recent_symbols.clear()
     return {
         "opcode_counts": dict(sorted(counts.items())),
         "global_references": sorted(globals_seen),
@@ -76,6 +95,7 @@ def audit_zip_archive(
     *,
     required_root: str,
     allowed_metadata_roots: tuple[str, ...] = ("__MACOSX",),
+    allowed_pickle_globals: frozenset[str] | None = None,
 ) -> dict[str, Any]:
     archive_sha256 = hashlib.sha256(path.read_bytes()).hexdigest()
     rows: list[dict[str, Any]] = []
@@ -116,8 +136,19 @@ def audit_zip_archive(
                             {"path": name, "finding": finding, "marker": marker}
                         )
             if suffix in SERIALIZED_MODEL_SUFFIXES and not is_metadata:
+                scan = scan_pickle_opcodes(payload)
+                references = set(scan["global_references"])
+                if "<unresolved-stack-global>" in references:
+                    raise ValueError(f"unresolved pickle global reference in {name!r}")
+                if allowed_pickle_globals is not None:
+                    unexpected = references - allowed_pickle_globals
+                    if unexpected:
+                        raise ValueError(
+                            f"unexpected pickle globals in {name!r}: "
+                            + ", ".join(sorted(unexpected))
+                        )
                 pickle_scans.append(
-                    {"path": name, "size_bytes": len(payload), **scan_pickle_opcodes(payload)}
+                    {"path": name, "size_bytes": len(payload), **scan}
                 )
 
     rows.sort(key=lambda item: item["path"])

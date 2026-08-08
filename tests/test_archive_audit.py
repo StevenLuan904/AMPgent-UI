@@ -73,3 +73,27 @@ def test_pickle_scan_does_not_execute_reduce_payload() -> None:
     scan = scan_pickle_opcodes(data)
     assert scan["opcode_counts"]["REDUCE"] == 1
     assert touched is False
+
+
+def test_pickle_scan_resolves_memoized_stack_globals() -> None:
+    data = pickle.dumps({"items": {1, 2, 3}}, protocol=4)
+    scan = scan_pickle_opcodes(data)
+    assert "<unresolved-stack-global>" not in scan["global_references"]
+
+
+def test_archive_audit_rejects_pickle_global_outside_allowlist(tmp_path: Path) -> None:
+    archive_path = tmp_path / "untrusted.zip"
+    _write_zip(
+        archive_path,
+        {"hemopi2/model.sav": pickle.dumps(PayloadForGlobalAudit(), protocol=4)},
+    )
+    with pytest.raises(ValueError, match="unexpected pickle globals"):
+        audit_zip_archive(
+            archive_path,
+            required_root="hemopi2",
+            allowed_pickle_globals=frozenset(),
+        )
+
+
+class PayloadForGlobalAudit:
+    pass

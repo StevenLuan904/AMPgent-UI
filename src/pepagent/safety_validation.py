@@ -48,6 +48,7 @@ class NarrowAdapterContract(BaseModel):
     classification_backend: Literal["random_forest_model_1"]
     regression_backend: Literal["random_forest_hc50"]
     allowed_model_paths: list[str] = Field(min_length=2, max_length=2)
+    pickle_global_allowlist: list[str] = Field(min_length=1)
     upstream_cli_execution_forbidden: bool
     shell_execution_forbidden: bool
     merci_disabled: bool
@@ -75,6 +76,19 @@ class NarrowAdapterContract(BaseModel):
             "hemopi2/Model/HemoPI2_reg.sav",
         }:
             raise ValueError("HemoPI2 adapter model allowlist must be exact")
+        expected_pickle_globals = {
+            "numpy.core.multiarray._reconstruct",
+            "numpy.core.multiarray.scalar",
+            "numpy.dtype",
+            "numpy.ndarray",
+            "sklearn.ensemble._forest.RandomForestClassifier",
+            "sklearn.ensemble._forest.RandomForestRegressor",
+            "sklearn.tree._classes.DecisionTreeClassifier",
+            "sklearn.tree._classes.DecisionTreeRegressor",
+            "sklearn.tree._tree.Tree",
+        }
+        if set(self.pickle_global_allowlist) != expected_pickle_globals:
+            raise ValueError("HemoPI2 pickle global allowlist must be exact")
         return self
 
 

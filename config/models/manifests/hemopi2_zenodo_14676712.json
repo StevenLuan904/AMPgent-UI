@@ -46,6 +46,17 @@
     "network_disabled_during_inference": true,
     "require_archive_digest_before_extraction": true,
     "require_static_inventory_before_deserialization": true,
-    "require_local_sha256_before_ready": true
+    "require_local_sha256_before_ready": true,
+    "pickle_global_allowlist": [
+      "numpy.core.multiarray._reconstruct",
+      "numpy.core.multiarray.scalar",
+      "numpy.dtype",
+      "numpy.ndarray",
+      "sklearn.ensemble._forest.RandomForestClassifier",
+      "sklearn.ensemble._forest.RandomForestRegressor",
+      "sklearn.tree._classes.DecisionTreeClassifier",
+      "sklearn.tree._classes.DecisionTreeRegressor",
+      "sklearn.tree._tree.Tree"
+    ]
   }
 }
