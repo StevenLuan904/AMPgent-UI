@@ -6,8 +6,11 @@ from pepagent.model_workers.pepmlm_target_proxy_cli import (
     _require_sequence_sha256,
     summarize_stratified_target_specific_delta_nll,
     summarize_target_specific_delta_nll,
+    summarize_target_specific_delta_nll_for_version,
     target_panel_sha256,
+    validate_target_panel_for_metric,
 )
+from pepagent.workers.activities import _validate_proxy_result_contract
 
 
 def test_target_specific_delta_nll_is_decoy_median_minus_primary() -> None:
@@ -129,6 +132,114 @@ def test_stratified_target_specific_delta_nll_balances_control_types() -> None:
         "may_override_structure_evidence": False,
         "independence": "not_independent_from_pepmlm_generation_or_ppl",
     }
+
+
+def test_metric_version_routes_v22_to_stratified_primary() -> None:
+    result = summarize_target_specific_delta_nll_for_version(
+        {"sequence": "AAAA", "sequence_sha256": "peptide-sha"},
+        [
+            {"control_type": "primary", "conditional_nll": 2.0},
+            {"control_type": "unrelated", "conditional_nll": 3.0},
+            {"control_type": "unrelated", "conditional_nll": 5.0},
+            {"control_type": "composition_shuffle", "conditional_nll": 8.0},
+            {"control_type": "composition_shuffle", "conditional_nll": 12.0},
+        ],
+        "v22_stratified",
+    )
+
+    assert result["metric_version"] == "v22_stratified"
+    assert result["target_specific_delta_nll"] == 5.0
+    assert result["pooled_v21_compatible_secondary"][
+        "target_specific_delta_nll"
+    ] == 4.5
+
+
+def test_metric_version_defaults_to_legacy_v21_pooled() -> None:
+    scores = [
+        {"control_type": "primary", "conditional_nll": 2.0},
+        {"control_type": "unrelated", "conditional_nll": 3.0},
+        {"control_type": "composition_shuffle", "conditional_nll": 9.0},
+    ]
+    direct = summarize_target_specific_delta_nll(
+        {"sequence": "AAAA", "sequence_sha256": "peptide-sha"}, scores
+    )
+    routed = summarize_target_specific_delta_nll_for_version(
+        {"sequence": "AAAA", "sequence_sha256": "peptide-sha"}, scores, None
+    )
+
+    assert routed == direct
+    assert "metric_version" not in routed
+
+
+def test_metric_version_rejects_unknown_value() -> None:
+    with pytest.raises(ValueError, match="unsupported metric_version"):
+        summarize_target_specific_delta_nll_for_version(
+            {"sequence": "AAAA", "sequence_sha256": "peptide-sha"},
+            [],
+            "v22_typo",
+        )
+
+
+def test_v22_persistence_contract_rejects_missing_stratified_fields() -> None:
+    with pytest.raises(ValueError, match="missing required fields"):
+        _validate_proxy_result_contract(
+            {
+                "parameters": {"metric_version": "v22_stratified"},
+                "result": {
+                    "metric_version": "v22_stratified",
+                    "results": [
+                        {
+                            "metric_version": "v22_stratified",
+                            "sequence_sha256": "peptide-sha",
+                            "target_specific_delta_nll": 1.0,
+                        }
+                    ],
+                },
+            }
+        )
+
+
+def test_persistence_contract_rejects_v22_request_with_pooled_output() -> None:
+    with pytest.raises(ValueError, match="does not match"):
+        _validate_proxy_result_contract(
+            {
+                "parameters": {"metric_version": "v22_stratified"},
+                "result": {"metric_version": "v21_pooled", "results": []},
+            }
+        )
+
+
+def test_legacy_v21_persistence_contract_accepts_unversioned_output() -> None:
+    assert (
+        _validate_proxy_result_contract(
+            {
+                "parameters": {},
+                "result": {
+                    "results": [
+                        {
+                            "sequence_sha256": "peptide-sha",
+                            "target_specific_delta_nll": 1.0,
+                        }
+                    ]
+                },
+            }
+        )
+        == "v21_pooled"
+    )
+
+
+def test_v22_target_contract_fails_before_scoring_on_wrong_strata() -> None:
+    with pytest.raises(ValueError, match="exactly 1 primary, 4 unrelated"):
+        validate_target_panel_for_metric(
+            [
+                {"control_type": "primary", "sequence": "AAAA"},
+                {"control_type": "unrelated", "sequence": "CCCC"},
+                {"control_type": "unrelated", "sequence": "DDDD"},
+                {"control_type": "composition_shuffle", "sequence": "AAAA"},
+                {"control_type": "composition_shuffle", "sequence": "AAAA"},
+            ],
+            "v22_stratified",
+        )
 
 
 @pytest.mark.parametrize(

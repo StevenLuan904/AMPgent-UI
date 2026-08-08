@@ -9,6 +9,8 @@ from typing import Any
 DEFAULT_MODEL = "ChatterjeeLab/PepMLM-650M"
 DEFAULT_REVISION = "898fca941a9057aebdd1a6164b5ee09a1a71780e"
 CANONICAL_AA = set("ACDEFGHIKLMNPQRSTVWY")
+V21_METRIC_VERSION = "v21_pooled"
+V22_METRIC_VERSION = "v22_stratified"
 
 
 def _normalize_sequence(value: str, *, field: str) -> str:
@@ -29,6 +31,38 @@ def target_panel_sha256(targets: list[dict[str, Any]]) -> str:
         targets, ensure_ascii=False, sort_keys=True, separators=(",", ":")
     ).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
+
+
+def validate_target_panel_for_metric(
+    targets: list[dict[str, Any]], metric_version: str
+) -> None:
+    if metric_version != V22_METRIC_VERSION:
+        return
+    allowed = {"primary", "unrelated", "composition_shuffle"}
+    unknown = {item.get("control_type") for item in targets}.difference(allowed)
+    if unknown:
+        raise ValueError(
+            "unknown control_type(s): "
+            + ", ".join(sorted(repr(value) for value in unknown))
+        )
+    counts = {
+        control_type: sum(item["control_type"] == control_type for item in targets)
+        for control_type in allowed
+    }
+    expected = {"primary": 1, "unrelated": 4, "composition_shuffle": 8}
+    if counts != expected:
+        raise ValueError(
+            "v22 target panel requires exactly 1 primary, 4 unrelated, "
+            "and 8 composition_shuffle targets"
+        )
+    primary_sequence = next(
+        item["sequence"] for item in targets if item["control_type"] == "primary"
+    )
+    for item in targets:
+        if item["control_type"] == "composition_shuffle" and sorted(
+            item["sequence"]
+        ) != sorted(primary_sequence):
+            raise ValueError("v22 composition_shuffle is not composition-matched")
 
 
 def summarize_target_specific_delta_nll(
@@ -194,6 +228,19 @@ def summarize_stratified_target_specific_delta_nll(
     }
 
 
+def summarize_target_specific_delta_nll_for_version(
+    peptide: dict[str, Any],
+    target_scores: list[dict[str, Any]],
+    metric_version: str | None,
+) -> dict[str, Any]:
+    """Route explicitly versioned metrics without changing legacy v21 behavior."""
+    if metric_version in (None, V21_METRIC_VERSION):
+        return summarize_target_specific_delta_nll(peptide, target_scores)
+    if metric_version == V22_METRIC_VERSION:
+        return summarize_stratified_target_specific_delta_nll(peptide, target_scores)
+    raise ValueError(f"unsupported metric_version: {metric_version!r}")
+
+
 def pseudo_perplexity(
     model: Any, tokenizer: Any, target: str, peptide: str
 ) -> tuple[float, float, list[float]]:
@@ -227,6 +274,9 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     request = json.loads(args.request.read_text(encoding="utf-8"))
+    metric_version = request.get("metric_version", V21_METRIC_VERSION)
+    if metric_version not in {V21_METRIC_VERSION, V22_METRIC_VERSION}:
+        raise ValueError(f"unsupported metric_version: {metric_version!r}")
 
     targets: list[dict[str, Any]] = []
     for index, raw in enumerate(request["targets"]):
@@ -242,6 +292,7 @@ def main() -> None:
         targets.append(target)
     if len({item["sequence_sha256"] for item in targets}) != len(targets):
         raise ValueError("target control sequences must be unique")
+    validate_target_panel_for_metric(targets, metric_version)
     actual_panel_sha256 = target_panel_sha256(targets)
     if actual_panel_sha256 != request["target_panel_sha256"]:
         raise ValueError(
@@ -290,12 +341,25 @@ def main() -> None:
                     "per_residue_log_probabilities": residue_log_probabilities,
                 }
             )
-        results.append(summarize_target_specific_delta_nll(peptide, scores))
+        results.append(
+            summarize_target_specific_delta_nll_for_version(
+                peptide, scores, metric_version
+            )
+        )
+
+    if metric_version == V22_METRIC_VERSION:
+        definition = (
+            "0.5*median(unrelated_control_nlls)+"
+            "0.5*median(composition_shuffle_control_nlls)-primary_target_nll"
+        )
+    else:
+        definition = "median(decoy_target_nll)-primary_target_nll"
 
     output = {
         "schema_version": "1.0",
         "metric": "target_specific_delta_nll",
-        "definition": "median(decoy_target_nll)-primary_target_nll",
+        "metric_version": metric_version,
+        "definition": definition,
         "model": model_name,
         "revision": revision,
         "device": device,

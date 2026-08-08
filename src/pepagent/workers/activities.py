@@ -429,6 +429,9 @@ async def generate_with_pepmlm(request: dict[str, Any]) -> list[dict[str, Any]]:
 @activity.defn(name="score_target_specific_pepmlm_proxy")
 async def score_target_specific_pepmlm_proxy(request: dict[str, Any]) -> dict[str, Any]:
     """Score a fixed candidate cohort against one primary and an immutable decoy panel."""
+    metric_version = request.get("metric_version", "v21_pooled")
+    if metric_version not in {"v21_pooled", "v22_stratified"}:
+        raise ValueError(f"unsupported metric_version: {metric_version!r}")
     settings = get_settings()
     await _verify_pepmlm_release(settings.pepmlm_model_path, settings.pepmlm_weights_sha256)
     environment_sha256, environment = fingerprint_runtime()
@@ -438,14 +441,21 @@ async def score_target_specific_pepmlm_proxy(request: dict[str, Any]) -> dict[st
         "target_panel_sha256": request["target_panel_sha256"],
         "model": settings.pepmlm_model_path,
         "revision": settings.pepmlm_model_revision,
+        "metric_version": metric_version,
     }
     result = await _run_json_cli(
         "pepagent.model_workers.pepmlm_target_proxy_cli",
         payload,
         Path(settings.work_root) / request["run_id"] / "pepmlm-target-proxy",
     )
+    if result.get("metric_version") != metric_version:
+        raise ValueError("proxy result metric_version does not match request")
+    _validate_proxy_result_contract(
+        {"parameters": {"metric_version": metric_version}, "result": result}
+    )
     raw_artifact = await _store_json(result)
     environment_artifact = await _store_json(environment)
+    definition = result.get("definition")
     return {
         "input": {
             **payload,
@@ -453,7 +463,8 @@ async def score_target_specific_pepmlm_proxy(request: dict[str, Any]) -> dict[st
         },
         "parameters": {
             "metric": "target_specific_delta_nll",
-            "definition": "median(decoy_target_nll)-primary_target_nll",
+            "metric_version": metric_version,
+            "definition": definition,
             "confidence": "low",
             "rank_only": True,
             "admission_status": "out_of_domain",
@@ -475,11 +486,47 @@ async def score_target_specific_pepmlm_proxy(request: dict[str, Any]) -> dict[st
     }
 
 
+def _validate_proxy_result_contract(scored: dict[str, Any]) -> str:
+    metric_version = scored["parameters"].get("metric_version", "v21_pooled")
+    if metric_version not in {"v21_pooled", "v22_stratified"}:
+        raise ValueError(f"unsupported metric_version: {metric_version!r}")
+    output = scored["result"]
+    output_metric_version = output.get("metric_version")
+    if output_metric_version is not None and output_metric_version != metric_version:
+        raise ValueError("persisted proxy metric_version does not match tool parameters")
+    if metric_version == "v22_stratified" and output_metric_version is None:
+        raise ValueError("v22 proxy output is missing metric_version")
+    for result in output["results"]:
+        if metric_version != "v22_stratified":
+            continue
+        required = {
+            "metric_version",
+            "control_type_nll_medians",
+            "stratified_control_target_nll",
+            "pooled_v21_compatible_secondary",
+            "control_type_sensitivity",
+        }
+        missing = required.difference(result)
+        if missing:
+            raise ValueError(
+                "v22 proxy result missing required fields: "
+                + ", ".join(sorted(missing))
+            )
+        if result["metric_version"] != metric_version:
+            raise ValueError("v22 candidate result metric_version mismatch")
+        if not result["pooled_v21_compatible_secondary"].get("secondary"):
+            raise ValueError("v22 pooled metric must be marked secondary")
+        if not result["control_type_sensitivity"].get("diagnostic_only"):
+            raise ValueError("v22 type sensitivity must be diagnostic-only")
+    return metric_version
+
+
 @activity.defn(name="persist_target_specific_pepmlm_proxy")
 async def persist_target_specific_pepmlm_proxy(request: dict[str, Any]) -> dict[str, Any]:
     run_id = uuid.UUID(request["run_id"])
     scored = request["scored"]
     provenance = scored["provenance"]
+    metric_version = _validate_proxy_result_contract(scored)
     async with SessionFactory() as session, session.begin():
         repository = ExperimentRepository(session)
         call = await repository.record_completed_tool_call(
@@ -551,6 +598,25 @@ async def persist_target_specific_pepmlm_proxy(request: dict[str, Any]) -> dict[
                     "candidate_id": str(candidate.id),
                     "sequence_sha256": candidate.sequence_sha256,
                     "target_specific_delta_nll": result["target_specific_delta_nll"],
+                    "metric_version": metric_version,
+                    **(
+                        {
+                            "stratified_control_target_nll": result[
+                                "stratified_control_target_nll"
+                            ],
+                            "control_type_nll_medians": result[
+                                "control_type_nll_medians"
+                            ],
+                            "pooled_v21_compatible_secondary": result[
+                                "pooled_v21_compatible_secondary"
+                            ],
+                            "control_type_sensitivity": result[
+                                "control_type_sensitivity"
+                            ],
+                        }
+                        if metric_version == "v22_stratified"
+                        else {}
+                    ),
                 }
             )
     return {"tool_call_id": str(call.id), "results": persisted}

@@ -1,0 +1,295 @@
+manifest_version: acea_pepmlm_delta_nll_calibration_v22
+preregistered_at: "2026-08-08T15:14:00+08:00"
+spec_path: ../experiments/acea_autoresearch_v19_wkl_pose_seeded_lightweight.yaml
+parent_run_id: 004dddca-d46d-4341-9d71-4b9bc7b4f7a9
+
+execution_release:
+  code_commit: 9b95b5964607e162e7323bf42e8d3b966e2eb10f
+  content_addressed_archive_sha256: 6fc7adda503d5a4399f8e6f9d4674916ac3c024fe207b75755f7901244b61caf
+  deployment_status_at_preregistration: not_deployed
+  required_before_run: true
+model_release:
+  model_name: ChatterjeeLab/PepMLM-650M
+  revision: 898fca941a9057aebdd1a6164b5ee09a1a71780e
+  weights_sha256: 8a3225bca1f9acd9f701ca2e46597c12bab92320e32b68f380ddf3b6d3b20770
+  role: conditional_sequence_pseudo_likelihood_proxy
+
+scientific_contract:
+  confidence: low
+  rank_only: true
+  admission_status: out_of_domain
+  evidence_kind: sequence_binding_proxy
+  is_binding_probability: false
+  is_affinity: false
+  may_override_structure_evidence: false
+  independence: not_independent_from_pepmlm_generation_or_ppl
+  interpretation: Higher delta NLL only ranks candidates within this frozen protocol.
+  prohibited_claims:
+    - reliable_AceA_binding
+    - binding_probability
+    - binding_affinity
+    - independent_confirmation_of_PepMLM_generation_or_PPL
+  preserved_audit_findings:
+    v20: source-provenance-conflicted
+    v20b: label-persistence-conflicted
+    v20c: label-reason-contract-incomplete
+    v20d: strict-reproduction-succeeded-but-all-four-final-candidates-conflicting
+
+decoy_preregistration:
+  source_database: UniProtKB/Swiss-Prot
+  database_release: "2026_02"
+  retrieved_at: "2026-08-08"
+  taxonomy_id: 83333
+  query: "(organism_id:83333) AND (reviewed:true) AND (length:[380 TO 480]) AND (cc_scl_term:SL-0086) AND (existence:1) AND (fragment:false)"
+  exact_rest_url: "https://rest.uniprot.org/uniprotkb/search?query=(organism_id%3A83333)%20AND%20(reviewed%3Atrue)%20AND%20(length%3A%5B380%20TO%20480%5D)%20AND%20(cc_scl_term%3ASL-0086)%20AND%20(existence%3A1)%20AND%20(fragment%3Afalse)&format=tsv&size=500&fields=accession,id,protein_name,gene_names,organism_name,length,cc_subcellular_location,ft_signal,ft_transmem,sequence,sequence_version,protein_existence,date_modified"
+  local_fail_closed_filters:
+    - accession_is_not_P0A9G6
+    - ft_signal_is_empty
+    - ft_transmem_is_empty
+    - protein_name_excludes_putative_case_insensitive
+    - protein_name_excludes_uncharacterized_case_insensitive
+  candidate_pool:
+    row_count: 101
+    byte_count: 7878
+    sha256: 8445dd7406075fddf1eef44e967f3eaf943c2bb223c6432ddf4980ab5be93275
+    serialization: "Sort by accession ASCII ascending; ACCESSION<TAB>SEQUENCE_VERSION<TAB>LENGTH<TAB>SEQUENCE_SHA256<LF>; UTF-8 without BOM; no header; every row including the last ends in LF."
+    first_record: "P00509\t1\t396\tce1f3d587de57cc79eaf0f33d9e569d3e2480104200ef21b5879f3a7329d1a0c\n"
+    last_record: "Q46877\t1\t479\tc183652b765bb3aa7c7528ffd1433ba5dbecfebf9ad630029840dbff76beb9f6\n"
+  selection_salt: AMPgent-AceA-v22-decoy-panel-2026-08-08
+  selection_hash_definition: "lowercase_hex(SHA256(UTF8(selection_salt + '|' + accession + '|' + sequence_sha256)))"
+  selection_rule: Select the four lowest selection_hash values in ASCII ascending order before proxy scoring.
+  nonhomology_screen:
+    rule: No shared UniRef50 cluster, Pfam accession, or InterPro accession with AceA P0A9G6.
+    interpretation: coarse_nonhomology_exclusion_only
+    must_not_be_interpreted_as: proof_of_functional_or_structural_independence
+
+target_shuffle_contract:
+  reference_accession: P0A9G6
+  algorithm: Python random.Random(seed).shuffle applied once in-place to list(reference_sequence residues), then joined without separators
+  python_runtime_family: CPython-3.11
+  seeds: [2026080801, 2026080802, 2026080803, 2026080804, 2026080805, 2026080806, 2026080807, 2026080808]
+
+target_panel_sha256: 1d124971fc2ea127d85b409b736b0b5701501da15d2b72bc1ae977943f991c84
+target_panel_hash_definition: "SHA256 of compact UTF-8 JSON (ensure_ascii=false, sort_keys=true) over the ordered CLI-normalized fields accession, sequence, sequence_sha256, control_type, source, source_version"
+target_panel:
+  - accession: P0A9G6
+    control_type: primary
+    source: UniProtKB/Swiss-Prot entry 145; sequence 1
+    source_version: retrieved 2026-07-31
+    sequence_sha256: 3a113be0188b92e4e130d3165f4fdb2a3f0df846284e539a8af01c8f038ade10
+    sequence: MKTRTQQIEELQKEWTQPRWEGITRPYSAEDVVKLRGSVNPECTLAQLGAAKMWRLLHGESKKGYINSLGALTGGQALQQAKAGIEAVYLSGWQVAADANLAASMYPDQSLYPANSVPAVVERINNTFRRADQIQWSAGIEPGDPRYVDYFLPIVADAEAGFGGVLNAFELMKAMIEAGAAAVHFEDQLASVKKCGHMGGKVLVPTQEAIQKLVAARLAADVTGVPTLLVARTDADAADLITSDCDPYDSEFITGERTSEGFFRTHAGIEQAISRGLAYAPYADLVWCETSTPDLELARRFAQAIHAKYPGKLLAYNCSPSFNWQKNLDDKTIASFQQQLSDMGYKFQFITLAGIHSMWFNMFDLANAYAQGEGMKHYVEKVQQPEFAAAKDGYTFVSHQQEVGTGYFDKVTTIIQGGTSSVTALTGSTEESQF
+  - accession: P0A7D4
+    control_type: unrelated
+    source: UniProtKB/Swiss-Prot PURA_ECOLI; taxonomy 83333
+    source_version: release 2026_02; sequence version 2; retrieved 2026-08-08
+    length: 432
+    selection_hash: 00a56a5801405a2f91612a6deefd0e5e6b844a75132efa2b380da553e86759c9
+    sequence_sha256: 6b30d8caf49e7b7f867ddc8d3d76157f7d66256013f2b08df803f36b10644e5a
+    sequence: MGNNVVVLGTQWGDEGKGKIVDLLTERAKYVVRYQGGHNAGHTLVINGEKTVLHLIPSGILRENVTSIIGNGVVLSPAALMKEMKELEDRGIPVRERLLLSEACPLILDYHVALDNAREKARGAKAIGTTGRGIGPAYEDKVARRGLRVGDLFDKETFAEKLKEVMEYHNFQLVNYYKAEAVDYQKVLDDTMAVADILTSMVVDVSDLLDQARQRGDFVMFEGAQGTLLDIDHGTYPYVTSSNTTAGGVATGSGLGPRYVDYVLGILKAYSTRVGAGPFPTELFDETGEFLCKQGNEFGATTGRRRRTGWLDTVAVRRAVQLNSLSGFCLTKLDVLDGLKEVKLCVAYRMPDGREVTTTPLAADDWKGVEPIYETMPGWSESTFGVKDRSGLPQAALNYIKRIEELTGVPIDIISTGPDRTETMILRDPFDA
+  - accession: P11880
+    control_type: unrelated
+    source: UniProtKB/Swiss-Prot MURF_ECOLI; taxonomy 83333
+    source_version: release 2026_02; sequence version 2; retrieved 2026-08-08
+    length: 452
+    selection_hash: 03115a5c26246cae49654c9964ad3be594b0fd2a91c7725ee82ed4a998f250e6
+    sequence_sha256: e5fd2f65d603cba32001067979b06751a9dec09b352bc52be50745758cbc8d56
+    sequence: MISVTLSQLTDILNGELQGADITLDAVTTDTRKLTPGCLFVALKGERFDAHDFADQAKAGGAGALLVSRPLDIDLPQLIVKDTRLAFGELAAWVRQQVPARVVALTGSSGKTSVKEMTAAILSQCGNTLYTAGNLNNDIGVPMTLLRLTPEYDYAVIELGANHQGEIAWTVSLTRPEAALVNNLAAAHLEGFGSLAGVAKAKGEIFSGLPENGIAIMNADNNDWLNWQSVIGSRKVWRFSPNAANSDFTATNIHVTSHGTEFTLQTPTGSVDVLLPLPGRHNIANALAAAALSMSVGATLDAIKAGLANLKAVPGRLFPIQLAENQLLLDDSYNANVGSMTAAVQVLAEMPGYRVLVVGDMAELGAESEACHVQVGEAAKAAGIDRVLSVGKQSHAISTASGVGEHFADKTALITRLKLLIAEQQVITILVKGSRSAAMEEVVRALQENGTC
+  - accession: P21693
+    control_type: unrelated
+    source: UniProtKB/Swiss-Prot DBPA_ECOLI; taxonomy 83333
+    source_version: release 2026_02; sequence version 2; retrieved 2026-08-08
+    length: 457
+    selection_hash: 05fa8f3b30753433df686d42371e08389488bb4f15752d44180482b1b4593d1f
+    sequence_sha256: b4b06f3c664c21454d950f853c8bb52820a2d57f55f66df9a675972c0bbcad1b
+    sequence: MTAFSTLNVLPPAQLTNLNELGYLTMTPVQAAALPAILAGKDVRVQAKTGSGKTAAFGLGLLQQIDASLFQTQALVLCPTRELADQVAGELRRLARFLPNTKILTLCGGQPFGMQRDSLQHAPHIIVATPGRLLDHLQKGTVSLDALNTLVMDEADRMLDMGFSDAIDDVIRFAPASRQTLLFSATWPEAIAAISGRVQRDPLAIEIDSTDALPPIEQQFYETSSKGKIPLLQRLLSLHQPSSCVVFCNTKKDCQAVCDALNEVGQSALSLHGDLEQRDRDQTLVRFANGSARVLVATDVAARGLDIKSLELVVNFELAWDPEVHVHRIGRTARAGNSGLAISFCAPEEAQRANIISDMLQIKLNWQTPPANSSIATLEAEMATLCIDGGKKAKMRPGDVLGALTGDIGLDGADIGKIAVHPAHVYVAVRQAVAHKAWKQLQGGKIKGKTCRVRLLK
+  - accession: P07004
+    control_type: unrelated
+    source: UniProtKB/Swiss-Prot PROA_ECOLI; taxonomy 83333
+    source_version: release 2026_02; sequence version 2; retrieved 2026-08-08
+    length: 417
+    selection_hash: 0c05e239e35dafcc1bdc9c902ddc29789d6e96647d0e9813fb17e7335ee73a0f
+    sequence_sha256: db7b73071b97b4b46e0600a1f94c08e5194d8e0515dacfa9650694f87e1f9a12
+    sequence: MLEQMGIAAKQASYKLAQLSSREKNRVLEKIADELEAQSEIILNANAQDVADARANGLSEAMLDRLALTPARLKGIADDVRQVCNLADPVGQVIDGGVLDSGLRLERRRVPLGVIGVIYEARPNVTVDVASLCLKTGNAVILRGGKETCRTNAATVAVIQDALKSCGLPAGAVQAIDNPDRALVSEMLRMDKYIDMLIPRGGAGLHKLCREQSTIPVITGGIGVCHIYVDESVEIAEALKVIVNAKTQRPSTCNTVETLLVNKNIADSFLPALSKQMAESGVTLHADAAALAQLQAGPAKVVAVKAEEYDDEFLSLDLNVKIVSDLDDAIAHIREHGTQHSDAILTRDMRNAQRFVNEVDSSAVYVNASTRFTDGGQFGLGAEVAVSTQKLHARGPMGLEALTTYKWIGIGDYTIRA
+  - accession: P0A9G6-COMPOSITION-SHUFFLE-2026080801
+    control_type: composition_shuffle
+    source: deterministic Python shuffle of P0A9G6 residues
+    source_version: CPython-3.11 random.Random(2026080801).shuffle
+    sequence_sha256: 0a07dcae2eb2c34275f901870fb83c3dbc357b37437f43469ef6bb1c6f0ba6c0
+    sequence: YQFYKGVYEWAHPVQKAQQPLWATSGATRTGTFTKAQANSVAASIAESMDRSVAVAARSPLKAVAPQKPDEMDKTGSTFANDIGLFYFDGQIDLYQSQAKEQVTPAHTDIAAMVFILTLSAVDSYYNLQGAPQVLDVFDKKYQEIAQVLSWFILTVAAPKVASQDPTLLTLGKVFGHTCLKSCTLAHNIMEIGCGSVWSRGFDFGIKGIATKMAGAEYASRWIKTDFMRWEQKLLLQRGLGAAKPNGAGCVLIAAAEGASPFGSLQAQARGAFEDFTKEMASIWGLLETFYGPALIGEYAELYSTIDFETGDTVQALEDLQYGGLYTIYARKNMQTDAVAELGIIAPDNEVETAGRQQMPDHQRLEYELAQGCEAGGAATSASIVQVAPRMNRVENKHRKHPSNEVSTFPLQLANNRVDEQRDHVGEFYSWEDG
+  - accession: P0A9G6-COMPOSITION-SHUFFLE-2026080802
+    control_type: composition_shuffle
+    source: deterministic Python shuffle of P0A9G6 residues
+    source_version: CPython-3.11 random.Random(2026080802).shuffle
+    sequence_sha256: 277ca50e5dcafe323414e37d1a7f3360c97e7b7b939034e82b875eca7afd110c
+    sequence: GESARLAMKDQHRPETAYWVGPALGKAKSFQLRGSSTLVEKPLTRKAIDYKKEAKTEEPPLAQLLEAPDDASQFATIWFQYAGLSQIREYAKQQAWANIEVMYSVEHTATPGKGLFLVGYATLQVFYKIPRVFFKETQFGSSIAETTQMFAGQEKVGAQTRIFPGSGDEKDNFGVGAQTGLTANSELGEKFLNVDDQGQKLADAKAAWGKSYQVLYALKTKNCIQDVIDCATNDLASIFVSPSSAMIDAYTQQADANDAIMAATLPCTNTQLVPILIDGLYDSAADPLAGDIAHVDIIQMAQQQSQRERRGHAAMVTVPRVLYVGPQANNAVLDAFGLTGQGGANAVAINSTCTLVLMEKASTALDILGTSSARYEMGSFEAGLGESYEWHGYPWAEFFEMRYRVAGFYQVWRWVHLVECHFRAIPGEDHTEGS
+  - accession: P0A9G6-COMPOSITION-SHUFFLE-2026080803
+    control_type: composition_shuffle
+    source: deterministic Python shuffle of P0A9G6 residues
+    source_version: CPython-3.11 random.Random(2026080803).shuffle
+    sequence_sha256: 44e0e8726ac36d1139075a3602af91b5b114ff79b9ffd673d2182dfb98a3fe85
+    sequence: LPYQQEDRPEVVQHVDANYKKVNHKALWMNGNIGVEQNIGDASIFTGHQAIASTQQFEAANGGKPSLLSAAGYEQFDARDSAEMYTGNGLCMITLSYGLVWFADTAEKQWFYQMVKPYTTRHQEEDALFLQQYLNQTTLIKGASQAADVFQFPFRECGASVHWSDGATEQGGETYRCNAQHVAGRDSRGAPDIFASQIEACKQHYMPYSRAPVAKAGEAAAADTLVASSQANPLAVEDSEGAQEAYKLYTPLTAADLVQSRYNLKFDTFAWERGQRGEGMPDHPLGVQELKRFVKITGLWVMAGLLDEQEAPTIQASVWLVASSEAYPFFVLLLGAKTFTYTVYVLGATTVSRGWGAIIAKPGTRKFLDSAGGMKTEADAKIAQNIETKAAASIDTMSLPPALDRIKVDILFLRKCIELDEISGVFTGVSGQIM
+  - accession: P0A9G6-COMPOSITION-SHUFFLE-2026080804
+    control_type: composition_shuffle
+    source: deterministic Python shuffle of P0A9G6 residues
+    source_version: CPython-3.11 random.Random(2026080804).shuffle
+    sequence_sha256: 8824655303a32d2fa6c71c06f140d5a86b77dad134bcad982ab97f12954f7fae
+    sequence: VATKMAISAGAKFEFKPGGRKRLCAETDYEDEGALYKNESGILVWAASTNAQAGMATGTRDGKDQDADGDTSVSLVPKLLFGDKCTEGFHTIHEVLGLNAAYSRQTGQSWMKPVSQQLLAAQAQTPFEAFSKAAQEVESQEVWRQIGGRSAELEGSMQYANAIDGDDVSLLVVGMRLDDQFPNSGAVLAYKKFQLTFSMKGLTSIQMGAGFTVDYPPFYDQSQGYADLKRNARASFIIAWVEQMDAHRQSTDITTQAQEYPQAMYEAADSVLPQFVTPQKQASAYLADFVACVRATNEQAQVEWHPLAAAIVERGIDDVTSLVAWAARIHVVGSIIVETITHNATEESCAEALKKFHQKGQLGTIGYPKETEYRLKRNLGDGPGYIPPEHPAANELLSIYFAIWLLLATTFCLVGFNGIWFRGMYATLYKANGP
+  - accession: P0A9G6-COMPOSITION-SHUFFLE-2026080805
+    control_type: composition_shuffle
+    source: deterministic Python shuffle of P0A9G6 residues
+    source_version: CPython-3.11 random.Random(2026080805).shuffle
+    sequence_sha256: 31cc8a5f3c58745242cee7f249323adc000fef9e55a7e9272732815f3d93af1a
+    sequence: GMKSELDTEVPKFAQYPSKKQTCLLGEENAGQSASQTGSSHASPDFSRKQSVYLSSADGADAEQSADMGWDYNIPENWQMVITRMTTVKQPGGSIALLRTQYGKEENFGWLAFAFITGERAQFLAKGGLYVHISMWAYASWGTFAQESNAANFLAVLQHDMYYVQGAADAAKPHEVGLGVLFKAELTLYGLFIAGPPKHQLFVKQFWELSIKATEDIISIALNSQLEMRATGTYAVKQIIGQDEGSKGRDEETHAYFTADWANLRATQIGFTTQGAASSFAGVKDAQREQAVKYHMIGYRDALAVGNTRARPQVITFFLCVGLIPRPVQYMFQAVVTYSGALGTLIGDPPARIDEALPELAREPKTARKEYNLEAQQADSDEALVDIHVKNAQLAESIALLNVACDEWPTGFVYRVATAVGGTQDDCKMTPDCV
+  - accession: P0A9G6-COMPOSITION-SHUFFLE-2026080806
+    control_type: composition_shuffle
+    source: deterministic Python shuffle of P0A9G6 residues
+    source_version: CPython-3.11 random.Random(2026080806).shuffle
+    sequence_sha256: 7b05b53fb1e2877b6e9c4b91668419601147f53e24528333327bfa7f8903d189
+    sequence: EPYQDWQLPDLQLIGFRLDRSTAMAWDFERAASYDDVTGQSLVVATEDLSIAWLEIDASVQSNYNVWGAKMALGYYMEVKFSYIFLPYKYAFGRGLHTYKGSPIIDAKPTQADNEETGNGAQVQKVPTTGGLNKIGGRFGIVIGKEKGALALSAPGPTACCAALTFQIYVARALQFALLYMGGDAGETVRTFNIELAAPLLQIEETDGFKVTMAERHALTPDVEKEAVQFHRKVDPVSYVTHEHLEKGTLAERSFIVAAAIYEVFMFNQFLRPDAGVKSAWRMRAMVQAQAKAPIQDTQNLESMENGHDWMTAVTAAVQERSSAFYQTIGQLKVRSEASHCGGNLQQDQKADSARESEILHCVFDKLISLLTSKDGGGGEFATTQAPGSVPIFSWGGAYGAADYASLYQPANLSWTATQCQDQEIPTAKNAKAQ
+  - accession: P0A9G6-COMPOSITION-SHUFFLE-2026080807
+    control_type: composition_shuffle
+    source: deterministic Python shuffle of P0A9G6 residues
+    source_version: CPython-3.11 random.Random(2026080807).shuffle
+    sequence_sha256: 59b121e60aaa592bf71cef90f9a2379fb45ca639acf01400845a366d2f1e5967
+    sequence: ALGQITCAETMTANAIFLMETETAFDAFLYKRKVIPVNKAQMEVFAQASRMTGLSWWFEAGWAQMLLVDLHFPLVTYGSDDKLTGVSLARRARLYGDPKIIAKFQLQACQVYATALTKQDADSVAWSAPQFPGAASQNNFATDDEFVRQPPVSIGLEQSSINLQWESLANFYGIQSYQQGLRASLTEALTMRKKSNTFAISVDATAADTPSDVAMNLAELPLQDYELEAKIVGAKSRGWILVHYFKRFSIARLQIFKKCMIEEGYFLTGAQQDQYPCLSDEGTELYGEQNVTQHAAQETGASPAFISVNKPPTAQETGRHGIQAAKGESALTWALEHQCADVNTGKPAGSDGQVFAGEAIPKRDYIRPNVGYTDVSHGKELIEQEGYVVGASYAFVAIDAHEGYKDMAVLDGTMTPRDAYWGRGGGEVHGLAKV
+  - accession: P0A9G6-COMPOSITION-SHUFFLE-2026080808
+    control_type: composition_shuffle
+    source: deterministic Python shuffle of P0A9G6 residues
+    source_version: CPython-3.11 random.Random(2026080808).shuffle
+    sequence_sha256: 400c7e8025d1314de07128c299da56015f813dacda996ee256ac57d1457014c5
+    sequence: TCELTVFTRNAMYVLAARELCSQTEAVLGLILRDYLWPKDDFASGIMTGALGIGYLTRLKDLQAGLSIAKSQTVQKARAGKDKLGNATLGPTRADNWGTSGTRSAVKWLQFDPQQFYESLGPAPFECSVVGQMTKHSVTQAVFLGRQEGYWFGVALRKSEAVISIHYHQLMFPYKARAGGNGQQPSCQTRSAFWVFLRPIGDGAEAVNYAVQGAWYFEQKIILQGEQAAKQNIHAAVEEADIPVNVMEAHQHAWTTGSQLSVLIEYPYGKKKGCFDDYGQTSQVMKQVFASMAAHDEAFGVLQTRFDASADAATPNTEDGAAILRAEMDKANEEEDYLSGVAGDIEVWALFGMYTRLLQVKELAKDTMAATASDIEIGLAAAATFPSSKKPTLIAEALYGEYYVEPQPDDPGFEQATFTNIHIINPVSNQDSSR
+
+candidate_scramble_contract:
+  salt: AMPgent-AceA-v22-candidate-scramble-2026-08-08
+  seed_derivation: "int(lowercase_hex(SHA256(UTF8(salt + '|' + reference_sequence_sha256)))[:16], 16)"
+  algorithm: Python random.Random(seed).shuffle applied once in-place to list(reference_sequence residues), then joined without separators
+  python_runtime_family: CPython-3.11
+  collision_rule: If shuffled sequence equals its reference, increment seed by one and repeat until different; record both derived_seed and final_seed.
+
+candidate_panel_sha256: 3440b8ae20d9bee0b682d04741de5775f0f7d7f815c3212732595eb156fcf892
+candidate_panel_hash_definition: "SHA256 of compact UTF-8 JSON (ensure_ascii=false, sort_keys=true) over the ordered CLI-normalized fields sequence, sequence_sha256, source_run_id, source_candidate_id, cohort_role, composition_reference_sequence_sha256"
+candidates:
+  - sequence: RKLVDAAVRVVRNHW
+    sequence_sha256: 68e977c175d34a11167081b178eda59d7fa695c0bb6bfb6554a6fb19817733ff
+    source_run_id: 004dddca-d46d-4341-9d71-4b9bc7b4f7a9
+    source_candidate_id: 2bc62c65-a603-4091-9f7f-31f4c610c27a
+    cohort_role: v20d_structural_candidate
+  - sequence: RSIGSAGNSISGKFAWAA
+    sequence_sha256: f84760b53b0649640af3521c3bc4c9d7cb3faa749d97c100f5d7f52ea02f2d8e
+    source_run_id: 004dddca-d46d-4341-9d71-4b9bc7b4f7a9
+    source_candidate_id: 9c7102a3-bb84-49a9-b957-438533d7228c
+    cohort_role: v20d_structural_candidate
+  - sequence: WKLLDAVSRLVRNHV
+    sequence_sha256: 1b0308b3a14520426d9cad992944ad9d6764072a1ab5b99672fc104358059abd
+    source_run_id: 004dddca-d46d-4341-9d71-4b9bc7b4f7a9
+    source_candidate_id: 1539dc00-a1b1-40e5-88c3-6fa1fb766509
+    cohort_role: v20d_structural_candidate
+  - sequence: RKLGSIVDRVAAWHH
+    sequence_sha256: 149f4e7049848be6a20bfeb6bcb61a81d4885a3aa52ba3683a20c67adf91c068
+    source_run_id: 004dddca-d46d-4341-9d71-4b9bc7b4f7a9
+    source_candidate_id: af50e285-dfa2-41af-b5ce-72a7fc36badb
+    cohort_role: v20d_structural_candidate
+  - sequence: WKLVDIAGRVARNHG
+    sequence_sha256: 9d721d2d8d09d231c0ebb23624dd451fc29660a62a4b29444ccc2b5ad01878bc
+    source_run_id: 044275ab-0046-48f1-bd73-64e088418abc
+    source_candidate_id: 09a3261c-75ac-43e6-95e1-3ee53fce457f
+    cohort_role: v18_parent
+  - sequence: RKLGSIVDRVAAWHA
+    sequence_sha256: a7cc2010a342a6a3b96870c1090238243e338c7dbfa91fcab793ef02396d534c
+    source_run_id: 044275ab-0046-48f1-bd73-64e088418abc
+    source_candidate_id: 85b2aadf-a140-418b-9b2c-120c227c1dba
+    cohort_role: v18_parent
+  - sequence: KAAVDILSGVSLVVA
+    sequence_sha256: cd253a14c2f02ca7b18c33c8e3b8f717a22e8025fe3ad0de3424948d6bc02fac
+    source_run_id: ded8e530-c596-427e-9fba-92f0fe92821e
+    source_candidate_id: 8a1ae1f3-143f-4fcb-8cda-330ee9a16eb7
+    cohort_role: v19_de_novo_control
+  - sequence: NSVEDLLASVSAVRRSHC
+    sequence_sha256: 358bb5295ef0c58a927931fb61be356e956a66ac410f78a8a99cffcd152ce128
+    source_run_id: ded8e530-c596-427e-9fba-92f0fe92821e
+    source_candidate_id: aa54b83f-f57d-4f54-b240-660015492d3a
+    cohort_role: v19_de_novo_control
+  - sequence: ILRWVGAHANDVGRK
+    sequence_sha256: 151036ed7fe4c998bec8fa8fe98cd9667c1287301351373fc36c9772a10a383f
+    cohort_role: composition_matched_scramble_control
+    composition_reference_sequence_sha256: 9d721d2d8d09d231c0ebb23624dd451fc29660a62a4b29444ccc2b5ad01878bc
+  - sequence: ILRRVAAHVWSGDAK
+    sequence_sha256: 6dcc31d98e30127ca8f590758b6eb1a4d6345999084e61410f9bf2117780101d
+    cohort_role: composition_matched_scramble_control
+    composition_reference_sequence_sha256: a7cc2010a342a6a3b96870c1090238243e338c7dbfa91fcab793ef02396d534c
+  - sequence: VDRNRLAVHAVVKWR
+    sequence_sha256: 87fbdba3043260da389530a5e14fae80dd5c1ceab4931065ce6fcf466a0d50a6
+    cohort_role: composition_matched_scramble_control
+    composition_reference_sequence_sha256: 68e977c175d34a11167081b178eda59d7fa695c0bb6bfb6554a6fb19817733ff
+    scramble_derived_seed: 3977718646725303651
+    scramble_final_seed: 3977718646725303651
+  - sequence: AAARSFGKIWNSASIGSG
+    sequence_sha256: 99efaf3ef62ce5650d743a934b710debc5278993dcfb0c04f16b005a222fc272
+    cohort_role: composition_matched_scramble_control
+    composition_reference_sequence_sha256: f84760b53b0649640af3521c3bc4c9d7cb3faa749d97c100f5d7f52ea02f2d8e
+    scramble_derived_seed: 11532102258295980743
+    scramble_final_seed: 11532102258295980743
+  - sequence: LLRLSKVRVNHAWDV
+    sequence_sha256: ce5091a74bd6bb023f181817aae5a5fa5aec71341ec86a73c52d689f51909bcb
+    cohort_role: composition_matched_scramble_control
+    composition_reference_sequence_sha256: 1b0308b3a14520426d9cad992944ad9d6764072a1ab5b99672fc104358059abd
+    scramble_derived_seed: 4453035642724821410
+    scramble_final_seed: 4453035642724821410
+  - sequence: KVVRSRLWAGHAHDI
+    sequence_sha256: f5b0131ffb25b98ea4a32ff5210dd1654ee555d39db6d93a8b24a80ee53483f0
+    cohort_role: composition_matched_scramble_control
+    composition_reference_sequence_sha256: 149f4e7049848be6a20bfeb6bcb61a81d4885a3aa52ba3683a20c67adf91c068
+    scramble_derived_seed: 7661944944948985258
+    scramble_final_seed: 7661944944948985258
+
+metric_definition:
+  primary_metric:
+    name: target_specific_delta_nll
+    version: v22_stratified
+    formula: 0.5 * median(unrelated_control_nlls) + 0.5 * median(composition_shuffle_control_nlls) - AceA_nll
+    direction: higher_values_rank_as_more_AceA_conditioned_within_this_protocol
+  secondary_metric:
+    name: pooled_v21_compatible_delta_nll
+    formula: median(all_control_target_nlls) - AceA_nll
+    secondary_only: true
+  no_score_based_adaptation: Do not add, remove, replace, or rerun controls or candidates based on observed proxy scores; any scientific change requires a new versioned manifest.
+  required_consumer_function: summarize_stratified_target_specific_delta_nll
+
+stability_diagnostics:
+  diagnostic_only: true
+  do_not_change_primary_metric: true
+  leave_one_decoy_out:
+    compare_to_full_panel: Spearman rank correlation across all 14 candidates
+    minimum_acceptable_spearman_rho: 0.90
+    maximum_acceptable_candidate_rank_swing: 2
+  control_type_dependence:
+    compare_rankings: unrelated-only delta NLL versus composition-shuffle-only delta NLL
+    minimum_acceptable_spearman_rho: 0.80
+    require_same_sign_for_each_candidate: true
+  paired_candidate_controls:
+    pairs: 6
+    report_each_pair_without_statistical_generalization: true
+  threshold_interpretation: Failure preserves the run as diagnostic evidence but forbids any evidence upgrade or reliable binding claim.
+
+fail_closed_stop_conditions:
+  - code commit or content-addressed release archive differs from execution_release
+  - PepMLM model revision or weights SHA256 differs from model_release
+  - UniProt release, exact query, returned row count, canonical byte count, or candidate-pool SHA256 differs
+  - any frozen decoy accession, canonical sequence, sequence version, sequence SHA256, or selection hash differs
+  - any selected decoy shares AceA UniRef50, Pfam, or InterPro membership
+  - target panel does not contain exactly one primary, four unrelated controls, and eight composition shuffles
+  - any target sequence SHA256 or target_panel_sha256 differs
+  - any composition shuffle is not composition-identical to AceA or any target sequence is duplicated
+  - candidate panel is not exactly the ten v21 candidates plus the four preregistered v20d scrambles
+  - any candidate sequence SHA256, candidate_panel_sha256, source identity, scramble seed derivation, composition match, or uniqueness check differs
+  - any target control_type is unknown, any control stratum has fewer than two members, or any conditional NLL is non-finite
+  - the scoring CLI does not explicitly select summarize_stratified_target_specific_delta_nll and persist metric_version v22_stratified
+  - an active run exists or the designated GPU is occupied by an unrelated process at deployment or submission time
+  - any attempt is made to inspect proxy scores before the panel and manifest are frozen
+
+execution_notes:
+  remote_run_authorized_by_this_manifest: false
+  score_inspection_during_preregistration: prohibited
+  execution_status: blocked_fail_closed
+  cli_compatibility: submit-sequence-binding-proxy-calibration consumes target_panel and candidates but ignores the additional audit metadata; it computes the target panel digest from normalized target fields and does not currently enforce candidate_panel_sha256.
+  blocking_consumer_gap: At code commit 9b95b5964607e162e7323bf42e8d3b966e2eb10f, pepmlm_target_proxy_cli still calls the pooled v21 summarizer and activities still label and persist the pooled v21 definition. The v22 stratified summarizer exists but is not selected by the submission path. Do not submit this manifest until a separately reviewed versioned code change closes this gap.

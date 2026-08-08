@@ -297,6 +297,25 @@ def submit_sequence_binding_proxy_calibration(manifest_path: Path) -> None:
         spec_path = manifest_path.parent / spec_path
     spec = ExperimentSpec.model_validate(_load_mapping(spec_path.resolve()))
     parent_run_id = uuid.UUID(manifest["parent_run_id"])
+    metric_definition = manifest.get("metric_definition", {})
+    primary_metric = metric_definition.get("primary_metric", {})
+    metric_version = primary_metric.get("version", "v21_pooled")
+    if metric_version not in {"v21_pooled", "v22_stratified"}:
+        raise typer.BadParameter(f"unsupported metric_version: {metric_version!r}")
+    if metric_version == "v22_stratified":
+        execution_status = manifest.get("readiness", {}).get("execution_status")
+        if execution_status != "ready":
+            raise typer.BadParameter(
+                "v22 manifest is not ready for execution: "
+                f"{execution_status!r}"
+            )
+        if primary_metric.get("name") != "target_specific_delta_nll":
+            raise typer.BadParameter("v22 primary metric name is invalid")
+        if (
+            metric_definition.get("required_consumer_function")
+            != "summarize_stratified_target_specific_delta_nll"
+        ):
+            raise typer.BadParameter("v22 required consumer function is missing")
 
     targets: list[dict] = []
     for index, raw in enumerate(manifest["target_panel"]):
@@ -325,6 +344,22 @@ def submit_sequence_binding_proxy_calibration(manifest_path: Path) -> None:
         )
     if len(decoys) < 2:
         raise typer.BadParameter("target panel requires at least two decoy targets")
+    if metric_version == "v22_stratified":
+        control_counts = {
+            control_type: sum(
+                target["control_type"] == control_type for target in targets
+            )
+            for control_type in ("primary", "unrelated", "composition_shuffle")
+        }
+        if control_counts != {
+            "primary": 1,
+            "unrelated": 4,
+            "composition_shuffle": 8,
+        }:
+            raise typer.BadParameter(
+                "v22 target panel requires exactly 1 primary, 4 unrelated, "
+                "and 8 composition_shuffle targets"
+            )
     if len({target["sequence_sha256"] for target in targets}) != len(targets):
         raise typer.BadParameter("target panel sequences must be unique")
     for index, target in enumerate(targets):
@@ -335,6 +370,10 @@ def submit_sequence_binding_proxy_calibration(manifest_path: Path) -> None:
                 f"target_panel[{index}] is not composition-matched to the primary"
             )
     target_panel_sha256 = sha256_json(targets)
+    if metric_version == "v22_stratified" and target_panel_sha256 != manifest.get(
+        "target_panel_sha256"
+    ):
+        raise typer.BadParameter("v22 target_panel_sha256 mismatch")
 
     candidate_entries: list[dict] = []
     for index, raw in enumerate(manifest["candidates"]):
@@ -362,6 +401,12 @@ def submit_sequence_binding_proxy_calibration(manifest_path: Path) -> None:
         )
     if len({item["sequence_sha256"] for item in candidate_entries}) != len(candidate_entries):
         raise typer.BadParameter("calibration candidate sequences must be unique")
+    if metric_version == "v22_stratified":
+        if len(candidate_entries) != 14:
+            raise typer.BadParameter("v22 candidate panel requires exactly 14 candidates")
+        candidate_panel_sha256 = sha256_json(candidate_entries)
+        if candidate_panel_sha256 != manifest.get("candidate_panel_sha256"):
+            raise typer.BadParameter("v22 candidate_panel_sha256 mismatch")
     candidate_by_sha = {item["sequence_sha256"]: item for item in candidate_entries}
     for index, entry in enumerate(candidate_entries):
         if entry["cohort_role"] != "composition_matched_scramble_control":
@@ -420,6 +465,7 @@ def submit_sequence_binding_proxy_calibration(manifest_path: Path) -> None:
                     "cannot_override_structure_evidence": True,
                     "not_independent_from_pepmlm_generation_or_ppl": True,
                 },
+                "metric_version": metric_version,
             }
             repository = ExperimentRepository(session)
             run = await repository.create_run(
@@ -442,6 +488,7 @@ def submit_sequence_binding_proxy_calibration(manifest_path: Path) -> None:
                     "exact_sequence_hash_required": True,
                     "same_target_required": True,
                     "fixed_target_panel_required": True,
+                    "metric_version": metric_version,
                 },
                 import_result,
                 model_uri="deterministic://sequence-binding-proxy-calibration-import",
@@ -478,6 +525,7 @@ def submit_sequence_binding_proxy_calibration(manifest_path: Path) -> None:
                 "peptides": staged,
                 "targets": targets,
                 "target_panel_sha256": target_panel_sha256,
+                "metric_version": metric_version,
             },
             id=workflow_id,
             task_queue="pepagent-control",
