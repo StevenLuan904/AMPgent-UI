@@ -151,8 +151,20 @@ def main() -> None:
     manifest = GeneratorChallengerManifest.model_validate(payload)
     result = freeze_raw_cohorts(manifest, args.raw_dir)
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    _write_csv(args.output_dir / "cohort_audit.csv", result["audits"])
-    _write_csv(args.output_dir / "selected_candidates.csv", result["selected"])
+    cohort_audit_path = args.output_dir / "cohort_audit.csv"
+    selected_path = args.output_dir / "selected_candidates.csv"
+    _write_csv(cohort_audit_path, result["audits"])
+    _write_csv(selected_path, result["selected"])
+    result["freeze_manifest"]["cohort_audit"] = {
+        "path": cohort_audit_path.as_posix(),
+        "size_bytes": cohort_audit_path.stat().st_size,
+        "sha256": _sha256(cohort_audit_path),
+    }
+    result["freeze_manifest"]["selected_candidates"] = {
+        "path": selected_path.as_posix(),
+        "size_bytes": selected_path.stat().st_size,
+        "sha256": _sha256(selected_path),
+    }
     (args.output_dir / "raw_freeze_manifest.json").write_text(
         json.dumps(result["freeze_manifest"], ensure_ascii=False, indent=2),
         encoding="utf-8",
