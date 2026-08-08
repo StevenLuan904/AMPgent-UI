@@ -121,6 +121,56 @@ def test_stratified_target_specific_delta_nll_balances_control_types() -> None:
         "target_specific_delta_nll_max": 8.0,
         "target_specific_delta_nll_range": 6.0,
     }
+    assert result["stratified_panel_sensitivity"] == {
+        "method": "leave_one_control_out_within_stratum",
+        "diagnostic_only": True,
+        "primary_metric_unchanged": True,
+        "target_specific_delta_nll_min": 4.5,
+        "target_specific_delta_nll_max": 5.5,
+        "target_specific_delta_nll_range": 1.0,
+        "leave_one_control_out": [
+            {
+                "omitted_accession": None,
+                "omitted_sequence_sha256": None,
+                "omitted_control_type": "unrelated",
+                "retained_control_type_nll_median": 5.0,
+                "stratified_control_target_nll": 7.5,
+                "target_specific_delta_nll": 5.5,
+            },
+            {
+                "omitted_accession": None,
+                "omitted_sequence_sha256": None,
+                "omitted_control_type": "unrelated",
+                "retained_control_type_nll_median": 3.0,
+                "stratified_control_target_nll": 6.5,
+                "target_specific_delta_nll": 4.5,
+            },
+            {
+                "omitted_accession": None,
+                "omitted_sequence_sha256": None,
+                "omitted_control_type": "composition_shuffle",
+                "retained_control_type_nll_median": 11.0,
+                "stratified_control_target_nll": 7.5,
+                "target_specific_delta_nll": 5.5,
+            },
+            {
+                "omitted_accession": None,
+                "omitted_sequence_sha256": None,
+                "omitted_control_type": "composition_shuffle",
+                "retained_control_type_nll_median": 10.0,
+                "stratified_control_target_nll": 7.0,
+                "target_specific_delta_nll": 5.0,
+            },
+            {
+                "omitted_accession": None,
+                "omitted_sequence_sha256": None,
+                "omitted_control_type": "composition_shuffle",
+                "retained_control_type_nll_median": 9.0,
+                "stratified_control_target_nll": 6.5,
+                "target_specific_delta_nll": 4.5,
+            },
+        ],
+    }
     assert result["interpretation"] == {
         "direction": "higher_values_rank_as_more_primary_target_conditioned",
         "confidence": "low",

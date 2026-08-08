@@ -189,6 +189,45 @@ def summarize_stratified_target_specific_delta_nll(
         control_type: median - primary_nll
         for control_type, median in stratum_medians.items()
     }
+    leave_one_control_out: list[dict[str, Any]] = []
+    for control_type in ("unrelated", "composition_shuffle"):
+        stratum_scores = [
+            (item, value)
+            for item, value in normalized_scores
+            if item["control_type"] == control_type
+        ]
+        other_control_type = (
+            "composition_shuffle"
+            if control_type == "unrelated"
+            else "unrelated"
+        )
+        for omitted_index, (omitted, _) in enumerate(stratum_scores):
+            retained_values = [
+                value
+                for index, (_, value) in enumerate(stratum_scores)
+                if index != omitted_index
+            ]
+            retained_median = float(statistics.median(retained_values))
+            stratified_control_nll_without_omitted = 0.5 * (
+                retained_median + stratum_medians[other_control_type]
+            )
+            leave_one_control_out.append(
+                {
+                    "omitted_accession": omitted.get("accession"),
+                    "omitted_sequence_sha256": omitted.get("sequence_sha256"),
+                    "omitted_control_type": control_type,
+                    "retained_control_type_nll_median": retained_median,
+                    "stratified_control_target_nll": (
+                        stratified_control_nll_without_omitted
+                    ),
+                    "target_specific_delta_nll": (
+                        stratified_control_nll_without_omitted - primary_nll
+                    ),
+                }
+            )
+    leave_one_out_deltas = [
+        item["target_specific_delta_nll"] for item in leave_one_control_out
+    ]
 
     return {
         "sequence": peptide["sequence"],
@@ -212,6 +251,16 @@ def summarize_stratified_target_specific_delta_nll(
             "target_specific_delta_nll_max": max(type_deltas.values()),
             "target_specific_delta_nll_range": max(type_deltas.values())
             - min(type_deltas.values()),
+        },
+        "stratified_panel_sensitivity": {
+            "method": "leave_one_control_out_within_stratum",
+            "diagnostic_only": True,
+            "primary_metric_unchanged": True,
+            "target_specific_delta_nll_min": min(leave_one_out_deltas),
+            "target_specific_delta_nll_max": max(leave_one_out_deltas),
+            "target_specific_delta_nll_range": max(leave_one_out_deltas)
+            - min(leave_one_out_deltas),
+            "leave_one_control_out": leave_one_control_out,
         },
         "target_scores": target_scores,
         "interpretation": {
