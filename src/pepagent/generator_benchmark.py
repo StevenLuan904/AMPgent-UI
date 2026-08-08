@@ -35,6 +35,7 @@ class GeneratorReleaseSpec(BaseModel):
     weights_record_uri: str | None = Field(default=None, pattern=r"^https://")
     weights_record_doi: str | None = Field(default=None, min_length=1)
     weights_record_license: str | None = Field(default=None, min_length=1)
+    adapter_version: str | None = Field(default=None, min_length=1)
     generation_mode: Literal["de_novo", "parent_optimization", "enumeration"]
     weights: list[GeneratorWeightArtifact] = Field(min_length=1)
     internal_score_filtering_enabled: bool = False
@@ -205,6 +206,8 @@ class GeneratorChallengerManifest(BaseModel):
             raise ValueError("first-round challenger keeps structure disabled")
         if self.generator.generation_mode != "de_novo":
             raise ValueError("de_novo challenger requires a de_novo generator")
+        if self.generator.adapter_version is None:
+            raise ValueError("challenger generator requires a frozen adapter_version")
         if self.sampling.batch_size * self.sampling.batches_per_seed != (
             self.raw_proposal_budget_per_seed
         ):
