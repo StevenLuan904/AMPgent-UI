@@ -25,7 +25,12 @@ def test_v26_is_preregistered_but_not_ready() -> None:
     assert manifest.execution_status == "archive_pending"
     assert manifest.input_cohort.row_count == 300
     assert manifest.input_cohort.selection_forbidden is True
-    assert manifest.archive.local_sha256 is None
+    assert manifest.archive.local_sha256 == (
+        "ac0b5567fbb4bd08869bf3c43facb0883d96cf7dfd0afddef9919255e31e1c81"
+    )
+    assert manifest.archive.static_inventory_sha256 == (
+        "6a3eb2d0db9d84030540e9f3d69fa9bd81f6c345c3db8651ec3836c6eaf13a85"
+    )
     assert manifest.archive.extracted_inventory_sha256 is None
 
 
@@ -53,6 +58,33 @@ def test_v26_cannot_be_ready_without_archive_and_inventory_sha256() -> None:
     payload["execution_status"] = "ready"
     with pytest.raises(ValueError, match="archive and inventory SHA-256"):
         SafetyValidationManifest.model_validate(payload)
+
+
+def test_v26_adapter_surface_is_rf_only_and_shell_free() -> None:
+    manifest = SafetyValidationManifest.model_validate(_payload())
+    adapter = manifest.adapter_contract
+    assert adapter.classification_backend == "random_forest_model_1"
+    assert adapter.regression_backend == "random_forest_hc50"
+    assert adapter.upstream_cli_execution_forbidden is True
+    assert adapter.shell_execution_forbidden is True
+    assert adapter.merci_disabled is True
+    assert adapter.esm_disabled is True
+
+
+def test_v26_rejects_expanding_the_adapter_surface() -> None:
+    for field in (
+        "upstream_cli_execution_forbidden",
+        "shell_execution_forbidden",
+        "merci_disabled",
+        "esm_disabled",
+        "protein_scan_disabled",
+        "design_and_mutation_disabled",
+        "network_access_forbidden",
+    ):
+        payload = deepcopy(_payload())
+        payload["adapter_contract"][field] = False
+        with pytest.raises(ValueError, match="excluded surface"):
+            SafetyValidationManifest.model_validate(payload)
 
 
 def test_v26_rejects_partial_cohort_or_selection() -> None:

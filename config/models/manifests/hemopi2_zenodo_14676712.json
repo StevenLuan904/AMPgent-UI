@@ -1,5 +1,5 @@
 {
-  "manifest_version": "v26.0.0-preregistered-not-ready",
+  "manifest_version": "v26.0.1-security-amendment-not-ready",
   "retrieved_at": "2026-08-09",
   "paper": {
     "title": "Prediction of hemolytic peptides and their hemolytic concentration",
@@ -17,7 +17,10 @@
       "path": "hemopi2.zip",
       "size_bytes": 85723584,
       "upstream_digest": "md5:d85ca641f1d72ff75b7851c270dc6d44",
-      "local_sha256": null,
+      "local_sha256": "ac0b5567fbb4bd08869bf3c43facb0883d96cf7dfd0afddef9919255e31e1c81",
+      "static_inventory_sha256": "6a3eb2d0db9d84030540e9f3d69fa9bd81f6c345c3db8651ec3836c6eaf13a85",
+      "static_entry_count": 100,
+      "static_file_count": 94,
       "extracted_inventory_sha256": null
     },
     "datasets": [
@@ -34,8 +37,8 @@
     ]
   },
   "security_gate": {
-    "status": "blocked_pending_archive_sha256_and_static_inventory",
-    "archive_downloaded": false,
+    "status": "blocked_pending_safe_extraction_adapter_and_environment",
+    "archive_downloaded": true,
     "model_run_started": false,
     "serialized_model_format": "pickle",
     "untrusted_deserialization": true,

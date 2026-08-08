@@ -23,6 +23,11 @@ class ValidatorArchiveSpec(BaseModel):
     size_bytes: int = Field(ge=1)
     upstream_digest: str = Field(pattern=r"^md5:[0-9a-f]{32}$")
     local_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    static_inventory_sha256: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$"
+    )
+    static_entry_count: int | None = Field(default=None, ge=1)
+    static_file_count: int | None = Field(default=None, ge=1)
     extracted_inventory_sha256: str | None = Field(
         default=None, pattern=r"^[0-9a-f]{64}$"
     )
@@ -38,6 +43,41 @@ class TrainingOverlapSpec(BaseModel):
     exact_sequence_overlap_count: int = Field(ge=0)
 
 
+class NarrowAdapterContract(BaseModel):
+    adapter_id: str = Field(min_length=1)
+    classification_backend: Literal["random_forest_model_1"]
+    regression_backend: Literal["random_forest_hc50"]
+    allowed_model_paths: list[str] = Field(min_length=2, max_length=2)
+    upstream_cli_execution_forbidden: bool
+    shell_execution_forbidden: bool
+    merci_disabled: bool
+    esm_disabled: bool
+    protein_scan_disabled: bool
+    design_and_mutation_disabled: bool
+    network_access_forbidden: bool
+    archive_metadata_root_ignored_for_execution: Literal["__MACOSX/"]
+
+    @model_validator(mode="after")
+    def require_narrow_surface(self) -> NarrowAdapterContract:
+        required_true = (
+            self.upstream_cli_execution_forbidden,
+            self.shell_execution_forbidden,
+            self.merci_disabled,
+            self.esm_disabled,
+            self.protein_scan_disabled,
+            self.design_and_mutation_disabled,
+            self.network_access_forbidden,
+        )
+        if not all(required_true):
+            raise ValueError("HemoPI2 adapter must keep every excluded surface disabled")
+        if set(self.allowed_model_paths) != {
+            "hemopi2/Model/hemopi2_ml_clf.sav",
+            "hemopi2/Model/HemoPI2_reg.sav",
+        }:
+            raise ValueError("HemoPI2 adapter model allowlist must be exact")
+        return self
+
+
 class SafetyValidationManifest(BaseModel):
     validation_id: str = Field(pattern=r"^[a-z0-9][a-z0-9_-]+$")
     version: str = Field(min_length=1)
@@ -51,6 +91,7 @@ class SafetyValidationManifest(BaseModel):
     paper_uri: str = Field(pattern=r"^https://")
     paper_venue: str = Field(min_length=1)
     archive: ValidatorArchiveSpec
+    adapter_contract: NarrowAdapterContract
     training_overlap_audit: list[TrainingOverlapSpec] = Field(min_length=1)
     expected_output_columns: list[str] = Field(min_length=1)
     expected_output_rows: int = Field(ge=1)
@@ -73,6 +114,12 @@ class SafetyValidationManifest(BaseModel):
             raise ValueError("pickle validators must be treated as untrusted")
         if not self.isolated_execution_required or not self.network_disabled_during_inference:
             raise ValueError("untrusted validator execution must be isolated and offline")
+        if self.archive.local_sha256 is not None and (
+            self.archive.static_inventory_sha256 is None
+            or self.archive.static_entry_count is None
+            or self.archive.static_file_count is None
+        ):
+            raise ValueError("downloaded archive requires a frozen static inventory")
         if self.execution_status in {"ready", "completed"} and (
             self.archive.local_sha256 is None
             or self.archive.extracted_inventory_sha256 is None

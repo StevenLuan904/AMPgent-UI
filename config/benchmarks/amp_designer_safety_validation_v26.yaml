@@ -1,10 +1,13 @@
 validation_id: amp_designer_safety_validation_v26
-version: v26.0.0-preregistered
+version: v26.0.1-security-amendment
 execution_status: archive_pending
 track: frozen_cohort_external_safety_validation
 reference_benchmark_id: amp_designer_de_novo_v25
 reference_code_revision: 7ed12e959cd1c4fdb14399f7539eb025a7fc8c4c
 reference_results_immutable: true
+preregistration_amendment:
+  parent_revision: 0503e14836b16f3d18fdf35bc2520011556059b0
+  reason: Static archive review found untrusted pickle models and shell-interpolating upstream CLI paths; no inference or candidate scores had been produced.
 
 input_cohort:
   path: reports/amp_generator_v25_candidate_metrics_20260809.csv
@@ -25,10 +28,29 @@ archive:
   archive_name: hemopi2.zip
   size_bytes: 85723584
   upstream_digest: md5:d85ca641f1d72ff75b7851c270dc6d44
-  local_sha256: null
+  local_sha256: ac0b5567fbb4bd08869bf3c43facb0883d96cf7dfd0afddef9919255e31e1c81
+  static_inventory_sha256: 6a3eb2d0db9d84030540e9f3d69fa9bd81f6c345c3db8651ec3836c6eaf13a85
+  static_entry_count: 100
+  static_file_count: 94
   extracted_inventory_sha256: null
   serialized_model_format: pickle
   untrusted_deserialization: true
+
+adapter_contract:
+  adapter_id: hemopi2-v26-rf-only-no-shell-v1
+  classification_backend: random_forest_model_1
+  regression_backend: random_forest_hc50
+  allowed_model_paths:
+    - hemopi2/Model/hemopi2_ml_clf.sav
+    - hemopi2/Model/HemoPI2_reg.sav
+  upstream_cli_execution_forbidden: true
+  shell_execution_forbidden: true
+  merci_disabled: true
+  esm_disabled: true
+  protein_scan_disabled: true
+  design_and_mutation_disabled: true
+  network_access_forbidden: true
+  archive_metadata_root_ignored_for_execution: __MACOSX/
 
 training_overlap_audit:
   - dataset_name: cross_val_dataset.csv
