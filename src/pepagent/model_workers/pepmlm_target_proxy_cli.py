@@ -42,12 +42,39 @@ def summarize_target_specific_delta_nll(
     acea_nll = float(primary[0]["conditional_nll"])
     decoy_nlls = [float(item["conditional_nll"]) for item in decoys]
     decoy_median = float(statistics.median(decoy_nlls))
+    leave_one_decoy_out: list[dict[str, Any]] = []
+    for omitted_index, omitted in enumerate(decoys):
+        retained_nlls = [
+            value for index, value in enumerate(decoy_nlls) if index != omitted_index
+        ]
+        retained_median = float(statistics.median(retained_nlls))
+        leave_one_decoy_out.append(
+            {
+                "omitted_accession": omitted.get("accession"),
+                "omitted_sequence_sha256": omitted.get("sequence_sha256"),
+                "omitted_control_type": omitted["control_type"],
+                "decoy_target_nll_median": retained_median,
+                "target_specific_delta_nll": retained_median - acea_nll,
+            }
+        )
+    leave_one_out_deltas = [
+        item["target_specific_delta_nll"] for item in leave_one_decoy_out
+    ]
     return {
         "sequence": peptide["sequence"],
         "sequence_sha256": peptide["sequence_sha256"],
         "primary_target_nll": acea_nll,
         "decoy_target_nll_median": decoy_median,
         "target_specific_delta_nll": decoy_median - acea_nll,
+        "panel_sensitivity": {
+            "method": "leave_one_decoy_out",
+            "diagnostic_only": True,
+            "target_specific_delta_nll_min": min(leave_one_out_deltas),
+            "target_specific_delta_nll_max": max(leave_one_out_deltas),
+            "target_specific_delta_nll_range": max(leave_one_out_deltas)
+            - min(leave_one_out_deltas),
+            "leave_one_decoy_out": leave_one_decoy_out,
+        },
         "target_scores": target_scores,
         "interpretation": {
             "direction": "higher_values_rank_as_more_primary_target_conditioned",

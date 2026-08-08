@@ -26,6 +26,36 @@ def test_target_specific_delta_nll_is_decoy_median_minus_primary() -> None:
 
     assert result["decoy_target_nll_median"] == 4.0
     assert result["target_specific_delta_nll"] == 2.0
+    assert result["panel_sensitivity"] == {
+        "method": "leave_one_decoy_out",
+        "diagnostic_only": True,
+        "target_specific_delta_nll_min": 1.5,
+        "target_specific_delta_nll_max": 2.5,
+        "target_specific_delta_nll_range": 1.0,
+        "leave_one_decoy_out": [
+            {
+                "omitted_accession": None,
+                "omitted_sequence_sha256": None,
+                "omitted_control_type": "unrelated",
+                "decoy_target_nll_median": 4.5,
+                "target_specific_delta_nll": 2.5,
+            },
+            {
+                "omitted_accession": None,
+                "omitted_sequence_sha256": None,
+                "omitted_control_type": "composition_shuffle",
+                "decoy_target_nll_median": 4.0,
+                "target_specific_delta_nll": 2.0,
+            },
+            {
+                "omitted_accession": None,
+                "omitted_sequence_sha256": None,
+                "omitted_control_type": "composition_shuffle",
+                "decoy_target_nll_median": 3.5,
+                "target_specific_delta_nll": 1.5,
+            },
+        ],
+    }
     assert result["interpretation"] == {
         "direction": "higher_values_rank_as_more_primary_target_conditioned",
         "confidence": "low",
