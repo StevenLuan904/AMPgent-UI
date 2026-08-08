@@ -1,6 +1,6 @@
 benchmark_id: amp_designer_de_novo_v25
 version: v25.0.0
-execution_status: weights_pending
+execution_status: ready
 track: de_novo_challenger
 reference_benchmark_id: amp_generator_de_novo_v23
 reference_benchmark_revision: 0df27e2d5d97de55a2afd3a9d9357a0160855bd8
@@ -25,10 +25,12 @@ generator:
     - path: config.json
       size_bytes: 957
       upstream_digest: md5:9c449482f86c226a13212484b47bf5c6
+      sha256: e8f1bed7607065b7a11e5f338a5a5e618947ae78ee0bc0314689cf9801d7d62a
       download_uri: https://zenodo.org/api/records/15051980/files/config.json/content
     - path: pytorch_model.bin
       size_bytes: 340569639
       upstream_digest: md5:898be214aaec6d718ab02dbd8a76b878
+      sha256: 47944ff42f7ea6a448340d44c2027329833205dd658ec4777e77777bdab1adc9
       download_uri: https://zenodo.org/api/records/15051980/files/pytorch_model.bin/content
   limitations:
     - The base model training corpus contains peptides up to 32 residues and official decoding permits up to 34 steps.
@@ -56,6 +58,14 @@ sampling:
   learned_prompt_tokens: 10
   batch_size: 100
   batches_per_seed: 10
+
+smoke_validation:
+  seed: 20260824
+  repetitions: 2
+  raw_records_per_repetition: 1000
+  ordered_output_sha256: a303c3955b1e2f27a5646eec96865faf4bc4fe79391e2b6d284049d02987aa1b
+  outputs_identical: true
+  valid_unique_yield: 0.838
 
 weight_download_allowlist: [config.json, pytorch_model.bin]
 weight_download_denylist: [Ecoli_regress.pth, Paeruginosa_regress.pth, Saureus_regress.pth]

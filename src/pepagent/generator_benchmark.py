@@ -151,6 +151,15 @@ class ChallengerSamplingSpec(BaseModel):
     batches_per_seed: int = Field(ge=1)
 
 
+class ChallengerSmokeSpec(BaseModel):
+    seed: int
+    repetitions: int = Field(ge=2)
+    raw_records_per_repetition: int = Field(ge=1)
+    ordered_output_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    outputs_identical: bool
+    valid_unique_yield: float = Field(ge=0.0, le=1.0)
+
+
 class GeneratorChallengerManifest(BaseModel):
     """Append-only single-generator challenge against a frozen benchmark."""
 
@@ -174,6 +183,7 @@ class GeneratorChallengerManifest(BaseModel):
     bootstrap_unit: Literal["generator_seed"]
     structure_enabled: bool = False
     sampling: ChallengerSamplingSpec
+    smoke_validation: ChallengerSmokeSpec | None = None
     metrics: list[BenchmarkMetricSpec] = Field(min_length=1)
     weight_download_allowlist: list[str] = Field(min_length=1)
     weight_download_denylist: list[str] = Field(min_length=1)
@@ -216,6 +226,16 @@ class GeneratorChallengerManifest(BaseModel):
             artifact.sha256 is None for artifact in self.generator.weights
         ):
             raise ValueError("ready challenger requires local SHA-256 for every weight")
+        if self.execution_status in {"ready", "completed"}:
+            if self.smoke_validation is None:
+                raise ValueError("ready challenger requires repeated smoke validation")
+            if self.smoke_validation.outputs_identical is not True:
+                raise ValueError("ready challenger requires identical repeated smoke output")
+            if (
+                self.smoke_validation.raw_records_per_repetition
+                != self.raw_proposal_budget_per_seed
+            ):
+                raise ValueError("smoke raw count must equal the formal raw budget")
         metric_names = [item.name for item in self.metrics]
         if len(metric_names) != len(set(metric_names)):
             raise ValueError("challenger metric names must be unique")

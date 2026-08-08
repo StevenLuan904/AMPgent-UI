@@ -34,9 +34,9 @@ def _payload() -> dict:
     return yaml.safe_load(CONFIG_PATH.read_text(encoding="utf-8"))
 
 
-def test_v25_preregistration_is_weights_pending_and_append_only() -> None:
+def test_v25_preregistration_is_ready_and_append_only() -> None:
     manifest = GeneratorChallengerManifest.model_validate(_payload())
-    assert manifest.execution_status == "weights_pending"
+    assert manifest.execution_status == "ready"
     assert manifest.reference_results_immutable is True
     assert manifest.generator.internal_score_filtering_enabled is False
     assert manifest.sampling.temperature is None
@@ -45,6 +45,8 @@ def test_v25_preregistration_is_weights_pending_and_append_only() -> None:
     assert manifest.sampling.decode_steps == 34
     assert manifest.sampling.batch_size == 100
     assert manifest.sampling.batches_per_seed == 10
+    assert manifest.smoke_validation is not None
+    assert manifest.smoke_validation.outputs_identical is True
 
 
 def test_v25_declared_weights_exactly_match_allowlist_and_exclude_regressors() -> None:
@@ -87,7 +89,7 @@ def test_v25_rejects_batch_partition_drift() -> None:
 
 def test_v25_ready_status_requires_downloaded_sha256() -> None:
     payload = deepcopy(_payload())
-    payload["execution_status"] = "ready"
+    payload["generator"]["weights"][0].pop("sha256")
     with pytest.raises(ValueError, match="local SHA-256"):
         GeneratorChallengerManifest.model_validate(payload)
 
@@ -99,7 +101,7 @@ def test_v25_keeps_pepmlm_diagnostic_only() -> None:
         GeneratorChallengerManifest.model_validate(payload)
 
 
-def test_v25_model_manifest_allowlist_matches_benchmark_and_is_not_ready() -> None:
+def test_v25_model_manifest_allowlist_matches_benchmark_and_is_ready() -> None:
     payload = _payload()
     model_manifest = json.loads(MODEL_MANIFEST_PATH.read_text(encoding="utf-8"))
     weights = model_manifest["weights_record"]
@@ -109,13 +111,13 @@ def test_v25_model_manifest_allowlist_matches_benchmark_and_is_not_ready() -> No
     assert [item["path"] for item in weights["denylist"]] == payload[
         "weight_download_denylist"
     ]
-    assert all(item["local_sha256"] is None for item in weights["allowlist"])
-    assert model_manifest["execution_gate"]["status"] == "weights_pending"
+    assert all(item["local_sha256"] is not None for item in weights["allowlist"])
+    assert model_manifest["execution_gate"]["status"] == "ready"
 
 
-def test_v25_environment_is_cpu_frozen_before_installation() -> None:
+def test_v25_environment_is_installed_and_cpu_frozen() -> None:
     environment = json.loads(ENVIRONMENT_PATH.read_text(encoding="utf-8"))
-    assert environment["status"] == "preregistered_not_installed"
+    assert environment["status"] == "installed_verified"
     assert environment["device"]["type"] == "cpu"
     assert environment["required_versions"] == {
         "torch": "1.13.1+cpu",

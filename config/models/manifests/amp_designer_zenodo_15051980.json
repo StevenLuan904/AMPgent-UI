@@ -40,14 +40,14 @@
         "size_bytes": 957,
         "upstream_digest": "md5:9c449482f86c226a13212484b47bf5c6",
         "download_uri": "https://zenodo.org/api/records/15051980/files/config.json/content",
-        "local_sha256": null
+        "local_sha256": "e8f1bed7607065b7a11e5f338a5a5e618947ae78ee0bc0314689cf9801d7d62a"
       },
       {
         "path": "pytorch_model.bin",
         "size_bytes": 340569639,
         "upstream_digest": "md5:898be214aaec6d718ab02dbd8a76b878",
         "download_uri": "https://zenodo.org/api/records/15051980/files/pytorch_model.bin/content",
-        "local_sha256": null
+        "local_sha256": "47944ff42f7ea6a448340d44c2027329833205dd658ec4777e77777bdab1adc9"
       }
     ],
     "denylist": [
@@ -69,11 +69,12 @@
     ]
   },
   "execution_gate": {
-    "status": "weights_pending",
-    "downloaded": false,
+    "status": "ready",
+    "downloaded": true,
     "model_run_started": false,
     "internal_regressors_forbidden": true,
     "require_upstream_digest_before_deserialization": true,
-    "require_local_sha256_before_ready": true
+    "require_local_sha256_before_ready": true,
+    "weights_only_deserialization_verified": true
   }
 }
