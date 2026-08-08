@@ -303,7 +303,9 @@ def submit_sequence_binding_proxy_calibration(manifest_path: Path) -> None:
     if metric_version not in {"v21_pooled", "v22_stratified"}:
         raise typer.BadParameter(f"unsupported metric_version: {metric_version!r}")
     if metric_version == "v22_stratified":
-        execution_status = manifest.get("readiness", {}).get("execution_status")
+        execution_status = manifest.get("execution_notes", {}).get(
+            "execution_status"
+        )
         if execution_status != "ready":
             raise typer.BadParameter(
                 "v22 manifest is not ready for execution: "
