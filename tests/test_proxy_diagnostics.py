@@ -86,3 +86,41 @@ def test_pair_robustness_requires_matching_omission_panels() -> None:
             ],
             [parent, scramble],
         )
+
+
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf")])
+def test_pair_robustness_rejects_non_finite_primary_scores(value: float) -> None:
+    parent = _result("parent", value, [0.8, 0.6])
+    scramble = _result("scramble", 0.4, [0.5, 0.3])
+
+    with pytest.raises(ValueError, match="scores must be finite"):
+        summarize_composition_pair_panel_robustness(
+            [
+                {"sequence": "AACC", "sequence_sha256": "parent"},
+                {
+                    "sequence": "CACA",
+                    "sequence_sha256": "scramble",
+                    "composition_reference_sequence_sha256": "parent",
+                },
+            ],
+            [parent, scramble],
+        )
+
+
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf")])
+def test_pair_robustness_rejects_non_finite_loo_scores(value: float) -> None:
+    parent = _result("parent", 0.7, [0.8, value])
+    scramble = _result("scramble", 0.4, [0.5, 0.3])
+
+    with pytest.raises(ValueError, match="scores must be finite"):
+        summarize_composition_pair_panel_robustness(
+            [
+                {"sequence": "AACC", "sequence_sha256": "parent"},
+                {
+                    "sequence": "CACA",
+                    "sequence_sha256": "scramble",
+                    "composition_reference_sequence_sha256": "parent",
+                },
+            ],
+            [parent, scramble],
+        )

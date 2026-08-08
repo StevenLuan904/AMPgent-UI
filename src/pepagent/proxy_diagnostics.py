@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from typing import Any
 
 
@@ -52,11 +53,13 @@ def summarize_composition_pair_panel_robustness(
             raise ValueError("paired results must use the same omitted-control panels")
 
         loo_gaps = [
-            float(parent_loo[key]["target_specific_delta_nll"])
-            - float(scramble_loo[key]["target_specific_delta_nll"])
+            _finite_score(parent_loo[key]["target_specific_delta_nll"])
+            - _finite_score(scramble_loo[key]["target_specific_delta_nll"])
             for key in parent_loo
         ]
-        primary_gap = float(parent_result["target_specific_delta_nll"]) - float(
+        primary_gap = _finite_score(
+            parent_result["target_specific_delta_nll"]
+        ) - _finite_score(
             scramble_result["target_specific_delta_nll"]
         )
         pairs.append(
@@ -108,3 +111,10 @@ def _index_leave_one_control_out(
     if not indexed:
         raise ValueError("at least one leave-one-control-out panel is required")
     return indexed
+
+
+def _finite_score(value: Any) -> float:
+    score = float(value)
+    if not math.isfinite(score):
+        raise ValueError("paired robustness scores must be finite")
+    return score
