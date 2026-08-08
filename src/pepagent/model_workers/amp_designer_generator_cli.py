@@ -90,6 +90,18 @@ def _build_model(config_path: Path, weights_path: Path, device: str) -> Any:
         raise RuntimeError("PyTorch runtime must support weights_only=True") from exc
     if not isinstance(state, dict):
         raise ValueError("AMP-Designer weight payload must be a state dictionary")
+    legacy_buffers: set[str] = set()
+    for layer_index, block in enumerate(model.transformer.h):
+        for buffer_name in ("bias", "masked_bias"):
+            key = f"transformer.h.{layer_index}.attn.{buffer_name}"
+            if key not in state:
+                raise ValueError(f"AMP-Designer state is missing legacy buffer {key}")
+            current = getattr(block.attn, buffer_name)
+            if not torch.equal(state[key].to(dtype=current.dtype), current.cpu()):
+                raise ValueError(f"AMP-Designer legacy buffer does not match config: {key}")
+            legacy_buffers.add(key)
+    for key in legacy_buffers:
+        del state[key]
     model.load_state_dict(state, strict=True)
     model.to(torch.device(device))
     model.eval()
