@@ -1,0 +1,79 @@
+{
+  "manifest_version": "v25.0.0-preregistered",
+  "retrieved_at": "2026-08-09",
+  "source": {
+    "uri": "https://github.com/jkwang93/AMP-Designer",
+    "revision": "b554b1ac1507040d9d50356e037098e652ce4719",
+    "license": "MIT",
+    "files": [
+      {
+        "path": "LICENSE",
+        "size_bytes": 1065,
+        "sha256": "20da92ca15ebfa1bde9bd53804e1d4fe32001c9bd9827d4286a4d4c377478e0e"
+      },
+      {
+        "path": "AMP_GPT_generator.py",
+        "size_bytes": 6499,
+        "sha256": "98c06d10afd25db6b07aa050679c58d8a945f4d30e1e1c23ecdb5c8f82d4dfe0"
+      },
+      {
+        "path": "soft_prompt_embedding.py",
+        "size_bytes": 2328,
+        "sha256": "6673c6072e49fc01a7556fb9ed136362af0b90fb693f367ee3b096f1e980820f"
+      },
+      {
+        "path": "voc/vocab.txt",
+        "size_bytes": 70,
+        "sha256": "b887319d2f815b62750fbd32e4ecf4c730d6df7963983ca073972af79574fe58"
+      }
+    ]
+  },
+  "weights_record": {
+    "uri": "https://zenodo.org/records/15051980",
+    "api_uri": "https://zenodo.org/api/records/15051980",
+    "doi": "10.5281/zenodo.15051980",
+    "license": "CC-BY-4.0",
+    "record_updated_at": "2025-03-19T14:20:02.593266+00:00",
+    "allowlist": [
+      {
+        "path": "config.json",
+        "size_bytes": 957,
+        "upstream_digest": "md5:9c449482f86c226a13212484b47bf5c6",
+        "download_uri": "https://zenodo.org/api/records/15051980/files/config.json/content",
+        "local_sha256": null
+      },
+      {
+        "path": "pytorch_model.bin",
+        "size_bytes": 340569639,
+        "upstream_digest": "md5:898be214aaec6d718ab02dbd8a76b878",
+        "download_uri": "https://zenodo.org/api/records/15051980/files/pytorch_model.bin/content",
+        "local_sha256": null
+      }
+    ],
+    "denylist": [
+      {
+        "path": "Ecoli_regress.pth",
+        "size_bytes": 341341973,
+        "upstream_digest": "md5:bc693aa0f4401cb4f841a0cd80a3c11b"
+      },
+      {
+        "path": "Paeruginosa_regress.pth",
+        "size_bytes": 341341973,
+        "upstream_digest": "md5:58d26753c006e8cf3808be9bdc8f16c3"
+      },
+      {
+        "path": "Saureus_regress.pth",
+        "size_bytes": 341341973,
+        "upstream_digest": "md5:692b8ba9e77ce1800ae71cf50da94a0e"
+      }
+    ]
+  },
+  "execution_gate": {
+    "status": "weights_pending",
+    "downloaded": false,
+    "model_run_started": false,
+    "internal_regressors_forbidden": true,
+    "require_upstream_digest_before_deserialization": true,
+    "require_local_sha256_before_ready": true
+  }
+}

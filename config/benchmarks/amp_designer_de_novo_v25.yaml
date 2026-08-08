@@ -1,0 +1,96 @@
+benchmark_id: amp_designer_de_novo_v25
+version: v25.0.0
+execution_status: weights_pending
+track: de_novo_challenger
+reference_benchmark_id: amp_generator_de_novo_v23
+reference_benchmark_revision: 0df27e2d5d97de55a2afd3a9d9357a0160855bd8
+reference_results_immutable: true
+
+generator:
+  generator_id: amp_designer
+  display_name: AMP-Designer
+  paper_title: De novo design of antimicrobial peptides with a generative language model
+  venue: Science Advances
+  publication_year: 2026
+  paper_uri: https://doi.org/10.1126/sciadv.ads8932
+  source_uri: https://github.com/jkwang93/AMP-Designer
+  source_revision: b554b1ac1507040d9d50356e037098e652ce4719
+  license: MIT
+  weights_record_uri: https://zenodo.org/records/15051980
+  weights_record_doi: 10.5281/zenodo.15051980
+  weights_record_license: CC-BY-4.0
+  generation_mode: de_novo
+  internal_score_filtering_enabled: false
+  weights:
+    - path: config.json
+      size_bytes: 957
+      upstream_digest: md5:9c449482f86c226a13212484b47bf5c6
+      download_uri: https://zenodo.org/api/records/15051980/files/config.json/content
+    - path: pytorch_model.bin
+      size_bytes: 340569639
+      upstream_digest: md5:898be214aaec6d718ab02dbd8a76b878
+      download_uri: https://zenodo.org/api/records/15051980/files/pytorch_model.bin/content
+  limitations:
+    - The base model training corpus contains peptides up to 32 residues and official decoding permits up to 34 steps.
+    - Outputs outside the fixed 10-25 residue window count against raw yield and are never truncated or replaced.
+    - The paper's internal species-specific MIC regressors and reinforcement-learning scores are excluded from generation and evaluation.
+    - The upstream repository does not provide a dependency lockfile, so an isolated environment must be frozen before execution.
+
+seeds: [20260825, 20260826, 20260827]
+raw_proposal_budget_per_seed: 1000
+selected_valid_unique_per_seed: 100
+minimum_length: 10
+maximum_length: 25
+canonical_amino_acids: ACDEFGHIKLMNPQRSTVWY
+selection_rule: raw_order_first_k_valid_unique
+missing_policy: retain_shortfall_no_refill
+ranking_method: pareto_then_lexicographic
+bootstrap_unit: generator_seed
+structure_enabled: false
+
+sampling:
+  top_k: 10
+  top_p: 1.0
+  temperature: null
+  decode_steps: 34
+  learned_prompt_tokens: 10
+  batch_size: 100
+  batches_per_seed: 10
+
+weight_download_allowlist: [config.json, pytorch_model.bin]
+weight_download_denylist: [Ecoli_regress.pth, Paeruginosa_regress.pth, Saureus_regress.pth]
+
+metrics:
+  - {name: valid_unique_yield, role: qualification, direction: maximize, evidence_class: descriptor}
+  - {name: net_charge_ph7_4, role: profile, direction: none, evidence_class: descriptor}
+  - {name: hydrophobic_ratio_modlamp, role: profile, direction: none, evidence_class: descriptor}
+  - {name: hydrophobic_moment_eisenberg, role: profile, direction: none, evidence_class: descriptor}
+  - {name: macrel_amp_probability, role: profile, direction: maximize, evidence_class: soft}
+  - {name: llamp_predicted_mic_um, role: profile, direction: minimize, evidence_class: soft}
+  - {name: amp_read_predicted_mic_um, role: profile, direction: minimize, evidence_class: soft}
+  - {name: toxinpred3_ml_score, role: safety, direction: minimize, evidence_class: soft}
+  - {name: macrel_hemolysis_probability, role: safety, direction: minimize, evidence_class: soft}
+  - {name: target_specific_delta_nll, role: diagnostic, direction: maximize, evidence_class: low_confidence_proxy}
+
+scientific_contract:
+  raw_outputs_frozen_before_metrics: true
+  no_score_based_refill: true
+  generator_internal_scores_not_used_for_selection: true
+  internal_regressors_not_downloaded_or_loaded: true
+  pepmlm_not_used_to_select_winner: true
+  no_binding_or_affinity_claim: true
+  no_reference_benchmark_rewrite: true
+
+promotion_rule_notes:
+  - Compare append-only against frozen v23 results; never rewrite the v23 scorecard.
+  - Use generator-seed medians and Pareto dominance without a weighted composite score.
+  - Promote only if AMP-Designer is not dominated by all qualified v23 generators across essential endpoints.
+  - Crossed or near-equal profiles remain unresolved rather than receiving a forced rank.
+
+fail_closed:
+  - Stop on source revision, Zenodo record, file size, upstream digest, or post-download SHA-256 mismatch.
+  - Stop if the isolated dependency lock, RNG injection, sampling settings, or fixed batch partition differs.
+  - Stop if a repeated smoke seed does not produce the same ordered raw-output SHA-256.
+  - Stop if any seed does not produce exactly 1000 ordered raw records or a generation exception is swallowed.
+  - Stop if any internal regressor or any internal or external score enters generation, filtering, refill, or ordering.
+  - Stop if raw cohorts are not frozen before metrics or any essential metric is missing, version-drifted, or non-finite.

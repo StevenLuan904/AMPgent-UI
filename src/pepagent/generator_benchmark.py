@@ -13,6 +13,7 @@ class GeneratorWeightArtifact(BaseModel):
     size_bytes: int = Field(ge=1)
     sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     upstream_digest: str | None = Field(default=None, min_length=8)
+    download_uri: str | None = Field(default=None, pattern=r"^https://")
 
     @model_validator(mode="after")
     def require_a_digest(self) -> GeneratorWeightArtifact:
@@ -31,6 +32,9 @@ class GeneratorReleaseSpec(BaseModel):
     source_uri: str = Field(pattern=r"^https://")
     source_revision: str = Field(pattern=r"^[0-9a-f]{40}$")
     license: str = Field(min_length=1)
+    weights_record_uri: str | None = Field(default=None, pattern=r"^https://")
+    weights_record_doi: str | None = Field(default=None, min_length=1)
+    weights_record_license: str | None = Field(default=None, min_length=1)
     generation_mode: Literal["de_novo", "parent_optimization", "enumeration"]
     weights: list[GeneratorWeightArtifact] = Field(min_length=1)
     internal_score_filtering_enabled: bool = False
@@ -131,6 +135,108 @@ class GeneratorBenchmarkManifest(BaseModel):
             "generator_internal_scores_not_used_for_selection",
             "pepmlm_not_used_to_select_winner",
             "no_binding_or_affinity_claim",
+        }
+        if any(self.scientific_contract.get(flag) is not True for flag in required_flags):
+            raise ValueError("scientific_contract is missing a required true flag")
+        return self
+
+
+class ChallengerSamplingSpec(BaseModel):
+    top_k: int = Field(ge=1)
+    top_p: float = Field(gt=0.0, le=1.0)
+    temperature: None = None
+    decode_steps: int = Field(ge=1)
+    learned_prompt_tokens: int = Field(ge=1)
+    batch_size: int = Field(ge=1)
+    batches_per_seed: int = Field(ge=1)
+
+
+class GeneratorChallengerManifest(BaseModel):
+    """Append-only single-generator challenge against a frozen benchmark."""
+
+    benchmark_id: str = Field(pattern=r"^[a-z0-9][a-z0-9_-]+$")
+    version: str = Field(min_length=1)
+    execution_status: Literal["weights_pending", "ready", "completed"]
+    track: Literal["de_novo_challenger"]
+    reference_benchmark_id: str = Field(min_length=1)
+    reference_benchmark_revision: str = Field(pattern=r"^[0-9a-f]{40}$")
+    reference_results_immutable: bool
+    generator: GeneratorReleaseSpec
+    seeds: list[int] = Field(min_length=3)
+    raw_proposal_budget_per_seed: int = Field(ge=100)
+    selected_valid_unique_per_seed: int = Field(ge=10)
+    minimum_length: int = Field(ge=5)
+    maximum_length: int = Field(le=100)
+    canonical_amino_acids: str = CANONICAL_AMINO_ACIDS
+    selection_rule: Literal["raw_order_first_k_valid_unique"]
+    missing_policy: Literal["retain_shortfall_no_refill"]
+    ranking_method: Literal["pareto_then_lexicographic"]
+    bootstrap_unit: Literal["generator_seed"]
+    structure_enabled: bool = False
+    sampling: ChallengerSamplingSpec
+    metrics: list[BenchmarkMetricSpec] = Field(min_length=1)
+    weight_download_allowlist: list[str] = Field(min_length=1)
+    weight_download_denylist: list[str] = Field(min_length=1)
+    scientific_contract: dict[str, bool]
+
+    @model_validator(mode="after")
+    def validate_challenger_contract(self) -> GeneratorChallengerManifest:
+        if self.reference_results_immutable is not True:
+            raise ValueError("challenger cannot rewrite its reference benchmark")
+        if len(self.seeds) != len(set(self.seeds)):
+            raise ValueError("challenger seeds must be unique")
+        if self.minimum_length > self.maximum_length:
+            raise ValueError("minimum_length cannot exceed maximum_length")
+        if self.canonical_amino_acids != CANONICAL_AMINO_ACIDS:
+            raise ValueError("challenger alphabet must be the 20 canonical amino acids")
+        if self.selected_valid_unique_per_seed > self.raw_proposal_budget_per_seed:
+            raise ValueError("selected cohort cannot exceed the raw proposal budget")
+        if self.structure_enabled:
+            raise ValueError("first-round challenger keeps structure disabled")
+        if self.generator.generation_mode != "de_novo":
+            raise ValueError("de_novo challenger requires a de_novo generator")
+        if self.sampling.batch_size * self.sampling.batches_per_seed != (
+            self.raw_proposal_budget_per_seed
+        ):
+            raise ValueError("fixed batch partition must equal the raw proposal budget")
+        allowlist = set(self.weight_download_allowlist)
+        denylist = set(self.weight_download_denylist)
+        if allowlist & denylist:
+            raise ValueError("weight allowlist and denylist must be disjoint")
+        if any(
+            marker in path.lower()
+            for path in allowlist
+            for marker in ("regress", "reward", "mic_predict")
+        ):
+            raise ValueError("internal scoring artifacts are forbidden in the allowlist")
+        declared = {item.path for item in self.generator.weights}
+        if declared != allowlist:
+            raise ValueError("declared generator weights must exactly match the allowlist")
+        if self.execution_status in {"ready", "completed"} and any(
+            artifact.sha256 is None for artifact in self.generator.weights
+        ):
+            raise ValueError("ready challenger requires local SHA-256 for every weight")
+        metric_names = [item.name for item in self.metrics]
+        if len(metric_names) != len(set(metric_names)):
+            raise ValueError("challenger metric names must be unique")
+        required_metrics = {
+            "valid_unique_yield",
+            "macrel_amp_probability",
+            "llamp_predicted_mic_um",
+            "amp_read_predicted_mic_um",
+            "toxinpred3_ml_score",
+            "macrel_hemolysis_probability",
+        }
+        if not required_metrics.issubset(metric_names):
+            raise ValueError("challenger is missing an essential external metric")
+        required_flags = {
+            "raw_outputs_frozen_before_metrics",
+            "no_score_based_refill",
+            "generator_internal_scores_not_used_for_selection",
+            "internal_regressors_not_downloaded_or_loaded",
+            "pepmlm_not_used_to_select_winner",
+            "no_binding_or_affinity_claim",
+            "no_reference_benchmark_rewrite",
         }
         if any(self.scientific_contract.get(flag) is not True for flag in required_flags):
             raise ValueError("scientific_contract is missing a required true flag")
