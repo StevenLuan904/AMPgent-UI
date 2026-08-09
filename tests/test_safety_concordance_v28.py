@@ -11,15 +11,20 @@ from pepagent import safety_concordance_v28 as audit
 ROOT = Path(__file__).parents[1]
 
 
-def test_v28_is_preregistered_and_not_authorized() -> None:
+def test_v28_is_completed_and_not_authorized_to_rerun() -> None:
     manifest = yaml.safe_load(
         (ROOT / "config/benchmarks/amp_designer_safety_concordance_v28.yaml").read_text(
             encoding="utf-8"
         )
     )
-    assert manifest["execution_status"] == "preregistered_not_run"
+    assert manifest["execution_status"] == "completed"
     assert manifest["selection_ranking_and_promotion_forbidden"] is True
     assert manifest["output"]["candidate_level_rows_forbidden"] is True
+    assert manifest["output"]["sha256"] == (
+        "f0f1b87c9845a6896a7443ad4179a766c88e2bb978edf871fdd4f4ebedca4343"
+    )
+    assert manifest["completed_results"]["full_joined_candidate_count"] == 300
+    assert manifest["completed_results"]["rerun_forbidden"] is True
     with pytest.raises(RuntimeError, match="not authorized"):
         audit.main()
 

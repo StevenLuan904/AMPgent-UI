@@ -1,6 +1,6 @@
 audit_id: amp_designer_safety_concordance_v28
 version: v28.0.0-preregistered
-execution_status: audit_authorized
+execution_status: completed
 audit_type: frozen_full_cohort_soft_model_concordance
 selection_ranking_and_promotion_forbidden: true
 
@@ -65,6 +65,44 @@ output:
   path: reports/amp_designer_safety_concordance_v28_20260809.csv
   expected_comparison_rows: 9
   candidate_level_rows_forbidden: true
+  sha256: f0f1b87c9845a6896a7443ad4179a766c88e2bb978edf871fdd4f4ebedca4343
+
+completed_results:
+  row_count: 9
+  full_joined_candidate_count: 300
+  macrel_vs_hemopi2_rf:
+    both_risk: 139
+    macrel_only: 143
+    hemopi2_only: 3
+    neither: 15
+    agreement_rate: 0.513333333333
+    continuous_spearman_rho: 0.134277889722
+  macrel_vs_hemopi2_hc50:
+    both_risk: 137
+    macrel_only: 145
+    hemopi2_only: 8
+    neither: 10
+    agreement_rate: 0.49
+    continuous_spearman_rho: 0.095206451253
+  hemopi2_rf_vs_hc50:
+    both_risk: 129
+    rf_only: 13
+    hc50_only: 16
+    neither: 142
+    agreement_rate: 0.903333333333
+  toxinpred3_cross_endpoint:
+    vs_hemopi2_rf_agreement_rate: 0.393333333333
+    vs_hemopi2_hc50_agreement_rate: 0.37
+    score_vs_rf_spearman_rho: -0.232440705157
+    score_vs_negative_hc50_spearman_rho: -0.24170246043
+    interpretation: cross-endpoint descriptive co-risk only; not hemolysis agreement
+  scientific_interpretation: >-
+    Macrel and HemoPI2 do not provide strong convergent hemolysis evidence for
+    the frozen AMP-Designer cohort: binary agreement is near one half and
+    continuous rank correlations are weak. The two HemoPI2 heads agree more
+    often, but they belong to the same validator family. No result supports
+    candidate selection, experimental safety, or a generator-winner claim.
+  rerun_forbidden: true
 
 scientific_scope:
   allowed_claim: descriptive agreement or disagreement among frozen soft predictors
