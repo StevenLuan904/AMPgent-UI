@@ -1,6 +1,6 @@
 validation_id: amp_designer_safety_validation_v26
 version: v26.0.2-safe-extraction-complete
-execution_status: archive_pending
+execution_status: smoke_failed_nondeterministic
 track: frozen_cohort_external_safety_validation
 reference_benchmark_id: amp_designer_de_novo_v25
 reference_code_revision: 7ed12e959cd1c4fdb14399f7539eb025a7fc8c4c
@@ -96,7 +96,7 @@ runtime_environment:
   python_version: 3.11.10
   sklearn_version: 1.3.1
   install_status: installed_verified
-  model_deserialization_attempted: false
+  model_deserialization_attempted: true
   formal_cohort_accessed: false
 
 implemented_feature_blocks:
@@ -107,6 +107,7 @@ implemented_feature_blocks:
     model_offset_end_exclusive: 422
     implemented_without_upstream_execution: true
     formal_cohort_accessed: false
+
   - block_id: atc_btc_pcp_rri_pri_ddr
     feature_count: 104
     ordered_feature_names_sha256: 3b4067038d952bc7831fb866c4fc31d6c5d4639150eab2b98501f744ab253c96
@@ -161,6 +162,17 @@ implemented_feature_blocks:
     model_offset_end_exclusive: 1167
     implemented_without_upstream_execution: true
     formal_cohort_accessed: false
+
+smoke_audit:
+  status: failed_nondeterministic
+  attempt_count: 2
+  first_output_sha256: 425f983dd9a37ab9fca601a6d1ee7e1999a005c60220ea6ed2126a47d966994c
+  second_output_sha256: f8306d5ddcd7b1f229688070fcf405680b482020f643d6630dd5b2817003a483
+  canonical_bytes_equal: false
+  classification_outputs_equal: true
+  max_abs_hc50_delta: 8.881784197001252e-16
+  formal_cohort_accessed: false
+  promotion_forbidden: true
 
 training_overlap_audit:
   - dataset_name: cross_val_dataset.csv

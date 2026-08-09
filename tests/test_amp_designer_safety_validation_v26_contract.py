@@ -21,9 +21,9 @@ def _payload() -> dict:
     return yaml.safe_load(CONFIG_PATH.read_text(encoding="utf-8"))
 
 
-def test_v26_is_preregistered_but_not_ready() -> None:
+def test_v26_is_terminal_after_nondeterministic_smoke() -> None:
     manifest = SafetyValidationManifest.model_validate(_payload())
-    assert manifest.execution_status == "archive_pending"
+    assert manifest.execution_status == "smoke_failed_nondeterministic"
     assert manifest.input_cohort.row_count == 300
     assert manifest.input_cohort.selection_forbidden is True
     assert manifest.archive.local_sha256 == (
@@ -128,16 +128,32 @@ def test_v26_runtime_is_hash_locked_without_model_access() -> None:
         runtime.wheelhouse_inventory_sha256
     )
     assert environment["required_versions"]["scikit-learn"] == "1.3.1"
-    assert environment["verification"]["model_deserialization_attempted"] is False
+    assert environment["verification"]["model_deserialization_attempted"] is True
     assert environment["verification"]["formal_cohort_accessed"] is False
 
 
-def test_v26_rejects_runtime_that_accessed_model_or_formal_cohort() -> None:
-    for field in ("model_deserialization_attempted", "formal_cohort_accessed"):
-        payload = deepcopy(_payload())
-        payload["runtime_environment"][field] = True
-        with pytest.raises(ValueError):
-            SafetyValidationManifest.model_validate(payload)
+def test_v26_rejects_runtime_that_accessed_formal_cohort() -> None:
+    payload = deepcopy(_payload())
+    payload["runtime_environment"]["formal_cohort_accessed"] = True
+    with pytest.raises(ValueError):
+        SafetyValidationManifest.model_validate(payload)
+
+
+def test_v26_failed_smoke_is_fail_closed() -> None:
+    manifest = SafetyValidationManifest.model_validate(_payload())
+    assert manifest.smoke_audit is not None
+    assert manifest.smoke_audit.canonical_bytes_equal is False
+    assert manifest.smoke_audit.classification_outputs_equal is True
+    assert manifest.smoke_audit.max_abs_hc50_delta == pytest.approx(
+        8.881784197001252e-16
+    )
+    assert manifest.smoke_audit.formal_cohort_accessed is False
+    assert manifest.smoke_audit.promotion_forbidden is True
+
+    payload = deepcopy(_payload())
+    payload["smoke_audit"]["promotion_forbidden"] = False
+    with pytest.raises(ValueError):
+        SafetyValidationManifest.model_validate(payload)
 
 
 def test_v26_records_only_partial_feature_implementation() -> None:

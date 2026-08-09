@@ -6,12 +6,14 @@ import io
 import json
 import math
 import pickle
+import warnings
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, BinaryIO
 
 import numpy as np
+import pandas as pd
 
 from pepagent.archive_audit import scan_pickle_opcodes
 
@@ -52,6 +54,16 @@ HEMOPI2_PICKLE_GLOBALS = frozenset(
         "sklearn.tree._classes.DecisionTreeRegressor",
         "sklearn.tree._tree.Tree",
     }
+)
+HEMOPI2_SMOKE_SEQUENCES = (
+    "ACDEFGHIKLMNPQRSTVWY",
+    "KKLLWWRRAACCDD",
+)
+HEMOPI2_CLASSIFIER_SHA256 = (
+    "63973510af1b883c505e0c475297b4f9edf07b5c7bcd91546ffcb4fdec62dac5"
+)
+HEMOPI2_REGRESSOR_SHA256 = (
+    "72b8afc63ed7803955aae970ab93627bb710fab17db027bf6110a0237abb6955"
 )
 
 
@@ -672,6 +684,64 @@ def assemble_feature_matrices(
     return {"classification": classifier, "regression": regression}
 
 
+def _require_estimator(model: Any, key: str) -> Any:
+    if not callable(getattr(model, "predict", None)):
+        raise TypeError(f"{key} has no callable predict method")
+    return model
+
+
+def run_fixed_smoke_once(model_root: Path, data_root: Path) -> bytes:
+    sequences = list(HEMOPI2_SMOKE_SEQUENCES)
+    matrices = assemble_feature_matrices(sequences, data_root)
+    classifier_object = load_restricted_sklearn_pickle(
+        model_root / "hemopi2_ml_clf.sav",
+        expected_sha256=HEMOPI2_CLASSIFIER_SHA256,
+    )
+    regressor_object = load_restricted_sklearn_pickle(
+        model_root / "HemoPI2_reg.sav",
+        expected_sha256=HEMOPI2_REGRESSOR_SHA256,
+    )
+    classifier = _require_estimator(classifier_object, "random_forest_model_1")
+    regressor = _require_estimator(regressor_object, "random_forest_hc50")
+    if not callable(getattr(classifier, "predict_proba", None)):
+        raise TypeError("random_forest_model_1 has no callable predict_proba method")
+    classifier_values, classifier_names = matrices["classification"]
+    regression_values, regression_names = matrices["regression"]
+    classifier_frame = pd.DataFrame(classifier_values, columns=classifier_names)
+    regression_frame = pd.DataFrame(regression_values, columns=regression_names)
+    with warnings.catch_warnings(record=True) as captured:
+        warnings.simplefilter("always")
+        probabilities = np.asarray(classifier.predict_proba(classifier_frame))
+        labels = np.asarray(classifier.predict(classifier_frame))
+        hc50 = np.asarray(regressor.predict(regression_frame))
+    if captured:
+        messages = "; ".join(str(item.message) for item in captured)
+        raise RuntimeError(f"smoke emitted warnings: {messages}")
+    classes = list(getattr(classifier, "classes_", []))
+    if 1 not in classes:
+        raise ValueError("classifier classes do not contain positive class 1")
+    positive_index = classes.index(1)
+    if probabilities.shape != (len(sequences), len(classes)):
+        raise ValueError("classifier probability shape drifted")
+    if labels.shape != (len(sequences),) or hc50.shape != (len(sequences),):
+        raise ValueError("smoke prediction shape drifted")
+    if not np.isfinite(probabilities).all() or not np.isfinite(hc50).all():
+        raise ValueError("smoke predictions contain non-finite values")
+    records = [
+        {
+            "sequence": sequence,
+            "sequence_sha256": hashlib.sha256(sequence.encode()).hexdigest(),
+            "hemopi2_classification_score": float(probabilities[index, positive_index]),
+            "hemopi2_classification_label": int(labels[index]),
+            "hemopi2_hc50_um": float(hc50[index]),
+            "validator_version": "HemoPI2-Zenodo-14676712-rf-only-v26",
+            "evidence_scope": "nonformal_determinism_smoke_only",
+        }
+        for index, sequence in enumerate(sequences)
+    ]
+    return canonical_smoke_bytes(records)
+
+
 @dataclass(frozen=True)
 class FeatureMatrixContract:
     feature_count: int
@@ -723,9 +793,9 @@ def load_restricted_sklearn_pickle(
     if hashlib.sha256(payload).hexdigest() != expected_sha256:
         raise ValueError("serialized model SHA-256 mismatch")
     audit = scan_pickle_opcodes(payload)
-    if audit["unresolved_stack_global_count"] != 0:
-        raise ValueError("serialized model contains unresolved STACK_GLOBAL references")
     observed = frozenset(audit["global_references"])
+    if "<unresolved-stack-global>" in observed:
+        raise ValueError("serialized model contains unresolved STACK_GLOBAL references")
     if not observed.issubset(allowed_globals):
         raise ValueError("serialized model references globals outside the allowlist")
     return RestrictedSklearnUnpickler(

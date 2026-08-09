@@ -23,6 +23,7 @@ from pepagent.hemopi2_adapter import (
     load_restricted_sklearn_pickle,
     validate_sequences,
 )
+from pepagent.hemopi2_smoke import main as smoke_main
 
 ROOT = Path(__file__).parents[1]
 HEMOPI2_DATA = (
@@ -161,6 +162,11 @@ def test_complete_feature_matrices_close_both_model_contracts() -> None:
     )
 
 
+def test_failed_v26_status_prevents_smoke_rerun() -> None:
+    with pytest.raises(RuntimeError, match="not authorized"):
+        smoke_main()
+
+
 def test_feature_contract_accepts_only_exact_finite_matrix() -> None:
     names = ["first", "middle", "last"]
     contract = _contract(names)
@@ -187,6 +193,17 @@ def test_model_loader_checks_digest_before_deserialization(tmp_path: Path) -> No
     path.write_bytes(pickle.dumps({"safe": "data"}, protocol=4))
     with pytest.raises(ValueError, match="SHA-256 mismatch"):
         load_restricted_sklearn_pickle(path, expected_sha256="0" * 64)
+
+
+def test_model_loader_accepts_global_free_payload_after_static_audit(tmp_path: Path) -> None:
+    path = tmp_path / "model.sav"
+    payload = pickle.dumps({"safe": "data"}, protocol=4)
+    path.write_bytes(payload)
+    assert load_restricted_sklearn_pickle(
+        path,
+        expected_sha256=hashlib.sha256(payload).hexdigest(),
+        allowed_globals=frozenset(),
+    ) == {"safe": "data"}
 
 
 def test_adapter_allowlist_matches_preregistered_contract() -> None:

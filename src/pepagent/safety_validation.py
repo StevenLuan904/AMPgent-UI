@@ -65,7 +65,7 @@ class RuntimeEnvironmentSpec(BaseModel):
     python_version: Literal["3.11.10"]
     sklearn_version: Literal["1.3.1"]
     install_status: Literal["installed_verified"]
-    model_deserialization_attempted: Literal[False]
+    model_deserialization_attempted: bool
     formal_cohort_accessed: Literal[False]
 
 
@@ -168,10 +168,24 @@ class NarrowAdapterContract(BaseModel):
         return self
 
 
+class SmokeAuditSpec(BaseModel):
+    status: Literal["failed_nondeterministic"]
+    attempt_count: Literal[2]
+    first_output_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    second_output_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    canonical_bytes_equal: Literal[False]
+    classification_outputs_equal: Literal[True]
+    max_abs_hc50_delta: float = Field(gt=0)
+    formal_cohort_accessed: Literal[False]
+    promotion_forbidden: Literal[True]
+
+
 class SafetyValidationManifest(BaseModel):
     validation_id: str = Field(pattern=r"^[a-z0-9][a-z0-9_-]+$")
     version: str = Field(min_length=1)
-    execution_status: Literal["archive_pending", "ready", "completed"]
+    execution_status: Literal[
+        "archive_pending", "smoke_failed_nondeterministic", "ready", "completed"
+    ]
     track: Literal["frozen_cohort_external_safety_validation"]
     reference_benchmark_id: str = Field(min_length=1)
     reference_code_revision: str = Field(pattern=r"^[0-9a-f]{40}$")
@@ -186,6 +200,7 @@ class SafetyValidationManifest(BaseModel):
     implemented_feature_blocks: list[ImplementedFeatureBlockSpec] = Field(
         default_factory=list
     )
+    smoke_audit: SmokeAuditSpec | None = None
     training_overlap_audit: list[TrainingOverlapSpec] = Field(min_length=1)
     expected_output_columns: list[str] = Field(min_length=1)
     expected_output_rows: int = Field(ge=1)
@@ -219,6 +234,11 @@ class SafetyValidationManifest(BaseModel):
             or self.archive.extracted_inventory_sha256 is None
         ):
             raise ValueError("ready validation requires archive and inventory SHA-256")
+        if self.execution_status == "smoke_failed_nondeterministic":
+            if self.smoke_audit is None or self.smoke_audit.promotion_forbidden is not True:
+                raise ValueError("failed smoke must be recorded and forbid promotion")
+            if self.runtime_environment.model_deserialization_attempted is not True:
+                raise ValueError("failed smoke requires a recorded model load attempt")
         required_flags = {
             "frozen_full_cohort_no_filtering",
             "validator_not_used_for_generation",
