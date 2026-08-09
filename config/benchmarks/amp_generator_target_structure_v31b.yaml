@@ -1,0 +1,102 @@
+benchmark_id: amp_generator_target_structure_v31b
+version: v31b.0.0
+execution_status: preregistered_selection_pending
+phase: multi_seed_structure_confirmation
+target_accession: P0A9G6
+
+phase_a_inputs:
+  run_id: 46796d6f-2c94-49fa-82e0-2d7716423b10
+  frozen_cohort_path: ../../var/generator-structure/v31/fast_screen_cohort.csv
+  frozen_cohort_sha256: 6aff2088b09dc57ff1981fec176b4c02f51b5b0ead5819b8332ac589f81db746
+  candidate_report_path: ../../reports/acea_v31_generator_structure_candidates_20260810.csv
+  candidate_report_sha256: 138fbfdc6cfe10d7fbb68a0165887a2a53924153757db0ce77147285ad09b583
+  expected_candidate_count: 90
+
+confirmation_cohort:
+  generators: [hydramp, ampgan_v2, amp_designer]
+  selected_per_generator: 6
+  expected_total: 18
+  sequence_uniqueness_required: true
+  preserve_phase_a_candidate_identity: true
+
+selection:
+  method: generator_stratified_pareto_then_maximin_sequence_distance
+  metric_directions:
+    boltz2_pair_iptm: maximize
+    pocket_coverage_fraction: maximize
+    interface_clash_count: minimize
+    rosetta_dg_separated_reu: minimize
+  eligibility:
+    required_metrics_finite: true
+    pocket_contact_count_minimum: 1
+    interface_clash_count_strictly_less_than: 25
+  pareto_fronts:
+    computed_separately_per_generator: true
+    exact_numeric_values_used: true
+    dominance_requires_no_worse_all_and_strictly_better_one: true
+    consume_fronts_in_order_until_quota_reachable: true
+  diversity:
+    method: normalized_levenshtein_maximin
+    first_item: minimum_sequence_sha256_in_earliest_available_front
+    subsequent_priority:
+      - earliest_pareto_front
+      - maximum_minimum_distance_to_selected
+      - minimum_sequence_sha256
+  forbidden_selection_inputs:
+    - PepMLM_delta_nll
+    - generic_AMP_or_MIC_soft_scores
+    - safety_or_toxicity_soft_scores
+    - weighted_composite_score
+  fail_closed_if_generator_quota_unavailable: true
+
+confirmation_protocol:
+  target_spec_path: ../experiments/acea_generator_structure_fast_screen_v31.yaml
+  boltz_method: boltz2
+  independent_boltz_seeds: [20260911, 20260912, 20260913]
+  diffusion_samples_per_seed: 1
+  boltz_recycling_steps: 3
+  boltz_sampling_steps: 200
+  boltz_force_pocket: true
+  use_msa_server: false
+  rosetta_score_function: ref2015
+  rosetta_decoys_per_boltz_pose: 16
+  rosetta_parallel_decoys: 8
+  expected_structures_per_candidate: 3
+  expected_rosetta_decoys_per_candidate: 48
+
+analysis:
+  primary_views:
+    - cross_seed_pair_iptm_distribution
+    - cross_seed_pocket_coverage_and_contacts
+    - cross_seed_clash_count
+    - representative_rosetta_dg_distribution_same_protocol_reu
+    - minimum_rosetta_dg_distribution_same_protocol_reu
+    - pose_consistency_across_boltz_seeds
+  generator_comparison:
+    report_seed_level_and_candidate_level_effects: true
+    report_direction_consistency: true
+    report_median_and_iqr: true
+    weighted_total_score_forbidden: true
+    forced_single_winner_forbidden: true
+
+claim_boundary:
+  rosetta_reu_same_protocol_relative_only: true
+  conditional_on_predicted_pose: true
+  no_binding_claim: true
+  no_affinity_claim: true
+  no_experimental_claim: true
+  pepmlm_replacement_decision_requires_confirmation_completion: true
+
+execution:
+  formal_run_limit: 1
+  execution_authorized: false
+  selection_must_be_frozen_and_committed_before_run: true
+  rerun_forbidden_after_formal_submission: true
+  access_192_168_99_32_forbidden: true
+
+# Phase A showed a non-dominated trade-off: AMPGAN v2 had the most favorable
+# median representative Rosetta dG, HydrAMP had the strongest median pocket
+# coverage and lowest peptide backbone movement, and AMP-Designer had the
+# highest median pair-ipTM. Confirmation therefore preserves all three arms and
+# tests stability across independent structure seeds rather than declaring a
+# Phase A winner.

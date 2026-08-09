@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import math
+from pathlib import Path
 
 import pytest
+import yaml
 
 from pepagent.generator_structure_report import (
     REQUIRED_METRICS,
@@ -83,3 +85,21 @@ def test_candidate_export_rejects_nonfinite_value() -> None:
     evidence["evaluations"][0]["numeric_value"] = math.nan  # type: ignore[index]
     with pytest.raises(ValueError, match="non-finite"):
         build_candidate_rows(cohort, evidence)
+
+
+def test_v31b_preregistration_preserves_confirmation_boundaries() -> None:
+    path = (
+        Path(__file__).parents[1]
+        / "config"
+        / "benchmarks"
+        / "amp_generator_target_structure_v31b.yaml"
+    )
+    payload = yaml.safe_load(path.read_text(encoding="utf-8"))
+    assert payload["execution_status"] == "preregistered_selection_pending"
+    assert payload["execution"]["execution_authorized"] is False
+    assert payload["confirmation_cohort"]["expected_total"] == 18
+    assert payload["confirmation_protocol"]["expected_structures_per_candidate"] == 3
+    assert payload["confirmation_protocol"]["expected_rosetta_decoys_per_candidate"] == 48
+    assert payload["analysis"]["generator_comparison"]["weighted_total_score_forbidden"]
+    assert payload["claim_boundary"]["no_binding_claim"]
+    assert "PepMLM_delta_nll" in payload["selection"]["forbidden_selection_inputs"]
