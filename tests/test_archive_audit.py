@@ -10,6 +10,7 @@ import pytest
 from pepagent.archive_audit import (
     audit_zip_archive,
     extract_allowlisted_files,
+    extract_sklearn_feature_contract,
     scan_pickle_opcodes,
 )
 
@@ -101,6 +102,22 @@ def test_archive_audit_rejects_pickle_global_outside_allowlist(tmp_path: Path) -
 
 class PayloadForGlobalAudit:
     pass
+
+
+def test_static_sklearn_feature_contract_extraction() -> None:
+    payload = pickle.dumps(
+        {
+            "feature_names_in_": ["first", "last"],
+            "n_features_in_": 2,
+            "_sklearn_version": "1.3.1",
+        },
+        protocol=4,
+    )
+    contract = extract_sklearn_feature_contract(payload)
+    assert contract["sklearn_version"] == "1.3.1"
+    assert contract["feature_count"] == 2
+    assert contract["first_feature"] == "first"
+    assert contract["last_feature"] == "last"
 
 
 def test_allowlisted_extraction_is_atomic_and_omits_unlisted_files(tmp_path: Path) -> None:

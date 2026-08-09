@@ -106,6 +106,9 @@ def test_v26_extraction_allowlist_excludes_upstream_risky_surfaces() -> None:
     assert not any(path.endswith("hemopi2_classification.py") for path in paths)
     assert not any(path.endswith("hemopi2_regression.py") for path in paths)
     assert "hemopi2/model/data/hemopi2_reg.sav" not in paths
+    assert manifest.adapter_contract.sklearn_version == "1.3.1"
+    assert manifest.adapter_contract.classification_feature_contract.feature_count == 1190
+    assert manifest.adapter_contract.regression_feature_contract.feature_count == 1167
 
 
 def test_v26_rejects_forbidden_extraction_surface() -> None:

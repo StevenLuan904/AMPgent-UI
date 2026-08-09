@@ -92,6 +92,80 @@ def scan_pickle_opcodes(payload: bytes) -> dict[str, Any]:
     }
 
 
+def extract_sklearn_feature_contract(payload: bytes) -> dict[str, Any]:
+    """Recover version and ordered feature-name metadata without unpickling."""
+
+    operations = list(pickletools.genops(payload))
+    feature_anchor = next(
+        (
+            index
+            for index, (_op, value, _pos) in enumerate(operations)
+            if value == "feature_names_in_"
+        ),
+        None,
+    )
+    if feature_anchor is None:
+        raise ValueError("pickle has no feature_names_in_ metadata")
+    count_anchor = next(
+        (
+            index
+            for index, (_op, value, _pos) in enumerate(
+                operations[feature_anchor + 1 :], feature_anchor + 1
+            )
+            if value == "n_features_in_"
+        ),
+        None,
+    )
+    if count_anchor is None:
+        raise ValueError("pickle has no n_features_in_ metadata after feature_names_in_")
+    count = next(
+        (
+            int(value)
+            for op, value, _pos in operations[count_anchor + 1 : count_anchor + 8]
+            if op.name in {"BININT", "BININT1", "BININT2", "LONG1", "LONG4"}
+        ),
+        None,
+    )
+    if count is None or count < 1:
+        raise ValueError("pickle has no valid n_features_in_ integer")
+    strings = [
+        str(value)
+        for op, value, _pos in operations[feature_anchor + 1 : count_anchor]
+        if op.name in {"BINUNICODE", "SHORT_BINUNICODE", "UNICODE"}
+    ]
+    if len(strings) < count:
+        raise ValueError("pickle contains fewer feature names than n_features_in_")
+    feature_names = strings[-count:]
+    version_anchor = next(
+        (
+            index
+            for index, (_op, value, _pos) in enumerate(operations)
+            if value == "_sklearn_version"
+        ),
+        None,
+    )
+    if version_anchor is None:
+        raise ValueError("pickle has no _sklearn_version metadata")
+    sklearn_version = next(
+        (
+            str(value)
+            for op, value, _pos in operations[version_anchor + 1 : version_anchor + 6]
+            if op.name in {"BINUNICODE", "SHORT_BINUNICODE", "UNICODE"}
+        ),
+        None,
+    )
+    if sklearn_version is None:
+        raise ValueError("pickle has no sklearn version value")
+    names_payload = ("\n".join(feature_names) + "\n").encode()
+    return {
+        "sklearn_version": sklearn_version,
+        "feature_count": count,
+        "ordered_feature_names_sha256": hashlib.sha256(names_payload).hexdigest(),
+        "first_feature": feature_names[0],
+        "last_feature": feature_names[-1],
+    }
+
+
 def audit_zip_archive(
     path: Path,
     *,

@@ -65,6 +65,17 @@ adapter_contract:
     - {path: hemopi2/Model/Data/Schneider-Wrede.csv, size_bytes: 2315, sha256: 5ae5c4e83e41490464ac0fc120e209de2e87a2b37b8ed3350b028b7760b89a56}
     - {path: hemopi2/Model/Data/Grantham.csv, size_bytes: 1460, sha256: 87baa46a74c6510d466011358973d340d943844aeb8ce5fb46541db97aaa883c}
     - {path: hemopi2/Model/Data/aa_attr_group.csv, size_bytes: 416, sha256: 8cfa34e00a569810ab9af6c2562e27bb3dc2064eac0f24ca2920faa7ea90b4d9}
+  sklearn_version: 1.3.1
+  classification_feature_contract:
+    feature_count: 1190
+    ordered_feature_names_sha256: aad3eca84e467f5d6d48ab1f49096de5eb48b9354a71cef042529526342fc778
+    first_feature: Molecular Weight (kDa)
+    last_feature: SEP_LR
+  regression_feature_contract:
+    feature_count: 1167
+    ordered_feature_names_sha256: d8ea48ee923d6275ff3bb904b609974c4116ed9e0aecee968a52cb51066c618e
+    first_feature: Molecular Weight (kDa)
+    last_feature: SOC1_G1
   upstream_cli_execution_forbidden: true
   shell_execution_forbidden: true
   merci_disabled: true

@@ -49,6 +49,13 @@ class ExtractedArtifactSpec(BaseModel):
     sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
 
 
+class FeatureContractSpec(BaseModel):
+    feature_count: int = Field(ge=1)
+    ordered_feature_names_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    first_feature: str = Field(min_length=1)
+    last_feature: str = Field(min_length=1)
+
+
 class NarrowAdapterContract(BaseModel):
     adapter_id: str = Field(min_length=1)
     classification_backend: Literal["random_forest_model_1"]
@@ -56,6 +63,9 @@ class NarrowAdapterContract(BaseModel):
     allowed_model_paths: list[str] = Field(min_length=2, max_length=2)
     pickle_global_allowlist: list[str] = Field(min_length=1)
     extraction_allowlist: list[ExtractedArtifactSpec] = Field(min_length=1)
+    sklearn_version: Literal["1.3.1"]
+    classification_feature_contract: FeatureContractSpec
+    regression_feature_contract: FeatureContractSpec
     upstream_cli_execution_forbidden: bool
     shell_execution_forbidden: bool
     merci_disabled: bool
@@ -118,6 +128,10 @@ class NarrowAdapterContract(BaseModel):
             raise ValueError("forbidden HemoPI2 surface entered extraction allowlist")
         if self.extracted_file_count != len(extracted_paths):
             raise ValueError("extracted file count must match extraction allowlist")
+        if self.classification_feature_contract.feature_count != 1190:
+            raise ValueError("classification feature count must remain 1190")
+        if self.regression_feature_contract.feature_count != 1167:
+            raise ValueError("regression feature count must remain 1167")
         return self
 
 
