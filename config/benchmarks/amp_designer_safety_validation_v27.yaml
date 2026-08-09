@@ -1,6 +1,6 @@
 validation_id: amp_designer_safety_validation_v27
 version: v27.0.0-upstream-hc50-semantics-preregistered
-execution_status: passed_ready
+execution_status: formal_authorized
 track: frozen_cohort_external_safety_validation
 parent_validation_id: amp_designer_safety_validation_v26
 parent_status_required: smoke_failed_nondeterministic
@@ -111,7 +111,7 @@ nonformal_smoke:
         hc50_um: 33.672
 
 formal_execution:
-  status: ready_not_run
+  status: authorized_not_run
   allowed_run_count_after_ready: 1
   full_300_row_cohort_required: true
   filtering_reordering_deduplication_omission_forbidden: true
