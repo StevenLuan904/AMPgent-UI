@@ -42,7 +42,7 @@ def test_worker_import_has_no_numeric_library_side_effect(monkeypatch: pytest.Mo
         worker.require_preimport_environment(loaded_module_names=("numpy",))
 
 
-def test_v27_preregistered_status_prevents_smoke_execution() -> None:
+def test_v27_passed_status_prevents_smoke_rerun() -> None:
     with pytest.raises(RuntimeError, match="not authorized"):
         smoke_main()
 

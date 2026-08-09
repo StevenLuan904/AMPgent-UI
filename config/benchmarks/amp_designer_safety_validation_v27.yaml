@@ -1,6 +1,6 @@
 validation_id: amp_designer_safety_validation_v27
 version: v27.0.0-upstream-hc50-semantics-preregistered
-execution_status: smoke_authorized
+execution_status: passed_ready
 track: frozen_cohort_external_safety_validation
 parent_validation_id: amp_designer_safety_validation_v26
 parent_status_required: smoke_failed_nondeterministic
@@ -71,7 +71,7 @@ runtime_determinism_contract:
   runtime_wheelhouse_inventory_sha256: 0a0dc30e71dddc9fd9c0c4f68d0a7b26581bb598c403eccf9d4d6e0f20de5cf9
 
 nonformal_smoke:
-  status: not_run
+  status: passed
   attempt_count: 2
   run_in_two_fresh_processes: true
   sequences:
@@ -94,9 +94,24 @@ nonformal_smoke:
     - all classification and transformed HC50 outputs are finite
     - canonical output bytes and SHA-256 are exactly equal
   failure_action: terminal_fail_closed_no_rerun
+  completed_audit:
+    attempt_count: 2
+    canonical_bytes_equal: true
+    first_output_sha256: 33b5f1e4b9fb8c49358f832d9a022492abd1a27f70b607e9c398e885c57b3c6f
+    second_output_sha256: 33b5f1e4b9fb8c49358f832d9a022492abd1a27f70b607e9c398e885c57b3c6f
+    formal_cohort_accessed: false
+    outputs:
+      - sequence_sha256: 5a52efc76a4a4ceb3c992ff17426b3545634646080bb6acec132c47c278c9846
+        classification_score: 0.42
+        classification_label: 0
+        hc50_um: 90.237
+      - sequence_sha256: 0d12e60103351fa43df6fa2b510bd5b44983eed770d6dc934ea353938079b2ca
+        classification_score: 0.435
+        classification_label: 0
+        hc50_um: 33.672
 
 formal_execution:
-  status: forbidden_until_smoke_passes
+  status: ready_not_run
   allowed_run_count_after_ready: 1
   full_300_row_cohort_required: true
   filtering_reordering_deduplication_omission_forbidden: true
