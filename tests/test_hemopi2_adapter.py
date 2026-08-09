@@ -16,11 +16,16 @@ from pepagent.hemopi2_adapter import (
     canonical_smoke_bytes,
     compute_basic_feature_block,
     compute_entropy_feature_block,
+    compute_reference_table_feature_block,
     load_restricted_sklearn_pickle,
     validate_sequences,
 )
 
 ROOT = Path(__file__).parents[1]
+HEMOPI2_DATA = (
+    ROOT
+    / "var/external-models/hemopi2/zenodo-14676712/rf-only-extracted-v1/Model/Data"
+)
 
 
 def _contract(names: list[str]) -> FeatureMatrixContract:
@@ -78,6 +83,31 @@ def test_entropy_feature_block_matches_reference_sign_and_rounding() -> None:
     assert hashlib.sha256(("\n".join(names) + "\n").encode()).hexdigest() == (
         "07b18ea0c6d9f5e8d3ad0a55883b65959f0f1c74b56f41fc10e9075fe9a729c7"
     )
+
+
+def test_reference_table_feature_block_matches_model_column_contract() -> None:
+    values, names = compute_reference_table_feature_block(
+        ["ACDEFGHIKLMNPQRSTVWY"], HEMOPI2_DATA
+    )
+    assert values.shape == (1, 104)
+    assert np.isfinite(values).all()
+    assert names[0] == "ATC_C"
+    assert names[-1] == "DDR_Y"
+    assert names[5:9] == ["BTC_T", "BTC_H", "BTC_S", "BTC_D"]
+    assert values[0, :9].tolist() == pytest.approx(
+        [27.72, 51.55, 7.51, 12.69, 0.52, 382.0, 202.0, 344.0, 38.0]
+    )
+    assert hashlib.sha256(("\n".join(names) + "\n").encode()).hexdigest() == (
+        "3b4067038d952bc7831fb866c4fc31d6c5d4639150eab2b98501f744ab253c96"
+    )
+
+
+def test_reference_table_feature_block_is_repeatable_for_fixed_order() -> None:
+    sequences = ["ACDEFG", "KKLLWW"]
+    first = compute_reference_table_feature_block(sequences, HEMOPI2_DATA)
+    second = compute_reference_table_feature_block(sequences, HEMOPI2_DATA)
+    assert first[1] == second[1]
+    assert np.array_equal(first[0], second[0])
 
 
 def test_feature_contract_accepts_only_exact_finite_matrix() -> None:

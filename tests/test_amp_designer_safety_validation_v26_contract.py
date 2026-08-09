@@ -144,8 +144,10 @@ def test_v26_records_only_partial_feature_implementation() -> None:
     manifest = SafetyValidationManifest.model_validate(_payload())
     blocks = {item.block_id: item for item in manifest.implemented_feature_blocks}
     assert blocks["mw_length_aac_dpc1"].feature_count == 422
+    assert blocks["atc_btc_pcp_rri_pri_ddr"].feature_count == 104
+    assert blocks["atc_btc_pcp_rri_pri_ddr"].reference_order_dependence_preserved
     assert blocks["ser_sep_entropy"].feature_count == 21
-    assert sum(item.feature_count for item in blocks.values()) == 443
+    assert sum(item.feature_count for item in blocks.values()) == 547
     assert all(item.implemented_without_upstream_execution for item in blocks.values())
     assert all(item.formal_cohort_accessed is False for item in blocks.values())
 

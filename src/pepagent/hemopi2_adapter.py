@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import csv
 import hashlib
 import io
 import json
@@ -137,6 +138,172 @@ def compute_entropy_feature_block(
     values = np.asarray(rows, dtype=np.float64)
     if values.shape != (len(validated), 21) or not np.isfinite(values).all():
         raise ValueError("entropy feature block failed its fixed shape or finiteness contract")
+    return values, feature_names
+
+
+def _read_numeric_csv(path: Path, *, skip_header: bool = False) -> list[list[float]]:
+    with path.open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.reader(handle))
+    if skip_header:
+        rows = rows[1:]
+    try:
+        return [[float(value) for value in row] for row in rows if row]
+    except ValueError as exc:
+        raise ValueError(f"non-numeric reference table: {path.name}") from exc
+
+
+def _repeat_index(sequence: str, residue: str, *, cursor: int) -> tuple[float, int]:
+    cumulative: list[int] = []
+    count = 0
+    for item in sequence:
+        if item == residue:
+            count += 1
+            cumulative.append(count)
+        else:
+            count = 0
+    for index in range(cursor, len(cumulative) - 1):
+        if cumulative[index] < cumulative[index + 1]:
+            cumulative[index] = 0
+    retained = [value for value in cumulative if value != 0]
+    denominator = sum(retained)
+    value = (
+        0.0
+        if denominator == 0
+        else sum(item * item for item in retained) / denominator
+    )
+    return value, max(cursor, len(cumulative))
+
+
+def compute_reference_table_feature_block(
+    sequences: list[str], data_root: Path
+) -> tuple[np.ndarray, list[str]]:
+    """Compute ATC/BTC/PCP/RRI/PRI/DDR without importing upstream code."""
+
+    validated = validate_sequences(sequences)
+    atom_path = data_root / "atom.csv"
+    bond_path = data_root / "bonds.csv"
+    pcp_path = data_root / "PhysicoChemical.csv"
+    with atom_path.open(encoding="utf-8", newline="") as handle:
+        atom_rows = list(csv.reader(handle))
+    if len(atom_rows) != 20 or any(len(row) != 2 for row in atom_rows):
+        raise ValueError("atom reference table shape drifted")
+    atom_counts = {
+        residue.strip(): [formula.count(element) for element in "CHNOS"]
+        for residue, formula in atom_rows
+    }
+    with bond_path.open(encoding="utf-8", newline="") as handle:
+        bond_rows = list(csv.reader(handle))
+    if len(bond_rows) != 21 or bond_rows[0] != [
+        "Name",
+        "nBonds_tot",
+        "Hydrogen_bonds",
+        "nBondsS",
+        "nBondsD",
+    ]:
+        raise ValueError("bond reference table shape or header drifted")
+    bond_values = {
+        row[0]: [float(value) for value in row[1:]] for row in bond_rows[1:]
+    }
+    pcp = np.asarray(_read_numeric_csv(pcp_path), dtype=np.float64)
+    if pcp.shape != (30, 20) or not np.isfinite(pcp).all():
+        raise ValueError("physicochemical reference table must be finite 30x20")
+
+    pcp_names = [
+        "PC",
+        "NC",
+        "NE",
+        "PO",
+        "NP",
+        "AL",
+        "CY",
+        "AR",
+        "AC",
+        "BS",
+        "NE_pH",
+        "HB",
+        "HL",
+        "NT",
+        "HX",
+        "SC",
+        "SS_HE",
+        "SS_ST",
+        "SS_CO",
+        "SA_BU",
+        "SA_EX",
+        "SA_IN",
+        "TN",
+        "SM",
+        "LR",
+        "Z1",
+        "Z2",
+        "Z3",
+        "Z4",
+        "Z5",
+    ]
+    feature_names = [f"ATC_{element}" for element in "CHNOS"]
+    feature_names.extend(["BTC_T", "BTC_H", "BTC_S", "BTC_D"])
+    feature_names.extend(f"PCP_{name}" for name in pcp_names)
+    feature_names.extend(f"RRI_{residue}" for residue in AMINO_ACID_ORDER)
+    feature_names.extend(f"PRI_{name}" for name in pcp_names[:25])
+    feature_names.extend(f"DDR_{residue}" for residue in AMINO_ACID_ORDER)
+
+    rows: list[list[float]] = []
+    rri_cursor = 0
+    residue_index = {residue: index for index, residue in enumerate(AMINO_ACID_ORDER)}
+    for sequence in validated:
+        atom_totals = np.sum([atom_counts[residue] for residue in sequence], axis=0)
+        atom_percent = np.round(atom_totals / atom_totals.sum() * 100.0, 2)
+        bonds = np.sum([bond_values[residue] for residue in sequence], axis=0)
+        encoded = np.asarray([residue_index[residue] for residue in sequence])
+        pcp_means = np.round(pcp[:, encoded].mean(axis=1), 3)
+        rri: list[float] = []
+        for residue in AMINO_ACID_ORDER:
+            repeat_value, rri_cursor = _repeat_index(
+                sequence, residue, cursor=rri_cursor
+            )
+            rri.append(_rounded(repeat_value, 2))
+        pri: list[float] = []
+        for feature_index in range(25):
+            profile = pcp[feature_index, encoded]
+            run = numerator = denominator = ones = 0.0
+            for index, value in enumerate(profile):
+                if value == 0:
+                    numerator += run * run
+                    denominator += run
+                    run = 0.0
+                else:
+                    run += 1.0
+                    ones += 1.0
+                if index == len(profile) - 1 and value != 0:
+                    numerator += run * run
+                    denominator += run
+            del denominator
+            pri.append(0.0 if ones == 0 else round(numerator / (ones * ones), 2))
+        reversed_sequence = sequence[::-1]
+        ddr: list[float] = []
+        for residue in AMINO_ACID_ORDER:
+            positions = [i for i, value in enumerate(sequence) if value == residue]
+            reverse_positions = [
+                i for i, value in enumerate(reversed_sequence) if value == residue
+            ]
+            gaps = [positions[i + 1] - positions[i] - 1 for i in range(len(positions) - 1)]
+            if positions:
+                gaps.insert(0, positions[0])
+                gaps.append(reverse_positions[0])
+            ddr.append(_rounded(sum(gap * gap for gap in gaps) / (sum(gaps) + 1), 2))
+        rows.append(
+            [
+                *atom_percent.tolist(),
+                *bonds.tolist(),
+                *pcp_means.tolist(),
+                *rri,
+                *pri,
+                *ddr,
+            ]
+        )
+    values = np.asarray(rows, dtype=np.float64)
+    if values.shape != (len(validated), 104) or not np.isfinite(values).all():
+        raise ValueError("reference-table feature block failed shape or finiteness contract")
     return values, feature_names
 
 
