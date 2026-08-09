@@ -43,12 +43,19 @@ class TrainingOverlapSpec(BaseModel):
     exact_sequence_overlap_count: int = Field(ge=0)
 
 
+class ExtractedArtifactSpec(BaseModel):
+    path: str = Field(min_length=1)
+    size_bytes: int = Field(ge=1)
+    sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+
 class NarrowAdapterContract(BaseModel):
     adapter_id: str = Field(min_length=1)
     classification_backend: Literal["random_forest_model_1"]
     regression_backend: Literal["random_forest_hc50"]
     allowed_model_paths: list[str] = Field(min_length=2, max_length=2)
     pickle_global_allowlist: list[str] = Field(min_length=1)
+    extraction_allowlist: list[ExtractedArtifactSpec] = Field(min_length=1)
     upstream_cli_execution_forbidden: bool
     shell_execution_forbidden: bool
     merci_disabled: bool
@@ -57,6 +64,8 @@ class NarrowAdapterContract(BaseModel):
     design_and_mutation_disabled: bool
     network_access_forbidden: bool
     archive_metadata_root_ignored_for_execution: Literal["__MACOSX/"]
+    extraction_destination: str = Field(min_length=1)
+    extracted_file_count: int = Field(ge=1)
 
     @model_validator(mode="after")
     def require_narrow_surface(self) -> NarrowAdapterContract:
@@ -89,6 +98,26 @@ class NarrowAdapterContract(BaseModel):
         }
         if set(self.pickle_global_allowlist) != expected_pickle_globals:
             raise ValueError("HemoPI2 pickle global allowlist must be exact")
+        extracted_paths = [item.path for item in self.extraction_allowlist]
+        if len(extracted_paths) != len(set(extracted_paths)):
+            raise ValueError("HemoPI2 extraction allowlist paths must be unique")
+        if not set(self.allowed_model_paths).issubset(extracted_paths):
+            raise ValueError("every allowed model must be in the extraction allowlist")
+        forbidden_extraction_markers = (
+            "__macosx",
+            "pytorch_model",
+            "hemopi2_classification.py",
+            "hemopi2_regression.py",
+            "merci/",
+        )
+        if any(
+            marker in path.lower()
+            for path in extracted_paths
+            for marker in forbidden_extraction_markers
+        ):
+            raise ValueError("forbidden HemoPI2 surface entered extraction allowlist")
+        if self.extracted_file_count != len(extracted_paths):
+            raise ValueError("extracted file count must match extraction allowlist")
         return self
 
 

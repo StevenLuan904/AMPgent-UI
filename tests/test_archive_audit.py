@@ -7,7 +7,11 @@ from pathlib import Path
 
 import pytest
 
-from pepagent.archive_audit import audit_zip_archive, scan_pickle_opcodes
+from pepagent.archive_audit import (
+    audit_zip_archive,
+    extract_allowlisted_files,
+    scan_pickle_opcodes,
+)
 
 
 def _write_zip(path: Path, members: dict[str, bytes]) -> None:
@@ -97,3 +101,55 @@ def test_archive_audit_rejects_pickle_global_outside_allowlist(tmp_path: Path) -
 
 class PayloadForGlobalAudit:
     pass
+
+
+def test_allowlisted_extraction_is_atomic_and_omits_unlisted_files(tmp_path: Path) -> None:
+    archive_path = tmp_path / "source.zip"
+    _write_zip(
+        archive_path,
+        {"hemopi2/keep.txt": b"keep", "hemopi2/omit.txt": b"omit"},
+    )
+    destination = tmp_path / "extracted"
+    expected = {"hemopi2/keep.txt": __import__("hashlib").sha256(b"keep").hexdigest()}
+    result = extract_allowlisted_files(
+        archive_path,
+        destination,
+        required_root="hemopi2",
+        expected_files=expected,
+        allowed_pickle_globals=frozenset(),
+    )
+    assert result["file_count"] == 1
+    assert (destination / "keep.txt").read_bytes() == b"keep"
+    assert not (destination / "omit.txt").exists()
+
+
+def test_allowlisted_extraction_rejects_digest_mismatch_without_destination(
+    tmp_path: Path,
+) -> None:
+    archive_path = tmp_path / "source.zip"
+    _write_zip(archive_path, {"hemopi2/keep.txt": b"keep"})
+    destination = tmp_path / "extracted"
+    with pytest.raises(ValueError, match="SHA-256 mismatch"):
+        extract_allowlisted_files(
+            archive_path,
+            destination,
+            required_root="hemopi2",
+            expected_files={"hemopi2/keep.txt": "0" * 64},
+            allowed_pickle_globals=frozenset(),
+        )
+    assert not destination.exists()
+
+
+def test_allowlisted_extraction_refuses_existing_destination(tmp_path: Path) -> None:
+    archive_path = tmp_path / "source.zip"
+    _write_zip(archive_path, {"hemopi2/keep.txt": b"keep"})
+    destination = tmp_path / "extracted"
+    destination.mkdir()
+    with pytest.raises(FileExistsError, match="overwrite"):
+        extract_allowlisted_files(
+            archive_path,
+            destination,
+            required_root="hemopi2",
+            expected_files={"hemopi2/keep.txt": "0" * 64},
+            allowed_pickle_globals=frozenset(),
+        )

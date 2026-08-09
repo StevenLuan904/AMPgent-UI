@@ -31,7 +31,9 @@ def test_v26_is_preregistered_but_not_ready() -> None:
     assert manifest.archive.static_inventory_sha256 == (
         "6a3eb2d0db9d84030540e9f3d69fa9bd81f6c345c3db8651ec3836c6eaf13a85"
     )
-    assert manifest.archive.extracted_inventory_sha256 is None
+    assert manifest.archive.extracted_inventory_sha256 == (
+        "676ad220203c5ae8d4ba89696ea91f0ff784958cb3465e4840ddadcf413f7892"
+    )
 
 
 def test_v26_binds_the_frozen_v25_full_cohort() -> None:
@@ -56,6 +58,7 @@ def test_v26_training_overlap_audit_is_zero_for_both_frozen_datasets() -> None:
 def test_v26_cannot_be_ready_without_archive_and_inventory_sha256() -> None:
     payload = deepcopy(_payload())
     payload["execution_status"] = "ready"
+    payload["archive"]["extracted_inventory_sha256"] = None
     with pytest.raises(ValueError, match="archive and inventory SHA-256"):
         SafetyValidationManifest.model_validate(payload)
 
@@ -91,6 +94,30 @@ def test_v26_rejects_pickle_global_allowlist_drift() -> None:
     payload = deepcopy(_payload())
     payload["adapter_contract"]["pickle_global_allowlist"].append("builtins.eval")
     with pytest.raises(ValueError, match="pickle global allowlist"):
+        SafetyValidationManifest.model_validate(payload)
+
+
+def test_v26_extraction_allowlist_excludes_upstream_risky_surfaces() -> None:
+    manifest = SafetyValidationManifest.model_validate(_payload())
+    paths = {item.path.lower() for item in manifest.adapter_contract.extraction_allowlist}
+    assert len(paths) == 11
+    assert not any("pytorch_model" in path for path in paths)
+    assert not any("__macosx" in path for path in paths)
+    assert not any(path.endswith("hemopi2_classification.py") for path in paths)
+    assert not any(path.endswith("hemopi2_regression.py") for path in paths)
+    assert "hemopi2/model/data/hemopi2_reg.sav" not in paths
+
+
+def test_v26_rejects_forbidden_extraction_surface() -> None:
+    payload = deepcopy(_payload())
+    payload["adapter_contract"]["extraction_allowlist"].append(
+        {
+            "path": "hemopi2/Model/pytorch_model.bin",
+            "size_bytes": 1,
+            "sha256": "0" * 64,
+        }
+    )
+    with pytest.raises(ValueError, match="forbidden HemoPI2 surface"):
         SafetyValidationManifest.model_validate(payload)
 
 

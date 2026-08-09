@@ -3,7 +3,9 @@ from __future__ import annotations
 import hashlib
 import pickletools
 import re
+import shutil
 import stat
+import tempfile
 import zipfile
 from collections import Counter, deque
 from pathlib import Path, PurePosixPath
@@ -167,4 +169,82 @@ def audit_zip_archive(
             source_findings, key=lambda item: (item["path"], item["finding"])
         ),
         "pickle_scans": sorted(pickle_scans, key=lambda item: item["path"]),
+    }
+
+
+def extract_allowlisted_files(
+    archive_path: Path,
+    destination: Path,
+    *,
+    required_root: str,
+    expected_files: dict[str, str],
+    allowed_pickle_globals: frozenset[str],
+) -> dict[str, Any]:
+    """Atomically extract only content-addressed files from an audited ZIP."""
+
+    if destination.exists():
+        raise FileExistsError(f"refusing to overwrite extraction destination: {destination}")
+    if not expected_files:
+        raise ValueError("safe extraction requires a non-empty explicit allowlist")
+    if len(expected_files) != len({item.casefold() for item in expected_files}):
+        raise ValueError("extraction allowlist paths must be unique case-insensitively")
+
+    audit = audit_zip_archive(
+        archive_path,
+        required_root=required_root,
+        allowed_pickle_globals=allowed_pickle_globals,
+    )
+    archived = {item["path"]: item for item in audit["files"]}
+    missing = set(expected_files) - set(archived)
+    if missing:
+        raise ValueError("allowlisted files are absent from archive: " + ", ".join(sorted(missing)))
+    mismatched = [
+        path
+        for path, expected_sha256 in expected_files.items()
+        if archived[path]["sha256"] != expected_sha256
+    ]
+    if mismatched:
+        raise ValueError("allowlisted file SHA-256 mismatch: " + ", ".join(sorted(mismatched)))
+
+    destination_parent = destination.parent.resolve()
+    destination_parent.mkdir(parents=True, exist_ok=True)
+    temporary = Path(
+        tempfile.mkdtemp(prefix=f".{destination.name}.extracting-", dir=destination_parent)
+    )
+    rows: list[dict[str, Any]] = []
+    try:
+        with zipfile.ZipFile(archive_path) as archive:
+            for member in sorted(expected_files):
+                relative = PurePosixPath(member).relative_to(required_root)
+                target = temporary.joinpath(*relative.parts)
+                target_parent = target.parent.resolve()
+                if temporary.resolve() not in (target_parent, *target_parent.parents):
+                    raise ValueError(f"extraction target escaped temporary root: {member!r}")
+                target.parent.mkdir(parents=True, exist_ok=True)
+                with archive.open(member) as source, target.open("xb") as sink:
+                    shutil.copyfileobj(source, sink, length=1024 * 1024)
+                with target.open("rb") as extracted:
+                    digest = _sha256_stream(extracted)
+                if digest != expected_files[member]:
+                    raise ValueError(f"post-extraction SHA-256 mismatch: {member!r}")
+                rows.append(
+                    {
+                        "path": relative.as_posix(),
+                        "size_bytes": target.stat().st_size,
+                        "sha256": digest,
+                    }
+                )
+        rows.sort(key=lambda item: item["path"])
+        inventory = "".join(
+            f"{item['path']}\t{item['size_bytes']}\t{item['sha256']}\n" for item in rows
+        ).encode()
+        temporary.rename(destination)
+    except Exception:
+        shutil.rmtree(temporary, ignore_errors=True)
+        raise
+    return {
+        "destination": str(destination),
+        "file_count": len(rows),
+        "inventory_sha256": hashlib.sha256(inventory).hexdigest(),
+        "files": rows,
     }

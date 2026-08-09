@@ -1,5 +1,5 @@
 {
-  "manifest_version": "v26.0.1-security-amendment-not-ready",
+  "manifest_version": "v26.0.2-safe-extraction-complete-not-ready",
   "retrieved_at": "2026-08-09",
   "paper": {
     "title": "Prediction of hemolytic peptides and their hemolytic concentration",
@@ -21,7 +21,7 @@
       "static_inventory_sha256": "6a3eb2d0db9d84030540e9f3d69fa9bd81f6c345c3db8651ec3836c6eaf13a85",
       "static_entry_count": 100,
       "static_file_count": 94,
-      "extracted_inventory_sha256": null
+      "extracted_inventory_sha256": "676ad220203c5ae8d4ba89696ea91f0ff784958cb3465e4840ddadcf413f7892"
     },
     "datasets": [
       {
@@ -39,6 +39,9 @@
   "security_gate": {
     "status": "blocked_pending_safe_extraction_adapter_and_environment",
     "archive_downloaded": true,
+    "safe_extraction_completed": true,
+    "safe_extraction_destination": "var/external-models/hemopi2/zenodo-14676712/rf-only-extracted-v1",
+    "safe_extraction_file_count": 11,
     "model_run_started": false,
     "serialized_model_format": "pickle",
     "untrusted_deserialization": true,

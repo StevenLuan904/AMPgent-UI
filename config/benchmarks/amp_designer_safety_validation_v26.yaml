@@ -1,5 +1,5 @@
 validation_id: amp_designer_safety_validation_v26
-version: v26.0.1-security-amendment
+version: v26.0.2-safe-extraction-complete
 execution_status: archive_pending
 track: frozen_cohort_external_safety_validation
 reference_benchmark_id: amp_designer_de_novo_v25
@@ -32,7 +32,7 @@ archive:
   static_inventory_sha256: 6a3eb2d0db9d84030540e9f3d69fa9bd81f6c345c3db8651ec3836c6eaf13a85
   static_entry_count: 100
   static_file_count: 94
-  extracted_inventory_sha256: null
+  extracted_inventory_sha256: 676ad220203c5ae8d4ba89696ea91f0ff784958cb3465e4840ddadcf413f7892
   serialized_model_format: pickle
   untrusted_deserialization: true
 
@@ -53,6 +53,18 @@ adapter_contract:
     - sklearn.tree._classes.DecisionTreeClassifier
     - sklearn.tree._classes.DecisionTreeRegressor
     - sklearn.tree._tree.Tree
+  extraction_allowlist:
+    - {path: hemopi2/Model/hemopi2_ml_clf.sav, size_bytes: 5853684, sha256: 63973510af1b883c505e0c475297b4f9edf07b5c7bcd91546ffcb4fdec62dac5}
+    - {path: hemopi2/Model/HemoPI2_reg.sav, size_bytes: 97794972, sha256: 72b8afc63ed7803955aae970ab93627bb710fab17db027bf6110a0237abb6955}
+    - {path: hemopi2/Model/composition_calculate.py, size_bytes: 44507, sha256: c75b4b079264cbf2ec89d95e3a0fe1633a8611be84d7ea373d02c2a148902562}
+    - {path: hemopi2/Model/composition_calculate_hemopi2_2.py, size_bytes: 39468, sha256: 8f031f0697f3699a0ae2386163d7abcd36d2e133b0e6e160fe8d512e03ec8be3}
+    - {path: hemopi2/Model/Data/atom.csv, size_bytes: 466, sha256: 16de8b333ff6dbc7539ea9d1d77a114ff6db09a6c53ddfb9ce7153aa08abaaa5}
+    - {path: hemopi2/Model/Data/bonds.csv, size_bytes: 317, sha256: 9ded52e577d0f44d2a1d9cc5d932c89d312a973cf47aa538743b3b44c770f915}
+    - {path: hemopi2/Model/Data/PhysicoChemical.csv, size_bytes: 1563, sha256: f8e94cf9464539ddd0e9e97a20da2fe0ffbdcb8a48c1a632d7117153bea11c04}
+    - {path: hemopi2/Model/Data/data, size_bytes: 331, sha256: ee61f3c40c87ccacd1b2070faad781ad0ce2e923a52b74d2a9836e2a5884061d}
+    - {path: hemopi2/Model/Data/Schneider-Wrede.csv, size_bytes: 2315, sha256: 5ae5c4e83e41490464ac0fc120e209de2e87a2b37b8ed3350b028b7760b89a56}
+    - {path: hemopi2/Model/Data/Grantham.csv, size_bytes: 1460, sha256: 87baa46a74c6510d466011358973d340d943844aeb8ce5fb46541db97aaa883c}
+    - {path: hemopi2/Model/Data/aa_attr_group.csv, size_bytes: 416, sha256: 8cfa34e00a569810ab9af6c2562e27bb3dc2064eac0f24ca2920faa7ea90b4d9}
   upstream_cli_execution_forbidden: true
   shell_execution_forbidden: true
   merci_disabled: true
@@ -61,6 +73,8 @@ adapter_contract:
   design_and_mutation_disabled: true
   network_access_forbidden: true
   archive_metadata_root_ignored_for_execution: __MACOSX/
+  extraction_destination: var/external-models/hemopi2/zenodo-14676712/rf-only-extracted-v1
+  extracted_file_count: 11
 
 training_overlap_audit:
   - dataset_name: cross_val_dataset.csv
