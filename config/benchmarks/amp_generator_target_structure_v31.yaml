@@ -1,0 +1,65 @@
+benchmark_id: amp_generator_target_structure_v31
+version: v31.0.0
+execution_status: cohort_frozen
+phase: balanced_fast_screen
+spec_path: ../experiments/acea_generator_structure_fast_screen_v31.yaml
+target_accession: P0A9G6
+
+sources:
+  - source_id: v23_generator_benchmark
+    path: ../../reports/amp_generator_v23_candidate_metrics_20260809.csv
+    sha256: b44c88acbfa2cf43c39c7d37cc3308f40ebc37e5374c46f51f637356b9cab2ff
+    expected_row_count: 602
+  - source_id: v25_amp_designer
+    path: ../../reports/amp_generator_v25_candidate_metrics_20260809.csv
+    sha256: fac36b6dbbf4c7525ab7982f054c3c3b02632e0760b938b137d719f1a22a7b12
+    expected_row_count: 300
+
+generators:
+  - generator_id: hydramp
+    source_id: v23_generator_benchmark
+    seeds: [20260809, 20260810, 20260811]
+    expected_source_rows_per_seed: 100
+    selected_per_seed: 10
+  - generator_id: ampgan_v2
+    source_id: v23_generator_benchmark
+    seeds: [20260809, 20260810, 20260811]
+    expected_source_rows_per_seed: 100
+    selected_per_seed: 10
+  - generator_id: amp_designer
+    source_id: v25_amp_designer
+    seeds: [20260825, 20260826, 20260827]
+    expected_source_rows_per_seed: 100
+    selected_per_seed: 10
+
+selection:
+  method: seed_stratified_maximin_levenshtein
+  first_item_tiebreak: sequence_sha256_then_source_rank
+  subsequent_tiebreak: source_rank_then_sequence_sha256
+  soft_metric_columns_ignored: true
+  pepmlm_used: false
+  global_sequence_uniqueness_required: true
+
+descriptor_qualification:
+  maximum_identical_residue_run: 3
+  maximum_hydrophobic_run: 5
+  minimum_net_charge_ph7_4: -2.0
+  maximum_net_charge_ph7_4: 10.0
+
+output_cohort_path: ../../var/generator-structure/v31/fast_screen_cohort.csv
+output_audit_path: ../../var/generator-structure/v31/fast_screen_cohort_audit.json
+structure_claim_scope: same_protocol_relative_target_specific_computational_evidence
+no_binding_or_affinity_claim: true
+frozen_predecessors_unchanged: true
+
+completion:
+  cohort_path: ../../var/generator-structure/v31/fast_screen_cohort.csv
+  cohort_sha256: 6aff2088b09dc57ff1981fec176b4c02f51b5b0ead5819b8332ac589f81db746
+  audit_path: ../../var/generator-structure/v31/fast_screen_cohort_audit.json
+  audit_sha256: dfb1e855648bdff41e37a8ea691cba637431d218bae37c65efcaf6aca6cf96b8
+  selected_count: 90
+
+# Phase A deliberately uses an equal 30-candidate quota per generator. The
+# generator comparison is based on the fraction and distribution of candidates
+# that survive the same AceA structure/Rosetta protocol, not on PepMLM or generic
+# AMP/safety scores. Phase B promotion is a separate preregistered confirmation.
