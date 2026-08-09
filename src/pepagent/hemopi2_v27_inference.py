@@ -31,8 +31,13 @@ def official_hc50_um(raw_prediction: np.ndarray) -> np.ndarray:
     return reported
 
 
-def run_fixed_v27_smoke_once(model_root: Path, data_root: Path) -> bytes:
-    sequences = list(HEMOPI2_SMOKE_SEQUENCES)
+def run_v27_predictions(
+    sequences: list[str],
+    model_root: Path,
+    data_root: Path,
+    *,
+    evidence_scope: str,
+) -> list[dict[str, object]]:
     matrices = assemble_feature_matrices(sequences, data_root)
     classifier = _require_estimator(
         load_restricted_sklearn_pickle(
@@ -76,7 +81,7 @@ def run_fixed_v27_smoke_once(model_root: Path, data_root: Path) -> bytes:
         raise ValueError("classification predictions contain non-finite values")
     hc50_um = official_hc50_um(raw_regression)
 
-    records = [
+    return [
         {
             "sequence": sequence,
             "sequence_sha256": hashlib.sha256(sequence.encode()).hexdigest(),
@@ -86,8 +91,17 @@ def run_fixed_v27_smoke_once(model_root: Path, data_root: Path) -> bytes:
             "hemopi2_classification_label": int(labels[index]),
             "hemopi2_hc50_um": float(hc50_um[index]),
             "validator_version": "HemoPI2-Zenodo-14676712-rf-only-v27",
-            "evidence_scope": "nonformal_determinism_smoke_only",
+            "evidence_scope": evidence_scope,
         }
         for index, sequence in enumerate(sequences)
     ]
+
+
+def run_fixed_v27_smoke_once(model_root: Path, data_root: Path) -> bytes:
+    records = run_v27_predictions(
+        list(HEMOPI2_SMOKE_SEQUENCES),
+        model_root,
+        data_root,
+        evidence_scope="nonformal_determinism_smoke_only",
+    )
     return canonical_smoke_bytes(records)
