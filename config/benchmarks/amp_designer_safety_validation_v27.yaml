@@ -1,0 +1,125 @@
+validation_id: amp_designer_safety_validation_v27
+version: v27.0.0-upstream-hc50-semantics-preregistered
+execution_status: preregistered_not_run
+track: frozen_cohort_external_safety_validation
+parent_validation_id: amp_designer_safety_validation_v26
+parent_status_required: smoke_failed_nondeterministic
+parent_results_immutable: true
+scientific_change: >-
+  Restore the archived HemoPI2 regression output contract: transform the random
+  forest raw prediction with exp(-raw) and report HC50 in micromolar rounded to
+  three decimal places. This is a new-version semantic correction based on the
+  frozen upstream source, not a post-hoc relaxation or rewrite of v26.
+
+input_cohort:
+  path: reports/amp_generator_v25_candidate_metrics_20260809.csv
+  sha256: fac36b6dbbf4c7525ab7982f054c3c3b02632e0760b938b137d719f1a22a7b12
+  row_count: 300
+  sequence_column: sequence
+  sequence_sha256_column: sequence_sha256
+  selection_forbidden: true
+  formal_access_before_ready_forbidden: true
+
+validator:
+  name: HemoPI2
+  archive_record_id: 14676712
+  archive_sha256: ac0b5567fbb4bd08869bf3c43facb0883d96cf7dfd0afddef9919255e31e1c81
+  regression_source_member: hemopi2/hemopi2_regression.py
+  regression_source_member_sha256: 9e6ec8f13d96af52d653a7a7244a33440e6fb865fddceab0bcca42cf459b4bd8
+  audited_lines: 58-68
+  audited_lines_sha256: 0475d0a80acc4bbc826f2093614dd8b9626d6ecf13ce4ac3df8aa0b7c9336509
+  upstream_hc50_contract:
+    raw_prediction: random_forest_hc50.predict(features)
+    transform: exp(-raw_prediction)
+    report_round_decimal_places: 3
+    report_column: hemopi2_hc50_um
+    unit: micromolar
+  raw_regressor_output_must_not_be_labeled_hc50_um: true
+
+inherited_security_contract:
+  source_manifest: config/benchmarks/amp_designer_safety_validation_v26.yaml
+  source_manifest_status: smoke_failed_nondeterministic
+  extracted_inventory_sha256: 676ad220203c5ae8d4ba89696ea91f0ff784958cb3465e4840ddadcf413f7892
+  classifier_model_sha256: 63973510af1b883c505e0c475297b4f9edf07b5c7bcd91546ffcb4fdec62dac5
+  regressor_model_sha256: 72b8afc63ed7803955aae970ab93627bb710fab17db027bf6110a0237abb6955
+  pickle_global_allowlist_unchanged: true
+  classifier_feature_contract_sha256: aad3eca84e467f5d6d48ab1f49096de5eb48b9354a71cef042529526342fc778
+  regression_feature_contract_sha256: d8ea48ee923d6275ff3bb904b609974c4116ed9e0aecee968a52cb51066c618e
+  restricted_unpickler_required: true
+  upstream_cli_execution_forbidden: true
+  shell_execution_forbidden: true
+  network_access_forbidden: true
+  merci_perl_esm_scan_design_mutation_forbidden: true
+  consamphemo_forbidden_without_license: true
+  reference_defects_preserved:
+    - rri_cross_sequence_cursor_order_dependence
+    - cetd_unmapped_cysteine_skip
+    - qso_second_tail_uses_schneider_wrede_accumulation
+
+runtime_determinism_contract:
+  fresh_isolated_process_required: true
+  environment_must_be_set_before_numpy_or_sklearn_import: true
+  environment:
+    PYTHONHASHSEED: "0"
+    OMP_NUM_THREADS: "1"
+    MKL_NUM_THREADS: "1"
+    OPENBLAS_NUM_THREADS: "1"
+    NUMEXPR_NUM_THREADS: "1"
+    VECLIB_MAXIMUM_THREADS: "1"
+  threadpool_max_threads: 1
+  runtime_requirements_lock_sha256: 8846d3abd9acbe120ddb392c14a16edebbe03e96052fef0d36aa3bad3ef2d1bf
+  runtime_wheelhouse_inventory_sha256: 0a0dc30e71dddc9fd9c0c4f68d0a7b26581bb598c403eccf9d4d6e0f20de5cf9
+
+nonformal_smoke:
+  status: not_run
+  attempt_count: 2
+  run_in_two_fresh_processes: true
+  sequences:
+    - sequence: ACDEFGHIKLMNPQRSTVWY
+      sequence_sha256: 5a52efc76a4a4ceb3c992ff17426b3545634646080bb6acec132c47c278c9846
+    - sequence: KKLLWWRRAACCDD
+      sequence_sha256: 0d12e60103351fa43df6fa2b510bd5b44983eed770d6dc934ea353938079b2ca
+  ordered_sequence_list_sha256: 9578af2ffbb135b49ebb95ef8740a1c2234771a83c35a28164b5a8fc1ce2e362
+  canonicalization:
+    json_sort_keys: true
+    json_separators: [",", ":"]
+    trailing_newline: true
+    hc50_transform: exp(-raw_prediction)
+    hc50_round_decimal_places: 3
+    classification_score_extra_rounding: forbidden
+  pass_requirements:
+    - both fresh processes exit successfully without warnings
+    - static model hashes and pickle global allowlist match
+    - feature names, order, counts, and hashes match
+    - all classification and transformed HC50 outputs are finite
+    - canonical output bytes and SHA-256 are exactly equal
+  failure_action: terminal_fail_closed_no_rerun
+
+formal_execution:
+  status: forbidden_until_smoke_passes
+  allowed_run_count_after_ready: 1
+  full_300_row_cohort_required: true
+  filtering_reordering_deduplication_omission_forbidden: true
+  one_to_one_output_required: true
+  transformed_hc50_only: true
+  raw_hc50_label_forbidden: true
+
+evidence_scope:
+  evidence_class: independent_model_family_soft_safety_validation
+  allowed_claim: external HemoPI2 agreement or disagreement on predicted hemolysis risk
+  forbidden_claims:
+    - experimental safety or hemolysis
+    - AceA binding or affinity
+    - global generator winner
+    - candidate selection using v27 outputs
+    - rewrite or rescue of v26
+
+fail_closed:
+  - Stop if any inherited archive, model, environment, feature, or allowlist hash changes.
+  - Stop if the fixed smoke sequences or their order changes.
+  - Stop if thread limits are not active before numerical libraries import.
+  - Stop if the upstream exp(-raw) then round(3) HC50 contract is not applied exactly.
+  - Stop if repeated smoke canonical bytes differ for any reason.
+  - Stop before formal access unless smoke status is explicitly passed_ready.
+  - Stop if any formal input or output row is selected, reordered, duplicated, or omitted.
+  - Stop if results are presented as experimental, binding, affinity, or winner evidence.
