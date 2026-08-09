@@ -443,6 +443,235 @@ def compute_ctd_block(
     return values, feature_names
 
 
+def _load_paac_properties(path: Path) -> np.ndarray:
+    with path.open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.reader(handle, delimiter="\t"))
+    if len(rows) != 4 or len(rows[0]) != 21:
+        raise ValueError("PAAC property table shape drifted")
+    values = np.asarray([[float(value) for value in row[1:]] for row in rows[1:]])
+    means = values.mean(axis=1, keepdims=True)
+    standard_deviations = np.sqrt(((values - means) ** 2).mean(axis=1, keepdims=True))
+    normalized = (values - means) / standard_deviations
+    if normalized.shape != (3, 20) or not np.isfinite(normalized).all():
+        raise ValueError("PAAC normalized property table is invalid")
+    return normalized
+
+
+def _load_distance_matrix(path: Path) -> dict[str, dict[str, float]]:
+    with path.open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.reader(handle))
+    if len(rows) != 21 or len(rows[0]) != 21 or rows[0][0] != "Name":
+        raise ValueError(f"distance matrix shape or header drifted: {path.name}")
+    columns = rows[0][1:]
+    matrix = {
+        row[0]: {column: float(value) for column, value in zip(columns, row[1:], strict=True)}
+        for row in rows[1:]
+    }
+    if set(columns) != STANDARD_AMINO_ACIDS or set(matrix) != STANDARD_AMINO_ACIDS:
+        raise ValueError(f"distance matrix residues drifted: {path.name}")
+    return matrix
+
+
+def _squared_distance_sum(
+    sequence: str, matrix: dict[str, dict[str, float]], gap: int = 1
+) -> float:
+    return sum(
+        matrix[sequence[index + gap]][sequence[index]] ** 2
+        for index in range(len(sequence) - gap)
+    )
+
+
+def compute_common_tail_block(
+    sequences: list[str], data_root: Path
+) -> tuple[np.ndarray, list[str]]:
+    """Compute PAAC1, APAAC1 and QSO1 shared by both RF models."""
+
+    validated = validate_sequences(sequences)
+    if any(len(sequence) < 2 for sequence in validated):
+        raise ValueError("PAAC/QSO gap 1 requires sequences of length at least two")
+    properties = _load_paac_properties(data_root / "data")
+    schneider = _load_distance_matrix(data_root / "Schneider-Wrede.csv")
+    grantham = _load_distance_matrix(data_root / "Grantham.csv")
+    residue_index = {residue: index for index, residue in enumerate(AMINO_ACID_ORDER)}
+    paac_names = [f"PAAC1_{residue}" for residue in AMINO_ACID_ORDER] + [
+        "PAAC1_lam1"
+    ]
+    apaac_names = [f"APAAC1_{residue}" for residue in AMINO_ACID_ORDER] + [
+        "APAAC1_HB_lam1",
+        "APAAC1_HL_lam1",
+        "APAAC1_SC_lam1",
+    ]
+    qso_names = [f"QSO1_SC_{residue}" for residue in AMINO_ACID_ORDER]
+    qso_names.extend(f"QSO1_G_{residue}" for residue in AMINO_ACID_ORDER)
+    qso_names.extend(["QSO1_SC1", "QSO1_G1"])
+    feature_names = paac_names + apaac_names + qso_names
+    rows: list[list[float]] = []
+    for sequence in validated:
+        encoded = [residue_index[residue] for residue in sequence]
+        counts = Counter(sequence)
+        aac = [
+            _rounded(counts[residue] / len(sequence) * 100.0, 2)
+            for residue in AMINO_ACID_ORDER
+        ]
+        theta = sum(
+            np.mean((properties[:, encoded[index]] - properties[:, encoded[index + 1]]) ** 2)
+            for index in range(len(sequence) - 1)
+        ) / (len(sequence) - 1)
+        paac = [*aac, round((0.05 * theta) / (1.0 + 0.05 * theta), 4)]
+        correlations = [
+            sum(
+                properties[property_index, encoded[index]]
+                * properties[property_index, encoded[index + 1]]
+                for index in range(len(sequence) - 1)
+            )
+            / (len(sequence) - 1)
+            for property_index in range(3)
+        ]
+        correlation_denominator = 1.0 + 0.05 * sum(correlations)
+        apaac = [
+            *aac,
+            *(round(0.05 * value / correlation_denominator, 4) for value in correlations),
+        ]
+        schneider_sum = _squared_distance_sum(sequence, schneider)
+        grantham_sum = _squared_distance_sum(sequence, grantham)
+        schneider_denominator = 1.0 + 0.1 * schneider_sum
+        grantham_denominator = 1.0 + 0.1 * grantham_sum
+        qso = [
+            *(round(counts[residue] / schneider_denominator, 4) for residue in AMINO_ACID_ORDER),
+            *(round(counts[residue] / grantham_denominator, 4) for residue in AMINO_ACID_ORDER),
+            round(0.1 * schneider_sum / schneider_denominator, 4),
+            round(0.1 * schneider_sum / schneider_denominator, 4),
+        ]
+        rows.append([*paac, *apaac, *qso])
+    values = np.asarray(rows, dtype=np.float64)
+    if values.shape != (len(validated), 86) or not np.isfinite(values).all():
+        raise ValueError("common tail block failed shape or finiteness contract")
+    return values, feature_names
+
+
+def compute_classifier_specific_block(
+    sequences: list[str], data_root: Path
+) -> tuple[np.ndarray, list[str]]:
+    validated = validate_sequences(sequences)
+    pcp = np.asarray(_read_numeric_csv(data_root / "PhysicoChemical.csv"), dtype=np.float64)
+    if pcp.shape != (30, 20):
+        raise ValueError("physicochemical reference table must be 30x20")
+    residue_index = {residue: index for index, residue in enumerate(AMINO_ACID_ORDER)}
+    names = [
+        "SEP_PC",
+        "SEP_NC",
+        "SEP_NE",
+        "SEP_PO",
+        "SEP_NP",
+        "SEP_AL",
+        "SEP_CY",
+        "SEP_AR",
+        "SEP_AC",
+        "SEP_BS",
+        "SEP_NE_pH",
+        "SEP_HB",
+        "SEP_HL",
+        "SEP_NT",
+        "SEP_HX",
+        "SEP_SC",
+        "SEP_SS_HE",
+        "SEP_SS_ST",
+        "SEP_SS_CO",
+        "SEP_SA_BU",
+        "SEP_SA_EX",
+        "SEP_SA_IN",
+        "SEP_TN",
+        "SEP_SM",
+        "SEP_LR",
+    ]
+    rows: list[list[float]] = []
+    for sequence in validated:
+        encoded = [residue_index[residue] for residue in sequence]
+        probabilities = pcp[:25, encoded].mean(axis=1)
+        entropy = [
+            0.0
+            if probability in {0.0, 1.0}
+            else round(
+                -(
+                    probability * math.log2(probability)
+                    + (1.0 - probability) * math.log2(1.0 - probability)
+                ),
+                3,
+            )
+            for probability in probabilities
+        ]
+        rows.append(entropy)
+    values = np.asarray(rows, dtype=np.float64)
+    if values.shape != (len(validated), 25) or not np.isfinite(values).all():
+        raise ValueError("classifier-specific block failed shape or finiteness contract")
+    return values, names
+
+
+def compute_regression_specific_block(
+    sequences: list[str], data_root: Path
+) -> tuple[np.ndarray, list[str]]:
+    validated = validate_sequences(sequences)
+    if any(len(sequence) < 2 for sequence in validated):
+        raise ValueError("SOC gap 1 requires sequences of length at least two")
+    schneider = _load_distance_matrix(data_root / "Schneider-Wrede.csv")
+    grantham = _load_distance_matrix(data_root / "Grantham.csv")
+    rows = [
+        [
+            round(_squared_distance_sum(sequence, schneider) / (len(sequence) - 1), 4),
+            round(_squared_distance_sum(sequence, grantham) / (len(sequence) - 1), 4),
+        ]
+        for sequence in validated
+    ]
+    values = np.asarray(rows, dtype=np.float64)
+    if values.shape != (len(validated), 2) or not np.isfinite(values).all():
+        raise ValueError("regression-specific block failed shape or finiteness contract")
+    return values, ["SOC1_SC1", "SOC1_G1"]
+
+
+def assemble_feature_matrices(
+    sequences: list[str], data_root: Path
+) -> dict[str, tuple[np.ndarray, list[str]]]:
+    """Assemble and validate the two complete, model-specific feature matrices."""
+
+    blocks = [
+        compute_basic_feature_block(sequences),
+        compute_reference_table_feature_block(sequences, data_root),
+        compute_entropy_feature_block(sequences),
+        compute_conjoint_triad_block(sequences),
+        compute_ctd_block(sequences, data_root / "aa_attr_group.csv"),
+        compute_common_tail_block(sequences, data_root),
+    ]
+    common_values = np.concatenate([block[0] for block in blocks], axis=1)
+    common_names = [name for block in blocks for name in block[1]]
+    classifier_tail = compute_classifier_specific_block(sequences, data_root)
+    regression_tail = compute_regression_specific_block(sequences, data_root)
+    classifier = (
+        np.concatenate([common_values, classifier_tail[0]], axis=1),
+        [*common_names, *classifier_tail[1]],
+    )
+    regression = (
+        np.concatenate([common_values, regression_tail[0]], axis=1),
+        [*common_names, *regression_tail[1]],
+    )
+    FeatureMatrixContract(
+        feature_count=1190,
+        ordered_feature_names_sha256=(
+            "aad3eca84e467f5d6d48ab1f49096de5eb48b9354a71cef042529526342fc778"
+        ),
+        first_feature="Molecular Weight (kDa)",
+        last_feature="SEP_LR",
+    ).validate(*classifier)
+    FeatureMatrixContract(
+        feature_count=1167,
+        ordered_feature_names_sha256=(
+            "d8ea48ee923d6275ff3bb904b609974c4116ed9e0aecee968a52cb51066c618e"
+        ),
+        first_feature="Molecular Weight (kDa)",
+        last_feature="SOC1_G1",
+    ).validate(*regression)
+    return {"classification": classifier, "regression": regression}
+
+
 @dataclass(frozen=True)
 class FeatureMatrixContract:
     feature_count: int

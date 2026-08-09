@@ -71,6 +71,7 @@ class RuntimeEnvironmentSpec(BaseModel):
 
 class ImplementedFeatureBlockSpec(BaseModel):
     block_id: str = Field(min_length=1)
+    model_scope: Literal["common", "classification", "regression"] = "common"
     feature_count: int = Field(ge=1)
     ordered_feature_names_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     model_offset_start: int = Field(ge=0)
@@ -79,6 +80,7 @@ class ImplementedFeatureBlockSpec(BaseModel):
     formal_cohort_accessed: Literal[False]
     reference_order_dependence_preserved: bool = False
     reference_unmapped_residue_behavior_preserved: bool = False
+    reference_cross_matrix_bug_preserved: bool = False
 
     @model_validator(mode="after")
     def require_exact_span(self) -> ImplementedFeatureBlockSpec:
@@ -227,4 +229,36 @@ class SafetyValidationManifest(BaseModel):
         }
         if any(self.scientific_contract.get(flag) is not True for flag in required_flags):
             raise ValueError("scientific_contract is missing a required true flag")
+        block_ids = [block.block_id for block in self.implemented_feature_blocks]
+        if len(block_ids) != len(set(block_ids)):
+            raise ValueError("implemented feature block ids must be unique")
+        common = sorted(
+            (
+                block.model_offset_start,
+                block.model_offset_end_exclusive,
+            )
+            for block in self.implemented_feature_blocks
+            if block.model_scope == "common"
+        )
+        if common:
+            cursor = 0
+            for start, end in common:
+                if start != cursor:
+                    raise ValueError("common feature blocks must be contiguous from column zero")
+                cursor = end
+            if cursor != 1165:
+                raise ValueError("common feature blocks must close exactly 1165 columns")
+            model_specific = {
+                block.model_scope: (
+                    block.model_offset_start,
+                    block.model_offset_end_exclusive,
+                )
+                for block in self.implemented_feature_blocks
+                if block.model_scope != "common"
+            }
+            if model_specific != {
+                "classification": (1165, 1190),
+                "regression": (1165, 1167),
+            }:
+                raise ValueError("model-specific feature tails must close both RF contracts")
         return self

@@ -150,7 +150,14 @@ def test_v26_records_only_partial_feature_implementation() -> None:
     assert blocks["conjoint_triad"].feature_count == 343
     assert blocks["cetd"].feature_count == 189
     assert blocks["cetd"].reference_unmapped_residue_behavior_preserved
-    assert sum(item.feature_count for item in blocks.values()) == 1079
+    assert blocks["paac_apaac_qso"].feature_count == 86
+    assert blocks["paac_apaac_qso"].reference_cross_matrix_bug_preserved
+    common = sum(
+        item.feature_count for item in blocks.values() if item.model_scope == "common"
+    )
+    assert common == 1165
+    assert common + blocks["classifier_sep_property_entropy"].feature_count == 1190
+    assert common + blocks["regression_soc"].feature_count == 1167
     assert all(item.implemented_without_upstream_execution for item in blocks.values())
     assert all(item.formal_cohort_accessed is False for item in blocks.values())
 

@@ -13,6 +13,7 @@ from pepagent.hemopi2_adapter import (
     HEMOPI2_PICKLE_GLOBALS,
     FeatureMatrixContract,
     RestrictedSklearnUnpickler,
+    assemble_feature_matrices,
     canonical_smoke_bytes,
     compute_basic_feature_block,
     compute_conjoint_triad_block,
@@ -135,6 +136,28 @@ def test_ctd_block_preserves_reference_headers_and_finite_values() -> None:
     assert values.sum() == pytest.approx(1159.0)
     assert hashlib.sha256(("\n".join(names) + "\n").encode()).hexdigest() == (
         "b989be84be86fc82d3b395d5887c264fa5db8b270b8660d91fe16cc1eec9e0d4"
+    )
+
+
+def test_complete_feature_matrices_close_both_model_contracts() -> None:
+    sequences = ["ACDEFGHIKLMNPQRSTVWY", "KKLLWWRRAACCDD"]
+    first = assemble_feature_matrices(sequences, HEMOPI2_DATA)
+    second = assemble_feature_matrices(sequences, HEMOPI2_DATA)
+    classifier, classifier_names = first["classification"]
+    regression, regression_names = first["regression"]
+    assert classifier.shape == (2, 1190)
+    assert regression.shape == (2, 1167)
+    assert np.isfinite(classifier).all()
+    assert np.isfinite(regression).all()
+    assert classifier_names[-1] == "SEP_LR"
+    assert regression_names[-1] == "SOC1_G1"
+    assert np.array_equal(classifier, second["classification"][0])
+    assert np.array_equal(regression, second["regression"][0])
+    assert hashlib.sha256(classifier.tobytes()).hexdigest() == (
+        "111cdda9288ca190992d04df8437c49e457c828fde1bfd0fe091a1d75a900f9e"
+    )
+    assert hashlib.sha256(regression.tobytes()).hexdigest() == (
+        "299640291677ebe02e2141cfe328dd92b4bdddfa4bdf55010a38cea4198c20c6"
     )
 
 

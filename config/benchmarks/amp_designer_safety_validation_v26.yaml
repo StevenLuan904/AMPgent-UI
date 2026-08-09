@@ -137,6 +137,30 @@ implemented_feature_blocks:
     implemented_without_upstream_execution: true
     formal_cohort_accessed: false
     reference_unmapped_residue_behavior_preserved: true
+  - block_id: paac_apaac_qso
+    feature_count: 86
+    ordered_feature_names_sha256: 03d6c2878600d112ff5235288266e73c0c43c178b3d8efdb0487409e377a418c
+    model_offset_start: 1079
+    model_offset_end_exclusive: 1165
+    implemented_without_upstream_execution: true
+    formal_cohort_accessed: false
+    reference_cross_matrix_bug_preserved: true
+  - block_id: classifier_sep_property_entropy
+    model_scope: classification
+    feature_count: 25
+    ordered_feature_names_sha256: f04ad9214c64467299dd2d7c3da9c19b724a57fe6c6ec126482b3bcc672b8fec
+    model_offset_start: 1165
+    model_offset_end_exclusive: 1190
+    implemented_without_upstream_execution: true
+    formal_cohort_accessed: false
+  - block_id: regression_soc
+    model_scope: regression
+    feature_count: 2
+    ordered_feature_names_sha256: 7d5397b748bdec8a0230fb03612f53c4ad86e71d9bdb2ce2ab039519ae1eaf7c
+    model_offset_start: 1165
+    model_offset_end_exclusive: 1167
+    implemented_without_upstream_execution: true
+    formal_cohort_accessed: false
 
 training_overlap_audit:
   - dataset_name: cross_val_dataset.csv
