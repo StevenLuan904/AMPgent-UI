@@ -147,7 +147,10 @@ def test_v26_records_only_partial_feature_implementation() -> None:
     assert blocks["atc_btc_pcp_rri_pri_ddr"].feature_count == 104
     assert blocks["atc_btc_pcp_rri_pri_ddr"].reference_order_dependence_preserved
     assert blocks["ser_sep_entropy"].feature_count == 21
-    assert sum(item.feature_count for item in blocks.values()) == 547
+    assert blocks["conjoint_triad"].feature_count == 343
+    assert blocks["cetd"].feature_count == 189
+    assert blocks["cetd"].reference_unmapped_residue_behavior_preserved
+    assert sum(item.feature_count for item in blocks.values()) == 1079
     assert all(item.implemented_without_upstream_execution for item in blocks.values())
     assert all(item.formal_cohort_accessed is False for item in blocks.values())
 

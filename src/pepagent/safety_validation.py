@@ -78,6 +78,7 @@ class ImplementedFeatureBlockSpec(BaseModel):
     implemented_without_upstream_execution: Literal[True]
     formal_cohort_accessed: Literal[False]
     reference_order_dependence_preserved: bool = False
+    reference_unmapped_residue_behavior_preserved: bool = False
 
     @model_validator(mode="after")
     def require_exact_span(self) -> ImplementedFeatureBlockSpec:

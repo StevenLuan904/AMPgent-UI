@@ -122,6 +122,21 @@ implemented_feature_blocks:
     model_offset_end_exclusive: 547
     implemented_without_upstream_execution: true
     formal_cohort_accessed: false
+  - block_id: conjoint_triad
+    feature_count: 343
+    ordered_feature_names_sha256: 1d7c07d7e24e40e0c4ace24a8fbf246cbe30f7fb43f86ec9650e04f7437c81ef
+    model_offset_start: 547
+    model_offset_end_exclusive: 890
+    implemented_without_upstream_execution: true
+    formal_cohort_accessed: false
+  - block_id: cetd
+    feature_count: 189
+    ordered_feature_names_sha256: b989be84be86fc82d3b395d5887c264fa5db8b270b8660d91fe16cc1eec9e0d4
+    model_offset_start: 890
+    model_offset_end_exclusive: 1079
+    implemented_without_upstream_execution: true
+    formal_cohort_accessed: false
+    reference_unmapped_residue_behavior_preserved: true
 
 training_overlap_audit:
   - dataset_name: cross_val_dataset.csv

@@ -15,6 +15,8 @@ from pepagent.hemopi2_adapter import (
     RestrictedSklearnUnpickler,
     canonical_smoke_bytes,
     compute_basic_feature_block,
+    compute_conjoint_triad_block,
+    compute_ctd_block,
     compute_entropy_feature_block,
     compute_reference_table_feature_block,
     load_restricted_sklearn_pickle,
@@ -108,6 +110,32 @@ def test_reference_table_feature_block_is_repeatable_for_fixed_order() -> None:
     second = compute_reference_table_feature_block(sequences, HEMOPI2_DATA)
     assert first[1] == second[1]
     assert np.array_equal(first[0], second[0])
+
+
+def test_conjoint_triad_block_has_exact_model_order() -> None:
+    values, names = compute_conjoint_triad_block(["AAA"])
+    assert values.shape == (1, 343)
+    assert names[0] == "CTC_111"
+    assert names[-1] == "CTC_777"
+    assert values[0, 0] == 1.0
+    assert values.sum() == 1.0
+    assert hashlib.sha256(("\n".join(names) + "\n").encode()).hexdigest() == (
+        "1d7c07d7e24e40e0c4ace24a8fbf246cbe30f7fb43f86ec9650e04f7437c81ef"
+    )
+
+
+def test_ctd_block_preserves_reference_headers_and_finite_values() -> None:
+    values, names = compute_ctd_block(
+        ["ACDEFGHIKLMNPQRSTVWY"], HEMOPI2_DATA / "aa_attr_group.csv"
+    )
+    assert values.shape == (1, 189)
+    assert np.isfinite(values).all()
+    assert names[0] == "CeTD_HB1"
+    assert names[-1] == "CeTD_100_p_SA3"
+    assert values.sum() == pytest.approx(1159.0)
+    assert hashlib.sha256(("\n".join(names) + "\n").encode()).hexdigest() == (
+        "b989be84be86fc82d3b395d5887c264fa5db8b270b8660d91fe16cc1eec9e0d4"
+    )
 
 
 def test_feature_contract_accepts_only_exact_finite_matrix() -> None:

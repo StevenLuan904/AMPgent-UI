@@ -307,6 +307,142 @@ def compute_reference_table_feature_block(
     return values, feature_names
 
 
+CTC_GROUP = {
+    "A": "1",
+    "G": "1",
+    "V": "1",
+    "I": "2",
+    "L": "2",
+    "F": "2",
+    "P": "2",
+    "Y": "3",
+    "M": "3",
+    "T": "3",
+    "S": "3",
+    "H": "4",
+    "N": "4",
+    "Q": "4",
+    "W": "4",
+    "R": "5",
+    "K": "5",
+    "D": "6",
+    "E": "6",
+    "C": "7",
+}
+
+
+def compute_conjoint_triad_block(
+    sequences: list[str],
+) -> tuple[np.ndarray, list[str]]:
+    validated = validate_sequences(sequences)
+    if any(len(sequence) < 3 for sequence in validated):
+        raise ValueError("CTC requires every sequence to contain at least three residues")
+    triads = [f"{a}{b}{c}" for a in "1234567" for b in "1234567" for c in "1234567"]
+    feature_names = [f"CTC_{triad}" for triad in triads]
+    rows: list[list[float]] = []
+    for sequence in validated:
+        grouped = "".join(CTC_GROUP[residue] for residue in sequence)
+        counts = Counter(grouped[index : index + 3] for index in range(len(grouped) - 2))
+        raw = [counts[triad] for triad in triads]
+        minimum = min(raw)
+        maximum = max(raw)
+        if maximum == 0:
+            raise ValueError("CTC has no observed triad")
+        rows.append([round((value - minimum) / maximum, 3) for value in raw])
+    values = np.asarray(rows, dtype=np.float64)
+    if values.shape != (len(validated), 343) or not np.isfinite(values).all():
+        raise ValueError("CTC block failed shape or finiteness contract")
+    return values, feature_names
+
+
+def _load_ctd_groups(path: Path) -> list[list[set[str]]]:
+    with path.open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.reader(handle, delimiter="\t"))
+    if len(rows) != 8 or rows[0] != ["attr", "1", "2", "3"]:
+        raise ValueError("CeTD attribute table shape or header drifted")
+    groups: list[list[set[str]]] = []
+    for row in rows[1:]:
+        if len(row) != 4:
+            raise ValueError("CeTD attribute row shape drifted")
+        parsed = [set(value[::2]) for value in row[1:]]
+        observed = set.union(*parsed)
+        if (
+            not observed.issubset(STANDARD_AMINO_ACIDS)
+            or len(observed) < 19
+            or sum(map(len, parsed)) != len(observed)
+        ):
+            raise ValueError("CeTD attribute groups must be disjoint standard residues")
+        groups.append(parsed)
+    return groups
+
+
+def compute_ctd_block(
+    sequences: list[str], attribute_path: Path
+) -> tuple[np.ndarray, list[str]]:
+    """Reproduce the reference CeTD value order and its published headers."""
+
+    validated = validate_sequences(sequences)
+    groups = _load_ctd_groups(attribute_path)
+    attributes = ["HB", "VW", "PO", "PZ", "CH", "SS", "SA"]
+    composition_names = [
+        f"CeTD_{attribute}{group}"
+        for attribute in attributes
+        for group in range(1, 4)
+    ]
+    pairs = [f"{left}{right}" for left in range(1, 4) for right in range(1, 4)]
+    transition_names = [
+        f"CeTD_{pair}_{attribute}" for pair in pairs for attribute in attributes
+    ]
+    percentiles = ["0_p", "25_p", "50_p", "75_p", "100_p"]
+    distribution_names = [
+        f"CeTD_{percentile}_{attribute}{group}"
+        for group in range(1, 4)
+        for attribute in attributes
+        for percentile in percentiles
+    ]
+    feature_names = composition_names + transition_names + distribution_names
+    rows: list[list[float]] = []
+    for sequence in validated:
+        encoded_by_attribute: list[list[int]] = []
+        for attribute_groups in groups:
+            mapping = {
+                residue: group_index
+                for group_index, residues in enumerate(attribute_groups, start=1)
+                for residue in residues
+            }
+            encoded = [mapping[residue] for residue in sequence if residue in mapping]
+            if not encoded:
+                raise ValueError("CeTD attribute has no mapped residues for a sequence")
+            encoded_by_attribute.append(encoded)
+        composition: list[float] = []
+        for encoded in encoded_by_attribute:
+            composition.extend(
+                _rounded(encoded.count(group) / len(encoded) * 100.0, 2)
+                for group in range(1, 4)
+            )
+        transitions: list[float] = []
+        for encoded in encoded_by_attribute:
+            adjacent = Counter(zip(encoded, encoded[1:], strict=False))
+            transitions.extend(
+                float(adjacent[(left, right)])
+                for left in range(1, 4)
+                for right in range(1, 4)
+            )
+        distribution: list[float] = []
+        for encoded in encoded_by_attribute:
+            for group in range(1, 4):
+                count = encoded.count(group)
+                distribution.extend(
+                    float(math.floor(percentile * count / 100.0))
+                    for percentile in (0, 25, 50, 75, 100)
+                )
+        rows.append([*composition, *transitions, *distribution])
+    values = np.asarray(rows, dtype=np.float64)
+    if values.shape != (len(validated), 189) or not np.isfinite(values).all():
+        raise ValueError("CeTD block failed shape or finiteness contract")
+    return values, feature_names
+
+
 @dataclass(frozen=True)
 class FeatureMatrixContract:
     feature_count: int
