@@ -14,6 +14,7 @@ CONFIG_PATH = ROOT / "config" / "benchmarks" / "amp_designer_safety_validation_v
 MODEL_MANIFEST_PATH = (
     ROOT / "config" / "models" / "manifests" / "hemopi2_zenodo_14676712.json"
 )
+ENVIRONMENT_PATH = ROOT / "config" / "environments" / "hemopi2_v26_environment.json"
 
 
 def _payload() -> dict:
@@ -109,6 +110,34 @@ def test_v26_extraction_allowlist_excludes_upstream_risky_surfaces() -> None:
     assert manifest.adapter_contract.sklearn_version == "1.3.1"
     assert manifest.adapter_contract.classification_feature_contract.feature_count == 1190
     assert manifest.adapter_contract.regression_feature_contract.feature_count == 1167
+
+
+def test_v26_runtime_is_hash_locked_without_model_access() -> None:
+    manifest = SafetyValidationManifest.model_validate(_payload())
+    runtime = manifest.runtime_environment
+    lock_path = ROOT / runtime.requirements_lock_path
+    import hashlib
+
+    assert hashlib.sha256(lock_path.read_bytes()).hexdigest() == (
+        runtime.requirements_lock_sha256
+    )
+    environment = json.loads(ENVIRONMENT_PATH.read_text(encoding="utf-8"))
+    assert environment["status"] == "installed_verified"
+    assert environment["requirements_lock_sha256"] == runtime.requirements_lock_sha256
+    assert environment["wheelhouse_inventory_sha256"] == (
+        runtime.wheelhouse_inventory_sha256
+    )
+    assert environment["required_versions"]["scikit-learn"] == "1.3.1"
+    assert environment["verification"]["model_deserialization_attempted"] is False
+    assert environment["verification"]["formal_cohort_accessed"] is False
+
+
+def test_v26_rejects_runtime_that_accessed_model_or_formal_cohort() -> None:
+    for field in ("model_deserialization_attempted", "formal_cohort_accessed"):
+        payload = deepcopy(_payload())
+        payload["runtime_environment"][field] = True
+        with pytest.raises(ValueError):
+            SafetyValidationManifest.model_validate(payload)
 
 
 def test_v26_rejects_forbidden_extraction_surface() -> None:

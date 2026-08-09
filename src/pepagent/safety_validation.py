@@ -56,6 +56,19 @@ class FeatureContractSpec(BaseModel):
     last_feature: str = Field(min_length=1)
 
 
+class RuntimeEnvironmentSpec(BaseModel):
+    manifest_path: str = Field(min_length=1)
+    requirements_lock_path: str = Field(min_length=1)
+    requirements_lock_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    wheelhouse_inventory_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    runtime_path: str = Field(min_length=1)
+    python_version: Literal["3.11.10"]
+    sklearn_version: Literal["1.3.1"]
+    install_status: Literal["installed_verified"]
+    model_deserialization_attempted: Literal[False]
+    formal_cohort_accessed: Literal[False]
+
+
 class NarrowAdapterContract(BaseModel):
     adapter_id: str = Field(min_length=1)
     classification_backend: Literal["random_forest_model_1"]
@@ -149,6 +162,7 @@ class SafetyValidationManifest(BaseModel):
     paper_venue: str = Field(min_length=1)
     archive: ValidatorArchiveSpec
     adapter_contract: NarrowAdapterContract
+    runtime_environment: RuntimeEnvironmentSpec
     training_overlap_audit: list[TrainingOverlapSpec] = Field(min_length=1)
     expected_output_columns: list[str] = Field(min_length=1)
     expected_output_rows: int = Field(ge=1)
