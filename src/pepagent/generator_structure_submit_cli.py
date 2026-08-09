@@ -26,6 +26,8 @@ async def submit(manifest_path: Path) -> dict[str, object]:
     manifest = GeneratorStructureScreenManifest.model_validate(payload)
     if manifest.execution_status != "cohort_frozen":
         raise ValueError("structure submission requires cohort_frozen status")
+    if not manifest.execution_authorized or manifest.formal_run_limit != 1:
+        raise ValueError("v31 formal structure run is not authorized")
     base_dir = manifest_path.parent
     rows = load_frozen_structure_cohort(manifest, base_dir)
     spec_path = Path(manifest.spec_path)
@@ -49,6 +51,11 @@ async def submit(manifest_path: Path) -> dict[str, object]:
         "cohort_sha256": manifest.completion.cohort_sha256,
         "candidate_count": len(rows),
         "pepmlm_used": False,
+        "formal_run_limit": manifest.formal_run_limit,
+        "implementation_revision": manifest.completion.implementation_revision,
+        "implementation_archive_sha256": (
+            manifest.completion.implementation_archive_sha256
+        ),
     }
     async with SessionFactory() as session, session.begin():
         repository = ExperimentRepository(session)

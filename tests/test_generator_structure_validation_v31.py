@@ -115,6 +115,8 @@ def _manifest(tmp_path: Path) -> dict:
         "structure_claim_scope": "same_protocol_relative_target_specific_computational_evidence",
         "no_binding_or_affinity_claim": True,
         "frozen_predecessors_unchanged": True,
+        "execution_authorized": False,
+        "formal_run_limit": 1,
     }
 
 
@@ -156,6 +158,8 @@ def test_v31_frozen_loader_requires_exact_hash_order_and_quota(tmp_path: Path) -
     cohort_sha, audit_sha = write_frozen_outputs(rows, audit, cohort_path, audit_path)
     payload["execution_status"] = "cohort_frozen"
     payload["completion"] = {
+        "implementation_revision": "a" * 40,
+        "implementation_archive_sha256": "b" * 64,
         "cohort_path": "cohort.csv",
         "cohort_sha256": cohort_sha,
         "audit_path": "audit.json",

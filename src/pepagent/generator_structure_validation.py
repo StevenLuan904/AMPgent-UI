@@ -88,6 +88,8 @@ class DescriptorQualificationSpec(BaseModel):
 
 
 class GeneratorStructureScreenCompletion(BaseModel):
+    implementation_revision: str = Field(pattern=r"^[0-9a-f]{40}$")
+    implementation_archive_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     cohort_path: str = Field(min_length=1)
     cohort_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     audit_path: str = Field(min_length=1)
@@ -113,6 +115,8 @@ class GeneratorStructureScreenManifest(BaseModel):
     ]
     no_binding_or_affinity_claim: bool
     frozen_predecessors_unchanged: bool
+    execution_authorized: bool = False
+    formal_run_limit: Literal[1]
     completion: GeneratorStructureScreenCompletion | None = None
 
     @field_validator("sources")
@@ -143,6 +147,8 @@ class GeneratorStructureScreenManifest(BaseModel):
             raise ValueError("preregistered manifest cannot contain completion hashes")
         if self.execution_status != "preregistered" and self.completion is None:
             raise ValueError("frozen or later manifest requires completion hashes")
+        if self.execution_status in {"running", "completed"} and not self.execution_authorized:
+            raise ValueError("running or completed v31 requires explicit execution authorization")
         return self
 
 
