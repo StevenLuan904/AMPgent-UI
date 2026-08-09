@@ -1,6 +1,6 @@
 validation_id: amp_designer_safety_validation_v27
 version: v27.0.0-upstream-hc50-semantics-preregistered
-execution_status: formal_authorized
+execution_status: completed_with_label_semantics_caveat
 track: frozen_cohort_external_safety_validation
 parent_validation_id: amp_designer_safety_validation_v26
 parent_status_required: smoke_failed_nondeterministic
@@ -111,13 +111,49 @@ nonformal_smoke:
         hc50_um: 33.672
 
 formal_execution:
-  status: authorized_not_run
+  status: completed
   allowed_run_count_after_ready: 1
+  completed_run_count: 1
   full_300_row_cohort_required: true
   filtering_reordering_deduplication_omission_forbidden: true
   one_to_one_output_required: true
   transformed_hc50_only: true
   raw_hc50_label_forbidden: true
+  output_path: reports/amp_designer_safety_validation_v27_20260809.csv
+  output_row_count: 300
+  output_sha256: 96f74a51074843b8abc2968bc031d2f54a03774d4bf903ccc58bf34c71650382
+  result_sidecar_path: var/generator-iteration/v27-hemopi2-formal/formal-result-sidecar.json
+  rerun_forbidden: true
+
+post_run_semantic_audit:
+  classification_source_member: hemopi2/hemopi2_classification.py
+  classification_source_member_sha256: 60d60c840636d8aedbdb1f97758dec5bdac49410df5859ba8ae2216444a6452d
+  score_reporting_lines: 57-67
+  score_reporting_lines_sha256: ab9c869b891c74b0931c9ef259472cb9b14020804398da02dbc248d12d1a4400
+  default_threshold_lines: 459-467
+  default_threshold_lines_sha256: 9b8eef58883cf629cb7383e3cda62cb74a6c84278a75f48300842392475f8a96
+  official_rf_display_contract:
+    score_round_decimal_places: 3
+    hemolytic_threshold_inclusive: 0.45
+  stored_classification_label_semantics: estimator_native_predict_label
+  stored_label_is_official_display_label: false
+  native_vs_official_label_disagreement_count: 20
+  aggregate_summary:
+    official_rf_hemolytic_count: 142
+    official_rf_nonhemolytic_count: 158
+    hc50_below_100um_count: 145
+    hc50_at_least_100um_count: 155
+    hc50_median_um: 103.0905
+    hc50_mean_um: 110.78572333333337
+    classification_hc50_binary_agreement_count: 271
+    classification_hc50_binary_disagreement_count: 29
+  summary_path: reports/amp_designer_safety_validation_v27_summary_20260809.csv
+  summary_sha256: 52fd0ff904cb2efb58defbb54e6e74c8a6663abafdc27eb9c41bed1672b04bc5
+  interpretation: >-
+    HemoPI2 gives a mixed safety signal for the frozen AMP-Designer cohort:
+    approximately half are predicted hemolytic by either official RF threshold
+    or the independent HC50 head. This remains within-model soft prediction,
+    not experimental safety evidence and not a basis for candidate selection.
 
 evidence_scope:
   evidence_class: independent_model_family_soft_safety_validation

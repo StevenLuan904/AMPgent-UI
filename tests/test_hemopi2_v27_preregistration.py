@@ -22,14 +22,35 @@ def test_v27_is_append_only_and_smoke_passed_without_formal_access() -> None:
     assert v27["parent_validation_id"] == v26["validation_id"]
     assert v27["parent_status_required"] == v26["execution_status"]
     assert v27["parent_results_immutable"] is True
-    assert v27["execution_status"] == "passed_ready"
+    assert v27["execution_status"] == "completed_with_label_semantics_caveat"
     assert v27["nonformal_smoke"]["status"] == "passed"
     audit = v27["nonformal_smoke"]["completed_audit"]
     assert audit["attempt_count"] == 2
     assert audit["canonical_bytes_equal"] is True
     assert audit["first_output_sha256"] == audit["second_output_sha256"]
     assert audit["formal_cohort_accessed"] is False
-    assert v27["formal_execution"]["status"] == "ready_not_run"
+    formal = v27["formal_execution"]
+    assert formal["status"] == "completed"
+    assert formal["completed_run_count"] == 1
+    assert formal["output_row_count"] == 300
+    assert formal["rerun_forbidden"] is True
+
+
+def test_v27_post_run_label_semantics_are_explicit() -> None:
+    audit = _manifest(V27_PATH)["post_run_semantic_audit"]
+    assert audit["official_rf_display_contract"] == {
+        "score_round_decimal_places": 3,
+        "hemolytic_threshold_inclusive": 0.45,
+    }
+    assert audit["stored_classification_label_semantics"] == (
+        "estimator_native_predict_label"
+    )
+    assert audit["stored_label_is_official_display_label"] is False
+    assert audit["native_vs_official_label_disagreement_count"] == 20
+    summary = audit["aggregate_summary"]
+    assert summary["official_rf_hemolytic_count"] == 142
+    assert summary["hc50_below_100um_count"] == 145
+    assert summary["classification_hc50_binary_agreement_count"] == 271
 
 
 def test_v27_freezes_full_v25_cohort_without_selection() -> None:
