@@ -3,7 +3,9 @@ from __future__ import annotations
 import hashlib
 import io
 import json
+import math
 import pickle
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, BinaryIO
@@ -13,6 +15,29 @@ import numpy as np
 from pepagent.archive_audit import scan_pickle_opcodes
 
 STANDARD_AMINO_ACIDS = frozenset("ACDEFGHIKLMNPQRSTVWY")
+AMINO_ACID_ORDER = "ACDEFGHIKLMNPQRSTVWY"
+MOLECULAR_WEIGHT_KDA = {
+    "A": 0.089,
+    "R": 0.174,
+    "N": 0.132,
+    "D": 0.133,
+    "C": 0.121,
+    "E": 0.147,
+    "Q": 0.146,
+    "G": 0.075,
+    "H": 0.155,
+    "I": 0.131,
+    "L": 0.131,
+    "K": 0.146,
+    "M": 0.150,
+    "F": 0.165,
+    "P": 0.115,
+    "S": 0.105,
+    "T": 0.119,
+    "W": 0.204,
+    "Y": 0.181,
+    "V": 0.117,
+}
 
 HEMOPI2_PICKLE_GLOBALS = frozenset(
     {
@@ -44,6 +69,75 @@ def validate_sequences(sequences: list[str]) -> list[str]:
             raise ValueError(f"sequence {index} has invalid residues: {''.join(invalid)}")
         validated.append(sequence)
     return validated
+
+
+def _rounded(value: float, digits: int) -> float:
+    return float(f"{value:.{digits}f}")
+
+
+def compute_basic_feature_block(sequences: list[str]) -> tuple[np.ndarray, list[str]]:
+    """Compute the audited, file-free MW/length/AAC/DPC1 block."""
+
+    validated = validate_sequences(sequences)
+    if any(len(sequence) < 2 for sequence in validated):
+        raise ValueError("DPC1 requires every sequence to contain at least two residues")
+    feature_names = ["Molecular Weight (kDa)", "length"]
+    feature_names.extend(f"AAC_{residue}" for residue in AMINO_ACID_ORDER)
+    feature_names.extend(
+        f"DPC1_{left}{right}"
+        for left in AMINO_ACID_ORDER
+        for right in AMINO_ACID_ORDER
+    )
+    rows: list[list[float]] = []
+    for sequence in validated:
+        counts = Counter(sequence)
+        molecular_weight = sum(MOLECULAR_WEIGHT_KDA[aa] for aa in sequence)
+        molecular_weight -= 0.018 * (len(sequence) - 1)
+        row = [_rounded(molecular_weight, 3), float(len(sequence))]
+        row.extend(
+            _rounded(counts[residue] / len(sequence) * 100.0, 2)
+            for residue in AMINO_ACID_ORDER
+        )
+        dipeptides = Counter(
+            sequence[index : index + 2] for index in range(len(sequence) - 1)
+        )
+        denominator = len(sequence) - 1
+        row.extend(
+            _rounded(dipeptides[left + right] / denominator * 100.0, 2)
+            for left in AMINO_ACID_ORDER
+            for right in AMINO_ACID_ORDER
+        )
+        rows.append(row)
+    values = np.asarray(rows, dtype=np.float64)
+    if values.shape != (len(validated), 422) or not np.isfinite(values).all():
+        raise ValueError("basic feature block failed its fixed shape or finiteness contract")
+    return values, feature_names
+
+
+def compute_entropy_feature_block(
+    sequences: list[str],
+) -> tuple[np.ndarray, list[str]]:
+    """Compute residue-level entropy followed by whole-sequence entropy."""
+
+    validated = validate_sequences(sequences)
+    feature_names = [f"SER_{residue}" for residue in AMINO_ACID_ORDER] + ["SEP"]
+    rows: list[list[float]] = []
+    for sequence in validated:
+        counts = Counter(sequence)
+        length = len(sequence)
+        residue_entropy = []
+        for residue in AMINO_ACID_ORDER:
+            frequency = counts[residue] / length
+            value = 0.0 if frequency == 0.0 else frequency * math.log2(frequency)
+            residue_entropy.append(round(value, 3))
+        whole_entropy = -sum(
+            (count / length) * math.log2(count / length) for count in counts.values()
+        )
+        rows.append([*residue_entropy, round(whole_entropy, 3)])
+    values = np.asarray(rows, dtype=np.float64)
+    if values.shape != (len(validated), 21) or not np.isfinite(values).all():
+        raise ValueError("entropy feature block failed its fixed shape or finiteness contract")
+    return values, feature_names
 
 
 @dataclass(frozen=True)

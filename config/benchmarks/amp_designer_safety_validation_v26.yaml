@@ -99,6 +99,22 @@ runtime_environment:
   model_deserialization_attempted: false
   formal_cohort_accessed: false
 
+implemented_feature_blocks:
+  - block_id: mw_length_aac_dpc1
+    feature_count: 422
+    ordered_feature_names_sha256: 61bf86021298b4314b9471ed89e6e6c049fd8bebb18a98359ee200cdede9bf0c
+    model_offset_start: 0
+    model_offset_end_exclusive: 422
+    implemented_without_upstream_execution: true
+    formal_cohort_accessed: false
+  - block_id: ser_sep_entropy
+    feature_count: 21
+    ordered_feature_names_sha256: 07b18ea0c6d9f5e8d3ad0a55883b65959f0f1c74b56f41fc10e9075fe9a729c7
+    model_offset_start: 526
+    model_offset_end_exclusive: 547
+    implemented_without_upstream_execution: true
+    formal_cohort_accessed: false
+
 training_overlap_audit:
   - dataset_name: cross_val_dataset.csv
     size_bytes: 41446

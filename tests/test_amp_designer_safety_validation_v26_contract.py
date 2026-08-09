@@ -140,6 +140,23 @@ def test_v26_rejects_runtime_that_accessed_model_or_formal_cohort() -> None:
             SafetyValidationManifest.model_validate(payload)
 
 
+def test_v26_records_only_partial_feature_implementation() -> None:
+    manifest = SafetyValidationManifest.model_validate(_payload())
+    blocks = {item.block_id: item for item in manifest.implemented_feature_blocks}
+    assert blocks["mw_length_aac_dpc1"].feature_count == 422
+    assert blocks["ser_sep_entropy"].feature_count == 21
+    assert sum(item.feature_count for item in blocks.values()) == 443
+    assert all(item.implemented_without_upstream_execution for item in blocks.values())
+    assert all(item.formal_cohort_accessed is False for item in blocks.values())
+
+
+def test_v26_rejects_feature_block_span_drift() -> None:
+    payload = deepcopy(_payload())
+    payload["implemented_feature_blocks"][0]["model_offset_end_exclusive"] = 421
+    with pytest.raises(ValueError, match="span"):
+        SafetyValidationManifest.model_validate(payload)
+
+
 def test_v26_rejects_forbidden_extraction_surface() -> None:
     payload = deepcopy(_payload())
     payload["adapter_contract"]["extraction_allowlist"].append(

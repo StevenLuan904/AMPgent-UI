@@ -69,6 +69,22 @@ class RuntimeEnvironmentSpec(BaseModel):
     formal_cohort_accessed: Literal[False]
 
 
+class ImplementedFeatureBlockSpec(BaseModel):
+    block_id: str = Field(min_length=1)
+    feature_count: int = Field(ge=1)
+    ordered_feature_names_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    model_offset_start: int = Field(ge=0)
+    model_offset_end_exclusive: int = Field(ge=1)
+    implemented_without_upstream_execution: Literal[True]
+    formal_cohort_accessed: Literal[False]
+
+    @model_validator(mode="after")
+    def require_exact_span(self) -> ImplementedFeatureBlockSpec:
+        if self.model_offset_end_exclusive - self.model_offset_start != self.feature_count:
+            raise ValueError("feature block span must match its feature count")
+        return self
+
+
 class NarrowAdapterContract(BaseModel):
     adapter_id: str = Field(min_length=1)
     classification_backend: Literal["random_forest_model_1"]
@@ -163,6 +179,9 @@ class SafetyValidationManifest(BaseModel):
     archive: ValidatorArchiveSpec
     adapter_contract: NarrowAdapterContract
     runtime_environment: RuntimeEnvironmentSpec
+    implemented_feature_blocks: list[ImplementedFeatureBlockSpec] = Field(
+        default_factory=list
+    )
     training_overlap_audit: list[TrainingOverlapSpec] = Field(min_length=1)
     expected_output_columns: list[str] = Field(min_length=1)
     expected_output_rows: int = Field(ge=1)

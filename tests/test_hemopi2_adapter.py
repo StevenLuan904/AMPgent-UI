@@ -14,6 +14,8 @@ from pepagent.hemopi2_adapter import (
     FeatureMatrixContract,
     RestrictedSklearnUnpickler,
     canonical_smoke_bytes,
+    compute_basic_feature_block,
+    compute_entropy_feature_block,
     load_restricted_sklearn_pickle,
     validate_sequences,
 )
@@ -37,6 +39,45 @@ def test_sequence_validation_is_strict_and_canonical() -> None:
         validate_sequences(["ACX"])
     with pytest.raises(ValueError, match="empty"):
         validate_sequences([" "])
+
+
+def test_basic_feature_block_matches_audited_reference_arithmetic() -> None:
+    values, names = compute_basic_feature_block(["AC"])
+    assert values.shape == (1, 422)
+    assert names[:4] == [
+        "Molecular Weight (kDa)",
+        "length",
+        "AAC_A",
+        "AAC_C",
+    ]
+    assert names[-1] == "DPC1_YY"
+    assert values[0, 0] == pytest.approx(0.192)
+    assert values[0, 1] == 2.0
+    assert values[0, names.index("AAC_A")] == 50.0
+    assert values[0, names.index("AAC_C")] == 50.0
+    assert values[0, names.index("DPC1_AC")] == 100.0
+    assert np.count_nonzero(values[0, 22:]) == 1
+    assert hashlib.sha256(("\n".join(names) + "\n").encode()).hexdigest() == (
+        "61bf86021298b4314b9471ed89e6e6c049fd8bebb18a98359ee200cdede9bf0c"
+    )
+
+
+def test_basic_feature_block_rejects_sequence_too_short_for_dpc() -> None:
+    with pytest.raises(ValueError, match="DPC1"):
+        compute_basic_feature_block(["A"])
+
+
+def test_entropy_feature_block_matches_reference_sign_and_rounding() -> None:
+    values, names = compute_entropy_feature_block(["AC"])
+    assert values.shape == (1, 21)
+    assert names[0] == "SER_A"
+    assert names[-1] == "SEP"
+    assert values[0, names.index("SER_A")] == -0.5
+    assert values[0, names.index("SER_C")] == -0.5
+    assert values[0, -1] == 1.0
+    assert hashlib.sha256(("\n".join(names) + "\n").encode()).hexdigest() == (
+        "07b18ea0c6d9f5e8d3ad0a55883b65959f0f1c74b56f41fc10e9075fe9a729c7"
+    )
 
 
 def test_feature_contract_accepts_only_exact_finite_matrix() -> None:
