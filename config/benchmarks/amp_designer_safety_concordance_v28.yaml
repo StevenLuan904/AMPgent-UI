@@ -1,0 +1,86 @@
+audit_id: amp_designer_safety_concordance_v28
+version: v28.0.0-preregistered
+execution_status: preregistered_not_run
+audit_type: frozen_full_cohort_soft_model_concordance
+selection_ranking_and_promotion_forbidden: true
+
+inputs:
+  v25_metrics:
+    path: reports/amp_generator_v25_candidate_metrics_20260809.csv
+    sha256: fac36b6dbbf4c7525ab7982f054c3c3b02632e0760b938b137d719f1a22a7b12
+    row_count: 300
+  v27_hemopi2:
+    path: reports/amp_designer_safety_validation_v27_20260809.csv
+    sha256: 96f74a51074843b8abc2968bc031d2f54a03774d4bf903ccc58bf34c71650382
+    row_count: 300
+  exact_join_keys: [candidate_id, sequence_sha256]
+  full_one_to_one_join_required: true
+
+frozen_semantics:
+  macrel_hemolysis:
+    label_column: macrel_hemolysis_label
+    risk_label: high
+    nonrisk_label: low
+    continuous_column: macrel_hemolysis_probability
+    endpoint: predicted_hemolysis
+  toxinpred3:
+    label_column: toxinpred3_label
+    risk_label: Toxin
+    nonrisk_label: Non-Toxin
+    continuous_column: toxinpred3_hybrid_score
+    endpoint: predicted_general_toxicity
+  hemopi2_rf:
+    score_column: hemopi2_classification_score
+    score_round_decimal_places: 3
+    risk_rule: rounded_score_greater_than_or_equal_to_0.45
+    endpoint: predicted_hemolysis
+  hemopi2_hc50:
+    value_column: hemopi2_hc50_um
+    risk_rule: hc50_less_than_100_micromolar
+    continuous_risk_orientation: negative_hc50
+    endpoint: predicted_hemolysis
+
+preregistered_comparisons:
+  categorical_same_endpoint:
+    - macrel_hemolysis_vs_hemopi2_rf
+    - macrel_hemolysis_vs_hemopi2_hc50
+    - hemopi2_rf_vs_hemopi2_hc50
+  continuous_same_endpoint:
+    - macrel_hemolysis_probability_vs_hemopi2_rf_score
+    - macrel_hemolysis_probability_vs_negative_hemopi2_hc50
+  categorical_cross_endpoint_descriptive_only:
+    - toxinpred3_toxicity_vs_hemopi2_rf_hemolysis
+    - toxinpred3_toxicity_vs_hemopi2_hc50_hemolysis
+  continuous_cross_endpoint_descriptive_only:
+    - toxinpred3_hybrid_score_vs_hemopi2_rf_score
+    - toxinpred3_hybrid_score_vs_negative_hemopi2_hc50
+
+statistics:
+  categorical: [both_risk, left_only, right_only, neither, agreement_rate]
+  continuous: spearman_rank_correlation_with_average_ties
+  missing_nonfinite_or_unknown_label_action: fail_closed
+  infer_new_thresholds: forbidden
+
+output:
+  path: reports/amp_designer_safety_concordance_v28_20260809.csv
+  expected_comparison_rows: 9
+  candidate_level_rows_forbidden: true
+
+scientific_scope:
+  allowed_claim: descriptive agreement or disagreement among frozen soft predictors
+  forbidden_claims:
+    - independent experimental confirmation
+    - candidate safety or hemolysis established
+    - AceA binding or affinity
+    - candidate selection ranking or promotion
+    - generator winner
+    - rewrite of v25 v26 or v27
+  caveat: >-
+    ToxinPred3 predicts general toxicity rather than hemolysis, so its comparisons
+    with HemoPI2 are cross-endpoint co-risk descriptions, not agreement estimates.
+
+fail_closed:
+  - Stop on any input SHA, row count, key, sequence SHA, column, label, or finiteness mismatch.
+  - Stop unless the join is exactly one-to-one for all 300 frozen rows in v25 order.
+  - Stop if any candidate-level output, ranking, selection, or promotion is attempted.
+  - Stop if ToxinPred3 cross-endpoint comparisons are called hemolysis agreement.
