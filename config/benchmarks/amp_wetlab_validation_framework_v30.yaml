@@ -1,0 +1,98 @@
+framework_id: amp_wetlab_validation_framework_v30
+version: v30.0.0-draft
+execution_status: draft_requires_user_inputs
+framework_type: wetlab_validation_decision_scaffold
+preregistered: false
+experiment_authorized: false
+candidate_selection_authorized: false
+candidate_sequences_included: false
+existing_soft_scores_may_select_candidates: false
+
+purpose: >-
+  Define the minimum decisions needed before a new, independently preregistered
+  wet-lab validation version can be written. This draft does not select peptides,
+  set success thresholds, authorize synthesis, or authorize experiments.
+
+required_user_inputs:
+  antimicrobial_scope:
+    decision: bacterial_strains_and_any_clinical_isolates_available
+    examples_for_clarification_only:
+      - reference_gram_positive_strain
+      - reference_gram_negative_strain
+      - clinically_relevant_skin_isolate
+    unresolved: true
+  safety_platforms:
+    decisions:
+      - red_blood_cell_species_and_hemolysis_assay_available
+      - mammalian_cell_line_and_viability_assay_available
+    unresolved: true
+  synthesis_capacity:
+    decisions:
+      - maximum_number_of_peptides
+      - purity_and_quantity_constraints
+      - approximate_budget_or_batch_limit
+    unresolved: true
+  acea_validation:
+    decisions:
+      - purified_AceA_or_expression_access
+      - direct_binding_platform_available
+      - enzymatic_or_cellular_functional_assay_available
+    unresolved: true
+  laboratory_constraints:
+    decisions:
+      - biosafety_level_and_local_approvals
+      - available_replication_capacity
+      - blinded_randomized_plate_layout_feasibility
+    unresolved: true
+
+future_preregistration_blocks:
+  identity_and_quality_control:
+    required_topics:
+      - sequence_identity_and_batch_traceability
+      - purity_and_mass_confirmation
+      - solubility_and_stock_handling_constraints
+  antimicrobial_activity:
+    required_topics:
+      - organism_panel
+      - broth_microdilution_standard_and_endpoint
+      - biological_and_technical_replication
+      - positive_negative_and_vehicle_controls
+  host_safety:
+    required_topics:
+      - hemolysis_endpoint_and_concentration_range
+      - mammalian_cell_viability_endpoint
+      - matched_vehicle_and_assay_controls
+  acea_mechanism:
+    required_topics:
+      - direct_binding_or_target_engagement_endpoint
+      - orthogonal_functional_endpoint
+      - target_specific_negative_control
+      - interpretation_when_binding_and_function_disagree
+  statistics_and_decision_rules:
+    required_topics:
+      - primary_endpoints
+      - fixed_analysis_population
+      - missing_data_and_failed_assay_rules
+      - multiplicity_control
+      - promotion_and_stopping_thresholds
+    thresholds_status: forbidden_until_user_inputs_and_new_preregistration
+
+candidate_set_firewall:
+  current_v25_cohort_read_for_this_draft: false
+  candidate_ids_or_sequences_permitted_in_draft: false
+  ranking_or_selection_permitted_in_draft: false
+  selection_basis_for_future_version: >-
+    Must be specified before candidate identities are revealed to the selection
+    process and must not be tuned to v25-v29 outcomes.
+
+minimum_evidence_interpretation:
+  antimicrobial_activity_alone: does_not_establish_AceA_binding
+  hemolysis_or_cytotoxicity_alone: does_not_establish_general_safety
+  direct_binding_alone: does_not_establish_cellular_mechanism
+  computational_prediction: remains_nonexperimental_support_only
+  required_for_strongest_claim: convergent_activity_safety_and_target_specific_evidence
+
+next_action:
+  status: blocked_on_user_experimental_context
+  action_after_inputs: create_new_version_preregistration_before_any_candidate_selection
+
