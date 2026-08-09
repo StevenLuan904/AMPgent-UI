@@ -1,0 +1,132 @@
+audit_id: amp_safety_validator_qualification_v29
+version: v29.0.0
+execution_status: completed_no_validator_approved_for_execution
+audit_type: independent_open_weight_safety_validator_qualification
+model_download_or_execution_performed: false
+frozen_v25_cohort_read: false
+
+eligibility_gates:
+  explicit_redistribution_or_use_license_required: true
+  immutable_model_revision_and_weight_identity_required: true
+  traceable_training_data_required: true
+  safe_non_pickle_load_path_required: true
+  target_endpoint_required: predicted_hemolysis_or_peptide_cytotoxicity
+  target_length_support_required: 10_to_25_amino_acids
+  primary_sources_only: true
+  all_gates_required_for_execution: true
+
+audited_candidates:
+  - validator: PeptiVerse_XGB_WT_hemolysis
+    endpoint: predicted_hemolysis
+    publication_status: bioRxiv_preprint_2025
+    official_release: https://huggingface.co/ChatterjeeLab/PeptiVerse
+    release_revision: 8cf0b21dae356278ae96b414a088e4360357d16c
+    license: Apache-2.0
+    classifier_artifact: training_classifiers/hemolysis/xgb_wt/best_model.json
+    classifier_blob_id: c6817256d3d8bd348a4ce25fcd53ef83deb60564
+    calibration_artifact: training_classifiers/hemolysis/xgb_wt/mapie_calibration.joblib
+    calibration_lfs_sha256: bd66144668f1a05c74232f91808c542a7226f6eed7098081f373ea8da9bbdb58
+    training_rows: 6076
+    training_rows_10_to_25aa: 4500
+    training_length_min: 1
+    training_length_max: 190
+    training_class_counts: {nonhemolytic: 4765, hemolytic: 1311}
+    sequence_embedding_dependency:
+      model: facebook/esm2_t33_650M_UR50D
+      license: MIT
+      safetensors_available: true
+    gate_status:
+      explicit_license: pass
+      immutable_weight_identity: pass
+      traceable_training_data: pass
+      target_length_support: pass_with_broader_training_domain
+      safe_end_to_end_load_path: pending
+      peer_reviewed_primary_publication: fail_preprint_only
+    decision: future_protocol_candidate_not_approved_for_execution
+    reason: >-
+      The core XGBoost classifier is JSON and the embedding checkpoint has a
+      safetensors path, but the released inference stack also includes a Joblib
+      calibration artifact. The exact optionality, output semantics, feature
+      contract, and safe omission of that artifact have not been statically
+      audited. No model files may be downloaded or run under v29.
+
+  - validator: HemoDL
+    endpoint: predicted_hemolysis
+    publication_status: Analytical_Biochemistry_2024
+    official_repo: https://github.com/abcair/HemoDL
+    gate_status:
+      explicit_license: fail
+      immutable_weight_identity: fail_no_release_or_weight_hash
+      traceable_training_data: pass_repository_contains_four_data_splits
+      target_length_support: not_established_for_10_to_25aa
+      safe_end_to_end_load_path: fail_opaque_model_files
+    decision: disqualified
+    reason: No repository license and no immutable release or published weight hash.
+
+  - validator: Hemolytic_End_to_End_Architecture
+    endpoint: predicted_hemolysis
+    publication_status: peer_reviewed_2024
+    official_repo: https://github.com/mohamedelhakim/Hemolytic-End-to-End-Architecture
+    gate_status:
+      explicit_license: fail
+      immutable_weight_identity: fail_no_release_or_weight_hash
+      traceable_training_data: partial_csv_sources_present
+      target_length_support: not_established_for_10_to_25aa
+      safe_end_to_end_load_path: fail_not_documented
+    decision: disqualified
+    reason: No repository license and no safely specified immutable model artifact.
+
+  - validator: CAPTP
+    endpoint: predicted_general_peptide_toxicity
+    publication_status: peer_reviewed_2024
+    official_repo: https://github.com/jiaoshihu/CAPTP
+    gate_status:
+      explicit_license: fail
+      immutable_weight_identity: fail_no_release_or_weight_hash
+      traceable_training_data: partial
+      target_length_support: not_established_for_10_to_25aa
+      safe_end_to_end_load_path: fail_pickle_model
+      endpoint_match: cross_endpoint_only
+    decision: disqualified
+    reason: No license, pickle artifacts, and general toxicity is not hemolysis.
+
+  - validator: ToxiPep
+    endpoint: predicted_general_peptide_toxicity
+    publication_status: peer_reviewed_2025
+    official_repo: https://github.com/GGCL7/ToxiPep
+    gate_status:
+      explicit_license: fail
+      immutable_weight_identity: fail_no_release_or_weight_hash
+      traceable_training_data: pass_repository_splits_present
+      target_length_support: not_established_for_10_to_25aa
+      safe_end_to_end_load_path: pending_pytorch_state_dict_contract
+      endpoint_match: cross_endpoint_only
+    decision: disqualified
+    reason: No license or immutable release; general toxicity is not hemolysis.
+
+completed_conclusion:
+  approved_for_execution_count: 0
+  future_protocol_candidate_count: 1
+  future_protocol_candidate: PeptiVerse_XGB_WT_hemolysis
+  report:
+    path: reports/amp_safety_validator_v29_qualification_20260809.csv
+    row_count: 5
+    sha256: 08e84a734e4744cd99c34bf2a27ccafe308098d86ebfa8243fc28a67aef89548
+  fail_closed: true
+  next_step: >-
+    A new version may statically audit the frozen PeptiVerse revision, JSON
+    classifier feature contract, ESM-2 safetensors dependency, threshold semantics,
+    and whether calibration Joblib can be excluded without changing the published
+    predictor. Until that succeeds, no independent model may be run. Wet-lab
+    hemolysis and cytotoxicity remain the decisive next evidence rather than adding
+    more unqualified soft predictors.
+
+scientific_scope:
+  allowed_claim: qualification status of public model releases
+  forbidden_claims:
+    - candidate safety or toxicity established
+    - candidate ranking selection or promotion
+    - independent experimental validation
+    - AceA binding or affinity
+    - generator winner
+    - rewrite or rerun of v22 through v28
