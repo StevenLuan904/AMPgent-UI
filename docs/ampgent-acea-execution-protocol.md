@@ -296,3 +296,8 @@ lane trades predicted activity for lower soft-risk evidence. These conflicts are
 The current next step is result acceptance and a read-only v32 interpretation/export layer derived
 from the database. Any new sequence generation or explicit positive-charge design requires a new,
 committed v33 preregistration. v31 Phase A, v31b, and v32 remain frozen and must not be rerun.
+
+Completion-state commit `91c3db5af21003fdd818898720febb24bfe3ae1a` passed `ruff check .` and
+the full suite (`256 passed`). Its content archive is
+`var/archives/ampgent-v32-completion-91c3db5.zip`, SHA-256
+`bf6ab2c0197495d6412694d0ab475d66031b89591e24f9196b455cf0e4b17d95`.
