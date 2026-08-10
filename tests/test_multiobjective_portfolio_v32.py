@@ -167,7 +167,7 @@ def test_formal_submission_contract_is_frozen_to_tested_revision() -> None:
     payload, _ = load_submission_contract(MANIFEST_PATH)
     assert payload["formal_run"]["submitted"] is False
     assert payload["formal_run"]["implementation_revision"] == (
-        "fefaa3ce7c3b243e444fbd3037ab8a5829431759"
+        "a12fc0d84b2e4fe3587eb1e351089f6a0d3b7172"
     )
 
 

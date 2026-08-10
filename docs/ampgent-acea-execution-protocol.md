@@ -236,7 +236,7 @@ ambiguous nodes/edges, non-finite required values, SHA mismatch, or replay misma
 Implementation state at this append: workflow, persistence edges, deterministic portfolio, and
 database replay verifier are implemented locally; `ruff` passes and the full suite reports
 `255 passed`. Worker identities now include role, physical host, PID, and explicit source revision.
-The v32 implementation is frozen at `fefaa3ce7c3b243e444fbd3037ab8a5829431759`; the formal run is
+The v32 implementation is frozen at `a12fc0d84b2e4fe3587eb1e351089f6a0d3b7172`; the formal run is
 still unsubmitted. Do not submit until the
 allowed local control/metrics/portfolio workers are mapped to that revision, all service gates are
 rechecked, and PostgreSQL plus Temporal contain no prior v32 run/workflow. Host 192.168.99.32 and
@@ -250,3 +250,8 @@ explicit Temporal identities ending in source revision
 `fefaa3ce7c3b243e444fbd3037ab8a5829431759`. These PIDs are dated observations, not permanent
 configuration; the exact identities and last-access timestamps must be checked again immediately
 before submission.
+
+The final preflight audit found and fixed lost-response retry hazards in generator freezing,
+AgentDecision persistence, and replay verification. Revision
+`a12fc0d84b2e4fe3587eb1e351089f6a0d3b7172` recovers the already-committed rows instead of
+advancing to a different raw subsequence or duplicating decisions.

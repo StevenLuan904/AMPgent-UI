@@ -25,6 +25,8 @@ def test_ampgent_acea_execution_protocol_preserves_nonnegotiable_rules() -> None
         "role, physical host, PID, and explicit source revision",
         "812aa8404d7fae7620e13fafd66ff445ed9a1ec4424f8a287fe4fa6a9c78c62f",
         "fefaa3ce7c3b243e444fbd3037ab8a5829431759",
+        "a12fc0d84b2e4fe3587eb1e351089f6a0d3b7172",
+        "lost-response retry hazards",
         "不得为了推进而把任务发给位置或版本未知的 poller",
     )
     for footprint in required_footprints:
