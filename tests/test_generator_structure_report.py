@@ -102,8 +102,8 @@ def test_v31b_preregistration_preserves_confirmation_boundaries() -> None:
         / "amp_generator_target_structure_v31b.yaml"
     )
     payload = yaml.safe_load(path.read_text(encoding="utf-8"))
-    assert payload["execution_status"] == "cohort_frozen_execution_pending"
-    assert payload["execution"]["execution_authorized"] is False
+    assert payload["execution_status"] == "ready_for_single_formal_run"
+    assert payload["execution"]["execution_authorized"] is True
     assert payload["confirmation_cohort"]["expected_total"] == 18
     assert payload["confirmation_protocol"]["expected_structures_per_candidate"] == 3
     assert payload["confirmation_protocol"]["expected_rosetta_decoys_per_candidate"] == 48
