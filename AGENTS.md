@@ -2,6 +2,18 @@
 
 These rules apply to every Codex change in this repository.
 
+## Mandatory AMPgent/AceA execution protocol
+
+Before any AMPgent/AceA research, deployment, monitoring, or formal-run action, read
+`docs/ampgent-acea-execution-protocol.md` completely. Its current-state ledger is the operational
+source of truth for frozen versions, host restrictions, run limits, evidence semantics, and the
+next authorized action. Exact benchmark/config files remain the scientific protocol contracts.
+
+If memory, a heartbeat prompt, or an old handoff conflicts with the execution protocol, stop and
+reconcile the repository evidence before acting. Never infer worker location merely from a Temporal
+poller identity, and never submit a formal run until the worker host and loaded source revision are
+verified.
+
 ## Git workflow
 
 - The canonical remote is `https://github.com/StevenLuan904/AMPgent.git`.
