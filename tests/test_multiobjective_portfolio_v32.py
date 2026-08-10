@@ -163,9 +163,12 @@ def test_database_only_replay_reconstructs_exact_portfolio() -> None:
     assert replay_v32_portfolio(graph, manifest) == build_portfolio(candidates, manifest)
 
 
-def test_formal_submission_remains_locked_until_tested_revision() -> None:
-    with pytest.raises(ValueError, match="not frozen as complete"):
-        load_submission_contract(MANIFEST_PATH)
+def test_formal_submission_contract_is_frozen_to_tested_revision() -> None:
+    payload, _ = load_submission_contract(MANIFEST_PATH)
+    assert payload["formal_run"]["submitted"] is False
+    assert payload["formal_run"]["implementation_revision"] == (
+        "fefaa3ce7c3b243e444fbd3037ab8a5829431759"
+    )
 
 
 def test_temporal_roles_register_v32_workflow_and_generation_activity() -> None:

@@ -236,8 +236,8 @@ ambiguous nodes/edges, non-finite required values, SHA mismatch, or replay misma
 Implementation state at this append: workflow, persistence edges, deterministic portfolio, and
 database replay verifier are implemented locally; `ruff` passes and the full suite reports
 `255 passed`. Worker identities now include role, physical host, PID, and explicit source revision.
-The exact-once submission remains locked while the manifest is `preregistered` and
-its implementation revision is pending. Do not submit until a clean scoped commit is pushed, the
+The v32 implementation is frozen at `fefaa3ce7c3b243e444fbd3037ab8a5829431759`; the formal run is
+still unsubmitted. Do not submit until the
 allowed local control/metrics/portfolio workers are mapped to that revision, all service gates are
 rechecked, and PostgreSQL plus Temporal contain no prior v32 run/workflow. Host 192.168.99.32 and
 synth GPU4 remain prohibited.
