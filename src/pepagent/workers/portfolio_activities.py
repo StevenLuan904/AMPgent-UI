@@ -13,7 +13,15 @@ from typing import Any
 from sqlalchemy import select
 from temporalio import activity
 
-from pepagent.db.models import Candidate, Evaluation
+from pepagent.db.models import (
+    AgentDecision,
+    AgentDecisionToolCallEdge,
+    Artifact,
+    Candidate,
+    Evaluation,
+    EvidenceArtifact,
+    ToolCall,
+)
 from pepagent.db.repository import ExperimentRepository
 from pepagent.db.session import SessionFactory
 from pepagent.developability import CANONICAL_AMINO_ACIDS, sequence_developability_metrics
@@ -175,6 +183,33 @@ async def persist_v32_generation_batch(request: dict[str, Any]) -> dict[str, Any
             random_seed=seed,
             attempt=provenance["attempt"],
         )
+        existing_candidates = list(
+            await session.scalars(
+                select(Candidate)
+                .where(Candidate.run_id == run_id, Candidate.generator_call_id == call.id)
+                .order_by(Candidate.proposal_rank, Candidate.id)
+            )
+        )
+        if existing_candidates:
+            if len(existing_candidates) > manifest.evaluated_valid_unique_per_seed:
+                raise ValueError("v32 generation retry recovered an oversized seed cohort")
+            recovered = [
+                {
+                    "id": str(candidate.id),
+                    "sequence": candidate.sequence,
+                    "sequence_sha256": candidate.sequence_sha256,
+                    "seed": candidate.metadata_json["generator_seed"],
+                    "raw_rank": candidate.metadata_json["raw_rank"],
+                }
+                for candidate in existing_candidates
+            ]
+            return {
+                "seed": seed,
+                "candidate_count": len(recovered),
+                "candidates": recovered,
+                "generator_tool_call_id": str(call.id),
+                "idempotently_recovered": True,
+            }
         await _register_artifact(
             session,
             call.id,
@@ -346,6 +381,32 @@ async def persist_v32_portfolio_decision(request: dict[str, Any]) -> dict[str, A
     manifest = MultiobjectivePortfolioManifest.model_validate(request["manifest"])
     async with SessionFactory() as session, session.begin():
         repository = ExperimentRepository(session)
+        existing_decision = await session.scalar(
+            select(AgentDecision).where(
+                AgentDecision.run_id == run_id,
+                AgentDecision.decision_type == "v32_multiobjective_portfolio",
+            )
+        )
+        if existing_decision is not None:
+            output_edge = await session.scalar(
+                select(AgentDecisionToolCallEdge).where(
+                    AgentDecisionToolCallEdge.decision_id == existing_decision.id,
+                    AgentDecisionToolCallEdge.direction == "output",
+                    AgentDecisionToolCallEdge.relation_type == "materializes_portfolio",
+                )
+            )
+            if output_edge is None:
+                raise ValueError("persisted v32 decision lacks its output ToolCall edge")
+            selection_call = await session.get(ToolCall, output_edge.tool_call_id)
+            if selection_call is None or selection_call.output_sha256 is None:
+                raise ValueError("persisted v32 decision output ToolCall is incomplete")
+            return {
+                "decision_id": str(existing_decision.id),
+                "selection_tool_call_id": str(selection_call.id),
+                "portfolio_sha256": selection_call.output_sha256,
+                "portfolio": existing_decision.structured_json,
+                "idempotently_recovered": True,
+            }
         candidates = await _v32_candidate_payloads(session, run_id, manifest)
         portfolio = replay_v32_portfolio(
             {
@@ -480,6 +541,30 @@ async def persist_v32_replay_bundle(request: dict[str, Any]) -> dict[str, Any]:
     expected = request["portfolio"]
     async with SessionFactory() as session, session.begin():
         repository = ExperimentRepository(session)
+        existing_call = await session.scalar(
+            select(ToolCall).where(
+                ToolCall.run_id == run_id,
+                ToolCall.tool_name == "v32-database-only-replay-verifier",
+            )
+        )
+        if existing_call is not None:
+            link = await session.scalar(
+                select(EvidenceArtifact).where(
+                    EvidenceArtifact.tool_call_id == existing_call.id,
+                    EvidenceArtifact.role == "database_replay_bundle",
+                )
+            )
+            if link is None:
+                raise ValueError("persisted replay verifier lacks its replay bundle artifact")
+            artifact_row = await session.get(Artifact, link.artifact_id)
+            if artifact_row is None:
+                raise ValueError("persisted replay bundle artifact row is missing")
+            return {
+                "exact_replay": True,
+                "replay_tool_call_id": str(existing_call.id),
+                "replay_bundle_sha256": artifact_row.sha256,
+                "idempotently_recovered": True,
+            }
         graph = await build_database_evidence_graph(session, run_id)
         replayed = replay_v32_portfolio(graph, manifest)
         if replayed != expected:
