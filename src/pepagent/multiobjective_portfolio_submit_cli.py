@@ -23,12 +23,12 @@ def load_submission_contract(path: Path) -> tuple[dict[str, Any], ExperimentSpec
     payload = yaml.safe_load(path.read_text(encoding="utf-8"))
     MultiobjectivePortfolioManifest.model_validate(payload)
     formal = payload["formal_run"]
+    if formal["submitted"] or formal["run_id"] or formal["workflow_id"]:
+        raise ValueError("v32 formal run has already been submitted")
     if payload["execution_status"] != "implementation_complete":
         raise ValueError("v32 implementation is not frozen as complete")
     if not formal["authorized"] or not formal["submit_exactly_once"]:
         raise ValueError("v32 exact-once formal run is not authorized")
-    if formal["submitted"] or formal["run_id"] or formal["workflow_id"]:
-        raise ValueError("v32 formal run has already been submitted")
     revision = str(formal["implementation_revision"])
     if len(revision) != 40 or any(character not in "0123456789abcdef" for character in revision):
         raise ValueError("v32 requires a frozen 40-character implementation revision")
