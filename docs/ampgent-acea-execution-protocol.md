@@ -241,3 +241,12 @@ still unsubmitted. Do not submit until the
 allowed local control/metrics/portfolio workers are mapped to that revision, all service gates are
 rechecked, and PostgreSQL plus Temporal contain no prior v32 run/workflow. Host 192.168.99.32 and
 synth GPU4 remain prohibited.
+
+Pre-submission gate update: source archive for repository commit `2c2d5d2` is
+`var/archives/ampgent-source-2c2d5d2.zip`, SHA-256
+`812aa8404d7fae7620e13fafd66ff445ed9a1ec4424f8a287fe4fa6a9c78c62f`. The allowed local host
+`StevensOMEN9` currently maps control PID 22496, metrics PID 49700, and portfolio PID 10608 to
+explicit Temporal identities ending in source revision
+`fefaa3ce7c3b243e444fbd3037ab8a5829431759`. These PIDs are dated observations, not permanent
+configuration; the exact identities and last-access timestamps must be checked again immediately
+before submission.

@@ -23,6 +23,8 @@ def test_ampgent_acea_execution_protocol_preserves_nonnegotiable_rules() -> None
         "Explicit positive-charge design is reserved",
         "255 passed",
         "role, physical host, PID, and explicit source revision",
+        "812aa8404d7fae7620e13fafd66ff445ed9a1ec4424f8a287fe4fa6a9c78c62f",
+        "fefaa3ce7c3b243e444fbd3037ab8a5829431759",
         "不得为了推进而把任务发给位置或版本未知的 poller",
     )
     for footprint in required_footprints:
