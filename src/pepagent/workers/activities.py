@@ -1708,8 +1708,8 @@ async def score_rosetta_complex(request: dict[str, Any]) -> dict[str, Any]:
     )
     if spec.get("structure_protocol") == "diagnostic_fast":
         result.setdefault("limitations", []).append(
-            "Eight-or-fewer decoys from a predicted Boltz pose are a shadow local-energy "
-            "diagnostic, not decision-grade affinity or uncertainty estimation."
+            "Predicted-pose decoys are a same-protocol local-energy diagnostic, not "
+            "decision-grade affinity or experimental uncertainty estimation."
         )
     raw_artifact = await _store_json(result)
     engine_artifacts: list[dict[str, Any]] = []
