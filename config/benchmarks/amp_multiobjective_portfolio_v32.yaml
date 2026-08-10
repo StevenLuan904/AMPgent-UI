@@ -1,6 +1,6 @@
 benchmark_id: amp_multiobjective_portfolio_v32
 version: v32.0.0
-execution_status: implementation_complete
+execution_status: running
 track: de_novo_multiobjective_portfolio
 target_spec_path: ../experiments/acea_generator_structure_confirmation_v31b.yaml
 
@@ -109,10 +109,10 @@ scientific_contract:
 formal_run:
   authorized: true
   submit_exactly_once: true
-  submitted: false
+  submitted: true
   implementation_revision: a12fc0d84b2e4fe3587eb1e351089f6a0d3b7172
-  workflow_id: null
-  run_id: null
+  workflow_id: pepagent-multiobjective-v32-d695853e-cb94-4608-ad71-e4d7c4df1e85
+  run_id: d695853e-cb94-4608-ad71-e4d7c4df1e85
 
 fail_closed:
   - Stop on any source, weight, environment, protocol or raw-output identity mismatch.

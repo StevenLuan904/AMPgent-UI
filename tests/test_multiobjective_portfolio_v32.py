@@ -163,12 +163,16 @@ def test_database_only_replay_reconstructs_exact_portfolio() -> None:
     assert replay_v32_portfolio(graph, manifest) == build_portfolio(candidates, manifest)
 
 
-def test_formal_submission_contract_is_frozen_to_tested_revision() -> None:
-    payload, _ = load_submission_contract(MANIFEST_PATH)
-    assert payload["formal_run"]["submitted"] is False
+def test_formal_submission_is_frozen_and_cannot_be_repeated() -> None:
+    payload = _payload()
+    MultiobjectivePortfolioManifest.model_validate(payload)
+    assert payload["formal_run"]["submitted"] is True
     assert payload["formal_run"]["implementation_revision"] == (
         "a12fc0d84b2e4fe3587eb1e351089f6a0d3b7172"
     )
+    assert payload["formal_run"]["run_id"] == "d695853e-cb94-4608-ad71-e4d7c4df1e85"
+    with pytest.raises(ValueError, match="already been submitted"):
+        load_submission_contract(MANIFEST_PATH)
 
 
 def test_temporal_roles_register_v32_workflow_and_generation_activity() -> None:

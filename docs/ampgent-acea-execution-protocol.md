@@ -261,3 +261,9 @@ Retry-safe implementation archive: `var/archives/ampgent-v32-implementation-a12f
 mapping is control PID 34500, metrics PID 87616, and portfolio PID 67356 on `StevensOMEN9`; all
 three Temporal identities explicitly end in revision
 `a12fc0d84b2e4fe3587eb1e351089f6a0d3b7172`.
+
+v32 formal submission is now immutable and must not be repeated. Run ID:
+`d695853e-cb94-4608-ad71-e4d7c4df1e85`; workflow ID:
+`pepagent-multiobjective-v32-d695853e-cb94-4608-ad71-e4d7c4df1e85`; submitted manifest SHA-256:
+`5b29bcf0dd0de3d02b27ef4ecafb1ec30aa27e7cec4016b1b11b18dbcdfc9b69`. Monitor and repair only
+within the frozen scientific protocol; never create a replacement run.
