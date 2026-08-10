@@ -8,6 +8,8 @@ import statistics
 from collections import defaultdict
 from typing import Any
 
+from pepagent.selection import sequence_distance
+
 REQUIRED_METRICS = (
     "boltz2_pair_iptm",
     "boltz2_pair_iptm_median",
@@ -53,6 +55,26 @@ SUMMARY_METRICS = (
     "rosetta_peptide_bb_rmsd_angstrom",
     "rosetta_interface_hbonds",
     "rosetta_buried_surface_area",
+)
+
+V31B_PARETO_DIRECTIONS = {
+    "boltz2_pair_iptm": "maximize",
+    "pocket_coverage_fraction": "maximize",
+    "interface_clash_count": "minimize",
+    "rosetta_dg_separated_reu": "minimize",
+}
+
+V31B_COHORT_COLUMNS = (
+    "confirmation_rank",
+    "generator_id",
+    "within_generator_confirmation_rank",
+    "pareto_front",
+    "phase_a_screening_rank",
+    "candidate_id",
+    "source_candidate_id",
+    "sequence",
+    "sequence_sha256",
+    *V31B_PARETO_DIRECTIONS,
 )
 
 
@@ -179,3 +201,133 @@ def build_summary_rows(
             summary[f"{metric}_min"] = min(values)
         output.append(summary)
     return output
+
+
+def _dominates(left: dict[str, Any], right: dict[str, Any]) -> bool:
+    no_worse = True
+    strictly_better = False
+    for metric, direction in V31B_PARETO_DIRECTIONS.items():
+        left_value = float(left[metric])
+        right_value = float(right[metric])
+        if direction == "maximize":
+            no_worse = no_worse and left_value >= right_value
+            strictly_better = strictly_better or left_value > right_value
+        else:
+            no_worse = no_worse and left_value <= right_value
+            strictly_better = strictly_better or left_value < right_value
+    return no_worse and strictly_better
+
+
+def _pareto_fronts(rows: list[dict[str, Any]]) -> dict[str, int]:
+    remaining = list(rows)
+    fronts: dict[str, int] = {}
+    front_index = 1
+    while remaining:
+        current = [
+            row
+            for row in remaining
+            if not any(_dominates(other, row) for other in remaining if other is not row)
+        ]
+        if not current:
+            raise RuntimeError("Pareto decomposition failed to make progress")
+        for row in current:
+            fronts[str(row["sequence_sha256"])] = front_index
+            remaining.remove(row)
+        front_index += 1
+    return fronts
+
+
+def select_v31b_confirmation_cohort(
+    candidate_rows: list[dict[str, Any]], selected_per_generator: int = 6
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    if len(candidate_rows) != 90:
+        raise ValueError(f"expected 90 Phase A candidates, found {len(candidate_rows)}")
+    by_generator: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for row in candidate_rows:
+        by_generator[str(row["generator_id"])].append(row)
+    if set(by_generator) != {"hydramp", "ampgan_v2", "amp_designer"}:
+        raise ValueError("v31b requires exactly the three preregistered generators")
+    if any(len(rows) != 30 for rows in by_generator.values()):
+        raise ValueError("v31b requires 30 Phase A candidates per generator")
+
+    selected: list[dict[str, Any]] = []
+    audit_cells: list[dict[str, Any]] = []
+    for generator_id in ("hydramp", "ampgan_v2", "amp_designer"):
+        source = by_generator[generator_id]
+        eligible = []
+        for row in source:
+            values = [float(row[metric]) for metric in V31B_PARETO_DIRECTIONS]
+            if not all(math.isfinite(value) for value in values):
+                raise ValueError(f"non-finite Pareto metric for {row['sequence_sha256']}")
+            if float(row["pocket_contact_count"]) < 1:
+                continue
+            if float(row["interface_clash_count"]) >= 25:
+                continue
+            eligible.append(row)
+        if len(eligible) < selected_per_generator:
+            raise ValueError(f"insufficient eligible candidates for {generator_id}")
+        fronts = _pareto_fronts(eligible)
+        available = list(eligible)
+        chosen: list[dict[str, Any]] = []
+        while len(chosen) < selected_per_generator:
+            earliest_front = min(fronts[str(row["sequence_sha256"])] for row in available)
+            front_rows = [
+                row
+                for row in available
+                if fronts[str(row["sequence_sha256"])] == earliest_front
+            ]
+            if not chosen:
+                next_row = min(front_rows, key=lambda row: str(row["sequence_sha256"]))
+            else:
+                next_row = min(
+                    front_rows,
+                    key=lambda row: (
+                        -min(
+                            sequence_distance(str(row["sequence"]), str(item["sequence"]))
+                            / max(len(str(row["sequence"])), len(str(item["sequence"])))
+                            for item in chosen
+                        ),
+                        str(row["sequence_sha256"]),
+                    ),
+                )
+            chosen.append(next_row)
+            available.remove(next_row)
+
+        front_counts: dict[str, int] = defaultdict(int)
+        for rank, row in enumerate(chosen, start=1):
+            front = fronts[str(row["sequence_sha256"])]
+            front_counts[str(front)] += 1
+            selected.append(
+                {
+                    "confirmation_rank": len(selected) + 1,
+                    "generator_id": generator_id,
+                    "within_generator_confirmation_rank": rank,
+                    "pareto_front": front,
+                    "phase_a_screening_rank": row["screening_rank"],
+                    "candidate_id": row["candidate_id"],
+                    "source_candidate_id": row["source_candidate_id"],
+                    "sequence": row["sequence"],
+                    "sequence_sha256": row["sequence_sha256"],
+                    **{metric: row[metric] for metric in V31B_PARETO_DIRECTIONS},
+                }
+            )
+        audit_cells.append(
+            {
+                "generator_id": generator_id,
+                "source_count": len(source),
+                "eligible_count": len(eligible),
+                "selected_count": len(chosen),
+                "selected_front_counts": dict(sorted(front_counts.items())),
+            }
+        )
+    hashes = [str(row["sequence_sha256"]) for row in selected]
+    if len(selected) != 18 or len(set(hashes)) != 18:
+        raise ValueError("v31b confirmation cohort must contain 18 unique sequences")
+    audit = {
+        "method": "generator_stratified_pareto_then_maximin_sequence_distance",
+        "selected_count": len(selected),
+        "global_sequence_uniqueness": True,
+        "metric_directions": V31B_PARETO_DIRECTIONS,
+        "cells": audit_cells,
+    }
+    return selected, audit

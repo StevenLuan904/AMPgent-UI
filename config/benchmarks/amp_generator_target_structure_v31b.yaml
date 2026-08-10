@@ -1,6 +1,6 @@
 benchmark_id: amp_generator_target_structure_v31b
 version: v31b.0.0
-execution_status: preregistered_selection_pending
+execution_status: cohort_frozen_execution_pending
 phase: multi_seed_structure_confirmation
 target_accession: P0A9G6
 
@@ -93,6 +93,14 @@ execution:
   selection_must_be_frozen_and_committed_before_run: true
   rerun_forbidden_after_formal_submission: true
   access_192_168_99_32_forbidden: true
+
+frozen_selection:
+  cohort_path: ../../var/generator-structure/v31b/confirmation_cohort.csv
+  cohort_sha256: 0e9801456c1fcd6eddd3d87c6dbff9cd744228ace38208e03559d10af419cc7b
+  audit_path: ../../var/generator-structure/v31b/confirmation_cohort_audit.json
+  audit_sha256: f73c95cae79de8942841b2ec44612ca7a9c438157173116ecb7e6714a4c85de0
+  selected_count: 18
+  selected_per_generator: 6
 
 # Phase A showed a non-dominated trade-off: AMPGAN v2 had the most favorable
 # median representative Rosetta dG, HydrAMP had the strongest median pocket
