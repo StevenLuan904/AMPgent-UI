@@ -204,6 +204,7 @@ class ExperimentSpec(BaseModel):
     boltz_method: str = "boltz2"
     diffusion_samples: int = 5
     boltz_seeds_per_candidate: int = Field(default=1, ge=1, le=16)
+    boltz_seed_values: list[int] = Field(default_factory=list, max_length=16)
     boltz_recycling_steps: int = 3
     boltz_sampling_steps: int = 200
     boltz_use_potentials: bool = True
@@ -236,6 +237,7 @@ class ExperimentSpec(BaseModel):
     rosetta_top_k: int = Field(default=1, ge=1)
     rosetta_nstruct: int = Field(default=200, ge=1)
     rosetta_parallel_decoys: int = Field(default=1, ge=1, le=16)
+    rosetta_all_boltz_samples: bool = False
     rosetta_pair_iptm_min: float = Field(default=0.5, ge=0, le=1)
     rosetta_score_function: str = "ref2015"
     exploratory_rosetta_slots: int = Field(default=0, ge=0, le=1)
@@ -268,6 +270,15 @@ class ExperimentSpec(BaseModel):
 
     @model_validator(mode="after")
     def validate_rosetta_protocol(self) -> "ExperimentSpec":
+        if self.boltz_seed_values:
+            if len(self.boltz_seed_values) != self.boltz_seeds_per_candidate:
+                raise ValueError(
+                    "boltz_seed_values must match boltz_seeds_per_candidate"
+                )
+            if len(self.boltz_seed_values) != len(set(self.boltz_seed_values)):
+                raise ValueError("boltz_seed_values must be unique")
+        if self.rosetta_all_boltz_samples and not self.rosetta_enabled:
+            raise ValueError("rosetta_all_boltz_samples requires rosetta_enabled")
         if (
             self.rosetta_enabled
             and self.structure_protocol == "legacy_ensemble_gate"

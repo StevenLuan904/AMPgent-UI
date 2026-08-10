@@ -7,6 +7,8 @@ from pathlib import Path
 import pytest
 import yaml
 
+from pepagent.domain.schemas import ExperimentSpec
+from pepagent.generator_structure_confirmation_submit_cli import _load_contract
 from pepagent.generator_structure_report import (
     REQUIRED_METRICS,
     build_candidate_rows,
@@ -117,6 +119,14 @@ def test_v31b_preregistration_preserves_confirmation_boundaries() -> None:
         assert hashlib.sha256(artifact.read_bytes()).hexdigest() == payload[
             "frozen_selection"
         ][f"{kind}_sha256"]
+    spec_path = (
+        path.parent / payload["confirmation_protocol"]["target_spec_path"]
+    ).resolve()
+    spec = ExperimentSpec.model_validate(yaml.safe_load(spec_path.read_text(encoding="utf-8")))
+    assert spec.boltz_seed_values == [20260911, 20260912, 20260913]
+    assert spec.boltz_seeds_per_candidate == 3
+    assert spec.rosetta_all_boltz_samples is True
+    assert spec.rosetta_nstruct == 16
 
 
 def test_v31b_selection_is_balanced_unique_and_deterministic() -> None:
@@ -131,3 +141,17 @@ def test_v31b_selection_is_balanced_unique_and_deterministic() -> None:
     assert [row["generator_id"] for row in first].count("ampgan_v2") == 6
     assert [row["generator_id"] for row in first].count("amp_designer") == 6
     assert audit["global_sequence_uniqueness"] is True
+
+
+def test_v31b_submission_contract_loads_only_frozen_authorized_inputs() -> None:
+    path = (
+        Path(__file__).parents[1]
+        / "config"
+        / "benchmarks"
+        / "amp_generator_target_structure_v31b.yaml"
+    )
+    payload, rows, spec = _load_contract(path)
+    assert payload["execution"]["formal_run_limit"] == 1
+    assert len(rows) == 18
+    assert spec.boltz_seed_values == [20260911, 20260912, 20260913]
+    assert spec.rosetta_all_boltz_samples

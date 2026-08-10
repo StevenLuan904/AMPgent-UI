@@ -39,6 +39,9 @@ def test_bulk_candidate_validation_honors_configured_boltz_seed_count() -> None:
     rendered = ast.unparse(bulk_workflow)
 
     assert "boltz_seeds_per_candidate" in rendered
-    assert "for seed_index in range(seed_count)" in rendered
-    assert "int(request['seed']) + seed_index" in rendered
+    assert "boltz_seed_values" in rendered
+    assert "for structure_seed in structure_seeds" in rendered
+    assert "int(request['seed']) + index" in rendered
     assert "'structures': structures" in rendered
+    assert "rosetta_all_boltz_samples" in rendered
+    assert "for rosetta_input in rosetta_inputs" in rendered

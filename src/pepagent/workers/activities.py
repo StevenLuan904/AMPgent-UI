@@ -1664,7 +1664,13 @@ async def score_rosetta_complex(request: dict[str, Any]) -> dict[str, Any]:
     spec = request["spec"]
     validation_case = request.get("validation_case")
     lane = "rosetta-validation" if validation_case else "rosetta"
-    work_dir = Path(settings.work_root) / request["run_id"] / lane / candidate["id"]
+    work_dir = (
+        Path(settings.work_root)
+        / request["run_id"]
+        / lane
+        / candidate["id"]
+        / str(request["seed"])
+    )
     coordinate_artifact = _select_boltz_structure_artifact(structure)
     coordinate_bytes = await asyncio.to_thread(
         ContentAddressedObjectStore().get_bytes, coordinate_artifact["uri"]

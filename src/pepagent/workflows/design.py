@@ -439,15 +439,23 @@ class BulkCandidateEvaluationWorkflow:
 
         structures: list[dict[str, Any]] = []
         seed_count = int(request["spec"].get("boltz_seeds_per_candidate", 1))
+        explicit_seeds = request["spec"].get("boltz_seed_values", [])
+        structure_seeds = (
+            [int(seed) for seed in explicit_seeds]
+            if explicit_seeds
+            else [int(request["seed"]) + index for index in range(seed_count)]
+        )
+        if len(structure_seeds) != seed_count or len(set(structure_seeds)) != seed_count:
+            raise ValueError("Boltz structure seed contract is incomplete or non-unique")
         try:
-            for seed_index in range(seed_count):
+            for structure_seed in structure_seeds:
                 structure = await workflow.execute_activity(
                     "predict_boltz2_complex",
                     {
                         "run_id": request["run_id"],
                         "spec": request["spec"],
                         "candidate": candidate,
-                        "seed": int(request["seed"]) + seed_index,
+                        "seed": structure_seed,
                     },
                     task_queue="pepagent-gpu-boltz2",
                     versioning_intent=workflow.VersioningIntent.DEFAULT,
@@ -486,51 +494,77 @@ class BulkCandidateEvaluationWorkflow:
                 start_to_close_timeout=timedelta(minutes=15),
                 retry_policy=retry,
             )
-            rosetta_inputs = await workflow.execute_activity(
-                "select_rosetta_inputs",
-                {
-                    "ensembles": [audit],
-                    "top_k": 1,
-                    "exploratory_slots": 0,
-                    "mode": "diagnostic_shadow",
-                },
-                task_queue="pepagent-control",
-                start_to_close_timeout=timedelta(minutes=5),
-                retry_policy=retry,
-            )
+            all_samples = bool(request["spec"].get("rosetta_all_boltz_samples", False))
+            if all_samples:
+                rosetta_inputs = await workflow.execute_activity(
+                    "select_rosetta_inputs",
+                    {
+                        "structures": structures,
+                        "pair_iptm_min": 0.0,
+                        "top_k": len(structures),
+                    },
+                    task_queue="pepagent-control",
+                    start_to_close_timeout=timedelta(minutes=5),
+                    retry_policy=retry,
+                )
+                rosetta_inputs = [
+                    {
+                        **item,
+                        "interface_audit": audit["audit"],
+                        "interface_audit_tool_call_id": audit["tool_call_id"],
+                        "rosetta_selection_mode": "all_preregistered_boltz_samples",
+                    }
+                    for item in rosetta_inputs
+                ]
+            else:
+                rosetta_inputs = await workflow.execute_activity(
+                    "select_rosetta_inputs",
+                    {
+                        "ensembles": [audit],
+                        "top_k": 1,
+                        "exploratory_slots": 0,
+                        "mode": "diagnostic_shadow",
+                    },
+                    task_queue="pepagent-control",
+                    start_to_close_timeout=timedelta(minutes=5),
+                    retry_policy=retry,
+                )
             if not rosetta_inputs:
                 raise RuntimeError("bulk candidate produced no usable coordinate structure")
         except Exception as error:
             return await preserve_failure("coordinate_audit", error)
 
         try:
-            rosetta_result = await workflow.execute_activity(
-                "score_rosetta_complex",
-                {
-                    "run_id": request["run_id"],
-                    "spec": request["spec"],
-                    "structure": rosetta_inputs[0],
-                    "seed": int(request["seed"]) + 1,
-                },
-                task_queue="pepagent-cpu-rosetta",
-                versioning_intent=workflow.VersioningIntent.DEFAULT,
-                start_to_close_timeout=timedelta(hours=72),
-                heartbeat_timeout=timedelta(minutes=5),
-                retry_policy=retry,
-            )
-            rosetta_result = await workflow.execute_activity(
-                "persist_rosetta_evidence",
-                {"run_id": request["run_id"], "rosetta_result": rosetta_result},
-                task_queue="pepagent-control",
-                start_to_close_timeout=timedelta(hours=2),
-                retry_policy=retry,
-            )
+            rosetta_results = []
+            for rosetta_input in rosetta_inputs:
+                rosetta_result = await workflow.execute_activity(
+                    "score_rosetta_complex",
+                    {
+                        "run_id": request["run_id"],
+                        "spec": request["spec"],
+                        "structure": rosetta_input,
+                        "seed": int(rosetta_input["input"]["seed"]) + 100_000_000,
+                    },
+                    task_queue="pepagent-cpu-rosetta",
+                    versioning_intent=workflow.VersioningIntent.DEFAULT,
+                    start_to_close_timeout=timedelta(hours=72),
+                    heartbeat_timeout=timedelta(minutes=5),
+                    retry_policy=retry,
+                )
+                rosetta_result = await workflow.execute_activity(
+                    "persist_rosetta_evidence",
+                    {"run_id": request["run_id"], "rosetta_result": rosetta_result},
+                    task_queue="pepagent-control",
+                    start_to_close_timeout=timedelta(hours=2),
+                    retry_policy=retry,
+                )
+                rosetta_results.append(rosetta_result)
         except Exception as error:
             return await preserve_failure("rosetta", error)
         return {
             "candidate_id": candidate["id"],
             "status": "succeeded",
-            "rosetta_tool_call_id": rosetta_result["tool_call_id"],
+            "rosetta_tool_call_ids": [item["tool_call_id"] for item in rosetta_results],
         }
 
 
