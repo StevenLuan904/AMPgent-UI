@@ -1,0 +1,40 @@
+{
+  "cells": [
+    {
+      "eligible_count": 30,
+      "generator_id": "hydramp",
+      "selected_count": 6,
+      "selected_front_counts": {
+        "1": 6
+      },
+      "source_count": 30
+    },
+    {
+      "eligible_count": 30,
+      "generator_id": "ampgan_v2",
+      "selected_count": 6,
+      "selected_front_counts": {
+        "1": 6
+      },
+      "source_count": 30
+    },
+    {
+      "eligible_count": 30,
+      "generator_id": "amp_designer",
+      "selected_count": 6,
+      "selected_front_counts": {
+        "1": 6
+      },
+      "source_count": 30
+    }
+  ],
+  "global_sequence_uniqueness": true,
+  "method": "generator_stratified_pareto_then_maximin_sequence_distance",
+  "metric_directions": {
+    "boltz2_pair_iptm": "maximize",
+    "interface_clash_count": "minimize",
+    "pocket_coverage_fraction": "maximize",
+    "rosetta_dg_separated_reu": "minimize"
+  },
+  "selected_count": 18
+}
