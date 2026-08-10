@@ -950,6 +950,24 @@ async def persist_optional_sequence_metric(request: dict[str, Any]) -> dict[str,
                 select(Candidate).where(Candidate.run_id == run_id)
             )
         }
+        requested_candidate_ids = {item["id"] for item in request["candidates"]}
+        if requested_candidate_ids - set(candidates_by_id):
+            raise KeyError("optional metric request references unknown candidates")
+        generator_call_ids = {
+            candidates_by_id[candidate_id].generator_call_id
+            for candidate_id in requested_candidate_ids
+            if candidates_by_id[candidate_id].generator_call_id is not None
+        }
+        if not generator_call_ids:
+            raise ValueError(
+                "optional metric evidence must depend on persisted candidate generation"
+            )
+        for generator_call_id in sorted(generator_call_ids, key=str):
+            await repository.record_tool_dependency(
+                call.id,
+                generator_call_id,
+                "evaluates_generated_candidate",
+            )
         recorded = 0
         if result["status"] == "complete":
             for record in result["records"]:

@@ -1,0 +1,123 @@
+benchmark_id: amp_multiobjective_portfolio_v32
+version: v32.0.0
+execution_status: preregistered
+track: de_novo_multiobjective_portfolio
+target_spec_path: ../experiments/acea_generator_structure_confirmation_v31b.yaml
+
+# v32 is intentionally a single, stable generator iteration. It tests the Agent's
+# evidence-governance and portfolio behavior without confounding it with legacy
+# generator-runtime differences. It does not declare AMP-Designer a global winner.
+generator_id: amp_designer
+generator_source_revision: b554b1ac1507040d9d50356e037098e652ce4719
+generator_adapter_version: amp-designer-v25-raw-topk10-batch100-v1
+generator_weights_sha256: 47944ff42f7ea6a448340d44c2027329833205dd658ec4777e77777bdab1adc9
+generator_config_sha256: e8f1bed7607065b7a11e5f338a5a5e618947ae78ee0bc0314689cf9801d7d62a
+generator_environment_manifest: config/environments/amp_designer_v25_requirements.lock
+generator_runtime:
+  python_path: var/generator-runtimes/amp-designer-py39/Scripts/python.exe
+  python_sha256: f60272da5522589b99e76b96633b747f5b12dbeeba79f49b6d3d6f196c79d921
+  environment_manifest_path: config/environments/amp_designer_v25_requirements.lock
+  environment_manifest_sha256: 68407982a09f66b4777bc30d8eb0ca276a4cd9473cce750a9f4d44464dd75127
+  adapter_path: src/pepagent/model_workers/amp_designer_generator_cli.py
+  adapter_sha256: 8ddd17480faace7000aab107b48545a527b67f9d5edd5e6aad82b21fb3d30a31
+  model_config_path: var/generator-models/amp-designer-zenodo-15051980/config.json
+  model_config_sha256: e8f1bed7607065b7a11e5f338a5a5e618947ae78ee0bc0314689cf9801d7d62a
+  model_weights_path: var/generator-models/amp-designer-zenodo-15051980/pytorch_model.bin
+  model_weights_sha256: 47944ff42f7ea6a448340d44c2027329833205dd658ec4777e77777bdab1adc9
+  vocab_path: var/generator-sources/amp-designer-b554b1ac1507040d9d50356e037098e652ce4719/voc/vocab.txt
+  vocab_sha256: b887319d2f815b62750fbd32e4ecf4c730d6df7963983ca073972af79574fe58
+seeds: [20261101, 20261102, 20261103]
+raw_proposal_budget_per_seed: 1000
+evaluated_valid_unique_per_seed: 100
+minimum_length: 10
+maximum_length: 25
+selection_rule: raw_order_first_k_valid_unique
+global_sequence_uniqueness: true
+missing_policy: retain_shortfall_no_refill
+
+# Net charge remains observable provenance only. No charge threshold, direction,
+# mutation rule, conditioning vector or portfolio tie-break is allowed in v32.
+charge_policy: observe_only_defer_optimization_to_v33
+
+risk_guard:
+  policy: exclude_only_concordant_red_flags_no_refill
+  toxicity_label_metric: toxinpred3_label
+  toxicity_red_label: Toxin
+  hemolysis_label_metric: macrel_hemolysis_label
+  hemolysis_red_label: high
+  single_model_warning_remains_eligible: true
+  interpretation: soft-risk guard, not experimental safety
+
+maximum_sequence_similarity: 0.80
+maximum_per_seed_per_lane: 2
+lanes:
+  - name: membrane
+    quota: 6
+    objectives:
+      - {metric_name: hydrophobic_moment_eisenberg, direction: maximize}
+      - {metric_name: hydrophobic_ratio_modlamp, direction: target_interval, minimum: 0.35, maximum: 0.65}
+      - {metric_name: maximum_hydrophobic_run, direction: minimize}
+  - name: activity_mic
+    quota: 6
+    objectives:
+      - {metric_name: macrel_amp_probability, direction: maximize}
+      - {metric_name: llamp_log10_mic_um, direction: minimize}
+      - {metric_name: amp_read_log10_mic_um, direction: minimize}
+  - name: risk_control
+    quota: 6
+    objectives:
+      - {metric_name: toxinpred3_hybrid_score, direction: minimize}
+      - {metric_name: macrel_hemolysis_probability, direction: minimize}
+  - name: balanced
+    quota: 6
+    objectives: []
+
+required_metric_names:
+  - hydrophobic_moment_eisenberg
+  - hydrophobic_ratio_modlamp
+  - maximum_hydrophobic_run
+  - net_charge_ph7_4
+  - macrel_amp_probability
+  - llamp_log10_mic_um
+  - amp_read_log10_mic_um
+  - toxinpred3_hybrid_score
+  - macrel_hemolysis_probability
+
+metric_plugins:
+  - {name: physicochemical_developability, trust: descriptor, failure_policy: fail_run}
+  - {name: hemolysis_risk, trust: soft, failure_policy: fail_run}
+  - {name: toxicity_risk, trust: soft, failure_policy: fail_run}
+  - {name: mic_potency, trust: soft, failure_policy: fail_run}
+  - {name: mic_potency_amp_read, trust: soft, failure_policy: fail_run}
+
+scientific_contract:
+  raw_outputs_frozen_before_metrics: true
+  no_score_based_refill: true
+  all_agent_evidence_persisted: true
+  full_replay_required: true
+  exact_candidate_metric_join_required: true
+  all_decision_edges_persisted: true
+  no_weighted_total_score: true
+  no_forced_single_winner: true
+  positive_charge_optimization_enabled: false
+  pepmlm_used: false
+  amplify_used: false
+  no_experimental_activity_claim: true
+  no_experimental_safety_claim: true
+  no_acea_binding_or_affinity_claim: true
+
+formal_run:
+  authorized: true
+  submit_exactly_once: true
+  submitted: false
+  implementation_revision: pending_tested_commit
+  workflow_id: null
+  run_id: null
+
+fail_closed:
+  - Stop on any source, weight, environment, protocol or raw-output identity mismatch.
+  - Stop if raw ranks, candidate IDs, sequence hashes or database joins are incomplete.
+  - Stop if an essential metric is unavailable, non-finite or not linked to its tool call.
+  - Stop if the Agent decision lacks a complete input edge set or replay artifact.
+  - Stop if any charge-derived value enters selection in v32.
+  - Stop rather than refill a short portfolio lane or a short generator seed cohort.

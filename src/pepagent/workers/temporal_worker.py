@@ -29,6 +29,12 @@ from pepagent.workers.activities import (
     select_next_generation,
     select_rosetta_inputs,
 )
+from pepagent.workers.portfolio_activities import (
+    generate_amp_designer_v32,
+    persist_v32_generation_batch,
+    persist_v32_portfolio_decision,
+    persist_v32_replay_bundle,
+)
 from pepagent.workflows.design import (
     BulkCandidateEvaluationWorkflow,
     CandidateStructureValidationWorkflow,
@@ -36,6 +42,7 @@ from pepagent.workflows.design import (
     RosettaValidationWorkflow,
     SequenceBindingProxyCalibrationWorkflow,
 )
+from pepagent.workflows.portfolio import MultiobjectivePortfolioWorkflow
 
 ROLE_CONFIG = {
     "control": (
@@ -59,6 +66,9 @@ ROLE_CONFIG = {
             persist_target_specific_pepmlm_proxy,
             select_next_generation,
             finalize_run,
+            persist_v32_generation_batch,
+            persist_v32_portfolio_decision,
+            persist_v32_replay_bundle,
         ],
         [
             PeptideDesignWorkflow,
@@ -66,6 +76,7 @@ ROLE_CONFIG = {
             CandidateStructureValidationWorkflow,
             RosettaValidationWorkflow,
             SequenceBindingProxyCalibrationWorkflow,
+            MultiobjectivePortfolioWorkflow,
         ],
     ),
     "pepmlm": (
@@ -80,6 +91,7 @@ ROLE_CONFIG = {
         [evaluate_optional_sequence_metric],
         [],
     ),
+    "portfolio": ("pepagent-cpu-portfolio", [generate_amp_designer_v32], []),
 }
 
 

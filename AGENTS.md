@@ -104,3 +104,13 @@ Apply the following style to AMPgent/AceA research work in this repository:
   distinction is accurate.
 - Communicate in plain language. For every important number, explain whether it is good, bad,
   inconclusive, or merely technical, and state what decision it does or does not support.
+
+# Evidence persistence and replay
+
+- Every Agent-flow observation and action must be persisted in PostgreSQL as a typed evidence graph:
+  source/generation ToolCalls, dependencies, candidate identities, evaluations, Agent decisions and
+  decision edges, artifacts, and lifecycle events. A report or CSV is an export, never the source
+  of truth.
+- A formal run is incomplete until a database-only replay reconstructs the exact candidate order,
+  metric joins, exclusions, portfolio lanes, and decision output. Missing nodes or edges fail
+  closed; do not infer or backfill them from local files.

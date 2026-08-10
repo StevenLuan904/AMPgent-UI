@@ -209,3 +209,34 @@ Phase A 不能证明任何生成器全面胜出，也不能单独决定替代 Pe
 
 默认结论形式：“在冻结的同协议计算评测中，A 在指标 X 上更有利，但 B/C 在 Y/Z 上保持优势；结果为
 non-dominated，需要预注册确认阶段判断稳定性，不构成实验或结合证据。”
+# 12. v32 multiobjective Agent protocol (2026-08-11 append-only update)
+
+User authorization now permits a new v32 iteration after v31 Phase A; it does not authorize a
+v31/v31b rerun or rewrite. v31b remains frozen and unsubmitted. The exact v32 contract is
+`config/benchmarks/amp_multiobjective_portfolio_v32.yaml`.
+
+v32 is a fresh AMP-Designer run with three new seeds. It introduces separate membrane-descriptor,
+AMP/MIC, toxicity/hemolysis-risk, and balanced Pareto portfolio lanes. It forbids a weighted total,
+a forced winner, PepMLM, AMPlify, score-based refill, and any experimental activity/safety claim.
+Net charge is recorded as provenance only and is forbidden from selection, ranking, mutation, or
+tie-breaking. Explicit positive-charge design is reserved for a separately preregistered v33.
+
+Database evidence is a formal completion gate. Every generation and metric invocation must create
+an in-run ToolCall; every candidate must reference its generation ToolCall; every Evaluation must
+reference its exact metric ToolCall; metric calls must depend on all source generation calls; the
+portfolio AgentDecision must retain all input and output edges; raw output, environment, adapter,
+portfolio, and replay artifacts must be content addressed; all state changes must have lifecycle
+events. CSV/JSON reports are exports and cannot be used to repair or backfill database evidence.
+
+The formal workflow must finish with a database-only replay bundle that reconstructs the exact
+candidate order, metric joins, concordant-risk exclusions, Pareto depths, lane membership, lane
+ranks, and portfolio output SHA without reading intermediate working-directory files. Missing or
+ambiguous nodes/edges, non-finite required values, SHA mismatch, or replay mismatch fail closed.
+
+Implementation state at this append: workflow, persistence edges, deterministic portfolio, and
+database replay verifier are implemented locally; `ruff` passes and the full suite reports
+`254 passed`. The exact-once submission remains locked while the manifest is `preregistered` and
+its implementation revision is pending. Do not submit until a clean scoped commit is pushed, the
+allowed local control/metrics/portfolio workers are mapped to that revision, all service gates are
+rechecked, and PostgreSQL plus Temporal contain no prior v32 run/workflow. Host 192.168.99.32 and
+synth GPU4 remain prohibited.

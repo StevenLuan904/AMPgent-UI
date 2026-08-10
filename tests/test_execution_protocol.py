@@ -18,10 +18,14 @@ def test_ampgent_acea_execution_protocol_preserves_nonnegotiable_rules() -> None
         "0e9801456c1fcd6eddd3d87c6dbff9cd744228ace38208e03559d10af419cc7b",
         "20260911, 20260912, 20260913",
         "formal run not submitted",
+        "amp_multiobjective_portfolio_v32.yaml",
+        "database-only replay bundle",
+        "Explicit positive-charge design is reserved",
+        "254 passed",
         "不得为了推进而把任务发给位置或版本未知的 poller",
     )
     for footprint in required_footprints:
         assert footprint in protocol
 
     assert "sjtu@" not in protocol
-    assert "weighted total" not in protocol.lower()
+    assert "forbids a weighted total" in protocol.lower()
