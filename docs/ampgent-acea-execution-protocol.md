@@ -267,3 +267,32 @@ v32 formal submission is now immutable and must not be repeated. Run ID:
 `pepagent-multiobjective-v32-d695853e-cb94-4608-ad71-e4d7c4df1e85`; submitted manifest SHA-256:
 `5b29bcf0dd0de3d02b27ef4ecafb1ec30aa27e7cec4016b1b11b18dbcdfc9b69`. Monitor and repair only
 within the frozen scientific protocol; never create a replacement run.
+
+## 13. v32 formal completion (2026-08-11 append-only update)
+
+The unique v32 formal run completed successfully and is now locked against rerun, refill, threshold
+change, or result rewrite. PostgreSQL status is `succeeded`; Temporal status is `completed`. The run
+started at `2026-08-10T17:49:45.017983Z` and finished at
+`2026-08-10T18:20:36.897062Z`.
+
+The frozen evidence graph contains 300 candidates, 10 ToolCalls, 6000 Evaluations, 24 typed
+ToolCallDependency edges, and one succeeded AgentDecision. The preregistered concordant-red rule
+excluded 109 candidates and retained 191 eligible candidates. The final non-weighted portfolio has
+24 globally distinct selections: six each in membrane, activity/MIC, risk-control, and balanced
+lanes. No positive-charge objective or tie-break was used.
+
+The portfolio artifact SHA-256 is
+`d50b0b77e8e04f86f6b8d48fa3bc24f9d96a43aa9016a315f4004cca0db6d0e3`. The database-only replay
+bundle SHA-256 is `4c3eef0a74f6db34503d605154c5d2ea7aa5035cc706c1d33d7001b363315634`;
+its recorded `exact_replay` result is true. The complete decision, lane ranks, exclusions, source
+calls, metric calls, dependencies, artifacts, and candidate/evaluation joins are recoverable from
+PostgreSQL plus content-addressed object storage; CSV or working-directory files are not required.
+
+Scientific interpretation remains limited: this is a computational multiobjective hypothesis
+portfolio, not experimental AMP activity, MIC, safety, AceA binding, or affinity evidence. Several
+activity- or membrane-oriented selections retain single-model hemolysis warnings; the risk-control
+lane trades predicted activity for lower soft-risk evidence. These conflicts are part of the result.
+
+The current next step is result acceptance and a read-only v32 interpretation/export layer derived
+from the database. Any new sequence generation or explicit positive-charge design requires a new,
+committed v33 preregistration. v31 Phase A, v31b, and v32 remain frozen and must not be rerun.

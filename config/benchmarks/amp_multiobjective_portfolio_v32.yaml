@@ -1,6 +1,6 @@
 benchmark_id: amp_multiobjective_portfolio_v32
 version: v32.0.0
-execution_status: running
+execution_status: completed
 track: de_novo_multiobjective_portfolio
 target_spec_path: ../experiments/acea_generator_structure_confirmation_v31b.yaml
 
@@ -113,6 +113,30 @@ formal_run:
   implementation_revision: a12fc0d84b2e4fe3587eb1e351089f6a0d3b7172
   workflow_id: pepagent-multiobjective-v32-d695853e-cb94-4608-ad71-e4d7c4df1e85
   run_id: d695853e-cb94-4608-ad71-e4d7c4df1e85
+
+completion:
+  database_status: succeeded
+  temporal_status: completed
+  started_at_utc: "2026-08-10T17:49:45.017983Z"
+  finished_at_utc: "2026-08-10T18:20:36.897062Z"
+  candidate_count: 300
+  eligible_count: 191
+  concordant_risk_red_count: 109
+  selected_portfolio_count: 24
+  selected_per_lane:
+    membrane: 6
+    activity_mic: 6
+    risk_control: 6
+    balanced: 6
+  tool_call_count: 10
+  evaluation_count: 6000
+  tool_call_dependency_count: 24
+  agent_decision_count: 1
+  portfolio_artifact_sha256: d50b0b77e8e04f86f6b8d48fa3bc24f9d96a43aa9016a315f4004cca0db6d0e3
+  database_replay_bundle_sha256: 4c3eef0a74f6db34503d605154c5d2ea7aa5035cc706c1d33d7001b363315634
+  exact_database_only_replay: true
+  weighted_total_score_used: false
+  charge_optimized: false
 
 fail_closed:
   - Stop on any source, weight, environment, protocol or raw-output identity mismatch.

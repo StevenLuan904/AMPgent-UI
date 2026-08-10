@@ -175,6 +175,31 @@ def test_formal_submission_is_frozen_and_cannot_be_repeated() -> None:
         load_submission_contract(MANIFEST_PATH)
 
 
+def test_v32_completion_contract_records_exact_database_replay() -> None:
+    payload = _payload()
+    completion = payload["completion"]
+    assert payload["execution_status"] == "completed"
+    assert completion["database_status"] == "succeeded"
+    assert completion["temporal_status"] == "completed"
+    assert completion["candidate_count"] == 300
+    assert completion["eligible_count"] == 191
+    assert completion["concordant_risk_red_count"] == 109
+    assert completion["selected_portfolio_count"] == 24
+    assert completion["selected_per_lane"] == {
+        "membrane": 6,
+        "activity_mic": 6,
+        "risk_control": 6,
+        "balanced": 6,
+    }
+    assert completion["tool_call_count"] == 10
+    assert completion["evaluation_count"] == 6000
+    assert completion["tool_call_dependency_count"] == 24
+    assert completion["agent_decision_count"] == 1
+    assert completion["exact_database_only_replay"] is True
+    assert completion["weighted_total_score_used"] is False
+    assert completion["charge_optimized"] is False
+
+
 def test_temporal_roles_register_v32_workflow_and_generation_activity() -> None:
     control = ROLE_CONFIG["control"]
     portfolio = ROLE_CONFIG["portfolio"]

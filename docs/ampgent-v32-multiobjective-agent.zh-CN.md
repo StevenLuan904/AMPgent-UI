@@ -1,6 +1,6 @@
 # AMPgent v32：证据治理式多目标短肽 Agent
 
-状态：预注册；正式运行尚未提交。
+状态：正式运行完成并通过数据库单源精确重放；结果已锁定，禁止重跑或回写。
 
 ## 目标
 
@@ -51,3 +51,18 @@ v33 才考虑显式正电性，预期包含：按长度归一化的电荷密度�
 v32 中每一步都必须先落 PostgreSQL：原始生成调用、冻结候选、每个指标调用、候选—指标一一对应、调用依赖、风险排除、Pareto 层级、portfolio lane 决策、AgentDecision 输入/输出边、对象存储 artifact 身份及生命周期事件。CSV/JSON 只是从数据库导出的只读视图，不得反过来作为选择事实源。
 
 正式运行只有在“数据库单源重放”能够不读取工作目录中间文件、按冻结 config 重建完全相同的候选顺序、排除集合、lane 与 lane_rank，并得到相同输出 SHA 后才算完成。任何缺失节点、缺失依赖边、重复/错位候选、非有限指标或回放 SHA 不一致均 fail-closed，禁止手工补表或从报告回填。
+
+## 正式运行结果（2026-08-11 锁定）
+
+- run：`d695853e-cb94-4608-ad71-e4d7c4df1e85`
+- workflow：`pepagent-multiobjective-v32-d695853e-cb94-4608-ad71-e4d7c4df1e85`
+- 状态：PostgreSQL `succeeded`；Temporal `completed`
+- 候选：300 条，三个 seed 各 100 条；6000 条 Evaluation
+- 证据图：10 个 ToolCall、24 条 ToolCallDependency、1 个 AgentDecision
+- 风险治理：109 条“双红旗”候选按预注册规则排除；191 条仍可进入 Pareto 组合
+- 组合：24 条，膜作用、AMP/MIC、风险控制、均衡四个 lane 各 6 条
+- portfolio artifact SHA-256：`d50b0b77e8e04f86f6b8d48fa3bc24f9d96a43aa9016a315f4004cca0db6d0e3`
+- database-only replay bundle SHA-256：`4c3eef0a74f6db34503d605154c5d2ea7aa5035cc706c1d33d7001b363315634`
+- 精确重放：通过；没有使用加权总分；没有优化正电性
+
+这 24 条是互补的计算候选组合，不是实验活性、安全性、AceA 结合或亲和力证据。尤其是膜作用和 AMP/MIC lane 中多条候选仍有单模型溶血高风险警告；风险控制 lane 则以较低软风险换取较弱的预测活性。冲突没有被平均或隐藏。显式正电性仍按计划留给先预注册的 v33。
