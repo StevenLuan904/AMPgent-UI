@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     environment: str = "development"
     log_level: str = "INFO"
     worker_role: str = "control"
+    worker_source_revision: str = "unknown"
     worker_max_concurrent_activities: int = 1
     work_root: str = "./var/work"
     metric_adapter_registry_path: str = "./config/metrics/runtime.local.yaml"

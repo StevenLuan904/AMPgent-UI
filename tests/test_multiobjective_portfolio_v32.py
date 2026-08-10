@@ -15,6 +15,7 @@ from pepagent.multiobjective_portfolio import (
     normalized_levenshtein_similarity,
 )
 from pepagent.multiobjective_portfolio_submit_cli import load_submission_contract
+from pepagent.settings import Settings
 from pepagent.workers.temporal_worker import ROLE_CONFIG
 
 ROOT = Path(__file__).parents[1]
@@ -172,3 +173,8 @@ def test_temporal_roles_register_v32_workflow_and_generation_activity() -> None:
     portfolio = ROLE_CONFIG["portfolio"]
     assert any(item.__name__ == "MultiobjectivePortfolioWorkflow" for item in control[2])
     assert any(item.__name__ == "generate_amp_designer_v32" for item in portfolio[1])
+
+
+def test_worker_revision_is_exposed_as_a_setting() -> None:
+    settings = Settings(worker_source_revision="a" * 40)
+    assert settings.worker_source_revision == "a" * 40

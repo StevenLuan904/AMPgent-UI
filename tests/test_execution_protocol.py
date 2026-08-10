@@ -21,7 +21,8 @@ def test_ampgent_acea_execution_protocol_preserves_nonnegotiable_rules() -> None
         "amp_multiobjective_portfolio_v32.yaml",
         "database-only replay bundle",
         "Explicit positive-charge design is reserved",
-        "254 passed",
+        "255 passed",
+        "role, physical host, PID, and explicit source revision",
         "不得为了推进而把任务发给位置或版本未知的 poller",
     )
     for footprint in required_footprints:

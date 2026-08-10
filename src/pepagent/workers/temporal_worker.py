@@ -1,4 +1,6 @@
 import asyncio
+import os
+import platform
 
 from temporalio.client import Client
 from temporalio.worker import Worker
@@ -101,12 +103,18 @@ async def run_worker() -> None:
         raise ValueError(f"unknown worker role: {settings.worker_role}")
     task_queue, activities, workflows = ROLE_CONFIG[settings.worker_role]
     client = await Client.connect(settings.temporal_address, namespace=settings.temporal_namespace)
+    identity = (
+        f"pepagent:{settings.worker_role}:{os.getpid()}@{platform.node()}:"
+        f"{settings.worker_source_revision}"
+    )
     worker = Worker(
         client,
         task_queue=task_queue,
         activities=activities,
         workflows=workflows,
         max_concurrent_activities=settings.worker_max_concurrent_activities,
+        identity=identity,
+        build_id=settings.worker_source_revision,
     )
     await worker.run()
 
