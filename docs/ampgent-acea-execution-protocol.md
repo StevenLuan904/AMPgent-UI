@@ -255,3 +255,9 @@ The final preflight audit found and fixed lost-response retry hazards in generat
 AgentDecision persistence, and replay verification. Revision
 `a12fc0d84b2e4fe3587eb1e351089f6a0d3b7172` recovers the already-committed rows instead of
 advancing to a different raw subsequence or duplicating decisions.
+
+Retry-safe implementation archive: `var/archives/ampgent-v32-implementation-a12fc0d.zip`, SHA-256
+`255a412a79aa4e146b84429bda7ef0491cdc3130a281e820f4f932fba9a391c6`. The current allowed local
+mapping is control PID 34500, metrics PID 87616, and portfolio PID 67356 on `StevensOMEN9`; all
+three Temporal identities explicitly end in revision
+`a12fc0d84b2e4fe3587eb1e351089f6a0d3b7172`.

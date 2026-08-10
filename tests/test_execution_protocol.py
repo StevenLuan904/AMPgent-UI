@@ -27,6 +27,8 @@ def test_ampgent_acea_execution_protocol_preserves_nonnegotiable_rules() -> None
         "fefaa3ce7c3b243e444fbd3037ab8a5829431759",
         "a12fc0d84b2e4fe3587eb1e351089f6a0d3b7172",
         "lost-response retry hazards",
+        "255a412a79aa4e146b84429bda7ef0491cdc3130a281e820f4f932fba9a391c6",
+        "control PID 34500, metrics PID 87616, and portfolio PID 67356",
         "不得为了推进而把任务发给位置或版本未知的 poller",
     )
     for footprint in required_footprints:
