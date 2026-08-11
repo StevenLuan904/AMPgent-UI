@@ -12,8 +12,13 @@ def _contract() -> dict:
 
 def test_v36_is_governance_only_and_cannot_run_or_generate() -> None:
     contract = _contract()
-    assert contract["execution_status"] == "governance_framework_frozen_not_authorized"
+    assert contract["execution_status"] == (
+        "typed_schema_and_offline_verifier_implemented_not_deployed_not_authorized"
+    )
     scope = contract["scope"]
+    assert scope["harness_schema_implementation_authorized"]
+    assert scope["harness_schema_implementation_completed_in_repository"]
+    assert scope["migration_deployed_to_shared_PostgreSQL"] is False
     assert scope["historical_replay_authorized"] is False
     assert scope["shadow_challenger_authorized"] is False
     assert scope["prospective_champion_challenger_authorized"] is False
@@ -81,7 +86,7 @@ def test_v36_promotion_is_multi_endpoint_and_not_self_scored() -> None:
     assert evaluation["no_single_hypervolume_or_weighted_utility_promotion"]
 
 
-def test_v36_fails_closed_until_typed_lineage_and_replay_exist() -> None:
+def test_v36_fails_closed_until_typed_lineage_is_migrated_and_accepted() -> None:
     contract = _contract()
     evidence = contract["typed_database_contract"]
     assert evidence["JSON_only_lineage_is_insufficient"]
@@ -93,10 +98,12 @@ def test_v36_fails_closed_until_typed_lineage_and_replay_exist() -> None:
         "HarnessOutcome",
         "HarnessPromotionDecision",
     }
-    assert evidence["current_schema_gap"]["typed_harness_entities_implemented"] is False
-    assert evidence["current_schema_gap"][
-        "execution_forbidden_until_implemented_and_migrated"
-    ]
+    gap = evidence["current_schema_gap"]
+    assert gap["typed_harness_entities_implemented_in_repository"]
+    assert gap["offline_replay_verifier_implemented_in_repository"]
+    assert gap["migration_deployed_to_shared_PostgreSQL"] is False
+    assert gap["synthetic_database_replay_acceptance_completed"] is False
+    assert gap["execution_forbidden_until_migrated_accepted_and_separately_authorized"]
     assert evidence["database_object_store_only_replay_required"]
     assert "complete_harness_lineage_and_immutable_footprints" in evidence[
         "replay_must_reconstruct"

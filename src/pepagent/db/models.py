@@ -5,6 +5,7 @@ from typing import Any
 from sqlalchemy import (
     BigInteger,
     Boolean,
+    CheckConstraint,
     DateTime,
     Float,
     ForeignKey,
@@ -277,6 +278,234 @@ class EvidenceArtifact(Base):
     tool_call_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tool_calls.id"), primary_key=True)
     artifact_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("artifacts.id"), primary_key=True)
     role: Mapped[str] = mapped_column(String(64), primary_key=True)
+
+
+class HarnessRelease(Base):
+    """Immutable identity and evidence boundary for one Agent harness release."""
+
+    __tablename__ = "harness_releases"
+    __table_args__ = (
+        Index("ix_harness_release_scope_status", "scope_id", "release_status"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    harness_id: Mapped[str] = mapped_column(String(128), nullable=False, unique=True)
+    scope_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    release_status: Mapped[str] = mapped_column(String(32), nullable=False)
+    change_hypothesis: Mapped[str] = mapped_column(Text, nullable=False)
+    primary_changed_component: Mapped[str] = mapped_column(String(128), nullable=False)
+    source_revision: Mapped[str] = mapped_column(String(128), nullable=False)
+    config_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    prompt_bundle_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    tool_manifest_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    model_manifest_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    environment_manifest_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    failure_taxonomy_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    budget_contract_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    history_cutoff_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    allowed_evidence_slice_artifact_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("artifacts.id"), nullable=False
+    )
+    forbidden_holdout_manifest_artifact_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("artifacts.id"), nullable=False
+    )
+    endpoint_contract_artifact_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("artifacts.id"), nullable=False
+    )
+    rollback_harness_release_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("harness_releases.id")
+    )
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class HarnessLineageEdge(Base):
+    """Typed immutable edge in the harness release DAG."""
+
+    __tablename__ = "harness_lineage_edges"
+    __table_args__ = (
+        CheckConstraint(
+            "child_release_id <> parent_release_id",
+            name="harness_lineage_not_self",
+        ),
+        Index("ix_harness_lineage_parent", "parent_release_id"),
+    )
+
+    child_release_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("harness_releases.id"), primary_key=True
+    )
+    parent_release_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("harness_releases.id"), primary_key=True
+    )
+    relation_type: Mapped[str] = mapped_column(String(64), primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class HarnessTrial(Base):
+    """One frozen counterfactual, shadow, or prospective comparison."""
+
+    __tablename__ = "harness_trials"
+    __table_args__ = (
+        CheckConstraint(
+            "champion_release_id <> challenger_release_id",
+            name="harness_trial_distinct_releases",
+        ),
+        Index("ix_harness_trial_scope_phase", "scope_id", "phase"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    trial_key: Mapped[str] = mapped_column(String(128), nullable=False, unique=True)
+    phase: Mapped[str] = mapped_column(String(32), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    scope_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    champion_release_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("harness_releases.id"), nullable=False
+    )
+    challenger_release_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("harness_releases.id"), nullable=False
+    )
+    parent_trial_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("harness_trials.id"))
+    history_partition_manifest_artifact_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("artifacts.id"), nullable=False
+    )
+    assignment_manifest_artifact_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("artifacts.id"), nullable=False
+    )
+    blinding_manifest_artifact_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("artifacts.id"), nullable=False
+    )
+    endpoint_contract_artifact_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("artifacts.id"), nullable=False
+    )
+    budget_contract_artifact_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("artifacts.id"), nullable=False
+    )
+    adjudication_run_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("experiment_runs.id")
+    )
+    blinded: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    adjudication_locked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    unblinded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class HarnessAssignment(Base):
+    """One paired episode assignment to a frozen harness release."""
+
+    __tablename__ = "harness_assignments"
+    __table_args__ = (
+        UniqueConstraint(
+            "trial_id",
+            "episode_key",
+            "assigned_release_id",
+            name="uq_harness_assignment_episode_release",
+        ),
+        UniqueConstraint(
+            "trial_id",
+            "assignment_rank",
+            name="uq_harness_assignment_trial_rank",
+        ),
+        Index("ix_harness_assignment_trial_pair", "trial_id", "pair_key"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    trial_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("harness_trials.id"), nullable=False)
+    experiment_run_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("experiment_runs.id"), nullable=False
+    )
+    episode_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    pair_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    assigned_release_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("harness_releases.id"), nullable=False
+    )
+    opaque_arm_label: Mapped[str] = mapped_column(String(64), nullable=False)
+    assignment_rank: Mapped[int] = mapped_column(Integer, nullable=False)
+    random_seed: Mapped[int | None] = mapped_column(BigInteger)
+    resource_class: Mapped[str] = mapped_column(String(64), nullable=False)
+    controls_formal_action: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class HarnessOutcome(Base):
+    """Independent endpoint-family outcome for one harness assignment."""
+
+    __tablename__ = "harness_outcomes"
+    __table_args__ = (
+        UniqueConstraint(
+            "assignment_id",
+            "endpoint_family",
+            "endpoint_name",
+            "tool_call_id",
+            name="uq_harness_outcome_evidence",
+        ),
+        Index("ix_harness_outcome_assignment_family", "assignment_id", "endpoint_family"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    assignment_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("harness_assignments.id"), nullable=False
+    )
+    endpoint_family: Mapped[str] = mapped_column(String(64), nullable=False)
+    endpoint_name: Mapped[str] = mapped_column(String(128), nullable=False)
+    tool_call_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tool_calls.id"), nullable=False)
+    artifact_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("artifacts.id"))
+    numeric_value: Mapped[float | None] = mapped_column(Float)
+    text_value: Mapped[str | None] = mapped_column(Text)
+    unit: Mapped[str | None] = mapped_column(String(64))
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    limitations_json: Mapped[list[str]] = mapped_column(JSONB, default=list, nullable=False)
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class HarnessPromotionDecision(Base):
+    """Append-only scoped promotion, retention, rejection, or rollback decision."""
+
+    __tablename__ = "harness_promotion_decisions"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    prospective_trial_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("harness_trials.id"), nullable=False, unique=True
+    )
+    counterfactual_trial_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("harness_trials.id"), nullable=False
+    )
+    shadow_trial_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("harness_trials.id"), nullable=False
+    )
+    agent_decision_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("agent_decisions.id"), nullable=False, unique=True
+    )
+    decision: Mapped[str] = mapped_column(String(64), nullable=False)
+    scope_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    promoted_release_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("harness_releases.id")
+    )
+    rollback_release_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("harness_releases.id")
+    )
+    decision_artifact_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("artifacts.id"), nullable=False
+    )
+    effective_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
 
 
 class TargetPocket(Base, TimestampMixin):

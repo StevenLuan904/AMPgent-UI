@@ -1,6 +1,6 @@
 # AMPgent v36 证据治理式 Harness Evolution 框架
 
-状态：`governance_framework_frozen_not_authorized`
+状态：`typed_schema_and_offline_verifier_implemented_not_deployed_not_authorized`
 
 精确合同：`config/benchmarks/amp_harness_evolution_v36.yaml`。
 
@@ -76,10 +76,17 @@ seed 或上下文复现。成本、失败和无效果都必须报告。
 但没有一等的 harness lineage。把 `harness_id` 和 promotion 塞进自由 JSON 会让查询、约束和重放依赖
 约定，不能满足长期自动演化。
 
-因此 v36 执行前必须新增并迁移六类 typed entity：`HarnessRelease`、`HarnessLineageEdge`、
-`HarnessTrial`、`HarnessAssignment`、`HarnessOutcome` 和 `HarnessPromotionDecision`。它们必须与现有
-run、ToolCall、decision、artifact 和 lifecycle 图相连。当前明确标记
-`typed_harness_entities_implemented=false`，所以本框架不授权任何 replay、shadow 或正式 trial。
+仓库现已实现六类 typed entity：`HarnessRelease`、`HarnessLineageEdge`、`HarnessTrial`、
+`HarnessAssignment`、`HarnessOutcome` 和 `HarnessPromotionDecision`，以及迁移
+`0010_harness_evolution_lineage`。其中 prospective trial 还用独立的 typed
+`adjudication_run_id` 承载盲化裁决，避免把晋级决定挂在某一个 arm 的 run 上。repository primitive
+按精确 retry identity fail-closed，并把 release、trial、assignment 和 promotion 写入 lifecycle 图。
+
+离线 verifier 只从 typed PostgreSQL 行和内容寻址对象字节构建 replay；它核对 release DAG、祖先回滚、
+四区无交叉、三阶段链、同 episode/seed/resource 的配对、shadow 只有 champion 控制动作、端点家族、
+非有限值、独立 adjudication run、decision artifact、ToolCall/AgentDecision/run 归属及完整 artifact 集。
+当前实现尚未迁移到共享 PostgreSQL，也没有做合成 database replay acceptance，因此仍不授权任何真实
+replay、shadow 或正式 trial。
 
 database+object-store-only replay 最终必须重建：完整 release 谱系与 SHA、四个历史分区、每个 episode
 可见的证据、所有分配与盲化、counterfactual/shadow 决策、前瞻配对效应和成本、以及晋级或回滚的
@@ -93,10 +100,9 @@ database+object-store-only replay 最终必须重建：完整 release 谱系与 
 
 ## 8. 下一步
 
-下一独立阶段只实现 typed lineage schema、迁移、repository primitive 和 database/object-store-only
-offline replay verifier，并用合成 fixture 验证泄漏、重复分配、谱系环、非法回滚和缺边均会 fail-closed。
-它不读取候选结果来提 policy，不运行 challenger，也不生成短肽。实现、部署和任何真实 replay 仍需
-单独冻结与授权。
+下一独立阶段只部署迁移并执行合成 database/object-store replay acceptance，验证 ORM、PostgreSQL
+约束、对象存储读取和 verifier 能在真实事务边界闭环。它不读取历史候选结果来提 policy，不运行
+challenger，也不生成短肽。真实历史 replay、shadow 和 prospective trial 仍各需单独冻结与授权。
 
 治理框架冻结 revision 为 `f7b58f9`；config SHA-256 为
 `286bc3888f675ef5dc794e40aad8903ad173674dcaf554d1936e185962f2043e`。内容归档

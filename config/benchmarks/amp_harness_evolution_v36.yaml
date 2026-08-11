@@ -1,6 +1,6 @@
 benchmark_id: amp_harness_evolution_v36
-version: v36.0.0-governance-framework
-execution_status: governance_framework_frozen_not_authorized
+version: v36.1.0-typed-replay-implementation
+execution_status: typed_schema_and_offline_verifier_implemented_not_deployed_not_authorized
 track: evidence_governed_harness_evolution
 
 scientific_question:
@@ -9,7 +9,9 @@ scientific_question:
   universal_best_harness_claim_forbidden: true
 
 scope:
-  harness_schema_implementation_authorized: false
+  harness_schema_implementation_authorized: true
+  harness_schema_implementation_completed_in_repository: true
+  migration_deployed_to_shared_PostgreSQL: false
   historical_replay_authorized: false
   shadow_challenger_authorized: false
   prospective_champion_challenger_authorized: false
@@ -187,8 +189,11 @@ typed_database_contract:
     - LifecycleEvent
   JSON_only_lineage_is_insufficient: true
   current_schema_gap:
-    typed_harness_entities_implemented: false
-    execution_forbidden_until_implemented_and_migrated: true
+    typed_harness_entities_implemented_in_repository: true
+    offline_replay_verifier_implemented_in_repository: true
+    migration_deployed_to_shared_PostgreSQL: false
+    synthetic_database_replay_acceptance_completed: false
+    execution_forbidden_until_migrated_accepted_and_separately_authorized: true
   persist_every:
     - release_registration_and_parent_edge
     - evidence_slice_and_holdout_manifest
@@ -223,7 +228,7 @@ provider_ownership:
   AMPgent_provider_specific_adaptation_forbidden: true
 
 next_stage:
-  name: typed_lineage_schema_and_offline_replay_verifier
+  name: migration_deployment_and_synthetic_database_replay_acceptance
   independently_authorized_before_execution: true
   candidate_generation_allowed: false
   formal_challenger_allowed: false

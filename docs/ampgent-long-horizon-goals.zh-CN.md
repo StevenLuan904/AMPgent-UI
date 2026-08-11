@@ -191,7 +191,8 @@ SHA-256 为 `a722f0f74d486237a128327a3158ae71ee143577f3f8b7e4acb46505e38778da`�
 当前判断：`in_progress`。v32 的 typed evidence graph 与 replay closure 提供了 run 级底座；v36 已冻结
 证据治理式演化框架，精确合同为 `config/benchmarks/amp_harness_evolution_v36.yaml`，叙事说明为
 `docs/ampgent-v36-harness-evolution.zh-CN.md`。当前状态是
-`governance_framework_frozen_not_authorized`，没有 replay、shadow、champion/challenger trial 或候选生成。
+`typed_schema_and_offline_verifier_implemented_not_deployed_not_authorized`，没有 replay、shadow、
+champion/challenger trial 或候选生成。
 
 每个 harness 版本必须保存：`harness_id`、`parent_harness_id`、变更假设、允许读取的历史切片、
 禁止泄漏的 holdout、代码/config/model SHA、预算、失败分类和晋级结论。演化循环固定为：
@@ -213,16 +214,16 @@ v36 将 harness 定义为版本化的“证据到决策”策略，而不是一�
 晋级必须通过失败归纳、历史时点一致 replay、不影响正式动作的 shadow、同预算盲化前瞻对照和作用域
 晋级/回滚五关；replay 或 shadow 单独不能晋级，也不设加权总分或默认全局冠军。
 
-schema 审计发现现有 ExperimentRun/ToolCall/AgentDecision/Artifact 图没有一等的 harness release、谱系、
-trial、assignment、outcome 与 promotion 实体。仅写入自由 JSON 不满足长期 typed replay。因此 v36 明确
-冻结六类待实现实体：`HarnessRelease`、`HarnessLineageEdge`、`HarnessTrial`、`HarnessAssignment`、
-`HarnessOutcome`、`HarnessPromotionDecision`。在迁移、repository primitive 和 database/object-store-only
-verifier 完成前，所有演化 gate 保持未授权。
+schema 审计提出的六类 typed 实体已在仓库实现：`HarnessRelease`、`HarnessLineageEdge`、
+`HarnessTrial`、`HarnessAssignment`、`HarnessOutcome`、`HarnessPromotionDecision`；同时新增独立
+`adjudication_run_id`、repository primitive 和 database/object-store-only verifier。纯合成 fixture 已覆盖
+泄漏、谱系环、shadow 越权、manifest/ToolCall 脱链、揭盲顺序、decision artifact、裁决 run 脱链及
+非有限值。共享 PostgreSQL 尚未迁移，合成数据库 acceptance 尚未执行，所以所有演化 gate 继续未授权。
 
 治理框架冻结 revision 为 `f7b58f9`，config SHA-256 为
 `286bc3888f675ef5dc794e40aad8903ad173674dcaf554d1936e185962f2043e`，内容归档 SHA-256 为
-`20b43305c7cc6586c977262638f3273da776eb3db4898926edb8e88bb2182c66`。这些足迹只证明框架已冻结，
-不证明 typed schema 已实现或任何 harness 已改善。
+`20b43305c7cc6586c977262638f3273da776eb3db4898926edb8e88bb2182c66`。这些足迹只证明治理框架已冻结；
+后续实现足迹另行追加。即使 typed schema 已在仓库实现，也不证明任何 harness 已改善。
 
 ## 5. 分阶段路线与晋级门
 
@@ -315,9 +316,10 @@ receipt 都必须进入相应 Agent evidence graph。历史“adapter”一词�
 允许适配 provider。
 
 v36 当前框架见 `docs/ampgent-v36-harness-evolution.zh-CN.md`，精确合同为
-`config/benchmarks/amp_harness_evolution_v36.yaml`。它只冻结演化哲学、历史分区、五关晋级、端点家族、
-typed database contract 和追加式回滚；不授权真实历史 replay、shadow、前瞻 trial 或候选生成。下一
-独立阶段只实现 typed lineage schema 与离线 replay verifier，再另行申请运行授权。
+`config/benchmarks/amp_harness_evolution_v36.yaml`。typed lineage schema、迁移、repository primitive 与
+离线 replay verifier 已在仓库实现，但尚未部署到共享 PostgreSQL，也未做合成数据库 acceptance；因此
+不授权真实历史 replay、shadow、前瞻 trial 或候选生成。下一独立阶段仅部署迁移和做合成闭环验收，
+真实演化仍需再授权。
 
 版本号是当前规划，不是正式 run 授权。任何生成、阈值、候选选择或执行必须先有独立冻结 config、
 提交/push、服务与 worker 门禁、唯一 run 检查。长期路线允许被新证据修订，但修订必须追加理由，不能
