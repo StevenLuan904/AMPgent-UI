@@ -1,8 +1,11 @@
 # AMPgent 长期目标与问题账本
 
-状态：`active_roadmap`  
-首次冻结：2026-08-11  
-维护者：当前 AMPgent/AceA Agent  
+状态：`active_roadmap`
+
+首次冻结：2026-08-11
+
+维护者：当前 AMPgent/AceA Agent
+
 事实源关系：本文件管理长期问题、假设与阶段目标；`docs/ampgent-acea-execution-protocol.md`
 管理当前可执行状态与禁令；每个 `config/benchmarks/*.yaml` 仍是唯一精确科学合同。
 

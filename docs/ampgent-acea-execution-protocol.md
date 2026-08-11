@@ -433,3 +433,7 @@ placeholder，二者均未作为正式干预进入 v32。因此后续必须采�
 所有未来 Agent episode、知识检索、结构 review、Pareto archive 变化、harness 分配与晋级决策必须
 形成 PostgreSQL typed evidence graph，并把外部知识库/PepShot 证据作为 immutable artifact 和
 ToolCall dependency 纳入对应 run。只保存在外部工具数据库、Markdown 或本地目录不算正式接入。
+
+长期目标首次冻结 commit 为 `54e712b38298b1922184ef488cbdc2cbd062c788`；内容归档为
+`var/archives/ampgent-long-horizon-goals-54e712b.zip`，SHA-256
+`b6b7947a06d7f60d1dc6e2fd2c26f96addf5d95e4d09ed32fd75391484524dca`。
