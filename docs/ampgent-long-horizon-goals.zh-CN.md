@@ -90,10 +90,12 @@ charge-neutral/hydropathy-near control；检查膜作用、AMP/MIC、软风险�
 SHA-256 为 `c8224ac766c3b10ecefaeb443b42a5a570be0795e6b5b2a7418e3d188d65c1b3`。这只证明规则可确定性执行，
 不代表 v33 已获运行授权或已经产生新的短肽结果。
 
-后续工程闭环已实现但尚待冻结：parent/child、descriptor Evaluation、文献与指标 ToolCall 依赖、逐
+后续工程闭环已冻结于 commit `fab5cac50b3d709e9435c732173bc22eba81a505`：parent/child、descriptor
+Evaluation、文献与指标 ToolCall 依赖、逐
 checkpoint archive、dominance witness、saturation AgentDecision 和对象存储 artifact 可形成数据库原生
 证据图，并可只用 PostgreSQL 与对象存储精确 replay。lost-response retry 恢复原身份而不追加新变体。
-在 executable revision 提交、归档并获得另行授权前，这仍不表示 v33 已执行或产生结果。
+归档 SHA-256 为 `1519d6b4e26546b5f28b2a5e7f0489f423232591dba25f9c5047eadfc2e3f55e`。在获得另行
+formal-run 授权前，这仍不表示 v33 已执行或产生结果。
 
 ### Q2：当前 Pareto 搜索是否已经接近可达最优？
 

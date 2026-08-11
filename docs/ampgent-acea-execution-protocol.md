@@ -452,13 +452,15 @@ Q/N/S/T 编辑，避免把 D/E 去负电与加正电混淆。+8 净电荷与 0.5
 不是普适最佳阈值。Pareto 充分性使用 3 个开发 seed、2 个确认 seed 和每 seed 25/50/100/150/200 固定 checkpoint；
 必须跑完整预算，禁止 adaptive early stop、加权总分、单一 hypervolume 完成声明或 global optimum 声称。
 
-当前状态：`implementation_complete_pending_freeze_not_authorized`。没有 v33 run/workflow，也不得生成或
+当前状态：`implementation_frozen_not_authorized`。没有 v33 run/workflow，也不得生成或
 提交。文献驱动的 deterministic K/R dose block、同位置 control、checkpoint archive、累计新 ε-cell、
 dominance witness、PostgreSQL persistence primitives 与 database+object-store-only replay verifier 已
 实现并有契约测试。persistence primitives 尚未注册到 Temporal worker，因此当前代码不能形成 formal
-workflow；这是刻意保留的执行隔离。唯一下一步是完整 ruff/pytest、commit/push/archive，并把 executable
-revision 与归档 SHA 冻结进 config；随后仍须获得用户单独 formal-run 授权并通过第 6 节全部门禁。v32
-三层 run 链保持不可变。
+workflow；这是刻意保留的执行隔离。实现已冻结为 commit
+`fab5cac50b3d709e9435c732173bc22eba81a505`，归档
+`var/archives/ampgent-v33-evidence-fab5cac.zip` 的 SHA-256 为
+`1519d6b4e26546b5f28b2a5e7f0489f423232591dba25f9c5047eadfc2e3f55e`。唯一下一步是获得用户单独
+formal-run 授权，再通过第 6 节全部门禁并注册/部署对应 worker activity。v32 三层 run 链保持不可变。
 
 本阶段文献驱动预注册与纯确定性组件已冻结在 commit
 `140c71f4e8bc1823faf64dce4125c53b82d471fd`，完整验证为 ruff clean、pytest `273 passed`。内容归档为
@@ -471,5 +473,6 @@ revision；PostgreSQL activity 与 object-store-only replay verifier 未完成�
 六臂是带精确 `parent_id` 的 child。跨 parent/arm 序列碰撞、缺 child、重复 child、artifact 角色挂错
 ToolCall、文献/transform/archive 依赖缺失、移除成员无 dominance witness、描述符超容差或 replay SHA
 不符均 fail-closed。replay 只允许读取 PostgreSQL 图和对象存储字节，不允许 config/report/CSV 回填。
-上述旧句“未完成前”保留为 commit `140c71f` 的历史状态；当前实现完成但尚未冻结，因此
-`formal_run.implementation_revision` 仍为空。
+上述旧句“未完成前”保留为 commit `140c71f` 的历史状态；当前实现已冻结，config 中
+`formal_run.implementation_revision` 指向 `fab5cac50b3d709e9435c732173bc22eba81a505`，但
+`execution_authorized=false`、`submitted=false`，不能据此执行。

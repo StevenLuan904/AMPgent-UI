@@ -89,9 +89,12 @@ pair-ipTM、口袋覆盖、碰撞、姿势一致性和 Rosetta REU 不是 AceA �
 - 已实现 database+object-store-only replay verifier：精确检查 parent/child、序列与顺序、七臂、
   描述符容差、artifact SHA/角色、文献依赖、archive dominance witness 和 decision edge；缺失或歧义
   fail-closed；lost-response retry 只恢复既有身份，不推进 raw stream 或复制 child；
-- 尚未冻结 executable revision、环境 SHA、worker identity，也没有 v33 run/workflow；
-- 当前不得部署、生成、提交或运行，v32 三层 run 链保持只读锁定。下一门禁是完整测试、提交/push、
-  内容归档并把实现 revision 冻结进 config；在用户另行授权 formal run 前仍保持未执行。
+- executable implementation 已冻结为 commit `fab5cac50b3d709e9435c732173bc22eba81a505`；归档
+  `var/archives/ampgent-v33-evidence-fab5cac.zip` 的 SHA-256 为
+  `1519d6b4e26546b5f28b2a5e7f0489f423232591dba25f9c5047eadfc2e3f55e`；
+- 尚未冻结执行环境 SHA 或 worker identity，也没有 v33 run/workflow；
+- 当前不得部署、生成、提交或运行，v32 三层 run 链保持只读锁定。下一门禁是用户另行授权 formal
+  run，然后重新完成服务、worker 身份、唯一 run 和第 6 节全部门禁。
 
 ## 7. 主要原始证据
 

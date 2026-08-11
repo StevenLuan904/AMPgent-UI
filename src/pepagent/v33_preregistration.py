@@ -189,15 +189,14 @@ class V33Preregistration(BaseModel):
             raise ValueError("v33 cannot use a weighted total")
         if self.formal_run.execution_authorized or self.formal_run.submitted:
             raise ValueError("v33 draft is not authorized for execution")
-        if any(
-            value is not None
-            for value in (
-                self.formal_run.run_id,
-                self.formal_run.workflow_id,
-                self.formal_run.implementation_revision,
-            )
+        if self.formal_run.run_id is not None or self.formal_run.workflow_id is not None:
+            raise ValueError("unsubmitted v33 draft cannot carry run/workflow identities")
+        revision = self.formal_run.implementation_revision
+        if revision is not None and (
+            len(revision) != 40
+            or any(character not in "0123456789abcdef" for character in revision)
         ):
-            raise ValueError("unsubmitted v33 draft cannot carry execution identities")
+            raise ValueError("frozen v33 implementation revision must be a full lowercase Git SHA")
         return self
 
 
