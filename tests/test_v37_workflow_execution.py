@@ -17,15 +17,20 @@ from pepagent.v37_submit_cli import (
     ensure_no_existing_v37_run,
     load_v37_submission_bundle,
 )
+from pepagent.workers import v37_activities
+from pepagent.workers.temporal_worker import ROLE_CONFIG
+from pepagent.workers.v37_activities import (
+    evaluate_v37_sequence_metric,
+    predict_v37_boltz2_complex,
+    score_v37_rosetta_complex,
+)
 from pepagent.workers.v37_temporal_worker import V37_ROLE_CONFIG
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def _workflow_calls() -> list[str]:
-    source = (ROOT / "src/pepagent/workflows/v37_champion.py").read_text(
-        encoding="utf-8"
-    )
+    source = (ROOT / "src/pepagent/workflows/v37_champion.py").read_text(encoding="utf-8")
     tree = ast.parse(source)
     calls: list[str] = []
     for node in ast.walk(tree):
@@ -45,16 +50,16 @@ def _workflow_calls() -> list[str]:
 
 def test_v37_workflow_activity_history_and_queues_are_explicit() -> None:
     calls = _workflow_calls()
-    assert len(calls) == 18
+    assert len(calls) == 19
     assert len(calls) == len(set(calls))
     assert "generate_v37_batch" in calls
-    assert "predict_boltz2_complex" in calls
-    assert "score_rosetta_complex" in calls
+    assert "evaluate_v37_sequence_metric" in calls
+    assert "predict_v37_boltz2_complex" in calls
+    assert "score_v37_rosetta_complex" in calls
     assert "run_and_persist_v37_pepshot" in calls
-    assert "finalize_run" in calls
-    source = (ROOT / "src/pepagent/workflows/v37_champion.py").read_text(
-        encoding="utf-8"
-    )
+    assert "persist_v37_knowledge_projection" in calls
+    assert "finalize_v37_run" in calls
+    source = (ROOT / "src/pepagent/workflows/v37_champion.py").read_text(encoding="utf-8")
     for role in (
         "workflow_and_control",
         "generator",
@@ -82,6 +87,33 @@ def test_v37_worker_registry_contains_only_callables() -> None:
     assert V37_ROLE_CONFIG["v37-control"][0] == queues["workflow_and_control"]
     assert V37_ROLE_CONFIG["v37-generator"][0] == queues["generator"]
     assert V37_ROLE_CONFIG["v37-provider"][0] == queues["provider"]
+    assert evaluate_v37_sequence_metric in ROLE_CONFIG["metrics"][1]
+    assert predict_v37_boltz2_complex in ROLE_CONFIG["boltz2"][1]
+    assert score_v37_rosetta_complex in ROLE_CONFIG["rosetta"][1]
+
+
+def test_v37_physical_wrappers_bind_real_operations_to_attempt_ledgers() -> None:
+    source = (ROOT / "src/pepagent/workers/v37_activities.py").read_text(
+        encoding="utf-8"
+    )
+    for activity_name in (
+        "evaluate_v37_sequence_metric",
+        "predict_v37_boltz2_complex",
+        "score_v37_rosetta_complex",
+    ):
+        function = getattr(v37_activities, activity_name)
+        function_source = inspect.getsource(function)
+        assert "execute_v37_durable_attempt(" in function_source
+    assert "run_v37_guarded_subprocess(" in source
+    assert 'logical_id=f"v37:physical:pepshot:{candidate_id}"' in source
+    assert 'logical_id="v37:physical:pepshot:contract"' in source
+
+
+def test_v37_finalizer_validates_closure_before_success_transition() -> None:
+    source = inspect.getsource(v37_activities.finalize_v37_run)
+    assert source.index("validate_v37_database_object_replay(") < source.index(
+        "run.status = RunStatus.SUCCEEDED"
+    )
 
 
 class _DuplicateSession:
@@ -118,16 +150,14 @@ def test_v37_formal_identity_and_workflow_id_are_content_derived() -> None:
     assert first == second
     assert len(first) == 64
     assert build_v37_workflow_id(first) == f"pepagent-rapid-champion-v37-{first}"
-    assert build_v37_formal_submission_key(
-        **{**inputs, "manifest_sha256": "b" * 64}
-    ) != first
+    assert build_v37_formal_submission_key(**{**inputs, "manifest_sha256": "b" * 64}) != first
 
 
 def test_v37_preflight_freezes_database_submission_identity() -> None:
     static = build_v37_static_preflight(
         ROOT / "config/benchmarks/amp_rapid_champion_generation_v37.yaml"
     )
-    assert static["schema_version"] == "1.1"
+    assert static["schema_version"] == "1.2"
     assert static["formal_submission_key"] == build_v37_formal_submission_key(
         benchmark_id=static["benchmark_id"],
         benchmark_version=static["benchmark_version"],
@@ -135,13 +165,9 @@ def test_v37_preflight_freezes_database_submission_identity() -> None:
     )
 
 
-def test_v37_submission_bundle_revalidates_exact_experiment_spec(tmp_path: Path) -> None:
-    manifest_path = (
-        ROOT / "config/benchmarks/amp_rapid_champion_generation_v37.yaml"
-    )
-    experiment_spec_path = (
-        ROOT / "config/experiments/acea_v37_rapid_champion_structure.yaml"
-    )
+def test_v37_submission_bundle_refuses_unapproved_frozen_config(tmp_path: Path) -> None:
+    manifest_path = ROOT / "config/benchmarks/amp_rapid_champion_generation_v37.yaml"
+    experiment_spec_path = ROOT / "config/experiments/acea_v37_rapid_champion_structure.yaml"
     static = build_v37_static_preflight(manifest_path)
     preflight = authorize_v37_submission_preflight(
         static,
@@ -176,24 +202,12 @@ def test_v37_submission_bundle_revalidates_exact_experiment_spec(tmp_path: Path)
     }
     execution_path = tmp_path / "execution.json"
     execution_path.write_text(json.dumps(execution), encoding="utf-8")
-    _, spec, _, _ = load_v37_submission_bundle(
-        manifest_path=manifest_path,
-        experiment_spec_path=experiment_spec_path,
-        execution_bundle_path=execution_path,
-        preflight_path=preflight_path,
-    )
-    assert spec.boltz_seed_values == [20270380, 20270381, 20270382]
-    drifted_spec_path = tmp_path / "drifted-spec.yaml"
-    drifted_spec_path.write_text(
-        experiment_spec_path.read_text(encoding="utf-8").replace(
-            "20270382", "20270383"
-        ),
-        encoding="utf-8",
-    )
-    with pytest.raises(ValueError, match="experiment spec SHA drifted"):
+    assert preflight["status"] == "blocked"
+    assert "config_execution_authorized" in preflight["failed_gates"]
+    with pytest.raises(ValueError, match="has not authorized formal execution"):
         load_v37_submission_bundle(
             manifest_path=manifest_path,
-            experiment_spec_path=drifted_spec_path,
+            experiment_spec_path=experiment_spec_path,
             execution_bundle_path=execution_path,
             preflight_path=preflight_path,
         )

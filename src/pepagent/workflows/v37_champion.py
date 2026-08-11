@@ -77,7 +77,7 @@ class RapidChampionGenerationV37Workflow:
                         }
                     )
 
-            async def generate_and_persist(cell: dict[str, Any]) -> dict[str, Any]:
+            async def generate(cell: dict[str, Any]) -> dict[str, Any]:
                 generated = await workflow.execute_activity(
                     "generate_v37_batch",
                     {
@@ -91,21 +91,28 @@ class RapidChampionGenerationV37Workflow:
                     heartbeat_timeout=timedelta(minutes=5),
                     retry_policy=retry,
                 )
+                return {"ordinal": cell["ordinal"], "generated": generated}
+
+            generated_cells = await _bounded_ordered_map(
+                generation_cells,
+                limit=int(manifest["execution"]["generation_concurrency"]),
+                operation=generate,
+            )
+            generated_cells.sort(key=lambda item: item["ordinal"])
+            generation_results = []
+            for cell in generated_cells:
                 persisted = await workflow.execute_activity(
                     "persist_v37_generation_batch",
-                    {"run_id": run_id, "manifest": manifest, "generated": generated},
+                    {
+                        "run_id": run_id,
+                        "manifest": manifest,
+                        "generated": cell["generated"],
+                    },
                     task_queue=queues["workflow_and_control"],
                     start_to_close_timeout=timedelta(hours=1),
                     retry_policy=retry,
                 )
-                return {"ordinal": cell["ordinal"], **persisted}
-
-            generation_results = await _bounded_ordered_map(
-                generation_cells,
-                limit=int(manifest["execution"]["generation_concurrency"]),
-                operation=generate_and_persist,
-            )
-            generation_results.sort(key=lambda item: item["ordinal"])
+                generation_results.append({"ordinal": cell["ordinal"], **persisted})
             all_candidates = [
                 candidate
                 for result in generation_results
@@ -119,7 +126,7 @@ class RapidChampionGenerationV37Workflow:
             ) -> dict[str, Any]:
                 plugin = request["metric_plugins_by_name"][item["name"]]
                 result = await workflow.execute_activity(
-                    "evaluate_optional_sequence_metric",
+                    "evaluate_v37_sequence_metric",
                     {
                         "run_id": run_id,
                         "generation": 0,
@@ -133,14 +140,12 @@ class RapidChampionGenerationV37Workflow:
                     retry_policy=retry,
                 )
                 persisted = await workflow.execute_activity(
-                    "persist_optional_sequence_metric",
+                    "persist_v37_sequence_metric",
                     {
                         "run_id": run_id,
-                        "generation": 0,
-                        "plugin": plugin,
+                        "manifest": manifest,
                         "candidates": all_candidates,
                         "metric_result": result,
-                        "v37_logical_id": f"v37:metric:{item['name']}",
                     },
                     task_queue=queues["workflow_and_control"],
                     start_to_close_timeout=timedelta(hours=1),
@@ -155,6 +160,19 @@ class RapidChampionGenerationV37Workflow:
                 ],
                 limit=int(manifest["execution"]["metric_concurrency"]),
                 operation=evaluate_and_persist_metric,
+            )
+            await workflow.execute_activity(
+                "persist_v37_knowledge_projection",
+                {
+                    "run_id": run_id,
+                    "manifest": manifest,
+                    "query": request["knowledge_query"],
+                    "knowledge": knowledge,
+                    "candidates": all_candidates,
+                },
+                task_queue=queues["workflow_and_control"],
+                start_to_close_timeout=timedelta(hours=1),
+                retry_policy=retry,
             )
             shortlist = await workflow.execute_activity(
                 "persist_v37_stage1_shortlist",
@@ -178,7 +196,7 @@ class RapidChampionGenerationV37Workflow:
 
             async def predict_and_persist_pose(item: dict[str, Any]) -> dict[str, Any]:
                 structure = await workflow.execute_activity(
-                    "predict_boltz2_complex",
+                        "predict_v37_boltz2_complex",
                     {
                         "run_id": run_id,
                         "spec": request["experiment_spec"],
@@ -268,7 +286,7 @@ class RapidChampionGenerationV37Workflow:
 
             async def score_and_persist_pose(item: dict[str, Any]) -> dict[str, Any]:
                 rosetta = await workflow.execute_activity(
-                    "score_rosetta_complex",
+                    "score_v37_rosetta_complex",
                     {
                         "run_id": run_id,
                         "spec": request["experiment_spec"],
@@ -300,9 +318,8 @@ class RapidChampionGenerationV37Workflow:
                 operation=score_and_persist_pose,
             )
             rosetta_results_with_ordinals.sort(key=lambda item: item["ordinal"])
-            structures = [item["structure"] for item in rosetta_items]
             rosetta_results = [item["rosetta"] for item in rosetta_results_with_ordinals]
-            await workflow.execute_activity(
+            structure_summary = await workflow.execute_activity(
                 "persist_v37_structure_stage_summaries",
                 {
                     "run_id": run_id,
@@ -322,6 +339,7 @@ class RapidChampionGenerationV37Workflow:
                 "run_and_persist_v37_pepshot",
                 {
                     "run_id": run_id,
+                    "manifest": manifest,
                     "runtime": request["pepshot_runtime"],
                     "provider_contract": manifest["verified_auxiliaries"][
                         "pepshot"
@@ -350,21 +368,18 @@ class RapidChampionGenerationV37Workflow:
                     "run_id": run_id,
                     "manifest": manifest,
                     "structurally_eligible_candidate_ids": structurally_eligible,
+                    "structure_summary": structure_summary,
+                    "pepshot": pepshot,
                 },
                 task_queue=queues["workflow_and_control"],
                 start_to_close_timeout=timedelta(hours=2),
                 retry_policy=retry,
             )
             await workflow.execute_activity(
-                "finalize_run",
+                "finalize_v37_run",
                 {
                     "run_id": run_id,
-                    "structures": structures,
-                    "rosetta_results": rosetta_results,
-                    "generation_count": 1,
-                    "agent_decision_count": 2,
-                    "bulk_rosetta_count": len(rosetta_results),
-                    "bulk_csv": None,
+                    "manifest": manifest,
                 },
                 task_queue=queues["workflow_and_control"],
                 start_to_close_timeout=timedelta(minutes=10),

@@ -504,6 +504,7 @@ def validate_v37_database_object_replay(
     plan: Mapping[str, Any],
     graph: Mapping[str, Any],
     artifact_payloads_by_sha256: Mapping[str, dict[str, Any]],
+    allow_incomplete_replay: bool = False,
 ) -> dict[str, Any]:
     """Fail closed unless the DB/object graph reconstructs every v37 decision input."""
     validate_v37_replay_graph(_logical_graph(graph), plan)
@@ -530,10 +531,17 @@ def validate_v37_database_object_replay(
             str(link["role"])
         )
     for logical_id, roles in role_contract.items():
+        if allow_incomplete_replay and logical_id == "v37:replay":
+            continue
         if Counter(observed_roles.get(logical_id, [])) != Counter(roles):
             raise ValueError(f"v37 artifact roles drifted for {logical_id}")
     payloads = _artifact_payloads(graph, artifact_payloads_by_sha256)
-    _validate_attempt_and_failure_ledgers(payloads, list(calls))
+    ledger_calls = [
+        logical_id
+        for logical_id in calls
+        if not (allow_incomplete_replay and logical_id == "v37:replay")
+    ]
+    _validate_attempt_and_failure_ledgers(payloads, ledger_calls)
     _validate_knowledge_evidence(payloads[("v37:knowledge", "knowledge_evidence")])
 
     candidates = {str(item["id"]): item for item in graph.get("candidates", [])}
@@ -600,8 +608,43 @@ def validate_v37_database_object_replay(
     metric_call_ids = {
         str(calls[item["logical_id"]]["id"]) for item in plan["metric_calls"]
     }
-    if set(evaluations_by_call) - metric_call_ids:
-        raise ValueError("v37 Evaluation rows belong to a noncanonical metric ToolCall")
+    required_stage1_metrics = {
+        metric_name
+        for item in plan["metric_calls"]
+        for metric_name in item["metric_names"]
+    }
+    allowed_physical_metrics = {
+        "boltz2_confidence",
+        "boltz2_iptm",
+        "boltz2_pair_iptm",
+        "boltz2_complex_iplddt",
+        "boltz2_pair_iptm_median",
+        "pocket_contact_count",
+        "pocket_contact_consistency",
+        "pocket_coverage_fraction",
+        "off_pocket_contact_fraction",
+        "interface_min_distance_angstrom",
+        "interface_clash_count",
+        "pose_cluster_fraction",
+        "structure_available",
+        "structure_support",
+        "interface_gate_pass",
+        "rosetta_dg_separated_reu",
+        "rosetta_dg_minimum_reu",
+        "rosetta_peptide_bb_rmsd_angstrom",
+        "rosetta_interface_score",
+        "rosetta_reweighted_score",
+        "rosetta_interface_hbonds",
+        "rosetta_buried_surface_area",
+    }
+    if any(
+        row["metric_name"] in required_stage1_metrics
+        or row["metric_name"] not in allowed_physical_metrics
+        for call_id, rows in evaluations_by_call.items()
+        if call_id not in metric_call_ids
+        for row in rows
+    ):
+        raise ValueError("v37 stage-1 Evaluation belongs to a noncanonical metric ToolCall")
     metrics_by_candidate: dict[str, dict[str, float]] = {
         candidate_id: {} for candidate_id in expected_candidate_ids
     }
@@ -924,7 +967,8 @@ def validate_v37_database_object_replay(
         for item in graph.get("agent_decisions", [])
         if item["decision_type"] == "v37_stage_decision"
     }
-    if set(decisions) != decision_logicals or any(
+    expected_decisions = decision_logicals - ({"v37:replay"} if allow_incomplete_replay else set())
+    if set(decisions) != expected_decisions or any(
         item.get("status") != "succeeded" for item in decisions.values()
     ):
         raise ValueError("v37 AgentDecision set is incomplete")

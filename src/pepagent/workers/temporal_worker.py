@@ -37,6 +37,11 @@ from pepagent.workers.portfolio_activities import (
     persist_v32_portfolio_decision,
     persist_v32_replay_bundle,
 )
+from pepagent.workers.v37_activities import (
+    evaluate_v37_sequence_metric,
+    predict_v37_boltz2_complex,
+    score_v37_rosetta_complex,
+)
 from pepagent.workflows.design import (
     BulkCandidateEvaluationWorkflow,
     CandidateStructureValidationWorkflow,
@@ -86,11 +91,19 @@ ROLE_CONFIG = {
         [generate_with_pepmlm, score_target_specific_pepmlm_proxy],
         [],
     ),
-    "boltz2": ("pepagent-gpu-boltz2", [predict_boltz2_complex], []),
-    "rosetta": ("pepagent-cpu-rosetta", [score_rosetta_complex], []),
+    "boltz2": (
+        "pepagent-gpu-boltz2",
+        [predict_boltz2_complex, predict_v37_boltz2_complex],
+        [],
+    ),
+    "rosetta": (
+        "pepagent-cpu-rosetta",
+        [score_rosetta_complex, score_v37_rosetta_complex],
+        [],
+    ),
     "metrics": (
         "pepagent-cpu-metrics",
-        [evaluate_optional_sequence_metric],
+        [evaluate_optional_sequence_metric, evaluate_v37_sequence_metric],
         [],
     ),
     "portfolio": ("pepagent-cpu-portfolio", [generate_amp_designer_v32], []),

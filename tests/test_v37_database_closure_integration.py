@@ -113,7 +113,7 @@ def test_formal_closure_invokes_verifier_and_never_hardcodes_success() -> None:
 
 def test_formal_closure_validates_a_graph_containing_the_replay_call() -> None:
     source = inspect.getsource(v37_activities.persist_v37_final_portfolio_and_replay)
-    replay_call = source.index('"v37-replay"')
+    replay_call = source.index('replay_logical = "v37:replay"')
     graph_projection = source.index("build_database_evidence_graph")
     assert replay_call < graph_projection
 
@@ -351,8 +351,10 @@ def test_replay_rejects_a_single_missing_decoy_from_three_by_sixteen() -> None:
 
 def test_final_idempotent_recovery_still_runs_database_object_replay() -> None:
     source = inspect.getsource(v37_activities.persist_v37_final_portfolio_and_replay)
-    recovery = source.index("if existing is not None:")
-    next_block = source.index("candidates =", recovery)
-    recovery_block = source[recovery:next_block]
-    assert "validate_v37_database_object_replay" in recovery_block
-    assert "return" not in recovery_block
+    assert source.count("_persist_v37_node(") == 1
+    assert "repository.record_completed_tool_call(" in source
+    assert "allow_incomplete_replay=True" in source
+    assert "validate_v37_database_object_replay(" in source
+    assert source.index('replay_logical = "v37:replay"') < source.index(
+        "build_database_evidence_graph"
+    )
