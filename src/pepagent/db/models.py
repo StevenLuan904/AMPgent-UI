@@ -75,6 +75,38 @@ class Candidate(Base, TimestampMixin):
     evaluations: Mapped[list["Evaluation"]] = relationship(back_populates="candidate")
 
 
+class CandidateOccurrence(Base):
+    """Immutable record of one sequence proposal, before candidate deduplication."""
+
+    __tablename__ = "candidate_occurrences"
+    __table_args__ = (
+        UniqueConstraint(
+            "tool_call_id",
+            "occurrence_rank",
+            name="uq_candidate_occurrence_call_rank",
+        ),
+        Index("ix_candidate_occurrence_run_label", "run_id", "opaque_arm_label"),
+        Index("ix_candidate_occurrence_run_sequence", "run_id", "sequence_sha256"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    run_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("experiment_runs.id"), nullable=False)
+    tool_call_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tool_calls.id"), nullable=False)
+    candidate_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("candidates.id"))
+    parent_candidate_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("candidates.id"), nullable=False
+    )
+    occurrence_rank: Mapped[int] = mapped_column(Integer, nullable=False)
+    occurrence_kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    opaque_arm_label: Mapped[str] = mapped_column(String(64), nullable=False)
+    sequence: Mapped[str] = mapped_column(Text, nullable=False)
+    sequence_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
 class ToolCall(Base):
     __tablename__ = "tool_calls"
     __table_args__ = (Index("ix_tool_call_idempotency", "idempotency_key", unique=True),)

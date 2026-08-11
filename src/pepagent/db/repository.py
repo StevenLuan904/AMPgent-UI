@@ -11,6 +11,7 @@ from pepagent.db.models import (
     AgentDecision,
     AgentDecisionToolCallEdge,
     Candidate,
+    CandidateOccurrence,
     Evaluation,
     ExperimentRun,
     LifecycleEvent,
@@ -182,6 +183,66 @@ class ExperimentRepository:
             actor,
             {"from": old_status, "to": new_status, "reason": reason},
         )
+
+    async def record_candidate_occurrence(
+        self,
+        *,
+        run_id: uuid.UUID,
+        tool_call_id: uuid.UUID,
+        parent_candidate_id: uuid.UUID,
+        occurrence_rank: int,
+        occurrence_kind: str,
+        opaque_arm_label: str,
+        sequence: str,
+        candidate_id: uuid.UUID | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> CandidateOccurrence:
+        """Record one proposal exactly; a retry with changed payload fails closed."""
+        if occurrence_rank < 1:
+            raise ValueError("candidate occurrence rank must be positive")
+        call = await self.session.get(ToolCall, tool_call_id)
+        parent = await self.session.get(Candidate, parent_candidate_id)
+        candidate = await self.session.get(Candidate, candidate_id) if candidate_id else None
+        if call is None or call.run_id != run_id:
+            raise ValueError("candidate occurrence tool call is missing or cross-run")
+        if parent is None:
+            raise ValueError("candidate occurrence parent does not exist")
+        if candidate_id is not None and (candidate is None or candidate.run_id != run_id):
+            raise ValueError("candidate occurrence materialization is missing or cross-run")
+        normalized = "".join(sequence.split()).upper()
+        digest = sha256_text(normalized)
+        if candidate is not None and candidate.sequence_sha256 != digest:
+            raise ValueError("candidate occurrence and materialized candidate differ")
+        identity = {
+            "run_id": run_id,
+            "tool_call_id": tool_call_id,
+            "candidate_id": candidate_id,
+            "parent_candidate_id": parent_candidate_id,
+            "occurrence_rank": occurrence_rank,
+            "occurrence_kind": occurrence_kind,
+            "opaque_arm_label": opaque_arm_label,
+            "sequence": normalized,
+            "sequence_sha256": digest,
+            "metadata_json": metadata or {},
+        }
+        existing = await self.session.scalar(
+            select(CandidateOccurrence).where(
+                CandidateOccurrence.tool_call_id == tool_call_id,
+                CandidateOccurrence.occurrence_rank == occurrence_rank,
+            )
+        )
+        if existing is not None:
+            observed = {
+                key: getattr(existing, key)
+                for key in identity
+            }
+            if observed != identity:
+                raise ValueError("candidate occurrence retry payload drifted")
+            return existing
+        occurrence = CandidateOccurrence(**identity)
+        self.session.add(occurrence)
+        await self.session.flush()
+        return occurrence
 
     async def record_completed_tool_call(
         self,

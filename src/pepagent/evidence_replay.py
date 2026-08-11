@@ -12,6 +12,7 @@ from pepagent.db.models import (
     AgentDecisionToolCallEdge,
     Artifact,
     Candidate,
+    CandidateOccurrence,
     Evaluation,
     EvidenceArtifact,
     ExperimentRun,
@@ -38,6 +39,9 @@ async def build_database_evidence_graph(
     if run is None:
         raise KeyError(f"run not found: {run_id}")
     candidates = await _all(session, Candidate, Candidate.run_id == run_id)
+    occurrences = await _all(
+        session, CandidateOccurrence, CandidateOccurrence.run_id == run_id
+    )
     calls = await _all(session, ToolCall, ToolCall.run_id == run_id)
     call_ids = {call.id for call in calls}
     candidate_ids = {candidate.id for candidate in candidates}
@@ -76,6 +80,25 @@ async def build_database_evidence_graph(
         (edge.child_tool_call_id, edge.parent_tool_call_id) for edge in dependencies
     }
     candidates_by_id = {candidate.id: candidate for candidate in candidates}
+    calls_by_id = {call.id: call for call in calls}
+    for occurrence in occurrences:
+        if occurrence.tool_call_id not in calls_by_id:
+            raise ValueError(
+                f"candidate occurrence references an out-of-run call: {occurrence.id}"
+            )
+        parent = await session.get(Candidate, occurrence.parent_candidate_id)
+        if parent is None:
+            raise ValueError(f"candidate occurrence parent is missing: {occurrence.id}")
+        if occurrence.candidate_id is not None:
+            materialized = candidates_by_id.get(occurrence.candidate_id)
+            if materialized is None:
+                raise ValueError(
+                    f"candidate occurrence materialization is out-of-run: {occurrence.id}"
+                )
+            if materialized.sequence_sha256 != occurrence.sequence_sha256:
+                raise ValueError(
+                    f"candidate occurrence materialization differs: {occurrence.id}"
+                )
     for evaluation in evaluations:
         candidate = candidates_by_id[evaluation.candidate_id]
         if evaluation.tool_call_id not in call_ids:
@@ -116,6 +139,24 @@ async def build_database_evidence_graph(
             }
             for item in sorted(
                 candidates, key=lambda value: (value.proposal_rank or 0, str(value.id))
+            )
+        ],
+        "candidate_occurrences": [
+            {
+                "id": str(item.id),
+                "tool_call_id": str(item.tool_call_id),
+                "candidate_id": str(item.candidate_id) if item.candidate_id else None,
+                "parent_candidate_id": str(item.parent_candidate_id),
+                "occurrence_rank": item.occurrence_rank,
+                "occurrence_kind": item.occurrence_kind,
+                "opaque_arm_label": item.opaque_arm_label,
+                "sequence": item.sequence,
+                "sequence_sha256": item.sequence_sha256,
+                "metadata": item.metadata_json,
+            }
+            for item in sorted(
+                occurrences,
+                key=lambda value: (str(value.tool_call_id), value.occurrence_rank),
             )
         ],
         "tool_calls": [

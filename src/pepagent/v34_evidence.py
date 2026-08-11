@@ -32,11 +32,16 @@ def _tool(prefix: str, name: str, artifact_roles: Sequence[str]) -> dict[str, An
 
 
 def build_v34_evidence_plan(
-    parents: Sequence[Mapping[str, Any]], *, order_salt: str
+    parents: Sequence[Mapping[str, Any]],
+    *,
+    order_salt: str,
+    raw_proposals_per_episode: int = 8,
 ) -> dict[str, Any]:
     """Build the exact evidence graph shape before any v34 episode is executed."""
     if len(parents) != 24:
         raise ValueError("v34 requires exactly 24 frozen parents")
+    if raw_proposals_per_episode < 1:
+        raise ValueError("v34 requires a positive fixed proposal budget")
     candidate_ids = [str(item["candidate_id"]) for item in parents]
     if len(set(candidate_ids)) != len(candidate_ids):
         raise ValueError("v34 parent identities must be unique")
@@ -173,6 +178,7 @@ def build_v34_evidence_plan(
         "evidence_version": V34_EVIDENCE_VERSION,
         "parent_manifest_sha256": sha256_json(list(parents)),
         "episode_count": len(episodes),
+        "raw_proposals_per_episode": raw_proposals_per_episode,
         "episodes": episodes,
         "global_tool_calls": [reveal, analysis],
         "required_tool_call_ids": all_tool_ids,
