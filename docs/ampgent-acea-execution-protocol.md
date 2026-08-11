@@ -628,6 +628,8 @@ activity，不生成序列。
 
 精确授权对象已整理于 `docs/ampgent-v34-formal-authorization-request.zh-CN.md`。只有用户明确回复
 `授权 v34 正式 2×2 run` 才视为授权；同意继续规划、shadow 或一般性“继续”均不授权正式执行。
+授权请求冻结提交为 `c708d48985c2f6252a329b45039b8731c3c2615b`；内容归档 SHA-256 为
+`0ab4f6e71791f7ad19d45e8eaf315535eaa581470f2d45aa77340717a2c57cf6`。
 
 完成锁定提交为 `834ef57`；完成态 shadow config SHA-256 为
 `a8e4e4e3fafcb638c292bbb042eaa88fc4900c163d32e654778417e880893547`。内容归档

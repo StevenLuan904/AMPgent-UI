@@ -84,3 +84,7 @@ holdout join、配对效应和最终 verdict 时，v34 才算完成。CSV/Markdo
 - `暂不授权`。
 
 任何含糊答复、仅同意继续规划、仅同意 shadow，均不视为正式运行授权。
+
+本文冻结提交为 `c708d48985c2f6252a329b45039b8731c3c2615b`；内容归档
+`var/archives/ampgent-v34-authorization-c708d48.zip` 的 SHA-256 为
+`0ab4f6e71791f7ad19d45e8eaf315535eaa581470f2d45aa77340717a2c57cf6`。
