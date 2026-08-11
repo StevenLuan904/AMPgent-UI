@@ -543,3 +543,15 @@ preflight SHA-256 为 `e53c8f894df5f8d32c6cb09661c71e51ca91723d365c5d10f01b8b8ca
 并运行隔离 shadow fixture；不得跳过另行授权与 worker 门禁。全量验证为 ruff clean、pytest
 `306 passed`。记录提交为 `90bf0bf`；内容归档 `var/archives/ampgent-v34-adapters-90bf0bf.zip` 的
 SHA-256 为 `5fe4157e2901f982ee4b8822a8140f512a2c4fe5ced8d3c7d9aa24a3faec92ee`。
+
+后续 source-manifest 门禁冻结于 commit
+`12cd18e9790fe67503709406c007d49cd5f677eb`。知识库 allowlist 共 15 个源码/合同/依赖输入，manifest
+SHA-256 为 `402a7be05785ce2fbbf9e8be4d714af1aa6952aee26f60de17f8ee1bf7e4cad4`；PepShot allowlist
+共 32 个文件，manifest SHA-256 为
+`b9ab9ecb88d6d82c3e93d28909702ddd2b56632c437df5bd60627892258519fa`。清单不含机器绝对路径，复制到
+其他根目录仍应得到相同 SHA。config 已指向该实现，当前 config SHA-256 为
+`6ba458badbe8bb7e4446c9120b5cd5387f547f81c19812060868318c295e3388`，外部 footprint SHA-256 为
+`8f792f0e780ae14a265821bea3a672881982cd3d397fe4627b79eb273a3394ec`，离线 preflight SHA-256 为
+`c58b3af9f94c4e8cdf2d08167f647f5bba22121fac953ef2cfcde7447b711406`。该门禁只冻结可执行源码与
+环境输入文件，不证明已部署 Python/PyMOL 环境匹配；下一步仍须验证实际可执行环境，再运行隔离 shadow
+fixture。`execution_authorized=false`、`submitted=false`，无 Temporal activity、run、workflow 或新序列。

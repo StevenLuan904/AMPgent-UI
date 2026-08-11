@@ -106,3 +106,14 @@ SHA-256 为 `e53c8f894df5f8d32c6cb09661c71e51ca91723d365c5d10f01b8b8cae6ef903`�
 记录提交为 `90bf0bf`；内容归档 `var/archives/ampgent-v34-adapters-90bf0bf.zip` 的 SHA-256 为
 `5fe4157e2901f982ee4b8822a8140f512a2c4fe5ced8d3c7d9aa24a3faec92ee`。这不是工具有效性结果，也不是
 运行授权。
+
+source-manifest 增量门禁实现冻结于 commit
+`12cd18e9790fe67503709406c007d49cd5f677eb`。知识库 15 个 allowlisted 源码/合同/依赖输入的 manifest
+SHA-256 为 `402a7be05785ce2fbbf9e8be4d714af1aa6952aee26f60de17f8ee1bf7e4cad4`；PepShot 32 个文件为
+`b9ab9ecb88d6d82c3e93d28909702ddd2b56632c437df5bd60627892258519fa`。清单不编码机器绝对路径。
+config 中 implementation revision 已更新为该 commit，当前 config SHA-256 为
+`6ba458badbe8bb7e4446c9120b5cd5387f547f81c19812060868318c295e3388`，外部 footprint SHA-256 为
+`8f792f0e780ae14a265821bea3a672881982cd3d397fe4627b79eb273a3394ec`，离线 preflight SHA-256 为
+`c58b3af9f94c4e8cdf2d08167f647f5bba22121fac953ef2cfcde7447b711406`。该状态仍只是
+`ready_for_isolated_shadow_fixture_not_formal_execution`：实际部署的 Python/PyMOL 环境尚未核验，
+shadow fixture 尚未运行，且没有 Temporal activity、run、workflow 或新序列。

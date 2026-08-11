@@ -229,6 +229,16 @@ SHA-256 为 `cf5afb9ee7a4c01d1628323523abd15ff9589e52208def845c4b00d0b8ef6eba`�
 记录提交为 `90bf0bf`，内容归档 SHA-256 为
 `5fe4157e2901f982ee4b8822a8140f512a2c4fe5ced8d3c7d9aa24a3faec92ee`。
 
+source-manifest 增量门禁冻结于 commit `12cd18e9790fe67503709406c007d49cd5f677eb`：知识库 15 个
+allowlisted 文件的 manifest SHA-256 为
+`402a7be05785ce2fbbf9e8be4d714af1aa6952aee26f60de17f8ee1bf7e4cad4`，PepShot 32 个文件为
+`b9ab9ecb88d6d82c3e93d28909702ddd2b56632c437df5bd60627892258519fa`。当前 config SHA-256 为
+`6ba458badbe8bb7e4446c9120b5cd5387f547f81c19812060868318c295e3388`，外部 footprint 为
+`8f792f0e780ae14a265821bea3a672881982cd3d397fe4627b79eb273a3394ec`，preflight 为
+`c58b3af9f94c4e8cdf2d08167f647f5bba22121fac953ef2cfcde7447b711406`。这只推进 Q3/Q4 的可复原工程
+底座；尚未运行知识检索、PepShot、shadow episode 或正式消融，也没有工具效果结果。实际 Python/PyMOL
+运行时仍须独立冻结并与 source manifest 对齐。
+
 版本号是当前规划，不是正式 run 授权。任何生成、阈值、候选选择或执行必须先有独立冻结 config、
 提交/push、服务与 worker 门禁、唯一 run 检查。长期路线允许被新证据修订，但修订必须追加理由，不能
 静默改写历史问题或成功标准。
