@@ -25,6 +25,7 @@ def _v34_plan() -> dict:
     return build_v34_evidence_plan(
         manifest.parent_cohort["members"],
         order_salt=manifest.factorial_design["arm_order_salt"],
+        provider_governance=manifest.provider_governance,
     )
 
 

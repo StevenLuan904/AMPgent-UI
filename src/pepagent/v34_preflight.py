@@ -205,6 +205,7 @@ def build_v34_offline_preflight(
     plan = build_v34_evidence_plan(
         manifest.parent_cohort["members"],
         order_salt=manifest.factorial_design["arm_order_salt"],
+        provider_governance=manifest.provider_governance,
     )
     result: dict[str, object] = {
         "schema_version": "1.0",

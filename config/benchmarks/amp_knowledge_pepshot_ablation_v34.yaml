@@ -1,5 +1,5 @@
 benchmark_id: amp_knowledge_pepshot_ablation_v34
-version: v34.0.0-preregistration-draft
+version: v34.1.0-provider-governance-evidence-draft
 execution_status: preregistered_draft_not_authorized
 track: knowledge_and_visual_evidence_factorial_ablation
 
@@ -104,6 +104,51 @@ pepshot_provider:
     - increase_proposal_budget
     - alter_primary_endpoint
     - claim_binding_or_affinity
+
+provider_governance:
+  provider_owner_tasks:
+    knowledge:
+      task_id: 019fad3e-76b8-7e32-8455-d2e9b31d33e5
+      frozen_release_identity: amp-kb-acea-shadow-6d0eea37f2c145df
+    pepshot:
+      task_id: 019fb910-f2dd-7be1-a7e6-bfe381512c25
+      frozen_release_identity: pepshot-34487cf9667a64c3-fe1e5382de8cab09
+  trigger_categories:
+    - contract_violation
+    - runtime_or_renderer_failure
+    - evidence_incompleteness
+    - schema_or_semantic_inadequacy
+    - scientific_review_inadequacy
+  consumer_policy:
+    provider_owned_fix_required: true
+    AMPgent_compatibility_adaptation_forbidden: true
+    active_formal_run_release_hot_swap_forbidden: true
+    rejected_release_cannot_be_reaccepted_without_new_immutable_release: true
+    replacement_requires_read_only_acceptance: true
+  change_request_required_fields:
+    - request_id
+    - provider
+    - owner_task_id
+    - rejecting_run_id
+    - change_request_run_id
+    - rejected_release_identity
+    - trigger_category
+    - reproducible_input_artifact_sha256
+    - violated_contract_artifact_sha256
+    - acceptance_criteria_artifact_sha256
+    - external_request_receipt_artifact_sha256
+    - lifecycle_state
+    - consumer_adaptation_performed
+  replacement_required_fields:
+    - replacement_release_identity
+    - replacement_release_manifest_sha256
+    - read_only_acceptance_receipt_artifact_sha256
+  lifecycle_states:
+    - change_request_sent
+    - replacement_release_received
+    - read_only_reaccepted
+  database_parentage: provider_change_request_child_run_of_rejecting_run
+  no_change_path_requires_explicit_empty_ledger: true
 
 factorial_design:
   factors:
@@ -240,6 +285,10 @@ database_evidence_contract:
   persist_all_ToolCalls_dependencies_Evaluations_and_AgentDecisions: true
   persist_blinded_adjudication_before_assignment_reveal: true
   persist_cost_and_failure_events: true
+  persist_provider_ownership_release_freeze_and_change_request_ledger: true
+  persist_provider_rejection_request_replacement_and_reacceptance_receipts: true
+  provider_change_requests_are_child_runs_linked_to_rejecting_run: true
+  active_formal_run_provider_release_hot_swap_forbidden: true
   database_object_store_only_replay_required: true
   replay_must_reconstruct:
     - parent_order

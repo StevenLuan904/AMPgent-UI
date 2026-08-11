@@ -41,6 +41,7 @@ class V34Preregistration(BaseModel):
     parent_cohort: dict[str, Any]
     knowledge_provider: dict[str, Any]
     pepshot_provider: dict[str, Any]
+    provider_governance: dict[str, Any]
     factorial_design: dict[str, Any]
     budget_contract: dict[str, Any]
     intervention_contract: dict[str, Any]
@@ -187,6 +188,79 @@ class V34Preregistration(BaseModel):
         if "claim_binding_or_affinity" not in pepshot.get("forbidden_decision_effects", []):
             raise ValueError("PepShot cannot become binding or affinity evidence")
 
+        governance = self.provider_governance
+        expected_owners = {
+            "knowledge": {
+                "task_id": "019fad3e-76b8-7e32-8455-d2e9b31d33e5",
+                "frozen_release_identity": knowledge["release_revision"],
+            },
+            "pepshot": {
+                "task_id": "019fb910-f2dd-7be1-a7e6-bfe381512c25",
+                "frozen_release_identity": pepshot["release_id"],
+            },
+        }
+        if governance.get("provider_owner_tasks") != expected_owners:
+            raise ValueError("v34 provider ownership or frozen release drifted")
+        expected_triggers = {
+            "contract_violation",
+            "runtime_or_renderer_failure",
+            "evidence_incompleteness",
+            "schema_or_semantic_inadequacy",
+            "scientific_review_inadequacy",
+        }
+        if set(governance.get("trigger_categories", [])) != expected_triggers:
+            raise ValueError("v34 provider escalation trigger set drifted")
+        consumer_policy = governance.get("consumer_policy", {})
+        required_consumer_guards = (
+            "provider_owned_fix_required",
+            "AMPgent_compatibility_adaptation_forbidden",
+            "active_formal_run_release_hot_swap_forbidden",
+            "rejected_release_cannot_be_reaccepted_without_new_immutable_release",
+            "replacement_requires_read_only_acceptance",
+        )
+        if not all(consumer_policy.get(key) is True for key in required_consumer_guards):
+            raise ValueError("v34 provider consumer policy is incomplete")
+        expected_request_fields = {
+            "request_id",
+            "provider",
+            "owner_task_id",
+            "rejecting_run_id",
+            "change_request_run_id",
+            "rejected_release_identity",
+            "trigger_category",
+            "reproducible_input_artifact_sha256",
+            "violated_contract_artifact_sha256",
+            "acceptance_criteria_artifact_sha256",
+            "external_request_receipt_artifact_sha256",
+            "lifecycle_state",
+            "consumer_adaptation_performed",
+        }
+        if set(governance.get("change_request_required_fields", [])) != (
+            expected_request_fields
+        ):
+            raise ValueError("v34 provider change-request field contract drifted")
+        expected_replacement_fields = {
+            "replacement_release_identity",
+            "replacement_release_manifest_sha256",
+            "read_only_acceptance_receipt_artifact_sha256",
+        }
+        if set(governance.get("replacement_required_fields", [])) != (
+            expected_replacement_fields
+        ):
+            raise ValueError("v34 provider replacement field contract drifted")
+        if governance.get("lifecycle_states") != [
+            "change_request_sent",
+            "replacement_release_received",
+            "read_only_reaccepted",
+        ]:
+            raise ValueError("v34 provider change-request lifecycle drifted")
+        if governance.get("database_parentage") != (
+            "provider_change_request_child_run_of_rejecting_run"
+        ):
+            raise ValueError("v34 provider change request must be a linked child run")
+        if governance.get("no_change_path_requires_explicit_empty_ledger") is not True:
+            raise ValueError("v34 provider no-change path must remain explicit")
+
         budget = self.budget_contract
         required_budget_guards = (
             "revision_replaces_not_adds_to_budget",
@@ -255,6 +329,10 @@ class V34Preregistration(BaseModel):
             "persist_all_ToolCalls_dependencies_Evaluations_and_AgentDecisions",
             "persist_blinded_adjudication_before_assignment_reveal",
             "persist_cost_and_failure_events",
+            "persist_provider_ownership_release_freeze_and_change_request_ledger",
+            "persist_provider_rejection_request_replacement_and_reacceptance_receipts",
+            "provider_change_requests_are_child_runs_linked_to_rejecting_run",
+            "active_formal_run_provider_release_hot_swap_forbidden",
             "database_object_store_only_replay_required",
             "CSV_and_Markdown_are_exports_only",
         )

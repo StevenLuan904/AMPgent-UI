@@ -22,7 +22,11 @@ from pepagent.db.models import (
 from pepagent.db.repository import ExperimentRepository
 from pepagent.evidence_replay import build_database_evidence_graph
 from pepagent.provenance.hashing import sha256_bytes, sha256_json
-from pepagent.v34_evidence import V34_EVIDENCE_VERSION, validate_v34_replay_graph
+from pepagent.v34_evidence import (
+    V34_EVIDENCE_VERSION,
+    validate_v34_provider_change_request_ledger,
+    validate_v34_replay_graph,
+)
 
 ArtifactWriter = Callable[[dict[str, Any]], Awaitable[Any]]
 ArtifactReader = Callable[[str], bytes]
@@ -482,6 +486,20 @@ def verify_v34_database_object_replay(
         if item["input_json"].get("v34_logical_id") is not None
     }
     artifacts = {item["id"]: item for item in graph["artifacts"]}
+    governance_payloads: list[dict[str, Any]] = []
+    for link in graph["evidence_artifacts"]:
+        if link["role"] != "provider_change_request_ledger":
+            continue
+        artifact = artifacts[link["artifact_id"]]
+        payload = artifact_payloads_by_sha256.get(artifact["sha256"])
+        if payload is None or sha256_json(payload) != artifact["sha256"]:
+            raise ValueError("v34 provider governance artifact is missing or corrupt")
+        governance_payloads.append(payload)
+    if len(governance_payloads) != 1:
+        raise ValueError("v34 replay requires one provider change-request ledger")
+    validate_v34_provider_change_request_ledger(
+        plan["provider_governance_contract"], governance_payloads[0]
+    )
     occurrence_payload_by_call: dict[str, dict[str, Any]] = {}
     for link in graph["evidence_artifacts"]:
         if link["role"] != "proposal_occurrences":

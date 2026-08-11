@@ -17,6 +17,7 @@ def _plan() -> dict:
     return build_v34_evidence_plan(
         manifest.parent_cohort["members"],
         order_salt=manifest.factorial_design["arm_order_salt"],
+        provider_governance=manifest.provider_governance,
     )
 
 
@@ -47,6 +48,17 @@ def _database_fixture(plan: dict) -> tuple[dict, dict[str, dict]]:
         )
         for role in tool["required_artifact_roles"]:
             payload = {"logical_id": logical_id, "role": role}
+            if role == "provider_change_request_ledger":
+                payload = {
+                    "schema_version": "1.0",
+                    "provider_owner_tasks": plan["provider_governance_contract"][
+                        "provider_owner_tasks"
+                    ],
+                    "formal_run_release_hot_swap_performed": False,
+                    "database_parentage_verified": True,
+                    "all_external_requests_have_receipts": True,
+                    "change_requests": [],
+                }
             if role == "proposal_occurrences":
                 occurrence_payloads = []
                 for occurrence_rank in range(1, 9):
@@ -131,7 +143,7 @@ def test_v34_database_object_replay_covers_every_proposal_occurrence() -> None:
     graph, payloads = _database_fixture(plan)
     result = verify_v34_database_object_replay(plan, graph, payloads)
     assert result["exact_replay"] is True
-    assert result["tool_call_count"] == 770
+    assert result["tool_call_count"] == 771
     assert result["candidate_occurrence_count"] == 768
 
 
@@ -154,4 +166,23 @@ def test_v34_database_object_replay_rejects_corrupt_occurrence_artifact() -> Non
     )
     payloads[artifact["sha256"]]["occurrences"][0]["sequence"] = "DRIFT"
     with pytest.raises(ValueError, match="missing or corrupt"):
+        verify_v34_database_object_replay(plan, graph, payloads)
+
+
+def test_v34_database_object_replay_rejects_provider_governance_drift() -> None:
+    plan = _plan()
+    graph, payloads = _database_fixture(plan)
+    governance_link = next(
+        item
+        for item in graph["evidence_artifacts"]
+        if item["role"] == "provider_change_request_ledger"
+    )
+    artifact = next(
+        item for item in graph["artifacts"] if item["id"] == governance_link["artifact_id"]
+    )
+    payload = payloads.pop(artifact["sha256"])
+    payload["formal_run_release_hot_swap_performed"] = True
+    artifact["sha256"] = sha256_json(payload)
+    payloads[artifact["sha256"]] = payload
+    with pytest.raises(ValueError, match="release hot swap"):
         verify_v34_database_object_replay(plan, graph, payloads)

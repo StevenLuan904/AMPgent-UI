@@ -37,6 +37,15 @@ def test_v34_freezes_exact_factorial_and_database_contract() -> None:
     assert manifest.database_evidence_contract[
         "database_object_store_only_replay_required"
     ] is True
+    assert manifest.provider_governance["provider_owner_tasks"]["pepshot"][
+        "task_id"
+    ] == "019fb910-f2dd-7be1-a7e6-bfe381512c25"
+    assert manifest.provider_governance["consumer_policy"][
+        "AMPgent_compatibility_adaptation_forbidden"
+    ] is True
+    assert manifest.provider_governance["consumer_policy"][
+        "active_formal_run_release_hot_swap_forbidden"
+    ] is True
 
 
 def test_v34_rejects_missing_arm_blinding_or_evidence() -> None:
@@ -67,6 +76,13 @@ def test_v34_rejects_missing_arm_blinding_or_evidence() -> None:
     payload = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
     payload["formal_run"]["implementation_revision"] = "not-a-revision"
     with pytest.raises(ValueError, match="exact git SHA"):
+        V34Preregistration.model_validate(payload)
+
+    payload = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
+    payload["provider_governance"]["consumer_policy"][
+        "AMPgent_compatibility_adaptation_forbidden"
+    ] = False
+    with pytest.raises(ValueError, match="consumer policy"):
         V34Preregistration.model_validate(payload)
 
 

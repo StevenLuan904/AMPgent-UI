@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import uuid
 from collections import Counter
 from collections.abc import Mapping, Sequence
 from typing import Any
@@ -31,10 +32,100 @@ def _tool(prefix: str, name: str, artifact_roles: Sequence[str]) -> dict[str, An
     }
 
 
+def _is_sha256(value: object) -> bool:
+    return isinstance(value, str) and len(value) == 64 and all(
+        character in "0123456789abcdef" for character in value
+    )
+
+
+def validate_v34_provider_change_request_ledger(
+    contract: Mapping[str, Any], ledger: Mapping[str, Any]
+) -> None:
+    """Validate the immutable provider escalation snapshot used for DB replay."""
+    if ledger.get("schema_version") != "1.0":
+        raise ValueError("v34 provider ledger schema drifted")
+    owners = contract.get("provider_owner_tasks", {})
+    if ledger.get("provider_owner_tasks") != owners:
+        raise ValueError("v34 provider ledger ownership or release freeze drifted")
+    if ledger.get("formal_run_release_hot_swap_performed") is not False:
+        raise ValueError("v34 provider ledger permits a formal-run release hot swap")
+    if ledger.get("database_parentage_verified") is not True:
+        raise ValueError("v34 provider ledger lacks child-run parentage verification")
+    if ledger.get("all_external_requests_have_receipts") is not True:
+        raise ValueError("v34 provider ledger lacks external request receipts")
+    requests = ledger.get("change_requests")
+    if not isinstance(requests, list):
+        raise ValueError("v34 provider ledger must contain an explicit request list")
+    request_ids = [item.get("request_id") for item in requests]
+    if None in request_ids or len(request_ids) != len(set(request_ids)):
+        raise ValueError("v34 provider change-request identities are missing or duplicated")
+    required_fields = set(contract.get("change_request_required_fields", []))
+    replacement_fields = set(contract.get("replacement_required_fields", []))
+    trigger_categories = set(contract.get("trigger_categories", []))
+    lifecycle_states = set(contract.get("lifecycle_states", []))
+    for item in requests:
+        if not required_fields.issubset(item):
+            raise ValueError("v34 provider change request is incomplete")
+        provider = item.get("provider")
+        owner = owners.get(provider)
+        if owner is None or item.get("owner_task_id") != owner.get("task_id"):
+            raise ValueError("v34 provider change request targets the wrong owner")
+        if item.get("rejected_release_identity") != owner.get(
+            "frozen_release_identity"
+        ):
+            raise ValueError("v34 provider rejection does not identify the frozen release")
+        if item.get("trigger_category") not in trigger_categories:
+            raise ValueError("v34 provider change request uses an unknown trigger")
+        if item.get("lifecycle_state") not in lifecycle_states:
+            raise ValueError("v34 provider change request uses an unknown lifecycle state")
+        if item.get("consumer_adaptation_performed") is not False:
+            raise ValueError("v34 provider change request records consumer adaptation")
+        try:
+            rejecting_run_id = uuid.UUID(str(item.get("rejecting_run_id")))
+            change_request_run_id = uuid.UUID(str(item.get("change_request_run_id")))
+        except ValueError as error:
+            raise ValueError("v34 provider change request has an invalid run identity") from error
+        if rejecting_run_id == change_request_run_id:
+            raise ValueError("v34 provider change request must use a child run")
+        for field in (
+            "reproducible_input_artifact_sha256",
+            "violated_contract_artifact_sha256",
+            "acceptance_criteria_artifact_sha256",
+            "external_request_receipt_artifact_sha256",
+        ):
+            if not _is_sha256(item.get(field)):
+                raise ValueError("v34 provider change request has an invalid artifact hash")
+        state = item["lifecycle_state"]
+        replacement_present = {
+            field for field in replacement_fields if item.get(field) not in (None, "")
+        }
+        if state == "change_request_sent" and replacement_present:
+            raise ValueError("v34 provider change request anticipates a replacement release")
+        if state in {"replacement_release_received", "read_only_reaccepted"}:
+            required = {
+                "replacement_release_identity",
+                "replacement_release_manifest_sha256",
+            }
+            if not required.issubset(replacement_present):
+                raise ValueError("v34 provider replacement release is incomplete")
+            if item.get("replacement_release_identity") == item.get(
+                "rejected_release_identity"
+            ):
+                raise ValueError("v34 provider replacement release is not new")
+            if not _is_sha256(item.get("replacement_release_manifest_sha256")):
+                raise ValueError("v34 provider replacement manifest hash is invalid")
+        receipt_field = "read_only_acceptance_receipt_artifact_sha256"
+        if state == "replacement_release_received" and item.get(receipt_field):
+            raise ValueError("v34 provider replacement is marked accepted before review")
+        if state == "read_only_reaccepted" and not _is_sha256(item.get(receipt_field)):
+            raise ValueError("v34 provider reacceptance receipt is missing or invalid")
+
+
 def build_v34_evidence_plan(
     parents: Sequence[Mapping[str, Any]],
     *,
     order_salt: str,
+    provider_governance: Mapping[str, Any],
     raw_proposals_per_episode: int = 8,
 ) -> dict[str, Any]:
     """Build the exact evidence graph shape before any v34 episode is executed."""
@@ -46,8 +137,17 @@ def build_v34_evidence_plan(
     if len(set(candidate_ids)) != len(candidate_ids):
         raise ValueError("v34 parent identities must be unique")
 
+    governance = _tool(
+        "v34-global",
+        "v34-provider-governance-freeze",
+        (
+            "provider_task_ownership_manifest",
+            "accepted_provider_release_manifest",
+            "provider_change_request_ledger",
+        ),
+    )
     episodes: list[dict[str, Any]] = []
-    all_tool_ids: list[str] = []
+    all_tool_ids: list[str] = [governance["logical_id"]]
     all_dependencies: list[tuple[str, str]] = []
     adjudication_ids: list[str] = []
     evaluation_ids: list[str] = []
@@ -130,6 +230,8 @@ def build_v34_evidence_plan(
             ]
             tool_ids = {item["tool_name"]: item["logical_id"] for item in tools}
             dependencies = [
+                (governance["logical_id"], knowledge["logical_id"]),
+                (governance["logical_id"], pepshot["logical_id"]),
                 (base["logical_id"], knowledge["logical_id"]),
                 (base["logical_id"], proposal["logical_id"]),
                 (knowledge["logical_id"], proposal["logical_id"]),
@@ -189,7 +291,8 @@ def build_v34_evidence_plan(
         "episode_count": len(episodes),
         "raw_proposals_per_episode": raw_proposals_per_episode,
         "episodes": episodes,
-        "global_tool_calls": [reveal, analysis],
+        "global_tool_calls": [governance, reveal, analysis],
+        "provider_governance_contract": dict(provider_governance),
         "required_tool_call_ids": all_tool_ids,
         "required_dependencies": [list(item) for item in all_dependencies],
         "adjudication_must_lock_before_reveal": True,
