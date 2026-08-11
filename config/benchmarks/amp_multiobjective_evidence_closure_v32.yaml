@@ -1,7 +1,7 @@
 benchmark_id: amp_multiobjective_evidence_closure_v32
 version: v32.closure.0.1
-execution_status: ready
-execution_authorized: true
+execution_status: completed
+execution_authorized: false
 v32_run_id: d695853e-cb94-4608-ad71-e4d7c4df1e85
 acceptance_run_id: f87c4db4-83e5-4c6f-8f4e-3d52f5c40ce3
 submitted_manifest:
@@ -30,5 +30,21 @@ implementation:
   revision: 6074fa4585f74c4b5d61685928d667c4167f92bc
 formal_closure_run:
   submit_exactly_once: true
-  submitted: false
-  run_id: null
+  submitted: true
+  run_id: de9f72ae-e490-408d-9432-c71a75a3d499
+  workflow_id: database-object-amp_multiobjective_evidence_closure_v32
+completion:
+  database_status: succeeded
+  v32_parent_candidate_count_after: 300
+  closure_tool_call_count: 2
+  closure_tool_call_dependency_count: 1
+  closure_agent_decision_count: 1
+  closure_agent_decision_edge_count: 2
+  closure_run_lifecycle_event_count: 6
+  submitted_manifest_artifact_sha256: 5b29bcf0dd0de3d02b27ef4ecafb1ec30aa27e7cec4016b1b11b18dbcdfc9b69
+  closure_artifact_sha256: 1844609968f4e14abf727a7fa08d905f1e778d3d120e016eaae0eeeabe540ea7
+  parent_graph_sha256: d1e701a32dd404826639531058b4bd9b6713891b38ea31f9551e9cd7d54793fc
+  database_object_store_only_replay: true
+  v32_parent_backwrite: false
+  acceptance_child_backwrite: false
+  verdict: ready_for_v33_preregistration

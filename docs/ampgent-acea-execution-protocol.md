@@ -387,3 +387,24 @@ The closure implementation is frozen at commit
 `var/archives/ampgent-v32-evidence-closure-6074fa4.zip`, SHA-256
 `cf9f5a27c0a60319f5f5a4e8fcbb4ceb70b1520fe63ffd0a670909631a174f01`. The contract is authorized
 for exactly one grandchild run after final service, identity, and duplicate-run gates pass.
+
+The unique evidence-closure grandchild run completed successfully and is locked. Run ID:
+`de9f72ae-e490-408d-9432-c71a75a3d499`; database-object workflow identity:
+`database-object-amp_multiobjective_evidence_closure_v32`. The immutable run chain is v32 parent
+`d695853e-cb94-4608-ad71-e4d7c4df1e85` -> acceptance child
+`f87c4db4-83e5-4c6f-8f4e-3d52f5c40ce3` -> closure grandchild
+`de9f72ae-e490-408d-9432-c71a75a3d499`, all succeeded. The v32 parent still contains exactly 300
+candidates.
+
+The closure evidence graph contains two ToolCalls, one dependency, one AgentDecision, two decision
+edges, six run lifecycle events, and two artifacts. The submitted manifest Artifact SHA-256 is
+`5b29bcf0dd0de3d02b27ef4ecafb1ec30aa27e7cec4016b1b11b18dbcdfc9b69`; it exactly equals both the
+canonical submitted manifest SHA and the SHA recorded in the v32 parent spec. The final closure
+Artifact SHA-256 is `1844609968f4e14abf727a7fa08d905f1e778d3d120e016eaae0eeeabe540ea7`.
+Its recorded parent graph SHA is
+`d1e701a32dd404826639531058b4bd9b6713891b38ea31f9551e9cd7d54793fc`.
+
+The full 300-candidate evidence graph, exact 24-member portfolio, all five acceptance exports,
+submitted Pareto policy, exclusions, lane ranks, and v33-readiness verdict are now reproducible from
+PostgreSQL plus content-addressed object storage alone. Neither locked ancestor was modified. The
+final verdict remains `ready_for_v33_preregistration`, with no authorization to generate or run v33.

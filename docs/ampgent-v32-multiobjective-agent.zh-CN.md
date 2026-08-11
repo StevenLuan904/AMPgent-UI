@@ -75,4 +75,6 @@ v32 中每一步都必须先落 PostgreSQL：原始生成调用、冻结候选�
 
 验收 child run `f87c4db4-83e5-4c6f-8f4e-3d52f5c40ce3` 已成功完成，父 run 候选数仍为 300。child run 保存 2 个 ToolCall、1 条依赖、1 个 AgentDecision、2 条 decision edge、6 个 run lifecycle event 和 5 个内容寻址 artifact。所有 11 个 v33 预注册门槛通过，结论为 `ready_for_v33_preregistration`。
 
+最终要求审计随后补齐了原提交 manifest 只存 SHA、未存完整 artifact 的缺口。追加式 closure grandchild run `de9f72ae-e490-408d-9432-c71a75a3d499` 已把提交时 canonical manifest（SHA `5b29bcf...9b69`）封存到对象存储，并完全使用 PostgreSQL 与内容寻址 artifact 重放父组合和五项验收导出。closure artifact SHA 为 `1844609968f4e14abf727a7fa08d905f1e778d3d120e016eaae0eeeabe540ea7`。父 run 与验收 child 均未回写，最终数据库—对象存储闭环已成立。
+
 路线级结果进一步显示真实 trade-off：膜作用 lane 的预测 MIC 中位数约为 LLAMP 8.15 µM、AMP-READ 19.35 µM，但 6/6 均有 Macrel 溶血高风险警告；AMP/MIC lane 的相应中位数约为 5.68/4.04 µM，但 6/6 同样为溶血高风险；风险控制 lane 的溶血概率中位数降至 0.426、6/6 为低标签，但预测 MIC 变弱至约 49.28/134.85 µM，且 2/6 有 ToxinPred3 单模型警告；均衡 lane 仍是 6/6 溶血高风险。这里没有“全能冠军”，而是被数据库完整保存的机制—活性—风险冲突。
