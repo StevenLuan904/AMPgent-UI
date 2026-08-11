@@ -509,3 +509,9 @@ margin 已在输出前冻结：确认后新颖非支配发现率改善 0.25 条/
 降低 0.10；其余端点最大允许退化分别为 0.10 条/parent、0.05、0.05。它们是 Agent 晋级幅度而非生物学
 阈值。执行前仍需：实现并测试正式知识检索、PepShot、盲化 adjudication
 和 replay activities；commit/push/archive；再获得单独 formal-run 授权并通过第 6 节全部门禁。
+
+v34 预注册、确定性 arm 分配/配对效应与 replay graph 完整性验证器已冻结在 commit
+`29a352abb858e07086ffac943e2b5c939c97d940`；全量验证为 ruff clean、pytest `290 passed`。内容归档为
+`var/archives/ampgent-v34-preregistration-29a352a.zip`，SHA-256
+`cf5afb9ee7a4c01d1628323523abd15ff9589e52208def845c4b00d0b8ef6eba`。该 checkpoint 只冻结科学合同与
+预执行验证器，不包含已注册 Temporal activity，也不授权运行或生成候选。

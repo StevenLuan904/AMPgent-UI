@@ -188,6 +188,8 @@ cards+PepShot 四个隔离 episode；proposal/结构/评价预算相同，工具
 parent identity manifest 已由 v32 database-only replay 冻结，SHA-256 为
 `f1955476cb761d9ca300a8fed00d9bb847e775ee5f4c1ef51d1346376a4f943e`；三个主要端点的 practical
 improvement/degradation margins 也已在输出前冻结。尚未实现正式数据库 activity，因而不能执行。
+预注册与预执行验证器 checkpoint 为 commit `29a352abb858e07086ffac943e2b5c939c97d940`，内容归档
+SHA-256 为 `cf5afb9ee7a4c01d1628323523abd15ff9589e52208def845c4b00d0b8ef6eba`。
 
 版本号是当前规划，不是正式 run 授权。任何生成、阈值、候选选择或执行必须先有独立冻结 config、
 提交/push、服务与 worker 门禁、唯一 run 检查。长期路线允许被新证据修订，但修订必须追加理由，不能
