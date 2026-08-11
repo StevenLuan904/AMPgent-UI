@@ -327,3 +327,10 @@ Its content archive is `var/archives/ampgent-v32-acceptance-implementation-9b703
 `5ec361056521272664025936583485670ca4fc149d0f9ecb60a539a91d94bd4e`. The acceptance contract is
 authorized for exactly one child run after the final API/PostgreSQL/MinIO/Temporal and duplicate-run
 gates pass. The parent v32 run remains immutable.
+
+Preflight correction: the acceptance verifier now checks all parent graph counts plus the exact
+eligible, concordant-red, and selected counts rather than candidate count alone. The final executable
+revision is `3cc040f2d0e0f0b162031931f81668076425c518`; its archive is
+`var/archives/ampgent-v32-acceptance-implementation-3cc040f.zip`, SHA-256
+`a77f557801298e564e1c4d25a7c53eac9a6c3c0a62697ba3ba55832ef664c813`. The earlier archive remains
+historical implementation evidence but is not authorized for execution.
