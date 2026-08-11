@@ -226,6 +226,8 @@ SHA-256 为 `cf5afb9ee7a4c01d1628323523abd15ff9589e52208def845c4b00d0b8ef6eba`�
 `912c8fd868d409b2ef6326007e5879cd4fbbc83b3c26c81ae986c0a0ae29b4be`，preflight SHA-256 为
 `e53c8f894df5f8d32c6cb09661c71e51ca91723d365c5d10f01b8b8cae6ef903`。当前只到
 `ready_for_isolated_shadow_fixture_not_formal_execution`，全量测试 `306 passed`，没有实际工具干预结果。
+记录提交为 `90bf0bf`，内容归档 SHA-256 为
+`5fe4157e2901f982ee4b8822a8140f512a2c4fe5ced8d3c7d9aa24a3faec92ee`。
 
 版本号是当前规划，不是正式 run 授权。任何生成、阈值、候选选择或执行必须先有独立冻结 config、
 提交/push、服务与 worker 门禁、唯一 run 检查。长期路线允许被新证据修订，但修订必须追加理由，不能

@@ -541,4 +541,5 @@ footprint SHA-256 为 `912c8fd868d409b2ef6326007e5879cd4fbbc83b3c26c81ae986c0a0a
 preflight SHA-256 为 `e53c8f894df5f8d32c6cb09661c71e51ca91723d365c5d10f01b8b8cae6ef903`，结论仅为
 `ready_for_isolated_shadow_fixture_not_formal_execution`。下一步仍是冻结可执行环境/source manifest
 并运行隔离 shadow fixture；不得跳过另行授权与 worker 门禁。全量验证为 ruff clean、pytest
-`306 passed`。
+`306 passed`。记录提交为 `90bf0bf`；内容归档 `var/archives/ampgent-v34-adapters-90bf0bf.zip` 的
+SHA-256 为 `5fe4157e2901f982ee4b8822a8140f512a2c4fe5ced8d3c7d9aa24a3faec92ee`。

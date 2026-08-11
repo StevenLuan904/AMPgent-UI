@@ -103,4 +103,6 @@ Candidate，但每一次提出行为仍单独落 `candidate_occurrences`；因�
 SHA-256 为 `912c8fd868d409b2ef6326007e5879cd4fbbc83b3c26c81ae986c0a0ae29b4be`，离线 preflight
 SHA-256 为 `e53c8f894df5f8d32c6cb09661c71e51ca91723d365c5d10f01b8b8cae6ef903`；状态严格为
 `ready_for_isolated_shadow_fixture_not_formal_execution`。全量验证为 ruff clean、pytest `306 passed`。
-这不是工具有效性结果，也不是运行授权。
+记录提交为 `90bf0bf`；内容归档 `var/archives/ampgent-v34-adapters-90bf0bf.zip` 的 SHA-256 为
+`5fe4157e2901f982ee4b8822a8140f512a2c4fe5ced8d3c7d9aa24a3faec92ee`。这不是工具有效性结果，也不是
+运行授权。
