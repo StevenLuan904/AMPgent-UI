@@ -438,6 +438,15 @@ ToolCall dependency 纳入对应 run。只保存在外部工具数据库、Markd
 `var/archives/ampgent-long-horizon-goals-54e712b.zip`，SHA-256
 `b6b7947a06d7f60d1dc6e2fd2c26f96addf5d95e4d09ed32fd75391484524dca`。
 
+长期目标现使用 L0–L5 能力成熟度和 Q1–Q6 完成证据矩阵管理。当前项目整体仅为 L2：AceA 单靶点、
+冻结指标作用域内的数据库可复原计算决策；尚无工具干预有效、跨靶点迁移或 harness 自我改进证据。
+契约测试会核对六个问题、v33–v36 精确 config 以及 v35a/v36a 未授权门，防止把 verifier、shadow 或
+测试通过误写为科学问题已回答。该矩阵 checkpoint 为 commit
+`db252e2b0713c4966fd414ab802f72eac9797b94`；内容归档
+`var/archives/ampgent-long-horizon-maturity-db252e2.zip` 的 SHA-256 为
+`334ad637931a4a3c31a5f0ee3b1d34ed2905257a2d7b49422d0d61e85abb13de`，验证为 ruff clean、pytest
+`362 passed`。该更新不授权任何 formal/synthetic run。
+
 ## 17. v33 正电性与搜索充分性预注册草案（2026-08-11 append-only update）
 
 v32 acceptance 仅授权编写预注册。当前已建立未授权草案

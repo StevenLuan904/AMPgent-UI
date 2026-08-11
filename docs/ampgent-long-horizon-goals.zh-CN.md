@@ -461,3 +461,9 @@ ToolCall 边进入 AMPgent run；“能在另一目录找到”不满足可复�
 每次新事实出现时更新对应问题的 `当前判断`、证据 ID/SHA、未解决项和下一项预注册实验。问题只能
 标记为 `open`、`in_progress`、`answered_within_scope` 或 `blocked`；不能因一次最好分数标记“解决”。
 每个大版本结束时追加：回答了什么、没有回答什么、哪个假设被推翻、harness 学到了什么。
+
+L0–L5 成熟度与 Q1–Q6 完成证据矩阵 checkpoint 为 commit
+`db252e2b0713c4966fd414ab802f72eac9797b94`。内容归档
+`var/archives/ampgent-long-horizon-maturity-db252e2.zip` 的 SHA-256 为
+`334ad637931a4a3c31a5f0ee3b1d34ed2905257a2d7b49422d0d61e85abb13de`；全量验证为 ruff clean、pytest
+`362 passed`。该 checkpoint 只强化路线图维护，不改变任何执行授权。
