@@ -10,7 +10,7 @@ def test_ampgent_acea_execution_protocol_preserves_nonnegotiable_rules() -> None
     assert "docs/ampgent-acea-execution-protocol.md" in agents
     required_footprints = (
         "192.168.99.32",
-        "synth `192.168.99.2` / GPU4",
+        "用户于 2026-08-12 明确授权使用除 `192.168.99.32` 外的其他 GPU",
         "AMPlify 已由用户永久停用",
         "absolute_difference <= 1e-8",
         "relative_difference <= 1e-6",
@@ -33,6 +33,9 @@ def test_ampgent_acea_execution_protocol_preserves_nonnegotiable_rules() -> None
     )
     for footprint in required_footprints:
         assert footprint in protocol
+
+    assert "资源许可不等于 formal run 科学授权" in protocol
+    assert "用户随后明确禁止 `.19` 的 GPU4" in protocol
 
     assert "sjtu@" not in protocol
     assert "forbids a weighted total" in protocol.lower()

@@ -2,7 +2,7 @@
 
 状态：`active`
 维护者：执行本项目的 agent
-最后核对日期：2026-08-10（Asia/Shanghai）
+最后核对日期：2026-08-12（Asia/Shanghai）
 适用范围：AMP 生成器、AceA 靶向结构评测、Rosetta 相对能量评测、相关 worker 与正式 run
 
 本文件是项目的执行事实源。每次开始工作、自动唤醒、部署 worker、提交正式 run 或解释结果前，
@@ -63,9 +63,11 @@
 
 - `192.168.99.32` 当前被用户明确禁止：不得登录、探测 GPU、提交任务、停止进程或触碰工作负载，
   直到用户明确解除。
-- synth `192.168.99.2` / GPU4 不属于当前 AMPgent 任务范围，不访问、不部署、不借用 poller。
-- `.19` 上只允许操作可明确归属于 AMPgent/PepAgent 的 worker；不得停止 OmniEpic、训练、Moba 或
-  其他用户进程。
+- 用户于 2026-08-12 明确授权使用除 `192.168.99.32` 外的其他 GPU，包括 synth 主机 GPU；使用前仍须
+  精确核实物理主机、GPU、PID、角色、活动 release/source revision 与 AMPgent 归属，且不得停止、争抢
+  或干扰 OmniEpic、训练、Moba 及其他用户任务。资源许可不等于 formal run 科学授权。
+- 用户随后明确禁止 `.19` 的 GPU4；即使该卡瞬时空闲也不得调度、启动 worker 或用于 capacity fixture。
+- `.19` 与 synth 上只允许操作可明确归属于 AMPgent/PepAgent 的 worker。
 - 先启动新 worker 并确认 poller 接管，再停止旧的、已精确识别的同角色 PID；有 active workflow 时
   禁止 worker 切换。
 - Temporal 显示 poller 在线，不等于已确认物理主机或代码版本。必须把 poller identity、远端 PID、
@@ -111,7 +113,7 @@
 3. 所需实现已 commit/push，完整 ruff/pytest 通过，内容归档 SHA 已记录。
 4. 本地 API、PostgreSQL、MinIO、Temporal 健康；active workflow 数为 0（除非协议明确允许并行）。
 5. control、GPU、CPU worker poller 在线，且物理主机、角色、PID、活动 release/source revision 已核实。
-6. worker 不在 `.32`、synth GPU4 或其他禁止资源上；不会争抢或停止他人任务。
+6. worker 不在 `.32`、`.19` GPU4 或其他禁止资源上；不会争抢、停止或干扰他人任务。
 7. task queue、工具版本、权重 SHA、环境 SHA 与预注册协议一致。
 8. 唯一 formal run 尚未提交；数据库和 Temporal 中均无同协议重复 run/workflow。
 9. 提交后立刻记录 run ID、workflow ID、cohort SHA 和提交 commit；之后禁止重复提交。
@@ -170,7 +172,7 @@ Phase A 不能证明任何生成器全面胜出，也不能单独决定替代 Pe
 
 当前状态：`ready in repository, formal run not submitted`。
 
-唯一下一步：定位 Temporal Boltz2/Rosetta poller 的实际主机，确认其不是 `.32` 或 synth GPU4，并部署/验证
+唯一下一步：定位 Temporal Boltz2/Rosetta poller 的实际主机，确认其不是 `.32` 且不会干扰他人任务，并部署/验证
 包含 `7b93e78` 的允许 worker release。完成 worker revision 映射后，重新执行第 6 节全部门禁，再提交
 唯一 v31b formal run。不得为了推进而把任务发给位置或版本未知的 poller。
 
@@ -180,7 +182,7 @@ Phase A 不能证明任何生成器全面胜出，也不能单独决定替代 Pe
 2. 只读检查 API health、active workflows、目标 run 状态、候选/证据计数。
 3. 查询 control/Boltz2/Rosetta poller 的 identity、last access 和 build ID。
 4. 若涉及部署/提交，核对 poller 的物理主机、角色、PID、PYTHONPATH、活动 release。
-5. 检查 `.32` 与 synth GPU4 禁令，没有明确解除就不访问。
+5. 检查 `.32` 与 `.19` GPU4 禁令；其他 GPU 仅在归属、进程和 revision 映射清楚且不干扰他人任务时使用。
 6. 无变化则安静；只在核心结果、严重异常、需要输入、阶段 CSV 或最终验收时通知。
 7. 阶段完成后更新本文件的足迹、run/workflow ID、SHA、测试数和下一步。
 
@@ -240,7 +242,8 @@ The v32 implementation is frozen at `a12fc0d84b2e4fe3587eb1e351089f6a0d3b7172`; 
 still unsubmitted. Do not submit until the
 allowed local control/metrics/portfolio workers are mapped to that revision, all service gates are
 rechecked, and PostgreSQL plus Temporal contain no prior v32 run/workflow. Host 192.168.99.32 and
-synth GPU4 remain prohibited.
+synth GPU4 were prohibited at that historical checkpoint; the 2026-08-12 resource rule above now
+allows non-`.32` GPUs subject to exact ownership/revision mapping and non-interference.
 
 Pre-submission gate update: source archive for repository commit `2c2d5d2` is
 `var/archives/ampgent-source-2c2d5d2.zip`, SHA-256
@@ -806,3 +809,27 @@ revision 为 `1905974f0a8f8818e7591cf3b38d70df5344c975`，v36a config SHA-256 �
 `62a18e0f13f3bd248176ab91cf1300fd82c4da9770e40d8d4b5d07366a4a5387`，全量测试 `346 passed`。
 revision 回填 checkpoint 为 `6299b233eef751004eec946f4ee2eab1edacdc1b`，内容归档 SHA-256 为
 `b1a7e1f4c4a2ee40a4f2838461ac4ebaf61cabd0f2a7df92aeabe04f535a5e41`。该归档不是数据库验收结果。
+
+## 20. 2026-08-12 GPU 资源边界与只读容量快照
+
+用户已将资源许可更新为：`192.168.99.32` 全部资源及 `.19` GPU4 禁用，其他 GPU 可用于 AMPgent。
+该许可解除此前对 synth GPU4 的项目级禁令，但不授权尚未获批的 formal/synthetic run，也不允许停止
+或争抢现有任务。
+
+只读快照显示：
+
+- `.19` 有 8 张 RTX 3090；快照时 GPU4、GPU5 无计算进程且约有 24 GiB 空闲，但用户随后禁止 GPU4，
+  因而该主机当前只有 GPU5 可作为潜在 AMPgent 空闲卡。现有 PepMLM worker
+  PID `810968` 使用 GPU3，`PYTHONPATH=/data1/huangyueshan/pepagent/platform/current/src`，活动 release
+  为 `339c4e48141830e3bad49ed3d6fb2a472d10ee57f11aefbd40771f9a19e52835`。
+- synth 有 8 张 RTX 3090；快照时 GPU5、GPU6 无计算进程且约有 24 GiB 空闲，GPU4 有约 12.7 GiB
+  已占用，不能仅因瞬时利用率为 0 而复用。Boltz2 worker PID `2914797` 固定
+  `CUDA_VISIBLE_DEVICES=6`，Rosetta worker PID `2914804` 为 CPU worker；两者均从
+  `/sdd_data/pepagent/platform/current/src` 加载，活动 release 为
+  `034e558367d75e04f91684a6e4e3c91d3f5359cdb0455ecada41888a8bf35d6c`。
+- Temporal poller identity 与上述 synth PID 已完成对应：Boltz2 `2914797@admin.cluster.local`，Rosetta
+  `2914804@admin.cluster.local`。但当前 active workflow 为 0，且 v34 formal run 尚未获得精确授权，
+  因此不得为了提高利用率而制造任务、重跑 v32 或提交 v34。
+
+GPU 空闲状态是瞬时观察，任何启动前都必须重新执行 `nvidia-smi`、禁用卡检查、进程归属和 release/source revision
+门禁。单卡多进程或新增 worker 必须在 formal run 之前冻结并记录，不得在 active run 中动态改变并发。

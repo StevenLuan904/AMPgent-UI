@@ -105,6 +105,11 @@ Apply the following style to AMPgent/AceA research work in this repository:
 - Host `192.168.99.32` is temporarily prohibited by user decision. Do not run jobs, inspect or use
   its GPUs, stop processes, or otherwise touch workloads on that host until the user explicitly
   lifts the restriction.
+- As of 2026-08-12, GPUs on other hosts may be used for AMPgent work after exact worker ownership,
+  physical host, PID, role, active release/source revision, and workload non-interference are
+  verified. This resource permission does not authorize an otherwise unapproved scientific run.
+- GPU4 on host `192.168.99.19` is explicitly prohibited by the user's latest instruction. Do not
+  schedule work on it even if it appears idle.
 - Preserve historical records without retroactively rewriting them. Historical ultra-strict gates
   may be described as engineering-policy failures rather than scientific contradictions when that
   distinction is accurate.

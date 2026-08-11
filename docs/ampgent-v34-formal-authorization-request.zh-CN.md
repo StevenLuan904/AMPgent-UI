@@ -32,7 +32,8 @@
 - 不回写 v22–v33 或任何冻结 run。
 
 授权不包括：修改 parent、增加预算、改变端点/margin、重新训练 provider、在 AMPgent 修 PepShot、使用
-`192.168.99.32`、synth GPU4、他人任务或 Moba 资源、以及任何湿实验。
+`192.168.99.32`、`.19` GPU4、停止/争抢/干扰他人任务或 Moba 资源、以及任何湿实验。其余 GPU 可在
+完成物理主机、GPU、PID、角色、release/source revision 映射并确认不干扰现有任务后使用。
 
 ## 3. PepShot 与知识卡所有权
 
