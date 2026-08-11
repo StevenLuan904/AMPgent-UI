@@ -96,3 +96,11 @@ Candidate，但每一次提出行为仍单独落 `candidate_occurrences`；因�
 实现记录提交为 `bba75e95b358eca205be0736f3d7b8600765355f`，全量验证为 ruff clean、pytest
 `294 passed`；内容归档 `var/archives/ampgent-v34-persistence-bba75e9.zip` 的 SHA-256 为
 `07ec7cbe1e5649e50df7b899c3cdb8ed04cb9bfa38eea43be573e07018e525af`。
+
+离线外部证据 adapter 实现冻结于 commit
+`3f842967cab0c56e8c933b19afe5da98569de202`。当前 config SHA-256 为
+`ece9e8d2853dd727d98fdc8951ad0e5dcca03a99f3ebd2df0c8df7f7f224c365`，外部合同 footprint
+SHA-256 为 `912c8fd868d409b2ef6326007e5879cd4fbbc83b3c26c81ae986c0a0ae29b4be`，离线 preflight
+SHA-256 为 `e53c8f894df5f8d32c6cb09661c71e51ca91723d365c5d10f01b8b8cae6ef903`；状态严格为
+`ready_for_isolated_shadow_fixture_not_formal_execution`。全量验证为 ruff clean、pytest `306 passed`。
+这不是工具有效性结果，也不是运行授权。

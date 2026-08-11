@@ -532,3 +532,13 @@ v34 预注册、确定性 arm 分配/配对效应与 replay graph 完整性验�
 `var/archives/ampgent-v34-preregistration-29a352a.zip`，SHA-256
 `cf5afb9ee7a4c01d1628323523abd15ff9589e52208def845c4b00d0b8ef6eba`。该 checkpoint 只冻结科学合同与
 预执行验证器，不包含已注册 Temporal activity，也不授权运行或生成候选。
+
+离线外部证据 adapter 实现冻结于 commit
+`3f842967cab0c56e8c933b19afe5da98569de202`，config 中 `formal_run.implementation_revision` 已指向
+该提交，同时继续保持 `execution_authorized=false`、`submitted=false` 和空 run/workflow ID。当前
+config SHA-256 为 `ece9e8d2853dd727d98fdc8951ad0e5dcca03a99f3ebd2df0c8df7f7f224c365`，外部合同
+footprint SHA-256 为 `912c8fd868d409b2ef6326007e5879cd4fbbc83b3c26c81ae986c0a0ae29b4be`，离线
+preflight SHA-256 为 `e53c8f894df5f8d32c6cb09661c71e51ca91723d365c5d10f01b8b8cae6ef903`，结论仅为
+`ready_for_isolated_shadow_fixture_not_formal_execution`。下一步仍是冻结可执行环境/source manifest
+并运行隔离 shadow fixture；不得跳过另行授权与 worker 门禁。全量验证为 ruff clean、pytest
+`306 passed`。

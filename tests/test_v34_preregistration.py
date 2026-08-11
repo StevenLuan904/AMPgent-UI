@@ -16,7 +16,7 @@ def test_v34_freezes_exact_factorial_and_database_contract() -> None:
     assert manifest.formal_run.execution_authorized is False
     assert manifest.formal_run.submitted is False
     assert manifest.formal_run.implementation_revision == (
-        "4f152bc31498e0fcf53fa47469dfd2d2791b163d"
+        "3f842967cab0c56e8c933b19afe5da98569de202"
     )
     assert manifest.parent_cohort["expected_parent_count"] == 24
     assert len(manifest.parent_cohort["members"]) == 24

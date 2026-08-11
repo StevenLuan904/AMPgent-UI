@@ -221,6 +221,11 @@ artifact/Evaluation/AgentDecision primitives、770 节点依赖物化、96 个�
 SHA-256 为 `07ec7cbe1e5649e50df7b899c3cdb8ed04cb9bfa38eea43be573e07018e525af`。
 预注册与预执行验证器 checkpoint 为 commit `29a352abb858e07086ffac943e2b5c939c97d940`，内容归档
 SHA-256 为 `cf5afb9ee7a4c01d1628323523abd15ff9589e52208def845c4b00d0b8ef6eba`。
+离线 knowledge/PepShot adapter 与 preflight 实现冻结于 commit
+`3f842967cab0c56e8c933b19afe5da98569de202`；外部合同 footprint SHA-256 为
+`912c8fd868d409b2ef6326007e5879cd4fbbc83b3c26c81ae986c0a0ae29b4be`，preflight SHA-256 为
+`e53c8f894df5f8d32c6cb09661c71e51ca91723d365c5d10f01b8b8cae6ef903`。当前只到
+`ready_for_isolated_shadow_fixture_not_formal_execution`，全量测试 `306 passed`，没有实际工具干预结果。
 
 版本号是当前规划，不是正式 run 授权。任何生成、阈值、候选选择或执行必须先有独立冻结 config、
 提交/push、服务与 worker 门禁、唯一 run 检查。长期路线允许被新证据修订，但修订必须追加理由，不能
