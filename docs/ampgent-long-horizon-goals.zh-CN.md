@@ -227,6 +227,8 @@ typed persistence revision 为 `6767f603be82ff3370bd655eed67cc29e7b81080`，migr
 `08e486d8d4d267ba57b763a27aefed8db5c139e31e5c212e1eb46fe11c00d472`，回填后的 v35 config
 SHA-256 为 `2a7b54a1ac1c7ace73cb3c39b3f6ab3eed6676dda033e73c866fe4883f9ec027`，全量测试为
 `355 passed`；这仍不是共享数据库部署或真实多靶点结果。
+revision 回填 checkpoint 为 `09ec7cf025636cf1b67f83b5d6243c7aa497bf3f`；内容归档 SHA-256 为
+`3d8f923264e46c1c7f02c37fe9ddc1faa4f9694590a61978acf16ea18551d520`。
 revision 回填 checkpoint 为 `d79858dc3aa42399e439abaabc7d2e0fbe42bc70`；内容归档 SHA-256 为
 `31b549ee748bd07edd083351732c8c4f76f1fbb4c8f8326d20716d05b12ad10b`。
 

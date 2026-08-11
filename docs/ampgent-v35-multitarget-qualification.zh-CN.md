@@ -126,6 +126,9 @@ typed persistence 实现 revision 为 `6767f603be82ff3370bd655eed67cc29e7b81080`
 `08e486d8d4d267ba57b763a27aefed8db5c139e31e5c212e1eb46fe11c00d472`；回填 revision 后的
 v35 config SHA-256 为 `2a7b54a1ac1c7ace73cb3c39b3f6ab3eed6676dda033e73c866fe4883f9ec027`。
 全量验证为 ruff clean、PostgreSQL migration 区间离线 DDL 可生成、pytest `355 passed`。
+revision 回填 checkpoint 为 `09ec7cf025636cf1b67f83b5d6243c7aa497bf3f`；内容归档
+`var/archives/ampgent-v35-persistence-09ec7cf.zip` 的 SHA-256 为
+`3d8f923264e46c1c7f02c37fe9ddc1faa4f9694590a61978acf16ea18551d520`。
 
 typed ledger/offline replay 实现 revision 为
 `e47e0d3cf94d6b9d0b63c5a799694c13aeb819ca`；回填 revision 后的 config SHA-256 为
