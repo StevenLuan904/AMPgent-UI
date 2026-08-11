@@ -76,6 +76,38 @@ def test_v37_keeps_endpoint_families_separate_and_charge_observational() -> None
     assert manifest["scientific_boundaries"]["explicit_positive_charge_optimization_used"] is False
 
 
+def test_v37_freezes_five_metric_calls_and_eleven_observations() -> None:
+    manifest = _load()
+    stage = manifest["stage_1_sequence_evaluation"]
+    plugins = stage["metric_plugins"]
+    assert [item["name"] for item in plugins] == [
+        "physicochemical_developability",
+        "hemolysis_risk",
+        "mic_potency",
+        "mic_potency_amp_read",
+        "toxicity_risk",
+    ]
+    observations = [name for item in plugins for name in item["observation_names"]]
+    assert set(observations) == set(stage["required_metric_names"])
+    assert len(observations) == len(set(observations)) == 11
+    assert manifest["execution"] == {
+        "capacity_contract_path": "../experiments/acea_v37_rapid_champion_capacity.yaml",
+        "task_queues": {
+            "workflow_and_control": "pepagent-control-v37",
+            "generator": "pepagent-generator-v37",
+            "provider": "pepagent-provider-v37",
+            "sequence_metrics": "pepagent-cpu-metrics",
+            "boltz": "pepagent-gpu-boltz2",
+            "rosetta": "pepagent-cpu-rosetta",
+        },
+        "generation_concurrency": 8,
+        "metric_concurrency": 5,
+        "boltz_concurrency": 3,
+        "rosetta_concurrency": 16,
+        "ordered_collection_key": "source_ordinal",
+    }
+
+
 def test_v37_requires_verified_auxiliaries_without_claiming_effectiveness() -> None:
     manifest = _load()
     auxiliaries = manifest["verified_auxiliaries"]
@@ -86,6 +118,8 @@ def test_v37_requires_verified_auxiliaries_without_claiming_effectiveness() -> N
     assert auxiliaries["pepshot"]["required_for_every_structural_shortlist_candidate"] is True
     assert auxiliaries["pepshot"]["provider_task_id"] == ("019fb910-f2dd-7be1-a7e6-bfe381512c25")
     assert auxiliaries["pepshot"]["candidate_revision_or_extra_generation_forbidden"] is True
+    assert auxiliaries["pepshot"]["required_route"] == "deterministic_inspect"
+    assert auxiliaries["pepshot"]["fallback_allowed"] is False
     assert auxiliaries["provider_failure_policy"]["fail_closed_without_consumer_adaptation"] is True
     assert auxiliaries["effectiveness_claim_allowed"] is False
 
@@ -102,7 +136,7 @@ def test_v37_requires_database_object_replay_and_preserves_scientific_boundaries
     assert evidence[knowledge_key] is True
     assert (
         evidence[
-            "persist_PepShot_request_bundle_images_read_order_review_validation_and_decision_edges"
+            "persist_PepShot_inspect_request_contract_receipt_structure_SHA_findings_and_decision_edges"
         ]
         is True
     )

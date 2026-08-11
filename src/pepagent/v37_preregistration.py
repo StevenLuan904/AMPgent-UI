@@ -36,6 +36,7 @@ class V37Manifest(BaseModel):
     charge_policy: dict[str, Any]
     verified_auxiliaries: dict[str, Any]
     stage_1_sequence_evaluation: dict[str, Any]
+    execution: dict[str, Any]
     stage_2_structure_confirmation: dict[str, Any]
     final_portfolio: dict[str, Any]
     stop_conditions: dict[str, Any]
@@ -66,6 +67,46 @@ class V37Manifest(BaseModel):
             raise ValueError("v37 generator budget is inconsistent")
         if expected != self.stage_1_sequence_evaluation["expected_candidate_count"]:
             raise ValueError("v37 stage-1 budget is inconsistent")
+        metric_plugins = self.stage_1_sequence_evaluation.get("metric_plugins", [])
+        if [item.get("name") for item in metric_plugins] != [
+            "physicochemical_developability",
+            "hemolysis_risk",
+            "mic_potency",
+            "mic_potency_amp_read",
+            "toxicity_risk",
+        ]:
+            raise ValueError("v37 requires the five frozen metric plugin calls")
+        observed_metrics = [
+            name for item in metric_plugins for name in item.get("observation_names", [])
+        ]
+        if len(observed_metrics) != len(set(observed_metrics)):
+            raise ValueError("v37 metric observations must map to exactly one plugin")
+        if set(observed_metrics) != set(
+            self.stage_1_sequence_evaluation["required_metric_names"]
+        ):
+            raise ValueError("v37 five plugin calls must emit the eleven frozen observations")
+        if self.execution != {
+            "capacity_contract_path": "../experiments/acea_v37_rapid_champion_capacity.yaml",
+            "task_queues": {
+                "workflow_and_control": "pepagent-control-v37",
+                "generator": "pepagent-generator-v37",
+                "provider": "pepagent-provider-v37",
+                "sequence_metrics": "pepagent-cpu-metrics",
+                "boltz": "pepagent-gpu-boltz2",
+                "rosetta": "pepagent-cpu-rosetta",
+            },
+            "generation_concurrency": 8,
+            "metric_concurrency": 5,
+            "boltz_concurrency": 3,
+            "rosetta_concurrency": 16,
+            "ordered_collection_key": "source_ordinal",
+        }:
+            raise ValueError("v37 bounded execution contract drifted")
+        pepshot = self.verified_auxiliaries.get("pepshot", {})
+        if pepshot.get("required_route") != "deterministic_inspect":
+            raise ValueError("v37 requires PepShot's provider-owned inspect route")
+        if pepshot.get("fallback_allowed") is not False:
+            raise ValueError("v37 PepShot fallback must remain disabled")
         structure = self.stage_2_structure_confirmation
         if structure.get("boltz_seeds") != [20270380, 20270381, 20270382]:
             raise ValueError("v37 requires the three frozen Boltz seeds")
@@ -73,6 +114,12 @@ class V37Manifest(BaseModel):
             raise ValueError("v37 requires three poses per shortlisted candidate")
         if structure.get("rosetta_decoys_per_pose") != 16:
             raise ValueError("v37 requires 16 Rosetta decoys per pose")
+        if (
+            structure.get("rosetta_seed_base") != 20270400
+            or structure.get("rosetta_seed_rule")
+            != "base_plus_frozen_pose_ordinal"
+        ):
+            raise ValueError("v37 Rosetta seed schedule drifted")
         expected_poses = structure["expected_maximum_candidates"] * 3
         if structure.get("expected_maximum_poses") != expected_poses:
             raise ValueError("v37 maximum pose budget drifted")

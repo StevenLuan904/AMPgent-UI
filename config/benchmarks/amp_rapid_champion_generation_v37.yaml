@@ -111,7 +111,8 @@ verified_auxiliaries:
     release_manifest_sha256: b4f4b848f603f431e5db49bd66e018904c35c9eacf97ae83882d92e6710f2c5d
     runtime_manifest_sha256: 332350d31e7feea6ec545b579bf680c0b46a1fb38c5110e652274451a725feba
     contract_sha256: 28eb1ad5dc8a1124b4ccf7e228d30eb864222c75516fcd933737e1b60e288522
-    required_route: verify_then_read_all_requested_images_then_validate_review
+    required_route: deterministic_inspect
+    fallback_allowed: false
     allowed_effects:
       - retain
       - reject_structural_conflict
@@ -125,6 +126,26 @@ verified_auxiliaries:
 
 stage_1_sequence_evaluation:
   expected_candidate_count: 900
+  metric_plugins:
+    - name: physicochemical_developability
+      observation_names:
+        - hydrophobic_moment_eisenberg
+        - hydrophobic_ratio_modlamp
+        - maximum_hydrophobic_run
+        - net_charge_ph7_4
+    - name: hemolysis_risk
+      observation_names:
+        - macrel_amp_probability
+        - macrel_hemolysis_probability
+        - macrel_hemolysis_label
+    - name: mic_potency
+      observation_names: [llamp_log10_mic_um]
+    - name: mic_potency_amp_read
+      observation_names: [amp_read_log10_mic_um]
+    - name: toxicity_risk
+      observation_names:
+        - toxinpred3_hybrid_score
+        - toxinpred3_label
   required_metric_names:
     - hydrophobic_moment_eisenberg
     - hydrophobic_ratio_modlamp
@@ -171,6 +192,21 @@ stage_1_sequence_evaluation:
     tie_break: sequence_sha256_ascending
     missing_policy: retain_shortfall_no_refill
 
+execution:
+  capacity_contract_path: ../experiments/acea_v37_rapid_champion_capacity.yaml
+  task_queues:
+    workflow_and_control: pepagent-control-v37
+    generator: pepagent-generator-v37
+    provider: pepagent-provider-v37
+    sequence_metrics: pepagent-cpu-metrics
+    boltz: pepagent-gpu-boltz2
+    rosetta: pepagent-cpu-rosetta
+  generation_concurrency: 8
+  metric_concurrency: 5
+  boltz_concurrency: 3
+  rosetta_concurrency: 16
+  ordered_collection_key: source_ordinal
+
 stage_2_structure_confirmation:
   experiment_spec_path: ../experiments/acea_v37_rapid_champion_structure.yaml
   experiment_spec_sha256: 98bc93a8fdeea51627254be830a95f8e384e14de2c8147f8bc26be9c30dfc99f
@@ -180,6 +216,8 @@ stage_2_structure_confirmation:
   all_poses_scored: true
   rosetta_score_function: ref2015
   rosetta_decoys_per_pose: 16
+  rosetta_seed_base: 20270400
+  rosetta_seed_rule: base_plus_frozen_pose_ordinal
   expected_maximum_poses: 144
   expected_maximum_rosetta_decoys: 2304
   required_metric_families:
@@ -273,7 +311,7 @@ database_evidence_contract:
   persist_knowledge_query_pack_trace_cards_passages_policy_and_adoption_edges: true
   persist_Boltz_inputs_outputs_pose_mapping_and_coordinate_audit: true
   persist_Rosetta_inputs_all_decoys_outputs_and_candidate_pose_edges: true
-  persist_PepShot_request_bundle_images_read_order_review_validation_and_decision_edges: true
+  persist_PepShot_inspect_request_contract_receipt_structure_SHA_findings_and_decision_edges: true
   persist_stage_1_shortlist_stage_2_exclusions_and_final_portfolio_AgentDecisions: true
   persist_all_Pareto_layers_dominance_diversity_and_shortfall_witnesses: true
   persist_cost_retry_failure_and_stop_events: true

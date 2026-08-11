@@ -919,6 +919,11 @@ async def persist_optional_sequence_metric(request: dict[str, Any]) -> dict[str,
             {
                 "generation": request["generation"],
                 "candidate_ids": [item["id"] for item in request["candidates"]],
+                **(
+                    {"v37_logical_id": request["v37_logical_id"]}
+                    if request.get("v37_logical_id")
+                    else {}
+                ),
             },
             {
                 "plugin": plugin,
