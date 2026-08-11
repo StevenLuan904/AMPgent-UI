@@ -334,3 +334,23 @@ revision is `3cc040f2d0e0f0b162031931f81668076425c518`; its archive is
 `var/archives/ampgent-v32-acceptance-implementation-3cc040f.zip`, SHA-256
 `a77f557801298e564e1c4d25a7c53eac9a6c3c0a62697ba3ba55832ef664c813`. The earlier archive remains
 historical implementation evidence but is not authorized for execution.
+
+The unique acceptance child run completed successfully and is now locked. Run ID:
+`f87c4db4-83e5-4c6f-8f4e-3d52f5c40ce3`; database-native workflow identity:
+`database-native-amp_multiobjective_acceptance_v32`. The parent candidate count remained exactly
+300. The child evidence graph contains two ToolCalls, one dependency, one AgentDecision, two
+decision edges, six run lifecycle events, and five content-addressed artifacts. Exact derived replay
+passed and all eleven preregistration gates are true.
+
+Artifact SHA-256 values:
+
+- all 300 candidates CSV: `2fe865664555ccd0a197689c0b7c050f99b3cc9909fe05582e85d52f1b3f4f9c`
+- selected 24 portfolio CSV: `8df8883d82746ddb642f31d10139461da626e83c76bdbbb19b7708b5da69b601`
+- four-lane summary CSV: `7d0d5498a6a8b5e93538cfe05d36e04f490d8da6e5b01eab0f7f7bdbbe6c83ca`
+- acceptance manifest JSON: `2bf72488c09f19f77018130db26a4a80998766548606c511b502e32a06eedf72`
+- derived replay JSON: `40ac1ae58669c2d131f8ab94f112ba3253c60ed3eeb7689bfa451f8e2667aa77`
+
+The acceptance verdict is `ready_for_v33_preregistration`. This means the v32 evidence governance,
+database replay, endpoint-family separation, seed balance, risk exclusion, and charge provenance are
+sufficient to write a new v33 protocol. It does not authorize v33 sequence generation, charge
+mutation, thresholds, or execution. v32 and its acceptance child run must not be rerun or backfilled.

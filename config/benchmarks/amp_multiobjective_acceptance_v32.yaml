@@ -1,7 +1,7 @@
 benchmark_id: amp_multiobjective_acceptance_v32
 version: v32.acceptance.0.1
-execution_status: ready
-execution_authorized: true
+execution_status: completed
+execution_authorized: false
 parent_run_id: d695853e-cb94-4608-ad71-e4d7c4df1e85
 source_manifest_path: config/benchmarks/amp_multiobjective_portfolio_v32.yaml
 expected_parent:
@@ -50,5 +50,23 @@ implementation:
   revision: 3cc040f2d0e0f0b162031931f81668076425c518
 formal_acceptance_run:
   submit_exactly_once: true
-  submitted: false
-  run_id: null
+  submitted: true
+  run_id: f87c4db4-83e5-4c6f-8f4e-3d52f5c40ce3
+  workflow_id: database-native-amp_multiobjective_acceptance_v32
+completion:
+  database_status: succeeded
+  parent_candidate_count_after: 300
+  child_tool_call_count: 2
+  child_tool_call_dependency_count: 1
+  child_agent_decision_count: 1
+  child_agent_decision_edge_count: 2
+  child_run_lifecycle_event_count: 6
+  exact_derived_replay: true
+  verdict: ready_for_v33_preregistration
+  all_v33_preregistration_gates_passed: true
+  artifacts:
+    all_candidates_csv: 2fe865664555ccd0a197689c0b7c050f99b3cc9909fe05582e85d52f1b3f4f9c
+    portfolio_candidates_csv: 8df8883d82746ddb642f31d10139461da626e83c76bdbbb19b7708b5da69b601
+    lane_summary_csv: 7d0d5498a6a8b5e93538cfe05d36e04f490d8da6e5b01eab0f7f7bdbbe6c83ca
+    acceptance_manifest_json: 2bf72488c09f19f77018130db26a4a80998766548606c511b502e32a06eedf72
+    derived_replay_bundle_json: 40ac1ae58669c2d131f8ab94f112ba3253c60ed3eeb7689bfa451f8e2667aa77

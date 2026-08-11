@@ -69,12 +69,18 @@ def _portfolio_item(index: int) -> dict:
 
 def test_acceptance_contract_is_read_only_and_frozen_for_one_run() -> None:
     payload = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
-    assert payload["execution_authorized"] is True
-    assert payload["execution_status"] == "ready"
+    assert payload["execution_authorized"] is False
+    assert payload["execution_status"] == "completed"
     assert payload["implementation"]["revision"] == (
         "3cc040f2d0e0f0b162031931f81668076425c518"
     )
-    assert payload["formal_acceptance_run"]["submitted"] is False
+    assert payload["formal_acceptance_run"]["submitted"] is True
+    assert payload["formal_acceptance_run"]["run_id"] == (
+        "f87c4db4-83e5-4c6f-8f4e-3d52f5c40ce3"
+    )
+    assert payload["completion"]["verdict"] == "ready_for_v33_preregistration"
+    assert payload["completion"]["exact_derived_replay"] is True
+    assert payload["completion"]["all_v33_preregistration_gates_passed"] is True
     assert payload["scientific_contract"]["parent_run_read_only"] is True
     assert payload["scientific_contract"]["no_new_generation"] is True
     assert payload["scientific_contract"]["no_parent_backwrite"] is True

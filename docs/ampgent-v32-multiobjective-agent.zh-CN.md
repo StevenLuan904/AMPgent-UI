@@ -72,3 +72,7 @@ v32 中每一步都必须先落 PostgreSQL：原始生成调用、冻结候选�
 正式 v32 run 保持只读。后续候选解释与导出使用独立的派生 child run，精确协议为 `config/benchmarks/amp_multiobjective_acceptance_v32.yaml`。它不得生成新序列、重新评分、改变阈值或向父 run 回写；只允许从 PostgreSQL 与内容寻址对象存储复原父证据。
 
 验收层必须生成并落库五类 artifact：300 条全候选 CSV、24 条组合 CSV、4 条路线汇总 CSV、验收 manifest JSON、派生精确重放 JSON。导出 ToolCall 与重放 ToolCall、二者依赖边、AgentDecision、artifact links 和生命周期事件全部保存在 child run。只有父证据计数、原始 artifact 字节 SHA、父组合重放和派生导出重放均精确通过，才可以给出 `ready_for_v33_preregistration`；该结论只授权编写 v33 预注册，不授权生成或运行。
+
+验收 child run `f87c4db4-83e5-4c6f-8f4e-3d52f5c40ce3` 已成功完成，父 run 候选数仍为 300。child run 保存 2 个 ToolCall、1 条依赖、1 个 AgentDecision、2 条 decision edge、6 个 run lifecycle event 和 5 个内容寻址 artifact。所有 11 个 v33 预注册门槛通过，结论为 `ready_for_v33_preregistration`。
+
+路线级结果进一步显示真实 trade-off：膜作用 lane 的预测 MIC 中位数约为 LLAMP 8.15 µM、AMP-READ 19.35 µM，但 6/6 均有 Macrel 溶血高风险警告；AMP/MIC lane 的相应中位数约为 5.68/4.04 µM，但 6/6 同样为溶血高风险；风险控制 lane 的溶血概率中位数降至 0.426、6/6 为低标签，但预测 MIC 变弱至约 49.28/134.85 µM，且 2/6 有 ToxinPred3 单模型警告；均衡 lane 仍是 6/6 溶血高风险。这里没有“全能冠军”，而是被数据库完整保存的机制—活性—风险冲突。
