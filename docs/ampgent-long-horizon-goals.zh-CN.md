@@ -219,6 +219,11 @@ trial、assignment、outcome 与 promotion 实体。仅写入自由 JSON 不满�
 `HarnessOutcome`、`HarnessPromotionDecision`。在迁移、repository primitive 和 database/object-store-only
 verifier 完成前，所有演化 gate 保持未授权。
 
+治理框架冻结 revision 为 `f7b58f9`，config SHA-256 为
+`286bc3888f675ef5dc794e40aad8903ad173674dcaf554d1936e185962f2043e`，内容归档 SHA-256 为
+`20b43305c7cc6586c977262638f3273da776eb3db4898926edb8e88bb2182c66`。这些足迹只证明框架已冻结，
+不证明 typed schema 已实现或任何 harness 已改善。
+
 ## 5. 分阶段路线与晋级门
 
 | 阶段 | 核心交付 | 晋级前必须证明 |

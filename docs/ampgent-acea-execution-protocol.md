@@ -671,3 +671,8 @@ policy、加权总分、单一 hypervolume 晋级或把软模型自洽当改进�
 阶段只允许实现这些 typed primitives 和 database+object-store-only offline replay verifier，不得据此
 运行 challenger 或生成短肽。任何 PepShot 缺陷仍直接退回任务
 `019fb910-f2dd-7be1-a7e6-bfe381512c25`，AMPgent 禁止自行适配。
+
+治理框架冻结 revision 为 `f7b58f9`；config SHA-256 为
+`286bc3888f675ef5dc794e40aad8903ad173674dcaf554d1936e185962f2043e`；内容归档
+`var/archives/ampgent-v36-governance-f7b58f9.zip` 的 SHA-256 为
+`20b43305c7cc6586c977262638f3273da776eb3db4898926edb8e88bb2182c66`。

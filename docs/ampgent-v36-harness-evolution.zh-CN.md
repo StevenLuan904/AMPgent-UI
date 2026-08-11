@@ -97,3 +97,8 @@ database+object-store-only replay 最终必须重建：完整 release 谱系与 
 offline replay verifier，并用合成 fixture 验证泄漏、重复分配、谱系环、非法回滚和缺边均会 fail-closed。
 它不读取候选结果来提 policy，不运行 challenger，也不生成短肽。实现、部署和任何真实 replay 仍需
 单独冻结与授权。
+
+治理框架冻结 revision 为 `f7b58f9`；config SHA-256 为
+`286bc3888f675ef5dc794e40aad8903ad173674dcaf554d1936e185962f2043e`。内容归档
+`var/archives/ampgent-v36-governance-f7b58f9.zip` 的 SHA-256 为
+`20b43305c7cc6586c977262638f3273da776eb3db4898926edb8e88bb2182c66`。
