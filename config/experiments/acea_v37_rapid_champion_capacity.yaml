@@ -1,0 +1,122 @@
+capacity_contract_id: acea_v37_rapid_champion_capacity
+version: v37-capacity-v1
+execution_status: preregistered_not_authorized
+
+scope:
+  track: single_arm_rapid_champion_generation
+  scientific_budget_source: separately_frozen_v37_benchmark_required
+  capacity_contract_does_not_set_scientific_budget: true
+  adaptive_budget_growth_forbidden: true
+  fixed_budget_completion_required_for_final_champion: true
+  interim_progress_is_not_final_champion_evidence: true
+
+resource_capacity:
+  gpu:
+    boltz_worker_role: boltz2
+    maximum_concurrent_workers: 3
+    activity_slots_per_worker: 1
+    one_worker_process_per_physical_gpu: true
+    gpu_oversubscription_forbidden: true
+    eligible_placements:
+      - {host: "192.168.99.19", gpu_index: 5, activation: exact_preflight_required}
+      - {host: synth, gpu_index: 5, activation: exact_preflight_required}
+      - {host: synth, gpu_index: 6, activation: exact_preflight_required}
+    prohibited_placements:
+      - {host: "192.168.99.32", gpu_index: any}
+      - {host: "192.168.99.19", gpu_index: 4}
+    placement_gates:
+      - physical_host_gpu_pid_role_identity_exact
+      - active_release_and_source_revision_exact
+      - task_queue_environment_and_model_weights_exact
+      - no_foreign_or_unowned_process_on_device
+      - no_active_workflow_during_worker_topology_change
+    foreign_process_policy: exclude_device_without_stopping_or_preempting_process
+    topology_change_during_run_forbidden: true
+  cpu:
+    proposal_activity_slots: 8
+    cheap_evaluation_activity_slots: 16
+    rosetta_activity_slots: 16
+    rosetta_threads_per_activity: 1
+    require_verified_free_logical_cores_at_least: 16
+    OMP_NUM_THREADS: 1
+    MKL_NUM_THREADS: 1
+    foreign_process_policy: reduce_available_host_capacity_before_authorization_do_not_preempt
+    topology_change_during_run_forbidden: true
+
+pipeline_contract:
+  order: [proposal, evaluation, boltz, rosetta]
+  scheduling_key: proposal_ordinal
+  scheduling_policy: deterministic_fifo_single_arm
+  arm_or_provider_stratification_used: false
+  stages:
+    proposal:
+      concurrent_activity_slots: 8
+      maximum_queued_items: 32
+      output_manifest_role: proposal_occurrence_manifest
+    evaluation:
+      concurrent_activity_slots: 16
+      maximum_queued_items: 64
+      input_manifest_role: proposal_occurrence_manifest
+      output_manifest_role: prestructure_evaluation_manifest
+      rejection_must_be_persisted_before_downstream_skip: true
+    boltz:
+      concurrent_activity_slots: 3
+      maximum_queued_items: 12
+      input_manifest_role: prestructure_evaluation_manifest
+      output_manifest_role: boltz_pose_manifest
+    rosetta:
+      concurrent_activity_slots: 16
+      maximum_queued_items: 64
+      input_manifest_role: boltz_pose_manifest
+      output_manifest_role: rosetta_decoy_manifest
+  bounded_backpressure_required: true
+  queue_overflow_policy: pause_upstream_dispatch_without_dropping_or_reordering
+  stage_handoff_requires_committed_database_manifest: true
+  downstream_may_not_read_local_uncommitted_output: true
+  candidate_or_occurrence_substitution_forbidden: true
+  adaptive_early_stop_from_interim_scores_forbidden: true
+
+retry_contract:
+  maximum_attempts_per_logical_stage_call: 2
+  recovery_order:
+    - database_idempotency_lookup
+    - object_store_content_hash_lookup
+    - retry_same_logical_stage_call_only_if_no_committed_success_exists
+  retryable_failure_classes:
+    - transport_timeout
+    - worker_heartbeat_loss
+    - transient_database_or_object_store_unavailability
+  nonretryable_failure_classes:
+    - identity_sequence_or_ordinal_mismatch
+    - stage_input_or_output_content_hash_mismatch
+    - source_release_environment_or_weight_drift
+    - unsafe_or_unowned_resource
+    - nonfinite_scientific_output
+    - broken_candidate_evaluation_pose_or_decoy_mapping
+  same_input_seed_protocol_and_idempotency_key_required: true
+  reseeding_forbidden: true
+  refill_or_substitution_forbidden: true
+  retry_does_not_create_additional_scientific_observation: true
+  exhausted_retry_policy: mark_item_failed_without_replacement_and_fail_final_completion_gate
+
+database_evidence:
+  PostgreSQL_is_authoritative: true
+  object_store_is_content_addressed: true
+  capacity_contract_artifact_required: true
+  worker_placement_snapshot_artifact_required: true
+  pipeline_manifest_artifact_required: true
+  pipeline_queue_and_transition_ledger_artifact_required: true
+  attempt_ledger_artifact_required: true
+  persist_every_attempt_as_typed_lifecycle_event: true
+  persist_worker_host_gpu_pid_role_release_environment_and_weights: true
+  persist_every_stage_input_output_manifest_and_dependency: true
+  persist_queue_position_dispatch_start_finish_outcome_and_backpressure: true
+  persist_retry_classification_and_idempotency_recovery: true
+  persist_interim_exports_as_nondecision_artifacts: true
+  database_object_store_only_replay_required: true
+  local_logs_csv_and_markdown_are_exports_only: true
+
+formal_run:
+  execution_authorized: false
+  submitted: false
+
