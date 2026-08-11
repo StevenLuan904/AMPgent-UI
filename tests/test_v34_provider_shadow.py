@@ -155,13 +155,15 @@ def _pepshot_release(root: Path) -> tuple[Path, dict]:
     }
 
 
-def test_shadow_contract_is_non_generative_and_not_authorized() -> None:
+def test_shadow_contract_is_non_generative_and_authorized_once() -> None:
     contract = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
-    assert contract["execution_authorized"] is False
+    assert contract["execution_authorized"] is True
     assert contract["formal_v34_execution_authorized"] is False
     assert contract["submitted"] is False
     assert contract["run_id"] is None
-    assert contract["implementation_revision"] is None
+    assert contract["implementation_revision"] == (
+        "99a65eb01fc7faf8a94fef70ee4ee30c49aabbd1"
+    )
     assert contract["expected_graph"] == {
         "candidate_count": 0,
         "evaluation_count": 0,
