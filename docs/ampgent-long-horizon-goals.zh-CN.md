@@ -148,6 +148,11 @@ yield、成本和 leave-one-soft-model-out Jaccard；模型剔除脆弱性与搜
 文献支持的集合值/attainment 哲学和本项目自行预注册的 ε 宽度、`1 cell/50 candidates`、`0.10`
 cell-turnover 实用门槛。后者不是文献给出的普适常数，也不得在看到 v33 输出后修改。
 
+搜索充分性 v2 实现冻结为 commit `56710db7fbc5f02d79d1a46046d0c14d4e080f30`；方法 manifest 原始
+SHA-256 为 `b5c3629cf19d90a6962d048cbe6bf8ff1d6ee7bef7ae449ffe03c649aa5470e6`，回填 revision 后的
+benchmark config SHA-256 为 `486a8ce423d06ab05df3847f1ebe12d73de6bff6a3a0976809da3e8cf11a765b`。
+全量测试为 `340 passed`。这些证据只证明预注册合同与数据库重算器可用，不能证明搜索已经饱和。
+
 ### Q3：文献知识卡是否真的提高设计质量？
 
 当前判断：`in_progress`。尚未正式接入并验证；v34 已形成未授权的 2×2 预注册草案，精确合同为

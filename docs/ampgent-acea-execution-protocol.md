@@ -507,7 +507,11 @@ hypervolume 均不能单独宣布完成。`1 new cell/50 candidates` 与 `0.10` 
 数据库 verifier 必须从冻结 candidate stream、逐候选 Evaluation、成本和方法 artifact 重新计算全部
 archive、active/cumulative ε-cell、双向 attainment、leave-one-soft-model-out 集合及最终合取 verdict；
 不能信任导出的 assessment JSON。该升级尚未部署或执行，没有 v33 run、没有新短肽、没有正电性或
-搜索饱和效果结果；`execution_authorized=false`、`submitted=false` 继续有效。
+搜索饱和效果结果。可执行实现冻结为 commit
+`56710db7fbc5f02d79d1a46046d0c14d4e080f30`；config 的 `formal_run.implementation_revision` 已同步，
+回填后的 benchmark config SHA-256 为
+`486a8ce423d06ab05df3847f1ebe12d73de6bff6a3a0976809da3e8cf11a765b`，全量验证为 ruff clean、pytest
+`340 passed`；但 `execution_authorized=false`、`submitted=false` 继续有效。
 
 ## 18. v34 文献知识卡 × PepShot 干预消融草案（2026-08-11 append-only update）
 

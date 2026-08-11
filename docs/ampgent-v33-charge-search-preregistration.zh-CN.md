@@ -120,7 +120,11 @@ pair-ipTM、口袋覆盖、碰撞、姿势一致性和 Rosetta REU 不是 AceA �
 cell turnover、strict-majority development/confirmation attainment、成本完整性和逐软模型剔除诊断；
 database/object-store-only verifier 会从数据库候选指标与冻结流顺序重新计算全部 archive、模型剔除集合
 和最终合取 verdict，而不再信任导出的 assessment JSON。该升级没有运行生成器，也没有产生新短肽或
-正电性效果结果。
+正电性效果结果。可执行实现冻结为 commit
+`56710db7fbc5f02d79d1a46046d0c14d4e080f30`；此前 `fab5cac...` 是 v1 历史实现，不再是当前正式运行
+候选 revision。回填 revision 后的 benchmark config SHA-256 为
+`486a8ce423d06ab05df3847f1ebe12d73de6bff6a3a0976809da3e8cf11a765b`，全量验证为 ruff clean、pytest
+`340 passed`。正式执行授权仍为 false。
 
 ## 7. 主要原始证据
 
