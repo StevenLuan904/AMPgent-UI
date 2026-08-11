@@ -229,6 +229,10 @@ final_portfolio:
       quota: 4
       Pareto_objective_families: [soft_risk, activity_mic, membrane, structure]
       lead_family: soft_risk
+      required_soft_labels:
+        macrel_hemolysis_label: low
+        toxinpred3_label: Non-Toxin
+      interpretation: lane_specific_soft_risk_eligibility_not_experimental_safety
   selection_scope: structurally_eligible_stage_2_candidates_only
   method:
     - compute_lane_local_nondominated_layers_without_cross_family_weighting

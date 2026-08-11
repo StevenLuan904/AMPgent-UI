@@ -109,3 +109,13 @@ def test_v37_requires_database_object_replay_and_preserves_scientific_boundaries
     assert boundaries["PepMLM_used"] is False
     assert boundaries["AMPlify_used"] is False
     assert boundaries["v22_through_v36_backwrite_forbidden"] is True
+
+
+def test_v37_balanced_risk_lane_requires_two_low_risk_soft_labels() -> None:
+    manifest = _load()
+    lanes = {lane["name"]: lane for lane in manifest["final_portfolio"]["lanes"]}
+    assert lanes["balanced_risk"]["required_soft_labels"] == {
+        "macrel_hemolysis_label": "low",
+        "toxinpred3_label": "Non-Toxin",
+    }
+    assert "experimental_safety" in lanes["balanced_risk"]["interpretation"]

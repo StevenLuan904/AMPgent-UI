@@ -52,6 +52,9 @@ shortfall 会原样报告。这样既保持探索力度，又避免把快速阶�
 activity-led、structure-led、balanced-risk 四个最终 lane。先使用 lane-local 非支配层，再做多样性选择；
 任何候选不会跨 lane 重复。没有全局冠军，也没有隐藏的综合分。
 
+`balanced-risk` lane 额外要求 Macrel hemolysis label 为 `low` 且 ToxinPred3 label 为 `Non-Toxin`。
+这只是该 lane 的软风险资格条件，不向其他 lane 外推，也不构成实验安全或低毒声明。
+
 ## 4. 知识卡与 PepShot 的角色
 
 知识卡必须来自冻结 release、verified card 和可定位 passage。它可以标注机制、适用范围和警告；只有
