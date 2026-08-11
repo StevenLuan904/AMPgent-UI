@@ -241,6 +241,14 @@ allowlisted 文件的 manifest SHA-256 为
 该 checkpoint 的记录提交为 `696f696`，内容归档 SHA-256 为
 `0f8f44fce80a43e489df62694520ae4e7b62b9134a832a149d2a72a27ceab91a`。
 
+2026-08-11 新增工具所有权原则：Q3/Q4 的 challenger 必须消费知识库/PepShot 自己发布并冻结的
+revision、runtime fingerprint 和 fixture receipt；AMPgent 不维护 provider-specific 兼容补丁或替工具
+修环境。消费侧可以拒绝漂移或缺证据的交付，但不能通过本地 monkey patch 把失败包装成可用。当前
+PepShot renderer 缺声明的 gemmi，知识库也尚无满足完整 requirements 的官方隔离 runtime；修复已退回
+对应任务。在两项 provider-owned 交付完成前，v34 shadow 保持未运行，不能据此评价工具增益。
+消费侧 runtime verifier 已实现于 commit `43fbe926cc8f3dcc0abc0231502b9079bc1a2368`，全量测试
+`309 passed`；它只负责拒绝不合格交付，不替 provider 修复。
+
 版本号是当前规划，不是正式 run 授权。任何生成、阈值、候选选择或执行必须先有独立冻结 config、
 提交/push、服务与 worker 门禁、唯一 run 检查。长期路线允许被新证据修订，但修订必须追加理由，不能
 静默改写历史问题或成功标准。

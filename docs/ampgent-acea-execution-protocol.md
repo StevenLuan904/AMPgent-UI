@@ -557,3 +557,15 @@ SHA-256 为 `402a7be05785ce2fbbf9e8be4d714af1aa6952aee26f60de17f8ee1bf7e4cad4`�
 fixture。`execution_authorized=false`、`submitted=false`，无 Temporal activity、run、workflow 或新序列。
 记录提交为 `696f696`；内容归档 `var/archives/ampgent-v34-source-manifest-696f696.zip` 的 SHA-256 为
 `0f8f44fce80a43e489df62694520ae4e7b62b9134a832a149d2a72a27ceab91a`。
+
+用户于 2026-08-11 明确新增 provider ownership 边界：AMPgent 只定义消费合同、证据映射与 fail-closed
+校验；若 PepShot 或知识库自身不满足其声明的源码、环境或输出合同，必须回到对应工具任务和仓库修复，
+不得在 AMPgent 侧写兼容分支、偷偷补包或绕过验证。只读探针确认 PepShot controller 合格，但既有
+renderer 缺其环境合同声明的 `gemmi==0.7.5`；临时 AMPgent 平台环境也缺知识库 requirements 中的
+pypdf/jsonschema/paramiko，不能充当知识库正式 runtime。修复请求已分别发送到 PepShot 任务
+`019fb910-f2dd-7be1-a7e6-bfe381512c25` 与知识卡任务 `019fad3e-76b8-7e32-8455-d2e9b31d33e5`。
+在 provider-owned revision、runtime manifest 和真实 fixture 交付前，不安装本地兼容环境、不运行 v34
+shadow；这些环境失败也不是工具效果结论。
+路径无关的 Python/conda runtime probe 与 requirement/import fail-closed verifier 实现提交为
+`43fbe926cc8f3dcc0abc0231502b9079bc1a2368`，ruff clean、pytest `309 passed`；它只是消费侧门禁，
+config 暂不指向该提交，须等 provider 发布新 revision 后一并重新冻结。

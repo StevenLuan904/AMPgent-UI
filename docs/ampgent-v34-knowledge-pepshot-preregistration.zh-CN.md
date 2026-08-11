@@ -119,3 +119,19 @@ config 中 implementation revision 已更新为该 commit，当前 config SHA-25
 shadow fixture 尚未运行，且没有 Temporal activity、run、workflow 或新序列。
 记录提交为 `696f696`；内容归档 `var/archives/ampgent-v34-source-manifest-696f696.zip` 的 SHA-256 为
 `0f8f44fce80a43e489df62694520ae4e7b62b9134a832a149d2a72a27ceab91a`。
+
+## 7. 外部工具必须自己满足合同
+
+AMPgent 只维护冻结请求、消费 schema、证据 artifact roles 和 fail-closed validator，不为知识库或
+PepShot 写 provider-specific 兼容实现。若 provider 源码、依赖、renderer、receipt 或 fixture 不满足
+合同，修复必须发生在 provider 自己的任务与仓库，并发布新的不可变 revision/runtime manifest；AMPgent
+随后只读验收。禁止在 AMPgent 环境中补装 provider 缺失依赖、monkey patch 输出或降低门禁。
+
+2026-08-11 只读探针发现：PepShot controller runtime 满足其 Python 依赖，但既有 renderer 缺
+`gemmi==0.7.5`；当前 AMPgent 平台环境缺知识库 requirements 中的 pypdf/jsonschema/paramiko，不能作为
+知识库官方 runtime。问题已分别退回任务 `019fb910-f2dd-7be1-a7e6-bfe381512c25` 与
+`019fad3e-76b8-7e32-8455-d2e9b31d33e5`。下一步等待两方交付源码 revision、路径无关 runtime
+fingerprint、真实固定 fixture 与验证 receipt，再由 AMPgent 运行隔离 shadow。该等待不授权正式 run。
+消费侧路径无关 Python/conda runtime probe 与 requirement/import verifier 已实现于 commit
+`43fbe926cc8f3dcc0abc0231502b9079bc1a2368`，ruff clean、pytest `309 passed`；config 暂不更新到该
+revision，须在 provider 交付后与其冻结 source/runtime manifest 一并重新预检。
