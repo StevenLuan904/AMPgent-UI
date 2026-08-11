@@ -1,0 +1,35 @@
+benchmark_id: amp_multiobjective_evidence_closure_v32
+version: v32.closure.0.1
+execution_status: preregistered
+execution_authorized: false
+v32_run_id: d695853e-cb94-4608-ad71-e4d7c4df1e85
+acceptance_run_id: f87c4db4-83e5-4c6f-8f4e-3d52f5c40ce3
+submitted_manifest:
+  git_commit: 686cc713c5649985e7fec6d0b472002b13e11a44
+  repository_path: config/benchmarks/amp_multiobjective_portfolio_v32.yaml
+  canonical_json_sha256: 5b29bcf0dd0de3d02b27ef4ecafb1ec30aa27e7cec4016b1b11b18dbcdfc9b69
+expected_parent_artifacts:
+  portfolio_output: d50b0b77e8e04f86f6b8d48fa3bc24f9d96a43aa9016a315f4004cca0db6d0e3
+  database_replay_bundle: 4c3eef0a74f6db34503d605154c5d2ea7aa5035cc706c1d33d7001b363315634
+expected_acceptance_artifacts:
+  all_candidates_csv: 2fe865664555ccd0a197689c0b7c050f99b3cc9909fe05582e85d52f1b3f4f9c
+  portfolio_candidates_csv: 8df8883d82746ddb642f31d10139461da626e83c76bdbbb19b7708b5da69b601
+  lane_summary_csv: 7d0d5498a6a8b5e93538cfe05d36e04f490d8da6e5b01eab0f7f7bdbbe6c83ca
+  acceptance_manifest_json: 2bf72488c09f19f77018130db26a4a80998766548606c511b502e32a06eedf72
+  derived_replay_bundle_json: 40ac1ae58669c2d131f8ab94f112ba3253c60ed3eeb7689bfa451f8e2667aa77
+scientific_contract:
+  append_only_grandchild_run: true
+  no_v32_parent_backwrite: true
+  no_acceptance_child_backwrite: true
+  no_new_generation_or_scoring: true
+  final_replay_uses_only_database_and_object_store: true
+  submitted_manifest_must_be_content_addressed: true
+  v33_readiness_means_preregistration_only: true
+implementation:
+  module: pepagent.v32_evidence_closure
+  revision: pending
+formal_closure_run:
+  submit_exactly_once: true
+  submitted: false
+  run_id: null
+

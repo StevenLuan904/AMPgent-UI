@@ -359,3 +359,25 @@ Completion-state commit `07e24ce6228d1d6a11a4f4ab1d1f986231955cbd` passed ruff a
 test suite (`258 passed`). Its content archive is
 `var/archives/ampgent-v32-acceptance-completion-07e24ce.zip`, SHA-256
 `d6684f090e0ead48f1c14a0f0e9e4960593f92ed9090e877a3515810b8c15d64`.
+
+## 15. v32 submitted-manifest evidence closure (2026-08-11 append-only update)
+
+The final requirement audit found that the parent database recorded the submitted manifest's
+canonical SHA but did not preserve the full manifest as a content-addressed Artifact. The first
+acceptance child therefore still loaded the repository config to reconstruct the Pareto policy.
+That is reproducible, but it does not satisfy the stricter user requirement that the completed
+process be restorable from PostgreSQL plus object storage alone.
+
+No locked run will be modified. A separately preregistered grandchild evidence-closure run is
+defined by `config/benchmarks/amp_multiobjective_evidence_closure_v32.yaml`. It must recover the
+exact submission payload from frozen Git commit `686cc713c5649985e7fec6d0b472002b13e11a44`, prove its
+canonical JSON SHA equals the parent-recorded
+`5b29bcf0dd0de3d02b27ef4ecafb1ec30aa27e7cec4016b1b11b18dbcdfc9b69`, store it as an Artifact,
+then replay the parent portfolio and all acceptance outputs using only database rows and
+content-addressed bytes. The closure run records its own sealer/auditor ToolCalls, dependency,
+AgentDecision, edges, artifacts, and lifecycle events.
+
+At this append, closure implementation tests pass, but execution is not authorized. The next step
+is to commit/push/archive the implementation, freeze its revision, rerun all gates, and submit the
+single append-only closure grandchild. Until it succeeds, the broader database/object-store-only
+completion claim remains qualified.
