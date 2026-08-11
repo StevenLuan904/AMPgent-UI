@@ -1,6 +1,6 @@
 # AMPgent AceA v35 多靶点资格框架
 
-状态：`qualification_framework_frozen_not_authorized`
+状态：`typed_ledger_and_offline_replay_implemented_not_authorized`
 
 精确合同：`config/benchmarks/amp_multitarget_qualification_v35.yaml`。
 
@@ -102,3 +102,14 @@ panel selection、shadow 和 formal confirmation 都需要各自独立授权与�
 `a722f0f74d486237a128327a3158ae71ee143577f3f8b7e4acb46505e38778da`。内容归档
 `var/archives/ampgent-v35-qualification-6608c2c.zip` 的 SHA-256 为
 `b33c54adeec43c736ba7d0ba340ce7d0cf813426e42b40358662463c591f17eb`。
+
+2026-08-11 新增 `v35.target-qualification-replay.1` typed 离线合同：每个 shortlist 项目必须保存连续
+顺序、目标身份、序列来源与原始字节 SHA、feature evidence、结构来源/验证/映射、primary 与 wrong
+pocket、A–D 等级、通过或拒绝理由，以及只由预注册面板描述符构成的 diversity vector。至少 8 个项目
+全部保留分母；只有 A/B primary 可进入 hard gate。面板使用 AceA anchor-aware deterministic maximin，
+tie-break 固定为 shortlist order → target key；selection witness 必须由对象字节精确重算。合成测试覆盖
+失败分母缺失、弱 pocket 混入、肽/Rosetta/PepShot 结果泄漏、面板顺序漂移和 artifact 篡改。
+
+这仍不是数据库执行许可。现有 `Target`/`TargetPocket` 可复用，但 typed qualification-audit 与 panel-
+selection-witness 实体、迁移和共享 PostgreSQL 合成验收尚未实现；在这些缺口关闭并另行授权前，不得
+审计或选择真实靶点。没有具体 target 名称、没有肽、没有结构评分或泛化结果。

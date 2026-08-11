@@ -688,6 +688,13 @@ v35 qualification framework 冻结 revision 为 `6608c2c690a76d0dcf1e4b974613676
 SHA-256 为 `a722f0f74d486237a128327a3158ae71ee143577f3f8b7e4acb46505e38778da`；内容归档 SHA-256 为
 `b33c54adeec43c736ba7d0ba340ce7d0cf813426e42b40358662463c591f17eb`。
 
+v35 现新增 `v35.target-qualification-replay.1` typed 离线 ledger/verifier：至少 8 个 shortlist 项必须按
+顺序保存完整通过/失败分母；A/B primary hard gate 后，使用 AceA-anchor-aware deterministic maximin
+重算 3–5 个 panel member，并精确核对 source/sequence/structure/pocket/selection-witness artifact SHA。
+任何 AMP/MIC、风险、Boltz、Rosetta、PepShot 或生成肽结果进入 target selection 都 fail-closed。当前
+仍未实现 typed qualification-audit/panel-witness PostgreSQL 实体、迁移或合成数据库 acceptance，因此
+不得审计/选择真实靶点；没有新 target 名单或泛化结果。
+
 完成锁定提交为 `834ef57`；完成态 shadow config SHA-256 为
 `a8e4e4e3fafcb638c292bbb042eaa88fc4900c163d32e654778417e880893547`。内容归档
 `var/archives/ampgent-v34-provider-shadow-834ef57.zip` 的 SHA-256 为

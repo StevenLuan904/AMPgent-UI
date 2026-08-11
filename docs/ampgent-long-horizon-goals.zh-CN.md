@@ -211,6 +211,12 @@ v35 现进一步冻结：先审计至少 8 个新靶点候选，所有通过和�
 SHA-256 为 `a722f0f74d486237a128327a3158ae71ee143577f3f8b7e4acb46505e38778da`，内容归档 SHA-256 为
 `b33c54adeec43c736ba7d0ba340ce7d0cf813426e42b40358662463c591f17eb`。这不授权具体靶点审计或运行。
 
+Q5 工程层现新增 `v35.target-qualification-replay.1` typed ledger/offline verifier：它要求不少于 8 个
+shortlist 项完整保留通过/失败分母，并从 immutable sequence/structure/pocket artifact、A/B hard gate 与
+AceA-anchor-aware deterministic maximin 重算 3–5 靶点面板；会拒绝任何 AMP/MIC、风险、Boltz、Rosetta
+或 PepShot 结果进入 target selection。当前仍缺 typed qualification-audit/panel-witness PostgreSQL 实体、
+迁移和合成数据库 acceptance，所以没有授权真实 target audit，也没有产生多靶点结果。
+
 ### Q6：怎样利用历史尝试进行 harness evolving？
 
 当前判断：`in_progress`。v32 的 typed evidence graph 与 replay closure 提供了 run 级底座；v36 已冻结

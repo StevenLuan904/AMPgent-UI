@@ -1,6 +1,7 @@
 benchmark_id: amp_multitarget_qualification_v35
-version: v35.0.0-qualification-framework
-execution_status: qualification_framework_frozen_not_authorized
+version: v35.1.0-typed-ledger-and-offline-replay
+execution_status: typed_ledger_and_offline_replay_implemented_not_authorized
+implementation_revision: null
 track: target_generalization_without_cherry_picking
 
 scientific_question:
@@ -157,6 +158,28 @@ database_evidence_contract:
     - per_target_and_cross_target_failures
     - final_generalization_scope
   CSV_and_Markdown_are_exports_only: true
+
+qualification_replay_contract:
+  schema_version: v35.target-qualification-replay.1
+  implementation_path: src/pepagent/v35_multitarget.py
+  minimum_shortlist_size: 8
+  requested_new_target_count_range: [3, 5]
+  selection_method: hard_gate_then_anchor_aware_maximin_v1
+  anchor: AceA_preregistered_panel_diversity_vector
+  tie_break: shortlist_order_then_target_key
+  exact_artifact_hash_validation_required: true
+  complete_rejection_denominator_required: true
+  selected_primary_targets_require_grade_A_or_B: true
+  forbidden_selection_key_scan_required: true
+  database_object_store_only_replay_required_before_execution: true
+
+typed_persistence_gap:
+  existing_target_and_target_pocket_entities_may_be_reused: true
+  typed_target_qualification_audit_entity_implemented: false
+  typed_panel_selection_witness_entity_implemented: false
+  migration_deployed_to_shared_PostgreSQL: false
+  synthetic_database_acceptance_completed: false
+  target_audit_execution_forbidden_until_gap_closed_and_separately_authorized: true
 
 stage_gates:
   stage_1_target_audit:
