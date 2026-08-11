@@ -696,6 +696,9 @@ AMPgent adaptation 必须为 false，active formal run 内禁止热替换 releas
 `b6adc410f99185f1f25c6205c57dc89223c0d685f5c2b80084a8cb39106318e6`，evidence plan SHA-256 为
 `67020e0241cf2eb0dae954e9dd8767a5321207ea3b1b656aacd69d62f35f4939`，固定 771 ToolCall、1345 dependency。
 验证为 ruff clean、pytest `368 passed`。该更新没有运行 PepShot 或 v34，也没有产生新 provider 缺陷。
+revision/文档回填 checkpoint 为 commit `f76a8101588f2c34ecfce21ea941aaf30d3db96b`；内容归档
+`var/archives/ampgent-v34-provider-governance-f76a810.zip` 的 SHA-256 为
+`64b2db2692b2b640e5d3d3b91e03de4ee621a8c1a7f53c873c7689e7b642da54`。
 
 ### 14.5 v35 多靶点资格框架（未授权）
 

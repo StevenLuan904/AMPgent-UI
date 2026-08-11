@@ -431,6 +431,9 @@ receipt 都必须进入相应 Agent evidence graph。历史“adapter”一词�
 `b6adc410f99185f1f25c6205c57dc89223c0d685f5c2b80084a8cb39106318e6`，evidence plan SHA-256 为
 `67020e0241cf2eb0dae954e9dd8767a5321207ea3b1b656aacd69d62f35f4939`；全量测试 `368 passed`。
 这仍只证明 Q3/Q4 的退回治理可预注册和复算，不证明知识卡或 PepShot 有效，也不授权正式 v34。
+revision/文档回填 checkpoint 为 commit `f76a8101588f2c34ecfce21ea941aaf30d3db96b`；内容归档
+`var/archives/ampgent-v34-provider-governance-f76a810.zip` 的 SHA-256 为
+`64b2db2692b2b640e5d3d3b91e03de4ee621a8c1a7f53c873c7689e7b642da54`。
 
 v36 当前框架见 `docs/ampgent-v36-harness-evolution.zh-CN.md`，精确合同为
 `config/benchmarks/amp_harness_evolution_v36.yaml`。typed lineage schema、迁移、repository primitive 与
