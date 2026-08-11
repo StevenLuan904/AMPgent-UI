@@ -108,6 +108,7 @@ async def build_database_evidence_graph(
                 "sequence": item.sequence,
                 "sequence_sha256": item.sequence_sha256,
                 "generation": item.generation,
+                "parent_id": str(item.parent_id) if item.parent_id else None,
                 "proposal_rank": item.proposal_rank,
                 "status": str(item.status),
                 "generator_call_id": str(item.generator_call_id),
