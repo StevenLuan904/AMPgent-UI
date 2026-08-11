@@ -19,7 +19,7 @@ def test_v33_preregistration_freezes_charge_pairs_and_search_budget() -> None:
     assert manifest.formal_run.execution_authorized is False
     assert manifest.formal_run.submitted is False
     assert manifest.formal_run.implementation_revision == (
-        "fab5cac50b3d709e9435c732173bc22eba81a505"
+        "34b46d3e6ccf6743cbeb06ff8a4ddf88a9adad7b"
     )
     assert manifest.generator.valid_stream_checkpoints == [25, 50, 100, 150, 200]
     assert len(manifest.generator.development_seeds) == 3
