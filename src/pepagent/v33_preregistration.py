@@ -6,7 +6,7 @@ from typing import Any, Literal
 import yaml
 from pydantic import BaseModel, Field, model_validator
 
-from pepagent.provenance.hashing import sha256_bytes
+from pepagent.provenance.hashing import sha256_bytes, sha256_json
 
 
 class ChargeDose(BaseModel):
@@ -53,14 +53,99 @@ class GeneratorContract(BaseModel):
         return self
 
 
+class SearchSaturationGate(BaseModel):
+    maximum_new_epsilon_cells_per_50_candidates: int = Field(ge=0)
+    maximum_epsilon_cell_turnover_fraction: float = Field(ge=0, le=1)
+    must_hold_for_every_pareto_family: Literal[True]
+    must_hold_in_all_development_seeds: Literal[True]
+    must_hold_in_all_confirmation_seeds: Literal[True]
+
+
+class CrossSeedAttainmentGate(BaseModel):
+    checkpoint: int = Field(gt=0)
+    consensus_support: Literal["strict_majority_within_seed_cohort"]
+    development_consensus_must_be_attained_by: Literal["every_confirmation_seed"]
+    confirmation_consensus_must_be_attained_by: Literal["every_development_seed"]
+    symmetric_recurrence_required_for_saturation: Literal[True]
+    empty_consensus_is_failure_not_success: Literal[True]
+
+
+class CostDiagnostic(BaseModel):
+    unit: Literal["cumulative_tool_wall_seconds_within_frozen_worker_release"]
+    required_at_every_assessment_checkpoint: Literal[True]
+    cost_efficiency_is_diagnostic_not_saturation_gate: Literal[True]
+
+
+class ModelDependenceDiagnostic(BaseModel):
+    checkpoint: int = Field(gt=0)
+    required_soft_model_metrics_by_family: dict[str, list[str]]
+    report_every_seed_and_metric: Literal[True]
+    fragility_warning_jaccard_below: float = Field(ge=0, le=1)
+    warning_is_orthogonal_to_search_saturation: Literal[True]
+    forbidden_inference: Literal["stable_search_does_not_validate_the_soft_models"]
+
+
 class SearchSufficiency(BaseModel):
+    philosophy: Literal["conjunctive_evidence_governance_not_single_indicator_convergence"]
+    claim_scope: Literal[
+        "empirical_stability_within_frozen_generator_metrics_seeds_and_budget_not_global_optimality"
+    ]
+    methods_evidence_manifest_path: str
+    methods_evidence_manifest_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    methods_evidence_manifest_canonical_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     fixed_full_budget_required: bool
     adaptive_early_stopping_forbidden: bool
+    analyze_development_and_confirmation_seeds_separately: Literal[True]
+    checkpoint_unit: Literal["reachable_counterfactual_parent"]
+    archive_method_version: Literal["v33-search-sufficiency-v2"]
+    checkpoint_metrics: list[str]
     saturation_assessment_checkpoints: list[int]
+    saturation_gate: SearchSaturationGate
+    cross_seed_attainment_gate: CrossSeedAttainmentGate
+    cost_diagnostic: CostDiagnostic
+    model_dependence_diagnostic: ModelDependenceDiagnostic
     allowed_verdicts: list[str]
     forbidden_verdicts: list[str]
     weighted_total_score_forbidden: bool
     single_hypervolume_completion_claim_forbidden: bool
+    front_size_alone_completion_claim_forbidden: bool
+    candidate_identity_turnover_alone_completion_claim_forbidden: bool
+
+    @model_validator(mode="after")
+    def validate_sufficiency_contract(self) -> SearchSufficiency:
+        if self.saturation_assessment_checkpoints != [150, 200]:
+            raise ValueError("v33 saturation assessment checkpoints drifted")
+        if self.cross_seed_attainment_gate.checkpoint != self.saturation_assessment_checkpoints[-1]:
+            raise ValueError("cross-seed attainment must use the final frozen checkpoint")
+        required_metrics = {
+            "new_nondominated_candidate_rate",
+            "archive_turnover_fraction",
+            "epsilon_cell_turnover_fraction",
+            "new_family_local_epsilon_cells_per_candidate",
+            "cross_seed_epsilon_cell_attainment",
+            "cost_per_new_epsilon_cell",
+            "leave_one_soft_model_out_selection_jaccard",
+        }
+        if set(self.checkpoint_metrics) != required_metrics:
+            raise ValueError("v33 search sufficiency metric set drifted")
+        expected_models = {
+            "membrane": [],
+            "activity_mic": [
+                "macrel_amp_probability",
+                "llamp_log10_mic_um",
+                "amp_read_log10_mic_um",
+            ],
+            "risk_control": [
+                "toxinpred3_hybrid_score",
+                "macrel_hemolysis_probability",
+            ],
+        }
+        observed_models = (
+            self.model_dependence_diagnostic.required_soft_model_metrics_by_family
+        )
+        if observed_models != expected_models:
+            raise ValueError("v33 leave-one-soft-model-out contract drifted")
+        return self
 
 
 class FormalRun(BaseModel):
@@ -165,14 +250,22 @@ class V33Preregistration(BaseModel):
             raise ValueError("weighted totals are forbidden")
         if not search.single_hypervolume_completion_claim_forbidden:
             raise ValueError("single hypervolume cannot establish completion")
+        if not search.front_size_alone_completion_claim_forbidden:
+            raise ValueError("front size alone cannot establish completion")
+        if not search.candidate_identity_turnover_alone_completion_claim_forbidden:
+            raise ValueError("candidate identity churn alone cannot establish completion")
 
         evidence = self.database_evidence_contract
         required_evidence = (
             "persist_literature_basis_as_content_addressed_manifest_artifact",
+            "persist_search_sufficiency_methods_as_content_addressed_manifest_artifact",
             "persist_raw_generator_batches",
             "persist_parent_child_candidate_edges",
             "persist_checkpoint_archive_snapshots",
             "persist_archive_add_remove_and_dominance_reasons",
+            "persist_active_and_cumulative_epsilon_cell_history",
+            "persist_cross_seed_attainment_surfaces",
+            "persist_leave_one_soft_model_out_diagnostics",
             "persist_agent_decisions_and_all_tool_edges",
             "database_object_store_only_replay_required",
         )
@@ -237,4 +330,23 @@ def load_v33_preregistration(path: Path) -> V33Preregistration:
     }
     if not required_forbidden.issubset(forbidden):
         raise ValueError("v33 literature evidence lacks required anti-extrapolation rules")
+    methods_path = (
+        path.parent / manifest.search_sufficiency.methods_evidence_manifest_path
+    ).resolve()
+    methods_payload = methods_path.read_bytes()
+    if sha256_bytes(methods_payload) != (
+        manifest.search_sufficiency.methods_evidence_manifest_sha256
+    ):
+        raise ValueError("v33 search sufficiency methods manifest checksum mismatch")
+    methods = yaml.safe_load(methods_payload)
+    if sha256_json(methods) != (
+        manifest.search_sufficiency.methods_evidence_manifest_canonical_sha256
+    ):
+        raise ValueError("v33 search sufficiency methods canonical checksum mismatch")
+    if methods.get("methodological_position", {}).get("admissible_completion_claim") != (
+        "empirical_stability_within_frozen_generator_metrics_seeds_and_budget"
+    ):
+        raise ValueError("v33 search sufficiency claim scope drifted")
+    if len(methods.get("primary_method_sources", [])) < 5:
+        raise ValueError("v33 search sufficiency methods evidence is incomplete")
     return manifest

@@ -124,9 +124,10 @@ formal-run 授权前，这仍不表示 v33 已执行或产生结果。
 
 ### Q2：当前 Pareto 搜索是否已经接近可达最优？
 
-当前判断：`in_progress`。v32 只证明冻结样本内的非支配组合，不能证明搜索收敛。v33 已冻结
-25/50/100/150/200 的全预算 checkpoint、family-local ε-cell、archive turnover 和独立确认 seed
-判据；尚未执行，因此没有新的饱和结论。
+当前判断：`in_progress`。v32 只证明冻结样本内的非支配组合，不能证明搜索收敛。v33 已把“搜索
+充分”升级为合取证据合同：25/50/100/150/200 全预算 checkpoint、active/cumulative family-local
+ε-cell、cell turnover、开发/确认 strict-majority attainment 双向复现、成本观察和逐软模型剔除诊断。
+实现与 database/object-store-only 重算 verifier 已完成，但尚未执行，因此没有新的饱和结论。
 
 要回答的问题：
 
@@ -135,10 +136,17 @@ formal-run 授权前，这仍不表示 v33 已执行或产生结果。
 - 去掉任一相关软模型、对有限数值作容差内扰动后，lane 与候选身份是否稳定？
 - 每单位 GPU/CPU 时间、ToolCall 和候选预算能带来多少新的可复原非支配发现？
 
-方法要求：使用预注册的逐批预算曲线和独立确认 seed。报告 archive turnover、ε-coverage、
-cross-seed attainment、novel discovery yield、leave-one-model-out 稳定性；不以单一 hypervolume 或
-加权总分宣布收敛。只有连续多个预注册批次的新发现率进入开发前定义的低区间，并在独立 seed
-复现，才可称“在该协议和预算范围内经验饱和”，不能称全局最优。
+方法要求：使用预注册的逐批预算曲线和独立确认 seed。候选身份 turnover 只作审计，目标空间
+ε-cell turnover 才进入稳定门；同 cell 的并列候选增长不算新进展。开发与确认 cohort 分别形成
+strict-majority attainment surface，并要求双向被另一 cohort 的每个 seed attain。报告 novel discovery
+yield、成本和 leave-one-soft-model-out Jaccard；模型剔除脆弱性与搜索饱和正交，不能把稳定搜索解释为
+模型正确。不以 front size、候选 churn、单一 hypervolume 或加权总分宣布收敛。只有完整固定预算、
+连续预注册末段 cell 稳定、独立 seed 目标区域复现且诊断齐全，才可称“在冻结生成器、指标、seed 与
+预算内经验饱和”，不能称全局最优。
+
+方法依据 manifest 为 `config/evidence/pareto_search_sufficiency_methods_v33.yaml`；其明确区分原始方法
+文献支持的集合值/attainment 哲学和本项目自行预注册的 ε 宽度、`1 cell/50 candidates`、`0.10`
+cell-turnover 实用门槛。后者不是文献给出的普适常数，也不得在看到 v33 输出后修改。
 
 ### Q3：文献知识卡是否真的提高设计质量？
 

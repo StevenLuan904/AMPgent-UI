@@ -21,7 +21,17 @@ from pepagent.db.models import (
 from pepagent.db.repository import ExperimentRepository
 from pepagent.evidence_replay import build_database_evidence_graph
 from pepagent.provenance.hashing import sha256_bytes, sha256_json
-from pepagent.search_sufficiency import ArchiveSnapshot, SaturationAssessment
+from pepagent.search_sufficiency import (
+    ArchiveSnapshot,
+    LeaveOneObjectiveOutAssessment,
+    SaturationAssessment,
+    SaturationGate,
+    assess_saturation,
+    build_archive_snapshots,
+    build_leave_one_objective_out_assessments,
+    pareto_families_from_preregistration,
+)
+from pepagent.v33_preregistration import V33Preregistration
 
 V33_EVIDENCE_VERSION = "v33-database-evidence-v1"
 ArtifactWriter = Callable[[dict[str, Any]], Awaitable[Any]]
@@ -188,6 +198,7 @@ async def persist_v33_charge_evidence(
     cohort: CounterfactualCohortResult,
     manifest_payload: dict[str, Any],
     literature_basis: dict[str, Any],
+    search_sufficiency_methods_basis: dict[str, Any],
     environment_sha256: str,
     artifact_writer: ArtifactWriter,
 ) -> dict[str, Any]:
@@ -203,7 +214,20 @@ async def persist_v33_charge_evidence(
     if existing is not None:
         if existing.output_sha256 != sha256_json(plan):
             raise ValueError("persisted v33 transform differs from retry payload")
-        return await _recover_transform(session, run_id, existing, plan)
+        recovered = await _recover_transform(session, run_id, existing, plan)
+        methods_call = await session.scalar(
+            select(ToolCall).where(
+                ToolCall.run_id == run_id,
+                ToolCall.tool_name == "v33-search-sufficiency-methods-freezer",
+            )
+        )
+        if (
+            methods_call is None
+            or methods_call.output_sha256 != sha256_json(search_sufficiency_methods_basis)
+        ):
+            raise ValueError("persisted v33 transform lacks exact search methods evidence")
+        recovered["search_methods_tool_call_id"] = str(methods_call.id)
+        return recovered
 
     parent_ids = [uuid.UUID(value) for value in plan["parent_order"]]
     parents = list(
@@ -241,6 +265,24 @@ async def persist_v33_charge_evidence(
         {"benchmark_id": manifest_payload["benchmark_id"]},
         artifact_writer,
     )
+    methods_call = await repository.record_completed_tool_call(
+        run_id,
+        "v33-search-sufficiency-methods-freezer",
+        V33_EVIDENCE_VERSION,
+        environment_sha256,
+        {"benchmark_id": manifest_payload["benchmark_id"]},
+        {"primary_methods_sources_only": True},
+        search_sufficiency_methods_basis,
+        model_uri="deterministic://v33-search-sufficiency-methods-freezer",
+    )
+    methods_artifact = await _register_json_artifact(
+        session,
+        methods_call.id,
+        search_sufficiency_methods_basis,
+        "search_sufficiency_methods_manifest",
+        {"benchmark_id": manifest_payload["benchmark_id"]},
+        artifact_writer,
+    )
     transform_call = await repository.record_completed_tool_call(
         run_id,
         "v33-matched-charge-transformer",
@@ -250,6 +292,7 @@ async def persist_v33_charge_evidence(
             "parent_order": plan["parent_order"],
             "manifest_sha256": sha256_json(manifest_payload),
             "literature_artifact_sha256": literature_artifact.sha256,
+            "search_methods_artifact_sha256": methods_artifact.sha256,
         },
         {"seven_matched_arms": True, "weighted_total_used": False},
         plan,
@@ -338,6 +381,7 @@ async def persist_v33_charge_evidence(
     return {
         "transform_tool_call_id": str(transform_call.id),
         "literature_tool_call_id": str(literature_call.id),
+        "search_methods_tool_call_id": str(methods_call.id),
         "cohort_artifact_sha256": cohort_artifact.sha256,
         "plan_sha256": plan["plan_sha256"],
         "candidate_ids_by_logical_id": {
@@ -408,7 +452,7 @@ async def persist_v33_archive_evidence(
     validated_assessment = SaturationAssessment.model_validate(
         saturation_assessment
     ).model_dump(mode="json")
-    snapshot_payload = {"schema_version": "1.0", "snapshots": validated_snapshots}
+    snapshot_payload = {"schema_version": "2.0", "snapshots": validated_snapshots}
     output = {
         "snapshot_sha256": sha256_json(snapshot_payload),
         "saturation_assessment_sha256": sha256_json(validated_assessment),
@@ -442,6 +486,17 @@ async def persist_v33_archive_evidence(
     transform = await session.get(ToolCall, transform_tool_call_id)
     if transform is None or transform.run_id != run_id:
         raise ValueError("v33 archive transform dependency is missing or cross-run")
+    methods_calls = list(
+        await session.scalars(
+            select(ToolCall).where(
+                ToolCall.run_id == run_id,
+                ToolCall.tool_name == "v33-search-sufficiency-methods-freezer",
+            )
+        )
+    )
+    if len(methods_calls) != 1:
+        raise ValueError("v33 archive requires one frozen search-methods evidence call")
+    methods_call = methods_calls[0]
     unique_metric_ids = sorted(set(metric_tool_call_ids), key=str)
     if len(unique_metric_ids) != len(metric_tool_call_ids):
         raise ValueError("v33 archive metric dependency list contains duplicates")
@@ -469,6 +524,9 @@ async def persist_v33_archive_evidence(
     )
     await repository.record_tool_dependency(
         archive_call.id, transform_tool_call_id, "archives_transformed_candidates"
+    )
+    await repository.record_tool_dependency(
+        archive_call.id, methods_call.id, "uses_search_sufficiency_methods"
     )
     for call_id in unique_metric_ids:
         await repository.record_tool_dependency(
@@ -514,6 +572,9 @@ async def persist_v33_archive_evidence(
     await repository.record_agent_tool_edge(
         decision.id, transform_tool_call_id, "input", "observes_transform_contract"
     )
+    await repository.record_agent_tool_edge(
+        decision.id, methods_call.id, "input", "observes_search_sufficiency_methods"
+    )
     for call_id in unique_metric_ids:
         await repository.record_agent_tool_edge(
             decision.id, call_id, "input", "observes_metric_evidence"
@@ -542,6 +603,175 @@ async def persist_v33_archive_evidence(
     }
 
 
+def _assert_replay_equivalent(expected: Any, observed: Any, path: str = "root") -> None:
+    if isinstance(expected, bool) or isinstance(observed, bool):
+        if expected is not observed:
+            raise ValueError(f"v33 replay mismatch at {path}")
+        return
+    if isinstance(expected, (int, float)) and isinstance(observed, (int, float)):
+        if not math.isclose(float(expected), float(observed), abs_tol=1e-8, rel_tol=1e-6):
+            raise ValueError(f"v33 numerical replay mismatch at {path}")
+        return
+    if isinstance(expected, dict) and isinstance(observed, dict):
+        if set(expected) != set(observed):
+            raise ValueError(f"v33 replay key mismatch at {path}")
+        for key in sorted(expected):
+            _assert_replay_equivalent(expected[key], observed[key], f"{path}.{key}")
+        return
+    if isinstance(expected, list) and isinstance(observed, list):
+        if len(expected) != len(observed):
+            raise ValueError(f"v33 replay length mismatch at {path}")
+        for index, (left, right) in enumerate(zip(expected, observed, strict=True)):
+            _assert_replay_equivalent(left, right, f"{path}[{index}]")
+        return
+    if expected != observed:
+        raise ValueError(f"v33 replay mismatch at {path}")
+
+
+def _recompute_v33_search_evidence(
+    graph: dict[str, Any],
+    manifest_payload: dict[str, Any],
+    methods_payload: dict[str, Any],
+    snapshot_payload: dict[str, Any],
+    assessment_payload: dict[str, Any],
+) -> tuple[list[ArchiveSnapshot], SaturationAssessment]:
+    """Rebuild every v33 archive and decision from database metrics plus artifact order."""
+    if snapshot_payload.get("schema_version") != "2.0":
+        raise ValueError("v33 replay requires search-sufficiency snapshot schema 2.0")
+    manifest = V33Preregistration.model_validate(manifest_payload)
+    if sha256_json(methods_payload) != (
+        manifest.search_sufficiency.methods_evidence_manifest_canonical_sha256
+    ):
+        raise ValueError("v33 replay search-sufficiency methods checksum mismatch")
+    snapshots = [
+        ArchiveSnapshot.model_validate(item) for item in snapshot_payload.get("snapshots", [])
+    ]
+    candidate_ids = {item["id"] for item in graph["candidates"]}
+    numeric: dict[tuple[str, str], float] = {}
+    for item in graph["evaluations"]:
+        if item["numeric_value"] is None:
+            continue
+        key = (item["candidate_id"], item["metric_name"])
+        value = float(item["numeric_value"])
+        if not math.isfinite(value):
+            raise ValueError(f"non-finite v33 replay evaluation: {key}")
+        if key in numeric and not math.isclose(numeric[key], value, abs_tol=1e-8, rel_tol=1e-6):
+            raise ValueError(f"conflicting duplicate v33 replay evaluation: {key}")
+        numeric[key] = value
+
+    families = pareto_families_from_preregistration(manifest)
+    grouped: dict[tuple[int, str], list[ArchiveSnapshot]] = {}
+    for snapshot in snapshots:
+        grouped.setdefault((snapshot.seed, snapshot.family), []).append(snapshot)
+    expected_groups = {
+        (seed, family)
+        for seed in manifest.generator.development_seeds + manifest.generator.confirmation_seeds
+        for family in families
+    }
+    if set(grouped) != expected_groups:
+        raise ValueError("v33 replay snapshot seed/family coverage drifted")
+
+    rebuilt_snapshots: list[ArchiveSnapshot] = []
+    loo: list[LeaveOneObjectiveOutAssessment] = []
+    omitted_contract = (
+        manifest.search_sufficiency.model_dependence_diagnostic
+        .required_soft_model_metrics_by_family
+    )
+    omitted_by_family = {
+        family: set(metrics)
+        for family, metrics in omitted_contract.items()
+    }
+    for (seed, family_name), observed_group in sorted(grouped.items()):
+        observed_group = sorted(observed_group, key=lambda item: item.checkpoint)
+        checkpoints = tuple(item.checkpoint for item in observed_group)
+        if list(checkpoints) != manifest.generator.valid_stream_checkpoints:
+            raise ValueError("v33 replay checkpoint schedule drifted")
+        final_ids = observed_group[-1].input_candidate_ids
+        if any(candidate_id not in candidate_ids for candidate_id in final_ids):
+            raise ValueError("v33 replay archive references a missing database candidate")
+        family = families[family_name]
+        required_metrics = {item.metric_name for item in family.objectives}
+        candidates: list[dict[str, Any]] = []
+        for candidate_id in final_ids:
+            metrics = {
+                metric: numeric[(candidate_id, metric)]
+                for metric in required_metrics
+                if (candidate_id, metric) in numeric
+            }
+            if set(metrics) != required_metrics:
+                raise ValueError(
+                    f"v33 replay lacks family metrics for seed={seed};family={family_name};"
+                    f"candidate={candidate_id}"
+                )
+            candidates.append({"id": candidate_id, "metrics": metrics})
+        cumulative_cost: dict[int, float] = {}
+        running_cost = 0.0
+        for item in observed_group:
+            if item.increment_cost_units is None:
+                raise ValueError("v33 replay lacks required checkpoint cost observation")
+            running_cost += item.increment_cost_units
+            cumulative_cost[item.checkpoint] = running_cost
+        rebuilt_group = build_archive_snapshots(
+            seed=seed,
+            candidates_in_stream_order=candidates,
+            family=family,
+            checkpoints=checkpoints,
+            cumulative_cost_by_checkpoint=cumulative_cost,
+        )
+        _assert_replay_equivalent(
+            [item.model_dump(mode="json") for item in rebuilt_group],
+            [item.model_dump(mode="json") for item in observed_group],
+            f"archive.seed={seed}.family={family_name}",
+        )
+        rebuilt_snapshots.extend(rebuilt_group)
+        if omitted_by_family[family_name]:
+            loo.extend(
+                build_leave_one_objective_out_assessments(
+                    seed=seed,
+                    candidates_in_stream_order=candidates,
+                    family=family,
+                    checkpoint=manifest.search_sufficiency.model_dependence_diagnostic.checkpoint,
+                    omitted_metrics=omitted_by_family[family_name],
+                )
+            )
+
+    contract_gate = manifest.search_sufficiency.saturation_gate
+    diagnostic = manifest.search_sufficiency.model_dependence_diagnostic
+    recomputed = assess_saturation(
+        rebuilt_snapshots,
+        required_seeds=set(
+            manifest.generator.development_seeds + manifest.generator.confirmation_seeds
+        ),
+        required_families=set(families),
+        gate=SaturationGate(
+            assessment_checkpoints=tuple(
+                manifest.search_sufficiency.saturation_assessment_checkpoints
+            ),
+            maximum_new_epsilon_cells_per_increment=(
+                contract_gate.maximum_new_epsilon_cells_per_50_candidates
+            ),
+            maximum_epsilon_cell_turnover_fraction=(
+                contract_gate.maximum_epsilon_cell_turnover_fraction
+            ),
+            require_cross_seed_attainment=True,
+            require_cost_observations=True,
+            require_leave_one_objective_out_reporting=True,
+            model_fragility_warning_jaccard_below=diagnostic.fragility_warning_jaccard_below,
+        ),
+        development_seeds=set(manifest.generator.development_seeds),
+        confirmation_seeds=set(manifest.generator.confirmation_seeds),
+        leave_one_objective_out_assessments=loo,
+        required_omitted_metrics_by_family=omitted_by_family,
+    )
+    observed_assessment = SaturationAssessment.model_validate(assessment_payload)
+    _assert_replay_equivalent(
+        recomputed.model_dump(mode="json"),
+        observed_assessment.model_dump(mode="json"),
+        "saturation_assessment",
+    )
+    return rebuilt_snapshots, recomputed
+
+
 def verify_v33_evidence_graph(
     graph: dict[str, Any], artifact_payloads_by_sha256: dict[str, dict[str, Any]]
 ) -> dict[str, Any]:
@@ -552,6 +782,7 @@ def verify_v33_evidence_graph(
         by_name.setdefault(call["tool_name"], []).append(call)
     for name in (
         "v33-literature-basis-freezer",
+        "v33-search-sufficiency-methods-freezer",
         "v33-matched-charge-transformer",
         "v33-checkpoint-archive",
     ):
@@ -559,9 +790,11 @@ def verify_v33_evidence_graph(
             raise ValueError(f"v33 replay requires exactly one {name} call")
     transform = by_name["v33-matched-charge-transformer"][0]
     literature = by_name["v33-literature-basis-freezer"][0]
+    methods = by_name["v33-search-sufficiency-methods-freezer"][0]
     archive_call = by_name["v33-checkpoint-archive"][0]
     expected_role_call = {
         "literature_basis_manifest": literature["id"],
+        "search_sufficiency_methods_manifest": methods["id"],
         "submitted_manifest": transform["id"],
         "charge_counterfactual_cohort": transform["id"],
         "checkpoint_archive_snapshots": archive_call["id"],
@@ -588,6 +821,7 @@ def verify_v33_evidence_graph(
         role_payload[link["role"]] = payload
     required_roles = {
         "literature_basis_manifest",
+        "search_sufficiency_methods_manifest",
         "submitted_manifest",
         "charge_counterfactual_cohort",
         "checkpoint_archive_snapshots",
@@ -627,9 +861,13 @@ def verify_v33_evidence_graph(
             float(observed), float(expected["numeric_value"]), abs_tol=1e-8, rel_tol=1e-6
         ):
             raise ValueError(f"v33 descriptor replay mismatch: {expected['logical_id']}/{key[1]}")
-    archive = role_payload["checkpoint_archive_snapshots"]
-    snapshots = [ArchiveSnapshot.model_validate(item) for item in archive.get("snapshots", [])]
-    SaturationAssessment.model_validate(role_payload["saturation_assessment"])
+    snapshots, replayed_assessment = _recompute_v33_search_evidence(
+        graph,
+        role_payload["submitted_manifest"],
+        role_payload["search_sufficiency_methods_manifest"],
+        role_payload["checkpoint_archive_snapshots"],
+        role_payload["saturation_assessment"],
+    )
     for snapshot in snapshots:
         removed = set(snapshot.removed_candidate_ids)
         if removed != set(snapshot.removed_candidate_dominance_witnesses):
@@ -640,6 +878,12 @@ def verify_v33_evidence_graph(
     }
     if (transform["id"], literature["id"], "uses_literature_basis") not in dependency_edges:
         raise ValueError("v33 transform lacks literature dependency")
+    if (
+        archive_call["id"],
+        methods["id"],
+        "uses_search_sufficiency_methods",
+    ) not in dependency_edges:
+        raise ValueError("v33 archive lacks search-sufficiency methods dependency")
     if not any(
         edge[0] == archive_call["id"] and edge[1] == transform["id"]
         for edge in dependency_edges
@@ -683,9 +927,12 @@ def verify_v33_evidence_graph(
         "parent_order": plan["parent_order"],
         "candidate_ids_by_logical_id": logical_to_id,
         "archive_snapshot_count": len(snapshots),
-        "saturation_assessment": role_payload["saturation_assessment"],
+        "saturation_assessment": replayed_assessment.model_dump(mode="json"),
         "manifest_sha256": sha256_json(role_payload["submitted_manifest"]),
         "literature_basis_sha256": sha256_json(role_payload["literature_basis_manifest"]),
+        "search_methods_basis_sha256": sha256_json(
+            role_payload["search_sufficiency_methods_manifest"]
+        ),
     }
     result["replay_sha256"] = sha256_json(result)
     return result

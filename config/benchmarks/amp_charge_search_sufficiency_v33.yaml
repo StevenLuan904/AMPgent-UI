@@ -1,5 +1,5 @@
 benchmark_id: amp_charge_search_sufficiency_v33
-version: v33.1.0-literature-evidence-freeze
+version: v33.2.0-literature-and-empirical-sufficiency-freeze
 execution_status: preregistered_draft_not_authorized
 track: cationic_counterfactual_and_search_sufficiency
 target_spec_path: ../experiments/acea_generator_structure_confirmation_v31b.yaml
@@ -170,13 +170,20 @@ pareto_families:
     - {metric: macrel_hemolysis_probability, direction: minimize, epsilon: 0.05}
 
 search_sufficiency:
+  philosophy: conjunctive_evidence_governance_not_single_indicator_convergence
+  claim_scope: empirical_stability_within_frozen_generator_metrics_seeds_and_budget_not_global_optimality
+  methods_evidence_manifest_path: ../evidence/pareto_search_sufficiency_methods_v33.yaml
+  methods_evidence_manifest_sha256: b5c3629cf19d90a6962d048cbe6bf8ff1d6ee7bef7ae449ffe03c649aa5470e6
+  methods_evidence_manifest_canonical_sha256: 20b4298a71510763ef92ddd340fcd3bf52ce04d61e76de938393af37dcf98fc4
   fixed_full_budget_required: true
   adaptive_early_stopping_forbidden: true
   analyze_development_and_confirmation_seeds_separately: true
   checkpoint_unit: reachable_counterfactual_parent
+  archive_method_version: v33-search-sufficiency-v2
   checkpoint_metrics:
     - new_nondominated_candidate_rate
     - archive_turnover_fraction
+    - epsilon_cell_turnover_fraction
     - new_family_local_epsilon_cells_per_candidate
     - cross_seed_epsilon_cell_attainment
     - cost_per_new_epsilon_cell
@@ -184,10 +191,31 @@ search_sufficiency:
   saturation_assessment_checkpoints: [150, 200]
   saturation_gate:
     maximum_new_epsilon_cells_per_50_candidates: 1
-    maximum_archive_turnover_fraction: 0.10
+    maximum_epsilon_cell_turnover_fraction: 0.10
     must_hold_for_every_pareto_family: true
     must_hold_in_all_development_seeds: true
     must_hold_in_all_confirmation_seeds: true
+  cross_seed_attainment_gate:
+    checkpoint: 200
+    consensus_support: strict_majority_within_seed_cohort
+    development_consensus_must_be_attained_by: every_confirmation_seed
+    confirmation_consensus_must_be_attained_by: every_development_seed
+    symmetric_recurrence_required_for_saturation: true
+    empty_consensus_is_failure_not_success: true
+  cost_diagnostic:
+    unit: cumulative_tool_wall_seconds_within_frozen_worker_release
+    required_at_every_assessment_checkpoint: true
+    cost_efficiency_is_diagnostic_not_saturation_gate: true
+  model_dependence_diagnostic:
+    checkpoint: 200
+    required_soft_model_metrics_by_family:
+      membrane: []
+      activity_mic: [macrel_amp_probability, llamp_log10_mic_um, amp_read_log10_mic_um]
+      risk_control: [toxinpred3_hybrid_score, macrel_hemolysis_probability]
+    report_every_seed_and_metric: true
+    fragility_warning_jaccard_below: 0.50
+    warning_is_orthogonal_to_search_saturation: true
+    forbidden_inference: stable_search_does_not_validate_the_soft_models
   allowed_verdicts:
     - saturated_within_protocol_and_budget
     - not_saturated_within_protocol_and_budget
@@ -195,6 +223,8 @@ search_sufficiency:
   forbidden_verdicts: [global_optimum, universally_optimal, best_possible_peptide]
   weighted_total_score_forbidden: true
   single_hypervolume_completion_claim_forbidden: true
+  front_size_alone_completion_claim_forbidden: true
+  candidate_identity_turnover_alone_completion_claim_forbidden: true
 
 paired_analysis:
   unit: counterfactual_parent_dose_identity_block
@@ -242,6 +272,8 @@ database_evidence_contract:
   persist_literature_basis_as_content_addressed_manifest_artifact: true
   literature_manifest_sha256_must_match_frozen_config: true
   literature_claim_projection_must_be_persisted: true
+  persist_search_sufficiency_methods_as_content_addressed_manifest_artifact: true
+  search_sufficiency_methods_sha256_must_match_frozen_config: true
   persist_raw_generator_batches: true
   persist_rejected_and_duplicate_proposals_as_artifacts: true
   persist_all_seed_occurrences: true
@@ -251,6 +283,9 @@ database_evidence_contract:
   persist_metric_tool_calls_and_dependencies: true
   persist_checkpoint_archive_snapshots: true
   persist_archive_add_remove_and_dominance_reasons: true
+  persist_active_and_cumulative_epsilon_cell_history: true
+  persist_cross_seed_attainment_surfaces: true
+  persist_leave_one_soft_model_out_diagnostics: true
   persist_agent_decisions_and_all_tool_edges: true
   persist_cost_and_runtime_observations: true
   content_address_all_outputs_and_environment_manifests: true

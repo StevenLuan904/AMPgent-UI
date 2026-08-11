@@ -494,6 +494,21 @@ config SHA-256 为 `6ca56fa350cd9f4600327d1d1ad39c7d99e52174ec07736844c42eb7e944
 `336 passed`。该提交只冻结外部证据驱动的目标与 loader 门禁；`execution_authorized=false`、
 `submitted=false`，没有新序列或计算效果结果。
 
+2026-08-11 搜索充分性合同升级为 `v33-search-sufficiency-v2`。方法依据冻结在
+`config/evidence/pareto_search_sufficiency_methods_v33.yaml`，原始字节 SHA-256 为
+`b5c3629cf19d90a6962d048cbe6bf8ff1d6ee7bef7ae449ffe03c649aa5470e6`，规范化内容 SHA-256 为
+`20b4298a71510763ef92ddd340fcd3bf52ce04d61e76de938393af37dcf98fc4`。它把“搜索是否充分”定义为固定
+全预算完整性、末段 active/cumulative family-local ε-cell 稳定、开发/确认 strict-majority attainment
+双向复现、成本观察和逐软模型剔除报告的合取证据；候选身份 turnover、front size、加权总分或单一
+hypervolume 均不能单独宣布完成。`1 new cell/50 candidates` 与 `0.10` ε-cell turnover 是本项目预注册
+实用阈值，不是论文给出的普适常数。允许的最强结论仅为
+`saturated_within_protocol_and_budget`，禁止声称 global optimum。
+
+数据库 verifier 必须从冻结 candidate stream、逐候选 Evaluation、成本和方法 artifact 重新计算全部
+archive、active/cumulative ε-cell、双向 attainment、leave-one-soft-model-out 集合及最终合取 verdict；
+不能信任导出的 assessment JSON。该升级尚未部署或执行，没有 v33 run、没有新短肽、没有正电性或
+搜索饱和效果结果；`execution_authorized=false`、`submitted=false` 继续有效。
+
 ## 18. v34 文献知识卡 × PepShot 干预消融草案（2026-08-11 append-only update）
 
 用户要求正式比较知识卡任务 `019fad3e-76b8-7e32-8455-d2e9b31d33e5` 与 PepShot 任务

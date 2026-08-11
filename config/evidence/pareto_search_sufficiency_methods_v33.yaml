@@ -1,0 +1,93 @@
+evidence_manifest_id: pareto_search_sufficiency_methods_v33
+version: 1.0.0
+frozen_on: "2026-08-11"
+scope: methodological_basis_for_empirical_multiobjective_search_sufficiency
+
+methodological_position:
+  optimization_object: a_stochastic_set_valued_search_process_not_a_single_scalar_score
+  admissible_completion_claim: empirical_stability_within_frozen_generator_metrics_seeds_and_budget
+  forbidden_completion_claims:
+    - global_optimum
+    - universally_optimal_peptide
+    - best_possible_peptide
+    - soft_model_validity_from_search_stability
+  evidence_dimensions_are_conjunctive:
+    - fixed_budget_completeness
+    - within_seed_late_window_epsilon_cell_stability
+    - independent_development_confirmation_attainment_recurrence
+    - cost_observation
+    - leave_one_soft_model_out_model_dependence_report
+  non_collapsing_rule: no_weighted_total_or_single_indicator_can_replace_the_evidence_dimensions
+
+primary_method_sources:
+  - evidence_id: fonseca_fleming_1996_attainment
+    citation: Fonseca CM, Fleming PJ. On the Performance Assessment and Comparison of Stochastic Multiobjective Optimizers. PPSN IV. 1996.
+    source_uri: https://eden.dei.uc.pt/~cmfonsec/fonseca-ppsn1996-reprint.pdf
+    source_type: primary_methods_paper
+    supports:
+      - repeated_independent_runs_are_required_for_stochastic_multiobjective_performance
+      - attainment_is_set_valued_and_nonparametric
+    does_not_support:
+      - a_universal_stopping_threshold
+      - a_global_optimality_claim
+
+  - evidence_id: grunert_fonseca_hall_2001_inferential_attainment
+    citation: Grunert da Fonseca V, Fonseca CM, Hall AO. Inferential Performance Assessment of Stochastic Optimisers and the Attainment Function. EMO 2001.
+    doi: 10.1007/3-540-44719-9_15
+    source_uri: https://doi.org/10.1007/3-540-44719-9_15
+    source_type: primary_methods_paper
+    supports:
+      - stochastic_multiobjective_outcomes_require_special_set_valued_inference
+      - seed_replicates_must_not_be_replaced_by_one_pooled_front
+    does_not_support:
+      - treating_correlated_soft_predictors_as_independent_evidence
+
+  - evidence_id: fonseca_guerreiro_lopezibanez_paquete_2011_eaf
+    citation: Fonseca CM, Guerreiro AP, Lopez-Ibanez M, Paquete L. On the Computation of the Empirical Attainment Function. EMO 2011.
+    doi: 10.1007/978-3-642-19893-9_8
+    source_uri: https://eden.dei.uc.pt/~cmfonsec/fonseca-emo2011-reprint.pdf
+    source_type: primary_methods_paper
+    supports:
+      - empirical_attainment_is_the_fraction_of_independent_outcome_sets_attaining_an_objective_point
+      - attainment_surfaces_preserve_location_information_that_front_size_discards
+    does_not_support:
+      - exact_global_front_recovery_from_finite_runs
+
+  - evidence_id: wagner_trautmann_marti_2011_stopping_taxonomy
+    citation: Wagner T, Trautmann H, Marti L. A Taxonomy of Online Stopping Criteria for Multi-Objective Evolutionary Algorithms. EMO 2011.
+    doi: 10.1007/978-3-642-19893-9_2
+    source_uri: https://doi.org/10.1007/978-3-642-19893-9_2
+    source_type: primary_methods_paper
+    supports:
+      - formal_convergence_is_often_unavailable_for_black_box_multiobjective_search
+      - heuristic_stopping_evidence_must_name_its_observed_progress_components
+    does_not_support:
+      - silently_changing_the_stop_rule_after_observing_results
+
+  - evidence_id: goel_stander_2010_archive_growth
+    citation: Goel T, Stander N. A non-dominance-based online stopping criterion for multi-objective evolutionary algorithms. International Journal for Numerical Methods in Engineering. 2010.
+    doi: 10.1002/nme.2909
+    source_uri: https://doi.org/10.1002/nme.2909
+    source_type: primary_methods_paper
+    supports:
+      - archive_progress_over_multiple_intervals_can_inform_practical_termination
+      - early_and_late_search_progress_should_be_distinguished
+    does_not_support:
+      - archive_size_alone_as_convergence_proof
+
+project_specific_choices_not_claimed_from_literature:
+  epsilon_widths: frozen_per_pareto_family_before_outputs
+  late_checkpoints: [150, 200]
+  maximum_new_epsilon_cells_per_50_candidates: 1
+  maximum_epsilon_cell_turnover_fraction: 0.10
+  explanation: these_are_preregistered_resolution_and_practical_stability_choices_not_universal_constants
+
+database_replay_requirements:
+  - exact_seed_and_candidate_stream_order
+  - objective_values_and_metric_release_dependencies
+  - exact_front_membership_and_dominance_witnesses
+  - active_and_cumulative_epsilon_cells_at_every_checkpoint
+  - development_and_confirmation_attainment_surfaces
+  - leave_one_soft_model_out_selection_sets
+  - checkpoint_cost_observations
+  - final_conjunctive_verdict_and_all_failed_or_missing_dimensions

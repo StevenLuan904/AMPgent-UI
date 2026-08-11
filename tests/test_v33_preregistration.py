@@ -34,6 +34,22 @@ def test_v33_preregistration_freezes_charge_pairs_and_search_budget() -> None:
         "two_charge_preserving_control",
     }
     assert manifest.search_sufficiency.fixed_full_budget_required is True
+    assert manifest.search_sufficiency.archive_method_version == (
+        "v33-search-sufficiency-v2"
+    )
+    assert manifest.search_sufficiency.methods_evidence_manifest_sha256 == (
+        "b5c3629cf19d90a6962d048cbe6bf8ff1d6ee7bef7ae449ffe03c649aa5470e6"
+    )
+    assert (
+        manifest.search_sufficiency.cross_seed_attainment_gate
+        .symmetric_recurrence_required_for_saturation
+        is True
+    )
+    assert (
+        manifest.search_sufficiency.saturation_gate
+        .maximum_epsilon_cell_turnover_fraction
+        == 0.10
+    )
     assert "global_optimum" in manifest.search_sufficiency.forbidden_verdicts
     assert manifest.database_evidence_contract[
         "database_object_store_only_replay_required"
@@ -86,6 +102,35 @@ def test_v33_preregistration_rejects_literature_manifest_drift() -> None:
         config_copy.write_text(CONFIG.read_text(encoding="utf-8"), encoding="utf-8")
         literature_copy.write_bytes(source.read_bytes() + b"\n# drift\n")
         with pytest.raises(ValueError, match="checksum mismatch"):
+            load_v33_preregistration(config_copy)
+
+
+def test_v33_preregistration_rejects_search_methods_manifest_drift() -> None:
+    config_payload = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
+    literature_source = (
+        CONFIG.parent
+        / config_payload["literature_evidence_basis"]["manifest_path"]
+    ).resolve()
+    methods_source = (
+        CONFIG.parent
+        / config_payload["search_sufficiency"]["methods_evidence_manifest_path"]
+    ).resolve()
+    with TemporaryDirectory() as directory:
+        root = Path(directory)
+        benchmark_dir = root / "benchmarks"
+        evidence_dir = root / "evidence"
+        benchmark_dir.mkdir()
+        evidence_dir.mkdir()
+        config_copy = benchmark_dir / CONFIG.name
+        literature_copy = evidence_dir / literature_source.name
+        methods_copy = evidence_dir / methods_source.name
+        config_copy.write_text(CONFIG.read_text(encoding="utf-8"), encoding="utf-8")
+        literature_copy.write_bytes(literature_source.read_bytes())
+        methods_copy.write_bytes(methods_source.read_bytes() + b"\n# drift\n")
+        with pytest.raises(
+            ValueError,
+            match="search sufficiency methods manifest checksum mismatch",
+        ):
             load_v33_preregistration(config_copy)
 
 

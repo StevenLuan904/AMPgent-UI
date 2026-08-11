@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import json
 from copy import deepcopy
+from pathlib import Path
 
 import pytest
+import yaml
 
 from pepagent.charge_design import (
     ChargeEditContract,
@@ -10,11 +13,21 @@ from pepagent.charge_design import (
     build_charge_counterfactual_cohort,
 )
 from pepagent.provenance.hashing import sha256_json
+from pepagent.search_sufficiency import (
+    SaturationGate,
+    assess_saturation,
+    build_archive_snapshots,
+    build_leave_one_objective_out_assessments,
+    pareto_families_from_preregistration,
+)
 from pepagent.v33_evidence import (
     build_v33_charge_persistence_plan,
     recover_v33_transform_identity,
     verify_v33_evidence_graph,
 )
+from pepagent.v33_preregistration import load_v33_preregistration
+
+ROOT = Path(__file__).parents[1]
 
 
 def _cohort():
@@ -86,8 +99,17 @@ def _artifact(payload, role, call_id, index):
 def _replay_fixture():
     cohort = _cohort()
     plan = build_v33_charge_persistence_plan(cohort)
+    manifest_path = ROOT / "config" / "benchmarks" / "amp_charge_search_sufficiency_v33.yaml"
+    manifest = load_v33_preregistration(manifest_path)
+    manifest_payload = json.loads(
+        json.dumps(
+            yaml.safe_load(manifest_path.read_text(encoding="utf-8")),
+            default=str,
+        )
+    )
     transform_id = "call-transform"
     literature_id = "call-literature"
+    methods_id = "call-search-methods"
     archive_id = "call-archive"
     decision_id = "decision-1"
     candidates = []
@@ -128,50 +150,137 @@ def _replay_fixture():
         }
         for index, item in enumerate(plan["descriptor_evaluations"])
     ]
+    families = pareto_families_from_preregistration(manifest)
+    search_metrics = {
+        "hydrophobic_moment_eisenberg": 0.50,
+        "hydrophobic_ratio_modlamp": 0.50,
+        "maximum_hydrophobic_run": 1.0,
+        "macrel_amp_probability": 0.50,
+        "llamp_log10_mic_um": 1.0,
+        "amp_read_log10_mic_um": 1.0,
+        "toxinpred3_hybrid_score": 0.10,
+        "macrel_hemolysis_probability": 0.10,
+    }
+    all_snapshots = []
+    loo = []
+    seeds = manifest.generator.development_seeds + manifest.generator.confirmation_seeds
+    for seed in seeds:
+        stream = []
+        for index in range(1, 201):
+            candidate_id = f"seed-{seed}-candidate-{index:03d}"
+            candidates.append(
+                {
+                    "id": candidate_id,
+                    "sequence": "A" * 10,
+                    "sequence_sha256": f"sha-{candidate_id}",
+                    "generation": 0,
+                    "parent_id": None,
+                    "proposal_rank": index,
+                    "status": "generated",
+                    "generator_call_id": "call-source",
+                    "metadata": {"seed": seed},
+                }
+            )
+            stream.append({"id": candidate_id, "metrics": search_metrics})
+            for metric_name, value in search_metrics.items():
+                evaluations.append(
+                    {
+                        "id": f"eval-{seed}-{index}-{metric_name}",
+                        "candidate_id": candidate_id,
+                        "tool_call_id": transform_id,
+                        "metric_name": metric_name,
+                        "numeric_value": value,
+                        "text_value": None,
+                        "unit": "soft_or_descriptor",
+                        "status": "succeeded",
+                        "out_of_domain": False,
+                        "limitations": [],
+                        "raw": {},
+                    }
+                )
+        for family_name, family in families.items():
+            all_snapshots.extend(
+                build_archive_snapshots(
+                    seed=seed,
+                    candidates_in_stream_order=stream,
+                    family=family,
+                    checkpoints=tuple(manifest.generator.valid_stream_checkpoints),
+                    cumulative_cost_by_checkpoint={
+                        25: 25.0,
+                        50: 50.0,
+                        100: 100.0,
+                        150: 150.0,
+                        200: 200.0,
+                    },
+                )
+            )
+            omitted = set(
+                manifest.search_sufficiency.model_dependence_diagnostic.required_soft_model_metrics_by_family[
+                    family_name
+                ]
+            )
+            if omitted:
+                loo.extend(
+                    build_leave_one_objective_out_assessments(
+                        seed=seed,
+                        candidates_in_stream_order=stream,
+                        family=family,
+                        checkpoint=200,
+                        omitted_metrics=omitted,
+                    )
+                )
+    contract_gate = manifest.search_sufficiency.saturation_gate
+    assessment = assess_saturation(
+        all_snapshots,
+        required_seeds=set(seeds),
+        required_families=set(families),
+        gate=SaturationGate(
+            assessment_checkpoints=tuple(
+                manifest.search_sufficiency.saturation_assessment_checkpoints
+            ),
+            maximum_new_epsilon_cells_per_increment=(
+                contract_gate.maximum_new_epsilon_cells_per_50_candidates
+            ),
+            maximum_epsilon_cell_turnover_fraction=(
+                contract_gate.maximum_epsilon_cell_turnover_fraction
+            ),
+            model_fragility_warning_jaccard_below=(
+                manifest.search_sufficiency.model_dependence_diagnostic.fragility_warning_jaccard_below
+            ),
+        ),
+        development_seeds=set(manifest.generator.development_seeds),
+        confirmation_seeds=set(manifest.generator.confirmation_seeds),
+        leave_one_objective_out_assessments=loo,
+        required_omitted_metrics_by_family={
+            family: set(metrics)
+            for family, metrics in (
+                manifest.search_sufficiency.model_dependence_diagnostic
+                .required_soft_model_metrics_by_family.items()
+            )
+        },
+    )
     payloads = {
         "literature_basis_manifest": {"primary_studies": ["study-a"]},
-        "submitted_manifest": {"benchmark_id": "amp_charge_search_sufficiency_v33"},
+        "search_sufficiency_methods_manifest": yaml.safe_load(
+            (
+                ROOT
+                / "config"
+                / "evidence"
+                / "pareto_search_sufficiency_methods_v33.yaml"
+            ).read_text(encoding="utf-8")
+        ),
+        "submitted_manifest": manifest_payload,
         "charge_counterfactual_cohort": cohort.model_dump(mode="json"),
         "checkpoint_archive_snapshots": {
-            "snapshots": [
-                {
-                    "schema_version": "1.0",
-                    "method_version": "v33-search-sufficiency-v1",
-                    "seed": 20261201,
-                    "family": "membrane",
-                    "checkpoint": 50,
-                    "previous_checkpoint": 25,
-                    "input_candidate_ids": ["child-1", "child-2"],
-                    "archive_candidate_ids": ["child-2"],
-                    "epsilon_cells": [[0, 0]],
-                    "added_candidate_ids": ["child-2"],
-                    "removed_candidate_ids": ["child-1"],
-                    "added_candidate_reasons": {
-                        "child-2": "nondominated_at_checkpoint"
-                    },
-                    "removed_candidate_dominance_witnesses": {
-                        "child-1": ["child-2"]
-                    },
-                    "new_epsilon_cells": [[0, 0]],
-                    "archive_turnover_fraction": 1.0,
-                    "new_nondominated_candidate_rate": 0.04,
-                    "new_family_local_epsilon_cells_per_candidate": 0.04,
-                }
-            ]
+            "schema_version": "2.0",
+            "snapshots": [item.model_dump(mode="json") for item in all_snapshots],
         },
-        "saturation_assessment": {
-            "verdict": "not_saturated_within_protocol_and_budget",
-            "assessed_seed_count": 1,
-            "assessed_family_count": 1,
-            "failing_seed_family_checkpoints": [
-                "seed=20261201;family=membrane;checkpoint=50"
-            ],
-            "missing_seed_family_checkpoints": [],
-        },
+        "saturation_assessment": assessment.model_dump(mode="json"),
     }
     artifacts, links, by_sha = [], [], {}
     role_call = {
         "literature_basis_manifest": literature_id,
+        "search_sufficiency_methods_manifest": methods_id,
         "submitted_manifest": transform_id,
         "charge_counterfactual_cohort": transform_id,
         "checkpoint_archive_snapshots": archive_id,
@@ -188,6 +297,10 @@ def _replay_fixture():
         "tool_calls": [
             {"id": "call-source", "tool_name": "generator"},
             {"id": literature_id, "tool_name": "v33-literature-basis-freezer"},
+            {
+                "id": methods_id,
+                "tool_name": "v33-search-sufficiency-methods-freezer",
+            },
             {"id": transform_id, "tool_name": "v33-matched-charge-transformer"},
             {"id": archive_id, "tool_name": "v33-checkpoint-archive"},
         ],
@@ -201,6 +314,11 @@ def _replay_fixture():
                 "child_tool_call_id": archive_id,
                 "parent_tool_call_id": transform_id,
                 "relation_type": "archives_transformed_candidates",
+            },
+            {
+                "child_tool_call_id": archive_id,
+                "parent_tool_call_id": methods_id,
+                "relation_type": "uses_search_sufficiency_methods",
             },
         ],
         "agent_decisions": [{"id": decision_id, "decision_type": "v33_saturation"}],
@@ -217,6 +335,12 @@ def _replay_fixture():
                 "direction": "input",
                 "relation_type": "observes_transform_contract",
             },
+            {
+                "decision_id": decision_id,
+                "tool_call_id": methods_id,
+                "direction": "input",
+                "relation_type": "observes_search_sufficiency_methods",
+            },
         ],
         "artifacts": artifacts,
         "evidence_artifacts": links,
@@ -228,7 +352,7 @@ def test_v33_replay_requires_complete_database_object_evidence_graph() -> None:
     graph, payloads = _replay_fixture()
     replay = verify_v33_evidence_graph(graph, payloads)
     assert replay["exact_replay"] is True
-    assert replay["archive_snapshot_count"] == 1
+    assert replay["archive_snapshot_count"] == 75
 
 
 def test_v33_replay_fails_on_missing_dependency_or_dominance_witness() -> None:
@@ -250,10 +374,11 @@ def test_v33_replay_fails_on_missing_dependency_or_dominance_witness() -> None:
         )
     )
     archive_payload = missing_witness_payloads.pop(archive_artifact["sha256"])
+    archive_payload["snapshots"][0]["removed_candidate_ids"] = ["ghost-candidate"]
     archive_payload["snapshots"][0]["removed_candidate_dominance_witnesses"] = {}
     archive_artifact["sha256"] = sha256_json(archive_payload)
     missing_witness_payloads[archive_artifact["sha256"]] = archive_payload
-    with pytest.raises(ValueError, match="dominance witnesses"):
+    with pytest.raises(ValueError, match="replay|dominance witnesses"):
         verify_v33_evidence_graph(missing_witness_graph, missing_witness_payloads)
 
 

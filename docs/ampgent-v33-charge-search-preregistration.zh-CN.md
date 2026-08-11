@@ -55,20 +55,40 @@ v32 只给出冻结集合内前沿。v33 使用 3 个开发 seed 和 2 个确认
 proposal，并对前 25/50/100/150/200 个可达 parent 保存 archive snapshot。即使中途看似饱和也跑完
 预算，禁止 adaptive early stop。
 
-膜作用、AMP/MIC 和风险家族分别记录非支配成员、明确支配 witness、archive turnover、累计首次
-发现的 family-local ε-cell、跨 seed attainment、成本以及 leave-one-model-out 稳定性。电荷剂量是
-干预标签和分层变量，不作为一个自动奖励“越高越好”的 Pareto 家族。
+膜作用、AMP/MIC 和风险家族分别记录精确非支配成员、支配 witness、当前与累计 family-local ε-cell、
+候选身份 turnover、ε-cell turnover、成本以及 leave-one-soft-model-out 稳定性。候选身份 turnover
+只作审计：同一个 ε-cell 中增加更多并列候选不代表目标空间仍在进步，因此不能单独阻止或证明饱和。
+真正进入末段稳定门的是新 ε-cell 和 ε-cell turnover。电荷剂量是干预标签和分层变量，不作为一个
+自动奖励“越高越好”的 Pareto 家族。
 
-只有预注册末段在所有家族、开发 seed 和确认 seed 同时满足新 ε-cell 与 turnover 门槛，才能称
-`saturated_within_protocol_and_budget`；否则只能称未饱和或因 shortfall 无法判断。禁止声称 global
-optimum，也禁止用加权总分或单一 hypervolume 宣布完成。
+开发与确认 seed 不再只分别通过同一个局部门槛。最终 checkpoint 先在 3 个开发 seed 和 2 个确认
+seed 内分别计算 strict-majority empirical attainment surface，再做双向检验：开发共识 cell 必须被
+每个确认 seed attain，确认共识 cell 也必须被每个开发 seed attain；空共识不能包装成通过。这个门
+回答的是独立随机流是否复现同一目标空间区域，而不是要求候选 ID 相同。
+
+leave-one-soft-model-out Jaccard 必须逐 seed、逐模型报告，但它与搜索饱和正交：低 Jaccard 标记
+“portfolio 依赖某个软模型”，高 Jaccard 也不证明模型正确。成本/新 ε-cell 必须落库，用于说明继续
+搜索的边际代价，但不设一个事后可调的成本停止阈值。只有固定预算完整、所有 seed-family 末段 cell
+稳定、开发/确认 attainment 双向复现、成本与模型依赖诊断均完整，才能称
+`saturated_within_protocol_and_budget`；否则只能称未饱和或因 shortfall 无法判断。
+
+该哲学来自随机多目标优化的集合值评估而非单指标收敛：Fonseca 与 Fleming 提出用重复独立运行和
+attainment 描述随机非支配集合；Fonseca 等形式化 EAF；Wagner 等指出黑箱多目标问题通常不能直接
+获得形式最优性证明，停止规则必须明确其进展证据组成；Goel 与 Stander 说明可跟踪多阶段 archive
+进展，但 archive 大小本身不是证明。方法依据冻结在
+`config/evidence/pareto_search_sufficiency_methods_v33.yaml`。这些论文不提供本项目的通用阈值；
+`1 cell/50 candidates` 和 `0.10` cell-turnover 是预注册的项目分辨率/实用稳定选择。
+
+无论门禁是否通过，都禁止声称 global optimum，也禁止用前沿大小、候选身份 turnover、加权总分或
+单一 hypervolume 宣布完成。
 
 ## 4. 数据库原生执行形态
 
 正式实现必须把 raw batch、重复/拒绝 proposal、全部 occurrence、parent eligibility、dose block ID、
-编辑位置、K/R/control 替换、全部指标 ToolCall、依赖、支配 witness、archive 增删、运行成本和
-AgentDecision 落 PostgreSQL。原始输出、冻结 manifest、环境和 checkpoint snapshot 作为内容寻址
-artifact 进入对象存储并由证据边引用。
+编辑位置、K/R/control 替换、全部指标 ToolCall、依赖、支配 witness、active/cumulative ε-cell、
+跨 seed attainment surface、leave-one-soft-model-out selection set、运行成本和 AgentDecision 落
+PostgreSQL。原始输出、冻结生物学/方法 manifest、环境和 checkpoint snapshot 作为内容寻址 artifact
+进入对象存储并由证据边引用。
 
 完成门槛是只用 PostgreSQL 与对象存储重建 raw order、七臂、每个指标 join、风险排除、逐 checkpoint
 archive、配对分析和充分性结论。CSV/Markdown 只能导出，不能作为缺失数据库证据的回填来源。
@@ -82,19 +102,25 @@ pair-ipTM、口袋覆盖、碰撞、姿势一致性和 Rosetta REU 不是 AceA �
 ## 6. 当前实现状态与剩余门禁
 
 - 已实现并测试文献驱动的确定性 1/2-residue K/R dose block、同位置 control 和逐 checkpoint archive；
-- 已保存 archive 增删、累计新 ε-cell 和移除成员的 dominance witness；
+- 已保存 archive 增删、active/cumulative ε-cell、cell turnover 和移除成员的 dominance witness；
 - 已实现未注册为 worker activity 的 PostgreSQL persistence primitives：baseline 复用原 parent，六个
   变体保存为带 `parent_id` 的 child；描述符 Evaluation、文献/生成/指标依赖、archive artifact、
   saturation AgentDecision 与完整 tool edges 均有显式持久化路径；
 - 已实现 database+object-store-only replay verifier：精确检查 parent/child、序列与顺序、七臂、
-  描述符容差、artifact SHA/角色、文献依赖、archive dominance witness 和 decision edge；缺失或歧义
-  fail-closed；lost-response retry 只恢复既有身份，不推进 raw stream 或复制 child；
+  描述符容差、artifact SHA/角色、文献与方法依赖、archive dominance witness 和 decision edge；缺失或
+  歧义 fail-closed；lost-response retry 只恢复既有身份，不推进 raw stream 或复制 child；
 - executable implementation 已冻结为 commit `fab5cac50b3d709e9435c732173bc22eba81a505`；归档
   `var/archives/ampgent-v33-evidence-fab5cac.zip` 的 SHA-256 为
   `1519d6b4e26546b5f28b2a5e7f0489f423232591dba25f9c5047eadfc2e3f55e`；
 - 尚未冻结执行环境 SHA 或 worker identity，也没有 v33 run/workflow；
 - 当前不得部署、生成、提交或运行，v32 三层 run 链保持只读锁定。下一门禁是用户另行授权 formal
   run，然后重新完成服务、worker 身份、唯一 run 和第 6 节全部门禁。
+
+2026-08-11 搜索充分性实现升级为 `v33-search-sufficiency-v2`：新增 active/cumulative ε-cell 历史、
+cell turnover、strict-majority development/confirmation attainment、成本完整性和逐软模型剔除诊断；
+database/object-store-only verifier 会从数据库候选指标与冻结流顺序重新计算全部 archive、模型剔除集合
+和最终合取 verdict，而不再信任导出的 assessment JSON。该升级没有运行生成器，也没有产生新短肽或
+正电性效果结果。
 
 ## 7. 主要原始证据
 
