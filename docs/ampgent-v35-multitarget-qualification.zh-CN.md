@@ -97,4 +97,3 @@ shortlist 中每个靶点的序列、结构、pocket、来源字节、SHA、硬�
 下一步仅允许编写并审计不少于 8 个新靶点的 qualification ledger。该 ledger 必须先冻结选择规则和来源
 字段，再开始逐靶点 web/database evidence audit；不能在本框架中直接写入具体 target 名称。靶点审计、
 panel selection、shadow 和 formal confirmation 都需要各自独立授权与不可变合同。
-
