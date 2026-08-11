@@ -150,13 +150,21 @@ run 证据；没有新 candidate、Evaluation 或搜索结论。
 这些研究规定的是干预哲学和对照结构，不直接提供 v33 的实验活性、安全或普适阈值。
 完整的 claim→source→禁止外推关系已冻结在
 `config/evidence/amp_charge_design_literature_v33.yaml`，SHA-256 为
-`309062137acc291ae58346fa9b80b5025a5438c7def097e67e235182bbb98e6a`。正式 run 必须把该 manifest 原始
-字节、SHA、literature freezer ToolCall、逐 claim projection 和 charge-transform 依赖边全部写入
-PostgreSQL/对象存储；仅在本文列出引用不算 Agent 证据已落库。
+`94096787d62233e9dca77f277bc24ec18ce512e9cb49db740255541f02b897e4`。本次 source-record 审计把
+R9 边界反例补入 claim-level manifest，并把 KR-12 机制模拟显式列入 benchmark；现在 benchmark 与
+manifest 的 PMID 集合精确闭合为九项来源，其中八项为原始实验、一项仅为机制模拟。每项还冻结
+NCBI PubMed XML 的 retrieval URI、原始记录 SHA-256、passage locator、证据等级和适用距离。
 
-文献目标冻结 checkpoint 为 commit `563fb7cf22f8d13c315474bba90bbb7d92d7aea6`；benchmark config
-SHA-256 为 `6ca56fa350cd9f4600327d1d1ad39c7d99e52174ec07736844c42eb7e94469ae`。内容归档
-`var/archives/ampgent-v33-literature-evidence-563fb7c.zip` 的 SHA-256 为
-`1d4f45140d84aa282fa11db98e0d4ef22580ed8511e67008257eb36987496aa9`。该 checkpoint 通过全量 ruff
-和 pytest（336 passed），但仍是 `execution_authorized=false`、`submitted=false`；没有生成新序列，
-没有得到正电性、AMP/MIC、膜作用或风险结果。
+三组跨研究冲突证据也成为正式合同：K/R 方向依 scaffold 而变；电荷数量与活性/安全不是单调关系；
+正电本身不足以推出抗菌活性。它们要求 v33 比较同 scaffold、同位置、同编辑数的 K/R 与中性对照，
+而不能给出全局 K/R 胜者或“越正越好”的目标。
+
+未来正式 run 必须把 manifest 和九份精确 source-record 字节写入内容寻址对象存储，并把各记录 SHA、
+passage locator、claim projection、冲突 witness、literature-freezer ToolCall 与 charge-transform 依赖边
+写入 PostgreSQL。当前这些网页记录只完成了预注册时的外部核验，尚未进入任何 formal evidence graph；
+若来源字节漂移，必须阻断并版本化 manifest，禁止静默刷新或从本文回填。
+
+source-record 审计实现冻结为 commit `0bb8fb65c7bc42f427e9c06e55c2fab4cb8a7e26`；回填实现 revision 后的
+benchmark config SHA-256 为 `5bcf988937a0a51d39b4304c3e98ef454563abbe887fd1206d114d2e4aebfc54`。
+该阶段仍是 `execution_authorized=false`、`submitted=false`；没有生成新序列，也没有得到正电性、
+AMP/MIC、膜作用或风险结果。

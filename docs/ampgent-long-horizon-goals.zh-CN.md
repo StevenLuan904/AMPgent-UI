@@ -113,14 +113,21 @@ checkpoint archive、dominance witness、saturation AgentDecision 和对象存�
 formal-run 授权前，这仍不表示 v33 已执行或产生结果。
 
 外部证据现进一步冻结为 `config/evidence/amp_charge_design_literature_v33.yaml`，SHA-256
-`309062137acc291ae58346fa9b80b5025a5438c7def097e67e235182bbb98e6a`。它逐项保存原始研究身份、
-研究设计、能支持的 claim 和禁止外推，并明确：v32 自生成分布仅诊断 generator coverage 与预算可达性；
-生物学目标是同 scaffold 的 K/R 身份、1/2-residue 剂量和位置效应，不是任何内部 quantile 或统一净电荷
-区间。正式 run 必须把 manifest 字节、claim projection 与 ToolCall 依赖写入证据图。
-该证据 checkpoint 为 commit `563fb7cf22f8d13c315474bba90bbb7d92d7aea6`，benchmark config SHA-256
-`6ca56fa350cd9f4600327d1d1ad39c7d99e52174ec07736844c42eb7e94469ae`，内容归档 SHA-256
-`1d4f45140d84aa282fa11db98e0d4ef22580ed8511e67008257eb36987496aa9`，全量测试 `336 passed`。
-它回答了“目标从哪里来”，但未回答“哪种编辑有效”，因为 v33 仍未获执行授权。
+`94096787d62233e9dca77f277bc24ec18ce512e9cb49db740255541f02b897e4`。它逐项保存九项原始研究记录
+身份，其中八项为实验、一项仅为机制模拟，并冻结 source-record SHA、passage locator、证据等级和
+适用距离。R9 的高正电无活性边界反例与 KR-12 机制证据现和 benchmark 身份精确闭合；三组冲突
+witness 明确规定：K/R 没有跨 scaffold 的全局赢家，电荷数量不是活性/风险的单调目标，正电本身也
+不足以推出抗菌活性。
+
+v32 自生成分布仍只诊断 generator coverage 与预算可达性；生物学目标是同 scaffold 的 K/R 身份、
+1/2-residue 剂量和位置效应，不是任何内部 quantile 或统一净电荷区间。正式 run 必须把 manifest 和
+九份精确 source-record 字节、逐记录 SHA/passage、claim projection、冲突 witness 与 ToolCall 依赖写入
+数据库—对象存储证据图。当前外部网页核验尚未落入 formal graph，来源漂移必须阻断并版本化，禁止
+静默刷新。
+
+source-record 审计实现为 commit `0bb8fb65c7bc42f427e9c06e55c2fab4cb8a7e26`，回填后的 benchmark
+config SHA-256 为 `5bcf988937a0a51d39b4304c3e98ef454563abbe887fd1206d114d2e4aebfc54`。
+它进一步回答了“目标从哪里来、冲突如何治理”，但仍未回答“哪种编辑有效”，因为 v33 未获执行授权。
 
 ### Q2：当前 Pareto 搜索是否已经接近可达最优？
 

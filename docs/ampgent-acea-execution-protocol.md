@@ -480,19 +480,20 @@ ToolCall、文献/transform/archive 依赖缺失、移除成员无 dominance wit
 
 2026-08-11 外部文献复核已把 claim-level evidence manifest 冻结为
 `config/evidence/amp_charge_design_literature_v33.yaml`，SHA-256 为
-`309062137acc291ae58346fa9b80b5025a5438c7def097e67e235182bbb98e6a`。其中保存至少七组原始配对研究的
-source identity、scaffold/intervention、supported claim 和禁止外推；研究共同支持相对的同 scaffold
-`+1/+2 × K/R × 同位置对照`问题，但不支持统一净电荷阈值或全局 K/R 胜者。config loader 会校验该
-manifest 的内容 SHA、来源身份唯一性和 anti-extrapolation 规则。该证据尚未进入任何 formal Agent run；
-正式执行时必须作为 literature-freezer ToolCall artifact 与 charge-transform dependency 写入 PostgreSQL
-和对象存储，不能从本地文档回填。
+`94096787d62233e9dca77f277bc24ec18ce512e9cb49db740255541f02b897e4`。source-record 审计现使
+benchmark 与 manifest 精确闭合为九项 PMID：八项原始实验和一项仅作机制支持的 KR-12 模拟；R9
+“高正电不足以推出抗菌活性”的边界反例已从叙事补入 claim-level manifest。每项均冻结 retrieval URI、
+NCBI PubMed XML SHA-256、passage locator、证据等级和适用距离。config loader 还要求三组显式冲突
+witness：K/R 方向依 scaffold 而变、电荷数量与活性/安全非单调、正电本身不足以推出活性。
 
-文献目标冻结 checkpoint 为 commit `563fb7cf22f8d13c315474bba90bbb7d92d7aea6`；当前 v33 benchmark
-config SHA-256 为 `6ca56fa350cd9f4600327d1d1ad39c7d99e52174ec07736844c42eb7e94469ae`。内容归档
-`var/archives/ampgent-v33-literature-evidence-563fb7c.zip` 的 SHA-256 为
-`1d4f45140d84aa282fa11db98e0d4ef22580ed8511e67008257eb36987496aa9`，验证为 ruff clean、pytest
-`336 passed`。该提交只冻结外部证据驱动的目标与 loader 门禁；`execution_authorized=false`、
-`submitted=false`，没有新序列或计算效果结果。
+正式执行必须把 manifest 与九份精确 source-record 字节作为 literature-freezer artifacts 写入内容寻址
+对象存储，并将逐记录 SHA/passage、claim projection、冲突 witness 和 charge-transform dependency 写入
+PostgreSQL。当前网页核验不等于这些证据已进入 formal Agent graph；来源字节漂移必须阻断并版本化
+manifest，禁止静默刷新、用本地文档回填或依据 v32 自生成分布改变生物学目标。
+
+source-record 审计实现冻结为 commit `0bb8fb65c7bc42f427e9c06e55c2fab4cb8a7e26`；当前 v33 benchmark
+config SHA-256 为 `5bcf988937a0a51d39b4304c3e98ef454563abbe887fd1206d114d2e4aebfc54`。该阶段仍为
+`execution_authorized=false`、`submitted=false`，没有新序列或计算效果结果。
 
 2026-08-11 搜索充分性合同升级为 `v33-search-sufficiency-v2`。方法依据冻结在
 `config/evidence/pareto_search_sufficiency_methods_v33.yaml`，原始字节 SHA-256 为
