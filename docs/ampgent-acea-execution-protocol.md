@@ -301,3 +301,23 @@ Completion-state commit `91c3db5af21003fdd818898720febb24bfe3ae1a` passed `ruff 
 the full suite (`256 passed`). Its content archive is
 `var/archives/ampgent-v32-completion-91c3db5.zip`, SHA-256
 `bf6ab2c0197495d6412694d0ab475d66031b89591e24f9196b455cf0e4b17d95`.
+
+## 14. v32 database-native acceptance layer (2026-08-11 append-only update)
+
+The next authorized engineering stage is a read-only acceptance child run governed by
+`config/benchmarks/amp_multiobjective_acceptance_v32.yaml`. It preserves the completed v32 parent
+run exactly and records all new interpretation/export evidence under a new `ExperimentRun` whose
+`parent_run_id` points to the locked v32 run. Cross-run mutation, candidate copying, rescoring,
+threshold changes, and parent backfill are forbidden.
+
+The child run must derive five content-addressed artifacts from PostgreSQL plus object storage only:
+the 300-row candidate table, the 24-row portfolio table, the four-row lane summary, an acceptance
+manifest, and a derived replay bundle. The export and replay verifier are typed ToolCalls in the
+child run with a dependency edge; the acceptance verdict is an AgentDecision with exact tool edges.
+Local CSV/JSON files are disposable copies of those artifacts.
+
+At this append, implementation and contract tests pass (`258 passed`, ruff clean), but execution is
+not authorized and no child run has been created. The next step is to commit/push and archive the
+implementation, freeze its source revision into the acceptance contract, rerun all gates, and only
+then submit the single database-native acceptance child run. A successful verdict means only
+`ready_for_v33_preregistration`; it does not authorize v33 generation or execution.

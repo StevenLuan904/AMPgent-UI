@@ -66,3 +66,9 @@ v32 中每一步都必须先落 PostgreSQL：原始生成调用、冻结候选�
 - 精确重放：通过；没有使用加权总分；没有优化正电性
 
 这 24 条是互补的计算候选组合，不是实验活性、安全性、AceA 结合或亲和力证据。尤其是膜作用和 AMP/MIC lane 中多条候选仍有单模型溶血高风险警告；风险控制 lane 则以较低软风险换取较弱的预测活性。冲突没有被平均或隐藏。显式正电性仍按计划留给先预注册的 v33。
+
+## v32 数据库原生验收层
+
+正式 v32 run 保持只读。后续候选解释与导出使用独立的派生 child run，精确协议为 `config/benchmarks/amp_multiobjective_acceptance_v32.yaml`。它不得生成新序列、重新评分、改变阈值或向父 run 回写；只允许从 PostgreSQL 与内容寻址对象存储复原父证据。
+
+验收层必须生成并落库五类 artifact：300 条全候选 CSV、24 条组合 CSV、4 条路线汇总 CSV、验收 manifest JSON、派生精确重放 JSON。导出 ToolCall 与重放 ToolCall、二者依赖边、AgentDecision、artifact links 和生命周期事件全部保存在 child run。只有父证据计数、原始 artifact 字节 SHA、父组合重放和派生导出重放均精确通过，才可以给出 `ready_for_v33_preregistration`；该结论只授权编写 v33 预注册，不授权生成或运行。

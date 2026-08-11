@@ -1,0 +1,55 @@
+benchmark_id: amp_multiobjective_acceptance_v32
+version: v32.acceptance.0.1
+execution_status: preregistered
+execution_authorized: false
+parent_run_id: d695853e-cb94-4608-ad71-e4d7c4df1e85
+source_manifest_path: config/benchmarks/amp_multiobjective_portfolio_v32.yaml
+expected_parent:
+  status: succeeded
+  candidate_count: 300
+  tool_call_count: 10
+  evaluation_count: 6000
+  tool_call_dependency_count: 24
+  agent_decision_count: 1
+  selected_count: 24
+  eligible_count: 191
+  concordant_risk_red_count: 109
+  portfolio_artifact_sha256: d50b0b77e8e04f86f6b8d48fa3bc24f9d96a43aa9016a315f4004cca0db6d0e3
+  database_replay_bundle_sha256: 4c3eef0a74f6db34503d605154c5d2ea7aa5035cc706c1d33d7001b363315634
+required_exports:
+  - all_candidates_csv
+  - portfolio_candidates_csv
+  - lane_summary_csv
+  - acceptance_manifest_json
+  - derived_replay_bundle_json
+v33_preregistration_gates:
+  exact_database_replay: true
+  exact_parent_counts: true
+  source_artifacts_content_verified: true
+  selected_count: 24
+  selected_per_lane: 6
+  selected_per_seed_per_lane: 2
+  no_selected_concordant_risk_red: true
+  no_weighted_total_score: true
+  charge_was_observe_only: true
+  selected_charge_values_finite: true
+  all_exports_content_addressed: true
+scientific_contract:
+  parent_run_read_only: true
+  child_run_required: true
+  database_and_object_store_only: true
+  csv_is_export_not_source_of_truth: true
+  no_new_generation: true
+  no_parent_backwrite: true
+  no_threshold_change: true
+  no_experimental_activity_claim: true
+  no_experimental_safety_claim: true
+  v33_readiness_means_preregistration_only: true
+implementation:
+  module: pepagent.v32_acceptance
+  revision: pending
+formal_acceptance_run:
+  submit_exactly_once: true
+  submitted: false
+  run_id: null
+
