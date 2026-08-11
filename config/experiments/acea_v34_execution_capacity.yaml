@@ -1,0 +1,100 @@
+capacity_contract_id: acea_v34_execution_capacity
+version: v34-capacity-v1
+execution_status: preregistered_not_authorized
+
+scope:
+  benchmark_id: amp_knowledge_pepshot_ablation_v34
+  expected_parent_count: 24
+  expected_arm_count: 4
+  expected_episode_count: 96
+  maximum_retained_proposals_per_episode: 4
+  structure_poses_per_retained_proposal: 1
+  rosetta_decoys_per_pose: 8
+  maximum_boltz_poses: 384
+  maximum_rosetta_decoys: 3072
+
+gpu_capacity:
+  boltz_worker_role: boltz2
+  maximum_concurrent_workers: 3
+  activity_slots_per_worker: 1
+  one_worker_process_per_physical_gpu: true
+  gpu_oversubscription_forbidden: true
+  eligible_placements:
+    - {host: "192.168.99.19", gpu_index: 5, activation: exact_preflight_required}
+    - {host: synth, gpu_index: 5, activation: exact_preflight_required}
+    - {host: synth, gpu_index: 6, activation: exact_preflight_required}
+  prohibited_placements:
+    - {host: "192.168.99.32", gpu_index: any}
+    - {host: "192.168.99.19", gpu_index: 4}
+  placement_gates:
+    - physical_host_gpu_pid_role_identity_exact
+    - active_release_and_source_revision_exact
+    - task_queue_and_environment_exact
+    - no_foreign_or_unowned_process_on_device
+    - no_active_workflow_during_worker_topology_change
+  foreign_process_policy: exclude_device_without_stopping_or_preempting_process
+  dynamic_worker_addition_during_formal_run_forbidden: true
+
+cpu_capacity:
+  rosetta_worker_role: rosetta
+  fixed_concurrent_activity_slots: 16
+  threads_per_activity: 1
+  require_verified_free_logical_cores_at_least: 16
+  OMP_NUM_THREADS: 1
+  MKL_NUM_THREADS: 1
+  topology_change_during_formal_run_forbidden: true
+  foreign_process_policy: reduce_available_host_capacity_before_authorization_do_not_preempt
+
+fair_scheduler:
+  scheduling_unit: parent_arm_episode
+  queue_order: deterministic_round_robin_by_arm_order_then_parent_order
+  queue_sort_fields: [arm_order, parent_order]
+  arm_identity_visible_to_scheduler: false
+  maximum_inflight_episodes_per_parent: 1
+  maximum_inflight_episodes: 24
+  structure_queue_inherits_episode_order: true
+  no_arm_or_provider_priority: true
+  no_cross_arm_memory: true
+  completed_or_failed_episode_never_refilled_or_substituted: true
+
+retry_contract:
+  maximum_attempts_per_logical_tool_call: 2
+  recovery_order:
+    - database_idempotency_lookup
+    - object_store_content_hash_lookup
+    - retry_same_logical_call_only_if_no_committed_success_exists
+  retryable_failure_classes:
+    - transport_timeout
+    - worker_heartbeat_loss
+    - transient_database_or_object_store_unavailability
+  nonretryable_failure_classes:
+    - identity_or_sequence_mismatch
+    - input_or_output_content_hash_mismatch
+    - source_release_or_environment_drift
+    - unsafe_or_unowned_resource
+    - nonfinite_scientific_output
+    - broken_candidate_or_endpoint_mapping
+  same_input_seed_protocol_and_idempotency_key_required: true
+  reseeding_forbidden: true
+  refill_or_substitution_forbidden: true
+  retry_does_not_create_additional_scientific_observation: true
+  exhausted_retry_policy: fail_formal_completion_without_replacement_run
+
+database_evidence:
+  PostgreSQL_is_authoritative: true
+  object_store_is_content_addressed: true
+  capacity_contract_artifact_required: true
+  worker_placement_snapshot_artifact_required: true
+  scheduler_queue_manifest_artifact_required: true
+  attempt_ledger_artifact_required: true
+  persist_every_attempt_as_typed_lifecycle_event: true
+  persist_worker_host_gpu_pid_role_release_and_environment: true
+  persist_queue_position_dispatch_start_finish_and_outcome: true
+  persist_retry_classification_and_idempotency_recovery: true
+  database_object_store_only_replay_required: true
+  local_logs_csv_and_markdown_are_exports_only: true
+
+formal_run:
+  execution_authorized: false
+  submitted: false
+
