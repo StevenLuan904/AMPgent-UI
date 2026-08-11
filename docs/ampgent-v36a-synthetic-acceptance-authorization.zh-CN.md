@@ -50,3 +50,8 @@ trial、真实 promotion 或候选生成。那些阶段仍须各自预注册和�
 回填 revision 后的 config SHA-256 为
 `62a18e0f13f3bd248176ab91cf1300fd82c4da9770e40d8d4b5d07366a4a5387`；全量验证为 ruff clean、pytest
 `346 passed`。`execution_authorized=false`、`submitted=false`。
+
+revision 回填 checkpoint 为 `6299b233eef751004eec946f4ee2eab1edacdc1b`；内容归档
+`var/archives/ampgent-v36a-preregistration-6299b23.zip` 的 SHA-256 为
+`b1a7e1f4c4a2ee40a4f2838461ac4ebaf61cabd0f2a7df92aeabe04f535a5e41`。归档只包含预注册与实现快照，
+不是数据库验收 receipt。
