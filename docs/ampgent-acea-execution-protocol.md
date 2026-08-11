@@ -899,3 +899,6 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
 - Latest repository validation after the runtime freezer: Ruff clean; pytest `583 passed, 1
   skipped`. Formal submission remains blocked until every runtime descriptor validates and the
   allowed worker host/PID/GPU/release mapping is current.
+- Runtime freezer checkpoint commit is `86f9a99`; content archive
+  `var/archives/ampgent-v37-runtime-identities-86f9a99.zip` has SHA-256
+  `6EB4060A1B654EE99C16394BD3195E76DF9F50F8B0D51648631B4DC28B334BB2`.
