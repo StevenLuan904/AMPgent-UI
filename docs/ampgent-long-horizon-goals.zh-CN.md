@@ -321,6 +321,13 @@ v36 当前框架见 `docs/ampgent-v36-harness-evolution.zh-CN.md`，精确合同
 不授权真实历史 replay、shadow、前瞻 trial 或候选生成。下一独立阶段仅部署迁移和做合成闭环验收，
 真实演化仍需再授权。
 
+实现 checkpoint 为 commit `c185476a0db34bb2cf802aba89299a8593520abc`，config SHA-256 为
+`8ce6fe07689851c354ecb01cc620f081d80c9ede03ee6a81e7e6a3964a0f2528`，内容归档 SHA-256 为
+`a0e6f32464e37d44193a4fe2efd1cdc16a7dc6b19d5f70d643d12d1ce87d5c3c`；全量测试为
+`334 passed`。repository 现在会在写入时拒绝跨 scope parent/rollback、非祖先回滚、未通过上一关的
+trial、缺失独立裁决 run、非配对或未完成 outcome，以及完成后追加 assignment/outcome。该结果仍只是
+可验收的工程底座，不是 harness 增益证据。
+
 版本号是当前规划，不是正式 run 授权。任何生成、阈值、候选选择或执行必须先有独立冻结 config、
 提交/push、服务与 worker 门禁、唯一 run 检查。长期路线允许被新证据修订，但修订必须追加理由，不能
 静默改写历史问题或成功标准。

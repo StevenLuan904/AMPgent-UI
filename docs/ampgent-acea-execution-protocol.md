@@ -678,3 +678,13 @@ database+object-store-only offline replay verifier 已在仓库实现。prospect
 `286bc3888f675ef5dc794e40aad8903ad173674dcaf554d1936e185962f2043e`；内容归档
 `var/archives/ampgent-v36-governance-f7b58f9.zip` 的 SHA-256 为
 `20b43305c7cc6586c977262638f3273da776eb3db4898926edb8e88bb2182c66`。
+
+typed replay 实现已冻结并 push 到 commit `c185476a0db34bb2cf802aba89299a8593520abc`；当前 config
+SHA-256 为 `8ce6fe07689851c354ecb01cc620f081d80c9ede03ee6a81e7e6a3964a0f2528`。内容归档
+`var/archives/ampgent-v36-typed-replay-c185476.zip` 的 SHA-256 为
+`a0e6f32464e37d44193a4fe2efd1cdc16a7dc6b19d5f70d643d12d1ce87d5c3c`。验证为 ruff clean、
+pytest `334 passed`，且 migration `0009_candidate_occurrences:0010_harness_evolution_lineage` 的
+PostgreSQL offline DDL 成功生成。全历史 offline DDL 会在旧 migration
+`0002_tool_call_replay_input` 的 reflection 上停止，因此共享 PostgreSQL 部署仍须独立授权，并在真实
+事务环境执行完整 migration、rollback 与合成 database/object-store replay acceptance。当前禁止把
+repository 实现、合成 fixture 或迁移区间 DDL 解释为真实 harness 运行或改进。

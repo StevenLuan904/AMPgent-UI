@@ -108,3 +108,13 @@ challenger，也不生成短肽。真实历史 replay、shadow 和 prospective t
 `286bc3888f675ef5dc794e40aad8903ad173674dcaf554d1936e185962f2043e`。内容归档
 `var/archives/ampgent-v36-governance-f7b58f9.zip` 的 SHA-256 为
 `20b43305c7cc6586c977262638f3273da776eb3db4898926edb8e88bb2182c66`。
+
+typed replay 实现 checkpoint 为 commit `c185476a0db34bb2cf802aba89299a8593520abc`；当前 config
+SHA-256 为 `8ce6fe07689851c354ecb01cc620f081d80c9ede03ee6a81e7e6a3964a0f2528`。内容归档
+`var/archives/ampgent-v36-typed-replay-c185476.zip` 的 SHA-256 为
+`a0e6f32464e37d44193a4fe2efd1cdc16a7dc6b19d5f70d643d12d1ce87d5c3c`。该 checkpoint 通过
+`ruff check src tests migrations`、全量 `pytest`（334 passed）及精确迁移区间
+`0009_candidate_occurrences:0010_harness_evolution_lineage` 的 PostgreSQL offline DDL 生成。全历史
+offline DDL 仍会在旧迁移 `0002_tool_call_replay_input` 的 reflection 上停止；这不影响新迁移区间验证，
+但共享 PostgreSQL 部署前仍必须在真实事务环境重新执行完整 migration acceptance。上述足迹只证明
+typed 底座可进入部署验收，不证明任何 harness 已改善，也不授权真实试验。
