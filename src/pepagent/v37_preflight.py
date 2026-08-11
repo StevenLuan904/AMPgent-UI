@@ -24,9 +24,20 @@ def build_v37_static_preflight(config_path: Path) -> dict[str, Any]:
         verified_sources[prefix] = observed
     plan = build_v37_evidence_plan(manifest)
     experiment_spec = validate_v37_experiment_spec(manifest, config_path)
+    manifest_sha256 = sha256_json(manifest.model_dump(mode="json"))
+    formal_submission_key = sha256_json(
+        {
+            "benchmark_id": manifest.benchmark_id,
+            "benchmark_version": manifest.version,
+            "manifest_sha256": manifest_sha256,
+        }
+    )
     result: dict[str, Any] = {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "benchmark_id": manifest.benchmark_id,
+        "benchmark_version": manifest.version,
+        "manifest_sha256": manifest_sha256,
+        "formal_submission_key": formal_submission_key,
         "config_sha256": sha256_bytes(config_path.read_bytes()),
         "evidence_plan_sha256": plan["plan_sha256"],
         "source_contract_sha256": verified_sources,

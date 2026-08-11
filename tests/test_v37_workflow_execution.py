@@ -12,6 +12,8 @@ from pepagent.v37_preflight import (
     build_v37_static_preflight,
 )
 from pepagent.v37_submit_cli import (
+    build_v37_formal_submission_key,
+    build_v37_workflow_id,
     ensure_no_existing_v37_run,
     load_v37_submission_bundle,
 )
@@ -103,6 +105,34 @@ async def test_v37_submit_duplicate_gate_fails_closed() -> None:
             benchmark_id="amp_rapid_champion_generation_v37",
             benchmark_version="v37.0.0-preregistered",
         )
+
+
+def test_v37_formal_identity_and_workflow_id_are_content_derived() -> None:
+    inputs = {
+        "benchmark_id": "amp_rapid_champion_generation_v37",
+        "benchmark_version": "v37.0.0-preregistered",
+        "manifest_sha256": "a" * 64,
+    }
+    first = build_v37_formal_submission_key(**inputs)
+    second = build_v37_formal_submission_key(**inputs)
+    assert first == second
+    assert len(first) == 64
+    assert build_v37_workflow_id(first) == f"pepagent-rapid-champion-v37-{first}"
+    assert build_v37_formal_submission_key(
+        **{**inputs, "manifest_sha256": "b" * 64}
+    ) != first
+
+
+def test_v37_preflight_freezes_database_submission_identity() -> None:
+    static = build_v37_static_preflight(
+        ROOT / "config/benchmarks/amp_rapid_champion_generation_v37.yaml"
+    )
+    assert static["schema_version"] == "1.1"
+    assert static["formal_submission_key"] == build_v37_formal_submission_key(
+        benchmark_id=static["benchmark_id"],
+        benchmark_version=static["benchmark_version"],
+        manifest_sha256=static["manifest_sha256"],
+    )
 
 
 def test_v37_submission_bundle_revalidates_exact_experiment_spec(tmp_path: Path) -> None:

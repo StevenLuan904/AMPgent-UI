@@ -37,11 +37,18 @@ class Target(Base, TimestampMixin):
 
 class ExperimentRun(Base, TimestampMixin):
     __tablename__ = "experiment_runs"
+    __table_args__ = (
+        UniqueConstraint(
+            "formal_submission_key",
+            name="uq_experiment_runs_formal_submission_key",
+        ),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     target_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("targets.id"), nullable=False)
     spec_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     spec_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    formal_submission_key: Mapped[str | None] = mapped_column(String(64))
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="created")
     temporal_workflow_id: Mapped[str | None] = mapped_column(String(255), unique=True)
     temporal_run_id: Mapped[str | None] = mapped_column(String(255))
