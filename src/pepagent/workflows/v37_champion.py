@@ -7,6 +7,12 @@ from typing import Any
 from temporalio import workflow
 from temporalio.common import RetryPolicy
 
+from pepagent.v37_capacity import (
+    V37_PIPELINE_STAGES,
+    build_v37_pipeline_manifest,
+    build_v37_pipeline_queue_transition_ledger,
+)
+
 
 async def _bounded_ordered_map(
     items: list[dict[str, Any]],
@@ -118,6 +124,15 @@ class RapidChampionGenerationV37Workflow:
                 for result in generation_results
                 for candidate in result["candidates"]
             ]
+            pipeline_manifest = build_v37_pipeline_manifest(
+                [
+                    {
+                        "proposal_ordinal": ordinal,
+                        "occurrence_id": candidate["id"],
+                    }
+                    for ordinal, candidate in enumerate(all_candidates, start=1)
+                ]
+            )
 
             metric_plugins = manifest["stage_1_sequence_evaluation"]["metric_plugins"]
 
@@ -362,6 +377,24 @@ class RapidChampionGenerationV37Workflow:
                 for item in pepshot["inspections"]
                 if item["disposition"] == "retain"
             )
+            shortlisted_ids = {str(item["id"]) for item in shortlist["candidates"]}
+            stage_outcomes = {}
+            for item in pipeline_manifest["items"]:
+                occurrence_id = str(item["occurrence_id"])
+                for stage in V37_PIPELINE_STAGES:
+                    stage_outcomes[item["stage_logical_ids"][stage]] = {
+                        "outcome": (
+                            "succeeded"
+                            if stage in {"proposal", "evaluation"}
+                            or occurrence_id in shortlisted_ids
+                            else "skipped_not_selected"
+                        ),
+                        "backpressure_observed": False,
+                    }
+            transition_ledger = build_v37_pipeline_queue_transition_ledger(
+                pipeline_manifest=pipeline_manifest,
+                stage_outcomes=stage_outcomes,
+            )
             final = await workflow.execute_activity(
                 "persist_v37_final_portfolio_and_replay",
                 {
@@ -370,6 +403,9 @@ class RapidChampionGenerationV37Workflow:
                     "structurally_eligible_candidate_ids": structurally_eligible,
                     "structure_summary": structure_summary,
                     "pepshot": pepshot,
+                    "worker_placement_snapshot": request["worker_placement_snapshot"],
+                    "pipeline_manifest": pipeline_manifest,
+                    "pipeline_queue_transition_ledger": transition_ledger,
                 },
                 task_queue=queues["workflow_and_control"],
                 start_to_close_timeout=timedelta(hours=2),

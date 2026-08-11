@@ -96,13 +96,6 @@ def _inventory(root: Path, relative_paths: list[str] | None = None) -> list[dict
     ]
 
 
-def _git_files(root: Path) -> list[str]:
-    output = subprocess.check_output(
-        ["git", "-C", str(root), "ls-files", "-z"],
-    )
-    return sorted(item.decode("utf-8") for item in output.split(b"\0") if item)
-
-
 def _verify_hydramp_provider_assets(provider_root: Path) -> None:
     expected = {
         "releases/hydramp-safe-pca-v1/acceptance.receipt.json": (
@@ -226,10 +219,16 @@ def _generator_definitions(workspace: Path) -> list[dict[str, Any]]:
             "runtime_name": "ampgan-py38",
             "adapter": "src/pepagent/model_workers/ampgan_v2_generator_cli.py",
             "adapter_version": "ampgan-v2-generator-v1-positive-conditions-unfiltered",
-            "source_root": "var/research/amp_gan",
-            "source_uri": "https://gitlab.com/vail-uvm/amp-gan",
+            "source_root": (
+                f"var/releases/{_RELEASE_VERSION}/ampgan_v2/"
+                "source-1a2ac60bdc268f99"
+            ),
+            "source_uri": (
+                f"workspace-release://var/releases/{_RELEASE_VERSION}/ampgan_v2/"
+                "source-1a2ac60bdc268f99"
+            ),
             "source_revision": "1009476bdb988707ff260def863d694549dc18b0",
-            "source_files": _git_files(workspace / "var/research/amp_gan"),
+            "source_files": None,
             "model_root": f"var/releases/{_RELEASE_VERSION}/ampgan_v2/model",
             "model_uri": f"workspace-release://var/releases/{_RELEASE_VERSION}/ampgan_v2/model",
             "model_revision": "ampgan-v2-gan-1606-a5e7cafa16c33010",

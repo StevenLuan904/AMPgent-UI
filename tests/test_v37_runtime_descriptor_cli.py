@@ -112,6 +112,23 @@ def test_v37_descriptor_freezer_preserves_provider_metadata(tmp_path: Path) -> N
     )
 
 
+def test_v37_descriptor_freezer_accepts_one_of_multiple_provider_entrypoints(
+    tmp_path: Path,
+) -> None:
+    paths = _fixture(tmp_path)
+    base_path = Path(paths["base"])
+    base = json.loads(base_path.read_text(encoding="utf-8"))
+    kbctl = tmp_path / "kbctl.py"
+    kbctl.write_text("print('administration only')\n", encoding="utf-8")
+    base["kbctl_path"] = str(kbctl)
+    base_path.write_text(json.dumps(base), encoding="utf-8")
+
+    descriptor = _freeze(paths)
+
+    assert descriptor["adapter_path"] == str(paths["adapter"])
+    assert descriptor["kbctl_path"] == str(kbctl)
+
+
 def test_v37_descriptor_freezer_rejects_identity_and_path_drift(tmp_path: Path) -> None:
     paths = _fixture(tmp_path)
     base_path = Path(paths["base"])

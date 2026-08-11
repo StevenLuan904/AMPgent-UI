@@ -373,6 +373,8 @@ def test_formal_provider_and_external_metric_launches_use_the_typed_guard() -> N
     assert "consume_external_metric_result(" in metric_source
     assert "_run_guarded_generic_runtime(" in metric_source
     assert "_run_guarded_generic_runtime(" in knowledge_source
+    assert "query=query_text" in knowledge_source
+    assert "query=str(request[\"query\"])" not in knowledge_source
     assert pepshot_source.count("_run_guarded_generic_runtime(") == 2
     assert "v37_runtime_receipts" in knowledge_source
     assert "v37_runtime_receipts" in pepshot_source

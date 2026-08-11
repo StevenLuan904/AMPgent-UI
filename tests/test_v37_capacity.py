@@ -9,12 +9,49 @@ import yaml
 from pepagent.v37_capacity import (
     V37CapacityContract,
     build_v37_pipeline_manifest,
+    build_v37_pipeline_queue_transition_ledger,
     build_v37_static_capacity_preflight,
     load_v37_capacity_contract,
+    validate_v37_capacity_replay_artifacts,
+    validate_v37_worker_placement_snapshot,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT_PATH = ROOT / "config" / "experiments" / "acea_v37_rapid_champion_capacity.yaml"
+
+
+def _worker_snapshot() -> dict:
+    roles = (
+        ("v37-control", "pepagent-control-v37"),
+        ("v37-generator", "pepagent-generator-v37"),
+        ("v37-provider", "pepagent-provider-v37"),
+        ("metrics", "pepagent-cpu-metrics"),
+        ("boltz2", "pepagent-gpu-boltz2"),
+        ("rosetta", "pepagent-cpu-rosetta"),
+    )
+    return {
+        "schema_version": "v37.worker-placement-snapshot.1",
+        "captured_at": "2026-08-12T00:00:00Z",
+        "active_workflow_count": 0,
+        "topology_frozen_for_run": True,
+        "placements": [
+            {
+                "physical_host": "synth" if role == "boltz2" else "local",
+                "gpu_index": 6 if role == "boltz2" else None,
+                "pid": 2000 + index,
+                "role": role,
+                "task_queue": queue,
+                "poller_identity": f"{2000 + index}@test",
+                "source_revision": "a" * 40,
+                "release_sha256": "b" * 64,
+                "environment_sha256": "c" * 64,
+                "weights_sha256": "d" * 64 if role == "boltz2" else None,
+                "ampgent_owned": True,
+                "foreign_process_present": False,
+            }
+            for index, (role, queue) in enumerate(roles)
+        ],
+    }
 
 
 def test_v37_capacity_contract_freezes_rapid_pipeline_without_authorization() -> None:
@@ -94,4 +131,38 @@ def test_v37_pipeline_manifest_rejects_noncontiguous_or_duplicate_occurrences() 
                 {"proposal_ordinal": 1, "occurrence_id": "a"},
                 {"proposal_ordinal": 2, "occurrence_id": "a"},
             ]
+        )
+
+
+def test_v37_worker_snapshot_requires_every_frozen_role_and_queue() -> None:
+    snapshot = _worker_snapshot()
+    assert validate_v37_worker_placement_snapshot(snapshot) is snapshot
+    snapshot["placements"] = snapshot["placements"][1:]
+    with pytest.raises(ValueError, match="task queue coverage"):
+        validate_v37_worker_placement_snapshot(snapshot)
+
+
+def test_v37_capacity_replay_rejects_transition_tampering() -> None:
+    manifest = build_v37_pipeline_manifest(
+        [{"proposal_ordinal": 1, "occurrence_id": "candidate-1"}]
+    )
+    outcomes = {
+        logical_id: {"outcome": "succeeded", "backpressure_observed": False}
+        for logical_id in manifest["items"][0]["stage_logical_ids"].values()
+    }
+    ledger = build_v37_pipeline_queue_transition_ledger(
+        pipeline_manifest=manifest,
+        stage_outcomes=outcomes,
+    )
+    validate_v37_capacity_replay_artifacts(
+        worker_placement_snapshot=_worker_snapshot(),
+        pipeline_manifest=manifest,
+        queue_transition_ledger=ledger,
+    )
+    ledger["transitions"][0]["queue_position"] = 99
+    with pytest.raises(ValueError, match="self-hash"):
+        validate_v37_capacity_replay_artifacts(
+            worker_placement_snapshot=_worker_snapshot(),
+            pipeline_manifest=manifest,
+            queue_transition_ledger=ledger,
         )

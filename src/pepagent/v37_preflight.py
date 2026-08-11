@@ -16,6 +16,7 @@ def bind_v37_submission_inputs(
     manifest_path: Path,
     experiment_spec_path: Path,
     capacity_contract_path: Path,
+    worker_placement_snapshot_path: Path,
     execution_bundle_path: Path,
     metric_registry_path: Path,
     object_store: Any,
@@ -26,6 +27,10 @@ def bind_v37_submission_inputs(
         "manifest": (manifest_path, "application/yaml"),
         "experiment_spec": (experiment_spec_path, "application/yaml"),
         "capacity_contract": (capacity_contract_path, "application/yaml"),
+        "worker_placement_snapshot": (
+            worker_placement_snapshot_path,
+            "application/json",
+        ),
         "execution_bundle": (execution_bundle_path, "application/json"),
         "metric_registry": (metric_registry_path, "application/yaml"),
     }
@@ -122,6 +127,7 @@ def authorize_v37_submission_preflight(
         "manifest",
         "experiment_spec",
         "capacity_contract",
+        "worker_placement_snapshot",
         "execution_bundle",
         "metric_registry",
     }

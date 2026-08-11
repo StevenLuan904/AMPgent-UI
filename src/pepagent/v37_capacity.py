@@ -10,6 +10,27 @@ from pydantic import BaseModel, model_validator
 from pepagent.provenance.hashing import sha256_bytes, sha256_json
 
 V37_PIPELINE_STAGES = ("proposal", "evaluation", "boltz", "rosetta")
+V37_CAPACITY_ARTIFACT_ROLES = (
+    "worker_placement_snapshot",
+    "pipeline_manifest",
+    "pipeline_queue_transition_ledger",
+)
+V37_REQUIRED_WORKER_ROLE_BY_QUEUE_KEY = {
+    "workflow_and_control": "v37-control",
+    "generator": "v37-generator",
+    "provider": "v37-provider",
+    "sequence_metrics": "metrics",
+    "boltz": "boltz2",
+    "rosetta": "rosetta",
+}
+V37_DEFAULT_TASK_QUEUES = {
+    "workflow_and_control": "pepagent-control-v37",
+    "generator": "pepagent-generator-v37",
+    "provider": "pepagent-provider-v37",
+    "sequence_metrics": "pepagent-cpu-metrics",
+    "boltz": "pepagent-gpu-boltz2",
+    "rosetta": "pepagent-cpu-rosetta",
+}
 
 
 class CapacityFormalRun(BaseModel):
@@ -234,6 +255,201 @@ def build_v37_pipeline_manifest(
     }
     manifest["pipeline_manifest_sha256"] = sha256_json(manifest)
     return manifest
+
+
+def validate_v37_worker_placement_snapshot(
+    payload: dict[str, Any],
+    *,
+    contract: V37CapacityContract | None = None,
+    expected_task_queues: dict[str, str] | None = None,
+) -> dict[str, Any]:
+    """Validate the exact launch-boundary worker placement evidence."""
+    required = {
+        "schema_version",
+        "captured_at",
+        "active_workflow_count",
+        "topology_frozen_for_run",
+        "placements",
+    }
+    if set(payload) != required or payload.get("schema_version") != (
+        "v37.worker-placement-snapshot.1"
+    ):
+        raise ValueError("v37 worker placement snapshot schema drifted")
+    if payload.get("topology_frozen_for_run") is not True:
+        raise ValueError("v37 worker topology is not frozen")
+    if int(payload.get("active_workflow_count", -1)) != 0:
+        raise ValueError("v37 worker placement snapshot was not captured at zero active workflows")
+    placements = payload.get("placements")
+    if not isinstance(placements, list) or not placements:
+        raise ValueError("v37 worker placement snapshot is empty")
+    required_placement = {
+        "physical_host",
+        "gpu_index",
+        "pid",
+        "role",
+        "task_queue",
+        "poller_identity",
+        "source_revision",
+        "release_sha256",
+        "environment_sha256",
+        "weights_sha256",
+        "ampgent_owned",
+        "foreign_process_present",
+    }
+    eligible = (
+        {
+            (str(item["host"]), int(item["gpu_index"]))
+            for item in contract.resource_capacity["gpu"]["eligible_placements"]
+        }
+        if contract is not None
+        else {("192.168.99.19", 5), ("synth", 5), ("synth", 6)}
+    )
+    gpu_placements: set[tuple[str, int]] = set()
+    identities: set[tuple[str, int, str]] = set()
+    queue_roles: dict[str, set[str]] = {}
+    for item in placements:
+        if not isinstance(item, dict) or set(item) != required_placement:
+            raise ValueError("v37 worker placement row schema drifted")
+        if item["ampgent_owned"] is not True or item["foreign_process_present"] is not False:
+            raise ValueError("v37 worker placement is unsafe or unowned")
+        if int(item["pid"]) < 1 or any(
+            not isinstance(item[field], str) or not item[field].strip()
+            for field in (
+                "physical_host",
+                "role",
+                "task_queue",
+                "poller_identity",
+                "source_revision",
+                "release_sha256",
+                "environment_sha256",
+            )
+        ):
+            raise ValueError("v37 worker placement identity is incomplete")
+        identity = (str(item["physical_host"]), int(item["pid"]), str(item["role"]))
+        if identity in identities:
+            raise ValueError("v37 worker placement identity is duplicated")
+        identities.add(identity)
+        queue_roles.setdefault(str(item["task_queue"]), set()).add(str(item["role"]))
+        if item["gpu_index"] is not None:
+            placement = (str(item["physical_host"]), int(item["gpu_index"]))
+            if placement not in eligible:
+                raise ValueError("v37 worker placement uses a non-eligible GPU")
+            if placement in gpu_placements:
+                raise ValueError("v37 worker placement oversubscribes a GPU")
+            gpu_placements.add(placement)
+    maximum_workers = (
+        int(contract.resource_capacity["gpu"]["maximum_concurrent_workers"])
+        if contract is not None
+        else 3
+    )
+    if len(gpu_placements) > maximum_workers:
+        raise ValueError("v37 worker placement exceeds frozen GPU capacity")
+    queues = expected_task_queues or V37_DEFAULT_TASK_QUEUES
+    if set(queues) != set(V37_REQUIRED_WORKER_ROLE_BY_QUEUE_KEY):
+        raise ValueError("v37 expected task queue contract drifted")
+    expected_queue_roles = {
+        str(queues[key]): V37_REQUIRED_WORKER_ROLE_BY_QUEUE_KEY[key]
+        for key in V37_REQUIRED_WORKER_ROLE_BY_QUEUE_KEY
+    }
+    if set(queue_roles) != set(expected_queue_roles):
+        raise ValueError("v37 worker placement task queue coverage drifted")
+    if any(queue_roles[queue] != {role} for queue, role in expected_queue_roles.items()):
+        raise ValueError("v37 worker placement role-to-task-queue mapping drifted")
+    return payload
+
+
+def build_v37_pipeline_queue_transition_ledger(
+    *,
+    pipeline_manifest: dict[str, Any],
+    stage_outcomes: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    """Build the deterministic FIFO queue/transition ledger for replay."""
+    expected_ids = {
+        logical_id
+        for item in pipeline_manifest.get("items", [])
+        for logical_id in item.get("stage_logical_ids", {}).values()
+    }
+    if set(stage_outcomes) != expected_ids:
+        raise ValueError("v37 pipeline stage outcome coverage drifted")
+    transitions = []
+    sequence = 0
+    for item in pipeline_manifest["items"]:
+        ordinal = int(item["proposal_ordinal"])
+        for stage in V37_PIPELINE_STAGES:
+            sequence += 1
+            logical_id = item["stage_logical_ids"][stage]
+            outcome = stage_outcomes[logical_id]
+            if set(outcome) != {"outcome", "backpressure_observed"}:
+                raise ValueError("v37 pipeline stage outcome schema drifted")
+            if outcome["outcome"] not in {
+                "succeeded",
+                "skipped_not_selected",
+                "failed_without_replacement",
+            }:
+                raise ValueError("v37 pipeline stage outcome is invalid")
+            if type(outcome["backpressure_observed"]) is not bool:
+                raise ValueError("v37 pipeline backpressure evidence must be boolean")
+            transitions.append(
+                {
+                    "stage_logical_id": logical_id,
+                    "occurrence_id": item["occurrence_id"],
+                    "proposal_ordinal": ordinal,
+                    "stage": stage,
+                    "queue_position": ordinal,
+                    "dispatch_sequence": sequence,
+                    "start_sequence": sequence,
+                    "finish_sequence": sequence,
+                    **outcome,
+                }
+            )
+    result: dict[str, Any] = {
+        "schema_version": "v37.pipeline-queue-transition-ledger.1",
+        "pipeline_manifest_sha256": pipeline_manifest["pipeline_manifest_sha256"],
+        "scheduling_policy": "deterministic_fifo_single_arm",
+        "transitions": transitions,
+    }
+    result["ledger_sha256"] = sha256_json(result)
+    return result
+
+
+def validate_v37_capacity_replay_artifacts(
+    *,
+    contract: V37CapacityContract | None = None,
+    worker_placement_snapshot: dict[str, Any],
+    pipeline_manifest: dict[str, Any],
+    queue_transition_ledger: dict[str, Any],
+) -> None:
+    validate_v37_worker_placement_snapshot(worker_placement_snapshot, contract=contract)
+    if pipeline_manifest.get("pipeline_manifest_sha256") != sha256_json(
+        {
+            key: value
+            for key, value in pipeline_manifest.items()
+            if key != "pipeline_manifest_sha256"
+        }
+    ):
+        raise ValueError("v37 pipeline manifest self-hash drifted")
+    if tuple(pipeline_manifest.get("stage_order", [])) != V37_PIPELINE_STAGES:
+        raise ValueError("v37 pipeline manifest stage order drifted")
+    ledger_identity = {
+        key: value for key, value in queue_transition_ledger.items() if key != "ledger_sha256"
+    }
+    if queue_transition_ledger.get("ledger_sha256") != sha256_json(ledger_identity):
+        raise ValueError("v37 pipeline transition ledger self-hash drifted")
+    if queue_transition_ledger.get("pipeline_manifest_sha256") != pipeline_manifest.get(
+        "pipeline_manifest_sha256"
+    ):
+        raise ValueError("v37 pipeline transition ledger belongs to another manifest")
+    expected = {
+        logical_id
+        for item in pipeline_manifest.get("items", [])
+        for logical_id in item.get("stage_logical_ids", {}).values()
+    }
+    observed = [
+        str(item.get("stage_logical_id"))
+        for item in queue_transition_ledger.get("transitions", [])
+    ]
+    if len(observed) != len(expected) or set(observed) != expected:
+        raise ValueError("v37 pipeline transition ledger coverage drifted")
 
 
 def build_v37_static_capacity_preflight(*, contract_path: Path) -> dict[str, Any]:

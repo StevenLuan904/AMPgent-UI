@@ -7,6 +7,10 @@ from typing import Any
 
 from pepagent.provenance.hashing import sha256_bytes, sha256_json
 from pepagent.storage.object_store import ContentAddressedObjectStore
+from pepagent.v37_capacity import (
+    load_v37_capacity_contract,
+    validate_v37_worker_placement_snapshot,
+)
 from pepagent.v37_preflight import (
     authorize_v37_submission_preflight,
     bind_v37_submission_inputs,
@@ -148,6 +152,29 @@ def build_v37_execution_bundle(
         knowledge_runtime_path, label="knowledge runtime"
     )
     knowledge_query = _load_json_object(knowledge_query_path, label="knowledge query")
+    frozen_knowledge = manifest.verified_auxiliaries["knowledge"]
+    frozen_query_path = (manifest_path.parent / frozen_knowledge["query_path"]).resolve()
+    if knowledge_query_path.resolve() != frozen_query_path:
+        raise ValueError("v37 knowledge query path differs from frozen benchmark")
+    if sha256_bytes(knowledge_query_path.read_bytes()) != frozen_knowledge["query_sha256"]:
+        raise ValueError("v37 knowledge query bytes differ from frozen benchmark")
+    if set(knowledge_query) != {
+        "schema_version",
+        "target_key",
+        "application",
+        "query",
+    }:
+        raise ValueError("v37 knowledge query schema drifted")
+    if knowledge_query != {
+        "schema_version": "v37.knowledge-query.1",
+        "target_key": "AceA",
+        "application": "v37_rapid_champion_generation",
+        "query": (
+            "AceA targeted antimicrobial short peptide sequence design positive "
+            "negative variants intracellular delivery MIC selectivity"
+        ),
+    }:
+        raise ValueError("v37 knowledge query content drifted")
     pepshot_runtime = _load_json_object(pepshot_runtime_path, label="PepShot runtime")
     original_paths.update(
         {
@@ -182,6 +209,7 @@ def build_v37_preflight_files(
     manifest_path: Path,
     experiment_spec_path: Path,
     capacity_contract_path: Path,
+    worker_placement_snapshot_path: Path,
     runtime_index_path: Path,
     metric_runtime_paths: dict[str, Path],
     knowledge_runtime_path: Path,
@@ -194,6 +222,15 @@ def build_v37_preflight_files(
     submission_preflight_output: Path,
     object_store: Any,
 ) -> dict[str, Any]:
+    manifest = load_v37_preregistration(manifest_path)
+    worker_snapshot = _load_json_object(
+        worker_placement_snapshot_path, label="worker placement snapshot"
+    )
+    validate_v37_worker_placement_snapshot(
+        worker_snapshot,
+        contract=load_v37_capacity_contract(capacity_contract_path),
+        expected_task_queues=manifest.execution["task_queues"],
+    )
     bundle = build_v37_execution_bundle(
         workspace=workspace,
         manifest_path=manifest_path,
@@ -220,6 +257,7 @@ def build_v37_preflight_files(
         manifest_path=manifest_path,
         experiment_spec_path=experiment_spec_path,
         capacity_contract_path=capacity_contract_path,
+        worker_placement_snapshot_path=worker_placement_snapshot_path,
         execution_bundle_path=execution_bundle_output,
         metric_registry_path=metric_registry_path,
         object_store=object_store,
@@ -252,6 +290,7 @@ def main() -> None:
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--experiment-spec", type=Path, required=True)
     parser.add_argument("--capacity-contract", type=Path, required=True)
+    parser.add_argument("--worker-placement-snapshot", type=Path, required=True)
     parser.add_argument("--runtime-index", type=Path, required=True)
     parser.add_argument(
         "--metric-runtime",
@@ -274,6 +313,7 @@ def main() -> None:
         manifest_path=args.manifest.resolve(),
         experiment_spec_path=args.experiment_spec.resolve(),
         capacity_contract_path=args.capacity_contract.resolve(),
+        worker_placement_snapshot_path=args.worker_placement_snapshot.resolve(),
         runtime_index_path=args.runtime_index.resolve(),
         metric_runtime_paths=_parse_named_paths(
             args.metric_runtime, label="metric runtime"

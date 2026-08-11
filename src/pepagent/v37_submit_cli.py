@@ -26,6 +26,10 @@ from pepagent.provenance.hashing import (
 )
 from pepagent.settings import get_settings
 from pepagent.storage.object_store import ContentAddressedObjectStore, StoredObject
+from pepagent.v37_capacity import (
+    load_v37_capacity_contract,
+    validate_v37_worker_placement_snapshot,
+)
 from pepagent.v37_preregistration import (
     load_v37_preregistration,
     validate_v37_experiment_spec,
@@ -108,6 +112,7 @@ def _same_v37_submission(existing: ExperimentRun, raw_spec: dict[str, Any]) -> b
         "submission_preflight_sha256",
         "execution_bundle_sha256",
         "experiment_spec_sha256",
+        "worker_placement_snapshot_sha256",
         "formal_submission_key",
     )
     return all(existing.spec_json.get(key) == raw_spec[key] for key in immutable_keys)
@@ -406,8 +411,7 @@ def _validate_execution_runtime_identities(
 
     for name, runtime in execution["metric_plugins_by_name"].items():
         _validate_self_hashed_runtime(runtime, label=f"metric {name}")
-        if name != "physicochemical_developability":
-            _validate_generic_execution_guard(runtime, label=f"metric {name}")
+        _validate_generic_execution_guard(runtime, label=f"metric {name}")
     metric_registry_path = workspace / "config/metrics/runtime.local.yaml"
     metric_registry_bytes = metric_registry_path.read_bytes()
     if execution.get("metric_registry_sha256") != sha256_bytes(metric_registry_bytes):
@@ -443,7 +447,7 @@ def _validate_execution_runtime_identities(
     frozen_aux = manifest.verified_auxiliaries
     if (
         knowledge.get("runtime_manifest_sha256")
-        != frozen_aux["knowledge_cards"]["runtime_manifest_sha256"]
+        != frozen_aux["knowledge"]["runtime_manifest_sha256"]
         or pepshot.get("runtime_manifest_sha256")
         != frozen_aux["pepshot"]["runtime_manifest_sha256"]
     ):
@@ -471,6 +475,7 @@ def load_v37_submission_bundle(
     manifest_path: Path,
     experiment_spec_path: Path,
     capacity_contract_path: Path,
+    worker_placement_snapshot_path: Path,
     execution_bundle_path: Path,
     preflight_path: Path,
     validate_live_runtimes: bool = False,
@@ -505,6 +510,14 @@ def load_v37_submission_bundle(
         raise ValueError("v37 benchmark already records a formal submission")
     if preflight.get("status") != "ready_to_submit_unique_run":
         raise ValueError("v37 submission preflight is not ready")
+    worker_placement_snapshot = json.loads(
+        worker_placement_snapshot_path.read_text(encoding="utf-8")
+    )
+    validate_v37_worker_placement_snapshot(
+        worker_placement_snapshot,
+        contract=load_v37_capacity_contract(capacity_contract_path),
+        expected_task_queues=manifest.execution["task_queues"],
+    )
     if preflight.get("config_sha256") != sha256_bytes(manifest_path.read_bytes()):
         raise ValueError("v37 submission preflight belongs to another manifest")
     if preflight.get("experiment_spec") != experiment_binding:
@@ -555,6 +568,7 @@ def load_v37_submission_bundle(
         "manifest": manifest_path,
         "experiment_spec": experiment_spec_path,
         "capacity_contract": capacity_contract_path,
+        "worker_placement_snapshot": worker_placement_snapshot_path,
         "execution_bundle": execution_bundle_path,
         "metric_registry": manifest_path.resolve().parents[1] / "metrics/runtime.local.yaml",
     }.items():
@@ -576,6 +590,7 @@ async def submit_v37_once(
     manifest_path: Path,
     experiment_spec_path: Path,
     capacity_contract_path: Path,
+    worker_placement_snapshot_path: Path,
     execution_bundle_path: Path,
     preflight_path: Path,
 ) -> dict[str, Any]:
@@ -583,6 +598,7 @@ async def submit_v37_once(
         manifest_path=manifest_path,
         experiment_spec_path=experiment_spec_path,
         capacity_contract_path=capacity_contract_path,
+        worker_placement_snapshot_path=worker_placement_snapshot_path,
         execution_bundle_path=execution_bundle_path,
         preflight_path=preflight_path,
         validate_live_runtimes=True,
@@ -591,6 +607,9 @@ async def submit_v37_once(
     execution_bundle_bytes = await asyncio.to_thread(execution_bundle_path.read_bytes)
     experiment_spec_bytes = await asyncio.to_thread(experiment_spec_path.read_bytes)
     capacity_contract_bytes = await asyncio.to_thread(capacity_contract_path.read_bytes)
+    worker_placement_snapshot_bytes = await asyncio.to_thread(
+        worker_placement_snapshot_path.read_bytes
+    )
     preflight_bytes = await asyncio.to_thread(preflight_path.read_bytes)
     metric_registry_path = manifest_path.parents[1] / "metrics/runtime.local.yaml"
     metric_registry_bytes = await asyncio.to_thread(metric_registry_path.read_bytes)
@@ -605,6 +624,9 @@ async def submit_v37_once(
         "execution_bundle_sha256": sha256_bytes(execution_bundle_bytes),
         "experiment_spec_sha256": sha256_bytes(experiment_spec_bytes),
         "capacity_contract_sha256": sha256_bytes(capacity_contract_bytes),
+        "worker_placement_snapshot_sha256": sha256_bytes(
+            worker_placement_snapshot_bytes
+        ),
         "all_agent_evidence_persisted": True,
         "database_object_store_replay_required": True,
     }
@@ -624,6 +646,11 @@ async def submit_v37_once(
         ("manifest", manifest_bytes, "application/yaml"),
         ("experiment_spec", experiment_spec_bytes, "application/yaml"),
         ("capacity_contract", capacity_contract_bytes, "application/yaml"),
+        (
+            "worker_placement_snapshot",
+            worker_placement_snapshot_bytes,
+            "application/json",
+        ),
         ("execution_bundle", execution_bundle_bytes, "application/json"),
         ("submission_preflight", preflight_bytes, "application/json"),
         ("metric_registry", metric_registry_bytes, "application/yaml"),
@@ -654,6 +681,7 @@ async def submit_v37_once(
             "manifest": manifest,
             "experiment_spec": raw_experiment_spec,
             "capacity_contract": yaml.safe_load(capacity_contract_bytes),
+            "worker_placement_snapshot": json.loads(worker_placement_snapshot_bytes),
             "submission_preflight": preflight,
             **execution,
         }
@@ -702,6 +730,7 @@ def main() -> None:
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--experiment-spec", type=Path, required=True)
     parser.add_argument("--capacity-contract", type=Path, required=True)
+    parser.add_argument("--worker-placement-snapshot", type=Path, required=True)
     parser.add_argument("--execution-bundle", type=Path, required=True)
     parser.add_argument("--preflight", type=Path, required=True)
     parser.add_argument("--execute", action="store_true")
@@ -713,6 +742,7 @@ def main() -> None:
             manifest_path=args.manifest.resolve(),
             experiment_spec_path=args.experiment_spec.resolve(),
             capacity_contract_path=args.capacity_contract.resolve(),
+            worker_placement_snapshot_path=args.worker_placement_snapshot.resolve(),
             execution_bundle_path=args.execution_bundle.resolve(),
             preflight_path=args.preflight.resolve(),
         )

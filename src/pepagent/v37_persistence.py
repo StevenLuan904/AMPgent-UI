@@ -21,6 +21,7 @@ from pepagent.db.models import (
 )
 from pepagent.db.repository import ExperimentRepository
 from pepagent.provenance.hashing import sha256_json, sha256_text
+from pepagent.v37_capacity import validate_v37_capacity_replay_artifacts
 from pepagent.v37_evidence import validate_v37_replay_graph
 from pepagent.v37_provider_consumers import (
     PEPSHOT_INSPECT_CONTRACT_ID,
@@ -78,6 +79,9 @@ _GLOBAL_ROLES = {
     "replay": (
         "database_object_replay",
         "committed_graph_snapshot",
+        "worker_placement_snapshot",
+        "pipeline_manifest",
+        "pipeline_queue_transition_ledger",
         "agent_decision",
         "stop_event",
     ),
@@ -595,13 +599,10 @@ def _validate_runtime_receipt_evidence(
     required_receipt_calls: set[str] = set()
     for call_id, call in calls.items():
         logical_id = str(call.get("input_json", {}).get("v37_logical_id", ""))
-        if (
-            (
-                logical_id.startswith("v37:metric:")
-                and logical_id != "v37:metric:physicochemical_developability"
-            )
-            or call.get("tool_name") in {"pepshot-contract", "pepshot-inspect"}
-        ):
+        if logical_id.startswith("v37:metric:") or call.get("tool_name") in {
+            "pepshot-contract",
+            "pepshot-inspect",
+        }:
             required_receipt_calls.add(call_id)
     for link in graph.get("evidence_artifacts", []):
         artifact = artifacts.get(str(link["artifact_id"]))
@@ -904,6 +905,16 @@ def validate_v37_database_object_replay(
         if not (allow_incomplete_replay and logical_id == "v37:replay")
     ]
     _validate_attempt_and_failure_ledgers(payloads, ledger_calls)
+    if not allow_incomplete_replay:
+        validate_v37_capacity_replay_artifacts(
+            worker_placement_snapshot=payloads[
+                ("v37:replay", "worker_placement_snapshot")
+            ],
+            pipeline_manifest=payloads[("v37:replay", "pipeline_manifest")],
+            queue_transition_ledger=payloads[
+                ("v37:replay", "pipeline_queue_transition_ledger")
+            ],
+        )
     _validate_knowledge_evidence(payloads[("v37:knowledge", "knowledge_evidence")])
 
     candidates = {str(item["id"]): item for item in graph.get("candidates", [])}

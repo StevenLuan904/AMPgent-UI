@@ -144,7 +144,7 @@ def _validate_base_path_bindings(
         adapter_fields = [key for key in ("adapter_path", "kbctl_path") if key in base]
         if not adapter_fields:
             raise ValueError("v37 base descriptor has no adapter_path or kbctl_path binding")
-        if any(not _same_path(base[key], adapter) for key in adapter_fields):
+        if not any(_same_path(base[key], adapter) for key in adapter_fields):
             raise ValueError("v37 base descriptor adapter path differs from physical runtime")
     if "cwd" not in base or not _same_path(base["cwd"], cwd):
         raise ValueError("v37 base descriptor cwd differs from physical runtime")

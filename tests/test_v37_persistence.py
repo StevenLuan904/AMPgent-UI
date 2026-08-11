@@ -4,6 +4,10 @@ from pathlib import Path
 import pytest
 
 from pepagent.provenance.hashing import sha256_json, sha256_text
+from pepagent.v37_capacity import (
+    build_v37_pipeline_manifest,
+    build_v37_pipeline_queue_transition_ledger,
+)
 from pepagent.v37_evidence import build_v37_evidence_plan
 from pepagent.v37_persistence import (
     _selection_witness_payloads,
@@ -756,6 +760,64 @@ def _fixture() -> tuple[dict, dict, dict, dict[str, dict]]:
     }
     payloads[("v37:replay", "database_object_replay")] = replay_payload
     payloads[("v37:replay", "committed_graph_snapshot")] = committed_snapshot
+    pipeline_manifest = build_v37_pipeline_manifest(
+        [
+            {"proposal_ordinal": index, "occurrence_id": item["id"]}
+            for index, item in enumerate(candidates, start=1)
+        ]
+    )
+    stage_outcomes = {
+        logical_id: {
+            "outcome": (
+                "succeeded"
+                if stage in {"proposal", "evaluation"}
+                or item["occurrence_id"] in shortlist_ids
+                else "skipped_not_selected"
+            ),
+            "backpressure_observed": False,
+        }
+        for item in pipeline_manifest["items"]
+        for stage, logical_id in item["stage_logical_ids"].items()
+    }
+    payloads[("v37:replay", "worker_placement_snapshot")] = {
+        "schema_version": "v37.worker-placement-snapshot.1",
+        "captured_at": "2026-08-12T00:00:00Z",
+        "active_workflow_count": 0,
+        "topology_frozen_for_run": True,
+        "placements": [
+            {
+                "physical_host": "synth" if role == "boltz2" else "local",
+                "gpu_index": 6 if role == "boltz2" else None,
+                "pid": 1234 + index,
+                "role": role,
+                "task_queue": task_queue,
+                "poller_identity": f"{1234 + index}@test",
+                "source_revision": "a" * 40,
+                "release_sha256": "b" * 64,
+                "environment_sha256": "c" * 64,
+                "weights_sha256": "d" * 64 if role == "boltz2" else None,
+                "ampgent_owned": True,
+                "foreign_process_present": False,
+            }
+            for index, (role, task_queue) in enumerate(
+                (
+                    ("v37-control", "pepagent-control-v37"),
+                    ("v37-generator", "pepagent-generator-v37"),
+                    ("v37-provider", "pepagent-provider-v37"),
+                    ("metrics", "pepagent-cpu-metrics"),
+                    ("boltz2", "pepagent-gpu-boltz2"),
+                    ("rosetta", "pepagent-cpu-rosetta"),
+                )
+            )
+        ],
+    }
+    payloads[("v37:replay", "pipeline_manifest")] = pipeline_manifest
+    payloads[("v37:replay", "pipeline_queue_transition_ledger")] = (
+        build_v37_pipeline_queue_transition_ledger(
+            pipeline_manifest=pipeline_manifest,
+            stage_outcomes=stage_outcomes,
+        )
+    )
     replay_call = next(
         item for item in calls if item["id"] == call_ids["v37:replay"]
     )
@@ -781,8 +843,6 @@ def _fixture() -> tuple[dict, dict, dict, dict[str, dict]]:
         }
     for item in plan["metric_calls"]:
         logical_id = item["logical_id"]
-        if logical_id == "v37:metric:physicochemical_developability":
-            continue
         payloads[(logical_id, "source_runtime_receipt")] = {
             "provenance": {"live_launch_receipt": _runtime_receipt(logical_id)},
             "plugin": {"name": logical_id.removeprefix("v37:metric:")},
@@ -825,7 +885,6 @@ def _fixture() -> tuple[dict, dict, dict, dict[str, dict]]:
             event_required = role == "v37_runtime_receipts" or (
                 role == "source_runtime_receipt"
                 and logical_id.startswith("v37:metric:")
-                and logical_id != "v37:metric:physicochemical_developability"
             )
             if isinstance(receipt, dict) and event_required:
                 runtime_event_payload = {

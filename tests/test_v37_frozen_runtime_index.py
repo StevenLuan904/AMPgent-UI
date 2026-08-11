@@ -161,6 +161,26 @@ def test_frozen_model_manifests_lock_expected_upstream_weights() -> None:
     )
 
 
+def test_frozen_ampgan_source_is_an_exact_clean_workspace_release() -> None:
+    manifest = _load(RUNTIME_ROOT / "ampgan_v2.runtime.json")
+    source = manifest["source_release"]
+    assert isinstance(source, dict)
+    assert source["uri"] == (
+        "workspace-release://var/releases/v37-generator-runtimes-v1/"
+        "ampgan_v2/source-1a2ac60bdc268f99"
+    )
+    declared = [item["path"] for item in source["files"]]  # type: ignore[index]
+    assert len(declared) == 369
+    assert all(not path.startswith(".git/") for path in declared)
+    release_root = ROOT / str(source["uri"]).removeprefix("workspace-release://")
+    observed = sorted(
+        path.relative_to(release_root).as_posix()
+        for path in release_root.rglob("*")
+        if path.is_file()
+    )
+    assert observed == declared
+
+
 def test_local_release_assets_match_frozen_runtime_index() -> None:
     result = verify_local_runtime_set(ROOT, RUNTIME_ROOT)
     assert result["verified_generators"] == [

@@ -31,8 +31,6 @@ from pepagent.evidence_replay import build_database_evidence_graph
 from pepagent.handoff_metrics import (
     HANDOFF_METRIC_VERSION,
     METRIC_PLUGIN_CONTRACTS,
-    normalize_metric_records,
-    physicochemical_descriptors,
 )
 from pepagent.model_workers.sequence_metric_plan import (
     build_external_metric_plan,
@@ -40,7 +38,6 @@ from pepagent.model_workers.sequence_metric_plan import (
     load_external_metric_adapter,
     materialize_external_metric_input,
 )
-from pepagent.provenance.environment import fingerprint_runtime
 from pepagent.provenance.hashing import sha256_bytes, sha256_json
 from pepagent.settings import get_settings
 from pepagent.storage.object_store import ContentAddressedObjectStore
@@ -90,7 +87,8 @@ V37_ACTIVITY_VERSION = "v37.0.0"
 
 @activity.defn(name="evaluate_v37_sequence_metric")
 async def evaluate_v37_sequence_metric(request: dict[str, Any]) -> dict[str, Any]:
-    plugin_name = str(request["plugin"]["name"])
+    plugin_payload = request["plugin"]
+    plugin_name = str(plugin_payload.get("name") or plugin_payload["plugin_name"])
     context = V37AttemptContext(
         run_id=uuid.UUID(request["run_id"]),
         logical_id=f"v37:metric:{plugin_name}",
@@ -102,42 +100,112 @@ async def evaluate_v37_sequence_metric(request: dict[str, Any]) -> dict[str, Any
         plugin = request["plugin"]
         contract = METRIC_PLUGIN_CONTRACTS[plugin_name]
         if contract["provider"] == "builtin":
-            parameters = plugin.get("parameters", {})
-            raw_rows = [
-                {
-                    "candidate_id": candidate["id"],
-                    "sequence": candidate["sequence"],
-                    "status": "complete",
-                    **physicochemical_descriptors(
-                        candidate["sequence"],
-                        ph=float(parameters.get("ph", 7.4)),
-                        c_terminal_amidated=bool(
-                            parameters.get("c_terminal_amidated", False)
-                        ),
-                        hydrophobic_moment_angle=int(
-                            parameters.get("hydrophobic_moment_angle", 100)
-                        ),
-                    ),
-                }
+            settings = get_settings()
+            work = (
+                Path(settings.work_root)
+                / request["run_id"]
+                / "v37"
+                / "metrics"
+                / plugin_name
+            )
+            await asyncio.to_thread(work.mkdir, parents=True, exist_ok=True)
+            request_path = work / "request.json"
+            output_path = work / "result.json"
+            runtime_request = {
+                "run_id": request["run_id"],
+                "plugin": {
+                    "name": plugin_name,
+                    "parameters": {
+                        "ph": 7.4,
+                        "c_terminal_amidated": False,
+                        "hydrophobic_moment_angle": 100,
+                    },
+                },
+                "candidates": request["candidates"],
+            }
+            request_bytes = (
+                json.dumps(runtime_request, ensure_ascii=False, sort_keys=True) + "\n"
+            ).encode("utf-8")
+            await asyncio.to_thread(request_path.write_bytes, request_bytes)
+            guard_paths = plugin["execution_guard"]["paths"]
+            command = [
+                str(guard_paths["executable_path"]),
+                str(guard_paths["adapter_path"]),
+                "--request",
+                str(request_path),
+                "--output",
+                str(output_path),
+            ]
+            stdout, launch_receipt = await _run_guarded_generic_runtime(
+                command=command,
+                runtime=plugin,
+                context=context,
+                cwd=Path(plugin["cwd"]),
+                env=os.environ.copy(),
+                input_paths={"request": request_path},
+            )
+            result = json.loads(
+                await asyncio.to_thread(output_path.read_text, encoding="utf-8")
+            )
+            if (
+                result.get("status") != "complete"
+                or result.get("runtime_id") != plugin.get("runtime_id")
+                or result.get("adapter_version") != "2026.08.04-v1"
+            ):
+                raise ValueError("v37 builtin metric runtime identity or status drifted")
+            expected_identities = [
+                (str(candidate["id"]), str(candidate["sequence"]))
                 for candidate in request["candidates"]
             ]
-            result = {
-                "plugin": plugin,
-                "contract": contract,
-                "candidate_count": len(request["candidates"]),
-                "status": "complete",
-                "adapter_version": HANDOFF_METRIC_VERSION,
-                "records": normalize_metric_records(plugin_name, raw_rows),
-                "raw_rows": raw_rows,
+            observed_identities = [
+                (str(record["candidate_id"]), str(record["sequence"]))
+                for record in result.get("records", [])
+            ]
+            if observed_identities != expected_identities:
+                raise ValueError(
+                    "v37 builtin metric candidate identity, sequence, or order drifted"
+                )
+            if result.get("candidate_count") != len(expected_identities):
+                raise ValueError("v37 builtin metric candidate count drifted")
+            emitted_metrics = {
+                observation["metric_name"]
+                for record in result.get("records", [])
+                for observation in record.get("observations", [])
             }
-            environment_sha256, environment = fingerprint_runtime()
+            expected_metrics = {
+                "hydrophobic_moment_eisenberg",
+                "hydrophobic_ratio_modlamp",
+                "maximum_hydrophobic_run",
+                "net_charge_ph7_4",
+            }
+            if emitted_metrics != expected_metrics:
+                raise ValueError("v37 builtin metric observation contract drifted")
+            runtime_contract = result.get("contract")
+            if not isinstance(runtime_contract, dict) or {
+                "default_trust": runtime_contract.get("default_trust"),
+                "maximum_trust": runtime_contract.get("maximum_trust"),
+                "provider": runtime_contract.get("provider"),
+            } != {
+                "default_trust": "descriptor",
+                "maximum_trust": "descriptor",
+                "provider": "builtin",
+            }:
+                raise ValueError("v37 builtin metric trust contract drifted")
+            result["plugin"] = {**plugin, "name": plugin_name}
+            environment_sha256 = launch_receipt["byte_identity_sha256"]
             raw_artifact = await _store_json(result)
+            environment = {
+                "runtime_request_sha256": sha256_bytes(request_bytes),
+                "command_argv": command,
+                "launch_receipt": launch_receipt,
+                "stdout_tail": stdout[-8000:],
+            }
             environment_artifact = await _store_json(environment)
             return {
                 "result": result,
                 "provenance": {
                     "tool_name": f"handoff-metric-{plugin_name}",
-                    "tool_version": HANDOFF_METRIC_VERSION,
+                    "tool_version": result["adapter_version"],
                     "model_uri": f"metric://{plugin_name}",
                     "weights_sha256": None,
                     "environment_sha256": environment_sha256,
@@ -145,7 +213,8 @@ async def evaluate_v37_sequence_metric(request: dict[str, Any]) -> dict[str, Any
                     "attempt": activity.info().attempt,
                     "raw_output_artifact": asdict(raw_artifact),
                     "environment_artifact": asdict(environment_artifact),
-                    "execution_mode": "builtin_no_subprocess",
+                    "execution_mode": "guarded_subprocess",
+                    "live_launch_receipt": launch_receipt,
                 },
             }
 
@@ -1041,7 +1110,7 @@ async def persist_v37_sequence_metric(request: dict[str, Any]) -> dict[str, Any]
     expected_metrics = set(plan_item["metric_names"])
     limitations = [
         f"handoff reliability: {result['contract']['reliability']}",
-        f"configured trust: {plugin['trust']}",
+        f"configured trust: {result['contract']['default_trust']}",
         *result.get("limitations", []),
     ]
     rows: list[dict[str, Any]] = []
@@ -1393,6 +1462,12 @@ async def persist_v37_stage1_shortlist(request: dict[str, Any]) -> dict[str, Any
 @activity.defn(name="run_and_persist_v37_knowledge")
 async def run_and_persist_v37_knowledge(request: dict[str, Any]) -> dict[str, Any]:
     runtime = request["runtime"]
+    query_payload = request["query"]
+    if not isinstance(query_payload, dict) or not isinstance(
+        query_payload.get("query"), str
+    ):
+        raise ValueError("v37 knowledge query payload is invalid")
+    query_text = query_payload["query"]
     settings = get_settings()
     work = Path(settings.work_root) / request["run_id"] / "v37" / "knowledge"
     await asyncio.to_thread(work.mkdir, parents=True, exist_ok=True)
@@ -1401,7 +1476,7 @@ async def run_and_persist_v37_knowledge(request: dict[str, Any]) -> dict[str, An
         python_executable=Path(runtime["python_path"]),
         kbctl_path=Path(runtime["kbctl_path"]),
         target_key="AceA",
-        query=str(request["query"]),
+        query=query_text,
         application="v37_rapid_champion_generation",
         output_path=output_path,
         config_path=Path(runtime["config_path"]) if runtime.get("config_path") else None,
@@ -2412,6 +2487,9 @@ async def persist_v37_final_portfolio_and_replay(
             required_replay_roles = {
                 "database_object_replay",
                 "committed_graph_snapshot",
+                "worker_placement_snapshot",
+                "pipeline_manifest",
+                "pipeline_queue_transition_ledger",
                 "agent_decision",
                 "stop_event",
                 "attempt_ledger",
@@ -2501,6 +2579,11 @@ async def persist_v37_final_portfolio_and_replay(
         for role, payload in {
             "database_object_replay": replay_payload,
             "committed_graph_snapshot": committed_graph_snapshot,
+            "worker_placement_snapshot": request["worker_placement_snapshot"],
+            "pipeline_manifest": request["pipeline_manifest"],
+            "pipeline_queue_transition_ledger": request[
+                "pipeline_queue_transition_ledger"
+            ],
             "agent_decision": replay_payload,
             "stop_event": replay_stop,
             **replay_ledgers,

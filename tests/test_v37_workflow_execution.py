@@ -219,6 +219,7 @@ def test_v37_submission_bundle_refuses_tampered_unauthorized_preflight(
             capacity_contract_path=(
                 ROOT / "config/experiments/acea_v37_rapid_champion_capacity.yaml"
             ),
+            worker_placement_snapshot_path=tmp_path / "missing-worker-snapshot.json",
             execution_bundle_path=execution_path,
             preflight_path=preflight_path,
         )

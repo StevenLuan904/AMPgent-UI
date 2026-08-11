@@ -1,0 +1,181 @@
+from __future__ import annotations
+
+import argparse
+import importlib.metadata
+import json
+from pathlib import Path
+from typing import Any
+
+import modlamp
+from modlamp.descriptors import GlobalDescriptor, PeptideDescriptor
+
+RUNTIME_ID = "physicochemical-developability-modlamp-4.3.2-v37"
+METHOD_VERSION = "2026.08.04-v1"
+
+OUTPUTS: dict[str, tuple[str, str]] = {
+    "net_charge_ph7_4": ("net_charge_ph7_4", "elementary_charge"),
+    "hydrophobic_ratio_modlamp": ("hydrophobic_ratio", "fraction"),
+    "hydrophobic_moment_eisenberg": ("hydrophobic_moment", "dimensionless"),
+    "maximum_hydrophobic_run": ("maximum_hydrophobic_run", "residues"),
+}
+
+HYDROPHOBIC_RESIDUES = frozenset("AVILMFWY")
+
+
+def _maximum_hydrophobic_run(sequence: str) -> int:
+    maximum = 0
+    current = 0
+    for residue in sequence:
+        if residue in HYDROPHOBIC_RESIDUES:
+            current += 1
+            maximum = max(maximum, current)
+        else:
+            current = 0
+    return maximum
+
+
+def _scalar(descriptor: object) -> float:
+    return float(descriptor.descriptor[0][0])
+
+
+def describe(
+    sequence: str,
+    *,
+    ph: float,
+    c_terminal_amidated: bool,
+    hydrophobic_moment_angle: int,
+) -> dict[str, Any]:
+    global_descriptor = GlobalDescriptor(sequence)
+    global_descriptor.calculate_MW(amide=c_terminal_amidated)
+    molecular_weight = _scalar(global_descriptor)
+    global_descriptor.calculate_charge(ph=ph, amide=c_terminal_amidated)
+    net_charge = _scalar(global_descriptor)
+    global_descriptor.isoelectric_point(amide=c_terminal_amidated)
+    isoelectric_point = _scalar(global_descriptor)
+    global_descriptor.hydrophobic_ratio()
+    hydrophobic_ratio = _scalar(global_descriptor)
+
+    moment_descriptor = PeptideDescriptor(sequence, "eisenberg")
+    moment_descriptor.calculate_moment(
+        window=1000,
+        angle=hydrophobic_moment_angle,
+        modality="max",
+    )
+    return {
+        "molecular_weight": molecular_weight,
+        "net_charge_ph7_4": net_charge,
+        "isoelectric_point": isoelectric_point,
+        "hydrophobic_ratio": hydrophobic_ratio,
+        "hydrophobic_moment": _scalar(moment_descriptor),
+        "maximum_hydrophobic_run": _maximum_hydrophobic_run(sequence),
+        "assumptions": {
+            "ph": ph,
+            "termini": (
+                "free N-terminus and amidated C-terminus"
+                if c_terminal_amidated
+                else "free N-terminus and free C-terminus"
+            ),
+            "hydrophobicity_scale": "Eisenberg consensus",
+            "hydrophobic_moment_angle_degrees": hydrophobic_moment_angle,
+            "hydrophobic_moment_window": 1000,
+            "modlamp_distribution_version": importlib.metadata.version("modlamp"),
+            "modlamp_runtime_version": modlamp.__version__,
+        },
+        "limitations": [
+            "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+            "The 100-degree hydrophobic moment is an idealized alpha-helical projection and "
+            "does not assert that the peptide forms an alpha helix.",
+            "Canonical sequence inference does not represent terminal capping, cyclization, "
+            "D-residues, or other chemical modifications.",
+        ],
+        "method_version": METHOD_VERSION,
+    }
+
+
+def evaluate(request: dict[str, Any]) -> dict[str, Any]:
+    plugin = request["plugin"]
+    if plugin["name"] != "physicochemical_developability":
+        raise ValueError("runtime only accepts physicochemical_developability")
+    parameters = plugin.get("parameters", {})
+    ph = float(parameters.get("ph", 7.4))
+    amidated = bool(parameters.get("c_terminal_amidated", False))
+    angle = int(parameters.get("hydrophobic_moment_angle", 100))
+    rows: list[dict[str, Any]] = []
+    records: list[dict[str, Any]] = []
+    for candidate in request["candidates"]:
+        row = {
+            "candidate_id": str(candidate["id"]),
+            "sequence": str(candidate["sequence"]),
+            "status": "complete",
+            **describe(
+                str(candidate["sequence"]),
+                ph=ph,
+                c_terminal_amidated=amidated,
+                hydrophobic_moment_angle=angle,
+            ),
+        }
+        rows.append(row)
+        records.append(
+            {
+                "candidate_id": row["candidate_id"],
+                "sequence": row["sequence"],
+                "status": "complete",
+                "observations": [
+                    {
+                        "metric_name": metric_name,
+                        "numeric_value": float(row[source_field]),
+                        "text_value": None,
+                        "unit": unit,
+                    }
+                    for metric_name, (source_field, unit) in OUTPUTS.items()
+                ],
+                "raw": row,
+            }
+        )
+    return {
+        "plugin": plugin,
+        "contract": {
+            "default_trust": "descriptor",
+            "maximum_trust": "descriptor",
+            "reliability": "descriptor-R2",
+            "provider": "builtin",
+            "outputs": {
+                key: [source_field, unit, "numeric"]
+                for key, (source_field, unit) in OUTPUTS.items()
+            },
+        },
+        "candidate_count": len(rows),
+        "status": "complete",
+        "adapter_version": METHOD_VERSION,
+        "runtime_id": RUNTIME_ID,
+        "records": records,
+        "raw_rows": rows,
+    }
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--request", type=Path, required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    args = parser.parse_args()
+    request = json.loads(args.request.read_text(encoding="utf-8"))
+    result = evaluate(request)
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(
+        json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    print(
+        json.dumps(
+            {
+                "plugin": request["plugin"]["name"],
+                "runtime_id": RUNTIME_ID,
+                "status": result["status"],
+            },
+            sort_keys=True,
+        )
+    )
+
+
+if __name__ == "__main__":
+    main()

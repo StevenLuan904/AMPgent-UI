@@ -218,6 +218,12 @@ def test_v37_requires_verified_auxiliaries_without_claiming_effectiveness() -> N
     assert auxiliaries["knowledge"]["required"] is True
     assert auxiliaries["knowledge"]["provider_task_id"] == ("019fad3e-76b8-7e32-8455-d2e9b31d33e5")
     assert auxiliaries["knowledge"]["positive_support_is_not_a_selection_score"] is True
+    assert auxiliaries["knowledge"]["query_path"] == (
+        "../experiments/acea_v37_knowledge_query.json"
+    )
+    assert auxiliaries["knowledge"]["query_sha256"] == (
+        "53e133ec3079681e66420c24789b76be42f8cc33a74e123b979e8fe8a838df44"
+    )
     assert auxiliaries["pepshot"]["required_for_every_structural_shortlist_candidate"] is True
     assert auxiliaries["pepshot"]["provider_task_id"] == ("019fb910-f2dd-7be1-a7e6-bfe381512c25")
     assert auxiliaries["pepshot"]["candidate_revision_or_extra_generation_forbidden"] is True

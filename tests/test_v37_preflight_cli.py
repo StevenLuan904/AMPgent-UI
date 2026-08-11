@@ -122,12 +122,32 @@ def test_v37_execution_bundle_uses_only_explicit_frozen_inputs(
     registry_path = workspace / "metrics.yaml"
     registry_path.write_text("adapters: {}\n", encoding="utf-8")
     inputs = {}
-    for name in ("metric", "knowledge", "query", "pepshot"):
+    for name in ("metric", "knowledge", "pepshot"):
         inputs[name] = _write_json(workspace / f"{name}.json", {"name": name})
+    inputs["query"] = _write_json(
+        workspace / "query.json",
+        {
+            "schema_version": "v37.knowledge-query.1",
+            "target_key": "AceA",
+            "application": "v37_rapid_champion_generation",
+            "query": (
+                "AceA targeted antimicrobial short peptide sequence design positive "
+                "negative variants intracellular delivery MIC selectivity"
+            ),
+        },
+    )
 
     class Manifest:
         generators = {"engines": [{"generator_id": "generator"}]}
         stage_1_sequence_evaluation = {"metric_plugins": [{"name": "metric"}]}
+        verified_auxiliaries = {
+            "knowledge": {
+                "query_path": "query.json",
+                "query_sha256": preflight_cli.sha256_bytes(
+                    inputs["query"].read_bytes()
+                ),
+            }
+        }
 
     class Store:
         def put_bytes(self, payload: bytes, media_type: str) -> object:

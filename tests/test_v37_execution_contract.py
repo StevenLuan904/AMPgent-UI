@@ -61,8 +61,9 @@ def _immutable_inputs() -> dict[str, dict[str, object]]:
             ("manifest", "a", "application/yaml"),
             ("experiment_spec", "b", "application/yaml"),
             ("capacity_contract", "c", "application/yaml"),
-            ("execution_bundle", "d", "application/json"),
-            ("metric_registry", "e", "application/yaml"),
+            ("worker_placement_snapshot", "d", "application/json"),
+            ("execution_bundle", "e", "application/json"),
+            ("metric_registry", "f", "application/yaml"),
         )
     }
 
@@ -131,6 +132,7 @@ def test_v37_preflight_requires_content_addressed_source_bytes(tmp_path: Path) -
         ("manifest.yaml", b"m"),
         ("spec.yaml", b"s"),
         ("capacity.yaml", b"c"),
+        ("workers.json", b"w"),
         ("run.json", b"e"),
         ("metrics.yaml", b"r"),
     ):
@@ -141,14 +143,16 @@ def test_v37_preflight_requires_content_addressed_source_bytes(tmp_path: Path) -
         manifest_path=paths[0],
         experiment_spec_path=paths[1],
         capacity_contract_path=paths[2],
-        execution_bundle_path=paths[3],
-        metric_registry_path=paths[4],
+        worker_placement_snapshot_path=paths[3],
+        execution_bundle_path=paths[4],
+        metric_registry_path=paths[5],
         object_store=Store(),
     )
     assert set(bindings) == {
         "manifest",
         "experiment_spec",
         "capacity_contract",
+        "worker_placement_snapshot",
         "execution_bundle",
         "metric_registry",
     }
