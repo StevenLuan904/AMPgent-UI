@@ -65,8 +65,13 @@ margin 也已在输出前冻结：确认后新颖非支配发现率至少增加 
 活性阈值或显著性替代品，并须同时报告 parent-cluster bootstrap 区间。数据库持久化实现已冻结为
 commit `4f152bc31498e0fcf53fa47469dfd2d2791b163d`：包括 typed proposal occurrence、精确重试
 ToolCall/artifact/Evaluation/AgentDecision、盲化后揭盲门禁、冻结依赖图和 database+object-store-only
-replay verifier。当前仍需实现并测试真实 knowledge/PepShot adapter activity、注册允许 worker、核验身份，
-并获得单独 formal-run 授权，才能申请唯一 formal run。
+replay verifier。真实接口的离线 adapter 合同现已实现并通过隔离测试：知识包必须匹配冻结 task、原始
+schema/policy 字节 SHA、`generated_at`、verified card 与可定位 passage；PepShot 必须按实际 CLI 的
+`bundle→verify→读取全部图片→validate-review` 路由，验证 `valid` receipt、bundle identity、artifact
+计数、priority-first 阅读顺序和所有图片 SHA。adapter 会生成与 evidence plan 完全一致的 knowledge/
+PepShot artifact roles，并把验证 receipt 一并封装供 PostgreSQL ToolCall 引用。它仍未注册为 worker
+activity，也没有执行任何 episode；完成 shadow preflight、允许 worker 身份核验并获得单独 formal-run
+授权后，才能申请唯一 formal run。
 
 只有至少一个主要实用端点达到冻结改善幅度，并且其他主要端点没有超过冻结退化幅度，工具或组合
 才可晋升。否则结论必须是 context-specific、无已证明收益、有害/不可靠或无法判断。所有结论仍只是

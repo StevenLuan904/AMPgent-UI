@@ -514,8 +514,13 @@ margin 已在输出前冻结：确认后新颖非支配发现率改善 0.25 条/
 `94f008863a57ff306b3134e1e81f7b6ed4dac81ca45b03b5d8c9cbc0e32084b5`，覆盖 96 个 episode、770 个
 逻辑 ToolCall 和 768 次 raw proposal occurrence。
 
-执行前仍需实现并测试真实 knowledge/PepShot adapter activity。不得把 persistence primitives 注册到
-Temporal 或提交 run；只有另获 formal-run 授权、完成 worker 身份/版本门禁后才可注册和执行。
+真实外部接口的离线 adapter 合同已实现并通过隔离测试：知识侧校验冻结 task、原始 schema/policy
+字节 SHA、`generated_at`、verified card 和可定位 passage，并生成 context/trace/policy/passage 四类
+精确 artifact；PepShot 侧按实际 CLI 的 `valid` receipt 语义核验 bundle identity、artifact 数、priority-
+first 顺序、全部请求图片 SHA、review validation 与科学声明边界，并生成 evidence plan 要求的五类精确
+artifact。该实现尚未注册为 Temporal activity，也没有实际检索、渲染、review 或候选生成。不得把
+persistence/adapters 注册到 Temporal 或提交 run；只有 shadow preflight 通过、另获 formal-run 授权并
+完成 worker 身份/版本门禁后才可注册和执行。
 
 该 persistence checkpoint 的记录提交为
 `bba75e95b358eca205be0736f3d7b8600765355f`，`ruff check .` clean、完整 `pytest -q` 为 `294 passed`。

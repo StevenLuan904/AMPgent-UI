@@ -65,6 +65,21 @@ challenger、独立评价端点、预先停止条件和数据库可重放证据�
 用于生成/选择的软指标不能同时作为唯一验收指标。历史 run 要按时间和版本分层；提议策略不能
 读取 holdout 的最终决策标签。新 harness 只有在离线重放、shadow 和前瞻对照依次通过后才能晋级。
 
+### 3.4 生物学目标必须由外部证据定义，生成历史只诊断可达性
+
+- 新的生物学优化目标、干预方向和风险边界必须来自可定位的外部证据：优先原始实验研究，必要时
+  由系统综述帮助界定检索范围；不得从本项目自己生成的分数分布、分位数或当前 Pareto 前沿反推
+  “应该优化到哪里”。
+- 自生成历史只能回答生成器覆盖、可达性、预算分配、匹配分层和异常检测问题。它可以说明“当前
+  能生成什么”，不能说明“什么在生物学上更有效或更安全”。
+- 文献若只支持 scaffold-specific、位置依赖或非单调效应，预注册就必须采用同 scaffold 配对干预、
+  剂量梯度与匹配对照；禁止把单篇研究的绝对净电荷、MIC 或毒性拐点移植为跨 scaffold 通用阈值。
+- 每个目标规则必须记录 `objective_claim`、来源 DOI/PMID、可定位 passage、证据等级、适用距离、
+  支持与反对证据、检索时间和内容 SHA。检索、纳入/排除、规则抽取及 Agent 采用/拒绝边必须进入
+  PostgreSQL evidence graph，原始页面或全文快照进入内容寻址对象存储。
+- 生成结果只能更新“覆盖与可行性”判断。要改变生物学目标，必须经过新的外部证据审查和新版本
+  预注册；不得在 active run 内用自身输出闭环改写目标。
+
 ## 4. 长期问题账本
 
 ### Q1：显式正电性怎样进入设计，而不是事后筛选？
@@ -118,8 +133,9 @@ cross-seed attainment、novel discovery yield、leave-one-model-out 稳定性；
 ### Q3：文献知识卡是否真的提高设计质量？
 
 当前判断：`in_progress`。尚未正式接入并验证；v34 已形成未授权的 2×2 预注册草案，精确合同为
-`config/benchmarks/amp_knowledge_pepshot_ablation_v34.yaml`。现有平台接口可容纳卡片，但动态检索、
-passage 绑定与真实 adapter 尚未形成可执行的端到端闭环。
+`config/benchmarks/amp_knowledge_pepshot_ablation_v34.yaml`。离线 adapter 已能校验冻结 task、原始
+schema/policy 字节 SHA、verified card、可定位 passage 与完整 evidence artifact roles；动态检索仍未
+注册为可执行 activity，也未进入正式 episode。
 
 工程状态更新：ToolCall、artifact、proposal occurrence、AgentDecision、盲化门禁与
 database+object-store-only replay 的持久化 primitives 已实现，但动态检索与 passage 绑定尚未注册为
@@ -135,10 +151,12 @@ passage SHA、prompt、response、采纳/拒绝边必须落库。
 
 当前判断：`in_progress`。工具已成熟到可做 shadow evidence，但未进入 v32 决策；v34 草案已固定
 PepShot contract/request/review schema SHA、verify→读取全部请求图片→validate-review 路由和允许影响的
-决策类型；尚未实现真实 adapter activity 或运行。
+决策类型。离线 adapter 已按实际 CLI 的 `valid` receipt、bundle identity、artifact 数、priority-first
+顺序、全部图片 SHA 和 review validation 实现 fail-closed 校验，并生成与 evidence plan 一致的五类
+artifact；尚未注册 activity 或运行。
 
-工程状态更新：正式 evidence graph 与重放 primitives 已实现；实际 PepShot adapter activity、worker
-注册和运行仍未发生。
+工程状态更新：正式 evidence graph、重放 primitives 与离线 PepShot adapter 合同已实现；实际
+PepShot activity、worker 注册和运行仍未发生。
 
 建议实验：同一批冻结结构做 `PepShot off/on` 配对；与知识卡形成可解释的 2×2 设计：baseline、
 cards-only、PepShot-only、cards+PepShot。PepShot 只影响结构审阅、追加视图和是否升级/修改，不得

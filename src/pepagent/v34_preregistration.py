@@ -7,6 +7,10 @@ import yaml
 from pydantic import BaseModel, model_validator
 
 from pepagent.provenance.hashing import sha256_json
+from pepagent.v34_external_adapters import (
+    DEFAULT_KNOWLEDGE_ADAPTER_CONTRACT,
+    DEFAULT_PEPSHOT_ADAPTER_CONTRACT,
+)
 
 
 class FactorialArm(BaseModel):
@@ -98,6 +102,16 @@ class V34Preregistration(BaseModel):
         knowledge = self.knowledge_provider
         if knowledge.get("system_id") != "amp-system-kb":
             raise ValueError("v34 knowledge provider identity drifted")
+        if knowledge.get("context_pack_schema_sha256") != (
+            DEFAULT_KNOWLEDGE_ADAPTER_CONTRACT.context_schema_sha256
+        ) or knowledge.get("active_policy_sha256") != (
+            DEFAULT_KNOWLEDGE_ADAPTER_CONTRACT.active_policy_sha256
+        ):
+            raise ValueError("v34 knowledge provider contract hash drifted")
+        if set(knowledge.get("required_pack_fields", [])) != set(
+            DEFAULT_KNOWLEDGE_ADAPTER_CONTRACT.required_pack_fields
+        ):
+            raise ValueError("v34 knowledge context fields drifted")
         admission = knowledge.get("admission", {})
         required_knowledge_guards = (
             "D4_excluded",
@@ -110,6 +124,22 @@ class V34Preregistration(BaseModel):
             raise ValueError("online knowledge condensation is forbidden in v34")
 
         pepshot = self.pepshot_provider
+        expected_pepshot_hashes = (
+            DEFAULT_PEPSHOT_ADAPTER_CONTRACT.contract_sha256,
+            DEFAULT_PEPSHOT_ADAPTER_CONTRACT.request_schema_sha256,
+            DEFAULT_PEPSHOT_ADAPTER_CONTRACT.review_schema_sha256,
+        )
+        observed_pepshot_hashes = (
+            pepshot.get("contract_sha256"),
+            pepshot.get("agent_request_schema_sha256"),
+            pepshot.get("review_schema_sha256"),
+        )
+        if observed_pepshot_hashes != expected_pepshot_hashes:
+            raise ValueError("v34 PepShot provider contract hash drifted")
+        if pepshot.get("maximum_priority_labeled_views") != (
+            DEFAULT_PEPSHOT_ADAPTER_CONTRACT.maximum_priority_labeled_views
+        ):
+            raise ValueError("v34 PepShot priority-view budget drifted")
         if pepshot.get("required_route") != (
             "verify_then_read_all_requested_images_then_validate_review"
         ):
