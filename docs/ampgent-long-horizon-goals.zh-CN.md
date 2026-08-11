@@ -152,6 +152,8 @@ cell-turnover 实用门槛。后者不是文献给出的普适常数，也不得
 SHA-256 为 `b5c3629cf19d90a6962d048cbe6bf8ff1d6ee7bef7ae449ffe03c649aa5470e6`，回填 revision 后的
 benchmark config SHA-256 为 `486a8ce423d06ab05df3847f1ebe12d73de6bff6a3a0976809da3e8cf11a765b`。
 全量测试为 `340 passed`。这些证据只证明预注册合同与数据库重算器可用，不能证明搜索已经饱和。
+revision 回填 checkpoint 为 `87b96532ac3cac6cc0bac785ccae5ca34757fa21`，内容归档 SHA-256 为
+`cb32279158e9f2f32827111677ff4aa201f7346909b38ba861eb401ec5339557`。
 
 ### Q3：文献知识卡是否真的提高设计质量？
 

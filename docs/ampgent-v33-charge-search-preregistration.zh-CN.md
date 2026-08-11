@@ -126,6 +126,11 @@ database/object-store-only verifier 会从数据库候选指标与冻结流顺�
 `486a8ce423d06ab05df3847f1ebe12d73de6bff6a3a0976809da3e8cf11a765b`，全量验证为 ruff clean、pytest
 `340 passed`。正式执行授权仍为 false。
 
+revision 回填记录 checkpoint 为 commit `87b96532ac3cac6cc0bac785ccae5ca34757fa21`。内容归档
+`var/archives/ampgent-v33-search-sufficiency-87b9653.zip` 的 SHA-256 为
+`cb32279158e9f2f32827111677ff4aa201f7346909b38ba861eb401ec5339557`。该归档是冻结源码/合同快照，不是
+run 证据；没有新 candidate、Evaluation 或搜索结论。
+
 ## 7. 主要原始证据
 
 - Jiang et al., *Biopolymers* 2008, PMID 18098173, PMCID PMC2761230,

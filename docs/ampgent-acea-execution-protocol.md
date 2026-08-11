@@ -513,6 +513,11 @@ archive、active/cumulative ε-cell、双向 attainment、leave-one-soft-model-o
 `486a8ce423d06ab05df3847f1ebe12d73de6bff6a3a0976809da3e8cf11a765b`，全量验证为 ruff clean、pytest
 `340 passed`；但 `execution_authorized=false`、`submitted=false` 继续有效。
 
+revision 回填记录 checkpoint 为 commit `87b96532ac3cac6cc0bac785ccae5ca34757fa21`；内容归档
+`var/archives/ampgent-v33-search-sufficiency-87b9653.zip` 的 SHA-256 为
+`cb32279158e9f2f32827111677ff4aa201f7346909b38ba861eb401ec5339557`。这是实现与预注册合同归档，
+不是 formal-run evidence，不改变未授权状态。
+
 ## 18. v34 文献知识卡 × PepShot 干预消融草案（2026-08-11 append-only update）
 
 用户要求正式比较知识卡任务 `019fad3e-76b8-7e32-8455-d2e9b31d33e5` 与 PepShot 任务
