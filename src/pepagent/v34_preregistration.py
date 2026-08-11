@@ -212,8 +212,12 @@ class V34Preregistration(BaseModel):
             raise ValueError("v34 draft is not authorized for execution")
         if self.formal_run.run_id is not None or self.formal_run.workflow_id is not None:
             raise ValueError("unsubmitted v34 draft cannot carry run/workflow identities")
-        if self.formal_run.implementation_revision is not None:
-            raise ValueError("v34 implementation is not frozen yet")
+        revision = self.formal_run.implementation_revision
+        if revision is not None and (
+            len(revision) != 40
+            or any(character not in "0123456789abcdef" for character in revision)
+        ):
+            raise ValueError("v34 implementation revision must be an exact git SHA")
         return self
 
 

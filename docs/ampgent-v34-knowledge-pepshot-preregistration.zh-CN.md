@@ -62,9 +62,11 @@ schema 或 evidence reference 损坏时 fail closed。PepShot on 时必须依次
 margin 也已在输出前冻结：确认后新颖非支配发现率至少增加 0.25 条/parent（24 个 parent 即至少 6 条），
 结构冲突拦截召回率至少提高 10 个百分点，或无效/无支持编辑率至少降低 10 个百分点；其余主要端点
 分别不得恶化超过 0.10 条/parent、5 个百分点、5 个百分点。这些是 Agent 工程晋级幅度，不是生物学
-活性阈值或显著性替代品，并须同时报告 parent-cluster bootstrap 区间。当前还需实现正式 ToolCall、
-依赖、盲化 adjudication
-与 replay activity，commit/push 并核验 worker 身份，才能申请唯一 formal run。
+活性阈值或显著性替代品，并须同时报告 parent-cluster bootstrap 区间。数据库持久化实现已冻结为
+commit `4f152bc31498e0fcf53fa47469dfd2d2791b163d`：包括 typed proposal occurrence、精确重试
+ToolCall/artifact/Evaluation/AgentDecision、盲化后揭盲门禁、冻结依赖图和 database+object-store-only
+replay verifier。当前仍需实现并测试真实 knowledge/PepShot adapter activity、注册允许 worker、核验身份，
+并获得单独 formal-run 授权，才能申请唯一 formal run。
 
 只有至少一个主要实用端点达到冻结改善幅度，并且其他主要端点没有超过冻结退化幅度，工具或组合
 才可晋升。否则结论必须是 context-specific、无已证明收益、有害/不可靠或无法判断。所有结论仍只是
@@ -79,3 +81,9 @@ request/bundle/audit/image/review/validation、prompt/response、proposal occurr
 
 正式完成的定义是只依赖 PostgreSQL 与对象存储即可重建四臂顺序、工具可用性、全部决策、holdout
 join、配对效应和晋升结论。CSV 与 Markdown 只允许作为导出，不能用于回填缺失证据。
+
+当前 evidence plan SHA-256 为
+`94f008863a57ff306b3134e1e81f7b6ed4dac81ca45b03b5d8c9cbc0e32084b5`：96 个 episode、770 个逻辑
+ToolCall、每 episode 固定 8 次 raw proposal，共 768 次 proposal occurrence。相同序列可去重成同一
+Candidate，但每一次提出行为仍单独落 `candidate_occurrences`；因此重复生成、拒绝项和 lost-response
+重试都不会被候选去重吞掉。

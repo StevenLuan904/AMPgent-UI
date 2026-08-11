@@ -15,6 +15,9 @@ def test_v34_freezes_exact_factorial_and_database_contract() -> None:
 
     assert manifest.formal_run.execution_authorized is False
     assert manifest.formal_run.submitted is False
+    assert manifest.formal_run.implementation_revision == (
+        "4f152bc31498e0fcf53fa47469dfd2d2791b163d"
+    )
     assert manifest.parent_cohort["expected_parent_count"] == 24
     assert len(manifest.parent_cohort["members"]) == 24
     assert manifest.parent_cohort["member_manifest_sha256"] == (
@@ -59,6 +62,11 @@ def test_v34_rejects_missing_arm_blinding_or_evidence() -> None:
         "members"
     ][1]["candidate_id"]
     with pytest.raises(ValueError, match="identities and sequences"):
+        V34Preregistration.model_validate(payload)
+
+    payload = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
+    payload["formal_run"]["implementation_revision"] = "not-a-revision"
+    with pytest.raises(ValueError, match="exact git SHA"):
         V34Preregistration.model_validate(payload)
 
 

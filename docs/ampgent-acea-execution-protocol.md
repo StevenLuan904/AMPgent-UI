@@ -507,8 +507,15 @@ pack/bundle 的原始字节作为内容寻址 artifact 导入对应 AMPgent evid
 `f1955476cb761d9ca300a8fed00d9bb847e775ee5f4c1ef51d1346376a4f943e`。三个主要端点的 practical
 margin 已在输出前冻结：确认后新颖非支配发现率改善 0.25 条/parent、结构冲突召回改善 0.10、无效编辑率
 降低 0.10；其余端点最大允许退化分别为 0.10 条/parent、0.05、0.05。它们是 Agent 晋级幅度而非生物学
-阈值。执行前仍需：实现并测试正式知识检索、PepShot、盲化 adjudication
-和 replay activities；commit/push/archive；再获得单独 formal-run 授权并通过第 6 节全部门禁。
+阈值。数据库持久化层已冻结于 commit `4f152bc31498e0fcf53fa47469dfd2d2791b163d`：新增 typed
+`candidate_occurrences`，使相同序列在不同 arm/重试中的每次提出行为都不会被 Candidate 去重吞掉；并
+实现精确重试 ToolCall/artifact/Evaluation/AgentDecision、冻结依赖图、96 个盲化判定后才可揭盲的门禁，
+以及 database+object-store-only replay verifier。当前 evidence plan SHA-256 为
+`94f008863a57ff306b3134e1e81f7b6ed4dac81ca45b03b5d8c9cbc0e32084b5`，覆盖 96 个 episode、770 个
+逻辑 ToolCall 和 768 次 raw proposal occurrence。
+
+执行前仍需实现并测试真实 knowledge/PepShot adapter activity。不得把 persistence primitives 注册到
+Temporal 或提交 run；只有另获 formal-run 授权、完成 worker 身份/版本门禁后才可注册和执行。
 
 v34 预注册、确定性 arm 分配/配对效应与 replay graph 完整性验证器已冻结在 commit
 `29a352abb858e07086ffac943e2b5c939c97d940`；全量验证为 ruff clean、pytest `290 passed`。内容归档为

@@ -119,7 +119,11 @@ cross-seed attainment、novel discovery yield、leave-one-model-out 稳定性；
 
 当前判断：`in_progress`。尚未正式接入并验证；v34 已形成未授权的 2×2 预注册草案，精确合同为
 `config/benchmarks/amp_knowledge_pepshot_ablation_v34.yaml`。现有平台接口可容纳卡片，但动态检索、
-passage 绑定与正式 Agent 决策边仍未形成可执行的端到端闭环。
+passage 绑定与真实 adapter 尚未形成可执行的端到端闭环。
+
+工程状态更新：ToolCall、artifact、proposal occurrence、AgentDecision、盲化门禁与
+database+object-store-only replay 的持久化 primitives 已实现，但动态检索与 passage 绑定尚未注册为
+可执行 activity，也没有获授权的端到端 workflow。
 
 建议实验：冻结 parent、seed、预算和所有模型，比较 `no_cards` 与 `verified_cards`；后续可增加
 `retrieval_without_rerank` 和 `context-matched_cards`。知识组只能读取与任务上下文匹配、来源 passage
@@ -131,7 +135,10 @@ passage SHA、prompt、response、采纳/拒绝边必须落库。
 
 当前判断：`in_progress`。工具已成熟到可做 shadow evidence，但未进入 v32 决策；v34 草案已固定
 PepShot contract/request/review schema SHA、verify→读取全部请求图片→validate-review 路由和允许影响的
-决策类型，仍未实现正式 activity 或运行。
+决策类型；尚未实现真实 adapter activity 或运行。
+
+工程状态更新：正式 evidence graph 与重放 primitives 已实现；实际 PepShot adapter activity、worker
+注册和运行仍未发生。
 
 建议实验：同一批冻结结构做 `PepShot off/on` 配对；与知识卡形成可解释的 2×2 设计：baseline、
 cards-only、PepShot-only、cards+PepShot。PepShot 只影响结构审阅、追加视图和是否升级/修改，不得
@@ -187,7 +194,11 @@ v34 当前叙事预注册见 `docs/ampgent-v34-knowledge-pepshot-preregistration
 cards+PepShot 四个隔离 episode；proposal/结构/评价预算相同，工具成本单列，评价先盲化后揭盲。当前
 parent identity manifest 已由 v32 database-only replay 冻结，SHA-256 为
 `f1955476cb761d9ca300a8fed00d9bb847e775ee5f4c1ef51d1346376a4f943e`；三个主要端点的 practical
-improvement/degradation margins 也已在输出前冻结。尚未实现正式数据库 activity，因而不能执行。
+improvement/degradation margins 也已在输出前冻结。实现 commit
+`4f152bc31498e0fcf53fa47469dfd2d2791b163d` 新增 typed `candidate_occurrences`、精确重试 ToolCall/
+artifact/Evaluation/AgentDecision primitives、770 节点依赖物化、96 个盲化锁门禁和仅依赖数据库/对象
+存储的 replay verifier；8×96=768 次 raw proposal occurrence 可逐次复原。它们没有注册到 Temporal，
+实际知识检索与 PepShot adapter 也尚未执行，因而不能执行或声称工具有效。
 预注册与预执行验证器 checkpoint 为 commit `29a352abb858e07086ffac943e2b5c939c97d940`，内容归档
 SHA-256 为 `cf5afb9ee7a4c01d1628323523abd15ff9589e52208def845c4b00d0b8ef6eba`。
 
