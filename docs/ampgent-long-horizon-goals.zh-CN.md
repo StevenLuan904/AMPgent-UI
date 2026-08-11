@@ -261,6 +261,10 @@ provider gate 记录提交为 `6e38bdb`，内容归档 SHA-256 为
 效果结论。下一验收点是：完整 release 与 receipt 进入 PostgreSQL/对象存储证据图，数据库-only replay
 通过后，才允许申请 v34 正式 2×2 消融授权。
 
+该边界与消费门禁冻结于 commit `96b4e02732939544a8b7a939de312e7d22ff0ad2`，config revision 记录于
+`d24a55c1d2ab0f8276d09a904118f5d9e8224a3d`；全量验证为 ruff clean、pytest `313 passed`。内容归档
+SHA-256 为 `4196f9ffb4017bcf2ed44e89d8b69c8e5aae611145f41abb6a72a807dad9ab05`。
+
 版本号是当前规划，不是正式 run 授权。任何生成、阈值、候选选择或执行必须先有独立冻结 config、
 提交/push、服务与 worker 门禁、唯一 run 检查。长期路线允许被新证据修订，但修订必须追加理由，不能
 静默改写历史问题或成功标准。

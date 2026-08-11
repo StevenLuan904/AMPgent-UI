@@ -590,3 +590,11 @@ release fixture ID 强行相等。
 `b4f4b848f603f431e5db49bd66e018904c35c9eacf97ae83882d92e6710f2c5d`）。当前下一步仅是把两项 release
 完整快照进入内容寻址对象存储，并运行数据库原生、无候选生成的隔离 shadow/replay。该验收不是工具
 效果结果，也不授权 v34 formal run。
+
+消费验收与 provider ownership checkpoint 为 commit
+`96b4e02732939544a8b7a939de312e7d22ff0ad2`；v34 config 随后在 commit
+`d24a55c1d2ab0f8276d09a904118f5d9e8224a3d` 冻结指向该实现。ruff clean、pytest `313 passed`；
+config SHA-256 为 `f22e3db1c2c9ad0d9f7ab14cc7f7d676b23cdf20f68b049f785793775116be84`，evidence plan
+SHA-256 为 `3f1cfe953cfec2da98145573843fe514570760a91f25247280369f6795c29380`。内容归档
+`var/archives/ampgent-v34-provider-release-d24a55c.zip` 的 SHA-256 为
+`4196f9ffb4017bcf2ed44e89d8b69c8e5aae611145f41abb6a72a807dad9ab05`。
