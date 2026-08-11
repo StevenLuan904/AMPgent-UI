@@ -1,0 +1,237 @@
+benchmark_id: amp_harness_evolution_v36
+version: v36.0.0-governance-framework
+execution_status: governance_framework_frozen_not_authorized
+track: evidence_governed_harness_evolution
+
+scientific_question:
+  primary: Can AMPgent improve its decision process from replayable historical evidence without tuning on holdouts, rewriting frozen runs, or confusing soft-model agreement with scientific progress?
+  current_answer: unanswered
+  universal_best_harness_claim_forbidden: true
+
+scope:
+  harness_schema_implementation_authorized: false
+  historical_replay_authorized: false
+  shadow_challenger_authorized: false
+  prospective_champion_challenger_authorized: false
+  candidate_generation_authorized: false
+  formal_run_authorized: false
+  frozen_runs_may_be_mutated: false
+
+philosophy:
+  harness_is: versioned_executable_epistemic_policy
+  optimization_unit: evidence_to_decision_process_not_single_candidate_score
+  primary_goal: improve_reproducible_decision_quality_per_fixed_budget
+  context_specific_harness_portfolio_preferred_over_universal_winner: true
+  one_minimal_attributable_change_per_challenger: true
+  weighted_total_score_forbidden: true
+  self_generated_biological_targets_forbidden: true
+  soft_model_self_consistency_is_not_progress: true
+
+harness_release_contract:
+  required_identity_fields:
+    - harness_id
+    - parent_harness_id
+    - scope_id
+    - release_status
+    - change_hypothesis
+    - changed_components
+    - rollback_harness_id
+  required_immutable_footprints:
+    - source_revision
+    - config_sha256
+    - prompt_bundle_sha256
+    - tool_manifest_sha256
+    - model_manifest_sha256
+    - environment_manifest_sha256
+    - failure_taxonomy_sha256
+    - budget_contract_sha256
+  required_evidence_boundaries:
+    - history_cutoff_timestamp
+    - allowed_evidence_slice_sha256
+    - forbidden_holdout_manifest_sha256
+    - endpoint_contract_sha256
+  release_is_immutable_after_registration: true
+  active_run_policy_mutation_forbidden: true
+
+history_partition_contract:
+  chronological_partition_required: true
+  partitions:
+    proposal_history:
+      purpose: failure_pattern_mining_and_change_hypothesis
+      final_holdout_labels_visible: false
+    counterfactual_replay:
+      purpose: offline_policy_reexecution_over_frozen_observations
+      new_model_or_tool_evidence_allowed: false
+    shadow:
+      purpose: challenger_decisions_recorded_without_affecting_formal_actions
+      challenger_output_may_change_formal_decision: false
+    prospective_holdout:
+      purpose: equal_budget_blinded_champion_challenger_evaluation
+      assignment_hidden_until_adjudication_lock: true
+  no_episode_may_cross_partitions: true
+  holdout_outcome_or_final_decision_leakage_fails_closed: true
+
+change_proposal_contract:
+  allowed_signal_families:
+    - repeated_failure_patterns
+    - tool_order_and_retry_patterns
+    - missing_or_late_evidence
+    - compute_and_toolcall_budget_waste
+    - Pareto_lane_collapse_or_coverage_gaps
+    - context_specific_success_and_failure
+    - provider_rejection_and_recovery_history
+  required_change_record:
+    - observed_pattern_and_denominator
+    - source_run_ids_and_evidence_cutoff
+    - causal_hypothesis
+    - exactly_one_primary_changed_component
+    - expected_benefit_endpoint_family
+    - plausible_harm_endpoint_families
+    - falsification_condition
+    - rollback_trigger
+  forbidden_change_sources:
+    - prospective_holdout_outcomes
+    - hidden_final_adjudication_labels
+    - candidate_identity_cherry_picking
+    - posthoc_threshold_search
+    - provider_specific_compatibility_patch
+  multiple_unattributable_changes_forbidden: true
+
+five_gate_evolution_cycle:
+  gate_1_failure_pattern_mining:
+    status: not_authorized
+    prerequisites:
+      - frozen_database_replayable_history_slice
+      - frozen_failure_taxonomy
+      - complete_success_and_failure_denominator
+    output: immutable_change_hypothesis
+  gate_2_counterfactual_replay:
+    status: not_authorized
+    semantics: rerun_decision_policy_over_only_evidence_available_at_each_historical_decision_time
+    new_evidence_or_rescoring_forbidden: true
+    output: replay_delta_and_decision_divergence_ledger
+  gate_3_shadow_challenger:
+    status: not_authorized
+    champion_controls_formal_actions: true
+    challenger_decisions_and_costs_persisted: true
+    output: shadow_safety_and_operability_verdict
+  gate_4_prospective_equal_budget_trial:
+    status: not_authorized
+    same_inputs_seeds_resource_class_and_stopping_rules: true
+    blinded_assignment_and_adjudication: true
+    no_refill_or_early_stop_after_outcomes: true
+    output: paired_endpoint_family_effects
+  gate_5_promotion_or_rollback:
+    status: not_authorized
+    allowed_decisions:
+      - promote_for_declared_scope
+      - retain_as_context_specific_specialist
+      - retain_champion
+      - reject_challenger
+      - rollback_to_registered_ancestor
+    global_promotion_by_default_forbidden: true
+
+evaluation_contract:
+  independent_endpoint_families:
+    discovery_quality:
+      examples:
+        - valid_novel_non_dominated_discovery_yield
+        - mechanism_and_sequence_coverage
+    error_control:
+      examples:
+        - preregistered_failure_avoidance
+        - structural_conflict_interception
+        - invalid_edit_rate
+    stability:
+      examples:
+        - independent_seed_direction_consistency
+        - decision_identity_stability_under_tolerance_bounded_noise
+    efficiency:
+      examples:
+        - compute_time
+        - ToolCall_count
+        - object_store_bytes
+        - successful_decisions_per_fixed_budget
+    evidence_quality:
+      examples:
+        - graph_completeness
+        - database_object_store_only_exact_replay
+        - explanation_and_decision_edge_completeness
+  promotion_requires:
+    - improvement_on_at_least_one_preregistered_practical_endpoint
+    - no_unacceptable_degradation_in_any_protected_endpoint_family
+    - replication_across_preregistered_independent_seeds_or_contexts
+    - complete_cost_and_failure_reporting
+    - exact_database_object_store_replay
+  generation_or_selection_metrics_cannot_be_the_only_acceptance_endpoint: true
+  no_single_hypervolume_or_weighted_utility_promotion: true
+
+typed_database_contract:
+  PostgreSQL_is_authoritative: true
+  object_store_is_content_addressed: true
+  required_typed_entities:
+    - HarnessRelease
+    - HarnessLineageEdge
+    - HarnessTrial
+    - HarnessAssignment
+    - HarnessOutcome
+    - HarnessPromotionDecision
+  required_links_to_existing_graph:
+    - ExperimentRun
+    - ToolCall
+    - ToolCallDependency
+    - AgentDecision
+    - AgentDecisionToolCallEdge
+    - Artifact
+    - EvidenceArtifact
+    - LifecycleEvent
+  JSON_only_lineage_is_insufficient: true
+  current_schema_gap:
+    typed_harness_entities_implemented: false
+    execution_forbidden_until_implemented_and_migrated: true
+  persist_every:
+    - release_registration_and_parent_edge
+    - evidence_slice_and_holdout_manifest
+    - change_proposal_and_rejection
+    - replay_decision_and_divergence
+    - shadow_assignment_decision_and_cost
+    - prospective_blinded_assignment_and_outcome
+    - promotion_specialization_rejection_and_rollback
+    - provider_change_request_and_acceptance_receipt
+  database_object_store_only_replay_required: true
+  replay_must_reconstruct:
+    - complete_harness_lineage_and_immutable_footprints
+    - exact_history_partitions_and_no_leakage_witnesses
+    - every_champion_challenger_assignment
+    - evidence_available_at_each_decision_time
+    - every_counterfactual_and_shadow_decision
+    - paired_prospective_endpoint_effects_and_costs
+    - promotion_or_rollback_decision_and_scope
+  CSV_JSON_and_Markdown_are_exports_only: true
+
+rollback_contract:
+  rollback_target_must_be_registered_ancestor: true
+  rollback_is_append_only_event_not_history_rewrite: true
+  active_runs_finish_under_their_frozen_harness: true
+  emergency_disable_requires_reason_artifact_and_lifecycle_event: true
+  post_rollback_replay_must_preserve_failed_release_evidence: true
+
+provider_ownership:
+  PepShot_task: 019fb910-f2dd-7be1-a7e6-bfe381512c25
+  knowledge_card_task: 019fad3e-76b8-7e32-8455-d2e9b31d33e5
+  provider_defects_are_fixed_by_provider_not_AMPgent: true
+  AMPgent_provider_specific_adaptation_forbidden: true
+
+next_stage:
+  name: typed_lineage_schema_and_offline_replay_verifier
+  independently_authorized_before_execution: true
+  candidate_generation_allowed: false
+  formal_challenger_allowed: false
+
+scientific_boundaries:
+  predictions_are_not_experiments: true
+  no_AMP_activity_safety_binding_or_affinity_claim: true
+  replay_improvement_is_not_prospective_improvement: true
+  shadow_improvement_is_not_promotion: true
+  scope_specific_promotion_is_not_global_superiority: true
+  no_backwrite_to_v22_through_v35: true

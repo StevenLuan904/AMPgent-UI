@@ -188,7 +188,10 @@ SHA-256 为 `a722f0f74d486237a128327a3158ae71ee143577f3f8b7e4acb46505e38778da`�
 
 ### Q6：怎样利用历史尝试进行 harness evolving？
 
-当前判断：v32 的 typed evidence graph 与 replay closure 提供了必要底座，但尚无正式的策略晋级器。
+当前判断：`in_progress`。v32 的 typed evidence graph 与 replay closure 提供了 run 级底座；v36 已冻结
+证据治理式演化框架，精确合同为 `config/benchmarks/amp_harness_evolution_v36.yaml`，叙事说明为
+`docs/ampgent-v36-harness-evolution.zh-CN.md`。当前状态是
+`governance_framework_frozen_not_authorized`，没有 replay、shadow、champion/challenger trial 或候选生成。
 
 每个 harness 版本必须保存：`harness_id`、`parent_harness_id`、变更假设、允许读取的历史切片、
 禁止泄漏的 holdout、代码/config/model SHA、预算、失败分类和晋级结论。演化循环固定为：
@@ -204,6 +207,17 @@ SHA-256 为 `a722f0f74d486237a128327a3158ae71ee143577f3f8b7e4acb46505e38778da`�
 
 允许学习：重复失败的变异、工具调用顺序、证据缺口、预算浪费、lane 塌缩、策略在何种上下文有效。
 禁止学习：利用 holdout 最终答案调阈值、回写旧 run、在 active run 中改 policy、把软模型自洽性当进步。
+
+v36 将 harness 定义为版本化的“证据到决策”策略，而不是一段 Prompt；每个 challenger 只允许一个主要
+可归因变化，并按时间隔离 proposal history、counterfactual replay、shadow 和 prospective holdout。
+晋级必须通过失败归纳、历史时点一致 replay、不影响正式动作的 shadow、同预算盲化前瞻对照和作用域
+晋级/回滚五关；replay 或 shadow 单独不能晋级，也不设加权总分或默认全局冠军。
+
+schema 审计发现现有 ExperimentRun/ToolCall/AgentDecision/Artifact 图没有一等的 harness release、谱系、
+trial、assignment、outcome 与 promotion 实体。仅写入自由 JSON 不满足长期 typed replay。因此 v36 明确
+冻结六类待实现实体：`HarnessRelease`、`HarnessLineageEdge`、`HarnessTrial`、`HarnessAssignment`、
+`HarnessOutcome`、`HarnessPromotionDecision`。在迁移、repository primitive 和 database/object-store-only
+verifier 完成前，所有演化 gate 保持未授权。
 
 ## 5. 分阶段路线与晋级门
 
@@ -294,6 +308,11 @@ PepShot 治理规则再次锁定：若后续实际对照对 PepShot 不满意，
 必须在自身仓库发布新不可变 release，AMPgent 才重新只读验收；change request、拒绝、新 release 和
 receipt 都必须进入相应 Agent evidence graph。历史“adapter”一词仅指严格 consumer validator，不代表
 允许适配 provider。
+
+v36 当前框架见 `docs/ampgent-v36-harness-evolution.zh-CN.md`，精确合同为
+`config/benchmarks/amp_harness_evolution_v36.yaml`。它只冻结演化哲学、历史分区、五关晋级、端点家族、
+typed database contract 和追加式回滚；不授权真实历史 replay、shadow、前瞻 trial 或候选生成。下一
+独立阶段只实现 typed lineage schema 与离线 replay verifier，再另行申请运行授权。
 
 版本号是当前规划，不是正式 run 授权。任何生成、阈值、候选选择或执行必须先有独立冻结 config、
 提交/push、服务与 worker 门禁、唯一 run 检查。长期路线允许被新证据修订，但修订必须追加理由，不能

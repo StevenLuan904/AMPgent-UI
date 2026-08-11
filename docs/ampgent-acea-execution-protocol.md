@@ -651,3 +651,23 @@ SHA-256 为 `a722f0f74d486237a128327a3158ae71ee143577f3f8b7e4acb46505e38778da`�
 `a8e4e4e3fafcb638c292bbb042eaa88fc4900c163d32e654778417e880893547`。内容归档
 `var/archives/ampgent-v34-provider-shadow-834ef57.zip` 的 SHA-256 为
 `652f1801c09f9babb6cd7295e3f1df7960b023b766913ef1deb45af20508274c`。
+
+## 19. v36 Harness Evolution 治理框架（未授权）
+
+长期路线的 harness evolving 已冻结为治理框架，精确合同为
+`config/benchmarks/amp_harness_evolution_v36.yaml`，叙事说明为
+`docs/ampgent-v36-harness-evolution.zh-CN.md`。状态为
+`governance_framework_frozen_not_authorized`：没有历史 replay、shadow challenger、前瞻
+champion/challenger、候选生成或 formal run 授权。
+
+固定演化循环为：完整失败分母归纳 → 单一最小变化假设 → 只使用历史决策时点可见证据的
+counterfactual replay → 不影响正式动作的 shadow → 同输入/seed/预算/停止规则的盲化前瞻对照 →
+按作用域晋级、保留为专用策略、拒绝或追加式回滚。禁止读取 holdout 结果调阈值、active run 热切
+policy、加权总分、单一 hypervolume 晋级或把软模型自洽当改进。
+
+当前 schema 审计结论：现有 run/ToolCall/decision/artifact 图不足以 typed 表达 harness 谱系和晋级。
+执行前必须实现并迁移 `HarnessRelease`、`HarnessLineageEdge`、`HarnessTrial`、`HarnessAssignment`、
+`HarnessOutcome` 与 `HarnessPromotionDecision`，并与现有证据图相连；自由 JSON 不可替代。下一独立
+阶段只允许实现这些 typed primitives 和 database+object-store-only offline replay verifier，不得据此
+运行 challenger 或生成短肽。任何 PepShot 缺陷仍直接退回任务
+`019fb910-f2dd-7be1-a7e6-bfe381512c25`，AMPgent 禁止自行适配。
