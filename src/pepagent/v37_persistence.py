@@ -360,6 +360,82 @@ def _logical_graph(graph: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
+def _is_sha256(value: Any) -> bool:
+    return isinstance(value, str) and len(value) == 64 and all(
+        char in "0123456789abcdef" for char in value
+    )
+
+
+def _validate_attempt_and_failure_ledgers(
+    payloads: Mapping[tuple[str, str], dict[str, Any]], logical_ids: Sequence[str]
+) -> None:
+    for logical_id in logical_ids:
+        attempt_ledger = payloads[(logical_id, "attempt_ledger")]
+        failure_ledger = payloads[(logical_id, "failure_ledger")]
+        attempts = attempt_ledger.get("attempts")
+        failures = failure_ledger.get("failures")
+        if (
+            attempt_ledger.get("schema_version") != "1.0"
+            or failure_ledger.get("schema_version") != "1.0"
+            or not isinstance(attempts, list)
+            or not attempts
+            or not isinstance(failures, list)
+        ):
+            raise ValueError("v37 attempt/failure ledger schema is incomplete")
+        ranks = [int(item.get("attempt", 0)) for item in attempts]
+        if ranks != list(range(1, len(attempts) + 1)) or any(
+            item.get("status") not in {"failed", "succeeded"} for item in attempts
+        ):
+            raise ValueError("v37 attempt ledger order or status is invalid")
+        if attempts[-1].get("status") != "succeeded" or any(
+            item.get("status") == "succeeded" for item in attempts[:-1]
+        ):
+            raise ValueError("v37 completed ToolCall lacks one terminal successful attempt")
+        failed_attempts = {
+            int(item["attempt"]) for item in attempts if item["status"] == "failed"
+        }
+        recorded_failures = {int(item.get("attempt", 0)) for item in failures}
+        if failed_attempts != recorded_failures or any(
+            not item.get("error_type") or not item.get("error_sha256")
+            for item in failures
+        ):
+            raise ValueError("v37 failure ledger differs from failed attempts")
+
+
+def _validate_knowledge_evidence(payload: Mapping[str, Any]) -> None:
+    required_hashes = (
+        "query_sha256",
+        "query_pack_sha256",
+        "trace_sha256",
+        "policy_sha256",
+    )
+    cards = payload.get("cards")
+    adoption_edges = payload.get("adoption_edges")
+    if (
+        payload.get("schema_version") != "1.0"
+        or not all(_is_sha256(payload.get(field)) for field in required_hashes)
+        or not isinstance(cards, list)
+        or not cards
+        or not isinstance(adoption_edges, list)
+        or not adoption_edges
+    ):
+        raise ValueError("v37 knowledge query/trace/card evidence is incomplete")
+    if any(
+        not item.get("card_id")
+        or not item.get("revision")
+        or not _is_sha256(item.get("passage_manifest_sha256"))
+        for item in cards
+    ):
+        raise ValueError("v37 knowledge card provenance is incomplete")
+    if any(
+        not item.get("evidence_id")
+        or item.get("disposition") not in {"used", "rejected", "not_applicable"}
+        or not item.get("reason")
+        for item in adoption_edges
+    ):
+        raise ValueError("v37 knowledge adoption/rejection edge is incomplete")
+
+
 def validate_v37_database_object_replay(
     *,
     manifest: Mapping[str, Any],
@@ -387,6 +463,8 @@ def validate_v37_database_object_replay(
         if Counter(observed_roles.get(logical_id, [])) != Counter(roles):
             raise ValueError(f"v37 artifact roles drifted for {logical_id}")
     payloads = _artifact_payloads(graph, artifact_payloads_by_sha256)
+    _validate_attempt_and_failure_ledgers(payloads, list(calls))
+    _validate_knowledge_evidence(payloads[("v37:knowledge", "knowledge_evidence")])
 
     candidates = {str(item["id"]): item for item in graph.get("candidates", [])}
     expected_candidate_ids: set[str] = set()
@@ -425,7 +503,13 @@ def validate_v37_database_object_replay(
             if candidate_id is None or candidate_id in expected_candidate_ids:
                 raise ValueError("v37 retained proposal candidate identity is missing or reused")
             candidate = candidates.get(candidate_id)
-            if candidate is None or candidate["sequence_sha256"] != item["sequence_sha256"]:
+            if (
+                candidate is None
+                or candidate["sequence_sha256"] != item["sequence_sha256"]
+                or candidate.get("generator_id") != generator["generator_id"]
+                or int(candidate.get("seed", -1)) != int(generator["seed"])
+                or int(candidate.get("raw_rank", -1)) != int(item["raw_rank"])
+            ):
                 raise ValueError("v37 retained proposal differs from Candidate evidence")
             expected_candidate_ids.add(candidate_id)
     if set(candidates) != expected_candidate_ids:
@@ -484,7 +568,7 @@ def validate_v37_database_object_replay(
         if not all(
             isinstance(pose.get(field), str) and len(pose[field]) == 64
             for field in ("structure_sha256", "coordinate_audit_sha256")
-        ):
+        ) or not isinstance(pose.get("boltz_seed"), int):
             raise ValueError("v37 structure pose lacks exact coordinate evidence")
         pose_ids.add(pose_id)
         pose_counts[candidate_id] += 1
@@ -501,7 +585,14 @@ def validate_v37_database_object_replay(
         pose_id = str(decoy["pose_id"])
         decoy_id = str(decoy["decoy_id"])
         score = float(decoy["interface_delta_g_reu"])
-        if pose_id not in pose_ids or decoy_id in decoy_ids or not math.isfinite(score):
+        if (
+            pose_id not in pose_ids
+            or decoy_id in decoy_ids
+            or not math.isfinite(score)
+            or not _is_sha256(decoy.get("input_sha256"))
+            or not _is_sha256(decoy.get("output_sha256"))
+            or not _is_sha256(decoy.get("score_terms_sha256"))
+        ):
             raise ValueError("v37 Rosetta decoy identity or score is invalid")
         decoy_ids.add(decoy_id)
         decoy_counts[pose_id] += 1
@@ -513,8 +604,10 @@ def validate_v37_database_object_replay(
 
     pepshot = payloads[("v37:pepshot", "pepshot_evidence")]
     reviews = pepshot.get("reviews")
-    if not isinstance(reviews, list) or {str(item["candidate_id"]) for item in reviews} != set(
-        shortlist_ids
+    if (
+        not isinstance(reviews, list)
+        or len(reviews) != len(shortlist_ids)
+        or {str(item["candidate_id"]) for item in reviews} != set(shortlist_ids)
     ):
         raise ValueError("v37 PepShot candidate review coverage is incomplete")
     required_pepshot = {
@@ -531,6 +624,12 @@ def validate_v37_database_object_replay(
     for review in reviews:
         if not required_pepshot.issubset(review) or review["pose_id"] not in pose_ids:
             raise ValueError("v37 PepShot review evidence is incomplete")
+        if not all(
+            _is_sha256(review[field])
+            for field in required_pepshot
+            if field.endswith("_sha256")
+        ):
+            raise ValueError("v37 PepShot review hash chain is invalid")
         if review["status"] not in {"reviewed", "insufficient_evidence"}:
             raise ValueError("v37 PepShot review status is invalid")
 

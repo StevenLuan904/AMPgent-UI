@@ -55,7 +55,15 @@ def _fixture() -> tuple[dict, dict, dict, dict[str, dict]]:
         candidate_id = f"candidate-{index:02d}"
         sequence = f"KRW{'K' * index}"
         sequence_sha = sha256_text(sequence)
-        candidates.append({"id": candidate_id, "sequence_sha256": sequence_sha})
+        candidates.append(
+            {
+                "id": candidate_id,
+                "sequence_sha256": sequence_sha,
+                "generator_id": generator["generator_id"],
+                "seed": generator["seed"],
+                "raw_rank": 1,
+            }
+        )
         occurrences = [
             {
                 "v37_logical_id": logical_id,
@@ -118,6 +126,7 @@ def _fixture() -> tuple[dict, dict, dict, dict[str, dict]]:
                 {
                     "candidate_id": candidate_id,
                     "pose_id": f"{candidate_id}-pose-{pose_rank}",
+                    "boltz_seed": 20270380 + pose_rank,
                     "structure_sha256": "a" * 64,
                     "coordinate_audit_sha256": "b" * 64,
                 }
@@ -131,6 +140,9 @@ def _fixture() -> tuple[dict, dict, dict, dict[str, dict]]:
                     "pose_id": pose["pose_id"],
                     "decoy_id": f"{pose['pose_id']}-decoy-{decoy_rank}",
                     "interface_delta_g_reu": -float(decoy_rank),
+                    "input_sha256": "c" * 64,
+                    "output_sha256": "d" * 64,
+                    "score_terms_sha256": "e" * 64,
                 }
             )
     payloads[("v37:rosetta", "decoy_manifest")] = {"decoys": decoys}
@@ -153,6 +165,27 @@ def _fixture() -> tuple[dict, dict, dict, dict[str, dict]]:
     payloads[("v37:final-portfolio", "final_portfolio")] = {
         "candidate_ids": shortlist_ids[:1]
     }
+    payloads[("v37:knowledge", "knowledge_evidence")] = {
+        "schema_version": "1.0",
+        "query_sha256": "1" * 64,
+        "query_pack_sha256": "2" * 64,
+        "trace_sha256": "3" * 64,
+        "policy_sha256": "4" * 64,
+        "cards": [
+            {
+                "card_id": "card-1",
+                "revision": "revision-1",
+                "passage_manifest_sha256": "5" * 64,
+            }
+        ],
+        "adoption_edges": [
+            {
+                "evidence_id": "card-1:passage-1",
+                "disposition": "used",
+                "reason": "applicable to frozen target context",
+            }
+        ],
+    }
 
     for stage in plan["global_calls"]:
         events.append(
@@ -166,6 +199,16 @@ def _fixture() -> tuple[dict, dict, dict, dict[str, dict]]:
         )
 
     for logical_id, roles in contract.items():
+        payloads[(logical_id, "attempt_ledger")] = {
+            "schema_version": "1.0",
+            "v37_logical_id": logical_id,
+            "attempts": [{"attempt": 1, "status": "succeeded"}],
+        }
+        payloads[(logical_id, "failure_ledger")] = {
+            "schema_version": "1.0",
+            "v37_logical_id": logical_id,
+            "failures": [],
+        }
         for role in roles:
             payload = payloads.get(
                 (logical_id, role), {"logical_id": logical_id, "role": role}
@@ -267,6 +310,19 @@ def _pop_role_item(graph: dict, payloads: dict[str, dict], role: str, key: str) 
     payloads[new_sha] = payload
 
 
+def _mutate_role_payload(graph: dict, payloads: dict[str, dict], role: str, mutation) -> None:
+    artifact = next(
+        artifact
+        for artifact in graph["artifacts"]
+        for link in graph["evidence_artifacts"]
+        if link["artifact_id"] == artifact["id"] and link["role"] == role
+    )
+    payload = payloads.pop(artifact["sha256"])
+    mutation(payload)
+    artifact["sha256"] = sha256_json(payload)
+    payloads[artifact["sha256"]] = payload
+
+
 def test_v37_replay_requires_complete_typed_database_object_graph() -> None:
     result = _validate(_fixture())
     assert result["exact_replay"] is True
@@ -338,6 +394,40 @@ def test_v37_replay_fails_closed_on_missing_pepshot_review() -> None:
     manifest, plan, graph, payloads = _fixture()
     _pop_role_item(graph, payloads, "pepshot_evidence", "reviews")
     with pytest.raises(ValueError, match="PepShot candidate review coverage"):
+        validate_v37_database_object_replay(
+            manifest=manifest,
+            plan=plan,
+            graph=graph,
+            artifact_payloads_by_sha256=payloads,
+        )
+
+
+@pytest.mark.parametrize(
+    ("role", "mutation", "match"),
+    [
+        (
+            "attempt_ledger",
+            lambda payload: payload["attempts"].clear(),
+            "attempt/failure ledger schema",
+        ),
+        (
+            "knowledge_evidence",
+            lambda payload: payload["cards"].clear(),
+            "knowledge query/trace/card evidence",
+        ),
+        (
+            "pepshot_evidence",
+            lambda payload: payload["reviews"][0].update({"review_sha256": "bad"}),
+            "PepShot review hash chain",
+        ),
+    ],
+)
+def test_v37_replay_rejects_semantically_empty_artifacts(
+    role: str, mutation, match: str
+) -> None:
+    manifest, plan, graph, payloads = _fixture()
+    _mutate_role_payload(graph, payloads, role, mutation)
+    with pytest.raises(ValueError, match=match):
         validate_v37_database_object_replay(
             manifest=manifest,
             plan=plan,
