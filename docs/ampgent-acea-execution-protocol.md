@@ -354,3 +354,8 @@ The acceptance verdict is `ready_for_v33_preregistration`. This means the v32 ev
 database replay, endpoint-family separation, seed balance, risk exclusion, and charge provenance are
 sufficient to write a new v33 protocol. It does not authorize v33 sequence generation, charge
 mutation, thresholds, or execution. v32 and its acceptance child run must not be rerun or backfilled.
+
+Completion-state commit `07e24ce6228d1d6a11a4f4ab1d1f986231955cbd` passed ruff and the full
+test suite (`258 passed`). Its content archive is
+`var/archives/ampgent-v32-acceptance-completion-07e24ce.zip`, SHA-256
+`d6684f090e0ead48f1c14a0f0e9e4960593f92ed9090e877a3515810b8c15d64`.
