@@ -1,7 +1,7 @@
 benchmark_id: amp_multiobjective_evidence_closure_v32
 version: v32.closure.0.1
-execution_status: preregistered
-execution_authorized: false
+execution_status: ready
+execution_authorized: true
 v32_run_id: d695853e-cb94-4608-ad71-e4d7c4df1e85
 acceptance_run_id: f87c4db4-83e5-4c6f-8f4e-3d52f5c40ce3
 submitted_manifest:
@@ -27,9 +27,8 @@ scientific_contract:
   v33_readiness_means_preregistration_only: true
 implementation:
   module: pepagent.v32_evidence_closure
-  revision: pending
+  revision: 6074fa4585f74c4b5d61685928d667c4167f92bc
 formal_closure_run:
   submit_exactly_once: true
   submitted: false
   run_id: null
-

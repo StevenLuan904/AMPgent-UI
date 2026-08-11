@@ -11,9 +11,13 @@ ROOT = Path(__file__).parents[1]
 CONFIG = ROOT / "config" / "benchmarks" / "amp_multiobjective_evidence_closure_v32.yaml"
 
 
-def test_closure_contract_is_append_only_and_initially_unsubmitted() -> None:
+def test_closure_contract_is_append_only_and_frozen_for_one_run() -> None:
     payload = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
-    assert payload["execution_authorized"] is False
+    assert payload["execution_authorized"] is True
+    assert payload["execution_status"] == "ready"
+    assert payload["implementation"]["revision"] == (
+        "6074fa4585f74c4b5d61685928d667c4167f92bc"
+    )
     assert payload["scientific_contract"]["append_only_grandchild_run"] is True
     assert payload["scientific_contract"]["no_v32_parent_backwrite"] is True
     assert payload["scientific_contract"]["no_acceptance_child_backwrite"] is True

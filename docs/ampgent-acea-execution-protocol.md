@@ -381,3 +381,9 @@ At this append, closure implementation tests pass, but execution is not authoriz
 is to commit/push/archive the implementation, freeze its revision, rerun all gates, and submit the
 single append-only closure grandchild. Until it succeeds, the broader database/object-store-only
 completion claim remains qualified.
+
+The closure implementation is frozen at commit
+`6074fa4585f74c4b5d61685928d667c4167f92bc`; its archive is
+`var/archives/ampgent-v32-evidence-closure-6074fa4.zip`, SHA-256
+`cf9f5a27c0a60319f5f5a4e8fcbb4ceb70b1520fe63ffd0a670909631a174f01`. The contract is authorized
+for exactly one grandchild run after final service, identity, and duplicate-run gates pass.
