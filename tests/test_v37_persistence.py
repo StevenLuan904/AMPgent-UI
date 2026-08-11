@@ -350,6 +350,7 @@ def _fixture() -> tuple[dict, dict, dict, dict[str, dict]]:
                 "evidence_id": "card-1:passage-1",
                 "disposition": "used",
                 "reason": "applicable to frozen target context",
+                "candidate_ids": [item["id"] for item in candidates],
             }
         ],
     }
@@ -566,6 +567,23 @@ def test_v37_replay_rejects_metric_plugin_ownership_drift() -> None:
     )
     metric_call["parameters_json"]["v37_plugin_name"] = "wrong-plugin"
     with pytest.raises(ValueError, match="plugin ownership"):
+        validate_v37_database_object_replay(
+            manifest=manifest,
+            plan=plan,
+            graph=graph,
+            artifact_payloads_by_sha256=payloads,
+        )
+
+
+def test_v37_replay_requires_candidate_specific_knowledge_edges() -> None:
+    manifest, plan, graph, payloads = _fixture()
+    _mutate_role_payload(
+        graph,
+        payloads,
+        "knowledge_evidence",
+        lambda payload: payload["adoption_edges"][0]["candidate_ids"].pop(),
+    )
+    with pytest.raises(ValueError, match="knowledge applicability candidate edges"):
         validate_v37_database_object_replay(
             manifest=manifest,
             plan=plan,

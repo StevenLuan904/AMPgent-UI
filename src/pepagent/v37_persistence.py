@@ -490,6 +490,9 @@ def _validate_knowledge_evidence(payload: Mapping[str, Any]) -> None:
         not item.get("evidence_id")
         or item.get("disposition") not in {"used", "rejected", "not_applicable"}
         or not item.get("reason")
+        or not isinstance(item.get("candidate_ids"), list)
+        or not item["candidate_ids"]
+        or len(item["candidate_ids"]) != len(set(item["candidate_ids"]))
         for item in adoption_edges
     ):
         raise ValueError("v37 knowledge adoption/rejection edge is incomplete")
@@ -582,6 +585,14 @@ def validate_v37_database_object_replay(
             expected_candidate_ids.add(candidate_id)
     if set(candidates) != expected_candidate_ids:
         raise ValueError("v37 Candidate set is not exactly the retained proposal set")
+    knowledge = payloads[("v37:knowledge", "knowledge_evidence")]
+    knowledge_candidate_ids = {
+        str(candidate_id)
+        for edge in knowledge["adoption_edges"]
+        for candidate_id in edge["candidate_ids"]
+    }
+    if knowledge_candidate_ids != expected_candidate_ids:
+        raise ValueError("v37 knowledge applicability candidate edges are incomplete")
 
     evaluations_by_call: dict[str, list[dict[str, Any]]] = {}
     for evaluation in graph.get("evaluations", []):
