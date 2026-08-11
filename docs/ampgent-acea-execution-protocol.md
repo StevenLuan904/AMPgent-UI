@@ -943,6 +943,8 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
 - Runtime and replay hardening commits are `d694b2aae0c5dd931acc2d7d6caa4ba887122188`
   and `147249218554f22ac45a461f420dec8344dfdce7`. The frozen benchmark now points at the latter;
   revision-freeze commit is `da587f7`. Full validation is Ruff clean and `615 passed, 1 skipped`.
+  Content archive `var/archives/ampgent-v37-replay-closure-812198b.zip` has SHA-256
+  `1D24F434EEB072D24E5ED27AEA6B6CF1B97774265AFEA18F14F50993047DFB15`.
 - No v37 formal run has yet been submitted. The only next action is dynamic service/duplicate/worker
   placement preflight, deployment of the exact frozen release to allowed resources, and one
   exact-once submission. `192.168.99.32` and `.19` GPU4 remain prohibited; unrelated processes must
