@@ -94,7 +94,11 @@ def _fixture(
 def test_live_launch_rehash_rejects_bytes_mutated_after_preflight(tmp_path: Path) -> None:
     manifest, expectation, paths = _fixture(tmp_path)
     build_v37_live_launch_receipt(
-        manifest=manifest, expectation=expectation, paths=paths, command=[sys.executable]
+        manifest=manifest,
+        expectation=expectation,
+        paths=paths,
+        command=[sys.executable, str(paths.adapter_path)],
+        cwd=tmp_path,
     )
     (paths.model_root / "weights.bin").write_bytes(b"mutated")
     with pytest.raises(ValueError, match="live model release bytes drifted"):
@@ -102,7 +106,8 @@ def test_live_launch_rehash_rejects_bytes_mutated_after_preflight(tmp_path: Path
             manifest=manifest,
             expectation=expectation,
             paths=paths,
-            command=[sys.executable],
+            command=[sys.executable, str(paths.adapter_path)],
+            cwd=tmp_path,
         )
 
 
@@ -115,16 +120,29 @@ def test_guarded_launch_persists_receipt_before_process_creation(tmp_path: Path)
 
     output, receipt = asyncio.run(
         run_v37_guarded_subprocess(
-            [sys.executable, "-c", "print('ok')"],
+            [sys.executable, str(paths.adapter_path)],
             manifest=manifest,
             expectation=expectation,
             paths=paths,
             receipt_writer=writer,
+            cwd=tmp_path,
+            env={"PYTHONPATH": str(paths.source_root), "V37_TEST": "stable"},
         )
     )
-    assert output.strip() == "ok"
-    assert receipts == [receipt]
-    assert receipt["preflight_revalidated_at_launch_boundary"] is True
+    assert output.strip() == "adapter"
+    assert receipts == [receipt["pre_snapshot"]]
+    assert receipt["all_boundaries_match"] is True
+    assert [receipt[key]["stage"] for key in (
+        "pre_snapshot", "prelaunch", "post_spawn", "completion"
+    )] == ["pre_snapshot", "prelaunch", "post_spawn", "completion"]
+    assert len({receipt[key]["byte_identity_sha256"] for key in (
+        "pre_snapshot", "prelaunch", "post_spawn", "completion"
+    )}) == 1
+    identity = receipt["pre_snapshot"]["identity"]
+    assert identity["environment_sha256"] == sha256_json(
+        {"PYTHONPATH": str(paths.source_root), "V37_TEST": "stable"}
+    )
+    assert identity["cwd"] == str(tmp_path.resolve())
     assert receipt["launch_receipt_sha256"] == sha256_json(
         {key: value for key, value in receipt.items() if key != "launch_receipt_sha256"}
     )
@@ -142,10 +160,116 @@ def test_guarded_launch_rejects_mutation_while_receipt_is_persisted(
     with pytest.raises(ValueError, match="live source release bytes drifted"):
         asyncio.run(
             run_v37_guarded_subprocess(
-                [sys.executable, "-c", "raise SystemExit('must not launch')"],
+                [sys.executable, str(paths.adapter_path)],
                 manifest=manifest,
                 expectation=expectation,
                 paths=paths,
                 receipt_writer=mutating_writer,
+                cwd=tmp_path,
+            )
+        )
+
+
+def test_launch_rejects_command_entities_that_do_not_match_manifest(tmp_path: Path) -> None:
+    manifest, expectation, paths = _fixture(tmp_path)
+    other = tmp_path / "other.py"
+    other.write_text("print('other')\n", encoding="utf-8")
+    with pytest.raises(ValueError, match=r"command\[1\].*declared adapter"):
+        build_v37_live_launch_receipt(
+            manifest=manifest,
+            expectation=expectation,
+            paths=paths,
+            command=[sys.executable, str(other)],
+            cwd=tmp_path,
+        )
+
+
+def test_release_inventory_rejects_undeclared_files_but_ignores_pycache(
+    tmp_path: Path,
+) -> None:
+    manifest, expectation, paths = _fixture(tmp_path)
+    pycache = paths.source_root / "__pycache__"
+    pycache.mkdir()
+    (pycache / "source.cpython-311.pyc").write_bytes(b"cache")
+    build_v37_live_launch_receipt(
+        manifest=manifest,
+        expectation=expectation,
+        paths=paths,
+        command=[sys.executable, str(paths.adapter_path)],
+        cwd=tmp_path,
+    )
+    (paths.source_root / "undeclared.py").write_text("VALUE = 3\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="source release inventory drifted"):
+        build_v37_live_launch_receipt(
+            manifest=manifest,
+            expectation=expectation,
+            paths=paths,
+            command=[sys.executable, str(paths.adapter_path)],
+            cwd=tmp_path,
+        )
+
+
+def test_guarded_launch_binds_input_bytes_before_spawn(tmp_path: Path) -> None:
+    manifest, expectation, paths = _fixture(tmp_path)
+    request = tmp_path / "request.json"
+    request.write_text('{"seed": 1}\n', encoding="utf-8")
+
+    async def mutating_writer(_receipt: dict[str, object]) -> None:
+        request.write_text('{"seed": 2}\n', encoding="utf-8")
+
+    with pytest.raises(ValueError, match="launch context drifted"):
+        asyncio.run(
+            run_v37_guarded_subprocess(
+                [
+                    sys.executable,
+                    str(paths.adapter_path),
+                    "--request",
+                    str(request),
+                ],
+                manifest=manifest,
+                expectation=expectation,
+                paths=paths,
+                receipt_writer=mutating_writer,
+                cwd=tmp_path,
+                env={"PYTHONPATH": str(paths.source_root)},
+            )
+        )
+
+
+def test_guarded_launch_rehashes_again_after_spawn_and_completion(tmp_path: Path) -> None:
+    manifest, expectation, paths = _fixture(tmp_path)
+    paths.adapter_path.write_text(
+        "import pathlib, sys\npathlib.Path(sys.argv[1]).write_text('VALUE = 9\\n')\n",
+        encoding="utf-8",
+    )
+    manifest["adapter"]["sha256"] = _sha(paths.adapter_path)  # type: ignore[index]
+    expectation = V37GeneratorRuntimeExpectation(
+        **{**expectation.__dict__, "adapter_sha256": _sha(paths.adapter_path)}
+    )
+    manifest["runtime_manifest_sha256"] = sha256_json(
+        {
+            key: value
+            for key, value in manifest.items()
+            if key != "runtime_manifest_sha256"
+        }
+    )
+
+    async def writer(_receipt: dict[str, object]) -> None:
+        return None
+
+    with pytest.raises(ValueError, match="live source release bytes drifted"):
+        asyncio.run(
+            run_v37_guarded_subprocess(
+                [
+                    sys.executable,
+                    str(paths.adapter_path),
+                    str(paths.source_root / "source.py"),
+                ],
+                manifest=manifest,
+                expectation=expectation,
+                paths=paths,
+                receipt_writer=writer,
+                cwd=tmp_path,
+                env={"PYTHONPATH": str(paths.source_root)},
             )
         )
