@@ -923,3 +923,27 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   mojibake rather than the real NFC workspace path. The defect was returned to knowledge provider
   task `019fad3e-76b8-7e32-8455-d2e9b31d33e5` for a new immutable release. AMPgent must not add a
   compatibility layer or accept the failed release.
+
+### 21.3 2026-08-12 v37 provider/runtime and database-only replay closure
+
+- Provider-owned Knowledge v3 and PepShot v2 releases are now accepted without an AMPgent
+  compatibility layer. Formal activities consume each descriptor's frozen native invocation and
+  launch prefix; candidate order, provider lineage, policy/release hashes, knowledge cards,
+  passages and adoption edges are checked fail-closed before persistence.
+- All five sequence-metric runtimes, including the deterministic physicochemical runtime, execute
+  through byte-bound launch guards. External metric rows must preserve exact candidate order and
+  all emitted values must be finite.
+- The worker-placement snapshot is a sixth exact submission input. It must be fresh, report zero
+  active workflows, bind Temporal poller identity and last access to physical host/PID/role/queue,
+  source revision, release/environment/weight SHA, and use only the frozen eligible GPU topology.
+- Pipeline dispatch/start/finish/backpressure evidence is recorded from real Temporal activity
+  receipts. Database replay reconstructs generator/seed/raw-rank order and stage outcomes, then
+  binds the worker snapshot, seven submission artifacts, preflight, formal key and workflow request
+  to PostgreSQL evidence plus object-store bytes. No external manifest argument may repair replay.
+- Runtime and replay hardening commits are `d694b2aae0c5dd931acc2d7d6caa4ba887122188`
+  and `147249218554f22ac45a461f420dec8344dfdce7`. The frozen benchmark now points at the latter;
+  revision-freeze commit is `da587f7`. Full validation is Ruff clean and `615 passed, 1 skipped`.
+- No v37 formal run has yet been submitted. The only next action is dynamic service/duplicate/worker
+  placement preflight, deployment of the exact frozen release to allowed resources, and one
+  exact-once submission. `192.168.99.32` and `.19` GPU4 remain prohibited; unrelated processes must
+  not be stopped or displaced.
