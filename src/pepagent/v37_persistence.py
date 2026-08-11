@@ -424,6 +424,78 @@ def _logical_graph(graph: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
+def _v37_preclosure_projection(graph: Mapping[str, Any]) -> dict[str, Any]:
+    """Remove only protocol-defined replay/finalization writes from a closed graph."""
+    projected = deepcopy(dict(graph))
+    projected.pop("graph_sha256", None)
+    replay_calls = [
+        item
+        for item in projected.get("tool_calls", [])
+        if item.get("input_json", {}).get("v37_logical_id") == "v37:replay"
+    ]
+    if len(replay_calls) != 1:
+        raise ValueError("v37 preclosure projection lacks one replay ToolCall")
+    replay_call = replay_calls[0]
+    replay_call_id = str(replay_call["id"])
+    replay_call["status"] = "running"
+    replay_call["output_sha256"] = None
+    replay_call["error_json"] = None
+
+    replay_decision_ids = {
+        str(item["id"])
+        for item in projected.get("agent_decisions", [])
+        if item.get("structured_json", {}).get("v37_logical_id") == "v37:replay"
+    }
+    projected["agent_decisions"] = [
+        item
+        for item in projected.get("agent_decisions", [])
+        if str(item["id"]) not in replay_decision_ids
+    ]
+    projected["agent_decision_tool_call_edges"] = [
+        item
+        for item in projected.get("agent_decision_tool_call_edges", [])
+        if str(item["decision_id"]) not in replay_decision_ids
+    ]
+    projected["evidence_artifacts"] = [
+        item
+        for item in projected.get("evidence_artifacts", [])
+        if str(item["tool_call_id"]) != replay_call_id
+    ]
+    projected["lifecycle_events"] = [
+        item
+        for item in projected.get("lifecycle_events", [])
+        if item.get("event_type") != "run.succeeded"
+        and not (
+            item.get("event_type") == "tool_call.succeeded"
+            and str(item.get("payload_json", {}).get("tool_call_id")) == replay_call_id
+        )
+    ]
+    if isinstance(projected.get("run"), dict):
+        projected["run"]["status"] = "running"
+
+    retained_artifact_ids = {
+        str(item["artifact_id"]) for item in projected.get("evidence_artifacts", [])
+    }
+    attempt_artifact_sha256s = {
+        str(item.get("payload_json", {}).get("artifact_sha256"))
+        for item in projected.get("lifecycle_events", [])
+        if item.get("aggregate_type") == "v37_attempt"
+        and item.get("event_type")
+        in {
+            "v37.launch_receipt_persisted",
+            "v37.aggregate_launch_receipt_persisted",
+        }
+    }
+    projected["artifacts"] = [
+        item
+        for item in projected.get("artifacts", [])
+        if str(item["id"]) in retained_artifact_ids
+        or str(item["sha256"]) in attempt_artifact_sha256s
+    ]
+    projected["graph_sha256"] = sha256_json(projected)
+    return projected
+
+
 def _is_sha256(value: Any) -> bool:
     return isinstance(value, str) and len(value) == 64 and all(
         char in "0123456789abcdef" for char in value
@@ -1107,17 +1179,67 @@ def validate_v37_database_object_replay(
     }
     artifacts_by_id = {str(item["id"]): item for item in graph.get("artifacts", [])}
     artifact_shas_by_call: dict[str, set[str]] = {}
+    artifact_shas_by_call_role: dict[tuple[str, str], list[str]] = {}
     for link in graph.get("evidence_artifacts", []):
         artifact = artifacts_by_id.get(str(link["artifact_id"]))
         if artifact is not None:
-            artifact_shas_by_call.setdefault(str(link["tool_call_id"]), set()).add(
-                str(artifact["sha256"])
-            )
+            call_id = str(link["tool_call_id"])
+            artifact_sha256 = str(artifact["sha256"])
+            artifact_shas_by_call.setdefault(call_id, set()).add(artifact_sha256)
+            artifact_shas_by_call_role.setdefault(
+                (call_id, str(link["role"])), []
+            ).append(artifact_sha256)
     evaluation_candidates_by_call: dict[str, set[str]] = {}
     for evaluation in graph.get("evaluations", []):
         evaluation_candidates_by_call.setdefault(
             str(evaluation["tool_call_id"]), set()
         ).add(str(evaluation["candidate_id"]))
+
+    knowledge_receipt = payloads[("v37:knowledge", "provider_release_receipt")]
+    knowledge_call_id = str(knowledge_receipt.get("provider_tool_call_id"))
+    knowledge_call = all_calls_by_id.get(knowledge_call_id)
+    knowledge_input = knowledge_call.get("input_json", {}) if knowledge_call else {}
+    context_pack_sha256 = str(knowledge_receipt.get("context_pack_sha256"))
+    context_artifact_sha256 = str(
+        knowledge_receipt.get("context_pack_artifact_sha256")
+    )
+    runtime_artifact_sha256 = str(
+        knowledge_receipt.get("runtime_receipt_artifact_sha256")
+    )
+    context_payload = artifact_payloads_by_sha256.get(context_artifact_sha256)
+    if (
+        knowledge_call is None
+        or knowledge_call.get("tool_name") != "v37-knowledge"
+        or knowledge_call.get("status") != "succeeded"
+        or set(knowledge_input) != {"stage", "query"}
+        or knowledge_input.get("stage") != "v37_knowledge_provider_detail"
+        or knowledge_call.get("input_sha256") != sha256_json(knowledge_input)
+        or knowledge_call.get("input_sha256")
+        != knowledge_receipt.get("provider_input_sha256")
+        or knowledge_call.get("output_sha256") != context_pack_sha256
+        or knowledge_call.get("output_sha256")
+        != knowledge_receipt.get("provider_output_sha256")
+        or payloads[("v37:knowledge", "knowledge_evidence")].get("query_sha256")
+        != sha256_json(knowledge_input.get("query"))
+        or context_pack_sha256 != context_artifact_sha256
+        or artifact_shas_by_call_role.get(
+            (knowledge_call_id, "v37_knowledge_context_pack")
+        )
+        != [context_artifact_sha256]
+        or artifact_shas_by_call_role.get(
+            (knowledge_call_id, "v37_runtime_receipts")
+        )
+        != [runtime_artifact_sha256]
+        or not isinstance(context_payload, Mapping)
+        or sha256_json(context_payload) != context_pack_sha256
+        or (
+            str(calls["v37:knowledge"]["id"]),
+            knowledge_call_id,
+            "projects_knowledge_provider_output",
+        )
+        not in dependency_rows
+    ):
+        raise ValueError("v37 knowledge physical provider lineage is invalid")
     for pose in poses:
         candidate_id = str(pose["candidate_id"])
         pose_id = str(pose["pose_id"])
@@ -1533,6 +1655,10 @@ def validate_v37_database_object_replay(
 
     _validate_runtime_receipt_evidence(graph, artifact_payloads_by_sha256)
     _validate_attempt_runtime_evidence(graph, artifact_payloads_by_sha256)
+    if not allow_incomplete_replay and snapshot_graph != _v37_preclosure_projection(graph):
+        raise ValueError(
+            "v37 committed graph snapshot differs from the database preclosure projection"
+        )
     result = {
         "schema_version": "1.0",
         "exact_replay": True,

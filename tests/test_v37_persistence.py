@@ -7,6 +7,7 @@ from pepagent.provenance.hashing import sha256_json, sha256_text
 from pepagent.v37_evidence import build_v37_evidence_plan
 from pepagent.v37_persistence import (
     _selection_witness_payloads,
+    _v37_preclosure_projection,
     build_v37_artifact_contract,
     validate_v37_database_object_replay,
 )
@@ -636,10 +637,69 @@ def _fixture() -> tuple[dict, dict, dict, dict[str, dict]]:
     }
     for role, witness in _selection_witness_payloads(final_selection).items():
         payloads[("v37:final-portfolio", role)] = witness
+    knowledge_query = "fixture knowledge query"
+    knowledge_pack = {
+        "evidence_index": {"card-1": {"fixture": True}},
+        "retrieval_trace_id": "trace-1",
+    }
+    knowledge_provider_id = "knowledge-provider-call"
+    knowledge_call = add_physical_call(
+        call_id=knowledge_provider_id,
+        tool_name="v37-knowledge",
+        candidate_id=None,
+        input_json={
+            "stage": "v37_knowledge_provider_detail",
+            "query": knowledge_query,
+        },
+        output_payload=knowledge_pack,
+    )
+    knowledge_pack_sha256 = sha256_json(knowledge_pack)
+    context_artifact_id = f"artifact-{len(artifacts) + 1}"
+    artifacts.append({"id": context_artifact_id, "sha256": knowledge_pack_sha256})
+    links.append(
+        {
+            "tool_call_id": knowledge_provider_id,
+            "artifact_id": context_artifact_id,
+            "role": "v37_knowledge_context_pack",
+        }
+    )
+    payloads[knowledge_pack_sha256] = knowledge_pack
+    knowledge_runtime_receipt = _runtime_receipt("knowledge-provider")
+    knowledge_runtime_sha256 = sha256_json(knowledge_runtime_receipt)
+    runtime_artifact_id = f"artifact-{len(artifacts) + 1}"
+    artifacts.append({"id": runtime_artifact_id, "sha256": knowledge_runtime_sha256})
+    links.append(
+        {
+            "tool_call_id": knowledge_provider_id,
+            "artifact_id": runtime_artifact_id,
+            "role": "v37_runtime_receipts",
+        }
+    )
+    payloads[knowledge_runtime_sha256] = knowledge_runtime_receipt
+    knowledge_runtime_event = {
+        "tool_call_id": knowledge_provider_id,
+        "runtime_id": "knowledge-provider",
+        "artifact_sha256": knowledge_runtime_sha256,
+        "launch_receipt_sha256": knowledge_runtime_receipt["launch_receipt_sha256"],
+    }
+    events.append(
+        {
+            "event_type": "v37.runtime_receipts.committed",
+            "payload_json": knowledge_runtime_event,
+            "payload_sha256": sha256_json(knowledge_runtime_event),
+        }
+    )
+    physical_dependencies.append(
+        {
+            "child_tool_call_id": call_ids["v37:knowledge"],
+            "parent_tool_call_id": knowledge_provider_id,
+            "relation_type": "projects_knowledge_provider_output",
+        }
+    )
     payloads[("v37:knowledge", "knowledge_evidence")] = {
         "schema_version": "1.0",
-        "query_sha256": "1" * 64,
-        "query_pack_sha256": "2" * 64,
+        "query_sha256": sha256_json(knowledge_query),
+        "query_pack_sha256": knowledge_pack_sha256,
         "trace_sha256": "3" * 64,
         "policy_sha256": "4" * 64,
         "cards": [
@@ -657,6 +717,14 @@ def _fixture() -> tuple[dict, dict, dict, dict[str, dict]]:
                 "candidate_ids": [item["id"] for item in candidates],
             }
         ],
+    }
+    payloads[("v37:knowledge", "provider_release_receipt")] = {
+        "provider_tool_call_id": knowledge_provider_id,
+        "provider_input_sha256": knowledge_call["input_sha256"],
+        "provider_output_sha256": knowledge_call["output_sha256"],
+        "context_pack_sha256": knowledge_pack_sha256,
+        "context_pack_artifact_sha256": knowledge_pack_sha256,
+        "runtime_receipt_artifact_sha256": knowledge_runtime_sha256,
     }
 
     for stage in plan["global_calls"]:
@@ -834,6 +902,42 @@ def _fixture() -> tuple[dict, dict, dict, dict[str, dict]]:
         "agent_decisions": decisions,
         "agent_decision_tool_call_edges": decision_edges,
     }
+    projected = _v37_preclosure_projection(graph)
+    committed_snapshot["graph"] = projected
+    committed_snapshot["committed_graph_sha256"] = projected["graph_sha256"]
+    snapshot_link = next(
+        item
+        for item in links
+        if item["tool_call_id"] == call_ids["v37:replay"]
+        and item["role"] == "committed_graph_snapshot"
+    )
+    snapshot_artifact = next(
+        item for item in artifacts if item["id"] == snapshot_link["artifact_id"]
+    )
+    payloads.pop(snapshot_artifact["sha256"])
+    snapshot_artifact["sha256"] = sha256_json(committed_snapshot)
+    payloads[snapshot_artifact["sha256"]] = committed_snapshot
+    replay_payload["committed_graph_sha256"] = projected["graph_sha256"]
+    replay_payload["committed_graph_snapshot_sha256"] = snapshot_artifact["sha256"]
+    replay_link = next(
+        item
+        for item in links
+        if item["tool_call_id"] == call_ids["v37:replay"]
+        and item["role"] == "database_object_replay"
+    )
+    replay_artifact = next(
+        item for item in artifacts if item["id"] == replay_link["artifact_id"]
+    )
+    payloads.pop(replay_artifact["sha256"])
+    replay_artifact["sha256"] = sha256_json(replay_payload)
+    payloads[replay_artifact["sha256"]] = replay_payload
+    replay_call["output_sha256"] = replay_artifact["sha256"]
+    replay_success_event["payload_json"]["output_sha256"] = replay_call[
+        "output_sha256"
+    ]
+    replay_success_event["payload_sha256"] = sha256_json(
+        replay_success_event["payload_json"]
+    )
     return manifest, plan, graph, {
         key: value for key, value in payloads.items() if isinstance(key, str)
     }
@@ -896,7 +1000,7 @@ def test_v37_replay_requires_complete_typed_database_object_graph() -> None:
         ),
         (
             lambda graph, _payloads: graph["tool_call_dependencies"].pop(),
-            "source lineage",
+            "provider lineage",
         ),
         (
             lambda graph, payloads: _pop_role_item(
@@ -1172,6 +1276,50 @@ def test_v37_replay_rejects_deleted_pepshot_detail_tool_call() -> None:
         )
 
 
+def test_v37_replay_rejects_deleted_knowledge_provider_tool_call() -> None:
+    manifest, plan, graph, payloads = _fixture()
+    call = next(
+        item
+        for item in graph["tool_calls"]
+        if item.get("input_json", {}).get("stage")
+        == "v37_knowledge_provider_detail"
+    )
+    graph["tool_calls"].remove(call)
+    graph["lifecycle_events"] = [
+        item
+        for item in graph["lifecycle_events"]
+        if str(item.get("payload_json", {}).get("tool_call_id")) != call["id"]
+    ]
+    with pytest.raises(ValueError, match="knowledge physical provider lineage"):
+        validate_v37_database_object_replay(
+            manifest=manifest,
+            plan=plan,
+            graph=graph,
+            artifact_payloads_by_sha256=payloads,
+        )
+
+
+def test_v37_replay_rejects_misbound_knowledge_provider_dependency() -> None:
+    manifest, plan, graph, payloads = _fixture()
+    dependency = next(
+        item
+        for item in graph["tool_call_dependencies"]
+        if item["relation_type"] == "projects_knowledge_provider_output"
+    )
+    dependency["parent_tool_call_id"] = next(
+        item["id"]
+        for item in graph["tool_calls"]
+        if item["tool_name"] == "pepshot-contract"
+    )
+    with pytest.raises(ValueError, match="knowledge physical provider lineage"):
+        validate_v37_database_object_replay(
+            manifest=manifest,
+            plan=plan,
+            graph=graph,
+            artifact_payloads_by_sha256=payloads,
+        )
+
+
 def test_v37_replay_rejects_misbound_rosetta_detail_tool_call() -> None:
     manifest, plan, graph, payloads = _fixture()
     decoy_artifact = next(
@@ -1229,6 +1377,69 @@ def test_v37_replay_rejects_committed_graph_snapshot_drift() -> None:
         lambda payload: payload["graph"].update({"drift": True}),
     )
     with pytest.raises(ValueError, match="committed graph artifact hash chain"):
+        validate_v37_database_object_replay(
+            manifest=manifest,
+            plan=plan,
+            graph=graph,
+            artifact_payloads_by_sha256=payloads,
+        )
+
+
+def test_v37_replay_rejects_self_consistent_forged_committed_graph() -> None:
+    manifest, plan, graph, payloads = _fixture()
+    snapshot_link = next(
+        item
+        for item in graph["evidence_artifacts"]
+        if item["role"] == "committed_graph_snapshot"
+    )
+    snapshot_artifact = next(
+        item
+        for item in graph["artifacts"]
+        if item["id"] == snapshot_link["artifact_id"]
+    )
+    snapshot = payloads.pop(snapshot_artifact["sha256"])
+    snapshot["graph"]["forged"] = True
+    snapshot["graph"]["graph_sha256"] = sha256_json(
+        {
+            key: value
+            for key, value in snapshot["graph"].items()
+            if key != "graph_sha256"
+        }
+    )
+    snapshot["committed_graph_sha256"] = snapshot["graph"]["graph_sha256"]
+    snapshot_artifact["sha256"] = sha256_json(snapshot)
+    payloads[snapshot_artifact["sha256"]] = snapshot
+
+    replay_link = next(
+        item
+        for item in graph["evidence_artifacts"]
+        if item["role"] == "database_object_replay"
+    )
+    replay_artifact = next(
+        item
+        for item in graph["artifacts"]
+        if item["id"] == replay_link["artifact_id"]
+    )
+    replay = payloads.pop(replay_artifact["sha256"])
+    replay["committed_graph_sha256"] = snapshot["committed_graph_sha256"]
+    replay["committed_graph_snapshot_sha256"] = snapshot_artifact["sha256"]
+    replay_artifact["sha256"] = sha256_json(replay)
+    payloads[replay_artifact["sha256"]] = replay
+    replay_call = next(
+        item
+        for item in graph["tool_calls"]
+        if item.get("input_json", {}).get("v37_logical_id") == "v37:replay"
+    )
+    replay_call["output_sha256"] = replay_artifact["sha256"]
+    replay_event = next(
+        item
+        for item in graph["lifecycle_events"]
+        if item["event_type"] == "tool_call.succeeded"
+        and item["payload_json"]["tool_call_id"] == replay_call["id"]
+    )
+    replay_event["payload_json"]["output_sha256"] = replay_call["output_sha256"]
+    replay_event["payload_sha256"] = sha256_json(replay_event["payload_json"])
+    with pytest.raises(ValueError, match="database preclosure projection"):
         validate_v37_database_object_replay(
             manifest=manifest,
             plan=plan,
@@ -1379,9 +1590,49 @@ def _append_attempt_runtime_evidence(
         )
 
 
+def _refresh_replay_snapshot(graph: dict, payloads: dict[str, dict]) -> None:
+    replay_call = next(
+        item
+        for item in graph["tool_calls"]
+        if item.get("input_json", {}).get("v37_logical_id") == "v37:replay"
+    )
+    role_links = {
+        item["role"]: item
+        for item in graph["evidence_artifacts"]
+        if item["tool_call_id"] == replay_call["id"]
+    }
+    artifacts_by_id = {item["id"]: item for item in graph["artifacts"]}
+    snapshot_artifact = artifacts_by_id[
+        role_links["committed_graph_snapshot"]["artifact_id"]
+    ]
+    snapshot_payload = payloads.pop(snapshot_artifact["sha256"])
+    projected = _v37_preclosure_projection(graph)
+    snapshot_payload["graph"] = projected
+    snapshot_payload["committed_graph_sha256"] = projected["graph_sha256"]
+    snapshot_artifact["sha256"] = sha256_json(snapshot_payload)
+    payloads[snapshot_artifact["sha256"]] = snapshot_payload
+
+    replay_artifact = artifacts_by_id[role_links["database_object_replay"]["artifact_id"]]
+    replay_payload = payloads.pop(replay_artifact["sha256"])
+    replay_payload["committed_graph_sha256"] = projected["graph_sha256"]
+    replay_payload["committed_graph_snapshot_sha256"] = snapshot_artifact["sha256"]
+    replay_artifact["sha256"] = sha256_json(replay_payload)
+    payloads[replay_artifact["sha256"]] = replay_payload
+    replay_call["output_sha256"] = replay_artifact["sha256"]
+    replay_event = next(
+        item
+        for item in graph["lifecycle_events"]
+        if item["event_type"] == "tool_call.succeeded"
+        and item["payload_json"]["tool_call_id"] == replay_call["id"]
+    )
+    replay_event["payload_json"]["output_sha256"] = replay_call["output_sha256"]
+    replay_event["payload_sha256"] = sha256_json(replay_event["payload_json"])
+
+
 def test_v37_replay_accepts_complete_attempt_runtime_evidence() -> None:
     manifest, plan, graph, payloads = _fixture()
     _append_attempt_runtime_evidence(graph, payloads)
+    _refresh_replay_snapshot(graph, payloads)
     validate_v37_database_object_replay(
         manifest=manifest,
         plan=plan,

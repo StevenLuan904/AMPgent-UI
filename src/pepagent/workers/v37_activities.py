@@ -1473,6 +1473,10 @@ async def run_and_persist_v37_knowledge(request: dict[str, Any]) -> dict[str, An
         )
     return {
         "tool_call_id": str(call.id),
+        "provider_input_sha256": call.input_sha256,
+        "provider_output_sha256": call.output_sha256,
+        "context_pack_artifact_sha256": artifact.sha256,
+        "runtime_receipt_artifact_sha256": runtime_artifact.sha256,
         "context_pack": payload,
         "live_launch_receipt": executed["live_launch_receipt"],
     }
@@ -1546,6 +1550,7 @@ async def persist_v37_knowledge_projection(request: dict[str, Any]) -> dict[str,
     }
     logical_id = "v37:knowledge"
     async with SessionFactory() as session, session.begin():
+        repository = ExperimentRepository(session)
         stop_payload = await _persist_v37_stop(
             session,
             run_id=run_id,
@@ -1573,12 +1578,25 @@ async def persist_v37_knowledge_projection(request: dict[str, Any]) -> dict[str,
                 "provider_release_receipt": {
                     **manifest["verified_auxiliaries"]["knowledge"],
                     "provider_tool_call_id": knowledge["tool_call_id"],
+                    "provider_input_sha256": knowledge["provider_input_sha256"],
+                    "provider_output_sha256": knowledge["provider_output_sha256"],
                     "context_pack_sha256": sha256_json(pack),
+                    "context_pack_artifact_sha256": knowledge[
+                        "context_pack_artifact_sha256"
+                    ],
+                    "runtime_receipt_artifact_sha256": knowledge[
+                        "runtime_receipt_artifact_sha256"
+                    ],
                 },
                 "agent_decision": decision_payload,
                 "stop_event": stop_payload,
             },
             model_uri="provider://amp-kb/context",
+        )
+        await repository.record_tool_dependency(
+            call.id,
+            uuid.UUID(knowledge["tool_call_id"]),
+            "projects_knowledge_provider_output",
         )
         await persist_v37_agent_decision(
             session,

@@ -139,6 +139,7 @@ def test_replay_accepts_the_real_database_candidate_projection_shape() -> None:
                 "metadata": metadata,
             }
         )
+    FIXTURE_MODULE._refresh_replay_snapshot(graph, payloads)
     assert _validate((manifest, plan, graph, payloads))["exact_replay"] is True
 
 
@@ -375,3 +376,97 @@ def test_formal_provider_and_external_metric_launches_use_the_typed_guard() -> N
     assert pepshot_source.count("_run_guarded_generic_runtime(") == 2
     assert "v37_runtime_receipts" in knowledge_source
     assert "v37_runtime_receipts" in pepshot_source
+
+
+@pytest.mark.asyncio
+async def test_knowledge_projection_persists_the_physical_provider_join(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    manifest, _plan, graph, _payloads = _fixture()
+    run_id = uuid.uuid4()
+    provider_call_id = uuid.uuid4()
+    canonical_call_id = uuid.uuid4()
+    recorded_dependencies: list[tuple[uuid.UUID, uuid.UUID, str]] = []
+    persisted_nodes: list[dict] = []
+
+    class _Transaction:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_exc):
+            return False
+
+    class _Session:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_exc):
+            return False
+
+        def begin(self):
+            return _Transaction()
+
+    class _Repository:
+        def __init__(self, _session) -> None:
+            pass
+
+        async def record_tool_dependency(self, child, parent, relation) -> None:
+            recorded_dependencies.append((child, parent, relation))
+
+    async def _persist_stop(*_args, **_kwargs):
+        return {"stop_reason": "completed_frozen_query_and_candidate_projection"}
+
+    async def _persist_node(*_args, **kwargs):
+        persisted_nodes.append(kwargs)
+        return SimpleNamespace(id=canonical_call_id)
+
+    async def _persist_decision(*_args, **_kwargs):
+        return None
+
+    monkeypatch.setattr(v37_activities, "SessionFactory", _Session)
+    monkeypatch.setattr(v37_activities, "ExperimentRepository", _Repository)
+    monkeypatch.setattr(v37_activities, "_persist_v37_stop", _persist_stop)
+    monkeypatch.setattr(v37_activities, "_persist_v37_node", _persist_node)
+    monkeypatch.setattr(
+        v37_activities, "persist_v37_agent_decision", _persist_decision
+    )
+
+    query = "frozen AceA evidence query"
+    context_pack = {
+        "policy_version": "fixture-policy",
+        "retrieval_trace_id": "fixture-trace",
+        "evidence_index": [{"card_id": "card-1"}],
+    }
+    request = {
+        "run_id": str(run_id),
+        "manifest": manifest,
+        "query": query,
+        "candidates": [
+            {"id": str(item["id"]), "sequence": item["sequence"]}
+            for item in graph["candidates"]
+        ],
+        "knowledge": {
+            "tool_call_id": str(provider_call_id),
+            "provider_input_sha256": "1" * 64,
+            "provider_output_sha256": sha256_json(context_pack),
+            "context_pack_artifact_sha256": sha256_json(context_pack),
+            "runtime_receipt_artifact_sha256": "2" * 64,
+            "context_pack": context_pack,
+        },
+    }
+    result = await v37_activities.persist_v37_knowledge_projection(request)
+
+    assert result["tool_call_id"] == str(canonical_call_id)
+    assert recorded_dependencies == [
+        (
+            canonical_call_id,
+            provider_call_id,
+            "projects_knowledge_provider_output",
+        )
+    ]
+    receipt = persisted_nodes[0]["artifacts"]["provider_release_receipt"]
+    assert receipt["provider_tool_call_id"] == str(provider_call_id)
+    assert receipt["provider_input_sha256"] == "1" * 64
+    assert receipt["provider_output_sha256"] == sha256_json(context_pack)
+    assert receipt["context_pack_artifact_sha256"] == sha256_json(context_pack)
+    assert receipt["runtime_receipt_artifact_sha256"] == "2" * 64
