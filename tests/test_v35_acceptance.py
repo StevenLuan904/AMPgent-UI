@@ -24,7 +24,10 @@ def _payload() -> dict:
 def test_v35a_contract_is_strict_hash_pinned_and_not_authorized() -> None:
     contract = load_v35a_acceptance_contract(CONFIG)
     assert contract.execution_status == "preregistered_not_authorized"
-    assert contract.implementation_revision is None
+    assert (
+        contract.implementation_revision
+        == "41aba8ba08405cde65479bfd802fd2c6b2891598"
+    )
     assert contract.authorization.execution_authorized is False
     assert contract.authorization.submitted is False
     assert contract.authorization.run_id is None

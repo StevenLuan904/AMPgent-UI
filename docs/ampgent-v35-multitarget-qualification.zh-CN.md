@@ -136,7 +136,10 @@ v35a 合成数据库闭环验收现已单独预注册，精确合同为
 6 个 A/B 通过项、2 个 C/D 拒绝项和 3 个 panel member；全程为 0 Candidate、0 Evaluation，不读取
 真实靶点、历史肽或任何结构/活性结果。合同冻结 7 类负向探针，并要求 PostgreSQL 与内容寻址对象存储
 完整保存成功和失败分母。当前状态为 `preregistered_not_authorized`，尚未部署 migration、未提交 run，
-也不授权真实靶点审计或选择。
+也不授权真实靶点审计或选择。预注册实现 revision 为
+`41aba8ba08405cde65479bfd802fd2c6b2891598`；回填后的 v35a config SHA-256 为
+`b85d8542d1ab2f7f18b6c803fe8f6fea042dfcc0b1967ff3797b76af067befcb`；全量验证为 ruff clean、
+PostgreSQL migration 区间离线 DDL 可生成、pytest `359 passed`。
 
 typed ledger/offline replay 实现 revision 为
 `e47e0d3cf94d6b9d0b63c5a799694c13aeb819ca`；回填 revision 后的 config SHA-256 为
