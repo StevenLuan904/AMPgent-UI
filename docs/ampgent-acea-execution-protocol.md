@@ -833,3 +833,9 @@ revision 回填 checkpoint 为 `6299b233eef751004eec946f4ee2eab1edacdc1b`，内�
 
 GPU 空闲状态是瞬时观察，任何启动前都必须重新执行 `nvidia-smi`、禁用卡检查、进程归属和 release/source revision
 门禁。单卡多进程或新增 worker 必须在 formal run 之前冻结并记录，不得在 active run 中动态改变并发。
+
+资源边界与只读容量审计冻结于 commit
+`36a1c6d2cb3f93b92006372b33da7010cf99cfdf`；全量验证为 ruff clean、pytest `368 passed`。内容归档
+`var/archives/ampgent-gpu-boundaries-36a1c6d.zip` 的 SHA-256 为
+`70b51bde4c34468e78fb8830cad7a51b01bdc6628a55d294bb0b06091f9dde6b`。该 checkpoint 没有启动或停止
+任何远端进程，没有提交 run，也没有访问 `192.168.99.32` 或 `.19` GPU4。
