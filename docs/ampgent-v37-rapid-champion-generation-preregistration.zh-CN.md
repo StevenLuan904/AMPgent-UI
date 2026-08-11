@@ -28,8 +28,8 @@ adapter 的固定 1000-raw 合同，不为 AMP-Designer 新写 600-raw 变体。
 generator×seed 顺序执行；重复、非法和不足都进入失败分母且不补抽。昂贵结构阶段仍固定为 48 条：
 四个机制 lane 各 12 条，并限制每个 generator 和 generator×seed 对每个 lane 的最大贡献。
 
-每个结构候选固定运行两个 Boltz seed；两个姿势都做坐标审计并各跑 8 个 ref2015 Rosetta decoy。
-最大计算量为 96 个结构姿势和 768 个 Rosetta decoy。全部 48 条都必须走 PepShot 的冻结
+每个结构候选固定运行三个 Boltz seed；三个姿势都做坐标审计并各跑 16 个 ref2015 Rosetta decoy。
+最大计算量为 144 个结构姿势和 2304 个 Rosetta decoy。全部 48 条都必须走 PepShot 的冻结
 verify→读取全部请求图片→validate-review 路由。最终 portfolio 上限为 16 条，每个 lane 4 条。
 
 固定预算必须完整执行，不允许看到好结果后提前停，也不允许因某个 seed、lane 或工具失败而补抽。

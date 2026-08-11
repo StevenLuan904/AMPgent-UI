@@ -49,8 +49,11 @@ def test_v37_budget_is_exact_and_internally_consistent() -> None:
     assert manifest["stage_1_sequence_evaluation"]["expected_candidate_count"] == 900
     assert manifest["stage_1_sequence_evaluation"]["shortlist"]["total_quota"] == 48
     assert sum(manifest["stage_1_sequence_evaluation"]["shortlist"]["lane_quotas"].values()) == 48
-    assert structure["poses_per_candidate"] == len(structure["boltz_seeds"]) == 2
-    assert structure["expected_maximum_poses"] == 48 * 2
+    assert structure["boltz_seeds"] == [20270380, 20270381, 20270382]
+    assert structure["poses_per_candidate"] == len(structure["boltz_seeds"]) == 3
+    assert structure["expected_maximum_poses"] == 48 * 3
+    assert structure["rosetta_decoys_per_pose"] == 16
+    assert structure["expected_maximum_rosetta_decoys"] == 2304
     assert structure["expected_maximum_rosetta_decoys"] == (
         structure["expected_maximum_poses"] * structure["rosetta_decoys_per_pose"]
     )

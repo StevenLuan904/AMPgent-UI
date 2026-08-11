@@ -172,14 +172,16 @@ stage_1_sequence_evaluation:
     missing_policy: retain_shortfall_no_refill
 
 stage_2_structure_confirmation:
+  experiment_spec_path: ../experiments/acea_v37_rapid_champion_structure.yaml
+  experiment_spec_sha256: 98bc93a8fdeea51627254be830a95f8e384e14de2c8147f8bc26be9c30dfc99f
   expected_maximum_candidates: 48
-  boltz_seeds: [20270380, 20270381]
-  poses_per_candidate: 2
+  boltz_seeds: [20270380, 20270381, 20270382]
+  poses_per_candidate: 3
   all_poses_scored: true
   rosetta_score_function: ref2015
-  rosetta_decoys_per_pose: 8
-  expected_maximum_poses: 96
-  expected_maximum_rosetta_decoys: 768
+  rosetta_decoys_per_pose: 16
+  expected_maximum_poses: 144
+  expected_maximum_rosetta_decoys: 2304
   required_metric_families:
     - pair_iptm
     - pocket_coverage_and_contacts
@@ -209,6 +211,7 @@ stage_2_structure_confirmation:
     PepShot_structural_conflict_excluded: true
     PepShot_insufficient_evidence_excluded_from_final_portfolio: true
     no_numerical_binding_threshold: true
+    coordinate_audit_thresholds_observational_only: true
 
 final_portfolio:
   total_quota: 16
@@ -254,7 +257,7 @@ final_portfolio:
 stop_conditions:
   generation_stops_after_all_nine_fixed_generator_seed_budgets_are_consumed: true
   metric_stage_stops_after_all_retained_valid_unique_candidates_are_evaluated: true
-  structure_stage_stops_after_all_shortlisted_candidates_receive_two_poses_and_all_decoys: true
+  structure_stage_stops_after_all_shortlisted_candidates_receive_three_poses_and_all_decoys: true
   final_selection_runs_once_after_all_required_evidence_is_complete: true
   adaptive_early_stop_forbidden: true
   refill_after_failure_or_shortfall_forbidden: true

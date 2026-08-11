@@ -5,7 +5,10 @@ from typing import Any
 
 from pepagent.provenance.hashing import sha256_bytes, sha256_file, sha256_json
 from pepagent.v37_evidence import build_v37_evidence_plan
-from pepagent.v37_preregistration import load_v37_preregistration
+from pepagent.v37_preregistration import (
+    load_v37_preregistration,
+    validate_v37_experiment_spec,
+)
 
 
 def build_v37_static_preflight(config_path: Path) -> dict[str, Any]:
@@ -20,12 +23,14 @@ def build_v37_static_preflight(config_path: Path) -> dict[str, Any]:
             raise ValueError(f"v37 frozen {prefix} source contract drifted")
         verified_sources[prefix] = observed
     plan = build_v37_evidence_plan(manifest)
+    experiment_spec = validate_v37_experiment_spec(manifest, config_path)
     result: dict[str, Any] = {
         "schema_version": "1.0",
         "benchmark_id": manifest.benchmark_id,
         "config_sha256": sha256_bytes(config_path.read_bytes()),
         "evidence_plan_sha256": plan["plan_sha256"],
         "source_contract_sha256": verified_sources,
+        "experiment_spec": experiment_spec,
         "direction_authorized": True,
         "execution_authorized": False,
         "formal_run_submitted": False,
