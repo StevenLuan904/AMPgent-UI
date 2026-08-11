@@ -902,3 +902,24 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
 - Runtime freezer checkpoint commit is `86f9a99`; content archive
   `var/archives/ampgent-v37-runtime-identities-86f9a99.zip` has SHA-256
   `6EB4060A1B654EE99C16394BD3195E76DF9F50F8B0D51648631B4DC28B334BB2`.
+
+### 21.2 2026-08-12 v37 immutable-capacity and exact-once checkpoint
+
+- The frozen capacity contract is now a fifth immutable formal-submission input. Its exact bytes
+  have SHA-256 `34f83c5a6df92a1d07779014c407211daefc80210581a840b7cea19cea46c3f0` and
+  must be persisted to object storage, represented by a database Artifact, and included in the
+  Temporal request. Missing or drifted capacity bytes fail closed.
+- PostgreSQL formal-run reservation now takes a transaction-scoped advisory lock derived from the
+  frozen benchmark ID and version before checking for an existing run. Retrying the same formal
+  key recovers the original identity; a concurrent different manifest key for the same benchmark
+  and version is rejected. No v37 formal run has been submitted by this checkpoint.
+- The implementation is pushed at commit `f8937a9cfeee0f932bd0304b86ab91cc60065423`.
+  Ruff is clean and the full suite is `586 passed, 1 skipped`; the skipped real-PostgreSQL
+  two-session test was also run independently against the local PostgreSQL service and passed.
+  Content archive `var/archives/ampgent-v37-capacity-exact-once-f8937a9.zip` has SHA-256
+  `CF8C049C71E3C09F1F25AAC9EB652CDBCEB90CEEED5FDFAA1C15B728BA1AEC45`.
+- Knowledge runtime release `amp-kb-runtime-base-c040cc601e4426093c72` failed read-only consumer
+  acceptance: required top-level launch bindings were absent and its absolute paths contained
+  mojibake rather than the real NFC workspace path. The defect was returned to knowledge provider
+  task `019fad3e-76b8-7e32-8455-d2e9b31d33e5` for a new immutable release. AMPgent must not add a
+  compatibility layer or accept the failed release.
