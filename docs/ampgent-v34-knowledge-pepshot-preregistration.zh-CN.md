@@ -158,3 +158,35 @@ provider gate 记录提交为 `6e38bdb`；内容归档 `var/archives/ampgent-v34
 这只解除 provider runtime/发布合同阻塞，证明可进入数据库原生隔离 shadow；不证明知识卡或 PepShot
 提高了短肽质量，也不授权 v34 formal run。shadow 必须把完整 release、verifier 输出和消费侧 receipt
 写入对象存储并由 PostgreSQL ToolCall/artifact/dependency/decision 引用，且仅靠数据库与对象存储重放。
+
+## 8. Provider shadow 完成与所有权锁定（2026-08-11 append-only update）
+
+数据库原生隔离 shadow 已完成并锁定，run ID 为
+`941ea473-82d6-4b70-9ede-5162a14bf8ce`，parent 为
+`de9f72ae-e490-408d-9432-c71a75a3d499`。该 run 没有生成候选或计算效果指标：0 Candidate、
+0 Evaluation、4 ToolCall、5 ToolCallDependency、1 AgentDecision、3 条 decision edge、6 Artifact 和
+8 LifecycleEvent。结论严格为
+`provider_releases_replayable_for_v34_authorization_request`。
+
+完整知识卡 release archive SHA-256 为
+`cc04d5c67437f743c4b90595b15d0ba4e361c73b96319db07ea09eea8adce686`，PepShot release archive
+SHA-256 为 `1cb5f3b642242a7c2d5bf0340137875d48438aa5a93e5e2db2ce82b5687556f0`；对应数据库验收 receipt
+artifact SHA-256 分别为 `fff7cba95e73645a1241a586b60bb4fd958672f5e770cb42caa1c9992a114a23` 和
+`e4e0ff844486ea755fcadeda517979832c3ef075a16d5d5f120df5608cd01cbd`。database+object-store-only
+replay bundle SHA-256 为 `390d5757ee55d7a010b66701b4d6fe0338eb97f4d84b87c20b572f74cc9ae73c`，重放确认
+`exact_replay=true`、`provider_effectiveness_evaluated=false`、`formal_v34_authorized=false`。
+
+前一节记录的 PepShot 基础消费 receipt SHA-256
+`2985342dee11fdd4d3f112628e57dbec8529276124c3cd4c826db64feba43db7` 使用了旧的 fixture 字段解释；
+在消费侧把 `bundle_id` 正确区分为 `fixture_bundle_id` 后，基础 receipt 的追加更正值为
+`d7ae26187004eb0949251753bea7389f6be6d4dea47713d00bde1ac9c1e7d487`。这是一项 AMPgent 消费合同
+错误修正，不是对 PepShot 输出的适配，也没有改变 provider release。
+
+用户再次明确：如果后续 2×2 消融显示 PepShot 的视图、finding、review schema、证据足迹或科学审阅
+语义不满意，AMPgent 不修改、包装或兼容 PepShot。必须把可复现输入、违反的冻结合同、期望验收标准、
+回归测试和证据落库要求直接发送到 PepShot 任务 `019fb910-f2dd-7be1-a7e6-bfe381512c25`，由 PepShot
+自己修复并发布新不可变 release；AMPgent 只拒绝旧 release、记录 change request，并只读验收新 release。
+本文历史所称“adapter”只表示严格消费验证器，不授权任何 provider-specific compatibility adaptation。
+
+shadow 的完成只允许提出 v34 正式 2×2 消融授权申请。正式 v34 仍未提交、未授权，不能运行知识卡/
+PepShot 效果对照，也不能生成新序列。

@@ -598,3 +598,30 @@ config SHA-256 为 `f22e3db1c2c9ad0d9f7ab14cc7f7d676b23cdf20f68b049f785793775116
 SHA-256 为 `3f1cfe953cfec2da98145573843fe514570760a91f25247280369f6795c29380`。内容归档
 `var/archives/ampgent-v34-provider-release-d24a55c.zip` 的 SHA-256 为
 `4196f9ffb4017bcf2ed44e89d8b69c8e5aae611145f41abb6a72a807dad9ab05`。
+
+### 14.4 v34 provider shadow 已完成并锁定（2026-08-11）
+
+- 唯一 shadow run：`941ea473-82d6-4b70-9ede-5162a14bf8ce`；parent：
+  `de9f72ae-e490-408d-9432-c71a75a3d499`；状态 `succeeded`。
+- 证据图精确计数：0 Candidate、0 Evaluation、4 ToolCall、5 ToolCallDependency、1 AgentDecision、
+  3 decision edge、6 Artifact、8 LifecycleEvent。
+- shadow contract SHA-256：`03d007fc86f28b70edcd4949c476509403e69cfbc209527975c91a4bd773e7d2`。
+- knowledge/PepShot release archive SHA-256：
+  `cc04d5c67437f743c4b90595b15d0ba4e361c73b96319db07ea09eea8adce686` /
+  `1cb5f3b642242a7c2d5bf0340137875d48438aa5a93e5e2db2ce82b5687556f0`。
+- knowledge/PepShot persisted receipt SHA-256：
+  `fff7cba95e73645a1241a586b60bb4fd958672f5e770cb42caa1c9992a114a23` /
+  `e4e0ff844486ea755fcadeda517979832c3ef075a16d5d5f120df5608cd01cbd`。
+- database+object-store-only replay bundle SHA-256：
+  `390d5757ee55d7a010b66701b4d6fe0338eb97f4d84b87c20b572f74cc9ae73c`；`exact_replay=true`。
+- 唯一结论：`provider_releases_replayable_for_v34_authorization_request`。没有评价工具效果，没有生成
+  候选，没有授权 v34 formal run。
+
+PepShot 基础消费 receipt 的旧记录 `2985342d...` 使用了错误 fixture 字段语义；追加更正后的完整 SHA-256
+为 `d7ae26187004eb0949251753bea7389f6be6d4dea47713d00bde1ac9c1e7d487`。这是消费侧合同纠错，不是
+PepShot 兼容补丁。今后无论是接口失败还是效果不满意，均直接向 PepShot 任务
+`019fb910-f2dd-7be1-a7e6-bfe381512c25` 提交 provider change request；AMPgent 禁止自行适配。只有
+provider-owned 新 release 通过只读验收后才可继续。
+
+当前唯一下一步是申请并另行冻结 v34 正式 2×2 消融授权；在用户明确授权前保持未提交，不注册正式
+activity，不生成序列。

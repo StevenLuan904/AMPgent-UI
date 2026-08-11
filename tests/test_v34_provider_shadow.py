@@ -155,12 +155,13 @@ def _pepshot_release(root: Path) -> tuple[Path, dict]:
     }
 
 
-def test_shadow_contract_is_non_generative_and_authorized_once() -> None:
+def test_shadow_contract_is_non_generative_completed_and_locked() -> None:
     contract = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
-    assert contract["execution_authorized"] is True
+    assert contract["execution_status"] == "completed_locked"
+    assert contract["execution_authorized"] is False
     assert contract["formal_v34_execution_authorized"] is False
-    assert contract["submitted"] is False
-    assert contract["run_id"] is None
+    assert contract["submitted"] is True
+    assert contract["run_id"] == "941ea473-82d6-4b70-9ede-5162a14bf8ce"
     assert contract["implementation_revision"] == (
         "99a65eb01fc7faf8a94fef70ee4ee30c49aabbd1"
     )
@@ -175,6 +176,11 @@ def test_shadow_contract_is_non_generative_and_authorized_once() -> None:
         "lifecycle_event_count": 8,
     }
     assert all(contract["scientific_contract"].values())
+    assert contract["completion"]["status"] == "succeeded"
+    assert contract["completion"]["graph_counts"] == contract["expected_graph"]
+    assert contract["completion"]["exact_replay"] is True
+    assert contract["completion"]["provider_effectiveness_evaluated"] is False
+    assert contract["completion"]["formal_v34_authorized"] is False
 
 
 def test_provider_archives_are_deterministic_and_portably_reverified(tmp_path: Path) -> None:

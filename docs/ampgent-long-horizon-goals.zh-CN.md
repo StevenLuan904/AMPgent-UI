@@ -265,6 +265,19 @@ provider gate 记录提交为 `6e38bdb`，内容归档 SHA-256 为
 `d24a55c1d2ab0f8276d09a904118f5d9e8224a3d`；全量验证为 ruff clean、pytest `313 passed`。内容归档
 SHA-256 为 `4196f9ffb4017bcf2ed44e89d8b69c8e5aae611145f41abb6a72a807dad9ab05`。
 
+数据库原生 provider shadow 随后已完成并锁定。唯一 run 为
+`941ea473-82d6-4b70-9ede-5162a14bf8ce`，0 Candidate、0 Evaluation；两项完整 release、验收 receipt、
+依赖图、AgentDecision 和 replay bundle 均已进入 PostgreSQL/内容寻址对象存储。replay bundle SHA-256
+为 `390d5757ee55d7a010b66701b4d6fe0338eb97f4d84b87c20b572f74cc9ae73c`，结论仅为
+`provider_releases_replayable_for_v34_authorization_request`。因此 Q3/Q4 的工程可复原阻塞已解除，但
+效果问题仍为 `in_progress`：没有 knowledge/PepShot 增益结果，也没有正式 v34 授权。
+
+PepShot 治理规则再次锁定：若后续实际对照对 PepShot 不满意，AMPgent 不做兼容、修补、后处理或语义
+猜测，而是把可复现失败与冻结验收标准直接退回任务 `019fb910-f2dd-7be1-a7e6-bfe381512c25`。PepShot
+必须在自身仓库发布新不可变 release，AMPgent 才重新只读验收；change request、拒绝、新 release 和
+receipt 都必须进入相应 Agent evidence graph。历史“adapter”一词仅指严格 consumer validator，不代表
+允许适配 provider。
+
 版本号是当前规划，不是正式 run 授权。任何生成、阈值、候选选择或执行必须先有独立冻结 config、
 提交/push、服务与 worker 门禁、唯一 run 检查。长期路线允许被新证据修订，但修订必须追加理由，不能
 静默改写历史问题或成功标准。
