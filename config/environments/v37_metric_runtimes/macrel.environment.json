@@ -1,0 +1,39 @@
+{
+  "schema_version": "v37.metric-runtime-environment.1",
+  "environment_id": "macrel-controller-and-inner-py311-20260812",
+  "controller": {
+    "python_workspace_relative_path": ".venv/Scripts/python.exe",
+    "python_version": "3.11.10",
+    "python_executable_sha256": "1a11d8be73aa8ba516e48b5a6d2c035341f2af486e51efabb7e12c946bb801e5",
+    "uv_lock_path": "uv.lock",
+    "uv_lock_sha256": "93f507654f1174f4510230756b0e791a8bc6aae8ef0de1c71d17f5e813822a62",
+    "distribution_count": 133,
+    "dist_metadata_inventory_sha256": "f604d6176dafe0554c0d3e2c0531f07ce78d847406eede9273d7dad7710271aa",
+    "pip_available": false
+  },
+  "inner_runtime": {
+    "python_workspace_relative_path": "var/metric-runtimes/macrel-py311/Scripts/python.exe",
+    "macrel_executable_workspace_relative_path": "var/metric-runtimes/macrel-py311/Scripts/macrel.exe",
+    "python_version": "3.11.10",
+    "python_executable_sha256": "1a11d8be73aa8ba516e48b5a6d2c035341f2af486e51efabb7e12c946bb801e5",
+    "packages_lock_path": "config/environments/v37_metric_runtimes/macrel_inner.packages.lock.txt",
+    "packages_lock_sha256": "d8166f1bb7aafffb1931611efaec4b675320631b71be94d829f4ba2681f0c1d1",
+    "distribution_count": 18,
+    "dist_metadata_inventory_method": "SHA-256 of canonical JSON ordered by normalized distribution name; each entry binds name, version, METADATA SHA-256, RECORD SHA-256, and direct_url.json SHA-256 when present",
+    "dist_metadata_inventory_sha256": "ffc5e980f832d237e6aadfd0e628df042834a3afbdedcf1c8a27383af7816599",
+    "pip_available": false,
+    "dependency_check": {
+      "method": "importlib.metadata plus PEP 508 requirement evaluation under Python 3.11.10 marker environment",
+      "status": "ok",
+      "problems": []
+    }
+  },
+  "registry_binding": {
+    "registry_path": "config/metrics/runtime.local.yaml",
+    "registry_sha256": "007afeabe9302c7ac00e95f52e7fa00297946483982c39c12de8a62b5e6da6f9",
+    "plugins": [
+      "hemolysis_risk"
+    ]
+  },
+  "scientific_scope": "Exact controller and inner Macrel environment evidence only; the output remains soft non-assay-calibrated evidence."
+}

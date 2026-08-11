@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "metric_plugin": "mic_potency_amp_read",
+  "decision_role": "soft_supporting_evidence_only",
+  "source": {
+    "repository": "https://github.com/MicroResearchLab/AMP-potency-prediction-EvoGradient",
+    "commit": "ec9478b5e0d0aff4f92d6381c5027855390104c4",
+    "license": "Apache-2.0",
+    "model_source_file": "otherModelsRegression.py",
+    "model_source_sha256": "1bed5830995e9d2f47bcbf64249d7e53ddb90eca83cc5f80b5ab9d6901220ba1"
+  },
+  "model_assets": [
+    {
+      "name": "cnn",
+      "file": "model/regression/CNN.pth",
+      "sha256": "da071c6624666e128aae79643dcbe6084fce339711b902a3ba89e4eb3aeee07e"
+    },
+    {
+      "name": "transformer",
+      "file": "model/regression/Transformer.pth",
+      "sha256": "658a354dd0c76c1851516af361ea0899568642c02cc0fab0f6a55a87579fcc44"
+    },
+    {
+      "name": "attention",
+      "file": "model/regression/Attention.pth",
+      "sha256": "5dbea063bb56ffe7e903538aab4f4a90688d0f87f89c4ed26851fb649062283a"
+    },
+    {
+      "name": "lstm",
+      "file": "model/regression/LSTM.pth",
+      "sha256": "6f6d2784149a77fe430125aad612efe20cd3ef4e9b6680b5ec29b10ac99f9594"
+    }
+  ],
+  "model_asset_manifest_sha256": "06a577e36a833d36fad8b2af03f79cef8b3e795269918dcdee263967d197565f",
+  "runtime": {
+    "environment_manifest": "config/environments/v37_metric_runtimes/shared_llamp_amp_read.environment.json",
+    "python": "3.9.23",
+    "torch": "1.13.1+cpu",
+    "numpy": "1.23.5"
+  },
+  "limitations": [
+    "AMP-READ estimates generic mixed-species MIC and is not an AceA-binding endpoint or wet-lab MIC.",
+    "The four released component predictions are retained; no cross-family consensus is fabricated.",
+    "The released comparison is not sequence-similarity isolated from training data.",
+    "The runtime evidence establishes exact local bytes and dependencies, not calibration."
+  ]
+}

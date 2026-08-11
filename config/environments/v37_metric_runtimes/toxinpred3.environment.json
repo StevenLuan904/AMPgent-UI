@@ -1,0 +1,30 @@
+{
+  "schema_version": "v37.metric-runtime-environment.1",
+  "environment_id": "toxinpred3-py39-20260812",
+  "python": {
+    "workspace_relative_path": "var/metric-runtimes/toxinpred3-py39/Scripts/python.exe",
+    "version": "3.9.23",
+    "executable_sha256": "f417b7249592e93ec5e6109a1b5e8ef24664ddec0c7a2b063090fc4f03dc92ff"
+  },
+  "registry_binding": {
+    "registry_path": "config/metrics/runtime.local.yaml",
+    "registry_sha256": "007afeabe9302c7ac00e95f52e7fa00297946483982c39c12de8a62b5e6da6f9",
+    "plugins": [
+      "toxicity_risk"
+    ]
+  },
+  "packages": {
+    "lock_path": "config/environments/v37_metric_runtimes/toxinpred3.packages.lock.txt",
+    "lock_sha256": "6a4bbd9342e080362118fc9a44b2f1ad68760b356e170cf64b3086896d7a574a",
+    "distribution_count": 5,
+    "dist_metadata_inventory_method": "SHA-256 of canonical JSON ordered by normalized distribution name; each entry binds name, version, METADATA SHA-256, RECORD SHA-256, and direct_url.json SHA-256 when present",
+    "dist_metadata_inventory_sha256": "6d04a6d97bd6ee9bfe53f422373ac25420a3df33d7314b5f9d40803e386fa886",
+    "pip_available": false,
+    "dependency_check": {
+      "method": "importlib.metadata plus PEP 508 requirement evaluation under Python 3.9.23 marker environment",
+      "status": "ok",
+      "problems": []
+    }
+  },
+  "scientific_scope": "Exact execution environment evidence only; ToxinPred3 remains soft non-assay-matched toxicity evidence."
+}

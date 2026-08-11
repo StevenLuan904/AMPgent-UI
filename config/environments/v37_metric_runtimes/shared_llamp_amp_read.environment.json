@@ -1,0 +1,28 @@
+{
+  "schema_version": "v37.metric-runtime-environment.1",
+  "environment_id": "llamp-amp-read-shared-py39-20260812",
+  "python": {
+    "workspace_relative_path": "var/metric-runtimes/llamp-py39/Scripts/python.exe",
+    "version": "3.9.23",
+    "executable_sha256": "f417b7249592e93ec5e6109a1b5e8ef24664ddec0c7a2b063090fc4f03dc92ff"
+  },
+  "registry_binding": {
+    "registry_path": "config/metrics/runtime.local.yaml",
+    "registry_sha256": "007afeabe9302c7ac00e95f52e7fa00297946483982c39c12de8a62b5e6da6f9",
+    "plugins": [
+      "mic_potency",
+      "mic_potency_amp_read"
+    ],
+    "same_command_executable_proven": true
+  },
+  "packages": {
+    "lock_path": "config/environments/v37_metric_runtimes/llamp_amp_read.packages.lock.txt",
+    "lock_sha256": "6f850f20aca0439fc2e6b79a459a8dc1fe1058a6bbd1c2034105f7bd4bf05208",
+    "distribution_count": 35,
+    "dist_metadata_inventory_method": "SHA-256 of canonical JSON ordered by normalized distribution name; each entry binds name, version, METADATA SHA-256, RECORD SHA-256, and direct_url.json SHA-256 when present",
+    "dist_metadata_inventory_sha256": "24ac2a5a8408a9c69bdea48d8eea77fdc0055f813a040aa860a4d0d1909bd899",
+    "pip_freeze_all_local_available": true,
+    "pip_check": "No broken requirements found."
+  },
+  "scientific_scope": "Exact shared execution environment evidence only; it does not validate MIC calibration or AceA binding."
+}
