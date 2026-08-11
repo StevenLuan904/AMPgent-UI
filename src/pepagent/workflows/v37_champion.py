@@ -303,7 +303,16 @@ class RapidChampionGenerationV37Workflow:
             rosetta_results = [item["rosetta"] for item in rosetta_results_with_ordinals]
             await workflow.execute_activity(
                 "persist_v37_structure_stage_summaries",
-                {"run_id": run_id},
+                {
+                    "run_id": run_id,
+                    "manifest": manifest,
+                    "candidate_ids": [item["id"] for item in shortlist["candidates"]],
+                    "structures_by_candidate": {
+                        candidate_id: item["poses"]
+                        for candidate_id, item in audited_by_candidate.items()
+                    },
+                    "rosetta_results": rosetta_results,
+                },
                 task_queue=queues["workflow_and_control"],
                 start_to_close_timeout=timedelta(hours=1),
                 retry_policy=retry,

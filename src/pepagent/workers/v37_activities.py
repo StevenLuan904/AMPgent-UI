@@ -26,6 +26,11 @@ from pepagent.storage.object_store import ContentAddressedObjectStore
 from pepagent.v34_external_adapters import (
     build_knowledge_command,
 )
+from pepagent.v37_evidence import build_v37_evidence_plan
+from pepagent.v37_persistence import (
+    validate_v37_database_object_replay as _validate_v37_replay_graph,
+)
+from pepagent.v37_preregistration import V37Manifest
 from pepagent.v37_provider_consumers import (
     build_v37_pepshot_inspect_request,
     consume_v37_pepshot_inspection,
@@ -438,8 +443,8 @@ async def _validate_stage1_observations(
     calls = list(
         await session.scalars(select(ToolCall).where(ToolCall.run_id == run_id))
     )
-    observed_logical_ids = {
-        str(call.input_json.get("v37_logical_id"))
+    metric_calls = {
+        str(call.input_json.get("v37_logical_id")): call
         for call in calls
         if str(call.input_json.get("v37_logical_id", "")).startswith("v37:metric:")
     }
@@ -447,8 +452,22 @@ async def _validate_stage1_observations(
         f"v37:metric:{item['name']}"
         for item in manifest["stage_1_sequence_evaluation"]["metric_plugins"]
     }
-    if observed_logical_ids != expected_logical_ids:
+    if set(metric_calls) != expected_logical_ids:
         raise ValueError("v37 stage-1 metric ToolCall set differs from five-plugin contract")
+    expected_owner_by_metric = {
+        metric_name: f"v37:metric:{plugin['name']}"
+        for plugin in manifest["stage_1_sequence_evaluation"]["metric_plugins"]
+        for metric_name in plugin["observation_names"]
+    }
+    for (candidate_id, metric_name), observed in by_key.items():
+        expected_logical_id = expected_owner_by_metric[metric_name]
+        call = metric_calls[expected_logical_id]
+        expected_tool_call_id = str(getattr(call, "id", expected_logical_id))
+        if str(observed[0].tool_call_id) != expected_tool_call_id:
+            raise ValueError(
+                "v37 stage-1 plugin ToolCall ownership mismatch: "
+                f"{candidate_id}/{metric_name}"
+            )
 
 
 def _stage1_lanes(manifest: dict[str, Any]) -> list[dict[str, Any]]:
@@ -822,6 +841,25 @@ async def persist_v37_structure_stage_summaries(
     request: dict[str, Any],
 ) -> dict[str, Any]:
     run_id = uuid.UUID(request["run_id"])
+    manifest = request["manifest"]
+    structure_contract = manifest["stage_2_structure_confirmation"]
+    poses_per_candidate = int(structure_contract["poses_per_candidate"])
+    rosetta_decoys_per_pose = int(structure_contract["rosetta_decoys_per_pose"])
+    candidate_ids = [str(value) for value in request["candidate_ids"]]
+    structures_by_candidate = request["structures_by_candidate"]
+    for candidate_id in candidate_ids:
+        poses = structures_by_candidate.get(candidate_id)
+        if not isinstance(poses, list) or len(poses) != poses_per_candidate:
+            raise ValueError(f"v37 pose coverage mismatch for {candidate_id}")
+    if set(structures_by_candidate) != set(candidate_ids):
+        raise ValueError("v37 pose coverage contains an unknown or missing candidate")
+    rosetta_results = request["rosetta_results"]
+    if len(rosetta_results) != len(candidate_ids) * poses_per_candidate:
+        raise ValueError("v37 decoy coverage has the wrong pose count")
+    for result in rosetta_results:
+        decoys = result.get("rosetta", {}).get("decoys")
+        if not isinstance(decoys, list) or len(decoys) != rosetta_decoys_per_pose:
+            raise ValueError("v37 decoy coverage mismatch for a frozen pose")
     async with SessionFactory() as session, session.begin():
         repository = ExperimentRepository(session)
         calls = list(await session.scalars(select(ToolCall).where(ToolCall.run_id == run_id)))
@@ -881,7 +919,14 @@ async def persist_v37_final_portfolio_and_replay(
             )
         )
         if existing is not None:
-            return {"portfolio": existing.structured_json, "idempotently_recovered": True}
+            recovered = True
+            await validate_v37_database_object_replay(
+                session=session,
+                run_id=run_id,
+                manifest=manifest,
+            )
+        else:
+            recovered = False
         candidates = await _candidate_payloads(session, run_id)
         eligible_ids = set(request["structurally_eligible_candidate_ids"])
         eligible = [item for item in candidates if item["id"] in eligible_ids]
@@ -898,7 +943,7 @@ async def persist_v37_final_portfolio_and_replay(
         families["structure"] = manifest["stage_2_structure_confirmation"][
             "Pareto_objectives"
         ]
-        portfolio = select_v37_lanes(
+        recomputed_portfolio = select_v37_lanes(
             eligible,
             lanes=lanes,
             family_objectives=families,
@@ -906,6 +951,12 @@ async def persist_v37_final_portfolio_and_replay(
             maximum_per_generator=2,
             maximum_per_generator_seed=1,
         )
+        if recovered:
+            portfolio = existing.structured_json
+            if portfolio != recomputed_portfolio:
+                raise ValueError("v37 recovered final portfolio differs from database evidence")
+        else:
+            portfolio = recomputed_portfolio
         call = await repository.record_completed_tool_call(
             run_id,
             "v37-final-portfolio",
@@ -915,26 +966,19 @@ async def persist_v37_final_portfolio_and_replay(
             {"manifest_sha256": sha256_json(manifest), "weighted_total": False},
             portfolio,
         )
-        decision = await repository.record_agent_decision(
-            run_id,
-            0,
-            "v37_final_portfolio",
-            "deterministic-evidence-governance-agent",
-            V37_ACTIVITY_VERSION,
-            "Apply the frozen final v37 lane portfolio without scalarization.",
-            json.dumps(portfolio, sort_keys=True),
-            portfolio,
-        )
+        decision = existing or await repository.record_agent_decision(
+                run_id,
+                0,
+                "v37_final_portfolio",
+                "deterministic-evidence-governance-agent",
+                V37_ACTIVITY_VERSION,
+                "Apply the frozen final v37 lane portfolio without scalarization.",
+                json.dumps(portfolio, sort_keys=True),
+                portfolio,
+            )
         await repository.record_agent_tool_edge(
             decision.id, call.id, "output", "materializes_final_portfolio"
         )
-        graph = await build_database_evidence_graph(session, run_id)
-        replay_payload = {
-            "graph": graph,
-            "portfolio": portfolio,
-            "graph_sha256": sha256_json(graph),
-            "exact_database_replay": True,
-        }
         replay_call = await repository.record_completed_tool_call(
             run_id,
             "v37-replay",
@@ -942,8 +986,20 @@ async def persist_v37_final_portfolio_and_replay(
             sha256_json({"replay": "database-only-v37"}),
             {"v37_logical_id": "v37:replay"},
             {"database_only": True},
-            replay_payload,
+            {"validation_pending": True},
         )
+        graph = await build_database_evidence_graph(session, run_id)
+        validation, graph = await validate_v37_database_object_replay(
+            session=session,
+            run_id=run_id,
+            manifest=manifest,
+            graph=graph,
+        )
+        replay_payload = {
+            "graph_sha256": sha256_json(graph),
+            "validation": validation,
+            "portfolio_sha256": call.output_sha256,
+        }
         artifact = await _store_json(replay_payload)
         await _register_artifact(
             session, replay_call.id, asdict(artifact), "v37_database_replay_bundle", {}
@@ -952,5 +1008,38 @@ async def persist_v37_final_portfolio_and_replay(
         "portfolio": portfolio,
         "portfolio_sha256": call.output_sha256,
         "replay_sha256": replay_call.output_sha256,
-        "exact_database_replay": True,
+        "exact_database_replay": bool(validation["exact_replay"]),
+        "idempotently_recovered": recovered,
     }
+
+
+async def validate_v37_database_object_replay(
+    *,
+    session: Any,
+    run_id: uuid.UUID,
+    manifest: dict[str, Any],
+    graph: dict[str, Any] | None = None,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Reconstruct and validate the closure from persisted bytes only."""
+    if graph is None:
+        graph = await build_database_evidence_graph(session, run_id)
+    object_store = ContentAddressedObjectStore()
+    artifact_payloads: dict[str, dict[str, Any]] = {}
+    for artifact_row in graph.get("artifacts", []):
+        try:
+            raw = await asyncio.to_thread(
+                object_store.get_bytes, artifact_row["storage_uri"]
+            )
+            payload = json.loads(raw)
+        except (KeyError, TypeError, UnicodeDecodeError, json.JSONDecodeError):
+            continue
+        if isinstance(payload, dict):
+            artifact_payloads[str(artifact_row["sha256"])] = payload
+    plan = build_v37_evidence_plan(V37Manifest.model_validate(manifest))
+    validation = _validate_v37_replay_graph(
+        manifest=manifest,
+        plan=plan,
+        graph=graph,
+        artifact_payloads_by_sha256=artifact_payloads,
+    )
+    return validation, graph
