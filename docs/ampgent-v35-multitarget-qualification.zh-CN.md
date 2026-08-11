@@ -113,3 +113,8 @@ tie-break 固定为 shortlist order → target key；selection witness 必须由
 这仍不是数据库执行许可。现有 `Target`/`TargetPocket` 可复用，但 typed qualification-audit 与 panel-
 selection-witness 实体、迁移和共享 PostgreSQL 合成验收尚未实现；在这些缺口关闭并另行授权前，不得
 审计或选择真实靶点。没有具体 target 名称、没有肽、没有结构评分或泛化结果。
+
+typed ledger/offline replay 实现 revision 为
+`e47e0d3cf94d6b9d0b63c5a799694c13aeb819ca`；回填 revision 后的 config SHA-256 为
+`c9641143982940a0a05127e8b2e0081837a499b13770fc4c0ac6ecbad63a0c81`。全量验证为 ruff clean、
+pytest `352 passed`。这些足迹只证明离线合同可执行，不代表 PostgreSQL 持久化缺口已关闭。

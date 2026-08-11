@@ -216,6 +216,9 @@ shortlist 项完整保留通过/失败分母，并从 immutable sequence/structu
 AceA-anchor-aware deterministic maximin 重算 3–5 靶点面板；会拒绝任何 AMP/MIC、风险、Boltz、Rosetta
 或 PepShot 结果进入 target selection。当前仍缺 typed qualification-audit/panel-witness PostgreSQL 实体、
 迁移和合成数据库 acceptance，所以没有授权真实 target audit，也没有产生多靶点结果。
+该离线实现 revision 为 `e47e0d3cf94d6b9d0b63c5a799694c13aeb819ca`，回填后的 config SHA-256 为
+`c9641143982940a0a05127e8b2e0081837a499b13770fc4c0ac6ecbad63a0c81`，全量测试为 `352 passed`。
+它只关闭 Q5 的确定性离线重算缺口；数据库实体、迁移、合成验收和真实靶点授权仍是独立后续问题。
 
 ### Q6：怎样利用历史尝试进行 harness evolving？
 

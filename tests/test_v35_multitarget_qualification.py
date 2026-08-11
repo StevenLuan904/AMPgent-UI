@@ -11,7 +11,9 @@ def test_v35_is_qualification_only_and_cannot_cherry_pick_targets() -> None:
     assert contract["execution_status"] == (
         "typed_ledger_and_offline_replay_implemented_not_authorized"
     )
-    assert contract["implementation_revision"] is None
+    assert contract["implementation_revision"] == (
+        "e47e0d3cf94d6b9d0b63c5a799694c13aeb819ca"
+    )
     assert contract["scope"]["target_names_selected"] is False
     assert contract["scope"]["target_selection_authorized"] is False
     assert contract["scope"]["candidate_generation_authorized"] is False

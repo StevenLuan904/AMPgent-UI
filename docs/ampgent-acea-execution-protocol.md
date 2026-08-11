@@ -694,6 +694,10 @@ v35 现新增 `v35.target-qualification-replay.1` typed 离线 ledger/verifier�
 任何 AMP/MIC、风险、Boltz、Rosetta、PepShot 或生成肽结果进入 target selection 都 fail-closed。当前
 仍未实现 typed qualification-audit/panel-witness PostgreSQL 实体、迁移或合成数据库 acceptance，因此
 不得审计/选择真实靶点；没有新 target 名单或泛化结果。
+typed ledger/offline replay 实现 revision 为
+`e47e0d3cf94d6b9d0b63c5a799694c13aeb819ca`；回填后的 v35 config SHA-256 为
+`c9641143982940a0a05127e8b2e0081837a499b13770fc4c0ac6ecbad63a0c81`，全量验证为 ruff clean、
+pytest `352 passed`。该实现仍不是数据库部署、target audit 或 panel execution 授权。
 
 完成锁定提交为 `834ef57`；完成态 shadow config SHA-256 为
 `a8e4e4e3fafcb638c292bbb042eaa88fc4900c163d32e654778417e880893547`。内容归档
