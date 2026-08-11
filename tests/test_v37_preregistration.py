@@ -192,6 +192,9 @@ def test_v37_freezes_five_metric_calls_and_eleven_observations() -> None:
     assert len(observations) == len(set(observations)) == 11
     assert manifest["execution"] == {
         "capacity_contract_path": "../experiments/acea_v37_rapid_champion_capacity.yaml",
+        "capacity_contract_sha256": (
+            "34f83c5a6df92a1d07779014c407211daefc80210581a840b7cea19cea46c3f0"
+        ),
         "task_queues": {
             "workflow_and_control": "pepagent-control-v37",
             "generator": "pepagent-generator-v37",

@@ -181,6 +181,7 @@ def build_v37_preflight_files(
     workspace: Path,
     manifest_path: Path,
     experiment_spec_path: Path,
+    capacity_contract_path: Path,
     runtime_index_path: Path,
     metric_runtime_paths: dict[str, Path],
     knowledge_runtime_path: Path,
@@ -218,6 +219,7 @@ def build_v37_preflight_files(
     immutable_inputs = bind_v37_submission_inputs(
         manifest_path=manifest_path,
         experiment_spec_path=experiment_spec_path,
+        capacity_contract_path=capacity_contract_path,
         execution_bundle_path=execution_bundle_output,
         metric_registry_path=metric_registry_path,
         object_store=object_store,
@@ -249,6 +251,7 @@ def main() -> None:
     parser.add_argument("--workspace", type=Path, default=Path.cwd())
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--experiment-spec", type=Path, required=True)
+    parser.add_argument("--capacity-contract", type=Path, required=True)
     parser.add_argument("--runtime-index", type=Path, required=True)
     parser.add_argument(
         "--metric-runtime",
@@ -270,6 +273,7 @@ def main() -> None:
         workspace=args.workspace.resolve(),
         manifest_path=args.manifest.resolve(),
         experiment_spec_path=args.experiment_spec.resolve(),
+        capacity_contract_path=args.capacity_contract.resolve(),
         runtime_index_path=args.runtime_index.resolve(),
         metric_runtime_paths=_parse_named_paths(
             args.metric_runtime, label="metric runtime"

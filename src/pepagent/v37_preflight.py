@@ -15,6 +15,7 @@ def bind_v37_submission_inputs(
     *,
     manifest_path: Path,
     experiment_spec_path: Path,
+    capacity_contract_path: Path,
     execution_bundle_path: Path,
     metric_registry_path: Path,
     object_store: Any,
@@ -24,6 +25,7 @@ def bind_v37_submission_inputs(
     sources = {
         "manifest": (manifest_path, "application/yaml"),
         "experiment_spec": (experiment_spec_path, "application/yaml"),
+        "capacity_contract": (capacity_contract_path, "application/yaml"),
         "execution_bundle": (execution_bundle_path, "application/json"),
         "metric_registry": (metric_registry_path, "application/yaml"),
     }
@@ -44,6 +46,10 @@ def bind_v37_submission_inputs(
 
 def build_v37_static_preflight(config_path: Path) -> dict[str, Any]:
     manifest = load_v37_preregistration(config_path)
+    capacity_path = config_path.parent / manifest.execution["capacity_contract_path"]
+    capacity_sha256 = sha256_bytes(capacity_path.read_bytes())
+    if capacity_sha256 != manifest.execution["capacity_contract_sha256"]:
+        raise ValueError("v37 frozen capacity contract bytes drifted")
     source_contracts = manifest.generators["frozen_source_contracts"]
     verified_sources = {}
     for prefix in ("v23", "v24", "v32"):
@@ -73,6 +79,10 @@ def build_v37_static_preflight(config_path: Path) -> dict[str, Any]:
         "evidence_plan_sha256": plan["plan_sha256"],
         "source_contract_sha256": verified_sources,
         "experiment_spec": experiment_spec,
+        "capacity_contract": {
+            "capacity_contract_path": manifest.execution["capacity_contract_path"],
+            "capacity_contract_sha256": capacity_sha256,
+        },
         "config_execution_authorized": manifest.formal_run.execution_authorized,
         "implementation_revision": manifest.formal_run.implementation_revision,
         "direction_authorized": True,
@@ -111,6 +121,7 @@ def authorize_v37_submission_preflight(
     required_inputs = {
         "manifest",
         "experiment_spec",
+        "capacity_contract",
         "execution_bundle",
         "metric_registry",
     }

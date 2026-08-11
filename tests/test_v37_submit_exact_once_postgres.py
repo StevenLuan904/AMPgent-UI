@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 import yaml
-from sqlalchemy import func, select, text
+from sqlalchemy import delete, func, select, text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from pepagent.db.models import ExperimentRun, LifecycleEvent, Target
@@ -69,14 +69,19 @@ async def test_two_postgres_sessions_reserve_one_v37_formal_run() -> None:
             "formal_submission_key": formal_key,
         }
 
-        async def reserve() -> uuid.UUID:
+        async def reserve(
+            submission_spec: dict[str, object] | None = None,
+            submission_key: str = formal_key,
+            submission_workflow_id: str = workflow_id,
+        ) -> uuid.UUID:
+            resolved_spec = raw_spec if submission_spec is None else submission_spec
             async with sessions() as session, session.begin():
                 run = await _reserve_v37_formal_run(
                     session,
                     spec=spec,
-                    raw_spec=raw_spec,
-                    formal_submission_key=formal_key,
-                    workflow_id=workflow_id,
+                    raw_spec=resolved_spec,
+                    formal_submission_key=submission_key,
+                    workflow_id=submission_workflow_id,
                 )
                 return run.id
 
@@ -89,6 +94,39 @@ async def test_two_postgres_sessions_reserve_one_v37_formal_run() -> None:
             assert run is not None
             assert run.formal_submission_key == formal_key
             assert run.temporal_workflow_id == workflow_id
+
+        async with sessions() as session, session.begin():
+            await session.execute(delete(LifecycleEvent))
+            await session.execute(delete(ExperimentRun))
+
+        other_manifest_sha256 = "5" * 64
+        other_key = build_v37_formal_submission_key(
+            benchmark_id="amp_rapid_champion_generation_v37",
+            benchmark_version="v37.0.0-preregistered",
+            manifest_sha256=other_manifest_sha256,
+        )
+        other_raw_spec = {
+            **raw_spec,
+            "manifest_sha256": other_manifest_sha256,
+            "formal_submission_key": other_key,
+        }
+        outcomes = await asyncio.gather(
+            reserve(),
+            reserve(
+                other_raw_spec,
+                other_key,
+                build_v37_workflow_id(other_key),
+            ),
+            return_exceptions=True,
+        )
+        assert sum(isinstance(item, uuid.UUID) for item in outcomes) == 1
+        failures = [item for item in outcomes if isinstance(item, Exception)]
+        assert len(failures) == 1
+        assert isinstance(failures[0], ValueError)
+        assert "v37 formal run already exists" in str(failures[0])
+        async with sessions() as session:
+            assert await session.scalar(select(func.count()).select_from(ExperimentRun)) == 1
+            assert await session.scalar(select(func.count()).select_from(LifecycleEvent)) == 2
     finally:
         async with engine.begin() as connection:
             await connection.execute(text(f'DROP SCHEMA IF EXISTS "{schema}" CASCADE'))

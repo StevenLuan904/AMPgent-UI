@@ -130,12 +130,16 @@ async def test_v37_submit_duplicate_gate_fails_closed() -> None:
         _DuplicateSession(None),  # type: ignore[arg-type]
         benchmark_id="amp_rapid_champion_generation_v37",
         benchmark_version="v37.0.0-preregistered",
+        formal_submission_key="a" * 64,
     )
     with pytest.raises(ValueError, match="formal run already exists"):
         await ensure_no_existing_v37_run(
-            _DuplicateSession(SimpleNamespace(id="prior-run")),  # type: ignore[arg-type]
+            _DuplicateSession(
+                SimpleNamespace(id="prior-run", formal_submission_key="b" * 64)
+            ),  # type: ignore[arg-type]
             benchmark_id="amp_rapid_champion_generation_v37",
             benchmark_version="v37.0.0-preregistered",
+            formal_submission_key="a" * 64,
         )
 
 
@@ -212,6 +216,9 @@ def test_v37_submission_bundle_refuses_tampered_unauthorized_preflight(
         load_v37_submission_bundle(
             manifest_path=manifest_path,
             experiment_spec_path=experiment_spec_path,
+            capacity_contract_path=(
+                ROOT / "config/experiments/acea_v37_rapid_champion_capacity.yaml"
+            ),
             execution_bundle_path=execution_path,
             preflight_path=preflight_path,
         )

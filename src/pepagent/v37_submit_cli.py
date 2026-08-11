@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.dialects.postgresql import insert as postgresql_insert
 from temporalio.client import Client, WorkflowHandle
 from temporalio.exceptions import WorkflowAlreadyStartedError
@@ -55,16 +55,33 @@ _WORKFLOW_MEMO_KEY = "v37_submission_identity"
 
 
 async def ensure_no_existing_v37_run(
-    session: Any, *, benchmark_id: str, benchmark_version: str
-) -> None:
+    session: Any,
+    *,
+    benchmark_id: str,
+    benchmark_version: str,
+    formal_submission_key: str,
+) -> ExperimentRun | None:
     duplicate = await session.scalar(
         select(ExperimentRun).where(
             ExperimentRun.spec_json["benchmark_id"].astext == benchmark_id,
             ExperimentRun.spec_json["benchmark_version"].astext == benchmark_version,
         )
     )
-    if duplicate is not None:
+    if duplicate is not None and duplicate.formal_submission_key != formal_submission_key:
         raise ValueError(f"v37 formal run already exists: {duplicate.id}")
+    return duplicate
+
+
+def _v37_benchmark_lock_id(*, benchmark_id: str, benchmark_version: str) -> int:
+    digest = bytes.fromhex(
+        sha256_json(
+            {
+                "benchmark_id": benchmark_id,
+                "benchmark_version": benchmark_version,
+            }
+        )
+    )
+    return int.from_bytes(digest[:8], byteorder="big", signed=True)
 
 
 def build_v37_formal_submission_key(
@@ -105,6 +122,24 @@ async def _reserve_v37_formal_run(
     workflow_id: str,
 ) -> ExperimentRun:
     """Atomically create or recover the one database identity for this submission."""
+
+    benchmark_id = str(raw_spec["benchmark_id"])
+    benchmark_version = str(raw_spec["benchmark_version"])
+    await session.execute(
+        text("SELECT pg_advisory_xact_lock(:lock_id)"),
+        {
+            "lock_id": _v37_benchmark_lock_id(
+                benchmark_id=benchmark_id,
+                benchmark_version=benchmark_version,
+            )
+        },
+    )
+    await ensure_no_existing_v37_run(
+        session,
+        benchmark_id=benchmark_id,
+        benchmark_version=benchmark_version,
+        formal_submission_key=formal_submission_key,
+    )
 
     target_digest = sha256_text(spec.target.sequence)
     target_insert = (
@@ -435,6 +470,7 @@ def load_v37_submission_bundle(
     *,
     manifest_path: Path,
     experiment_spec_path: Path,
+    capacity_contract_path: Path,
     execution_bundle_path: Path,
     preflight_path: Path,
     validate_live_runtimes: bool = False,
@@ -446,6 +482,14 @@ def load_v37_submission_bundle(
         manifest_path,
         spec_path_override=experiment_spec_path,
     )
+    capacity_binding = {
+        "capacity_contract_path": manifest.execution["capacity_contract_path"],
+        "capacity_contract_sha256": sha256_bytes(capacity_contract_path.read_bytes()),
+    }
+    if capacity_binding["capacity_contract_sha256"] != manifest.execution[
+        "capacity_contract_sha256"
+    ]:
+        raise ValueError("v37 capacity contract bytes drifted")
     spec = ExperimentSpec.model_validate(
         yaml.safe_load(experiment_spec_path.read_text(encoding="utf-8"))
     )
@@ -465,6 +509,8 @@ def load_v37_submission_bundle(
         raise ValueError("v37 submission preflight belongs to another manifest")
     if preflight.get("experiment_spec") != experiment_binding:
         raise ValueError("v37 submission preflight experiment spec binding drifted")
+    if preflight.get("capacity_contract") != capacity_binding:
+        raise ValueError("v37 submission preflight capacity contract binding drifted")
     if preflight.get("formal_run_submitted") is not False:
         raise ValueError("v37 submission preflight already records a submission")
     if preflight.get("implementation_revision") != implementation_revision:
@@ -508,6 +554,7 @@ def load_v37_submission_bundle(
     for role, path in {
         "manifest": manifest_path,
         "experiment_spec": experiment_spec_path,
+        "capacity_contract": capacity_contract_path,
         "execution_bundle": execution_bundle_path,
         "metric_registry": manifest_path.resolve().parents[1] / "metrics/runtime.local.yaml",
     }.items():
@@ -528,12 +575,14 @@ async def submit_v37_once(
     *,
     manifest_path: Path,
     experiment_spec_path: Path,
+    capacity_contract_path: Path,
     execution_bundle_path: Path,
     preflight_path: Path,
 ) -> dict[str, Any]:
     manifest, spec, execution, preflight = load_v37_submission_bundle(
         manifest_path=manifest_path,
         experiment_spec_path=experiment_spec_path,
+        capacity_contract_path=capacity_contract_path,
         execution_bundle_path=execution_bundle_path,
         preflight_path=preflight_path,
         validate_live_runtimes=True,
@@ -541,6 +590,7 @@ async def submit_v37_once(
     manifest_bytes = await asyncio.to_thread(manifest_path.read_bytes)
     execution_bundle_bytes = await asyncio.to_thread(execution_bundle_path.read_bytes)
     experiment_spec_bytes = await asyncio.to_thread(experiment_spec_path.read_bytes)
+    capacity_contract_bytes = await asyncio.to_thread(capacity_contract_path.read_bytes)
     preflight_bytes = await asyncio.to_thread(preflight_path.read_bytes)
     metric_registry_path = manifest_path.parents[1] / "metrics/runtime.local.yaml"
     metric_registry_bytes = await asyncio.to_thread(metric_registry_path.read_bytes)
@@ -554,6 +604,7 @@ async def submit_v37_once(
         "submission_preflight_sha256": preflight["submission_preflight_sha256"],
         "execution_bundle_sha256": sha256_bytes(execution_bundle_bytes),
         "experiment_spec_sha256": sha256_bytes(experiment_spec_bytes),
+        "capacity_contract_sha256": sha256_bytes(capacity_contract_bytes),
         "all_agent_evidence_persisted": True,
         "database_object_store_replay_required": True,
     }
@@ -572,6 +623,7 @@ async def submit_v37_once(
     for role, payload, media_type in (
         ("manifest", manifest_bytes, "application/yaml"),
         ("experiment_spec", experiment_spec_bytes, "application/yaml"),
+        ("capacity_contract", capacity_contract_bytes, "application/yaml"),
         ("execution_bundle", execution_bundle_bytes, "application/json"),
         ("submission_preflight", preflight_bytes, "application/json"),
         ("metric_registry", metric_registry_bytes, "application/yaml"),
@@ -601,6 +653,7 @@ async def submit_v37_once(
             "run_id": run_id,
             "manifest": manifest,
             "experiment_spec": raw_experiment_spec,
+            "capacity_contract": yaml.safe_load(capacity_contract_bytes),
             "submission_preflight": preflight,
             **execution,
         }
@@ -648,6 +701,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Submit the unique v37 formal run")
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--experiment-spec", type=Path, required=True)
+    parser.add_argument("--capacity-contract", type=Path, required=True)
     parser.add_argument("--execution-bundle", type=Path, required=True)
     parser.add_argument("--preflight", type=Path, required=True)
     parser.add_argument("--execute", action="store_true")
@@ -658,6 +712,7 @@ def main() -> None:
         submit_v37_once(
             manifest_path=args.manifest.resolve(),
             experiment_spec_path=args.experiment_spec.resolve(),
+            capacity_contract_path=args.capacity_contract.resolve(),
             execution_bundle_path=args.execution_bundle.resolve(),
             preflight_path=args.preflight.resolve(),
         )

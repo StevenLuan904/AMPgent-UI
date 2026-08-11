@@ -34,8 +34,9 @@ def _immutable_inputs() -> dict[str, dict[str, object]]:
         for role, character, media_type in (
             ("manifest", "a", "application/yaml"),
             ("experiment_spec", "b", "application/yaml"),
-            ("execution_bundle", "c", "application/json"),
-            ("metric_registry", "d", "application/yaml"),
+            ("capacity_contract", "c", "application/yaml"),
+            ("execution_bundle", "d", "application/json"),
+            ("metric_registry", "e", "application/yaml"),
         )
     }
 
@@ -69,6 +70,47 @@ def test_v37_preflight_cannot_override_frozen_config_authorization() -> None:
     ]
 
 
+def test_v37_preflight_requires_capacity_artifact_binding() -> None:
+    static = build_v37_static_preflight(CONFIG)
+    immutable = _immutable_inputs()
+    del immutable["capacity_contract"]
+    blocked = authorize_v37_submission_preflight(
+        static,
+        dynamic_gates=_all_dynamic_gates(),
+        immutable_inputs=immutable,
+    )
+    assert blocked["status"] == "blocked"
+    assert blocked["failed_gates"] == ["immutable_submission_inputs_bound"]
+
+
+def test_v37_static_preflight_freezes_capacity_bytes() -> None:
+    static = build_v37_static_preflight(CONFIG)
+    assert static["capacity_contract"] == {
+        "capacity_contract_path": "../experiments/acea_v37_rapid_champion_capacity.yaml",
+        "capacity_contract_sha256": (
+            "34f83c5a6df92a1d07779014c407211daefc80210581a840b7cea19cea46c3f0"
+        ),
+    }
+
+
+def test_v37_submission_rejects_capacity_byte_drift(tmp_path: Path) -> None:
+    source = CONFIG.parents[1] / "experiments/acea_v37_rapid_champion_capacity.yaml"
+    drifted = tmp_path / "capacity.yaml"
+    drifted.write_bytes(source.read_bytes() + b"# drift\n")
+    with pytest.raises(ValueError, match="capacity contract bytes drifted"):
+        from pepagent.v37_submit_cli import load_v37_submission_bundle
+
+        load_v37_submission_bundle(
+            manifest_path=CONFIG,
+            experiment_spec_path=(
+                CONFIG.parents[1] / "experiments/acea_v37_rapid_champion_structure.yaml"
+            ),
+            capacity_contract_path=drifted,
+            execution_bundle_path=tmp_path / "missing-execution.json",
+            preflight_path=tmp_path / "missing-preflight.json",
+        )
+
+
 def test_v37_preflight_binds_exact_source_bytes(tmp_path: Path) -> None:
     class Store:
         def put_bytes(self, payload: bytes, media_type: str) -> object:
@@ -86,6 +128,7 @@ def test_v37_preflight_binds_exact_source_bytes(tmp_path: Path) -> None:
     for name, payload in (
         ("manifest.yaml", b"m"),
         ("spec.yaml", b"s"),
+        ("capacity.yaml", b"c"),
         ("run.json", b"e"),
         ("metrics.yaml", b"r"),
     ):
@@ -95,13 +138,15 @@ def test_v37_preflight_binds_exact_source_bytes(tmp_path: Path) -> None:
     bindings = bind_v37_submission_inputs(
         manifest_path=paths[0],
         experiment_spec_path=paths[1],
-        execution_bundle_path=paths[2],
-        metric_registry_path=paths[3],
+        capacity_contract_path=paths[2],
+        execution_bundle_path=paths[3],
+        metric_registry_path=paths[4],
         object_store=Store(),
     )
     assert set(bindings) == {
         "manifest",
         "experiment_spec",
+        "capacity_contract",
         "execution_bundle",
         "metric_registry",
     }
