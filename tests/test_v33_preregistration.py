@@ -1,4 +1,5 @@
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import pytest
 import yaml
@@ -44,6 +45,9 @@ def test_v33_preregistration_freezes_charge_pairs_and_search_budget() -> None:
         "relative_matched_intervention_not_absolute_v32_derived_interval"
     )
     assert len(manifest.literature_evidence_basis["primary_studies"]) >= 5
+    assert manifest.literature_evidence_basis["manifest_sha256"] == (
+        "309062137acc291ae58346fa9b80b5025a5438c7def097e67e235182bbb98e6a"
+    )
 
 
 def test_v33_preregistration_rejects_execution_or_target_drift() -> None:
@@ -63,3 +67,50 @@ def test_v33_preregistration_rejects_missing_database_evidence() -> None:
     payload["database_evidence_contract"]["persist_checkpoint_archive_snapshots"] = False
     with pytest.raises(ValueError, match="evidence contract"):
         V33Preregistration.model_validate(payload)
+
+
+def test_v33_preregistration_rejects_literature_manifest_drift() -> None:
+    config_payload = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
+    source = (
+        CONFIG.parent
+        / config_payload["literature_evidence_basis"]["manifest_path"]
+    ).resolve()
+    with TemporaryDirectory() as directory:
+        root = Path(directory)
+        benchmark_dir = root / "benchmarks"
+        evidence_dir = root / "evidence"
+        benchmark_dir.mkdir()
+        evidence_dir.mkdir()
+        config_copy = benchmark_dir / CONFIG.name
+        literature_copy = evidence_dir / source.name
+        config_copy.write_text(CONFIG.read_text(encoding="utf-8"), encoding="utf-8")
+        literature_copy.write_bytes(source.read_bytes() + b"\n# drift\n")
+        with pytest.raises(ValueError, match="checksum mismatch"):
+            load_v33_preregistration(config_copy)
+
+
+def test_v33_literature_manifest_freezes_external_targets_and_anti_extrapolation() -> None:
+    config_payload = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
+    literature_path = (
+        CONFIG.parent
+        / config_payload["literature_evidence_basis"]["manifest_path"]
+    ).resolve()
+    literature = yaml.safe_load(literature_path.read_text(encoding="utf-8"))
+    evidence_ids = {item["evidence_id"] for item in literature["evidence_items"]}
+    assert {
+        "v13k_charge_series_2008",
+        "charge_patterning_2019",
+        "ar23_position_distribution_2016",
+        "wr_wk_length_series_2016",
+        "alpha_defensin_K_R_context_2009",
+        "w6k8_w6r8_2026",
+    }.issubset(evidence_ids)
+    assert literature["biological_target_policy"]["v32_distribution_use"] == (
+        "generator_coverage_and_budget_feasibility_only"
+    )
+    assert "absolute_net_charge_optimum" in literature["biological_target_policy"][
+        "target_is_not"
+    ]
+    assert "call_K_or_R_globally_superior" in literature[
+        "cross_study_inference_rules"
+    ]["forbidden"]

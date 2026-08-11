@@ -442,8 +442,9 @@ ToolCall dependency 纳入对应 run。只保存在外部工具数据库、Markd
 
 v32 acceptance 仅授权编写预注册。当前已建立未授权草案
 `config/benchmarks/amp_charge_search_sufficiency_v33.yaml`，叙事说明为
-`docs/ampgent-v33-charge-search-preregistration.zh-CN.md`。草案用锁定 v32 的 300 条数据库记录只读
-校准 charge-density 分层，不读取候选身份作 parent 选择，也不回写 v32。
+`docs/ampgent-v33-charge-search-preregistration.zh-CN.md`。草案只把锁定 v32 的 300 条数据库记录用于
+generator coverage 与预算可达性诊断，不用其 charge-density quantile 定义分层、生物学目标、parent
+选择或最佳区间，也不回写 v32。
 
 目标规则已在 2026-08-11 审查后纠正：v32 自生成电荷分布只作 generator coverage diagnostic，不再
 定义 v33 生物学目标。v33 现由原始实验支持为七个同 scaffold 臂：未编辑 baseline；在同一位置分别
@@ -476,6 +477,15 @@ ToolCall、文献/transform/archive 依赖缺失、移除成员无 dominance wit
 上述旧句“未完成前”保留为 commit `140c71f` 的历史状态；当前实现已冻结，config 中
 `formal_run.implementation_revision` 指向 `fab5cac50b3d709e9435c732173bc22eba81a505`，但
 `execution_authorized=false`、`submitted=false`，不能据此执行。
+
+2026-08-11 外部文献复核已把 claim-level evidence manifest 冻结为
+`config/evidence/amp_charge_design_literature_v33.yaml`，SHA-256 为
+`309062137acc291ae58346fa9b80b5025a5438c7def097e67e235182bbb98e6a`。其中保存至少七组原始配对研究的
+source identity、scaffold/intervention、supported claim 和禁止外推；研究共同支持相对的同 scaffold
+`+1/+2 × K/R × 同位置对照`问题，但不支持统一净电荷阈值或全局 K/R 胜者。config loader 会校验该
+manifest 的内容 SHA、来源身份唯一性和 anti-extrapolation 规则。该证据尚未进入任何 formal Agent run；
+正式执行时必须作为 literature-freezer ToolCall artifact 与 charge-transform dependency 写入 PostgreSQL
+和对象存储，不能从本地文档回填。
 
 ## 18. v34 文献知识卡 × PepShot 干预消融草案（2026-08-11 append-only update）
 

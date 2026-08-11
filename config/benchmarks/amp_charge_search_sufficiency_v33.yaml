@@ -1,5 +1,5 @@
 benchmark_id: amp_charge_search_sufficiency_v33
-version: v33.0.0-preregistration-draft
+version: v33.1.0-literature-evidence-freeze
 execution_status: preregistered_draft_not_authorized
 track: cationic_counterfactual_and_search_sufficiency
 target_spec_path: ../experiments/acea_generator_structure_confirmation_v31b.yaml
@@ -83,11 +83,16 @@ charge_definition:
 literature_evidence_basis:
   target_rule: relative_matched_intervention_not_absolute_v32_derived_interval
   retrieved_on: 2026-08-11
+  manifest_path: ../evidence/amp_charge_design_literature_v33.yaml
+  manifest_sha256: 309062137acc291ae58346fa9b80b5025a5438c7def097e67e235182bbb98e6a
+  manifest_semantics: external_primary_evidence_defines_questions_controls_and_forbidden_inferences_not_a_universal_numeric_target
   primary_studies:
     - {pmid: 18098173, pmcid: PMC2761230, doi: 10.1002/bip.20911, source_uri: https://pmc.ncbi.nlm.nih.gov/articles/PMC2761230/, role: V13K_charge_series_activity_and_hemolysis_threshold_is_scaffold_specific}
     - {pmid: 23982951, doi: 10.1002/bip.22399, source_uri: https://pubmed.ncbi.nlm.nih.gov/23982951/, role: charge_number_and_position_do_not_alone_explain_activity}
-    - {doi: 10.1021/acs.jmedchem.9b00657, source_uri: https://doi.org/10.1021/acs.jmedchem.9b00657, role: positive_charge_patterning_changes_activity_toxicity_and_stability}
+    - {pmid: 31194548, doi: 10.1021/acs.jmedchem.9b00657, source_uri: https://pubmed.ncbi.nlm.nih.gov/31194548/, role: positive_charge_patterning_changes_activity_toxicity_and_stability}
+    - {pmid: 27271216, pmcid: PMC4897634, doi: 10.1038/srep27394, source_uri: https://pubmed.ncbi.nlm.nih.gov/27271216/, role: positive_residue_position_can_matter_more_than_count}
     - {pmid: 27046192, source_uri: https://pubmed.ncbi.nlm.nih.gov/27046192/, role: lysine_vs_arginine_effect_is_sequence_context_dependent}
+    - {pmid: 19737896, pmcid: PMC2772546, doi: 10.1128/IAI.00695-09, source_uri: https://pubmed.ncbi.nlm.nih.gov/19737896/, role: K_for_R_direction_reverses_between_alpha_defensin_primary_sequences}
     - {pmid: 42276501, source_uri: https://pubmed.ncbi.nlm.nih.gov/42276501/, role: newer_tryptophan_rich_series_finds_opposite_K_vs_R_direction}
     - {pmcid: PMC6761801, source_uri: https://pmc.ncbi.nlm.nih.gov/articles/PMC6761801/, role: polyarginine_charge_alone_is_not_sufficient_for_antimicrobial_activity}
   forbidden_inference: no_single_study_or_generated_distribution_defines_a_universal_charge_or_charge_density_optimum
@@ -235,6 +240,8 @@ structure_confirmation_child:
 
 database_evidence_contract:
   persist_literature_basis_as_content_addressed_manifest_artifact: true
+  literature_manifest_sha256_must_match_frozen_config: true
+  literature_claim_projection_must_be_persisted: true
   persist_raw_generator_batches: true
   persist_rejected_and_duplicate_proposals_as_artifacts: true
   persist_all_seed_occurrences: true

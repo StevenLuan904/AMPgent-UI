@@ -6,6 +6,8 @@ from typing import Any, Literal
 import yaml
 from pydantic import BaseModel, Field, model_validator
 
+from pepagent.provenance.hashing import sha256_bytes
+
 
 class ChargeDose(BaseModel):
     edit_count: int = Field(ge=1, le=2)
@@ -108,6 +110,10 @@ class V33Preregistration(BaseModel):
             raise ValueError("v33 target rule must be literature-led and relative")
         if len(self.literature_evidence_basis.get("primary_studies", [])) < 5:
             raise ValueError("v33 literature basis is incomplete")
+        if self.literature_evidence_basis.get("manifest_semantics") != (
+            "external_primary_evidence_defines_questions_controls_and_forbidden_inferences_not_a_universal_numeric_target"
+        ):
+            raise ValueError("v33 literature manifest semantics drifted")
 
         expected_arms = {
             "baseline_unedited",
@@ -201,6 +207,34 @@ class V33Preregistration(BaseModel):
 
 
 def load_v33_preregistration(path: Path) -> V33Preregistration:
-    return V33Preregistration.model_validate(
+    manifest = V33Preregistration.model_validate(
         yaml.safe_load(path.read_text(encoding="utf-8"))
     )
+    evidence = manifest.literature_evidence_basis
+    literature_path = (path.parent / evidence["manifest_path"]).resolve()
+    payload = literature_path.read_bytes()
+    if sha256_bytes(payload) != evidence["manifest_sha256"]:
+        raise ValueError("v33 literature evidence manifest checksum mismatch")
+    literature = yaml.safe_load(payload)
+    target_policy = literature.get("biological_target_policy", {})
+    if target_policy.get("v32_distribution_use") != (
+        "generator_coverage_and_budget_feasibility_only"
+    ):
+        raise ValueError("v33 literature evidence reuses generated data as a biological target")
+    evidence_items = literature.get("evidence_items", [])
+    if len(evidence_items) < 7:
+        raise ValueError("v33 literature evidence manifest is incomplete")
+    evidence_ids = [item.get("evidence_id") for item in evidence_items]
+    if None in evidence_ids or len(evidence_ids) != len(set(evidence_ids)):
+        raise ValueError("v33 literature evidence identifiers are missing or duplicated")
+    forbidden = set(
+        literature.get("cross_study_inference_rules", {}).get("forbidden", [])
+    )
+    required_forbidden = {
+        "copy_any_study_specific_charge_threshold_into_a_universal_gate",
+        "use_generated_charge_quantiles_as_biological_ground_truth",
+        "call_K_or_R_globally_superior",
+    }
+    if not required_forbidden.issubset(forbidden):
+        raise ValueError("v33 literature evidence lacks required anti-extrapolation rules")
+    return manifest

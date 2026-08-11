@@ -102,10 +102,19 @@ pair-ipTM、口袋覆盖、碰撞、姿势一致性和 Rosetta REU 不是 AceA �
   DOI 10.1002/bip.20911：V13K 净电荷梯度、MIC 与人红细胞溶血。
 - Taniguchi et al., *Biopolymers* 2014, PMID 23982951,
   DOI 10.1002/bip.22399：K/R 位点删减、膜模型与活性不呈简单电荷关系。
-- Chen et al., *J Med Chem* 2019, DOI 10.1021/acs.jmedchem.9b00657：正电 pattern 对活性、毒性和
+- Stone et al., *J Med Chem* 2019, PMID 31194548, DOI 10.1021/acs.jmedchem.9b00657：正电 pattern 对活性、毒性和
   稳定性的配对影响。
+- Zhang et al., *Sci Rep* 2016, PMID 27271216, PMCID PMC4897634：正电残基的位置而非仅数量可显著
+  改变疏水性、两亲性、螺旋、宿主膜作用与选择性。
 - Schmidt et al., *J Biol Chem* 2016, PMID 27046192，以及 2026 W-rich K/R 系列 PMID 42276501：
   K/R 身份效应依赖 scaffold，不能预设单一赢家。
+- Llenado et al., *Infect Immun* 2009, PMID 19737896, PMCID PMC2772546：同为 Arg→Lys 替换，在两种
+  α-defensin scaffold 中得到相反的功能方向。
 - Jeong et al., *Sci Rep* 2019, PMCID PMC6761801：R9 单独高正电不足以产生抗菌活性。
 
 这些研究规定的是干预哲学和对照结构，不直接提供 v33 的实验活性、安全或普适阈值。
+完整的 claim→source→禁止外推关系已冻结在
+`config/evidence/amp_charge_design_literature_v33.yaml`，SHA-256 为
+`309062137acc291ae58346fa9b80b5025a5438c7def097e67e235182bbb98e6a`。正式 run 必须把该 manifest 原始
+字节、SHA、literature freezer ToolCall、逐 claim projection 和 charge-transform 依赖边全部写入
+PostgreSQL/对象存储；仅在本文列出引用不算 Agent 证据已落库。

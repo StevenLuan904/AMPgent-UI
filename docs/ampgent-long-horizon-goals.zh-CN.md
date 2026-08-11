@@ -112,6 +112,12 @@ checkpoint archive、dominance witness、saturation AgentDecision 和对象存�
 归档 SHA-256 为 `1519d6b4e26546b5f28b2a5e7f0489f423232591dba25f9c5047eadfc2e3f55e`。在获得另行
 formal-run 授权前，这仍不表示 v33 已执行或产生结果。
 
+外部证据现进一步冻结为 `config/evidence/amp_charge_design_literature_v33.yaml`，SHA-256
+`309062137acc291ae58346fa9b80b5025a5438c7def097e67e235182bbb98e6a`。它逐项保存原始研究身份、
+研究设计、能支持的 claim 和禁止外推，并明确：v32 自生成分布仅诊断 generator coverage 与预算可达性；
+生物学目标是同 scaffold 的 K/R 身份、1/2-residue 剂量和位置效应，不是任何内部 quantile 或统一净电荷
+区间。正式 run 必须把 manifest 字节、claim projection 与 ToolCall 依赖写入证据图。
+
 ### Q2：当前 Pareto 搜索是否已经接近可达最优？
 
 当前判断：`in_progress`。v32 只证明冻结样本内的非支配组合，不能证明搜索收敛。v33 已冻结

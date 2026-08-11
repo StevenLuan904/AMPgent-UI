@@ -1,0 +1,172 @@
+schema_version: amp_charge_design_literature.v1
+retrieved_on: 2026-08-11
+retrieval_scope: primary_experimental_studies_and_one_mechanistic_simulation
+biological_target_policy:
+  target_is: within_scaffold_matched_causal_response_to_cationic_residue_identity_dose_and_position
+  target_is_not:
+    - absolute_net_charge_optimum
+    - absolute_charge_density_optimum
+    - v32_generated_distribution_quantile
+    - universal_lysine_or_arginine_winner
+  v32_distribution_use: generator_coverage_and_budget_feasibility_only
+  preregistered_intervention:
+    dose: [one_neutral_to_cationic_edit, two_neutral_to_cationic_edits]
+    identity: [lysine, arginine]
+    controls:
+      - same_parent
+      - same_positions
+      - same_edit_count
+      - charge_preserving_sidechain_control
+    required_joint_readouts:
+      - membrane_descriptor_family
+      - AMP_and_MIC_soft_evidence_family
+      - hemolysis_and_toxicity_soft_risk_family
+      - descriptor_residuals
+  interpretation: literature_defines_questions_and_controls_not_a_numeric_universal_target
+
+evidence_items:
+  - evidence_id: v13k_charge_series_2008
+    citation:
+      pmid: "18098173"
+      pmcid: PMC2761230
+      doi: 10.1002/bip.20911
+      source_uri: https://pubmed.ncbi.nlm.nih.gov/18098173/
+    study_type: matched_analog_series_with_microbiology_and_human_erythrocyte_hemolysis
+    scaffold: 26_residue_amphipathic_alpha_helical_L_V13K
+    intervention: net_charge_and_positive_residue_count_on_polar_face
+    supports:
+      - charge_response_can_be_non_monotonic
+      - one_additional_positive_residue_can_sharply_change_hemolysis_in_one_scaffold
+      - activity_and_hemolysis_must_be_read_jointly
+    does_not_support:
+      - universal_plus_8_safety_threshold
+      - universal_charge_density_target
+
+  - evidence_id: cl14_25_position_series_2014
+    citation:
+      pmid: "23982951"
+      doi: 10.1002/bip.22399
+      source_uri: https://pubmed.ncbi.nlm.nih.gov/23982951/
+    study_type: position_specific_K_R_to_A_analog_series_with_membrane_models_and_activity
+    scaffold: cationic_alpha_helical_dodecapeptide_CL14_25
+    intervention: removal_of_selected_lysine_or_arginine_residues
+    supports:
+      - cationic_residue_number_alone_does_not_explain_activity
+      - residue_position_and_hydrophobic_amphipathic_changes_are_confounders
+      - descriptor_residuals_are_required_for_interpreting_charge_edits
+    does_not_support:
+      - treating_charge_delta_as_an_isolated_chemical_intervention
+
+  - evidence_id: charge_patterning_2019
+    citation:
+      pmid: "31194548"
+      doi: 10.1021/acs.jmedchem.9b00657
+      source_uri: https://pubmed.ncbi.nlm.nih.gov/31194548/
+    study_type: matched_synthetic_pattern_series_with_activity_toxicity_and_stability
+    scaffold: 17_residue_charge_clustered_and_amphipathic_CAP_series
+    intervention: redistribution_of_positive_residues_at_fixed_composition
+    supports:
+      - charge_patterning_changes_activity_toxicity_and_protease_stability
+      - charge_count_and_charge_arrangement_are_separate_design_variables
+      - no_single_activity_endpoint_can_define_improvement
+    does_not_support:
+      - universal_preference_for_clustered_or_amphipathic_patterning
+
+  - evidence_id: ar23_position_distribution_2016
+    citation:
+      pmid: "27271216"
+      pmcid: PMC4897634
+      doi: 10.1038/srep27394
+      source_uri: https://pubmed.ncbi.nlm.nih.gov/27271216/
+    study_type: position_specific_positive_residue_substitution_with_activity_and_host_cell_risk
+    scaffold: 23_residue_alpha_helical_AR_23
+    intervention: arginine_or_lysine_at_polar_and_nonpolar_face_positions
+    supports:
+      - position_can_matter_more_than_positive_residue_count
+      - nonpolar_face_edits_can_change_hydrophobicity_amphipathicity_helicity_and_host_cell_risk
+      - same_position_comparisons_and_descriptor_matching_are_required
+    does_not_support:
+      - transferring_AR23_position_rules_to_unrelated_scaffolds
+
+  - evidence_id: wr_wk_length_series_2016
+    citation:
+      pmid: "27046192"
+      pmcid: PMC5042116
+      doi: 10.1099/jmm.0.000258
+      source_uri: https://pubmed.ncbi.nlm.nih.gov/27046192/
+    study_type: matched_tryptophan_lysine_vs_tryptophan_arginine_length_series
+    scaffold: engineered_WR_and_WK_8_to_18_residue_series
+    intervention: lysine_vs_arginine_identity_at_matched_length
+    supports:
+      - lysine_and_arginine_identity_can_change_activity_and_salt_response
+      - identity_effect_depends_on_length_and_sequence_context
+    does_not_support:
+      - universal_arginine_superiority
+
+  - evidence_id: alpha_defensin_K_R_context_2009
+    citation:
+      pmid: "19737896"
+      pmcid: PMC2772546
+      doi: 10.1128/IAI.00695-09
+      source_uri: https://pubmed.ncbi.nlm.nih.gov/19737896/
+    study_type: matched_all_arginine_to_lysine_replacement_in_two_alpha_defensins
+    scaffold: Crp4_and_RMAD4_alpha_defensins
+    intervention: lysine_for_arginine_at_equal_electropositive_charge
+    supports:
+      - K_R_direction_can_reverse_between_primary_sequences
+      - salt_sensitivity_is_a_contextual_endpoint
+    does_not_support:
+      - universal_K_or_R_winner
+
+  - evidence_id: w6k8_w6r8_2026
+    citation:
+      pmid: "42276501"
+      doi: 10.1016/j.bbamem.2026.184548
+      source_uri: https://pubmed.ncbi.nlm.nih.gov/42276501/
+    study_type: matched_W6K8_vs_W6R8_microbiology_hemolysis_and_membrane_biophysics
+    scaffold: two_14_residue_tryptophan_rich_peptides
+    intervention: eight_lysines_vs_eight_arginines_at_matched_composition_pattern
+    supports:
+      - lysine_can_outperform_arginine_in_a_tryptophan_rich_context
+      - bacterial_and_eukaryotic_membrane_readouts_can_move_differently
+      - K_R_identity_requires_direct_matched_comparison
+    does_not_support:
+      - universal_lysine_superiority
+
+  - evidence_id: kr12_bilayer_mechanism_2017
+    citation:
+      pmid: "28583830"
+      pmcid: PMC5582999
+      doi: 10.1016/j.bbamem.2017.06.002
+      source_uri: https://pubmed.ncbi.nlm.nih.gov/28583830/
+    study_type: comparative_molecular_dynamics_and_free_energy_simulation
+    scaffold: all_K_vs_all_R_KR12_analogs
+    intervention: lysine_vs_arginine_identity
+    supports:
+      - K_R_sidechain_chemistry_can_change_anionic_bilayer_association_beyond_formal_charge
+      - K_R_identity_is_not_a_pure_charge_control
+    does_not_support:
+      - experimental_antimicrobial_activity
+      - universal_membrane_or_safety_direction
+
+cross_study_inference_rules:
+  supported:
+    - use_relative_matched_effects_within_each_parent_scaffold
+    - compare_K_and_R_at_identical_positions_and_edit_dose
+    - treat_position_pattern_hydrophobicity_and_amphipathicity_as_causal_or_confounding_axes
+    - preserve_activity_membrane_and_host_risk_as_separate_Pareto_families
+    - report_scaffold_and_seed_heterogeneity_instead_of_forcing_one_direction
+  forbidden:
+    - copy_any_study_specific_charge_threshold_into_a_universal_gate
+    - infer_antimicrobial_activity_from_positive_charge_alone
+    - infer_safety_from_a_single_soft_predictor
+    - use_generated_charge_quantiles_as_biological_ground_truth
+    - call_K_or_R_globally_superior
+
+formal_run_evidence_requirements:
+  persist_manifest_bytes_in_object_store: true
+  persist_manifest_sha256_in_PostgreSQL_Artifact: true
+  create_literature_freezer_ToolCall: true
+  link_transform_ToolCall_to_literature_ToolCall: true
+  persist_each_source_identifier_and_supported_claim_projection: true
+  database_object_store_only_replay_required: true
