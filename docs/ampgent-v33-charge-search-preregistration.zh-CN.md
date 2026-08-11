@@ -168,3 +168,8 @@ source-record 审计实现冻结为 commit `0bb8fb65c7bc42f427e9c06e55c2fab4cb8a
 benchmark config SHA-256 为 `5bcf988937a0a51d39b4304c3e98ef454563abbe887fd1206d114d2e4aebfc54`。
 该阶段仍是 `execution_authorized=false`、`submitted=false`；没有生成新序列，也没有得到正电性、
 AMP/MIC、膜作用或风险结果。
+
+revision 与账本回填 checkpoint 为 commit `cc999e6d3f45af9dddf656217540ec81bb560c53`；内容归档
+`var/archives/ampgent-v33-source-evidence-cc999e6.zip` 的 SHA-256 为
+`6cbde73186e00ecf558384cd286a2f6f9a5a1a18aae07186e8d7de585cb998cd`。验证为 ruff clean、pytest
+`360 passed`。该归档是仓库内容 checkpoint，不是正式 Agent run 的 literature artifact。

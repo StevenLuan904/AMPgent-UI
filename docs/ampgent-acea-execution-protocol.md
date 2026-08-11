@@ -495,6 +495,11 @@ source-record 审计实现冻结为 commit `0bb8fb65c7bc42f427e9c06e55c2fab4cb8a
 config SHA-256 为 `5bcf988937a0a51d39b4304c3e98ef454563abbe887fd1206d114d2e4aebfc54`。该阶段仍为
 `execution_authorized=false`、`submitted=false`，没有新序列或计算效果结果。
 
+revision 与账本回填 checkpoint 为 commit `cc999e6d3f45af9dddf656217540ec81bb560c53`；内容归档
+`var/archives/ampgent-v33-source-evidence-cc999e6.zip` 的 SHA-256 为
+`6cbde73186e00ecf558384cd286a2f6f9a5a1a18aae07186e8d7de585cb998cd`，验证为 ruff clean、pytest
+`360 passed`。该 ZIP 仅是仓库 checkpoint，不得冒充 formal Agent evidence artifact。
+
 2026-08-11 搜索充分性合同升级为 `v33-search-sufficiency-v2`。方法依据冻结在
 `config/evidence/pareto_search_sufficiency_methods_v33.yaml`，原始字节 SHA-256 为
 `b5c3629cf19d90a6962d048cbe6bf8ff1d6ee7bef7ae449ffe03c649aa5470e6`，规范化内容 SHA-256 为

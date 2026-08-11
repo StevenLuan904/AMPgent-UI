@@ -128,6 +128,9 @@ v32 自生成分布仍只诊断 generator coverage 与预算可达性；生物�
 source-record 审计实现为 commit `0bb8fb65c7bc42f427e9c06e55c2fab4cb8a7e26`，回填后的 benchmark
 config SHA-256 为 `5bcf988937a0a51d39b4304c3e98ef454563abbe887fd1206d114d2e4aebfc54`。
 它进一步回答了“目标从哪里来、冲突如何治理”，但仍未回答“哪种编辑有效”，因为 v33 未获执行授权。
+revision 与账本回填 checkpoint 为 commit `cc999e6d3f45af9dddf656217540ec81bb560c53`；内容归档
+`var/archives/ampgent-v33-source-evidence-cc999e6.zip` 的 SHA-256 为
+`6cbde73186e00ecf558384cd286a2f6f9a5a1a18aae07186e8d7de585cb998cd`，全量测试 `360 passed`。
 
 ### Q2：当前 Pareto 搜索是否已经接近可达最优？
 
