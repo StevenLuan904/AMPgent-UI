@@ -272,6 +272,10 @@ SHA-256 为 `4196f9ffb4017bcf2ed44e89d8b69c8e5aae611145f41abb6a72a807dad9ab05`�
 `provider_releases_replayable_for_v34_authorization_request`。因此 Q3/Q4 的工程可复原阻塞已解除，但
 效果问题仍为 `in_progress`：没有 knowledge/PepShot 增益结果，也没有正式 v34 授权。
 
+正式 v34 的授权对象、计算上限、provider 退回路径、执行门禁与数据库完成定义已独立整理为
+`docs/ampgent-v34-formal-authorization-request.zh-CN.md`。该文件只消除授权歧义，不改变预注册协议，
+也不构成运行授权。
+
 PepShot 治理规则再次锁定：若后续实际对照对 PepShot 不满意，AMPgent 不做兼容、修补、后处理或语义
 猜测，而是把可复现失败与冻结验收标准直接退回任务 `019fb910-f2dd-7be1-a7e6-bfe381512c25`。PepShot
 必须在自身仓库发布新不可变 release，AMPgent 才重新只读验收；change request、拒绝、新 release 和
