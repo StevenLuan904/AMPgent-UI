@@ -124,6 +124,15 @@ async def run_v37_guarded_subprocess(
         command=command,
     )
     await receipt_writer(receipt)
+    final_receipt = await asyncio.to_thread(
+        build_v37_live_launch_receipt,
+        manifest=manifest,
+        expectation=expectation,
+        paths=paths,
+        command=command,
+    )
+    if final_receipt != receipt:
+        raise ValueError("v37 live runtime bytes drifted while persisting launch receipt")
     process = await asyncio.create_subprocess_exec(
         *command,
         cwd=str(cwd) if cwd else None,

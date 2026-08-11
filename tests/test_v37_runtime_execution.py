@@ -128,3 +128,24 @@ def test_guarded_launch_persists_receipt_before_process_creation(tmp_path: Path)
     assert receipt["launch_receipt_sha256"] == sha256_json(
         {key: value for key, value in receipt.items() if key != "launch_receipt_sha256"}
     )
+
+
+def test_guarded_launch_rejects_mutation_while_receipt_is_persisted(
+    tmp_path: Path,
+) -> None:
+    manifest, expectation, paths = _fixture(tmp_path)
+
+    async def mutating_writer(receipt: dict[str, object]) -> None:
+        assert receipt["preflight_revalidated_at_launch_boundary"] is True
+        (paths.source_root / "source.py").write_bytes(b"VALUE = 2\n")
+
+    with pytest.raises(ValueError, match="live source release bytes drifted"):
+        asyncio.run(
+            run_v37_guarded_subprocess(
+                [sys.executable, "-c", "raise SystemExit('must not launch')"],
+                manifest=manifest,
+                expectation=expectation,
+                paths=paths,
+                receipt_writer=mutating_writer,
+            )
+        )
