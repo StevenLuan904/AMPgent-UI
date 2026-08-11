@@ -15,6 +15,10 @@ class V37Engine(BaseModel):
     upstream_source_revision: str | None = Field(
         default=None, pattern=r"^[0-9a-f]{40}$"
     )
+    formal_seed_acceptance_path: str | None = None
+    formal_seed_acceptance_sha256: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$"
+    )
     seeds: list[int] = Field(min_length=3, max_length=3)
 
 
@@ -68,6 +72,13 @@ class V37Manifest(BaseModel):
             "6590d2f4c2963f25d30669052a4c4a857e0e7279"
         ):
             raise ValueError("v37 HydrAMP upstream provenance drifted")
+        if hydramp.formal_seed_acceptance_path != (
+            "../environments/v37_generator_runtimes/"
+            "hydramp.formal-seed-acceptance.json"
+        ) or hydramp.formal_seed_acceptance_sha256 != (
+            "868905493a3118d2a35ce15ca38144a5c48e347ab31309ed84f2b424353ca8c8"
+        ):
+            raise ValueError("v37 HydrAMP formal-seed acceptance binding drifted")
         seeds = [seed for engine in engines for seed in engine.seeds]
         if len(seeds) != len(set(seeds)) or len(seeds) != 9:
             raise ValueError("v37 requires nine globally unique generator seeds")

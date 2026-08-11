@@ -1,0 +1,73 @@
+{
+  "acceptance_receipt_sha256": "868905493a3118d2a35ce15ca38144a5c48e347ab31309ed84f2b424353ca8c8",
+  "acceptance_rule": "each formal seed must produce exactly 1000 rows with exact sequence identity and order in two independent processes",
+  "benchmark_id": "amp_rapid_champion_generation_v37",
+  "downstream_selection_rule": "raw_order_first_k_valid_unique",
+  "formal_generation_contract": {
+    "device": "cpu-only",
+    "filter_out": false,
+    "mode": "amp",
+    "n_attempts": 1,
+    "process_isolation": "independent_fresh_python_processes",
+    "processes_per_seed": 2,
+    "properties": false,
+    "raw_proposal_budget_per_seed": 1000,
+    "seeds": [
+      20270371,
+      20270372,
+      20270373
+    ]
+  },
+  "formal_run_executed": false,
+  "generator_id": "hydramp",
+  "provider_release": {
+    "adapter_version": "hydramp-safe-pca-stateless-gumbel-v1",
+    "commit": "36b18003122f0d73323f9644b07e1ed267255c11",
+    "release_manifest_sha256": "5b66bd0c4364e26cf629af27620789408cdb7765448d63765434fe97ed21d822",
+    "release_verifier_receipt_sha256": "3f4282501403d2e6386836eaeae3e8f6985f83de7ee66fd2601eb63111f5103b",
+    "safe_pca_sha256": "5f729138df7bf8e3b3fc0d443cc6c3ad259305de4beeb36f09aaea33bd2bd7a3"
+  },
+  "provider_snapshot_hygiene": {
+    "future_execution_requires_PYTHONDONTWRITEBYTECODE": true,
+    "generated_cache_removed_after_path_validation": true,
+    "post_cleanup_snapshot_cache_count": 0,
+    "validation_generated_bytecode_cache": true
+  },
+  "raw_validity_or_uniqueness_is_acceptance_gate": false,
+  "remote_or_gpu_accessed": false,
+  "schema_version": "v37.generator-runtime-formal-seed-acceptance.1",
+  "seed_receipts": [
+    {
+      "cross_process_exact_order": true,
+      "ordered_sequence_sha256": "ad66f0a934fad88f1d5332dce69c7232183f1f032af9b7c1eda69f933a639026",
+      "process_a_output_sha256": "64d7fe516c65eaef9cf15477c9d210f5be80373b53369a373d923ed9133a4389",
+      "process_b_output_sha256": "64d7fe516c65eaef9cf15477c9d210f5be80373b53369a373d923ed9133a4389",
+      "rows_per_process": 1000,
+      "seed": 20270371,
+      "unique_rows": 736,
+      "valid_standard_length_rows": 627
+    },
+    {
+      "cross_process_exact_order": true,
+      "ordered_sequence_sha256": "e56e2edbbfcb62e9f4ffd8b5bf531ffbdcca17068a93dc8c07052cb68a239cc9",
+      "process_a_output_sha256": "06b6ac810e9b9f9f2186fb6c9b3968a6087fc23aa54d482cbada1e6e6fdca308",
+      "process_b_output_sha256": "06b6ac810e9b9f9f2186fb6c9b3968a6087fc23aa54d482cbada1e6e6fdca308",
+      "rows_per_process": 1000,
+      "seed": 20270372,
+      "unique_rows": 722,
+      "valid_standard_length_rows": 645
+    },
+    {
+      "cross_process_exact_order": true,
+      "ordered_sequence_sha256": "856ca98a2383b5c603832fae61ea180a65d4efe8f15e5dcbda692c81765408da",
+      "process_a_output_sha256": "2773d60bd41b80c910a4373aa25d8d185ae8addb425f8e487af0fc52b07e8b8b",
+      "process_b_output_sha256": "2773d60bd41b80c910a4373aa25d8d185ae8addb425f8e487af0fc52b07e8b8b",
+      "rows_per_process": 1000,
+      "seed": 20270373,
+      "unique_rows": 734,
+      "valid_standard_length_rows": 608
+    }
+  ],
+  "status": "accepted",
+  "unsafe_deserialization_executed": false
+}

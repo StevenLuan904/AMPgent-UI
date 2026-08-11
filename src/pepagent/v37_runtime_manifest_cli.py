@@ -33,6 +33,41 @@ _HYDRAMP_SAFE_PCA_SHA256 = (
 _HYDRAMP_SAFE_PCA_MANIFEST_SHA256 = (
     "50c31657fffddf77540e054452e329b8508eaff79e4e8196b37092dc93bf55cc"
 )
+_HYDRAMP_V37_FORMAL_SEED_RECEIPTS = (
+    {
+        "seed": 20270371,
+        "ordered_sequence_sha256": (
+            "ad66f0a934fad88f1d5332dce69c7232183f1f032af9b7c1eda69f933a639026"
+        ),
+        "process_output_sha256": (
+            "64d7fe516c65eaef9cf15477c9d210f5be80373b53369a373d923ed9133a4389"
+        ),
+        "unique_rows": 736,
+        "valid_standard_length_rows": 627,
+    },
+    {
+        "seed": 20270372,
+        "ordered_sequence_sha256": (
+            "e56e2edbbfcb62e9f4ffd8b5bf531ffbdcca17068a93dc8c07052cb68a239cc9"
+        ),
+        "process_output_sha256": (
+            "06b6ac810e9b9f9f2186fb6c9b3968a6087fc23aa54d482cbada1e6e6fdca308"
+        ),
+        "unique_rows": 722,
+        "valid_standard_length_rows": 645,
+    },
+    {
+        "seed": 20270373,
+        "ordered_sequence_sha256": (
+            "856ca98a2383b5c603832fae61ea180a65d4efe8f15e5dcbda692c81765408da"
+        ),
+        "process_output_sha256": (
+            "2773d60bd41b80c910a4373aa25d8d185ae8addb425f8e487af0fc52b07e8b8b"
+        ),
+        "unique_rows": 734,
+        "valid_standard_length_rows": 608,
+    },
+)
 
 
 def _sha256_file(path: Path) -> str:
@@ -326,6 +361,69 @@ def build_local_runtime_set(workspace: Path, output_root: Path) -> dict[str, Any
         encoding="utf-8",
         newline="\n",
     )
+    formal_seed_receipts = [
+        {
+            **item,
+            "rows_per_process": 1000,
+            "process_a_output_sha256": item["process_output_sha256"],
+            "process_b_output_sha256": item["process_output_sha256"],
+            "cross_process_exact_order": True,
+        }
+        for item in _HYDRAMP_V37_FORMAL_SEED_RECEIPTS
+    ]
+    for item in formal_seed_receipts:
+        del item["process_output_sha256"]
+    formal_seed_acceptance: dict[str, Any] = {
+        "schema_version": "v37.generator-runtime-formal-seed-acceptance.1",
+        "benchmark_id": "amp_rapid_champion_generation_v37",
+        "generator_id": "hydramp",
+        "status": "accepted",
+        "provider_release": {
+            "commit": _HYDRAMP_PROVIDER_REVISION,
+            "adapter_version": _HYDRAMP_ADAPTER_VERSION,
+            "release_manifest_sha256": _HYDRAMP_RELEASE_MANIFEST_SHA256,
+            "release_verifier_receipt_sha256": _HYDRAMP_RELEASE_VERIFIER_SHA256,
+            "safe_pca_sha256": _HYDRAMP_SAFE_PCA_SHA256,
+        },
+        "formal_generation_contract": {
+            "seeds": [20270371, 20270372, 20270373],
+            "raw_proposal_budget_per_seed": 1000,
+            "mode": "amp",
+            "filter_out": False,
+            "properties": False,
+            "n_attempts": 1,
+            "processes_per_seed": 2,
+            "process_isolation": "independent_fresh_python_processes",
+            "device": "cpu-only",
+        },
+        "seed_receipts": formal_seed_receipts,
+        "acceptance_rule": (
+            "each formal seed must produce exactly 1000 rows with exact sequence "
+            "identity and order in two independent processes"
+        ),
+        "raw_validity_or_uniqueness_is_acceptance_gate": False,
+        "downstream_selection_rule": "raw_order_first_k_valid_unique",
+        "provider_snapshot_hygiene": {
+            "validation_generated_bytecode_cache": True,
+            "generated_cache_removed_after_path_validation": True,
+            "post_cleanup_snapshot_cache_count": 0,
+            "future_execution_requires_PYTHONDONTWRITEBYTECODE": True,
+        },
+        "unsafe_deserialization_executed": False,
+        "remote_or_gpu_accessed": False,
+        "formal_run_executed": False,
+    }
+    formal_seed_acceptance["acceptance_receipt_sha256"] = sha256_json(
+        formal_seed_acceptance
+    )
+    formal_seed_acceptance_path = output_root / (
+        "hydramp.formal-seed-acceptance.json"
+    )
+    formal_seed_acceptance_path.write_text(
+        json.dumps(formal_seed_acceptance, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
     entries: list[dict[str, Any]] = []
     for definition in _generator_definitions(workspace):
         generator_id = definition["generator_id"]
@@ -368,6 +466,12 @@ def build_local_runtime_set(workspace: Path, output_root: Path) -> dict[str, Any
             manifest["provider_acceptance"] = {
                 "receipt_path": acceptance_path.relative_to(workspace).as_posix(),
                 "receipt_sha256": hydramp_acceptance["acceptance_receipt_sha256"],
+                "formal_seed_receipt_path": (
+                    formal_seed_acceptance_path.relative_to(workspace).as_posix()
+                ),
+                "formal_seed_receipt_sha256": formal_seed_acceptance[
+                    "acceptance_receipt_sha256"
+                ],
             }
         manifest["runtime_manifest_sha256"] = sha256_json(manifest)
         manifest_path = output_root / f"{generator_id}.runtime.json"
@@ -388,6 +492,11 @@ def build_local_runtime_set(workspace: Path, output_root: Path) -> dict[str, Any
             upstream_source_revision=definition.get("upstream_source_revision"),
             provider_acceptance_sha256=(
                 hydramp_acceptance["acceptance_receipt_sha256"]
+                if definition.get("provider_acceptance") is True
+                else None
+            ),
+            formal_seed_acceptance_sha256=(
+                formal_seed_acceptance["acceptance_receipt_sha256"]
                 if definition.get("provider_acceptance") is True
                 else None
             ),
@@ -417,6 +526,11 @@ def build_local_runtime_set(workspace: Path, output_root: Path) -> dict[str, Any
                 ),
                 "acceptance_receipt_path": (
                     acceptance_path.relative_to(workspace).as_posix()
+                    if generator_id == "hydramp"
+                    else None
+                ),
+                "formal_seed_acceptance_receipt_path": (
+                    formal_seed_acceptance_path.relative_to(workspace).as_posix()
                     if generator_id == "hydramp"
                     else None
                 ),
@@ -500,6 +614,52 @@ def verify_local_runtime_set(workspace: Path, output_root: Path) -> dict[str, An
                     acceptance["acceptance_receipt_sha256"]
                 ):
                     raise ValueError("HydrAMP manifest/acceptance identity drifted")
+                formal_seed_acceptance_path = workspace / entry[
+                    "formal_seed_acceptance_receipt_path"
+                ]
+                formal_seed_acceptance = json.loads(
+                    formal_seed_acceptance_path.read_text(encoding="utf-8")
+                )
+                formal_seed_identity = {
+                    key: value
+                    for key, value in formal_seed_acceptance.items()
+                    if key != "acceptance_receipt_sha256"
+                }
+                if formal_seed_acceptance["acceptance_receipt_sha256"] != (
+                    sha256_json(formal_seed_identity)
+                ):
+                    raise ValueError(
+                        "HydrAMP formal-seed acceptance receipt self-hash drifted"
+                    )
+                if manifest["provider_acceptance"][
+                    "formal_seed_receipt_sha256"
+                ] != formal_seed_acceptance["acceptance_receipt_sha256"]:
+                    raise ValueError(
+                        "HydrAMP manifest/formal-seed acceptance identity drifted"
+                    )
+                formal_seed_receipts = formal_seed_acceptance["seed_receipts"]
+                expected_formal_seed_receipts = [
+                    {
+                        **item,
+                        "rows_per_process": 1000,
+                        "process_a_output_sha256": item["process_output_sha256"],
+                        "process_b_output_sha256": item["process_output_sha256"],
+                        "cross_process_exact_order": True,
+                    }
+                    for item in _HYDRAMP_V37_FORMAL_SEED_RECEIPTS
+                ]
+                for item in expected_formal_seed_receipts:
+                    del item["process_output_sha256"]
+                if formal_seed_receipts != expected_formal_seed_receipts:
+                    raise ValueError("HydrAMP formal-seed process receipt drifted")
+                hygiene = formal_seed_acceptance["provider_snapshot_hygiene"]
+                if hygiene != {
+                    "validation_generated_bytecode_cache": True,
+                    "generated_cache_removed_after_path_validation": True,
+                    "post_cleanup_snapshot_cache_count": 0,
+                    "future_execution_requires_PYTHONDONTWRITEBYTECODE": True,
+                }:
+                    raise ValueError("HydrAMP provider snapshot hygiene receipt drifted")
                 historical_path = workspace / entry[
                     "historical_blocker_receipt_path"
                 ]

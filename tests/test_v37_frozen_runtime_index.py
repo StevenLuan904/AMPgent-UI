@@ -41,6 +41,9 @@ def test_frozen_v37_runtime_index_has_three_verified_provider_runtimes() -> None
     assert entries["hydramp"]["acceptance_receipt_path"].endswith(
         "hydramp.acceptance.json"
     )
+    assert entries["hydramp"]["formal_seed_acceptance_receipt_path"].endswith(
+        "hydramp.formal-seed-acceptance.json"
+    )
     assert entries["ampgan_v2"]["status"] == "verified"
     assert entries["amp_designer"]["status"] == "verified"
 
@@ -111,6 +114,30 @@ def test_frozen_hydramp_runtime_preserves_blocker_and_accepts_provider_release()
         item["cross_process_exact_order"] is True
         for item in acceptance["independent_process_exact_order_receipts"]
     )
+    formal = _load(ROOT / entry["formal_seed_acceptance_receipt_path"])
+    assert formal["status"] == "accepted"
+    assert formal["formal_generation_contract"]["seeds"] == [
+        20270371,
+        20270372,
+        20270373,
+    ]
+    assert formal["formal_generation_contract"]["processes_per_seed"] == 2
+    assert [item["ordered_sequence_sha256"] for item in formal["seed_receipts"]] == [
+        "ad66f0a934fad88f1d5332dce69c7232183f1f032af9b7c1eda69f933a639026",
+        "e56e2edbbfcb62e9f4ffd8b5bf531ffbdcca17068a93dc8c07052cb68a239cc9",
+        "856ca98a2383b5c603832fae61ea180a65d4efe8f15e5dcbda692c81765408da",
+    ]
+    assert all(
+        item["process_a_output_sha256"] == item["process_b_output_sha256"]
+        and item["cross_process_exact_order"] is True
+        for item in formal["seed_receipts"]
+    )
+    assert formal["provider_snapshot_hygiene"] == {
+        "validation_generated_bytecode_cache": True,
+        "generated_cache_removed_after_path_validation": True,
+        "post_cleanup_snapshot_cache_count": 0,
+        "future_execution_requires_PYTHONDONTWRITEBYTECODE": True,
+    }
 
 
 def test_frozen_model_manifests_lock_expected_upstream_weights() -> None:

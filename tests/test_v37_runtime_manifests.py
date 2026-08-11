@@ -246,6 +246,8 @@ def test_v37_runtime_manifest_rejects_provider_provenance_drift() -> None:
     manifest["provider_acceptance"] = {
         "receipt_path": "config/provider-acceptance.json",
         "receipt_sha256": SHA_F,
+        "formal_seed_receipt_path": "config/formal-seed-acceptance.json",
+        "formal_seed_receipt_sha256": SHA_E,
     }
     _rehash(manifest)
     expectation = _expectation("hydramp")
@@ -254,6 +256,7 @@ def test_v37_runtime_manifest_rejects_provider_provenance_drift() -> None:
             **expectation.__dict__,
             "upstream_source_revision": "2" * 40,
             "provider_acceptance_sha256": SHA_F,
+            "formal_seed_acceptance_sha256": SHA_E,
         }
     )
     with pytest.raises(ValueError, match="upstream source revision"):

@@ -6,6 +6,7 @@ import pytest
 from pepagent.v37_evidence import build_v37_evidence_plan
 from pepagent.v37_preflight import (
     authorize_v37_submission_preflight,
+    bind_v37_submission_inputs,
     build_v37_static_preflight,
 )
 from pepagent.v37_preregistration import (
@@ -27,13 +28,16 @@ def test_v37_manifest_and_evidence_plan_are_exact() -> None:
     assert plan["expected_structure_shortlist"] == 48
     assert len(plan["required_tool_call_ids"]) == 21
     hydramp = manifest.generators["engines"][0]
-    assert hydramp["source_revision"] == (
-        "36b18003122f0d73323f9644b07e1ed267255c11"
-    )
-    assert hydramp["upstream_source_revision"] == (
-        "6590d2f4c2963f25d30669052a4c4a857e0e7279"
-    )
+    assert hydramp["source_revision"] == ("36b18003122f0d73323f9644b07e1ed267255c11")
+    assert hydramp["upstream_source_revision"] == ("6590d2f4c2963f25d30669052a4c4a857e0e7279")
     assert hydramp["adapter_version"] == "hydramp-safe-pca-stateless-gumbel-v1"
+    assert hydramp["formal_seed_acceptance_path"] == (
+        "../environments/v37_generator_runtimes/"
+        "hydramp.formal-seed-acceptance.json"
+    )
+    assert hydramp["formal_seed_acceptance_sha256"] == (
+        "868905493a3118d2a35ce15ca38144a5c48e347ab31309ed84f2b424353ca8c8"
+    )
 
 
 def test_v37_manifest_rejects_single_generator_drift() -> None:
@@ -45,7 +49,24 @@ def test_v37_manifest_rejects_single_generator_drift() -> None:
         V37Manifest.model_validate(drifted)
 
 
-def test_v37_static_and_dynamic_preflight_never_submit() -> None:
+def _immutable_inputs() -> dict[str, dict[str, object]]:
+    return {
+        role: {
+            "sha256": character * 64,
+            "size_bytes": 1,
+            "media_type": media_type,
+            "storage_uri": f"s3://pepagent/sha256/{character * 2}/{character * 64}",
+        }
+        for role, character, media_type in (
+            ("manifest", "a", "application/yaml"),
+            ("experiment_spec", "b", "application/yaml"),
+            ("execution_bundle", "c", "application/json"),
+            ("metric_registry", "d", "application/yaml"),
+        )
+    }
+
+
+def test_v37_static_and_dynamic_preflight_never_overrides_config_authorization() -> None:
     static = build_v37_static_preflight(CONFIG)
     assert static["direction_authorized"] is True
     assert static["execution_authorized"] is False
@@ -59,10 +80,15 @@ def test_v37_static_and_dynamic_preflight_never_submit() -> None:
         "forbidden_resources_absent": True,
         "no_existing_v37_run_or_workflow": True,
     }
-    ready = authorize_v37_submission_preflight(static, dynamic_gates=gates)
-    assert ready["status"] == "ready_to_submit_unique_run"
-    assert ready["execution_authorized"] is True
-    assert ready["formal_run_submitted"] is False
+    blocked = authorize_v37_submission_preflight(
+        static, dynamic_gates=gates, immutable_inputs=_immutable_inputs()
+    )
+    assert blocked["status"] == "blocked"
+    assert blocked["execution_authorized"] is False
+    assert blocked["failed_gates"] == [
+        "config_execution_authorized",
+        "implementation_revision_frozen",
+    ]
 
 
 def test_v37_dynamic_preflight_lists_failed_gate() -> None:
@@ -76,9 +102,56 @@ def test_v37_dynamic_preflight_lists_failed_gate() -> None:
         "forbidden_resources_absent": True,
         "no_existing_v37_run_or_workflow": True,
     }
-    blocked = authorize_v37_submission_preflight(static, dynamic_gates=gates)
+    blocked = authorize_v37_submission_preflight(
+        static, dynamic_gates=gates, immutable_inputs=_immutable_inputs()
+    )
     assert blocked["status"] == "blocked"
-    assert blocked["failed_gates"] == ["database_schema_exact"]
+    assert blocked["failed_gates"] == [
+        "config_execution_authorized",
+        "database_schema_exact",
+        "implementation_revision_frozen",
+    ]
+
+
+def test_v37_preflight_requires_content_addressed_source_bytes(tmp_path: Path) -> None:
+    class Store:
+        def put_bytes(self, payload: bytes, media_type: str) -> object:
+            digest = __import__("hashlib").sha256(payload).hexdigest()
+            return type(
+                "Stored",
+                (),
+                {
+                    "sha256": digest,
+                    "size_bytes": len(payload),
+                    "media_type": media_type,
+                    "uri": f"s3://pepagent/sha256/{digest[:2]}/{digest}",
+                },
+            )()
+
+    paths = []
+    for name, payload in (
+        ("manifest.yaml", b"m"),
+        ("spec.yaml", b"s"),
+        ("run.json", b"e"),
+        ("metrics.yaml", b"r"),
+    ):
+        path = tmp_path / name
+        path.write_bytes(payload)
+        paths.append(path)
+    bindings = bind_v37_submission_inputs(
+        manifest_path=paths[0],
+        experiment_spec_path=paths[1],
+        execution_bundle_path=paths[2],
+        metric_registry_path=paths[3],
+        object_store=Store(),
+    )
+    assert set(bindings) == {
+        "manifest",
+        "experiment_spec",
+        "execution_bundle",
+        "metric_registry",
+    }
+    assert all(value["storage_uri"].endswith(str(value["sha256"])) for value in bindings.values())
 
 
 def test_v37_experiment_spec_is_exact_and_drift_fails_closed(tmp_path: Path) -> None:

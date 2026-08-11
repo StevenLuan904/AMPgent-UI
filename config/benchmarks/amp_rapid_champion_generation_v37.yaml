@@ -45,6 +45,8 @@ generators:
     - generator_id: hydramp
       source_revision: 36b18003122f0d73323f9644b07e1ed267255c11
       upstream_source_revision: 6590d2f4c2963f25d30669052a4c4a857e0e7279
+      formal_seed_acceptance_path: ../environments/v37_generator_runtimes/hydramp.formal-seed-acceptance.json
+      formal_seed_acceptance_sha256: 868905493a3118d2a35ce15ca38144a5c48e347ab31309ed84f2b424353ca8c8
       weights_sha256: c2bf137ebe546fee8750b8c174486f1a9804e21a394a389a4f83d0bc6d743420
       adapter_version: hydramp-safe-pca-stateless-gumbel-v1
       mode: frozen_v23_unconstrained_de_novo

@@ -7,6 +7,7 @@
       "expectation": {
         "adapter_sha256": "658c2ec7323a082969f09879aaedb8b765888646b718c2cbf06e1222f86333c8",
         "adapter_version": "hydramp-safe-pca-stateless-gumbel-v1",
+        "formal_seed_acceptance_sha256": "868905493a3118d2a35ce15ca38144a5c48e347ab31309ed84f2b424353ca8c8",
         "generator_id": "hydramp",
         "model_manifest_sha256": "578545b4990f592c3539040e0c65568d47dc6a4c29006d8e086cac2f6626b4a5",
         "model_revision": "zenodo-7420278-models-c2bf137ebe546fee",
@@ -16,10 +17,11 @@
         "source_revision": "36b18003122f0d73323f9644b07e1ed267255c11",
         "upstream_source_revision": "6590d2f4c2963f25d30669052a4c4a857e0e7279"
       },
+      "formal_seed_acceptance_receipt_path": "config/environments/v37_generator_runtimes/hydramp.formal-seed-acceptance.json",
       "generator_id": "hydramp",
       "historical_blocker_receipt_path": "config/environments/v37_generator_runtimes/hydramp.blocker.json",
       "manifest_path": "config/environments/v37_generator_runtimes/hydramp.runtime.json",
-      "runtime_manifest_sha256": "13b454e0c77e0e545f2348b61eccbd9932af9bbdccedb2c4df469fe43d9b0ec5",
+      "runtime_manifest_sha256": "def8c6b27594098a0baa55697ef3a701671a7b8280df26caa19078b7d91411b8",
       "status": "verified"
     },
     {
@@ -29,6 +31,7 @@
       "expectation": {
         "adapter_sha256": "8f1b9e62b75af24a0dde2087d29eacad321f846a20ee681d781b934d5df6c832",
         "adapter_version": "ampgan-v2-generator-v1-positive-conditions-unfiltered",
+        "formal_seed_acceptance_sha256": null,
         "generator_id": "ampgan_v2",
         "model_manifest_sha256": "5c6b855a5c806f67d982bdf37fcd1a590434413a936fdc38b59a26c563468bbd",
         "model_revision": "ampgan-v2-gan-1606-a5e7cafa16c33010",
@@ -38,6 +41,7 @@
         "source_revision": "1009476bdb988707ff260def863d694549dc18b0",
         "upstream_source_revision": null
       },
+      "formal_seed_acceptance_receipt_path": null,
       "generator_id": "ampgan_v2",
       "historical_blocker_receipt_path": null,
       "manifest_path": "config/environments/v37_generator_runtimes/ampgan_v2.runtime.json",
@@ -51,6 +55,7 @@
       "expectation": {
         "adapter_sha256": "8ddd17480faace7000aab107b48545a527b67f9d5edd5e6aad82b21fb3d30a31",
         "adapter_version": "amp-designer-v25-raw-topk10-batch100-v1",
+        "formal_seed_acceptance_sha256": null,
         "generator_id": "amp_designer",
         "model_manifest_sha256": "db91dbf932699a9d17f7c2fc46c73101f5cd6035f41fa1e7f08de47ad1bda4f2",
         "model_revision": "zenodo-15051980-47944ff42f7ea6a4",
@@ -60,6 +65,7 @@
         "source_revision": "b554b1ac1507040d9d50356e037098e652ce4719",
         "upstream_source_revision": null
       },
+      "formal_seed_acceptance_receipt_path": null,
       "generator_id": "amp_designer",
       "historical_blocker_receipt_path": null,
       "manifest_path": "config/environments/v37_generator_runtimes/amp_designer.runtime.json",
@@ -69,6 +75,6 @@
   ],
   "overall_status": "verified",
   "release_version": "v37-generator-runtimes-v1",
-  "runtime_index_sha256": "ebe08432a75f1f33237cf1bbfadb8c508dff48b0fa3785349d2e5d8ed98ed5a1",
+  "runtime_index_sha256": "8a76d84e820af4444599eea7d53c74c24f8b9ac7598c629ba33722e912ac1de8",
   "schema_version": "v37.generator-runtime-index.1"
 }

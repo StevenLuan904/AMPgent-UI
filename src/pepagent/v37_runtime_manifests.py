@@ -27,6 +27,7 @@ class V37GeneratorRuntimeExpectation:
     request_contract_sha256: str
     upstream_source_revision: str | None = None
     provider_acceptance_sha256: str | None = None
+    formal_seed_acceptance_sha256: str | None = None
 
 
 def _require_sha256(value: object, label: str) -> str:
@@ -218,7 +219,12 @@ def verify_v37_generator_runtime_manifest(
             raise ValueError("v37 upstream source revision drifted")
         _require_exact_keys(
             provider_acceptance,
-            required={"receipt_path", "receipt_sha256"},
+            required={
+                "receipt_path",
+                "receipt_sha256",
+                "formal_seed_receipt_path",
+                "formal_seed_receipt_sha256",
+            },
             label="provider acceptance",
         )
         receipt_path = str(provider_acceptance["receipt_path"])
@@ -237,6 +243,24 @@ def verify_v37_generator_runtime_manifest(
         )
         if receipt_sha256 != expectation.provider_acceptance_sha256:
             raise ValueError("v37 provider acceptance receipt drifted")
+        formal_seed_receipt_path = str(
+            provider_acceptance["formal_seed_receipt_path"]
+        )
+        parsed_formal_seed_path = PurePosixPath(formal_seed_receipt_path)
+        if (
+            not formal_seed_receipt_path
+            or "\\" in formal_seed_receipt_path
+            or parsed_formal_seed_path.is_absolute()
+            or formal_seed_receipt_path != parsed_formal_seed_path.as_posix()
+            or any(part in {".", ".."} for part in parsed_formal_seed_path.parts)
+        ):
+            raise ValueError("v37 formal-seed acceptance receipt path is not relative")
+        formal_seed_receipt_sha256 = _require_sha256(
+            provider_acceptance["formal_seed_receipt_sha256"],
+            "formal-seed acceptance receipt SHA-256",
+        )
+        if formal_seed_receipt_sha256 != expectation.formal_seed_acceptance_sha256:
+            raise ValueError("v37 formal-seed acceptance receipt drifted")
 
     _require_exact_keys(
         model,
