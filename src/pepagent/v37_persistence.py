@@ -75,7 +75,12 @@ _GLOBAL_ROLES = {
         "agent_decision",
         "stop_event",
     ),
-    "replay": ("database_object_replay", "agent_decision", "stop_event"),
+    "replay": (
+        "database_object_replay",
+        "committed_graph_snapshot",
+        "agent_decision",
+        "stop_event",
+    ),
 }
 
 
@@ -425,6 +430,253 @@ def _is_sha256(value: Any) -> bool:
     )
 
 
+def _validate_tool_success_event_consistency(graph: Mapping[str, Any]) -> None:
+    calls = {str(item["id"]): item for item in graph.get("tool_calls", [])}
+    events_by_call: dict[str, list[Mapping[str, Any]]] = {}
+    for event in graph.get("lifecycle_events", []):
+        payload = event.get("payload_json", {})
+        if event.get("payload_sha256") != sha256_json(payload):
+            raise ValueError("v37 LifecycleEvent payload SHA differs from persisted JSON")
+        if event.get("event_type") != "tool_call.succeeded":
+            continue
+        call_id = str(payload.get("tool_call_id"))
+        if call_id not in calls:
+            raise ValueError("v37 tool success event references an unknown ToolCall")
+        events_by_call.setdefault(call_id, []).append(event)
+    for call_id, call in calls.items():
+        events = events_by_call.get(call_id, [])
+        if call.get("status") != "succeeded":
+            if events:
+                raise ValueError("v37 non-succeeded ToolCall has a success event")
+            continue
+        if len(events) != 1:
+            raise ValueError("v37 succeeded ToolCall lacks one exact success event")
+        payload = events[0]["payload_json"]
+        if (
+            payload.get("idempotency_key") != call.get("idempotency_key")
+            or payload.get("input_sha256") != call.get("input_sha256")
+            or payload.get("output_sha256") != call.get("output_sha256")
+        ):
+            raise ValueError("v37 ToolCall row and success event SHA lineage differ")
+
+
+def _runtime_launch_receipt(payload: Mapping[str, Any]) -> Mapping[str, Any] | None:
+    if payload.get("schema_version") == "v37.guarded-runtime-receipts.2":
+        return payload
+    direct = payload.get("live_launch_receipt")
+    if isinstance(direct, Mapping):
+        return direct
+    provenance = payload.get("provenance")
+    if isinstance(provenance, Mapping):
+        receipt = provenance.get("live_launch_receipt")
+        if isinstance(receipt, Mapping):
+            return receipt
+    return None
+
+
+def _validate_aggregate_runtime_receipt(receipt: Mapping[str, Any]) -> str:
+    stages = ("pre_snapshot", "prelaunch", "post_spawn", "completion")
+    if receipt.get("schema_version") != "v37.guarded-runtime-receipts.2":
+        raise ValueError("v37 committed runtime receipt schema drifted")
+    byte_identities: list[str] = []
+    for stage_name in stages:
+        stage = receipt.get(stage_name)
+        if not isinstance(stage, Mapping) or stage.get("stage") != stage_name:
+            raise ValueError("v37 committed runtime receipt boundary is missing")
+        identity = stage.get("identity")
+        if (
+            not isinstance(identity, Mapping)
+            or stage.get("byte_identity_sha256") != sha256_json(identity)
+            or stage.get("preflight_revalidated_at_launch_boundary") is not True
+            or stage.get("launch_receipt_sha256")
+            != sha256_json(
+                {key: value for key, value in stage.items() if key != "launch_receipt_sha256"}
+            )
+        ):
+            raise ValueError("v37 committed runtime receipt boundary hash drifted")
+        byte_identities.append(str(stage["byte_identity_sha256"]))
+    aggregate_identity = receipt.get("byte_identity_sha256")
+    if (
+        len(set(byte_identities)) != 1
+        or byte_identities[0] != aggregate_identity
+        or receipt.get("all_boundaries_match") is not True
+        or ("returncode" in receipt and receipt.get("returncode") != 0)
+    ):
+        raise ValueError("v37 committed runtime receipt boundaries differ")
+    embedded_sha256 = receipt.get("launch_receipt_sha256")
+    recomputed_sha256 = sha256_json(
+        {key: value for key, value in receipt.items() if key != "launch_receipt_sha256"}
+    )
+    if embedded_sha256 != recomputed_sha256:
+        raise ValueError("v37 committed runtime receipt hash chain drifted")
+    return str(embedded_sha256)
+
+
+def _validate_runtime_receipt_evidence(
+    graph: Mapping[str, Any],
+    artifact_payloads_by_sha256: Mapping[str, dict[str, Any]],
+) -> None:
+    calls = {str(item["id"]): item for item in graph.get("tool_calls", [])}
+    artifacts = {str(item["id"]): item for item in graph.get("artifacts", [])}
+    links_by_call_sha: dict[tuple[str, str], list[Mapping[str, Any]]] = {}
+    receipt_calls: set[str] = set()
+    required_receipt_calls: set[str] = set()
+    for call_id, call in calls.items():
+        logical_id = str(call.get("input_json", {}).get("v37_logical_id", ""))
+        if (
+            (
+                logical_id.startswith("v37:metric:")
+                and logical_id != "v37:metric:physicochemical_developability"
+            )
+            or call.get("tool_name") in {"pepshot-contract", "pepshot-inspect"}
+        ):
+            required_receipt_calls.add(call_id)
+    for link in graph.get("evidence_artifacts", []):
+        artifact = artifacts.get(str(link["artifact_id"]))
+        if artifact is None:
+            raise ValueError("v37 evidence link references an unknown Artifact")
+        call_id = str(link["tool_call_id"])
+        artifact_sha256 = str(artifact["sha256"])
+        links_by_call_sha.setdefault((call_id, artifact_sha256), []).append(link)
+        payload = artifact_payloads_by_sha256.get(artifact_sha256)
+        receipt = _runtime_launch_receipt(payload) if isinstance(payload, Mapping) else None
+        if receipt is not None:
+            _validate_aggregate_runtime_receipt(receipt)
+        if str(link.get("role")) == "v37_runtime_receipts" or (
+            str(link.get("role")) == "source_runtime_receipt"
+            and call_id in required_receipt_calls
+        ):
+            receipt_calls.add(call_id)
+
+    events_by_call: dict[str, list[Mapping[str, Any]]] = {}
+    for event in graph.get("lifecycle_events", []):
+        if event.get("event_type") != "v37.runtime_receipts.committed":
+            continue
+        payload = event.get("payload_json", {})
+        call_id = str(payload.get("tool_call_id"))
+        events_by_call.setdefault(call_id, []).append(event)
+        artifact_sha256 = payload.get("artifact_sha256")
+        launch_sha256 = payload.get("launch_receipt_sha256")
+        if (
+            call_id not in calls
+            or calls[call_id].get("status") != "succeeded"
+            or not _is_sha256(artifact_sha256)
+            or not _is_sha256(launch_sha256)
+        ):
+            raise ValueError("v37 committed runtime receipt event identity is invalid")
+        linked = links_by_call_sha.get((call_id, str(artifact_sha256)), [])
+        if len(linked) != 1 or str(linked[0].get("role")) not in {
+            "v37_runtime_receipts",
+            "source_runtime_receipt",
+        }:
+            raise ValueError("v37 committed runtime receipt artifact is not uniquely linked")
+        artifact_payload = artifact_payloads_by_sha256.get(str(artifact_sha256))
+        if (
+            not isinstance(artifact_payload, Mapping)
+            or sha256_json(artifact_payload) != artifact_sha256
+        ):
+            raise ValueError("v37 committed runtime receipt artifact is corrupt")
+        receipt = _runtime_launch_receipt(artifact_payload)
+        if receipt is None:
+            raise ValueError("v37 committed runtime receipt artifact lacks launch evidence")
+        if _validate_aggregate_runtime_receipt(receipt) != launch_sha256:
+            raise ValueError("v37 committed runtime receipt hash chain drifted")
+
+    if set(events_by_call) != receipt_calls | required_receipt_calls or any(
+        len(events_by_call[call_id]) != 1 for call_id in events_by_call
+    ):
+        raise ValueError("v37 runtime receipt artifacts and commit events are not one-to-one")
+
+
+def _validate_attempt_runtime_evidence(
+    graph: Mapping[str, Any],
+    artifact_payloads_by_sha256: Mapping[str, dict[str, Any]],
+) -> None:
+    artifact_shas = {str(item["sha256"]) for item in graph.get("artifacts", [])}
+    grouped: dict[str, list[Mapping[str, Any]]] = {}
+    for event in graph.get("lifecycle_events", []):
+        if event.get("aggregate_type") != "v37_attempt":
+            continue
+        grouped.setdefault(str(event.get("aggregate_id")), []).append(event)
+    for aggregate_id, events in grouped.items():
+        ordered = sorted(events, key=lambda item: int(item.get("sequence_no", 0)))
+        sequence_numbers = [int(item.get("sequence_no", 0)) for item in ordered]
+        if sequence_numbers != list(range(1, len(ordered) + 1)):
+            raise ValueError("v37 attempt lifecycle sequence is not contiguous")
+        identities = {
+            (
+                str(item.get("payload_json", {}).get("run_id")),
+                str(item.get("payload_json", {}).get("v37_logical_id")),
+                str(item.get("payload_json", {}).get("activity_name")),
+                int(item.get("payload_json", {}).get("attempt", 0)),
+            )
+            for item in ordered
+        }
+        if len(identities) != 1 or next(iter(identities))[3] < 1:
+            raise ValueError("v37 attempt lifecycle identity drifted")
+        by_type: dict[str, list[Mapping[str, Any]]] = {}
+        for event in ordered:
+            by_type.setdefault(str(event.get("event_type")), []).append(event)
+        terminals = [
+            *by_type.get("v37.attempt_failed", []),
+            *by_type.get("v37.attempt_succeeded", []),
+        ]
+        launches = by_type.get("v37.launch_receipt_persisted", [])
+        aggregates = by_type.get("v37.aggregate_launch_receipt_persisted", [])
+        if (
+            len(by_type.get("v37.attempt_started", [])) != 1
+            or len(terminals) != 1
+            or ordered[0].get("event_type") != "v37.attempt_started"
+            or ordered[-1].get("event_type")
+            not in {"v37.attempt_failed", "v37.attempt_succeeded"}
+            or len(launches) > 1
+            or len(aggregates) > 1
+            or (aggregates and not launches)
+            or (
+                launches
+                and terminals[0].get("event_type") == "v37.attempt_succeeded"
+                and not aggregates
+            )
+        ):
+            raise ValueError(f"v37 attempt lifecycle is incomplete: {aggregate_id}")
+
+        launch_payload: Mapping[str, Any] | None = None
+        if launches:
+            payload = launches[0]["payload_json"]
+            artifact_sha256 = str(payload.get("artifact_sha256"))
+            launch_payload = artifact_payloads_by_sha256.get(artifact_sha256)
+            if (
+                artifact_sha256 not in artifact_shas
+                or not isinstance(launch_payload, Mapping)
+                or sha256_json(launch_payload) != artifact_sha256
+                or launch_payload.get("stage") != "pre_snapshot"
+                or launch_payload.get("launch_receipt_sha256")
+                != payload.get("launch_receipt_sha256")
+                or launch_payload.get("launch_receipt_sha256")
+                != sha256_json(
+                    {
+                        key: value
+                        for key, value in launch_payload.items()
+                        if key != "launch_receipt_sha256"
+                    }
+                )
+            ):
+                raise ValueError("v37 attempt launch receipt artifact is invalid")
+        if aggregates:
+            payload = aggregates[0]["payload_json"]
+            artifact_sha256 = str(payload.get("artifact_sha256"))
+            aggregate_payload = artifact_payloads_by_sha256.get(artifact_sha256)
+            if (
+                artifact_sha256 not in artifact_shas
+                or not isinstance(aggregate_payload, Mapping)
+                or sha256_json(aggregate_payload) != artifact_sha256
+                or _validate_aggregate_runtime_receipt(aggregate_payload)
+                != payload.get("launch_receipt_sha256")
+                or aggregate_payload.get("pre_snapshot") != launch_payload
+            ):
+                raise ValueError("v37 attempt aggregate receipt artifact is invalid")
+
+
 def _validate_attempt_and_failure_ledgers(
     payloads: Mapping[tuple[str, str], dict[str, Any]], logical_ids: Sequence[str]
 ) -> None:
@@ -508,6 +760,7 @@ def validate_v37_database_object_replay(
 ) -> dict[str, Any]:
     """Fail closed unless the DB/object graph reconstructs every v37 decision input."""
     validate_v37_replay_graph(_logical_graph(graph), plan)
+    _validate_tool_success_event_consistency(graph)
     logical_call_rows = [
         item
         for item in graph["tool_calls"]
@@ -517,8 +770,17 @@ def validate_v37_database_object_replay(
         str(item["input_json"]["v37_logical_id"]): item
         for item in logical_call_rows
     }
+    allowed_incomplete_status = {
+        logical_id: (
+            {"running", "succeeded"}
+            if allow_incomplete_replay and logical_id == "v37:replay"
+            else {"succeeded"}
+        )
+        for logical_id in calls
+    }
     if len(calls) != len(logical_call_rows) or any(
-        item.get("status") != "succeeded" for item in calls.values()
+        item.get("status") not in allowed_incomplete_status[logical_id]
+        for logical_id, item in calls.items()
     ):
         raise ValueError("v37 replay has duplicate or non-succeeded ToolCalls")
     role_contract = build_v37_artifact_contract(plan)
@@ -536,6 +798,34 @@ def validate_v37_database_object_replay(
         if Counter(observed_roles.get(logical_id, [])) != Counter(roles):
             raise ValueError(f"v37 artifact roles drifted for {logical_id}")
     payloads = _artifact_payloads(graph, artifact_payloads_by_sha256)
+    if not allow_incomplete_replay:
+        replay_payload = payloads[("v37:replay", "database_object_replay")]
+        snapshot_payload = payloads[("v37:replay", "committed_graph_snapshot")]
+        snapshot_graph = snapshot_payload.get("graph")
+        if (
+            replay_payload.get("schema_version")
+            != "v37.database-object-replay.2"
+            or snapshot_payload.get("schema_version")
+            != "v37.committed-graph-snapshot.1"
+            or not isinstance(snapshot_graph, dict)
+        ):
+            raise ValueError("v37 committed graph artifact schema drifted")
+        embedded_graph_sha256 = snapshot_graph.get("graph_sha256")
+        recomputed_graph_sha256 = sha256_json(
+            {key: value for key, value in snapshot_graph.items() if key != "graph_sha256"}
+        )
+        if (
+            embedded_graph_sha256 != recomputed_graph_sha256
+            or snapshot_payload.get("committed_graph_sha256")
+            != embedded_graph_sha256
+            or replay_payload.get("committed_graph_sha256")
+            != embedded_graph_sha256
+            or replay_payload.get("committed_graph_snapshot_sha256")
+            != sha256_json(snapshot_payload)
+            or calls["v37:replay"].get("output_sha256")
+            != sha256_json(replay_payload)
+        ):
+            raise ValueError("v37 committed graph artifact hash chain drifted")
     ledger_calls = [
         logical_id
         for logical_id in calls
@@ -802,9 +1092,32 @@ def validate_v37_database_object_replay(
         raise ValueError("v37 pose manifest schema drifted")
     pose_ids: set[str] = set()
     pose_counts: Counter[str] = Counter()
+    pose_seeds: dict[str, list[int]] = {candidate_id: [] for candidate_id in shortlist_ids}
     poses_by_candidate: dict[str, list[dict[str, Any]]] = {
         candidate_id: [] for candidate_id in shortlist_ids
     }
+    all_calls_by_id = {str(item["id"]): item for item in graph.get("tool_calls", [])}
+    dependency_rows = {
+        (
+            str(item["child_tool_call_id"]),
+            str(item["parent_tool_call_id"]),
+            str(item.get("relation_type")),
+        )
+        for item in graph.get("tool_call_dependencies", [])
+    }
+    artifacts_by_id = {str(item["id"]): item for item in graph.get("artifacts", [])}
+    artifact_shas_by_call: dict[str, set[str]] = {}
+    for link in graph.get("evidence_artifacts", []):
+        artifact = artifacts_by_id.get(str(link["artifact_id"]))
+        if artifact is not None:
+            artifact_shas_by_call.setdefault(str(link["tool_call_id"]), set()).add(
+                str(artifact["sha256"])
+            )
+    evaluation_candidates_by_call: dict[str, set[str]] = {}
+    for evaluation in graph.get("evaluations", []):
+        evaluation_candidates_by_call.setdefault(
+            str(evaluation["tool_call_id"]), set()
+        ).add(str(evaluation["candidate_id"]))
     for pose in poses:
         candidate_id = str(pose["candidate_id"])
         pose_id = str(pose["pose_id"])
@@ -812,9 +1125,37 @@ def validate_v37_database_object_replay(
             raise ValueError("v37 structure pose identity mapping is invalid")
         if not all(
             isinstance(pose.get(field), str) and len(pose[field]) == 64
-            for field in ("structure_sha256", "coordinate_audit_sha256")
+            for field in (
+                "structure_sha256",
+                "coordinate_audit_sha256",
+                "boltz_input_sha256",
+                "boltz_output_sha256",
+                "interface_audit_input_sha256",
+                "interface_audit_output_sha256",
+            )
         ) or not isinstance(pose.get("boltz_seed"), int):
             raise ValueError("v37 structure pose lacks exact coordinate evidence")
+        audit_call_id = str(pose.get("interface_audit_tool_call_id"))
+        boltz_call = all_calls_by_id.get(pose_id)
+        audit_call = all_calls_by_id.get(audit_call_id)
+        if (
+            boltz_call is None
+            or boltz_call.get("tool_name") != "boltz2"
+            or boltz_call.get("random_seed") != pose["boltz_seed"]
+            or boltz_call.get("input_sha256") != pose["boltz_input_sha256"]
+            or boltz_call.get("output_sha256") != pose["boltz_output_sha256"]
+            or boltz_call.get("input_json", {}).get("peptide_sequence")
+            != candidates[candidate_id]["sequence"]
+            or pose["structure_sha256"] not in artifact_shas_by_call.get(pose_id, set())
+            or evaluation_candidates_by_call.get(pose_id) != {candidate_id}
+            or audit_call is None
+            or audit_call.get("tool_name") != "coordinate-interface-audit"
+            or audit_call.get("input_sha256") != pose["interface_audit_input_sha256"]
+            or audit_call.get("output_sha256") != pose["interface_audit_output_sha256"]
+            or evaluation_candidates_by_call.get(audit_call_id) != {candidate_id}
+            or (audit_call_id, pose_id, "audits") not in dependency_rows
+        ):
+            raise ValueError("v37 physical Boltz/audit ToolCall lineage is invalid")
         structure_values = (
             pose.get("pair_iptm"),
             pose.get("pocket_coverage_fraction"),
@@ -830,21 +1171,32 @@ def validate_v37_database_object_replay(
             raise ValueError("v37 structure pose metrics are missing or non-finite")
         pose_ids.add(pose_id)
         pose_counts[candidate_id] += 1
+        pose_seeds[candidate_id].append(int(pose["boltz_seed"]))
         poses_by_candidate[candidate_id].append(pose)
     expected_poses = int(manifest["stage_2_structure_confirmation"]["poses_per_candidate"])
     if any(pose_counts[item] != expected_poses for item in shortlist_ids):
         raise ValueError("v37 structure pose coverage differs from frozen protocol")
+    frozen_boltz_seeds = sorted(
+        int(item) for item in manifest["stage_2_structure_confirmation"]["boltz_seeds"]
+    )
+    if any(sorted(pose_seeds[item]) != frozen_boltz_seeds for item in shortlist_ids):
+        raise ValueError("v37 Boltz seed multiset differs from frozen protocol")
+    pose_by_id = {str(item["pose_id"]): item for item in poses}
 
     decoys = payloads[("v37:rosetta", "decoy_manifest")].get("decoys")
     if not isinstance(decoys, list):
         raise ValueError("v37 Rosetta decoy manifest schema drifted")
     decoy_counts: Counter[str] = Counter()
     decoy_ids: set[str] = set()
+    rosetta_call_by_pose: dict[str, str] = {}
     scores_by_pose: dict[str, list[float]] = {pose_id: [] for pose_id in pose_ids}
     for decoy in decoys:
         pose_id = str(decoy["pose_id"])
         decoy_id = str(decoy["decoy_id"])
         score = float(decoy["interface_delta_g_reu"])
+        candidate_id = str(decoy.get("candidate_id"))
+        rosetta_call_id = str(decoy.get("rosetta_tool_call_id"))
+        rosetta_call = all_calls_by_id.get(rosetta_call_id)
         if (
             pose_id not in pose_ids
             or decoy_id in decoy_ids
@@ -852,8 +1204,24 @@ def validate_v37_database_object_replay(
             or not _is_sha256(decoy.get("input_sha256"))
             or not _is_sha256(decoy.get("output_sha256"))
             or not _is_sha256(decoy.get("score_terms_sha256"))
+            or not _is_sha256(decoy.get("rosetta_call_input_sha256"))
+            or not _is_sha256(decoy.get("rosetta_call_output_sha256"))
+            or candidate_id
+            != str(pose_by_id.get(pose_id, {}).get("candidate_id"))
+            or int(decoy.get("boltz_seed", -1))
+            != int(pose_by_id.get(pose_id, {}).get("boltz_seed", -2))
+            or rosetta_call is None
+            or rosetta_call.get("tool_name")
+            != "pyrosetta-flexpepdock-interface-analyzer"
+            or rosetta_call.get("input_sha256") != decoy["rosetta_call_input_sha256"]
+            or rosetta_call.get("output_sha256") != decoy["rosetta_call_output_sha256"]
+            or evaluation_candidates_by_call.get(rosetta_call_id) != {candidate_id}
+            or (rosetta_call_id, pose_id, "refines") not in dependency_rows
         ):
             raise ValueError("v37 Rosetta decoy identity or score is invalid")
+        if pose_id in rosetta_call_by_pose and rosetta_call_by_pose[pose_id] != rosetta_call_id:
+            raise ValueError("v37 Rosetta pose maps to multiple physical ToolCalls")
+        rosetta_call_by_pose[pose_id] = rosetta_call_id
         decoy_ids.add(decoy_id)
         decoy_counts[pose_id] += 1
         scores_by_pose[pose_id].append(score)
@@ -862,6 +1230,36 @@ def validate_v37_database_object_replay(
     )
     if any(decoy_counts[item] != expected_decoys for item in pose_ids):
         raise ValueError("v37 Rosetta decoy coverage differs from frozen protocol")
+    if set(rosetta_call_by_pose) != pose_ids or len(set(rosetta_call_by_pose.values())) != len(
+        pose_ids
+    ):
+        raise ValueError("v37 Rosetta physical ToolCall mapping is not one-to-one")
+    structure_call_id = str(calls["v37:structure"]["id"])
+    rosetta_summary_call_id = str(calls["v37:rosetta"]["id"])
+    expected_structure_sources = {
+        str(item["pose_id"]) for item in poses
+    } | {str(item["interface_audit_tool_call_id"]) for item in poses}
+    observed_structure_sources = {
+        parent
+        for child, parent, relation in dependency_rows
+        if child == structure_call_id and relation == "summarizes_structure_evidence"
+    }
+    observed_rosetta_sources = {
+        parent
+        for child, parent, relation in dependency_rows
+        if child == rosetta_summary_call_id and relation == "summarizes_rosetta_evidence"
+    }
+    if (
+        observed_structure_sources != expected_structure_sources
+        or observed_rosetta_sources != set(rosetta_call_by_pose.values())
+        or (
+            rosetta_summary_call_id,
+            structure_call_id,
+            "scores_frozen_structure_stage",
+        )
+        not in dependency_rows
+    ):
+        raise ValueError("v37 canonical structure summary source lineage is invalid")
 
     pepshot = payloads[("v37:pepshot", "pepshot_evidence")]
     inspections = pepshot.get("inspections")
@@ -890,8 +1288,19 @@ def validate_v37_database_object_replay(
         "runtime_manifest_sha256",
         "spatial_finding_count",
         "blocking_finding_types",
+        "detail_tool_call_id",
+        "detail_input_sha256",
+        "detail_output_sha256",
     }
-    pose_by_id = {str(item["pose_id"]): item for item in poses}
+    pepshot_receipt = payloads[("v37:pepshot", "provider_release_receipt")]
+    contract_call_id = str(pepshot_receipt.get("contract_tool_call_id"))
+    contract_call = all_calls_by_id.get(contract_call_id)
+    receipt_detail_ids = {
+        str(item) for item in pepshot_receipt.get("detail_tool_call_ids", [])
+    }
+    if contract_call is None or contract_call.get("tool_name") != "pepshot-contract":
+        raise ValueError("v37 PepShot contract ToolCall lineage is missing")
+    observed_detail_ids: set[str] = set()
     expected_projection = {
         "PASS": ("retain", "provider_inspect_interface_pass"),
         "WARN": ("insufficient", "provider_inspect_interface_warning"),
@@ -909,6 +1318,8 @@ def validate_v37_database_object_replay(
         ):
             raise ValueError("v37 PepShot inspection hash chain is invalid")
         pose = pose_by_id[pose_id]
+        detail_call_id = str(inspection.get("detail_tool_call_id"))
+        detail_call = all_calls_by_id.get(detail_call_id)
         verdict = inspection["interface_verdict"]
         candidate_poses = poses_by_candidate.get(candidate_id, [])
         pair_iptm_median = statistics.median(
@@ -949,11 +1360,34 @@ def validate_v37_database_object_replay(
             != PEPSHOT_RELEASE_MANIFEST_SHA256
             or inspection["runtime_manifest_sha256"]
             != PEPSHOT_RUNTIME_MANIFEST_SHA256
+            or detail_call is None
+            or detail_call.get("tool_name") != "pepshot-inspect"
+            or detail_call.get("input_sha256") != inspection["detail_input_sha256"]
+            or detail_call.get("output_sha256") != inspection["detail_output_sha256"]
+            or detail_call.get("output_sha256") != inspection["inspection_sha256"]
+            or detail_call.get("input_json", {}).get("candidate_id") != candidate_id
+            or detail_call.get("input_json", {}).get("request_sha256")
+            != inspection["request_sha256"]
+            or detail_call.get("input_json", {}).get("coordinate_sha256")
+            != inspection["source_sha256"]
+            or (detail_call_id, contract_call_id, "uses_verified_inspect_contract")
+            not in dependency_rows
+            or (
+                str(calls["v37:pepshot"]["id"]),
+                detail_call_id,
+                "aggregates_candidate_inspection",
+            )
+            not in dependency_rows
             or not isinstance(inspection["spatial_finding_count"], int)
             or inspection["spatial_finding_count"] < 0
             or not isinstance(inspection["blocking_finding_types"], list)
         ):
             raise ValueError("v37 PepShot inspection projection or lineage is invalid")
+        observed_detail_ids.add(detail_call_id)
+    if observed_detail_ids != receipt_detail_ids or len(observed_detail_ids) != len(
+        shortlist_ids
+    ):
+        raise ValueError("v37 PepShot detail ToolCall set differs from provider receipt")
 
     decision_logicals = {
         "v37:knowledge",
@@ -1097,6 +1531,8 @@ def validate_v37_database_object_replay(
         if payloads[("v37:final-portfolio", role)] != expected_payload:
             raise ValueError("v37 final selection witness does not replay")
 
+    _validate_runtime_receipt_evidence(graph, artifact_payloads_by_sha256)
+    _validate_attempt_runtime_evidence(graph, artifact_payloads_by_sha256)
     result = {
         "schema_version": "1.0",
         "exact_replay": True,

@@ -39,6 +39,11 @@ from pepagent.v37_provider_consumers import (
     PEPSHOT_RELEASE_MANIFEST_SHA256,
     PEPSHOT_RUNTIME_MANIFEST_SHA256,
 )
+from pepagent.v37_runtime_execution import (
+    V37GenericRuntimeExpectation,
+    V37GenericRuntimePaths,
+    build_v37_generic_launch_receipt,
+)
 from pepagent.v37_runtime_manifests import (
     V37GeneratorRuntimeExpectation,
     verify_v37_generator_runtime_manifest,
@@ -232,6 +237,46 @@ def _validate_self_hashed_runtime(value: Any, *, label: str) -> None:
         raise ValueError(f"v37 {label} runtime identity drifted")
 
 
+def _validate_generic_execution_guard(runtime: dict[str, Any], *, label: str) -> None:
+    guard = runtime.get("execution_guard")
+    if not isinstance(guard, dict) or set(guard) != {"contract", "expectation", "paths"}:
+        raise ValueError(f"v37 {label} runtime lacks an exact execution guard")
+    expectation = V37GenericRuntimeExpectation(**guard["expectation"])
+    paths_payload = guard["paths"]
+    paths = V37GenericRuntimePaths(
+        executable_path=Path(paths_payload["executable_path"]),
+        runtime_manifest_path=Path(paths_payload["runtime_manifest_path"]),
+        packages_lock_path=Path(paths_payload["packages_lock_path"]),
+        source_root=Path(paths_payload["source_root"]),
+        model_root=Path(paths_payload["model_root"]),
+        adapter_path=(
+            Path(paths_payload["adapter_path"])
+            if paths_payload.get("adapter_path") is not None
+            else None
+        ),
+    )
+    entities = guard["contract"]["command_entities"]
+    command = ["v37-guard-placeholder"] * (
+        max(
+            int(entities["executable_index"]),
+            int(entities["adapter_index"] or 0),
+        )
+        + 1
+    )
+    command[int(entities["executable_index"])] = str(paths.executable_path)
+    if entities["adapter_index"] is not None:
+        command[int(entities["adapter_index"])] = str(paths.adapter_path)
+    build_v37_generic_launch_receipt(
+        contract=guard["contract"],
+        expectation=expectation,
+        paths=paths,
+        command=command,
+        cwd=Path(runtime.get("cwd") or Path.cwd()),
+        env={},
+        input_paths={},
+    )
+
+
 def _verify_generator_runtime_bytes(
     *, workspace: Path, runtime_root: Path, generator_id: str, runtime: dict[str, Any]
 ) -> None:
@@ -326,6 +371,8 @@ def _validate_execution_runtime_identities(
 
     for name, runtime in execution["metric_plugins_by_name"].items():
         _validate_self_hashed_runtime(runtime, label=f"metric {name}")
+        if name != "physicochemical_developability":
+            _validate_generic_execution_guard(runtime, label=f"metric {name}")
     metric_registry_path = workspace / "config/metrics/runtime.local.yaml"
     metric_registry_bytes = metric_registry_path.read_bytes()
     if execution.get("metric_registry_sha256") != sha256_bytes(metric_registry_bytes):
@@ -339,6 +386,7 @@ def _validate_execution_runtime_identities(
             raise ValueError(f"v37 metric {name} is absent or disabled in frozen registry")
     knowledge = execution["knowledge_runtime"]
     _validate_self_hashed_runtime(knowledge, label="knowledge provider")
+    _validate_generic_execution_guard(knowledge, label="knowledge provider")
     expected_knowledge = {
         "release_revision": KNOWLEDGE_RELEASE_REVISION,
         "release_manifest_sha256": KNOWLEDGE_RELEASE_MANIFEST_SHA256,
@@ -349,6 +397,7 @@ def _validate_execution_runtime_identities(
         raise ValueError("v37 knowledge provider runtime identity drifted")
     pepshot = execution["pepshot_runtime"]
     _validate_self_hashed_runtime(pepshot, label="PepShot provider")
+    _validate_generic_execution_guard(pepshot, label="PepShot provider")
     expected_pepshot = {
         "release_id": PEPSHOT_RELEASE_ID,
         "release_manifest_sha256": PEPSHOT_RELEASE_MANIFEST_SHA256,

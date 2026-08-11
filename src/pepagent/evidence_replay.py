@@ -61,9 +61,7 @@ async def build_database_evidence_graph(
     evidence_links = await _all(
         session, EvidenceArtifact, EvidenceArtifact.tool_call_id.in_(call_ids)
     )
-    artifact_ids = {link.artifact_id for link in evidence_links}
-    artifacts = await _all(session, Artifact, Artifact.id.in_(artifact_ids))
-    events = await _all(
+    run_events = await _all(
         session,
         LifecycleEvent,
         ((LifecycleEvent.aggregate_type == "run") & (LifecycleEvent.aggregate_id == run_id))
@@ -72,6 +70,30 @@ async def build_database_evidence_graph(
             & LifecycleEvent.aggregate_id.in_(candidate_ids)
         ),
     )
+    attempt_events = await _all(
+        session,
+        LifecycleEvent,
+        LifecycleEvent.aggregate_type == "v37_attempt",
+        LifecycleEvent.payload_json["run_id"].astext == str(run_id),
+    )
+    events = [*run_events, *attempt_events]
+    artifact_ids = {link.artifact_id for link in evidence_links}
+    attempt_artifact_sha256s = {
+        str(event.payload_json["artifact_sha256"])
+        for event in attempt_events
+        if event.event_type
+        in {
+            "v37.launch_receipt_persisted",
+            "v37.aggregate_launch_receipt_persisted",
+        }
+        and event.payload_json.get("artifact_sha256")
+    }
+    linked_artifacts = await _all(session, Artifact, Artifact.id.in_(artifact_ids))
+    attempt_artifacts = await _all(
+        session, Artifact, Artifact.sha256.in_(attempt_artifact_sha256s)
+    )
+    artifacts_by_id = {item.id: item for item in [*linked_artifacts, *attempt_artifacts]}
+    artifacts = list(artifacts_by_id.values())
 
     for candidate in candidates:
         if candidate.generator_call_id is None or candidate.generator_call_id not in call_ids:

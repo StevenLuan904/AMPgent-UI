@@ -26,8 +26,21 @@ from pepagent.db.models import (
 from pepagent.db.repository import ExperimentRepository
 from pepagent.db.session import SessionFactory
 from pepagent.developability import CANONICAL_AMINO_ACIDS
-from pepagent.domain.enums import CandidateStatus, RunStatus
+from pepagent.domain.enums import CandidateStatus, EvaluationStatus, RunStatus
 from pepagent.evidence_replay import build_database_evidence_graph
+from pepagent.handoff_metrics import (
+    HANDOFF_METRIC_VERSION,
+    METRIC_PLUGIN_CONTRACTS,
+    normalize_metric_records,
+    physicochemical_descriptors,
+)
+from pepagent.model_workers.sequence_metric_plan import (
+    build_external_metric_plan,
+    consume_external_metric_result,
+    load_external_metric_adapter,
+    materialize_external_metric_input,
+)
+from pepagent.provenance.environment import fingerprint_runtime
 from pepagent.provenance.hashing import sha256_bytes, sha256_json
 from pepagent.settings import get_settings
 from pepagent.storage.object_store import ContentAddressedObjectStore
@@ -56,13 +69,18 @@ from pepagent.v37_provider_consumers import (
     build_v37_pepshot_inspect_request,
     consume_v37_pepshot_inspection,
 )
-from pepagent.v37_runtime_execution import V37LiveRuntimePaths, run_v37_guarded_subprocess
+from pepagent.v37_runtime_execution import (
+    V37GenericRuntimeExpectation,
+    V37GenericRuntimePaths,
+    V37LiveRuntimePaths,
+    run_v37_guarded_provider_subprocess,
+    run_v37_guarded_subprocess,
+)
 from pepagent.v37_runtime_manifests import V37GeneratorRuntimeExpectation
 from pepagent.v37_selection import select_v37_lanes
 from pepagent.workers.activities import (
     _register_artifact,
     _store_json,
-    evaluate_optional_sequence_metric,
     predict_boltz2_complex,
     score_rosetta_complex,
 )
@@ -81,7 +99,140 @@ async def evaluate_v37_sequence_metric(request: dict[str, Any]) -> dict[str, Any
     )
 
     async def operation() -> dict[str, Any]:
-        return await evaluate_optional_sequence_metric(request)
+        plugin = request["plugin"]
+        contract = METRIC_PLUGIN_CONTRACTS[plugin_name]
+        if contract["provider"] == "builtin":
+            parameters = plugin.get("parameters", {})
+            raw_rows = [
+                {
+                    "candidate_id": candidate["id"],
+                    "sequence": candidate["sequence"],
+                    "status": "complete",
+                    **physicochemical_descriptors(
+                        candidate["sequence"],
+                        ph=float(parameters.get("ph", 7.4)),
+                        c_terminal_amidated=bool(
+                            parameters.get("c_terminal_amidated", False)
+                        ),
+                        hydrophobic_moment_angle=int(
+                            parameters.get("hydrophobic_moment_angle", 100)
+                        ),
+                    ),
+                }
+                for candidate in request["candidates"]
+            ]
+            result = {
+                "plugin": plugin,
+                "contract": contract,
+                "candidate_count": len(request["candidates"]),
+                "status": "complete",
+                "adapter_version": HANDOFF_METRIC_VERSION,
+                "records": normalize_metric_records(plugin_name, raw_rows),
+                "raw_rows": raw_rows,
+            }
+            environment_sha256, environment = fingerprint_runtime()
+            raw_artifact = await _store_json(result)
+            environment_artifact = await _store_json(environment)
+            return {
+                "result": result,
+                "provenance": {
+                    "tool_name": f"handoff-metric-{plugin_name}",
+                    "tool_version": HANDOFF_METRIC_VERSION,
+                    "model_uri": f"metric://{plugin_name}",
+                    "weights_sha256": None,
+                    "environment_sha256": environment_sha256,
+                    "environment": environment,
+                    "attempt": activity.info().attempt,
+                    "raw_output_artifact": asdict(raw_artifact),
+                    "environment_artifact": asdict(environment_artifact),
+                    "execution_mode": "builtin_no_subprocess",
+                },
+            }
+
+        registry_path = Path(str(plugin["registry_path"]))
+        adapter, registry_sha256 = load_external_metric_adapter(
+            registry_path, plugin_name
+        )
+        if not adapter or adapter.get("enabled") is not True:
+            raise ValueError(f"v37 required metric adapter is absent: {plugin_name}")
+        if registry_sha256 != plugin.get("registry_sha256"):
+            raise ValueError("v37 metric registry identity differs from frozen runtime")
+        settings = get_settings()
+        work = (
+            Path(settings.work_root)
+            / request["run_id"]
+            / "v37"
+            / "metrics"
+            / plugin_name
+        )
+        await asyncio.to_thread(work.mkdir, parents=True, exist_ok=True)
+        plan = build_external_metric_plan(
+            plugin_name=plugin_name,
+            adapter=adapter,
+            work_dir=work,
+            run_id=request["run_id"],
+            registry_path=registry_path,
+            registry_sha256=registry_sha256,
+        )
+        input_receipt = await asyncio.to_thread(
+            materialize_external_metric_input, plan, request["candidates"]
+        )
+        environment = os.environ.copy()
+        environment.update(plan["environment"])
+        stdout, launch_receipt = await _run_guarded_generic_runtime(
+            command=list(plan["command_argv"]),
+            runtime=plugin,
+            context=context,
+            cwd=Path(plan["working_directory"]) if plan.get("working_directory") else work,
+            env=environment,
+            input_paths={
+                "candidate_input": Path(plan["input"]["candidates_csv"]),
+                "metric_registry": registry_path,
+            },
+        )
+        provider_result = consume_external_metric_result(
+            plan=plan,
+            candidates=request["candidates"],
+            execution_receipt={
+                "status": "completed",
+                "returncode": launch_receipt["returncode"],
+                "stdout": stdout,
+                "stderr": launch_receipt["stderr_tail"],
+                "command_argv": list(plan["command_argv"]),
+            },
+        )
+        result = {
+            "plugin": plugin,
+            "contract": contract,
+            "candidate_count": len(request["candidates"]),
+            **provider_result,
+        }
+        environment_sha256 = launch_receipt["byte_identity_sha256"]
+        raw_artifact = await _store_json(result)
+        environment_artifact = await _store_json(
+            {
+                "execution_plan": plan,
+                "input_receipt": input_receipt,
+                "launch_receipt": launch_receipt,
+            }
+        )
+        return {
+            "result": result,
+            "provenance": {
+                "tool_name": f"handoff-metric-{plugin_name}",
+                "tool_version": result.get("adapter_version") or HANDOFF_METRIC_VERSION,
+                "model_uri": result.get("model_uri") or f"metric://{plugin_name}",
+                "weights_sha256": result.get("weights_sha256"),
+                "environment_sha256": environment_sha256,
+                "environment": {"execution_plan": plan},
+                "attempt": activity.info().attempt,
+                "raw_output_artifact": asdict(raw_artifact),
+                "environment_artifact": asdict(environment_artifact),
+                "execution_plan": plan,
+                "input_receipt": input_receipt,
+                "live_launch_receipt": launch_receipt,
+            },
+        }
 
     return await execute_v37_durable_attempt(operation, context=context)
 
@@ -243,6 +394,226 @@ async def _persist_v37_launch_receipt(
             raise ValueError("v37 launch receipt differs on retry")
 
 
+async def _persist_v37_aggregate_launch_receipt(
+    *, context: V37AttemptContext, receipt: dict[str, Any]
+) -> None:
+    stored = await _store_json(receipt)
+    async with SessionFactory() as session, session.begin():
+        artifact = await session.scalar(select(Artifact).where(Artifact.sha256 == stored.sha256))
+        if artifact is None:
+            artifact = Artifact(
+                sha256=stored.sha256,
+                size_bytes=stored.size_bytes,
+                media_type=stored.media_type,
+                storage_uri=stored.uri,
+                metadata_json={"v37_role": "aggregate_live_launch_receipt"},
+            )
+            session.add(artifact)
+            await session.flush()
+        payload = {
+            "run_id": str(context.run_id),
+            "v37_logical_id": context.logical_id,
+            "activity_name": context.activity_name,
+            "attempt": context.attempt,
+            "artifact_sha256": stored.sha256,
+            "launch_receipt_sha256": receipt["launch_receipt_sha256"],
+            "all_boundaries_match": receipt["all_boundaries_match"],
+        }
+        existing = await session.scalar(
+            select(LifecycleEvent).where(
+                LifecycleEvent.aggregate_type == "v37_attempt",
+                LifecycleEvent.aggregate_id == context.aggregate_id,
+                LifecycleEvent.event_type
+                == "v37.aggregate_launch_receipt_persisted",
+            )
+        )
+        if existing is None:
+            await ExperimentRepository(session).append_event(
+                "v37_attempt",
+                context.aggregate_id,
+                "v37.aggregate_launch_receipt_persisted",
+                "v37-formal-runtime",
+                payload,
+            )
+        elif existing.payload_json != payload:
+            raise ValueError("v37 aggregate launch receipt differs on retry")
+
+
+async def _run_guarded_generic_runtime(
+    *,
+    command: list[str],
+    runtime: dict[str, Any],
+    context: V37AttemptContext,
+    cwd: Path,
+    env: dict[str, str] | None = None,
+    input_paths: dict[str, Path] | None = None,
+) -> tuple[str, dict[str, Any]]:
+    guard = runtime.get("execution_guard")
+    if not isinstance(guard, dict):
+        raise ValueError("v37 provider runtime lacks a frozen execution guard")
+    contract = guard.get("contract")
+    expectation_payload = guard.get("expectation")
+    paths_payload = guard.get("paths")
+    if not all(isinstance(item, dict) for item in (contract, expectation_payload, paths_payload)):
+        raise ValueError("v37 provider execution guard is incomplete")
+    expectation = V37GenericRuntimeExpectation(**expectation_payload)
+    paths = V37GenericRuntimePaths(
+        executable_path=Path(paths_payload["executable_path"]),
+        runtime_manifest_path=Path(paths_payload["runtime_manifest_path"]),
+        packages_lock_path=Path(paths_payload["packages_lock_path"]),
+        source_root=Path(paths_payload["source_root"]),
+        model_root=Path(paths_payload["model_root"]),
+        adapter_path=(
+            Path(paths_payload["adapter_path"])
+            if paths_payload.get("adapter_path") is not None
+            else None
+        ),
+    )
+
+    async def receipt_writer(receipt: dict[str, Any]) -> None:
+        await _persist_v37_launch_receipt(context=context, receipt=receipt)
+
+    async def aggregate_receipt_writer(receipt: dict[str, Any]) -> None:
+        await _persist_v37_aggregate_launch_receipt(context=context, receipt=receipt)
+
+    async def progress_writer() -> None:
+        activity.heartbeat(
+            {
+                "v37_logical_id": context.logical_id,
+                "attempt": context.attempt,
+                "status": "guarded_provider_subprocess_running",
+            }
+        )
+
+    return await run_v37_guarded_provider_subprocess(
+        command,
+        contract=contract,
+        expectation=expectation,
+        paths=paths,
+        receipt_writer=receipt_writer,
+        aggregate_receipt_writer=aggregate_receipt_writer,
+        progress_writer=progress_writer,
+        cwd=cwd,
+        env=env,
+        input_paths=input_paths,
+    )
+
+
+async def _persist_v37_committed_runtime_receipt(
+    session: Any,
+    *,
+    run_id: uuid.UUID,
+    tool_call_id: uuid.UUID,
+    payload: dict[str, Any],
+) -> None:
+    complete_payload = {"tool_call_id": str(tool_call_id), **payload}
+    existing = await session.scalar(
+        select(LifecycleEvent).where(
+            LifecycleEvent.aggregate_type == "run",
+            LifecycleEvent.aggregate_id == run_id,
+            LifecycleEvent.event_type == "v37.runtime_receipts.committed",
+            LifecycleEvent.payload_json["tool_call_id"].astext == str(tool_call_id),
+        )
+    )
+    if existing is None:
+        await ExperimentRepository(session).append_event(
+            "run",
+            run_id,
+            "v37.runtime_receipts.committed",
+            "v37-formal-runtime",
+            complete_payload,
+        )
+    elif existing.payload_json != complete_payload:
+        raise ValueError("v37 committed runtime receipt differs on retry")
+
+
+async def _get_or_create_pending_v37_replay_call(
+    session: Any,
+    *,
+    run_id: uuid.UUID,
+    final_call_id: uuid.UUID,
+    plan_sha256: str,
+    attempt: int,
+) -> ToolCall:
+    input_payload = {
+        "v37_logical_id": "v37:replay",
+        "payload": {"final_portfolio_tool_call_id": str(final_call_id)},
+    }
+    parameters = {"v37_plan_sha256": plan_sha256, "database_only": True}
+    environment_sha256 = sha256_json({"replay": "database-only-v37"})
+    input_sha256 = sha256_json(input_payload)
+    idempotency_key = sha256_json(
+        {
+            "run_id": str(run_id),
+            "tool_name": "v37-replay",
+            "tool_version": V37_ACTIVITY_VERSION,
+            "environment_sha256": environment_sha256,
+            "weights_sha256": None,
+            "input_sha256": input_sha256,
+            "parameters": parameters,
+            "random_seed": None,
+        }
+    )
+    existing = await session.scalar(
+        select(ToolCall).where(ToolCall.idempotency_key == idempotency_key)
+    )
+    if existing is not None:
+        if (
+            existing.run_id != run_id
+            or existing.input_json != input_payload
+            or existing.parameters_json != parameters
+            or existing.status not in {EvaluationStatus.RUNNING, EvaluationStatus.SUCCEEDED}
+        ):
+            raise ValueError("persisted v37 replay call differs on retry")
+        return existing
+    now = datetime.now(UTC)
+    call = ToolCall(
+        run_id=run_id,
+        tool_name="v37-replay",
+        tool_version=V37_ACTIVITY_VERSION,
+        model_uri="deterministic://v37-database-object-replay",
+        environment_sha256=environment_sha256,
+        idempotency_key=idempotency_key,
+        input_sha256=input_sha256,
+        input_json=input_payload,
+        parameters_json=parameters,
+        status=EvaluationStatus.RUNNING,
+        attempt=attempt,
+        queued_at=now,
+        started_at=now,
+    )
+    session.add(call)
+    await session.flush()
+    return call
+
+
+async def _complete_v37_replay_call(
+    session: Any, *, call: ToolCall, output_payload: dict[str, Any]
+) -> None:
+    output_sha256 = sha256_json(output_payload)
+    if call.status == EvaluationStatus.SUCCEEDED:
+        if call.output_sha256 != output_sha256:
+            raise ValueError("persisted v37 replay output differs on retry")
+        return
+    if call.status != EvaluationStatus.RUNNING or call.output_sha256 is not None:
+        raise ValueError("v37 replay call is not in a completable state")
+    call.status = EvaluationStatus.SUCCEEDED
+    call.finished_at = datetime.now(UTC)
+    call.output_sha256 = output_sha256
+    await ExperimentRepository(session).append_event(
+        "run",
+        call.run_id,
+        "tool_call.succeeded",
+        call.tool_name,
+        {
+            "tool_call_id": str(call.id),
+            "idempotency_key": call.idempotency_key,
+            "input_sha256": call.input_sha256,
+            "output_sha256": output_sha256,
+        },
+    )
+
+
 def _select_v37_coordinate_artifact(structure: dict[str, Any]) -> dict[str, Any]:
     artifacts = structure["provenance"]["engine_artifacts"]
     coordinates = [
@@ -256,32 +627,6 @@ def _select_v37_coordinate_artifact(structure: dict[str, Any]) -> dict[str, Any]
     if not (preferred or coordinates):
         raise ValueError("v37 PepShot inspect requires a persisted coordinate artifact")
     return sorted(preferred or coordinates, key=lambda item: item["path"])[0]
-
-
-async def _run_process(command: list[str], *, cwd: Path | None = None) -> str:
-    process = await asyncio.create_subprocess_exec(
-        *command,
-        cwd=str(cwd) if cwd else None,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.STDOUT,
-        start_new_session=os.name == "posix",
-    )
-    lines = []
-    while True:
-        try:
-            line = await asyncio.wait_for(process.stdout.readline(), timeout=30)
-        except TimeoutError:
-            activity.heartbeat({"command": command[0], "status": "running"})
-            continue
-        if not line:
-            break
-        lines.append(line.decode(errors="replace").rstrip())
-        lines = lines[-80:]
-    code = await process.wait()
-    output = "\n".join(lines)
-    if code:
-        raise RuntimeError(f"v37 subprocess failed ({code}): {output[-8000:]}")
-    return output
 
 
 def _generator_command(
@@ -379,12 +724,28 @@ async def generate_v37_batch(request: dict[str, Any]) -> dict[str, Any]:
         async def receipt_writer(receipt: dict[str, Any]) -> None:
             await _persist_v37_launch_receipt(context=context, receipt=receipt)
 
+        async def aggregate_receipt_writer(receipt: dict[str, Any]) -> None:
+            await _persist_v37_aggregate_launch_receipt(
+                context=context, receipt=receipt
+            )
+
+        async def progress_writer() -> None:
+            activity.heartbeat(
+                {
+                    "v37_logical_id": context.logical_id,
+                    "attempt": context.attempt,
+                    "status": "guarded_generator_subprocess_running",
+                }
+            )
+
         stdout, launch_receipt = await run_v37_guarded_subprocess(
             command,
             manifest=runtime["runtime_manifest"],
             expectation=expectation,
             paths=live_paths,
             receipt_writer=receipt_writer,
+            aggregate_receipt_writer=aggregate_receipt_writer,
+            progress_writer=progress_writer,
             cwd=Path(runtime.get("cwd", work)),
         )
         result = json.loads(
@@ -450,6 +811,7 @@ async def persist_v37_generation_batch(request: dict[str, Any]) -> dict[str, Any
                 "records": raw_records,
                 "runtime_identity": generated["runtime_identity"],
                 "stdout_tail": generated["stdout_tail"],
+                "live_launch_receipt": generated["launch_receipt"],
             }
         )
         await _register_artifact(
@@ -458,6 +820,27 @@ async def persist_v37_generation_batch(request: dict[str, Any]) -> dict[str, Any
             asdict(artifact),
             "v37_raw_generator_output",
             {"generator_id": generator, "seed": seed},
+        )
+        runtime_receipt_artifact = await _store_json(generated["launch_receipt"])
+        await _register_artifact(
+            session,
+            call.id,
+            asdict(runtime_receipt_artifact),
+            "v37_runtime_receipts",
+            {"generator_id": generator, "seed": seed},
+        )
+        await _persist_v37_committed_runtime_receipt(
+            session,
+            run_id=run_id,
+            tool_call_id=call.id,
+            payload={
+                "runtime_id": f"generator:{generator}",
+                "seed": seed,
+                "artifact_sha256": runtime_receipt_artifact.sha256,
+                "launch_receipt_sha256": generated["launch_receipt"][
+                    "launch_receipt_sha256"
+                ],
+            },
         )
         existing_sequences = set(
             await session.scalars(
@@ -700,6 +1083,11 @@ async def persist_v37_sequence_metric(request: dict[str, Any]) -> dict[str, Any]
     rows.sort(key=lambda item: (item["candidate_id"], item["metric_name"]))
     async with SessionFactory() as session, session.begin():
         repository = ExperimentRepository(session)
+        source_runtime_receipt = {
+            "provenance": provenance,
+            "plugin": plugin,
+            "contract": result["contract"],
+        }
         call = await _persist_v37_node(
             session,
             run_id=run_id,
@@ -715,11 +1103,7 @@ async def persist_v37_sequence_metric(request: dict[str, Any]) -> dict[str, Any]
             output_payload=request["metric_result"],
             artifacts={
                 "evaluation_vector": {"evaluations": rows},
-                "source_runtime_receipt": {
-                    "provenance": provenance,
-                    "plugin": plugin,
-                    "contract": result["contract"],
-                },
+                "source_runtime_receipt": source_runtime_receipt,
             },
             model_uri=provenance["model_uri"],
             weights_sha256=provenance.get("weights_sha256"),
@@ -748,6 +1132,19 @@ async def persist_v37_sequence_metric(request: dict[str, Any]) -> dict[str, Any]
                 await repository.record_tool_dependency(
                     call.id, parent_id, "evaluates_generated_candidate"
                 )
+        if provenance.get("live_launch_receipt") is not None:
+            await _persist_v37_committed_runtime_receipt(
+                session,
+                run_id=run_id,
+                tool_call_id=call.id,
+                payload={
+                    "runtime_id": f"metric:{plugin['name']}",
+                    "artifact_sha256": sha256_json(source_runtime_receipt),
+                    "launch_receipt_sha256": provenance["live_launch_receipt"][
+                        "launch_receipt_sha256"
+                    ],
+                },
+            )
     return {"plugin": plugin["name"], "evaluation_count": len(rows), "tool_call_id": str(call.id)}
 
 
@@ -1018,12 +1415,27 @@ async def run_and_persist_v37_knowledge(request: dict[str, Any]) -> dict[str, An
     )
 
     async def operation() -> dict[str, Any]:
-        await _run_process(command, cwd=Path(runtime["cwd"]))
-        return json.loads(
-            await asyncio.to_thread(output_path.read_text, encoding="utf-8")
+        stdout, launch_receipt = await _run_guarded_generic_runtime(
+            command=command,
+            runtime=runtime,
+            context=context,
+            cwd=Path(runtime["cwd"]),
+            input_paths={
+                "knowledge_runtime_manifest": Path(
+                    runtime["execution_guard"]["paths"]["runtime_manifest_path"]
+                )
+            },
         )
+        return {
+            "context_pack": json.loads(
+                await asyncio.to_thread(output_path.read_text, encoding="utf-8")
+            ),
+            "live_launch_receipt": launch_receipt,
+            "stdout_tail": stdout[-8000:],
+        }
 
-    payload = await execute_v37_durable_attempt(operation, context=context)
+    executed = await execute_v37_durable_attempt(operation, context=context)
+    payload = executed["context_pack"]
     async with SessionFactory() as session, session.begin():
         repository = ExperimentRepository(session)
         call = await repository.record_completed_tool_call(
@@ -1039,7 +1451,31 @@ async def run_and_persist_v37_knowledge(request: dict[str, Any]) -> dict[str, An
         await _register_artifact(
             session, call.id, asdict(artifact), "v37_knowledge_context_pack", {}
         )
-    return {"tool_call_id": str(call.id), "context_pack": payload}
+        runtime_artifact = await _store_json(executed["live_launch_receipt"])
+        await _register_artifact(
+            session,
+            call.id,
+            asdict(runtime_artifact),
+            "v37_runtime_receipts",
+            {"runtime_id": "knowledge-provider"},
+        )
+        await _persist_v37_committed_runtime_receipt(
+            session,
+            run_id=run_id,
+            tool_call_id=call.id,
+            payload={
+                "runtime_id": "knowledge-provider",
+                "artifact_sha256": runtime_artifact.sha256,
+                "launch_receipt_sha256": executed["live_launch_receipt"][
+                    "launch_receipt_sha256"
+                ],
+            },
+        )
+    return {
+        "tool_call_id": str(call.id),
+        "context_pack": payload,
+        "live_launch_receipt": executed["live_launch_receipt"],
+    }
 
 
 @activity.defn(name="persist_v37_knowledge_projection")
@@ -1188,17 +1624,25 @@ async def run_and_persist_v37_pepshot(request: dict[str, Any]) -> dict[str, Any]
             str(contract_path),
         ]
 
-    async def execute_contract() -> str:
-        return await _run_process(contract_command, cwd=Path(runtime["cwd"]))
+    contract_context = V37AttemptContext(
+        run_id=run_id,
+        logical_id="v37:physical:pepshot:contract",
+        activity_name="run_and_persist_v37_pepshot",
+        attempt=attempt,
+    )
 
-    await execute_v37_durable_attempt(
+    async def execute_contract() -> dict[str, Any]:
+        stdout, launch_receipt = await _run_guarded_generic_runtime(
+            command=contract_command,
+            runtime=runtime,
+            context=contract_context,
+            cwd=Path(runtime["cwd"]),
+        )
+        return {"stdout_tail": stdout[-8000:], "launch_receipt": launch_receipt}
+
+    contract_execution = await execute_v37_durable_attempt(
         execute_contract,
-        context=V37AttemptContext(
-            run_id=run_id,
-            logical_id="v37:physical:pepshot:contract",
-            activity_name="run_and_persist_v37_pepshot",
-            attempt=attempt,
-        ),
+        context=contract_context,
     )
     inspect_contract = json.loads(
         await asyncio.to_thread(contract_path.read_text, encoding="utf-8")
@@ -1279,17 +1723,34 @@ async def run_and_persist_v37_pepshot(request: dict[str, Any]) -> dict[str, Any]
                 str(inspection_path),
             )
 
-        async def execute_inspection(command: tuple[str, ...] = inspect_command) -> str:
-            return await _run_process(list(command), cwd=Path(runtime["cwd"]))
+        detail_context = V37AttemptContext(
+            run_id=run_id,
+            logical_id=f"v37:physical:pepshot:{candidate_id}",
+            activity_name="run_and_persist_v37_pepshot",
+            attempt=attempt,
+        )
+
+        async def execute_inspection(
+            command: tuple[str, ...] = inspect_command,
+            context: V37AttemptContext = detail_context,
+            request_path: Path = spec_path,
+            coordinate_input: Path = coordinate_path,
+        ) -> dict[str, Any]:
+            stdout, launch_receipt = await _run_guarded_generic_runtime(
+                command=list(command),
+                runtime=runtime,
+                context=context,
+                cwd=Path(runtime["cwd"]),
+                input_paths={
+                    "inspection_spec": request_path,
+                    "coordinate": coordinate_input,
+                },
+            )
+            return {"stdout_tail": stdout[-8000:], "launch_receipt": launch_receipt}
 
         receipt = await execute_v37_durable_attempt(
             execute_inspection,
-            context=V37AttemptContext(
-                run_id=run_id,
-                logical_id=f"v37:physical:pepshot:{candidate_id}",
-                activity_name="run_and_persist_v37_pepshot",
-                attempt=attempt,
-            ),
+            context=detail_context,
         )
         inspection = json.loads(
             await asyncio.to_thread(inspection_path.read_text, encoding="utf-8")
@@ -1329,21 +1790,6 @@ async def run_and_persist_v37_pepshot(request: dict[str, Any]) -> dict[str, Any]
                 "summary": summary,
             }
         )
-    output = {"inspections": inspections}
-    async def project_pepshot() -> dict[str, Any]:
-        if len(inspections) != len(request["candidates"]):
-            raise ValueError("v37 PepShot projection coverage drifted")
-        return output
-
-    output = await execute_v37_durable_attempt(
-        project_pepshot,
-        context=V37AttemptContext(
-            run_id=run_id,
-            logical_id="v37:pepshot",
-            activity_name="run_and_persist_v37_pepshot",
-            attempt=attempt,
-        ),
-    )
     async with SessionFactory() as session, session.begin():
         repository = ExperimentRepository(session)
         contract_call = await repository.record_completed_tool_call(
@@ -1364,6 +1810,29 @@ async def run_and_persist_v37_pepshot(request: dict[str, Any]) -> dict[str, Any]
             asdict(contract_artifact),
             "pepshot_inspect_contract",
             {"release_id": runtime["release_id"]},
+        )
+        contract_runtime_artifact = await _store_json(
+            contract_execution["launch_receipt"]
+        )
+        await _register_artifact(
+            session,
+            contract_call.id,
+            asdict(contract_runtime_artifact),
+            "v37_runtime_receipts",
+            {"runtime_id": "pepshot", "route": "contract"},
+        )
+        await _persist_v37_committed_runtime_receipt(
+            session,
+            run_id=run_id,
+            tool_call_id=contract_call.id,
+            payload={
+                "runtime_id": "pepshot",
+                "route": "contract",
+                "artifact_sha256": contract_runtime_artifact.sha256,
+                "launch_receipt_sha256": contract_execution["launch_receipt"][
+                    "launch_receipt_sha256"
+                ],
+            },
         )
         detail_calls = []
         for detail in detailed_outputs:
@@ -1388,6 +1857,9 @@ async def run_and_persist_v37_pepshot(request: dict[str, Any]) -> dict[str, Any]
                 random_seed=int(summary["boltz_seed"]),
                 attempt=attempt,
             )
+            summary["detail_tool_call_id"] = str(detail_call.id)
+            summary["detail_input_sha256"] = detail_call.input_sha256
+            summary["detail_output_sha256"] = detail_call.output_sha256
             await repository.record_tool_dependency(
                 detail_call.id, contract_call.id, "uses_verified_inspect_contract"
             )
@@ -1395,10 +1867,13 @@ async def run_and_persist_v37_pepshot(request: dict[str, Any]) -> dict[str, Any]
             inspection_artifact = await _store_json(detail["inspection"])
             receipt_artifact = await _store_json(
                 {
-                    "stdout": detail["stdout_receipt"],
+                    "stdout_tail": detail["stdout_receipt"]["stdout_tail"],
                     "inspection_sha256": summary["inspection_sha256"],
                     "disposition": summary["disposition"],
                 }
+            )
+            runtime_receipt_artifact = await _store_json(
+                detail["stdout_receipt"]["launch_receipt"]
             )
             await _register_artifact(
                 session,
@@ -1421,7 +1896,43 @@ async def run_and_persist_v37_pepshot(request: dict[str, Any]) -> dict[str, Any]
                 "pepshot_inspect_receipt",
                 {"candidate_id": detail["candidate_id"]},
             )
+            await _register_artifact(
+                session,
+                detail_call.id,
+                asdict(runtime_receipt_artifact),
+                "v37_runtime_receipts",
+                {"runtime_id": "pepshot", "candidate_id": detail["candidate_id"]},
+            )
+            await _persist_v37_committed_runtime_receipt(
+                session,
+                run_id=run_id,
+                tool_call_id=detail_call.id,
+                payload={
+                    "runtime_id": "pepshot",
+                    "candidate_id": detail["candidate_id"],
+                    "artifact_sha256": runtime_receipt_artifact.sha256,
+                    "launch_receipt_sha256": detail["stdout_receipt"][
+                        "launch_receipt"
+                    ]["launch_receipt_sha256"],
+                },
+            )
             detail_calls.append(detail_call)
+        output = {"inspections": inspections}
+
+        async def project_pepshot() -> dict[str, Any]:
+            if len(inspections) != len(request["candidates"]):
+                raise ValueError("v37 PepShot projection coverage drifted")
+            return output
+
+        output = await execute_v37_durable_attempt(
+            project_pepshot,
+            context=V37AttemptContext(
+                run_id=run_id,
+                logical_id="v37:pepshot",
+                activity_name="run_and_persist_v37_pepshot",
+                attempt=attempt,
+            ),
+        )
         logical_id = "v37:pepshot"
         stop_payload = await _persist_v37_stop(
             session,
@@ -1543,6 +2054,9 @@ async def persist_v37_structure_stage_summaries(
                 "candidate_id": candidate_id,
                 "pose_id": pose_id,
                 "boltz_seed": seed,
+                "interface_audit_tool_call_id": str(
+                    pose["interface_audit_tool_call_id"]
+                ),
                 "structure_sha256": coordinate["sha256"],
                 "coordinate_audit_sha256": sha256_json(audit),
                 "pair_iptm": float(pose["boltz2"]["pair_iptm"]),
@@ -1561,8 +2075,11 @@ async def persist_v37_structure_stage_summaries(
             decoy_id = str(decoy.get("decoy_id") or f"{pose_id}:decoy:{ordinal}")
             decoy_rows.append(
                 {
+                    "candidate_id": candidate_id,
                     "pose_id": pose_id,
                     "decoy_id": decoy_id,
+                    "boltz_seed": seed,
+                    "rosetta_tool_call_id": str(rosetta_result["tool_call_id"]),
                     "interface_delta_g_reu": float(decoy["dG_separated"]),
                     "input_sha256": decoy["input_sha256"],
                     "output_sha256": decoy["output_sha256"],
@@ -1572,15 +2089,50 @@ async def persist_v37_structure_stage_summaries(
     async with SessionFactory() as session, session.begin():
         repository = ExperimentRepository(session)
         calls = list(await session.scalars(select(ToolCall).where(ToolCall.run_id == run_id)))
-        structure_sources = [
-            item
-            for item in calls
-            if "boltz" in item.tool_name.lower()
-            or "interface" in item.tool_name.lower()
-        ]
-        rosetta_sources = [item for item in calls if "rosetta" in item.tool_name.lower()]
-        if not structure_sources or not rosetta_sources:
-            raise ValueError("v37 structure summaries require persisted Boltz and Rosetta calls")
+        calls_by_id = {str(item.id): item for item in calls}
+        boltz_ids = {str(item["pose_id"]) for item in pose_rows}
+        audit_ids = {str(item["interface_audit_tool_call_id"]) for item in pose_rows}
+        rosetta_ids = {str(item["rosetta_tool_call_id"]) for item in decoy_rows}
+        if not boltz_ids or not audit_ids or not rosetta_ids:
+            raise ValueError("v37 structure lineage has an empty physical source set")
+        if not (boltz_ids | audit_ids | rosetta_ids).issubset(calls_by_id):
+            raise ValueError("v37 structure lineage references a missing physical ToolCall")
+        if any(calls_by_id[item].tool_name != "boltz2" for item in boltz_ids):
+            raise ValueError("v37 structure lineage references a non-Boltz pose ToolCall")
+        if any(
+            calls_by_id[item].tool_name != "coordinate-interface-audit"
+            for item in audit_ids
+        ):
+            raise ValueError("v37 structure lineage references a non-audit ToolCall")
+        if any(
+            calls_by_id[item].tool_name
+            != "pyrosetta-flexpepdock-interface-analyzer"
+            for item in rosetta_ids
+        ):
+            raise ValueError("v37 structure lineage references a non-Rosetta ToolCall")
+        for pose_row in pose_rows:
+            boltz_call = calls_by_id[str(pose_row["pose_id"])]
+            audit_call = calls_by_id[str(pose_row["interface_audit_tool_call_id"])]
+            if (
+                int(boltz_call.random_seed or -1) != int(pose_row["boltz_seed"])
+                or boltz_call.input_json.get("peptide_sequence")
+                != next(
+                    item["candidate"]["sequence"]
+                    for item in flattened_poses
+                    if str(item["tool_call_id"]) == str(pose_row["pose_id"])
+                )
+            ):
+                raise ValueError("v37 Boltz ToolCall candidate or seed lineage drifted")
+            pose_row["boltz_input_sha256"] = boltz_call.input_sha256
+            pose_row["boltz_output_sha256"] = boltz_call.output_sha256
+            pose_row["interface_audit_input_sha256"] = audit_call.input_sha256
+            pose_row["interface_audit_output_sha256"] = audit_call.output_sha256
+        for decoy_row in decoy_rows:
+            rosetta_call = calls_by_id[str(decoy_row["rosetta_tool_call_id"])]
+            decoy_row["rosetta_call_input_sha256"] = rosetta_call.input_sha256
+            decoy_row["rosetta_call_output_sha256"] = rosetta_call.output_sha256
+        structure_sources = [calls_by_id[item] for item in sorted(boltz_ids | audit_ids)]
+        rosetta_sources = [calls_by_id[item] for item in sorted(rosetta_ids)]
         structure_logical = "v37:structure"
         structure_stop = await _persist_v37_stop(
             session,
@@ -1841,6 +2393,7 @@ async def persist_v37_final_portfolio_and_replay(
             )
             required_replay_roles = {
                 "database_object_replay",
+                "committed_graph_snapshot",
                 "agent_decision",
                 "stop_event",
                 "attempt_ledger",
@@ -1865,30 +2418,17 @@ async def persist_v37_final_portfolio_and_replay(
             session, run_id=run_id, logical_id=replay_logical,
             stop_reason="completed_database_object_replay",
         )
-        replay_intent = {
-            "database_only": True,
-            "manifest_sha256": sha256_json(manifest),
-            "validation_contract": "v37.database-object-replay.1",
-        }
-        repository = ExperimentRepository(session)
-        replay_call = await repository.record_completed_tool_call(
+        plan = _v37_plan(manifest)
+        replay_call = await _get_or_create_pending_v37_replay_call(
+            session,
             run_id=run_id,
-            tool_name="v37-replay",
-            tool_version=V37_ACTIVITY_VERSION,
-            environment_sha256=sha256_json({"replay": "database-only-v37"}),
-            input_payload={
-                "v37_logical_id": replay_logical,
-                "payload": {"final_portfolio_tool_call_id": str(final_call.id)},
-            },
-            parameters={
-                "v37_plan_sha256": _v37_plan(manifest)["plan_sha256"],
-                "database_only": True,
-            },
-            output_payload=replay_intent,
-            model_uri="deterministic://v37-database-object-replay",
+            final_call_id=final_call.id,
+            plan_sha256=plan["plan_sha256"],
+            attempt=activity.info().attempt,
         )
-        await persist_v37_dependencies(session, run_id=run_id, plan=_v37_plan(manifest))
+        await persist_v37_dependencies(session, run_id=run_id, plan=plan)
         preclosure_graph = await build_database_evidence_graph(session, run_id)
+
         async def validate_preclosure() -> dict[str, Any]:
             result, _ = await validate_v37_database_object_replay(
                 session=session,
@@ -1908,16 +2448,41 @@ async def persist_v37_final_portfolio_and_replay(
                 attempt=activity.info().attempt,
             ),
         )
+        committed_graph = await build_database_evidence_graph(session, run_id)
+        validation, committed_graph = await validate_v37_database_object_replay(
+            session=session,
+            run_id=run_id,
+            manifest=manifest,
+            graph=committed_graph,
+            allow_incomplete_replay=True,
+        )
+        committed_graph_snapshot = {
+            "schema_version": "v37.committed-graph-snapshot.1",
+            "committed_graph_sha256": committed_graph["graph_sha256"],
+            "graph": committed_graph,
+        }
         replay_payload = {
-            "preclosure_graph_sha256": sha256_json(preclosure_graph),
+            "schema_version": "v37.database-object-replay.2",
+            "database_only": True,
+            "manifest_sha256": sha256_json(manifest),
+            "validation_contract": "v37.database-object-replay.1",
+            "preclosure_graph_sha256": preclosure_graph["graph_sha256"],
+            "committed_graph_sha256": committed_graph["graph_sha256"],
+            "committed_graph_snapshot_sha256": sha256_json(
+                committed_graph_snapshot
+            ),
             "validation": validation,
             "portfolio_sha256": final_call.output_sha256,
         }
+        await _complete_v37_replay_call(
+            session, call=replay_call, output_payload=replay_payload
+        )
         replay_ledgers = await _durable_attempt_artifacts(
             run_id=run_id, logical_id=replay_logical
         )
         for role, payload in {
             "database_object_replay": replay_payload,
+            "committed_graph_snapshot": committed_graph_snapshot,
             "agent_decision": replay_payload,
             "stop_event": replay_stop,
             **replay_ledgers,
@@ -1926,7 +2491,6 @@ async def persist_v37_final_portfolio_and_replay(
             await _register_artifact(
                 session, replay_call.id, asdict(artifact), role, {"v37_logical_id": replay_logical}
             )
-        replay_call.output_sha256 = sha256_json(validation)
         await persist_v37_agent_decision(
             session, run_id=run_id, logical_id=replay_logical,
             tool_call_id=replay_call.id,
@@ -1939,13 +2503,12 @@ async def persist_v37_final_portfolio_and_replay(
         validation, graph = await validate_v37_database_object_replay(
             session=session, run_id=run_id, manifest=manifest, graph=graph
         )
-        replay_payload["committed_graph_sha256"] = sha256_json(graph)
     return {
         "portfolio": portfolio,
         "portfolio_sha256": final_call.output_sha256,
         "replay_sha256": replay_call.output_sha256,
         "exact_database_replay": bool(validation["exact_replay"]),
-        "database_graph_sha256": replay_payload["committed_graph_sha256"],
+        "database_graph_sha256": graph["graph_sha256"],
     }
 
 
@@ -2004,8 +2567,13 @@ async def validate_v37_database_object_replay(
             raw = await asyncio.to_thread(
                 object_store.get_bytes, artifact_row["storage_uri"]
             )
+        except (KeyError, TypeError) as error:
+            raise ValueError("v37 artifact object is missing or unreadable") from error
+        if sha256_bytes(raw) != artifact_row["sha256"]:
+            raise ValueError("v37 artifact object bytes differ from the database SHA")
+        try:
             payload = json.loads(raw)
-        except (KeyError, TypeError, UnicodeDecodeError, json.JSONDecodeError):
+        except (UnicodeDecodeError, json.JSONDecodeError):
             continue
         if isinstance(payload, dict):
             artifact_payloads[str(artifact_row["sha256"])] = payload

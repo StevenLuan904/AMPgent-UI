@@ -26,6 +26,26 @@ class V37LiveRuntimePaths:
     model_root: Path
 
 
+@dataclass(frozen=True)
+class V37GenericRuntimeExpectation:
+    """Frozen identity of a non-generator provider execution contract."""
+
+    runtime_id: str
+    execution_contract_sha256: str
+
+
+@dataclass(frozen=True)
+class V37GenericRuntimePaths:
+    """Physical bytes consumed by one non-generator provider launch."""
+
+    executable_path: Path
+    runtime_manifest_path: Path
+    packages_lock_path: Path
+    source_root: Path
+    model_root: Path
+    adapter_path: Path | None = None
+
+
 def _sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -94,10 +114,10 @@ def _inventory_release(root: Path, *, label: str) -> tuple[list[str], list[str]]
 
 
 def _rehash_release(
-    release: Mapping[str, Any], root: Path, *, label: str
+    release: Mapping[str, Any], root: Path, *, label: str, allow_empty: bool = False
 ) -> tuple[list[dict[str, Any]], list[str]]:
     expected = release["files"]
-    if not isinstance(expected, list) or not expected:
+    if not isinstance(expected, list) or (not expected and not allow_empty):
         raise ValueError(f"v37 {label} release has no declared files")
     declared = [str(item["path"]) for item in expected]
     inventory, ignored_pycache = _inventory_release(root, label=label)
@@ -123,6 +143,89 @@ def _rehash_release(
     if sha256_json(observed) != release["files_sha256"]:
         raise ValueError(f"v37 live {label} release file-list hash drifted")
     return observed, ignored_pycache
+
+
+def _require_sha256(value: object, *, label: str) -> str:
+    text = str(value)
+    if len(text) != 64 or any(character not in "0123456789abcdef" for character in text):
+        raise ValueError(f"v37 generic runtime has invalid {label}")
+    return text
+
+
+def verify_v37_generic_runtime_contract(
+    contract: Mapping[str, Any], *, expectation: V37GenericRuntimeExpectation
+) -> None:
+    required = {
+        "schema_version",
+        "runtime_id",
+        "runtime_manifest_sha256",
+        "executable",
+        "adapter",
+        "packages_lock_sha256",
+        "source_release",
+        "model_release",
+        "command_entities",
+        "execution_contract_sha256",
+    }
+    if set(contract) != required:
+        raise ValueError("v37 generic runtime execution contract keys drifted")
+    if contract["schema_version"] != "v37.generic-runtime-execution.1":
+        raise ValueError("v37 generic runtime execution contract schema drifted")
+    if contract["runtime_id"] != expectation.runtime_id:
+        raise ValueError("v37 generic runtime identity drifted")
+    identity = {
+        key: value for key, value in contract.items() if key != "execution_contract_sha256"
+    }
+    contract_sha256 = _require_sha256(
+        contract["execution_contract_sha256"], label="execution contract SHA-256"
+    )
+    if contract_sha256 != sha256_json(identity):
+        raise ValueError("v37 generic runtime execution contract self-hash drifted")
+    if contract_sha256 != expectation.execution_contract_sha256:
+        raise ValueError("v37 generic runtime execution contract differs from expectation")
+    _require_sha256(contract["runtime_manifest_sha256"], label="runtime manifest SHA-256")
+    _require_sha256(contract["packages_lock_sha256"], label="package lock SHA-256")
+    executable = contract["executable"]
+    if not isinstance(executable, Mapping) or set(executable) != {"path", "sha256"}:
+        raise ValueError("v37 generic runtime executable identity is malformed")
+    _require_sha256(executable["sha256"], label="executable SHA-256")
+    adapter = contract["adapter"]
+    if adapter is not None:
+        if not isinstance(adapter, Mapping) or set(adapter) != {"path", "sha256"}:
+            raise ValueError("v37 generic runtime adapter identity is malformed")
+        _require_sha256(adapter["sha256"], label="adapter SHA-256")
+    entities = contract["command_entities"]
+    if not isinstance(entities, Mapping) or set(entities) != {
+        "executable_index",
+        "adapter_index",
+    }:
+        raise ValueError("v37 generic runtime command entity mapping is malformed")
+    if int(entities["executable_index"]) != 0:
+        raise ValueError("v37 generic runtime executable must be command[0]")
+    adapter_index = entities["adapter_index"]
+    if (adapter is None) != (adapter_index is None):
+        raise ValueError("v37 generic runtime adapter command mapping is inconsistent")
+    if adapter_index is not None and int(adapter_index) < 1:
+        raise ValueError("v37 generic runtime adapter index is invalid")
+    for label in ("source_release", "model_release"):
+        release = contract[label]
+        if not isinstance(release, Mapping) or set(release) != {"files", "files_sha256"}:
+            raise ValueError(f"v37 generic runtime {label} identity is malformed")
+        files = release["files"]
+        if not isinstance(files, list):
+            raise ValueError(f"v37 generic runtime {label} files are malformed")
+        if [str(item.get("path", "")) for item in files] != sorted(
+            str(item.get("path", "")) for item in files
+        ):
+            raise ValueError(f"v37 generic runtime {label} files are not sorted")
+        for item in files:
+            if not isinstance(item, Mapping) or set(item) != {"path", "size_bytes", "sha256"}:
+                raise ValueError(f"v37 generic runtime {label} file identity is malformed")
+            _require_sha256(item["sha256"], label=f"{label} file SHA-256")
+        if _require_sha256(
+            release["files_sha256"], label=f"{label} files SHA-256"
+        ) != sha256_json(files):
+            raise ValueError(f"v37 generic runtime {label} file-list hash drifted")
 
 
 def _path_ends_with_declared(path: Path, declared: object) -> bool:
@@ -284,6 +387,110 @@ def build_v37_live_launch_receipt(
     return receipt
 
 
+def build_v37_generic_launch_receipt(
+    *,
+    contract: Mapping[str, Any],
+    expectation: V37GenericRuntimeExpectation,
+    paths: V37GenericRuntimePaths,
+    command: Sequence[str],
+    stage: str = "pre_snapshot",
+    cwd: Path | None = None,
+    env: Mapping[str, str] | None = None,
+    input_paths: Mapping[str, Path] | None = None,
+) -> dict[str, Any]:
+    """Build a byte-complete launch snapshot for a non-generator provider."""
+    if stage not in {"pre_snapshot", "prelaunch", "post_spawn", "completion"}:
+        raise ValueError("v37 runtime receipt has an unknown stage")
+    verify_v37_generic_runtime_contract(contract, expectation=expectation)
+    command_values = [str(item) for item in command]
+    entities = contract["command_entities"]
+    executable_index = int(entities["executable_index"])
+    if len(command_values) <= executable_index:
+        raise ValueError("v37 generic runtime command lacks its executable")
+    command_executable = _checked_regular_file(
+        Path(command_values[executable_index]), label="command executable"
+    )
+    executable = _checked_regular_file(paths.executable_path, label="declared executable")
+    if not os.path.samefile(command_executable, executable):
+        raise ValueError("v37 generic runtime command executable differs from declaration")
+    if not _path_ends_with_declared(executable, contract["executable"]["path"]):
+        raise ValueError("v37 generic runtime executable path differs from contract")
+    adapter: Path | None = None
+    adapter_index = entities["adapter_index"]
+    if adapter_index is not None:
+        index = int(adapter_index)
+        if len(command_values) <= index or paths.adapter_path is None:
+            raise ValueError("v37 generic runtime command lacks its declared adapter")
+        command_adapter = _checked_regular_file(
+            Path(command_values[index]), label="command adapter"
+        )
+        adapter = _checked_regular_file(paths.adapter_path, label="declared adapter")
+        if not os.path.samefile(command_adapter, adapter):
+            raise ValueError("v37 generic runtime command adapter differs from declaration")
+        if not _path_ends_with_declared(adapter, contract["adapter"]["path"]):
+            raise ValueError("v37 generic runtime adapter path differs from contract")
+    runtime_manifest = _checked_regular_file(
+        paths.runtime_manifest_path, label="runtime manifest"
+    )
+    packages_lock = _checked_regular_file(paths.packages_lock_path, label="package lock")
+    observed_hashes = {
+        "runtime_manifest_sha256": _sha256_file(runtime_manifest),
+        "executable_sha256": _sha256_file(executable),
+        "adapter_sha256": _sha256_file(adapter) if adapter is not None else None,
+        "packages_lock_sha256": _sha256_file(packages_lock),
+    }
+    if observed_hashes["runtime_manifest_sha256"] != contract["runtime_manifest_sha256"]:
+        raise ValueError("v37 live runtime manifest bytes drifted after preflight")
+    if observed_hashes["executable_sha256"] != contract["executable"]["sha256"]:
+        raise ValueError("v37 live executable bytes drifted after preflight")
+    expected_adapter_sha256 = (
+        contract["adapter"]["sha256"] if contract["adapter"] is not None else None
+    )
+    if observed_hashes["adapter_sha256"] != expected_adapter_sha256:
+        raise ValueError("v37 live adapter bytes drifted after preflight")
+    if observed_hashes["packages_lock_sha256"] != contract["packages_lock_sha256"]:
+        raise ValueError("v37 live package lock bytes drifted after preflight")
+    source_files, source_pycache = _rehash_release(
+        contract["source_release"], paths.source_root, label="source", allow_empty=True
+    )
+    model_files, model_pycache = _rehash_release(
+        contract["model_release"], paths.model_root, label="model", allow_empty=True
+    )
+    working_directory = _checked_directory(cwd or Path.cwd(), label="working directory")
+    environment = _normalize_environment(env)
+    inputs = dict(input_paths or _infer_input_paths(command_values))
+    identity: dict[str, Any] = {
+        "schema_version": "v37.generic-live-runtime-byte-identity.1",
+        "runtime_id": expectation.runtime_id,
+        "execution_contract_sha256": expectation.execution_contract_sha256,
+        **observed_hashes,
+        "source_files_sha256": sha256_json(source_files),
+        "model_files_sha256": sha256_json(model_files),
+        "source_inventory": [item["path"] for item in source_files],
+        "model_inventory": [item["path"] for item in model_files],
+        "ignored_pycache": {"source": source_pycache, "model": model_pycache},
+        "command": command_values,
+        "command_sha256": sha256_json(command_values),
+        "cwd": str(working_directory),
+        "cwd_sha256": hashlib.sha256(str(working_directory).encode()).hexdigest(),
+        "environment_sha256": sha256_json(environment),
+        "environment_keys": sorted(environment),
+        "pythonpath": _pythonpath_identity(environment),
+        "inputs": _input_identity(inputs),
+        "contract_verified": True,
+    }
+    identity["input_set_sha256"] = sha256_json(identity["inputs"])
+    receipt: dict[str, Any] = {
+        "schema_version": "v37.generic-live-runtime-snapshot.1",
+        "stage": stage,
+        "byte_identity_sha256": sha256_json(identity),
+        "identity": identity,
+        "preflight_revalidated_at_launch_boundary": True,
+    }
+    receipt["launch_receipt_sha256"] = sha256_json(receipt)
+    return receipt
+
+
 def _require_same_identity(reference: Mapping[str, Any], observed: Mapping[str, Any]) -> None:
     if observed["byte_identity_sha256"] != reference["byte_identity_sha256"]:
         raise ValueError("v37 live runtime bytes or launch context drifted across boundaries")
@@ -295,6 +502,25 @@ async def _terminate_process(process: Any) -> None:
     await process.communicate()
 
 
+async def _communicate_with_progress(
+    process: Any,
+    *,
+    progress_writer: Callable[[], Awaitable[None]] | None,
+    progress_interval_seconds: float,
+) -> tuple[bytes, bytes | None]:
+    if progress_interval_seconds <= 0:
+        raise ValueError("v37 subprocess progress interval must be positive")
+    communicate_task = asyncio.create_task(process.communicate())
+    while True:
+        try:
+            return await asyncio.wait_for(
+                asyncio.shield(communicate_task), timeout=progress_interval_seconds
+            )
+        except TimeoutError:
+            if progress_writer is not None:
+                await progress_writer()
+
+
 async def run_v37_guarded_subprocess(
     command: Sequence[str],
     *,
@@ -302,6 +528,9 @@ async def run_v37_guarded_subprocess(
     expectation: V37GeneratorRuntimeExpectation,
     paths: V37LiveRuntimePaths,
     receipt_writer: Callable[[dict[str, Any]], Awaitable[None]],
+    aggregate_receipt_writer: Callable[[dict[str, Any]], Awaitable[None]] | None = None,
+    progress_writer: Callable[[], Awaitable[None]] | None = None,
+    progress_interval_seconds: float = 30.0,
     cwd: Path | None = None,
     env: Mapping[str, str] | None = None,
     input_paths: Mapping[str, Path] | None = None,
@@ -342,7 +571,11 @@ async def run_v37_guarded_subprocess(
     except BaseException:
         await _terminate_process(process)
         raise
-    stdout, _ = await process.communicate()
+    stdout, _ = await _communicate_with_progress(
+        process,
+        progress_writer=progress_writer,
+        progress_interval_seconds=progress_interval_seconds,
+    )
     completion = await snapshot("completion")
     _require_same_identity(pre_snapshot, completion)
     output = stdout.decode(errors="replace")
@@ -356,6 +589,91 @@ async def run_v37_guarded_subprocess(
         "all_boundaries_match": True,
     }
     receipts["launch_receipt_sha256"] = sha256_json(receipts)
+    if aggregate_receipt_writer is not None:
+        await aggregate_receipt_writer(receipts)
     if process.returncode:
         raise RuntimeError(f"v37 subprocess failed ({process.returncode}): {output[-8000:]}")
+    return output, receipts
+
+
+async def run_v37_guarded_provider_subprocess(
+    command: Sequence[str],
+    *,
+    contract: Mapping[str, Any],
+    expectation: V37GenericRuntimeExpectation,
+    paths: V37GenericRuntimePaths,
+    receipt_writer: Callable[[dict[str, Any]], Awaitable[None]],
+    aggregate_receipt_writer: Callable[[dict[str, Any]], Awaitable[None]] | None = None,
+    progress_writer: Callable[[], Awaitable[None]] | None = None,
+    progress_interval_seconds: float = 30.0,
+    cwd: Path | None = None,
+    env: Mapping[str, str] | None = None,
+    input_paths: Mapping[str, Path] | None = None,
+) -> tuple[str, dict[str, Any]]:
+    """Launch a provider subprocess only after four matching byte snapshots."""
+    environment = _normalize_environment(env)
+    effective_cwd = cwd or Path.cwd()
+    effective_inputs = dict(input_paths or _infer_input_paths(command))
+
+    async def snapshot(stage: str) -> dict[str, Any]:
+        return await asyncio.to_thread(
+            build_v37_generic_launch_receipt,
+            contract=contract,
+            expectation=expectation,
+            paths=paths,
+            command=command,
+            stage=stage,
+            cwd=effective_cwd,
+            env=environment,
+            input_paths=effective_inputs,
+        )
+
+    pre_snapshot = await snapshot("pre_snapshot")
+    await receipt_writer(pre_snapshot)
+    prelaunch = await snapshot("prelaunch")
+    _require_same_identity(pre_snapshot, prelaunch)
+    process = await asyncio.create_subprocess_exec(
+        *command,
+        cwd=str(effective_cwd),
+        env=environment,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+        start_new_session=os.name == "posix",
+    )
+    try:
+        post_spawn = await snapshot("post_spawn")
+        _require_same_identity(pre_snapshot, post_spawn)
+    except BaseException:
+        await _terminate_process(process)
+        raise
+    stdout, stderr = await _communicate_with_progress(
+        process,
+        progress_writer=progress_writer,
+        progress_interval_seconds=progress_interval_seconds,
+    )
+    completion = await snapshot("completion")
+    _require_same_identity(pre_snapshot, completion)
+    output = stdout.decode(errors="replace")
+    error_output = stderr.decode(errors="replace")
+    receipts: dict[str, Any] = {
+        "schema_version": "v37.guarded-runtime-receipts.2",
+        "pre_snapshot": pre_snapshot,
+        "prelaunch": prelaunch,
+        "post_spawn": post_spawn,
+        "completion": completion,
+        "byte_identity_sha256": pre_snapshot["byte_identity_sha256"],
+        "all_boundaries_match": True,
+        "returncode": int(process.returncode or 0),
+        "stdout_sha256": hashlib.sha256(stdout).hexdigest(),
+        "stderr_sha256": hashlib.sha256(stderr).hexdigest(),
+        "stderr_tail": error_output[-8000:],
+    }
+    receipts["launch_receipt_sha256"] = sha256_json(receipts)
+    if aggregate_receipt_writer is not None:
+        await aggregate_receipt_writer(receipts)
+    if process.returncode:
+        raise RuntimeError(
+            f"v37 subprocess failed ({process.returncode}): "
+            f"{(output + error_output)[-8000:]}"
+        )
     return output, receipts

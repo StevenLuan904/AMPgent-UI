@@ -8,8 +8,12 @@ import pytest
 
 from pepagent.provenance.hashing import sha256_json
 from pepagent.v37_runtime_execution import (
+    V37GenericRuntimeExpectation,
+    V37GenericRuntimePaths,
     V37LiveRuntimePaths,
+    build_v37_generic_launch_receipt,
     build_v37_live_launch_receipt,
+    run_v37_guarded_provider_subprocess,
     run_v37_guarded_subprocess,
 )
 from pepagent.v37_runtime_manifests import (
@@ -33,7 +37,11 @@ def _fixture(
     model = tmp_path / "model"
     source.mkdir()
     model.mkdir()
-    adapter.write_bytes(b"print('adapter')\n")
+    adapter.write_bytes(
+        b"import os, time\n"
+        b"time.sleep(float(os.environ.get('V37_TEST_SLEEP', '0')))\n"
+        b"print('adapter')\n"
+    )
     lock.write_bytes(b"example==1\n")
     (source / "source.py").write_bytes(b"VALUE = 1\n")
     (model / "weights.bin").write_bytes(b"weights")
@@ -146,6 +154,33 @@ def test_guarded_launch_persists_receipt_before_process_creation(tmp_path: Path)
     assert receipt["launch_receipt_sha256"] == sha256_json(
         {key: value for key, value in receipt.items() if key != "launch_receipt_sha256"}
     )
+
+
+def test_guarded_launch_emits_progress_while_process_is_running(tmp_path: Path) -> None:
+    manifest, expectation, paths = _fixture(tmp_path)
+    progress: list[str] = []
+
+    async def writer(receipt: dict[str, object]) -> None:
+        assert receipt["stage"] == "pre_snapshot"
+
+    async def progress_writer() -> None:
+        progress.append("heartbeat")
+
+    output, _ = asyncio.run(
+        run_v37_guarded_subprocess(
+            [sys.executable, str(paths.adapter_path)],
+            manifest=manifest,
+            expectation=expectation,
+            paths=paths,
+            receipt_writer=writer,
+            progress_writer=progress_writer,
+            progress_interval_seconds=0.01,
+            cwd=tmp_path,
+            env={"V37_TEST_SLEEP": "0.05"},
+        )
+    )
+    assert output.strip() == "adapter"
+    assert progress
 
 
 def test_guarded_launch_rejects_mutation_while_receipt_is_persisted(
@@ -272,4 +307,123 @@ def test_guarded_launch_rehashes_again_after_spawn_and_completion(tmp_path: Path
                 cwd=tmp_path,
                 env={"PYTHONPATH": str(paths.source_root)},
             )
+        )
+
+
+def _generic_fixture(
+    tmp_path: Path,
+) -> tuple[dict[str, object], V37GenericRuntimeExpectation, V37GenericRuntimePaths]:
+    adapter = tmp_path / "provider.py"
+    lock = tmp_path / "provider.lock"
+    runtime_manifest = tmp_path / "runtime.json"
+    source = tmp_path / "provider-source"
+    model = tmp_path / "provider-model"
+    source.mkdir()
+    model.mkdir()
+    adapter.write_text("print('provider')\n", encoding="utf-8")
+    lock.write_text("provider==1\n", encoding="utf-8")
+    runtime_manifest.write_text('{"release":"one"}\n', encoding="utf-8")
+    (source / "module.py").write_text("VALUE = 1\n", encoding="utf-8")
+    source_files = [
+        {
+            "path": "module.py",
+            "size_bytes": (source / "module.py").stat().st_size,
+            "sha256": _sha(source / "module.py"),
+        }
+    ]
+    contract: dict[str, object] = {
+        "schema_version": "v37.generic-runtime-execution.1",
+        "runtime_id": "knowledge-provider",
+        "runtime_manifest_sha256": _sha(runtime_manifest),
+        "executable": {"path": Path(sys.executable).name, "sha256": _sha(Path(sys.executable))},
+        "adapter": {"path": adapter.name, "sha256": _sha(adapter)},
+        "packages_lock_sha256": _sha(lock),
+        "source_release": {
+            "files": source_files,
+            "files_sha256": sha256_json(source_files),
+        },
+        "model_release": {"files": [], "files_sha256": sha256_json([])},
+        "command_entities": {"executable_index": 0, "adapter_index": 1},
+    }
+    contract["execution_contract_sha256"] = sha256_json(contract)
+    expectation = V37GenericRuntimeExpectation(
+        runtime_id="knowledge-provider",
+        execution_contract_sha256=str(contract["execution_contract_sha256"]),
+    )
+    paths = V37GenericRuntimePaths(
+        executable_path=Path(sys.executable),
+        runtime_manifest_path=runtime_manifest,
+        packages_lock_path=lock,
+        source_root=source,
+        model_root=model,
+        adapter_path=adapter,
+    )
+    return contract, expectation, paths
+
+
+def test_generic_provider_guard_binds_all_four_boundaries(tmp_path: Path) -> None:
+    contract, expectation, paths = _generic_fixture(tmp_path)
+    persisted: list[dict[str, object]] = []
+    aggregates: list[dict[str, object]] = []
+
+    async def writer(receipt: dict[str, object]) -> None:
+        persisted.append(receipt)
+
+    async def aggregate_writer(receipt: dict[str, object]) -> None:
+        aggregates.append(receipt)
+
+    output, receipts = asyncio.run(
+        run_v37_guarded_provider_subprocess(
+            [sys.executable, str(paths.adapter_path)],
+            contract=contract,
+            expectation=expectation,
+            paths=paths,
+            receipt_writer=writer,
+            aggregate_receipt_writer=aggregate_writer,
+            cwd=tmp_path,
+            env={"PYTHONPATH": str(paths.source_root)},
+        )
+    )
+    assert output.strip() == "provider"
+    assert persisted == [receipts["pre_snapshot"]]
+    assert aggregates == [receipts]
+    assert receipts["all_boundaries_match"] is True
+    assert len(
+        {
+            receipts[stage]["byte_identity_sha256"]
+            for stage in ("pre_snapshot", "prelaunch", "post_spawn", "completion")
+        }
+    ) == 1
+
+
+def test_generic_provider_guard_rejects_runtime_manifest_drift(tmp_path: Path) -> None:
+    contract, expectation, paths = _generic_fixture(tmp_path)
+    build_v37_generic_launch_receipt(
+        contract=contract,
+        expectation=expectation,
+        paths=paths,
+        command=[sys.executable, str(paths.adapter_path)],
+        cwd=tmp_path,
+    )
+    paths.runtime_manifest_path.write_text('{"release":"two"}\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="runtime manifest bytes drifted"):
+        build_v37_generic_launch_receipt(
+            contract=contract,
+            expectation=expectation,
+            paths=paths,
+            command=[sys.executable, str(paths.adapter_path)],
+            cwd=tmp_path,
+        )
+
+
+def test_generic_provider_guard_rejects_declared_adapter_drift(tmp_path: Path) -> None:
+    contract, expectation, paths = _generic_fixture(tmp_path)
+    paths.adapter_path.write_text("print('changed')\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="adapter bytes drifted"):
+        build_v37_generic_launch_receipt(
+            contract=contract,
+            expectation=expectation,
+            paths=paths,
+            command=[sys.executable, str(paths.adapter_path)],
+            cwd=tmp_path,
         )

@@ -352,9 +352,26 @@ def test_replay_rejects_a_single_missing_decoy_from_three_by_sixteen() -> None:
 def test_final_idempotent_recovery_still_runs_database_object_replay() -> None:
     source = inspect.getsource(v37_activities.persist_v37_final_portfolio_and_replay)
     assert source.count("_persist_v37_node(") == 1
-    assert "repository.record_completed_tool_call(" in source
+    assert "_get_or_create_pending_v37_replay_call(" in source
+    assert "_complete_v37_replay_call(" in source
     assert "allow_incomplete_replay=True" in source
     assert "validate_v37_database_object_replay(" in source
     assert source.index('replay_logical = "v37:replay"') < source.index(
         "build_database_evidence_graph"
     )
+
+
+def test_formal_provider_and_external_metric_launches_use_the_typed_guard() -> None:
+    module_source = inspect.getsource(v37_activities)
+    metric_source = inspect.getsource(v37_activities.evaluate_v37_sequence_metric)
+    knowledge_source = inspect.getsource(v37_activities.run_and_persist_v37_knowledge)
+    pepshot_source = inspect.getsource(v37_activities.run_and_persist_v37_pepshot)
+    assert "async def _run_process" not in module_source
+    assert "build_external_metric_plan(" in metric_source
+    assert "materialize_external_metric_input" in metric_source
+    assert "consume_external_metric_result(" in metric_source
+    assert "_run_guarded_generic_runtime(" in metric_source
+    assert "_run_guarded_generic_runtime(" in knowledge_source
+    assert pepshot_source.count("_run_guarded_generic_runtime(") == 2
+    assert "v37_runtime_receipts" in knowledge_source
+    assert "v37_runtime_receipts" in pepshot_source
