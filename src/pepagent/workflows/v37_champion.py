@@ -36,6 +36,7 @@ class RapidChampionGenerationV37Workflow:
             backoff_coefficient=2.0,
             maximum_interval=timedelta(minutes=10),
             maximum_attempts=2,
+            non_retryable_error_types=["ValueError", "KeyError", "TypeError"],
         )
         run_id = request["run_id"]
         manifest = request["manifest"]
