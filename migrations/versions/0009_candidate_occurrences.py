@@ -11,6 +11,16 @@ depends_on = None
 
 
 def upgrade() -> None:
+    # Alembic creates version_num as VARCHAR(32) by default, but the next
+    # repository revision identifier is 33 characters long.  Widen the
+    # bookkeeping column before Alembic attempts to record that revision.
+    op.alter_column(
+        "alembic_version",
+        "version_num",
+        existing_type=sa.String(length=32),
+        type_=sa.String(length=128),
+        existing_nullable=False,
+    )
     op.create_table(
         "candidate_occurrences",
         sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False),

@@ -1,8 +1,11 @@
 import uuid
+from io import StringIO
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from alembic import command
+from alembic.config import Config
 
 from pepagent.db.repository import (
     _candidate_occurrence_identity_matches,
@@ -32,6 +35,28 @@ def test_migration_downgrade_is_fail_closed_for_parentless_rows() -> None:
     assert "IF EXISTS" in source
     assert "parent_candidate_id IS NULL" in source
     assert "RAISE EXCEPTION" in source
+
+
+def test_migration_widens_alembic_revision_column_before_long_revision() -> None:
+    root = Path(__file__).resolve().parents[1]
+    output = StringIO()
+    config = Config(str(root / "alembic.ini"), output_buffer=output)
+
+    command.upgrade(
+        config,
+        "0008_research_experience_views:0013_formal_submission_exact_once",
+        sql=True,
+    )
+
+    sql = output.getvalue()
+    widen = "ALTER TABLE alembic_version ALTER COLUMN version_num TYPE VARCHAR(128)"
+    first_long_revision = (
+        "UPDATE alembic_version SET "
+        "version_num='0011_target_qualification_lineage'"
+    )
+    assert widen in sql
+    assert first_long_revision in sql
+    assert sql.index(widen) < sql.index(first_long_revision)
 
 
 def test_occurrence_parent_and_materialization_must_share_run() -> None:
