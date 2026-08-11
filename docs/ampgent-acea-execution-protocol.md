@@ -413,3 +413,23 @@ Closure completion commit `57c69b2288b4ff971faae19cf5955310a7585ce8` passed ruff
 suite (`260 passed`). Its content archive is
 `var/archives/ampgent-v32-evidence-closure-completion-57c69b2.zip`, SHA-256
 `844215069d7e27ba0c0a25e9d07cca43fbe263b220d1cc73b1f8f4b5b01cc217`.
+
+## 16. 长期目标与问题账本（2026-08-11 append-only update）
+
+用户已授权建立并持续维护项目级长期目标。权威路线文件为
+`docs/ampgent-long-horizon-goals.zh-CN.md`。该文件明确记录六个未解决问题：显式正电性设计、
+Pareto 搜索充分性、文献知识卡干预、PepShot 结构审阅干预、多靶点泛化，以及由数据库历史证据
+驱动的 harness evolving。
+
+当前事实边界：v32 只在 191 条冻结合格候选及其固定指标中构建非支配组合，不能称序列空间或预算
+范围已最优；knowledge cards 与 PepShot 虽已有接口/工具，但近期 mutation brief 仍允许或使用
+placeholder，二者均未作为正式干预进入 v32。因此后续必须采用同输入、seed、预算的配对/消融实验，
+不能把“接口存在”包装成有效性证据。
+
+规划顺序为：v33 显式正电性与搜索充分性；v34 knowledge-card × PepShot 2×2 消融；v35 资格审计后
+的多靶点面板；v36+ champion/challenger harness evolution。版本规划不是 formal-run 授权。任何新
+生成、筛选、阈值或执行仍须先预注册并通过第 6 节全部门禁。v22-v32 及 v32 两个派生 run 继续锁定。
+
+所有未来 Agent episode、知识检索、结构 review、Pareto archive 变化、harness 分配与晋级决策必须
+形成 PostgreSQL typed evidence graph，并把外部知识库/PepShot 证据作为 immutable artifact 和
+ToolCall dependency 纳入对应 run。只保存在外部工具数据库、Markdown 或本地目录不算正式接入。

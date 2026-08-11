@@ -9,6 +9,12 @@ Before any AMPgent/AceA research, deployment, monitoring, or formal-run action, 
 source of truth for frozen versions, host restrictions, run limits, evidence semantics, and the
 next authorized action. Exact benchmark/config files remain the scientific protocol contracts.
 
+Before planning a new major version, changing the Agent harness, or claiming that a research
+question is solved, also read and maintain `docs/ampgent-long-horizon-goals.zh-CN.md`. That document
+is the append-only problem ledger for charge design, search sufficiency, knowledge/PepShot
+interventions, multi-target generalization, and champion/challenger harness evolution. A roadmap
+entry never substitutes for a frozen benchmark contract or formal-run authorization.
+
 If memory, a heartbeat prompt, or an old handoff conflicts with the execution protocol, stop and
 reconcile the repository evidence before acting. Never infer worker location merely from a Temporal
 poller identity, and never submit a formal run until the worker host and loaded source revision are
