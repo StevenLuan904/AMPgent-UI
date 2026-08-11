@@ -25,6 +25,8 @@ class V37GeneratorRuntimeExpectation:
     model_revision: str
     model_manifest_sha256: str
     request_contract_sha256: str
+    upstream_source_revision: str | None = None
+    provider_acceptance_sha256: str | None = None
 
 
 def _require_sha256(value: object, label: str) -> str:
@@ -70,8 +72,8 @@ def _verify_file_manifest(value: object, *, label: str) -> list[dict[str, Any]]:
         ):
             raise ValueError(f"v37 runtime manifest {label} path is not relative")
         size_bytes = int(item["size_bytes"])
-        if size_bytes < 1:
-            raise ValueError(f"v37 runtime manifest {label} size must be positive")
+        if size_bytes < 0:
+            raise ValueError(f"v37 runtime manifest {label} size must be non-negative")
         verified.append(
             {
                 "path": path,
@@ -95,21 +97,24 @@ def verify_v37_generator_runtime_manifest(
     """Verify one real runtime snapshot against frozen generator identities."""
     if expectation.generator_id not in V37_GENERATOR_IDS:
         raise ValueError("v37 runtime expectation has unknown generator_id")
+    required_top_level = {
+        "schema_version",
+        "generator_id",
+        "adapter",
+        "runtime",
+        "source_release",
+        "model_release",
+        "request_contract",
+        "request_contract_sha256",
+        "internal_score_filtering_enabled",
+        "unsafe_deserialization_enabled",
+        "runtime_manifest_sha256",
+    }
+    if expectation.upstream_source_revision is not None:
+        required_top_level.update({"upstream_source_release", "provider_acceptance"})
     _require_exact_keys(
         manifest,
-        required={
-            "schema_version",
-            "generator_id",
-            "adapter",
-            "runtime",
-            "source_release",
-            "model_release",
-            "request_contract",
-            "request_contract_sha256",
-            "internal_score_filtering_enabled",
-            "unsafe_deserialization_enabled",
-            "runtime_manifest_sha256",
-        },
+        required=required_top_level,
         label="top-level",
     )
     if manifest["schema_version"] != V37_RUNTIME_MANIFEST_SCHEMA:
@@ -196,6 +201,42 @@ def verify_v37_generator_runtime_manifest(
     }
     if source["manifest_sha256"] != sha256_json(source_identity):
         raise ValueError("v37 runtime manifest source release self-hash drifted")
+
+    if expectation.upstream_source_revision is not None:
+        upstream = manifest["upstream_source_release"]
+        provider_acceptance = manifest["provider_acceptance"]
+        if not isinstance(upstream, Mapping) or not isinstance(
+            provider_acceptance, Mapping
+        ):
+            raise ValueError("v37 provider provenance section is not an object")
+        _require_exact_keys(
+            upstream,
+            required={"uri", "revision"},
+            label="upstream source release",
+        )
+        if upstream["revision"] != expectation.upstream_source_revision:
+            raise ValueError("v37 upstream source revision drifted")
+        _require_exact_keys(
+            provider_acceptance,
+            required={"receipt_path", "receipt_sha256"},
+            label="provider acceptance",
+        )
+        receipt_path = str(provider_acceptance["receipt_path"])
+        parsed_receipt_path = PurePosixPath(receipt_path)
+        if (
+            not receipt_path
+            or "\\" in receipt_path
+            or parsed_receipt_path.is_absolute()
+            or receipt_path != parsed_receipt_path.as_posix()
+            or any(part in {".", ".."} for part in parsed_receipt_path.parts)
+        ):
+            raise ValueError("v37 provider acceptance receipt path is not relative")
+        receipt_sha256 = _require_sha256(
+            provider_acceptance["receipt_sha256"],
+            "provider acceptance receipt SHA-256",
+        )
+        if receipt_sha256 != expectation.provider_acceptance_sha256:
+            raise ValueError("v37 provider acceptance receipt drifted")
 
     _require_exact_keys(
         model,

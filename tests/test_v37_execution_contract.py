@@ -26,6 +26,14 @@ def test_v37_manifest_and_evidence_plan_are_exact() -> None:
     assert plan["expected_candidate_count"] == 900
     assert plan["expected_structure_shortlist"] == 48
     assert len(plan["required_tool_call_ids"]) == 21
+    hydramp = manifest.generators["engines"][0]
+    assert hydramp["source_revision"] == (
+        "36b18003122f0d73323f9644b07e1ed267255c11"
+    )
+    assert hydramp["upstream_source_revision"] == (
+        "6590d2f4c2963f25d30669052a4c4a857e0e7279"
+    )
+    assert hydramp["adapter_version"] == "hydramp-safe-pca-stateless-gumbel-v1"
 
 
 def test_v37_manifest_rejects_single_generator_drift() -> None:

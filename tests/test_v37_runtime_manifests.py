@@ -111,6 +111,29 @@ def test_v37_runtime_manifest_verifies_complete_exact_identity() -> None:
     assert result["model_file_count"] == 1
 
 
+def test_v37_runtime_manifest_accepts_exact_empty_provider_files() -> None:
+    manifest = _manifest("hydramp")
+    source = manifest["source_release"]
+    assert isinstance(source, dict)
+    source["files"] = [{"path": "__init__.py", "size_bytes": 0, "sha256": SHA_D}]
+    source["files_sha256"] = sha256_json(source["files"])
+    source_identity = {
+        key: value for key, value in source.items() if key != "manifest_sha256"
+    }
+    source["manifest_sha256"] = sha256_json(source_identity)
+    _rehash(manifest)
+    expectation = _expectation("hydramp")
+    expectation = V37GeneratorRuntimeExpectation(
+        **{
+            **expectation.__dict__,
+            "source_manifest_sha256": source["manifest_sha256"],
+        }
+    )
+    assert verify_v37_generator_runtime_manifest(
+        manifest, expectation=expectation
+    )["verified"] is True
+
+
 @pytest.mark.parametrize(
     ("mutation", "message"),
     [
@@ -211,4 +234,29 @@ def test_v37_runtime_manifest_rejects_unexpected_fields() -> None:
     with pytest.raises(ValueError, match="top-level keys drifted"):
         verify_v37_generator_runtime_manifest(
             manifest, expectation=_expectation("hydramp")
+        )
+
+
+def test_v37_runtime_manifest_rejects_provider_provenance_drift() -> None:
+    manifest = _manifest("hydramp")
+    manifest["upstream_source_release"] = {
+        "uri": "https://example.invalid/upstream",
+        "revision": "1" * 40,
+    }
+    manifest["provider_acceptance"] = {
+        "receipt_path": "config/provider-acceptance.json",
+        "receipt_sha256": SHA_F,
+    }
+    _rehash(manifest)
+    expectation = _expectation("hydramp")
+    provider_expectation = V37GeneratorRuntimeExpectation(
+        **{
+            **expectation.__dict__,
+            "upstream_source_revision": "2" * 40,
+            "provider_acceptance_sha256": SHA_F,
+        }
+    )
+    with pytest.raises(ValueError, match="upstream source revision"):
+        verify_v37_generator_runtime_manifest(
+            manifest, expectation=provider_expectation
         )

@@ -12,6 +12,9 @@ from pepagent.provenance.hashing import sha256_file
 class V37Engine(BaseModel):
     generator_id: Literal["hydramp", "ampgan_v2", "amp_designer"]
     source_revision: str = Field(pattern=r"^[0-9a-f]{40}$")
+    upstream_source_revision: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{40}$"
+    )
     seeds: list[int] = Field(min_length=3, max_length=3)
 
 
@@ -58,6 +61,13 @@ class V37Manifest(BaseModel):
             "amp_designer",
         ]:
             raise ValueError("v37 generator order drifted")
+        hydramp = engines[0]
+        if hydramp.source_revision == hydramp.upstream_source_revision:
+            raise ValueError("v37 HydrAMP provider and upstream revisions must be distinct")
+        if hydramp.upstream_source_revision != (
+            "6590d2f4c2963f25d30669052a4c4a857e0e7279"
+        ):
+            raise ValueError("v37 HydrAMP upstream provenance drifted")
         seeds = [seed for engine in engines for seed in engine.seeds]
         if len(seeds) != len(set(seeds)) or len(seeds) != 9:
             raise ValueError("v37 requires nine globally unique generator seeds")

@@ -1,8 +1,8 @@
 {
   "adapter": {
-    "adapter_version": "hydramp-generator-v1-raw-unfiltered-nattempts1",
-    "entrypoint": "src/pepagent/model_workers/hydramp_generator_cli.py",
-    "sha256": "d2bde943db3182b6236b8fcb942c1171f1a5d4f13c37f433fabfb395e7727f68"
+    "adapter_version": "hydramp-safe-pca-stateless-gumbel-v1",
+    "entrypoint": "var/releases/v37-generator-runtimes-v1/hydramp/provider/36b18003122f0d73323f9644b07e1ed267255c11/amp/inference/inference.py",
+    "sha256": "658c2ec7323a082969f09879aaedb8b765888646b718c2cbf06e1222f86333c8"
   },
   "generator_id": "hydramp",
   "internal_score_filtering_enabled": false,
@@ -14,15 +14,24 @@
         "size_bytes": 437523333
       },
       {
-        "path": "pca_decomposer.joblib",
-        "sha256": "a3a5dcea04e91421be363c047249b93fa46e99e128aec929e1f6b0f0e488a26d",
-        "size_bytes": 18711
+        "path": "pca_decomposer.safe.manifest.json",
+        "sha256": "50c31657fffddf77540e054452e329b8508eaff79e4e8196b37092dc93bf55cc",
+        "size_bytes": 2495
+      },
+      {
+        "path": "pca_decomposer.safe.npz",
+        "sha256": "5f729138df7bf8e3b3fc0d443cc6c3ad259305de4beeb36f09aaea33bd2bd7a3",
+        "size_bytes": 19154
       }
     ],
-    "files_sha256": "3e5600d362c5c3d0d211ca3b78c2e4923759d9a6a926cb608e0211a615841ff7",
-    "manifest_sha256": "d4ddff24d5882d1f3bcdcb666a8834a0aa9ea8cdb75ad7de8c4a049524a1e3bf",
+    "files_sha256": "26db663903e1f937049dc7c1a1246f325257759e6c2ba5b601913840956a863b",
+    "manifest_sha256": "578545b4990f592c3539040e0c65568d47dc6a4c29006d8e086cac2f6626b4a5",
     "revision": "zenodo-7420278-models-c2bf137ebe546fee",
-    "uri": "workspace-release://var/releases/v37-generator-runtimes-v1/hydramp/model"
+    "uri": "workspace-release://var/releases/v37-generator-runtimes-v1/hydramp/model-safe-5f729138df7b"
+  },
+  "provider_acceptance": {
+    "receipt_path": "config/environments/v37_generator_runtimes/hydramp.acceptance.json",
+    "receipt_sha256": "303e518c769d884c0f773aeb81c03a8d14228a1cedb82a3b9aa60b248812d813"
   },
   "request_contract": {
     "additional_properties": false,
@@ -52,7 +61,7 @@
     "python_executable_sha256": "a35938cd6841c3a7814a63ba5be88c3966c6d173fa3a864e7a9084d72a0068ec",
     "python_version": "3.8.20"
   },
-  "runtime_manifest_sha256": "7c7da481d3599c5f3817edf5fba9c3208abcf0009bc55996c909edff1a4e4185",
+  "runtime_manifest_sha256": "13b454e0c77e0e545f2348b61eccbd9932af9bbdccedb2c4df469fe43d9b0ec5",
   "schema_version": "v37.generator-runtime.1",
   "source_release": {
     "files": [
@@ -193,8 +202,13 @@
       },
       {
         "path": "amp/inference/inference.py",
-        "sha256": "3500b3cec26818b0de30d13ca3817a7cd289bf6675122f1ffa5daf0926cccd01",
-        "size_bytes": 16706
+        "sha256": "658c2ec7323a082969f09879aaedb8b765888646b718c2cbf06e1222f86333c8",
+        "size_bytes": 16756
+      },
+      {
+        "path": "amp/inference/safe_pca.py",
+        "sha256": "8df5f8135e88e6b553a55a2f63f8950b67170d070c0e78b72226ec9b86296633",
+        "size_bytes": 3721
       },
       {
         "path": "amp/inference/scripts/predict_if_amp.py",
@@ -228,8 +242,8 @@
       },
       {
         "path": "amp/layers/gumbel_softmax.py",
-        "sha256": "19fcf66905f1014a66d80f2649f915e86034e5afe5eb19eaebf60f3bb3e77a0b",
-        "size_bytes": 753
+        "sha256": "bcd205302457b310d6dc5ab6fa6750cb1e091171edc7696202a6d56f8fd5d073",
+        "size_bytes": 1101
       },
       {
         "path": "amp/layers/vae_loss.py",
@@ -372,6 +386,11 @@
         "size_bytes": 179
       },
       {
+        "path": "docs/safe-pca-release-v1.md",
+        "sha256": "f36c712613e2592c40fd2c7bfd296fb27d98f39ffd71507bd31027acf520a156",
+        "size_bytes": 2662
+      },
+      {
         "path": "get_data.sh",
         "sha256": "b59ac89e5d00b9ff2963e319599c11342e1e47eb5da13b920fc6667cec0f22b7",
         "size_bytes": 248
@@ -380,6 +399,36 @@
         "path": "models.dvc",
         "sha256": "0913772032833fa6a2981f54065068d4a20ea13b880e51e2cdcf81407c890f38",
         "size_bytes": 98
+      },
+      {
+        "path": "releases/hydramp-safe-pca-v1/acceptance.receipt.json",
+        "sha256": "6bfdbda1c544a3dcda7df6bc1413f88fa72b41ba07838d00d49d2f18b158198d",
+        "size_bytes": 8401
+      },
+      {
+        "path": "releases/hydramp-safe-pca-v1/legacy-parity.blocked.receipt.json",
+        "sha256": "e08247061427d94742872cb3416c253e70e476fe9ea7ca53ee62418901a05691",
+        "size_bytes": 893
+      },
+      {
+        "path": "releases/hydramp-safe-pca-v1/pca_decomposer.safe.manifest.json",
+        "sha256": "50c31657fffddf77540e054452e329b8508eaff79e4e8196b37092dc93bf55cc",
+        "size_bytes": 2495
+      },
+      {
+        "path": "releases/hydramp-safe-pca-v1/pca_decomposer.safe.npz",
+        "sha256": "5f729138df7bf8e3b3fc0d443cc6c3ad259305de4beeb36f09aaea33bd2bd7a3",
+        "size_bytes": 19154
+      },
+      {
+        "path": "releases/hydramp-safe-pca-v1/release.manifest.json",
+        "sha256": "5b66bd0c4364e26cf629af27620789408cdb7765448d63765434fe97ed21d822",
+        "size_bytes": 2409
+      },
+      {
+        "path": "releases/hydramp-safe-pca-v1/release.verifier.receipt.json",
+        "sha256": "3f4282501403d2e6386836eaeae3e8f6985f83de7ee66fd2601eb63111f5103b",
+        "size_bytes": 855
       },
       {
         "path": "results.dvc",
@@ -507,15 +556,44 @@
         "size_bytes": 136883
       },
       {
+        "path": "tests/test_release_manifest.py",
+        "sha256": "cc93b0317ab58a01fb6fde08a61e13fc98b91fe3d831574047b0c95889b18e33",
+        "size_bytes": 628
+      },
+      {
+        "path": "tests/test_safe_pca.py",
+        "sha256": "8dc541c814726b372e997fc4d15c27927f90759fb69c1b69fd935c10a35fa3fa",
+        "size_bytes": 2788
+      },
+      {
+        "path": "tools/build_release_manifest.py",
+        "sha256": "119f4542184eed486db9613911e10383bcf516decc1cc82f27ff67f31f2a32fd",
+        "size_bytes": 7211
+      },
+      {
+        "path": "tools/extract_safe_pca.py",
+        "sha256": "453a5711b048c7a8121b4d5f8aaa60c957a98b960ce1c86e65ca5c34b20aee04",
+        "size_bytes": 5482
+      },
+      {
+        "path": "tools/validate_safe_release.py",
+        "sha256": "e05fd6a43b7ed72237e4b9901a9d1e71a996237ed349705820ae23372d4e75d0",
+        "size_bytes": 8511
+      },
+      {
         "path": "wheels.dvc",
         "sha256": "1c517e0171c352e6f2cf87fac7b920e7ffe39df41cc9f3c90ed70e8fecc52aac",
         "size_bytes": 95
       }
     ],
-    "files_sha256": "25e0e214f6b22f38bfc832458c6b4a3a6f3d5cd5221c6d8c4e74df5b735cad2e",
-    "manifest_sha256": "0c07487b95a504eef7b60f3a08158895e16936d544c5024a81e49157d855f8d9",
+    "files_sha256": "0463747e4c7cb4f8d1eef42851ba7644b1ac068c70b6eac80c0f3b037fd0b262",
+    "manifest_sha256": "548759a23fb721bddbc8d4de3e77bbd5bb87b2f7ba16234ffc49ea886c7b6c70",
+    "revision": "36b18003122f0d73323f9644b07e1ed267255c11",
+    "uri": "workspace-release://var/releases/v37-generator-runtimes-v1/hydramp/provider/36b18003122f0d73323f9644b07e1ed267255c11"
+  },
+  "unsafe_deserialization_enabled": false,
+  "upstream_source_release": {
     "revision": "6590d2f4c2963f25d30669052a4c4a857e0e7279",
     "uri": "https://github.com/szczurek-lab/hydramp"
-  },
-  "unsafe_deserialization_enabled": true
+  }
 }

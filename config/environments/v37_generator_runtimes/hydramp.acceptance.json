@@ -1,0 +1,48 @@
+{
+  "acceptance_receipt_sha256": "303e518c769d884c0f773aeb81c03a8d14228a1cedb82a3b9aa60b248812d813",
+  "ampgent_compatibility_patch_applied": false,
+  "formal_run_executed": false,
+  "generator_id": "hydramp",
+  "historical_blocker": {
+    "preserved_status": "blocked",
+    "receipt_path": "config/environments/v37_generator_runtimes/hydramp.blocker.json",
+    "receipt_sha256": "bb0e4eac829ea324f37668f94c02e1cf0ca530aea3ed75fac76d992dbb45377e"
+  },
+  "independent_process_exact_order_receipts": [
+    {
+      "cross_process_exact_order": true,
+      "rows": 1000,
+      "seed": 20260809,
+      "sequence_order_sha256": "857869e7d29f34258bb4063588d080bb5869e17b8c2b9168a9e79c264cd25754"
+    },
+    {
+      "cross_process_exact_order": true,
+      "rows": 1000,
+      "seed": 20260810,
+      "sequence_order_sha256": "6f9269e8a4449dccd3f3cd5ff43aee51430112b964a5f6a10f51773d4429cb94"
+    },
+    {
+      "cross_process_exact_order": true,
+      "rows": 1000,
+      "seed": 20260811,
+      "sequence_order_sha256": "4021d967d1f85787b276c88a9f8e37328be9496d272e1562d80b083b9582591d"
+    }
+  ],
+  "provider_release": {
+    "adapter_version": "hydramp-safe-pca-stateless-gumbel-v1",
+    "commit": "36b18003122f0d73323f9644b07e1ed267255c11",
+    "provider_acceptance_receipt_sha256": "6bfdbda1c544a3dcda7df6bc1413f88fa72b41ba07838d00d49d2f18b158198d",
+    "release_manifest_sha256": "5b66bd0c4364e26cf629af27620789408cdb7765448d63765434fe97ed21d822",
+    "release_name": "hydramp-safe-pca-v1.0.0",
+    "release_verifier_receipt_sha256": "3f4282501403d2e6386836eaeae3e8f6985f83de7ee66fd2601eb63111f5103b",
+    "safe_pca_sha256": "5f729138df7bf8e3b3fc0d443cc6c3ad259305de4beeb36f09aaea33bd2bd7a3",
+    "tag": "hydramp-safe-v1.0.0"
+  },
+  "schema_version": "v37.generator-runtime-provider-acceptance.1",
+  "status": "accepted",
+  "unsafe_deserialization_enabled": false,
+  "upstream_source": {
+    "revision": "6590d2f4c2963f25d30669052a4c4a857e0e7279",
+    "uri": "https://github.com/szczurek-lab/hydramp"
+  }
+}
