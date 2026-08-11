@@ -698,6 +698,9 @@ typed ledger/offline replay 实现 revision 为
 `e47e0d3cf94d6b9d0b63c5a799694c13aeb819ca`；回填后的 v35 config SHA-256 为
 `c9641143982940a0a05127e8b2e0081837a499b13770fc4c0ac6ecbad63a0c81`，全量验证为 ruff clean、
 pytest `352 passed`。该实现仍不是数据库部署、target audit 或 panel execution 授权。
+revision 回填 checkpoint 为 `d79858dc3aa42399e439abaabc7d2e0fbe42bc70`；内容归档
+`var/archives/ampgent-v35-target-replay-d79858d.zip` 的 SHA-256 为
+`31b549ee748bd07edd083351732c8c4f76f1fbb4c8f8326d20716d05b12ad10b`。
 
 完成锁定提交为 `834ef57`；完成态 shadow config SHA-256 为
 `a8e4e4e3fafcb638c292bbb042eaa88fc4900c163d32e654778417e880893547`。内容归档

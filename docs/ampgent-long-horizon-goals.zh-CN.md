@@ -219,6 +219,8 @@ AceA-anchor-aware deterministic maximin 重算 3–5 靶点面板；会拒绝任
 该离线实现 revision 为 `e47e0d3cf94d6b9d0b63c5a799694c13aeb819ca`，回填后的 config SHA-256 为
 `c9641143982940a0a05127e8b2e0081837a499b13770fc4c0ac6ecbad63a0c81`，全量测试为 `352 passed`。
 它只关闭 Q5 的确定性离线重算缺口；数据库实体、迁移、合成验收和真实靶点授权仍是独立后续问题。
+revision 回填 checkpoint 为 `d79858dc3aa42399e439abaabc7d2e0fbe42bc70`；内容归档 SHA-256 为
+`31b549ee748bd07edd083351732c8c4f76f1fbb4c8f8326d20716d05b12ad10b`。
 
 ### Q6：怎样利用历史尝试进行 harness evolving？
 

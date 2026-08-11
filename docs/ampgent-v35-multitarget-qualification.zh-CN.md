@@ -118,3 +118,6 @@ typed ledger/offline replay 实现 revision 为
 `e47e0d3cf94d6b9d0b63c5a799694c13aeb819ca`；回填 revision 后的 config SHA-256 为
 `c9641143982940a0a05127e8b2e0081837a499b13770fc4c0ac6ecbad63a0c81`。全量验证为 ruff clean、
 pytest `352 passed`。这些足迹只证明离线合同可执行，不代表 PostgreSQL 持久化缺口已关闭。
+revision 回填 checkpoint 为 `d79858dc3aa42399e439abaabc7d2e0fbe42bc70`；内容归档
+`var/archives/ampgent-v35-target-replay-d79858d.zip` 的 SHA-256 为
+`31b549ee748bd07edd083351732c8c4f76f1fbb4c8f8326d20716d05b12ad10b`。
