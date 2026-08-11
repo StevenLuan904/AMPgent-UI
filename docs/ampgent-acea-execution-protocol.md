@@ -870,3 +870,32 @@ fail-closed 对抗测试。用户的结果优先持续推进指令现冻结为 v
 `execution_authorized: true`、`submitted: false`，`implementation_revision` 冻结到执行闭环 revision；容量
 合同仍保持不授权并仅作为只读资源合同。该状态仅允许在重新生成内容寻址 preflight、部署
 migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执行一次 exact-once submit；尚未提交 run。
+
+### 21.1 2026-08-12 v37 execution-gate checkpoint
+
+- v37 remains the only authorized result-first formal run. It is still `submitted: false`; no
+  replacement or duplicate run/workflow may be created.
+- PostgreSQL was backed up before migration. Backup SHA-256 is
+  `5A4691844CB577FF37C9600E84936330F88D209CA9A2DC79A1B418263236EA65`. The shared database is now
+  at migration `0013_formal_submission_exact_once`; canonical hashes for all 15 pre-existing
+  tables were identical before and after migration, all ten new evidence tables were empty, and
+  the locked v32 database/object-store replay remained exact and read-only.
+- Authorization checkpoint commit is `284993f`; its content archive SHA-256 is
+  `98DD69D5755D701176ACC6BD047A62948C1AC4A9BFF5D9D3C5D9F6F5B0EEA37C`. Preflight and migration
+  checkpoint commit is `528c1b9`.
+- The physical synth mapping previously observed for Boltz2 PID `2914797` and Rosetta PID
+  `2914804` must be revalidated immediately before submission. Poller identities alone do not
+  satisfy the gate. Remote jump access most recently timed out before authentication; no remote
+  command was run and no prohibited host or GPU was accessed.
+- A deterministic actual-byte runtime descriptor freezer has been added for v37. It preserves
+  provider metadata, inventories executable/source/model bytes, binds package locks, rejects
+  symlinks/reparse points and encoding corruption, and self-validates through the generic launch
+  guard. It never launches a provider or submits a workflow.
+- Knowledge and PepShot tasks have received provider-owned delivery requests for immutable base
+  descriptors and complete runtime snapshots. AMPgent must not invent these identities or add a
+  compatibility layer. Metrics may freeze AMPgent-owned adapter environments only from exact live
+  bytes plus committed manifests and package locks; AMP-READ still requires its committed runtime
+  manifest.
+- Latest repository validation after the runtime freezer: Ruff clean; pytest `583 passed, 1
+  skipped`. Formal submission remains blocked until every runtime descriptor validates and the
+  allowed worker host/PID/GPU/release mapping is current.
