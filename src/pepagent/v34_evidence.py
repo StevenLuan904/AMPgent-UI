@@ -66,7 +66,15 @@ def build_v34_evidence_plan(
                 knowledge = _tool(
                     prefix,
                     "v34-knowledge-context",
-                    ("context_pack", "retrieval_trace", "policy_snapshot", "passage_manifest"),
+                    (
+                        "context_pack",
+                        "retrieval_trace",
+                        "policy_snapshot",
+                        "policy_selection_receipt",
+                        "policy_roles",
+                        "passage_manifest",
+                        "provider_release_receipt",
+                    ),
                 )
             else:
                 knowledge = _tool(prefix, "v34-knowledge-absent", ("tool_absent_marker",))
@@ -90,6 +98,7 @@ def build_v34_evidence_plan(
                         "coordinate_audit",
                         "image_manifest",
                         "validated_review",
+                        "provider_release_receipt",
                     ),
                 )
             else:

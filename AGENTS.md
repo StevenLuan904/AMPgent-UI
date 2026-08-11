@@ -120,3 +120,17 @@ Apply the following style to AMPgent/AceA research work in this repository:
 - A formal run is incomplete until a database-only replay reconstructs the exact candidate order,
   metric joins, exclusions, portfolio lanes, and decision output. Missing nodes or edges fail
   closed; do not infer or backfill them from local files.
+
+# External tool ownership and escalation
+
+- AMPgent is a strict consumer of provider-owned tools. It may define request/response contracts,
+  validate immutable releases, persist evidence, and reject an unsuitable release. It must not add
+  provider-specific compatibility layers, monkey patches, undeclared dependencies, output repairs,
+  or lowered gates to make a provider appear usable.
+- If PepShot violates its frozen contract or is scientifically/operationally inadequate, send the
+  defect and acceptance criteria to PepShot task `019fb910-f2dd-7be1-a7e6-bfe381512c25`. The fix,
+  tests, runtime, and immutable release must be produced there; AMPgent then performs read-only
+  acceptance. Do not adapt PepShot inside this repository.
+- Apply the same rule to the literature knowledge-card provider task
+  `019fad3e-76b8-7e32-8455-d2e9b31d33e5`. Record each rejection, provider request, replacement
+  release, and acceptance decision in the AMPgent evidence graph when part of an Agent run.

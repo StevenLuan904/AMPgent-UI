@@ -12,7 +12,28 @@ V34_CONTEXT_SCHEMA_SHA256 = (
     "1c358a48ca1c4d27554925c02f47d9c72aa273685288935b9fa9c7c7a0c745da"
 )
 V34_ACTIVE_POLICY_SHA256 = (
-    "25fb7a5a4c8c1d001a2d313acefc065a98a709ee1f784661b3054fc01e146bb1"
+    "4900ac9e54622132e5ea4e59ecfef6095329e77439977a8239c524e9cca73c52"
+)
+V34_KNOWLEDGE_LATEST_SHA256 = (
+    "514c3f7ad49cfd3fc6c4681af065595d67bafdf119cc88f5d4fd903d13dcf9b9"
+)
+V34_KNOWLEDGE_RELEASE_MANIFEST_SHA256 = (
+    "7fd21012bcbcbe519dd964b6c9c826f16532d257cbb721951cb3ab0c4023e518"
+)
+V34_KNOWLEDGE_RUNTIME_MANIFEST_SHA256 = (
+    "15b0ab24d3290ab1fe63b9f3bca0cb3376e871ec45b2ea6a903bcd242a7a0d65"
+)
+V34_KNOWLEDGE_POLICY_SELECTION_SHA256 = (
+    "7353f6c458bb504f35120343fe2196f847e76f409c695877d3205c63cd7bee41"
+)
+V34_KNOWLEDGE_POLICY_ROLES_SHA256 = (
+    "d2f8fb11475e6f4cb7fbd3763c57aeee1f4ba58fe87b503c18059f8b19a1b69c"
+)
+V34_KNOWLEDGE_POLICY_RECORD_SHA256 = (
+    "435ac89e876eeb2693bd3f98325bc57494d74b48e0be4505f0063388f1c5b207"
+)
+V34_KNOWLEDGE_POLICY_SPECIFICATION_SHA256 = (
+    "806152a1f75471f1148085f31e355ba9c6e481d8983e0a87eb5504f9a27b3b0f"
 )
 V34_PEPSHOT_CONTRACT_SHA256 = (
     "28eb1ad5dc8a1124b4ccf7e228d30eb864222c75516fcd933737e1b60e288522"
@@ -23,12 +44,29 @@ V34_PEPSHOT_REQUEST_SCHEMA_SHA256 = (
 V34_PEPSHOT_REVIEW_SCHEMA_SHA256 = (
     "e08a04a0dba156c0cccee59d668d2458b0c2301c1cf150834cfea26fa2d2b14d"
 )
+V34_PEPSHOT_LATEST_SHA256 = (
+    "504470dfa22e1a81f4add9c97ab426e1b34c4c9889b7bb8c39c88ac179cdd317"
+)
+V34_PEPSHOT_RELEASE_MANIFEST_SHA256 = (
+    "b4f4b848f603f431e5db49bd66e018904c35c9eacf97ae83882d92e6710f2c5d"
+)
+V34_PEPSHOT_RUNTIME_MANIFEST_SHA256 = (
+    "332350d31e7feea6ec545b579bf680c0b46a1fb38c5110e652274451a725feba"
+)
 
 
 @dataclass(frozen=True)
 class KnowledgeAdapterContract:
     context_schema_sha256: str = V34_CONTEXT_SCHEMA_SHA256
     active_policy_sha256: str = V34_ACTIVE_POLICY_SHA256
+    latest_sha256: str = V34_KNOWLEDGE_LATEST_SHA256
+    release_revision: str = "amp-kb-acea-shadow-6d0eea37f2c145df"
+    release_manifest_sha256: str = V34_KNOWLEDGE_RELEASE_MANIFEST_SHA256
+    runtime_manifest_sha256: str = V34_KNOWLEDGE_RUNTIME_MANIFEST_SHA256
+    policy_selection_receipt_sha256: str = V34_KNOWLEDGE_POLICY_SELECTION_SHA256
+    policy_roles_sha256: str = V34_KNOWLEDGE_POLICY_ROLES_SHA256
+    policy_record_content_sha256: str = V34_KNOWLEDGE_POLICY_RECORD_SHA256
+    policy_specification_sha256: str = V34_KNOWLEDGE_POLICY_SPECIFICATION_SHA256
     required_pack_fields: tuple[str, ...] = (
         "task",
         "policy_version",
@@ -48,6 +86,16 @@ class PepShotAdapterContract:
     contract_sha256: str = V34_PEPSHOT_CONTRACT_SHA256
     request_schema_sha256: str = V34_PEPSHOT_REQUEST_SCHEMA_SHA256
     review_schema_sha256: str = V34_PEPSHOT_REVIEW_SCHEMA_SHA256
+    latest_sha256: str = V34_PEPSHOT_LATEST_SHA256
+    source_revision: str = (
+        "sha256:34487cf9667a64c3b64c8cb0884a723b6bb6dcdcddb0543021aa3204fc642264"
+    )
+    release_id: str = "pepshot-34487cf9667a64c3-fe1e5382de8cab09"
+    release_manifest_sha256: str = V34_PEPSHOT_RELEASE_MANIFEST_SHA256
+    runtime_manifest_sha256: str = V34_PEPSHOT_RUNTIME_MANIFEST_SHA256
+    fixture_bundle_id: str = (
+        "fe1e5382de8cab09951eebe810be2ba7765e082f63801566debc43518d9097ad"
+    )
     maximum_priority_labeled_views: int = 3
 
 
@@ -318,10 +366,24 @@ def build_knowledge_artifact_payloads(
     context_pack: Mapping[str, Any],
     retrieval_trace: Mapping[str, Any],
     policy_snapshot: Mapping[str, Any],
+    policy_selection_receipt: Mapping[str, Any],
+    policy_roles: Mapping[str, Any],
     passage_manifest: Mapping[str, Any],
     adapter_validation: Mapping[str, Any],
+    provider_release_receipt: Mapping[str, Any],
 ) -> dict[str, dict[str, Any]]:
     """Build the exact v34 knowledge artifact roles after source admission."""
+    if provider_release_receipt.get("provider_contract_verified") is not True:
+        raise ValueError("v34 knowledge provider release was not verified")
+    if policy_selection_receipt.get("exact_identity_match") is not True:
+        raise ValueError("v34 knowledge retrieval policy selection was not exact")
+    retrieval_role = policy_roles.get("context_retrieval", {})
+    if (
+        retrieval_role.get("identity") != context_pack.get("policy_version")
+        or policy_selection_receipt.get("selected_policy_identity")
+        != context_pack.get("policy_version")
+    ):
+        raise ValueError("v34 knowledge artifact roles cite another retrieval policy")
     trace_id = str(context_pack["retrieval_trace_id"])
     if retrieval_trace.get("retrieval_trace_id") != trace_id:
         raise ValueError("v34 knowledge retrieval trace differs from the context pack")
@@ -354,10 +416,13 @@ def build_knowledge_artifact_payloads(
         "context_pack": dict(context_pack),
         "retrieval_trace": dict(retrieval_trace),
         "policy_snapshot": dict(policy_snapshot),
+        "policy_selection_receipt": dict(policy_selection_receipt),
+        "policy_roles": dict(policy_roles),
         "passage_manifest": {
             **dict(passage_manifest),
             "adapter_validation": dict(adapter_validation),
         },
+        "provider_release_receipt": dict(provider_release_receipt),
     }
 
 
@@ -371,11 +436,17 @@ def build_pepshot_artifact_payloads(
     verification_receipt: Mapping[str, Any],
     review_validation_receipt: Mapping[str, Any],
     adapter_validation: Mapping[str, Any],
+    provider_release_receipt: Mapping[str, Any],
 ) -> dict[str, dict[str, Any]]:
     """Build the exact v34 PepShot artifact roles, including validator receipts."""
     bundle_id = str(agent_request["bundle_id"])
     if adapter_validation.get("bundle_id") != bundle_id:
         raise ValueError("v34 PepShot adapter validation belongs to another bundle")
+    if provider_release_receipt.get("provider_contract_verified") is not True:
+        raise ValueError("v34 PepShot provider release was not verified")
+    fixture_bundle_id = str(provider_release_receipt.get("fixture_bundle_id", ""))
+    if len(fixture_bundle_id) != 64:
+        raise ValueError("v34 PepShot provider fixture identity is missing")
     return {
         "agent_request": dict(agent_request),
         "bundle_manifest": dict(bundle_manifest),
@@ -387,4 +458,5 @@ def build_pepshot_artifact_payloads(
             "review_validation": dict(review_validation_receipt),
             "adapter_validation": dict(adapter_validation),
         },
+        "provider_release_receipt": dict(provider_release_receipt),
     }

@@ -251,6 +251,16 @@ PepShot renderer 缺声明的 gemmi，知识库也尚无满足完整 requirement
 provider gate 记录提交为 `6e38bdb`，内容归档 SHA-256 为
 `6e813011781cba3f6d9ea255381f870d8401fdd81226808c20b034fcd76fc8c9`。
 
+用户进一步明确：对 PepShot 的不满意必须直接退回 PepShot 任务
+`019fb910-f2dd-7be1-a7e6-bfe381512c25`，不得由 AMPgent 自行适配。退回内容至少包含可复现输入、违反的
+冻结合同、期望验收标准和证据落库要求；PepShot 必须在自身任务/仓库完成修复并发布新 release，AMPgent
+只做只读验收。该边界同时覆盖接口兼容性、renderer/runtime、输出 schema、证据完整性和科学审阅语义。
+
+两项 provider 已在自身仓库修复并发布不可变 release，官方 verifier 与 AMPgent 只读消费门禁均通过。
+这把 Q3/Q4 从“provider runtime blocked”推进到“ready for database-native isolated shadow”，但仍无工具
+效果结论。下一验收点是：完整 release 与 receipt 进入 PostgreSQL/对象存储证据图，数据库-only replay
+通过后，才允许申请 v34 正式 2×2 消融授权。
+
 版本号是当前规划，不是正式 run 授权。任何生成、阈值、候选选择或执行必须先有独立冻结 config、
 提交/push、服务与 worker 门禁、唯一 run 检查。长期路线允许被新证据修订，但修订必须追加理由，不能
 静默改写历史问题或成功标准。

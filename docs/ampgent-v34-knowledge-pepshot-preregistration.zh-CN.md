@@ -127,6 +127,13 @@ PepShot 写 provider-specific 兼容实现。若 provider 源码、依赖、rend
 合同，修复必须发生在 provider 自己的任务与仓库，并发布新的不可变 revision/runtime manifest；AMPgent
 随后只读验收。禁止在 AMPgent 环境中补装 provider 缺失依赖、monkey patch 输出或降低门禁。
 
+该规则也适用于效果层面的“不满意”，而不只适用于接口报错。若 PepShot 的视图、finding、review
+schema、可复原足迹或科学语义不能支持 v34 的冻结端点，AMPgent 必须把可复现缺陷、失败 fixture 和验收
+标准发送至 PepShot 任务 `019fb910-f2dd-7be1-a7e6-bfe381512c25`，等待其在自身仓库修复、测试并发布新的
+不可变 release。AMPgent 不为旧 release 写适配器来绕过问题。消费侧自身的合同错误仍由 AMPgent 修复；
+例如 provider release 中的固定 fixture bundle 只证明该 release 可运行，不得被误当成以后每个候选
+bundle 的身份。
+
 2026-08-11 只读探针发现：PepShot controller runtime 满足其 Python 依赖，但既有 renderer 缺
 `gemmi==0.7.5`；当前 AMPgent 平台环境缺知识库 requirements 中的 pypdf/jsonschema/paramiko，不能作为
 知识库官方 runtime。问题已分别退回任务 `019fb910-f2dd-7be1-a7e6-bfe381512c25` 与
@@ -137,3 +144,17 @@ fingerprint、真实固定 fixture 与验证 receipt，再由 AMPgent 运行隔�
 revision，须在 provider 交付后与其冻结 source/runtime manifest 一并重新预检。
 provider gate 记录提交为 `6e38bdb`；内容归档 `var/archives/ampgent-v34-provider-gate-6e38bdb.zip`
 的 SHA-256 为 `6e813011781cba3f6d9ea255381f870d8401fdd81226808c20b034fcd76fc8c9`。
+
+2026-08-11 provider-owned 修复已分别发布并通过官方 verifier。知识卡 release revision 为
+`amp-kb-acea-shadow-6d0eea37f2c145df`，release manifest SHA-256 为
+`7fd21012bcbcbe519dd964b6c9c826f16532d257cbb721951cb3ab0c4023e518`；PepShot release ID 为
+`pepshot-34487cf9667a64c3-fe1e5382de8cab09`，release manifest SHA-256 为
+`b4f4b848f603f431e5db49bd66e018904c35c9eacf97ae83882d92e6710f2c5d`。PepShot 官方
+`release-verify` 验证 30 个 artifact 和 9 张解码图片且无错误；知识卡官方 verifier 验证 33 个 passage、
+冻结检索 policy 与 selection receipt。AMPgent 消费侧验收 receipt SHA-256 分别为
+`b7149b780b44dfd3c0ff7fce00879af2e537bf33c81bf5531ebd272a53820c15` 与
+`2985342dee11fdd4d3f112628e57dbec8529276124c3cd4c826db64feba43db7`。
+
+这只解除 provider runtime/发布合同阻塞，证明可进入数据库原生隔离 shadow；不证明知识卡或 PepShot
+提高了短肽质量，也不授权 v34 formal run。shadow 必须把完整 release、verifier 输出和消费侧 receipt
+写入对象存储并由 PostgreSQL ToolCall/artifact/dependency/decision 引用，且仅靠数据库与对象存储重放。

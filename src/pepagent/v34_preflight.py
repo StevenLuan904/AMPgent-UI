@@ -11,6 +11,10 @@ from pepagent.v34_external_adapters import (
     PepShotAdapterContract,
 )
 from pepagent.v34_preregistration import load_v34_preregistration
+from pepagent.v34_provider_releases import (
+    verify_knowledge_provider_release,
+    verify_pepshot_provider_release,
+)
 
 
 def _required_bytes(path: Path) -> bytes:
@@ -73,10 +77,6 @@ def verify_v34_external_contract_files(
             knowledge_root / "schemas" / "design_context.schema.json",
             knowledge_contract.context_schema_sha256,
         ),
-        "knowledge_active_policy": (
-            knowledge_root / "policies" / "agent_context_defaults.json",
-            knowledge_contract.active_policy_sha256,
-        ),
         "pepshot_agent_contract": (
             pepshot_root / "AGENT_TOOL.md",
             pepshot_contract.contract_sha256,
@@ -117,6 +117,7 @@ def verify_v34_external_contract_files(
                 "manifest.json",
                 "requirements.txt",
                 "src/amp_kb/**/*.py",
+                "pipelines/**/*.py",
                 "schemas/**/*.json",
                 "policies/**/*.json",
             ),
@@ -134,6 +135,45 @@ def verify_v34_external_contract_files(
             ),
         ),
     }
+    provider_releases = {
+        "knowledge": verify_knowledge_provider_release(
+            knowledge_root / "exports" / "ampgent-readonly" / "LATEST.json",
+            expected_latest_sha256=knowledge_contract.latest_sha256,
+            expected_revision=knowledge_contract.release_revision,
+            expected_release_manifest_sha256=(
+                knowledge_contract.release_manifest_sha256
+            ),
+            expected_runtime_manifest_sha256=(
+                knowledge_contract.runtime_manifest_sha256
+            ),
+            expected_policy_snapshot_sha256=knowledge_contract.active_policy_sha256,
+            expected_policy_selection_receipt_sha256=(
+                knowledge_contract.policy_selection_receipt_sha256
+            ),
+            expected_policy_roles_sha256=knowledge_contract.policy_roles_sha256,
+            expected_policy_record_content_sha256=(
+                knowledge_contract.policy_record_content_sha256
+            ),
+            expected_policy_specification_sha256=(
+                knowledge_contract.policy_specification_sha256
+            ),
+        ),
+        "pepshot": verify_pepshot_provider_release(
+            pepshot_root
+            / "evidence"
+            / "releases"
+            / "pepshot-runtime-v1"
+            / "LATEST.json",
+            expected_latest_sha256=pepshot_contract.latest_sha256,
+            expected_source_revision=pepshot_contract.source_revision,
+            expected_release_id=pepshot_contract.release_id,
+            expected_release_manifest_sha256=(
+                pepshot_contract.release_manifest_sha256
+            ),
+            expected_runtime_manifest_sha256=pepshot_contract.runtime_manifest_sha256,
+            expected_bundle_id=pepshot_contract.fixture_bundle_id,
+        ),
+    }
     result: dict[str, object] = {
         "schema_version": "1.0",
         "frozen_contract_hashes": observed,
@@ -143,6 +183,7 @@ def verify_v34_external_contract_files(
             for provider, manifest in source_manifests.items()
         },
         "source_manifests": source_manifests,
+        "provider_release_receipts": provider_releases,
         "external_commands_executed": False,
     }
     result["footprint_sha256"] = sha256_json(result)

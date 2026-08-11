@@ -49,9 +49,17 @@ parent_cohort:
 
 knowledge_provider:
   system_id: amp-system-kb
-  manifest_version: 0.3.0
+  manifest_version: 0.4.0-provider-release
   context_pack_schema_sha256: 1c358a48ca1c4d27554925c02f47d9c72aa273685288935b9fa9c7c7a0c745da
-  active_policy_sha256: 25fb7a5a4c8c1d001a2d313acefc065a98a709ee1f784661b3054fc01e146bb1
+  active_policy_sha256: 4900ac9e54622132e5ea4e59ecfef6095329e77439977a8239c524e9cca73c52
+  release_revision: amp-kb-acea-shadow-6d0eea37f2c145df
+  latest_sha256: 514c3f7ad49cfd3fc6c4681af065595d67bafdf119cc88f5d4fd903d13dcf9b9
+  release_manifest_sha256: 7fd21012bcbcbe519dd964b6c9c826f16532d257cbb721951cb3ab0c4023e518
+  runtime_manifest_sha256: 15b0ab24d3290ab1fe63b9f3bca0cb3376e871ec45b2ea6a903bcd242a7a0d65
+  policy_selection_receipt_sha256: 7353f6c458bb504f35120343fe2196f847e76f409c695877d3205c63cd7bee41
+  policy_roles_sha256: d2f8fb11475e6f4cb7fbd3763c57aeee1f4ba58fe87b503c18059f8b19a1b69c
+  policy_record_content_sha256: 435ac89e876eeb2693bd3f98325bc57494d74b48e0be4505f0063388f1c5b207
+  policy_specification_sha256: 806152a1f75471f1148085f31e355ba9c6e481d8983e0a87eb5504f9a27b3b0f
   required_pack_fields:
     - task
     - policy_version
@@ -76,6 +84,12 @@ pepshot_provider:
   contract_sha256: 28eb1ad5dc8a1124b4ccf7e228d30eb864222c75516fcd933737e1b60e288522
   agent_request_schema_sha256: 4860a5404f10500e0844e836eda2f64f43fed702333410276cd7e8dd19ef8957
   review_schema_sha256: e08a04a0dba156c0cccee59d668d2458b0c2301c1cf150834cfea26fa2d2b14d
+  normalized_source_revision: sha256:34487cf9667a64c3b64c8cb0884a723b6bb6dcdcddb0543021aa3204fc642264
+  release_id: pepshot-34487cf9667a64c3-fe1e5382de8cab09
+  latest_sha256: 504470dfa22e1a81f4add9c97ab426e1b34c4c9889b7bb8c39c88ac179cdd317
+  release_manifest_sha256: b4f4b848f603f431e5db49bd66e018904c35c9eacf97ae83882d92e6710f2c5d
+  runtime_manifest_sha256: 332350d31e7feea6ec545b579bf680c0b46a1fb38c5110e652274451a725feba
+  fixed_fixture_bundle_id: fe1e5382de8cab09951eebe810be2ba7765e082f63801566debc43518d9097ad
   required_route: verify_then_read_all_requested_images_then_validate_review
   maximum_priority_labeled_views: 3
   review_statuses: [reviewed, insufficient_evidence]

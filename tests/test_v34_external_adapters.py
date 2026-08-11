@@ -186,14 +186,23 @@ def test_knowledge_adapter_builds_exact_database_artifact_roles() -> None:
         context_pack=pack,
         retrieval_trace=trace,
         policy_snapshot=policy,
+        policy_selection_receipt={
+            "exact_identity_match": True,
+            "selected_policy_identity": "amp-design-context-v2",
+        },
+        policy_roles={"context_retrieval": {"identity": "amp-design-context-v2"}},
         passage_manifest=passages,
         adapter_validation=validation,
+        provider_release_receipt={"provider_contract_verified": True},
     )
     assert set(artifacts) == {
         "context_pack",
         "retrieval_trace",
         "policy_snapshot",
+        "policy_selection_receipt",
+        "policy_roles",
         "passage_manifest",
+        "provider_release_receipt",
     }
     episode = next(item for item in _v34_plan()["episodes"] if item["knowledge_on"])
     contract_roles = next(
@@ -316,6 +325,11 @@ def test_pepshot_adapter_builds_exact_database_artifact_roles() -> None:
         verification_receipt=fixture["verification_receipt"],
         review_validation_receipt=fixture["review_validation_receipt"],
         adapter_validation=validation,
+        provider_release_receipt={
+            "provider_contract_verified": True,
+            # The provider release proves its own fixed fixture, not this candidate bundle.
+            "fixture_bundle_id": "c" * 64,
+        },
     )
     assert set(artifacts) == {
         "agent_request",
@@ -323,6 +337,7 @@ def test_pepshot_adapter_builds_exact_database_artifact_roles() -> None:
         "coordinate_audit",
         "image_manifest",
         "validated_review",
+        "provider_release_receipt",
     }
     assert artifacts["validated_review"]["adapter_validation"] == validation
     episode = next(item for item in _v34_plan()["episodes"] if item["pepshot_on"])
@@ -332,3 +347,28 @@ def test_pepshot_adapter_builds_exact_database_artifact_roles() -> None:
         if item["tool_name"] == "v34-pepshot-review"
     )
     assert set(artifacts) == set(contract_roles)
+
+
+def test_pepshot_artifacts_require_verified_provider_fixture_identity() -> None:
+    fixture = _pepshot_fixture()
+    validation = validate_pepshot_evidence(**fixture)
+    kwargs = {
+        "agent_request": fixture["agent_request"],
+        "bundle_manifest": fixture["bundle_manifest"],
+        "coordinate_audit": fixture["coordinate_audit"],
+        "image_manifest": fixture["image_manifest"],
+        "review": fixture["review"],
+        "verification_receipt": fixture["verification_receipt"],
+        "review_validation_receipt": fixture["review_validation_receipt"],
+        "adapter_validation": validation,
+    }
+    with pytest.raises(ValueError, match="was not verified"):
+        build_pepshot_artifact_payloads(
+            **kwargs,
+            provider_release_receipt={"fixture_bundle_id": "c" * 64},
+        )
+    with pytest.raises(ValueError, match="fixture identity is missing"):
+        build_pepshot_artifact_payloads(
+            **kwargs,
+            provider_release_receipt={"provider_contract_verified": True},
+        )

@@ -571,3 +571,22 @@ shadow；这些环境失败也不是工具效果结论。
 config 暂不指向该提交，须等 provider 发布新 revision 后一并重新冻结。
 provider gate 记录提交为 `6e38bdb`；内容归档 `var/archives/ampgent-v34-provider-gate-6e38bdb.zip`
 的 SHA-256 为 `6e813011781cba3f6d9ea255381f870d8401fdd81226808c20b034fcd76fc8c9`。
+
+用户进一步明确：对 PepShot 的“不满意”也属于 provider-owned change request，不只限于依赖或接口
+报错。若视图、finding、review schema、可复原足迹或科学审阅语义不满足冻结合同，AMPgent 必须把
+可复现缺陷与验收标准发送到 PepShot 任务 `019fb910-f2dd-7be1-a7e6-bfe381512c25`，由该任务在自身
+仓库修复、测试并发布新的不可变 release；AMPgent 不自行适配。知识卡 provider 同理由任务
+`019fad3e-76b8-7e32-8455-d2e9b31d33e5` 负责。进入 Agent 流程的 rejection、变更请求、新 release
+和验收 receipt 必须进入 PostgreSQL evidence graph，原始交付进入内容寻址对象存储。
+
+消费侧自身的合同错误仍由 AMPgent 修复。例如 PepShot release 的固定 fixture bundle 只证明该发布
+环境及合同可运行，不代表正式 episode 中每个候选 bundle 的身份；候选 bundle 必须各自验证，不能与
+release fixture ID 强行相等。
+
+两项 provider-owned 修复现已交付并通过官方 verifier。知识卡 release revision 为
+`amp-kb-acea-shadow-6d0eea37f2c145df`（manifest SHA-256
+`7fd21012bcbcbe519dd964b6c9c826f16532d257cbb721951cb3ab0c4023e518`）；PepShot release ID 为
+`pepshot-34487cf9667a64c3-fe1e5382de8cab09`（manifest SHA-256
+`b4f4b848f603f431e5db49bd66e018904c35c9eacf97ae83882d92e6710f2c5d`）。当前下一步仅是把两项 release
+完整快照进入内容寻址对象存储，并运行数据库原生、无候选生成的隔离 shadow/replay。该验收不是工具
+效果结果，也不授权 v34 formal run。

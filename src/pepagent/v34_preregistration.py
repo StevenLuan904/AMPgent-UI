@@ -112,6 +112,30 @@ class V34Preregistration(BaseModel):
             DEFAULT_KNOWLEDGE_ADAPTER_CONTRACT.required_pack_fields
         ):
             raise ValueError("v34 knowledge context fields drifted")
+        expected_knowledge_release = {
+            "release_revision": DEFAULT_KNOWLEDGE_ADAPTER_CONTRACT.release_revision,
+            "latest_sha256": DEFAULT_KNOWLEDGE_ADAPTER_CONTRACT.latest_sha256,
+            "release_manifest_sha256": (
+                DEFAULT_KNOWLEDGE_ADAPTER_CONTRACT.release_manifest_sha256
+            ),
+            "runtime_manifest_sha256": (
+                DEFAULT_KNOWLEDGE_ADAPTER_CONTRACT.runtime_manifest_sha256
+            ),
+            "policy_selection_receipt_sha256": (
+                DEFAULT_KNOWLEDGE_ADAPTER_CONTRACT.policy_selection_receipt_sha256
+            ),
+            "policy_roles_sha256": (
+                DEFAULT_KNOWLEDGE_ADAPTER_CONTRACT.policy_roles_sha256
+            ),
+            "policy_record_content_sha256": (
+                DEFAULT_KNOWLEDGE_ADAPTER_CONTRACT.policy_record_content_sha256
+            ),
+            "policy_specification_sha256": (
+                DEFAULT_KNOWLEDGE_ADAPTER_CONTRACT.policy_specification_sha256
+            ),
+        }
+        if any(knowledge.get(key) != value for key, value in expected_knowledge_release.items()):
+            raise ValueError("v34 knowledge provider release drifted")
         admission = knowledge.get("admission", {})
         required_knowledge_guards = (
             "D4_excluded",
@@ -136,6 +160,22 @@ class V34Preregistration(BaseModel):
         )
         if observed_pepshot_hashes != expected_pepshot_hashes:
             raise ValueError("v34 PepShot provider contract hash drifted")
+        expected_pepshot_release = {
+            "normalized_source_revision": DEFAULT_PEPSHOT_ADAPTER_CONTRACT.source_revision,
+            "release_id": DEFAULT_PEPSHOT_ADAPTER_CONTRACT.release_id,
+            "latest_sha256": DEFAULT_PEPSHOT_ADAPTER_CONTRACT.latest_sha256,
+            "release_manifest_sha256": (
+                DEFAULT_PEPSHOT_ADAPTER_CONTRACT.release_manifest_sha256
+            ),
+            "runtime_manifest_sha256": (
+                DEFAULT_PEPSHOT_ADAPTER_CONTRACT.runtime_manifest_sha256
+            ),
+            "fixed_fixture_bundle_id": (
+                DEFAULT_PEPSHOT_ADAPTER_CONTRACT.fixture_bundle_id
+            ),
+        }
+        if any(pepshot.get(key) != value for key, value in expected_pepshot_release.items()):
+            raise ValueError("v34 PepShot provider release drifted")
         if pepshot.get("maximum_priority_labeled_views") != (
             DEFAULT_PEPSHOT_ADAPTER_CONTRACT.maximum_priority_labeled_views
         ):
