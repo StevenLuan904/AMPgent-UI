@@ -408,3 +408,8 @@ The full 300-candidate evidence graph, exact 24-member portfolio, all five accep
 submitted Pareto policy, exclusions, lane ranks, and v33-readiness verdict are now reproducible from
 PostgreSQL plus content-addressed object storage alone. Neither locked ancestor was modified. The
 final verdict remains `ready_for_v33_preregistration`, with no authorization to generate or run v33.
+
+Closure completion commit `57c69b2288b4ff971faae19cf5955310a7585ce8` passed ruff and the full
+suite (`260 passed`). Its content archive is
+`var/archives/ampgent-v32-evidence-closure-completion-57c69b2.zip`, SHA-256
+`844215069d7e27ba0c0a25e9d07cca43fbe263b220d1cc73b1f8f4b5b01cc217`.
