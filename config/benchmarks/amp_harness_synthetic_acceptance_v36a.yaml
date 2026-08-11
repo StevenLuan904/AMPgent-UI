@@ -1,0 +1,104 @@
+benchmark_id: amp_harness_synthetic_acceptance_v36a
+version: v36a.0.1-preregistered-synthetic-database-acceptance
+execution_status: preregistered_not_authorized
+implementation_revision: null
+parent_contract_path: amp_harness_evolution_v36.yaml
+parent_contract_sha256: d3524f360ae68a3b3751397c76976d64890dafb316ef24d5050c0f0fb1795c98
+
+migration:
+  path: migrations/versions/0010_harness_evolution_lineage.py
+  sha256: 16d1624e8838bd3b6dfe6f74fa5d1b7d3368882147b9191ac1c575f17510227d
+  from_revision: 0009_candidate_occurrences
+  to_revision: 0010_harness_evolution_lineage
+  deploy_to_shared_PostgreSQL_only_after_authorization: true
+  transactional_upgrade_and_schema_introspection_required: true
+  downgrade_is_not_part_of_acceptance: true
+
+authorization:
+  execution_authorized: false
+  submitted: false
+  run_id: null
+  explicit_user_phrase_required: 授权 v36a 合成数据库闭环验收
+  authorization_cannot_be_inferred_from_roadmap_work: true
+
+data_boundary:
+  synthetic_only: true
+  historical_candidate_or_evaluation_reads_forbidden: true
+  candidate_generation_forbidden: true
+  candidate_count: 0
+  evaluation_count: 0
+  real_harness_activation_forbidden: true
+  formal_challenger_or_promotion_forbidden: true
+  frozen_runs_may_be_mutated: false
+
+scenarios:
+  - scenario_id: synthetic_scope_promotion
+    scope_id: v36a-synthetic-promotion-only
+    terminal_decision: promote_for_declared_scope
+    release_count: 3
+    lineage_edge_count: 2
+    trial_phases: [counterfactual_replay, shadow, prospective_equal_budget]
+    assignment_count: 6
+    outcome_count: 30
+    experiment_run_count: 7
+    outcome_tool_call_count: 6
+    agent_decision_count: 1
+  - scenario_id: synthetic_ancestor_rollback
+    scope_id: v36a-synthetic-rollback-only
+    terminal_decision: rollback_to_registered_ancestor
+    release_count: 3
+    lineage_edge_count: 2
+    trial_phases: [counterfactual_replay, shadow, prospective_equal_budget]
+    assignment_count: 6
+    outcome_count: 30
+    experiment_run_count: 7
+    outcome_tool_call_count: 6
+    agent_decision_count: 1
+
+endpoint_families:
+  - discovery_quality
+  - error_control
+  - stability
+  - efficiency
+  - evidence_quality
+
+aggregate_expected_counts:
+  harness_release_count: 6
+  lineage_edge_count: 4
+  trial_count: 6
+  assignment_count: 12
+  outcome_count: 60
+  experiment_run_count: 14
+  outcome_tool_call_count: 12
+  agent_decision_count: 2
+  candidate_count: 0
+  evaluation_count: 0
+
+database_evidence_contract:
+  PostgreSQL_is_authoritative: true
+  object_store_is_content_addressed: true
+  persist_release_trial_assignment_outcome_and_decision_rows: true
+  persist_every_artifact_and_existing_graph_edge: true
+  database_object_store_only_replay_required: true
+  replay_both_scenarios_independently: true
+  failed_attempts_and_retries_are_persisted: true
+  CSV_JSON_and_Markdown_are_exports_only: true
+  required_artifact_roles:
+    - allowed_evidence_slice
+    - forbidden_holdout_manifest
+    - endpoint_contract
+    - source_and_environment_footprints
+    - history_partition_manifest
+    - assignment_manifest
+    - blinding_manifest
+    - budget_contract
+    - terminal_decision
+    - scenario_replay_bundle
+    - aggregate_acceptance_receipt
+
+acceptance_verdicts:
+  allowed:
+    - synthetic_database_closure_accepted
+    - synthetic_database_closure_rejected
+  success_does_not_authorize_real_harness_evolution: true
+  success_does_not_prove_harness_improvement: true

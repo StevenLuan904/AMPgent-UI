@@ -250,6 +250,13 @@ schema 审计提出的六类 typed 实体已在仓库实现：`HarnessRelease`�
 `20b43305c7cc6586c977262638f3273da776eb3db4898926edb8e88bb2182c66`。这些足迹只证明治理框架已冻结；
 后续实现足迹另行追加。即使 typed schema 已在仓库实现，也不证明任何 harness 已改善。
 
+下一工程门已进一步预注册为 v36a 合成数据库闭环验收，精确合同为
+`config/benchmarks/amp_harness_synthetic_acceptance_v36a.yaml`，授权说明为
+`docs/ampgent-v36a-synthetic-acceptance-authorization.zh-CN.md`。它只允许两个隔离 synthetic scope
+分别覆盖作用域晋级和祖先回滚，走完 replay→shadow→prospective 三阶段与五类端点，共 0 Candidate、
+0 Evaluation。通过也只能回答“typed lineage 在真实 PostgreSQL/对象存储事务中可写、可拒绝、可重放”，
+不能回答 harness 是否改善。当前仍为 `preregistered_not_authorized`，路线图维护不能推定执行授权。
+
 ## 5. 分阶段路线与晋级门
 
 | 阶段 | 核心交付 | 晋级前必须证明 |

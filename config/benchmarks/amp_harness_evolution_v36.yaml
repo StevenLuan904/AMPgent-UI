@@ -229,6 +229,9 @@ provider_ownership:
 
 next_stage:
   name: migration_deployment_and_synthetic_database_replay_acceptance
+  contract_path: amp_harness_synthetic_acceptance_v36a.yaml
+  preregistered: true
+  execution_authorized: false
   independently_authorized_before_execution: true
   candidate_generation_allowed: false
   formal_challenger_allowed: false

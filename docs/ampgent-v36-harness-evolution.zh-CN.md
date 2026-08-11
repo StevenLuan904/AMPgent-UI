@@ -118,3 +118,12 @@ SHA-256 为 `8ce6fe07689851c354ecb01cc620f081d80c9ede03ee6a81e7e6a3964a0f2528`�
 offline DDL 仍会在旧迁移 `0002_tool_call_replay_input` 的 reflection 上停止；这不影响新迁移区间验证，
 但共享 PostgreSQL 部署前仍必须在真实事务环境重新执行完整 migration acceptance。上述足迹只证明
 typed 底座可进入部署验收，不证明任何 harness 已改善，也不授权真实试验。
+
+下一阶段现已收敛为 v36a 未授权精确合同
+`config/benchmarks/amp_harness_synthetic_acceptance_v36a.yaml`，授权说明为
+`docs/ampgent-v36a-synthetic-acceptance-authorization.zh-CN.md`。它固定两个隔离的纯合成场景：作用域
+晋级与祖先回滚；每个场景都经过 counterfactual replay、shadow 和 prospective 三阶段，并覆盖五类
+端点。合计只允许 6 release、6 trial、12 assignment、60 synthetic outcome、0 Candidate、0 Evaluation。
+所有行、artifact、失败与 retry 必须进入 PostgreSQL/对象存储并分别重放。该预注册不执行迁移，也不
+授权任何真实历史 replay、harness 激活、promotion 或短肽生成。父合同当前 SHA-256 为
+`d3524f360ae68a3b3751397c76976d64890dafb316ef24d5050c0f0fb1795c98`。

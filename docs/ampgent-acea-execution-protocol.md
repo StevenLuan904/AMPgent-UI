@@ -729,3 +729,12 @@ PostgreSQL offline DDL 成功生成。全历史 offline DDL 会在旧 migration
 `0002_tool_call_replay_input` 的 reflection 上停止，因此共享 PostgreSQL 部署仍须独立授权，并在真实
 事务环境执行完整 migration、rollback 与合成 database/object-store replay acceptance。当前禁止把
 repository 实现、合成 fixture 或迁移区间 DDL 解释为真实 harness 运行或改进。
+
+v36 的下一独立阶段现已精确预注册为 v36a，合同为
+`config/benchmarks/amp_harness_synthetic_acceptance_v36a.yaml`，授权说明为
+`docs/ampgent-v36a-synthetic-acceptance-authorization.zh-CN.md`。它只允许部署迁移并写入两个相互隔离
+的纯合成 scope，分别验证作用域晋级和祖先回滚的三阶段闭环；合计 0 Candidate、0 Evaluation，禁止
+读取历史候选、激活真实 harness 或影响任何正式决策。通过也只表示数据库闭环可用，不证明 harness
+改善。当前状态为 `preregistered_not_authorized`；只有用户明确回复
+`授权 v36a 合成数据库闭环验收` 才可执行。父 v36 合同当前 SHA-256 为
+`d3524f360ae68a3b3751397c76976d64890dafb316ef24d5050c0f0fb1795c98`。
