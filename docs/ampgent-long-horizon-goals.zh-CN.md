@@ -117,6 +117,10 @@ formal-run 授权前，这仍不表示 v33 已执行或产生结果。
 研究设计、能支持的 claim 和禁止外推，并明确：v32 自生成分布仅诊断 generator coverage 与预算可达性；
 生物学目标是同 scaffold 的 K/R 身份、1/2-residue 剂量和位置效应，不是任何内部 quantile 或统一净电荷
 区间。正式 run 必须把 manifest 字节、claim projection 与 ToolCall 依赖写入证据图。
+该证据 checkpoint 为 commit `563fb7cf22f8d13c315474bba90bbb7d92d7aea6`，benchmark config SHA-256
+`6ca56fa350cd9f4600327d1d1ad39c7d99e52174ec07736844c42eb7e94469ae`，内容归档 SHA-256
+`1d4f45140d84aa282fa11db98e0d4ef22580ed8511e67008257eb36987496aa9`，全量测试 `336 passed`。
+它回答了“目标从哪里来”，但未回答“哪种编辑有效”，因为 v33 仍未获执行授权。
 
 ### Q2：当前 Pareto 搜索是否已经接近可达最优？
 

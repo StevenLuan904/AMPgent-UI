@@ -118,3 +118,10 @@ pair-ipTM、口袋覆盖、碰撞、姿势一致性和 Rosetta REU 不是 AceA �
 `309062137acc291ae58346fa9b80b5025a5438c7def097e67e235182bbb98e6a`。正式 run 必须把该 manifest 原始
 字节、SHA、literature freezer ToolCall、逐 claim projection 和 charge-transform 依赖边全部写入
 PostgreSQL/对象存储；仅在本文列出引用不算 Agent 证据已落库。
+
+文献目标冻结 checkpoint 为 commit `563fb7cf22f8d13c315474bba90bbb7d92d7aea6`；benchmark config
+SHA-256 为 `6ca56fa350cd9f4600327d1d1ad39c7d99e52174ec07736844c42eb7e94469ae`。内容归档
+`var/archives/ampgent-v33-literature-evidence-563fb7c.zip` 的 SHA-256 为
+`1d4f45140d84aa282fa11db98e0d4ef22580ed8511e67008257eb36987496aa9`。该 checkpoint 通过全量 ruff
+和 pytest（336 passed），但仍是 `execution_authorized=false`、`submitted=false`；没有生成新序列，
+没有得到正电性、AMP/MIC、膜作用或风险结果。

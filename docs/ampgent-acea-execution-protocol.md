@@ -487,6 +487,13 @@ manifest 的内容 SHA、来源身份唯一性和 anti-extrapolation 规则。�
 正式执行时必须作为 literature-freezer ToolCall artifact 与 charge-transform dependency 写入 PostgreSQL
 和对象存储，不能从本地文档回填。
 
+文献目标冻结 checkpoint 为 commit `563fb7cf22f8d13c315474bba90bbb7d92d7aea6`；当前 v33 benchmark
+config SHA-256 为 `6ca56fa350cd9f4600327d1d1ad39c7d99e52174ec07736844c42eb7e94469ae`。内容归档
+`var/archives/ampgent-v33-literature-evidence-563fb7c.zip` 的 SHA-256 为
+`1d4f45140d84aa282fa11db98e0d4ef22580ed8511e67008257eb36987496aa9`，验证为 ruff clean、pytest
+`336 passed`。该提交只冻结外部证据驱动的目标与 loader 门禁；`execution_authorized=false`、
+`submitted=false`，没有新序列或计算效果结果。
+
 ## 18. v34 文献知识卡 × PepShot 干预消融草案（2026-08-11 append-only update）
 
 用户要求正式比较知识卡任务 `019fad3e-76b8-7e32-8455-d2e9b31d33e5` 与 PepShot 任务
