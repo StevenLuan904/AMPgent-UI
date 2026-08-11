@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import math
+import statistics
 import uuid
 from collections import Counter
 from collections.abc import Awaitable, Callable, Mapping, Sequence
+from copy import deepcopy
 from dataclasses import asdict, is_dataclass
 from typing import Any
 
@@ -28,6 +30,7 @@ from pepagent.v37_provider_consumers import (
     PEPSHOT_REQUEST_SCHEMA_SHA256,
     PEPSHOT_RUNTIME_MANIFEST_SHA256,
 )
+from pepagent.v37_selection import select_v37_lanes
 
 V37_EVIDENCE_VERSION = "v37.database-object-replay.1"
 ArtifactWriter = Callable[[dict[str, Any]], Awaitable[Any]]
@@ -117,6 +120,31 @@ def _stored_payload(value: Any) -> dict[str, Any]:
     }
 
 
+def _selection_witness_payloads(selection: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
+    """Project selection evidence into independently hashed replay witnesses."""
+    witnesses = selection["witnesses"]
+    return {
+        "pareto_layers": {
+            "lane_results": deepcopy(selection["lane_results"]),
+            "pareto_depths": {
+                lane: deepcopy(value["pareto_depths"])
+                for lane, value in witnesses.items()
+            },
+        },
+        "diversity_witness": {
+            "selected_ids": list(selection["selected_ids"]),
+            "lane_results": deepcopy(selection["lane_results"]),
+            "weighted_total_used": selection["weighted_total_used"],
+        },
+        "shortfall_witness": {
+            "selection_complete": selection["selection_complete"],
+            "shortfalls": {
+                lane: value["shortfall"] for lane, value in witnesses.items()
+            },
+        },
+    }
+
+
 async def persist_v37_tool_result(
     session: AsyncSession,
     *,
@@ -140,16 +168,29 @@ async def persist_v37_tool_result(
     if Counter(artifact_payloads_by_role) != Counter(role_contract[logical_id]):
         raise ValueError("v37 artifact roles differ from replay contract")
     repository = ExperimentRepository(session)
+    plan_item = next(
+        item
+        for section in ("generator_calls", "metric_calls", "global_calls")
+        for item in plan[section]
+        if item["logical_id"] == logical_id
+    )
+    contract_parameters: dict[str, Any] = {}
+    if "plugin_name" in plan_item:
+        contract_parameters = {
+            "v37_plugin_name": plan_item["plugin_name"],
+            "v37_metric_names": list(plan_item["metric_names"]),
+        }
     call_input = {"v37_logical_id": logical_id, "payload": input_payload}
-    call_parameters = {"v37_plan_sha256": plan["plan_sha256"], **parameters}
+    call_parameters = {
+        "v37_plan_sha256": plan["plan_sha256"],
+        **contract_parameters,
+        **parameters,
+    }
+    if any(call_parameters.get(key) != value for key, value in contract_parameters.items()):
+        raise ValueError("v37 caller attempted to override frozen plugin ownership")
     call = await repository.record_completed_tool_call(
         run_id,
-        next(
-            item["tool_name"]
-            for section in ("generator_calls", "metric_calls", "global_calls")
-            for item in plan[section]
-            if item["logical_id"] == logical_id
-        ),
+        plan_item["tool_name"],
         V37_EVIDENCE_VERSION,
         environment_sha256,
         call_input,
@@ -335,10 +376,13 @@ def _artifact_payloads(
     call_logical = {
         str(item["id"]): str(item["input_json"]["v37_logical_id"])
         for item in graph["tool_calls"]
+        if "v37_logical_id" in item.get("input_json", {})
     }
     artifacts = {str(item["id"]): item for item in graph["artifacts"]}
     result: dict[tuple[str, str], dict[str, Any]] = {}
     for link in graph["evidence_artifacts"]:
+        if str(link["tool_call_id"]) not in call_logical:
+            continue
         artifact = artifacts[str(link["artifact_id"])]
         payload = payloads_by_sha256.get(str(artifact["sha256"]))
         if payload is None or sha256_json(payload) != artifact["sha256"]:
@@ -356,14 +400,21 @@ def _logical_graph(graph: Mapping[str, Any]) -> dict[str, Any]:
         for item in graph.get("tool_calls", [])
         if "v37_logical_id" in item.get("input_json", {})
     }
+    logical_call_ids = set(logical_by_call)
     return {
-        "tool_calls": list(graph.get("tool_calls", [])),
+        "tool_calls": [
+            item
+            for item in graph.get("tool_calls", [])
+            if str(item["id"]) in logical_call_ids
+        ],
         "logical_dependencies": [
             {
                 "parent_logical_id": logical_by_call[str(item["parent_tool_call_id"])],
                 "child_logical_id": logical_by_call[str(item["child_tool_call_id"])],
             }
             for item in graph.get("tool_call_dependencies", [])
+            if str(item["parent_tool_call_id"]) in logical_call_ids
+            and str(item["child_tool_call_id"]) in logical_call_ids
         ],
     }
 
@@ -453,10 +504,16 @@ def validate_v37_database_object_replay(
 ) -> dict[str, Any]:
     """Fail closed unless the DB/object graph reconstructs every v37 decision input."""
     validate_v37_replay_graph(_logical_graph(graph), plan)
+    logical_call_rows = [
+        item
+        for item in graph["tool_calls"]
+        if "v37_logical_id" in item.get("input_json", {})
+    ]
     calls = {
-        str(item["input_json"]["v37_logical_id"]): item for item in graph["tool_calls"]
+        str(item["input_json"]["v37_logical_id"]): item
+        for item in logical_call_rows
     }
-    if len(calls) != len(graph["tool_calls"]) or any(
+    if len(calls) != len(logical_call_rows) or any(
         item.get("status") != "succeeded" for item in calls.values()
     ):
         raise ValueError("v37 replay has duplicate or non-succeeded ToolCalls")
@@ -464,6 +521,8 @@ def validate_v37_database_object_replay(
     observed_roles: dict[str, list[str]] = {}
     call_id_to_logical = {str(item["id"]): logical for logical, item in calls.items()}
     for link in graph.get("evidence_artifacts", []):
+        if str(link["tool_call_id"]) not in call_id_to_logical:
+            continue
         observed_roles.setdefault(call_id_to_logical[str(link["tool_call_id"])], []).append(
             str(link["role"])
         )
@@ -511,12 +570,13 @@ def validate_v37_database_object_replay(
             if candidate_id is None or candidate_id in expected_candidate_ids:
                 raise ValueError("v37 retained proposal candidate identity is missing or reused")
             candidate = candidates.get(candidate_id)
+            metadata = candidate.get("metadata", {}) if candidate else {}
             if (
                 candidate is None
                 or candidate["sequence_sha256"] != item["sequence_sha256"]
-                or candidate.get("generator_id") != generator["generator_id"]
-                or int(candidate.get("seed", -1)) != int(generator["seed"])
-                or int(candidate.get("raw_rank", -1)) != int(item["raw_rank"])
+                or metadata.get("generator_id") != generator["generator_id"]
+                or int(metadata.get("generator_seed", -1)) != int(generator["seed"])
+                or int(metadata.get("raw_rank", -1)) != int(item["raw_rank"])
             ):
                 raise ValueError("v37 retained proposal differs from Candidate evidence")
             expected_candidate_ids.add(candidate_id)
@@ -526,9 +586,31 @@ def validate_v37_database_object_replay(
     evaluations_by_call: dict[str, list[dict[str, Any]]] = {}
     for evaluation in graph.get("evaluations", []):
         evaluations_by_call.setdefault(str(evaluation["tool_call_id"]), []).append(evaluation)
+    metric_call_ids = {
+        str(calls[item["logical_id"]]["id"]) for item in plan["metric_calls"]
+    }
+    if set(evaluations_by_call) - metric_call_ids:
+        raise ValueError("v37 Evaluation rows belong to a noncanonical metric ToolCall")
+    metrics_by_candidate: dict[str, dict[str, float]] = {
+        candidate_id: {} for candidate_id in expected_candidate_ids
+    }
+    labels_by_candidate: dict[str, dict[str, str]] = {
+        candidate_id: {} for candidate_id in expected_candidate_ids
+    }
     for metric in plan["metric_calls"]:
         logical_id = metric["logical_id"]
-        call_id = str(calls[logical_id]["id"])
+        call = calls[logical_id]
+        if (
+            call.get("tool_name") != metric["tool_name"]
+            or call.get("parameters_json", {}).get("v37_plan_sha256")
+            != plan["plan_sha256"]
+            or call.get("parameters_json", {}).get("v37_plugin_name")
+            != metric["plugin_name"]
+            or call.get("parameters_json", {}).get("v37_metric_names")
+            != metric["metric_names"]
+        ):
+            raise ValueError("v37 metric ToolCall plugin ownership drifted")
+        call_id = str(call["id"])
         expected = payloads[(logical_id, "evaluation_vector")].get("evaluations")
         if not isinstance(expected, list):
             raise ValueError("v37 object metric evidence is not a list")
@@ -537,11 +619,12 @@ def validate_v37_database_object_replay(
         ]
         if len(expected_keys) != len(set(expected_keys)):
             raise ValueError("v37 object metric evidence contains duplicate joins")
+        all_observed = evaluations_by_call.get(call_id, [])
         observed_by_key = {
             (item["candidate_id"], item["metric_name"]): item
-            for item in evaluations_by_call.get(call_id, [])
+            for item in all_observed
         }
-        if len(observed_by_key) != len(evaluations_by_call.get(call_id, [])):
+        if len(observed_by_key) != len(all_observed):
             raise ValueError("v37 database metric evidence contains duplicate joins")
         observed = [observed_by_key[key] for key in expected_keys if key in observed_by_key]
         compact = [
@@ -562,7 +645,7 @@ def validate_v37_database_object_replay(
             raise ValueError("v37 Evaluation rows differ from object metric evidence")
         expected_metric_names = set(metric["metric_names"])
         observed_pairs = {
-            (item["candidate_id"], item["metric_name"]) for item in observed
+            (item["candidate_id"], item["metric_name"]) for item in all_observed
         }
         expected_pairs = {
             (candidate_id, metric_name)
@@ -597,6 +680,15 @@ def validate_v37_database_object_replay(
             for name, value in labels.items()
         ):
             raise ValueError("v37 metric evidence contains an invalid categorical label")
+        for item in observed:
+            if item["numeric_value"] is not None:
+                metrics_by_candidate[item["candidate_id"]][item["metric_name"]] = float(
+                    item["numeric_value"]
+                )
+            if item["text_value"] is not None:
+                labels_by_candidate[item["candidate_id"]][item["metric_name"]] = str(
+                    item["text_value"]
+                )
 
     shortlist = payloads[("v37:stage1-shortlist", "shortlist_manifest")]
     shortlist_ids = list(shortlist.get("candidate_ids", []))
@@ -606,6 +698,49 @@ def validate_v37_database_object_replay(
         raise ValueError("v37 shortlist identity set is invalid")
     if len(shortlist_ids) > int(plan["expected_structure_shortlist"]):
         raise ValueError("v37 shortlist exceeds its frozen quota")
+    shortlist_policy = manifest["stage_1_sequence_evaluation"]["shortlist"]
+    stage1_candidates = []
+    for candidate_id in expected_candidate_ids:
+        row = candidates[candidate_id]
+        metadata = row["metadata"]
+        stage1_candidates.append(
+            {
+                "id": candidate_id,
+                "sequence": row["sequence"],
+                "sequence_sha256": row["sequence_sha256"],
+                "generator_id": metadata["generator_id"],
+                "seed": int(metadata["generator_seed"]),
+                "source_ordinal": int(metadata["raw_rank"]),
+                "metrics": metrics_by_candidate[candidate_id],
+                "labels": labels_by_candidate[candidate_id],
+            }
+        )
+    stage1_lanes = [
+        {
+            "name": name,
+            "quota": quota,
+            "objective_families": shortlist_policy["lane_objective_families"][name],
+        }
+        for name, quota in shortlist_policy["lane_quotas"].items()
+    ]
+    recomputed_shortlist = select_v37_lanes(
+        stage1_candidates,
+        lanes=stage1_lanes,
+        family_objectives=manifest["stage_1_sequence_evaluation"]["endpoint_families"],
+        maximum_similarity=0.80,
+        maximum_per_generator=6,
+        maximum_per_generator_seed=2,
+    )
+    if (
+        shortlist.get("selection") != recomputed_shortlist
+        or shortlist_ids != recomputed_shortlist["selected_ids"]
+    ):
+        raise ValueError("v37 shortlist Pareto/maximin/risk witnesses do not replay")
+    for role, expected_payload in _selection_witness_payloads(
+        recomputed_shortlist
+    ).items():
+        if payloads[("v37:stage1-shortlist", role)] != expected_payload:
+            raise ValueError("v37 shortlist selection witness does not replay")
 
     pose_manifest = payloads[("v37:structure", "pose_manifest")]
     poses = pose_manifest.get("poses")
@@ -613,6 +748,9 @@ def validate_v37_database_object_replay(
         raise ValueError("v37 pose manifest schema drifted")
     pose_ids: set[str] = set()
     pose_counts: Counter[str] = Counter()
+    poses_by_candidate: dict[str, list[dict[str, Any]]] = {
+        candidate_id: [] for candidate_id in shortlist_ids
+    }
     for pose in poses:
         candidate_id = str(pose["candidate_id"])
         pose_id = str(pose["pose_id"])
@@ -623,8 +761,22 @@ def validate_v37_database_object_replay(
             for field in ("structure_sha256", "coordinate_audit_sha256")
         ) or not isinstance(pose.get("boltz_seed"), int):
             raise ValueError("v37 structure pose lacks exact coordinate evidence")
+        structure_values = (
+            pose.get("pair_iptm"),
+            pose.get("pocket_coverage_fraction"),
+            pose.get("geometric_clash_count"),
+            pose.get("peptide_backbone_displacement"),
+        )
+        if any(
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not math.isfinite(float(value))
+            for value in structure_values
+        ):
+            raise ValueError("v37 structure pose metrics are missing or non-finite")
         pose_ids.add(pose_id)
         pose_counts[candidate_id] += 1
+        poses_by_candidate[candidate_id].append(pose)
     expected_poses = int(manifest["stage_2_structure_confirmation"]["poses_per_candidate"])
     if any(pose_counts[item] != expected_poses for item in shortlist_ids):
         raise ValueError("v37 structure pose coverage differs from frozen protocol")
@@ -634,6 +786,7 @@ def validate_v37_database_object_replay(
         raise ValueError("v37 Rosetta decoy manifest schema drifted")
     decoy_counts: Counter[str] = Counter()
     decoy_ids: set[str] = set()
+    scores_by_pose: dict[str, list[float]] = {pose_id: [] for pose_id in pose_ids}
     for decoy in decoys:
         pose_id = str(decoy["pose_id"])
         decoy_id = str(decoy["decoy_id"])
@@ -649,6 +802,7 @@ def validate_v37_database_object_replay(
             raise ValueError("v37 Rosetta decoy identity or score is invalid")
         decoy_ids.add(decoy_id)
         decoy_counts[pose_id] += 1
+        scores_by_pose[pose_id].append(score)
     expected_decoys = int(
         manifest["stage_2_structure_confirmation"]["rosetta_decoys_per_pose"]
     )
@@ -690,6 +844,7 @@ def validate_v37_database_object_replay(
         "FAIL": ("reject", "provider_inspect_interface_fail"),
     }
     for inspection in inspections:
+        candidate_id = str(inspection.get("candidate_id"))
         pose_id = str(inspection.get("representative_pose_id"))
         if not required_pepshot.issubset(inspection) or pose_id not in pose_ids:
             raise ValueError("v37 PepShot inspection evidence is incomplete")
@@ -701,11 +856,35 @@ def validate_v37_database_object_replay(
             raise ValueError("v37 PepShot inspection hash chain is invalid")
         pose = pose_by_id[pose_id]
         verdict = inspection["interface_verdict"]
+        candidate_poses = poses_by_candidate.get(candidate_id, [])
+        pair_iptm_median = statistics.median(
+            float(item["pair_iptm"]) for item in candidate_poses
+        )
+        representative_distances = {
+            str(item["pose_id"]): abs(float(item["pair_iptm"]) - pair_iptm_median)
+            for item in candidate_poses
+        }
+        minimum_distance = min(representative_distances.values())
+        expected_representative = min(
+            (
+                item
+                for item in candidate_poses
+                if math.isclose(
+                    representative_distances[str(item["pose_id"])],
+                    minimum_distance,
+                    rel_tol=1e-6,
+                    abs_tol=1e-8,
+                )
+            ),
+            key=lambda item: int(item["boltz_seed"]),
+        )
         if (
             verdict not in expected_projection
             or (inspection["disposition"], inspection["reason"])
             != expected_projection[verdict]
             or inspection["boltz_seed"] != pose["boltz_seed"]
+            or candidate_id != str(pose["candidate_id"])
+            or pose_id != str(expected_representative["pose_id"])
             or inspection["source_sha256"] != pose["structure_sha256"]
             or inspection["contract_id"] != PEPSHOT_INSPECT_CONTRACT_ID
             or inspection["request_schema_sha256"] != PEPSHOT_REQUEST_SCHEMA_SHA256
@@ -775,8 +954,93 @@ def validate_v37_database_object_replay(
     quota = int(manifest["final_portfolio"]["total_quota"])
     if len(final_ids) != len(set(final_ids)) or len(final_ids) > quota:
         raise ValueError("v37 final portfolio identity or quota is invalid")
-    if not set(final_ids).issubset(set(shortlist_ids)):
-        raise ValueError("v37 final portfolio includes a non-shortlisted candidate")
+    eligible_ids = {
+        str(item["candidate_id"])
+        for item in inspections
+        if item["interface_verdict"] == "PASS" and item["disposition"] == "retain"
+    }
+    if not set(final_ids).issubset(eligible_ids):
+        raise ValueError("v37 final portfolio includes a structurally ineligible candidate")
+
+    final_candidates = []
+    for candidate_id in sorted(eligible_ids):
+        row = candidates[candidate_id]
+        metadata = row["metadata"]
+        candidate_poses = poses_by_candidate[candidate_id]
+        representative_scores = [
+            statistics.median(scores_by_pose[str(pose["pose_id"])])
+            for pose in candidate_poses
+        ]
+        displacements = [
+            float(pose["peptide_backbone_displacement"])
+            for pose in candidate_poses
+        ]
+        final_candidates.append(
+            {
+                "id": candidate_id,
+                "sequence": row["sequence"],
+                "sequence_sha256": row["sequence_sha256"],
+                "generator_id": metadata["generator_id"],
+                "seed": int(metadata["generator_seed"]),
+                "source_ordinal": int(metadata["raw_rank"]),
+                "metrics": {
+                    **metrics_by_candidate[candidate_id],
+                    "median_pair_iptm": statistics.median(
+                        float(pose["pair_iptm"]) for pose in candidate_poses
+                    ),
+                    "median_pocket_coverage": statistics.median(
+                        float(pose["pocket_coverage_fraction"])
+                        for pose in candidate_poses
+                    ),
+                    "maximum_geometric_clash_count": max(
+                        float(pose["geometric_clash_count"])
+                        for pose in candidate_poses
+                    ),
+                    "peptide_backbone_displacement_range": max(displacements)
+                    - min(displacements),
+                    "median_representative_rosetta_interface_delta_g": statistics.median(
+                        representative_scores
+                    ),
+                },
+                "labels": labels_by_candidate[candidate_id],
+            }
+        )
+    final_lanes = [
+        {
+            "name": lane["name"],
+            "quota": lane["quota"],
+            "objective_families": lane["Pareto_objective_families"],
+            "required_soft_labels": lane.get("required_soft_labels", {}),
+        }
+        for lane in manifest["final_portfolio"]["lanes"]
+    ]
+    final_families = dict(
+        manifest["stage_1_sequence_evaluation"]["endpoint_families"]
+    )
+    final_families["structure"] = manifest["stage_2_structure_confirmation"][
+        "Pareto_objectives"
+    ]
+    recomputed_final = select_v37_lanes(
+        final_candidates,
+        lanes=final_lanes,
+        family_objectives=final_families,
+        maximum_similarity=0.80,
+        maximum_per_generator=2,
+        maximum_per_generator_seed=1,
+    )
+    recomputed_summaries = {
+        item["id"]: {"metrics": item["metrics"], "labels": item["labels"]}
+        for item in final_candidates
+    }
+    if (
+        final_portfolio.get("selection") != recomputed_final
+        or final_ids != recomputed_final["selected_ids"]
+        or final_portfolio.get("candidate_summaries") != recomputed_summaries
+    ):
+        raise ValueError("v37 final Pareto/maximin/risk witnesses do not replay")
+    for role, expected_payload in _selection_witness_payloads(recomputed_final).items():
+        if payloads[("v37:final-portfolio", role)] != expected_payload:
+            raise ValueError("v37 final selection witness does not replay")
 
     result = {
         "schema_version": "1.0",

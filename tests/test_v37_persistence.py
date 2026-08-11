@@ -1,3 +1,4 @@
+import statistics
 from pathlib import Path
 
 import pytest
@@ -5,6 +6,7 @@ import pytest
 from pepagent.provenance.hashing import sha256_json, sha256_text
 from pepagent.v37_evidence import build_v37_evidence_plan
 from pepagent.v37_persistence import (
+    _selection_witness_payloads,
     build_v37_artifact_contract,
     validate_v37_database_object_replay,
 )
@@ -17,6 +19,7 @@ from pepagent.v37_provider_consumers import (
     PEPSHOT_REQUEST_SCHEMA_SHA256,
     PEPSHOT_RUNTIME_MANIFEST_SHA256,
 )
+from pepagent.v37_selection import select_v37_lanes
 
 ROOT = Path(__file__).parents[1]
 CONFIG = ROOT / "config" / "benchmarks" / "amp_rapid_champion_generation_v37.yaml"
@@ -31,6 +34,8 @@ def _fixture() -> tuple[dict, dict, dict, dict[str, dict]]:
     manifest["stage_2_structure_confirmation"]["poses_per_candidate"] = 2
     manifest["stage_2_structure_confirmation"]["rosetta_decoys_per_pose"] = 2
     manifest["final_portfolio"]["total_quota"] = 1
+    for index, lane in enumerate(manifest["final_portfolio"]["lanes"]):
+        lane["quota"] = 1 if index == 0 else 0
 
     calls = []
     call_ids = {}
@@ -54,7 +59,19 @@ def _fixture() -> tuple[dict, dict, dict, dict[str, dict]]:
             {
                 "id": call_id,
                 "status": "succeeded",
+                "tool_name": item["tool_name"],
                 "input_json": {"v37_logical_id": logical_id},
+                "parameters_json": {
+                    "v37_plan_sha256": plan["plan_sha256"],
+                    **(
+                        {
+                            "v37_plugin_name": item["plugin_name"],
+                            "v37_metric_names": item["metric_names"],
+                        }
+                        if "plugin_name" in item
+                        else {}
+                    ),
+                },
             }
         )
 
@@ -66,10 +83,13 @@ def _fixture() -> tuple[dict, dict, dict, dict[str, dict]]:
         candidates.append(
             {
                 "id": candidate_id,
+                "sequence": sequence,
                 "sequence_sha256": sequence_sha,
-                "generator_id": generator["generator_id"],
-                "seed": generator["seed"],
-                "raw_rank": 1,
+                "metadata": {
+                    "generator_id": generator["generator_id"],
+                    "generator_seed": generator["seed"],
+                    "raw_rank": 1,
+                },
             }
         )
         occurrences = [
@@ -129,10 +149,54 @@ def _fixture() -> tuple[dict, dict, dict, dict[str, dict]]:
                 evaluations.append({"tool_call_id": call_ids[logical_id], **row})
         payloads[(logical_id, "evaluation_vector")] = {"evaluations": rows}
 
-    shortlist_ids = [candidate["id"] for candidate in candidates[:2]]
+    metric_rows_by_candidate = {candidate["id"]: {} for candidate in candidates}
+    label_rows_by_candidate = {candidate["id"]: {} for candidate in candidates}
+    for row in evaluations:
+        if row["numeric_value"] is not None:
+            metric_rows_by_candidate[row["candidate_id"]][row["metric_name"]] = row[
+                "numeric_value"
+            ]
+        if row["text_value"] is not None:
+            label_rows_by_candidate[row["candidate_id"]][row["metric_name"]] = row[
+                "text_value"
+            ]
+    shortlist_policy = manifest["stage_1_sequence_evaluation"]["shortlist"]
+    selection = select_v37_lanes(
+        [
+            {
+                "id": candidate["id"],
+                "sequence": candidate["sequence"],
+                "sequence_sha256": candidate["sequence_sha256"],
+                "generator_id": candidate["metadata"]["generator_id"],
+                "seed": candidate["metadata"]["generator_seed"],
+                "source_ordinal": candidate["metadata"]["raw_rank"],
+                "metrics": metric_rows_by_candidate[candidate["id"]],
+                "labels": label_rows_by_candidate[candidate["id"]],
+            }
+            for candidate in candidates
+        ],
+        lanes=[
+            {
+                "name": name,
+                "quota": quota,
+                "objective_families": shortlist_policy["lane_objective_families"][
+                    name
+                ],
+            }
+            for name, quota in shortlist_policy["lane_quotas"].items()
+        ],
+        family_objectives=manifest["stage_1_sequence_evaluation"]["endpoint_families"],
+        maximum_similarity=0.80,
+        maximum_per_generator=6,
+        maximum_per_generator_seed=2,
+    )
+    shortlist_ids = selection["selected_ids"]
     payloads[("v37:stage1-shortlist", "shortlist_manifest")] = {
-        "candidate_ids": shortlist_ids
+        "candidate_ids": shortlist_ids,
+        "selection": selection,
     }
+    for role, witness in _selection_witness_payloads(selection).items():
+        payloads[("v37:stage1-shortlist", role)] = witness
     poses = []
     for candidate_id in shortlist_ids:
         for pose_rank in range(1, 3):
@@ -143,6 +207,10 @@ def _fixture() -> tuple[dict, dict, dict, dict[str, dict]]:
                     "boltz_seed": 20270380 + pose_rank,
                     "structure_sha256": "a" * 64,
                     "coordinate_audit_sha256": "b" * 64,
+                    "pair_iptm": 0.5 + pose_rank / 10,
+                    "pocket_coverage_fraction": 0.4 + pose_rank / 10,
+                    "geometric_clash_count": pose_rank,
+                    "peptide_backbone_displacement": pose_rank / 10,
                 }
             )
     payloads[("v37:structure", "pose_manifest")] = {"poses": poses}
@@ -185,9 +253,85 @@ def _fixture() -> tuple[dict, dict, dict, dict[str, dict]]:
             for candidate_id in shortlist_ids
         ]
     }
+    final_candidates = []
+    by_candidate = {candidate["id"]: candidate for candidate in candidates}
+    for candidate_id in shortlist_ids:
+        candidate = by_candidate[candidate_id]
+        candidate_poses = [
+            pose for pose in poses if pose["candidate_id"] == candidate_id
+        ]
+        representative_scores = [
+            statistics.median(
+                decoy["interface_delta_g_reu"]
+                for decoy in decoys
+                if decoy["pose_id"] == pose["pose_id"]
+            )
+            for pose in candidate_poses
+        ]
+        displacements = [
+            pose["peptide_backbone_displacement"] for pose in candidate_poses
+        ]
+        final_candidates.append(
+            {
+                "id": candidate_id,
+                "sequence": candidate["sequence"],
+                "sequence_sha256": candidate["sequence_sha256"],
+                "generator_id": candidate["metadata"]["generator_id"],
+                "seed": candidate["metadata"]["generator_seed"],
+                "source_ordinal": candidate["metadata"]["raw_rank"],
+                "metrics": {
+                    **metric_rows_by_candidate[candidate_id],
+                    "median_pair_iptm": statistics.median(
+                        pose["pair_iptm"] for pose in candidate_poses
+                    ),
+                    "median_pocket_coverage": statistics.median(
+                        pose["pocket_coverage_fraction"] for pose in candidate_poses
+                    ),
+                    "maximum_geometric_clash_count": float(
+                        max(pose["geometric_clash_count"] for pose in candidate_poses)
+                    ),
+                    "peptide_backbone_displacement_range": max(displacements)
+                    - min(displacements),
+                    "median_representative_rosetta_interface_delta_g": statistics.median(
+                        representative_scores
+                    ),
+                },
+                "labels": label_rows_by_candidate[candidate_id],
+            }
+        )
+    final_lanes = [
+        {
+            "name": lane["name"],
+            "quota": lane["quota"],
+            "objective_families": lane["Pareto_objective_families"],
+            "required_soft_labels": lane.get("required_soft_labels", {}),
+        }
+        for lane in manifest["final_portfolio"]["lanes"]
+    ]
+    final_families = dict(
+        manifest["stage_1_sequence_evaluation"]["endpoint_families"]
+    )
+    final_families["structure"] = manifest["stage_2_structure_confirmation"][
+        "Pareto_objectives"
+    ]
+    final_selection = select_v37_lanes(
+        final_candidates,
+        lanes=final_lanes,
+        family_objectives=final_families,
+        maximum_similarity=0.80,
+        maximum_per_generator=2,
+        maximum_per_generator_seed=1,
+    )
     payloads[("v37:final-portfolio", "final_portfolio")] = {
-        "candidate_ids": shortlist_ids[:1]
+        "candidate_ids": final_selection["selected_ids"],
+        "selection": final_selection,
+        "candidate_summaries": {
+            item["id"]: {"metrics": item["metrics"], "labels": item["labels"]}
+            for item in final_candidates
+        },
     }
+    for role, witness in _selection_witness_payloads(final_selection).items():
+        payloads[("v37:final-portfolio", role)] = witness
     payloads[("v37:knowledge", "knowledge_evidence")] = {
         "schema_version": "1.0",
         "query_sha256": "1" * 64,
@@ -351,8 +495,8 @@ def test_v37_replay_requires_complete_typed_database_object_graph() -> None:
     assert result["exact_replay"] is True
     assert result["candidate_count"] == 9
     assert result["raw_proposal_occurrence_count"] == 18
-    assert result["pose_count"] == 4
-    assert result["rosetta_decoy_count"] == 8
+    assert result["pose_count"] == 8
+    assert result["rosetta_decoy_count"] == 16
     assert result["agent_decision_count"] == 5
 
 
@@ -413,6 +557,50 @@ def test_v37_replay_fails_closed_on_corrupt_object_payload() -> None:
         )
 
 
+def test_v37_replay_rejects_metric_plugin_ownership_drift() -> None:
+    manifest, plan, graph, payloads = _fixture()
+    metric_call = next(
+        item
+        for item in graph["tool_calls"]
+        if item["input_json"]["v37_logical_id"].startswith("v37:metric:")
+    )
+    metric_call["parameters_json"]["v37_plugin_name"] = "wrong-plugin"
+    with pytest.raises(ValueError, match="plugin ownership"):
+        validate_v37_database_object_replay(
+            manifest=manifest,
+            plan=plan,
+            graph=graph,
+            artifact_payloads_by_sha256=payloads,
+        )
+
+
+def test_v37_replay_rejects_evaluation_on_noncanonical_call() -> None:
+    manifest, plan, graph, payloads = _fixture()
+    graph["tool_calls"].append(
+        {
+            "id": "physical-call",
+            "status": "succeeded",
+            "tool_name": "unregistered-metric",
+            "input_json": {},
+            "parameters_json": {},
+        }
+    )
+    graph["evaluations"].append(
+        {
+            **graph["evaluations"][0],
+            "tool_call_id": "physical-call",
+            "metric_name": "unregistered_metric",
+        }
+    )
+    with pytest.raises(ValueError, match="noncanonical metric ToolCall"):
+        validate_v37_database_object_replay(
+            manifest=manifest,
+            plan=plan,
+            graph=graph,
+            artifact_payloads_by_sha256=payloads,
+        )
+
+
 def test_v37_replay_fails_closed_on_missing_pepshot_inspection() -> None:
     manifest, plan, graph, payloads = _fixture()
     _pop_role_item(graph, payloads, "pepshot_evidence", "inspections")
@@ -439,11 +627,39 @@ def test_v37_replay_fails_closed_on_missing_pepshot_inspection() -> None:
             "knowledge query/trace/card evidence",
         ),
         (
+            "shortlist_manifest",
+            lambda payload: payload["selection"]["lane_results"][0].update(
+                {"rank": 999}
+            ),
+            "shortlist Pareto/maximin/risk witnesses",
+        ),
+        (
             "pepshot_evidence",
             lambda payload: payload["inspections"][0].update(
                 {"inspection_sha256": "bad"}
             ),
             "PepShot inspection hash chain",
+        ),
+        (
+            "pose_manifest",
+            lambda payload: payload["poses"][0].update(
+                {"pocket_coverage_fraction": 0.999}
+            ),
+            "final Pareto/maximin/risk witnesses",
+        ),
+        (
+            "decoy_manifest",
+            lambda payload: payload["decoys"][0].update(
+                {"interface_delta_g_reu": -999.0}
+            ),
+            "final Pareto/maximin/risk witnesses",
+        ),
+        (
+            "final_portfolio",
+            lambda payload: payload["selection"]["lane_results"][0].update(
+                {"rank": 999}
+            ),
+            "final Pareto/maximin/risk witnesses",
         ),
     ],
 )
