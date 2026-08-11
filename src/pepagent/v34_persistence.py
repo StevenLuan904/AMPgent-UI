@@ -17,6 +17,7 @@ from pepagent.db.models import (
     CandidateOccurrence,
     Evaluation,
     EvidenceArtifact,
+    ExperimentRun,
     ToolCall,
 )
 from pepagent.db.repository import ExperimentRepository
@@ -257,6 +258,7 @@ async def persist_v34_blinded_adjudication(
     *,
     run_id: uuid.UUID,
     tool_call_id: uuid.UUID,
+    observed_tool_call_id: uuid.UUID,
     logical_id: str,
     prompt_text: str,
     response_text: str,
@@ -288,6 +290,9 @@ async def persist_v34_blinded_adjudication(
             payload,
         )
         await repository.record_agent_tool_edge(
+            existing.id, observed_tool_call_id, "input", "observes_holdout_evaluation"
+        )
+        await repository.record_agent_tool_edge(
             existing.id, tool_call_id, "output", "materializes_blinded_adjudication"
         )
         return existing
@@ -297,6 +302,12 @@ async def persist_v34_blinded_adjudication(
         or existing.structured_json != payload
     ):
         raise ValueError("persisted v34 adjudication differs from retry payload")
+    await repository.record_agent_tool_edge(
+        existing.id, observed_tool_call_id, "input", "observes_holdout_evaluation"
+    )
+    await repository.record_agent_tool_edge(
+        existing.id, tool_call_id, "output", "materializes_blinded_adjudication"
+    )
     return existing
 
 
@@ -344,6 +355,54 @@ async def persist_v34_intervention_decision(
         )
     await repository.record_agent_tool_edge(
         existing.id, tool_call_id, "output", "materializes_intervention_decision"
+    )
+    return existing
+
+
+async def persist_v34_final_decision(
+    session: AsyncSession,
+    *,
+    run_id: uuid.UUID,
+    tool_call_id: uuid.UUID,
+    observed_tool_call_ids: Sequence[uuid.UUID],
+    prompt_text: str,
+    response_text: str,
+    structured: dict[str, Any],
+) -> AgentDecision:
+    """Persist the single promotion verdict and its complete preregistered inputs."""
+    logical_id = "v34-global:v34-factorial-analysis"
+    payload = {**structured, "v34_logical_id": logical_id}
+    existing = await session.scalar(
+        select(AgentDecision).where(
+            AgentDecision.run_id == run_id,
+            AgentDecision.decision_type == "v34_factorial_promotion",
+            AgentDecision.structured_json["v34_logical_id"].astext == logical_id,
+        )
+    )
+    repository = ExperimentRepository(session)
+    if existing is None:
+        existing = await repository.record_agent_decision(
+            run_id,
+            0,
+            "v34_factorial_promotion",
+            "v34-factorial-adjudicator",
+            V34_EVIDENCE_VERSION,
+            prompt_text,
+            response_text,
+            payload,
+        )
+    elif (
+        existing.prompt_text != prompt_text
+        or existing.response_text != response_text
+        or existing.structured_json != payload
+    ):
+        raise ValueError("persisted v34 promotion verdict differs from retry payload")
+    for observed_id in sorted(set(observed_tool_call_ids), key=str):
+        await repository.record_agent_tool_edge(
+            existing.id, observed_id, "input", "observes_locked_factorial_evidence"
+        )
+    await repository.record_agent_tool_edge(
+        existing.id, tool_call_id, "output", "materializes_promotion_verdict"
     )
     return existing
 
@@ -486,6 +545,7 @@ def verify_v34_database_object_replay(
         if item["input_json"].get("v34_logical_id") is not None
     }
     artifacts = {item["id"]: item for item in graph["artifacts"]}
+    call_id_by_logical = {logical_id: call_id for call_id, logical_id in call_logical.items()}
     governance_payloads: list[dict[str, Any]] = []
     for link in graph["evidence_artifacts"]:
         if link["role"] != "provider_change_request_ledger":
@@ -500,6 +560,74 @@ def verify_v34_database_object_replay(
     validate_v34_provider_change_request_ledger(
         plan["provider_governance_contract"], governance_payloads[0]
     )
+    expected_parent_rows = [
+        {
+            "id": str(episode_parent["candidate_id"]),
+            "sequence_sha256": str(episode_parent["sequence_sha256"]),
+        }
+        for episode_parent in sorted(
+            {
+                episode["parent_id"]: {
+                    "candidate_id": episode["parent_id"],
+                    "sequence_sha256": episode["parent_sequence_sha256"],
+                    "order": episode["parent_order"],
+                }
+                for episode in plan["episodes"]
+            }.values(),
+            key=lambda item: item["order"],
+        )
+    ]
+    observed_parent_rows = [
+        {
+            "id": str(item["id"]),
+            "sequence_sha256": str(item["sequence_sha256"]),
+        }
+        for item in graph.get("v34_parent_candidates", [])
+    ]
+    if observed_parent_rows != expected_parent_rows:
+        raise ValueError("v34 replay parent identity or order drifted")
+
+    requests = governance_payloads[0]["change_requests"]
+    expected_lineage = [
+        {
+            "request_id": str(item["request_id"]),
+            "rejecting_run_id": str(item["rejecting_run_id"]),
+            "change_request_run_id": str(item["change_request_run_id"]),
+        }
+        for item in requests
+    ]
+    observed_lineage = [
+        {
+            "request_id": str(item["request_id"]),
+            "rejecting_run_id": str(item["rejecting_run_id"]),
+            "change_request_run_id": str(item["change_request_run_id"]),
+        }
+        for item in graph.get("provider_governance_lineage", [])
+        if item.get("parentage_verified") is True
+    ]
+    if observed_lineage != expected_lineage:
+        raise ValueError("v34 provider child-run lineage is missing or drifted")
+    governance_hash_fields = (
+        "reproducible_input_artifact_sha256",
+        "violated_contract_artifact_sha256",
+        "acceptance_criteria_artifact_sha256",
+        "external_request_receipt_artifact_sha256",
+        "replacement_release_manifest_sha256",
+        "read_only_acceptance_receipt_artifact_sha256",
+    )
+    expected_governance_hashes = {
+        str(item[field])
+        for item in requests
+        for field in governance_hash_fields
+        if item.get(field)
+    }
+    observed_governance_hashes = {
+        str(item["sha256"])
+        for item in graph.get("provider_governance_artifacts", [])
+        if item.get("content_verified") is True
+    }
+    if observed_governance_hashes != expected_governance_hashes:
+        raise ValueError("v34 provider referenced artifacts are missing or corrupt")
     occurrence_payload_by_call: dict[str, dict[str, Any]] = {}
     for link in graph["evidence_artifacts"]:
         if link["role"] != "proposal_occurrences":
@@ -542,12 +670,145 @@ def verify_v34_database_object_replay(
                 "occurrence_kind": item["occurrence_kind"],
                 "sequence": item["sequence"],
                 "sequence_sha256": item["sequence_sha256"],
+                "candidate_id": item.get("candidate_id"),
                 "metadata": item["metadata"],
             }
             for item in observed
         ]
         if compact != expected:
             raise ValueError("v34 database proposal occurrences differ from artifact")
+
+    expected_decisions: dict[tuple[str, str], tuple[set[str], str, str]] = {}
+    for episode in plan["episodes"]:
+        decision_logical = episode["intervention_decision_tool_id"]
+        adjudication_logical = episode["blinded_adjudication_tool_id"]
+        direct_inputs = {
+            str(parent)
+            for parent, child in episode["dependencies"]
+            if child == decision_logical
+        }
+        evaluation_logical = next(
+            tool["logical_id"]
+            for tool in episode["tool_calls"]
+            if tool["tool_name"] == "v34-independent-evaluation"
+        )
+        expected_decisions[("v34_intervention", decision_logical)] = (
+            direct_inputs,
+            "materializes_intervention_decision",
+            "observes_episode_evidence",
+        )
+        expected_decisions[("v34_blinded_adjudication", adjudication_logical)] = (
+            {evaluation_logical},
+            "materializes_blinded_adjudication",
+            "observes_holdout_evaluation",
+        )
+    analysis_logical = "v34-global:v34-factorial-analysis"
+    analysis_inputs = {
+        str(parent)
+        for parent, child in plan["required_dependencies"]
+        if child == analysis_logical
+    }
+    expected_decisions[("v34_factorial_promotion", analysis_logical)] = (
+        analysis_inputs,
+        "materializes_promotion_verdict",
+        "observes_locked_factorial_evidence",
+    )
+    decisions_by_key: dict[tuple[str, str], dict[str, Any]] = {}
+    for decision in graph.get("agent_decisions", []):
+        logical_id = decision.get("structured_json", {}).get("v34_logical_id")
+        key = (str(decision.get("decision_type")), str(logical_id))
+        if key not in expected_decisions:
+            raise ValueError("v34 replay contains an unexpected AgentDecision")
+        if key in decisions_by_key:
+            raise ValueError("v34 replay contains duplicate AgentDecision identities")
+        if decision.get("status") != "succeeded":
+            raise ValueError("v34 replay contains a non-succeeded AgentDecision")
+        decisions_by_key[key] = decision
+    if set(decisions_by_key) != set(expected_decisions):
+        raise ValueError("v34 replay AgentDecision set is incomplete")
+
+    edges_by_decision: dict[str, list[dict[str, Any]]] = {}
+    for edge in graph.get("agent_decision_tool_call_edges", []):
+        edges_by_decision.setdefault(str(edge["decision_id"]), []).append(edge)
+    for key, decision in decisions_by_key.items():
+        _, logical_id = key
+        input_logicals, output_relation, input_relation = expected_decisions[key]
+        observed_edges = edges_by_decision.get(str(decision["id"]), [])
+        observed_inputs = {
+            call_logical[str(edge["tool_call_id"])]
+            for edge in observed_edges
+            if edge["direction"] == "input" and edge["relation_type"] == input_relation
+        }
+        expected_output_call = call_id_by_logical[logical_id]
+        observed_outputs = {
+            str(edge["tool_call_id"])
+            for edge in observed_edges
+            if edge["direction"] == "output"
+            and edge["relation_type"] == output_relation
+        }
+        expected_edge_keys = {
+            (call_id_by_logical[item], "input", input_relation) for item in input_logicals
+        }
+        expected_edge_keys.add((expected_output_call, "output", output_relation))
+        observed_edge_keys = {
+            (
+                str(edge["tool_call_id"]),
+                str(edge["direction"]),
+                str(edge["relation_type"]),
+            )
+            for edge in observed_edges
+        }
+        if (
+            observed_inputs != input_logicals
+            or observed_outputs != {expected_output_call}
+            or observed_edge_keys != expected_edge_keys
+        ):
+            raise ValueError("v34 replay AgentDecision evidence edges drifted")
+
+    evaluation_payload_by_call: dict[str, dict[str, Any]] = {}
+    for link in graph["evidence_artifacts"]:
+        if link["role"] != "holdout_endpoint_vector":
+            continue
+        artifact = artifacts[link["artifact_id"]]
+        payload = artifact_payloads_by_sha256.get(artifact["sha256"])
+        if payload is None or sha256_json(payload) != artifact["sha256"]:
+            raise ValueError("v34 holdout endpoint artifact is missing or corrupt")
+        evaluation_payload_by_call[str(link["tool_call_id"])] = payload
+    db_evaluations_by_call: dict[str, list[dict[str, Any]]] = {}
+    for item in graph.get("evaluations", []):
+        db_evaluations_by_call.setdefault(str(item["tool_call_id"]), []).append(item)
+    evaluation_logicals = {
+        tool["logical_id"]
+        for episode in plan["episodes"]
+        for tool in episode["tool_calls"]
+        if tool["tool_name"] == "v34-independent-evaluation"
+    }
+    for logical_id in evaluation_logicals:
+        call_id = call_id_by_logical[logical_id]
+        payload = evaluation_payload_by_call.get(call_id)
+        if payload is None or payload.get("schema_version") != "1.0":
+            raise ValueError("v34 replay lacks a typed holdout endpoint vector")
+        expected_rows = payload.get("evaluations")
+        if not isinstance(expected_rows, list):
+            raise ValueError("v34 holdout endpoint vector lacks an evaluation list")
+        observed_rows = [
+            {
+                "candidate_id": item["candidate_id"],
+                "metric_name": item["metric_name"],
+                "numeric_value": item["numeric_value"],
+                "text_value": item["text_value"],
+                "unit": item["unit"],
+                "out_of_domain": item["out_of_domain"],
+                "limitations": item["limitations"],
+                "raw": item["raw"],
+            }
+            for item in sorted(
+                db_evaluations_by_call.get(call_id, []),
+                key=lambda value: (value["candidate_id"], value["metric_name"]),
+            )
+        ]
+        if observed_rows != expected_rows:
+            raise ValueError("v34 database evaluations differ from holdout artifact")
     result = {
         "schema_version": "1.0",
         "exact_replay": True,
@@ -575,5 +836,87 @@ async def build_v34_database_object_replay_bundle(
         if sha256_bytes(raw) != artifact["sha256"]:
             raise OSError(f"v34 object-store checksum mismatch: {artifact['sha256']}")
         payloads[artifact["sha256"]] = json.loads(raw)
+    parent_order = {
+        str(episode["parent_id"]): int(episode["parent_order"])
+        for episode in plan["episodes"]
+    }
+    parent_ids = [uuid.UUID(item) for item in parent_order]
+    parent_candidates = list(
+        await session.scalars(select(Candidate).where(Candidate.id.in_(parent_ids)))
+    )
+    graph["v34_parent_candidates"] = [
+        {
+            "id": str(item.id),
+            "run_id": str(item.run_id),
+            "sequence_sha256": item.sequence_sha256,
+        }
+        for item in sorted(
+            parent_candidates, key=lambda item: parent_order[str(item.id)]
+        )
+    ]
+    governance_link = next(
+        (
+            item
+            for item in graph["evidence_artifacts"]
+            if item["role"] == "provider_change_request_ledger"
+        ),
+        None,
+    )
+    requests: list[dict[str, Any]] = []
+    if governance_link is not None:
+        artifact_by_id = {item["id"]: item for item in graph["artifacts"]}
+        ledger_artifact = artifact_by_id[governance_link["artifact_id"]]
+        requests = list(payloads[ledger_artifact["sha256"]].get("change_requests", []))
+    lineage: list[dict[str, Any]] = []
+    referenced_hashes: set[str] = set()
+    governance_hash_fields = (
+        "reproducible_input_artifact_sha256",
+        "violated_contract_artifact_sha256",
+        "acceptance_criteria_artifact_sha256",
+        "external_request_receipt_artifact_sha256",
+        "replacement_release_manifest_sha256",
+        "read_only_acceptance_receipt_artifact_sha256",
+    )
+    for request in requests:
+        rejecting = await session.get(ExperimentRun, uuid.UUID(request["rejecting_run_id"]))
+        change = await session.get(
+            ExperimentRun, uuid.UUID(request["change_request_run_id"])
+        )
+        parentage_verified = (
+            rejecting is not None
+            and change is not None
+            and change.parent_run_id == rejecting.id
+        )
+        lineage.append(
+            {
+                "request_id": request["request_id"],
+                "rejecting_run_id": request["rejecting_run_id"],
+                "change_request_run_id": request["change_request_run_id"],
+                "parentage_verified": parentage_verified,
+            }
+        )
+        referenced_hashes.update(
+            str(request[field])
+            for field in governance_hash_fields
+            if request.get(field)
+        )
+    referenced_artifacts = list(
+        await session.scalars(select(Artifact).where(Artifact.sha256.in_(referenced_hashes)))
+    )
+    governance_artifacts: list[dict[str, Any]] = []
+    for artifact in sorted(referenced_artifacts, key=lambda item: item.sha256):
+        raw = artifact_reader(artifact.storage_uri)
+        governance_artifacts.append(
+            {
+                "sha256": artifact.sha256,
+                "storage_uri": artifact.storage_uri,
+                "content_verified": sha256_bytes(raw) == artifact.sha256,
+            }
+        )
+    graph["provider_governance_lineage"] = lineage
+    graph["provider_governance_artifacts"] = governance_artifacts
+    graph["graph_sha256"] = sha256_json(
+        {key: value for key, value in graph.items() if key != "graph_sha256"}
+    )
     replay = verify_v34_database_object_replay(plan, graph, payloads)
     return {"schema_version": "1.0", "evidence_graph": graph, "replay": replay}
