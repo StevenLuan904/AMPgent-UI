@@ -697,6 +697,10 @@ typed `TargetQualificationAudit`、`TargetPanelSelectionWitness`、`TargetPanelS
 projection verifier 已在仓库实现。它们会拒绝跨 target/run 证据、AgentDecision/ToolCall 脱链、artifact
 漂移、冻结后追加 ledger 行和重试漂移。共享 PostgreSQL 尚未部署 migration，也未完成隔离合成数据库
 acceptance，因此不得审计/选择真实靶点；没有新 target 名单或泛化结果。
+typed persistence revision 为 `6767f603be82ff3370bd655eed67cc29e7b81080`；migration SHA-256 为
+`08e486d8d4d267ba57b763a27aefed8db5c139e31e5c212e1eb46fe11c00d472`；回填后的 v35 config
+SHA-256 为 `2a7b54a1ac1c7ace73cb3c39b3f6ab3eed6676dda033e73c866fe4883f9ec027`。全量验证为 ruff clean、
+PostgreSQL migration 区间离线 DDL 可生成、pytest `355 passed`。
 typed ledger/offline replay 实现 revision 为
 `e47e0d3cf94d6b9d0b63c5a799694c13aeb819ca`；回填后的 v35 config SHA-256 为
 `c9641143982940a0a05127e8b2e0081837a499b13770fc4c0ac6ecbad63a0c81`，全量验证为 ruff clean、

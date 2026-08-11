@@ -16,7 +16,9 @@ def test_v35_is_qualification_only_and_cannot_cherry_pick_targets() -> None:
     assert contract["implementation_revision"] == (
         "e47e0d3cf94d6b9d0b63c5a799694c13aeb819ca"
     )
-    assert contract["typed_persistence_revision"] is None
+    assert contract["typed_persistence_revision"] == (
+        "6767f603be82ff3370bd655eed67cc29e7b81080"
+    )
     assert contract["scope"]["target_names_selected"] is False
     assert contract["scope"]["target_selection_authorized"] is False
     assert contract["scope"]["candidate_generation_authorized"] is False

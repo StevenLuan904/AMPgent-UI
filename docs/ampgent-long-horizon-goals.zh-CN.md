@@ -223,6 +223,10 @@ AgentDecision/ToolCall 脱链、冻结后追加 ledger 行和重试漂移。共�
 `c9641143982940a0a05127e8b2e0081837a499b13770fc4c0ac6ecbad63a0c81`，全量测试为 `352 passed`。
 它只关闭 Q5 的确定性离线重算缺口；本次 typed persistence 实现进一步关闭仓库 schema/repository
 缺口，但 migration 部署、合成验收和真实靶点授权仍是三个独立后续问题。
+typed persistence revision 为 `6767f603be82ff3370bd655eed67cc29e7b81080`，migration SHA-256 为
+`08e486d8d4d267ba57b763a27aefed8db5c139e31e5c212e1eb46fe11c00d472`，回填后的 v35 config
+SHA-256 为 `2a7b54a1ac1c7ace73cb3c39b3f6ab3eed6676dda033e73c866fe4883f9ec027`，全量测试为
+`355 passed`；这仍不是共享数据库部署或真实多靶点结果。
 revision 回填 checkpoint 为 `d79858dc3aa42399e439abaabc7d2e0fbe42bc70`；内容归档 SHA-256 为
 `31b549ee748bd07edd083351732c8c4f76f1fbb4c8f8326d20716d05b12ad10b`。
 

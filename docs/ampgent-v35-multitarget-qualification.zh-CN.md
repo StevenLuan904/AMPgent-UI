@@ -122,6 +122,11 @@ repository primitive 和 database-row + object-store-only projection verifier �
 仍不得审计或选择真实靶点。没有具体 target 名称、没有肽、没有结构评分或泛化结果。下一工程门只应是
 0 Candidate、0 Evaluation 的 v35 合成数据库闭环验收，而不是真实 target audit。
 
+typed persistence 实现 revision 为 `6767f603be82ff3370bd655eed67cc29e7b81080`；migration SHA-256 为
+`08e486d8d4d267ba57b763a27aefed8db5c139e31e5c212e1eb46fe11c00d472`；回填 revision 后的
+v35 config SHA-256 为 `2a7b54a1ac1c7ace73cb3c39b3f6ab3eed6676dda033e73c866fe4883f9ec027`。
+全量验证为 ruff clean、PostgreSQL migration 区间离线 DDL 可生成、pytest `355 passed`。
+
 typed ledger/offline replay 实现 revision 为
 `e47e0d3cf94d6b9d0b63c5a799694c13aeb819ca`；回填 revision 后的 config SHA-256 为
 `c9641143982940a0a05127e8b2e0081837a499b13770fc4c0ac6ecbad63a0c81`。全量验证为 ruff clean、
