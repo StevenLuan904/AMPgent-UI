@@ -29,6 +29,22 @@
 因此，项目的终局验收是“持续产生更好、更多样、证据边界更清楚的计算候选，并能证明改进来自
 哪里”，不是计算分数等同于 AMP 活性、安全、AceA 结合、亲和力或临床价值。
 
+### 1.1 能力成熟度：版本完成不等于能力晋级
+
+| 等级 | 可声称的能力 | 必须具备的证据 |
+|---|---|---|
+| L0：来源可追踪 | 能找回输入、模型、工具和版本 | 精确身份、SHA、行数、顺序与来源记录 |
+| L1：规则可复算 | 同输入可重算预注册变换和选择 | 冻结 config、确定性 verifier、负向测试 |
+| L2：决策可复原 | 能从数据库与对象存储重放完整 Agent 决策 | typed evidence graph、原始 artifact、database-only replay |
+| L3：干预有效 | 能证明一个组件在同输入、seed、预算下改善预注册端点 | 隔离对照、盲化、独立评价、完整成本与失败分母 |
+| L4：作用域可迁移 | 能区分跨靶点通用、靶点特异和失败策略 | 资格审计后的多靶点面板、阴性对照和同协议复现 |
+| L5：受控自我改进 | harness 能基于历史证据安全晋级或回滚 | 离线 replay、shadow、前瞻对照、策略谱系和追溯式回滚 |
+
+截至 2026-08-11，项目整体处于 **L2（AceA 单靶点、冻结指标作用域）**。v32 已证明一个正式
+portfolio 可以数据库单源复原；v34 provider shadow 证明外部 release 可被复原消费。它们尚未证明工具
+干预有效、跨靶点迁移或 harness 自我改进，因此不能提前声称 L3–L5。当前无湿实验边界下的合理上限是
+L5 的“可持续改进计算假设工厂”；即使达到 L5，也不能声称药效、安全、AceA 结合或临床有效。
+
 ## 2. 当前基线（2026-08-11）
 
 - v32 已锁定：300 条候选，109 条预注册双红旗排除，191 条可进入 Pareto，最终四个 lane 共
@@ -303,6 +319,21 @@ revision 回填 checkpoint 为 `6299b233eef751004eec946f4ee2eab1edacdc1b`，内�
 `b1a7e1f4c4a2ee40a4f2838461ac4ebaf61cabd0f2a7df92aeabe04f535a5e41`。
 
 ## 5. 分阶段路线与晋级门
+
+### 5.1 长期问题的完成证据矩阵
+
+| 问题 | 当前精确合同与状态 | 当前已证明 | 标记 `answered_within_scope` 前仍必须证明 | 下一独立门 |
+|---|---|---|---|---|
+| Q1 正电性设计 | `amp_charge_search_sufficiency_v33.yaml`；`preregistered_draft_not_authorized` | 文献来源、K/R 配对变换与数据库 replay 合同可校验 | 固定预算结果显示哪类同 scaffold 编辑改善活性/膜作用且没有仅以风险换收益 | v33 formal run 独立授权 |
+| Q2 Pareto 搜索充分性 | 同一 v33 合同；`preregistered_draft_not_authorized` | checkpoint、ε-cell、attainment 与饱和判据可重算 | 跑完冻结预算并由独立 seed 复现末段目标区域，或明确判定未饱和 | 与 Q1 共用但不混淆结论的 v33 formal run |
+| Q3 文献知识卡增益 | `amp_knowledge_pepshot_ablation_v34.yaml`；`preregistered_draft_not_authorized` | provider release、receipt 和 shadow 可数据库复原 | 2×2 同预算盲化对照在预注册实用端点上给出增益/退化、成本和完整失败分母 | 明确授权 v34 正式 2×2 run |
+| Q4 PepShot 增益 | 同一 v34 合同；`preregistered_draft_not_authorized` | PepShot release 只读验收和 provider 退回路径已闭合 | off/on 配对证明结构错误拦截、误报、追加视图成本及后续方向稳定性的净效应 | 明确授权 v34 正式 2×2 run；不满意直接退回 PepShot |
+| Q5 多靶点泛化 | `amp_multitarget_qualification_v35.yaml`；`typed_persistence_implemented_not_deployed_not_authorized` | 资格审计 ledger、面板选择与离线 replay 可验证 | 先完成 v35a 数据库验收，再审计不少于 8 个靶点并在冻结 3–5 靶点面板报告成功与失败 | v35a 合成闭环需独立授权；真实 target audit 再另行授权 |
+| Q6 Harness evolving | `amp_harness_evolution_v36.yaml`；`typed_schema_and_offline_verifier_implemented_not_deployed_not_authorized` | typed 谱系、晋级/回滚规则和离线 verifier 可验证 | 先完成 v36a 数据库验收，再以真实历史进行无泄漏 replay、shadow 和前瞻配对，并产生可追溯晋级/拒绝/回滚 | v36a 合成闭环需独立授权；真实演化再另行授权 |
+
+矩阵中的“已证明”只陈述当前证据实际覆盖的范围。“下一独立门”不得由路线图维护、测试通过、无 active
+workflow 或用户一般性“继续”推定授权。每次状态变化时必须同时更新对应 Q、精确 config、执行协议和本表；
+若三者冲突，以用户最新明确指令、冻结 config、PostgreSQL/Temporal 实况和执行协议为准。
 
 | 阶段 | 核心交付 | 晋级前必须证明 |
 |---|---|---|
