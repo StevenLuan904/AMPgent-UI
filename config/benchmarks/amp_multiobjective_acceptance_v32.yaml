@@ -1,7 +1,7 @@
 benchmark_id: amp_multiobjective_acceptance_v32
 version: v32.acceptance.0.1
-execution_status: preregistered
-execution_authorized: false
+execution_status: ready
+execution_authorized: true
 parent_run_id: d695853e-cb94-4608-ad71-e4d7c4df1e85
 source_manifest_path: config/benchmarks/amp_multiobjective_portfolio_v32.yaml
 expected_parent:
@@ -47,9 +47,8 @@ scientific_contract:
   v33_readiness_means_preregistration_only: true
 implementation:
   module: pepagent.v32_acceptance
-  revision: pending
+  revision: 9b70351250c30687c459a1297a7ff8ffa5b2291f
 formal_acceptance_run:
   submit_exactly_once: true
   submitted: false
   run_id: null
-

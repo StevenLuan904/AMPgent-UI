@@ -60,9 +60,14 @@ def _portfolio_item(index: int) -> dict:
     }
 
 
-def test_acceptance_contract_is_read_only_and_not_authorized_initially() -> None:
+def test_acceptance_contract_is_read_only_and_frozen_for_one_run() -> None:
     payload = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
-    assert payload["execution_authorized"] is False
+    assert payload["execution_authorized"] is True
+    assert payload["execution_status"] == "ready"
+    assert payload["implementation"]["revision"] == (
+        "9b70351250c30687c459a1297a7ff8ffa5b2291f"
+    )
+    assert payload["formal_acceptance_run"]["submitted"] is False
     assert payload["scientific_contract"]["parent_run_read_only"] is True
     assert payload["scientific_contract"]["no_new_generation"] is True
     assert payload["scientific_contract"]["no_parent_backwrite"] is True

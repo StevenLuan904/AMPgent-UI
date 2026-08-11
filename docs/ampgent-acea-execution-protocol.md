@@ -321,3 +321,9 @@ not authorized and no child run has been created. The next step is to commit/pus
 implementation, freeze its source revision into the acceptance contract, rerun all gates, and only
 then submit the single database-native acceptance child run. A successful verdict means only
 `ready_for_v33_preregistration`; it does not authorize v33 generation or execution.
+
+The implementation is now frozen at commit `9b70351250c30687c459a1297a7ff8ffa5b2291f`.
+Its content archive is `var/archives/ampgent-v32-acceptance-implementation-9b70351.zip`, SHA-256
+`5ec361056521272664025936583485670ca4fc149d0f9ecb60a539a91d94bd4e`. The acceptance contract is
+authorized for exactly one child run after the final API/PostgreSQL/MinIO/Temporal and duplicate-run
+gates pass. The parent v32 run remains immutable.
