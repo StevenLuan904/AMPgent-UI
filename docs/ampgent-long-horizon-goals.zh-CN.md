@@ -117,8 +117,9 @@ cross-seed attainment、novel discovery yield、leave-one-model-out 稳定性；
 
 ### Q3：文献知识卡是否真的提高设计质量？
 
-当前判断：尚未正式接入并验证。现有平台接口可容纳卡片，但动态检索、passage 绑定与正式 Agent
-决策边尚未形成端到端对照。
+当前判断：`in_progress`。尚未正式接入并验证；v34 已形成未授权的 2×2 预注册草案，精确合同为
+`config/benchmarks/amp_knowledge_pepshot_ablation_v34.yaml`。现有平台接口可容纳卡片，但动态检索、
+passage 绑定与正式 Agent 决策边仍未形成可执行的端到端闭环。
 
 建议实验：冻结 parent、seed、预算和所有模型，比较 `no_cards` 与 `verified_cards`；后续可增加
 `retrieval_without_rerank` 和 `context-matched_cards`。知识组只能读取与任务上下文匹配、来源 passage
@@ -128,7 +129,9 @@ passage SHA、prompt、response、采纳/拒绝边必须落库。
 
 ### Q4：PepShot 是否帮助 Agent 避免结构性错误？
 
-当前判断：工具已成熟到可做 shadow evidence，但未进入 v32 决策。
+当前判断：`in_progress`。工具已成熟到可做 shadow evidence，但未进入 v32 决策；v34 草案已固定
+PepShot contract/request/review schema SHA、verify→读取全部请求图片→validate-review 路由和允许影响的
+决策类型，仍未实现正式 activity 或运行。
 
 建议实验：同一批冻结结构做 `PepShot off/on` 配对；与知识卡形成可解释的 2×2 设计：baseline、
 cards-only、PepShot-only、cards+PepShot。PepShot 只影响结构审阅、追加视图和是否升级/修改，不得
@@ -174,9 +177,17 @@ artifact SHA 和 Agent 决策边全部进入主证据图；只存在外部工具
 | v36+：持续 harness evolution | champion/challenger 晋级器与策略谱系 | 离线 replay、shadow、前瞻对照三关通过；可一键回滚和完整复原 |
 
 v33 当前叙事预注册见 `docs/ampgent-v33-charge-search-preregistration.zh-CN.md`。其状态为
-`draft_not_authorized_for_execution`；确定性 K/R dose block 与逐 checkpoint archive 已实现并有测试，
-下一工程任务是 PostgreSQL persistence activity 和 database+object-store-only replay verifier，而不是
-提交 formal run。
+`implementation_frozen_not_authorized`；确定性 K/R dose block、逐 checkpoint archive、PostgreSQL
+persistence primitives 与 database+object-store-only replay verifier 已实现并有测试。persistence
+primitives 尚未注册到 Temporal worker；未经单独 formal-run 授权，不得注册或提交。
+
+v34 当前叙事预注册见 `docs/ampgent-v34-knowledge-pepshot-preregistration.zh-CN.md`，精确合同为
+`config/benchmarks/amp_knowledge_pepshot_ablation_v34.yaml`，状态为
+`draft_not_authorized_for_execution`。每个冻结 parent 都运行 baseline、cards-only、PepShot-only 与
+cards+PepShot 四个隔离 episode；proposal/结构/评价预算相同，工具成本单列，评价先盲化后揭盲。当前
+parent identity manifest 已由 v32 database-only replay 冻结，SHA-256 为
+`f1955476cb761d9ca300a8fed00d9bb847e775ee5f4c1ef51d1346376a4f943e`；三个主要端点的 practical
+improvement/degradation margins 也已在输出前冻结。尚未实现正式数据库 activity，因而不能执行。
 
 版本号是当前规划，不是正式 run 授权。任何生成、阈值、候选选择或执行必须先有独立冻结 config、
 提交/push、服务与 worker 门禁、唯一 run 检查。长期路线允许被新证据修订，但修订必须追加理由，不能

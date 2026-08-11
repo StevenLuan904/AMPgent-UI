@@ -476,3 +476,36 @@ ToolCall、文献/transform/archive 依赖缺失、移除成员无 dominance wit
 上述旧句“未完成前”保留为 commit `140c71f` 的历史状态；当前实现已冻结，config 中
 `formal_run.implementation_revision` 指向 `fab5cac50b3d709e9435c732173bc22eba81a505`，但
 `execution_authorized=false`、`submitted=false`，不能据此执行。
+
+## 18. v34 文献知识卡 × PepShot 干预消融草案（2026-08-11 append-only update）
+
+用户要求正式比较知识卡任务 `019fad3e-76b8-7e32-8455-d2e9b31d33e5` 与 PepShot 任务
+`019fb910-f2dd-7be1-a7e6-bfe381512c25` 接入前后的效果，并要求所有 Agent 证据进入 PostgreSQL、可由
+数据库与对象存储复原。接口只读核查确认：知识库 `amp-system-kb` v0.3.0 已有带 policy、retrieval
+trace、evidence refs 的 Design Context Pack；PepShot 已有 verify、坐标审计、受控图片、review schema
+与 validate-review 路由。但当前平台 mutation brief 仍使用 `pepshot-placeholder-v1`，知识字段也未形成
+正式动态检索 ToolCall 和决策依赖。因此二者均不能声称已完成正式接入或改善 Agent。
+
+当前已建立未授权草案 `config/benchmarks/amp_knowledge_pepshot_ablation_v34.yaml`，叙事说明为
+`docs/ampgent-v34-knowledge-pepshot-preregistration.zh-CN.md`。它冻结四臂：baseline、cards-only、
+PepShot-only、cards+PepShot；v32 数据库重放中的 24 个 portfolio parent 全量进入，每个 parent 跑四个
+无共享记忆 episode。proposal、结构、Rosetta、revision 与评价预算相同，知识/PepShot 额外成本单列；
+评价只见 opaque arm label，锁定 adjudication 后才揭盲。工具输出不能作为自身唯一验收端点，禁止
+加权总分或只展示成功案例。
+
+外部接口冻结足迹：知识 context schema SHA-256
+`1c358a48ca1c4d27554925c02f47d9c72aa273685288935b9fa9c7c7a0c745da`，active policy SHA-256
+`25fb7a5a4c8c1d001a2d313acefc065a98a709ee1f784661b3054fc01e146bb1`；PepShot agent contract
+SHA-256 `28eb1ad5dc8a1124b4ccf7e228d30eb864222c75516fcd933737e1b60e288522`，request schema
+SHA-256 `4860a5404f10500e0844e836eda2f64f43fed702333410276cd7e8dd19ef8957`，review schema
+SHA-256 `e08a04a0dba156c0cccee59d668d2458b0c2301c1cf150834cfea26fa2d2b14d`。正式 run 必须把外部
+pack/bundle 的原始字节作为内容寻址 artifact 导入对应 AMPgent evidence graph；只引用另一目录或外部
+数据库不满足复原要求。
+
+当前状态：`preregistered_draft_not_authorized`。没有 v34 run/workflow，不得生成或提交。24 个 parent
+的 candidate ID、sequence SHA、lane/rank 与数据库重放顺序已经冻结，member manifest SHA-256 为
+`f1955476cb761d9ca300a8fed00d9bb847e775ee5f4c1ef51d1346376a4f943e`。三个主要端点的 practical
+margin 已在输出前冻结：确认后新颖非支配发现率改善 0.25 条/parent、结构冲突召回改善 0.10、无效编辑率
+降低 0.10；其余端点最大允许退化分别为 0.10 条/parent、0.05、0.05。它们是 Agent 晋级幅度而非生物学
+阈值。执行前仍需：实现并测试正式知识检索、PepShot、盲化 adjudication
+和 replay activities；commit/push/archive；再获得单独 formal-run 授权并通过第 6 节全部门禁。

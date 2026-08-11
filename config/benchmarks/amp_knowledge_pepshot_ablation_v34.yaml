@@ -1,0 +1,258 @@
+benchmark_id: amp_knowledge_pepshot_ablation_v34
+version: v34.0.0-preregistration-draft
+execution_status: preregistered_draft_not_authorized
+track: knowledge_and_visual_evidence_factorial_ablation
+
+scientific_question:
+  primary: Do verified literature context and PepShot structural review improve AMPgent decisions under identical parents, seeds, proposal budgets, and downstream evaluation?
+  forbidden_shortcut: tool_availability_or_attractive_examples_do_not_establish_agent_improvement
+
+parent_cohort:
+  source_run_id: d695853e-cb94-4608-ad71-e4d7c4df1e85
+  source_portfolio_sha256: d50b0b77e8e04f86f6b8d48fa3bc24f9d96a43aa9016a315f4004cca0db6d0e3
+  source_replay_sha256: 4c3eef0a74f6db34503d605154c5d2ea7aa5035cc706c1d33d7001b363315634
+  selection_rule: all_24_v32_portfolio_members_in_database_replay_order
+  expected_parent_count: 24
+  identity_status: frozen_from_database_replay
+  member_manifest_sha256: f1955476cb761d9ca300a8fed00d9bb847e775ee5f4c1ef51d1346376a4f943e
+  members:
+    - {order: 1, lane: membrane, lane_rank: 1, candidate_id: 2a21e47e-d359-45fb-8ff4-c09ab843e8ae, sequence_sha256: e8a86322f0f3d5cb881d11c10647accc38065f1683b3b3e512b575dc984930d1}
+    - {order: 2, lane: membrane, lane_rank: 2, candidate_id: ca3f753c-911e-40f3-aa42-4ff312b32217, sequence_sha256: fceeedd73ecbb36f7d36dafd1f95e8a2162a249e9c491a1e3be0a5a4545f88d1}
+    - {order: 3, lane: membrane, lane_rank: 3, candidate_id: 4955a90c-c2b6-4992-a3fa-55d40f9fb902, sequence_sha256: 5fba0a1e54e983234b75531716e63c324f13646d87c266cc03f20e012c6bc855}
+    - {order: 4, lane: membrane, lane_rank: 4, candidate_id: 91c2e1d5-fb4c-4d1f-9d9a-61a446fb9ccb, sequence_sha256: 37e705f946ba7747537eb33afec3d8c68df0978efc3961d6af35bab4d1957104}
+    - {order: 5, lane: membrane, lane_rank: 5, candidate_id: ba46c9da-7ae0-41d8-b1aa-b2406aaad8d2, sequence_sha256: c8124c404ad626bd9089e4b745a6a914b31d7bf9d438ca2012b7a3b350be129d}
+    - {order: 6, lane: membrane, lane_rank: 6, candidate_id: e3b47142-b978-4ecf-820b-8c32f9daaee6, sequence_sha256: e35926e82460949c2dee7f083c6faffdb3122546383debbc33989f45150df908}
+    - {order: 7, lane: activity_mic, lane_rank: 1, candidate_id: 281f94b7-bd20-4747-9f2f-65af174e4078, sequence_sha256: 1e32ac4864117a7011204ad2ef2b57dfe4f39cb8bed5e742cd5418b61d55ce90}
+    - {order: 8, lane: activity_mic, lane_rank: 2, candidate_id: 32688e7e-d58c-463e-80dd-130608d52b7c, sequence_sha256: 9f498ec0d110d5f404f2a93c3bb2d939bd2f3af8bde37c0f707a51570adbe1e5}
+    - {order: 9, lane: activity_mic, lane_rank: 3, candidate_id: 3efcc48f-c004-4286-9354-b89c94e20535, sequence_sha256: 9a68962db1ca4d4ca6262b73a40d2e65a112df62dde21fecad99430646dc7daa}
+    - {order: 10, lane: activity_mic, lane_rank: 4, candidate_id: 942a1669-4c74-4e79-80af-611b9d7b52dc, sequence_sha256: 694a34b04722a0b257bd7ee1e416208b074308baa3375080c9667c577b1d3ffc}
+    - {order: 11, lane: activity_mic, lane_rank: 5, candidate_id: aee024eb-7fcd-4bab-8c40-9e1af84da666, sequence_sha256: c5c4af1781030a5109901a18caffb9f4ba1770740fe690d9fbbd173b3f312a74}
+    - {order: 12, lane: activity_mic, lane_rank: 6, candidate_id: 6948297b-4b55-471d-84db-c9ac91597c87, sequence_sha256: 518864e788ab33fdd809ba90de42fbcb616ce1437909bcd019e1be57cfaa26fa}
+    - {order: 13, lane: risk_control, lane_rank: 1, candidate_id: 496bb1b4-fff4-464f-aa0b-3c3aac516f4b, sequence_sha256: ce557329a8d8d9566d18f2e14257ed1d9794ad35b7fbb66e7ff3b974a5c16d18}
+    - {order: 14, lane: risk_control, lane_rank: 2, candidate_id: eb9db905-01f6-4d81-b79a-130eaf885edb, sequence_sha256: f0fb83a46c91fb120392fec08bbd38f7f77f52212d0453df03063c1a58f56511}
+    - {order: 15, lane: risk_control, lane_rank: 3, candidate_id: 34b9c843-4fbc-429a-906c-e3b2588c0bda, sequence_sha256: 5986c82abd7224b12d3820d28cbe00d5581c47835763f6889f81c472a6f033c3}
+    - {order: 16, lane: risk_control, lane_rank: 4, candidate_id: 50d78197-a462-496a-99ff-a972a3cfb22b, sequence_sha256: 9087945f7799397373b97ebfb07d324e886b22eadcc9c004023ea5ccd6596960}
+    - {order: 17, lane: risk_control, lane_rank: 5, candidate_id: 92b10e66-cc8c-4526-952f-b9a85d9c9623, sequence_sha256: 0dda5261c84ce3aec2c21d368513b3983430a241398584eb41af38c6f7891abb}
+    - {order: 18, lane: risk_control, lane_rank: 6, candidate_id: 0956fc91-b45d-4e55-8227-e701297fa25e, sequence_sha256: e365ced957f2a40ea200628de5191c6472d2ab180fbbfcd0ca48d80b569ddffe}
+    - {order: 19, lane: balanced, lane_rank: 1, candidate_id: 9b4da767-0f53-4847-930d-991515271194, sequence_sha256: 35ad6acc037dea60fcf8adbb65822a1a212759351d229eb892541def3203a913}
+    - {order: 20, lane: balanced, lane_rank: 2, candidate_id: 39a487a1-fff7-491a-bf31-d8f9eb4b1e5a, sequence_sha256: f9c9af32d0858f9066dc6997738281722f918d624a00ed96ef9868836fcd4287}
+    - {order: 21, lane: balanced, lane_rank: 3, candidate_id: f00d55a3-462e-489a-9895-6bcf061c3226, sequence_sha256: 6575f83dce4ff9e016322b7f6a3269b6e1096b0011ce2d63090f617f928f460a}
+    - {order: 22, lane: balanced, lane_rank: 4, candidate_id: f8910ea8-6920-4b63-a93b-f831466a190c, sequence_sha256: 6a9d128ba1a315a8a04d52dc6bb75e905de45ba518a3af1f84449a532a52cdcf}
+    - {order: 23, lane: balanced, lane_rank: 5, candidate_id: b10a6562-00b1-4e33-aa78-ff9602a43639, sequence_sha256: 4aaca5aa59e5447645cae0545f9401cbe1e0c449cc0cb86324657e0743fb77c3}
+    - {order: 24, lane: balanced, lane_rank: 6, candidate_id: f053797e-dd79-4019-9260-454f74711019, sequence_sha256: d93fde829ed2eac731a22771af87988a780892f54a79d1e6b107e41e8afa4888}
+  forbidden_selection_inputs:
+    - v34_arm_output
+    - knowledge_retrieval_result
+    - PepShot_review
+    - holdout_endpoint
+  v32_backwrite_forbidden: true
+
+knowledge_provider:
+  system_id: amp-system-kb
+  manifest_version: 0.3.0
+  context_pack_schema_sha256: 1c358a48ca1c4d27554925c02f47d9c72aa273685288935b9fa9c7c7a0c745da
+  active_policy_sha256: 25fb7a5a4c8c1d001a2d313acefc065a98a709ee1f784661b3054fc01e146bb1
+  required_pack_fields:
+    - task
+    - policy_version
+    - target_brief
+    - agent_brief
+    - design_rules
+    - evidence_index
+    - warnings
+    - knowledge_gaps
+    - retrieval_trace_id
+  admission:
+    direct_rules: D0_or_D1_and_E3_or_E4_and_verified
+    transfer_rules: D2_or_D3_and_E2_or_higher_and_verified
+    target_constraints: E1_allowed_only_as_advisory
+    D4_excluded: true
+    missing_matches_return_explicit_empty_pack: true
+    broken_database_policy_schema_or_evidence_reference_fails_closed: true
+  online_condensation_model_forbidden: true
+
+pepshot_provider:
+  contract_sha256: 28eb1ad5dc8a1124b4ccf7e228d30eb864222c75516fcd933737e1b60e288522
+  agent_request_schema_sha256: 4860a5404f10500e0844e836eda2f64f43fed702333410276cd7e8dd19ef8957
+  review_schema_sha256: e08a04a0dba156c0cccee59d668d2458b0c2301c1cf150834cfea26fa2d2b14d
+  required_route: verify_then_read_all_requested_images_then_validate_review
+  maximum_priority_labeled_views: 3
+  review_statuses: [reviewed, insufficient_evidence]
+  allowed_decision_effects:
+    - retain
+    - reject_structural_conflict
+    - escalate_additional_seed
+    - escalate_additional_view
+    - request_single_budgeted_revision
+  forbidden_decision_effects:
+    - change_parent_cohort
+    - increase_proposal_budget
+    - alter_primary_endpoint
+    - claim_binding_or_affinity
+
+factorial_design:
+  factors:
+    verified_knowledge_context: ["off", "on"]
+    PepShot_review: ["off", "on"]
+  arms:
+    - {name: baseline, verified_knowledge_context: "off", PepShot_review: "off"}
+    - {name: cards_only, verified_knowledge_context: "on", PepShot_review: "off"}
+    - {name: pepshot_only, verified_knowledge_context: "off", PepShot_review: "on"}
+    - {name: cards_and_pepshot, verified_knowledge_context: "on", PepShot_review: "on"}
+  repeated_block: every_parent_runs_all_four_arms
+  arm_order: deterministic_sha256_permutation
+  arm_order_salt: amp-knowledge-pepshot-v34-order-v1
+  cross_arm_memory_forbidden: true
+  opaque_arm_labels_for_adjudication: true
+  assignment_reveal_after_locked_adjudication: true
+
+budget_contract:
+  proposal_seed_per_parent: derived_from_parent_sha_and_arm_independent_seed_salt
+  proposal_seed_salt: amp-knowledge-pepshot-v34-proposal-v1
+  raw_proposals_per_parent_arm: 8
+  admissible_proposals_retained_per_parent_arm: 4
+  structure_poses_per_retained_proposal: 1
+  rosetta_decoys_per_pose: 8
+  maximum_agent_revisions_per_parent_arm: 1
+  revision_replaces_not_adds_to_budget: true
+  fixed_full_budget_required: true
+  adaptive_early_stopping_forbidden: true
+  missing_policy: retain_shortfall_no_refill
+  equal_tool_independent_compute_budget_across_arms: true
+  tool_specific_cost_reported_separately: true
+
+intervention_contract:
+  common_inputs:
+    - exact_parent_sequence
+    - exact_parent_structure
+    - frozen_target_and_pocket_definition
+    - base_prompt_sha256
+    - generator_and_evaluator_revisions
+    - proposal_seed
+    - proposal_and_revision_budget
+  knowledge_on_addition:
+    - exact_context_query
+    - immutable_context_pack
+    - retrieval_trace
+    - exact_cards_and_passage_references
+  knowledge_off_addition:
+    - typed_tool_absent_marker_without_synthetic_knowledge
+  PepShot_on_addition:
+    - verified_bundle
+    - coordinate_audit
+    - all_agent_request_images
+    - validated_review
+  PepShot_off_addition:
+    - typed_tool_absent_marker_without_synthetic_visual_findings
+  prohibited_inputs:
+    - cross_arm_outputs
+    - holdout_labels
+    - future_run_results
+    - unverified_or_unlocatable_knowledge_cards
+    - unvalidated_PepShot_review
+
+independent_evaluation:
+  evaluation_lane_blinded_to_arm_labels: true
+  intervention_agents_blinded_to_holdout_adjudication: true
+  primary_endpoints:
+    - {name: confirmed_novel_nondominated_yield_per_parent, direction: maximize, family: discovery}
+    - {name: structural_conflict_interception_recall, direction: maximize, family: structural_safety}
+    - {name: invalid_or_unsupported_edit_rate, direction: minimize, family: decision_quality}
+  secondary_endpoints:
+    - {name: repeated_historical_failure_avoidance_rate, direction: maximize}
+    - {name: structural_conflict_interception_precision, direction: maximize}
+    - {name: cross_seed_decision_consistency, direction: maximize}
+    - {name: mechanism_lane_coverage, direction: maximize}
+    - {name: tool_calls_per_retained_candidate, direction: minimize}
+    - {name: wall_clock_seconds_per_retained_candidate, direction: minimize}
+  holdout_confirmation:
+    structural: deterministic_coordinate_audit_plus_independent_Boltz_seeds_and_same_protocol_Rosetta
+    discovery: frozen_membrane_AMP_MIC_risk_and_structure_families_with_leave_one_model_out
+    historical_failure: frozen_pre_v34_failure_taxonomy_only
+  intervention_outputs_cannot_be_sole_validation_endpoint: true
+  weighted_total_score_forbidden: true
+  single_soft_model_promotion_forbidden: true
+
+analysis_contract:
+  unit: parent
+  paired_within_parent: true
+  report_each_arm_separately: true
+  required_contrasts:
+    - knowledge_main_effect
+    - PepShot_main_effect
+    - knowledge_by_PepShot_interaction
+    - cards_only_vs_baseline
+    - pepshot_only_vs_baseline
+    - cards_and_pepshot_vs_baseline
+  uncertainty: parent_cluster_bootstrap_with_frozen_seed
+  bootstrap_seed: 20270134
+  bootstrap_replicates: 10000
+  multiplicity_policy: endpoint_families_reported_separately_no_binary_global_winner
+  promotion_rule:
+    minimum_requirement: at_least_one_primary_practical_endpoint_improves_without_margin_exceeding_degradation_on_other_primary_endpoints
+    practical_margins_must_be_frozen_before_execution: true
+    current_margin_status: frozen_before_execution
+    endpoint_margins:
+      confirmed_novel_nondominated_yield_per_parent:
+        improvement: 0.25
+        maximum_allowed_degradation: 0.10
+        unit: confirmed_candidates_per_parent
+        interpretation: six_additional_confirmed_discoveries_across_24_parents_is_practically_material
+      structural_conflict_interception_recall:
+        improvement: 0.10
+        maximum_allowed_degradation: 0.05
+        unit: absolute_fraction
+      invalid_or_unsupported_edit_rate:
+        improvement: 0.10
+        maximum_allowed_degradation: 0.05
+        unit: absolute_fraction
+    confidence_interval_requirement: parent_cluster_bootstrap_95_percent_interval_reported_not_used_as_single_binary_gate
+    allowed_verdicts:
+      - promote_general
+      - retain_context_specific
+      - no_demonstrated_benefit
+      - harmful_or_unreliable
+      - inconclusive
+
+database_evidence_contract:
+  PostgreSQL_is_authoritative: true
+  object_store_is_content_addressed: true
+  persist_factorial_assignment_and_opaque_labels: true
+  persist_parent_and_all_proposal_occurrences: true
+  persist_context_query_pack_trace_cards_passages_and_policy: true
+  persist_PepShot_request_bundle_audit_images_review_and_validation: true
+  persist_prompts_responses_adoptions_rejections_and_revisions: true
+  persist_all_ToolCalls_dependencies_Evaluations_and_AgentDecisions: true
+  persist_blinded_adjudication_before_assignment_reveal: true
+  persist_cost_and_failure_events: true
+  database_object_store_only_replay_required: true
+  replay_must_reconstruct:
+    - parent_order
+    - arm_order_and_opaque_labels
+    - exact_tool_availability
+    - exact_context_and_visual_evidence
+    - proposals_revisions_and_decisions
+    - holdout_endpoint_joins
+    - factorial_contrasts
+    - promotion_verdict
+  CSV_and_Markdown_are_exports_only: true
+
+scientific_boundaries:
+  predictions_are_not_experiments: true
+  no_experimental_activity_claim: true
+  no_experimental_safety_claim: true
+  no_AceA_binding_or_affinity_claim: true
+  PepShot_is_structural_review_not_binding_evidence: true
+  knowledge_cards_are_attributed_advice_not_ground_truth: true
+  Rosetta_REU_same_protocol_relative_only: true
+  PepMLM_used: false
+  AMPlify_used: false
+  weighted_total_used: false
+  v22_through_v33_backwrite_forbidden: true
+
+formal_run:
+  execution_authorized: false
+  submitted: false
+  run_id: null
+  workflow_id: null
+  implementation_revision: null
