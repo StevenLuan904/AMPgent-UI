@@ -9,6 +9,14 @@ from pepagent.v37_persistence import (
     validate_v37_database_object_replay,
 )
 from pepagent.v37_preregistration import load_v37_preregistration
+from pepagent.v37_provider_consumers import (
+    PEPSHOT_INSPECT_CONTRACT_ID,
+    PEPSHOT_INSPECTION_SCHEMA_SHA256,
+    PEPSHOT_RELEASE_ID,
+    PEPSHOT_RELEASE_MANIFEST_SHA256,
+    PEPSHOT_REQUEST_SCHEMA_SHA256,
+    PEPSHOT_RUNTIME_MANIFEST_SHA256,
+)
 
 ROOT = Path(__file__).parents[1]
 CONFIG = ROOT / "config" / "benchmarks" / "amp_rapid_champion_generation_v37.yaml"
@@ -101,18 +109,24 @@ def _fixture() -> tuple[dict, dict, dict, dict[str, dict]]:
         logical_id = metric["logical_id"]
         rows = []
         for candidate in sorted(candidates, key=lambda row: row["id"]):
-            row = {
-                "candidate_id": candidate["id"],
-                "metric_name": metric["metric_name"],
-                "numeric_value": 1.0,
-                "text_value": None,
-                "unit": None,
-                "out_of_domain": False,
-                "limitations": [],
-                "raw": {"source": "synthetic-test"},
-            }
-            rows.append(row)
-            evaluations.append({"tool_call_id": call_ids[logical_id], **row})
+            for metric_name in metric["metric_names"]:
+                label = {
+                    "toxinpred3_label": "Non-Toxin",
+                    "macrel_hemolysis_label": "low",
+                }.get(metric_name)
+                row = {
+                    "candidate_id": candidate["id"],
+                    "metric_name": metric_name,
+                    "numeric_value": None if label is not None else 1.0,
+                    "text_value": label,
+                    "unit": None,
+                    "status": "succeeded",
+                    "out_of_domain": False,
+                    "limitations": [],
+                    "raw": {"source": "synthetic-test"},
+                }
+                rows.append(row)
+                evaluations.append({"tool_call_id": call_ids[logical_id], **row})
         payloads[(logical_id, "evaluation_vector")] = {"evaluations": rows}
 
     shortlist_ids = [candidate["id"] for candidate in candidates[:2]]
@@ -147,17 +161,26 @@ def _fixture() -> tuple[dict, dict, dict, dict[str, dict]]:
             )
     payloads[("v37:rosetta", "decoy_manifest")] = {"decoys": decoys}
     payloads[("v37:pepshot", "pepshot_evidence")] = {
-        "reviews": [
+        "inspections": [
             {
                 "candidate_id": candidate_id,
-                "pose_id": f"{candidate_id}-pose-1",
+                "representative_pose_id": f"{candidate_id}-pose-1",
+                "boltz_seed": 20270381,
+                "disposition": "retain",
+                "reason": "provider_inspect_interface_pass",
                 "request_sha256": "1" * 64,
-                "bundle_sha256": "2" * 64,
-                "image_manifest_sha256": "3" * 64,
-                "read_order_sha256": "4" * 64,
-                "review_sha256": "5" * 64,
-                "validation_sha256": "6" * 64,
-                "status": "reviewed",
+                "inspection_id": "2" * 64,
+                "inspection_sha256": "3" * 64,
+                "source_sha256": "a" * 64,
+                "interface_verdict": "PASS",
+                "contract_id": PEPSHOT_INSPECT_CONTRACT_ID,
+                "request_schema_sha256": PEPSHOT_REQUEST_SCHEMA_SHA256,
+                "inspection_schema_sha256": PEPSHOT_INSPECTION_SCHEMA_SHA256,
+                "release_id": PEPSHOT_RELEASE_ID,
+                "release_manifest_sha256": PEPSHOT_RELEASE_MANIFEST_SHA256,
+                "runtime_manifest_sha256": PEPSHOT_RUNTIME_MANIFEST_SHA256,
+                "spatial_finding_count": 0,
+                "blocking_finding_types": [],
             }
             for candidate_id in shortlist_ids
         ]
@@ -390,10 +413,10 @@ def test_v37_replay_fails_closed_on_corrupt_object_payload() -> None:
         )
 
 
-def test_v37_replay_fails_closed_on_missing_pepshot_review() -> None:
+def test_v37_replay_fails_closed_on_missing_pepshot_inspection() -> None:
     manifest, plan, graph, payloads = _fixture()
-    _pop_role_item(graph, payloads, "pepshot_evidence", "reviews")
-    with pytest.raises(ValueError, match="PepShot candidate review coverage"):
+    _pop_role_item(graph, payloads, "pepshot_evidence", "inspections")
+    with pytest.raises(ValueError, match="PepShot candidate inspection coverage"):
         validate_v37_database_object_replay(
             manifest=manifest,
             plan=plan,
@@ -417,8 +440,10 @@ def test_v37_replay_fails_closed_on_missing_pepshot_review() -> None:
         ),
         (
             "pepshot_evidence",
-            lambda payload: payload["reviews"][0].update({"review_sha256": "bad"}),
-            "PepShot review hash chain",
+            lambda payload: payload["inspections"][0].update(
+                {"inspection_sha256": "bad"}
+            ),
+            "PepShot inspection hash chain",
         ),
     ],
 )

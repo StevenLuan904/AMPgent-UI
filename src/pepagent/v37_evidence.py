@@ -31,11 +31,12 @@ def build_v37_evidence_plan(manifest: V37Manifest) -> dict[str, Any]:
             )
     metric_calls = [
         {
-            "logical_id": f"v37:metric:{metric}",
+            "logical_id": f"v37:metric:{plugin['name']}",
             "tool_name": "v37-sequence-metric",
-            "metric_name": metric,
+            "plugin_name": plugin["name"],
+            "metric_names": list(plugin["observation_names"]),
         }
-        for metric in manifest.stage_1_sequence_evaluation["required_metric_names"]
+        for plugin in manifest.stage_1_sequence_evaluation["metric_plugins"]
     ]
     global_calls = [
         {"logical_id": f"v37:{stage}", "tool_name": f"v37-{stage}"} for stage in V37_GLOBAL_STAGES

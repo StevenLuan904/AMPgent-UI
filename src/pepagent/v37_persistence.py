@@ -20,6 +20,14 @@ from pepagent.db.models import (
 from pepagent.db.repository import ExperimentRepository
 from pepagent.provenance.hashing import sha256_json, sha256_text
 from pepagent.v37_evidence import validate_v37_replay_graph
+from pepagent.v37_provider_consumers import (
+    PEPSHOT_INSPECT_CONTRACT_ID,
+    PEPSHOT_INSPECTION_SCHEMA_SHA256,
+    PEPSHOT_RELEASE_ID,
+    PEPSHOT_RELEASE_MANIFEST_SHA256,
+    PEPSHOT_REQUEST_SCHEMA_SHA256,
+    PEPSHOT_RUNTIME_MANIFEST_SHA256,
+)
 
 V37_EVIDENCE_VERSION = "v37.database-object-replay.1"
 ArtifactWriter = Callable[[dict[str, Any]], Awaitable[Any]]
@@ -522,9 +530,20 @@ def validate_v37_database_object_replay(
         logical_id = metric["logical_id"]
         call_id = str(calls[logical_id]["id"])
         expected = payloads[(logical_id, "evaluation_vector")].get("evaluations")
-        observed = sorted(
-            evaluations_by_call.get(call_id, []), key=lambda item: item["candidate_id"]
-        )
+        if not isinstance(expected, list):
+            raise ValueError("v37 object metric evidence is not a list")
+        expected_keys = [
+            (item["candidate_id"], item["metric_name"]) for item in expected
+        ]
+        if len(expected_keys) != len(set(expected_keys)):
+            raise ValueError("v37 object metric evidence contains duplicate joins")
+        observed_by_key = {
+            (item["candidate_id"], item["metric_name"]): item
+            for item in evaluations_by_call.get(call_id, [])
+        }
+        if len(observed_by_key) != len(evaluations_by_call.get(call_id, [])):
+            raise ValueError("v37 database metric evidence contains duplicate joins")
+        observed = [observed_by_key[key] for key in expected_keys if key in observed_by_key]
         compact = [
             {
                 "candidate_id": item["candidate_id"],
@@ -532,18 +551,52 @@ def validate_v37_database_object_replay(
                 "numeric_value": item["numeric_value"],
                 "text_value": item["text_value"],
                 "unit": item["unit"],
+                "status": item["status"],
                 "out_of_domain": item["out_of_domain"],
                 "limitations": item["limitations"],
                 "raw": item["raw"],
             }
             for item in observed
         ]
-        if not isinstance(expected, list) or compact != expected:
+        if compact != expected:
             raise ValueError("v37 Evaluation rows differ from object metric evidence")
-        if {item["candidate_id"] for item in observed} != expected_candidate_ids or any(
-            item["metric_name"] != metric["metric_name"] for item in observed
-        ):
+        expected_metric_names = set(metric["metric_names"])
+        observed_pairs = {
+            (item["candidate_id"], item["metric_name"]) for item in observed
+        }
+        expected_pairs = {
+            (candidate_id, metric_name)
+            for candidate_id in expected_candidate_ids
+            for metric_name in expected_metric_names
+        }
+        if observed_pairs != expected_pairs:
             raise ValueError("v37 metric coverage or candidate join is incomplete")
+        if any(
+            item.get("status") != "succeeded"
+            or item.get("out_of_domain") is not False
+            or (
+                item["metric_name"] not in {
+                    "toxinpred3_label",
+                    "macrel_hemolysis_label",
+                }
+                and (
+                    item.get("numeric_value") is None
+                    or not math.isfinite(float(item["numeric_value"]))
+                )
+            )
+            for item in observed
+        ):
+            raise ValueError("v37 metric evidence is failed, OOD, or non-finite")
+        labels = {
+            item["metric_name"]: item.get("text_value")
+            for item in observed
+            if item["metric_name"] in {"toxinpred3_label", "macrel_hemolysis_label"}
+        }
+        if any(
+            value not in ({"Toxin", "Non-Toxin"} if name == "toxinpred3_label" else {"high", "low"})
+            for name, value in labels.items()
+        ):
+            raise ValueError("v37 metric evidence contains an invalid categorical label")
 
     shortlist = payloads[("v37:stage1-shortlist", "shortlist_manifest")]
     shortlist_ids = list(shortlist.get("candidate_ids", []))
@@ -603,35 +656,71 @@ def validate_v37_database_object_replay(
         raise ValueError("v37 Rosetta decoy coverage differs from frozen protocol")
 
     pepshot = payloads[("v37:pepshot", "pepshot_evidence")]
-    reviews = pepshot.get("reviews")
+    inspections = pepshot.get("inspections")
     if (
-        not isinstance(reviews, list)
-        or len(reviews) != len(shortlist_ids)
-        or {str(item["candidate_id"]) for item in reviews} != set(shortlist_ids)
+        not isinstance(inspections, list)
+        or len(inspections) != len(shortlist_ids)
+        or {str(item["candidate_id"]) for item in inspections} != set(shortlist_ids)
     ):
-        raise ValueError("v37 PepShot candidate review coverage is incomplete")
+        raise ValueError("v37 PepShot candidate inspection coverage is incomplete")
     required_pepshot = {
         "candidate_id",
-        "pose_id",
+        "representative_pose_id",
+        "boltz_seed",
+        "disposition",
+        "reason",
         "request_sha256",
-        "bundle_sha256",
-        "image_manifest_sha256",
-        "read_order_sha256",
-        "review_sha256",
-        "validation_sha256",
-        "status",
+        "inspection_id",
+        "inspection_sha256",
+        "source_sha256",
+        "interface_verdict",
+        "contract_id",
+        "request_schema_sha256",
+        "inspection_schema_sha256",
+        "release_id",
+        "release_manifest_sha256",
+        "runtime_manifest_sha256",
+        "spatial_finding_count",
+        "blocking_finding_types",
     }
-    for review in reviews:
-        if not required_pepshot.issubset(review) or review["pose_id"] not in pose_ids:
-            raise ValueError("v37 PepShot review evidence is incomplete")
+    pose_by_id = {str(item["pose_id"]): item for item in poses}
+    expected_projection = {
+        "PASS": ("retain", "provider_inspect_interface_pass"),
+        "WARN": ("insufficient", "provider_inspect_interface_warning"),
+        "FAIL": ("reject", "provider_inspect_interface_fail"),
+    }
+    for inspection in inspections:
+        pose_id = str(inspection.get("representative_pose_id"))
+        if not required_pepshot.issubset(inspection) or pose_id not in pose_ids:
+            raise ValueError("v37 PepShot inspection evidence is incomplete")
         if not all(
-            _is_sha256(review[field])
+            _is_sha256(inspection[field])
             for field in required_pepshot
             if field.endswith("_sha256")
         ):
-            raise ValueError("v37 PepShot review hash chain is invalid")
-        if review["status"] not in {"reviewed", "insufficient_evidence"}:
-            raise ValueError("v37 PepShot review status is invalid")
+            raise ValueError("v37 PepShot inspection hash chain is invalid")
+        pose = pose_by_id[pose_id]
+        verdict = inspection["interface_verdict"]
+        if (
+            verdict not in expected_projection
+            or (inspection["disposition"], inspection["reason"])
+            != expected_projection[verdict]
+            or inspection["boltz_seed"] != pose["boltz_seed"]
+            or inspection["source_sha256"] != pose["structure_sha256"]
+            or inspection["contract_id"] != PEPSHOT_INSPECT_CONTRACT_ID
+            or inspection["request_schema_sha256"] != PEPSHOT_REQUEST_SCHEMA_SHA256
+            or inspection["inspection_schema_sha256"]
+            != PEPSHOT_INSPECTION_SCHEMA_SHA256
+            or inspection["release_id"] != PEPSHOT_RELEASE_ID
+            or inspection["release_manifest_sha256"]
+            != PEPSHOT_RELEASE_MANIFEST_SHA256
+            or inspection["runtime_manifest_sha256"]
+            != PEPSHOT_RUNTIME_MANIFEST_SHA256
+            or not isinstance(inspection["spatial_finding_count"], int)
+            or inspection["spatial_finding_count"] < 0
+            or not isinstance(inspection["blocking_finding_types"], list)
+        ):
+            raise ValueError("v37 PepShot inspection projection or lineage is invalid")
 
     decision_logicals = {
         "v37:knowledge",

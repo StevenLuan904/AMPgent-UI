@@ -22,10 +22,10 @@ def test_v37_manifest_and_evidence_plan_are_exact() -> None:
     manifest = load_v37_preregistration(CONFIG)
     plan = build_v37_evidence_plan(manifest)
     assert len(plan["generator_calls"]) == 9
-    assert len(plan["metric_calls"]) == 11
+    assert len(plan["metric_calls"]) == 5
     assert plan["expected_candidate_count"] == 900
     assert plan["expected_structure_shortlist"] == 48
-    assert len(plan["required_tool_call_ids"]) == 27
+    assert len(plan["required_tool_call_ids"]) == 21
 
 
 def test_v37_manifest_rejects_single_generator_drift() -> None:
