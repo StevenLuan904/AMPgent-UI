@@ -691,9 +691,12 @@ SHA-256 为 `a722f0f74d486237a128327a3158ae71ee143577f3f8b7e4acb46505e38778da`�
 v35 现新增 `v35.target-qualification-replay.1` typed 离线 ledger/verifier：至少 8 个 shortlist 项必须按
 顺序保存完整通过/失败分母；A/B primary hard gate 后，使用 AceA-anchor-aware deterministic maximin
 重算 3–5 个 panel member，并精确核对 source/sequence/structure/pocket/selection-witness artifact SHA。
-任何 AMP/MIC、风险、Boltz、Rosetta、PepShot 或生成肽结果进入 target selection 都 fail-closed。当前
-仍未实现 typed qualification-audit/panel-witness PostgreSQL 实体、迁移或合成数据库 acceptance，因此
-不得审计/选择真实靶点；没有新 target 名单或泛化结果。
+任何 AMP/MIC、风险、Boltz、Rosetta、PepShot 或生成肽结果进入 target selection 都 fail-closed。
+typed `TargetQualificationAudit`、`TargetPanelSelectionWitness`、`TargetPanelSelectionMember`、migration
+`0011_target_qualification_lineage`、retry-safe repository primitive 与 database-row + object-store-only
+projection verifier 已在仓库实现。它们会拒绝跨 target/run 证据、AgentDecision/ToolCall 脱链、artifact
+漂移、冻结后追加 ledger 行和重试漂移。共享 PostgreSQL 尚未部署 migration，也未完成隔离合成数据库
+acceptance，因此不得审计/选择真实靶点；没有新 target 名单或泛化结果。
 typed ledger/offline replay 实现 revision 为
 `e47e0d3cf94d6b9d0b63c5a799694c13aeb819ca`；回填后的 v35 config SHA-256 为
 `c9641143982940a0a05127e8b2e0081837a499b13770fc4c0ac6ecbad63a0c81`，全量验证为 ruff clean、

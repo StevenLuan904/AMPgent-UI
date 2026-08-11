@@ -110,9 +110,17 @@ pocket、A–D 等级、通过或拒绝理由，以及只由预注册面板描�
 tie-break 固定为 shortlist order → target key；selection witness 必须由对象字节精确重算。合成测试覆盖
 失败分母缺失、弱 pocket 混入、肽/Rosetta/PepShot 结果泄漏、面板顺序漂移和 artifact 篡改。
 
-这仍不是数据库执行许可。现有 `Target`/`TargetPocket` 可复用，但 typed qualification-audit 与 panel-
-selection-witness 实体、迁移和共享 PostgreSQL 合成验收尚未实现；在这些缺口关闭并另行授权前，不得
-审计或选择真实靶点。没有具体 target 名称、没有肽、没有结构评分或泛化结果。
+这仍不是数据库执行许可。现有 `Target`/`TargetPocket` 已被扩展为三个 append-only typed 实体：
+`TargetQualificationAudit` 保存完整 shortlist 通过/失败分母及其 run/ToolCall/AgentDecision/artifact
+依赖；`TargetPanelSelectionWitness` 保存冻结算法、AceA anchor、snapshot 与 witness；
+`TargetPanelSelectionMember` 保存选择顺序。migration `0011_target_qualification_lineage`、retry-safe
+repository primitive 和 database-row + object-store-only projection verifier 已在仓库实现。repository
+会拒绝跨 target/run 的证据、脱离 ToolCall 的 AgentDecision、artifact SHA 漂移、冻结面板后追加审计行
+以及重试 payload 漂移。
+
+共享 PostgreSQL 尚未部署 migration，也未执行隔离合成数据库 acceptance；因此在另行预注册和授权前，
+仍不得审计或选择真实靶点。没有具体 target 名称、没有肽、没有结构评分或泛化结果。下一工程门只应是
+0 Candidate、0 Evaluation 的 v35 合成数据库闭环验收，而不是真实 target audit。
 
 typed ledger/offline replay 实现 revision 为
 `e47e0d3cf94d6b9d0b63c5a799694c13aeb819ca`；回填 revision 后的 config SHA-256 为

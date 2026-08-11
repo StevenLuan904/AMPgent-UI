@@ -567,6 +567,167 @@ class PocketEvidence(Base, TimestampMixin):
     pocket: Mapped[TargetPocket | None] = relationship(back_populates="evidence")
 
 
+class TargetQualificationAudit(Base):
+    """Append-only target qualification row preserved before panel selection."""
+
+    __tablename__ = "target_qualification_audits"
+    __table_args__ = (
+        UniqueConstraint(
+            "audit_scope_id",
+            "shortlist_order",
+            name="uq_target_qualification_scope_order",
+        ),
+        UniqueConstraint(
+            "audit_scope_id",
+            "target_key",
+            name="uq_target_qualification_scope_key",
+        ),
+        UniqueConstraint(
+            "audit_scope_id",
+            "target_id",
+            name="uq_target_qualification_scope_target",
+        ),
+        CheckConstraint("shortlist_order > 0", name="target_qualification_positive_order"),
+        CheckConstraint(
+            "primary_pocket_id IS NULL OR wrong_pocket_id IS NULL "
+            "OR primary_pocket_id <> wrong_pocket_id",
+            name="target_qualification_distinct_pockets",
+        ),
+        Index("ix_target_qualification_scope_status", "audit_scope_id", "audit_status"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    audit_scope_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    schema_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    shortlist_order: Mapped[int] = mapped_column(Integer, nullable=False)
+    target_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("targets.id"), nullable=False)
+    audit_run_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("experiment_runs.id"), nullable=False
+    )
+    audit_tool_call_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("tool_calls.id"), nullable=False
+    )
+    audit_decision_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("agent_decisions.id"), nullable=False
+    )
+    target_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    organism_and_strain: Mapped[str] = mapped_column(Text, nullable=False)
+    sequence_accession: Mapped[str] = mapped_column(String(128), nullable=False)
+    sequence_entry_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    sequence_admission_basis: Mapped[str] = mapped_column(String(128), nullable=False)
+    sequence_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    sequence_artifact_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("artifacts.id"), nullable=False
+    )
+    source_manifest_artifact_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("artifacts.id"), nullable=False
+    )
+    feature_evidence_artifact_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("artifacts.id"), nullable=False
+    )
+    structure_source_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    coordinate_artifact_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("artifacts.id"))
+    structure_validation_artifact_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("artifacts.id")
+    )
+    sequence_structure_mapping_artifact_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("artifacts.id")
+    )
+    primary_pocket_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("target_pockets.id")
+    )
+    wrong_pocket_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("target_pockets.id")
+    )
+    primary_pocket_grade: Mapped[str | None] = mapped_column(String(8))
+    primary_pocket_definition_artifact_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("artifacts.id")
+    )
+    wrong_pocket_definition_artifact_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("artifacts.id")
+    )
+    audit_status: Mapped[str] = mapped_column(String(32), nullable=False)
+    rejection_reasons_json: Mapped[list[str]] = mapped_column(JSONB, default=list, nullable=False)
+    diversity_vector_json: Mapped[list[float] | None] = mapped_column(JSONB)
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class TargetPanelSelectionWitness(Base):
+    """Frozen database identity for one deterministic multi-target panel selection."""
+
+    __tablename__ = "target_panel_selection_witnesses"
+    __table_args__ = (
+        CheckConstraint(
+            "requested_new_target_count BETWEEN 3 AND 5",
+            name="target_panel_requested_count_range",
+        ),
+        Index("ix_target_panel_selection_status", "selection_status"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    audit_scope_id: Mapped[str] = mapped_column(String(128), nullable=False, unique=True)
+    schema_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    selection_method: Mapped[str] = mapped_column(String(128), nullable=False)
+    selection_run_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("experiment_runs.id"), nullable=False
+    )
+    selection_tool_call_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("tool_calls.id"), nullable=False
+    )
+    selection_decision_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("agent_decisions.id"), nullable=False
+    )
+    requested_new_target_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    target_names_selected_before_audit: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    peptide_or_structure_outcomes_used_for_selection: Mapped[bool] = mapped_column(
+        Boolean, nullable=False
+    )
+    target_agnostic_amp_lane_retained: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    acea_anchor_vector_json: Mapped[list[float]] = mapped_column(JSONB, nullable=False)
+    acea_anchor_artifact_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("artifacts.id"), nullable=False
+    )
+    selection_witness_artifact_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("artifacts.id"), nullable=False
+    )
+    snapshot_artifact_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("artifacts.id"), nullable=False
+    )
+    selection_status: Mapped[str] = mapped_column(String(32), nullable=False)
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class TargetPanelSelectionMember(Base):
+    """Ordered typed edge from a panel witness to one selected audit row."""
+
+    __tablename__ = "target_panel_selection_members"
+    __table_args__ = (
+        UniqueConstraint(
+            "selection_witness_id",
+            "target_audit_id",
+            name="uq_target_panel_selection_member_audit",
+        ),
+        CheckConstraint("selection_rank > 0", name="target_panel_member_positive_rank"),
+    )
+
+    selection_witness_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("target_panel_selection_witnesses.id"), primary_key=True
+    )
+    selection_rank: Mapped[int] = mapped_column(Integer, primary_key=True)
+    target_audit_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("target_qualification_audits.id"), nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
 class LifecycleEvent(Base):
     """Append-only audit trail for runs, candidates, and evidence."""
 

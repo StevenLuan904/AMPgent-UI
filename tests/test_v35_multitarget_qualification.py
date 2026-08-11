@@ -2,6 +2,8 @@ from pathlib import Path
 
 import yaml
 
+from pepagent.provenance.hashing import sha256_bytes
+
 ROOT = Path(__file__).parents[1]
 CONFIG = ROOT / "config" / "benchmarks" / "amp_multitarget_qualification_v35.yaml"
 
@@ -9,11 +11,12 @@ CONFIG = ROOT / "config" / "benchmarks" / "amp_multitarget_qualification_v35.yam
 def test_v35_is_qualification_only_and_cannot_cherry_pick_targets() -> None:
     contract = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
     assert contract["execution_status"] == (
-        "typed_ledger_and_offline_replay_implemented_not_authorized"
+        "typed_persistence_implemented_not_deployed_not_authorized"
     )
     assert contract["implementation_revision"] == (
         "e47e0d3cf94d6b9d0b63c5a799694c13aeb819ca"
     )
+    assert contract["typed_persistence_revision"] is None
     assert contract["scope"]["target_names_selected"] is False
     assert contract["scope"]["target_selection_authorized"] is False
     assert contract["scope"]["candidate_generation_authorized"] is False
@@ -65,7 +68,15 @@ def test_v35_freezes_offline_replay_but_fails_closed_on_typed_persistence_gap() 
     assert replay["complete_rejection_denominator_required"] is True
     assert replay["selected_primary_targets_require_grade_A_or_B"] is True
     gap = contract["typed_persistence_gap"]
-    assert gap["typed_target_qualification_audit_entity_implemented"] is False
-    assert gap["typed_panel_selection_witness_entity_implemented"] is False
+    assert gap["typed_target_qualification_audit_entity_implemented"] is True
+    assert gap["typed_panel_selection_witness_entity_implemented"] is True
+    assert gap["typed_panel_selection_member_entity_implemented"] is True
+    assert gap["migration_implemented_in_repository"] is True
+    assert gap["migration_from_revision"] == "0010_harness_evolution_lineage"
+    assert gap["migration_to_revision"] == "0011_target_qualification_lineage"
+    migration = ROOT / gap["migration_path"]
+    assert sha256_bytes(migration.read_bytes()) == gap["migration_sha256"]
+    assert gap["retry_safe_repository_writes_implemented"] is True
+    assert gap["database_row_object_store_projection_verifier_implemented"] is True
     assert gap["migration_deployed_to_shared_PostgreSQL"] is False
     assert gap["target_audit_execution_forbidden_until_gap_closed_and_separately_authorized"]

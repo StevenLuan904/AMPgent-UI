@@ -214,11 +214,15 @@ SHA-256 为 `a722f0f74d486237a128327a3158ae71ee143577f3f8b7e4acb46505e38778da`�
 Q5 工程层现新增 `v35.target-qualification-replay.1` typed ledger/offline verifier：它要求不少于 8 个
 shortlist 项完整保留通过/失败分母，并从 immutable sequence/structure/pocket artifact、A/B hard gate 与
 AceA-anchor-aware deterministic maximin 重算 3–5 靶点面板；会拒绝任何 AMP/MIC、风险、Boltz、Rosetta
-或 PepShot 结果进入 target selection。当前仍缺 typed qualification-audit/panel-witness PostgreSQL 实体、
-迁移和合成数据库 acceptance，所以没有授权真实 target audit，也没有产生多靶点结果。
+或 PepShot 结果进入 target selection。typed qualification-audit、panel-witness、ordered-member 三类
+PostgreSQL 实体、migration `0011_target_qualification_lineage`、retry-safe repository primitive 与
+database-row + object-store-only projection verifier 现已在仓库实现；会拒绝跨 target/run 证据、
+AgentDecision/ToolCall 脱链、冻结后追加 ledger 行和重试漂移。共享 PostgreSQL 尚未部署 migration，
+隔离合成数据库 acceptance 尚未执行，所以没有授权真实 target audit，也没有产生多靶点结果。
 该离线实现 revision 为 `e47e0d3cf94d6b9d0b63c5a799694c13aeb819ca`，回填后的 config SHA-256 为
 `c9641143982940a0a05127e8b2e0081837a499b13770fc4c0ac6ecbad63a0c81`，全量测试为 `352 passed`。
-它只关闭 Q5 的确定性离线重算缺口；数据库实体、迁移、合成验收和真实靶点授权仍是独立后续问题。
+它只关闭 Q5 的确定性离线重算缺口；本次 typed persistence 实现进一步关闭仓库 schema/repository
+缺口，但 migration 部署、合成验收和真实靶点授权仍是三个独立后续问题。
 revision 回填 checkpoint 为 `d79858dc3aa42399e439abaabc7d2e0fbe42bc70`；内容归档 SHA-256 为
 `31b549ee748bd07edd083351732c8c4f76f1fbb4c8f8326d20716d05b12ad10b`。
 

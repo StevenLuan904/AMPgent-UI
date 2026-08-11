@@ -1,7 +1,8 @@
 benchmark_id: amp_multitarget_qualification_v35
-version: v35.1.0-typed-ledger-and-offline-replay
-execution_status: typed_ledger_and_offline_replay_implemented_not_authorized
+version: v35.2.0-typed-persistence-and-database-projection
+execution_status: typed_persistence_implemented_not_deployed_not_authorized
 implementation_revision: e47e0d3cf94d6b9d0b63c5a799694c13aeb819ca
+typed_persistence_revision: null
 track: target_generalization_without_cherry_picking
 
 scientific_question:
@@ -175,8 +176,16 @@ qualification_replay_contract:
 
 typed_persistence_gap:
   existing_target_and_target_pocket_entities_may_be_reused: true
-  typed_target_qualification_audit_entity_implemented: false
-  typed_panel_selection_witness_entity_implemented: false
+  typed_target_qualification_audit_entity_implemented: true
+  typed_panel_selection_witness_entity_implemented: true
+  typed_panel_selection_member_entity_implemented: true
+  migration_implemented_in_repository: true
+  migration_path: migrations/versions/0011_target_qualification_lineage.py
+  migration_sha256: 08e486d8d4d267ba57b763a27aefed8db5c139e31e5c212e1eb46fe11c00d472
+  migration_from_revision: 0010_harness_evolution_lineage
+  migration_to_revision: 0011_target_qualification_lineage
+  retry_safe_repository_writes_implemented: true
+  database_row_object_store_projection_verifier_implemented: true
   migration_deployed_to_shared_PostgreSQL: false
   synthetic_database_acceptance_completed: false
   target_audit_execution_forbidden_until_gap_closed_and_separately_authorized: true
