@@ -555,3 +555,5 @@ SHA-256 为 `402a7be05785ce2fbbf9e8be4d714af1aa6952aee26f60de17f8ee1bf7e4cad4`�
 `c58b3af9f94c4e8cdf2d08167f647f5bba22121fac953ef2cfcde7447b711406`。该门禁只冻结可执行源码与
 环境输入文件，不证明已部署 Python/PyMOL 环境匹配；下一步仍须验证实际可执行环境，再运行隔离 shadow
 fixture。`execution_authorized=false`、`submitted=false`，无 Temporal activity、run、workflow 或新序列。
+记录提交为 `696f696`；内容归档 `var/archives/ampgent-v34-source-manifest-696f696.zip` 的 SHA-256 为
+`0f8f44fce80a43e489df62694520ae4e7b62b9134a832a149d2a72a27ceab91a`。

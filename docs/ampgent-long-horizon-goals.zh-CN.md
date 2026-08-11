@@ -238,6 +238,8 @@ allowlisted 文件的 manifest SHA-256 为
 `c58b3af9f94c4e8cdf2d08167f647f5bba22121fac953ef2cfcde7447b711406`。这只推进 Q3/Q4 的可复原工程
 底座；尚未运行知识检索、PepShot、shadow episode 或正式消融，也没有工具效果结果。实际 Python/PyMOL
 运行时仍须独立冻结并与 source manifest 对齐。
+该 checkpoint 的记录提交为 `696f696`，内容归档 SHA-256 为
+`0f8f44fce80a43e489df62694520ae4e7b62b9134a832a149d2a72a27ceab91a`。
 
 版本号是当前规划，不是正式 run 授权。任何生成、阈值、候选选择或执行必须先有独立冻结 config、
 提交/push、服务与 worker 门禁、唯一 run 检查。长期路线允许被新证据修订，但修订必须追加理由，不能

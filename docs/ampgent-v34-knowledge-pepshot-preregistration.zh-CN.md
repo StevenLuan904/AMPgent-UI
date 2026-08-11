@@ -117,3 +117,5 @@ config 中 implementation revision 已更新为该 commit，当前 config SHA-25
 `c58b3af9f94c4e8cdf2d08167f647f5bba22121fac953ef2cfcde7447b711406`。该状态仍只是
 `ready_for_isolated_shadow_fixture_not_formal_execution`：实际部署的 Python/PyMOL 环境尚未核验，
 shadow fixture 尚未运行，且没有 Temporal activity、run、workflow 或新序列。
+记录提交为 `696f696`；内容归档 `var/archives/ampgent-v34-source-manifest-696f696.zip` 的 SHA-256 为
+`0f8f44fce80a43e489df62694520ae4e7b62b9134a832a149d2a72a27ceab91a`。
