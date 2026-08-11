@@ -118,7 +118,15 @@ class RapidChampionGenerationV37Workflow:
                     start_to_close_timeout=timedelta(hours=1),
                     retry_policy=retry,
                 )
-                generation_results.append({"ordinal": cell["ordinal"], **persisted})
+                generation_results.append(
+                    {
+                        "ordinal": cell["ordinal"],
+                        "activity_transition_receipt": cell["generated"][
+                            "activity_transition_receipt"
+                        ],
+                        **persisted,
+                    }
+                )
             all_candidates = [
                 candidate
                 for result in generation_results
@@ -166,9 +174,15 @@ class RapidChampionGenerationV37Workflow:
                     start_to_close_timeout=timedelta(hours=1),
                     retry_policy=retry,
                 )
-                return {"ordinal": item["ordinal"], **persisted}
+                return {
+                    "ordinal": item["ordinal"],
+                    "activity_transition_receipt": result[
+                        "activity_transition_receipt"
+                    ],
+                    **persisted,
+                }
 
-            await _bounded_ordered_map(
+            metric_results = await _bounded_ordered_map(
                 [
                     {"ordinal": ordinal, **plugin}
                     for ordinal, plugin in enumerate(metric_plugins)
@@ -230,7 +244,13 @@ class RapidChampionGenerationV37Workflow:
                     start_to_close_timeout=timedelta(minutes=30),
                     retry_policy=retry,
                 )
-                return {**item, "structure": persisted}
+                return {
+                    **item,
+                    "structure": persisted,
+                    "activity_transition_receipt": structure[
+                        "activity_transition_receipt"
+                    ],
+                }
 
             pose_results = await _bounded_ordered_map(
                 structure_items,
@@ -325,7 +345,13 @@ class RapidChampionGenerationV37Workflow:
                     start_to_close_timeout=timedelta(hours=2),
                     retry_policy=retry,
                 )
-                return {**item, "rosetta": persisted}
+                return {
+                    **item,
+                    "rosetta": persisted,
+                    "activity_transition_receipt": rosetta[
+                        "activity_transition_receipt"
+                    ],
+                }
 
             rosetta_results_with_ordinals = await _bounded_ordered_map(
                 rosetta_items,
@@ -378,18 +404,44 @@ class RapidChampionGenerationV37Workflow:
                 if item["disposition"] == "retain"
             )
             shortlisted_ids = {str(item["id"]) for item in shortlist["candidates"]}
+            proposal_receipts = {
+                str(candidate["id"]): result["activity_transition_receipt"]
+                for result in generation_results
+                for candidate in result["candidates"]
+            }
+            evaluation_receipts = [
+                item["activity_transition_receipt"] for item in metric_results
+            ]
+            boltz_receipts: dict[str, list[dict[str, Any]]] = {}
+            for pose in pose_results:
+                candidate_id = str(pose["candidate"]["id"])
+                boltz_receipts.setdefault(candidate_id, []).append(
+                    pose["activity_transition_receipt"]
+                )
+            rosetta_receipts: dict[str, list[dict[str, Any]]] = {}
+            for scored in rosetta_results_with_ordinals:
+                candidate_id = str(scored["rosetta"]["candidate"]["id"])
+                rosetta_receipts.setdefault(candidate_id, []).append(
+                    scored["activity_transition_receipt"]
+                )
             stage_outcomes = {}
             for item in pipeline_manifest["items"]:
                 occurrence_id = str(item["occurrence_id"])
                 for stage in V37_PIPELINE_STAGES:
+                    succeeded = (
+                        stage in {"proposal", "evaluation"}
+                        or occurrence_id in shortlisted_ids
+                    )
                     stage_outcomes[item["stage_logical_ids"][stage]] = {
                         "outcome": (
-                            "succeeded"
-                            if stage in {"proposal", "evaluation"}
-                            or occurrence_id in shortlisted_ids
-                            else "skipped_not_selected"
+                            "succeeded" if succeeded else "skipped_not_selected"
                         ),
-                        "backpressure_observed": False,
+                        "activity_receipts": {
+                            "proposal": [proposal_receipts[occurrence_id]],
+                            "evaluation": evaluation_receipts,
+                            "boltz": boltz_receipts.get(occurrence_id, []),
+                            "rosetta": rosetta_receipts.get(occurrence_id, []),
+                        }[stage],
                     }
             transition_ledger = build_v37_pipeline_queue_transition_ledger(
                 pipeline_manifest=pipeline_manifest,

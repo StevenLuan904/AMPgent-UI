@@ -78,6 +78,19 @@ async def build_database_evidence_graph(
     )
     events = [*run_events, *attempt_events]
     artifact_ids = {link.artifact_id for link in evidence_links}
+    submission_artifact_sha256s: set[str] = set()
+    submission_inputs = run.spec_json.get("submission_input_artifacts", {})
+    if isinstance(submission_inputs, dict):
+        submission_artifact_sha256s.update(
+            str(identity["sha256"])
+            for identity in submission_inputs.values()
+            if isinstance(identity, dict) and identity.get("sha256")
+        )
+    workflow_request_artifact = run.spec_json.get("workflow_request_artifact")
+    if isinstance(workflow_request_artifact, dict) and workflow_request_artifact.get(
+        "sha256"
+    ):
+        submission_artifact_sha256s.add(str(workflow_request_artifact["sha256"]))
     attempt_artifact_sha256s = {
         str(event.payload_json["artifact_sha256"])
         for event in attempt_events
@@ -92,7 +105,13 @@ async def build_database_evidence_graph(
     attempt_artifacts = await _all(
         session, Artifact, Artifact.sha256.in_(attempt_artifact_sha256s)
     )
-    artifacts_by_id = {item.id: item for item in [*linked_artifacts, *attempt_artifacts]}
+    submission_artifacts = await _all(
+        session, Artifact, Artifact.sha256.in_(submission_artifact_sha256s)
+    )
+    artifacts_by_id = {
+        item.id: item
+        for item in [*linked_artifacts, *attempt_artifacts, *submission_artifacts]
+    }
     artifacts = list(artifacts_by_id.values())
 
     for candidate in candidates:

@@ -100,6 +100,166 @@ class KnowledgeApplicabilityResult:
     runtime_manifest_sha256: str
 
 
+@dataclass(frozen=True)
+class KnowledgeContextProjection:
+    """Canonical projection of the provider-owned v3 context-pack schema."""
+
+    retrieval_trace_id: str
+    policy_version: str
+    cards: tuple[dict[str, Any], ...]
+    passages: tuple[dict[str, Any], ...]
+    adoption_edges: tuple[dict[str, Any], ...]
+    context_pack_sha256: str
+
+
+def consume_v37_knowledge_context_pack(
+    *,
+    context_pack: Mapping[str, Any],
+    query_payload: Mapping[str, Any],
+    candidate_ids: Sequence[str],
+    provider_release_receipt: Mapping[str, Any],
+) -> KnowledgeContextProjection:
+    """Validate and project the immutable provider v3 pack without schema guessing."""
+
+    exact_release = {
+        "release_revision": KNOWLEDGE_RELEASE_REVISION,
+        "release_manifest_sha256": KNOWLEDGE_RELEASE_MANIFEST_SHA256,
+        "runtime_manifest_sha256": KNOWLEDGE_RUNTIME_MANIFEST_SHA256,
+        "active_policy_sha256": KNOWLEDGE_ACTIVE_POLICY_SHA256,
+    }
+    if provider_release_receipt.get("provider_contract_verified") is not True:
+        raise ValueError("knowledge provider release was not verified")
+    if any(provider_release_receipt.get(key) != value for key, value in exact_release.items()):
+        raise ValueError("knowledge provider release receipt drifted")
+
+    required_top_level = {
+        "task",
+        "policy_version",
+        "target_brief",
+        "agent_brief",
+        "design_rules",
+        "evidence_index",
+        "warnings",
+        "knowledge_gaps",
+        "retrieval_trace_id",
+        "generated_at",
+    }
+    if set(context_pack) != required_top_level:
+        raise ValueError("knowledge context pack top-level schema drifted")
+    task = context_pack.get("task")
+    if not isinstance(task, Mapping) or set(task) != {
+        "target_key",
+        "query",
+        "application",
+    }:
+        raise ValueError("knowledge context pack task schema drifted")
+    if str(task.get("target_key", "")).lower() != "acea":
+        raise ValueError("knowledge context pack target drifted")
+    if task.get("query") != query_payload.get("query"):
+        raise ValueError("knowledge context pack query drifted")
+    if task.get("application") != "bacterial AceA inhibition and antibacterial validation":
+        raise ValueError("knowledge context pack application drifted")
+    if context_pack.get("policy_version") != "amp-design-context-v2":
+        raise ValueError("knowledge context pack policy identity drifted")
+    trace_id = _identity(context_pack.get("retrieval_trace_id"), "retrieval_trace_id")
+
+    evidence_index = context_pack.get("evidence_index")
+    if not isinstance(evidence_index, list) or not evidence_index:
+        raise ValueError("knowledge context pack lacks its evidence index")
+    passages: list[dict[str, Any]] = []
+    evidence_ids: set[str] = set()
+    evidence_by_id: dict[str, dict[str, Any]] = {}
+    for raw in evidence_index:
+        if not isinstance(raw, Mapping):
+            raise ValueError("knowledge evidence index contains a non-object item")
+        evidence_id = _identity(raw.get("evidence_id"), "evidence_id")
+        if evidence_id in evidence_ids:
+            raise ValueError("knowledge evidence index contains duplicate evidence")
+        evidence_ids.add(evidence_id)
+        evidence_by_id[evidence_id] = dict(raw)
+        if raw.get("status") not in {"candidate", "verified"}:
+            raise ValueError("knowledge evidence index contains an invalid status")
+        passages.append(
+            {
+                "evidence_id": evidence_id,
+                "source_id": _identity(raw.get("source_id"), "source_id"),
+                "status": raw["status"],
+                "content_sha256": sha256_json(dict(raw)),
+            }
+        )
+
+    design_rules = context_pack.get("design_rules")
+    if not isinstance(design_rules, Mapping) or set(design_rules) != {"direct", "transfer"}:
+        raise ValueError("knowledge context pack design-rule schema drifted")
+    cards: list[dict[str, Any]] = []
+    card_ids: set[str] = set()
+    card_lanes: dict[str, str] = {}
+    for lane in ("direct", "transfer"):
+        rules = design_rules.get(lane)
+        if not isinstance(rules, list):
+            raise ValueError("knowledge context pack design-rule lane is not a list")
+        for raw in rules:
+            if not isinstance(raw, Mapping):
+                raise ValueError("knowledge context pack contains a non-object design rule")
+            card_id = _identity(raw.get("card_id"), "card_id")
+            if card_id in card_ids:
+                raise ValueError("knowledge context pack contains duplicate design rules")
+            card_ids.add(card_id)
+            evidence_refs = tuple(str(value) for value in raw.get("evidence_refs", []))
+            if (
+                not evidence_refs
+                or len(evidence_refs) != len(set(evidence_refs))
+                or any(value not in evidence_ids for value in evidence_refs)
+            ):
+                raise ValueError("knowledge design-rule evidence lineage drifted")
+            if raw.get("status") not in {"candidate", "verified"}:
+                raise ValueError("knowledge design rule contains an invalid status")
+            cards.append(
+                {
+                    "card_id": card_id,
+                    "revision": str(context_pack["policy_version"]),
+                    "kind": lane,
+                    "status": raw["status"],
+                    "content_sha256": sha256_json(dict(raw)),
+                    "passage_ids": list(evidence_refs),
+                    "passage_manifest_sha256": sha256_json(
+                        [evidence_by_id[value] for value in evidence_refs]
+                    ),
+                }
+            )
+            card_lanes[card_id] = lane
+    if not cards:
+        raise ValueError("knowledge context pack contains no design rules")
+
+    ordered_candidate_ids = [
+        _identity(candidate_id, "candidate_id") for candidate_id in candidate_ids
+    ]
+    if not ordered_candidate_ids or len(ordered_candidate_ids) != len(
+        set(ordered_candidate_ids)
+    ):
+        raise ValueError("knowledge projection candidate identity/order is invalid")
+    adoption_edges = tuple(
+        {
+            "evidence_id": f"{card['card_id']}:candidate-applicability",
+            "disposition": "used",
+            "reason": (
+                f"provider {card_lanes[card['card_id']]} advisory rule; "
+                "annotation only and never a selection score"
+            ),
+            "candidate_ids": list(ordered_candidate_ids),
+        }
+        for card in cards
+    )
+    return KnowledgeContextProjection(
+        retrieval_trace_id=trace_id,
+        policy_version=str(context_pack["policy_version"]),
+        cards=tuple(cards),
+        passages=tuple(passages),
+        adoption_edges=adoption_edges,
+        context_pack_sha256=sha256_json(dict(context_pack)),
+    )
+
+
 def _sha256(value: Any, field: str) -> str:
     text = str(value)
     if len(text) != 64 or any(character not in "0123456789abcdef" for character in text):

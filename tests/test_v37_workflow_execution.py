@@ -1,6 +1,7 @@
 import ast
 import inspect
 import json
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -27,6 +28,28 @@ from pepagent.workers.v37_activities import (
 from pepagent.workers.v37_temporal_worker import V37_ROLE_CONFIG
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_v37_activity_transition_receipt_uses_temporal_timing(monkeypatch) -> None:
+    started_at = datetime.now(UTC) - timedelta(seconds=1)
+    scheduled_at = started_at - timedelta(seconds=2)
+    monkeypatch.setattr(
+        v37_activities.activity,
+        "info",
+        lambda: SimpleNamespace(
+            activity_id="activity-1",
+            activity_type="generate_v37_batch",
+            attempt=2,
+            task_queue="pepagent-generator-v37",
+            current_attempt_scheduled_time=scheduled_at,
+            started_time=started_at,
+        ),
+    )
+    receipt = v37_activities._activity_transition_receipt()
+    assert receipt["scheduled_at"] == scheduled_at.isoformat()
+    assert receipt["started_at"] == started_at.isoformat()
+    assert receipt["schedule_to_start_seconds"] == 2.0
+    assert datetime.fromisoformat(receipt["finished_at"]) >= started_at
 
 
 def _workflow_calls() -> list[str]:

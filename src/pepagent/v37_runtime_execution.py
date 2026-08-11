@@ -46,6 +46,82 @@ class V37GenericRuntimePaths:
     adapter_path: Path | None = None
 
 
+def resolve_v37_frozen_invocation(
+    descriptor: Mapping[str, Any], invocation_name: str
+) -> tuple[list[str], Path]:
+    """Return an exact provider-owned invocation without rebuilding its CLI."""
+
+    invocations = descriptor.get("invocations")
+    if not isinstance(invocations, Mapping):
+        raise ValueError("v37 runtime descriptor lacks frozen invocations")
+    invocation = invocations.get(invocation_name)
+    if not isinstance(invocation, Mapping):
+        raise ValueError("v37 runtime descriptor lacks the requested frozen invocation")
+    argv = invocation.get("argv")
+    cwd = invocation.get("cwd")
+    if (
+        not isinstance(argv, list)
+        or not argv
+        or not all(isinstance(value, str) and value for value in argv)
+        or not isinstance(cwd, str)
+        or not cwd
+    ):
+        raise ValueError("v37 frozen invocation is incomplete")
+    _validate_descriptor_command_entities(descriptor, argv)
+    if cwd != descriptor.get("cwd"):
+        raise ValueError("v37 frozen invocation cwd differs from the descriptor")
+    return list(argv), Path(cwd)
+
+
+def build_v37_frozen_adapter_command(
+    descriptor: Mapping[str, Any], arguments: Sequence[str]
+) -> list[str]:
+    """Append provider arguments to the frozen executable/adapter launch prefix."""
+
+    launch_argv = descriptor.get("launch_argv")
+    if not isinstance(launch_argv, list) or not all(
+        isinstance(value, str) and value for value in launch_argv
+    ):
+        raise ValueError("v37 runtime descriptor lacks its frozen launch argv")
+    guard = descriptor.get("execution_guard")
+    if not isinstance(guard, Mapping) or not isinstance(guard.get("contract"), Mapping):
+        raise ValueError("v37 runtime descriptor lacks its execution guard")
+    entities = guard["contract"].get("command_entities")
+    if not isinstance(entities, Mapping) or entities.get("adapter_index") is None:
+        raise ValueError("v37 runtime descriptor lacks a frozen adapter index")
+    prefix_length = int(entities["adapter_index"]) + 1
+    if len(launch_argv) < prefix_length:
+        raise ValueError("v37 frozen launch argv does not contain its adapter")
+    command = [*launch_argv[:prefix_length], *(str(value) for value in arguments)]
+    _validate_descriptor_command_entities(descriptor, command)
+    return command
+
+
+def _validate_descriptor_command_entities(
+    descriptor: Mapping[str, Any], command: Sequence[str]
+) -> None:
+    guard = descriptor.get("execution_guard")
+    if not isinstance(guard, Mapping):
+        raise ValueError("v37 runtime descriptor lacks its execution guard")
+    contract = guard.get("contract")
+    paths = guard.get("paths")
+    if not isinstance(contract, Mapping) or not isinstance(paths, Mapping):
+        raise ValueError("v37 runtime descriptor execution guard is incomplete")
+    entities = contract.get("command_entities")
+    if not isinstance(entities, Mapping):
+        raise ValueError("v37 runtime descriptor lacks command entities")
+    executable_index = int(entities.get("executable_index", -1))
+    adapter_index = entities.get("adapter_index")
+    if executable_index < 0 or len(command) <= executable_index:
+        raise ValueError("v37 frozen command lacks its executable")
+    if command[executable_index] != paths.get("executable_path"):
+        raise ValueError("v37 frozen command executable differs from the descriptor")
+    if adapter_index is not None:
+        index = int(adapter_index)
+        if len(command) <= index or command[index] != paths.get("adapter_path"):
+            raise ValueError("v37 frozen command adapter differs from the descriptor")
+
+
 def _sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:

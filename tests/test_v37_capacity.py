@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 import yaml
 
+from pepagent.provenance.hashing import sha256_json
 from pepagent.v37_capacity import (
     V37CapacityContract,
     build_v37_pipeline_manifest,
@@ -42,6 +44,7 @@ def _worker_snapshot() -> dict:
                 "role": role,
                 "task_queue": queue,
                 "poller_identity": f"{2000 + index}@test",
+                "poller_last_access_at": "2026-08-12T00:00:00Z",
                 "source_revision": "a" * 40,
                 "release_sha256": "b" * 64,
                 "environment_sha256": "c" * 64,
@@ -52,6 +55,29 @@ def _worker_snapshot() -> dict:
             for index, (role, queue) in enumerate(roles)
         ],
     }
+
+
+def _stage_receipts(stage: str, logical_id: str) -> list[dict]:
+    activity_type, task_queue, count = {
+        "proposal": ("generate_v37_batch", "pepagent-generator-v37", 1),
+        "evaluation": ("evaluate_v37_sequence_metric", "pepagent-cpu-metrics", 5),
+        "boltz": ("predict_v37_boltz2_complex", "pepagent-gpu-boltz2", 3),
+        "rosetta": ("score_v37_rosetta_complex", "pepagent-cpu-rosetta", 3),
+    }[stage]
+    return [
+        {
+            "schema_version": "v37.activity-transition-receipt.1",
+            "activity_id": f"{logical_id}:{index}",
+            "activity_type": activity_type,
+            "attempt": 1,
+            "task_queue": task_queue,
+            "scheduled_at": "2026-08-12T00:00:00+00:00",
+            "started_at": "2026-08-12T00:00:01+00:00",
+            "finished_at": "2026-08-12T00:00:02+00:00",
+            "schedule_to_start_seconds": 1.0,
+        }
+        for index in range(count)
+    ]
 
 
 def test_v37_capacity_contract_freezes_rapid_pipeline_without_authorization() -> None:
@@ -142,13 +168,29 @@ def test_v37_worker_snapshot_requires_every_frozen_role_and_queue() -> None:
         validate_v37_worker_placement_snapshot(snapshot)
 
 
+def test_v37_worker_snapshot_rejects_nonexact_or_stale_identity() -> None:
+    malformed = _worker_snapshot()
+    malformed["placements"][0]["release_sha256"] = "x"
+    with pytest.raises(ValueError, match="SHA"):
+        validate_v37_worker_placement_snapshot(malformed)
+    stale = _worker_snapshot()
+    with pytest.raises(ValueError, match="stale"):
+        validate_v37_worker_placement_snapshot(
+            stale,
+            reference_time=datetime(2026, 8, 12, 0, 10, tzinfo=UTC),
+        )
+
+
 def test_v37_capacity_replay_rejects_transition_tampering() -> None:
     manifest = build_v37_pipeline_manifest(
         [{"proposal_ordinal": 1, "occurrence_id": "candidate-1"}]
     )
     outcomes = {
-        logical_id: {"outcome": "succeeded", "backpressure_observed": False}
-        for logical_id in manifest["items"][0]["stage_logical_ids"].values()
+        logical_id: {
+            "outcome": "succeeded",
+            "activity_receipts": _stage_receipts(stage, logical_id),
+        }
+        for stage, logical_id in manifest["items"][0]["stage_logical_ids"].items()
     }
     ledger = build_v37_pipeline_queue_transition_ledger(
         pipeline_manifest=manifest,
@@ -160,7 +202,10 @@ def test_v37_capacity_replay_rejects_transition_tampering() -> None:
         queue_transition_ledger=ledger,
     )
     ledger["transitions"][0]["queue_position"] = 99
-    with pytest.raises(ValueError, match="self-hash"):
+    ledger["ledger_sha256"] = sha256_json(
+        {key: value for key, value in ledger.items() if key != "ledger_sha256"}
+    )
+    with pytest.raises(ValueError, match="semantics"):
         validate_v37_capacity_replay_artifacts(
             worker_placement_snapshot=_worker_snapshot(),
             pipeline_manifest=manifest,

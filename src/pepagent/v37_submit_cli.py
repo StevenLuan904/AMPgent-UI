@@ -4,6 +4,7 @@ import argparse
 import asyncio
 import json
 import uuid
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -438,8 +439,8 @@ def _validate_execution_runtime_identities(
     _validate_self_hashed_runtime(pepshot, label="PepShot provider")
     _validate_generic_execution_guard(pepshot, label="PepShot provider")
     expected_pepshot = {
-        "release_id": PEPSHOT_RELEASE_ID,
-        "release_manifest_sha256": PEPSHOT_RELEASE_MANIFEST_SHA256,
+        "provider_release_id": PEPSHOT_RELEASE_ID,
+        "provider_release_manifest_sha256": PEPSHOT_RELEASE_MANIFEST_SHA256,
         "runtime_manifest_sha256": PEPSHOT_RUNTIME_MANIFEST_SHA256,
     }
     if any(pepshot.get(key) != value for key, value in expected_pepshot.items()):
@@ -517,6 +518,8 @@ def load_v37_submission_bundle(
         worker_placement_snapshot,
         contract=load_v37_capacity_contract(capacity_contract_path),
         expected_task_queues=manifest.execution["task_queues"],
+        expected_source_revision=manifest.formal_run.implementation_revision,
+        reference_time=datetime.now(UTC),
     )
     if preflight.get("config_sha256") != sha256_bytes(manifest_path.read_bytes()):
         raise ValueError("v37 submission preflight belongs to another manifest")

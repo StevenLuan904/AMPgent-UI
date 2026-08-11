@@ -19,6 +19,7 @@ from pepagent.v37_provider_consumers import (
     PEPSHOT_RUNTIME_MANIFEST_SHA256,
     PEPSHOT_SPATIAL_FINDING_SCHEMA_SHA256,
     build_v37_pepshot_inspect_request,
+    consume_v37_knowledge_context_pack,
     consume_v37_pepshot_inspection,
     project_v37_knowledge_applicability,
 )
@@ -371,5 +372,122 @@ def test_knowledge_projection_rejects_cross_candidate_hash_path_enum_and_lineage
             candidate=_candidate(),
             context_pack=pack,
             applicability=applicability,
+            provider_release_receipt=release,
+        )
+
+
+def _knowledge_v3() -> tuple[dict, dict, dict]:
+    query = {
+        "schema_version": "v37.knowledge-query.1",
+        "target_key": "AceA",
+        "application": "v37_rapid_champion_generation",
+        "query": "frozen v37 query",
+    }
+    pack = {
+        "task": {
+            "target_key": "acea",
+            "query": query["query"],
+            "application": "bacterial AceA inhibition and antibacterial validation",
+        },
+        "policy_version": "amp-design-context-v2",
+        "target_brief": {},
+        "agent_brief": {},
+        "design_rules": {
+            "direct": [],
+            "transfer": [
+                {
+                    "card_id": "card-1",
+                    "status": "candidate",
+                    "evidence_refs": ["passage-1"],
+                    "action": "annotate only",
+                }
+            ],
+        },
+        "evidence_index": [
+            {
+                "evidence_id": "passage-1",
+                "source_id": "PMC1",
+                "status": "candidate",
+                "kind": "passage",
+            }
+        ],
+        "warnings": [],
+        "knowledge_gaps": [],
+        "retrieval_trace_id": "trace-v37-v3",
+        "generated_at": "2026-08-11T00:00:00+00:00",
+    }
+    release = {
+        "provider_contract_verified": True,
+        "release_revision": KNOWLEDGE_RELEASE_REVISION,
+        "release_manifest_sha256": KNOWLEDGE_RELEASE_MANIFEST_SHA256,
+        "runtime_manifest_sha256": KNOWLEDGE_RUNTIME_MANIFEST_SHA256,
+        "active_policy_sha256": KNOWLEDGE_ACTIVE_POLICY_SHA256,
+    }
+    return pack, query, release
+
+
+def test_knowledge_v3_consumer_preserves_provider_order_and_lineage() -> None:
+    pack, query, release = _knowledge_v3()
+
+    result = consume_v37_knowledge_context_pack(
+        context_pack=pack,
+        query_payload=query,
+        candidate_ids=["candidate-2", "candidate-1"],
+        provider_release_receipt=release,
+    )
+
+    assert result.retrieval_trace_id == "trace-v37-v3"
+    assert result.cards[0]["card_id"] == "card-1"
+    assert result.cards[0]["passage_ids"] == ["passage-1"]
+    assert result.adoption_edges[0]["candidate_ids"] == [
+        "candidate-2",
+        "candidate-1",
+    ]
+    assert result.adoption_edges[0]["disposition"] == "used"
+
+
+@pytest.mark.parametrize(
+    ("mutator", "message"),
+    [
+        (lambda pack, query, release: pack["task"].update(query="other"), "query drifted"),
+        (
+            lambda pack, query, release: release.update(active_policy_sha256="0" * 64),
+            "release receipt drifted",
+        ),
+        (
+            lambda pack, query, release: pack["design_rules"]["transfer"][0].update(
+                evidence_refs=["missing"]
+            ),
+            "evidence lineage drifted",
+        ),
+        (
+            lambda pack, query, release: pack.update(unexpected=True),
+            "top-level schema drifted",
+        ),
+    ],
+)
+def test_knowledge_v3_consumer_fails_closed_on_schema_or_lineage_drift(
+    mutator, message: str
+) -> None:
+    pack, query, release = _knowledge_v3()
+    mutator(pack, query, release)
+
+    with pytest.raises(ValueError, match=message):
+        consume_v37_knowledge_context_pack(
+            context_pack=pack,
+            query_payload=query,
+            candidate_ids=["candidate-1"],
+            provider_release_receipt=release,
+        )
+
+
+def test_knowledge_v3_consumer_rejects_duplicate_candidate_projection() -> None:
+    pack, query, release = _knowledge_v3()
+
+    with pytest.raises(ValueError, match="identity/order"):
+        consume_v37_knowledge_context_pack(
+            context_pack=pack,
+            query_payload=query,
+            candidate_ids=["candidate-1", "candidate-1"],
             provider_release_receipt=release,
         )

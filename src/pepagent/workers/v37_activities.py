@@ -41,9 +41,6 @@ from pepagent.model_workers.sequence_metric_plan import (
 from pepagent.provenance.hashing import sha256_bytes, sha256_json
 from pepagent.settings import get_settings
 from pepagent.storage.object_store import ContentAddressedObjectStore
-from pepagent.v34_external_adapters import (
-    build_knowledge_command,
-)
 from pepagent.v37_attempt_ledger import (
     V37AttemptContext,
     build_v37_attempt_artifacts,
@@ -57,6 +54,7 @@ from pepagent.v37_persistence import (
     persist_v37_proposal_events,
     persist_v37_tool_result,
     proposal_occurrence_payload,
+    validate_v37_submission_replay_binding,
 )
 from pepagent.v37_persistence import (
     validate_v37_database_object_replay as _validate_v37_replay_graph,
@@ -64,12 +62,15 @@ from pepagent.v37_persistence import (
 from pepagent.v37_preregistration import V37Manifest
 from pepagent.v37_provider_consumers import (
     build_v37_pepshot_inspect_request,
+    consume_v37_knowledge_context_pack,
     consume_v37_pepshot_inspection,
 )
 from pepagent.v37_runtime_execution import (
     V37GenericRuntimeExpectation,
     V37GenericRuntimePaths,
     V37LiveRuntimePaths,
+    build_v37_frozen_adapter_command,
+    resolve_v37_frozen_invocation,
     run_v37_guarded_provider_subprocess,
     run_v37_guarded_subprocess,
 )
@@ -83,6 +84,35 @@ from pepagent.workers.activities import (
 )
 
 V37_ACTIVITY_VERSION = "v37.0.0"
+
+
+def _activity_transition_receipt() -> dict[str, Any]:
+    """Return Temporal server timing facts for the current successful attempt."""
+    info = activity.info()
+    finished_at = datetime.now(UTC)
+    scheduled_at = info.current_attempt_scheduled_time
+    started_at = info.started_time
+    if scheduled_at.tzinfo is None or started_at.tzinfo is None:
+        raise ValueError("v37 activity timing lacks timezone-aware Temporal timestamps")
+    if not scheduled_at <= started_at <= finished_at:
+        raise ValueError("v37 activity timing is not monotonic")
+    return {
+        "schema_version": "v37.activity-transition-receipt.1",
+        "activity_id": info.activity_id,
+        "activity_type": info.activity_type,
+        "attempt": int(info.attempt),
+        "task_queue": info.task_queue,
+        "scheduled_at": scheduled_at.astimezone(UTC).isoformat(),
+        "started_at": started_at.astimezone(UTC).isoformat(),
+        "finished_at": finished_at.isoformat(),
+        "schedule_to_start_seconds": (started_at - scheduled_at).total_seconds(),
+    }
+
+
+def _with_activity_transition(result: dict[str, Any]) -> dict[str, Any]:
+    if "activity_transition_receipt" in result:
+        raise ValueError("v37 activity result already contains a transition receipt")
+    return {**result, "activity_transition_receipt": _activity_transition_receipt()}
 
 
 @activity.defn(name="evaluate_v37_sequence_metric")
@@ -303,7 +333,9 @@ async def evaluate_v37_sequence_metric(request: dict[str, Any]) -> dict[str, Any
             },
         }
 
-    return await execute_v37_durable_attempt(operation, context=context)
+    return _with_activity_transition(
+        await execute_v37_durable_attempt(operation, context=context)
+    )
 
 
 @activity.defn(name="predict_v37_boltz2_complex")
@@ -320,7 +352,9 @@ async def predict_v37_boltz2_complex(request: dict[str, Any]) -> dict[str, Any]:
     async def operation() -> dict[str, Any]:
         return await predict_boltz2_complex(request)
 
-    return await execute_v37_durable_attempt(operation, context=context)
+    return _with_activity_transition(
+        await execute_v37_durable_attempt(operation, context=context)
+    )
 
 
 @activity.defn(name="score_v37_rosetta_complex")
@@ -336,7 +370,9 @@ async def score_v37_rosetta_complex(request: dict[str, Any]) -> dict[str, Any]:
     async def operation() -> dict[str, Any]:
         return await score_rosetta_complex(request)
 
-    return await execute_v37_durable_attempt(operation, context=context)
+    return _with_activity_transition(
+        await execute_v37_durable_attempt(operation, context=context)
+    )
 
 
 def _v37_plan(manifest: dict[str, Any]) -> dict[str, Any]:
@@ -834,7 +870,9 @@ async def generate_v37_batch(request: dict[str, Any]) -> dict[str, Any]:
             "attempt": activity.info().attempt,
         }
 
-    return await execute_v37_durable_attempt(operation, context=context)
+    return _with_activity_transition(
+        await execute_v37_durable_attempt(operation, context=context)
+    )
 
 
 @activity.defn(name="persist_v37_generation_batch")
@@ -1467,19 +1505,17 @@ async def run_and_persist_v37_knowledge(request: dict[str, Any]) -> dict[str, An
         query_payload.get("query"), str
     ):
         raise ValueError("v37 knowledge query payload is invalid")
-    query_text = query_payload["query"]
-    settings = get_settings()
-    work = Path(settings.work_root) / request["run_id"] / "v37" / "knowledge"
-    await asyncio.to_thread(work.mkdir, parents=True, exist_ok=True)
-    output_path = work / "context-pack.json"
-    command = build_knowledge_command(
-        python_executable=Path(runtime["python_path"]),
-        kbctl_path=Path(runtime["kbctl_path"]),
-        target_key="AceA",
-        query=query_text,
-        application="v37_rapid_champion_generation",
-        output_path=output_path,
-        config_path=Path(runtime["config_path"]) if runtime.get("config_path") else None,
+    if runtime.get("descriptor_contract") != "amp-kb-runtime-base-v3":
+        raise ValueError("v37 knowledge runtime is not the frozen provider v3 contract")
+    formal_task = runtime.get("formal_task", {}).get("canonical_task")
+    if (
+        not isinstance(formal_task, dict)
+        or str(formal_task.get("target_key", "")).lower() != "acea"
+        or formal_task.get("query") != query_payload["query"]
+    ):
+        raise ValueError("v37 knowledge query differs from the frozen provider task")
+    command, invocation_cwd = resolve_v37_frozen_invocation(
+        runtime, "formal_context_pack"
     )
     run_id = uuid.UUID(request["run_id"])
     context = V37AttemptContext(
@@ -1494,17 +1530,18 @@ async def run_and_persist_v37_knowledge(request: dict[str, Any]) -> dict[str, An
             command=command,
             runtime=runtime,
             context=context,
-            cwd=Path(runtime["cwd"]),
+            cwd=invocation_cwd,
             input_paths={
                 "knowledge_runtime_manifest": Path(
                     runtime["execution_guard"]["paths"]["runtime_manifest_path"]
                 )
             },
         )
+        context_pack = json.loads(stdout)
+        if context_pack.get("task") != formal_task:
+            raise ValueError("v37 knowledge provider returned a different frozen task")
         return {
-            "context_pack": json.loads(
-                await asyncio.to_thread(output_path.read_text, encoding="utf-8")
-            ),
+            "context_pack": context_pack,
             "live_launch_receipt": launch_receipt,
             "stdout_tail": stdout[-8000:],
         }
@@ -1554,6 +1591,7 @@ async def run_and_persist_v37_knowledge(request: dict[str, Any]) -> dict[str, An
         "runtime_receipt_artifact_sha256": runtime_artifact.sha256,
         "context_pack": payload,
         "live_launch_receipt": executed["live_launch_receipt"],
+        "provider_contract_verified": True,
     }
 
 
@@ -1565,62 +1603,28 @@ async def persist_v37_knowledge_projection(request: dict[str, Any]) -> dict[str,
     knowledge = request["knowledge"]
     pack = knowledge["context_pack"]
     candidates = request["candidates"]
-    evidence_index = pack.get("evidence_index")
-    if isinstance(evidence_index, dict):
-        evidence_items = [
-            {"card_id": str(key), "content": value}
-            for key, value in sorted(evidence_index.items())
-        ]
-    elif isinstance(evidence_index, list):
-        evidence_items = [dict(item) for item in evidence_index]
-    else:
-        raise ValueError("v37 knowledge context pack lacks a typed evidence index")
-    cards = []
-    for ordinal, item in enumerate(evidence_items, start=1):
-        card_id = str(item.get("card_id") or item.get("id") or f"card-{ordinal}")
-        cards.append(
-            {
-                "card_id": card_id,
-                "revision": str(item.get("revision") or pack.get("policy_version")),
-                "passage_manifest_sha256": sha256_json(item),
-            }
-        )
-    if not cards:
-        raise ValueError("v37 knowledge context pack contains no evidence cards")
     candidate_ids = [item["id"] for item in candidates]
-    adoption_edges = []
-    candidate_id_set = set(candidate_ids)
-    for card, item in zip(cards, evidence_items, strict=True):
-        explicit_ids = item.get("candidate_ids")
-        if explicit_ids is None:
-            disposition = "not_applicable"
-            applicable_ids = candidate_ids
-            reason = "provider supplied no candidate-specific applicability mapping"
-        else:
-            applicable_ids = [str(value) for value in explicit_ids]
-            if not applicable_ids or not set(applicable_ids).issubset(candidate_id_set):
-                raise ValueError("v37 knowledge candidate applicability mapping is invalid")
-            disposition = str(item.get("disposition", "used"))
-            if disposition not in {"used", "rejected", "not_applicable"}:
-                raise ValueError("v37 knowledge disposition is invalid")
-            reason = str(item.get("reason") or "provider-explicit candidate applicability")
-        adoption_edges.append(
-            {
-                "evidence_id": f"{card['card_id']}:candidate-applicability",
-                "disposition": disposition,
-                "reason": reason,
-                "candidate_ids": applicable_ids,
-            }
-        )
+    knowledge_auxiliary = manifest["verified_auxiliaries"]["knowledge"]
+    projection = consume_v37_knowledge_context_pack(
+        context_pack=pack,
+        query_payload=request["query"],
+        candidate_ids=candidate_ids,
+        provider_release_receipt={
+            **knowledge_auxiliary,
+            "provider_contract_verified": knowledge.get("provider_contract_verified"),
+        },
+    )
+    cards = [dict(card) for card in projection.cards]
+    passages = [dict(passage) for passage in projection.passages]
+    adoption_edges = [dict(edge) for edge in projection.adoption_edges]
     knowledge_evidence = {
         "schema_version": "1.0",
         "query_sha256": sha256_json(request["query"]),
         "query_pack_sha256": sha256_json(pack),
-        "trace_sha256": sha256_json(pack.get("retrieval_trace_id")),
-        "policy_sha256": manifest["verified_auxiliaries"]["knowledge"][
-            "active_policy_sha256"
-        ],
+        "trace_sha256": sha256_json(projection.retrieval_trace_id),
+        "policy_sha256": knowledge_auxiliary["active_policy_sha256"],
         "cards": cards,
+        "passages": passages,
         "adoption_edges": adoption_edges,
     }
     logical_id = "v37:knowledge"
@@ -1694,12 +1698,11 @@ async def run_and_persist_v37_pepshot(request: dict[str, Any]) -> dict[str, Any]
     if (
         provider_contract.get("required_route") != "deterministic_inspect"
         or provider_contract.get("fallback_allowed") is not False
-        or runtime.get("release_id") != provider_contract.get("release_id")
-        or runtime.get("release_manifest_sha256")
+        or runtime.get("provider_release_id") != provider_contract.get("release_id")
+        or runtime.get("provider_release_manifest_sha256")
         != provider_contract.get("release_manifest_sha256")
         or runtime.get("runtime_manifest_sha256")
         != provider_contract.get("runtime_manifest_sha256")
-        or runtime.get("contract_sha256") != provider_contract.get("contract_sha256")
     ):
         raise ValueError("v37 PepShot runtime differs from the frozen provider contract")
     attempt = activity.info().attempt
@@ -1708,14 +1711,16 @@ async def run_and_persist_v37_pepshot(request: dict[str, Any]) -> dict[str, Any]
     contract_dir = root / f"contract-attempt-{attempt}"
     await asyncio.to_thread(contract_dir.mkdir, parents=True, exist_ok=True)
     contract_path = contract_dir / "inspect-contract.json"
-    contract_command = [
-            str(runtime["executable"]),
+    contract_command = build_v37_frozen_adapter_command(
+        runtime,
+        [
             "contract",
             "--task",
             "inspect",
             "--out",
             str(contract_path),
-        ]
+        ],
+    )
 
     contract_context = V37AttemptContext(
         run_id=run_id,
@@ -1807,14 +1812,18 @@ async def run_and_persist_v37_pepshot(request: dict[str, Any]) -> dict[str, Any]
             encoding="utf-8",
         )
         inspection_path = work / "inspection.json"
-        inspect_command = (
-                str(runtime["executable"]),
+        inspect_command = tuple(
+            build_v37_frozen_adapter_command(
+                runtime,
+                [
                 "inspect",
                 "--spec",
                 str(spec_path),
                 "--out",
                 str(inspection_path),
+                ],
             )
+        )
 
         detail_context = V37AttemptContext(
             run_id=run_id,
@@ -2500,7 +2509,6 @@ async def persist_v37_final_portfolio_and_replay(
             validation, existing_graph = await validate_v37_database_object_replay(
                 session=session,
                 run_id=run_id,
-                manifest=manifest,
                 graph=existing_graph,
             )
             return {
@@ -2529,7 +2537,6 @@ async def persist_v37_final_portfolio_and_replay(
             result, _ = await validate_v37_database_object_replay(
                 session=session,
                 run_id=run_id,
-                manifest=manifest,
                 graph=preclosure_graph,
                 allow_incomplete_replay=True,
             )
@@ -2548,7 +2555,6 @@ async def persist_v37_final_portfolio_and_replay(
         validation, committed_graph = await validate_v37_database_object_replay(
             session=session,
             run_id=run_id,
-            manifest=manifest,
             graph=committed_graph,
             allow_incomplete_replay=True,
         )
@@ -2602,7 +2608,7 @@ async def persist_v37_final_portfolio_and_replay(
         )
         graph = await build_database_evidence_graph(session, run_id)
         validation, graph = await validate_v37_database_object_replay(
-            session=session, run_id=run_id, manifest=manifest, graph=graph
+            session=session, run_id=run_id, graph=graph
         )
     return {
         "portfolio": portfolio,
@@ -2617,7 +2623,6 @@ async def persist_v37_final_portfolio_and_replay(
 async def finalize_v37_run(request: dict[str, Any]) -> dict[str, Any]:
     """Mark success only after reconstructing the complete frozen closure."""
     run_id = uuid.UUID(request["run_id"])
-    manifest = request["manifest"]
     async with SessionFactory() as session, session.begin():
         run = await session.scalar(
             select(ExperimentRun).where(ExperimentRun.id == run_id).with_for_update()
@@ -2625,7 +2630,7 @@ async def finalize_v37_run(request: dict[str, Any]) -> dict[str, Any]:
         if run is None:
             raise KeyError(f"run not found: {run_id}")
         validation, graph = await validate_v37_database_object_replay(
-            session=session, run_id=run_id, manifest=manifest
+            session=session, run_id=run_id
         )
         if not validation["exact_replay"]:
             raise ValueError("v37 formal closure did not validate exactly")
@@ -2654,7 +2659,6 @@ async def validate_v37_database_object_replay(
     *,
     session: Any,
     run_id: uuid.UUID,
-    manifest: dict[str, Any],
     graph: dict[str, Any] | None = None,
     allow_incomplete_replay: bool = False,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
@@ -2663,6 +2667,7 @@ async def validate_v37_database_object_replay(
         graph = await build_database_evidence_graph(session, run_id)
     object_store = ContentAddressedObjectStore()
     artifact_payloads: dict[str, dict[str, Any]] = {}
+    artifact_bytes: dict[str, bytes] = {}
     for artifact_row in graph.get("artifacts", []):
         try:
             raw = await asyncio.to_thread(
@@ -2672,12 +2677,17 @@ async def validate_v37_database_object_replay(
             raise ValueError("v37 artifact object is missing or unreadable") from error
         if sha256_bytes(raw) != artifact_row["sha256"]:
             raise ValueError("v37 artifact object bytes differ from the database SHA")
+        artifact_bytes[str(artifact_row["sha256"])] = raw
         try:
             payload = json.loads(raw)
         except (UnicodeDecodeError, json.JSONDecodeError):
             continue
         if isinstance(payload, dict):
             artifact_payloads[str(artifact_row["sha256"])] = payload
+    manifest = validate_v37_submission_replay_binding(
+        graph=graph,
+        artifact_bytes_by_sha256=artifact_bytes,
+    )
     plan = build_v37_evidence_plan(V37Manifest.model_validate(manifest))
     validation = _validate_v37_replay_graph(
         manifest=manifest,

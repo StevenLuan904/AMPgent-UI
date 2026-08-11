@@ -774,7 +774,35 @@ def _fixture() -> tuple[dict, dict, dict, dict[str, dict]]:
                 or item["occurrence_id"] in shortlist_ids
                 else "skipped_not_selected"
             ),
-            "backpressure_observed": False,
+            "activity_receipts": ([
+                {
+                    "schema_version": "v37.activity-transition-receipt.1",
+                    "activity_id": f"{logical_id}:{receipt_index}",
+                    "activity_type": {
+                        "proposal": "generate_v37_batch",
+                        "evaluation": "evaluate_v37_sequence_metric",
+                        "boltz": "predict_v37_boltz2_complex",
+                        "rosetta": "score_v37_rosetta_complex",
+                    }[stage],
+                    "attempt": 1,
+                    "task_queue": {
+                        "proposal": "pepagent-generator-v37",
+                        "evaluation": "pepagent-cpu-metrics",
+                        "boltz": "pepagent-gpu-boltz2",
+                        "rosetta": "pepagent-cpu-rosetta",
+                    }[stage],
+                    "scheduled_at": "2026-08-12T00:00:00+00:00",
+                    "started_at": "2026-08-12T00:00:01+00:00",
+                    "finished_at": "2026-08-12T00:00:02+00:00",
+                    "schedule_to_start_seconds": 1.0,
+                }
+                for receipt_index in range(
+                    {"proposal": 1, "evaluation": 5, "boltz": 3, "rosetta": 3}[stage]
+                )
+            ]
+            if stage in {"proposal", "evaluation"}
+            or item["occurrence_id"] in shortlist_ids
+            else []),
         }
         for item in pipeline_manifest["items"]
         for stage, logical_id in item["stage_logical_ids"].items()
@@ -792,6 +820,7 @@ def _fixture() -> tuple[dict, dict, dict, dict[str, dict]]:
                 "role": role,
                 "task_queue": task_queue,
                 "poller_identity": f"{1234 + index}@test",
+                "poller_last_access_at": "2026-08-12T00:00:00Z",
                 "source_revision": "a" * 40,
                 "release_sha256": "b" * 64,
                 "environment_sha256": "c" * 64,

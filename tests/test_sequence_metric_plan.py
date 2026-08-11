@@ -180,3 +180,84 @@ def test_consume_validates_exact_candidate_sequence_mapping(tmp_path: Path) -> N
     )
     assert rejected["status"] == "unavailable"
     assert "sequence mismatch" in rejected["reason"]
+
+
+def test_consume_rejects_provider_row_reordering(tmp_path: Path) -> None:
+    plan = _plan(tmp_path)
+    candidates = [
+        {"id": "candidate-1", "sequence": "KLLKK"},
+        {"id": "candidate-2", "sequence": "RLLRR"},
+    ]
+    materialize_external_metric_input(plan, candidates)
+    output_path = Path(plan["output"]["predictions_csv"])
+    with output_path.open("w", encoding="utf-8", newline="") as stream:
+        writer = csv.DictWriter(
+            stream,
+            fieldnames=[
+                "candidate_id",
+                "sequence",
+                "status",
+                "llamp_log10_mic_um",
+                "llamp_predicted_mic_um",
+            ],
+        )
+        writer.writeheader()
+        for candidate in reversed(candidates):
+            writer.writerow(
+                {
+                    "candidate_id": candidate["id"],
+                    "sequence": candidate["sequence"],
+                    "status": "success",
+                    "llamp_log10_mic_um": "1.0",
+                    "llamp_predicted_mic_um": "10.0",
+                }
+            )
+
+    result = consume_external_metric_result(
+        plan=plan,
+        candidates=candidates,
+        execution_receipt={"status": "completed", "returncode": 0},
+    )
+
+    assert result["status"] == "unavailable"
+    assert "exact order" in result["reason"]
+
+
+@pytest.mark.parametrize("value", ["nan", "inf", "-inf"])
+def test_consume_rejects_nonfinite_numeric_outputs(
+    tmp_path: Path, value: str
+) -> None:
+    plan = _plan(tmp_path)
+    candidates = [{"id": "candidate-1", "sequence": "KLLKK"}]
+    materialize_external_metric_input(plan, candidates)
+    output_path = Path(plan["output"]["predictions_csv"])
+    with output_path.open("w", encoding="utf-8", newline="") as stream:
+        writer = csv.DictWriter(
+            stream,
+            fieldnames=[
+                "candidate_id",
+                "sequence",
+                "status",
+                "llamp_log10_mic_um",
+                "llamp_predicted_mic_um",
+            ],
+        )
+        writer.writeheader()
+        writer.writerow(
+            {
+                "candidate_id": "candidate-1",
+                "sequence": "KLLKK",
+                "status": "success",
+                "llamp_log10_mic_um": value,
+                "llamp_predicted_mic_um": "10.0",
+            }
+        )
+
+    result = consume_external_metric_result(
+        plan=plan,
+        candidates=candidates,
+        execution_receipt={"status": "completed", "returncode": 0},
+    )
+
+    assert result["status"] == "unavailable"
+    assert "non-finite" in result["reason"]

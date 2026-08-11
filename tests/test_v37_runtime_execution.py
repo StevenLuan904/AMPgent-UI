@@ -11,8 +11,10 @@ from pepagent.v37_runtime_execution import (
     V37GenericRuntimeExpectation,
     V37GenericRuntimePaths,
     V37LiveRuntimePaths,
+    build_v37_frozen_adapter_command,
     build_v37_generic_launch_receipt,
     build_v37_live_launch_receipt,
+    resolve_v37_frozen_invocation,
     run_v37_guarded_provider_subprocess,
     run_v37_guarded_subprocess,
 )
@@ -427,3 +429,70 @@ def test_generic_provider_guard_rejects_declared_adapter_drift(tmp_path: Path) -
             command=[sys.executable, str(paths.adapter_path)],
             cwd=tmp_path,
         )
+
+
+def _frozen_descriptor(tmp_path: Path) -> dict:
+    executable = str(tmp_path / "python.exe")
+    adapter = str(tmp_path / "adapter.py")
+    cwd = str(tmp_path)
+    return {
+        "cwd": cwd,
+        "launch_argv": [executable, "-X", "utf8", adapter, "verify"],
+        "invocations": {
+            "formal_context_pack": {
+                "argv": [
+                    executable,
+                    "-X",
+                    "utf8",
+                    adapter,
+                    "context-pack",
+                    "--json",
+                ],
+                "cwd": cwd,
+            }
+        },
+        "execution_guard": {
+            "contract": {
+                "command_entities": {"executable_index": 0, "adapter_index": 3}
+            },
+            "paths": {"executable_path": executable, "adapter_path": adapter},
+        },
+    }
+
+
+def test_frozen_invocation_is_consumed_without_rebuilding_provider_cli(
+    tmp_path: Path,
+) -> None:
+    descriptor = _frozen_descriptor(tmp_path)
+
+    command, cwd = resolve_v37_frozen_invocation(
+        descriptor, "formal_context_pack"
+    )
+
+    assert command == descriptor["invocations"]["formal_context_pack"]["argv"]
+    assert cwd == tmp_path
+
+
+def test_frozen_adapter_command_preserves_declared_adapter_prefix(
+    tmp_path: Path,
+) -> None:
+    descriptor = _frozen_descriptor(tmp_path)
+
+    command = build_v37_frozen_adapter_command(
+        descriptor, ["inspect", "--spec", "request.json"]
+    )
+
+    assert command[:4] == descriptor["launch_argv"][:4]
+    assert command[4:] == ["inspect", "--spec", "request.json"]
+
+
+def test_frozen_command_helpers_reject_descriptor_entity_drift(tmp_path: Path) -> None:
+    descriptor = _frozen_descriptor(tmp_path)
+    descriptor["execution_guard"]["paths"]["adapter_path"] = str(
+        tmp_path / "other.py"
+    )
+
+    with pytest.raises(ValueError, match="adapter differs"):
+        resolve_v37_frozen_invocation(descriptor, "formal_context_pack")
+    with pytest.raises(ValueError, match="adapter differs"):
+        build_v37_frozen_adapter_command(descriptor, ["inspect"])

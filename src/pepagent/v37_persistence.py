@@ -9,6 +9,7 @@ from copy import deepcopy
 from dataclasses import asdict, is_dataclass
 from typing import Any
 
+import yaml
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,7 +21,7 @@ from pepagent.db.models import (
     ToolCall,
 )
 from pepagent.db.repository import ExperimentRepository
-from pepagent.provenance.hashing import sha256_json, sha256_text
+from pepagent.provenance.hashing import sha256_bytes, sha256_json, sha256_text
 from pepagent.v37_capacity import validate_v37_capacity_replay_artifacts
 from pepagent.v37_evidence import validate_v37_replay_graph
 from pepagent.v37_provider_consumers import (
@@ -35,6 +36,19 @@ from pepagent.v37_selection import select_v37_lanes
 
 V37_EVIDENCE_VERSION = "v37.database-object-replay.1"
 ArtifactWriter = Callable[[dict[str, Any]], Awaitable[Any]]
+
+_V37_SUBMISSION_INPUT_ROLES = {
+    "manifest",
+    "experiment_spec",
+    "capacity_contract",
+    "worker_placement_snapshot",
+    "execution_bundle",
+    "submission_preflight",
+    "metric_registry",
+}
+_V37_PREFLIGHT_INPUT_ROLES = _V37_SUBMISSION_INPUT_ROLES - {
+    "submission_preflight"
+}
 
 _COMMON_ROLES = ("attempt_ledger", "failure_ledger")
 _GLOBAL_ROLES = {
@@ -127,6 +141,157 @@ def _stored_payload(value: Any) -> dict[str, Any]:
         "media_type": str(value["media_type"]),
         "storage_uri": str(value.get("uri", value.get("storage_uri"))),
     }
+
+
+def validate_v37_submission_replay_binding(
+    *,
+    graph: Mapping[str, Any],
+    artifact_bytes_by_sha256: Mapping[str, bytes],
+) -> dict[str, Any]:
+    """Recover the formal manifest and bind it to DB submission/object evidence."""
+    run = graph.get("run")
+    if not isinstance(run, Mapping):
+        raise ValueError("v37 replay lacks the persisted run projection")
+    spec = run.get("spec_json")
+    if not isinstance(spec, Mapping) or run.get("spec_sha256") != sha256_json(spec):
+        raise ValueError("v37 persisted run spec hash drifted")
+    bindings = spec.get("submission_input_artifacts")
+    if not isinstance(bindings, Mapping) or set(bindings) != _V37_SUBMISSION_INPUT_ROLES:
+        raise ValueError("v37 submission input artifact set drifted")
+    artifacts_by_sha = {
+        str(item["sha256"]): item for item in graph.get("artifacts", [])
+    }
+    if len(artifacts_by_sha) != len(graph.get("artifacts", [])):
+        raise ValueError("v37 database artifact SHA identity is ambiguous")
+
+    raw_by_role: dict[str, bytes] = {}
+    parsed_by_role: dict[str, Any] = {}
+    required_identity_keys = {"sha256", "size_bytes", "media_type", "storage_uri"}
+    for role in sorted(_V37_SUBMISSION_INPUT_ROLES):
+        identity = bindings[role]
+        if not isinstance(identity, Mapping) or set(identity) != required_identity_keys:
+            raise ValueError(f"v37 {role} submission binding drifted")
+        digest = str(identity["sha256"])
+        row = artifacts_by_sha.get(digest)
+        raw = artifact_bytes_by_sha256.get(digest)
+        if (
+            row is None
+            or raw is None
+            or sha256_bytes(raw) != digest
+            or int(row["size_bytes"]) != int(identity["size_bytes"])
+            or int(row["size_bytes"]) != len(raw)
+            or row["media_type"] != identity["media_type"]
+            or row["storage_uri"] != identity["storage_uri"]
+        ):
+            raise ValueError(f"v37 {role} submission artifact identity drifted")
+        raw_by_role[role] = raw
+        try:
+            parsed_by_role[role] = yaml.safe_load(raw)
+        except (UnicodeDecodeError, yaml.YAMLError) as error:
+            raise ValueError(f"v37 {role} submission artifact is unreadable") from error
+
+    manifest = parsed_by_role["manifest"]
+    if not isinstance(manifest, dict) or spec.get("manifest_sha256") != sha256_json(
+        manifest
+    ):
+        raise ValueError("v37 manifest submission binding drifted")
+    formal_submission_key = sha256_json(
+        {
+            "benchmark_id": manifest.get("benchmark_id"),
+            "benchmark_version": manifest.get("version"),
+            "manifest_sha256": spec.get("manifest_sha256"),
+        }
+    )
+    if (
+        spec.get("benchmark_id") != manifest.get("benchmark_id")
+        or spec.get("benchmark_version") != manifest.get("version")
+        or spec.get("formal_submission_key") != formal_submission_key
+        or run.get("temporal_workflow_id")
+        != f"pepagent-rapid-champion-v37-{formal_submission_key}"
+    ):
+        raise ValueError("v37 formal submission identity drifted")
+    raw_sha_fields = {
+        "experiment_spec": "experiment_spec_sha256",
+        "capacity_contract": "capacity_contract_sha256",
+        "worker_placement_snapshot": "worker_placement_snapshot_sha256",
+        "execution_bundle": "execution_bundle_sha256",
+    }
+    if any(
+        spec.get(field) != sha256_bytes(raw_by_role[role])
+        for role, field in raw_sha_fields.items()
+    ):
+        raise ValueError("v37 submission input SHA binding drifted")
+
+    preflight = parsed_by_role["submission_preflight"]
+    if not isinstance(preflight, dict):
+        raise ValueError("v37 submission preflight artifact schema drifted")
+    preflight_identity = {
+        key: value
+        for key, value in preflight.items()
+        if key != "submission_preflight_sha256"
+    }
+    if (
+        preflight.get("submission_preflight_sha256")
+        != sha256_json(preflight_identity)
+        or spec.get("submission_preflight_sha256")
+        != preflight.get("submission_preflight_sha256")
+        or preflight.get("immutable_inputs")
+        != {role: bindings[role] for role in _V37_PREFLIGHT_INPUT_ROLES}
+    ):
+        raise ValueError("v37 submission preflight binding drifted")
+
+    request_identity = spec.get("workflow_request_artifact")
+    if not isinstance(request_identity, Mapping) or set(
+        request_identity
+    ) != required_identity_keys:
+        raise ValueError("v37 workflow request artifact binding drifted")
+    request_digest = str(request_identity["sha256"])
+    request_row = artifacts_by_sha.get(request_digest)
+    request_raw = artifact_bytes_by_sha256.get(request_digest)
+    if (
+        request_row is None
+        or request_raw is None
+        or sha256_bytes(request_raw) != request_digest
+        or spec.get("workflow_request_sha256") != request_digest
+        or int(request_row["size_bytes"]) != len(request_raw)
+        or int(request_identity["size_bytes"]) != len(request_raw)
+        or request_row["media_type"] != request_identity["media_type"]
+        or request_row["media_type"] != "application/json"
+        or request_row["storage_uri"] != request_identity["storage_uri"]
+    ):
+        raise ValueError("v37 workflow request artifact identity drifted")
+    try:
+        request = yaml.safe_load(request_raw)
+    except (UnicodeDecodeError, yaml.YAMLError) as error:
+        raise ValueError("v37 workflow request artifact is unreadable") from error
+    execution = parsed_by_role["execution_bundle"]
+    if not isinstance(request, dict) or not isinstance(execution, dict):
+        raise ValueError("v37 workflow request or execution bundle schema drifted")
+    execution_identity = {
+        key: value
+        for key, value in execution.items()
+        if key != "execution_bundle_identity_sha256"
+    }
+    if (
+        execution.get("execution_bundle_identity_sha256")
+        != sha256_json(execution_identity)
+        or execution.get("metric_registry_sha256")
+        != sha256_bytes(raw_by_role["metric_registry"])
+        or preflight.get("config_sha256") != sha256_bytes(raw_by_role["manifest"])
+    ):
+        raise ValueError("v37 execution/preflight immutable byte binding drifted")
+    expected_request = {
+        "run_id": str(run["id"]),
+        "manifest": manifest,
+        "experiment_spec": parsed_by_role["experiment_spec"],
+        "capacity_contract": parsed_by_role["capacity_contract"],
+        "worker_placement_snapshot": parsed_by_role["worker_placement_snapshot"],
+        "submission_preflight": preflight,
+        **execution,
+    }
+    if request != expected_request:
+        raise ValueError("v37 workflow request differs from immutable submission inputs")
+    return manifest
 
 
 def _selection_witness_payloads(selection: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
@@ -480,6 +645,21 @@ def _v37_preclosure_projection(graph: Mapping[str, Any]) -> dict[str, Any]:
     retained_artifact_ids = {
         str(item["artifact_id"]) for item in projected.get("evidence_artifacts", [])
     }
+    submission_artifact_sha256s: set[str] = set()
+    run_projection = projected.get("run")
+    if isinstance(run_projection, Mapping):
+        spec_projection = run_projection.get("spec_json")
+        if isinstance(spec_projection, Mapping):
+            submission_inputs = spec_projection.get("submission_input_artifacts", {})
+            if isinstance(submission_inputs, Mapping):
+                submission_artifact_sha256s.update(
+                    str(identity["sha256"])
+                    for identity in submission_inputs.values()
+                    if isinstance(identity, Mapping) and identity.get("sha256")
+                )
+            workflow_request = spec_projection.get("workflow_request_artifact")
+            if isinstance(workflow_request, Mapping) and workflow_request.get("sha256"):
+                submission_artifact_sha256s.add(str(workflow_request["sha256"]))
     attempt_artifact_sha256s = {
         str(item.get("payload_json", {}).get("artifact_sha256"))
         for item in projected.get("lifecycle_events", [])
@@ -495,6 +675,7 @@ def _v37_preclosure_projection(graph: Mapping[str, Any]) -> dict[str, Any]:
         for item in projected.get("artifacts", [])
         if str(item["id"]) in retained_artifact_ids
         or str(item["sha256"]) in attempt_artifact_sha256s
+        or str(item["sha256"]) in submission_artifact_sha256s
     ]
     projected["graph_sha256"] = sha256_json(projected)
     return projected
@@ -906,14 +1087,87 @@ def validate_v37_database_object_replay(
     ]
     _validate_attempt_and_failure_ledgers(payloads, ledger_calls)
     if not allow_incomplete_replay:
+        pipeline_manifest = payloads[("v37:replay", "pipeline_manifest")]
+        pipeline_candidate_ids = {
+            str(item.get("occurrence_id"))
+            for item in pipeline_manifest.get("items", [])
+        }
+        pipeline_candidate_order = [
+            str(item.get("occurrence_id"))
+            for item in pipeline_manifest.get("items", [])
+        ]
+        database_candidate_ids = {
+            str(item["id"]) for item in graph.get("candidates", [])
+        }
+        generator_seed_order = {
+            (str(engine["generator_id"]), int(seed)): (engine_index, seed_index)
+            for engine_index, engine in enumerate(manifest["generators"]["engines"])
+            for seed_index, seed in enumerate(engine["seeds"])
+        }
+        database_order_rows: list[tuple[int, int, int, str]] = []
+        observed_generator_ranks: set[tuple[str, int, int]] = set()
+        for candidate in graph.get("candidates", []):
+            metadata = candidate.get("metadata")
+            if not isinstance(metadata, Mapping):
+                raise ValueError("v37 pipeline Candidate ordering metadata is missing")
+            generator_id = str(metadata.get("generator_id"))
+            try:
+                generator_seed = int(metadata["generator_seed"])
+                raw_rank = int(metadata["raw_rank"])
+            except (KeyError, TypeError, ValueError) as error:
+                raise ValueError(
+                    "v37 pipeline Candidate ordering metadata is invalid"
+                ) from error
+            generator_position = generator_seed_order.get(
+                (generator_id, generator_seed)
+            )
+            rank_identity = (generator_id, generator_seed, raw_rank)
+            if (
+                generator_position is None
+                or raw_rank < 1
+                or rank_identity in observed_generator_ranks
+            ):
+                raise ValueError("v37 pipeline Candidate frozen order is ambiguous")
+            observed_generator_ranks.add(rank_identity)
+            database_order_rows.append(
+                (*generator_position, raw_rank, str(candidate["id"]))
+            )
+        database_candidate_order = [
+            row[-1] for row in sorted(database_order_rows)
+        ]
+        shortlist_ids_for_capacity = {
+            str(item)
+            for item in payloads[
+                ("v37:stage1-shortlist", "shortlist_manifest")
+            ].get("candidate_ids", [])
+        }
+        if (
+            pipeline_candidate_ids != database_candidate_ids
+            or pipeline_candidate_order != database_candidate_order
+            or not shortlist_ids_for_capacity.issubset(database_candidate_ids)
+        ):
+            raise ValueError(
+                "v37 pipeline candidate coverage differs from Candidate evidence"
+            )
+        expected_stage_outcomes = {
+            str(logical_id): (
+                "succeeded"
+                if stage in {"proposal", "evaluation"}
+                or str(item["occurrence_id"]) in shortlist_ids_for_capacity
+                else "skipped_not_selected"
+            )
+            for item in pipeline_manifest["items"]
+            for stage, logical_id in item["stage_logical_ids"].items()
+        }
         validate_v37_capacity_replay_artifacts(
             worker_placement_snapshot=payloads[
                 ("v37:replay", "worker_placement_snapshot")
             ],
-            pipeline_manifest=payloads[("v37:replay", "pipeline_manifest")],
+            pipeline_manifest=pipeline_manifest,
             queue_transition_ledger=payloads[
                 ("v37:replay", "pipeline_queue_transition_ledger")
             ],
+            expected_stage_outcomes=expected_stage_outcomes,
         )
     _validate_knowledge_evidence(payloads[("v37:knowledge", "knowledge_evidence")])
 

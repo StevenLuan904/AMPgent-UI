@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import re
 from collections.abc import Sequence
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal
 
@@ -30,6 +32,12 @@ V37_DEFAULT_TASK_QUEUES = {
     "sequence_metrics": "pepagent-cpu-metrics",
     "boltz": "pepagent-gpu-boltz2",
     "rosetta": "pepagent-cpu-rosetta",
+}
+V37_STAGE_ACTIVITY_CONTRACT = {
+    "proposal": ("generate_v37_batch", "generator", 1),
+    "evaluation": ("evaluate_v37_sequence_metric", "sequence_metrics", 5),
+    "boltz": ("predict_v37_boltz2_complex", "boltz", 3),
+    "rosetta": ("score_v37_rosetta_complex", "rosetta", 3),
 }
 
 
@@ -262,6 +270,9 @@ def validate_v37_worker_placement_snapshot(
     *,
     contract: V37CapacityContract | None = None,
     expected_task_queues: dict[str, str] | None = None,
+    expected_source_revision: str | None = None,
+    reference_time: datetime | None = None,
+    maximum_age_seconds: int = 300,
 ) -> dict[str, Any]:
     """Validate the exact launch-boundary worker placement evidence."""
     required = {
@@ -279,6 +290,20 @@ def validate_v37_worker_placement_snapshot(
         raise ValueError("v37 worker topology is not frozen")
     if int(payload.get("active_workflow_count", -1)) != 0:
         raise ValueError("v37 worker placement snapshot was not captured at zero active workflows")
+    try:
+        captured_at = datetime.fromisoformat(
+            str(payload["captured_at"]).replace("Z", "+00:00")
+        )
+    except ValueError as error:
+        raise ValueError("v37 worker placement capture timestamp is invalid") from error
+    if captured_at.tzinfo is None:
+        raise ValueError("v37 worker placement capture timestamp lacks timezone")
+    captured_at = captured_at.astimezone(UTC)
+    if reference_time is not None:
+        now = reference_time.astimezone(UTC)
+        age = (now - captured_at).total_seconds()
+        if age < -30 or age > maximum_age_seconds:
+            raise ValueError("v37 worker placement snapshot is stale or future-dated")
     placements = payload.get("placements")
     if not isinstance(placements, list) or not placements:
         raise ValueError("v37 worker placement snapshot is empty")
@@ -289,6 +314,7 @@ def validate_v37_worker_placement_snapshot(
         "role",
         "task_queue",
         "poller_identity",
+        "poller_last_access_at",
         "source_revision",
         "release_sha256",
         "environment_sha256",
@@ -325,6 +351,28 @@ def validate_v37_worker_placement_snapshot(
             )
         ):
             raise ValueError("v37 worker placement identity is incomplete")
+        if not re.fullmatch(r"[0-9a-f]{64}", str(item["release_sha256"])) or not re.fullmatch(
+            r"[0-9a-f]{64}", str(item["environment_sha256"])
+        ):
+            raise ValueError("v37 worker placement release or environment SHA is invalid")
+        source_revision = str(item["source_revision"])
+        if expected_source_revision is not None:
+            if source_revision != expected_source_revision:
+                raise ValueError("v37 worker placement source revision drifted")
+        elif not re.fullmatch(r"[0-9a-f]{40}|[0-9a-f]{64}", source_revision):
+            raise ValueError("v37 worker placement source revision is invalid")
+        if not re.fullmatch(r"[^@\s]+@[^@\s]+", str(item["poller_identity"])):
+            raise ValueError("v37 worker placement poller identity is invalid")
+        try:
+            last_access = datetime.fromisoformat(
+                str(item["poller_last_access_at"]).replace("Z", "+00:00")
+            )
+        except ValueError as error:
+            raise ValueError("v37 worker poller last-access timestamp is invalid") from error
+        if last_access.tzinfo is None or abs(
+            (last_access.astimezone(UTC) - captured_at).total_seconds()
+        ) > 120:
+            raise ValueError("v37 worker poller last-access is stale")
         identity = (str(item["physical_host"]), int(item["pid"]), str(item["role"]))
         if identity in identities:
             raise ValueError("v37 worker placement identity is duplicated")
@@ -337,6 +385,10 @@ def validate_v37_worker_placement_snapshot(
             if placement in gpu_placements:
                 raise ValueError("v37 worker placement oversubscribes a GPU")
             gpu_placements.add(placement)
+        if item["role"] == "boltz2" and not re.fullmatch(
+            r"[0-9a-f]{64}", str(item["weights_sha256"])
+        ):
+            raise ValueError("v37 Boltz worker weights SHA is invalid")
     maximum_workers = (
         int(contract.resource_capacity["gpu"]["maximum_concurrent_workers"])
         if contract is not None
@@ -379,7 +431,7 @@ def build_v37_pipeline_queue_transition_ledger(
             sequence += 1
             logical_id = item["stage_logical_ids"][stage]
             outcome = stage_outcomes[logical_id]
-            if set(outcome) != {"outcome", "backpressure_observed"}:
+            if set(outcome) != {"outcome", "activity_receipts"}:
                 raise ValueError("v37 pipeline stage outcome schema drifted")
             if outcome["outcome"] not in {
                 "succeeded",
@@ -387,8 +439,29 @@ def build_v37_pipeline_queue_transition_ledger(
                 "failed_without_replacement",
             }:
                 raise ValueError("v37 pipeline stage outcome is invalid")
-            if type(outcome["backpressure_observed"]) is not bool:
-                raise ValueError("v37 pipeline backpressure evidence must be boolean")
+            receipts = outcome["activity_receipts"]
+            if not isinstance(receipts, list):
+                raise ValueError("v37 pipeline activity receipts must be a list")
+            if outcome["outcome"] == "succeeded" and not receipts:
+                raise ValueError("v37 succeeded pipeline stage lacks activity receipts")
+            if outcome["outcome"] == "skipped_not_selected" and receipts:
+                raise ValueError("v37 skipped pipeline stage cannot have activity receipts")
+            validated_receipts = [_validate_activity_transition_receipt(row) for row in receipts]
+            dispatch_at = (
+                min(row["scheduled_at"] for row in validated_receipts)
+                if validated_receipts
+                else None
+            )
+            start_at = (
+                min(row["started_at"] for row in validated_receipts)
+                if validated_receipts
+                else None
+            )
+            finish_at = (
+                max(row["finished_at"] for row in validated_receipts)
+                if validated_receipts
+                else None
+            )
             transitions.append(
                 {
                     "stage_logical_id": logical_id,
@@ -397,9 +470,15 @@ def build_v37_pipeline_queue_transition_ledger(
                     "stage": stage,
                     "queue_position": ordinal,
                     "dispatch_sequence": sequence,
-                    "start_sequence": sequence,
-                    "finish_sequence": sequence,
-                    **outcome,
+                    "dispatch_at": dispatch_at,
+                    "start_at": start_at,
+                    "finish_at": finish_at,
+                    "outcome": outcome["outcome"],
+                    "backpressure_observed": any(
+                        row["schedule_to_start_seconds"] > 0.0
+                        for row in validated_receipts
+                    ),
+                    "activity_receipts": validated_receipts,
                 }
             )
     result: dict[str, Any] = {
@@ -412,12 +491,53 @@ def build_v37_pipeline_queue_transition_ledger(
     return result
 
 
+def _validate_activity_transition_receipt(payload: Any) -> dict[str, Any]:
+    required = {
+        "schema_version",
+        "activity_id",
+        "activity_type",
+        "attempt",
+        "task_queue",
+        "scheduled_at",
+        "started_at",
+        "finished_at",
+        "schedule_to_start_seconds",
+    }
+    if not isinstance(payload, dict) or set(payload) != required:
+        raise ValueError("v37 activity transition receipt schema drifted")
+    if payload["schema_version"] != "v37.activity-transition-receipt.1":
+        raise ValueError("v37 activity transition receipt version drifted")
+    if int(payload["attempt"]) < 1 or any(
+        not isinstance(payload[field], str) or not payload[field].strip()
+        for field in ("activity_id", "activity_type", "task_queue")
+    ):
+        raise ValueError("v37 activity transition receipt identity is incomplete")
+    parsed = []
+    for field in ("scheduled_at", "started_at", "finished_at"):
+        try:
+            value = datetime.fromisoformat(str(payload[field]).replace("Z", "+00:00"))
+        except ValueError as error:
+            raise ValueError("v37 activity transition timestamp is invalid") from error
+        if value.tzinfo is None:
+            raise ValueError("v37 activity transition timestamp lacks timezone")
+        parsed.append(value.astimezone(UTC))
+    scheduled, started, finished = parsed
+    if not scheduled <= started <= finished:
+        raise ValueError("v37 activity transition timestamps are not monotonic")
+    observed_latency = float(payload["schedule_to_start_seconds"])
+    expected_latency = (started - scheduled).total_seconds()
+    if observed_latency < 0 or abs(observed_latency - expected_latency) > 1e-6:
+        raise ValueError("v37 activity schedule-to-start latency drifted")
+    return payload
+
+
 def validate_v37_capacity_replay_artifacts(
     *,
     contract: V37CapacityContract | None = None,
     worker_placement_snapshot: dict[str, Any],
     pipeline_manifest: dict[str, Any],
     queue_transition_ledger: dict[str, Any],
+    expected_stage_outcomes: dict[str, str] | None = None,
 ) -> None:
     validate_v37_worker_placement_snapshot(worker_placement_snapshot, contract=contract)
     if pipeline_manifest.get("pipeline_manifest_sha256") != sha256_json(
@@ -430,6 +550,17 @@ def validate_v37_capacity_replay_artifacts(
         raise ValueError("v37 pipeline manifest self-hash drifted")
     if tuple(pipeline_manifest.get("stage_order", [])) != V37_PIPELINE_STAGES:
         raise ValueError("v37 pipeline manifest stage order drifted")
+    rebuilt_manifest = build_v37_pipeline_manifest(
+        [
+            {
+                "proposal_ordinal": item.get("proposal_ordinal"),
+                "occurrence_id": item.get("occurrence_id"),
+            }
+            for item in pipeline_manifest.get("items", [])
+        ]
+    )
+    if pipeline_manifest != rebuilt_manifest:
+        raise ValueError("v37 pipeline manifest semantics drifted")
     ledger_identity = {
         key: value for key, value in queue_transition_ledger.items() if key != "ledger_sha256"
     }
@@ -450,6 +581,41 @@ def validate_v37_capacity_replay_artifacts(
     ]
     if len(observed) != len(expected) or set(observed) != expected:
         raise ValueError("v37 pipeline transition ledger coverage drifted")
+    transitions = queue_transition_ledger.get("transitions")
+    if not isinstance(transitions, list):
+        raise ValueError("v37 pipeline transition ledger rows are missing")
+    outcomes: dict[str, dict[str, Any]] = {}
+    for row in transitions:
+        if not isinstance(row, dict):
+            raise ValueError("v37 pipeline transition row is invalid")
+        logical_id = str(row.get("stage_logical_id"))
+        outcomes[logical_id] = {
+            "outcome": row.get("outcome"),
+            "activity_receipts": row.get("activity_receipts"),
+        }
+    rebuilt_ledger = build_v37_pipeline_queue_transition_ledger(
+        pipeline_manifest=pipeline_manifest,
+        stage_outcomes=outcomes,
+    )
+    if queue_transition_ledger != rebuilt_ledger:
+        raise ValueError("v37 pipeline transition ledger semantics drifted")
+    for row in transitions:
+        stage = str(row["stage"])
+        expected_type, queue_key, expected_count = V37_STAGE_ACTIVITY_CONTRACT[stage]
+        receipts = row["activity_receipts"]
+        if row["outcome"] == "succeeded" and (
+            len(receipts) != expected_count
+            or any(
+                receipt["activity_type"] != expected_type
+                or receipt["task_queue"] != V37_DEFAULT_TASK_QUEUES[queue_key]
+                for receipt in receipts
+            )
+        ):
+            raise ValueError("v37 pipeline activity receipt contract drifted")
+    if expected_stage_outcomes is not None and {
+        logical_id: outcome["outcome"] for logical_id, outcome in outcomes.items()
+    } != expected_stage_outcomes:
+        raise ValueError("v37 pipeline outcomes differ from database evidence")
 
 
 def build_v37_static_capacity_preflight(*, contract_path: Path) -> dict[str, Any]:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import math
 import os
 import subprocess
 from collections.abc import Callable, Mapping, Sequence
@@ -298,16 +299,29 @@ def consume_external_metric_result(
                 **common,
             }
         returned[candidate_id] = sequence
-    if returned.keys() != expected.keys():
+    if list(returned) != list(expected):
         return {
             "status": "unavailable",
             "records": [],
-            "reason": "adapter output is missing one or more candidate rows",
+            "reason": "adapter output candidate rows differ in identity or exact order",
+            **common,
+        }
+    records = normalize_metric_records(str(plan["plugin_name"]), rows)
+    if any(
+        observation.get("numeric_value") is not None
+        and not math.isfinite(float(observation["numeric_value"]))
+        for record in records
+        for observation in record.get("observations", [])
+    ):
+        return {
+            "status": "unavailable",
+            "records": [],
+            "reason": "adapter output contains a non-finite numeric value",
             **common,
         }
     return {
         "status": "complete",
-        "records": normalize_metric_records(str(plan["plugin_name"]), rows),
+        "records": records,
         "raw_rows": rows,
         "stdout_tail": stdout[-8000:],
         "stderr_tail": stderr[-8000:],

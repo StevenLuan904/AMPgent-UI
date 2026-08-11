@@ -373,8 +373,9 @@ def test_formal_provider_and_external_metric_launches_use_the_typed_guard() -> N
     assert "consume_external_metric_result(" in metric_source
     assert "_run_guarded_generic_runtime(" in metric_source
     assert "_run_guarded_generic_runtime(" in knowledge_source
-    assert "query=query_text" in knowledge_source
-    assert "query=str(request[\"query\"])" not in knowledge_source
+    assert "resolve_v37_frozen_invocation(" in knowledge_source
+    assert "build_knowledge_command(" not in knowledge_source
+    assert "build_v37_frozen_adapter_command(" in pepshot_source
     assert pepshot_source.count("_run_guarded_generic_runtime(") == 2
     assert "v37_runtime_receipts" in knowledge_source
     assert "v37_runtime_receipts" in pepshot_source
@@ -433,11 +434,42 @@ async def test_knowledge_projection_persists_the_physical_provider_join(
         v37_activities, "persist_v37_agent_decision", _persist_decision
     )
 
-    query = "frozen AceA evidence query"
+    query = {
+        "schema_version": "v37.knowledge-query.1",
+        "target_key": "AceA",
+        "application": "v37_rapid_champion_generation",
+        "query": "frozen AceA evidence query",
+    }
     context_pack = {
-        "policy_version": "fixture-policy",
+        "task": {
+            "target_key": "acea",
+            "query": query["query"],
+            "application": "bacterial AceA inhibition and antibacterial validation",
+        },
+        "policy_version": "amp-design-context-v2",
+        "target_brief": {},
+        "agent_brief": {},
+        "design_rules": {
+            "direct": [],
+            "transfer": [
+                {
+                    "card_id": "card-1",
+                    "status": "candidate",
+                    "evidence_refs": ["passage-1"],
+                }
+            ],
+        },
+        "evidence_index": [
+            {
+                "evidence_id": "passage-1",
+                "source_id": "PMC1",
+                "status": "candidate",
+            }
+        ],
+        "warnings": [],
+        "knowledge_gaps": [],
         "retrieval_trace_id": "fixture-trace",
-        "evidence_index": [{"card_id": "card-1"}],
+        "generated_at": "2026-08-11T00:00:00+00:00",
     }
     request = {
         "run_id": str(run_id),
@@ -454,6 +486,7 @@ async def test_knowledge_projection_persists_the_physical_provider_join(
             "context_pack_artifact_sha256": sha256_json(context_pack),
             "runtime_receipt_artifact_sha256": "2" * 64,
             "context_pack": context_pack,
+            "provider_contract_verified": True,
         },
     }
     result = await v37_activities.persist_v37_knowledge_projection(request)
@@ -472,3 +505,6 @@ async def test_knowledge_projection_persists_the_physical_provider_join(
     assert receipt["provider_output_sha256"] == sha256_json(context_pack)
     assert receipt["context_pack_artifact_sha256"] == sha256_json(context_pack)
     assert receipt["runtime_receipt_artifact_sha256"] == "2" * 64
+    evidence = persisted_nodes[0]["artifacts"]["knowledge_evidence"]
+    assert evidence["cards"][0]["card_id"] == "card-1"
+    assert evidence["passages"][0]["evidence_id"] == "passage-1"
