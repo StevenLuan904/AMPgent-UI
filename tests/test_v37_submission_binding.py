@@ -54,8 +54,11 @@ def _all_dynamic_gates() -> dict[str, bool]:
 
 def test_v37_preflight_cannot_override_frozen_config_authorization() -> None:
     static = build_v37_static_preflight(CONFIG)
+    tampered = dict(static)
+    tampered["config_execution_authorized"] = False
+    tampered["implementation_revision"] = None
     blocked = authorize_v37_submission_preflight(
-        static,
+        tampered,
         dynamic_gates=_all_dynamic_gates(),
         immutable_inputs=_immutable_inputs(),
     )

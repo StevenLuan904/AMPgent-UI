@@ -1,6 +1,9 @@
 from pathlib import Path
 
+import pytest
 import yaml
+
+from pepagent.v37_preregistration import V37FormalRun
 
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / "config" / "benchmarks" / "amp_rapid_champion_generation_v37.yaml"
@@ -10,7 +13,7 @@ def _load() -> dict:
     return yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
 
 
-def test_v37_is_single_arm_fixed_budget_direction_authorized_only() -> None:
+def test_v37_is_single_arm_fixed_budget_and_execution_authorized() -> None:
     manifest = _load()
 
     assert manifest["benchmark_id"] == "amp_rapid_champion_generation_v37"
@@ -22,12 +25,109 @@ def test_v37_is_single_arm_fixed_budget_direction_authorized_only() -> None:
     assert manifest["design"]["weighted_total_score_forbidden"] is True
     assert manifest["formal_run"] == {
         "direction_authorized": True,
+        "execution_authorized": True,
+        "submitted": False,
+        "implementation_revision": "fd263e8afc984960067fad94821d12a5b3effd73",
+        "run_id": None,
+        "workflow_id": None,
+    }
+
+
+def test_v37_formal_run_accepts_only_the_three_monotonic_states() -> None:
+    revision = "a" * 40
+    unauthorized = V37FormalRun(
+        direction_authorized=True,
+        execution_authorized=False,
+        submitted=False,
+        implementation_revision=None,
+        run_id=None,
+        workflow_id=None,
+    )
+    authorized = V37FormalRun(
+        direction_authorized=True,
+        execution_authorized=True,
+        submitted=False,
+        implementation_revision=revision,
+        run_id=None,
+        workflow_id=None,
+    )
+    submitted = V37FormalRun(
+        direction_authorized=True,
+        execution_authorized=True,
+        submitted=True,
+        implementation_revision=revision,
+        run_id="run-1",
+        workflow_id="workflow-1",
+    )
+    assert unauthorized.implementation_revision is None
+    assert authorized.implementation_revision == revision
+    assert (submitted.run_id, submitted.workflow_id) == ("run-1", "workflow-1")
+
+
+@pytest.mark.parametrize(
+    "overrides,match",
+    [
+        ({"implementation_revision": "a" * 40}, "must be pristine"),
+        ({"submitted": True}, "must be pristine"),
+        (
+            {"execution_authorized": True},
+            "requires a frozen revision",
+        ),
+        (
+            {
+                "execution_authorized": True,
+                "implementation_revision": "a" * 40,
+                "run_id": "premature",
+            },
+            "cannot have run identities",
+        ),
+        (
+            {
+                "execution_authorized": True,
+                "submitted": True,
+                "implementation_revision": "a" * 40,
+            },
+            "requires run_id",
+        ),
+        (
+            {
+                "execution_authorized": True,
+                "submitted": True,
+                "implementation_revision": "a" * 40,
+                "run_id": "run-1",
+            },
+            "requires workflow_id",
+        ),
+    ],
+)
+def test_v37_formal_run_rejects_cross_state_fields(
+    overrides: dict[str, object], match: str
+) -> None:
+    payload = {
+        "direction_authorized": True,
         "execution_authorized": False,
         "submitted": False,
         "implementation_revision": None,
         "run_id": None,
         "workflow_id": None,
+        **overrides,
     }
+    with pytest.raises(ValueError, match=match):
+        V37FormalRun.model_validate(payload)
+
+
+def test_v37_formal_run_rejects_non_commit_revision() -> None:
+    with pytest.raises(ValueError, match="String should match pattern"):
+        V37FormalRun.model_validate(
+            {
+                "direction_authorized": True,
+                "execution_authorized": True,
+                "submitted": False,
+                "implementation_revision": "not-a-commit",
+                "run_id": None,
+                "workflow_id": None,
+            }
+        )
 
 
 def test_v37_budget_is_exact_and_internally_consistent() -> None:

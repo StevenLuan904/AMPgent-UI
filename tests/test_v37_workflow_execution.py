@@ -165,10 +165,14 @@ def test_v37_preflight_freezes_database_submission_identity() -> None:
     )
 
 
-def test_v37_submission_bundle_refuses_unapproved_frozen_config(tmp_path: Path) -> None:
+def test_v37_submission_bundle_refuses_tampered_unauthorized_preflight(
+    tmp_path: Path,
+) -> None:
     manifest_path = ROOT / "config/benchmarks/amp_rapid_champion_generation_v37.yaml"
     experiment_spec_path = ROOT / "config/experiments/acea_v37_rapid_champion_structure.yaml"
     static = build_v37_static_preflight(manifest_path)
+    static["config_execution_authorized"] = False
+    static["implementation_revision"] = None
     preflight = authorize_v37_submission_preflight(
         static,
         dynamic_gates={
@@ -204,7 +208,7 @@ def test_v37_submission_bundle_refuses_unapproved_frozen_config(tmp_path: Path) 
     execution_path.write_text(json.dumps(execution), encoding="utf-8")
     assert preflight["status"] == "blocked"
     assert "config_execution_authorized" in preflight["failed_gates"]
-    with pytest.raises(ValueError, match="has not authorized formal execution"):
+    with pytest.raises(ValueError, match="submission preflight is not ready"):
         load_v37_submission_bundle(
             manifest_path=manifest_path,
             experiment_spec_path=experiment_spec_path,

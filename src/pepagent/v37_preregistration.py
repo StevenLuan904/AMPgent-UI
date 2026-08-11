@@ -24,11 +24,40 @@ class V37Engine(BaseModel):
 
 class V37FormalRun(BaseModel):
     direction_authorized: Literal[True]
-    execution_authorized: Literal[False]
-    submitted: Literal[False]
-    implementation_revision: None
-    run_id: None
-    workflow_id: None
+    execution_authorized: bool
+    submitted: bool
+    implementation_revision: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{40}$"
+    )
+    run_id: str | None = None
+    workflow_id: str | None = None
+
+    @model_validator(mode="after")
+    def validate_formal_state(self) -> V37FormalRun:
+        """Accept only the three monotonic states of one formal submission."""
+        if not self.execution_authorized:
+            if (
+                self.submitted
+                or self.implementation_revision is not None
+                or self.run_id is not None
+                or self.workflow_id is not None
+            ):
+                raise ValueError("unauthorized v37 formal run must be pristine")
+            return self
+
+        if self.implementation_revision is None:
+            raise ValueError("authorized v37 formal run requires a frozen revision")
+
+        if not self.submitted:
+            if self.run_id is not None or self.workflow_id is not None:
+                raise ValueError("unsubmitted v37 formal run cannot have run identities")
+            return self
+
+        if not self.run_id or not self.run_id.strip():
+            raise ValueError("submitted v37 formal run requires run_id")
+        if not self.workflow_id or not self.workflow_id.strip():
+            raise ValueError("submitted v37 formal run requires workflow_id")
+        return self
 
 
 class V37Manifest(BaseModel):

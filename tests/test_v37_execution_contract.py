@@ -66,11 +66,15 @@ def _immutable_inputs() -> dict[str, dict[str, object]]:
     }
 
 
-def test_v37_static_and_dynamic_preflight_never_overrides_config_authorization() -> None:
+def test_v37_static_and_dynamic_preflight_honors_config_authorization() -> None:
     static = build_v37_static_preflight(CONFIG)
     assert static["direction_authorized"] is True
     assert static["execution_authorized"] is False
     assert static["formal_run_submitted"] is False
+    assert static["config_execution_authorized"] is True
+    assert static["implementation_revision"] == (
+        "fd263e8afc984960067fad94821d12a5b3effd73"
+    )
     gates = {
         "implementation_committed_pushed_archived": True,
         "database_schema_exact": True,
@@ -80,15 +84,12 @@ def test_v37_static_and_dynamic_preflight_never_overrides_config_authorization()
         "forbidden_resources_absent": True,
         "no_existing_v37_run_or_workflow": True,
     }
-    blocked = authorize_v37_submission_preflight(
+    ready = authorize_v37_submission_preflight(
         static, dynamic_gates=gates, immutable_inputs=_immutable_inputs()
     )
-    assert blocked["status"] == "blocked"
-    assert blocked["execution_authorized"] is False
-    assert blocked["failed_gates"] == [
-        "config_execution_authorized",
-        "implementation_revision_frozen",
-    ]
+    assert ready["status"] == "ready_to_submit_unique_run"
+    assert ready["execution_authorized"] is True
+    assert ready["failed_gates"] == []
 
 
 def test_v37_dynamic_preflight_lists_failed_gate() -> None:
@@ -106,11 +107,7 @@ def test_v37_dynamic_preflight_lists_failed_gate() -> None:
         static, dynamic_gates=gates, immutable_inputs=_immutable_inputs()
     )
     assert blocked["status"] == "blocked"
-    assert blocked["failed_gates"] == [
-        "config_execution_authorized",
-        "database_schema_exact",
-        "implementation_revision_frozen",
-    ]
+    assert blocked["failed_gates"] == ["database_schema_exact"]
 
 
 def test_v37_preflight_requires_content_addressed_source_bytes(tmp_path: Path) -> None:
