@@ -1,13 +1,9 @@
 from __future__ import annotations
 
 import argparse
-import csv
 import json
-import subprocess
 from pathlib import Path
 from typing import Any
-
-import yaml
 
 from pepagent.handoff_metrics import (
     HANDOFF_METRIC_VERSION,
@@ -15,7 +11,14 @@ from pepagent.handoff_metrics import (
     normalize_metric_records,
     physicochemical_descriptors,
 )
-from pepagent.provenance.hashing import sha256_file
+from pepagent.model_workers.sequence_metric_plan import (
+    MetricExecutionPlanError,
+    build_external_metric_plan,
+    consume_external_metric_result,
+    execute_external_metric_plan,
+    load_external_metric_adapter,
+    materialize_external_metric_input,
+)
 
 
 def _builtin_result(
@@ -35,12 +38,8 @@ def _builtin_result(
                 **physicochemical_descriptors(
                     candidate["sequence"],
                     ph=float(parameters.get("ph", 7.4)),
-                    c_terminal_amidated=bool(
-                        parameters.get("c_terminal_amidated", False)
-                    ),
-                    hydrophobic_moment_angle=int(
-                        parameters.get("hydrophobic_moment_angle", 100)
-                    ),
+                    c_terminal_amidated=bool(parameters.get("c_terminal_amidated", False)),
+                    hydrophobic_moment_angle=int(parameters.get("hydrophobic_moment_angle", 100)),
                 ),
             }
         )
@@ -52,13 +51,6 @@ def _builtin_result(
     }
 
 
-def _load_registry(path: Path | None) -> tuple[dict[str, Any], str | None]:
-    if path is None or not path.exists():
-        return {}, None
-    payload = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-    return payload.get("adapters", {}), sha256_file(path)
-
-
 def _external_result(
     plugin_name: str,
     candidates: list[dict[str, Any]],
@@ -66,8 +58,18 @@ def _external_result(
     registry_path: Path | None,
     run_id: str,
 ) -> dict[str, Any]:
-    registry, registry_sha256 = _load_registry(registry_path)
-    adapter = registry.get(plugin_name)
+    try:
+        adapter, registry_sha256 = load_external_metric_adapter(
+            registry_path, plugin_name
+        )
+    except MetricExecutionPlanError as error:
+        return {
+            "status": "unavailable",
+            "adapter_version": None,
+            "records": [],
+            "reason": str(error),
+            "registry_sha256": None,
+        }
     if not adapter or not adapter.get("enabled", False):
         return {
             "status": "unavailable",
@@ -77,115 +79,30 @@ def _external_result(
             "registry_sha256": registry_sha256,
         }
 
-    work_dir.mkdir(parents=True, exist_ok=True)
-    input_path = work_dir / "candidates.csv"
-    output_path = work_dir / "predictions.csv"
-    raw_output_dir = work_dir / "raw"
-    raw_output_dir.mkdir(parents=True, exist_ok=True)
-    # An activity retry reuses its deterministic work directory. Never accept a
-    # prediction file left by an earlier failed or timed-out adapter attempt.
-    output_path.unlink(missing_ok=True)
-    with input_path.open("w", encoding="utf-8", newline="") as stream:
-        writer = csv.DictWriter(stream, fieldnames=["candidate_id", "sequence"])
-        writer.writeheader()
-        writer.writerows(
-            {"candidate_id": item["id"], "sequence": item["sequence"]}
-            for item in candidates
-        )
-
-    command_template = adapter.get("command")
-    if not isinstance(command_template, list) or not command_template:
-        return {
-            "status": "unavailable",
-            "adapter_version": adapter.get("version"),
-            "records": [],
-            "reason": "runtime registry entry has no command array",
-            "registry_sha256": registry_sha256,
-        }
-    config_path = adapter.get("config_path")
-    replacements = {
-        "input": str(input_path),
-        "output": str(output_path),
-        "config": str(Path(config_path).resolve()) if config_path else "",
-        "raw_output_dir": str(raw_output_dir),
-        "run_id": run_id,
-    }
-    command = [str(value).format(**replacements) for value in command_template]
-    timeout_seconds = int(adapter.get("timeout_seconds", 1800))
     try:
-        completed = subprocess.run(
-            command,
-            cwd=adapter.get("working_directory"),
-            capture_output=True,
-            text=True,
-            timeout=timeout_seconds,
-            check=False,
+        plan = build_external_metric_plan(
+            plugin_name=plugin_name,
+            adapter=adapter,
+            work_dir=work_dir,
+            run_id=run_id,
+            registry_path=registry_path,
+            registry_sha256=registry_sha256,
         )
-    except (OSError, subprocess.TimeoutExpired) as error:
+    except MetricExecutionPlanError as error:
         return {
             "status": "unavailable",
             "adapter_version": adapter.get("version"),
             "records": [],
-            "reason": f"external adapter could not complete: {type(error).__name__}: {error}",
-            "registry_sha256": registry_sha256,
-            "command_argv": command,
-        }
-    if completed.returncode != 0 or not output_path.exists():
-        return {
-            "status": "unavailable",
-            "adapter_version": adapter.get("version"),
-            "records": [],
-            "reason": f"external adapter exited with code {completed.returncode}",
-            "registry_sha256": registry_sha256,
-            "command_argv": command,
-            "stdout_tail": completed.stdout[-8000:],
-            "stderr_tail": completed.stderr[-8000:],
-        }
-    with output_path.open(encoding="utf-8-sig", newline="") as stream:
-        rows = list(csv.DictReader(stream))
-    expected = {str(item["id"]): item["sequence"] for item in candidates}
-    returned: dict[str, str] = {}
-    for row in rows:
-        candidate_id = str(row.get("candidate_id") or row.get("internal_id") or "")
-        sequence = row.get("sequence", "")
-        if candidate_id not in expected or expected[candidate_id] != sequence:
-            return {
-                "status": "unavailable",
-                "adapter_version": adapter.get("version"),
-                "records": [],
-                "reason": "adapter output contains an unknown candidate or sequence mismatch",
-                "registry_sha256": registry_sha256,
-            }
-        if candidate_id in returned:
-            return {
-                "status": "unavailable",
-                "adapter_version": adapter.get("version"),
-                "records": [],
-                "reason": "adapter output contains duplicate candidate rows",
-                "registry_sha256": registry_sha256,
-            }
-        returned[candidate_id] = sequence
-    if returned.keys() != expected.keys():
-        return {
-            "status": "unavailable",
-            "adapter_version": adapter.get("version"),
-            "records": [],
-            "reason": "adapter output is missing one or more candidate rows",
+            "reason": str(error),
             "registry_sha256": registry_sha256,
         }
-    return {
-        "status": "complete",
-        "adapter_version": adapter.get("version"),
-        "records": normalize_metric_records(plugin_name, rows),
-        "raw_rows": rows,
-        "registry_sha256": registry_sha256,
-        "command_argv": command,
-        "stdout_tail": completed.stdout[-8000:],
-        "stderr_tail": completed.stderr[-8000:],
-        "model_uri": adapter.get("model_uri"),
-        "weights_sha256": adapter.get("weights_sha256"),
-        "limitations": adapter.get("limitations", []),
-    }
+    materialize_external_metric_input(plan, candidates)
+    receipt = execute_external_metric_plan(plan)
+    return consume_external_metric_result(
+        plan=plan,
+        candidates=candidates,
+        execution_receipt=receipt,
+    )
 
 
 def evaluate(request: dict[str, Any], work_dir: Path, registry_path: Path | None) -> dict[str, Any]:
