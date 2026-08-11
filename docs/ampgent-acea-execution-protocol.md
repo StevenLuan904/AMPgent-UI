@@ -569,3 +569,5 @@ shadow；这些环境失败也不是工具效果结论。
 路径无关的 Python/conda runtime probe 与 requirement/import fail-closed verifier 实现提交为
 `43fbe926cc8f3dcc0abc0231502b9079bc1a2368`，ruff clean、pytest `309 passed`；它只是消费侧门禁，
 config 暂不指向该提交，须等 provider 发布新 revision 后一并重新冻结。
+provider gate 记录提交为 `6e38bdb`；内容归档 `var/archives/ampgent-v34-provider-gate-6e38bdb.zip`
+的 SHA-256 为 `6e813011781cba3f6d9ea255381f870d8401fdd81226808c20b034fcd76fc8c9`。

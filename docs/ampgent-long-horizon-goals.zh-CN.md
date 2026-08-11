@@ -248,6 +248,8 @@ PepShot renderer 缺声明的 gemmi，知识库也尚无满足完整 requirement
 对应任务。在两项 provider-owned 交付完成前，v34 shadow 保持未运行，不能据此评价工具增益。
 消费侧 runtime verifier 已实现于 commit `43fbe926cc8f3dcc0abc0231502b9079bc1a2368`，全量测试
 `309 passed`；它只负责拒绝不合格交付，不替 provider 修复。
+provider gate 记录提交为 `6e38bdb`，内容归档 SHA-256 为
+`6e813011781cba3f6d9ea255381f870d8401fdd81226808c20b034fcd76fc8c9`。
 
 版本号是当前规划，不是正式 run 授权。任何生成、阈值、候选选择或执行必须先有独立冻结 config、
 提交/push、服务与 worker 门禁、唯一 run 检查。长期路线允许被新证据修订，但修订必须追加理由，不能

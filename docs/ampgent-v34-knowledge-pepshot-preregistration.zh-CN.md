@@ -135,3 +135,5 @@ fingerprint、真实固定 fixture 与验证 receipt，再由 AMPgent 运行隔�
 消费侧路径无关 Python/conda runtime probe 与 requirement/import verifier 已实现于 commit
 `43fbe926cc8f3dcc0abc0231502b9079bc1a2368`，ruff clean、pytest `309 passed`；config 暂不更新到该
 revision，须在 provider 交付后与其冻结 source/runtime manifest 一并重新预检。
+provider gate 记录提交为 `6e38bdb`；内容归档 `var/archives/ampgent-v34-provider-gate-6e38bdb.zip`
+的 SHA-256 为 `6e813011781cba3f6d9ea255381f870d8401fdd81226808c20b034fcd76fc8c9`。
