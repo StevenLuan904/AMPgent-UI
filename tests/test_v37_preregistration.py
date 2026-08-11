@@ -43,10 +43,10 @@ def test_v37_budget_is_exact_and_internally_consistent() -> None:
     ]
     all_seeds = [seed for item in engines for seed in item["seeds"]]
     assert len(all_seeds) == len(set(all_seeds)) == 9
-    assert generators["raw_proposals_per_generator_seed"] == 600
-    assert generators["evaluated_valid_unique_per_generator_seed"] == 60
-    assert generators["expected_candidate_count"] == 540
-    assert manifest["stage_1_sequence_evaluation"]["expected_candidate_count"] == 540
+    assert generators["raw_proposals_per_generator_seed"] == 1000
+    assert generators["evaluated_valid_unique_per_generator_seed"] == 100
+    assert generators["expected_candidate_count"] == 900
+    assert manifest["stage_1_sequence_evaluation"]["expected_candidate_count"] == 900
     assert manifest["stage_1_sequence_evaluation"]["shortlist"]["total_quota"] == 48
     assert sum(manifest["stage_1_sequence_evaluation"]["shortlist"]["lane_quotas"].values()) == 48
     assert structure["poses_per_candidate"] == len(structure["boltz_seeds"]) == 2

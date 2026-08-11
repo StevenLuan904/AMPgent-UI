@@ -19,7 +19,7 @@ def test_v37_manifest_and_evidence_plan_are_exact() -> None:
     plan = build_v37_evidence_plan(manifest)
     assert len(plan["generator_calls"]) == 9
     assert len(plan["metric_calls"]) == 11
-    assert plan["expected_candidate_count"] == 540
+    assert plan["expected_candidate_count"] == 900
     assert plan["expected_structure_shortlist"] == 48
     assert len(plan["required_tool_call_ids"]) == 27
 

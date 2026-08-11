@@ -22,8 +22,9 @@ dG 中位数更有利，HydrAMP 的口袋覆盖更高且肽骨架位移更低，
 adapter；v24 高温 analogue 需要父序列与 cell seed 等另一套合同，不能混入本版本。AMPGAN v2 不使用
 v24 未晋级的安全优化 arm，AMP-Designer 使用冻结 adapter。
 
-每个生成器固定三个新 seed，每个 generator×seed 生成 600 条 raw proposal，并只按原始顺序保留
-前 60 条合法、全局唯一序列进入便宜序列指标阶段，正常情况下共 540 条。全局序列唯一性按冻结的
+每个生成器固定三个新 seed，每个 generator×seed 生成 1000 条 raw proposal，并只按原始顺序保留
+前 100 条合法、全局唯一序列进入便宜序列指标阶段，正常情况下共 900 条。这直接复用三个已验证
+adapter 的固定 1000-raw 合同，不为 AMP-Designer 新写 600-raw 变体。全局序列唯一性按冻结的
 generator×seed 顺序执行；重复、非法和不足都进入失败分母且不补抽。昂贵结构阶段仍固定为 48 条：
 四个机制 lane 各 12 条，并限制每个 generator 和 generator×seed 对每个 lane 的最大贡献。
 
@@ -81,7 +82,7 @@ ToolCall、dependency、knowledge query/card/passage、Boltz/Rosetta 输入输�
 两阶段 AgentDecision、Pareto/dominance/diversity witness、失败、重试、成本和停止理由必须进入
 PostgreSQL；大对象进入内容寻址对象存储。
 
-只有 database+object-store-only replay 能精确重建 540 条正常候选、48 条结构 shortlist、全部姿势与
+只有 database+object-store-only replay 能精确重建 900 条正常候选、48 条结构 shortlist、全部姿势与
 decoy、所有排除、最终 lane 顺序、shortfall 和停止理由时，v37 才算完成。CSV、JSON 与 Markdown 只是
 导出，不能回填证据。
 

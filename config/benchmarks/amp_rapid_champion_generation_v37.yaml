@@ -68,9 +68,9 @@ generators:
       environment_manifest_path: config/environments/amp_designer_v25_requirements.lock
       environment_manifest_sha256: 68407982a09f66b4777bc30d8eb0ca276a4cd9473cce750a9f4d44464dd75127
       seeds: [20270377, 20270378, 20270379]
-  raw_proposals_per_generator_seed: 600
-  evaluated_valid_unique_per_generator_seed: 60
-  expected_candidate_count: 540
+  raw_proposals_per_generator_seed: 1000
+  evaluated_valid_unique_per_generator_seed: 100
+  expected_candidate_count: 900
   raw_selection_rule: raw_order_first_k_valid_unique
   global_sequence_uniqueness: true
   minimum_length: 10
@@ -124,7 +124,7 @@ verified_auxiliaries:
   effectiveness_claim_allowed: false
 
 stage_1_sequence_evaluation:
-  expected_candidate_count: 540
+  expected_candidate_count: 900
   required_metric_names:
     - hydrophobic_moment_eisenberg
     - hydrophobic_ratio_modlamp
