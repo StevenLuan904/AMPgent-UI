@@ -87,3 +87,7 @@ join、配对效应和晋升结论。CSV 与 Markdown 只允许作为导出，�
 ToolCall、每 episode 固定 8 次 raw proposal，共 768 次 proposal occurrence。相同序列可去重成同一
 Candidate，但每一次提出行为仍单独落 `candidate_occurrences`；因此重复生成、拒绝项和 lost-response
 重试都不会被候选去重吞掉。
+
+实现记录提交为 `bba75e95b358eca205be0736f3d7b8600765355f`，全量验证为 ruff clean、pytest
+`294 passed`；内容归档 `var/archives/ampgent-v34-persistence-bba75e9.zip` 的 SHA-256 为
+`07ec7cbe1e5649e50df7b899c3cdb8ed04cb9bfa38eea43be573e07018e525af`。

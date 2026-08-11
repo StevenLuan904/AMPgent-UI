@@ -517,6 +517,11 @@ margin 已在输出前冻结：确认后新颖非支配发现率改善 0.25 条/
 执行前仍需实现并测试真实 knowledge/PepShot adapter activity。不得把 persistence primitives 注册到
 Temporal 或提交 run；只有另获 formal-run 授权、完成 worker 身份/版本门禁后才可注册和执行。
 
+该 persistence checkpoint 的记录提交为
+`bba75e95b358eca205be0736f3d7b8600765355f`，`ruff check .` clean、完整 `pytest -q` 为 `294 passed`。
+内容归档 `var/archives/ampgent-v34-persistence-bba75e9.zip` 的 SHA-256 为
+`07ec7cbe1e5649e50df7b899c3cdb8ed04cb9bfa38eea43be573e07018e525af`。
+
 v34 预注册、确定性 arm 分配/配对效应与 replay graph 完整性验证器已冻结在 commit
 `29a352abb858e07086ffac943e2b5c939c97d940`；全量验证为 ruff clean、pytest `290 passed`。内容归档为
 `var/archives/ampgent-v34-preregistration-29a352a.zip`，SHA-256

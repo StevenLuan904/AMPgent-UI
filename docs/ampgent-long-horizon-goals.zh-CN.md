@@ -199,6 +199,8 @@ improvement/degradation margins 也已在输出前冻结。实现 commit
 artifact/Evaluation/AgentDecision primitives、770 节点依赖物化、96 个盲化锁门禁和仅依赖数据库/对象
 存储的 replay verifier；8×96=768 次 raw proposal occurrence 可逐次复原。它们没有注册到 Temporal，
 实际知识检索与 PepShot adapter 也尚未执行，因而不能执行或声称工具有效。
+该实现记录提交为 `bba75e95b358eca205be0736f3d7b8600765355f`，全量测试 `294 passed`；内容归档
+SHA-256 为 `07ec7cbe1e5649e50df7b899c3cdb8ed04cb9bfa38eea43be573e07018e525af`。
 预注册与预执行验证器 checkpoint 为 commit `29a352abb858e07086ffac943e2b5c939c97d940`，内容归档
 SHA-256 为 `cf5afb9ee7a4c01d1628323523abd15ff9589e52208def845c4b00d0b8ef6eba`。
 
