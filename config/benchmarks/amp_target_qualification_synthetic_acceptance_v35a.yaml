@@ -1,0 +1,129 @@
+benchmark_id: amp_target_qualification_synthetic_acceptance_v35a
+version: v35a.0.1-preregistered-synthetic-database-acceptance
+execution_status: preregistered_not_authorized
+implementation_revision: null
+
+parent_contract:
+  path: amp_multitarget_qualification_v35.yaml
+  sha256: 2a7b54a1ac1c7ace73cb3c39b3f6ab3eed6676dda033e73c866fe4883f9ec027
+
+migration:
+  path: migrations/versions/0011_target_qualification_lineage.py
+  sha256: 08e486d8d4d267ba57b763a27aefed8db5c139e31e5c212e1eb46fe11c00d472
+  from_revision: 0010_harness_evolution_lineage
+  to_revision: 0011_target_qualification_lineage
+  deploy_to_shared_PostgreSQL_only_after_authorization: true
+  transactional_upgrade_and_schema_introspection_required: true
+  downgrade_is_not_part_of_acceptance: true
+
+authorization:
+  execution_authorized: false
+  submitted: false
+  run_id: null
+  explicit_user_phrase_required: 授权 v35a 靶点资格合成数据库闭环验收
+  authorization_cannot_be_inferred_from_roadmap_work: true
+
+data_boundary:
+  synthetic_only: true
+  synthetic_scope_id: v35a-synthetic-target-qualification-closure
+  real_target_names_or_accessions_forbidden: true
+  external_target_web_or_database_audit_forbidden: true
+  historical_candidate_or_evaluation_reads_forbidden: true
+  candidate_generation_forbidden: true
+  candidate_count: 0
+  evaluation_count: 0
+  real_target_selection_forbidden: true
+  panel_execution_forbidden: true
+  frozen_runs_may_be_mutated: false
+
+synthetic_scenario:
+  shortlist_count: 8
+  qualified_primary_count: 6
+  rejected_count: 2
+  requested_panel_size: 3
+  primary_pocket_grade_distribution:
+    A: 3
+    B: 3
+  rejected_pocket_grade_distribution:
+    C: 1
+    D: 1
+  target_audit_run_count: 8
+  selection_run_count: 1
+  audit_tool_call_count: 8
+  selection_tool_call_count: 1
+  negative_probe_tool_call_count: 7
+  audit_agent_decision_count: 8
+  selection_agent_decision_count: 1
+  selection_depends_on_all_audit_calls: true
+  exact_selection_method: hard_gate_then_anchor_aware_maximin_v1
+  target_names_selected_before_audit: false
+  peptide_or_structure_outcomes_used_for_selection: false
+  target_agnostic_amp_lane_retained: true
+
+negative_probes:
+  - append_audit_after_panel_freeze
+  - cross_target_or_cross_run_evidence
+  - detached_AgentDecision_ToolCall
+  - retry_payload_drift
+  - corrupt_object_bytes_or_artifact_metadata
+  - forbidden_peptide_or_structure_outcome_selection_key
+  - incomplete_shortlist_failure_denominator
+
+expected_typed_counts:
+  synthetic_target_count: 9
+  target_pocket_count: 12
+  experiment_run_count: 9
+  tool_call_count: 16
+  tool_call_dependency_count: 8
+  agent_decision_count: 9
+  agent_decision_tool_call_edge_count: 9
+  target_qualification_audit_count: 8
+  target_panel_selection_witness_count: 1
+  target_panel_selection_member_count: 3
+  candidate_count: 0
+  evaluation_count: 0
+  artifact_count: 109
+  evidence_artifact_edge_count: 86
+  lifecycle_event_count: 43
+
+database_evidence_contract:
+  PostgreSQL_is_authoritative: true
+  object_store_is_content_addressed: true
+  use_retry_safe_repository_primitives: true
+  persist_all_success_and_failed_probe_ToolCalls: true
+  persist_all_AgentDecision_ToolCall_edges: true
+  persist_all_target_audit_artifact_foreign_keys: true
+  persist_selection_dependency_fan_in: true
+  persist_anchor_witness_snapshot_replay_and_acceptance_artifacts: true
+  database_object_store_only_replay_required: true
+  replay_must_reconstruct_complete_failure_denominator: true
+  replay_must_reconstruct_exact_selected_order: true
+  replay_must_reject_every_negative_probe: true
+  CSV_JSON_and_Markdown_are_exports_only: true
+  required_artifact_roles:
+    - target_sequence
+    - target_source_manifest
+    - target_feature_evidence
+    - target_structure_coordinates
+    - target_structure_validation
+    - target_sequence_structure_mapping
+    - target_primary_pocket_definition
+    - target_wrong_pocket_definition
+    - ToolCall_input
+    - ToolCall_output_or_error
+    - AgentDecision_prompt
+    - AgentDecision_response
+    - AceA_anchor
+    - target_panel_selection_witness
+    - target_qualification_snapshot
+    - database_only_replay_bundle
+    - aggregate_acceptance_receipt
+
+acceptance_verdicts:
+  allowed:
+    - synthetic_target_qualification_database_closure_accepted
+    - synthetic_target_qualification_database_closure_rejected
+  success_does_not_authorize_real_target_audit: true
+  success_does_not_authorize_real_target_selection: true
+  success_does_not_authorize_candidate_generation: true
+  success_does_not_prove_multitarget_generalization: true

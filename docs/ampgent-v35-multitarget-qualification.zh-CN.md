@@ -130,6 +130,14 @@ revision 回填 checkpoint 为 `09ec7cf025636cf1b67f83b5d6243c7aa497bf3f`；内�
 `var/archives/ampgent-v35-persistence-09ec7cf.zip` 的 SHA-256 为
 `3d8f923264e46c1c7f02c37fe9ddc1faa4f9694590a61978acf16ea18551d520`。
 
+v35a 合成数据库闭环验收现已单独预注册，精确合同为
+`config/benchmarks/amp_target_qualification_synthetic_acceptance_v35a.yaml`，授权说明为
+`docs/ampgent-v35a-synthetic-acceptance-authorization.zh-CN.md`。它只允许 8 个匿名合成 shortlist 项、
+6 个 A/B 通过项、2 个 C/D 拒绝项和 3 个 panel member；全程为 0 Candidate、0 Evaluation，不读取
+真实靶点、历史肽或任何结构/活性结果。合同冻结 7 类负向探针，并要求 PostgreSQL 与内容寻址对象存储
+完整保存成功和失败分母。当前状态为 `preregistered_not_authorized`，尚未部署 migration、未提交 run，
+也不授权真实靶点审计或选择。
+
 typed ledger/offline replay 实现 revision 为
 `e47e0d3cf94d6b9d0b63c5a799694c13aeb819ca`；回填 revision 后的 config SHA-256 为
 `c9641143982940a0a05127e8b2e0081837a499b13770fc4c0ac6ecbad63a0c81`。全量验证为 ruff clean、

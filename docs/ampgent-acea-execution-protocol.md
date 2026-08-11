@@ -704,6 +704,12 @@ PostgreSQL migration 区间离线 DDL 可生成、pytest `355 passed`。
 revision 回填 checkpoint 为 `09ec7cf025636cf1b67f83b5d6243c7aa497bf3f`；内容归档
 `var/archives/ampgent-v35-persistence-09ec7cf.zip` 的 SHA-256 为
 `3d8f923264e46c1c7f02c37fe9ddc1faa4f9694590a61978acf16ea18551d520`。
+v35a 合成数据库闭环验收已预注册但未授权：精确合同为
+`config/benchmarks/amp_target_qualification_synthetic_acceptance_v35a.yaml`，授权说明为
+`docs/ampgent-v35a-synthetic-acceptance-authorization.zh-CN.md`。它冻结 8 条匿名合成 shortlist、完整
+通过/失败分母、3 条面板成员、7 类负向探针以及 0 Candidate/0 Evaluation 边界。未经用户逐字授权短语，
+不得部署 migration、提交 acceptance run、读取真实 target 或执行 panel selection；通过合成验收也不
+授权真实多靶点研究。
 typed ledger/offline replay 实现 revision 为
 `e47e0d3cf94d6b9d0b63c5a799694c13aeb819ca`；回填后的 v35 config SHA-256 为
 `c9641143982940a0a05127e8b2e0081837a499b13770fc4c0ac6ecbad63a0c81`，全量验证为 ruff clean、

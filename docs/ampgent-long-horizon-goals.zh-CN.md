@@ -229,6 +229,11 @@ SHA-256 为 `2a7b54a1ac1c7ace73cb3c39b3f6ab3eed6676dda033e73c866fe4883f9ec027`�
 `355 passed`；这仍不是共享数据库部署或真实多靶点结果。
 revision 回填 checkpoint 为 `09ec7cf025636cf1b67f83b5d6243c7aa497bf3f`；内容归档 SHA-256 为
 `3d8f923264e46c1c7f02c37fe9ddc1faa4f9694590a61978acf16ea18551d520`。
+Q5 的下一工程门已预注册为 v35a 合成数据库闭环验收，精确合同为
+`config/benchmarks/amp_target_qualification_synthetic_acceptance_v35a.yaml`。它只检验 typed lineage 在
+真实 PostgreSQL/对象存储事务中的可写、可拒绝和可重放：8 个匿名合成 shortlist 项、7 类负向探针、
+0 Candidate、0 Evaluation。当前为 `preregistered_not_authorized`；即使未来通过，也只关闭数据库工程
+缺口，不能回答跨靶点泛化、不能选择真实靶点，也不能生成肽。
 revision 回填 checkpoint 为 `d79858dc3aa42399e439abaabc7d2e0fbe42bc70`；内容归档 SHA-256 为
 `31b549ee748bd07edd083351732c8c4f76f1fbb4c8f8326d20716d05b12ad10b`。
 
