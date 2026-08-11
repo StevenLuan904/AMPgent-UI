@@ -24,6 +24,33 @@ from pepagent.domain.schemas import ExperimentSpec
 from pepagent.provenance.hashing import sha256_json, sha256_text
 
 
+def _validate_occurrence_parent_semantics(
+    occurrence_kind: str, parent_candidate_id: uuid.UUID | None
+) -> None:
+    if parent_candidate_id is None and occurrence_kind != "de_novo":
+        raise ValueError("parentless candidate occurrence must have de_novo kind")
+    if parent_candidate_id is not None and occurrence_kind == "de_novo":
+        raise ValueError("de_novo candidate occurrence cannot declare a parent")
+
+
+def _validate_occurrence_run_semantics(
+    run_id: uuid.UUID,
+    *,
+    parent: Candidate | None,
+    candidate: Candidate | None,
+) -> None:
+    if parent is not None and parent.run_id != run_id:
+        raise ValueError("candidate occurrence parent is cross-run")
+    if candidate is not None and candidate.run_id != run_id:
+        raise ValueError("candidate occurrence materialization is cross-run")
+
+
+def _candidate_occurrence_identity_matches(
+    existing: CandidateOccurrence, identity: dict[str, Any]
+) -> bool:
+    return all(getattr(existing, key) == value for key, value in identity.items())
+
+
 class ExperimentRepository:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
@@ -189,7 +216,7 @@ class ExperimentRepository:
         *,
         run_id: uuid.UUID,
         tool_call_id: uuid.UUID,
-        parent_candidate_id: uuid.UUID,
+        parent_candidate_id: uuid.UUID | None,
         occurrence_rank: int,
         occurrence_kind: str,
         opaque_arm_label: str,
@@ -200,15 +227,26 @@ class ExperimentRepository:
         """Record one proposal exactly; a retry with changed payload fails closed."""
         if occurrence_rank < 1:
             raise ValueError("candidate occurrence rank must be positive")
+        normalized_metadata = metadata or {}
+        _validate_occurrence_parent_semantics(occurrence_kind, parent_candidate_id)
         call = await self.session.get(ToolCall, tool_call_id)
-        parent = await self.session.get(Candidate, parent_candidate_id)
+        parent = (
+            await self.session.get(Candidate, parent_candidate_id)
+            if parent_candidate_id is not None
+            else None
+        )
         candidate = await self.session.get(Candidate, candidate_id) if candidate_id else None
         if call is None or call.run_id != run_id:
             raise ValueError("candidate occurrence tool call is missing or cross-run")
-        if parent is None:
+        if parent_candidate_id is not None and parent is None:
             raise ValueError("candidate occurrence parent does not exist")
-        if candidate_id is not None and (candidate is None or candidate.run_id != run_id):
+        if candidate_id is not None and candidate is None:
             raise ValueError("candidate occurrence materialization is missing or cross-run")
+        _validate_occurrence_run_semantics(
+            run_id,
+            parent=parent,
+            candidate=candidate,
+        )
         normalized = "".join(sequence.split()).upper()
         digest = sha256_text(normalized)
         if candidate is not None and candidate.sequence_sha256 != digest:
@@ -223,7 +261,7 @@ class ExperimentRepository:
             "opaque_arm_label": opaque_arm_label,
             "sequence": normalized,
             "sequence_sha256": digest,
-            "metadata_json": metadata or {},
+            "metadata_json": normalized_metadata,
         }
         existing = await self.session.scalar(
             select(CandidateOccurrence).where(
@@ -232,11 +270,7 @@ class ExperimentRepository:
             )
         )
         if existing is not None:
-            observed = {
-                key: getattr(existing, key)
-                for key in identity
-            }
-            if observed != identity:
+            if not _candidate_occurrence_identity_matches(existing, identity):
                 raise ValueError("candidate occurrence retry payload drifted")
             return existing
         occurrence = CandidateOccurrence(**identity)

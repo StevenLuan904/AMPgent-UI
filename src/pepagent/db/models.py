@@ -86,6 +86,11 @@ class CandidateOccurrence(Base):
             "occurrence_rank",
             name="uq_candidate_occurrence_call_rank",
         ),
+        CheckConstraint(
+            "(occurrence_kind = 'de_novo' AND parent_candidate_id IS NULL) OR "
+            "(occurrence_kind <> 'de_novo' AND parent_candidate_id IS NOT NULL)",
+            name="ck_candidate_occurrence_parent_semantics",
+        ),
         Index("ix_candidate_occurrence_run_label", "run_id", "opaque_arm_label"),
         Index("ix_candidate_occurrence_run_sequence", "run_id", "sequence_sha256"),
     )
@@ -94,8 +99,8 @@ class CandidateOccurrence(Base):
     run_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("experiment_runs.id"), nullable=False)
     tool_call_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tool_calls.id"), nullable=False)
     candidate_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("candidates.id"))
-    parent_candidate_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("candidates.id"), nullable=False
+    parent_candidate_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("candidates.id"), nullable=True
     )
     occurrence_rank: Mapped[int] = mapped_column(Integer, nullable=False)
     occurrence_kind: Mapped[str] = mapped_column(String(32), nullable=False)

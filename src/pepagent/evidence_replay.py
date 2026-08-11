@@ -86,8 +86,12 @@ async def build_database_evidence_graph(
             raise ValueError(
                 f"candidate occurrence references an out-of-run call: {occurrence.id}"
             )
-        parent = await session.get(Candidate, occurrence.parent_candidate_id)
-        if parent is None:
+        parent = (
+            await session.get(Candidate, occurrence.parent_candidate_id)
+            if occurrence.parent_candidate_id is not None
+            else None
+        )
+        if occurrence.parent_candidate_id is not None and parent is None:
             raise ValueError(f"candidate occurrence parent is missing: {occurrence.id}")
         if occurrence.candidate_id is not None:
             materialized = candidates_by_id.get(occurrence.candidate_id)
@@ -146,7 +150,9 @@ async def build_database_evidence_graph(
                 "id": str(item.id),
                 "tool_call_id": str(item.tool_call_id),
                 "candidate_id": str(item.candidate_id) if item.candidate_id else None,
-                "parent_candidate_id": str(item.parent_candidate_id),
+                "parent_candidate_id": (
+                    str(item.parent_candidate_id) if item.parent_candidate_id else None
+                ),
                 "occurrence_rank": item.occurrence_rank,
                 "occurrence_kind": item.occurrence_kind,
                 "opaque_arm_label": item.opaque_arm_label,
