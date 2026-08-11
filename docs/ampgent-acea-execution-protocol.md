@@ -643,6 +643,10 @@ Boltz/Rosetta/AMP/MIC/风险/PepShot 结果的条件下冻结 3–5 个新靶点
 证据级；每靶点必须预先定义 native 与 wrong/decoy pocket，并保留 target-agnostic AMP lane。任何
 多靶点结果仅是协议内计算迁移证据，不能称结合、亲和力、选择性或广谱靶向。
 
+v35 qualification framework 冻结 revision 为 `6608c2c690a76d0dcf1e4b974613676204c00b9e`；config
+SHA-256 为 `a722f0f74d486237a128327a3158ae71ee143577f3f8b7e4acb46505e38778da`；内容归档 SHA-256 为
+`b33c54adeec43c736ba7d0ba340ce7d0cf813426e42b40358662463c591f17eb`。
+
 完成锁定提交为 `834ef57`；完成态 shadow config SHA-256 为
 `a8e4e4e3fafcb638c292bbb042eaa88fc4900c163d32e654778417e880893547`。内容归档
 `var/archives/ampgent-v34-provider-shadow-834ef57.zip` 的 SHA-256 为

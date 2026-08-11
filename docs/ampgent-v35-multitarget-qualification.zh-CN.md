@@ -97,3 +97,8 @@ shortlist 中每个靶点的序列、结构、pocket、来源字节、SHA、硬�
 下一步仅允许编写并审计不少于 8 个新靶点的 qualification ledger。该 ledger 必须先冻结选择规则和来源
 字段，再开始逐靶点 web/database evidence audit；不能在本框架中直接写入具体 target 名称。靶点审计、
 panel selection、shadow 和 formal confirmation 都需要各自独立授权与不可变合同。
+
+框架冻结 revision 为 `6608c2c690a76d0dcf1e4b974613676204c00b9e`；config SHA-256 为
+`a722f0f74d486237a128327a3158ae71ee143577f3f8b7e4acb46505e38778da`。内容归档
+`var/archives/ampgent-v35-qualification-6608c2c.zip` 的 SHA-256 为
+`b33c54adeec43c736ba7d0ba340ce7d0cf813426e42b40358662463c591f17eb`。

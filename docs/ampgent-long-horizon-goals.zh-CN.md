@@ -182,6 +182,10 @@ v35 现进一步冻结：先审计至少 8 个新靶点候选，所有通过和�
 证据级；每靶点预先冻结 native pocket、same-target wrong/decoy pocket 和 target-agnostic lane。预测结构
 只能作带 pLDDT/PAE 限制的 hypothesis，不能单独定义 primary pocket。
 
+该 qualification framework 冻结 revision 为 `6608c2c690a76d0dcf1e4b974613676204c00b9e`，config
+SHA-256 为 `a722f0f74d486237a128327a3158ae71ee143577f3f8b7e4acb46505e38778da`，内容归档 SHA-256 为
+`b33c54adeec43c736ba7d0ba340ce7d0cf813426e42b40358662463c591f17eb`。这不授权具体靶点审计或运行。
+
 ### Q6：怎样利用历史尝试进行 harness evolving？
 
 当前判断：v32 的 typed evidence graph 与 replay closure 提供了必要底座，但尚无正式的策略晋级器。
