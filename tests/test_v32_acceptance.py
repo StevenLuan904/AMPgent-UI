@@ -45,6 +45,13 @@ def _portfolio_item(index: int) -> dict:
         "amp_read_predicted_mic_um": 12.0,
         "toxinpred3_hybrid_score": 0.2,
         "macrel_hemolysis_probability": 0.3,
+        "molecular_weight_da": 1500.0,
+        "isoelectric_point": 10.0,
+        "toxinpred3_ml_score": 0.2,
+        "amp_read_cnn_log10_mic_um": 1.0,
+        "amp_read_lstm_log10_mic_um": 1.1,
+        "amp_read_attention_log10_mic_um": 1.2,
+        "amp_read_transformer_log10_mic_um": 1.3,
     }
     return {
         "lane": lane,
@@ -110,9 +117,11 @@ def test_acceptance_exports_are_deterministic_and_v33_ready() -> None:
     }
     portfolio = {
         "lane_results": selected,
-        "excluded_risk_red_candidate_ids": [],
-        "eligible_count": 300,
-        "concordant_risk_red_count": 0,
+        "excluded_risk_red_candidate_ids": [
+            f"excluded-{index}" for index in range(109)
+        ],
+        "eligible_count": 191,
+        "concordant_risk_red_count": 109,
         "selected_count": 24,
         "weighted_total_score_used": False,
         "charge_optimized": False,

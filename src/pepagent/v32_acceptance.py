@@ -224,10 +224,22 @@ def build_acceptance_exports(
         float(item["metrics"]["net_charge_ph7_4"])
         for item in portfolio["lane_results"]
     ]
+    expected = contract["expected_parent"]
+    exact_parent_counts = (
+        len(graph["candidates"]) == expected["candidate_count"]
+        and len(graph["tool_calls"]) == expected["tool_call_count"]
+        and len(graph["evaluations"]) == expected["evaluation_count"]
+        and len(graph["tool_call_dependencies"])
+        == expected["tool_call_dependency_count"]
+        and len(graph["agent_decisions"]) == expected["agent_decision_count"]
+        and portfolio["selected_count"] == expected["selected_count"]
+        and portfolio["eligible_count"] == expected["eligible_count"]
+        and portfolio["concordant_risk_red_count"]
+        == expected["concordant_risk_red_count"]
+    )
     gates = {
         "exact_database_replay": True,
-        "exact_parent_counts": len(graph["candidates"])
-        == contract["expected_parent"]["candidate_count"],
+        "exact_parent_counts": exact_parent_counts,
         "source_artifacts_content_verified": True,
         "selected_count": len(portfolio["lane_results"]) == 24,
         "selected_per_lane": all(value == 6 for value in lane_counts.values()),
