@@ -713,6 +713,9 @@ v35a 合成数据库闭环验收已预注册但未授权：精确合同为
 `41aba8ba08405cde65479bfd802fd2c6b2891598`；回填后的 v35a config SHA-256 为
 `b85d8542d1ab2f7f18b6c803fe8f6fea042dfcc0b1967ff3797b76af067befcb`；全量验证为 ruff clean、
 PostgreSQL migration 区间离线 DDL 可生成、pytest `359 passed`。
+revision 回填 checkpoint 为 `a9516bdb8d6521c505c5428ac24b6cd3af513f08`；内容归档
+`var/archives/ampgent-v35a-preregistration-a9516bd.zip` 的 SHA-256 为
+`8d4e3bfd1b4280725253fe4e7c1c543e541f33daffce216ca284ff72ec30f384`。
 typed ledger/offline replay 实现 revision 为
 `e47e0d3cf94d6b9d0b63c5a799694c13aeb819ca`；回填后的 v35 config SHA-256 为
 `c9641143982940a0a05127e8b2e0081837a499b13770fc4c0ac6ecbad63a0c81`，全量验证为 ruff clean、

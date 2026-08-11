@@ -236,6 +236,8 @@ Q5 的下一工程门已预注册为 v35a 合成数据库闭环验收，精确�
 缺口，不能回答跨靶点泛化、不能选择真实靶点，也不能生成肽。预注册实现 revision 为
 `41aba8ba08405cde65479bfd802fd2c6b2891598`；回填后的 v35a config SHA-256 为
 `b85d8542d1ab2f7f18b6c803fe8f6fea042dfcc0b1967ff3797b76af067befcb`；全量测试为 `359 passed`。
+revision 回填 checkpoint 为 `a9516bdb8d6521c505c5428ac24b6cd3af513f08`；内容归档 SHA-256 为
+`8d4e3bfd1b4280725253fe4e7c1c543e541f33daffce216ca284ff72ec30f384`。
 revision 回填 checkpoint 为 `d79858dc3aa42399e439abaabc7d2e0fbe42bc70`；内容归档 SHA-256 为
 `31b549ee748bd07edd083351732c8c4f76f1fbb4c8f8326d20716d05b12ad10b`。
 
