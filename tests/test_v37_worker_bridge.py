@@ -21,14 +21,14 @@ class _Workflow:
     pass
 
 
-def test_v37_worker_bridge_audit_fails_closed_on_real_amp_designer_budget() -> None:
+def test_v37_worker_bridge_audit_accepts_aligned_generator_budget_but_stays_blocked() -> None:
     audit = build_v37_worker_bridge_audit(
-        repository_root=ROOT, raw_proposals_per_seed=600
+        repository_root=ROOT, raw_proposals_per_seed=1000
     )
     assert audit["amp_designer_cli_fixed_raw_budget"] == 1000
     assert audit["status"] == "blocked_missing_executable_activity_bridge"
     blocker_codes = {item["code"] for item in audit["blockers"]}
-    assert "amp_designer_raw_budget_incompatible" in blocker_codes
+    assert "amp_designer_raw_budget_incompatible" not in blocker_codes
     assert "v37_activity_registry_incomplete" in blocker_codes
     assert audit["remote_host_or_process_probe_performed"] is False
     assert audit["activity_or_workflow_registered"] is False
