@@ -1,0 +1,191 @@
+benchmark_id: amp_multitarget_qualification_v35
+version: v35.0.0-qualification-framework
+execution_status: qualification_framework_frozen_not_authorized
+track: target_generalization_without_cherry_picking
+
+scientific_question:
+  primary: Can the same evidence-governed AMPgent harness transfer from AceA to biologically and structurally distinct bacterial targets without selecting targets after seeing peptide outcomes?
+  current_answer: unanswered
+  global_generalization_claim_forbidden: true
+
+scope:
+  AceA_reference_target_included: true
+  new_target_count_minimum: 3
+  new_target_count_maximum: 5
+  target_agnostic_AMP_lane_retained: true
+  target_names_selected: false
+  target_selection_authorized: false
+  candidate_generation_authorized: false
+  formal_run_authorized: false
+
+selection_separation:
+  qualification_before_any_candidate_generation: true
+  minimum_new_target_shortlist_size: 8
+  all_shortlisted_targets_must_receive_audit_outcome: true
+  failed_targets_remain_in_failure_denominator: true
+  peptide_or_structure_outcomes_forbidden_during_target_selection: true
+  target_selection_uses_only:
+    - biological_hypothesis_evidence
+    - sequence_identity_and_annotation_evidence
+    - structure_and_local_validation_evidence
+    - pocket_definition_evidence
+    - panel_diversity_descriptors
+    - operational_feasibility
+  target_selection_forbids:
+    - generated_peptide_score
+    - Boltz_pose
+    - pair_ipTM
+    - Rosetta_REU
+    - AMP_or_MIC_prediction
+    - safety_prediction
+    - knowledge_or_PepShot_outcome
+
+sequence_contract:
+  preferred_source: UniProtKB_reviewed
+  unreviewed_allowed_only_with_explicit_evidence_and_manual_mapping: true
+  required_fields:
+    - organism_and_strain
+    - accession_and_entry_version
+    - canonical_sequence_bytes
+    - sequence_sha256
+    - reviewed_status
+    - feature_evidence_codes
+    - isoform_or_processing_state
+  uncertain_or_conflicting_residue_at_pocket_fails_primary_admission: true
+
+structure_contract:
+  evidence_order:
+    - experimentally_determined_target_state_with_validation_report
+    - experimentally_determined_close_homolog_with_explicit_mapping
+    - predicted_target_structure_as_hypothesis_only
+  required_fields:
+    - source_accession_and_revision
+    - method_and_resolution_when_experimental
+    - biological_assembly_and_chain_mapping
+    - missing_residues_and_alternate_conformations
+    - local_pocket_validation
+    - ligand_cofactor_metal_and_nucleic_acid_context
+    - sequence_to_structure_mapping
+    - coordinate_sha256
+  experimental_ligand_quality_must_be_checked_when_used: true
+  predicted_structure_requirements:
+    local_pLDDT_and_PAE_required: true
+    low_confidence_coordinates_not_interpreted: true
+    missing_nonprotein_components_acknowledged: true
+    binding_site_or_conformation_claim_forbidden: true
+
+pocket_evidence_grades:
+  A:
+    description: direct_experimental_target_structure_with_functional_ligand_substrate_or_inhibitor_and_acceptable_local_validation
+    primary_conditioning_allowed: true
+  B:
+    description: experimental_active_site_or_mutagenesis_evidence_with_exact_target_mapping_but_no_direct_bound_functional_ligand
+    primary_conditioning_allowed: true
+  C:
+    description: homolog_transfer_or_high_confidence_prediction_with_explicit_uncertainty
+    primary_conditioning_allowed: false
+    exploratory_only: true
+  D:
+    description: cavity_prediction_or_unverified_annotation_only
+    excluded: true
+  primary_panel_requires_grade_A_or_B: true
+
+panel_diversity_contract:
+  required_strata:
+    - AceA_anchor_or_close_mechanistic_neighbor
+    - nonhomologous_soluble_enzyme_with_distinct_pocket_geometry
+    - context_challenging_target_with_multimer_cofactor_metal_or_membrane_association
+  diversity_descriptors:
+    - sequence_homology
+    - fold_or_domain_class
+    - pocket_volume_and_openness
+    - electrostatic_character
+    - biological_mechanism
+    - oligomeric_and_cofactor_context
+  deterministic_selection_rule: hard_gate_then_maximin_over_preregistered_panel_descriptors
+  expected_success_forbidden_as_diversity_descriptor: true
+
+control_contract:
+  per_target_required_controls:
+    - native_functional_pocket
+    - same_target_wrong_or_decoy_pocket
+    - target_agnostic_AMP_lane
+  cross_target_required_controls:
+    - same_parent_or_seed_block_across_targets
+    - target_label_permutation_negative_control
+    - AceA_reference_protocol_replay_without_backwrite
+  optional_when_available:
+    - apo_vs_functional_state
+    - homologous_target_pair
+    - catalytic_residue_mask_or_pocket_perturbation
+  wrong_pocket_must_be_selected_before_peptide_outputs: true
+
+future_comparison_contract:
+  same_harness_revision_across_targets: true
+  same_generator_families_and_seed_policy_across_targets: true
+  target_specific_budget_changes_forbidden_without_preregistration: true
+  failure_or_shortfall_no_refill: true
+  weighted_total_score_forbidden: true
+  required_outputs:
+    - execution_success_and_failure_rate
+    - candidate_and_pose_yield
+    - multi_seed_pose_stability
+    - native_vs_wrong_pocket_contrast
+    - same_protocol_Rosetta_distribution
+    - Pareto_front_shape_and_lane_coverage
+    - cross_target_candidate_reuse
+    - target_specific_and_shared_failure_taxonomy
+    - compute_and_toolcall_cost
+  Rosetta_REU_same_protocol_relative_only: true
+  binding_affinity_selectivity_and_broad_spectrum_claims_forbidden: true
+
+database_evidence_contract:
+  PostgreSQL_is_authoritative: true
+  object_store_is_content_addressed: true
+  persist_every_shortlist_item_and_audit_outcome: true
+  persist_sequence_structure_pocket_sources_and_exact_bytes: true
+  persist_rejected_targets_and_reasons: true
+  persist_panel_selection_witnesses: true
+  persist_controls_assignments_ToolCalls_dependencies_Evaluations_and_AgentDecisions: true
+  database_object_store_only_replay_required: true
+  replay_must_reconstruct:
+    - complete_target_shortlist_and_order
+    - every_hard_gate_result
+    - selected_panel_and_diversity_witnesses
+    - native_and_wrong_pocket_definitions
+    - all_future_candidate_and_target_joins
+    - per_target_and_cross_target_failures
+    - final_generalization_scope
+  CSV_and_Markdown_are_exports_only: true
+
+stage_gates:
+  stage_1_target_audit:
+    status: not_authorized
+    output: immutable_target_qualification_ledger
+  stage_2_panel_preregistration:
+    status: not_authorized
+    prerequisites:
+      - complete_stage_1_ledger
+      - no_peptide_outcomes_seen
+      - selected_targets_have_A_or_B_pockets
+  stage_3_shadow_execution:
+    status: not_authorized
+    prerequisites:
+      - frozen_panel_and_controls
+      - database_replay_preflight
+      - worker_identity_and_release_mapping
+  stage_4_formal_confirmation:
+    status: not_authorized
+    prerequisites:
+      - separate_user_authorization
+      - independent_seeds
+      - frozen_failure_denominator
+
+scientific_boundaries:
+  predictions_are_not_experiments: true
+  no_experimental_activity_or_safety_claim: true
+  no_binding_affinity_or_selectivity_claim: true
+  target_generalization_is_protocol_scoped: true
+  failed_targets_cannot_be_silently_removed: true
+  no_backwrite_to_v22_through_v34: true
+

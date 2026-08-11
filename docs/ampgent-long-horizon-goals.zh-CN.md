@@ -166,12 +166,21 @@ artifact SHA 和 Agent 决策边全部进入主证据图；只存在外部工具
 
 ### Q5：方法能否泛化到别的靶点？
 
-当前判断：未回答。
+当前判断：`in_progress`。尚未对任何新靶点执行候选生成或结构评测；v35 已先冻结不含具体靶点名单的
+qualification framework，精确合同为 `config/benchmarks/amp_multitarget_qualification_v35.yaml`，叙事
+说明为 `docs/ampgent-v35-multitarget-qualification.zh-CN.md`。该框架不授权 target selection、候选生成
+或 formal run。
 
 进入多靶点前先冻结 target qualification：生物学假设、序列/结构来源、pocket 定义、结构完整性、
 阴性/错口袋对照、可比较协议和不得声称的结论。第一阶段建议使用 3–5 个具有不同 pocket 形状、
 同源性和作用机制的细菌靶点，并保留 target-agnostic AMP lane。比较同一 harness 的成功率、前沿形状、
 结构稳定性、候选跨靶点复用和失败类型；不能把“对多个口袋都有有利 REU”称为广谱靶向或选择性。
+
+v35 现进一步冻结：先审计至少 8 个新靶点候选，所有通过和失败都留在数据库分母；最终 3–5 个新靶点
+只使用生物学、序列、结构、pocket 证据和预注册多样性描述符做 hard-gate+maximin，选择阶段禁止读取
+任何新肽、Boltz、pair-ipTM、Rosetta、AMP/MIC、安全或 PepShot 结果。primary pocket 必须达到 A/B
+证据级；每靶点预先冻结 native pocket、same-target wrong/decoy pocket 和 target-agnostic lane。预测结构
+只能作带 pLDDT/PAE 限制的 hypothesis，不能单独定义 primary pocket。
 
 ### Q6：怎样利用历史尝试进行 harness evolving？
 

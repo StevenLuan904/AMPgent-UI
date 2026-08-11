@@ -631,6 +631,18 @@ activity，不生成序列。
 授权请求冻结提交为 `c708d48985c2f6252a329b45039b8731c3c2615b`；内容归档 SHA-256 为
 `0ab4f6e71791f7ad19d45e8eaf315535eaa581470f2d45aa77340717a2c57cf6`。
 
+### 14.5 v35 多靶点资格框架（未授权）
+
+v34 等待正式授权期间，只允许推进不使用候选结果的 v35 target qualification 设计。精确合同为
+`config/benchmarks/amp_multitarget_qualification_v35.yaml`，叙事说明为
+`docs/ampgent-v35-multitarget-qualification.zh-CN.md`。状态为
+`qualification_framework_frozen_not_authorized`：未选择具体靶点，未授权靶点审计、候选生成或 run。
+
+下一阶段若获独立授权，先审计不少于 8 个新靶点候选并保存全部失败，随后才可在不读取任何 peptide/
+Boltz/Rosetta/AMP/MIC/风险/PepShot 结果的条件下冻结 3–5 个新靶点面板。primary pocket 只接受 A/B
+证据级；每靶点必须预先定义 native 与 wrong/decoy pocket，并保留 target-agnostic AMP lane。任何
+多靶点结果仅是协议内计算迁移证据，不能称结合、亲和力、选择性或广谱靶向。
+
 完成锁定提交为 `834ef57`；完成态 shadow config SHA-256 为
 `a8e4e4e3fafcb638c292bbb042eaa88fc4900c163d32e654778417e880893547`。内容归档
 `var/archives/ampgent-v34-provider-shadow-834ef57.zip` 的 SHA-256 为
