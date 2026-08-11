@@ -682,8 +682,9 @@ PepShot 兼容补丁。今后无论是接口失败还是效果不满意，均直
 `019fb910-f2dd-7be1-a7e6-bfe381512c25` 提交 provider change request；AMPgent 禁止自行适配。只有
 provider-owned 新 release 通过只读验收后才可继续。
 
-当前唯一下一步是申请并另行冻结 v34 正式 2×2 消融授权；在用户明确授权前保持未提交，不注册正式
-activity，不生成序列。
+用户于 2026-08-12 明确禁止当前阶段执行 v34 消融，并要求将其保存到以后。v34 的合同、provider
+shadow、replay 加固与 capacity 合同继续作为冻结的 deferred checkpoint 保留；不得提交正式 activity、
+不得生成 v34 候选，也不得再以 v34 授权作为当前主线阻塞。
 
 精确授权对象已整理于 `docs/ampgent-v34-formal-authorization-request.zh-CN.md`。只有用户明确回复
 `授权 v34 正式 2×2 run` 才视为授权；同意继续规划、shadow 或一般性“继续”均不授权正式执行。
@@ -839,3 +840,33 @@ GPU 空闲状态是瞬时观察，任何启动前都必须重新执行 `nvidia-s
 `var/archives/ampgent-gpu-boundaries-36a1c6d.zip` 的 SHA-256 为
 `70b51bde4c34468e78fb8830cad7a51b01bdc6628a55d294bb0b06091f9dde6b`。该 checkpoint 没有启动或停止
 任何远端进程，没有提交 run，也没有访问 `192.168.99.32` 或 `.19` GPU4。
+
+## 21. 2026-08-12 当前结果优先主线
+
+用户当前优先级是尽快得到质量足够高、可直接查看的短肽结果，而不是证明知识卡或 PepShot 的工具增益。
+因此当前主线分为：
+
+1. 从已锁定 v32 PostgreSQL + 对象存储 portfolio 做只读候选组合导出，保持原 lane、顺序和限制，不重新
+   选择、不回写；
+2. 新建独立 v37 单臂 rapid champion generation 合同，使用当前最佳可用 Agent 流程，但不设置工具
+   off/on arm、不声明工具有效；
+3. v37 以 AMP/MIC、膜作用、毒性风险、AceA 结构/Rosetta 和序列多样性作多目标 portfolio，禁止加权
+   总分；所有 proposal occurrence、ToolCall、Evaluation、AgentDecision、artifact 和重试必须落库并可
+   database+object-store-only replay；
+4. 在冻结 v37 config、实现、预算、seed、停止条件、worker/release 映射和防重复门禁后，才提交唯一
+   v37 formal run。资源允许高并行，但 `.32` 与 `.19` GPU4 继续禁用，且不得干扰他人任务。
+
+本次用户指令授权把当前研发主线切换到结果导向的 v37 设计与执行准备；它不解冻或回写 v32，也不授权
+任何 v34 消融。
+
+2026-08-12，v37 正式实现门禁完成并经独立对抗复审通过。执行实现闭环 revision 为
+`fd263e8afc984960067fad94821d12a5b3effd73`，授权状态机 revision 为
+`c4ef99ff3743408910a61cd4c0f0f5b6ef845fa2`；全仓 `ruff` clean、最新 `pytest 572 passed, 1 skipped`，其中唯一
+跳过的 PostgreSQL 双会话 exact-once 测试已由主任务在真实本地 PostgreSQL 隔离 schema 中另行实跑为
+`1 passed`。复审确认 21 个 canonical ToolCalls、57 条 dependencies、5 个 decisions、7 个 stop events，
+并对重复 Boltz seed、删除或错绑 knowledge/PepShot/Rosetta 物理调用、ToolCall-event 漂移、自洽伪造
+committed graph、runtime receipt 漂移、非 canonical Evaluation 和 provider/adapter 字节突变执行了 17 项
+fail-closed 对抗测试。用户的结果优先持续推进指令现冻结为 v37 唯一正式执行授权；benchmark config 已置
+`execution_authorized: true`、`submitted: false`，`implementation_revision` 冻结到执行闭环 revision；容量
+合同仍保持不授权并仅作为只读资源合同。该状态仅允许在重新生成内容寻址 preflight、部署
+migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执行一次 exact-once submit；尚未提交 run。

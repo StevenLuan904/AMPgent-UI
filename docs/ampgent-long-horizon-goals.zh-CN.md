@@ -183,7 +183,8 @@ revision 回填 checkpoint 为 `87b96532ac3cac6cc0bac785ccae5ca34757fa21`，内�
 
 ### Q3：文献知识卡是否真的提高设计质量？
 
-当前判断：`in_progress`。尚未正式接入并验证；v34 已形成未授权的 2×2 预注册草案，精确合同为
+当前判断：`deferred_by_user`。用户于 2026-08-12 明确要求当前不做消融，先追求候选结果质量并快速
+看到结果；Q3 保留为以后研究问题，不再阻塞当前主线。v34 已形成未授权的 2×2 预注册草案，精确合同为
 `config/benchmarks/amp_knowledge_pepshot_ablation_v34.yaml`。离线 adapter 已能校验冻结 task、原始
 schema/policy 字节 SHA、verified card、可定位 passage 与完整 evidence artifact roles；动态检索仍未
 注册为可执行 activity，也未进入正式 episode。
@@ -200,7 +201,8 @@ passage SHA、prompt、response、采纳/拒绝边必须落库。
 
 ### Q4：PepShot 是否帮助 Agent 避免结构性错误？
 
-当前判断：`in_progress`。工具已成熟到可做 shadow evidence，但未进入 v32 决策；v34 草案已固定
+当前判断：`deferred_by_user`。PepShot 可作为当前单臂 champion 流程的已验收辅助工具使用，但当前不
+比较其 off/on 效果，也不据单臂结果声称 PepShot 有效。工具增益问题留待以后。v34 草案已固定
 PepShot contract/request/review schema SHA、verify→读取全部请求图片→validate-review 路由和允许影响的
 决策类型。离线 adapter 已按实际 CLI 的 `valid` receipt、bundle identity、artifact 数、priority-first
 顺序、全部图片 SHA 和 review validation 实现 fail-closed 校验，并生成与 evidence plan 一致的五类
@@ -326,8 +328,8 @@ revision 回填 checkpoint 为 `6299b233eef751004eec946f4ee2eab1edacdc1b`，内�
 |---|---|---|---|---|
 | Q1 正电性设计 | `amp_charge_search_sufficiency_v33.yaml`；`preregistered_draft_not_authorized` | 文献来源、K/R 配对变换与数据库 replay 合同可校验 | 固定预算结果显示哪类同 scaffold 编辑改善活性/膜作用且没有仅以风险换收益 | v33 formal run 独立授权 |
 | Q2 Pareto 搜索充分性 | 同一 v33 合同；`preregistered_draft_not_authorized` | checkpoint、ε-cell、attainment 与饱和判据可重算 | 跑完冻结预算并由独立 seed 复现末段目标区域，或明确判定未饱和 | 与 Q1 共用但不混淆结论的 v33 formal run |
-| Q3 文献知识卡增益 | `amp_knowledge_pepshot_ablation_v34.yaml`；`preregistered_draft_not_authorized` | provider release、receipt 和 shadow 可数据库复原 | 2×2 同预算盲化对照在预注册实用端点上给出增益/退化、成本和完整失败分母 | 明确授权 v34 正式 2×2 run |
-| Q4 PepShot 增益 | 同一 v34 合同；`preregistered_draft_not_authorized` | PepShot release 只读验收和 provider 退回路径已闭合 | off/on 配对证明结构错误拦截、误报、追加视图成本及后续方向稳定性的净效应 | 明确授权 v34 正式 2×2 run；不满意直接退回 PepShot |
+| Q3 文献知识卡增益 | `amp_knowledge_pepshot_ablation_v34.yaml`；`deferred_by_user` | provider release、receipt 和 shadow 可数据库复原 | 2×2 同预算盲化对照在预注册实用端点上给出增益/退化、成本和完整失败分母 | 当前不执行；以后由用户重新启用 |
+| Q4 PepShot 增益 | 同一 v34 合同；`deferred_by_user` | PepShot release 只读验收和 provider 退回路径已闭合 | off/on 配对证明结构错误拦截、误报、追加视图成本及后续方向稳定性的净效应 | 当前不执行；不满意仍直接退回 PepShot |
 | Q5 多靶点泛化 | `amp_multitarget_qualification_v35.yaml`；`typed_persistence_implemented_not_deployed_not_authorized` | 资格审计 ledger、面板选择与离线 replay 可验证 | 先完成 v35a 数据库验收，再审计不少于 8 个靶点并在冻结 3–5 靶点面板报告成功与失败 | v35a 合成闭环需独立授权；真实 target audit 再另行授权 |
 | Q6 Harness evolving | `amp_harness_evolution_v36.yaml`；`typed_schema_and_offline_verifier_implemented_not_deployed_not_authorized` | typed 谱系、晋级/回滚规则和离线 verifier 可验证 | 先完成 v36a 数据库验收，再以真实历史进行无泄漏 replay、shadow 和前瞻配对，并产生可追溯晋级/拒绝/回滚 | v36a 合成闭环需独立授权；真实演化再另行授权 |
 
@@ -341,6 +343,12 @@ workflow 或用户一般性“继续”推定授权。每次状态变化时必�
 | v34：知识/视觉干预 | knowledge card × PepShot 2×2 同预算消融 | 至少一个预注册实用端点改善，且成本与失败也完整报告 |
 | v35：多靶点迁移 | 资格审计后的 3–5 靶点面板与对照 | 区分通用、靶点特异和失败策略；不能只挑成功靶点 |
 | v36+：持续 harness evolution | champion/challenger 晋级器与策略谱系 | 离线 replay、shadow、前瞻对照三关通过；可一键回滚和完整复原 |
+| v37：结果优先单臂 champion | 当前最佳 Agent 流程直接生成、评价、结构确认并输出 portfolio | 快速得到可查看的高质量候选组合；不声称工具增益或实验效力 |
+
+v37 执行闭环已冻结到 `fd263e8afc984960067fad94821d12a5b3effd73`，授权状态机冻结到
+`c4ef99ff3743408910a61cd4c0f0f5b6ef845fa2`，并通过独立对抗复审。用户已授权
+唯一正式执行；当前状态为 `execution_authorized_not_submitted`。下一动作是内容寻址 preflight、数据库
+migration、允许资源的物理映射与一次 exact-once submit。v34 消融继续 deferred；v37 不产生工具增益结论。
 
 v33 当前叙事预注册见 `docs/ampgent-v33-charge-search-preregistration.zh-CN.md`。其状态为
 `implementation_frozen_not_authorized`；确定性 K/R dose block、逐 checkpoint archive、PostgreSQL
