@@ -16,7 +16,9 @@ CONFIG = ROOT / "config" / "benchmarks" / "amp_harness_synthetic_acceptance_v36a
 def test_v36a_freezes_synthetic_database_acceptance_without_real_execution() -> None:
     contract = load_v36a_acceptance_contract(CONFIG)
     assert contract.execution_status == "preregistered_not_authorized"
-    assert contract.implementation_revision is None
+    assert contract.implementation_revision == (
+        "1905974f0a8f8818e7591cf3b38d70df5344c975"
+    )
     assert contract.authorization.execution_authorized is False
     assert contract.authorization.submitted is False
     assert contract.data_boundary.synthetic_only is True

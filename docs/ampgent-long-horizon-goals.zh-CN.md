@@ -255,7 +255,10 @@ schema 审计提出的六类 typed 实体已在仓库实现：`HarnessRelease`�
 `docs/ampgent-v36a-synthetic-acceptance-authorization.zh-CN.md`。它只允许两个隔离 synthetic scope
 分别覆盖作用域晋级和祖先回滚，走完 replay→shadow→prospective 三阶段与五类端点，共 0 Candidate、
 0 Evaluation。通过也只能回答“typed lineage 在真实 PostgreSQL/对象存储事务中可写、可拒绝、可重放”，
-不能回答 harness 是否改善。当前仍为 `preregistered_not_authorized`，路线图维护不能推定执行授权。
+不能回答 harness 是否改善。typed preflight 实现 revision 为
+`1905974f0a8f8818e7591cf3b38d70df5344c975`，v36a config SHA-256 为
+`62a18e0f13f3bd248176ab91cf1300fd82c4da9770e40d8d4b5d07366a4a5387`，全量测试 `346 passed`。当前仍为
+`preregistered_not_authorized`，路线图维护不能推定执行授权。
 
 ## 5. 分阶段路线与晋级门
 

@@ -737,4 +737,6 @@ v36 的下一独立阶段现已精确预注册为 v36a，合同为
 读取历史候选、激活真实 harness 或影响任何正式决策。通过也只表示数据库闭环可用，不证明 harness
 改善。当前状态为 `preregistered_not_authorized`；只有用户明确回复
 `授权 v36a 合成数据库闭环验收` 才可执行。父 v36 合同当前 SHA-256 为
-`d3524f360ae68a3b3751397c76976d64890dafb316ef24d5050c0f0fb1795c98`。
+`d3524f360ae68a3b3751397c76976d64890dafb316ef24d5050c0f0fb1795c98`。v36a typed preflight 实现
+revision 为 `1905974f0a8f8818e7591cf3b38d70df5344c975`，v36a config SHA-256 为
+`62a18e0f13f3bd248176ab91cf1300fd82c4da9770e40d8d4b5d07366a4a5387`，全量测试 `346 passed`。

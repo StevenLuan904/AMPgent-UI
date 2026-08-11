@@ -44,3 +44,9 @@ trial、真实 promotion 或候选生成。那些阶段仍须各自预注册和�
 
 只有用户明确回复 `授权 v36a 合成数据库闭环验收` 才视为授权。继续维护路线图、同意写代码或同意
 离线测试都不能推定为执行授权。
+
+本合同与 typed preflight 的实现 revision 为
+`1905974f0a8f8818e7591cf3b38d70df5344c975`。该 revision 仅可作为未来获授权验收的实现候选；当前
+回填 revision 后的 config SHA-256 为
+`62a18e0f13f3bd248176ab91cf1300fd82c4da9770e40d8d4b5d07366a4a5387`；全量验证为 ruff clean、pytest
+`346 passed`。`execution_authorized=false`、`submitted=false`。
