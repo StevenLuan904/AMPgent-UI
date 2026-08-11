@@ -1,0 +1,22 @@
+{
+  "acceptance_criteria": [
+    "provider publishes a new immutable source and model release",
+    "the decomposer is stored as non-executable numeric data",
+    "the provider-owned loader does not call pickle or joblib.load",
+    "provider tests prove deterministic frozen-seed output parity",
+    "the new runtime manifest verifies with unsafe_deserialization_enabled=false"
+  ],
+  "ampgent_compatibility_patch_forbidden": true,
+  "blocker_code": "unsafe_joblib_deserialization",
+  "blocker_receipt_sha256": "bb0e4eac829ea324f37668f94c02e1cf0ca530aea3ed75fac76d992dbb45377e",
+  "evidence": {
+    "line": 97,
+    "operation": "joblib.load(decomposer_path)",
+    "source_path": "amp/inference/inference.py",
+    "source_revision": "6590d2f4c2963f25d30669052a4c4a857e0e7279",
+    "source_sha256": "3500b3cec26818b0de30d13ca3817a7cd289bf6675122f1ffa5daf0926cccd01"
+  },
+  "generator_id": "hydramp",
+  "schema_version": "v37.generator-runtime-blocker.1",
+  "status": "blocked"
+}

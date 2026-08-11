@@ -1,0 +1,521 @@
+{
+  "adapter": {
+    "adapter_version": "hydramp-generator-v1-raw-unfiltered-nattempts1",
+    "entrypoint": "src/pepagent/model_workers/hydramp_generator_cli.py",
+    "sha256": "d2bde943db3182b6236b8fcb942c1171f1a5d4f13c37f433fabfb395e7727f68"
+  },
+  "generator_id": "hydramp",
+  "internal_score_filtering_enabled": false,
+  "model_release": {
+    "files": [
+      {
+        "path": "models.zip",
+        "sha256": "c2bf137ebe546fee8750b8c174486f1a9804e21a394a389a4f83d0bc6d743420",
+        "size_bytes": 437523333
+      },
+      {
+        "path": "pca_decomposer.joblib",
+        "sha256": "a3a5dcea04e91421be363c047249b93fa46e99e128aec929e1f6b0f0e488a26d",
+        "size_bytes": 18711
+      }
+    ],
+    "files_sha256": "3e5600d362c5c3d0d211ca3b78c2e4923759d9a6a926cb608e0211a615841ff7",
+    "manifest_sha256": "d4ddff24d5882d1f3bcdcb666a8834a0aa9ea8cdb75ad7de8c4a049524a1e3bf",
+    "revision": "zenodo-7420278-models-c2bf137ebe546fee",
+    "uri": "workspace-release://var/releases/v37-generator-runtimes-v1/hydramp/model"
+  },
+  "request_contract": {
+    "additional_properties": false,
+    "properties": {
+      "generator_id": {
+        "const": "hydramp"
+      },
+      "raw_proposal_budget": {
+        "const": 1000
+      },
+      "seed": {
+        "type": "integer"
+      }
+    },
+    "required": [
+      "generator_id",
+      "raw_proposal_budget",
+      "seed"
+    ],
+    "schema_version": "v37.generator-request.1"
+  },
+  "request_contract_sha256": "4998fa04d4f3bcd95295cfce786b3ece2e8ac0f8791f9359066a838bcbb45c3b",
+  "runtime": {
+    "environment_sha256": "5359c59a4fe7e22532c3c755d8a06649258a5adf45d0399b15663be1154a78a3",
+    "packages_lock_sha256": "03e8b9c8af4c1b8313d45822e3fdb7e4fe2af32c574a369e1b209276532b7527",
+    "python_executable": "var/generator-runtimes/hydramp-py38/Scripts/python.exe",
+    "python_executable_sha256": "a35938cd6841c3a7814a63ba5be88c3966c6d173fa3a864e7a9084d72a0068ec",
+    "python_version": "3.8.20"
+  },
+  "runtime_manifest_sha256": "7c7da481d3599c5f3817edf5fba9c3208abcf0009bc55996c909edff1a4e4185",
+  "schema_version": "v37.generator-runtime.1",
+  "source_release": {
+    "files": [
+      {
+        "path": ".dvc/.gitignore",
+        "sha256": "cda3fc1a4ce9659cb19818bb065eee8c5271795484f49f314ca0357b4daec6ef",
+        "size_bytes": 26
+      },
+      {
+        "path": ".dvc/config",
+        "sha256": "4138791dd2d72d940639d3d077a45adafc9d09022cb3e80069e34cbffc39dfea",
+        "size_bytes": 104
+      },
+      {
+        "path": ".dvc/plots/confusion.json",
+        "sha256": "511413b32e5c4ab90912198a93f6195a8adef830ca99bef1711d0dfd9b9ba335",
+        "size_bytes": 3000
+      },
+      {
+        "path": ".dvc/plots/confusion_normalized.json",
+        "sha256": "7fc59e07a84e5b671d271981d6791fc9f00672c327fd04fbe038cb7f52c15177",
+        "size_bytes": 3145
+      },
+      {
+        "path": ".dvc/plots/linear.json",
+        "sha256": "f739d4a8f88952984280f35b78fc4b0ce6157c6b1373e0571eaa325d47a23952",
+        "size_bytes": 3654
+      },
+      {
+        "path": ".dvc/plots/scatter.json",
+        "sha256": "3295bb858f7e3fddd5a5c73a0c92e2f9e8495b796b6c731c56ce694a53fe1b5d",
+        "size_bytes": 3266
+      },
+      {
+        "path": ".dvc/plots/simple.json",
+        "sha256": "dac480ff2220ba696f3e7f5fc0a7277f11b10530ae56143091fa365eb60f2aaa",
+        "size_bytes": 714
+      },
+      {
+        "path": ".dvc/plots/smooth.json",
+        "sha256": "8803de9dde1184f0e8b2cf0291c6d606cca2f76a7883fdb603a801407c5ef11e",
+        "size_bytes": 889
+      },
+      {
+        "path": ".dvcignore",
+        "sha256": "1d8052e9672c44c62dc27a4df73ced356f20cb9c18d1a7b5aa09249309609583",
+        "size_bytes": 139
+      },
+      {
+        "path": ".gitignore",
+        "sha256": "4a096f2ca2898f199d06d419c5ecabfc563b87cdba909ab87827255f88a6d7b6",
+        "size_bytes": 2102
+      },
+      {
+        "path": "LICENSE",
+        "sha256": "6b5216edf5248687f1b410631485de581f9339709cb0e247bc76cb61fb6fbac8",
+        "size_bytes": 1059
+      },
+      {
+        "path": "README.md",
+        "sha256": "1060895c71e22c69216168b250901459e3f72cdd89aaf4a52dc192f43774366f",
+        "size_bytes": 9529
+      },
+      {
+        "path": "amp/.gitattributes",
+        "sha256": "ac7e3eecc65322fc55d713178bda98fc175068bf3a56e2500efc0d5012684635",
+        "size_bytes": 86
+      },
+      {
+        "path": "amp/__init__.py",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_bytes": 0
+      },
+      {
+        "path": "amp/config.py",
+        "sha256": "e6313650cdc49c8eecdcc2b25aceafeff1d6f4e874e9f8d388518ac57be4ac8a",
+        "size_bytes": 2725
+      },
+      {
+        "path": "amp/data_utils/__init__.py",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_bytes": 0
+      },
+      {
+        "path": "amp/data_utils/csv.py",
+        "sha256": "9f1f99dfa71e5b22d2c086fa367dacc66fdc2a5f9505c76ee6c97cda5a2922c8",
+        "size_bytes": 3836
+      },
+      {
+        "path": "amp/data_utils/data_loader.py",
+        "sha256": "956e6fcb5c47d3365db2dc392d0585c91df28796ac169b373052cc7e28e6c4aa",
+        "size_bytes": 4476
+      },
+      {
+        "path": "amp/data_utils/data_loader_single_file.py",
+        "sha256": "cf6e63eacdfdc61b182d143667b7bd8272acac7eda54c08766e55acd97fa97a7",
+        "size_bytes": 1048
+      },
+      {
+        "path": "amp/data_utils/download.py",
+        "sha256": "ffd34fa39469c868c20d888c704ec1f5bf038bab1339770dd5a3e4c417925257",
+        "size_bytes": 1217
+      },
+      {
+        "path": "amp/data_utils/fasta.py",
+        "sha256": "901d7e833710eba7038661b38606e1e430dd5dcdf4cc4da5371d3b90c7a69999",
+        "size_bytes": 788
+      },
+      {
+        "path": "amp/data_utils/sequence.py",
+        "sha256": "d4694789f1f16746626d11f2153c1136d7311821df32a76cfb42e46602dc5541",
+        "size_bytes": 728
+      },
+      {
+        "path": "amp/evaluation/config.py",
+        "sha256": "c96de6cbb1f23379ff941af0b95f17000cf4764d81a01a05cdfcc58432565e27",
+        "size_bytes": 38
+      },
+      {
+        "path": "amp/evaluation/scripts/run_cas.py",
+        "sha256": "221d60a6ac5f78d2eedddbcd65c1c130a2ea57b44cd6a01eb745872ba08ad124",
+        "size_bytes": 6513
+      },
+      {
+        "path": "amp/evaluation/scripts/run_nas.py",
+        "sha256": "6728e72ac40c76c55c21cc878fd9618a1aab78f0e26280f0fa676e85e6872f2c",
+        "size_bytes": 13131
+      },
+      {
+        "path": "amp/inference/__init__.py",
+        "sha256": "c3a3586acae0d0b2ee0b4064431ae570c5c2bb77af26bb31bbe8bda70ffd8461",
+        "size_bytes": 72
+      },
+      {
+        "path": "amp/inference/filtering.py",
+        "sha256": "1e2cd83164302af98dd754e1cd17281ea7a13616db82eca71e04042986b50383",
+        "size_bytes": 3115
+      },
+      {
+        "path": "amp/inference/inference.py",
+        "sha256": "3500b3cec26818b0de30d13ca3817a7cd289bf6675122f1ffa5daf0926cccd01",
+        "size_bytes": 16706
+      },
+      {
+        "path": "amp/inference/scripts/predict_if_amp.py",
+        "sha256": "d89b67690eacce126aa10973f7605ce6cf390231714644300b69d1e2b1437006",
+        "size_bytes": 1797
+      },
+      {
+        "path": "amp/inference/scripts/predict_sample_args.sh",
+        "sha256": "9c117acae598b088510e29fb6e28777b9d073a311705ff25e9b7436b3a1c8cd3",
+        "size_bytes": 429
+      },
+      {
+        "path": "amp/inference/scripts/run_analouge_generaton.py",
+        "sha256": "6164156c47c2ce55a1e233ab55d982503b3a782ce9ee2b9388e596493232d4fe",
+        "size_bytes": 2114
+      },
+      {
+        "path": "amp/inference/scripts/run_unconstrained_generation.py",
+        "sha256": "ad9e06063ce75265e0b78d96ad41db4afe4922152e4e2a728b6b378054d8c39d",
+        "size_bytes": 1868
+      },
+      {
+        "path": "amp/layers/__init__.py",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_bytes": 0
+      },
+      {
+        "path": "amp/layers/autoregressive_gru.py",
+        "sha256": "f1238c34909428bd10acc5d9e60bb87d2442f6feeff374251b1f3d4a4e87c1bb",
+        "size_bytes": 2209
+      },
+      {
+        "path": "amp/layers/gumbel_softmax.py",
+        "sha256": "19fcf66905f1014a66d80f2649f915e86034e5afe5eb19eaebf60f3bb3e77a0b",
+        "size_bytes": 753
+      },
+      {
+        "path": "amp/layers/vae_loss.py",
+        "sha256": "2bb48d72fb0b08219e096b2f0ac3138acc4848020f9c510532c733395ae607a2",
+        "size_bytes": 1299
+      },
+      {
+        "path": "amp/models/__init__.py",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_bytes": 0
+      },
+      {
+        "path": "amp/models/decoders/__init__.py",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_bytes": 0
+      },
+      {
+        "path": "amp/models/decoders/amp_expanded_decoder.py",
+        "sha256": "29476b6d34fda1ec03d35fdc2fac17b22de1f7e1eb482902891ebbd4cd6f1717",
+        "size_bytes": 4494
+      },
+      {
+        "path": "amp/models/decoders/decoder.py",
+        "sha256": "2255f20159fe00ff369594053f71a465c9756ebce3d1dda31027986638c33c27",
+        "size_bytes": 317
+      },
+      {
+        "path": "amp/models/discriminators/__init__.py",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_bytes": 0
+      },
+      {
+        "path": "amp/models/discriminators/amp_classifier_noCONV.py",
+        "sha256": "a6ded2934d169d834eb40275c1f32f48173ec18068fdfb9cccc7c6c0b259d23c",
+        "size_bytes": 4998
+      },
+      {
+        "path": "amp/models/discriminators/discriminator.py",
+        "sha256": "4df57c4a09f4a4c6cf494afe7d674919038f25291f10563d124c1b31aa52368a",
+        "size_bytes": 740
+      },
+      {
+        "path": "amp/models/discriminators/veltri_amp_classifier.py",
+        "sha256": "4b1ff78822343b0c9ce2f7c9948937edb177703c640317cdbce899ea9cf48291",
+        "size_bytes": 5100
+      },
+      {
+        "path": "amp/models/encoders/__init__.py",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_bytes": 0
+      },
+      {
+        "path": "amp/models/encoders/amp_expanded_encoder.py",
+        "sha256": "a6d85c228112ba47b0b4ca21bb6e9659016134b33c9aa4730330b8adde476eb2",
+        "size_bytes": 5751
+      },
+      {
+        "path": "amp/models/encoders/encoder.py",
+        "sha256": "6f10b5116df1dda660d7e1c4eeb8d8a06654a0f02bbff469013418f5cf5f6172",
+        "size_bytes": 440
+      },
+      {
+        "path": "amp/models/master/__init__.py",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_bytes": 0
+      },
+      {
+        "path": "amp/models/master/master.py",
+        "sha256": "3606ab04878b046ec5d462e51b905b564cc7b4024b01fd84fcfb7fcf245b2a5a",
+        "size_bytes": 15164
+      },
+      {
+        "path": "amp/models/model.py",
+        "sha256": "3e9579fe8a69b0ce3ab135ac2af5ee0b74e00a5be5d59dd7be401a76abcc0075",
+        "size_bytes": 1353
+      },
+      {
+        "path": "amp/models/model_garden.py",
+        "sha256": "dde65743793afa429f5355913ac1599ce47d9ecdd5dad964574d870518912b1c",
+        "size_bytes": 591
+      },
+      {
+        "path": "amp/utils/__init__.py",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_bytes": 0
+      },
+      {
+        "path": "amp/utils/basic_model_serializer.py",
+        "sha256": "1ea2d7b75a22783437647b07900adbb3a66f7822c02c6741b2884b66ccb1752c",
+        "size_bytes": 2796
+      },
+      {
+        "path": "amp/utils/callback.py",
+        "sha256": "9f06d8062420616169a1ca3ef4dbf55583455f124e4f3b424d762df7e5a16d1d",
+        "size_bytes": 5985
+      },
+      {
+        "path": "amp/utils/classifier_utils.py",
+        "sha256": "5804355ccf2730290ca1b5ee9004330f9d296121b86f31a859e92514a582e4d0",
+        "size_bytes": 1311
+      },
+      {
+        "path": "amp/utils/dict_model_layer_collection.py",
+        "sha256": "d87f590da22dd690af93ea47324e2a2a3719c229268a59c988cdcf750e633612",
+        "size_bytes": 2711
+      },
+      {
+        "path": "amp/utils/generate_peptides.py",
+        "sha256": "99f9f0e3f68ea6e033ae661b041cd86433be87a473072b97a6570dad3a69ebeb",
+        "size_bytes": 6446
+      },
+      {
+        "path": "amp/utils/generator.py",
+        "sha256": "cebcac2edc1d7560b205728f87aaa51c813de2aad4f75dfc24e204c898cc0451",
+        "size_bytes": 3115
+      },
+      {
+        "path": "amp/utils/metrics.py",
+        "sha256": "24760494804eb33d1e7bbf007e1f3960143212c0a2f15eb5bcf29eb23b0371eb",
+        "size_bytes": 2056
+      },
+      {
+        "path": "amp/utils/phys_chem_propterties.py",
+        "sha256": "f9dc58619c7dbd3b34730a8a5be5a828af63bbdca7c9b5085e38999e9f2c6a2a",
+        "size_bytes": 1393
+      },
+      {
+        "path": "amp/utils/seed.py",
+        "sha256": "fdb8bc8a5c4550adffb6998fd3bcade5469b5d067d850ce51fd37fc773e521f1",
+        "size_bytes": 525
+      },
+      {
+        "path": "data.dvc",
+        "sha256": "383662479633430ab09123199b145aae335930475e582ec88962098604b01e16",
+        "size_bytes": 98
+      },
+      {
+        "path": "data_setup/download_data.py",
+        "sha256": "b20dfbeeacc85a56edd08947ad7e5117bf2fc515d987d9a5a78d5c374800de60",
+        "size_bytes": 179
+      },
+      {
+        "path": "get_data.sh",
+        "sha256": "b59ac89e5d00b9ff2963e319599c11342e1e47eb5da13b920fc6667cec0f22b7",
+        "size_bytes": 248
+      },
+      {
+        "path": "models.dvc",
+        "sha256": "0913772032833fa6a2981f54065068d4a20ea13b880e51e2cdcf81407c890f38",
+        "size_bytes": 98
+      },
+      {
+        "path": "results.dvc",
+        "sha256": "69c479049fa22decdcad5f9b7981165ca73bf17f2bedc25e94a07af49c5d246e",
+        "size_bytes": 102
+      },
+      {
+        "path": "run_unconstrained_generation.sh",
+        "sha256": "dae1b55fd38e0ffac46653602b03cae2c77c968af844aa372278af5cafa4206b",
+        "size_bytes": 126
+      },
+      {
+        "path": "scripts/amp_classifier_training_procedure.ipynb",
+        "sha256": "875017f36e6f00618922869e958df08663b2bb0580a5d2e3ab566a721eef1697",
+        "size_bytes": 160556
+      },
+      {
+        "path": "scripts/basic_training_procedure.ipynb",
+        "sha256": "caf42be4c9343b64a5e69d0d728b25b2c0a2909043269ad0e709b7ebee9ea17e",
+        "size_bytes": 15732
+      },
+      {
+        "path": "scripts/dataset_preparation.ipynb",
+        "sha256": "913a357d33ec9af4d9a0a96420ce2f9f16e0d833b7789c0e1d7a21076c847b46",
+        "size_bytes": 63860
+      },
+      {
+        "path": "scripts/dbaasp/dbaasp.sh",
+        "sha256": "c79846d7be483e3e2ffc5c2499e096e77eda7fbaa32598dde47b0321118ca3c5",
+        "size_bytes": 557
+      },
+      {
+        "path": "scripts/dbaasp/dbaasp_parsing.ipynb",
+        "sha256": "ac300e22ef418f425ac367273739cd3a87fe8156f8749a672cb0637f69d54686",
+        "size_bytes": 165217
+      },
+      {
+        "path": "scripts/figures/AnalogueGeneration_Conditions.ipynb",
+        "sha256": "7ba92ba1be91f950928c5ea7c65d1ede239b8090cb6b954039d0bcf93011b80f",
+        "size_bytes": 459445
+      },
+      {
+        "path": "scripts/figures/AnalogueGeneration_Counts.ipynb",
+        "sha256": "8572ad1131adaf7f6dde6934a3dd3d0c7d6bb2d32521103021c3bafd67010428",
+        "size_bytes": 191019
+      },
+      {
+        "path": "scripts/figures/AnalogueGeneration_PhysiochcemicalProperties.ipynb",
+        "sha256": "680a72ee7a818f674eb48c553c12f0882ffd27d6348b14a7f115d59ab4053ec6",
+        "size_bytes": 214536
+      },
+      {
+        "path": "scripts/figures/Length.ipynb",
+        "sha256": "724e56d31017da6f45209a52ca7b1f996c9b1a03b300639d82fd3ce31557b6e5",
+        "size_bytes": 102180
+      },
+      {
+        "path": "scripts/figures/SuccessRate.ipynb",
+        "sha256": "d45aba6a6e4bd3c5c8337f19c1843a49ea44b568898700e6e66b7016dba59cc4",
+        "size_bytes": 198613
+      },
+      {
+        "path": "scripts/figures/UnconstrainedGeneration_Conditions.ipynb",
+        "sha256": "fd0339a7524527eb34ba8a243623055b9b7bdac69a0572325772a96ba42b7b83",
+        "size_bytes": 233257
+      },
+      {
+        "path": "scripts/figures/UnconstrainedGeneration_PhysicochemicalProperties.ipynb",
+        "sha256": "bc4282ce4e870d7b3cd93c0586e95726e0d0e8c5bd16f85aee435167efbc1e27",
+        "size_bytes": 181963
+      },
+      {
+        "path": "scripts/figures/aaComposition.ipynb",
+        "sha256": "f0010b4f5a98505391fb103311129d6873ab143ca16246c3e327c555781fec5e",
+        "size_bytes": 146872
+      },
+      {
+        "path": "scripts/hydra_training_procedure.ipynb",
+        "sha256": "b5c19e7596b8b67493440ce4af0f35db215f399fc4664d635b2fd9eefcac1f35",
+        "size_bytes": 13095
+      },
+      {
+        "path": "scripts/joker/joker.sh",
+        "sha256": "28a067bc78aaeaee3a81f179e85b6d13a97f9baad4f4e17d3202853560e1cd04",
+        "size_bytes": 795
+      },
+      {
+        "path": "scripts/joker/positives_test_joker_output.tsv",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_bytes": 0
+      },
+      {
+        "path": "scripts/mic_classifier_training_prodecure.ipynb",
+        "sha256": "5fc3642c4d0faa8cbd93593463b77cdaef1d72bed5a365673537a38ba6534bf8",
+        "size_bytes": 125718
+      },
+      {
+        "path": "scripts/model_selection.ipynb",
+        "sha256": "32de4c6cc056d1956f0b9a9d80d506f1e0c7d23bb70cd0d3cbb245a4ab0c40af",
+        "size_bytes": 509837
+      },
+      {
+        "path": "scripts/pepcvae_training_procedure.ipynb",
+        "sha256": "eda405618bb16f672a1c4ab9f41b5be7a200a7f3faa5a450c76117aa8a3d1e9e",
+        "size_bytes": 13345
+      },
+      {
+        "path": "scripts/unconstrained_generation.ipynb",
+        "sha256": "74045815d08fd75e6a76515df9afe27dd6f08814bb669feeeecc620151e796f2",
+        "size_bytes": 18788
+      },
+      {
+        "path": "scripts/z_sigma_improvement.ipynb",
+        "sha256": "3f5054a3cb9a6100802b950e5ebe46c02ad7c9f467c6ae7270511c57c6cdf4c4",
+        "size_bytes": 113592
+      },
+      {
+        "path": "setup.py",
+        "sha256": "e5820e69128b0874f192427a91e2af613150b2c90a3edf96d95cf6b84ccc6e00",
+        "size_bytes": 917
+      },
+      {
+        "path": "static/Frog_noOutline_2.png",
+        "sha256": "198b0c082c0f75addb7cd54c80596e71ad31f04de334d5fc685ce65cbfbee2d1",
+        "size_bytes": 136883
+      },
+      {
+        "path": "wheels.dvc",
+        "sha256": "1c517e0171c352e6f2cf87fac7b920e7ffe39df41cc9f3c90ed70e8fecc52aac",
+        "size_bytes": 95
+      }
+    ],
+    "files_sha256": "25e0e214f6b22f38bfc832458c6b4a3a6f3d5cd5221c6d8c4e74df5b735cad2e",
+    "manifest_sha256": "0c07487b95a504eef7b60f3a08158895e16936d544c5024a81e49157d855f8d9",
+    "revision": "6590d2f4c2963f25d30669052a4c4a857e0e7279",
+    "uri": "https://github.com/szczurek-lab/hydramp"
+  },
+  "unsafe_deserialization_enabled": true
+}

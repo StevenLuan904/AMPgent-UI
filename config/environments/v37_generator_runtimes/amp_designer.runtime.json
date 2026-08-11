@@ -1,0 +1,91 @@
+{
+  "adapter": {
+    "adapter_version": "amp-designer-v25-raw-topk10-batch100-v1",
+    "entrypoint": "src/pepagent/model_workers/amp_designer_generator_cli.py",
+    "sha256": "8ddd17480faace7000aab107b48545a527b67f9d5edd5e6aad82b21fb3d30a31"
+  },
+  "generator_id": "amp_designer",
+  "internal_score_filtering_enabled": false,
+  "model_release": {
+    "files": [
+      {
+        "path": "config.json",
+        "sha256": "e8f1bed7607065b7a11e5f338a5a5e618947ae78ee0bc0314689cf9801d7d62a",
+        "size_bytes": 957
+      },
+      {
+        "path": "pytorch_model.bin",
+        "sha256": "47944ff42f7ea6a448340d44c2027329833205dd658ec4777e77777bdab1adc9",
+        "size_bytes": 340569639
+      },
+      {
+        "path": "vocab.txt",
+        "sha256": "b887319d2f815b62750fbd32e4ecf4c730d6df7963983ca073972af79574fe58",
+        "size_bytes": 70
+      }
+    ],
+    "files_sha256": "6e78efede429d3d5d1ef4744f68574f03fe5f36fc68ac0caa2b1f5f952cbd405",
+    "manifest_sha256": "db91dbf932699a9d17f7c2fc46c73101f5cd6035f41fa1e7f08de47ad1bda4f2",
+    "revision": "zenodo-15051980-47944ff42f7ea6a4",
+    "uri": "workspace-release://var/releases/v37-generator-runtimes-v1/amp_designer/model"
+  },
+  "request_contract": {
+    "additional_properties": false,
+    "properties": {
+      "generator_id": {
+        "const": "amp_designer"
+      },
+      "raw_proposal_budget": {
+        "const": 1000
+      },
+      "seed": {
+        "type": "integer"
+      }
+    },
+    "required": [
+      "generator_id",
+      "raw_proposal_budget",
+      "seed"
+    ],
+    "schema_version": "v37.generator-request.1"
+  },
+  "request_contract_sha256": "09a1e328d5ab4146bc3c7b177c169632c598369d9230677aa09a105e5c5000cc",
+  "runtime": {
+    "environment_sha256": "7f3da35c97324b0014f852ad96ab4b842489bab601b58b1cf09ce5f333b5b30c",
+    "packages_lock_sha256": "2d8e06ab1be2277973ec71d6b70df71e26d94d0eb54475e97392eda869782c79",
+    "python_executable": "var/generator-runtimes/amp-designer-py39/Scripts/python.exe",
+    "python_executable_sha256": "f60272da5522589b99e76b96633b747f5b12dbeeba79f49b6d3d6f196c79d921",
+    "python_version": "3.9.23"
+  },
+  "runtime_manifest_sha256": "a829b8109423f549a0c2cfca6d5f711c46bf4058331ed719e2a9c9ddfb66635d",
+  "schema_version": "v37.generator-runtime.1",
+  "source_release": {
+    "files": [
+      {
+        "path": "AMP_GPT_generator.py",
+        "sha256": "98c06d10afd25db6b07aa050679c58d8a945f4d30e1e1c23ecdb5c8f82d4dfe0",
+        "size_bytes": 6499
+      },
+      {
+        "path": "LICENSE",
+        "sha256": "20da92ca15ebfa1bde9bd53804e1d4fe32001c9bd9827d4286a4d4c377478e0e",
+        "size_bytes": 1065
+      },
+      {
+        "path": "soft_prompt_embedding.py",
+        "sha256": "6673c6072e49fc01a7556fb9ed136362af0b90fb693f367ee3b096f1e980820f",
+        "size_bytes": 2328
+      },
+      {
+        "path": "voc/vocab.txt",
+        "sha256": "b887319d2f815b62750fbd32e4ecf4c730d6df7963983ca073972af79574fe58",
+        "size_bytes": 70
+      }
+    ],
+    "files_sha256": "881074cf9a375b0913ac5923e42345fe5348f8658453654cc81fc89d543abc12",
+    "manifest_sha256": "82f38e36a3244bb8e13cf12d50b118b2a8a1ca0cdf77662cc917908eb53e202f",
+    "revision": "b554b1ac1507040d9d50356e037098e652ce4719",
+    "uri": "https://github.com/aziele/AMP-Designer"
+  },
+  "unsafe_deserialization_enabled": false
+}

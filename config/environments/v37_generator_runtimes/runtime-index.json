@@ -1,0 +1,62 @@
+{
+  "entries": [
+    {
+      "blocker_code": "unsafe_joblib_deserialization",
+      "blocker_receipt_path": "config/environments/v37_generator_runtimes/hydramp.blocker.json",
+      "expectation": {
+        "adapter_sha256": "d2bde943db3182b6236b8fcb942c1171f1a5d4f13c37f433fabfb395e7727f68",
+        "adapter_version": "hydramp-generator-v1-raw-unfiltered-nattempts1",
+        "generator_id": "hydramp",
+        "model_manifest_sha256": "d4ddff24d5882d1f3bcdcb666a8834a0aa9ea8cdb75ad7de8c4a049524a1e3bf",
+        "model_revision": "zenodo-7420278-models-c2bf137ebe546fee",
+        "request_contract_sha256": "4998fa04d4f3bcd95295cfce786b3ece2e8ac0f8791f9359066a838bcbb45c3b",
+        "source_manifest_sha256": "0c07487b95a504eef7b60f3a08158895e16936d544c5024a81e49157d855f8d9",
+        "source_revision": "6590d2f4c2963f25d30669052a4c4a857e0e7279"
+      },
+      "generator_id": "hydramp",
+      "manifest_path": "config/environments/v37_generator_runtimes/hydramp.runtime.json",
+      "runtime_manifest_sha256": "7c7da481d3599c5f3817edf5fba9c3208abcf0009bc55996c909edff1a4e4185",
+      "status": "blocked"
+    },
+    {
+      "blocker_code": null,
+      "blocker_receipt_path": null,
+      "expectation": {
+        "adapter_sha256": "8f1b9e62b75af24a0dde2087d29eacad321f846a20ee681d781b934d5df6c832",
+        "adapter_version": "ampgan-v2-generator-v1-positive-conditions-unfiltered",
+        "generator_id": "ampgan_v2",
+        "model_manifest_sha256": "5c6b855a5c806f67d982bdf37fcd1a590434413a936fdc38b59a26c563468bbd",
+        "model_revision": "ampgan-v2-gan-1606-a5e7cafa16c33010",
+        "request_contract_sha256": "5d88e2d48e8bcc8d8069b5cb6aa26b608d71564dc339ac85c9d9405f09c55eb9",
+        "source_manifest_sha256": "927f47dcb7a21da3be19aff348f38b7d7c8e3fe9a541564b3a094ce6ca2ae670",
+        "source_revision": "1009476bdb988707ff260def863d694549dc18b0"
+      },
+      "generator_id": "ampgan_v2",
+      "manifest_path": "config/environments/v37_generator_runtimes/ampgan_v2.runtime.json",
+      "runtime_manifest_sha256": "6582115be8a04d99926706b237de2cfe30d3d188f778a3d990a6d871775bf0e4",
+      "status": "verified"
+    },
+    {
+      "blocker_code": null,
+      "blocker_receipt_path": null,
+      "expectation": {
+        "adapter_sha256": "8ddd17480faace7000aab107b48545a527b67f9d5edd5e6aad82b21fb3d30a31",
+        "adapter_version": "amp-designer-v25-raw-topk10-batch100-v1",
+        "generator_id": "amp_designer",
+        "model_manifest_sha256": "db91dbf932699a9d17f7c2fc46c73101f5cd6035f41fa1e7f08de47ad1bda4f2",
+        "model_revision": "zenodo-15051980-47944ff42f7ea6a4",
+        "request_contract_sha256": "09a1e328d5ab4146bc3c7b177c169632c598369d9230677aa09a105e5c5000cc",
+        "source_manifest_sha256": "82f38e36a3244bb8e13cf12d50b118b2a8a1ca0cdf77662cc917908eb53e202f",
+        "source_revision": "b554b1ac1507040d9d50356e037098e652ce4719"
+      },
+      "generator_id": "amp_designer",
+      "manifest_path": "config/environments/v37_generator_runtimes/amp_designer.runtime.json",
+      "runtime_manifest_sha256": "a829b8109423f549a0c2cfca6d5f711c46bf4058331ed719e2a9c9ddfb66635d",
+      "status": "verified"
+    }
+  ],
+  "overall_status": "blocked",
+  "release_version": "v37-generator-runtimes-v1",
+  "runtime_index_sha256": "0965238da5da4c584e31beddf054858a2eaab5062dac71e06a067d916880b5a8",
+  "schema_version": "v37.generator-runtime-index.1"
+}

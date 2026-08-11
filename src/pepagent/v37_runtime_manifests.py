@@ -156,6 +156,15 @@ def verify_v37_generator_runtime_manifest(
     )
     if not str(runtime["python_executable"]) or not str(runtime["python_version"]):
         raise ValueError("v37 runtime manifest Python identity is incomplete")
+    runtime_python = str(runtime["python_executable"])
+    parsed_runtime_python = PurePosixPath(runtime_python)
+    if (
+        "\\" in runtime_python
+        or parsed_runtime_python.is_absolute()
+        or runtime_python != parsed_runtime_python.as_posix()
+        or any(part in {".", ".."} for part in parsed_runtime_python.parts)
+    ):
+        raise ValueError("v37 runtime manifest Python executable path is not relative")
     for key in (
         "python_executable_sha256",
         "environment_sha256",
@@ -182,6 +191,11 @@ def verify_v37_generator_runtime_manifest(
         source_files
     ):
         raise ValueError("v37 runtime manifest source file-list hash drifted")
+    source_identity = {
+        key: value for key, value in source.items() if key != "manifest_sha256"
+    }
+    if source["manifest_sha256"] != sha256_json(source_identity):
+        raise ValueError("v37 runtime manifest source release self-hash drifted")
 
     _require_exact_keys(
         model,
@@ -202,6 +216,11 @@ def verify_v37_generator_runtime_manifest(
         model_files
     ):
         raise ValueError("v37 runtime manifest model file-list hash drifted")
+    model_identity = {
+        key: value for key, value in model.items() if key != "manifest_sha256"
+    }
+    if model["manifest_sha256"] != sha256_json(model_identity):
+        raise ValueError("v37 runtime manifest model release self-hash drifted")
 
     request_contract_sha256 = _require_sha256(
         manifest["request_contract_sha256"], "request contract SHA-256"

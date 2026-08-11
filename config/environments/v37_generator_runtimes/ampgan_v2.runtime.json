@@ -1,0 +1,1921 @@
+{
+  "adapter": {
+    "adapter_version": "ampgan-v2-generator-v1-positive-conditions-unfiltered",
+    "entrypoint": "src/pepagent/model_workers/ampgan_v2_generator_cli.py",
+    "sha256": "8f1b9e62b75af24a0dde2087d29eacad321f846a20ee681d781b934d5df6c832"
+  },
+  "generator_id": "ampgan_v2",
+  "internal_score_filtering_enabled": false,
+  "model_release": {
+    "files": [
+      {
+        "path": "gan_1606/saved_model.pb",
+        "sha256": "a5e7cafa16c33010bd0fe22747c89f05d74f8781deac9eeeb91c6e4c371177e2",
+        "size_bytes": 1344320
+      },
+      {
+        "path": "gan_1606/variables/variables.data-00000-of-00002",
+        "sha256": "df6b16408b05f21a6fdb1d675c12562257d619382d08af2fad391d7ed847084a",
+        "size_bytes": 53347
+      },
+      {
+        "path": "gan_1606/variables/variables.data-00001-of-00002",
+        "sha256": "012fc17624f1fe6b0441622bebc71ee968e4d7db80bb7910e22af93b49d69890",
+        "size_bytes": 12982248
+      },
+      {
+        "path": "gan_1606/variables/variables.index",
+        "sha256": "7936298d0a7ac1802bbedc726d29e27911c3aa60778ac97395a24d5f82456902",
+        "size_bytes": 12646
+      }
+    ],
+    "files_sha256": "748dfe52f027d0cbe84c1e99d3b9a188380e744fa37e40d2cdea7b24dddb6a50",
+    "manifest_sha256": "5c6b855a5c806f67d982bdf37fcd1a590434413a936fdc38b59a26c563468bbd",
+    "revision": "ampgan-v2-gan-1606-a5e7cafa16c33010",
+    "uri": "workspace-release://var/releases/v37-generator-runtimes-v1/ampgan_v2/model"
+  },
+  "request_contract": {
+    "additional_properties": false,
+    "properties": {
+      "generator_id": {
+        "const": "ampgan_v2"
+      },
+      "raw_proposal_budget": {
+        "const": 1000
+      },
+      "seed": {
+        "type": "integer"
+      }
+    },
+    "required": [
+      "generator_id",
+      "raw_proposal_budget",
+      "seed"
+    ],
+    "schema_version": "v37.generator-request.1"
+  },
+  "request_contract_sha256": "5d88e2d48e8bcc8d8069b5cb6aa26b608d71564dc339ac85c9d9405f09c55eb9",
+  "runtime": {
+    "environment_sha256": "e732b9a856dc204476da49379f978e6b8993c44ad58166eb72f8d5bf0759f08d",
+    "packages_lock_sha256": "c10b1c5750f909d70428490174f5e4f096a385fec5ea78cb639d919dadcf84e2",
+    "python_executable": "var/generator-runtimes/ampgan-py38/Scripts/python.exe",
+    "python_executable_sha256": "a35938cd6841c3a7814a63ba5be88c3966c6d173fa3a864e7a9084d72a0068ec",
+    "python_version": "3.8.20"
+  },
+  "runtime_manifest_sha256": "6582115be8a04d99926706b237de2cfe30d3d188f778a3d990a6d871775bf0e4",
+  "schema_version": "v37.generator-runtime.1",
+  "source_release": {
+    "files": [
+      {
+        "path": ".gitattributes",
+        "sha256": "709ef58c8e57a48b1d0e84dc51f4d26a81d9fa030852e2b1acf5f57dc4773741",
+        "size_bytes": 296
+      },
+      {
+        "path": ".gitignore",
+        "sha256": "0f7aeeed61f985363c3628f73a86e88b7f5cfda3c24ff5f3fbd915667895bcf6",
+        "size_bytes": 1418
+      },
+      {
+        "path": "LICENSE",
+        "sha256": "a1f3e860230efe4508826edc924e9a7cc53b86002376c74696e2d76f801cbc03",
+        "size_bytes": 1065
+      },
+      {
+        "path": "README.md",
+        "sha256": "34063d09157d611c4bfa323f0986ae8398e2404e9c3bc85ed2a54787c80aa1a4",
+        "size_bytes": 1802
+      },
+      {
+        "path": "ampgan.yaml",
+        "sha256": "07bfcb4a3db30d68355b116b42d3c5c4dfc8f82acdf936b7a1aa1f71289c398d",
+        "size_bytes": 280
+      },
+      {
+        "path": "ampgan/README.md",
+        "sha256": "386de3d56fee7469c7552f7ca1d4ffd760140f7e58873c59cb392210819baab3",
+        "size_bytes": 1670
+      },
+      {
+        "path": "ampgan/analyze_generated_samples.py",
+        "sha256": "9c09b6891dbf6dbf815f8e1e1fdd08c4f265ad4128de79072c1ded023637dac2",
+        "size_bytes": 15024
+      },
+      {
+        "path": "ampgan/analyze_training_stability.py",
+        "sha256": "5b98f07e29130efe838678985f182942edd6c15d264bd0ae0fa384a71efdea87",
+        "size_bytes": 4165
+      },
+      {
+        "path": "ampgan/avpdb.py",
+        "sha256": "b5808d5d9de4d65cf06d514f75f9123542aa836907c6687b798e250879fca9db",
+        "size_bytes": 5003
+      },
+      {
+        "path": "ampgan/callbacks.py",
+        "sha256": "80d03ed430136c64e12e8a875d7c6c76074d4bb5b707076dfb982c1a259c8b97",
+        "size_bytes": 7386
+      },
+      {
+        "path": "ampgan/cli_utils.py",
+        "sha256": "69d343e0ef04a9dc51eb052b25449389fb511eb8cf53b3e42478bd36ce43cb73",
+        "size_bytes": 364
+      },
+      {
+        "path": "ampgan/compare_v1_v2.py",
+        "sha256": "a517c482d8d4859547edd0be0068fc36a738e8b57eb74ce13f1b340b352ee3be",
+        "size_bytes": 3983
+      },
+      {
+        "path": "ampgan/data_utils.py",
+        "sha256": "c1902bf364b1c270d49027aebd4039c402ba4bc2c542ecb11360559f7cf07c04",
+        "size_bytes": 18504
+      },
+      {
+        "path": "ampgan/dbaasp.py",
+        "sha256": "432ad10dc09d026e9ab7fb150d62fa8ecfb615326b32a1bc4e6a89a902dc2d9e",
+        "size_bytes": 6090
+      },
+      {
+        "path": "ampgan/discriminator_sensitivty.py",
+        "sha256": "fcb4b98f0cb104f470f7b45f941fc2a964770ac51367cedccdba72146a0bd8e0",
+        "size_bytes": 3091
+      },
+      {
+        "path": "ampgan/eda.py",
+        "sha256": "9f71712b2b9ffed3d7fc4759f51c865668226ad6f5b9f814f915c0a22dadea73",
+        "size_bytes": 4901
+      },
+      {
+        "path": "ampgan/generate_samples.py",
+        "sha256": "782725c8ebcf4a3d1b9395b42bc82aa83d619bddd25bed3a9412fa3f8e8a9fc1",
+        "size_bytes": 2856
+      },
+      {
+        "path": "ampgan/mnist_test.py",
+        "sha256": "c8e4713e4f0fc921f4d7aa268a0ceed8704c023e37a17574fc3916382507f3b4",
+        "size_bytes": 2923
+      },
+      {
+        "path": "ampgan/model.py",
+        "sha256": "3476855d0eb813e872f5a0b46b6c6ffd0225a9797df2036e9b0cfc5c76764c81",
+        "size_bytes": 18828
+      },
+      {
+        "path": "ampgan/probe_global_scores.py",
+        "sha256": "24525171c6f9addbcc513e81d1ff144d9573314a245e8da5771e94586a0fcdd1",
+        "size_bytes": 3521
+      },
+      {
+        "path": "ampgan/shift_baseline.py",
+        "sha256": "e29170ea3de6a644702c08b3373779bd9c1bcb50b7835d75a24e9672ce3035bb",
+        "size_bytes": 3145
+      },
+      {
+        "path": "ampgan/train.py",
+        "sha256": "4bc8ef5ec9a73283a64530b8a5c8b080a08a62d1d0b6953fc8793cac151a9461",
+        "size_bytes": 3968
+      },
+      {
+        "path": "ampgan/uniprot.py",
+        "sha256": "618ceb93e5a4ce721f6e70023bea635d8f1f0b27899066b4d3e81bf06d3efc26",
+        "size_bytes": 3378
+      },
+      {
+        "path": "data/avpdb/AVPdb_data.tsv",
+        "sha256": "af33d4f78a973cc7780ff7f429931333adaa6c3817d21aea29e53fc32d908f5c",
+        "size_bytes": 731264
+      },
+      {
+        "path": "data/avpdb/mAVPdb_data.tsv",
+        "sha256": "34b81851f3570a479f090522ac85b88245c74cfdd53b1ff5f5593711fbb2f29f",
+        "size_bytes": 117772
+      },
+      {
+        "path": "data/avpdb/targets_mapping.json",
+        "sha256": "2746f3a2cbf9c10963d21e06767475f61e982c2e34785c06a4ac67140bb2c57c",
+        "size_bytes": 1423
+      },
+      {
+        "path": "data/campr3/consolidated.csv",
+        "sha256": "f33587a14d89e0e2779b43cf536687609698ccc4a25ab58e8b69ca668c59d6b3",
+        "size_bytes": 132
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-47-40.csv",
+        "sha256": "637cd59626aa90c6db59e64e59d966aea73b26cbe221c188d0ba1a45efaebb3e",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-47-47.csv",
+        "sha256": "85759ce6ee35278ac4003b4cf74b34abf3551dfbd97b20f6e7c0e90b5ce25b0f",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-47-54.csv",
+        "sha256": "352ca0d36d026ae6a034567b14d311a1821d6b69513a099542124f5f8da2723a",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-48-01.csv",
+        "sha256": "98f9b91ec4fdb14f49f405aa92221770d6d36d3482c28b88a267f72653789542",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-48-07.csv",
+        "sha256": "e5f01d298fbd93724b7f135563e29af5a90b9e7ff2b831a700aa82036e51fa9e",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-48-14.csv",
+        "sha256": "26407c07df5e87279a28360a8053e28ba711555e83710fa1507ba63d8dd5babd",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-48-20.csv",
+        "sha256": "dd4c48add9ba4494ebf2bf4f6dbdf5a7d1bd13a3bdaab0dd9ff968d5d0db8f0e",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-48-27.csv",
+        "sha256": "fafa3207448cc18b74af8c5e1d5fed21f6b8064e03c3b58e15d34ab0321f4d9b",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-48-34.csv",
+        "sha256": "be351b2e2a767b40623cb1f8bf4c7857e0dc115e93427eb686f59d82c2adba37",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-48-41.csv",
+        "sha256": "f0215aebb85c636dfc9be8f36ed0ec260952ee1b8235cfa43702c9a681ad021d",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-48-52.csv",
+        "sha256": "22042a7463fc2897def58642ded679154ee519f3846c0d31ac2940ca2b75db10",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-48-58.csv",
+        "sha256": "e5a5284a30a4bbf8712c8d735de9b11287aa0eca4dcff91a3a3c7383489fd682",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-49-05.csv",
+        "sha256": "f7ec4317f3b77cca503adb1b15a9f776972c4fa9af2e72dd020f5d027bccfaf2",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-49-12.csv",
+        "sha256": "c8e23d48b47929246421d9d2a9f90256ae98dc523848777c0dd42132baadf0a8",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-49-19.csv",
+        "sha256": "fa3e89c5a6d80f970a8ba47163102486b912ec9ff2b5d6d76ac609def2dac739",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-49-26.csv",
+        "sha256": "02b5cd3068ea1e62871be69324c0d0df488217e5fbc468c99d31ab344358f1bb",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-49-33.csv",
+        "sha256": "272e3aeccc83f4c1e3ef9dba266e26fe40c19c3faee5fe54fb966aff33867ee9",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-49-39.csv",
+        "sha256": "9870d6bfe1ce99791bf62761e7d8db740a2f36084ded5fcbd25b2386adb30dc2",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-49-47.csv",
+        "sha256": "9c8a29d342ab16c8b2b527fe28604245ff1f28279ea50663a76abeaccf834b94",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-49-53.csv",
+        "sha256": "a2e401b3a10ae5425ff1c953c8163f77d28626c4335e0c536fb2e883df218b36",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-50-00.csv",
+        "sha256": "f2c41131b7d21595be74ff5104e63b2b7a224fa296d1752240c962f016d0d06c",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-50-07.csv",
+        "sha256": "68606555379160a38bbb7690f43f0db50d0ff994f7b9d2763b2641646d9feb3c",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-50-14.csv",
+        "sha256": "8df802045a942e47e7a90e42ed9c6c5193fbeadf49f2b9be46b552d0acf01dd7",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-50-21.csv",
+        "sha256": "35365e881527ca1e77f0425c35d749a2d3fab6415f5277629cff365d4fd1d359",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-50-28.csv",
+        "sha256": "877b52ae163a4093393ae5dac1294ee4fa216221ca22a0488873791ae392c1b6",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-50-35.csv",
+        "sha256": "0774373388a7083a3620cd996c50c345eaa3461f7fb1cb490d94ac8cc159ab0e",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-50-41.csv",
+        "sha256": "dc801224df66272d978f86a21c7d8d8eb0ba05e6196fc7ceff295f40ed0ff478",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-50-48.csv",
+        "sha256": "29da3e60119671d516fb50ed8b281fffed1936afc5a2a079a3da0f2066c03a0a",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-50-55.csv",
+        "sha256": "afbc3ce6428887299cb79e9058f014e51fd5dfe2b63fe3c783c51d578829b651",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-51-02.csv",
+        "sha256": "62690fe0974c54e20da5f414dc4527bfedff81be359358ebb6dc70146625ae73",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-51-09.csv",
+        "sha256": "a0824b4f5131fa9372c6d1565e9438ec690561236c4e7ad302ee0f1a4994ba0b",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-51-16.csv",
+        "sha256": "7c10d9f30191eebd89adcafcd818ec500f2d73184045d887445109386528015d",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-51-23.csv",
+        "sha256": "8550a0caa9e95e96ed806550f76c60259fad5cf85eb7fea09a00b2864147ec41",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-51-29.csv",
+        "sha256": "1c174d0122bceef000e20e36a05ed7ed71808993c625c97076dbb513cf588a82",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-51-36.csv",
+        "sha256": "be62406ddca2f715f5bff52bf0d2c02746c6fbee7822537ae6fd0b41ec8c53c5",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-51-43.csv",
+        "sha256": "5a17007c4440a726b639e705130eb22b240948a2febe50de16ed2a1d82c771f3",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-51-50.csv",
+        "sha256": "9532e97091471ebd384da59845158e4a6e3187cfc322db6e7120f4d8c75d49b7",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-51-57.csv",
+        "sha256": "899ebf9ce96d507f55e0b98f8362972c8824ff6c7cc4d1fdc508a39b98a67fe7",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-52-04.csv",
+        "sha256": "4190eb22c0292c8e843e02b8375ca9305075feb43e0f8f1e8394abda68a6bbd8",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-52-11.csv",
+        "sha256": "a017a51c10c713af02806c450c48b2112866e869d8844b221ae7017e39ebe847",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-52-18.csv",
+        "sha256": "4ff10e718db192c9b389c6bed637576ca874c716a589b1dd136db51b66dbe035",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-52-25.csv",
+        "sha256": "ef57b86b1ee74edeef701f8d41843a23b41026f78718781f591da97c0a5e2043",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-52-32.csv",
+        "sha256": "08ffd3ac50faf5f01d0d543e69603642f66e714656bd15fe7f777a942ecf7f91",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-52-38.csv",
+        "sha256": "435b436d983db5ba9357c1b5a2958b7786dff7477cb754b3e8e787ed74dce958",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-52-45.csv",
+        "sha256": "8a855f172b810a7cbb1fa820bca0838b204a6a24ecb10a58d0e1ebae2b3b1909",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-52-52.csv",
+        "sha256": "c49ba30c5525a492c3d2cf029e4c35bdcf377caa5a3b4b7c3bc2f691891f68fe",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-52-59.csv",
+        "sha256": "f2c44c4f43ae278c605208dc639468587c1a7c2407865174abf57a0b66962b1e",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-53-05.csv",
+        "sha256": "de5eed79a64b6c036d30733a1d2e6fb5d0d556c1a75773f230acb03f7554e36a",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-53-12.csv",
+        "sha256": "188b9021ba4abe13fe42bcb39fe460b8e6ade865af66e612814727a3efd80fa3",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-53-20.csv",
+        "sha256": "bab2bbde32494c0353cdb82566fe025d0acee55c37cd0470d30c0165a19ba170",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-53-26.csv",
+        "sha256": "21b6047d4b43d6a2bcfd29490c9a366d7f612fe857ba308942e325d946dfc17b",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-53-33.csv",
+        "sha256": "8205dbe69246c02abfff336cab41c24f3202849b873fe090718a2db3df3f9a42",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-53-40.csv",
+        "sha256": "e6acb3c661388dda95059f1b8082c57a836e9716af83195eef85cb9ae042b01c",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-53-47.csv",
+        "sha256": "4436c02e087d932f9649f0f9ecd44f0c6afe67de343368ee2bbffe2b57446080",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-53-54.csv",
+        "sha256": "5bc61b368bfe9993997ede469e8f4369506809ef0e47c12a5ef0b3e5191543b6",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-54-01.csv",
+        "sha256": "015c7b9f299029c361eb60d8aabcc4d1aa87b874eccff9c5dca12d8e4ca53bc5",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-54-08.csv",
+        "sha256": "996bc69234e8589778d3a6c9824ad14776a14d3e25b260b1278320c00c4c8138",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-54-15.csv",
+        "sha256": "ec847134e90d2baa4575d329a2e4130df82dd417c020a5b29c99f5bf612a45bf",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-54-22.csv",
+        "sha256": "112219d6306a32f9361b5120bd717f638263827bf214b6080efd68913a3b389d",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-54-29.csv",
+        "sha256": "a7f23dd8bb123e9c2a141e44330e1a1a7557276f15e79ee5ae88bbbd416112b8",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-54-36.csv",
+        "sha256": "968dde65c316e90d4a491e021de60db09a5fb1da6cb6bcb96c16cce081b96339",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-54-43.csv",
+        "sha256": "813bf56482108d994109e62e7fb18c0dcbfb7639f4819f2a362bc09bf83a1d42",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-54-49.csv",
+        "sha256": "8c0edc33f08d4aed26d6514e3709d90b1c4c6f48d65ae1e3e6d2f96c25bf57b2",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-54-57.csv",
+        "sha256": "df20f0b3522f8e31043a806b8861bdbf491abcbc342a8d20198dfcb5e9406625",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-55-03.csv",
+        "sha256": "f9c5f1d458bcb82171d135dfcfef68d6d5704268f1b3cd975d576a13dd715798",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-55-10.csv",
+        "sha256": "940ea9aa32d518d83665f02950cc78de5fc740721392c349a86251857dd80c9d",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-55-17.csv",
+        "sha256": "a85d0dce653ce989bae3180f6b0799a55cebce159e207102954df91fa4c51ba5",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-55-24.csv",
+        "sha256": "90d758721042590c36a30db444050864f1b8f2f672ba878d60c5a3045c76861b",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-55-31.csv",
+        "sha256": "aa02ed689d49062361ac92fb0d560995c0a220c9ff105e5df8aaa8d988d7744d",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-55-38.csv",
+        "sha256": "f23853a5f7d12863cfd7e9327bba2ba5ce17d2c6c2cee7db8cdd4614fe46e6e2",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-55-45.csv",
+        "sha256": "da07610d47c003672db2eee9672220aba6647336b9245df28986f623effd9fb1",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-55-52.csv",
+        "sha256": "ed1a370e82cc6d99699cae47be8ee68608bdd628dbecaad5ad7ef61bdd20f09a",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-55-59.csv",
+        "sha256": "07854be186c85f197c5d02d1583ffe6b6600b7e0e2409c3d48395e38d4d45a18",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-56-06.csv",
+        "sha256": "f34afbacfe9f05a555c80028f995d240ee19b6cb4995e6b986c57960d271a471",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-56-12.csv",
+        "sha256": "abf7ef5fb5ca764254e51162a75073a40c56ababba70e1602459c7d31121d993",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-56-19.csv",
+        "sha256": "f47c3d60a15458a9e66ce69be644448614658b431fb97662ae2d3f4364e02063",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-56-26.csv",
+        "sha256": "d985a13bc96f7d8170508fa42220f1e5c4b890933fb44abb22c26c7bdfd9298b",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-56-33.csv",
+        "sha256": "73ae16289d5d8770183e9eefc0f574902c08ca68cb29e304636c4a5c8aa3d033",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-56-40.csv",
+        "sha256": "53d99b496de7dac3cff508b5be249b812be30c5f4c0453522733d0b834ea1c95",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-56-47.csv",
+        "sha256": "4f4445055f169b1173ff72d5c70e072fb1465f8318a364ab5725e687f131ae2f",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-56-54.csv",
+        "sha256": "94ca886a26bda84b4a9f35f9316ecf4825df94e62f6c7280899265512b9f2a63",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-57-01.csv",
+        "sha256": "6a67afbce1f2b387741818abad3089ee4fb3b3699b556c0fd4f680a1f85a10ae",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-57-08.csv",
+        "sha256": "320141264b91a66f6cb40d4c804c6abd543109e166f4ac2d7001a8c92a25ba5b",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-57-15.csv",
+        "sha256": "d34ca0e295b4756f3983f8cd043b2a4b0dcf328ef27fe32686963f065b3c63b1",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-57-22.csv",
+        "sha256": "382b4764adfec097dd54e3ccfaa3fa8572231d639004b3b29ce4c814ca073808",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-57-29.csv",
+        "sha256": "f150252cdf00ed87d97380a5ed2a9a281558be1fec91dbb461599807b3f820b5",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-57-36.csv",
+        "sha256": "120d73ed16d66a84c8d23262c96bece3be27dc5ff818ace3704c90dd8b0e3d6b",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-57-43.csv",
+        "sha256": "f676f68bd1da69cedde8f324a86bcd72312e299454199f804d69c946ddb19f9f",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-57-50.csv",
+        "sha256": "220009e5745b103b9288ec93a9029fa0d7e5c4016489fe26ebc9dd2ecf610efb",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-57-57.csv",
+        "sha256": "5c79f06549073243930683f2178c11f8eef732bb651d505d7ce83f7b54abd11b",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-58-04.csv",
+        "sha256": "fcc2fcb4e9447a275a4f75b1b45051c8b42f6a171b2ac3eac5adece1278709ab",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-58-11.csv",
+        "sha256": "b0aae771a8e9dfb31c52b4f6b20a52034dd8084e32bc9b92efb42d44248ad8ac",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-58-18.csv",
+        "sha256": "7fa600363d61e13c96986b5515699a627c4a3423445f128af365c4818efbf48e",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-58-24.csv",
+        "sha256": "11e074234beb38933038a2308ae632341fc05eec28c644abc35b5a316dd50f99",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-58-31.csv",
+        "sha256": "0dda985c7a97dba6b7edc14ca5366721b698f694dce03a751f5647a635f0c326",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-58-38.csv",
+        "sha256": "84f2607f10b5b336193367513624c8540430665a31dec0a8eb8e75449b387ec3",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-58-45.csv",
+        "sha256": "100281c4909ad2bfa67670aca1eff093319d4b143b448a3f813577c84a6938db",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-58-52.csv",
+        "sha256": "87a1063d965f1ce3181a73087d0292dffdbdadfcce54e3e338bcce406d436cbc",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-58-59.csv",
+        "sha256": "4210515d1d655e0b8cbf44fbdcaa7c75642d05a38ba08a157b818f5c0d3d68e8",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-59-06.csv",
+        "sha256": "0c42f35e8a30695ff6cca37f8e3310ef200a138193e5c5308f1754d702dee288",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-59-13.csv",
+        "sha256": "d1a240a8bf0f10f182483086430452f37aab5d5f355cfcba5de56573561bbc73",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-59-20.csv",
+        "sha256": "2c5c11918c23ec6737d064ba9b11f2150f5d77f2d7f26448ae9f5294eb8ab3f4",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-59-27.csv",
+        "sha256": "9653d17868883b717d8c9fdb6fe4060544343ad83c270b3c9a35b98ed6e1a80d",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-59-33.csv",
+        "sha256": "84ed1a3db47448961ad749ebc6e7f8287c8c1c207c65602fb54b68039a622fec",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-59-40.csv",
+        "sha256": "521f3262b00819308d1e630afb9e154922dd078f11984a9b1ea600691849de82",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-59-47.csv",
+        "sha256": "8180cee3bd22b6ac18700e906c9fd54eb80b44cddad8876cfe078406fba98764",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 06-59-55.csv",
+        "sha256": "7b4b00e1eb650995872825a985c9db9a6c6778e9efa483ba1b50e61c8bb3db8a",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-00-01.csv",
+        "sha256": "2f98b4a487a20c0897c1f14a74f10510306077f902ec59c8598d20a34cd6a5f3",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-00-08.csv",
+        "sha256": "51224e4bebc580fd3415417ec2b4e4bdc7039ac0e22ce7aa233954722f99ca43",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-00-15.csv",
+        "sha256": "7f592ca8284332fe09268f6214fbde20cfe92183773b27123dc00f32e3d04ae5",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-00-22.csv",
+        "sha256": "8ed943b2e91532b71d87792b4adb869e0cc5fa5041162aff67a7e45d0011568e",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-00-29.csv",
+        "sha256": "992b1f5f0920919b019618df8fc65a9a807ff98a0262777795537a65e8b95019",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-00-36.csv",
+        "sha256": "f454259fb955762004050ba1147fdfe3c4b970d5a76996eceabe9c1193fd56b6",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-00-43.csv",
+        "sha256": "16f19221f7f91e47d6cb7b0e1d08ae409fccecf20a720f57f2fe43d6cbeafb02",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-00-50.csv",
+        "sha256": "e307f2e10934c975cf0f443128e58073af5b4a259ea2be38243fa498bed2a116",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-00-57.csv",
+        "sha256": "149f38cdb1680f042b3907b1b8b8bb286c5a6afd9310f56ee460f1058a691c64",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-01-04.csv",
+        "sha256": "b431d41968a214b3536c5339ca9cc33609ceb3064f411c9428b5876e6c587e7c",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-01-10.csv",
+        "sha256": "7f4cdb10cf18be735fcdb6bb35eddf37d73d02d65f672ca68a16ecc4f6ecfa01",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-01-17.csv",
+        "sha256": "f6bfd323993848c3146a7eaae11f3dcc56fbbbe2722b7659352b6888b3219d6d",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-01-25.csv",
+        "sha256": "6567827306e2ba9fb0bc9cffeb258ebf2c21c42cf2d6efe2d39bd4f33026e708",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-01-31.csv",
+        "sha256": "8d960d2ad2041a2c7db1526b9ff4c546bc65b23c36fda587e865beec593dea39",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-01-38.csv",
+        "sha256": "5fa858bd262d6c0246f611d235298d1c8b545bcd052a54b494583b3975950fd3",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-01-45.csv",
+        "sha256": "e141a355d22688000272a1fa8a332760db8509a22878d75874031210e706ac51",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-01-52.csv",
+        "sha256": "303e76e7476f722e0d26978f1671bfea534d0a9f62a56f2fec38f6e46d19851b",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-01-59.csv",
+        "sha256": "be9d68ebb1f5c85e875d267c8e9f5b14cfa890cd2b4a79560d55d08eb14d0196",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-02-06.csv",
+        "sha256": "19c18aa5c8f11a112a7274bec59ab9513bc5dd1a3dee28aeba63c11606e699ce",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-02-13.csv",
+        "sha256": "97512985e18d5e01384f09b252820d73a5a39985490900c15cafc8f57437780e",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-02-20.csv",
+        "sha256": "569cac35a2460d600d952f70786f8810a42141c84a4331489d501ee1e03eaf06",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-02-27.csv",
+        "sha256": "3189375a6346bb7a97ced176b41e9cbd4a54ab4e6f599fd899a050e4ceb9fc94",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-02-34.csv",
+        "sha256": "4449b411052592d0c2fdf02174eea45573aadd9f21cc7005522d3bb4695b88dc",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-04-57.csv",
+        "sha256": "a59289b8195a6546a48fc445c280703e8b8f762e201a3a7eef6819827484b3e0",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-05-04.csv",
+        "sha256": "c599dc27c4928ebc7e558eb114fa63d2c2fd4152d440d39846b59a9ab2195f55",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-05-11.csv",
+        "sha256": "3446293fc837db7f3ec284aead41f6814899013e139396ec697b6dac0e1b22c4",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-05-18.csv",
+        "sha256": "dcb86cea2e88af423ee8c8f7fcc503b64798e5775790fbeb84e616392a7610fc",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-05-25.csv",
+        "sha256": "d4f285eb819f46fd995d741d2ed02729e4f1d9498a5865ecd211acbeedc28b0d",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-05-32.csv",
+        "sha256": "cdb28c8ecc032a391f97a3415144999f2a250ab7586f7787c374a9bd70cfc5a6",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-05-39.csv",
+        "sha256": "cab283a7a037e5ab51726b2b4f40ab7fe26d9eadfe3036a84ceec4b5d393786f",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-05-46.csv",
+        "sha256": "2a2989efed022e14975012c788a145acfaca06717f47070e172e4aed5ee3d42f",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-05-53.csv",
+        "sha256": "a8198a156ef824308050bd61500f0b713917fb005e4153ef2fb602e586277e5c",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-06-00.csv",
+        "sha256": "540584c4eb571f302f4128a28ea6776d1c9dc38e92cd5aef5566c7f39eeb6820",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-06-07.csv",
+        "sha256": "c3d1c13feda5886406e907e68fe3dadb8fd686e4a0b78afc5ec8007d18531b0c",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-06-14.csv",
+        "sha256": "03cf18ce79da3fe0306176878d31423049991d17cbf1407b97b9777c0cb186ed",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-06-21.csv",
+        "sha256": "4b3fdfd96482b44c330c02325dd4265c389e94f9385c8477dad1f31c10097dfa",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-06-28.csv",
+        "sha256": "e0b4bbbe67fefe6c6c1325f6d29b10b9a525a10507e8ef3a2916fec2eb7cd304",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-06-35.csv",
+        "sha256": "cab0ab818cfd2f032dded328c4c676e94fb7d0777240c3af4a76323588f56bcb",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-06-42.csv",
+        "sha256": "9318f53b81f9928303d3b1e0d15095b11860b731969cf72d9712d8e29172914d",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-06-49.csv",
+        "sha256": "740eb416432aa7679a88ae0cbb9b068f523680a32a388a40c847d7200b537553",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-06-56.csv",
+        "sha256": "cb7657e6676e9c87b635524190c853458d079d7a7f706fb1edcd264f43b7d751",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-07-02.csv",
+        "sha256": "231b7d4c504bae2a8e37e4b0a66f9749cd9de64a9c8afd6ce386d7c654e6e086",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-07-10.csv",
+        "sha256": "595c012f73fc13185fff6f1fb0e62736965f6fffe695b8245bfb5bd884dfc56e",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-07-16.csv",
+        "sha256": "6a0a9ea87e806fa5c37626a3473ffc871d1574c13e06fc88b3da727a16921fb8",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-07-23.csv",
+        "sha256": "2f23d20eb24bee43651705b8fb81decfa547cc0df55ff8c5ef4a1a44665be496",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-07-30.csv",
+        "sha256": "8d6b66e47261e722c725b3a93f0ba4573fca2392a94e7e9f1f391217e785164b",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-07-37.csv",
+        "sha256": "88526a0729c3aad4f52611c195e3bc297a760ab4729f3b2ebe5cb3c19d3f60a5",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-07-44.csv",
+        "sha256": "25f7e2876fcd3f0a4f35a2e51036145daaa4110c0ce4fa155f6398b0712e6df9",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-07-51.csv",
+        "sha256": "919dc56d00d4b1237fa4c4631adfa010f644928f6d2908a46404780ba48a4bf1",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-07-58.csv",
+        "sha256": "e4225b903aed9fa5e8d9db3636725d5ac02ac9e1ef905198ae07d1803c7652d1",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-08-05.csv",
+        "sha256": "0062140b64dbdfa23b05514f790017cd0a70b43f71ce93f2c700859f54b7e427",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-08-12.csv",
+        "sha256": "b3211175e5a7e8e60ceec43f106202e9e5972832456c75cf8dbc019561f25647",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-08-20.csv",
+        "sha256": "e45e492f84eaee2b7d045c17e17c7f0a1f2b12cf7dc14251179dd99bfb16a0e3",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-08-27.csv",
+        "sha256": "550e55330a62ef69d3129f6f5c6e84737f7e2b50c20ba63eb5533b424c323cd3",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-08-34.csv",
+        "sha256": "931e4547b57b7cee993bd3bc1b08bf4d50d96fc57f4dcc334c55d81f9a7f71f8",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-08-41.csv",
+        "sha256": "ab86a59d14fe213933122580e05fc0e1ff69f5cd97e413d202ba2842f94697a7",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-08-47.csv",
+        "sha256": "a3d77aa4b66b749472faed95881f5df3a7629aaf0557c8ca039f8e2eabebea3b",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-08-54.csv",
+        "sha256": "fd0651451547d9990e579f73e6698d1c9c94f7be8c947428e1e59b0c0292b648",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-09-02.csv",
+        "sha256": "35b37011644ac3c5ced4ea04fac913297280952dd42bc082b16db8159c1be614",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-09-08.csv",
+        "sha256": "f455feb9b8dbfc9f03ea55c53c13c88e15184d2222095a164c6a84e98071ddd0",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-09-15.csv",
+        "sha256": "9043b8e381fac5e42c14f3511063d5e3537a891b52d8cff4cb55d2e03d2602da",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-09-22.csv",
+        "sha256": "b107af3ba96f708ab49c76214fd0690705495f9f7ca3bd2cdfa916ed4abc58e6",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-09-29.csv",
+        "sha256": "d55590388e69c8e030a6b4c0a6186b56ed9d85109d688bb8878b1db1bc125f7f",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-09-36.csv",
+        "sha256": "4706000cbe8dd97e4a4d173280368ee05d5a89dc8a6470d6c41aa0d7c9d35384",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-09-43.csv",
+        "sha256": "a5059bf738613c2dc0d2ee51e8ee5243c39d337cc7150abc99f24354847f5091",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-09-50.csv",
+        "sha256": "e8899b1b78a88bf637bcfdeab713f651e22001a989ec17024fb6c400765c1d6b",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-09-57.csv",
+        "sha256": "6d585bb845094e6602cad81b3616a4d9f6f1edfa5b054a3eda95173d4e73f03d",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-10-04.csv",
+        "sha256": "73f1738ea2a08ca4f8d52e2f40d10a9a86a5ec8e6109ddff5b8a20fff260962c",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-10-11.csv",
+        "sha256": "c4d41ed06eadb0bb3cdcb68a556a6946feee654476ec0f7070d44f2dbccce550",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-10-18.csv",
+        "sha256": "db4e6d37b1f4a02a426ba59a37a6567131c81b6d2a13accf8f84ed92cb23fbb9",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-10-25.csv",
+        "sha256": "4794e301c93506f77b590cc89456c1aa43d7fa20f9833f9dc66c4407c72be551",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-10-32.csv",
+        "sha256": "3a580c1e608e5b1c53a21bad6d58b72e66cb9e0a1280ecf3685b4460e59d114b",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-10-39.csv",
+        "sha256": "924609978b354e70fa5d3f3244b3162f193e783a1b00788aa097cc5695103d9a",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-10-46.csv",
+        "sha256": "fc8cdc299c921febeb456851af979b3659bf8a484d80bca21ee816052bf4e261",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-10-53.csv",
+        "sha256": "cbc7db0e82902be3f111552a21688abb39ec0c36a9d248cb6a3a19f164d94a5c",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-11-00.csv",
+        "sha256": "11085858c9463ad5e5e38837901840f74465e7f0c936097fc6060620193c459b",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-11-07.csv",
+        "sha256": "193e5b258501c7d8026ab57109e16c0d8e1936f81dbf3130ab4f731e0ae0bf80",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-11-14.csv",
+        "sha256": "5b26a50f0462baa23d355b121e4ad1ed61697dd99a0f6d8331f8b389288c31cc",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-11-21.csv",
+        "sha256": "b44d098c7eb6878b738920d7fd6613d0951cae212e4440605d31d160317d558b",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-11-28.csv",
+        "sha256": "ffdd129aa93223a5cc43fb0d9c207c9e41e167d73ea0ec57d8f141abd3a2365b",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-11-35.csv",
+        "sha256": "f8a0b0533cf860cc9f66c6b5672b866312598e412426808e4678d9d85b6a753a",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-11-42.csv",
+        "sha256": "28a0909d3d64bc1df19e1de759eaeb2f63304d660ee861b5e428719e13bb2483",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-11-49.csv",
+        "sha256": "85b666d94b5538b22e1669b3f2c61ec9ba4dd19b1d99e14fd5db9dc24e809992",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-11-56.csv",
+        "sha256": "312f7e18eb08458f50c1f31917fb569c7213fd66a9287eb767db1ea14adef4dc",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-12-03.csv",
+        "sha256": "079eb28fe99f8a4ce64b37e1cb200bacf731248cfea23dd44cc29b30e54d1df1",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-12-10.csv",
+        "sha256": "4dd5f189986ce46608a000b02bfb43e2c75c704c95df81e57314abc06322b15f",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-12-17.csv",
+        "sha256": "12ab115238bc04aa0ab52689bbc2706faa038fb80866ddc37bd4f66b819cced7",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-12-24.csv",
+        "sha256": "ea7bcb77e203dbdaa2ef585d633816682d6fb14ec648d59fa252b0227240883e",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-12-31.csv",
+        "sha256": "7e53c96cc1556790f61eb0a6d972757fefa22f9a44037ea0b158a1c78e55df92",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-12-38.csv",
+        "sha256": "4544b3d53d1acb491670c658a20390d197fdbb86a99b25c1819007a599c2a02d",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-12-45.csv",
+        "sha256": "7076d218483bdcf4e1a208c41b0c4e82986f5e8c54fbdba901ac9a30b31a79aa",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-12-52.csv",
+        "sha256": "1caec4a8a896d96b1329fb03284d908fb99fae527c5b5f9d81fb88a857de50d8",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-12-59.csv",
+        "sha256": "d2475085ecc1069e3131c237781549eb0042290c286358128dc03ca6ad7e9af8",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-13-06.csv",
+        "sha256": "e5487b9b85c41ea0788724f74144de3cd6bb9da78a4e864e6d916c2dbe1fa1b1",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-13-13.csv",
+        "sha256": "c1b971e624058d68f5479a0d6ba7e672e132ae3844a327da2ccdb3562b6e2ae7",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-13-20.csv",
+        "sha256": "830815be11667418463e5d22d8defa722158e91fe2667f62249247649533bd67",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-13-27.csv",
+        "sha256": "a1a3f530dd1d12f377ea17755b7bd7350bb0ed780168f2964d4d8f12205c5840",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-13-34.csv",
+        "sha256": "04ec64decdd0a5a5743f272b40fcff24e250c99a23ed9983f7f8d1326c16b9cd",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-13-41.csv",
+        "sha256": "06f907159a45d1d237c8f300280127dfe4db34826f51127dcaa7b5cb6ad357e0",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-13-48.csv",
+        "sha256": "a6b1ab78af25219c7dddc287e824adba407bcfce87c1b1fb3817675bccd8fedf",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-13-55.csv",
+        "sha256": "e033c716a94e362f250436c947b3abc8b4ee03a90ffabcfdfcc3ef62e60434df",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-14-02.csv",
+        "sha256": "2ba0b8722523a559c89bf37529369c7a501cdc9879b14b1011f6c8f2b17322fa",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-14-09.csv",
+        "sha256": "becdb421f2b472467d0fed65b67681640c647cf591161e688bb38b9d8d0f3d4e",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-14-16.csv",
+        "sha256": "dffef9a5a4731b2d6b3d72576dae290ba6fbe3a826717c21789ff32664e23617",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-14-23.csv",
+        "sha256": "f2b1cfa636cf03a8c0641c6b45bc97813cacde481758b3110e643261b325a2fa",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-14-30.csv",
+        "sha256": "70f93b169ae3c752eb0007d73b4c80af4ae6dad0544ebcb67846c9c1fa2e046c",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-14-37.csv",
+        "sha256": "74fde703947d9458a22770606005c290782b6ec172422ffddbd5b8a51cdbb4e7",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-14-44.csv",
+        "sha256": "f2839abce717c87465f32a8bc3c3697533d861a37298a91acc8683e3ca36157c",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-14-51.csv",
+        "sha256": "8f1b466ae1a22c74c19d9c59c32a04045540db2313e8190658b89c7b414762e6",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-14-58.csv",
+        "sha256": "367f355d85eb975fa7306f35de01933694c1d8f0d8c8c916f2ae3cc01b9e857f",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-15-05.csv",
+        "sha256": "01f252dd43b07afe95c64e6bea2ba58e539397f87ed6ecd25d7e9971f6f291c3",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-15-12.csv",
+        "sha256": "40911680ada78a356f359f21be76bbef263cbd7e121c91f312d8b05b4fd7cf9f",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-15-19.csv",
+        "sha256": "925e94a0d0122feed288547c1834c4d9b524ebaf5baa2688b0ffc4010ed93a93",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-15-26.csv",
+        "sha256": "4d55859e5d9cbc38171ec81a9b8804cbc5b9ef1a4966ef9f95e8d826ccf0138e",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-15-33.csv",
+        "sha256": "37f1f9da079f079328a8d56f29eb499ac43b49fd3bce197ecf8e90aadf9a4c67",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-15-40.csv",
+        "sha256": "ac99436a2c64c9d21a8867108ac32ce58047d6e968f1af35768011215e93d677",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-15-47.csv",
+        "sha256": "53e7827371a479355433301852704ccd521100cba03f0d424ddb7b31f0a45ff0",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-15-54.csv",
+        "sha256": "b801810d1538ceed438733d6eddf240963613f61d7da2d452da8fe040a82b983",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-16-01.csv",
+        "sha256": "ab7d70c9fe3a282d3c7bd71d0aaada480c4cf4abf3dfe678b757c8616e35fdb4",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-16-08.csv",
+        "sha256": "a0cc46c3c02c22a746454f73b8936f7414559e52481f8df8ee670b6340380c5f",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-16-15.csv",
+        "sha256": "64c4b573ced85e90e04dfe8cb71ace557df3fa9cb6bedbd4cd948270c9a6982d",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-16-22.csv",
+        "sha256": "47d599ce1730a8ebdcce127a23c00a8973aa2df86a29913b4e9e3024ac60cab4",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-16-29.csv",
+        "sha256": "225b9a798ec8d20b366ebd95bae313f152c860a0759a7ddea93f5e99b4efb388",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-16-36.csv",
+        "sha256": "ec0dc44ea0e8ca42f01163f08107f7cc7422fa223eea7f0cb0bc29a66afc697d",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-16-43.csv",
+        "sha256": "13581ed00a888718a56a91e8a6fc1e6249bbf54fd66b73817940625d70566bf1",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-16-50.csv",
+        "sha256": "8433488e4efa0d9da4aac6a5920b5d89010ca11fc8ffa6e181fad900d1906f30",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-16-57.csv",
+        "sha256": "d320344d70350d6a27b8bec410d7571e6101d8f23417283cd97cb81331fd26e7",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-17-04.csv",
+        "sha256": "11949a9e3d73016b914a4ae632578df0bb21da23232a3f3c0067035dcc3abdb2",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-17-11.csv",
+        "sha256": "8a2a44ea1bdf8225c6967b6379b30392f5b3e62f52f5ba7bc4b523653fd57d67",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-17-18.csv",
+        "sha256": "3c2ca8ef886c385467fbf3823919e3b0e219915e1e9f8bbd48e00cd2ac500e32",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-17-25.csv",
+        "sha256": "7019a5d8476dd4710cecb9f78f21ca4bf093f8ca49cbbc0b324cf1a662683adc",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-17-32.csv",
+        "sha256": "9687953de036c929f1e463f95e1cadddc326b043832e07d8cb3721e33a3b12ae",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-17-39.csv",
+        "sha256": "c82f58b9b25ce1a79ae1fa625e479f1391f04679af23c92ff08b66f444069d58",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-17-47.csv",
+        "sha256": "36bc5f6851f6a4d88add01cef511f3fdf24c29056d38875a1b02694f6b0f130d",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-17-53.csv",
+        "sha256": "473d2681381c4135abee91f9fc79f2c4b10a3d7e38b45f14d6ad06558a4e6e48",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-18-01.csv",
+        "sha256": "40106c7b2a868462a4da451bd067910aa02805f20448fee69a689ea52ba34a57",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-18-07.csv",
+        "sha256": "f93fa2a5b58b804defcca2055f0a7610800cbd584135d263cd1e1a31e3c54118",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-18-15.csv",
+        "sha256": "fd0c1f573a190ca6c95816c80e90730a88dcdc960badbc52e44e7450daf26d05",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-18-22.csv",
+        "sha256": "d61575669aadd918c5c9a54b25e95144d51a30d16708931ce70a45e2a582ed51",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-18-29.csv",
+        "sha256": "af37a202f1731c249077d60c024d27ecbf3c534894301e085d1a4a0d1278d711",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-18-36.csv",
+        "sha256": "09f6fce7a4fdb5a1287aff6718bdbc02a580eaea7adc05f7014c9686746032fb",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-18-43.csv",
+        "sha256": "cec63c4c9f13cb29e908d307626fe25c868f847f8d079b16e8f72431f37fe7a3",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-18-50.csv",
+        "sha256": "e0cc168d6e5bb1c3ac9b73648a1b93f3a7bcaa624537cb8ecb5041abe615c3c1",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-18-57.csv",
+        "sha256": "4be14c190a59e4493c9258e38d4d24caa4815e910c32c1ba7534638774b722bd",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-19-04.csv",
+        "sha256": "43b863c6d3837bf5416eb0ad4e627b91928574e3d4da27fa0acf28186eee2ef7",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-19-11.csv",
+        "sha256": "8a1766ec9491fc208f31cbe7978fafa1dec04fb39ba346cfc1b44a0f563d15e4",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-19-18.csv",
+        "sha256": "d079748a921d3ffc76d5552868f10648d7ccf624e8a2178062b2b6370583a37b",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-19-25.csv",
+        "sha256": "907868534c191201a1e321745d2a77d19b818839264f1259953ff1fb247ec143",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-19-32.csv",
+        "sha256": "fc5fc8606d037538ea94a0826de50cc54fafe2310cc29659a9e0dfd6b3b11aa4",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-19-39.csv",
+        "sha256": "f0f50fa72a9a1b807201b277dc902baaabf32469e8e5f8f0f48b4df6eb981c06",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-19-46.csv",
+        "sha256": "41574ea5c469dc7b89e4832f6c7e423273d49236d4d749b150d9cac223d12c81",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-19-53.csv",
+        "sha256": "8865967001811f88064bd0752db9eafe60532bedde4a197ee4d4a8abd909cd92",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-20-00.csv",
+        "sha256": "b695201c1d456592f13d081da32d0a8dbb6bb21cb5dc95b15c19632d2f21fdb5",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-20-07.csv",
+        "sha256": "748d7a170d920b73a8b41b3d610d46120d466ef1e7f46d7288d6b650c8140165",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-20-15.csv",
+        "sha256": "ee7dfc3fbf07ae7e2581dab2a3eb42311505258c6885e2376b0917c18e97c6e4",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-20-22.csv",
+        "sha256": "5d8b8d84c804153ddf2ddf38a557c6a9d5e123effb1bfbbba1f5729ee89269c7",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-20-29.csv",
+        "sha256": "6bd0c543a4d9ef09570d3ab39834cba4d9d803ab806defeeeffd22c9421b50d3",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-20-36.csv",
+        "sha256": "eb3b3233eaf13e1703bd2ea0057a56348b6596343e5bc6b12441e7bd8d37b000",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-20-43.csv",
+        "sha256": "d995a077767e0adb29be91036e0e4361645d5acc4b06ecd4068705d1bafc99c3",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-20-50.csv",
+        "sha256": "e874e68c423bc51299d8b98d544a2cdeefc6ea2ed68a4639877f8a3c82670b81",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-20-57.csv",
+        "sha256": "76c3326d9cfd6f486e8a8df335d0769ce7035c13dfe2be69043d2cffb1e2cf17",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-21-04.csv",
+        "sha256": "8ec8f349365e13fd81021eb8c8d7df9d3fa9774089b7430c96f78ad01517bb3f",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-21-11.csv",
+        "sha256": "514a92fe026652d2c6caaa25888375552338e69d170f544e5ec1e24c57d0bcff",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-21-54.csv",
+        "sha256": "a65ab4ce3b16d3edc8e1100010c96ae15990337a068cc0523e73cf2276dbeb02",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-22-01.csv",
+        "sha256": "f002ea27563052663c4d89aa986b03b82a181e1424af4a376a9d006ded491407",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-22-08.csv",
+        "sha256": "713c4867bd6894eac647acae6af5015597cae9f9002c7d5737d16554cfdd3a21",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-22-16.csv",
+        "sha256": "264a19157bac55aea5b5367b8cf55f7bf4c0bf229401cc5472b1b813ff052ab1",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-22-22.csv",
+        "sha256": "c3f1ce817b3d11d0d6ece95b5f65009234b34e09bb014e4857a381f54c424250",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-22-29.csv",
+        "sha256": "8b5413ec42e731f651205edca9172cbd6fa921963ceb87eb3220a546290bc5ee",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-22-37.csv",
+        "sha256": "7516d616e4b563f6000d23aba31967eb9df606ed0ac605c747b6e88860cb95c7",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-22-43.csv",
+        "sha256": "35d95646fe2eaf8b1c999209622fb4cb063e833e84cccc8820e2cfe0475226b5",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-22-50.csv",
+        "sha256": "d30c3f6931e4a69b73eceee5edbcddcb7c65f26841b671b43674fee5a981dac8",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-22-58.csv",
+        "sha256": "43f36bb4c3ce2382f70f4cbc8a74de0e981c178083b0033f012b6f440392f043",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-23-05.csv",
+        "sha256": "e2dd35197f6c482488e41ac45a71f6da9fd4b25d99ebc0b77254259f10ec38a1",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-23-12.csv",
+        "sha256": "14027aa532f1bb533ea24e08e643fcfa97c229c3790f188d3bdebbdc5d0086ba",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-23-19.csv",
+        "sha256": "3ebdeddb2fb9f0c99bb9a6a0ba3d16653b03899500233917e77cd131fd0e2c01",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-23-26.csv",
+        "sha256": "ba5ac15a3506eef4796acba48b40beda4d9c8d3f81b34cdca0768b4c58ed3e5a",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-23-33.csv",
+        "sha256": "aa3852b3df1d46d8fef5e22448cc4de83663631c4a89df699ecc9169620f2182",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-23-40.csv",
+        "sha256": "0b83da7994bfc9e8d00be61b56fe8ad0acce71f9288bad480e4af1184ef2900c",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-23-47.csv",
+        "sha256": "0354e97c8f744f8ec543e4c583217462a11998264d5a64386cfbf72b07e80941",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-23-54.csv",
+        "sha256": "6757d814dd417fbd3be8bd54db657d59438a97571fb393aa6eaea096de740146",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-24-18.csv",
+        "sha256": "e65b80ee32c779495f153658d2e3b9ecf0a0243a7b6dae61ae0b349c8c014aef",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-24-25.csv",
+        "sha256": "7ba4a72d39794b0b6a988683514bfa9d324f7f65bf06f892d34c18d71e5147b9",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-24-32.csv",
+        "sha256": "8357f6266117c7475b77ad407021a3e3f049d95e15820acfa10746c80cdd32fc",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-24-39.csv",
+        "sha256": "686ac46be8d172a7b8b78b12d4499e3eb862f74fb9e36fa8ba82d92be297ce54",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-24-46.csv",
+        "sha256": "e1be25fc24290602a8b13992009e66a5759cded4d06ce5387ea39abfff06209c",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-24-53.csv",
+        "sha256": "7ea2062f065e2983cef2c29a2fc0349d6df7b95f128ee67578228069e55c4f7d",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-25-00.csv",
+        "sha256": "028a568c67cd85d89f5dec80ba3dcca26fe211a41ba7de2993b997b0d05cd655",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-25-07.csv",
+        "sha256": "5cf8f6535276b097a00adadfa9465ba69ed7235b24dc59bb5d8d587137abb074",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-25-14.csv",
+        "sha256": "8649e24eda1c4e6466042a33f8bcfb7d4265bbb1dc476416b6b2e985faa86ee5",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-25-21.csv",
+        "sha256": "a7636adb582da8935fad287feaa45fdab0921158923e02628c1dc55b4ad4fe8b",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-25-28.csv",
+        "sha256": "a9fb88e826024e19fa7183bfbe9ff3c011555685a7c4ca99770bc9abb6fbb7be",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-25-36.csv",
+        "sha256": "bda8e0e73e946fc959213ef1c89e6d7d1fa677a2d45ddd98f063a6532c8cec1e",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-25-43.csv",
+        "sha256": "afa2823e6fca79a96ec44a7c7e0abe07dad8e701e3ac73d0225766eed905e9b8",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-25-50.csv",
+        "sha256": "5ceda83fdae25182535958a684fd4d4aa64c2e3694f927f4e089a29ead900c9c",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-26-13.csv",
+        "sha256": "0b1c1db47b958af44b87c93a7d7d63513fbd7e3a5578c134b58b546028718cbd",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-26-20.csv",
+        "sha256": "41cad25a315101f10c0df7a8a05537deab750a19ad413228f02f82de9408efdb",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-26-28.csv",
+        "sha256": "2ccd90af3de46f19c0f57ae0887f81615318760aee92a2159c182dbf07651e55",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-26-34.csv",
+        "sha256": "642cfffe4c7864f3a7563112246c7a2bf71bb0574ac65e1f6a4c8b38fee04155",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-26-42.csv",
+        "sha256": "cf53152073fa147475862c453c8d4831d9c9485f0afe4a3310e03ba15bd951e3",
+        "size_bytes": 130
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-26-49.csv",
+        "sha256": "ce5474c0086b5014ec4981baae379ea8be4d1786ca2d9cf3387d52bc0d544014",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-26-56.csv",
+        "sha256": "c3daa1fb9438a2c094c906340f8e293a458c31bbe54505a44078f8c5e1914f9a",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-27-03.csv",
+        "sha256": "50ef53aa2da7507b92aba5d86c3356e6a2a10e2a00c7e067ba66ec8c0cee69ba",
+        "size_bytes": 130
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-27-10.csv",
+        "sha256": "b5a60224e36bbb7dc17c9d7f660e5d21a95c08d5a25327f373337580c8fe9f75",
+        "size_bytes": 130
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-27-17.csv",
+        "sha256": "5400407ace763355f52385818a00cc24c1c21692acc9f777ed7a8527cf9d56b1",
+        "size_bytes": 130
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-27-24.csv",
+        "sha256": "9e1f445f727898db47410e2c34c196d23c3ece237d300a1cc1fb19fbfc205c00",
+        "size_bytes": 130
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-27-31.csv",
+        "sha256": "afc7bdc833a5da88455e304e26f9089ffcf990cc6b00ef24a0f3a89b0b9d5a6a",
+        "size_bytes": 130
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-27-38.csv",
+        "sha256": "be3fe7710138673992edd468fb6619c085402518e3996e81ae95c3ab3d33a32e",
+        "size_bytes": 130
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-27-45.csv",
+        "sha256": "7b0fe59724487940dedead92a7b37619f27ccb8d6f7dd2e4fa9b1d2d99f7a886",
+        "size_bytes": 130
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-27-52.csv",
+        "sha256": "71f08d3a99c3526f48f898548df93d952221ec78a8ddad8890d27ac4db9b8849",
+        "size_bytes": 130
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-27-59.csv",
+        "sha256": "e63d576e747795e3902490c62d6cd44f3d8ccaab2dec42f08295f7d794e61cd3",
+        "size_bytes": 130
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-28-06.csv",
+        "sha256": "71e2fd547093f8f5edbb58dee9931694b3a13ea3054e6ff8b50d9cdd137c33c3",
+        "size_bytes": 130
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-28-14.csv",
+        "sha256": "3848246f4fb614600ca97a5ead157b8401396133e91b9a57f41c75f6c6230372",
+        "size_bytes": 130
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-28-20.csv",
+        "sha256": "da27f21910b45de7dbc1f5ad4011d4893991190beed8454b576f829a6bcb9834",
+        "size_bytes": 130
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-28-27.csv",
+        "sha256": "46a4ab751ef4f6c06e0e1a2523e2efd21ab890db8162cdeedc31bb1aa3857cf9",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-28-35.csv",
+        "sha256": "756dc6c189dab3073a4442298f635f9a513ebf2d290f63c8f121516b6706d8a8",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-28-42.csv",
+        "sha256": "09ceb6d35d69ad345255a34d093a55a449b8bbfa136e3aaa8b78c84629b520ee",
+        "size_bytes": 130
+      },
+      {
+        "path": "data/campr3/raw/CAMP_2019-01-09 07-28-49.csv",
+        "sha256": "6a0ded3be6df6304f1d14060eb2b73fd6dcb5e415552b035e9b1c6424e182649",
+        "size_bytes": 129
+      },
+      {
+        "path": "data/campr3/raw/rename.sh",
+        "sha256": "1e2bffefa3f8746fbe8bc347340945286a85eb51b3be0db5424c3aaf2f59c347",
+        "size_bytes": 114
+      },
+      {
+        "path": "data/dbaasp/raw.json",
+        "sha256": "6182395bf36710128b3c836cda9ae69c1c8bae25343034523cb70b95cf3f2521",
+        "size_bytes": 37782857
+      },
+      {
+        "path": "data/dbaasp/targets_mapping.json",
+        "sha256": "a7ae2d237f3edb72b9f644097aeeaad1f2487e14847f3f6134d23daeb47865ca",
+        "size_bytes": 295
+      },
+      {
+        "path": "data/uniprot/README.md",
+        "sha256": "675c60b7c8a9726a896c2dbc09e4197748c6c1f598a19cd4d3dfaaf2ccd5ae89",
+        "size_bytes": 404
+      },
+      {
+        "path": "data/uniprot/uniprot.tab",
+        "sha256": "3257638b64df58ec4647a4b3b470490840952cdd164c3aff9d42ae7cc65fcdee",
+        "size_bytes": 47128557
+      },
+      {
+        "path": "models/amp_gan_2020-07-08_24/gan_1606/saved_model.pb",
+        "sha256": "a5e7cafa16c33010bd0fe22747c89f05d74f8781deac9eeeb91c6e4c371177e2",
+        "size_bytes": 1344320
+      },
+      {
+        "path": "models/amp_gan_2020-07-08_24/gan_1606/variables/variables.data-00000-of-00002",
+        "sha256": "df6b16408b05f21a6fdb1d675c12562257d619382d08af2fad391d7ed847084a",
+        "size_bytes": 53347
+      },
+      {
+        "path": "models/amp_gan_2020-07-08_24/gan_1606/variables/variables.data-00001-of-00002",
+        "sha256": "012fc17624f1fe6b0441622bebc71ee968e4d7db80bb7910e22af93b49d69890",
+        "size_bytes": 12982248
+      },
+      {
+        "path": "models/amp_gan_2020-07-08_24/gan_1606/variables/variables.index",
+        "sha256": "7936298d0a7ac1802bbedc726d29e27911c3aa60778ac97395a24d5f82456902",
+        "size_bytes": 12646
+      },
+      {
+        "path": "results/losses_2020-07-08_24.png",
+        "sha256": "66e0f678a007d1523938fc8724f0f718a3ec8825c5fd1d3743bee73b3ebf0c3d",
+        "size_bytes": 62487
+      },
+      {
+        "path": "scripts/consolidate_campr3_data.py",
+        "sha256": "694f7286a87e1bbde86b564dd192a354235a4561ac133928ffacbf8f5c2c149b",
+        "size_bytes": 657
+      },
+      {
+        "path": "scripts/csv_to_fasta.py",
+        "sha256": "79c1faee48dccfe3acb7dea2cd175fd50bddde4e04500fa828ca3a0c9aa6a4a1",
+        "size_bytes": 1111
+      },
+      {
+        "path": "scripts/curate_campr3_data.py",
+        "sha256": "c07c9bd88a4a4d56d32ff6a8e3a2ad29d9605254987e997665a0e2c20d3e822c",
+        "size_bytes": 5082
+      },
+      {
+        "path": "scripts/get_dbaasp_data.sh",
+        "sha256": "6d25091f5ef67b89ae2af1d80053a7d955f89865c9146a431f9bf461753a85c4",
+        "size_bytes": 456
+      },
+      {
+        "path": "scripts/make_mnist_video.sh",
+        "sha256": "f44fa421467bfa17e9726035dca771eb9c56a6ab7bdfce16f8727555120fd16b",
+        "size_bytes": 259
+      },
+      {
+        "path": "scripts/submit.sh",
+        "sha256": "47e138f1f117035df70f3753528ccd2399ebd41fb41b87e317d3c0d93c0422b3",
+        "size_bytes": 567
+      },
+      {
+        "path": "scripts/training_stability.sh",
+        "sha256": "d6ef8fc8eaa7f0ca8661f481369f0c8a0da7b356e6ed2be75d0f265ebe538dbe",
+        "size_bytes": 164
+      }
+    ],
+    "files_sha256": "1a2ac60bdc268f9987168b7995d331180aa14bbb6d176a63cb3d34ac952e9b60",
+    "manifest_sha256": "927f47dcb7a21da3be19aff348f38b7d7c8e3fe9a541564b3a094ce6ca2ae670",
+    "revision": "1009476bdb988707ff260def863d694549dc18b0",
+    "uri": "https://gitlab.com/vail-uvm/amp-gan"
+  },
+  "unsafe_deserialization_enabled": false
+}

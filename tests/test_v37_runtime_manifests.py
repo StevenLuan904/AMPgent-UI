@@ -22,15 +22,39 @@ SHA_E = "e" * 64
 SHA_F = "f" * 64
 
 
+def _source_release(generator_id: str) -> dict[str, object]:
+    files = [{"path": "source.py", "size_bytes": 10, "sha256": SHA_D}]
+    identity: dict[str, object] = {
+        "uri": "provider://source",
+        "revision": f"{generator_id}-source-revision",
+        "files_sha256": sha256_json(files),
+        "files": files,
+    }
+    return {**identity, "manifest_sha256": sha256_json(identity)}
+
+
+def _model_release(generator_id: str) -> dict[str, object]:
+    files = [{"path": "weights.bin", "size_bytes": 20, "sha256": SHA_E}]
+    identity: dict[str, object] = {
+        "uri": "provider://model",
+        "revision": f"{generator_id}-model-revision",
+        "files_sha256": sha256_json(files),
+        "files": files,
+    }
+    return {**identity, "manifest_sha256": sha256_json(identity)}
+
+
 def _expectation(generator_id: str) -> V37GeneratorRuntimeExpectation:
+    source = _source_release(generator_id)
+    model = _model_release(generator_id)
     return V37GeneratorRuntimeExpectation(
         generator_id=generator_id,
         adapter_sha256=SHA_A,
         adapter_version=f"{generator_id}-adapter-v1",
         source_revision=f"{generator_id}-source-revision",
-        source_manifest_sha256=SHA_B,
+        source_manifest_sha256=str(source["manifest_sha256"]),
         model_revision=f"{generator_id}-model-revision",
-        model_manifest_sha256=SHA_C,
+        model_manifest_sha256=str(model["manifest_sha256"]),
         request_contract_sha256=sha256_json(
             {"generator_id": generator_id, "raw_proposal_budget": 1000}
         ),
@@ -39,8 +63,6 @@ def _expectation(generator_id: str) -> V37GeneratorRuntimeExpectation:
 
 def _manifest(generator_id: str) -> dict[str, object]:
     request_contract = {"generator_id": generator_id, "raw_proposal_budget": 1000}
-    source_files = [{"path": "source.py", "size_bytes": 10, "sha256": SHA_D}]
-    model_files = [{"path": "weights.bin", "size_bytes": 20, "sha256": SHA_E}]
     manifest: dict[str, object] = {
         "schema_version": V37_RUNTIME_MANIFEST_SCHEMA,
         "generator_id": generator_id,
@@ -50,26 +72,14 @@ def _manifest(generator_id: str) -> dict[str, object]:
             "adapter_version": f"{generator_id}-adapter-v1",
         },
         "runtime": {
-            "python_executable": "/opt/runtime/bin/python",
+            "python_executable": "var/runtime/bin/python",
             "python_executable_sha256": SHA_D,
             "python_version": "3.11.9",
             "environment_sha256": SHA_E,
             "packages_lock_sha256": SHA_F,
         },
-        "source_release": {
-            "uri": "provider://source",
-            "revision": f"{generator_id}-source-revision",
-            "manifest_sha256": SHA_B,
-            "files_sha256": sha256_json(source_files),
-            "files": source_files,
-        },
-        "model_release": {
-            "uri": "provider://model",
-            "revision": f"{generator_id}-model-revision",
-            "manifest_sha256": SHA_C,
-            "files_sha256": sha256_json(model_files),
-            "files": model_files,
-        },
+        "source_release": _source_release(generator_id),
+        "model_release": _model_release(generator_id),
         "request_contract": request_contract,
         "request_contract_sha256": sha256_json(request_contract),
         "internal_score_filtering_enabled": False,
