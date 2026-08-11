@@ -39,6 +39,8 @@ def _expectation(generator_id: str) -> V37GeneratorRuntimeExpectation:
 
 def _manifest(generator_id: str) -> dict[str, object]:
     request_contract = {"generator_id": generator_id, "raw_proposal_budget": 1000}
+    source_files = [{"path": "source.py", "size_bytes": 10, "sha256": SHA_D}]
+    model_files = [{"path": "weights.bin", "size_bytes": 20, "sha256": SHA_E}]
     manifest: dict[str, object] = {
         "schema_version": V37_RUNTIME_MANIFEST_SCHEMA,
         "generator_id": generator_id,
@@ -58,13 +60,15 @@ def _manifest(generator_id: str) -> dict[str, object]:
             "uri": "provider://source",
             "revision": f"{generator_id}-source-revision",
             "manifest_sha256": SHA_B,
-            "files": [{"path": "source.py", "size_bytes": 10, "sha256": SHA_D}],
+            "files_sha256": sha256_json(source_files),
+            "files": source_files,
         },
         "model_release": {
             "uri": "provider://model",
             "revision": f"{generator_id}-model-revision",
             "manifest_sha256": SHA_C,
-            "files": [{"path": "weights.bin", "size_bytes": 20, "sha256": SHA_E}],
+            "files_sha256": sha256_json(model_files),
+            "files": model_files,
         },
         "request_contract": request_contract,
         "request_contract_sha256": sha256_json(request_contract),
@@ -139,6 +143,32 @@ def test_v37_runtime_manifest_rejects_unsorted_or_duplicate_file_identity() -> N
     ]
     _rehash(manifest)
     with pytest.raises(ValueError, match="unique and sorted"):
+        verify_v37_generator_runtime_manifest(
+            manifest, expectation=_expectation("hydramp")
+        )
+
+
+@pytest.mark.parametrize("path", ["../source.py", "dir/../source.py", "dir\\source.py"])
+def test_v37_runtime_manifest_rejects_noncanonical_relative_paths(path: str) -> None:
+    manifest = _manifest("hydramp")
+    source = manifest["source_release"]
+    assert isinstance(source, dict)
+    source["files"] = [{"path": path, "size_bytes": 1, "sha256": SHA_D}]
+    source["files_sha256"] = sha256_json(source["files"])
+    _rehash(manifest)
+    with pytest.raises(ValueError, match="path is not relative"):
+        verify_v37_generator_runtime_manifest(
+            manifest, expectation=_expectation("hydramp")
+        )
+
+
+def test_v37_runtime_manifest_rejects_file_list_hash_drift() -> None:
+    manifest = _manifest("hydramp")
+    source = manifest["source_release"]
+    assert isinstance(source, dict)
+    source["files_sha256"] = "0" * 64
+    _rehash(manifest)
+    with pytest.raises(ValueError, match="source file-list hash drifted"):
         verify_v37_generator_runtime_manifest(
             manifest, expectation=_expectation("hydramp")
         )

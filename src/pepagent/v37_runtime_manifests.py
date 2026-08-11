@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from pathlib import PurePosixPath
 from typing import Any
 
 from pepagent.provenance.hashing import sha256_json
@@ -59,7 +60,14 @@ def _verify_file_manifest(value: object, *, label: str) -> list[dict[str, Any]]:
             label=f"{label} entry",
         )
         path = str(item["path"])
-        if not path or path.startswith(("/", "\\")) or ".." in path.split("/"):
+        parsed_path = PurePosixPath(path)
+        if (
+            not path
+            or "\\" in path
+            or parsed_path.is_absolute()
+            or path != parsed_path.as_posix()
+            or any(part in {".", ".."} for part in parsed_path.parts)
+        ):
             raise ValueError(f"v37 runtime manifest {label} path is not relative")
         size_bytes = int(item["size_bytes"])
         if size_bytes < 1:
@@ -157,7 +165,7 @@ def verify_v37_generator_runtime_manifest(
 
     _require_exact_keys(
         source,
-        required={"uri", "revision", "manifest_sha256", "files"},
+        required={"uri", "revision", "manifest_sha256", "files_sha256", "files"},
         label="source release",
     )
     if not str(source["uri"]):
@@ -170,10 +178,14 @@ def verify_v37_generator_runtime_manifest(
     ):
         raise ValueError("v37 runtime manifest source manifest drifted")
     source_files = _verify_file_manifest(source["files"], label="source files")
+    if _require_sha256(source["files_sha256"], "source files SHA-256") != sha256_json(
+        source_files
+    ):
+        raise ValueError("v37 runtime manifest source file-list hash drifted")
 
     _require_exact_keys(
         model,
-        required={"uri", "revision", "manifest_sha256", "files"},
+        required={"uri", "revision", "manifest_sha256", "files_sha256", "files"},
         label="model release",
     )
     if not str(model["uri"]):
@@ -186,6 +198,10 @@ def verify_v37_generator_runtime_manifest(
     ):
         raise ValueError("v37 runtime manifest model manifest drifted")
     model_files = _verify_file_manifest(model["files"], label="model files")
+    if _require_sha256(model["files_sha256"], "model files SHA-256") != sha256_json(
+        model_files
+    ):
+        raise ValueError("v37 runtime manifest model file-list hash drifted")
 
     request_contract_sha256 = _require_sha256(
         manifest["request_contract_sha256"], "request contract SHA-256"
