@@ -437,3 +437,23 @@ ToolCall dependency 纳入对应 run。只保存在外部工具数据库、Markd
 长期目标首次冻结 commit 为 `54e712b38298b1922184ef488cbdc2cbd062c788`；内容归档为
 `var/archives/ampgent-long-horizon-goals-54e712b.zip`，SHA-256
 `b6b7947a06d7f60d1dc6e2fd2c26f96addf5d95e4d09ed32fd75391484524dca`。
+
+## 17. v33 正电性与搜索充分性预注册草案（2026-08-11 append-only update）
+
+v32 acceptance 仅授权编写预注册。当前已建立未授权草案
+`config/benchmarks/amp_charge_search_sufficiency_v33.yaml`，叙事说明为
+`docs/ampgent-v33-charge-search-preregistration.zh-CN.md`。草案用锁定 v32 的 300 条数据库记录只读
+校准 charge-density 分层，不读取候选身份作 parent 选择，也不回写 v32。
+
+目标规则已在 2026-08-11 审查后纠正：v32 自生成电荷分布只作 generator coverage diagnostic，不再
+定义 v33 生物学目标。v33 现由原始实验支持为七个同 scaffold 臂：未编辑 baseline；在同一位置分别
+引入 1 个 K、1 个 R 及其电荷保持对照；在同一组位置分别引入 2 个 K、2 个 R 及其对照。主干预只从
+Q/N/S/T 编辑，避免把 D/E 去负电与加正电混淆。+8 净电荷与 0.50 电荷密度仅为 operational guard，
+不是普适最佳阈值。Pareto 充分性使用 3 个开发 seed、2 个确认 seed 和每 seed 25/50/100/150/200 固定 checkpoint；
+必须跑完整预算，禁止 adaptive early stop、加权总分、单一 hypervolume 完成声明或 global optimum 声称。
+
+当前状态：`preregistered_draft_not_authorized`。没有 v33 run/workflow，也不得生成或提交。文献驱动的
+deterministic K/R dose block、同位置 control、checkpoint archive、累计新 ε-cell 与 dominance witness
+已实现并有契约测试。唯一下一步是实现 PostgreSQL persistence activity 与 object-store-only replay
+verifier；随后 commit/push/archive 并冻结 executable revision，才可重新评估 formal-run 授权。v32
+三层 run 链保持不可变。

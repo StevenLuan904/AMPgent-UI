@@ -69,7 +69,11 @@ challenger、独立评价端点、预先停止条件和数据库可重放证据�
 
 ### Q1：显式正电性怎样进入设计，而不是事后筛选？
 
-当前判断：未解决。v32 的 `net_charge_ph7_4` 是 `observe_only`。
+当前判断：`in_progress`。v32 的 `net_charge_ph7_4` 是 `observe_only`；v33 已形成未授权预注册草案，
+精确合同为 `config/benchmarks/amp_charge_search_sufficiency_v33.yaml`。2026-08-11 的审查已纠正一项
+目标设定错误：v32 自生成电荷分布只能诊断生成器覆盖，不能定义下一轮生物学目标。v33 现改为由
+原始电荷梯度、K/R 替换和 charge-pattern 实验支持的同 scaffold 相对干预：1/2 个 K 或 R、同位置
+同编辑数 control；绝对净电荷和电荷密度只作描述与 operational guard。
 
 要回答的问题：
 
@@ -78,13 +82,15 @@ challenger、独立评价端点、预先停止条件和数据库可重放证据�
 - 条件生成、受约束突变和生成后拒绝采样，哪一种在同预算下产生更多有效新颖候选？
 - 怎样构造“只改变电荷轴”的匹配反事实对，避免把电荷效果与疏水性、长度或 scaffold 混淆？
 
-建议版本：v33。先预注册开发区间与风险护栏，再生成；正电不定义为越高越好。至少保留
-charge-up、charge-neutral matched control、hydropathy-matched control 三类配对，并检查结构与软风险
-是否发生方向性恶化。
+建议版本：v33。先预注册干预剂量与风险护栏，再生成；正电不定义为越高越好。当前主干预只用
+Q/N/S/T→K/R，避免把 D/E 去负电与加正电混淆。每个剂量共享 K/R 的编辑位置，并保留同位置
+charge-neutral/hydropathy-near control；检查膜作用、AMP/MIC、软风险和结构是否发生方向性变化。
 
 ### Q2：当前 Pareto 搜索是否已经接近可达最优？
 
-当前判断：没有证据支持。v32 只证明冻结样本内的非支配组合，不能证明搜索收敛。
+当前判断：`in_progress`。v32 只证明冻结样本内的非支配组合，不能证明搜索收敛。v33 已冻结
+25/50/100/150/200 的全预算 checkpoint、family-local ε-cell、archive turnover 和独立确认 seed
+判据；尚未执行，因此没有新的饱和结论。
 
 要回答的问题：
 
@@ -155,6 +161,11 @@ artifact SHA 和 Agent 决策边全部进入主证据图；只存在外部工具
 | v34：知识/视觉干预 | knowledge card × PepShot 2×2 同预算消融 | 至少一个预注册实用端点改善，且成本与失败也完整报告 |
 | v35：多靶点迁移 | 资格审计后的 3–5 靶点面板与对照 | 区分通用、靶点特异和失败策略；不能只挑成功靶点 |
 | v36+：持续 harness evolution | champion/challenger 晋级器与策略谱系 | 离线 replay、shadow、前瞻对照三关通过；可一键回滚和完整复原 |
+
+v33 当前叙事预注册见 `docs/ampgent-v33-charge-search-preregistration.zh-CN.md`。其状态为
+`draft_not_authorized_for_execution`；确定性 K/R dose block 与逐 checkpoint archive 已实现并有测试，
+下一工程任务是 PostgreSQL persistence activity 和 database+object-store-only replay verifier，而不是
+提交 formal run。
 
 版本号是当前规划，不是正式 run 授权。任何生成、阈值、候选选择或执行必须先有独立冻结 config、
 提交/push、服务与 worker 门禁、唯一 run 检查。长期路线允许被新证据修订，但修订必须追加理由，不能

@@ -1,0 +1,279 @@
+benchmark_id: amp_charge_search_sufficiency_v33
+version: v33.0.0-preregistration-draft
+execution_status: preregistered_draft_not_authorized
+track: cationic_counterfactual_and_search_sufficiency
+target_spec_path: ../experiments/acea_generator_structure_confirmation_v31b.yaml
+
+parent_evidence:
+  v32_run_id: d695853e-cb94-4608-ad71-e4d7c4df1e85
+  v32_portfolio_sha256: d50b0b77e8e04f86f6b8d48fa3bc24f9d96a43aa9016a315f4004cca0db6d0e3
+  v32_database_replay_sha256: 4c3eef0a74f6db34503d605154c5d2ea7aa5035cc706c1d33d7001b363315634
+  v32_manifest_sha256: 5b29bcf0dd0de3d02b27ef4ecafb1ec30aa27e7cec4016b1b11b18dbcdfc9b69
+  permitted_use: generator_coverage_diagnostic_and_frozen_baseline_only
+  forbidden_use:
+    - candidate_identity_selection
+    - parent_sequence_selection
+    - threshold_tuning_after_v33_outputs
+    - v32_backwrite
+  coverage_diagnostic_not_biological_target:
+    candidate_count: 300
+    charge_density_definition: net_charge_ph7_4 / sequence_length
+    charge_density_quantiles:
+      minimum: -0.000714
+      p10: 0.117981
+      p25: 0.185392
+      median: 0.293382
+      p75: 0.369365
+      p90: 0.473000
+      maximum: 0.705176
+
+scientific_questions:
+  - Do one- and two-residue K/R interventions improve membrane and AMP/MIC soft evidence within matched scaffolds without making all gains depend on higher soft risk?
+  - Do lysine and arginine produce different activity-risk tradeoffs at identical positions and edit dose?
+  - Is the Pareto archive empirically saturated within the frozen generator, metrics, and 200-valid-sequence-per-seed budget?
+  - Are observed charge effects stable in independent confirmation seeds and under leave-one-soft-model-out analysis?
+
+generator:
+  generator_id: amp_designer
+  source_revision: b554b1ac1507040d9d50356e037098e652ce4719
+  adapter_version: amp-designer-v25-raw-topk10-batch100-v1
+  weights_sha256: 47944ff42f7ea6a448340d44c2027329833205dd658ec4777e77777bdab1adc9
+  config_sha256: e8f1bed7607065b7a11e5f338a5a5e618947ae78ee0bc0314689cf9801d7d62a
+  environment_manifest_sha256: 68407982a09f66b4777bc30d8eb0ca276a4cd9473cce750a9f4d44464dd75127
+  development_seeds: [20261201, 20261202, 20261203]
+  confirmation_seeds: [20261211, 20261212]
+  raw_proposal_budget_per_seed: 1000
+  valid_stream_limit_per_seed: 200
+  valid_stream_checkpoints: [25, 50, 100, 150, 200]
+  minimum_length: 10
+  maximum_length: 25
+  standard_amino_acids_only: true
+  within_seed_uniqueness: true
+  cross_seed_duplicate_policy: one_candidate_row_all_source_occurrences_preserved
+  missing_policy: retain_shortfall_no_refill
+
+counterfactual_parent_cohort:
+  selection_rule: raw_order_first_reachable_valid_unique
+  maximum_parents_per_seed: 200
+  minimum_editable_positions: 2
+  all_charge_dose_identity_arms_must_be_reachable: true
+  maximum_identical_residue_run: 4
+  forbidden_selection_inputs:
+    - AMP_or_MIC_score
+    - toxicity_or_hemolysis_score
+    - PepMLM
+    - structural_score
+    - Rosetta_score
+
+charge_definition:
+  ph: 7.4
+  c_terminal_amidated: false
+  primary_design_variable: introduced_cationic_residue_count
+  observed_variables: [net_charge_ph7_4, charge_density_ph7_4, formal_charge_delta_from_parent]
+  histidine_policy: observe_not_introduce
+  intervention_doses:
+    one_positive_residue: {edit_count: 1, expected_formal_charge_delta: 1}
+    two_positive_residues: {edit_count: 2, expected_formal_charge_delta: 2}
+  introduced_residue_identities: [K, R]
+  operational_guards_not_biological_targets:
+    maximum_net_charge_ph7_4: 8.0
+    maximum_charge_density_ph7_4: 0.50
+  interpretation: literature motivates controlled within-scaffold charge perturbations, not a universal absolute optimum; v32 output distribution is not used to set a biological target
+
+literature_evidence_basis:
+  target_rule: relative_matched_intervention_not_absolute_v32_derived_interval
+  retrieved_on: 2026-08-11
+  primary_studies:
+    - {pmid: 18098173, pmcid: PMC2761230, doi: 10.1002/bip.20911, source_uri: https://pmc.ncbi.nlm.nih.gov/articles/PMC2761230/, role: V13K_charge_series_activity_and_hemolysis_threshold_is_scaffold_specific}
+    - {pmid: 23982951, doi: 10.1002/bip.22399, source_uri: https://pubmed.ncbi.nlm.nih.gov/23982951/, role: charge_number_and_position_do_not_alone_explain_activity}
+    - {doi: 10.1021/acs.jmedchem.9b00657, source_uri: https://doi.org/10.1021/acs.jmedchem.9b00657, role: positive_charge_patterning_changes_activity_toxicity_and_stability}
+    - {pmid: 27046192, source_uri: https://pubmed.ncbi.nlm.nih.gov/27046192/, role: lysine_vs_arginine_effect_is_sequence_context_dependent}
+    - {pmid: 42276501, source_uri: https://pubmed.ncbi.nlm.nih.gov/42276501/, role: newer_tryptophan_rich_series_finds_opposite_K_vs_R_direction}
+    - {pmcid: PMC6761801, source_uri: https://pmc.ncbi.nlm.nih.gov/articles/PMC6761801/, role: polyarginine_charge_alone_is_not_sufficient_for_antimicrobial_activity}
+  forbidden_inference: no_single_study_or_generated_distribution_defines_a_universal_charge_or_charge_density_optimum
+
+edit_contract:
+  editable_source_residues: [Q, N, S, T]
+  acidic_residue_policy: observe_only_in_primary_v33_to_avoid_conflating_anion_removal_with_cation_addition
+  introduced_positive_residues: [K, R]
+  forbidden_terminal_positions: true
+  maximum_edit_count: 2
+  maximum_edit_fraction: 0.20
+  maximum_new_adjacent_kr_run: 3
+  maximum_identical_residue_run: 4
+  position_selection_is_independent_of_K_vs_R_identity: true
+  position_lexicographic_objective:
+    - minimum_maximum_absolute_hydrophobic_moment_change_across_K_and_R
+    - minimum_maximum_absolute_eisenberg_hydropathy_change_across_K_and_R
+    - minimum_maximum_resulting_adjacent_kr_run_across_K_and_R
+    - earliest_position_tuple
+  charge_preserving_control_mapping: {Q: N, N: Q, S: T, T: S}
+  control_contract:
+    - use_exact_same_positions_as_corresponding_charge_arm
+    - use_exact_same_edit_count_as_corresponding_charge_arm
+    - preserve_formal_sidechain_charge_at_each_edited_position
+    - record_descriptor_match_deltas_without_posthoc_replacement
+  unreachable_policy: record_with_reason_and_exclude_from_paired_analysis_no_refill
+
+arms:
+  - {name: baseline_unedited, kind: baseline, target_interval: null, paired_to: null}
+  - {name: lysine_one, kind: charge_intervention, target_interval: one_positive_residue, paired_to: baseline_unedited}
+  - {name: arginine_one, kind: charge_intervention, target_interval: one_positive_residue, paired_to: baseline_unedited}
+  - {name: one_charge_preserving_control, kind: edit_control, target_interval: null, paired_to: lysine_one_and_arginine_one}
+  - {name: lysine_two, kind: charge_intervention, target_interval: two_positive_residues, paired_to: baseline_unedited}
+  - {name: arginine_two, kind: charge_intervention, target_interval: two_positive_residues, paired_to: baseline_unedited}
+  - {name: two_charge_preserving_control, kind: edit_control, target_interval: null, paired_to: lysine_two_and_arginine_two}
+
+required_metric_names:
+  - net_charge_ph7_4
+  - charge_density_ph7_4
+  - formal_charge_delta_from_parent
+  - lysine_fraction
+  - arginine_fraction
+  - histidine_fraction
+  - acidic_residue_fraction
+  - maximum_cationic_run
+  - maximum_identical_residue_run
+  - hydrophobic_moment_eisenberg
+  - hydrophobic_ratio_modlamp
+  - maximum_hydrophobic_run
+  - macrel_amp_probability
+  - llamp_log10_mic_um
+  - amp_read_log10_mic_um
+  - toxinpred3_hybrid_score
+  - macrel_hemolysis_probability
+
+risk_guard:
+  policy: exclude_only_concordant_red_flags_no_refill
+  toxicity_red: {metric: toxinpred3_label, value: Toxin}
+  hemolysis_red: {metric: macrel_hemolysis_label, value: high}
+  single_model_warning_remains_eligible: true
+  paired_analysis_keeps_excluded_rows_with_exclusion_label: true
+  interpretation: computational soft-risk governance only, not experimental safety
+
+pareto_families:
+  membrane:
+    - {metric: hydrophobic_moment_eisenberg, direction: maximize, epsilon: 0.05}
+    - {metric: hydrophobic_ratio_modlamp, direction: target_interval, minimum: 0.35, maximum: 0.65, epsilon: 0.05}
+    - {metric: maximum_hydrophobic_run, direction: minimize, epsilon: 1.0}
+  activity_mic:
+    - {metric: macrel_amp_probability, direction: maximize, epsilon: 0.05}
+    - {metric: llamp_log10_mic_um, direction: minimize, epsilon: 0.10}
+    - {metric: amp_read_log10_mic_um, direction: minimize, epsilon: 0.10}
+  risk_control:
+    - {metric: toxinpred3_hybrid_score, direction: minimize, epsilon: 0.05}
+    - {metric: macrel_hemolysis_probability, direction: minimize, epsilon: 0.05}
+
+search_sufficiency:
+  fixed_full_budget_required: true
+  adaptive_early_stopping_forbidden: true
+  analyze_development_and_confirmation_seeds_separately: true
+  checkpoint_unit: reachable_counterfactual_parent
+  checkpoint_metrics:
+    - new_nondominated_candidate_rate
+    - archive_turnover_fraction
+    - new_family_local_epsilon_cells_per_candidate
+    - cross_seed_epsilon_cell_attainment
+    - cost_per_new_epsilon_cell
+    - leave_one_soft_model_out_selection_jaccard
+  saturation_assessment_checkpoints: [150, 200]
+  saturation_gate:
+    maximum_new_epsilon_cells_per_50_candidates: 1
+    maximum_archive_turnover_fraction: 0.10
+    must_hold_for_every_pareto_family: true
+    must_hold_in_all_development_seeds: true
+    must_hold_in_all_confirmation_seeds: true
+  allowed_verdicts:
+    - saturated_within_protocol_and_budget
+    - not_saturated_within_protocol_and_budget
+    - inconclusive_due_to_preregistered_shortfall
+  forbidden_verdicts: [global_optimum, universally_optimal, best_possible_peptide]
+  weighted_total_score_forbidden: true
+  single_hypervolume_completion_claim_forbidden: true
+
+paired_analysis:
+  unit: counterfactual_parent_dose_identity_block
+  comparisons:
+    - lysine_one_vs_baseline_unedited
+    - arginine_one_vs_baseline_unedited
+    - lysine_one_vs_one_charge_preserving_control
+    - arginine_one_vs_one_charge_preserving_control
+    - lysine_one_vs_arginine_one
+    - lysine_two_vs_baseline_unedited
+    - arginine_two_vs_baseline_unedited
+    - lysine_two_vs_two_charge_preserving_control
+    - arginine_two_vs_two_charge_preserving_control
+    - lysine_two_vs_arginine_two
+    - lysine_two_vs_lysine_one
+    - arginine_two_vs_arginine_one
+  report:
+    - paired_median_delta
+    - paired_direction_fraction
+    - seed_stratified_effect
+    - descriptor_match_delta
+    - risk_transition_counts
+    - pareto_family_depth_transition
+  no_single_primary_score: true
+
+structure_confirmation_child:
+  preregistered_but_not_authorized: true
+  selection_rule: within_arm_family_depth_then_normalized_levenshtein_maximin
+  maximum_per_arm: 4
+  maximum_total: 28
+  boltz_seeds: [20261301, 20261302, 20261303]
+  rosetta_score_function: ref2015
+  rosetta_decoys_per_pose: 16
+  all_poses_scored: true
+  endpoints:
+    - pair_iptm
+    - pocket_coverage
+    - pocket_contacts
+    - coordinate_clashes
+    - pose_consistency
+    - rosetta_dg_separated_reu
+  interpretation: shadow structural compatibility and same-protocol relative energy only; not binding or affinity evidence
+
+database_evidence_contract:
+  persist_literature_basis_as_content_addressed_manifest_artifact: true
+  persist_raw_generator_batches: true
+  persist_rejected_and_duplicate_proposals_as_artifacts: true
+  persist_all_seed_occurrences: true
+  persist_parent_child_candidate_edges: true
+  persist_pair_id_arm_edit_positions_and_substitutions: true
+  persist_charge_transform_tool_calls: true
+  persist_metric_tool_calls_and_dependencies: true
+  persist_checkpoint_archive_snapshots: true
+  persist_archive_add_remove_and_dominance_reasons: true
+  persist_agent_decisions_and_all_tool_edges: true
+  persist_cost_and_runtime_observations: true
+  content_address_all_outputs_and_environment_manifests: true
+  database_object_store_only_replay_required: true
+  replay_must_reconstruct:
+    - raw_order_and_all_seed_occurrences
+    - counterfactual_parent_eligibility
+    - every_edit_and_control_mapping
+    - every_metric_join_and_risk_exclusion
+    - every_checkpoint_archive
+    - paired_analysis
+    - saturation_verdict
+    - structure_child_selection_if_executed
+
+scientific_boundaries:
+  PepMLM_used: false
+  AMPlify_used: false
+  weighted_total_used: false
+  knowledge_cards_used: false
+  PepShot_used_in_primary_sequence_stage: false
+  no_experimental_activity_claim: true
+  no_experimental_safety_claim: true
+  no_AceA_binding_or_affinity_claim: true
+  no_global_optimality_claim: true
+  v32_backwrite_forbidden: true
+
+formal_run:
+  execution_authorized: false
+  submitted: false
+  run_id: null
+  workflow_id: null
+  implementation_revision: null
+  authorization_requirement: implement_and_validate_transform_replay_then_explicitly_freeze_executable_revision
