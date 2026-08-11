@@ -190,3 +190,8 @@ replay bundle SHA-256 为 `390d5757ee55d7a010b66701b4d6fe0338eb97f4d84b87c20b572
 
 shadow 的完成只允许提出 v34 正式 2×2 消融授权申请。正式 v34 仍未提交、未授权，不能运行知识卡/
 PepShot 效果对照，也不能生成新序列。
+
+完成锁定提交为 `834ef57`，完成态 config SHA-256 为
+`a8e4e4e3fafcb638c292bbb042eaa88fc4900c163d32e654778417e880893547`；内容归档
+`var/archives/ampgent-v34-provider-shadow-834ef57.zip` 的 SHA-256 为
+`652f1801c09f9babb6cd7295e3f1df7960b023b766913ef1deb45af20508274c`。

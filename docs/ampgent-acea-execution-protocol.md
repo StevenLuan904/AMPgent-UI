@@ -625,3 +625,8 @@ provider-owned 新 release 通过只读验收后才可继续。
 
 当前唯一下一步是申请并另行冻结 v34 正式 2×2 消融授权；在用户明确授权前保持未提交，不注册正式
 activity，不生成序列。
+
+完成锁定提交为 `834ef57`；完成态 shadow config SHA-256 为
+`a8e4e4e3fafcb638c292bbb042eaa88fc4900c163d32e654778417e880893547`。内容归档
+`var/archives/ampgent-v34-provider-shadow-834ef57.zip` 的 SHA-256 为
+`652f1801c09f9babb6cd7295e3f1df7960b023b766913ef1deb45af20508274c`。
