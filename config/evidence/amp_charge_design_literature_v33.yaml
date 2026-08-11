@@ -1,6 +1,12 @@
 schema_version: amp_charge_design_literature.v1
 retrieved_on: 2026-08-11
 retrieval_scope: primary_experimental_studies_and_one_mechanistic_simulation
+source_snapshot_policy:
+  record_format: NCBI_PubMed_XML
+  record_retrieved_on: "2026-08-11"
+  source_record_bytes_currently_in_formal_evidence_graph: false
+  formal_run_requires_exact_source_record_artifact: true
+  on_source_record_drift: block_and_version_manifest_no_silent_refresh
 biological_target_policy:
   target_is: within_scaffold_matched_causal_response_to_cationic_residue_identity_dose_and_position
   target_is_not:
@@ -31,6 +37,13 @@ evidence_items:
       pmcid: PMC2761230
       doi: 10.1002/bip.20911
       source_uri: https://pubmed.ncbi.nlm.nih.gov/18098173/
+    source_record:
+      retrieval_uri: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=18098173&retmode=xml
+      sha256: 1fdb29db63efa6ef339d17a9c87865bc7eabbc35bb81720f475efe3761766d45
+      passage_locator: abstract_and_results_tables_III_IV
+      verification_status: primary_record_verified
+    evidence_grade: primary_experimental_matched_analog_series
+    applicability_distance: direct_for_within_scaffold_charge_dose_nonmonotonicity_only
     study_type: matched_analog_series_with_microbiology_and_human_erythrocyte_hemolysis
     scaffold: 26_residue_amphipathic_alpha_helical_L_V13K
     intervention: net_charge_and_positive_residue_count_on_polar_face
@@ -47,6 +60,13 @@ evidence_items:
       pmid: "23982951"
       doi: 10.1002/bip.22399
       source_uri: https://pubmed.ncbi.nlm.nih.gov/23982951/
+    source_record:
+      retrieval_uri: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=23982951&retmode=xml
+      sha256: 7f16e1156d263c20454efb358a97d8f768f9e8691647e4ab17b03c7277b9b9a7
+      passage_locator: abstract
+      verification_status: primary_record_verified
+    evidence_grade: primary_experimental_position_specific_analog_series
+    applicability_distance: direct_for_position_and_descriptor_confounding_only
     study_type: position_specific_K_R_to_A_analog_series_with_membrane_models_and_activity
     scaffold: cationic_alpha_helical_dodecapeptide_CL14_25
     intervention: removal_of_selected_lysine_or_arginine_residues
@@ -62,6 +82,13 @@ evidence_items:
       pmid: "31194548"
       doi: 10.1021/acs.jmedchem.9b00657
       source_uri: https://pubmed.ncbi.nlm.nih.gov/31194548/
+    source_record:
+      retrieval_uri: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=31194548&retmode=xml
+      sha256: 292a880d70d2ac026a19fd4efa4ec96481681a2ff24f85a7be0f2686e57c2ff7
+      passage_locator: abstract
+      verification_status: primary_record_verified
+    evidence_grade: primary_experimental_fixed_composition_pattern_series
+    applicability_distance: direct_for_charge_pattern_as_separate_design_axis_only
     study_type: matched_synthetic_pattern_series_with_activity_toxicity_and_stability
     scaffold: 17_residue_charge_clustered_and_amphipathic_CAP_series
     intervention: redistribution_of_positive_residues_at_fixed_composition
@@ -78,6 +105,13 @@ evidence_items:
       pmcid: PMC4897634
       doi: 10.1038/srep27394
       source_uri: https://pubmed.ncbi.nlm.nih.gov/27271216/
+    source_record:
+      retrieval_uri: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=27271216&retmode=xml
+      sha256: 5357c9fc20b35a919f7de3a144fd3c4d6765a9de8f444bb37e4e52e3a0423fe1
+      passage_locator: abstract
+      verification_status: primary_record_verified
+    evidence_grade: primary_experimental_position_specific_substitution_series
+    applicability_distance: direct_for_same_position_and_descriptor_matching_only
     study_type: position_specific_positive_residue_substitution_with_activity_and_host_cell_risk
     scaffold: 23_residue_alpha_helical_AR_23
     intervention: arginine_or_lysine_at_polar_and_nonpolar_face_positions
@@ -94,6 +128,13 @@ evidence_items:
       pmcid: PMC5042116
       doi: 10.1099/jmm.0.000258
       source_uri: https://pubmed.ncbi.nlm.nih.gov/27046192/
+    source_record:
+      retrieval_uri: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=27046192&retmode=xml
+      sha256: 058780fbfa0efd2763a294422e32796ca8db28c0bd5d7e3f1f19b5dcb6566b38
+      passage_locator: abstract_and_results_table_1
+      verification_status: primary_record_verified
+    evidence_grade: primary_experimental_matched_identity_length_series
+    applicability_distance: direct_for_K_R_identity_context_dependence_only
     study_type: matched_tryptophan_lysine_vs_tryptophan_arginine_length_series
     scaffold: engineered_WR_and_WK_8_to_18_residue_series
     intervention: lysine_vs_arginine_identity_at_matched_length
@@ -109,6 +150,13 @@ evidence_items:
       pmcid: PMC2772546
       doi: 10.1128/IAI.00695-09
       source_uri: https://pubmed.ncbi.nlm.nih.gov/19737896/
+    source_record:
+      retrieval_uri: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=19737896&retmode=xml
+      sha256: be2c608903638f7b63729c5041ba7835a5a6e0f99a99c4fca6edc2a84f67ca57
+      passage_locator: abstract_and_results_figures_2_6
+      verification_status: primary_record_verified
+    evidence_grade: primary_experimental_matched_identity_scaffold_pair
+    applicability_distance: direct_for_primary_sequence_dependent_K_R_direction_only
     study_type: matched_all_arginine_to_lysine_replacement_in_two_alpha_defensins
     scaffold: Crp4_and_RMAD4_alpha_defensins
     intervention: lysine_for_arginine_at_equal_electropositive_charge
@@ -123,6 +171,13 @@ evidence_items:
       pmid: "42276501"
       doi: 10.1016/j.bbamem.2026.184548
       source_uri: https://pubmed.ncbi.nlm.nih.gov/42276501/
+    source_record:
+      retrieval_uri: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=42276501&retmode=xml
+      sha256: dcdc0b6f85c5bae8f759fe1fe4b91dafb6290b514182a829c749ef7da3702bdd
+      passage_locator: abstract
+      verification_status: primary_record_verified
+    evidence_grade: primary_experimental_matched_identity_pair
+    applicability_distance: direct_for_one_tryptophan_rich_K_R_context_only
     study_type: matched_W6K8_vs_W6R8_microbiology_hemolysis_and_membrane_biophysics
     scaffold: two_14_residue_tryptophan_rich_peptides
     intervention: eight_lysines_vs_eight_arginines_at_matched_composition_pattern
@@ -139,6 +194,13 @@ evidence_items:
       pmcid: PMC5582999
       doi: 10.1016/j.bbamem.2017.06.002
       source_uri: https://pubmed.ncbi.nlm.nih.gov/28583830/
+    source_record:
+      retrieval_uri: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=28583830&retmode=xml
+      sha256: 9ed4c195461db49acc02d0c5d6cab58773272cef70e1b32ff4fb0d1b9374381e
+      passage_locator: abstract
+      verification_status: primary_record_verified
+    evidence_grade: mechanistic_molecular_dynamics_and_free_energy_simulation
+    applicability_distance: mechanistic_support_not_activity_or_safety_evidence
     study_type: comparative_molecular_dynamics_and_free_energy_simulation
     scaffold: all_K_vs_all_R_KR12_analogs
     intervention: lysine_vs_arginine_identity
@@ -148,6 +210,29 @@ evidence_items:
     does_not_support:
       - experimental_antimicrobial_activity
       - universal_membrane_or_safety_direction
+
+  - evidence_id: r9_charge_insufficiency_2019
+    citation:
+      pmid: "31572872"
+      pmcid: PMC6761801
+      doi: 10.1021/acsomega.9b02278
+      source_uri: https://pubmed.ncbi.nlm.nih.gov/31572872/
+    source_record:
+      retrieval_uri: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=31572872&retmode=xml
+      sha256: be93193c21eaa5f0ea535a0de4e1e34dba3f566ed720a87dfed22c4e18939597
+      passage_locator: results_R9_alone_MIC_paragraph_and_table_2
+      verification_status: primary_record_verified
+    evidence_grade: primary_experimental_boundary_counterexample
+    applicability_distance: direct_for_positive_charge_not_sufficient_only
+    study_type: CPP_AMP_conjugation_with_R9_alone_control_and_MIC
+    scaffold: nona_arginine_R9_control_and_CPP_AMP_conjugates
+    intervention: R9_alone_versus_conjugated_AMPs
+    supports:
+      - high_positive_charge_alone_is_not_sufficient_for_antimicrobial_activity
+      - sequence_context_and_noncharge_mechanisms_are_required
+    does_not_support:
+      - universal_inactivity_of_polyarginine
+      - using_R9_as_a_matched_K_R_identity_comparison
 
 cross_study_inference_rules:
   supported:
@@ -163,9 +248,30 @@ cross_study_inference_rules:
     - use_generated_charge_quantiles_as_biological_ground_truth
     - call_K_or_R_globally_superior
 
+cross_study_conflict_witnesses:
+  - conflict_id: K_R_identity_direction_is_scaffold_dependent
+    evidence_ids:
+      - wr_wk_length_series_2016
+      - alpha_defensin_K_R_context_2009
+      - w6k8_w6r8_2026
+    implication: compare_K_and_R_at_matched_positions_without_a_global_winner
+  - conflict_id: charge_amount_is_not_monotonic_activity_or_safety
+    evidence_ids:
+      - v13k_charge_series_2008
+      - cl14_25_position_series_2014
+    implication: use_dose_pairs_and_joint_activity_risk_readouts_not_more_charge_is_better
+  - conflict_id: positive_charge_is_not_sufficient_for_activity
+    evidence_ids:
+      - r9_charge_insufficiency_2019
+      - kr12_bilayer_mechanism_2017
+    implication: membrane_association_mechanism_cannot_substitute_for_antimicrobial_activity
+
 formal_run_evidence_requirements:
   persist_manifest_bytes_in_object_store: true
   persist_manifest_sha256_in_PostgreSQL_Artifact: true
+  persist_exact_source_record_bytes_in_object_store: true
+  persist_each_source_record_sha256_and_passage_locator: true
+  persist_cross_study_conflict_witnesses: true
   create_literature_freezer_ToolCall: true
   link_transform_ToolCall_to_literature_ToolCall: true
   persist_each_source_identifier_and_supported_claim_projection: true

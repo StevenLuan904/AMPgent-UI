@@ -27,6 +27,54 @@ class Arm(BaseModel):
     paired_to: str | None
 
 
+class LiteratureCitation(BaseModel):
+    pmid: str = Field(pattern=r"^[0-9]+$")
+    pmcid: str | None = Field(default=None, pattern=r"^PMC[0-9]+$")
+    doi: str | None = None
+    source_uri: str
+
+
+class LiteratureSourceRecord(BaseModel):
+    retrieval_uri: str
+    sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    passage_locator: str = Field(min_length=3)
+    verification_status: Literal["primary_record_verified"]
+
+
+class LiteratureEvidenceItem(BaseModel):
+    evidence_id: str = Field(min_length=3)
+    citation: LiteratureCitation
+    source_record: LiteratureSourceRecord
+    evidence_grade: Literal[
+        "primary_experimental_matched_analog_series",
+        "primary_experimental_position_specific_analog_series",
+        "primary_experimental_fixed_composition_pattern_series",
+        "primary_experimental_position_specific_substitution_series",
+        "primary_experimental_matched_identity_length_series",
+        "primary_experimental_matched_identity_scaffold_pair",
+        "primary_experimental_matched_identity_pair",
+        "primary_experimental_boundary_counterexample",
+        "mechanistic_molecular_dynamics_and_free_energy_simulation",
+    ]
+    applicability_distance: str = Field(min_length=3)
+    study_type: str = Field(min_length=3)
+    scaffold: str = Field(min_length=3)
+    intervention: str = Field(min_length=3)
+    supports: list[str] = Field(min_length=1)
+    does_not_support: list[str] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def validate_source_record_identity(self) -> LiteratureEvidenceItem:
+        expected_fragment = f"id={self.citation.pmid}&retmode=xml"
+        if expected_fragment not in self.source_record.retrieval_uri:
+            raise ValueError("v33 source record does not match its PMID")
+        if not self.citation.source_uri.startswith(
+            f"https://pubmed.ncbi.nlm.nih.gov/{self.citation.pmid}/"
+        ):
+            raise ValueError("v33 evidence must identify its primary PubMed record")
+        return self
+
+
 class GeneratorContract(BaseModel):
     development_seeds: list[int] = Field(min_length=3)
     confirmation_seeds: list[int] = Field(min_length=2)
@@ -258,6 +306,9 @@ class V33Preregistration(BaseModel):
         evidence = self.database_evidence_contract
         required_evidence = (
             "persist_literature_basis_as_content_addressed_manifest_artifact",
+            "persist_exact_literature_source_record_bytes",
+            "persist_literature_source_record_sha256_and_passage_locator",
+            "persist_cross_study_conflict_witnesses",
             "persist_search_sufficiency_methods_as_content_addressed_manifest_artifact",
             "persist_raw_generator_batches",
             "persist_parent_child_candidate_edges",
@@ -314,12 +365,71 @@ def load_v33_preregistration(path: Path) -> V33Preregistration:
         "generator_coverage_and_budget_feasibility_only"
     ):
         raise ValueError("v33 literature evidence reuses generated data as a biological target")
-    evidence_items = literature.get("evidence_items", [])
-    if len(evidence_items) < 7:
+    evidence_items = [
+        LiteratureEvidenceItem.model_validate(item)
+        for item in literature.get("evidence_items", [])
+    ]
+    if len(evidence_items) < 9:
         raise ValueError("v33 literature evidence manifest is incomplete")
-    evidence_ids = [item.get("evidence_id") for item in evidence_items]
-    if None in evidence_ids or len(evidence_ids) != len(set(evidence_ids)):
+    evidence_ids = [item.evidence_id for item in evidence_items]
+    if len(evidence_ids) != len(set(evidence_ids)):
         raise ValueError("v33 literature evidence identifiers are missing or duplicated")
+    evidence_pmids = {item.citation.pmid for item in evidence_items}
+    declared_studies = evidence.get("primary_studies", []) + evidence.get(
+        "mechanistic_studies", []
+    )
+    declared_pmids = {str(item.get("pmid")) for item in declared_studies}
+    if evidence_pmids != declared_pmids:
+        raise ValueError("v33 benchmark and literature evidence PMID sets drifted")
+    primary_count = sum(
+        item.evidence_grade.startswith("primary_experimental_")
+        for item in evidence_items
+    )
+    mechanistic_count = sum(
+        item.evidence_grade
+        == "mechanistic_molecular_dynamics_and_free_energy_simulation"
+        for item in evidence_items
+    )
+    if primary_count < 8 or mechanistic_count != 1:
+        raise ValueError("v33 evidence-grade composition drifted")
+    source_record_hashes = [item.source_record.sha256 for item in evidence_items]
+    if len(source_record_hashes) != len(set(source_record_hashes)):
+        raise ValueError("v33 source-record hashes are duplicated")
+    snapshot_policy = literature.get("source_snapshot_policy", {})
+    required_snapshot_policy = {
+        "record_format": "NCBI_PubMed_XML",
+        "record_retrieved_on": "2026-08-11",
+        "source_record_bytes_currently_in_formal_evidence_graph": False,
+        "formal_run_requires_exact_source_record_artifact": True,
+        "on_source_record_drift": "block_and_version_manifest_no_silent_refresh",
+    }
+    if snapshot_policy != required_snapshot_policy:
+        raise ValueError("v33 source snapshot policy drifted")
+    conflict_witnesses = literature.get("cross_study_conflict_witnesses", [])
+    expected_conflict_ids = {
+        "K_R_identity_direction_is_scaffold_dependent",
+        "charge_amount_is_not_monotonic_activity_or_safety",
+        "positive_charge_is_not_sufficient_for_activity",
+    }
+    observed_conflict_ids = {
+        witness.get("conflict_id") for witness in conflict_witnesses
+    }
+    if observed_conflict_ids != expected_conflict_ids:
+        raise ValueError("v33 cross-study conflict witness set drifted")
+    for witness in conflict_witnesses:
+        referenced_ids = set(witness.get("evidence_ids", []))
+        if len(referenced_ids) < 2 or not referenced_ids.issubset(set(evidence_ids)):
+            raise ValueError("v33 conflict witness references invalid evidence")
+        if not witness.get("implication"):
+            raise ValueError("v33 conflict witness lacks a design implication")
+    formal_evidence = literature.get("formal_run_evidence_requirements", {})
+    required_source_evidence = (
+        "persist_exact_source_record_bytes_in_object_store",
+        "persist_each_source_record_sha256_and_passage_locator",
+        "persist_cross_study_conflict_witnesses",
+    )
+    if not all(formal_evidence.get(key) is True for key in required_source_evidence):
+        raise ValueError("v33 source-level database evidence requirements drifted")
     forbidden = set(
         literature.get("cross_study_inference_rules", {}).get("forbidden", [])
     )
