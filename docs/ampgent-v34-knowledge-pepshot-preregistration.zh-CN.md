@@ -195,3 +195,22 @@ PepShot 效果对照，也不能生成新序列。
 `a8e4e4e3fafcb638c292bbb042eaa88fc4900c163d32e654778417e880893547`；内容归档
 `var/archives/ampgent-v34-provider-shadow-834ef57.zip` 的 SHA-256 为
 `652f1801c09f9babb6cd7295e3f1df7960b023b766913ef1deb45af20508274c`。
+
+## 9. Provider change request 数据库闭环（2026-08-11 append-only update）
+
+此前规则说明了“对 PepShot 不满意就退回 provider”，但正式 evidence plan 只冻结 release receipt 和
+episode 内的采纳/拒绝结果，尚不能完整重放“拒绝旧 release → 向哪个任务发送什么验收要求 → 收到
+哪个替代 release → 如何只读复验”。v34.1 现新增固定 `v34-provider-governance-freeze` ToolCall；正式
+完成图即使没有发生退回，也必须保存 provider ownership、冻结 release 和显式空 change-request ledger。
+
+若发生退回，ledger 必须保存 provider task、拒绝 run、独立 change-request child run、被拒绝 release、
+触发类别、可复现输入、违反合同、验收标准、外部任务发送 receipt、生命周期状态，以及替代 release
+manifest 和只读复验 receipt。AMPgent 兼容适配必须为 `false`。正式 run 内禁止热替换 provider release；
+替代 release 只能在当前 run 停止并经过新的冻结/授权边界后使用，防止同一 2×2 对照混入两个工具版本。
+
+evidence plan 现在固定 771 个 ToolCall、1345 条 dependency；database+object-store replay 会读取并校验
+change-request ledger 的原始 artifact，而不只核对其 SHA。实现 revision 为
+`9e879fec1285d2a1071fde7cd2d874765409aa24`；回填后的 config SHA-256 为
+`b6adc410f99185f1f25c6205c57dc89223c0d685f5c2b80084a8cb39106318e6`，plan SHA-256 为
+`67020e0241cf2eb0dae954e9dd8767a5321207ea3b1b656aacd69d62f35f4939`。全量验证为 ruff clean、pytest
+`368 passed`。这些是未执行的消费治理合同，不表示发生了新的 PepShot 缺陷，也不授权 v34 formal run。

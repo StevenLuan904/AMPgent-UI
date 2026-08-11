@@ -44,8 +44,8 @@
    `019fb910-f2dd-7be1-a7e6-bfe381512c25`；
 3. 停止受影响 episode，不写兼容层、不 monkey patch、不补包、不修输出、不降低门禁；
 4. 等 PepShot 在自身仓库发布新不可变 release；
-5. 对新 release 另做只读验收。是否允许替换正式 run 中冻结的 provider release，必须另行预注册，
-   不能静默热换。
+5. 对新 release 另做只读验收。当前正式 run 内绝对禁止替换已冻结 provider release；只能停止当前 run，
+   在新的冻结 config、版本与授权边界下使用替代 release，不能静默热换。
 
 知识卡 provider 采用相同规则，对应任务为 `019fad3e-76b8-7e32-8455-d2e9b31d33e5`。
 
@@ -60,7 +60,8 @@
 - proposal、结构、Rosetta、独立评价及 replay activity 的物理主机、角色、PID、task queue、源码 revision
   全部可映射，且不位于禁止资源；
 - 正式 implementation 已 commit/push，全量 `ruff`/`pytest` 通过并有内容归档 SHA；
-- 盲化分配、失败策略、成本记录、provider rejection/change-request 路径和唯一 run 防重复门禁通过。
+- 盲化分配、失败策略、成本记录、provider rejection/change-request child-run 路径、显式空/非空 ledger
+  和唯一 run 防重复门禁通过。
 
 当前 provider shadow run `941ea473-82d6-4b70-9ede-5162a14bf8ce` 只证明两项 provider release 可从
 PostgreSQL 与对象存储复原；它不是 formal run，也没有证明工具有效。
@@ -69,7 +70,9 @@ PostgreSQL 与对象存储复原；它不是 formal run，也没有证明工具�
 
 所有 input、query、card/passage、PepShot request/bundle/image/review、prompt/response、proposal
 occurrence、parent/child、ToolCall/dependency、Evaluation、AgentDecision、盲化/揭盲、失败、成本、
-portfolio 变化和停止理由必须落 PostgreSQL；大对象进入内容寻址对象存储并由数据库引用。
+portfolio 变化和停止理由必须落 PostgreSQL；大对象进入内容寻址对象存储并由数据库引用。provider
+ownership、冻结 release、拒绝、change request 外部发送 receipt、替代 release 和只读复验 receipt 也必须
+形成 linked child run 与内容寻址 ledger；没有退回时仍须保存显式空 ledger。
 
 只有 database+object-store-only replay 能重建 96 个 episode 的顺序、工具可用性、所有候选与 revision、
 holdout join、配对效应和最终 verdict 时，v34 才算完成。CSV/Markdown 仅是导出，不能回填证据。

@@ -687,6 +687,16 @@ activity，不生成序列。
 授权请求冻结提交为 `c708d48985c2f6252a329b45039b8731c3c2615b`；内容归档 SHA-256 为
 `0ab4f6e71791f7ad19d45e8eaf315535eaa581470f2d45aa77340717a2c57cf6`。
 
+v34.1 已补齐 provider change-request 的数据库复原合同。正式 evidence plan 增加固定 governance ToolCall，
+即使无退回事件也必须持久化 ownership、冻结 release 与显式空 ledger；若拒绝 provider，必须记录拒绝
+run、独立 child run、复现输入、违反合同、验收标准、外部任务 receipt、新 release 与只读复验 receipt。
+AMPgent adaptation 必须为 false，active formal run 内禁止热替换 release。database/object-store replay 会
+读取 ledger 原始字节并校验生命周期，而非只看 artifact SHA。实现 revision 为
+`9e879fec1285d2a1071fde7cd2d874765409aa24`；回填后的 v34 config SHA-256 为
+`b6adc410f99185f1f25c6205c57dc89223c0d685f5c2b80084a8cb39106318e6`，evidence plan SHA-256 为
+`67020e0241cf2eb0dae954e9dd8767a5321207ea3b1b656aacd69d62f35f4939`，固定 771 ToolCall、1345 dependency。
+验证为 ruff clean、pytest `368 passed`。该更新没有运行 PepShot 或 v34，也没有产生新 provider 缺陷。
+
 ### 14.5 v35 多靶点资格框架（未授权）
 
 v34 等待正式授权期间，只允许推进不使用候选结果的 v35 target qualification 设计。精确合同为

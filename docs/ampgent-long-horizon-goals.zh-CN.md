@@ -423,6 +423,15 @@ PepShot 治理规则再次锁定：若后续实际对照对 PepShot 不满意，
 receipt 都必须进入相应 Agent evidence graph。历史“adapter”一词仅指严格 consumer validator，不代表
 允许适配 provider。
 
+该治理路径现从文档规则升级为 v34.1 可重放合同：固定 governance ToolCall 保存 ownership、冻结 release
+和显式空/非空 change-request ledger；非空 ledger 必须连接拒绝 run 与独立 child run，并保存复现输入、
+合同违例、验收标准、外部任务 receipt、替代 release 和只读复验 receipt。正式 run 内禁止 release 热换，
+避免同一消融混入两个 provider 版本。实现 revision 为
+`9e879fec1285d2a1071fde7cd2d874765409aa24`，config SHA-256 为
+`b6adc410f99185f1f25c6205c57dc89223c0d685f5c2b80084a8cb39106318e6`，evidence plan SHA-256 为
+`67020e0241cf2eb0dae954e9dd8767a5321207ea3b1b656aacd69d62f35f4939`；全量测试 `368 passed`。
+这仍只证明 Q3/Q4 的退回治理可预注册和复算，不证明知识卡或 PepShot 有效，也不授权正式 v34。
+
 v36 当前框架见 `docs/ampgent-v36-harness-evolution.zh-CN.md`，精确合同为
 `config/benchmarks/amp_harness_evolution_v36.yaml`。typed lineage schema、迁移、repository primitive 与
 离线 replay verifier 已在仓库实现，但尚未部署到共享 PostgreSQL，也未做合成数据库 acceptance；因此
