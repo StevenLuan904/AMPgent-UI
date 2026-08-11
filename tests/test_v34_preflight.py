@@ -55,7 +55,21 @@ def test_external_contract_preflight_is_read_only_and_content_addressed(
     assert result["external_commands_executed"] is False
     assert len(result["frozen_contract_hashes"]) == 5
     assert len(result["observed_entrypoint_hashes"]) == 5
+    assert set(result["source_manifest_sha256"]) == {"knowledge", "pepshot"}
     assert len(result["footprint_sha256"]) == 64
+
+    second = tmp_path / "second"
+    knowledge_2, pepshot_2, knowledge_contract_2, pepshot_contract_2 = _write_fixture(
+        second
+    )
+    replay = verify_v34_external_contract_files(
+        knowledge_root=knowledge_2,
+        pepshot_root=pepshot_2,
+        knowledge_contract=knowledge_contract_2,
+        pepshot_contract=pepshot_contract_2,
+    )
+    assert replay["source_manifest_sha256"] == result["source_manifest_sha256"]
+    assert replay["footprint_sha256"] == result["footprint_sha256"]
 
 
 def test_external_contract_preflight_fails_closed_on_drift(tmp_path: Path) -> None:

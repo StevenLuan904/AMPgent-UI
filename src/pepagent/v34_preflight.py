@@ -19,6 +19,47 @@ def _required_bytes(path: Path) -> bytes:
     return path.read_bytes()
 
 
+def build_external_source_manifest(
+    *, root: Path, provider: str, include_patterns: tuple[str, ...]
+) -> dict[str, object]:
+    """Hash an allowlisted external source tree without machine-specific paths."""
+    files = {
+        path.resolve()
+        for pattern in include_patterns
+        for path in root.glob(pattern)
+        if path.is_file()
+    }
+    if not files:
+        raise ValueError(f"v34 {provider} source manifest is empty")
+    resolved_root = root.resolve()
+    relative_files: list[tuple[str, Path]] = []
+    for path in files:
+        try:
+            relative = path.relative_to(resolved_root).as_posix()
+        except ValueError as error:
+            raise ValueError(f"v34 {provider} source path escaped its root") from error
+        relative_files.append((relative, path))
+
+    entries = []
+    for relative, path in sorted(relative_files):
+        payload = _required_bytes(path)
+        entries.append(
+            {
+                "path": relative,
+                "sha256": sha256_bytes(payload),
+                "size_bytes": len(payload),
+            }
+        )
+    result: dict[str, object] = {
+        "schema_version": "1.0",
+        "provider": provider,
+        "include_patterns": list(include_patterns),
+        "entries": entries,
+    }
+    result["manifest_sha256"] = sha256_json(result)
+    return result
+
+
 def verify_v34_external_contract_files(
     *,
     knowledge_root: Path,
@@ -67,10 +108,41 @@ def verify_v34_external_contract_files(
     entrypoint_hashes = {
         role: sha256_bytes(_required_bytes(path)) for role, path in entrypoints.items()
     }
+    source_manifests = {
+        "knowledge": build_external_source_manifest(
+            root=knowledge_root,
+            provider="amp-system-kb",
+            include_patterns=(
+                "kbctl.py",
+                "manifest.json",
+                "requirements.txt",
+                "src/amp_kb/**/*.py",
+                "schemas/**/*.json",
+                "policies/**/*.json",
+            ),
+        ),
+        "pepshot": build_external_source_manifest(
+            root=pepshot_root,
+            provider="pepshot",
+            include_patterns=(
+                "AGENT_TOOL.md",
+                "pyproject.toml",
+                "uv.lock",
+                "environment.renderer.yml",
+                "src/pepshot/**/*.py",
+                "src/pepshot/schemas/**/*.json",
+            ),
+        ),
+    }
     result: dict[str, object] = {
         "schema_version": "1.0",
         "frozen_contract_hashes": observed,
         "observed_entrypoint_hashes": entrypoint_hashes,
+        "source_manifest_sha256": {
+            provider: manifest["manifest_sha256"]
+            for provider, manifest in source_manifests.items()
+        },
+        "source_manifests": source_manifests,
         "external_commands_executed": False,
     }
     result["footprint_sha256"] = sha256_json(result)
@@ -112,7 +184,7 @@ def build_v34_offline_preflight(
         "formal_run_submitted": False,
         "status": "ready_for_isolated_shadow_fixture_not_formal_execution",
         "remaining_gates": [
-            "freeze_executable_environment_and_source_manifest",
+            "verify_deployed_executable_environment_matches_frozen_source_manifests",
             "run_isolated_adapter_shadow_fixture",
             "obtain_separate_formal_run_authorization",
             "verify_allowed_worker_identity_and_release",
