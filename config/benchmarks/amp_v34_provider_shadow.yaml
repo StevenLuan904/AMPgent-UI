@@ -1,0 +1,51 @@
+benchmark_id: amp_v34_provider_shadow
+version: v34.provider-shadow.0.1
+execution_status: implementation_draft_not_authorized
+execution_authorized: false
+formal_v34_execution_authorized: false
+submitted: false
+run_id: null
+workflow_id: database-native-amp_v34_provider_shadow
+lineage_parent_run_id: de9f72ae-e490-408d-9432-c71a75a3d499
+implementation_revision: null
+providers:
+  knowledge:
+    release_revision: amp-kb-acea-shadow-6d0eea37f2c145df
+    latest_sha256: 514c3f7ad49cfd3fc6c4681af065595d67bafdf119cc88f5d4fd903d13dcf9b9
+    release_manifest_sha256: 7fd21012bcbcbe519dd964b6c9c826f16532d257cbb721951cb3ab0c4023e518
+    runtime_manifest_sha256: 15b0ab24d3290ab1fe63b9f3bca0cb3376e871ec45b2ea6a903bcd242a7a0d65
+    active_policy_sha256: 4900ac9e54622132e5ea4e59ecfef6095329e77439977a8239c524e9cca73c52
+    policy_selection_receipt_sha256: 7353f6c458bb504f35120343fe2196f847e76f409c695877d3205c63cd7bee41
+    policy_roles_sha256: d2f8fb11475e6f4cb7fbd3763c57aeee1f4ba58fe87b503c18059f8b19a1b69c
+    policy_record_content_sha256: 435ac89e876eeb2693bd3f98325bc57494d74b48e0be4505f0063388f1c5b207
+    policy_specification_sha256: 806152a1f75471f1148085f31e355ba9c6e481d8983e0a87eb5504f9a27b3b0f
+    release_archive_sha256: cc04d5c67437f743c4b90595b15d0ba4e361c73b96319db07ea09eea8adce686
+    consumer_receipt_sha256: b7149b780b44dfd3c0ff7fce00879af2e537bf33c81bf5531ebd272a53820c15
+  pepshot:
+    normalized_source_revision: sha256:34487cf9667a64c3b64c8cb0884a723b6bb6dcdcddb0543021aa3204fc642264
+    release_id: pepshot-34487cf9667a64c3-fe1e5382de8cab09
+    latest_sha256: 504470dfa22e1a81f4add9c97ab426e1b34c4c9889b7bb8c39c88ac179cdd317
+    release_manifest_sha256: b4f4b848f603f431e5db49bd66e018904c35c9eacf97ae83882d92e6710f2c5d
+    runtime_manifest_sha256: 332350d31e7feea6ec545b579bf680c0b46a1fb38c5110e652274451a725feba
+    fixed_fixture_bundle_id: fe1e5382de8cab09951eebe810be2ba7765e082f63801566debc43518d9097ad
+    release_archive_sha256: 1cb5f3b642242a7c2d5bf0340137875d48438aa5a93e5e2db2ce82b5687556f0
+    consumer_receipt_sha256: d7ae26187004eb0949251753bea7389f6be6d4dea47713d00bde1ac9c1e7d487
+expected_graph:
+  candidate_count: 0
+  evaluation_count: 0
+  tool_call_count: 4
+  dependency_count: 5
+  decision_count: 1
+  decision_edge_count: 3
+  artifact_count: 6
+  lifecycle_event_count: 8
+scientific_contract:
+  no_candidate_generation: true
+  no_evaluations: true
+  provider_effectiveness_not_evaluated: true
+  database_and_object_store_only_replay: true
+  provider_owned_repairs_only: true
+  formal_v34_requires_separate_authorization: true
+  predictions_are_not_experiments: true
+  no_AceA_binding_or_affinity_claim: true
+completion: null
