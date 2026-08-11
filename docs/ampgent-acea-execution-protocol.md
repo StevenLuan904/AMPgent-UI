@@ -457,3 +457,10 @@ deterministic K/R dose block、同位置 control、checkpoint archive、累计�
 已实现并有契约测试。唯一下一步是实现 PostgreSQL persistence activity 与 object-store-only replay
 verifier；随后 commit/push/archive 并冻结 executable revision，才可重新评估 formal-run 授权。v32
 三层 run 链保持不可变。
+
+本阶段文献驱动预注册与纯确定性组件已冻结在 commit
+`140c71f4e8bc1823faf64dce4125c53b82d471fd`，完整验证为 ruff clean、pytest `273 passed`。内容归档为
+`var/archives/ampgent-v33-preregistration-140c71f.zip`，SHA-256
+`c8224ac766c3b10ecefaeb443b42a5a570be0795e6b5b2a7418e3d188d65c1b3`。该 commit 不是可执行 formal-run
+revision；PostgreSQL activity 与 object-store-only replay verifier 未完成前，`formal_run.implementation_revision`
+继续为空。
