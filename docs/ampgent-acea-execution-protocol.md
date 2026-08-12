@@ -1012,12 +1012,32 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   `9b85a88b1fce3d7cb21a7cb9797fd3be22d448aa25895d4edcf883834d312e99`, and manifest SHA-256
   `6b23c0afabb0451622e13beda53827f1bf7faf0d75f2b957b9db37e6fb09926f`.
   It is the only permitted recovery run and must never be submitted again.
-- Current state is `running`. Generator activities have crossed the corrected path boundary and
-  are emitting live guarded-subprocess heartbeats on attempt 1. Until the database contains the
-  exact frozen candidate/occurrence graph, no generated peptide result may be claimed. The next
-  actions are monitoring stage completion, typed evidence counts, retries/failures and final
-  database/object-store-only replay; no ablation or alternative run is allowed.
+- Current state is `failed_immutable`; section 21.6 records the exact cause and the only permitted
+  versioned persistence recovery. No generated peptide result from this run may be claimed.
 - The recovery execution ledger and revision-contract alignment are pushed at checkpoint
   `a2341ef`. Validation is Ruff clean and `661 passed, 3 skipped`; content archive
   `var/archives/ampgent-v37-path-recovery-a2341ef.zip` has SHA-256
   `8310978d8ad5bee89056630002eea65ebcc9d1b59aadc6ef75973e9a1036d0e2`.
+
+### 21.6 2026-08-12 v37 persistence-recovery ledger
+
+- The `v37.0.1-path-recovery` run is now an immutable failed run. All nine frozen generator-seed
+  activities completed generation, but the first canonical generation persistence activity failed
+  before candidate commit with `v37 artifact roles differ from replay contract`. PostgreSQL remains
+  at zero candidates and zero evaluations for this run. The run and its local generator outputs
+  must not be retried in place, backfilled, or treated as scientific results.
+- Exact reconstruction from Temporal event 65 and the durable PostgreSQL attempt ledger showed that
+  the actual six roles and frozen six-role contract were identical. The defect was a deterministic
+  validator error: `Counter` was constructed from the artifact payload mapping itself, so payload
+  dictionaries were interpreted as counts. It was not a generator, metric, database, Temporal, or
+  scientific-quality failure.
+- The minimal fix validates `Counter(artifact_payloads_by_role.keys())` and adds positive,
+  missing-role, and unexpected-role regression coverage. The implementation revision is
+  `723823b5e64b37233fc2f41b8803b596c5039111`. Full validation is Ruff clean and
+  `664 passed, 3 skipped`.
+- A new exact-science recovery contract is frozen as `v37.0.2-persistence-recovery`. Generator
+  models, all nine seeds, fixed budgets, sequence metrics, Pareto rules, knowledge/PepShot releases,
+  Boltz seeds, Rosetta decoys, stop conditions, and scientific boundaries are unchanged. It is
+  authorized but not yet submitted. Before one exact-once submission, deploy a content-addressed
+  release containing the fix, revalidate all services and duplicate gates, and map every worker to
+  physical host/PID/role/queue/source revision. `192.168.99.32` and `.19` GPU4 remain prohibited.

@@ -68,7 +68,11 @@ class V37FormalRun(BaseModel):
 
 class V37Manifest(BaseModel):
     benchmark_id: Literal["amp_rapid_champion_generation_v37"]
-    version: Literal["v37.0.0-preregistered", "v37.0.1-path-recovery"]
+    version: Literal[
+        "v37.0.0-preregistered",
+        "v37.0.1-path-recovery",
+        "v37.0.2-persistence-recovery",
+    ]
     execution_status: Literal["direction_authorized_pending_preexecution_gates"]
     track: Literal["single_arm_rapid_champion_generation"]
     scientific_question: dict[str, Any]
