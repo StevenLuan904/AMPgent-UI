@@ -121,7 +121,7 @@ class V37Manifest(BaseModel):
                 "hydramp.consumer-launch-acceptance.json"
             )
             or hydramp.consumer_launch_acceptance_sha256
-            != "2ded724f079c2086e8e49a07cca52e96d5b0af19c36f364bc6de55fef56aa455"
+            != "29efc6e23fd3e8a2601c99a82e9cd34e5f00da1a2571aa39877f86b07ddd916f"
             or hydramp.provider_adapter_version
             != "hydramp-safe-pca-stateless-gumbel-v1"
             or hydramp.consumer_adapter_version
