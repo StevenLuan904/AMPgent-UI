@@ -1207,3 +1207,8 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
 - `192.168.99.32` remains a whole-host prohibition, explicitly including GPU3/GPU4, and must not be
   contacted even for inspection. `.19` GPU4 also remains prohibited. Only owned, revision-mapped
   allowed resources may be used without disturbing unrelated work.
+- The v37.0.4 freeze checkpoint is commit `7740b13`. Benchmark SHA-256 is
+  `af934bb5fa9a5ea7b7c47774641dea190b89fcbf3fd1215fc62ac13a619cc249`; structure-spec SHA-256 is
+  `b8c89fd5d4f255e985fc61f706b1e6ca5c0b5cf1ecc16c123180fa16df63c149`. Content archive
+  `var/archives/ampgent-v37-subprocess-recovery-7740b13.zip` has SHA-256
+  `18cee29c0756363babfadeca70f444faad8705081ca28663edc4d846a37bca13`.
