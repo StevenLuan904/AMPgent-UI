@@ -1125,8 +1125,12 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   validation is `66 passed`, and repository validation before the version freeze is Ruff clean with
   `668 passed, 3 skipped`. The v37.0.2 partial database evidence remains immutable and is not reused.
 - v37.0.3 is authorized only as the single exact-science recovery described above and remains
-  unsubmitted. Before submission it still requires a tested freeze commit, content archive, a new
-  content-addressed deployment release, zero duplicate run/workflow, healthy services, and fresh
+  unsubmitted. Freeze commit is `a7a0e671fb0234f9365bb083ce40c761cc2d0ccb`; benchmark SHA-256 is
+  `5def0178d8e37b1572af85d9a7854f2915e243c138325f4cd1c24a0465623eb4`, and experiment-spec
+  SHA-256 is `be9f96f4e75cb13fde345713f657c2ce564c473eb70ebbcc684814bc791219f5`.
+  Content archive `var/archives/ampgent-v37-interrupted-attempt-recovery-a7a0e67.zip` has SHA-256
+  `9835e99c67563e43433519074e38218e5b03ff8d1dc676dfefce0e0f767f0435`. Before submission it still
+  requires a new content-addressed deployment release, zero duplicate run/workflow, healthy services, and fresh
   physical host/GPU/PID/role/queue/release mapping for every worker.
 - `192.168.99.32` remains a whole-host prohibition explicitly including GPU3 and GPU4; no login or
   probe is allowed. `.19` GPU4 also remains prohibited. These constraints are formal preflight
