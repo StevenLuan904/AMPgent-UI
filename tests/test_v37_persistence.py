@@ -1,4 +1,5 @@
 import statistics
+import uuid
 from pathlib import Path
 
 import pytest
@@ -13,6 +14,7 @@ from pepagent.v37_persistence import (
     _selection_witness_payloads,
     _v37_preclosure_projection,
     build_v37_artifact_contract,
+    persist_v37_tool_result,
     validate_v37_database_object_replay,
 )
 from pepagent.v37_preregistration import load_v37_preregistration
@@ -28,6 +30,86 @@ from pepagent.v37_selection import select_v37_lanes
 
 ROOT = Path(__file__).parents[1]
 CONFIG = ROOT / "config" / "benchmarks" / "amp_rapid_champion_generation_v37.yaml"
+
+
+@pytest.mark.asyncio
+async def test_v37_tool_result_accepts_exact_artifact_role_mapping(monkeypatch) -> None:
+    frozen = load_v37_preregistration(CONFIG)
+    plan = build_v37_evidence_plan(frozen)
+    logical_id = plan["generator_calls"][0]["logical_id"]
+    artifacts = {
+        role: {"role": role}
+        for role in build_v37_artifact_contract(plan)[logical_id]
+    }
+
+    class StopAfterRoleValidation(Exception):
+        pass
+
+    class RepositoryProbe:
+        def __init__(self, session) -> None:
+            raise StopAfterRoleValidation
+
+    monkeypatch.setattr(
+        "pepagent.v37_persistence.ExperimentRepository",
+        RepositoryProbe,
+    )
+    with pytest.raises(StopAfterRoleValidation):
+        await persist_v37_tool_result(
+            object(),
+            run_id=uuid.uuid4(),
+            plan=plan,
+            logical_id=logical_id,
+            environment_sha256="a" * 64,
+            input_payload={},
+            parameters={},
+            output_payload={},
+            artifact_payloads_by_role=artifacts,
+            artifact_writer=None,
+        )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("mutation", ["missing", "unexpected"])
+async def test_v37_tool_result_rejects_artifact_role_drift(
+    monkeypatch, mutation: str
+) -> None:
+    frozen = load_v37_preregistration(CONFIG)
+    plan = build_v37_evidence_plan(frozen)
+    logical_id = plan["generator_calls"][0]["logical_id"]
+    artifacts = {
+        role: {"role": role}
+        for role in build_v37_artifact_contract(plan)[logical_id]
+    }
+    if mutation == "missing":
+        artifacts.pop("failure_ledger")
+    else:
+        artifacts["unexpected"] = {"role": "unexpected"}
+
+    repository_reached = False
+
+    class RepositoryProbe:
+        def __init__(self, session) -> None:
+            nonlocal repository_reached
+            repository_reached = True
+
+    monkeypatch.setattr(
+        "pepagent.v37_persistence.ExperimentRepository",
+        RepositoryProbe,
+    )
+    with pytest.raises(ValueError, match="artifact roles differ from replay contract"):
+        await persist_v37_tool_result(
+            object(),
+            run_id=uuid.uuid4(),
+            plan=plan,
+            logical_id=logical_id,
+            environment_sha256="a" * 64,
+            input_payload={},
+            parameters={},
+            output_payload={},
+            artifact_payloads_by_role=artifacts,
+            artifact_writer=None,
+        )
+    assert repository_reached is False
 
 
 def _runtime_receipt(runtime_id: str) -> dict:

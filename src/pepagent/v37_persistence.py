@@ -566,7 +566,7 @@ async def persist_v37_tool_result(
     role_contract = build_v37_artifact_contract(plan)
     if logical_id not in role_contract:
         raise ValueError("unknown v37 logical ToolCall")
-    if Counter(artifact_payloads_by_role) != Counter(role_contract[logical_id]):
+    if Counter(artifact_payloads_by_role.keys()) != Counter(role_contract[logical_id]):
         raise ValueError("v37 artifact roles differ from replay contract")
     repository = ExperimentRepository(session)
     plan_item = next(
