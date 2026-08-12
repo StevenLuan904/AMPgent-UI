@@ -1164,3 +1164,46 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   synth GPU5/GPU6, `.19` GPU5 and synth CPU workers, followed by fresh placement, all seven dynamic
   gates and one exact-once submission. `192.168.99.32` remains wholly prohibited, explicitly
   including GPU3/GPU4, and `.19` GPU4 remains prohibited.
+
+### 21.11 2026-08-12 v37.0.3 immutable provider-runtime failure
+
+- The unique `v37.0.3-interrupted-attempt-recovery` formal run is immutable failed. PostgreSQL run
+  ID is `97af297c-f0b5-4ba2-859e-56ab811562d3`; Temporal workflow ID is
+  `pepagent-rapid-champion-v37-5e5c943009dac4e3b66078c99bd03e25585569325a3e24d86e666b33ab0f4c55`;
+  Temporal run ID is `2ae087b3-9515-4571-9c41-b4673c172882`; formal key is
+  `5e5c943009dac4e3b66078c99bd03e25585569325a3e24d86e666b33ab0f4c55`.
+- It failed before candidate generation. PostgreSQL contains exactly 0 Candidate, 0 proposal
+  occurrence, 0 ToolCall, 0 Evaluation, 0 AgentDecision, 0 dependency, 0 decision edge and 0
+  evidence-artifact edge for the run. Both knowledge attempts recorded the same observable error,
+  `AssertionError: SRE module mismatch`. Their typed attempt events are complete and their two
+  launch-receipt artifacts match MinIO bytes and SHA, but those receipts are engineering audit
+  evidence only and cannot seed or repair another run.
+- The confirmed mechanism is cross-interpreter environment pollution: the local worker exported
+  its frozen Python 3.11 standard-library paths through `PYTHONPATH`, and the independent knowledge
+  provider Python 3.12 inherited them before importing `argparse`/`re`. This is an execution-runtime
+  isolation failure, not a peptide, knowledge-card or scientific-quality result. The run and every
+  output associated with it must not be resubmitted, backfilled, deleted or reused.
+
+### 21.12 2026-08-12 v37.0.4 subprocess-environment recovery freeze
+
+- The only permitted next version is `v37.0.4-subprocess-environment-recovery`. It changes only
+  subprocess environment isolation. Generator models, all nine seeds, raw/selected budgets, five
+  sequence metric families, 48-candidate structure shortlist, three Boltz seeds, 16 Rosetta
+  decoys per pose, provider releases, Pareto policy and stop conditions remain unchanged.
+- Provider and metric subprocesses now drop the parent worker's `PYTHONPATH`, `PYTHONHOME`,
+  `PYTHONSTARTUP`, `PYTHONUSERBASE`, `VIRTUAL_ENV` and `__PYVENV_LAUNCHER__`; declared adapters may
+  not override those keys. Generator subprocesses receive only their frozen generator source root,
+  never the worker bootstrap path. The source revision enforces policy
+  `isolated_provider_python_no_worker_bootstrap`.
+- Implementation revision `22f564e` includes the environment fix and v37.0.4 manifest binding.
+  A real smoke deliberately polluted the parent environment with the frozen Python 3.11 library,
+  then launched the frozen knowledge Python 3.12 with the isolated environment and successfully
+  imported `argparse` and `re`. Repository validation is Ruff clean with `675 passed, 4 skipped`.
+- v37.0.4 is authorized but unsubmitted. Before one exact-once submission it requires a new
+  content-addressed archive/release, new worker deployment and physical placement, a real provider
+  smoke under that release, healthy API/PostgreSQL/MinIO/Temporal, zero duplicate run/workflow and
+  all seven current gates. No v37.0.3 preflight, bundle, database row, artifact or local output may
+  be reused.
+- `192.168.99.32` remains a whole-host prohibition, explicitly including GPU3/GPU4, and must not be
+  contacted even for inspection. `.19` GPU4 also remains prohibited. Only owned, revision-mapped
+  allowed resources may be used without disturbing unrelated work.

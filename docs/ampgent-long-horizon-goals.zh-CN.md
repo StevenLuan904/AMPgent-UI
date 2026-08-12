@@ -495,3 +495,10 @@ L0–L5 成熟度与 Q1–Q6 完成证据矩阵 checkpoint 为 commit
 `var/archives/ampgent-long-horizon-maturity-db252e2.zip` 的 SHA-256 为
 `334ad637931a4a3c31a5f0ee3b1d34ed2905257a2d7b49422d0d61e85abb13de`；全量验证为 ruff clean、pytest
 `362 passed`。该 checkpoint 只强化路线图维护，不改变任何执行授权。
+
+2026-08-12 后续工程恢复事实：唯一 v37.0.3 run 在生成任何候选前因父 worker 的 Python 3.11
+`PYTHONPATH` 污染独立知识 provider Python 3.12 而失败；Candidate、Evaluation 与 AgentDecision 均为 0。
+该 run 作为不可变工程失败保留，不构成短肽质量、知识卡效果或科学结论。独立
+`v37.0.4-subprocess-environment-recovery` 仅隔离 provider、metric 与 generator 子进程环境，科学模型、
+seed、预算、结构协议、Pareto 和停止条件不变。其完成仍只用于追求一次数据库可回放的高质量 champion
+portfolio，不改变 Q1/Q2/Q6 的回答标准，也不提前恢复已延期的工具消融。

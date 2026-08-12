@@ -27,7 +27,7 @@ def test_v37_is_single_arm_fixed_budget_and_execution_authorized() -> None:
         "direction_authorized": True,
         "execution_authorized": True,
         "submitted": False,
-        "implementation_revision": "a7a0e671fb0234f9365bb083ce40c761cc2d0ccb",
+        "implementation_revision": "22f564e0fdde67aed97779d9185dbe929661c882",
         "run_id": None,
         "workflow_id": None,
     }

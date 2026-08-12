@@ -75,7 +75,7 @@ def test_v37_static_and_dynamic_preflight_honors_config_authorization() -> None:
     assert static["formal_run_submitted"] is False
     assert static["config_execution_authorized"] is True
     assert static["implementation_revision"] == (
-        "a7a0e671fb0234f9365bb083ce40c761cc2d0ccb"
+        "22f564e0fdde67aed97779d9185dbe929661c882"
     )
     gates = {
         "implementation_committed_pushed_archived": True,

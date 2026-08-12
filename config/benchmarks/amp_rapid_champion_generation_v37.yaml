@@ -1,5 +1,5 @@
 benchmark_id: amp_rapid_champion_generation_v37
-version: v37.0.3-interrupted-attempt-recovery
+version: v37.0.4-subprocess-environment-recovery
 execution_status: direction_authorized_pending_preexecution_gates
 track: single_arm_rapid_champion_generation
 
@@ -219,7 +219,7 @@ execution:
 
 stage_2_structure_confirmation:
   experiment_spec_path: ../experiments/acea_v37_rapid_champion_structure.yaml
-  experiment_spec_sha256: be9f96f4e75cb13fde345713f657c2ce564c473eb70ebbcc684814bc791219f5
+  experiment_spec_sha256: b8c89fd5d4f255e985fc61f706b1e6ca5c0b5cf1ecc16c123180fa16df63c149
   expected_maximum_candidates: 48
   boltz_seeds: [20270380, 20270381, 20270382]
   poses_per_candidate: 3
@@ -366,6 +366,6 @@ formal_run:
   direction_authorized: true
   execution_authorized: true
   submitted: false
-  implementation_revision: a7a0e671fb0234f9365bb083ce40c761cc2d0ccb
+  implementation_revision: 22f564e0fdde67aed97779d9185dbe929661c882
   run_id: null
   workflow_id: null
