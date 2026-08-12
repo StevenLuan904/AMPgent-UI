@@ -840,8 +840,8 @@ async def generate_v37_batch(request: dict[str, Any]) -> dict[str, Any]:
             command = _generator_command(
                 engine,
                 launch_binding,
-                request_path,
-                output_path,
+                request_path.resolve(),
+                output_path.resolve(),
                 hydramp_model_path=hydramp_model_path,
             )
             expectation = V37GeneratorRuntimeExpectation(**launch_binding["expectation"])
