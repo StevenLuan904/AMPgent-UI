@@ -1219,3 +1219,26 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   frozen knowledge provider Python again imported `argparse`/`re` successfully while the parent
   environment was deliberately polluted with the frozen Python 3.11 standard library. This proves
   the deployable artifact contains the isolation fix; it does not by itself authorize submission.
+
+### 21.13 2026-08-12 v37.0.4 worker migration checkpoint
+
+- Local control, generator, provider and sequence-metric workers were migrated to source
+  `22f564e0fdde67aed97779d9185dbe929661c882` and release
+  `e1f1d0a3e7211a83cc1fdd62e2989ba2511844f9eb8ed791b85caf87c130a3dd`. New pollers were observed
+  before the four exact old PIDs were stopped. Current local PIDs are control `24644`, generator
+  `35996`, provider `85900` and metrics `97464`; all four immutable receipts pass the local worker
+  inspector. Their v37.0.4-only bootstrap identities are launch material, not submission authority;
+  the final placement snapshot and submission preflight remain outstanding.
+- Remote migration stopped at the non-interference gate without changing remote state. On synth,
+  GPU5 is occupied by foreign PID `4076870` using about 15.9 GiB and GPU6 by foreign PID `4076871`
+  using about 17.3 GiB; both originate from another user's `ecd_pred` environment. They are not
+  AMPgent-owned and must not be stopped, inspected beyond the ownership gate, or competed with.
+  Consequently no v37.0.4 archive was uploaded or activated remotely and no remote worker was
+  started or stopped. The existing `.19` GPU5 Boltz worker and synth CPU Rosetta worker remain on
+  the old source/release pending a complete safe migration.
+- Temporal had zero active workflows during the local migration. No v37.0.4 formal run has been
+  submitted. The next permitted action is read-only occupancy monitoring; after synth GPU5/GPU6
+  become available, repeat the full remote ownership/release gate, migrate the complete remote set,
+  build the final placement/preflight, and only then perform the single exact-once submit.
+- The whole-host prohibition on `192.168.99.32`, including GPU3/GPU4, and the `.19` GPU4 prohibition
+  remain absolute and were not contacted or used during this checkpoint.
