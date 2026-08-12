@@ -350,6 +350,14 @@ v37 执行闭环已冻结到 `fd263e8afc984960067fad94821d12a5b3effd73`，授权
 唯一正式执行；当前状态为 `execution_authorized_not_submitted`。下一动作是内容寻址 preflight、数据库
 migration、允许资源的物理映射与一次 exact-once submit。v34 消融继续 deferred；v37 不产生工具增益结论。
 
+2026-08-12 追加执行事实：v37.0.0、v37.0.1 与 v37.0.2 的工程失败均作为不可变证据保留，均未产生可
+解释为最终短肽结果的完整 cohort。v37.0.2 揭示了 Temporal 心跳超时后“已开始但无终态”的 attempt
+证据语义缺口；该问题已在独立的 `v37.0.3-interrupted-attempt-recovery` 中以数据库原生、带并发围栏的
+typed interruption ledger 修复。它不改变本路线的科学问题、预算或成功标准，也不复用旧 run 数据。
+当前近期目标仍是完成一次可数据库回放的 v37 单臂 champion portfolio，再据此更新 Q1/Q2/Q6；工程恢复
+本身不构成肽质量、工具增益或实验效力结论。资源边界同时明确为：`192.168.99.32` 整机禁用（明确包括
+GPU3/GPU4），`.19` GPU4 禁用，其他资源仅在归属与 release 映射清楚且不干扰他人任务时使用。
+
 v33 当前叙事预注册见 `docs/ampgent-v33-charge-search-preregistration.zh-CN.md`。其状态为
 `implementation_frozen_not_authorized`；确定性 K/R dose block、逐 checkpoint archive、PostgreSQL
 persistence primitives 与 database+object-store-only replay verifier 已实现并有测试。persistence

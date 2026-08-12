@@ -1107,3 +1107,27 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   GPU3 and GPU4, and the host must not be contacted even to use another card. `.19` GPU4 also
   remains prohibited. Allowed resources still require exact host/GPU/PID/role/release ownership and
   must not displace unrelated work.
+
+### 21.9 2026-08-12 v37.0.3 interrupted-attempt recovery freeze
+
+- The execution-only recovery is frozen as `v37.0.3-interrupted-attempt-recovery`. The three
+  generators, nine seeds, raw and selected budgets, five sequence-evaluation families, 48-candidate
+  structure budget, three Boltz seeds, 16 Rosetta decoys per pose, knowledge/PepShot releases,
+  Pareto policy and all scientific interpretation boundaries are byte-for-byte or semantically
+  unchanged except for the required version binding.
+- The implementation persists the later attempt start and all inferred prior interruptions in one
+  PostgreSQL transaction protected by a lineage-scoped advisory lock. Terminal writes take the
+  same lock, so a superseded zombie attempt cannot race a typed interruption into a contradictory
+  ledger. Replay validates event type against payload status and identity, requires every
+  interruption to name an actual later-attempt start, rejects duplicate interruption rows, requires
+  contiguous attempt numbers and accepts only a final succeeded attempt.
+- The implementation checkpoint is `247f75102d396b846ec4a326711b361851eac49a`; targeted recovery
+  validation is `66 passed`, and repository validation before the version freeze is Ruff clean with
+  `668 passed, 3 skipped`. The v37.0.2 partial database evidence remains immutable and is not reused.
+- v37.0.3 is authorized only as the single exact-science recovery described above and remains
+  unsubmitted. Before submission it still requires a tested freeze commit, content archive, a new
+  content-addressed deployment release, zero duplicate run/workflow, healthy services, and fresh
+  physical host/GPU/PID/role/queue/release mapping for every worker.
+- `192.168.99.32` remains a whole-host prohibition explicitly including GPU3 and GPU4; no login or
+  probe is allowed. `.19` GPU4 also remains prohibited. These constraints are formal preflight
+  failures, not scheduling preferences.

@@ -72,6 +72,7 @@ class V37Manifest(BaseModel):
         "v37.0.0-preregistered",
         "v37.0.1-path-recovery",
         "v37.0.2-persistence-recovery",
+        "v37.0.3-interrupted-attempt-recovery",
     ]
     execution_status: Literal["direction_authorized_pending_preexecution_gates"]
     track: Literal["single_arm_rapid_champion_generation"]
