@@ -2,6 +2,8 @@ import hashlib
 import json
 from pathlib import Path
 
+import yaml
+
 ROOT = Path(__file__).resolve().parents[1]
 ENV_ROOT = ROOT / "config" / "environments" / "v37_metric_runtimes"
 
@@ -49,7 +51,7 @@ def test_v37_metric_environment_evidence_is_fail_closed() -> None:
     assert shared["registry_binding"] == {
         "registry_path": "config/metrics/runtime.local.yaml",
         "registry_sha256": (
-            "007afeabe9302c7ac00e95f52e7fa00297946483982c39c12de8a62b5e6da6f9"
+            "3b74ffaa2b1bb95b92f921575d10b6d0e8f653f52a7bd1ad0c1be369de2b8f5a"
         ),
         "plugins": ["mic_potency", "mic_potency_amp_read"],
         "same_command_executable_proven": True,
@@ -68,6 +70,34 @@ def test_v37_metric_environment_evidence_is_fail_closed() -> None:
     assert macrel["controller"]["uv_lock_sha256"] == (
         "93f507654f1174f4510230756b0e791a8bc6aae8ef0de1c71d17f5e813822a62"
     )
+    assert macrel["execution_source_contract"] == {
+        "adapter_workspace_relative_path": (
+            "src/pepagent/model_workers/macrel_metric_cli.py"
+        ),
+        "provider_source_root_workspace_relative_path": (
+            "var/metric-runtimes/macrel-py311/Lib/site-packages/macrel"
+        ),
+        "model_root_workspace_relative_path": (
+            "var/metric-runtimes/macrel-py311/Lib/site-packages/macrel/data/models"
+        ),
+        "source_inventory_scope": (
+            "provider-owned Macrel package only; unrelated pepagent model-worker "
+            "adapters are excluded"
+        ),
+    }
+
+
+def test_v37_macrel_registry_binds_direct_adapter_entity() -> None:
+    registry = yaml.safe_load(
+        (ROOT / "config" / "metrics" / "runtime.local.yaml").read_text(
+            encoding="utf-8"
+        )
+    )
+    command = registry["adapters"]["hemolysis_risk"]["command"]
+    assert command[1].replace("\\", "/").endswith(
+        "/src/pepagent/model_workers/macrel_metric_cli.py"
+    )
+    assert "-m" not in command[:2]
 
 
 def test_amp_read_manifest_binds_source_models_and_shared_environment() -> None:
