@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -12,10 +13,37 @@ from pepagent.v37_local_worker_windows import (
     RECEIPT_SCHEMA,
     LocalWorkerRefusal,
     _exclusive_reservation,
+    _powershell_process_snapshot,
     inspect_local_worker_receipt,
     launch_local_worker,
     validate_local_worker_plan,
 )
+
+
+def test_powershell_snapshot_forces_utf8_for_unicode_workspace_paths(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_run(command: list[str], **kwargs: object) -> SimpleNamespace:
+        captured["command"] = command
+        captured["kwargs"] = kwargs
+        return SimpleNamespace(
+            returncode=0,
+            stdout=(
+                '{"ProcessId":123,"ExecutablePath":'
+                '"D:\\\\DWorkspace\\\\\u76ae\u80a4\u6297\u83cc\u77ed\u80bd\\\\python.exe",'
+                '"CommandLine":"python -m worker","CreationDate":"created"}'
+            ),
+            stderr="",
+        )
+
+    monkeypatch.setattr("pepagent.v37_local_worker_windows.subprocess.run", fake_run)
+    snapshot = _powershell_process_snapshot(123)
+    assert snapshot["ProcessId"] == 123
+    assert captured["kwargs"]["encoding"] == "utf-8"
+    assert captured["kwargs"]["errors"] == "strict"
+    assert "[Console]::OutputEncoding" in captured["command"][-1]
 
 
 def _plan(tmp_path: Path, *, role: str = "metrics") -> dict[str, object]:
@@ -59,6 +87,9 @@ def _plan(tmp_path: Path, *, role: str = "metrics") -> dict[str, object]:
         "release_sha256": release_sha,
         "python_path": str(python_path),
         "python_sha256": sha256_file(python_path),
+        "managed_python_executable": str(python_path),
+        "managed_python_executable_sha256": sha256_file(python_path),
+        "runtime_import_paths": [],
         "entrypoint_sha256": sha256_file(entrypoint),
         "runtime_environment_sha256": "3" * 64,
         "runtime_manifest": {},
@@ -264,3 +295,40 @@ async def test_launch_refuses_existing_temporal_poller_before_spawn_or_reservati
     with pytest.raises(LocalWorkerRefusal, match="already has live pollers"):
         await launch_local_worker(plan_path)
     assert not (tmp_path / "state").exists()
+
+
+def test_local_poller_liveness_ignores_only_a_stopped_exact_local_pid(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from pepagent.v37_local_worker_windows import live_local_queue_pollers
+
+    def snapshot(pid: int) -> dict[str, object]:
+        if pid == 12:
+            raise LocalWorkerRefusal("absent")
+        return {"ProcessId": pid}
+
+    monkeypatch.setattr(
+        "pepagent.v37_local_worker_windows._powershell_process_snapshot", snapshot
+    )
+    pollers = [
+        {
+            "kind": "activity",
+            "identity": f"pepagent:v37-control:{pid}@local-host:{'1' * 40}",
+            "last_access_time": "2026-08-12T00:00:00Z",
+        }
+        for pid in (12, 13)
+    ]
+    pollers.append(
+        {
+            "kind": "activity",
+            "identity": f"pepagent:v37-control:14@remote-host:{'1' * 40}",
+            "last_access_time": "2026-08-12T00:00:00Z",
+        }
+    )
+    assert [
+        item["identity"]
+        for item in live_local_queue_pollers(pollers, local_host="local-host")
+    ] == [
+        pollers[1]["identity"],
+        pollers[2]["identity"],
+    ]

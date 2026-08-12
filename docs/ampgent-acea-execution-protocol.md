@@ -1138,3 +1138,26 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
 - `192.168.99.32` remains a whole-host prohibition explicitly including GPU3 and GPU4; no login or
   probe is allowed. `.19` GPU4 also remains prohibited. These constraints are formal preflight
   failures, not scheduling preferences.
+
+### 21.10 2026-08-12 v37.0.3 local worker identity recovery
+
+- The Windows worker manager now distinguishes Temporal's retained historical poller records from
+  live local workers by parsing the exact local PID identity and checking that PID without weakening
+  unknown-host or remote fail-closed behavior. It also binds the actual base CPython executable,
+  frozen dependency import paths and executable SHA instead of assuming that the virtual-environment
+  launcher wrapper is the long-lived worker process.
+- Windows process snapshots explicitly force UTF-8 output and strict UTF-8 decoding. This closes the
+  manager crash caused by the NFC Chinese workspace path being decoded with the host legacy code
+  page. The four processes from the incomplete launch were stopped only after zero active workflows,
+  exact command-line ownership and exact `a7a0e671...` Temporal identities were verified.
+- Fresh local receipts now bind control PID `2388`, generator PID `32192`, provider PID `34076` and
+  metrics PID `84708` on `StevensOMEN9` to source
+  `a7a0e671fb0234f9365bb083ce40c761cc2d0ccb` and release
+  `f9b3e30a6547e9254fc5e51d20e9eaceaf88200c63a7a6d2e45ab95a41197e92` under
+  `var/workers/v37-003-live2`. These PIDs are dated observations, not permanent configuration, and
+  must be revalidated for final placement.
+- Repository validation after the manager correction is Ruff clean and `670 passed, 4 skipped`.
+  v37.0.3 remains unsubmitted. The next action is deployment and exact inspection of the allowed
+  synth GPU5/GPU6, `.19` GPU5 and synth CPU workers, followed by fresh placement, all seven dynamic
+  gates and one exact-once submission. `192.168.99.32` remains wholly prohibited, explicitly
+  including GPU3/GPU4, and `.19` GPU4 remains prohibited.

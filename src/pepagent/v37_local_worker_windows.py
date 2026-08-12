@@ -25,6 +25,9 @@ PLAN_SCHEMA = "v37.local-windows-worker-plan.1"
 RECEIPT_SCHEMA = "v37.local-windows-worker-receipt.1"
 HEX40 = re.compile(r"[0-9a-f]{40}")
 HEX64 = re.compile(r"[0-9a-f]{64}")
+LOCAL_POLLER_IDENTITY = re.compile(
+    r"^pepagent:[^:]+:(?P<pid>[1-9][0-9]*)@(?P<host>[^:]+):[0-9a-f]{40}$"
+)
 
 
 @dataclass(frozen=True)
@@ -131,7 +134,11 @@ def _runtime_fingerprint(
         "assert origin.is_relative_to(root), (origin,root);"
         "digest,manifest=fingerprint_runtime();"
         "print(json.dumps({'environment_sha256':digest,'manifest':manifest,"
-        "'pepagent_origin':str(origin)},sort_keys=True,separators=(',',':')))"
+        "'pepagent_origin':str(origin),'executable':str(pathlib.Path("
+        "getattr(sys,'_base_executable',sys.executable)).resolve()),"
+        "'import_paths':[str(pathlib.Path(p).resolve()) for p in sys.path if p and "
+        "pathlib.Path(p).resolve()!=root and pathlib.Path(p).exists()]},"
+        "sort_keys=True,separators=(',',':')))"
     )
     environment = os.environ.copy()
     environment.update(
@@ -265,6 +272,9 @@ def build_local_worker_plan(
         "release_sha256": release_sha256,
         "python_path": str(python_path),
         "python_sha256": sha256_file(python_path),
+        "managed_python_executable": runtime["executable"],
+        "managed_python_executable_sha256": sha256_file(runtime["executable"]),
+        "runtime_import_paths": runtime["import_paths"],
         "entrypoint_sha256": sha256_file(entrypoint),
         "runtime_environment_sha256": runtime["environment_sha256"],
         "runtime_manifest": runtime["manifest"],
@@ -300,6 +310,11 @@ def validate_local_worker_plan(plan: dict[str, Any], *, rehash_live_files: bool)
             raise LocalWorkerRefusal("release archive changed after planning")
         if sha256_file(plan["python_path"]) != plan["python_sha256"]:
             raise LocalWorkerRefusal("managed Python changed after planning")
+        if (
+            sha256_file(plan["managed_python_executable"])
+            != plan["managed_python_executable_sha256"]
+        ):
+            raise LocalWorkerRefusal("managed Python executable changed after planning")
         release_root = Path(plan["release_root"])
         if (
             release_root.joinpath(".pepagent-source-revision")
@@ -372,6 +387,26 @@ async def temporal_queue_pollers(plan: dict[str, Any]) -> list[dict[str, str]]:
     return observed
 
 
+def live_local_queue_pollers(
+    pollers: list[dict[str, str]], *, local_host: str
+) -> list[dict[str, str]]:
+    """Ignore Temporal's historical local pollers only after their exact PID is gone."""
+
+    live: list[dict[str, str]] = []
+    local_host = local_host.casefold()
+    for poller in pollers:
+        match = LOCAL_POLLER_IDENTITY.fullmatch(str(poller.get("identity", "")))
+        if match is None or match.group("host").casefold() != local_host:
+            live.append(poller)
+            continue
+        try:
+            _powershell_process_snapshot(int(match.group("pid")))
+        except LocalWorkerRefusal:
+            continue
+        live.append(poller)
+    return live
+
+
 def _atomic_json(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
@@ -398,19 +433,26 @@ def _exclusive_reservation(path: Path, payload: dict[str, Any]) -> None:
 
 def _powershell_process_snapshot(pid: int) -> dict[str, Any]:
     command = (
+        "[Console]::OutputEncoding=[System.Text.UTF8Encoding]::new(); "
+        "$OutputEncoding=[Console]::OutputEncoding; "
         "$p=Get-CimInstance Win32_Process -Filter \"ProcessId="
         + str(pid)
         + "\"; if($null-eq$p){exit 3}; "
         "$p | Select-Object ProcessId,ExecutablePath,CommandLine,CreationDate "
         "| ConvertTo-Json -Compress"
     )
-    completed = subprocess.run(
-        ["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", command],
-        check=False,
-        capture_output=True,
-        text=True,
-        timeout=30,
-    )
+    try:
+        completed = subprocess.run(
+            ["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", command],
+            check=False,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="strict",
+            timeout=30,
+        )
+    except (UnicodeDecodeError, TypeError) as error:
+        raise LocalWorkerRefusal("Windows process snapshot was not valid UTF-8") from error
     if completed.returncode != 0:
         raise LocalWorkerRefusal("worker PID is absent or unreadable")
     try:
@@ -438,7 +480,7 @@ def inspect_local_worker_receipt(
     if int(snapshot.get("ProcessId", -1)) != pid:
         raise LocalWorkerRefusal("worker PID receipt no longer matches the process")
     if Path(str(snapshot.get("ExecutablePath", ""))).resolve() != Path(
-        plan["python_path"]
+        plan["managed_python_executable"]
     ).resolve():
         raise LocalWorkerRefusal("worker PID is using another Python executable")
     command_line = str(snapshot.get("CommandLine") or "")
@@ -469,7 +511,7 @@ def _spawn_worker(
     )
     with log_path.open("ab", buffering=0) as log_handle:
         return subprocess.Popen(
-            [str(plan["python_path"]), "-m", str(plan["worker_module"])],
+            [str(plan["managed_python_executable"]), "-m", str(plan["worker_module"])],
             cwd=plan["release_root"],
             env=environment,
             stdin=subprocess.DEVNULL,
@@ -489,7 +531,9 @@ async def launch_local_worker(
         raise LocalWorkerRefusal("the local v37 launcher is Windows-only")
     plan = _read_json(plan_path, label="worker plan")
     validate_local_worker_plan(plan, rehash_live_files=True)
-    initial_pollers = await temporal_queue_pollers(plan)
+    initial_pollers = live_local_queue_pollers(
+        await temporal_queue_pollers(plan), local_host=str(plan["physical_host"])
+    )
     if initial_pollers:
         raise LocalWorkerRefusal(
             f"task queue already has live pollers: {[item['identity'] for item in initial_pollers]}"
@@ -516,7 +560,12 @@ async def launch_local_worker(
     environment = os.environ.copy()
     environment.update(
         {
-            "PYTHONPATH": str(Path(plan["release_root"]) / "src"),
+            "PYTHONPATH": os.pathsep.join(
+                [
+                    str(Path(plan["release_root"]) / "src"),
+                    *[str(item) for item in plan["runtime_import_paths"]],
+                ]
+            ),
             "PYTHONUNBUFFERED": "1",
             "PEPAGENT_WORKER_ROLE": str(plan["role"]),
             "PEPAGENT_WORKER_SOURCE_REVISION": str(plan["source_revision"]),
@@ -550,7 +599,9 @@ async def launch_local_worker(
             raise LocalWorkerRefusal(
                 f"planned worker exited before polling Temporal (code={process.returncode})"
             )
-        observed = await temporal_queue_pollers(plan)
+        observed = live_local_queue_pollers(
+            await temporal_queue_pollers(plan), local_host=str(plan["physical_host"])
+        )
         unexpected = [item for item in observed if item["identity"] != expected_identity]
         if unexpected:
             raise LocalWorkerRefusal("another poller appeared during the launch reservation")
