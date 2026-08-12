@@ -291,7 +291,234 @@ def validate_v37_submission_replay_binding(
     }
     if request != expected_request:
         raise ValueError("v37 workflow request differs from immutable submission inputs")
+    _validate_generator_launch_binding_evidence(
+        graph=graph,
+        artifact_bytes_by_sha256=artifact_bytes_by_sha256,
+        execution=execution,
+    )
     return manifest
+
+
+def _normalized_bound_path(value: object) -> str:
+    return str(value).replace("\\", "/").rstrip("/").casefold()
+
+
+def _command_flag(command: Sequence[object], flag: str) -> str:
+    values = [str(item) for item in command]
+    positions = [index for index, item in enumerate(values) if item == flag]
+    if len(positions) != 1 or positions[0] + 1 >= len(values):
+        raise ValueError(f"v37 generator launch command lacks one exact {flag} binding")
+    return values[positions[0] + 1]
+
+
+def _generator_receipt_payload(payload: object) -> Mapping[str, Any] | None:
+    if not isinstance(payload, Mapping):
+        return None
+    direct = payload.get("live_launch_receipt")
+    if isinstance(direct, Mapping):
+        return direct
+    return payload if payload.get("schema_version") == "v37.guarded-runtime-receipts.2" else None
+
+
+def _validate_generator_launch_binding_evidence(
+    *,
+    graph: Mapping[str, Any],
+    artifact_bytes_by_sha256: Mapping[str, bytes],
+    execution: Mapping[str, Any],
+) -> None:
+    """Bind generator runtime receipts to the immutable execution-bundle commands."""
+    bindings = execution.get("generator_launch_bindings")
+    runtimes = execution.get("generator_runtimes")
+    generation_calls = [
+        item
+        for item in graph.get("tool_calls", [])
+        if str(item.get("tool_name", "")).startswith("v37-generate-")
+    ]
+    if bindings is None:
+        if generation_calls:
+            raise ValueError("v37 generator launch binding set is incomplete")
+        # Some narrow legacy unit fixtures contain no generator stage. They are
+        # outside the formal replay path and therefore have nothing to bind.
+        return
+    if (
+        not isinstance(bindings, Mapping)
+        or not isinstance(runtimes, Mapping)
+        or set(bindings) != set(runtimes)
+    ):
+        raise ValueError("v37 generator launch binding set is incomplete")
+
+    artifacts = {str(item["id"]): item for item in graph.get("artifacts", []) if "id" in item}
+    links_by_call: dict[str, list[Mapping[str, Any]]] = {}
+    for link in graph.get("evidence_artifacts", []):
+        if link.get("role") == "source_runtime_receipt":
+            links_by_call.setdefault(str(link.get("tool_call_id")), []).append(link)
+
+    observed_generators: set[str] = set()
+    if not generation_calls:
+        raise ValueError("v37 generator launch receipts are missing")
+    for call in generation_calls:
+        call_id = str(call["id"])
+        input_json = call.get("input_json")
+        generator_id = (
+            str(input_json.get("generator"))
+            if isinstance(input_json, Mapping) and input_json.get("generator")
+            else str(call["tool_name"]).removeprefix("v37-generate-")
+        )
+        binding = bindings.get(generator_id)
+        runtime = runtimes.get(generator_id)
+        if not isinstance(binding, Mapping) or not isinstance(runtime, Mapping):
+            raise ValueError("v37 generator ToolCall has no immutable launch binding")
+        embedded_binding_sha = binding.get("launch_binding_sha256")
+        binding_identity = {
+            key: value for key, value in binding.items() if key != "launch_binding_sha256"
+        }
+        if embedded_binding_sha != sha256_json(binding_identity):
+            raise ValueError("v37 generator launch binding self-hash drifted during replay")
+        if (
+            binding.get("generator_id") != generator_id
+            or binding.get("runtime_manifest_sha256")
+            != runtime.get("runtime_manifest_sha256")
+        ):
+            raise ValueError("v37 generator launch binding runtime identity drifted")
+
+        links = links_by_call.get(call_id, [])
+        if len(links) != 1:
+            raise ValueError("v37 generator ToolCall lacks one launch receipt artifact")
+        artifact = artifacts.get(str(links[0].get("artifact_id")))
+        if artifact is None:
+            raise ValueError("v37 generator launch receipt artifact is missing")
+        digest = str(artifact.get("sha256"))
+        raw = artifact_bytes_by_sha256.get(digest)
+        if raw is None or sha256_bytes(raw) != digest:
+            raise ValueError("v37 generator launch receipt object bytes drifted")
+        try:
+            receipt_payload = yaml.safe_load(raw)
+        except (UnicodeDecodeError, yaml.YAMLError) as error:
+            raise ValueError("v37 generator launch receipt object is unreadable") from error
+        receipt = _generator_receipt_payload(receipt_payload)
+        if receipt is None:
+            raise ValueError("v37 generator launch receipt object lacks launch evidence")
+        _validate_aggregate_runtime_receipt(receipt)
+        identity = receipt["pre_snapshot"]["identity"]
+        command = identity.get("command")
+        paths = binding.get("paths")
+        if not isinstance(command, list) or not isinstance(paths, Mapping) or len(command) < 2:
+            raise ValueError("v37 generator launch receipt command is malformed")
+        if (
+            identity.get("generator_id") != generator_id
+            or identity.get("runtime_manifest_sha256")
+            != binding.get("runtime_manifest_sha256")
+            or _normalized_bound_path(command[0])
+            != _normalized_bound_path(paths.get("python_path"))
+            or _normalized_bound_path(command[1])
+            != _normalized_bound_path(paths.get("adapter_path"))
+        ):
+            raise ValueError("v37 generator launch receipt differs from its launch binding")
+        _command_flag(command, "--request")
+        _command_flag(command, "--output")
+
+        if generator_id == "hydramp":
+            materialization = binding.get("materialization")
+            if not isinstance(materialization, Mapping):
+                raise ValueError("v37 HydrAMP launch materialization binding is missing")
+            materialization_receipt = (
+                receipt_payload.get("materialization_receipt")
+                if isinstance(receipt_payload, Mapping)
+                else None
+            )
+            if not isinstance(materialization_receipt, Mapping):
+                raise ValueError("v37 HydrAMP materialization receipt is missing")
+            receipt_identity = {
+                key: value
+                for key, value in materialization_receipt.items()
+                if key != "materialization_receipt_sha256"
+            }
+            if materialization_receipt.get("materialization_receipt_sha256") != (
+                sha256_json(receipt_identity)
+            ):
+                raise ValueError("v37 HydrAMP materialization receipt self-hash drifted")
+            for key in (
+                "archive_sha256",
+                "member_inventory_sha256",
+                "extracted_tree_sha256",
+                "member_count",
+                "file_count",
+                "uncompressed_bytes",
+            ):
+                if materialization_receipt.get(key) != materialization.get(key):
+                    raise ValueError(
+                        f"v37 HydrAMP materialization receipt {key} differs from binding"
+                    )
+            destination_name = str(materialization_receipt.get("destination_name", ""))
+            expected_prefix = f"hydramp-{str(materialization['archive_sha256'])[:16]}-"
+            if (
+                not destination_name.startswith(expected_prefix)
+                or "/" in destination_name
+                or "\\" in destination_name
+                or destination_name in {".", ".."}
+            ):
+                raise ValueError("v37 HydrAMP materialization destination is invalid")
+            if (
+                _normalized_bound_path(_command_flag(command, "--model-archive"))
+                != _normalized_bound_path(materialization.get("archive_path"))
+                or _normalized_bound_path(_command_flag(command, "--decomposer-path"))
+                != _normalized_bound_path(materialization.get("decomposer_path"))
+            ):
+                raise ValueError("v37 HydrAMP materialization inputs differ from binding")
+            expected_model = (
+                _normalized_bound_path(identity.get("cwd"))
+                + "/"
+                + destination_name.casefold()
+                + "/"
+                + str(materialization.get("model_subdirectory", "")).strip("/").casefold()
+            )
+            if _normalized_bound_path(_command_flag(command, "--model-path")) != expected_model:
+                raise ValueError("v37 HydrAMP materialized model path differs from binding")
+            model_files = runtime.get("model_release", {}).get("files", [])
+            decomposer_path = _normalized_bound_path(materialization.get("decomposer_path"))
+            decomposer_matches = [
+                item
+                for item in model_files
+                if decomposer_path.endswith("/" + str(item.get("path", "")).casefold())
+            ]
+            if len(decomposer_matches) != 1:
+                raise ValueError("v37 HydrAMP decomposer identity is not unique")
+            expected_inputs = {
+                _normalized_bound_path(materialization["archive_path"]): str(
+                    materialization["archive_sha256"]
+                ),
+                decomposer_path: str(decomposer_matches[0]["sha256"]),
+            }
+            observed_inputs = {
+                _normalized_bound_path(item.get("path")): str(item.get("sha256"))
+                for item in identity.get("inputs", [])
+                if isinstance(item, Mapping)
+            }
+            if any(observed_inputs.get(path) != sha for path, sha in expected_inputs.items()):
+                raise ValueError("v37 HydrAMP materialization input bytes differ from binding")
+        else:
+            arguments = binding.get("arguments")
+            if not isinstance(arguments, Mapping):
+                raise ValueError("v37 generator launch arguments are missing")
+            flags = (
+                {"--source-dir": "source_dir", "--model-dir": "model_dir"}
+                if generator_id == "ampgan_v2"
+                else {
+                    "--config": "model_config_path",
+                    "--weights": "model_weights_path",
+                    "--vocab": "vocab_path",
+                }
+            )
+            if any(
+                _normalized_bound_path(_command_flag(command, flag))
+                != _normalized_bound_path(arguments.get(key))
+                for flag, key in flags.items()
+            ):
+                raise ValueError("v37 generator command arguments differ from launch binding")
+        observed_generators.add(generator_id)
+
+    if observed_generators != set(bindings):
+        raise ValueError("v37 generator launch receipts do not cover every frozen generator")
 
 
 def _selection_witness_payloads(selection: Mapping[str, Any]) -> dict[str, dict[str, Any]]:

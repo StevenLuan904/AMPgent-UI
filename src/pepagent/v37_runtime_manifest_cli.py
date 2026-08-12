@@ -17,7 +17,14 @@ from pepagent.v37_runtime_manifests import (
 _RELEASE_VERSION = "v37-generator-runtimes-v1"
 _HYDRAMP_PROVIDER_REVISION = "36b18003122f0d73323f9644b07e1ed267255c11"
 _HYDRAMP_UPSTREAM_REVISION = "6590d2f4c2963f25d30669052a4c4a857e0e7279"
-_HYDRAMP_ADAPTER_VERSION = "hydramp-safe-pca-stateless-gumbel-v1"
+_HYDRAMP_ADAPTER_VERSION = "hydramp-generator-v1-raw-unfiltered-nattempts1"
+_HYDRAMP_PROVIDER_ADAPTER_VERSION = "hydramp-safe-pca-stateless-gumbel-v1"
+_HYDRAMP_LOCAL_ACCEPTANCE_SHA256 = (
+    "303e518c769d884c0f773aeb81c03a8d14228a1cedb82a3b9aa60b248812d813"
+)
+_HYDRAMP_FORMAL_SEED_ACCEPTANCE_SHA256 = (
+    "868905493a3118d2a35ce15ca38144a5c48e347ab31309ed84f2b424353ca8c8"
+)
 _HYDRAMP_RELEASE_MANIFEST_SHA256 = (
     "5b66bd0c4364e26cf629af27620789408cdb7765448d63765434fe97ed21d822"
 )
@@ -33,43 +40,6 @@ _HYDRAMP_SAFE_PCA_SHA256 = (
 _HYDRAMP_SAFE_PCA_MANIFEST_SHA256 = (
     "50c31657fffddf77540e054452e329b8508eaff79e4e8196b37092dc93bf55cc"
 )
-_HYDRAMP_V37_FORMAL_SEED_RECEIPTS = (
-    {
-        "seed": 20270371,
-        "ordered_sequence_sha256": (
-            "ad66f0a934fad88f1d5332dce69c7232183f1f032af9b7c1eda69f933a639026"
-        ),
-        "process_output_sha256": (
-            "64d7fe516c65eaef9cf15477c9d210f5be80373b53369a373d923ed9133a4389"
-        ),
-        "unique_rows": 736,
-        "valid_standard_length_rows": 627,
-    },
-    {
-        "seed": 20270372,
-        "ordered_sequence_sha256": (
-            "e56e2edbbfcb62e9f4ffd8b5bf531ffbdcca17068a93dc8c07052cb68a239cc9"
-        ),
-        "process_output_sha256": (
-            "06b6ac810e9b9f9f2186fb6c9b3968a6087fc23aa54d482cbada1e6e6fdca308"
-        ),
-        "unique_rows": 722,
-        "valid_standard_length_rows": 645,
-    },
-    {
-        "seed": 20270373,
-        "ordered_sequence_sha256": (
-            "856ca98a2383b5c603832fae61ea180a65d4efe8f15e5dcbda692c81765408da"
-        ),
-        "process_output_sha256": (
-            "2773d60bd41b80c910a4373aa25d8d185ae8addb425f8e487af0fc52b07e8b8b"
-        ),
-        "unique_rows": 734,
-        "valid_standard_length_rows": 608,
-    },
-)
-
-
 def _sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -120,6 +90,75 @@ def _verify_hydramp_provider_assets(provider_root: Path) -> None:
     }
     if observed != expected:
         raise ValueError("HydrAMP provider release asset SHA-256 drifted")
+
+
+def _verify_ampgan_derived_asset(source_root: Path) -> None:
+    provenance_path = source_root / "AMPgent_DERIVED_ASSET_PROVENANCE.json"
+    provenance = json.loads(provenance_path.read_text(encoding="utf-8"))
+    expected = {
+        "schema_version": "v37.ampgan-derived-runtime-asset.1",
+        "asset_path": "data/dbaasp/clean.csv",
+        "asset_sha256": "71b41e999dc257fb3c2b3ceaa8a744d56f3e3a10b29259c386b865e1a76ef250",
+        "asset_size_bytes": 728902,
+        "origin_path": "var/research/amp_gan/data/dbaasp/clean.csv",
+        "purpose": "frozen AMPGAN v2 condition-vector runtime input",
+        "derivation": {
+            "implementation_path": "ampgan/dbaasp.py",
+            "implementation_sha256": (
+                "432ad10dc09d026e9ab7fb150d62fa8ecfb615326b32a1bc4e6a89a902dc2d9e"
+            ),
+            "provider_function": "prepare",
+            "source_assets": [
+                {
+                    "path": "data/dbaasp/raw.json",
+                    "sha256": (
+                        "6182395bf36710128b3c836cda9ae69c1c8bae25343034523cb70b95cf3f2521"
+                    ),
+                    "size_bytes": 37782857,
+                },
+                {
+                    "path": "data/dbaasp/targets_mapping.json",
+                    "sha256": (
+                        "a7ae2d237f3edb72b9f644097aeeaad1f2487e14847f3f6134d23daeb47865ca"
+                    ),
+                    "size_bytes": 295,
+                },
+            ],
+        },
+        "license_footprint": {
+            "data_license_claim": "not_inferred; preserve upstream dataset terms",
+            "provider_software_license_path": "LICENSE",
+            "provider_software_license_sha256": (
+                "a1f3e860230efe4508826edc924e9a7cc53b86002376c74696e2d76f801cbc03"
+            ),
+        },
+    }
+    if provenance != expected:
+        raise ValueError("AMPGAN v2 derived-asset semantic provenance drifted")
+    assets = [
+        {
+            "path": provenance["asset_path"],
+            "sha256": provenance["asset_sha256"],
+            "size_bytes": provenance["asset_size_bytes"],
+        },
+        *provenance["derivation"]["source_assets"],
+        {
+            "path": provenance["derivation"]["implementation_path"],
+            "sha256": provenance["derivation"]["implementation_sha256"],
+        },
+        {
+            "path": provenance["license_footprint"]["provider_software_license_path"],
+            "sha256": provenance["license_footprint"][
+                "provider_software_license_sha256"
+            ],
+        },
+    ]
+    for item in assets:
+        path = source_root / item["path"]
+        if not path.is_file() or _sha256_file(path) != item["sha256"]:
+            raise ValueError("AMPGAN v2 derived-asset provenance bytes drifted")
+        if "size_bytes" in item and path.stat().st_size != item["size_bytes"]:
+            raise ValueError("AMPGAN v2 derived-asset provenance size drifted")
 
 
 def _runtime_identity(workspace: Path, runtime_name: str) -> tuple[dict[str, Any], str]:
@@ -185,10 +224,7 @@ def _generator_definitions(workspace: Path) -> list[dict[str, Any]]:
         {
             "generator_id": "hydramp",
             "runtime_name": "hydramp-py38",
-            "adapter": (
-                f"var/releases/{_RELEASE_VERSION}/hydramp/provider/"
-                f"{_HYDRAMP_PROVIDER_REVISION}/amp/inference/inference.py"
-            ),
+            "adapter": "src/pepagent/model_workers/hydramp_generator_cli.py",
             "adapter_version": _HYDRAMP_ADAPTER_VERSION,
             "source_root": (
                 f"var/releases/{_RELEASE_VERSION}/hydramp/provider/"
@@ -221,11 +257,11 @@ def _generator_definitions(workspace: Path) -> list[dict[str, Any]]:
             "adapter_version": "ampgan-v2-generator-v1-positive-conditions-unfiltered",
             "source_root": (
                 f"var/releases/{_RELEASE_VERSION}/ampgan_v2/"
-                "source-1a2ac60bdc268f99"
+                "source-b4aaefa9240d4dab"
             ),
             "source_uri": (
                 f"workspace-release://var/releases/{_RELEASE_VERSION}/ampgan_v2/"
-                "source-1a2ac60bdc268f99"
+                "source-b4aaefa9240d4dab"
             ),
             "source_revision": "1009476bdb988707ff260def863d694549dc18b0",
             "source_files": None,
@@ -305,127 +341,36 @@ def build_local_runtime_set(workspace: Path, output_root: Path) -> dict[str, Any
         f"{_HYDRAMP_PROVIDER_REVISION}"
     )
     _verify_hydramp_provider_assets(provider_root)
-    provider_acceptance_payload = json.loads(
-        (provider_root / "releases/hydramp-safe-pca-v1/acceptance.receipt.json").read_text(
-            encoding="utf-8"
-        )
-    )
-    provider_seed_receipts = [
-        {
-            "seed": item["seed"],
-            "rows": item["generated"]["rows"],
-            "sequence_order_sha256": item["generated"]["sequence_order_sha256"],
-            "cross_process_exact_order": item["checks"][
-                "cross_process_exact_order"
-            ],
-        }
-        for item in provider_acceptance_payload["seed_receipts"]
-    ]
-    hydramp_acceptance: dict[str, Any] = {
-        "schema_version": "v37.generator-runtime-provider-acceptance.1",
-        "generator_id": "hydramp",
-        "status": "accepted",
-        "provider_release": {
-            "release_name": "hydramp-safe-pca-v1.0.0",
-            "tag": "hydramp-safe-v1.0.0",
-            "commit": _HYDRAMP_PROVIDER_REVISION,
-            "release_manifest_sha256": _HYDRAMP_RELEASE_MANIFEST_SHA256,
-            "release_verifier_receipt_sha256": _HYDRAMP_RELEASE_VERIFIER_SHA256,
-            "provider_acceptance_receipt_sha256": (
-                _HYDRAMP_PROVIDER_ACCEPTANCE_SHA256
-            ),
-            "safe_pca_sha256": _HYDRAMP_SAFE_PCA_SHA256,
-            "adapter_version": _HYDRAMP_ADAPTER_VERSION,
-        },
-        "upstream_source": {
-            "uri": "https://github.com/szczurek-lab/hydramp",
-            "revision": _HYDRAMP_UPSTREAM_REVISION,
-        },
-        "historical_blocker": {
-            "receipt_path": blocker_path.relative_to(workspace).as_posix(),
-            "receipt_sha256": hydramp_blocker["blocker_receipt_sha256"],
-            "preserved_status": "blocked",
-        },
-        "independent_process_exact_order_receipts": provider_seed_receipts,
-        "unsafe_deserialization_enabled": False,
-        "ampgent_compatibility_patch_applied": False,
-        "formal_run_executed": False,
-    }
-    hydramp_acceptance["acceptance_receipt_sha256"] = sha256_json(
-        hydramp_acceptance
-    )
     acceptance_path = output_root / "hydramp.acceptance.json"
-    acceptance_path.write_text(
-        json.dumps(hydramp_acceptance, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
-        newline="\n",
+    formal_seed_acceptance_path = output_root / "hydramp.formal-seed-acceptance.json"
+    hydramp_acceptance = json.loads(acceptance_path.read_text(encoding="utf-8"))
+    formal_seed_acceptance = json.loads(
+        formal_seed_acceptance_path.read_text(encoding="utf-8")
     )
-    formal_seed_receipts = [
-        {
-            **item,
-            "rows_per_process": 1000,
-            "process_a_output_sha256": item["process_output_sha256"],
-            "process_b_output_sha256": item["process_output_sha256"],
-            "cross_process_exact_order": True,
+    if hydramp_acceptance.get("acceptance_receipt_sha256") != (
+        _HYDRAMP_LOCAL_ACCEPTANCE_SHA256
+    ):
+        raise ValueError("historical HydrAMP provider acceptance identity drifted")
+    if formal_seed_acceptance.get("acceptance_receipt_sha256") != (
+        _HYDRAMP_FORMAL_SEED_ACCEPTANCE_SHA256
+    ):
+        raise ValueError("historical HydrAMP formal-seed acceptance identity drifted")
+    for label, receipt in (
+        ("provider", hydramp_acceptance),
+        ("formal-seed", formal_seed_acceptance),
+    ):
+        identity = {
+            key: value
+            for key, value in receipt.items()
+            if key != "acceptance_receipt_sha256"
         }
-        for item in _HYDRAMP_V37_FORMAL_SEED_RECEIPTS
-    ]
-    for item in formal_seed_receipts:
-        del item["process_output_sha256"]
-    formal_seed_acceptance: dict[str, Any] = {
-        "schema_version": "v37.generator-runtime-formal-seed-acceptance.1",
-        "benchmark_id": "amp_rapid_champion_generation_v37",
-        "generator_id": "hydramp",
-        "status": "accepted",
-        "provider_release": {
-            "commit": _HYDRAMP_PROVIDER_REVISION,
-            "adapter_version": _HYDRAMP_ADAPTER_VERSION,
-            "release_manifest_sha256": _HYDRAMP_RELEASE_MANIFEST_SHA256,
-            "release_verifier_receipt_sha256": _HYDRAMP_RELEASE_VERIFIER_SHA256,
-            "safe_pca_sha256": _HYDRAMP_SAFE_PCA_SHA256,
-        },
-        "formal_generation_contract": {
-            "seeds": [20270371, 20270372, 20270373],
-            "raw_proposal_budget_per_seed": 1000,
-            "mode": "amp",
-            "filter_out": False,
-            "properties": False,
-            "n_attempts": 1,
-            "processes_per_seed": 2,
-            "process_isolation": "independent_fresh_python_processes",
-            "device": "cpu-only",
-        },
-        "seed_receipts": formal_seed_receipts,
-        "acceptance_rule": (
-            "each formal seed must produce exactly 1000 rows with exact sequence "
-            "identity and order in two independent processes"
-        ),
-        "raw_validity_or_uniqueness_is_acceptance_gate": False,
-        "downstream_selection_rule": "raw_order_first_k_valid_unique",
-        "provider_snapshot_hygiene": {
-            "validation_generated_bytecode_cache": True,
-            "generated_cache_removed_after_path_validation": True,
-            "post_cleanup_snapshot_cache_count": 0,
-            "future_execution_requires_PYTHONDONTWRITEBYTECODE": True,
-        },
-        "unsafe_deserialization_executed": False,
-        "remote_or_gpu_accessed": False,
-        "formal_run_executed": False,
-    }
-    formal_seed_acceptance["acceptance_receipt_sha256"] = sha256_json(
-        formal_seed_acceptance
-    )
-    formal_seed_acceptance_path = output_root / (
-        "hydramp.formal-seed-acceptance.json"
-    )
-    formal_seed_acceptance_path.write_text(
-        json.dumps(formal_seed_acceptance, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
-        newline="\n",
-    )
+        if receipt["acceptance_receipt_sha256"] != sha256_json(identity):
+            raise ValueError(f"historical HydrAMP {label} receipt self-hash drifted")
     entries: list[dict[str, Any]] = []
     for definition in _generator_definitions(workspace):
         generator_id = definition["generator_id"]
+        if generator_id == "ampgan_v2":
+            _verify_ampgan_derived_asset(workspace / definition["source_root"])
         runtime, packages_lock = _runtime_identity(workspace, definition["runtime_name"])
         (output_root / f"{generator_id}.packages.lock.txt").write_text(
             packages_lock, encoding="utf-8", newline="\n"
@@ -582,6 +527,8 @@ def verify_local_runtime_set(workspace: Path, output_root: Path) -> dict[str, An
         source_files = _inventory(
             workspace / definition["source_root"], definition["source_files"]
         )
+        if generator_id == "ampgan_v2":
+            _verify_ampgan_derived_asset(workspace / definition["source_root"])
         if source_files != manifest["source_release"]["files"]:
             raise ValueError(f"{generator_id} source release files drifted")
         model_files = _inventory(workspace / definition["model_root"])
@@ -636,29 +583,6 @@ def verify_local_runtime_set(workspace: Path, output_root: Path) -> dict[str, An
                     raise ValueError(
                         "HydrAMP manifest/formal-seed acceptance identity drifted"
                     )
-                formal_seed_receipts = formal_seed_acceptance["seed_receipts"]
-                expected_formal_seed_receipts = [
-                    {
-                        **item,
-                        "rows_per_process": 1000,
-                        "process_a_output_sha256": item["process_output_sha256"],
-                        "process_b_output_sha256": item["process_output_sha256"],
-                        "cross_process_exact_order": True,
-                    }
-                    for item in _HYDRAMP_V37_FORMAL_SEED_RECEIPTS
-                ]
-                for item in expected_formal_seed_receipts:
-                    del item["process_output_sha256"]
-                if formal_seed_receipts != expected_formal_seed_receipts:
-                    raise ValueError("HydrAMP formal-seed process receipt drifted")
-                hygiene = formal_seed_acceptance["provider_snapshot_hygiene"]
-                if hygiene != {
-                    "validation_generated_bytecode_cache": True,
-                    "generated_cache_removed_after_path_validation": True,
-                    "post_cleanup_snapshot_cache_count": 0,
-                    "future_execution_requires_PYTHONDONTWRITEBYTECODE": True,
-                }:
-                    raise ValueError("HydrAMP provider snapshot hygiene receipt drifted")
                 historical_path = workspace / entry[
                     "historical_blocker_receipt_path"
                 ]
@@ -690,7 +614,7 @@ def verify_local_runtime_set(workspace: Path, output_root: Path) -> dict[str, An
                         _HYDRAMP_PROVIDER_ACCEPTANCE_SHA256
                     ),
                     "safe_pca_sha256": _HYDRAMP_SAFE_PCA_SHA256,
-                    "adapter_version": _HYDRAMP_ADAPTER_VERSION,
+                        "adapter_version": _HYDRAMP_PROVIDER_ADAPTER_VERSION,
                 }:
                     raise ValueError("HydrAMP provider release identity drifted")
                 receipts = acceptance[

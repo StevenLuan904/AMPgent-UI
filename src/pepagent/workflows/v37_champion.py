@@ -73,12 +73,16 @@ class RapidChampionGenerationV37Workflow:
             generation_cells = []
             for engine in manifest["generators"]["engines"]:
                 runtime = request["generator_runtimes"][engine["generator_id"]]
+                launch_binding = request["generator_launch_bindings"][
+                    engine["generator_id"]
+                ]
                 for seed in engine["seeds"]:
                     generation_cells.append(
                         {
                             "ordinal": len(generation_cells),
                             "engine": engine,
                             "runtime": runtime,
+                            "launch_binding": launch_binding,
                             "seed": seed,
                         }
                     )
@@ -90,6 +94,7 @@ class RapidChampionGenerationV37Workflow:
                         "run_id": run_id,
                         "engine": cell["engine"],
                         "runtime": cell["runtime"],
+                        "launch_binding": cell["launch_binding"],
                         "seed": cell["seed"],
                     },
                     task_queue=queues["generator"],

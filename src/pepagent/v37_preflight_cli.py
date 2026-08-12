@@ -12,6 +12,7 @@ from pepagent.v37_capacity import (
     load_v37_capacity_contract,
     validate_v37_worker_placement_snapshot,
 )
+from pepagent.v37_generator_launch import build_v37_generator_launch_binding
 from pepagent.v37_preflight import (
     authorize_v37_submission_preflight,
     bind_v37_submission_inputs,
@@ -119,6 +120,7 @@ def build_v37_execution_bundle(
         raise ValueError("v37 generator runtime index is not fully verified")
 
     generator_runtimes: dict[str, dict[str, Any]] = {}
+    generator_launch_bindings: dict[str, dict[str, Any]] = {}
     original_paths: dict[str, Path] = {"generator_runtime_index": runtime_index_path}
     for entry in runtime_index.get("entries", []):
         if entry.get("status") != "verified":
@@ -129,16 +131,46 @@ def build_v37_execution_bundle(
         if runtime.get("runtime_manifest_sha256") != entry.get("runtime_manifest_sha256"):
             raise ValueError(f"v37 {generator_id} runtime/index identity drifted")
         generator_runtimes[generator_id] = runtime
+        generator_launch_bindings[generator_id] = build_v37_generator_launch_binding(
+            workspace=workspace,
+            runtime_index=runtime_index,
+            entry=entry,
+            manifest=runtime,
+        )
         original_paths[f"generator_runtime:{generator_id}"] = runtime_path
+        if generator_id == "hydramp":
+            for role, key in {
+                "generator_evidence:hydramp:provider_acceptance": (
+                    "acceptance_receipt_path"
+                ),
+                "generator_evidence:hydramp:formal_seed_acceptance": (
+                    "formal_seed_acceptance_receipt_path"
+                ),
+                "generator_evidence:hydramp:historical_blocker": (
+                    "historical_blocker_receipt_path"
+                ),
+            }.items():
+                relative = entry.get(key)
+                if not isinstance(relative, str) or not relative:
+                    raise ValueError(f"v37 HydrAMP runtime index lacks {key}")
+                original_paths[role] = workspace / relative
+            engine = next(
+                item
+                for item in manifest.generators["engines"]
+                if item["generator_id"] == "hydramp"
+            )
+            consumer_path = engine.get("consumer_launch_acceptance_path")
+            if not isinstance(consumer_path, str) or not consumer_path:
+                raise ValueError("v37 HydrAMP consumer acceptance path is absent")
+            original_paths["generator_evidence:hydramp:consumer_launch"] = (
+                manifest_path.parent / consumer_path
+            ).resolve()
 
-    expected_generators = {
-        str(item["generator_id"]) for item in manifest.generators["engines"]
-    }
+    expected_generators = {str(item["generator_id"]) for item in manifest.generators["engines"]}
     if set(generator_runtimes) != expected_generators:
         raise ValueError("v37 generator runtime set differs from frozen benchmark")
     expected_metrics = {
-        str(item["name"])
-        for item in manifest.stage_1_sequence_evaluation["metric_plugins"]
+        str(item["name"]) for item in manifest.stage_1_sequence_evaluation["metric_plugins"]
     }
     if set(metric_runtime_paths) != expected_metrics:
         raise ValueError("v37 metric runtime set differs from frozen benchmark")
@@ -149,9 +181,7 @@ def build_v37_execution_bundle(
     original_paths.update(
         {f"metric_runtime:{name}": path for name, path in metric_runtime_paths.items()}
     )
-    knowledge_runtime = _load_json_object(
-        knowledge_runtime_path, label="knowledge runtime"
-    )
+    knowledge_runtime = _load_json_object(knowledge_runtime_path, label="knowledge runtime")
     knowledge_query = _load_json_object(knowledge_query_path, label="knowledge query")
     frozen_knowledge = manifest.verified_auxiliaries["knowledge"]
     frozen_query_path = (manifest_path.parent / frozen_knowledge["query_path"]).resolve()
@@ -188,6 +218,7 @@ def build_v37_execution_bundle(
     bundle: dict[str, Any] = {
         "schema_version": "v37.execution-bundle.1",
         "generator_runtimes": generator_runtimes,
+        "generator_launch_bindings": generator_launch_bindings,
         "metric_plugins_by_name": metric_runtimes,
         "knowledge_runtime": knowledge_runtime,
         "knowledge_query": knowledge_query,
@@ -197,9 +228,7 @@ def build_v37_execution_bundle(
             role_paths=original_paths, object_store=object_store
         ),
     }
-    _validate_execution_runtime_identities(
-        execution=bundle, manifest=manifest, workspace=workspace
-    )
+    _validate_execution_runtime_identities(execution=bundle, manifest=manifest, workspace=workspace)
     bundle["execution_bundle_identity_sha256"] = sha256_json(bundle)
     return bundle
 
@@ -318,9 +347,7 @@ def main() -> None:
         capacity_contract_path=args.capacity_contract.resolve(),
         worker_placement_snapshot_path=args.worker_placement_snapshot.resolve(),
         runtime_index_path=args.runtime_index.resolve(),
-        metric_runtime_paths=_parse_named_paths(
-            args.metric_runtime, label="metric runtime"
-        ),
+        metric_runtime_paths=_parse_named_paths(args.metric_runtime, label="metric runtime"),
         knowledge_runtime_path=args.knowledge_runtime.resolve(),
         knowledge_query_path=args.knowledge_query.resolve(),
         pepshot_runtime_path=args.pepshot_runtime.resolve(),

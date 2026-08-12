@@ -19,6 +19,12 @@ class V37Engine(BaseModel):
     formal_seed_acceptance_sha256: str | None = Field(
         default=None, pattern=r"^[0-9a-f]{64}$"
     )
+    consumer_launch_acceptance_path: str | None = None
+    consumer_launch_acceptance_sha256: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$"
+    )
+    provider_adapter_version: str | None = None
+    consumer_adapter_version: str | None = None
     seeds: list[int] = Field(min_length=3, max_length=3)
 
 
@@ -108,6 +114,20 @@ class V37Manifest(BaseModel):
             "868905493a3118d2a35ce15ca38144a5c48e347ab31309ed84f2b424353ca8c8"
         ):
             raise ValueError("v37 HydrAMP formal-seed acceptance binding drifted")
+        if (
+            hydramp.consumer_launch_acceptance_path
+            != (
+                "../environments/v37_generator_runtimes/"
+                "hydramp.consumer-launch-acceptance.json"
+            )
+            or hydramp.consumer_launch_acceptance_sha256
+            != "2ded724f079c2086e8e49a07cca52e96d5b0af19c36f364bc6de55fef56aa455"
+            or hydramp.provider_adapter_version
+            != "hydramp-safe-pca-stateless-gumbel-v1"
+            or hydramp.consumer_adapter_version
+            != "hydramp-generator-v1-raw-unfiltered-nattempts1"
+        ):
+            raise ValueError("v37 HydrAMP consumer launch lineage drifted")
         seeds = [seed for engine in engines for seed in engine.seeds]
         if len(seeds) != len(set(seeds)) or len(seeds) != 9:
             raise ValueError("v37 requires nine globally unique generator seeds")

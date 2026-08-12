@@ -47,6 +47,11 @@ from pepagent.v37_attempt_ledger import (
     execute_v37_durable_attempt,
 )
 from pepagent.v37_evidence import build_v37_evidence_plan
+from pepagent.v37_generator_launch import verify_v37_generator_launch_binding
+from pepagent.v37_hydramp_archive import (
+    cleanup_hydramp_materialization,
+    materialize_hydramp_archive,
+)
 from pepagent.v37_persistence import (
     _selection_witness_payloads,
     persist_v37_agent_decision,
@@ -131,13 +136,7 @@ async def evaluate_v37_sequence_metric(request: dict[str, Any]) -> dict[str, Any
         contract = METRIC_PLUGIN_CONTRACTS[plugin_name]
         if contract["provider"] == "builtin":
             settings = get_settings()
-            work = (
-                Path(settings.work_root)
-                / request["run_id"]
-                / "v37"
-                / "metrics"
-                / plugin_name
-            )
+            work = Path(settings.work_root) / request["run_id"] / "v37" / "metrics" / plugin_name
             await asyncio.to_thread(work.mkdir, parents=True, exist_ok=True)
             request_path = work / "request.json"
             output_path = work / "result.json"
@@ -174,9 +173,7 @@ async def evaluate_v37_sequence_metric(request: dict[str, Any]) -> dict[str, Any
                 env=os.environ.copy(),
                 input_paths={"request": request_path},
             )
-            result = json.loads(
-                await asyncio.to_thread(output_path.read_text, encoding="utf-8")
-            )
+            result = json.loads(await asyncio.to_thread(output_path.read_text, encoding="utf-8"))
             if (
                 result.get("status") != "complete"
                 or result.get("runtime_id") != plugin.get("runtime_id")
@@ -249,21 +246,13 @@ async def evaluate_v37_sequence_metric(request: dict[str, Any]) -> dict[str, Any
             }
 
         registry_path = Path(str(plugin["registry_path"]))
-        adapter, registry_sha256 = load_external_metric_adapter(
-            registry_path, plugin_name
-        )
+        adapter, registry_sha256 = load_external_metric_adapter(registry_path, plugin_name)
         if not adapter or adapter.get("enabled") is not True:
             raise ValueError(f"v37 required metric adapter is absent: {plugin_name}")
         if registry_sha256 != plugin.get("registry_sha256"):
             raise ValueError("v37 metric registry identity differs from frozen runtime")
         settings = get_settings()
-        work = (
-            Path(settings.work_root)
-            / request["run_id"]
-            / "v37"
-            / "metrics"
-            / plugin_name
-        )
+        work = Path(settings.work_root) / request["run_id"] / "v37" / "metrics" / plugin_name
         await asyncio.to_thread(work.mkdir, parents=True, exist_ok=True)
         plan = build_external_metric_plan(
             plugin_name=plugin_name,
@@ -333,9 +322,7 @@ async def evaluate_v37_sequence_metric(request: dict[str, Any]) -> dict[str, Any
             },
         }
 
-    return _with_activity_transition(
-        await execute_v37_durable_attempt(operation, context=context)
-    )
+    return _with_activity_transition(await execute_v37_durable_attempt(operation, context=context))
 
 
 @activity.defn(name="predict_v37_boltz2_complex")
@@ -352,9 +339,7 @@ async def predict_v37_boltz2_complex(request: dict[str, Any]) -> dict[str, Any]:
     async def operation() -> dict[str, Any]:
         return await predict_boltz2_complex(request)
 
-    return _with_activity_transition(
-        await execute_v37_durable_attempt(operation, context=context)
-    )
+    return _with_activity_transition(await execute_v37_durable_attempt(operation, context=context))
 
 
 @activity.defn(name="score_v37_rosetta_complex")
@@ -370,9 +355,7 @@ async def score_v37_rosetta_complex(request: dict[str, Any]) -> dict[str, Any]:
     async def operation() -> dict[str, Any]:
         return await score_rosetta_complex(request)
 
-    return _with_activity_transition(
-        await execute_v37_durable_attempt(operation, context=context)
-    )
+    return _with_activity_transition(await execute_v37_durable_attempt(operation, context=context))
 
 
 def _v37_plan(manifest: dict[str, Any]) -> dict[str, Any]:
@@ -392,10 +375,7 @@ async def _durable_attempt_artifacts(
                 )
             )
         )
-    events = [
-        {"event_type": item.event_type, "payload_json": item.payload_json}
-        for item in rows
-    ]
+    events = [{"event_type": item.event_type, "payload_json": item.payload_json} for item in rows]
     return build_v37_attempt_artifacts(events, logical_id=logical_id)
 
 
@@ -459,9 +439,7 @@ async def _persist_v37_launch_receipt(
 ) -> None:
     stored = await _store_json(receipt)
     async with SessionFactory() as session, session.begin():
-        artifact = await session.scalar(
-            select(Artifact).where(Artifact.sha256 == stored.sha256)
-        )
+        artifact = await session.scalar(select(Artifact).where(Artifact.sha256 == stored.sha256))
         if artifact is None:
             artifact = Artifact(
                 sha256=stored.sha256,
@@ -528,8 +506,7 @@ async def _persist_v37_aggregate_launch_receipt(
             select(LifecycleEvent).where(
                 LifecycleEvent.aggregate_type == "v37_attempt",
                 LifecycleEvent.aggregate_id == context.aggregate_id,
-                LifecycleEvent.event_type
-                == "v37.aggregate_launch_receipt_persisted",
+                LifecycleEvent.event_type == "v37.aggregate_launch_receipt_persisted",
             )
         )
         if existing is None:
@@ -722,24 +699,26 @@ async def _complete_v37_replay_call(
 def _select_v37_coordinate_artifact(structure: dict[str, Any]) -> dict[str, Any]:
     artifacts = structure["provenance"]["engine_artifacts"]
     coordinates = [
-        item
-        for item in artifacts
-        if Path(item["path"]).suffix.lower() in {".cif", ".pdb"}
+        item for item in artifacts if Path(item["path"]).suffix.lower() in {".cif", ".pdb"}
     ]
-    preferred = [
-        item for item in coordinates if "model_0" in Path(item["path"]).name
-    ]
+    preferred = [item for item in coordinates if "model_0" in Path(item["path"]).name]
     if not (preferred or coordinates):
         raise ValueError("v37 PepShot inspect requires a persisted coordinate artifact")
     return sorted(preferred or coordinates, key=lambda item: item["path"])[0]
 
 
 def _generator_command(
-    engine: dict[str, Any], runtime: dict[str, Any], request_path: Path, output_path: Path
+    engine: dict[str, Any],
+    binding: dict[str, Any],
+    request_path: Path,
+    output_path: Path,
+    *,
+    hydramp_model_path: Path | None = None,
 ) -> list[str]:
+    paths = binding["paths"]
     base = [
-        str(runtime["python_path"]),
-        str(runtime["adapter_path"]),
+        str(paths["python_path"]),
+        str(paths["adapter_path"]),
         "--request",
         str(request_path),
         "--output",
@@ -747,40 +726,70 @@ def _generator_command(
     ]
     generator = engine["generator_id"]
     if generator == "hydramp":
+        materialization = binding["materialization"]
+        if hydramp_model_path is None:
+            raise ValueError("v37 HydrAMP model materialization is missing")
         return [
             *base,
             "--model-path",
-            str(runtime["model_path"]),
+            str(hydramp_model_path),
             "--decomposer-path",
-            str(runtime["decomposer_path"]),
+            str(materialization["decomposer_path"]),
             "--model-archive",
-            str(runtime["model_archive_path"]),
+            str(materialization["archive_path"]),
         ]
     if generator == "ampgan_v2":
+        arguments = binding["arguments"]
         return [
             *base,
             "--source-dir",
-            str(runtime["source_dir"]),
+            str(arguments["source_dir"]),
             "--model-dir",
-            str(runtime["model_dir"]),
+            str(arguments["model_dir"]),
         ]
     if generator == "amp_designer":
+        arguments = binding["arguments"]
         return [
             *base,
             "--config",
-            str(runtime["model_config_path"]),
+            str(arguments["model_config_path"]),
             "--weights",
-            str(runtime["model_weights_path"]),
+            str(arguments["model_weights_path"]),
             "--vocab",
-            str(runtime["vocab_path"]),
+            str(arguments["vocab_path"]),
         ]
     raise ValueError(f"unknown v37 generator: {generator}")
+
+
+def _materialize_hydramp_models(
+    binding: dict[str, Any], work: Path
+) -> tuple[Path, dict[str, Any]]:
+    materialization = binding["materialization"]
+    archive = Path(materialization["archive_path"])
+    destination, receipt = materialize_hydramp_archive(
+        archive,
+        work=work,
+        expected=materialization,
+    )
+    model_path = destination / materialization["model_subdirectory"]
+    if not model_path.is_dir():
+        raise ValueError("v37 HydrAMP archive lacks its frozen model directory")
+    receipt = {
+        key: value
+        for key, value in receipt.items()
+        if key != "materialization_receipt_sha256"
+    }
+    receipt["destination_name"] = destination.name
+    receipt["materialization_receipt_sha256"] = sha256_json(receipt)
+    return model_path, receipt
 
 
 @activity.defn(name="generate_v37_batch")
 async def generate_v37_batch(request: dict[str, Any]) -> dict[str, Any]:
     engine = request["engine"]
     runtime = request["runtime"]
+    launch_binding = request["launch_binding"]
+    verify_v37_generator_launch_binding(launch_binding)
     generator = engine["generator_id"]
     seed = int(request["seed"])
     settings = get_settings()
@@ -801,14 +810,13 @@ async def generate_v37_batch(request: dict[str, Any]) -> dict[str, Any]:
             top_p=1.0,
             temperature=None,
             decode_steps=34,
-            device=runtime["device"],
+            device=launch_binding["device"],
         )
     await asyncio.to_thread(
         request_path.write_text,
         json.dumps(payload, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
-    command = _generator_command(engine, runtime, request_path, output_path)
     context = V37AttemptContext(
         run_id=uuid.UUID(request["run_id"]),
         logical_id=f"v37:generate:{generator}:{seed}",
@@ -817,62 +825,97 @@ async def generate_v37_batch(request: dict[str, Any]) -> dict[str, Any]:
     )
 
     async def operation() -> dict[str, Any]:
-        expectation = V37GeneratorRuntimeExpectation(**runtime["expectation"])
-        live_paths = V37LiveRuntimePaths(
-            adapter_path=Path(runtime["adapter_path"]),
-            python_path=Path(runtime["python_path"]),
-            packages_lock_path=Path(runtime["packages_lock_path"]),
-            source_root=Path(runtime["source_root"]),
-            model_root=Path(runtime["model_root"]),
+        hydramp_materialization = (
+            await asyncio.to_thread(_materialize_hydramp_models, launch_binding, work)
+            if generator == "hydramp"
+            else None
         )
-
-        async def receipt_writer(receipt: dict[str, Any]) -> None:
-            await _persist_v37_launch_receipt(context=context, receipt=receipt)
-
-        async def aggregate_receipt_writer(receipt: dict[str, Any]) -> None:
-            await _persist_v37_aggregate_launch_receipt(
-                context=context, receipt=receipt
+        hydramp_model_path = hydramp_materialization[0] if hydramp_materialization else None
+        hydramp_destination = (
+            work / hydramp_materialization[1]["destination_name"]
+            if hydramp_materialization
+            else None
+        )
+        try:
+            command = _generator_command(
+                engine,
+                launch_binding,
+                request_path,
+                output_path,
+                hydramp_model_path=hydramp_model_path,
+            )
+            expectation = V37GeneratorRuntimeExpectation(**launch_binding["expectation"])
+            paths_payload = launch_binding["paths"]
+            launch_env = dict(os.environ)
+            existing_pythonpath = launch_env.get("PYTHONPATH", "")
+            launch_env["PYTHONPATH"] = os.pathsep.join(
+                value
+                for value in (paths_payload["source_root"], existing_pythonpath)
+                if value
+            )
+            launch_env["PYTHONDONTWRITEBYTECODE"] = "1"
+            live_paths = V37LiveRuntimePaths(
+                adapter_path=Path(paths_payload["adapter_path"]),
+                python_path=Path(paths_payload["python_path"]),
+                packages_lock_path=Path(paths_payload["packages_lock_path"]),
+                source_root=Path(paths_payload["source_root"]),
+                model_root=Path(paths_payload["model_root"]),
             )
 
-        async def progress_writer() -> None:
-            activity.heartbeat(
-                {
-                    "v37_logical_id": context.logical_id,
-                    "attempt": context.attempt,
-                    "status": "guarded_generator_subprocess_running",
-                }
+            async def receipt_writer(receipt: dict[str, Any]) -> None:
+                await _persist_v37_launch_receipt(context=context, receipt=receipt)
+
+            async def aggregate_receipt_writer(receipt: dict[str, Any]) -> None:
+                await _persist_v37_aggregate_launch_receipt(context=context, receipt=receipt)
+
+            async def progress_writer() -> None:
+                activity.heartbeat(
+                    {
+                        "v37_logical_id": context.logical_id,
+                        "attempt": context.attempt,
+                        "status": "guarded_generator_subprocess_running",
+                    }
+                )
+
+            stdout, launch_receipt = await run_v37_guarded_subprocess(
+                command,
+                manifest=runtime,
+                expectation=expectation,
+                paths=live_paths,
+                receipt_writer=receipt_writer,
+                aggregate_receipt_writer=aggregate_receipt_writer,
+                progress_writer=progress_writer,
+                cwd=work,
+                env=launch_env,
             )
+            result = json.loads(
+                await asyncio.to_thread(output_path.read_text, encoding="utf-8")
+            )
+            if result.get("generator_id") != generator or result.get("seed") != seed:
+                raise ValueError("v37 generator output identity mismatch")
+            if len(result.get("records", [])) != 1000:
+                raise ValueError("v37 generator output must contain exactly 1000 records")
+            return {
+                "result": result,
+                "runtime_identity": runtime["runtime_manifest_sha256"],
+                "environment_sha256": runtime["runtime"]["environment_sha256"],
+                "weights_sha256": runtime["model_release"]["manifest_sha256"],
+                "stdout_tail": stdout[-8000:],
+                "launch_receipt": launch_receipt,
+                "materialization_receipt": (
+                    hydramp_materialization[1] if hydramp_materialization else None
+                ),
+                "attempt": activity.info().attempt,
+            }
+        finally:
+            if hydramp_destination is not None:
+                await asyncio.to_thread(
+                    cleanup_hydramp_materialization,
+                    hydramp_destination,
+                    work=work,
+                )
 
-        stdout, launch_receipt = await run_v37_guarded_subprocess(
-            command,
-            manifest=runtime["runtime_manifest"],
-            expectation=expectation,
-            paths=live_paths,
-            receipt_writer=receipt_writer,
-            aggregate_receipt_writer=aggregate_receipt_writer,
-            progress_writer=progress_writer,
-            cwd=Path(runtime.get("cwd", work)),
-        )
-        result = json.loads(
-            await asyncio.to_thread(output_path.read_text, encoding="utf-8")
-        )
-        if result.get("generator_id") != generator or result.get("seed") != seed:
-            raise ValueError("v37 generator output identity mismatch")
-        if len(result.get("records", [])) != 1000:
-            raise ValueError("v37 generator output must contain exactly 1000 records")
-        return {
-            "result": result,
-            "runtime_identity": runtime["identity"],
-            "environment_sha256": runtime["environment_sha256"],
-            "weights_sha256": runtime["weights_sha256"],
-            "stdout_tail": stdout[-8000:],
-            "launch_receipt": launch_receipt,
-            "attempt": activity.info().attempt,
-        }
-
-    return _with_activity_transition(
-        await execute_v37_durable_attempt(operation, context=context)
-    )
+    return _with_activity_transition(await execute_v37_durable_attempt(operation, context=context))
 
 
 @activity.defn(name="persist_v37_generation_batch")
@@ -910,15 +953,14 @@ async def persist_v37_generation_batch(request: dict[str, Any]) -> dict[str, Any
             )
         )
         recovered = bool(existing)
-        existing_by_rank = {
-            int(item.metadata_json["raw_rank"]): item for item in existing
-        }
+        existing_by_rank = {int(item.metadata_json["raw_rank"]): item for item in existing}
         artifact = await _store_json(
             {
                 "records": raw_records,
                 "runtime_identity": generated["runtime_identity"],
                 "stdout_tail": generated["stdout_tail"],
                 "live_launch_receipt": generated["launch_receipt"],
+                "materialization_receipt": generated["materialization_receipt"],
             }
         )
         await _register_artifact(
@@ -928,7 +970,12 @@ async def persist_v37_generation_batch(request: dict[str, Any]) -> dict[str, Any
             "v37_raw_generator_output",
             {"generator_id": generator, "seed": seed},
         )
-        runtime_receipt_artifact = await _store_json(generated["launch_receipt"])
+        runtime_receipt_artifact = await _store_json(
+            {
+                "launch_receipt": generated["launch_receipt"],
+                "materialization_receipt": generated["materialization_receipt"],
+            }
+        )
         await _register_artifact(
             session,
             call.id,
@@ -944,9 +991,7 @@ async def persist_v37_generation_batch(request: dict[str, Any]) -> dict[str, Any
                 "runtime_id": f"generator:{generator}",
                 "seed": seed,
                 "artifact_sha256": runtime_receipt_artifact.sha256,
-                "launch_receipt_sha256": generated["launch_receipt"][
-                    "launch_receipt_sha256"
-                ],
+                "launch_receipt_sha256": generated["launch_receipt"]["launch_receipt_sha256"],
             },
         )
         existing_sequences = set(
@@ -1096,6 +1141,7 @@ async def persist_v37_generation_batch(request: dict[str, Any]) -> dict[str, Any
                     "weights_sha256": generated["weights_sha256"],
                     "adapter_version": result["adapter_version"],
                     "live_launch_receipt": generated["launch_receipt"],
+                    "materialization_receipt": generated["materialization_receipt"],
                     "upstream_attempt": int(generated["attempt"]),
                     "stdout_sha256": sha256_json(generated["stdout_tail"]),
                 },
@@ -1266,9 +1312,7 @@ async def _candidate_payloads(session: Any, run_id: uuid.UUID) -> list[dict[str,
             select(Evaluation).where(Evaluation.candidate_id.in_([item.id for item in candidates]))
         )
     )
-    numeric: dict[uuid.UUID, dict[str, list[float]]] = defaultdict(
-        lambda: defaultdict(list)
-    )
+    numeric: dict[uuid.UUID, dict[str, list[float]]] = defaultdict(lambda: defaultdict(list))
     labels: dict[uuid.UUID, dict[str, str]] = defaultdict(dict)
     for item in evaluations:
         if item.numeric_value is not None:
@@ -1278,8 +1322,7 @@ async def _candidate_payloads(session: Any, run_id: uuid.UUID) -> list[dict[str,
     payloads = []
     for item in candidates:
         metrics = {
-            name: float(statistics.median(values))
-            for name, values in numeric[item.id].items()
+            name: float(statistics.median(values)) for name, values in numeric[item.id].items()
         }
         aliases = {
             "median_pair_iptm": ("boltz2_pair_iptm_median", statistics.median),
@@ -1300,14 +1343,14 @@ async def _candidate_payloads(session: Any, run_id: uuid.UUID) -> list[dict[str,
                 metrics[alias] = float(reducer(values))
         payloads.append(
             {
-            "id": str(item.id),
-            "sequence": item.sequence,
-            "sequence_sha256": item.sequence_sha256,
-            "generator_id": item.metadata_json["generator_id"],
-            "seed": item.metadata_json["generator_seed"],
-            "source_ordinal": item.metadata_json["raw_rank"],
-            "metrics": metrics,
-            "labels": labels[item.id],
+                "id": str(item.id),
+                "sequence": item.sequence,
+                "sequence_sha256": item.sequence_sha256,
+                "generator_id": item.metadata_json["generator_id"],
+                "seed": item.metadata_json["generator_seed"],
+                "source_ordinal": item.metadata_json["raw_rank"],
+                "metrics": metrics,
+                "labels": labels[item.id],
             }
         )
     return payloads
@@ -1320,9 +1363,7 @@ async def _validate_stage1_observations(
     candidate_ids: list[uuid.UUID],
     manifest: dict[str, Any],
 ) -> None:
-    required = list(
-        manifest["stage_1_sequence_evaluation"]["required_metric_names"]
-    )
+    required = list(manifest["stage_1_sequence_evaluation"]["required_metric_names"])
     rows = list(
         await session.scalars(
             select(Evaluation).where(
@@ -1354,9 +1395,7 @@ async def _validate_stage1_observations(
                     raise ValueError("v37 stage-1 categorical label is outside its enum")
             elif row.numeric_value is None or not math.isfinite(row.numeric_value):
                 raise ValueError("v37 stage-1 numeric evidence is missing or non-finite")
-    calls = list(
-        await session.scalars(select(ToolCall).where(ToolCall.run_id == run_id))
-    )
+    calls = list(await session.scalars(select(ToolCall).where(ToolCall.run_id == run_id)))
     metric_calls = {
         str(call.input_json.get("v37_logical_id")): call
         for call in calls
@@ -1379,8 +1418,7 @@ async def _validate_stage1_observations(
         expected_tool_call_id = str(getattr(call, "id", expected_logical_id))
         if str(observed[0].tool_call_id) != expected_tool_call_id:
             raise ValueError(
-                "v37 stage-1 plugin ToolCall ownership mismatch: "
-                f"{candidate_id}/{metric_name}"
+                f"v37 stage-1 plugin ToolCall ownership mismatch: {candidate_id}/{metric_name}"
             )
 
 
@@ -1408,13 +1446,12 @@ async def persist_v37_stage1_shortlist(request: dict[str, Any]) -> dict[str, Any
             candidate_ids=[uuid.UUID(item["id"]) for item in candidates],
             manifest=manifest,
         )
+
         async def select_stage1() -> dict[str, Any]:
             return select_v37_lanes(
                 candidates,
                 lanes=_stage1_lanes(manifest),
-                family_objectives=manifest["stage_1_sequence_evaluation"][
-                    "endpoint_families"
-                ],
+                family_objectives=manifest["stage_1_sequence_evaluation"]["endpoint_families"],
                 maximum_similarity=0.80,
                 maximum_per_generator=6,
                 maximum_per_generator_seed=2,
@@ -1466,10 +1503,7 @@ async def persist_v37_stage1_shortlist(request: dict[str, Any]) -> dict[str, Any
                     ToolCall.input_json["v37_logical_id"].astext.in_(
                         [
                             "v37:knowledge",
-                            *[
-                                item["logical_id"]
-                                for item in _v37_plan(manifest)["metric_calls"]
-                            ],
+                            *[item["logical_id"] for item in _v37_plan(manifest)["metric_calls"]],
                         ]
                     ),
                 )
@@ -1501,9 +1535,7 @@ async def persist_v37_stage1_shortlist(request: dict[str, Any]) -> dict[str, Any
 async def run_and_persist_v37_knowledge(request: dict[str, Any]) -> dict[str, Any]:
     runtime = request["runtime"]
     query_payload = request["query"]
-    if not isinstance(query_payload, dict) or not isinstance(
-        query_payload.get("query"), str
-    ):
+    if not isinstance(query_payload, dict) or not isinstance(query_payload.get("query"), str):
         raise ValueError("v37 knowledge query payload is invalid")
     if runtime.get("descriptor_contract") != "amp-kb-runtime-base-v3":
         raise ValueError("v37 knowledge runtime is not the frozen provider v3 contract")
@@ -1514,9 +1546,7 @@ async def run_and_persist_v37_knowledge(request: dict[str, Any]) -> dict[str, An
         or formal_task.get("query") != query_payload["query"]
     ):
         raise ValueError("v37 knowledge query differs from the frozen provider task")
-    command, invocation_cwd = resolve_v37_frozen_invocation(
-        runtime, "formal_context_pack"
-    )
+    command, invocation_cwd = resolve_v37_frozen_invocation(runtime, "formal_context_pack")
     run_id = uuid.UUID(request["run_id"])
     context = V37AttemptContext(
         run_id=run_id,
@@ -1578,9 +1608,7 @@ async def run_and_persist_v37_knowledge(request: dict[str, Any]) -> dict[str, An
             payload={
                 "runtime_id": "knowledge-provider",
                 "artifact_sha256": runtime_artifact.sha256,
-                "launch_receipt_sha256": executed["live_launch_receipt"][
-                    "launch_receipt_sha256"
-                ],
+                "launch_receipt_sha256": executed["live_launch_receipt"]["launch_receipt_sha256"],
             },
         )
     return {
@@ -1660,12 +1688,8 @@ async def persist_v37_knowledge_projection(request: dict[str, Any]) -> dict[str,
                     "provider_input_sha256": knowledge["provider_input_sha256"],
                     "provider_output_sha256": knowledge["provider_output_sha256"],
                     "context_pack_sha256": sha256_json(pack),
-                    "context_pack_artifact_sha256": knowledge[
-                        "context_pack_artifact_sha256"
-                    ],
-                    "runtime_receipt_artifact_sha256": knowledge[
-                        "runtime_receipt_artifact_sha256"
-                    ],
+                    "context_pack_artifact_sha256": knowledge["context_pack_artifact_sha256"],
+                    "runtime_receipt_artifact_sha256": knowledge["runtime_receipt_artifact_sha256"],
                 },
                 "agent_decision": decision_payload,
                 "stop_event": stop_payload,
@@ -1788,9 +1812,7 @@ async def run_and_persist_v37_pepshot(request: dict[str, Any]) -> dict[str, Any]
             peptide_chains=["B"],
             pocket_residues=[
                 {"chain": "A", "number": int(number)}
-                for number in request["experiment_spec"]["target"].get(
-                    "pocket_residues", []
-                )
+                for number in request["experiment_spec"]["target"].get("pocket_residues", [])
             ],
         )
         selected_seed = int(spec["seed"])
@@ -1816,11 +1838,11 @@ async def run_and_persist_v37_pepshot(request: dict[str, Any]) -> dict[str, Any]
             build_v37_frozen_adapter_command(
                 runtime,
                 [
-                "inspect",
-                "--spec",
-                str(spec_path),
-                "--out",
-                str(inspection_path),
+                    "inspect",
+                    "--spec",
+                    str(spec_path),
+                    "--out",
+                    str(inspection_path),
                 ],
             )
         )
@@ -1870,17 +1892,13 @@ async def run_and_persist_v37_pepshot(request: dict[str, Any]) -> dict[str, Any]
         )
         audit = inspection.get("audit", {})
         findings = audit.get("spatial_findings")
-        if not isinstance(findings, list) or audit.get("spatial_finding_count") != len(
-            findings
-        ):
+        if not isinstance(findings, list) or audit.get("spatial_finding_count") != len(findings):
             raise ValueError("v37 PepShot inspection finding manifest is inconsistent")
         plausibility = audit.get("interface_plausibility", {})
         summary = {
             **asdict(provider_result),
             "spatial_finding_count": len(findings),
-            "blocking_finding_types": list(
-                plausibility.get("blocking_finding_types", [])
-            ),
+            "blocking_finding_types": list(plausibility.get("blocking_finding_types", [])),
         }
         inspections.append(summary)
         detailed_outputs.append(
@@ -1913,9 +1931,7 @@ async def run_and_persist_v37_pepshot(request: dict[str, Any]) -> dict[str, Any]
             "pepshot_inspect_contract",
             {"release_id": runtime["release_id"]},
         )
-        contract_runtime_artifact = await _store_json(
-            contract_execution["launch_receipt"]
-        )
+        contract_runtime_artifact = await _store_json(contract_execution["launch_receipt"])
         await _register_artifact(
             session,
             contract_call.id,
@@ -1974,9 +1990,7 @@ async def run_and_persist_v37_pepshot(request: dict[str, Any]) -> dict[str, Any]
                     "disposition": summary["disposition"],
                 }
             )
-            runtime_receipt_artifact = await _store_json(
-                detail["stdout_receipt"]["launch_receipt"]
-            )
+            runtime_receipt_artifact = await _store_json(detail["stdout_receipt"]["launch_receipt"])
             await _register_artifact(
                 session,
                 detail_call.id,
@@ -2013,9 +2027,9 @@ async def run_and_persist_v37_pepshot(request: dict[str, Any]) -> dict[str, Any]
                     "runtime_id": "pepshot",
                     "candidate_id": detail["candidate_id"],
                     "artifact_sha256": runtime_receipt_artifact.sha256,
-                    "launch_receipt_sha256": detail["stdout_receipt"][
-                        "launch_receipt"
-                    ]["launch_receipt_sha256"],
+                    "launch_receipt_sha256": detail["stdout_receipt"]["launch_receipt"][
+                        "launch_receipt_sha256"
+                    ],
                 },
             )
             detail_calls.append(detail_call)
@@ -2130,8 +2144,7 @@ async def persist_v37_structure_stage_summaries(
     pose_rows: list[dict[str, Any]] = []
     decoy_rows: list[dict[str, Any]] = []
     rosetta_by_pose = {
-        str(item["provenance"]["parent_tool_call_id"]): item
-        for item in rosetta_results
+        str(item["provenance"]["parent_tool_call_id"]): item for item in rosetta_results
     }
     if set(rosetta_by_pose) != {str(item["tool_call_id"]) for item in flattened_poses}:
         raise ValueError("v37 Rosetta-to-pose identity mapping is not one-to-one")
@@ -2148,17 +2161,13 @@ async def persist_v37_structure_stage_summaries(
             if str(item["tool_call_id"]) == pose_id and int(item["seed"]) == seed
         )
         decoys = rosetta_result["rosetta"]["decoys"]
-        displacement = statistics.median(
-            float(item["peptide_bb_rmsd"]) for item in decoys
-        )
+        displacement = statistics.median(float(item["peptide_bb_rmsd"]) for item in decoys)
         pose_rows.append(
             {
                 "candidate_id": candidate_id,
                 "pose_id": pose_id,
                 "boltz_seed": seed,
-                "interface_audit_tool_call_id": str(
-                    pose["interface_audit_tool_call_id"]
-                ),
+                "interface_audit_tool_call_id": str(pose["interface_audit_tool_call_id"]),
                 "structure_sha256": coordinate["sha256"],
                 "coordinate_audit_sha256": sha256_json(audit),
                 "pair_iptm": float(pose["boltz2"]["pair_iptm"]),
@@ -2201,28 +2210,22 @@ async def persist_v37_structure_stage_summaries(
             raise ValueError("v37 structure lineage references a missing physical ToolCall")
         if any(calls_by_id[item].tool_name != "boltz2" for item in boltz_ids):
             raise ValueError("v37 structure lineage references a non-Boltz pose ToolCall")
-        if any(
-            calls_by_id[item].tool_name != "coordinate-interface-audit"
-            for item in audit_ids
-        ):
+        if any(calls_by_id[item].tool_name != "coordinate-interface-audit" for item in audit_ids):
             raise ValueError("v37 structure lineage references a non-audit ToolCall")
         if any(
-            calls_by_id[item].tool_name
-            != "pyrosetta-flexpepdock-interface-analyzer"
+            calls_by_id[item].tool_name != "pyrosetta-flexpepdock-interface-analyzer"
             for item in rosetta_ids
         ):
             raise ValueError("v37 structure lineage references a non-Rosetta ToolCall")
         for pose_row in pose_rows:
             boltz_call = calls_by_id[str(pose_row["pose_id"])]
             audit_call = calls_by_id[str(pose_row["interface_audit_tool_call_id"])]
-            if (
-                int(boltz_call.random_seed or -1) != int(pose_row["boltz_seed"])
-                or boltz_call.input_json.get("peptide_sequence")
-                != next(
-                    item["candidate"]["sequence"]
-                    for item in flattened_poses
-                    if str(item["tool_call_id"]) == str(pose_row["pose_id"])
-                )
+            if int(boltz_call.random_seed or -1) != int(
+                pose_row["boltz_seed"]
+            ) or boltz_call.input_json.get("peptide_sequence") != next(
+                item["candidate"]["sequence"]
+                for item in flattened_poses
+                if str(item["tool_call_id"]) == str(pose_row["pose_id"])
             ):
                 raise ValueError("v37 Boltz ToolCall candidate or seed lineage drifted")
             pose_row["boltz_input_sha256"] = boltz_call.input_sha256
@@ -2361,9 +2364,7 @@ async def persist_v37_final_portfolio_and_replay(
             poses_by_candidate[str(pose["candidate_id"])].append(pose)
         scores_by_pose: dict[str, list[float]] = defaultdict(list)
         for decoy in request["structure_summary"]["decoys"]:
-            scores_by_pose[str(decoy["pose_id"])].append(
-                float(decoy["interface_delta_g_reu"])
-            )
+            scores_by_pose[str(decoy["pose_id"])].append(float(decoy["interface_delta_g_reu"]))
         eligible = []
         for item in candidates:
             if item["id"] not in eligible_ids:
@@ -2381,8 +2382,7 @@ async def persist_v37_final_portfolio_and_replay(
                 ),
                 "peptide_backbone_displacement_range": max(displacements) - min(displacements),
                 "median_representative_rosetta_interface_delta_g": statistics.median(
-                    statistics.median(scores_by_pose[str(pose["pose_id"])])
-                    for pose in poses
+                    statistics.median(scores_by_pose[str(pose["pose_id"])]) for pose in poses
                 ),
             }
             eligible.append({**item, "metrics": metrics})
@@ -2396,9 +2396,8 @@ async def persist_v37_final_portfolio_and_replay(
             for lane in manifest["final_portfolio"]["lanes"]
         ]
         families = dict(manifest["stage_1_sequence_evaluation"]["endpoint_families"])
-        families["structure"] = manifest["stage_2_structure_confirmation"][
-            "Pareto_objectives"
-        ]
+        families["structure"] = manifest["stage_2_structure_confirmation"]["Pareto_objectives"]
+
         async def select_final() -> dict[str, Any]:
             return select_v37_lanes(
                 eligible,
@@ -2419,8 +2418,7 @@ async def persist_v37_final_portfolio_and_replay(
             ),
         )
         summaries = {
-            item["id"]: {"metrics": item["metrics"], "labels": item["labels"]}
-            for item in eligible
+            item["id"]: {"metrics": item["metrics"], "labels": item["labels"]} for item in eligible
         }
         final_payload = {
             "candidate_ids": portfolio["selected_ids"],
@@ -2429,7 +2427,9 @@ async def persist_v37_final_portfolio_and_replay(
         }
         final_logical = "v37:final-portfolio"
         final_stop = await _persist_v37_stop(
-            session, run_id=run_id, logical_id=final_logical,
+            session,
+            run_id=run_id,
+            logical_id=final_logical,
             stop_reason="completed_frozen_final_portfolio_budget",
         )
         final_call = await _persist_v37_node(
@@ -2459,10 +2459,13 @@ async def persist_v37_final_portfolio_and_replay(
         all_calls = list(await session.scalars(select(ToolCall).where(ToolCall.run_id == run_id)))
         by_logical = {
             str(item.input_json.get("v37_logical_id")): item
-            for item in all_calls if item.input_json.get("v37_logical_id")
+            for item in all_calls
+            if item.input_json.get("v37_logical_id")
         }
         await persist_v37_agent_decision(
-            session, run_id=run_id, logical_id=final_logical,
+            session,
+            run_id=run_id,
+            logical_id=final_logical,
             tool_call_id=final_call.id,
             observed_tool_call_ids=[
                 by_logical[item].id
@@ -2519,7 +2522,9 @@ async def persist_v37_final_portfolio_and_replay(
                 "database_graph_sha256": sha256_json(existing_graph),
             }
         replay_stop = await _persist_v37_stop(
-            session, run_id=run_id, logical_id=replay_logical,
+            session,
+            run_id=run_id,
+            logical_id=replay_logical,
             stop_reason="completed_database_object_replay",
         )
         plan = _v37_plan(manifest)
@@ -2570,26 +2575,18 @@ async def persist_v37_final_portfolio_and_replay(
             "validation_contract": "v37.database-object-replay.1",
             "preclosure_graph_sha256": preclosure_graph["graph_sha256"],
             "committed_graph_sha256": committed_graph["graph_sha256"],
-            "committed_graph_snapshot_sha256": sha256_json(
-                committed_graph_snapshot
-            ),
+            "committed_graph_snapshot_sha256": sha256_json(committed_graph_snapshot),
             "validation": validation,
             "portfolio_sha256": final_call.output_sha256,
         }
-        await _complete_v37_replay_call(
-            session, call=replay_call, output_payload=replay_payload
-        )
-        replay_ledgers = await _durable_attempt_artifacts(
-            run_id=run_id, logical_id=replay_logical
-        )
+        await _complete_v37_replay_call(session, call=replay_call, output_payload=replay_payload)
+        replay_ledgers = await _durable_attempt_artifacts(run_id=run_id, logical_id=replay_logical)
         for role, payload in {
             "database_object_replay": replay_payload,
             "committed_graph_snapshot": committed_graph_snapshot,
             "worker_placement_snapshot": request["worker_placement_snapshot"],
             "pipeline_manifest": request["pipeline_manifest"],
-            "pipeline_queue_transition_ledger": request[
-                "pipeline_queue_transition_ledger"
-            ],
+            "pipeline_queue_transition_ledger": request["pipeline_queue_transition_ledger"],
             "agent_decision": replay_payload,
             "stop_event": replay_stop,
             **replay_ledgers,
@@ -2599,7 +2596,9 @@ async def persist_v37_final_portfolio_and_replay(
                 session, replay_call.id, asdict(artifact), role, {"v37_logical_id": replay_logical}
             )
         await persist_v37_agent_decision(
-            session, run_id=run_id, logical_id=replay_logical,
+            session,
+            run_id=run_id,
+            logical_id=replay_logical,
             tool_call_id=replay_call.id,
             observed_tool_call_ids=[final_call.id],
             prompt_text="Validate the frozen v37 evidence graph from database and objects only.",
@@ -2670,9 +2669,7 @@ async def validate_v37_database_object_replay(
     artifact_bytes: dict[str, bytes] = {}
     for artifact_row in graph.get("artifacts", []):
         try:
-            raw = await asyncio.to_thread(
-                object_store.get_bytes, artifact_row["storage_uri"]
-            )
+            raw = await asyncio.to_thread(object_store.get_bytes, artifact_row["storage_uri"])
         except (KeyError, TypeError) as error:
             raise ValueError("v37 artifact object is missing or unreadable") from error
         if sha256_bytes(raw) != artifact_row["sha256"]:

@@ -168,6 +168,14 @@ def test_v37_execution_bundle_uses_only_explicit_frozen_inputs(
         "_validate_execution_runtime_identities",
         lambda **kwargs: observed.update(kwargs),
     )
+    monkeypatch.setattr(
+        preflight_cli,
+        "build_v37_generator_launch_binding",
+        lambda **kwargs: {
+            "generator_id": kwargs["entry"]["generator_id"],
+            "launch_binding_sha256": "b" * 64,
+        },
+    )
     bundle = preflight_cli.build_v37_execution_bundle(
         workspace=workspace,
         manifest_path=manifest_path,

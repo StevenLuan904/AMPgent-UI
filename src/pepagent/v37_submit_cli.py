@@ -321,7 +321,13 @@ def _validate_generic_execution_guard(runtime: dict[str, Any], *, label: str) ->
 def _verify_generator_runtime_bytes(
     *, workspace: Path, runtime_root: Path, generator_id: str, runtime: dict[str, Any]
 ) -> None:
+    from pepagent.v37_generator_launch import (
+        _reject_reparse_chain,
+        iter_v37_runtime_tree_no_reparse,
+    )
+
     def check(path: Path, expected_sha256: str, label: str) -> None:
+        _reject_reparse_chain(path, root=workspace, label=label)
         if not path.is_file() or sha256_file(path) != expected_sha256:
             raise ValueError(f"v37 {generator_id} {label} bytes drifted")
 
@@ -361,10 +367,16 @@ def _verify_generator_runtime_bytes(
                 raise ValueError(f"v37 {generator_id} {release_name} has no local byte root")
         else:
             root = workspace / uri.removeprefix(prefix)
+        root = Path(root)
+        tree = iter_v37_runtime_tree_no_reparse(
+            root,
+            allowed_root=workspace,
+            label=f"{generator_id} {release_name}",
+        )
         declared_paths = {str(item["path"]) for item in release["files"]}
         observed_paths = {
             path.relative_to(root).as_posix()
-            for path in root.rglob("*")
+            for path in tree
             if path.is_file()
             and "__pycache__" not in path.relative_to(root).parts
             and path.suffix != ".pyc"
@@ -378,6 +390,11 @@ def _verify_generator_runtime_bytes(
             )
         for item in release["files"]:
             path = root / item["path"]
+            _reject_reparse_chain(
+                path,
+                root=root,
+                label=f"{generator_id} {release_name} file {item['path']}",
+            )
             check(path, item["sha256"], f"{release_name} file {item['path']}")
             if path.stat().st_size != int(item["size_bytes"]):
                 raise ValueError(f"v37 {generator_id} {release_name} file size drifted")
@@ -393,12 +410,37 @@ def _validate_execution_runtime_identities(
     ):
         raise ValueError("v37 generator runtime index identity drifted")
     by_id = {item["generator_id"]: item for item in index["entries"]}
+    engines_by_id = {
+        str(item["generator_id"]): item for item in manifest.generators["engines"]
+    }
+    from pepagent.v37_generator_launch import verify_v37_generator_launch_binding
+
+    launch_bindings = execution.get("generator_launch_bindings")
+    if not isinstance(launch_bindings, dict) or set(launch_bindings) != set(
+        execution["generator_runtimes"]
+    ):
+        raise ValueError("v37 generator launch binding set drifted")
     for generator_id, runtime in execution["generator_runtimes"].items():
         entry = by_id.get(generator_id)
         if entry is None or entry.get("status") != "verified":
             raise ValueError(f"v37 {generator_id} runtime is not frozen and verified")
         if runtime.get("runtime_manifest_sha256") != entry["runtime_manifest_sha256"]:
             raise ValueError(f"v37 {generator_id} execution runtime identity drifted")
+        engine = engines_by_id.get(generator_id)
+        if not isinstance(engine, dict):
+            raise ValueError(f"v37 {generator_id} benchmark engine is absent")
+        expected_adapter_version = engine.get(
+            "consumer_adapter_version", engine.get("adapter_version")
+        )
+        if (
+            runtime.get("source_release", {}).get("revision")
+            != engine.get("source_revision")
+            or runtime.get("adapter", {}).get("adapter_version")
+            != expected_adapter_version
+        ):
+            raise ValueError(
+                f"v37 {generator_id} benchmark/runtime engine identity drifted"
+            )
         verify_v37_generator_runtime_manifest(
             runtime,
             expectation=V37GeneratorRuntimeExpectation(**entry["expectation"]),
@@ -409,6 +451,75 @@ def _validate_execution_runtime_identities(
             generator_id=generator_id,
             runtime=runtime,
         )
+        binding = launch_bindings[generator_id]
+        verify_v37_generator_launch_binding(binding)
+        if (
+            binding.get("generator_id") != generator_id
+            or binding.get("runtime_index_sha256") != index["runtime_index_sha256"]
+            or binding.get("runtime_manifest_sha256")
+            != runtime["runtime_manifest_sha256"]
+            or binding.get("expectation") != entry["expectation"]
+        ):
+            raise ValueError(f"v37 {generator_id} launch binding identity drifted")
+        if generator_id == "hydramp":
+            if (
+                engine.get("provider_adapter_version")
+                != engine.get("adapter_version")
+                or engine.get("formal_seed_acceptance_sha256")
+                != entry["expectation"]["formal_seed_acceptance_sha256"]
+            ):
+                raise ValueError("v37 HydrAMP provider evidence lineage drifted")
+            relative_receipt = str(engine.get("consumer_launch_acceptance_path", ""))
+            receipt_path = (
+                workspace / "config/benchmarks" / relative_receipt
+            ).resolve()
+            allowed_root = (
+                workspace / "config/environments/v37_generator_runtimes"
+            ).resolve()
+            if receipt_path.parent != allowed_root or receipt_path.is_symlink():
+                raise ValueError("v37 HydrAMP consumer launch receipt path is unsafe")
+            receipt_bytes = receipt_path.read_bytes()
+            receipt = json.loads(receipt_bytes)
+            receipt_identity = {
+                key: value
+                for key, value in receipt.items()
+                if key != "acceptance_receipt_sha256"
+            }
+            if (
+                receipt.get("acceptance_receipt_sha256") != sha256_json(receipt_identity)
+                or receipt.get("acceptance_receipt_sha256")
+                != engine.get("consumer_launch_acceptance_sha256")
+                or receipt.get("consumer_adapter") != runtime.get("adapter")
+                or receipt.get("launch_binding")
+                != {
+                    "launch_binding_sha256": binding["launch_binding_sha256"],
+                    "runtime_index_sha256": index["runtime_index_sha256"],
+                    "runtime_manifest_sha256": runtime["runtime_manifest_sha256"],
+                }
+            ):
+                raise ValueError("v37 HydrAMP consumer launch acceptance drifted")
+            runtime_sources = execution.get("runtime_source_artifacts")
+            if not isinstance(runtime_sources, dict):
+                raise ValueError("v37 runtime source artifact set is missing")
+            evidence_paths = {
+                "generator_evidence:hydramp:provider_acceptance": (
+                    workspace / entry["acceptance_receipt_path"]
+                ),
+                "generator_evidence:hydramp:formal_seed_acceptance": (
+                    workspace / entry["formal_seed_acceptance_receipt_path"]
+                ),
+                "generator_evidence:hydramp:historical_blocker": (
+                    workspace / entry["historical_blocker_receipt_path"]
+                ),
+                "generator_evidence:hydramp:consumer_launch": receipt_path,
+            }
+            for role, path in evidence_paths.items():
+                binding = runtime_sources.get(role)
+                if not isinstance(binding, dict):
+                    raise ValueError(f"v37 runtime source artifacts lack {role}")
+                _validate_content_addressed_binding(
+                    role=role, payload=path.read_bytes(), binding=binding
+                )
 
     for name, runtime in execution["metric_plugins_by_name"].items():
         _validate_self_hashed_runtime(runtime, label=f"metric {name}")
@@ -548,6 +659,7 @@ def load_v37_submission_bundle(
         raise ValueError("v37 submission preflight formal identity drifted")
     required_runtime_keys = {
         "generator_runtimes",
+        "generator_launch_bindings",
         "metric_plugins_by_name",
         "knowledge_runtime",
         "knowledge_query",
@@ -559,6 +671,8 @@ def load_v37_submission_bundle(
     expected_generators = {item["generator_id"] for item in manifest.generators["engines"]}
     if set(execution["generator_runtimes"]) != expected_generators:
         raise ValueError("v37 generator runtime set drifted")
+    if set(execution["generator_launch_bindings"]) != expected_generators:
+        raise ValueError("v37 generator launch binding set drifted")
     expected_metrics = {
         item["name"] for item in manifest.stage_1_sequence_evaluation["metric_plugins"]
     }
@@ -659,6 +773,22 @@ async def submit_v37_once(
         ("metric_registry", metric_registry_bytes, "application/yaml"),
     ):
         stored_inputs[role] = await asyncio.to_thread(object_store.put_bytes, payload, media_type)
+    runtime_source_artifacts = execution.get("runtime_source_artifacts")
+    if not isinstance(runtime_source_artifacts, dict):
+        raise ValueError("v37 execution bundle lacks runtime source artifacts")
+    for source_role, binding in sorted(runtime_source_artifacts.items()):
+        if not isinstance(binding, dict):
+            raise ValueError("v37 runtime source artifact binding is malformed")
+        payload = await asyncio.to_thread(object_store.get_bytes, binding["storage_uri"])
+        _validate_content_addressed_binding(
+            role=f"runtime_source:{source_role}", payload=payload, binding=binding
+        )
+        stored_inputs[f"runtime_source:{source_role}"] = StoredObject(
+            sha256=binding["sha256"],
+            size_bytes=binding["size_bytes"],
+            uri=binding["storage_uri"],
+            media_type=binding["media_type"],
+        )
     raw_spec["submission_input_artifacts"] = {
         role: {
             "sha256": item.sha256,

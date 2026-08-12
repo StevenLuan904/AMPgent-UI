@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path, PurePosixPath
 
 import pytest
 
 from pepagent.provenance.hashing import sha256_json
-from pepagent.v37_runtime_manifest_cli import verify_local_runtime_set
+from pepagent.v37_runtime_manifest_cli import (
+    _verify_ampgan_derived_asset,
+    verify_local_runtime_set,
+)
 from pepagent.v37_runtime_manifests import (
     V37GeneratorRuntimeExpectation,
     verify_v37_generator_runtime_manifest,
@@ -78,10 +82,15 @@ def test_frozen_hydramp_runtime_preserves_blocker_and_accepts_provider_release()
         expectation=_expectation(entry["expectation"]),
     )
     assert verified["verified"] is True
-    assert manifest["adapter"]["entrypoint"].startswith(
-        "var/releases/v37-generator-runtimes-v1/hydramp/provider/"
+    assert manifest["adapter"]["entrypoint"] == (
+        "src/pepagent/model_workers/hydramp_generator_cli.py"
     )
-    assert not manifest["adapter"]["entrypoint"].startswith("src/pepagent/")
+    consumer_acceptance = _load(RUNTIME_ROOT / "hydramp.consumer-launch-acceptance.json")
+    assert consumer_acceptance["consumer_adapter"] == {
+        "entrypoint": "src/pepagent/model_workers/hydramp_generator_cli.py",
+        "adapter_version": "hydramp-generator-v1-raw-unfiltered-nattempts1",
+        "sha256": "d2bde943db3182b6236b8fcb942c1171f1a5d4f13c37f433fabfb395e7727f68",
+    }
     assert manifest["source_release"]["revision"] == (
         "36b18003122f0d73323f9644b07e1ed267255c11"
     )
@@ -167,10 +176,10 @@ def test_frozen_ampgan_source_is_an_exact_clean_workspace_release() -> None:
     assert isinstance(source, dict)
     assert source["uri"] == (
         "workspace-release://var/releases/v37-generator-runtimes-v1/"
-        "ampgan_v2/source-1a2ac60bdc268f99"
+        "ampgan_v2/source-b4aaefa9240d4dab"
     )
     declared = [item["path"] for item in source["files"]]  # type: ignore[index]
-    assert len(declared) == 369
+    assert len(declared) == 371
     assert all(not path.startswith(".git/") for path in declared)
     release_root = ROOT / str(source["uri"]).removeprefix("workspace-release://")
     observed = sorted(
@@ -179,6 +188,32 @@ def test_frozen_ampgan_source_is_an_exact_clean_workspace_release() -> None:
         if path.is_file()
     )
     assert observed == declared
+
+
+def test_ampgan_clean_csv_semantic_provenance_fails_closed(tmp_path: Path) -> None:
+    source = (
+        ROOT
+        / "var/releases/v37-generator-runtimes-v1/ampgan_v2/source-b4aaefa9240d4dab"
+    )
+    required = [
+        "AMPgent_DERIVED_ASSET_PROVENANCE.json",
+        "data/dbaasp/clean.csv",
+        "data/dbaasp/raw.json",
+        "data/dbaasp/targets_mapping.json",
+        "ampgan/dbaasp.py",
+        "LICENSE",
+    ]
+    for relative in required:
+        destination = tmp_path / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(source / relative, destination)
+    _verify_ampgan_derived_asset(tmp_path)
+    provenance_path = tmp_path / "AMPgent_DERIVED_ASSET_PROVENANCE.json"
+    provenance = json.loads(provenance_path.read_text(encoding="utf-8"))
+    provenance["purpose"] = "quietly changed meaning"
+    provenance_path.write_text(json.dumps(provenance), encoding="utf-8")
+    with pytest.raises(ValueError, match="semantic provenance"):
+        _verify_ampgan_derived_asset(tmp_path)
 
 
 def test_local_release_assets_match_frozen_runtime_index() -> None:
@@ -190,3 +225,26 @@ def test_local_release_assets_match_frozen_runtime_index() -> None:
     ]
     assert result["blocked_generators"] == []
     assert result["formal_runtime_set_ready"] is True
+
+
+def test_runtime_smoke_acceptance_is_self_hashed_and_runtime_bound() -> None:
+    receipt = _load(RUNTIME_ROOT / "runtime-smoke-acceptance.json")
+    embedded = receipt.pop("acceptance_receipt_sha256")
+    assert embedded == sha256_json(receipt)
+    assert receipt["scope"] == "preformal_local_runtime_smoke_not_agent_database_evidence"
+    index = _load(RUNTIME_ROOT / "runtime-index.json")
+    assert receipt["runtime_index_sha256"] == index["runtime_index_sha256"]
+    entries = {item["generator_id"]: item for item in index["entries"]}  # type: ignore[index]
+    records = receipt["records"]
+    assert isinstance(records, list)
+    assert [item["generator_id"] for item in records] == [
+        "hydramp",
+        "ampgan_v2",
+        "amp_designer",
+    ]
+    for item in records:
+        assert item["runtime_manifest_sha256"] == entries[item["generator_id"]][
+            "runtime_manifest_sha256"
+        ]
+        assert item["rows"] == item["raw_proposal_budget"]
+        assert item["error"] is None

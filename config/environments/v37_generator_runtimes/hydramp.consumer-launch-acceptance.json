@@ -1,0 +1,42 @@
+{
+  "acceptance_receipt_sha256": "2ded724f079c2086e8e49a07cca52e96d5b0af19c36f364bc6de55fef56aa455",
+  "consumer_adapter": {
+    "adapter_version": "hydramp-generator-v1-raw-unfiltered-nattempts1",
+    "entrypoint": "src/pepagent/model_workers/hydramp_generator_cli.py",
+    "sha256": "d2bde943db3182b6236b8fcb942c1171f1a5d4f13c37f433fabfb395e7727f68"
+  },
+  "generator_id": "hydramp",
+  "historical_evidence_lineage": {
+    "formal_seed_acceptance_path": "config/environments/v37_generator_runtimes/hydramp.formal-seed-acceptance.json",
+    "formal_seed_acceptance_sha256": "868905493a3118d2a35ce15ca38144a5c48e347ab31309ed84f2b424353ca8c8",
+    "provider_adapter_version": "hydramp-safe-pca-stateless-gumbel-v1",
+    "provider_acceptance_path": "config/environments/v37_generator_runtimes/hydramp.acceptance.json",
+    "provider_acceptance_sha256": "303e518c769d884c0f773aeb81c03a8d14228a1cedb82a3b9aa60b248812d813",
+    "scope": "provider runtime and frozen-seed evidence; preserved byte-for-byte and not relabelled as consumer-wrapper evidence"
+  },
+  "launch_binding": {
+    "launch_binding_sha256": "02e36e558873b26e629a44a710b3a35737e5a5a83181d1009d3553c7a8743e07",
+    "runtime_index_sha256": "bec0f4b15fded62ebd63f5b4b4c12c03a1e57c079f6e630d3bd8da0ae208b919",
+    "runtime_manifest_sha256": "813006648a9dce8aeeb16d0fab26f8b306ff1bd004855daf1c8b0a6497d767ad"
+  },
+  "materialization": {
+    "archive_path": "models.zip",
+    "archive_sha256": "c2bf137ebe546fee8750b8c174486f1a9804e21a394a389a4f83d0bc6d743420",
+    "extracted_tree_sha256": "6dca3f5dd137fbdf0da615c914cb12b9757b4fa1f6d077f2421be1cfe6cd2006",
+    "file_count": 7493,
+    "member_count": 9783,
+    "member_inventory_sha256": "ba1145b4c041408f27b6d8f5bdac2b5119a1f54e892a602cd87d5bd831c9cae3",
+    "model_subdirectory": "models/HydrAMP/37",
+    "policy": "fresh-workdir-safe-extraction-before-consumer-launch",
+    "uncompressed_bytes": 468397555
+  },
+  "schema_version": "v37.hydramp-consumer-launch-acceptance.1",
+  "smoke_receipt": {
+    "elapsed_seconds": 31.843,
+    "error": null,
+    "ordered_output_sha256": "eb91e456454023af4f256399365f503334c8b47bb722b4f24e67872c63daab05",
+    "raw_proposal_budget": 2,
+    "seed": 12345
+  },
+  "status": "accepted_preformal_launch_smoke"
+}

@@ -2,7 +2,7 @@
   "adapter": {
     "adapter_version": "ampgan-v2-generator-v1-positive-conditions-unfiltered",
     "entrypoint": "src/pepagent/model_workers/ampgan_v2_generator_cli.py",
-    "sha256": "8f1b9e62b75af24a0dde2087d29eacad321f846a20ee681d781b934d5df6c832"
+    "sha256": "198bf1fae8953d425f635247e0e99ec61fa0701032f45df5734bf747678ab8bb"
   },
   "generator_id": "ampgan_v2",
   "internal_score_filtering_enabled": false,
@@ -62,7 +62,7 @@
     "python_executable_sha256": "a35938cd6841c3a7814a63ba5be88c3966c6d173fa3a864e7a9084d72a0068ec",
     "python_version": "3.8.20"
   },
-  "runtime_manifest_sha256": "e8d4557e1ac3651f5135e44c85b10124dbd0847935a890f0eb0c087009ec4d9d",
+  "runtime_manifest_sha256": "1857b3a83f6973b81cb5e1b016fb2cd92d375e31e98dab7534d497310815e2f4",
   "schema_version": "v37.generator-runtime.1",
   "source_release": {
     "files": [
@@ -75,6 +75,11 @@
         "path": ".gitignore",
         "sha256": "0f7aeeed61f985363c3628f73a86e88b7f5cfda3c24ff5f3fbd915667895bcf6",
         "size_bytes": 1418
+      },
+      {
+        "path": "AMPgent_DERIVED_ASSET_PROVENANCE.json",
+        "sha256": "20dbf29dea10b77508c72b4ac96c6ee91fa6acf3798600521c2413643889fc6b",
+        "size_bytes": 1192
       },
       {
         "path": "LICENSE",
@@ -1832,6 +1837,11 @@
         "size_bytes": 114
       },
       {
+        "path": "data/dbaasp/clean.csv",
+        "sha256": "71b41e999dc257fb3c2b3ceaa8a744d56f3e3a10b29259c386b865e1a76ef250",
+        "size_bytes": 728902
+      },
+      {
         "path": "data/dbaasp/raw.json",
         "sha256": "6182395bf36710128b3c836cda9ae69c1c8bae25343034523cb70b95cf3f2521",
         "size_bytes": 37782857
@@ -1912,10 +1922,10 @@
         "size_bytes": 164
       }
     ],
-    "files_sha256": "1a2ac60bdc268f9987168b7995d331180aa14bbb6d176a63cb3d34ac952e9b60",
-    "manifest_sha256": "1d8352037a932de47a6164b83aee445b1b2c8ee651f1b865c6ff715d19c8f7bf",
+    "files_sha256": "b4aaefa9240d4dab46e546f1b107d7a0662404aad69be644eb5a8ee3777cbfb1",
+    "manifest_sha256": "dec3387b7ec3fc049c56b8fbc777a9776097bc9a68ea650c343049f8f21eee11",
     "revision": "1009476bdb988707ff260def863d694549dc18b0",
-    "uri": "workspace-release://var/releases/v37-generator-runtimes-v1/ampgan_v2/source-1a2ac60bdc268f99"
+    "uri": "workspace-release://var/releases/v37-generator-runtimes-v1/ampgan_v2/source-b4aaefa9240d4dab"
   },
   "unsafe_deserialization_enabled": false
 }

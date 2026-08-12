@@ -40,6 +40,16 @@ def _weight_manifest(model_dir: Path) -> list[dict[str, object]]:
     ]
 
 
+def _make_condition_vectors_without_provider_writes(data_utils, df, np, pd):
+    """Reproduce upstream condition encoding without mutating its source release."""
+    _, targets = data_utils.list_col_2_indicator(df.targets)
+    _, target_groups = data_utils.list_col_2_indicator(df.target_groups)
+    mic50, _ = pd.qcut(df.mic50, 10, retbins=True, labels=False)
+    mic50 = data_utils.to_categorical(mic50.astype(int), num_classes=10)
+    lengths = data_utils.int_col_2_bin_mask(df["length"].values, max_len=32)
+    return np.concatenate([target_groups, targets, mic50, lengths], axis=-1)
+
+
 def generate(
     request: dict[str, object], source_dir: Path, model_dir: Path
 ) -> dict[str, object]:
@@ -69,7 +79,9 @@ def generate(
     tf.random.set_seed(seed)
 
     amps = pd.concat([dbaasp.load_data(), avpdb.load_data()], axis=0, join="inner")
-    conditions = data_utils.make_condition_vectors(amps)
+    conditions = _make_condition_vectors_without_provider_writes(
+        data_utils, amps, np, pd
+    )
 
     condition_provenance: list[dict[str, object]] | None = None
     if condition_policy is None:

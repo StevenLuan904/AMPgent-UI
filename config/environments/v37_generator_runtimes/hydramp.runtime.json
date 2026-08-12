@@ -1,8 +1,8 @@
 {
   "adapter": {
-    "adapter_version": "hydramp-safe-pca-stateless-gumbel-v1",
-    "entrypoint": "var/releases/v37-generator-runtimes-v1/hydramp/provider/36b18003122f0d73323f9644b07e1ed267255c11/amp/inference/inference.py",
-    "sha256": "658c2ec7323a082969f09879aaedb8b765888646b718c2cbf06e1222f86333c8"
+    "adapter_version": "hydramp-generator-v1-raw-unfiltered-nattempts1",
+    "entrypoint": "src/pepagent/model_workers/hydramp_generator_cli.py",
+    "sha256": "d2bde943db3182b6236b8fcb942c1171f1a5d4f13c37f433fabfb395e7727f68"
   },
   "generator_id": "hydramp",
   "internal_score_filtering_enabled": false,
@@ -63,7 +63,7 @@
     "python_executable_sha256": "a35938cd6841c3a7814a63ba5be88c3966c6d173fa3a864e7a9084d72a0068ec",
     "python_version": "3.8.20"
   },
-  "runtime_manifest_sha256": "def8c6b27594098a0baa55697ef3a701671a7b8280df26caa19078b7d91411b8",
+  "runtime_manifest_sha256": "813006648a9dce8aeeb16d0fab26f8b306ff1bd004855daf1c8b0a6497d767ad",
   "schema_version": "v37.generator-runtime.1",
   "source_release": {
     "files": [
