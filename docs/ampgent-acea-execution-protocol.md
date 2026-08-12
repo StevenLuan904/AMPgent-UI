@@ -1017,3 +1017,7 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   exact frozen candidate/occurrence graph, no generated peptide result may be claimed. The next
   actions are monitoring stage completion, typed evidence counts, retries/failures and final
   database/object-store-only replay; no ablation or alternative run is allowed.
+- The recovery execution ledger and revision-contract alignment are pushed at checkpoint
+  `a2341ef`. Validation is Ruff clean and `661 passed, 3 skipped`; content archive
+  `var/archives/ampgent-v37-path-recovery-a2341ef.zip` has SHA-256
+  `8310978d8ad5bee89056630002eea65ebcc9d1b59aadc6ef75973e9a1036d0e2`.
