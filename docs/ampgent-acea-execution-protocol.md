@@ -1157,6 +1157,9 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   `var/workers/v37-003-live2`. These PIDs are dated observations, not permanent configuration, and
   must be revalidated for final placement.
 - Repository validation after the manager correction is Ruff clean and `670 passed, 4 skipped`.
+  Manager checkpoint commit is `db4caacdefb754d38566c33c4f96530bbd48584f`; content archive
+  `var/archives/ampgent-v37-local-worker-db4caac.zip` has SHA-256
+  `21206d872b22ecc610e8e5db8437c6b26df93587893ec451e3aa81709d4e454b`.
   v37.0.3 remains unsubmitted. The next action is deployment and exact inspection of the allowed
   synth GPU5/GPU6, `.19` GPU5 and synth CPU workers, followed by fresh placement, all seven dynamic
   gates and one exact-once submission. `192.168.99.32` remains wholly prohibited, explicitly
