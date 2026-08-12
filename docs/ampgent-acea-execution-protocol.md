@@ -1212,3 +1212,10 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   `b8c89fd5d4f255e985fc61f706b1e6ca5c0b5cf1ecc16c123180fa16df63c149`. Content archive
   `var/archives/ampgent-v37-subprocess-recovery-7740b13.zip` has SHA-256
   `18cee29c0756363babfadeca70f444faad8705081ca28663edc4d846a37bca13`.
+- The new deployable archive and extracted release are content-addressed as
+  `e1f1d0a3e7211a83cc1fdd62e2989ba2511844f9eb8ed791b85caf87c130a3dd`, with source marker
+  `22f564e0fdde67aed97779d9185dbe929661c882`. Archive bytes, release marker and source marker were
+  independently rechecked. Loading AMPgent from the extracted release succeeded, and the real
+  frozen knowledge provider Python again imported `argparse`/`re` successfully while the parent
+  environment was deliberately polluted with the frozen Python 3.11 standard library. This proves
+  the deployable artifact contains the isolation fix; it does not by itself authorize submission.
