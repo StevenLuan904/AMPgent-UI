@@ -1041,3 +1041,26 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   authorized but not yet submitted. Before one exact-once submission, deploy a content-addressed
   release containing the fix, revalidate all services and duplicate gates, and map every worker to
   physical host/PID/role/queue/source revision. `192.168.99.32` and `.19` GPU4 remain prohibited.
+
+### 21.7 2026-08-12 v37.0.2 formal execution ledger
+
+- The only `v37.0.2-persistence-recovery` formal run was submitted exactly once after all static,
+  dynamic, duplicate-run and worker-placement gates passed. PostgreSQL run ID is
+  `4beae6b1-3dee-4f49-941c-600e7b85a627`; Temporal workflow ID is
+  `pepagent-rapid-champion-v37-0e9464703e969de4c98b126a7a51cbfc634768f63401f21be4c76532d1b82b8e`;
+  Temporal run ID is `a1d2f66b-9930-4c43-8704-bce598372044`. Formal submission key is
+  `0e9464703e969de4c98b126a7a51cbfc634768f63401f21be4c76532d1b82b8e`, submitted manifest
+  SHA-256 is `7806a3bdd9e5b7a1e7b5e36f6b466682868d050076a2be01236c5c44afcdc6f9`, and fresh
+  submission-preflight SHA-256 is
+  `513f9f8e75e9f1a38fdf1a8e596b0dd11caee3f529833ef9514d111ab13ca79f`.
+- The content-addressed worker release is
+  `df5a018be13a82848e91de3b3119a9b485626550e9ff43658f39cc874e20614a`, loading source revision
+  `723823b5e64b37233fc2f41b8803b596c5039111`. The frozen placement contains local control,
+  generator, provider and metrics workers; synth GPU5/GPU6 Boltz2; `.19` GPU5 Boltz2; and synth
+  CPU Rosetta. Independent physical inspection found no foreign process on the three allowed GPUs.
+  Neither `192.168.99.32` nor `.19` GPU4 is present.
+- Current state is `running`; the knowledge ToolCall has succeeded and all nine fixed generator-seed
+  budgets are being collected before canonical ordered persistence. This run must never be submitted
+  again. Monitor PostgreSQL evidence counts and Temporal failures; do not backfill from local outputs
+  or create a replacement run. Append completion, failure or replay facts here only after they are
+  observed from PostgreSQL, Temporal and content-addressed object storage.
