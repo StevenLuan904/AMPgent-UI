@@ -44,6 +44,8 @@ from pepagent.v37_provider_consumers import (
     PEPSHOT_RELEASE_MANIFEST_SHA256,
     PEPSHOT_RUNTIME_MANIFEST_SHA256,
 )
+
+
 from pepagent.v37_runtime_execution import (
     V37GenericRuntimeExpectation,
     V37GenericRuntimePaths,
@@ -53,6 +55,15 @@ from pepagent.v37_runtime_manifests import (
     V37GeneratorRuntimeExpectation,
     verify_v37_generator_runtime_manifest,
 )
+
+
+def _v37_json_default(value: Any) -> str:
+    """Encode Temporal request timestamps canonically instead of using repr()."""
+    if isinstance(value, datetime):
+        if value.tzinfo is None:
+            raise ValueError("v37 workflow request contains a timezone-naive datetime")
+        return value.astimezone(UTC).isoformat().replace("+00:00", "Z")
+    raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable")
 
 _WORKFLOW_TYPE = "RapidChampionGenerationV37Workflow"
 _WORKFLOW_TASK_QUEUE = "pepagent-control-v37"
@@ -819,7 +830,11 @@ async def submit_v37_once(
             **execution,
         }
         request_bytes = json.dumps(
-            request, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+            request,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            default=_v37_json_default,
         ).encode("utf-8")
         request_sha256 = sha256_bytes(request_bytes)
         stored_request = await asyncio.to_thread(
