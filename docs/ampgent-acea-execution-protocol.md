@@ -1242,3 +1242,7 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   build the final placement/preflight, and only then perform the single exact-once submit.
 - The whole-host prohibition on `192.168.99.32`, including GPU3/GPU4, and the `.19` GPU4 prohibition
   remain absolute and were not contacted or used during this checkpoint.
+- This migration checkpoint was committed and pushed as `3e11066`. Repository validation was Ruff
+  clean with `675 passed, 4 skipped`; content archive
+  `var/archives/ampgent-v37-worker-migration-3e11066.zip` has SHA-256
+  `c23158f41027db94bff7f8971aa1aa9ba55f5cd33dc79d2aaa018be849963370`.
