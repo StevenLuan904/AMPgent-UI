@@ -1165,18 +1165,21 @@ def _validate_attempt_and_failure_ledgers(
         attempt_ledger = payloads[(logical_id, "attempt_ledger")]
         failure_ledger = payloads[(logical_id, "failure_ledger")]
         attempts = attempt_ledger.get("attempts")
+        interruptions = attempt_ledger.get("interruptions", [])
         failures = failure_ledger.get("failures")
         if (
             attempt_ledger.get("schema_version") != "1.0"
             or failure_ledger.get("schema_version") != "1.0"
             or not isinstance(attempts, list)
             or not attempts
+            or not isinstance(interruptions, list)
             or not isinstance(failures, list)
         ):
             raise ValueError("v37 attempt/failure ledger schema is incomplete")
         ranks = [int(item.get("attempt", 0)) for item in attempts]
         if ranks != list(range(1, len(attempts) + 1)) or any(
-            item.get("status") not in {"failed", "succeeded"} for item in attempts
+            item.get("status") not in {"interrupted", "failed", "succeeded"}
+            for item in attempts
         ):
             raise ValueError("v37 attempt ledger order or status is invalid")
         if attempts[-1].get("status") != "succeeded" or any(
@@ -1192,6 +1195,23 @@ def _validate_attempt_and_failure_ledgers(
             for item in failures
         ):
             raise ValueError("v37 failure ledger differs from failed attempts")
+        interrupted_attempts = {
+            int(item["attempt"]) for item in attempts if item["status"] == "interrupted"
+        }
+        recorded_interruptions = {
+            int(item.get("attempt", 0)) for item in interruptions
+        }
+        if (
+            len(recorded_interruptions) != len(interruptions)
+            or interrupted_attempts != recorded_interruptions
+            or any(
+            item.get("reason") != "superseded_by_temporal_retry"
+            or int(item.get("observed_by_attempt", 0)) <= int(item.get("attempt", 0))
+            or int(item.get("observed_by_attempt", 0)) not in ranks
+            for item in interruptions
+            )
+        ):
+            raise ValueError("v37 interruption ledger differs from interrupted attempts")
 
 
 def _validate_knowledge_evidence(payload: Mapping[str, Any]) -> None:

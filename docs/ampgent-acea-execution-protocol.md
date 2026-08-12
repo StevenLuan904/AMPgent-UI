@@ -61,7 +61,8 @@
 
 ### 4.1 永久操作规则
 
-- `192.168.99.32` 当前被用户明确禁止：不得登录、探测 GPU、提交任务、停止进程或触碰工作负载，
+- `192.168.99.32` 当前被用户明确禁止：不得登录、探测 GPU、提交任务、停止进程或触碰工作负载；
+  该全机禁令明确包含 GPU3 与 GPU4，二者均不得用于 AMPgent，且不得以“仅使用其他卡”为由访问该主机，
   直到用户明确解除。
 - 用户于 2026-08-12 明确授权使用除 `192.168.99.32` 外的其他 GPU，包括 synth 主机 GPU；使用前仍须
   精确核实物理主机、GPU、PID、角色、活动 release/source revision 与 AMPgent 归属，且不得停止、争抢
@@ -1071,3 +1072,38 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   AMP-Designer generation activities but exceeded the 120-second local check window; the exact
   deployed implementation had already passed the complete `664 passed, 3 skipped` suite before
   submission. This timeout is resource contention, not a test assertion failure.
+
+### 21.8 2026-08-12 v37.0.2 infrastructure interruption and immutable failure
+
+- The only `v37.0.2-persistence-recovery` run is now `failed_immutable`; its PostgreSQL run,
+  Temporal workflow/run and formal submission key in section 21.7 must never be submitted again,
+  reset, backfilled, deleted or described as completed. At failure it contained exactly 800
+  candidates, 8,000 proposal occurrences, 17 ToolCalls, 74 evidence artifacts and zero
+  evaluations or Agent decisions. These rows remain append-only partial-failure evidence and are
+  not a peptide-result cohort.
+- All nine generator-seed subprocesses produced their fixed 1,000-row raw outputs. Docker
+  Desktop/WSL2 then deadlocked while the final AMP-Designer activity was committing
+  content-addressed evidence to MinIO. The scoped recovery restarted only Docker Desktop and its
+  sole registered `docker-desktop` WSL distribution, preserved named volumes, local workers and SSH
+  tunnels, and did not access any prohibited host or GPU. The same workflow resumed without a
+  replacement submission or local-file backfill.
+- PostgreSQL proves that `v37:generate:amp_designer:20270379` attempt 1 recorded `started` and its
+  launch receipt but no terminal event because Temporal observed a five-minute heartbeat timeout.
+  Temporal then started attempt 2, which recorded launch and aggregate receipts and succeeded. The
+  old ledger projector ignored the interrupted attempt and saw terminal attempts `[2]`, so the
+  ninth `persist_v37_generation_batch` failed non-retryably with
+  `v37 durable attempt ledger is not contiguous`; the workflow and run were then marked failed.
+  This is an execution-evidence semantic defect, not a generator-quality result.
+- The only permitted next execution is a separately versioned
+  `v37.0.3-interrupted-attempt-recovery` with identical scientific models, seeds, budgets,
+  metrics, structure protocol and Pareto policy. Its execution contract must persist a typed
+  `v37.attempt_interrupted` event when a later Temporal attempt supersedes a started attempt that
+  lacks a terminal event; the replay ledger must distinguish `interrupted` from real `failed`,
+  require contiguous attempts, fence late zombie terminals and require only the final attempt to
+  succeed. It must be frozen, tested, committed, archived, deployed as a new content-addressed
+  release and pass every duplicate/service/worker-placement gate before one exact-once submission.
+  No v37.0.2 database rows or local outputs may seed or repair the new run.
+- Resource prohibition is fail-closed: `192.168.99.32` is entirely off limits, explicitly including
+  GPU3 and GPU4, and the host must not be contacted even to use another card. `.19` GPU4 also
+  remains prohibited. Allowed resources still require exact host/GPU/PID/role/release ownership and
+  must not displace unrelated work.

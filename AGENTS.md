@@ -104,7 +104,8 @@ Apply the following style to AMPgent/AceA research work in this repository:
   AMPlify in future scoring unless the user explicitly reverses that decision.
 - Host `192.168.99.32` is temporarily prohibited by user decision. Do not run jobs, inspect or use
   its GPUs, stop processes, or otherwise touch workloads on that host until the user explicitly
-  lifts the restriction.
+  lifts the restriction. This whole-host prohibition explicitly includes GPU3 and GPU4; it is not
+  permission to contact the host or use a different GPU there.
 - As of 2026-08-12, GPUs on other hosts may be used for AMPgent work after exact worker ownership,
   physical host, PID, role, active release/source revision, and workload non-interference are
   verified. This resource permission does not authorize an otherwise unapproved scientific run.
