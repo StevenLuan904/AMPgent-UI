@@ -1064,3 +1064,10 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   again. Monitor PostgreSQL evidence counts and Temporal failures; do not backfill from local outputs
   or create a replacement run. Append completion, failure or replay facts here only after they are
   observed from PostgreSQL, Temporal and content-addressed object storage.
+- Submission-ledger checkpoint commit is `62ca8cf`; content archive
+  `var/archives/ampgent-v37-persistence-run-62ca8cf.zip` has SHA-256
+  `db9c1ddd4df52c07e4167676b440f696b0719aaf875a765899965286a9fc7624`. Ruff is clean and the
+  submission-contract subset is `40 passed`. The full suite was started during two concurrent
+  AMP-Designer generation activities but exceeded the 120-second local check window; the exact
+  deployed implementation had already passed the complete `664 passed, 3 skipped` suite before
+  submission. This timeout is resource contention, not a test assertion failure.
