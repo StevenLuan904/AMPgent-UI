@@ -14,10 +14,45 @@ from pepagent.handoff_metrics import normalize_metric_records
 from pepagent.provenance.hashing import sha256_file
 
 PLAN_SCHEMA_VERSION = "sequence-metric-execution-plan-v1"
+PYTHON_BOOTSTRAP_ENVIRONMENT_KEYS = frozenset(
+    {
+        "PYTHONHOME",
+        "PYTHONPATH",
+        "PYTHONSTARTUP",
+        "PYTHONUSERBASE",
+        "VIRTUAL_ENV",
+        "__PYVENV_LAUNCHER__",
+    }
+)
 
 
 class MetricExecutionPlanError(ValueError):
     """Raised when a runtime registry entry cannot form an executable contract."""
+
+
+def isolated_external_runtime_environment(
+    overrides: Mapping[str, str] | None = None,
+) -> dict[str, str]:
+    """Return an OS environment isolated from a parent Python worker bootstrap."""
+
+    environment = {
+        str(key): str(value)
+        for key, value in os.environ.items()
+        if key.upper() not in PYTHON_BOOTSTRAP_ENVIRONMENT_KEYS
+    }
+    explicit = {str(key): str(value) for key, value in (overrides or {}).items()}
+    forbidden = sorted(
+        key for key in explicit if key.upper() in PYTHON_BOOTSTRAP_ENVIRONMENT_KEYS
+    )
+    if forbidden:
+        raise MetricExecutionPlanError(
+            "external runtime environment cannot override parent Python bootstrap keys: "
+            + ", ".join(forbidden)
+        )
+    environment.update(explicit)
+    environment["PYTHONDONTWRITEBYTECODE"] = "1"
+    environment["PYTHONNOUSERSITE"] = "1"
+    return environment
 
 
 def load_external_metric_adapter(
@@ -130,7 +165,7 @@ def build_external_metric_plan(
         "command_argv": command,
         "working_directory": working_directory,
         "environment": environment,
-        "inherits_parent_environment": True,
+        "inherits_parent_environment": False,
         "timeout_seconds": timeout_seconds,
         "input": {"candidates_csv": str(input_path)},
         "output": {
@@ -170,6 +205,10 @@ def validate_external_metric_plan(plan: Mapping[str, Any]) -> None:
         raise MetricExecutionPlanError("execution plan argument mapping is invalid")
     if not isinstance(plan.get("environment"), Mapping):
         raise MetricExecutionPlanError("execution plan environment is invalid")
+    if plan.get("inherits_parent_environment") is not False:
+        raise MetricExecutionPlanError(
+            "execution plan must isolate the provider runtime from its parent environment"
+        )
     if int(plan.get("timeout_seconds", 0)) <= 0:
         raise MetricExecutionPlanError("execution plan timeout is invalid")
     for section, key in (("input", "candidates_csv"), ("output", "predictions_csv")):
@@ -211,8 +250,7 @@ def execute_external_metric_plan(
     """Execute an already accepted plan and return a JSON-safe process receipt."""
 
     validate_external_metric_plan(plan)
-    environment = os.environ.copy()
-    environment.update({str(key): str(value) for key, value in plan["environment"].items()})
+    environment = isolated_external_runtime_environment(plan["environment"])
     try:
         completed = runner(
             list(plan["command_argv"]),

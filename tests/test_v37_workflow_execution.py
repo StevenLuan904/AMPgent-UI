@@ -1,6 +1,7 @@
 import ast
 import inspect
 import json
+import subprocess
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
@@ -50,6 +51,83 @@ def test_v37_activity_transition_receipt_uses_temporal_timing(monkeypatch) -> No
     assert receipt["started_at"] == started_at.isoformat()
     assert receipt["schedule_to_start_seconds"] == 2.0
     assert datetime.fromisoformat(receipt["finished_at"]) >= started_at
+
+
+def test_v37_child_runtime_environment_drops_worker_python_bootstrap(monkeypatch) -> None:
+    monkeypatch.setenv("PATH", "operating-system-path")
+    monkeypatch.setenv("PYTHONPATH", "worker-python-3.11-lib")
+    monkeypatch.setenv("PYTHONHOME", "worker-python-home")
+    monkeypatch.setenv("PYTHONSTARTUP", "worker-startup.py")
+    monkeypatch.setenv("PYTHONUSERBASE", "worker-user-site")
+    monkeypatch.setenv("VIRTUAL_ENV", "worker-venv")
+    monkeypatch.setenv("__PYVENV_LAUNCHER__", "worker-launcher")
+
+    environment = v37_activities._isolated_v37_runtime_environment(
+        {"V37_PROVIDER_SETTING": "frozen-value"}
+    )
+
+    assert environment["PATH"] == "operating-system-path"
+    assert environment["V37_PROVIDER_SETTING"] == "frozen-value"
+    assert environment["PYTHONDONTWRITEBYTECODE"] == "1"
+    assert environment["PYTHONNOUSERSITE"] == "1"
+    for key in (
+        "PYTHONPATH",
+        "PYTHONHOME",
+        "PYTHONSTARTUP",
+        "PYTHONUSERBASE",
+        "VIRTUAL_ENV",
+        "__PYVENV_LAUNCHER__",
+    ):
+        assert key not in environment
+
+
+def test_v37_child_runtime_environment_rejects_python_bootstrap_override() -> None:
+    with pytest.raises(ValueError, match="parent Python bootstrap keys: PYTHONPATH"):
+        v37_activities._isolated_v37_runtime_environment(
+            {"PYTHONPATH": "undeclared-provider-path"}
+        )
+
+
+def test_v37_generator_environment_keeps_only_frozen_provider_source(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("PYTHONPATH", "worker-release;worker-dependencies")
+
+    environment = v37_activities._isolated_v37_generator_environment(
+        "frozen-generator-source"
+    )
+
+    assert environment["PYTHONPATH"] == "frozen-generator-source"
+    assert "worker-release" not in environment["PYTHONPATH"]
+
+
+def test_v37_isolated_environment_runs_frozen_knowledge_python_without_sre_mismatch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    descriptor_path = ROOT / "var/run/v37-runtime-descriptors/knowledge.runtime.json"
+    if not descriptor_path.is_file():
+        pytest.skip("frozen knowledge runtime descriptor is not materialized")
+    descriptor = json.loads(descriptor_path.read_text(encoding="utf-8"))
+    executable = Path(descriptor["execution_guard"]["paths"]["executable_path"])
+    if not executable.is_file():
+        pytest.skip("frozen knowledge provider executable is not materialized")
+    polluted_python_lib = ROOT / "runtime/python/cpython-3.11.10-windows-x86_64-none/Lib"
+    assert polluted_python_lib.is_dir()
+    monkeypatch.setenv("PYTHONPATH", str(polluted_python_lib))
+
+    completed = subprocess.run(
+        [str(executable), "-X", "utf8", "-c", "import argparse,re; print('provider-ok')"],
+        env=v37_activities._isolated_v37_runtime_environment(),
+        check=False,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        timeout=30,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert completed.stdout.strip() == "provider-ok"
+    assert "PYTHONPATH" not in v37_activities._isolated_v37_runtime_environment()
 
 
 def _workflow_calls() -> list[str]:

@@ -59,6 +59,7 @@ def test_build_external_metric_plan_exposes_guardable_inventory_without_io(
     assert plan["arguments"][-1] == "run-1"
     assert plan["working_directory"] == "locked-release"
     assert plan["environment"] == {"CUDA_VISIBLE_DEVICES": ""}
+    assert plan["inherits_parent_environment"] is False
     assert plan["source_inventory"]["source_revision"] == "source-revision"
     assert plan["source_inventory"]["declared_digest_inventory"] == {
         "model_config_sha256": "b" * 64,
@@ -72,6 +73,14 @@ def test_build_external_metric_plan_exposes_guardable_inventory_without_io(
     }
     assert not (tmp_path / "work").exists()
     validate_external_metric_plan(plan)
+
+
+def test_external_metric_plan_rejects_parent_environment_inheritance(tmp_path: Path) -> None:
+    plan = _plan(tmp_path)
+    plan["inherits_parent_environment"] = True
+
+    with pytest.raises(MetricExecutionPlanError, match="must isolate the provider runtime"):
+        validate_external_metric_plan(plan)
 
 
 def test_invalid_command_template_fails_before_any_provider_execution(
@@ -102,8 +111,10 @@ def test_load_external_metric_adapter_binds_registry_digest(tmp_path: Path) -> N
 
 
 def test_materialize_removes_stale_output_and_execution_receipt_is_separate(
-    tmp_path: Path,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    monkeypatch.setenv("PYTHONPATH", "worker-python-lib")
+    monkeypatch.setenv("VIRTUAL_ENV", "worker-venv")
     plan = _plan(tmp_path)
     output_path = Path(plan["output"]["predictions_csv"])
     output_path.parent.mkdir(parents=True)
@@ -127,6 +138,10 @@ def test_materialize_removes_stale_output_and_execution_receipt_is_separate(
     assert observed["cwd"] == "locked-release"
     assert observed["timeout"] == 37
     assert observed["env"]["CUDA_VISIBLE_DEVICES"] == ""
+    assert observed["env"]["PYTHONDONTWRITEBYTECODE"] == "1"
+    assert observed["env"]["PYTHONNOUSERSITE"] == "1"
+    assert "PYTHONPATH" not in observed["env"]
+    assert "VIRTUAL_ENV" not in observed["env"]
     assert execution_receipt["returncode"] == 9
 
 

@@ -3,10 +3,10 @@ from __future__ import annotations
 import asyncio
 import json
 import math
-import os
 import statistics
 import uuid
 from collections import defaultdict
+from collections.abc import Mapping
 from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
@@ -35,6 +35,7 @@ from pepagent.handoff_metrics import (
 from pepagent.model_workers.sequence_metric_plan import (
     build_external_metric_plan,
     consume_external_metric_result,
+    isolated_external_runtime_environment,
     load_external_metric_adapter,
     materialize_external_metric_input,
 )
@@ -89,6 +90,21 @@ from pepagent.workers.activities import (
 )
 
 V37_ACTIVITY_VERSION = "v37.0.0"
+
+
+def _isolated_v37_runtime_environment(
+    overrides: Mapping[str, str] | None = None,
+) -> dict[str, str]:
+    """Build a child-runtime environment without the worker Python bootstrap paths."""
+    return isolated_external_runtime_environment(overrides)
+
+
+def _isolated_v37_generator_environment(source_root: str) -> dict[str, str]:
+    """Bind only the frozen generator source, never the worker's import path."""
+
+    environment = _isolated_v37_runtime_environment()
+    environment["PYTHONPATH"] = source_root
+    return environment
 
 
 def _activity_transition_receipt() -> dict[str, Any]:
@@ -170,7 +186,6 @@ async def evaluate_v37_sequence_metric(request: dict[str, Any]) -> dict[str, Any
                 runtime=plugin,
                 context=context,
                 cwd=Path(plugin["cwd"]),
-                env=os.environ.copy(),
                 input_paths={"request": request_path},
             )
             result = json.loads(await asyncio.to_thread(output_path.read_text, encoding="utf-8"))
@@ -265,14 +280,12 @@ async def evaluate_v37_sequence_metric(request: dict[str, Any]) -> dict[str, Any
         input_receipt = await asyncio.to_thread(
             materialize_external_metric_input, plan, request["candidates"]
         )
-        environment = os.environ.copy()
-        environment.update(plan["environment"])
         stdout, launch_receipt = await _run_guarded_generic_runtime(
             command=list(plan["command_argv"]),
             runtime=plugin,
             context=context,
             cwd=Path(plan["working_directory"]) if plan.get("working_directory") else work,
-            env=environment,
+            env_overrides=plan["environment"],
             input_paths={
                 "candidate_input": Path(plan["input"]["candidates_csv"]),
                 "metric_registry": registry_path,
@@ -527,7 +540,7 @@ async def _run_guarded_generic_runtime(
     runtime: dict[str, Any],
     context: V37AttemptContext,
     cwd: Path,
-    env: dict[str, str] | None = None,
+    env_overrides: Mapping[str, str] | None = None,
     input_paths: dict[str, Path] | None = None,
 ) -> tuple[str, dict[str, Any]]:
     guard = runtime.get("execution_guard")
@@ -567,6 +580,7 @@ async def _run_guarded_generic_runtime(
             }
         )
 
+    environment = _isolated_v37_runtime_environment(env_overrides)
     return await run_v37_guarded_provider_subprocess(
         command,
         contract=contract,
@@ -576,7 +590,7 @@ async def _run_guarded_generic_runtime(
         aggregate_receipt_writer=aggregate_receipt_writer,
         progress_writer=progress_writer,
         cwd=cwd,
-        env=env,
+        env=environment,
         input_paths=input_paths,
     )
 
@@ -846,14 +860,9 @@ async def generate_v37_batch(request: dict[str, Any]) -> dict[str, Any]:
             )
             expectation = V37GeneratorRuntimeExpectation(**launch_binding["expectation"])
             paths_payload = launch_binding["paths"]
-            launch_env = dict(os.environ)
-            existing_pythonpath = launch_env.get("PYTHONPATH", "")
-            launch_env["PYTHONPATH"] = os.pathsep.join(
-                value
-                for value in (paths_payload["source_root"], existing_pythonpath)
-                if value
+            launch_env = _isolated_v37_generator_environment(
+                str(paths_payload["source_root"])
             )
-            launch_env["PYTHONDONTWRITEBYTECODE"] = "1"
             live_paths = V37LiveRuntimePaths(
                 adapter_path=Path(paths_payload["adapter_path"]),
                 python_path=Path(paths_payload["python_path"]),
