@@ -1121,12 +1121,15 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   ledger. Replay validates event type against payload status and identity, requires every
   interruption to name an actual later-attempt start, rejects duplicate interruption rows, requires
   contiguous attempt numbers and accepts only a final succeeded attempt.
-- The implementation checkpoint is `247f75102d396b846ec4a326711b361851eac49a`; targeted recovery
+- The interrupted-attempt implementation checkpoint is `247f75102d396b846ec4a326711b361851eac49a`; the deployable
+  implementation revision is `a7a0e671fb0234f9365bb083ce40c761cc2d0ccb`, the first immutable
+  revision that contains both that recovery logic and the v37.0.3 manifest-version schema. Deploying
+  `247f751...` would fail closed on the new version before execution and is therefore prohibited. Targeted recovery
   validation is `66 passed`, and repository validation before the version freeze is Ruff clean with
   `668 passed, 3 skipped`. The v37.0.2 partial database evidence remains immutable and is not reused.
 - v37.0.3 is authorized only as the single exact-science recovery described above and remains
   unsubmitted. Freeze commit is `a7a0e671fb0234f9365bb083ce40c761cc2d0ccb`; benchmark SHA-256 is
-  `5def0178d8e37b1572af85d9a7854f2915e243c138325f4cd1c24a0465623eb4`, and experiment-spec
+  `bd5194fd57d0249d080c2f1a2fb7b3e5508b38c842239d14dbccba4ac831fa8a`, and experiment-spec
   SHA-256 is `be9f96f4e75cb13fde345713f657c2ce564c473eb70ebbcc684814bc791219f5`.
   Content archive `var/archives/ampgent-v37-interrupted-attempt-recovery-a7a0e67.zip` has SHA-256
   `9835e99c67563e43433519074e38218e5b03ff8d1dc676dfefce0e0f767f0435`. Before submission it still
