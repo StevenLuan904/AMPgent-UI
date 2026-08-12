@@ -981,3 +981,39 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   the metrics poller is a v32 identity, and v37 control/generator/provider pollers are absent.
   Therefore the only next action remains allowed-host deployment plus exact physical PID/GPU/release
   mapping, followed by the full preflight and one exact-once submission.
+
+### 21.5 2026-08-12 v37 formal execution and path-recovery ledger
+
+- The first `v37.0.0-preregistered` formal execution is preserved as an immutable failed run:
+  PostgreSQL run `59c18f4a-f7f2-461d-a230-481a6fa35bb3`, Temporal workflow
+  `pepagent-rapid-champion-v37-b853e3b4f2d042406733f7d8e0dada4fa6108328a5e141a48d26b6074b822268`,
+  Temporal run `645d0b87-3a77-4498-b1cb-eacc96461a0e`. It failed before candidate persistence
+  because the AMP-Designer subprocess received paths relative to a per-call working directory.
+  Its exact database evidence is 6 lifecycle events, 1 succeeded Knowledge ToolCall, 2 linked
+  artifacts, and zero candidates/evaluations/decisions. It must not be deleted, retried in place,
+  repaired from local files, or described as a scientific generator failure.
+- The execution-only correction resolves the request and output paths before constructing every
+  generator subprocess command. Scientific inputs, generator budgets, seeds, selection rules,
+  metrics, structure budget and portfolio policy are unchanged. The recovery benchmark version is
+  `v37.0.1-path-recovery`; implementation commit is
+  `46c4a1d3fccaf7714d85b9a6febff4885557582e`, freeze commit is
+  `60b975b0e28ab532c44f043c87d3590eb6a69de3`, and immutable deployment archive SHA-256 is
+  `1ec615a67e2e5433b7f604ecca5ca1468a66ba687c971f7c4a8b81d926257679`.
+- The recovery placement was independently joined to current Temporal pollers: local control,
+  generator, provider and metrics; synth GPU5/GPU6 Boltz2; `.19` GPU5 Boltz2; and synth CPU
+  Rosetta. Every placement loaded source `46c4a1d...`, and the prohibited `.32` host and `.19`
+  GPU4 were absent. Old `9d59a14...` AMPgent workers were terminated only after zero active
+  workflows and exact PID/revision ownership checks.
+- Fresh recovery preflight passed all seven gates with submission-preflight SHA-256
+  `718efc9dd5a901f9088595dca7055e1aa30a81575c68a49120028c4221e687a1`. The unique recovery formal
+  run is PostgreSQL run `c7291e95-2d45-4dca-bc94-c1a551ba0ddd`, workflow
+  `pepagent-rapid-champion-v37-9b85a88b1fce3d7cb21a7cb9797fd3be22d448aa25895d4edcf883834d312e99`,
+  Temporal run `f6ceaa72-9589-4f38-bb1f-f167023c53a8`, formal key
+  `9b85a88b1fce3d7cb21a7cb9797fd3be22d448aa25895d4edcf883834d312e99`, and manifest SHA-256
+  `6b23c0afabb0451622e13beda53827f1bf7faf0d75f2b957b9db37e6fb09926f`.
+  It is the only permitted recovery run and must never be submitted again.
+- Current state is `running`. Generator activities have crossed the corrected path boundary and
+  are emitting live guarded-subprocess heartbeats on attempt 1. Until the database contains the
+  exact frozen candidate/occurrence graph, no generated peptide result may be claimed. The next
+  actions are monitoring stage completion, typed evidence counts, retries/failures and final
+  database/object-store-only replay; no ablation or alternative run is allowed.
