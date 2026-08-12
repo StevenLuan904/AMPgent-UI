@@ -949,3 +949,35 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   placement preflight, deployment of the exact frozen release to allowed resources, and one
   exact-once submission. `192.168.99.32` and `.19` GPU4 remain prohibited; unrelated processes must
   not be stopped or displaced.
+
+### 21.4 2026-08-12 v37 executable generator release
+
+- All three frozen generator runtimes have completed real local pre-formal smoke execution. HydrAMP
+  and AMPGAN v2 each produced the requested two-row smoke output; AMP-Designer completed its native
+  fixed 1,000-proposal smoke budget. The self-hashed smoke receipt is
+  `config/environments/v37_generator_runtimes/runtime-smoke-acceptance.json`. This receipt admits the
+  executable paths only; it is not Agent database evidence and makes no peptide-quality claim.
+- HydrAMP now has separate immutable provider and consumer launch acceptances. Its archive is
+  streamed and materialized under fixed member, file-size, total-size and compression-ratio limits;
+  traversal, duplicate/case-fold collision, Windows device names, non-NFC names, links and reparse
+  points are rejected. The materialized inventory/tree SHA and cleanup receipt are included in the
+  canonical generator ToolCall evidence.
+- AMPGAN v2 now carries the exact derived `data/dbaasp/clean.csv` runtime asset and semantic
+  provenance that binds the source assets, provider derivation implementation and license footprint.
+- Every generator ToolCall must have exactly one launch receipt tied to the immutable command,
+  runtime manifest, source/model bytes and materialization evidence. The four HydrAMP acceptance and
+  historical evidence files are persisted as original content-addressed objects, registered as
+  PostgreSQL Artifacts and enumerated by database-only replay. Local files cannot repair missing
+  evidence.
+- Executable implementation revision is
+  `c6b4405aa3944e877b8336b6fa532ea990df45f8`; revision-freeze commit is `74281fc`. Full validation is
+  Ruff clean and `661 passed, 3 skipped`. Content archive
+  `var/archives/ampgent-v37-generator-runtime-74281fc.zip` has SHA-256
+  `E53ADBC051E7674D5AFDF56830ECC59F6FF7D59719CDBBD90F4EB7124E0DD5AE`.
+- The immutable deployment archive has SHA-256
+  `7d5edaed73df47b4e7735f539e72348f73d20e8b1db4f8440c2a681719f0e9d5` and embeds the exact executable
+  implementation revision. The v37 formal run remains unsubmitted. A fresh read-only check found
+  zero active workflows, but the visible Boltz/Rosetta pollers still belong to an older release,
+  the metrics poller is a v32 identity, and v37 control/generator/provider pollers are absent.
+  Therefore the only next action remains allowed-host deployment plus exact physical PID/GPU/release
+  mapping, followed by the full preflight and one exact-once submission.
