@@ -1270,3 +1270,19 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   `var/archives/ampgent-large-data-policy-0bb6112.zip` 为 52,426 bytes，SHA-256 为
   `07cf6c903e4c51e403129d889d7a001b7678d176a1395efe7abaf0458c32cb65`；该小型归档只包含本次 5 个
   已跟踪规则/契约文件，不包含模型、数据库、运行结果或用户产物。
+
+### 21.15 2026-08-13 持续工程环境与瓶颈评估规则
+
+- 用户要求 agent 不等待人工追问，而是在活跃研发、恢复和正式执行期间定期做只读工程环境核查，判断
+  当前任务不能 scale 或没有产生 durable progress 的真实原因。该规则已写入 `AGENTS.md`。
+- 固定诊断顺序为：API/PostgreSQL/对象存储/Temporal 控制面 → formal/duplicate 门禁 → evidence persistence
+  与 replay → worker 物理主机/PID/角色/release → GPU → CPU/Rosetta → 存储与网络 I/O → pipeline
+  barrier/backpressure → Agent 分析/决策延迟。前级尚未允许 dispatch 时，不得把瓶颈误报为后级算力。
+- 证据至少包括当前 health、active workflow、数据库证据计数增量、queue/poller last access、精确资源归属、
+  worker release receipt 和阶段吞吐。仅凭容器 `Up`、历史 poller、瞬时 GPU idle 或墙钟时间不能定性。
+- 扩 worker、进程或并行 agent 前必须证明关键路径可利用新增并发、冻结协议允许、资源不属于他人且不会
+  破坏数据库/对象存储的顺序和 replay。无 active workflow 不自动表示“可运行”或“健康”。
+- 当前 2026-08-13 只读快照用于说明该方法：PostgreSQL/MinIO 健康，Temporal 经实际容器地址可查询且
+  只有历史 failed v37 workflows；本地 API 未监听；v37.0.4 无 formal run。synth GPU5/GPU6 的最新可信
+  placement 快照仍显示外部 `ecd_pred` 占用，`.19` GPU5 worker 尚未迁移至 v37.0.4。因此当前关键路径是
+  控制面恢复和允许 worker/release 对齐，之后才是 Boltz GPU 容量；该快照是日期化观察，不是永久配置。

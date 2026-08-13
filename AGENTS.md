@@ -90,6 +90,32 @@ verified.
   PepPAP remains frozen; Boltz-2 is a structural-confidence lane, not an admitted peptide-affinity
   estimator.
 
+## Continuous environment and bottleneck assessment
+
+- During active research or recovery work, periodically perform a read-only engineering-environment
+  assessment instead of waiting for the user to ask why progress is slow. Reassess after a stage
+  transition, worker/release change, service incident, material throughput change, or prolonged lack
+  of durable evidence progress.
+- Diagnose the current critical path in this order: control-plane health (API, PostgreSQL, object
+  store, Temporal), formal-run/duplicate gates, evidence-persistence and replay state, worker
+  identity/release placement, GPU availability and utilization, CPU/Rosetta capacity, storage and
+  network I/O, pipeline barriers/backpressure, and only then Agent analysis or decision latency.
+- Base every bottleneck claim on current read-only evidence such as service health, active workflow
+  state, durable evidence-count deltas, queue/poller last access, exact host/GPU/PID ownership,
+  release receipts, and observed stage throughput. A container marked `Up`, a poller record, an idle
+  utilization sample, or elapsed wall time alone is not sufficient evidence.
+- Do not equate absent active workflows with healthy readiness: it may mean completed, failed,
+  unsubmitted, or unable to start. Conversely, do not call compute capacity the bottleneck while a
+  control-plane, provenance, persistence, or worker-version gate prevents dispatch.
+- Scale workers, processes, or parallel agents only when the measured critical path can use them,
+  the frozen protocol permits concurrency, exact ownership/non-interference checks pass, and
+  database/object-store persistence will remain ordered and replayable. More processes must not be
+  used to hide a serial barrier, broken service, stale release, foreign workload, or missing
+  scientific authorization.
+- Record material bottleneck changes, measurements, mitigations, and remaining constraints in the
+  execution protocol. Routine unchanged checks stay quiet; notify the user when a bottleneck changes
+  the expected completion path, creates a serious anomaly, requires input, or yields a stage result.
+
 ## Project scientific execution style prompt
 
 Apply the following style to AMPgent/AceA research work in this repository:

@@ -47,6 +47,9 @@ def test_ampgent_acea_execution_protocol_preserves_nonnegotiable_rules() -> None
     assert "docs/ampgent-large-data-location-ledger.zh-CN.md" in protocol
     assert "该存储许可不授权 `.19` GPU4" in normalized_protocol
     assert "database-plus-object-store replay" in protocol
+    assert "### 21.15 2026-08-13 持续工程环境与瓶颈评估规则" in protocol
+    assert "pipeline barrier/backpressure → Agent 分析/决策延迟" in normalized_protocol
+    assert "无 active workflow 不自动表示“可运行”或“健康”" in protocol
 
     assert "sjtu@" not in protocol
     assert "forbids a weighted total" in protocol.lower()

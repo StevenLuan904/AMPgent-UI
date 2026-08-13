@@ -37,3 +37,21 @@ def test_large_data_policy_separates_storage_from_scientific_authorization() -> 
     assert "PostgreSQL + 对象存储" in ledger
     assert "192.168.99.32` 仍为整机禁止访问/探测/使用" in ledger
     assert "/data1/huangyueshan/pepagent/data/{models,runtimes,artifacts,run-cache}" in ledger
+
+
+def test_agent_periodically_assesses_the_measured_critical_path() -> None:
+    rules = AGENT_RULES.read_text(encoding="utf-8")
+    normalized_rules = " ".join(rules.split())
+    assert "## Continuous environment and bottleneck assessment" in rules
+    assert (
+        "periodically perform a read-only engineering-environment assessment"
+        in normalized_rules
+    )
+    assert (
+        "control-plane health (API, PostgreSQL, object store, Temporal)"
+        in normalized_rules
+    )
+    assert "only then Agent analysis or decision latency" in normalized_rules
+    assert "Do not equate absent active workflows with healthy readiness" in normalized_rules
+    assert "Scale workers, processes, or parallel agents only when" in normalized_rules
+    assert "durable evidence-count deltas" in normalized_rules
