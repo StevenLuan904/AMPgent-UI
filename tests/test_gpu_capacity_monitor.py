@@ -23,3 +23,8 @@ def test_gpu_capacity_monitor_never_uses_unscoped_nvidia_smi() -> None:
     ]
     assert command_lines
     assert all("-i $GpuIndex" in line for line in command_lines)
+
+
+def test_gpu_capacity_monitor_suppresses_unreadable_proc_environ_errors() -> None:
+    source = MONITOR.read_text(encoding="utf-8")
+    assert '{ tr \'\\0\' \'\\n\' < "`$p/environ"; } 2>/dev/null' in source

@@ -26,7 +26,7 @@ echo __PROCESSES__
 nvidia-smi -i $GpuIndex --query-compute-apps=pid,process_name,used_memory --format=csv,noheader,nounits || true
 echo __DECLARATIONS__
 for p in /proc/[0-9]*; do
-  if tr '\0' '\n' < "`$p/environ" 2>/dev/null | grep -q "^CUDA_VISIBLE_DEVICES=$GpuIndex`$"; then
+  if { tr '\0' '\n' < "`$p/environ"; } 2>/dev/null | grep -q "^CUDA_VISIBLE_DEVICES=$GpuIndex`$"; then
     echo "`${p##*/}"
   fi
 done

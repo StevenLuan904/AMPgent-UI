@@ -1492,3 +1492,11 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
 - Monitor checkpoint commit `e979745` is pushed. Validation is Ruff clean and `682 passed, 4
   skipped`. Compact archive `var/archives/ampgent-gpu-idle-monitor-e979745.zip` is 82,237 bytes with
   SHA-256 `918c2d333049cd8f4704a25b783166e2d5496738321b39f182a70db124ddb9b1`.
+- The first scheduled patrol exposed and corrected a monitor-only false conflict: shell permission
+  errors while reading unrelated `/proc/*/environ` files were entering the declaration list. The
+  corrected probe suppresses those read errors before matching the exact allowed GPU index.
+- After correction, the scoped `.32` snapshot reports GPU1 idle (15 MiB, 0%, no compute process or
+  device declaration). GPU0 has the same instantaneous memory/utilization but is not idle because
+  PID `2001800`, `bash tools/watch_v4_sample_milestones.sh`, declares `CUDA_VISIBLE_DEVICES=0`;
+  therefore GPU0 must not be used or displaced. `.19` remained unreachable through the jump host,
+  so its earlier GPU6 availability is not current authorization. No GPU2/GPU3 probe occurred.
