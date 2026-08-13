@@ -43,6 +43,57 @@ def test_transient_failure_and_retry_success_are_both_durable() -> None:
     assert artifacts["failure_ledger"]["failures"][0]["error_type"] == "RuntimeError"
 
 
+def test_attempt_projection_ignores_launch_receipt_events_in_same_lineage() -> None:
+    run_id = uuid.uuid4()
+    logical_id = "v37:generate:hydramp:20270371"
+    identity = {
+        "schema_version": "v37.attempt-event.1",
+        "run_id": str(run_id),
+        "v37_logical_id": logical_id,
+        "activity_name": "generate_v37_batch",
+        "attempt": 1,
+    }
+    events = [
+        {
+            "event_type": "v37.attempt_started",
+            "payload_json": {**identity, "status": "started"},
+        },
+        {
+            "event_type": "v37.launch_receipt_persisted",
+            "payload_json": {
+                "run_id": str(run_id),
+                "v37_logical_id": logical_id,
+                "activity_name": "generate_v37_batch",
+                "attempt": 1,
+                "artifact_sha256": "a" * 64,
+                "launch_receipt_sha256": "b" * 64,
+            },
+        },
+        {
+            "event_type": "v37.aggregate_launch_receipt_persisted",
+            "payload_json": {
+                "run_id": str(run_id),
+                "v37_logical_id": logical_id,
+                "activity_name": "generate_v37_batch",
+                "attempt": 1,
+                "artifact_sha256": "c" * 64,
+                "launch_receipt_sha256": "d" * 64,
+                "all_boundaries_match": True,
+            },
+        },
+        {
+            "event_type": "v37.attempt_succeeded",
+            "payload_json": {**identity, "status": "succeeded", "output_sha256": "e" * 64},
+        },
+    ]
+
+    artifacts = build_v37_attempt_artifacts(events, logical_id=logical_id)
+    assert artifacts["attempt_ledger"]["attempts"] == [
+        {"attempt": 1, "status": "succeeded"}
+    ]
+    assert artifacts["failure_ledger"]["failures"] == []
+
+
 @pytest.mark.parametrize("error", [ValueError("bad"), KeyError("missing"), TypeError("wrong")])
 def test_provenance_and_contract_errors_are_non_retryable(error: BaseException) -> None:
     assert v37_error_is_retryable(error) is False

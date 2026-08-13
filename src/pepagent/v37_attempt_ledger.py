@@ -253,8 +253,17 @@ def build_v37_attempt_artifacts(
     events: Sequence[Mapping[str, Any]], *, logical_id: str
 ) -> dict[str, dict[str, Any]]:
     """Project durable lifecycle rows into the frozen replay artifact contract."""
+    attempt_event_types = {
+        "v37.attempt_started",
+        "v37.attempt_interrupted",
+        "v37.attempt_failed",
+        "v37.attempt_succeeded",
+    }
     relevant = [
-        item for item in events if item.get("payload_json", {}).get("v37_logical_id") == logical_id
+        item
+        for item in events
+        if item.get("event_type") in attempt_event_types
+        and item.get("payload_json", {}).get("v37_logical_id") == logical_id
     ]
     starts: dict[int, Mapping[str, Any]] = {}
     terminals: dict[int, Mapping[str, Any]] = {}

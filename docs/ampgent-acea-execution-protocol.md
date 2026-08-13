@@ -1411,3 +1411,28 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   `679 passed, 4 skipped`. Compact content archive
   `var/archives/ampgent-v37-worker-identity-5a86a8a.zip` is 141,630 bytes with SHA-256
   `073d24de432a784943379fcdb62d376e780d4164bb240695ab09cec5350d5711`.
+
+### 21.21 2026-08-13 v37.0.4 immutable persistence failure
+
+- The unique v37.0.4 formal run was submitted exactly once as run
+  `57a30fb0-e373-40ab-a629-1b22756bc70f`, workflow
+  `pepagent-rapid-champion-v37-20cb54e347c0f5f58ffe1a401aa94de5e36898edb5bf8c601434cf1ad006505f`.
+  It started at `2026-08-13T08:53:59.744756Z` and failed at
+  `2026-08-13T09:15:48.143457Z`. It is immutable failed evidence: do not rerun, backfill, delete,
+  retry in place, or reuse its uncommitted generator outputs.
+- PostgreSQL contains 1 succeeded knowledge ToolCall and 2 linked evidence artifacts, but 0
+  Candidate, 0 proposal occurrence, 0 Evaluation and 0 AgentDecision. Temporal shows all nine
+  frozen generation activities completed, followed by failure of
+  `persist_v37_generation_batch` with `v37 attempt lifecycle identity is invalid`. Therefore this
+  run produced no admissible peptide cohort or scientific result.
+- Read-only diagnosis localized the engineering defect to attempt-ledger projection: valid
+  `v37.launch_receipt_persisted` and `v37.aggregate_launch_receipt_persisted` rows share the
+  logical attempt lineage but do not use the `v37.attempt-event.1` payload schema;
+  `build_v37_attempt_artifacts` validates that schema before excluding the receipt event types.
+  This is a persistence-verifier ordering defect, not a generator, metric, GPU, peptide-quality or
+  scientific-protocol failure.
+- The only permitted next action is an isolated code/test correction and a new versioned recovery
+  proposal. No replacement formal run is authorized by this entry. Any future recovery must retain
+  the exact scientific budget and failed evidence, pass an adversarial fixture containing both
+  receipt event types, rebuild immutable releases/placements/preflight, and receive an independent
+  exact-once identity; local or Temporal generator return values may not repair PostgreSQL.

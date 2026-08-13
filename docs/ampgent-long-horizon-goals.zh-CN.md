@@ -507,3 +507,10 @@ portfolio，不改变 Q1/Q2/Q6 的回答标准，也不提前恢复已延期的�
 `.32 GPU0/GPU1` 及其他共享卡必须先与任务 `019fcd9b-a14e-7741-a3ff-2fd0e1d3d4c7` 协调精确归属，
 不得抢占。当前协调结果将 `.19 GPU4/GPU5` 明确留给 AMPgent，其他卡仍有外部任务。该勘误只提高
 v37 的安全执行容量，不改变科学问题、固定预算、评价端点、Pareto 规则或长期成熟度判据。
+
+2026-08-13 v37.0.4 追加事实：唯一正式 run
+`57a30fb0-e373-40ab-a629-1b22756bc70f` 在九个冻结生成 activity 返回后、候选持久化前，因 attempt-ledger
+投影错误地用 `v37.attempt-event.1` schema 校验合法 launch-receipt 事件而失败。数据库中为 0 Candidate、
+0 proposal occurrence、0 Evaluation、0 AgentDecision，因此没有新的可解释短肽结果，也不能更新 Q1/Q2
+或声称搜索进展。该结果只暴露 persistence-verifier 的事件分类顺序缺陷；修复必须版本化、带对抗 fixture，
+且不得从 Temporal 返回值或本地文件回填失败 run。v37.0.4 保持不可变 failed，新的正式恢复不由本条自动授权。
