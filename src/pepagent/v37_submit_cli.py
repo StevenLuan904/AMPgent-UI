@@ -638,7 +638,7 @@ def load_v37_submission_bundle(
         worker_placement_snapshot,
         contract=load_v37_capacity_contract(capacity_contract_path),
         expected_task_queues=manifest.execution["task_queues"],
-        expected_source_revision=manifest.formal_run.implementation_revision,
+        expected_source_revision=manifest.execution["worker_source_revision"],
         reference_time=datetime.now(UTC),
     )
     if preflight.get("config_sha256") != sha256_bytes(manifest_path.read_bytes()):
@@ -651,6 +651,8 @@ def load_v37_submission_bundle(
         raise ValueError("v37 submission preflight already records a submission")
     if preflight.get("implementation_revision") != implementation_revision:
         raise ValueError("v37 preflight implementation revision drifted")
+    if preflight.get("worker_source_revision") != manifest.execution["worker_source_revision"]:
+        raise ValueError("v37 preflight worker source revision drifted")
     if preflight.get("config_execution_authorized") is not True:
         raise ValueError("v37 preflight was created before execution authorization")
     preflight_identity = {

@@ -166,6 +166,7 @@ class V37Manifest(BaseModel):
             "capacity_contract_sha256": (
                 "bdc8e3cb294d92009509efbb6a859475d49bb5bd3a702e73b374a0f97c2fef19"
             ),
+            "worker_source_revision": "8bdeb39fcc0df7c635e13a4aefa56a6c6a2bb4e3",
             "task_queues": {
                 "workflow_and_control": "pepagent-control-v37",
                 "generator": "pepagent-generator-v37",

@@ -56,6 +56,13 @@ def test_ampgent_acea_execution_protocol_preserves_nonnegotiable_rules() -> None
     assert "PID `288726`" in protocol
     assert "PID 为 `289268`" in normalized_protocol
     assert "926a1c9cc9c1c52ffd12404190b3397bd0b2649dee941cc5a0cb8ff142cc8eba" in protocol
+    assert "### 21.19 2026-08-13 submission GPU gate 勘误与最终 `.19` release" in protocol
+    assert "PID 为 `290062`" in normalized_protocol
+    assert "PID 为 `290212`" in normalized_protocol
+    assert "cda153111e3e4f6bbb01720f0587e899b178cf9ec2626cdae65bcaf17b3146f3" in protocol
+    assert "### 21.20 2026-08-13 implementation/worker revision identity correction" in protocol
+    assert "execution.worker_source_revision" in protocol
+    assert "Static preflight schema `1.3`" in protocol
 
     assert "sjtu@" not in protocol
     assert "forbids a weighted total" in protocol.lower()

@@ -123,6 +123,18 @@ def _canonical_without(payload: dict[str, Any], key: str) -> dict[str, Any]:
     return {item_key: value for item_key, value in payload.items() if item_key != key}
 
 
+def _reject_mutable_pepagent_import_paths(
+    *, import_paths: list[str], release_root: Path
+) -> None:
+    release_root = release_root.resolve()
+    for raw_path in import_paths:
+        path = Path(raw_path).resolve()
+        if not path.is_relative_to(release_root) and (path / "pepagent").is_dir():
+            raise LocalWorkerRefusal(
+                "managed Python exposes mutable pepagent source outside the immutable release"
+            )
+
+
 def _runtime_fingerprint(
     *, python_path: Path, release_root: Path, release_sha256: str, source_revision: str
 ) -> dict[str, Any]:
@@ -167,6 +179,14 @@ def _runtime_fingerprint(
         raise LocalWorkerRefusal("managed Python returned an invalid runtime identity") from error
     if HEX64.fullmatch(str(payload.get("environment_sha256"))) is None:
         raise LocalWorkerRefusal("managed Python environment fingerprint is invalid")
+    import_paths = payload.get("import_paths")
+    if not isinstance(import_paths, list) or not all(
+        isinstance(path, str) for path in import_paths
+    ):
+        raise LocalWorkerRefusal("managed Python import-path identity is invalid")
+    _reject_mutable_pepagent_import_paths(
+        import_paths=import_paths, release_root=release_root
+    )
     return payload
 
 
@@ -222,6 +242,9 @@ def build_local_worker_plan(
     python_path = python_path.resolve(strict=True)
     state_root = state_root.resolve()
     benchmark, spec = _load_benchmark(benchmark_path, role)
+    expected_worker_revision = benchmark["execution"].get("worker_source_revision")
+    if source_revision != expected_worker_revision:
+        raise LocalWorkerRefusal("release source revision differs from frozen worker source")
     if sha256_file(release_archive_path) != release_sha256:
         raise LocalWorkerRefusal("release archive SHA-256 does not match the requested release")
     revision_marker = release_root / ".pepagent-source-revision"
@@ -266,6 +289,7 @@ def build_local_worker_plan(
         "worker_module": spec.worker_module,
         "maximum_concurrent_activities": spec.maximum_concurrent_activities,
         "source_revision": source_revision,
+        "worker_source_revision": expected_worker_revision,
         "implementation_revision": benchmark["formal_run"]["implementation_revision"],
         "release_root": str(release_root),
         "release_archive_path": str(release_archive_path),
@@ -302,6 +326,13 @@ def validate_local_worker_plan(plan: dict[str, Any], *, rehash_live_files: bool)
     if spec is None or plan.get("task_queue") != spec.task_queue:
         raise LocalWorkerRefusal("local worker role or task queue drifted")
     _require_sha(str(plan.get("source_revision")), length=40, label="source revision")
+    _require_sha(
+        str(plan.get("worker_source_revision")),
+        length=40,
+        label="worker source revision",
+    )
+    if plan["source_revision"] != plan["worker_source_revision"]:
+        raise LocalWorkerRefusal("planned source differs from frozen worker source")
     _require_sha(str(plan.get("release_sha256")), length=64, label="release SHA-256")
     if not rehash_live_files:
         return
@@ -357,6 +388,8 @@ def validate_local_worker_plan(plan: dict[str, Any], *, rehash_live_files: bool)
     )
     if runtime["environment_sha256"] != plan["runtime_environment_sha256"]:
         raise LocalWorkerRefusal("managed runtime environment changed after planning")
+    if runtime["import_paths"] != plan["runtime_import_paths"]:
+        raise LocalWorkerRefusal("managed runtime import paths changed after planning")
 
 
 async def temporal_queue_pollers(plan: dict[str, Any]) -> list[dict[str, str]]:

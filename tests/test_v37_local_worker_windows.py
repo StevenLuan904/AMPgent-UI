@@ -14,10 +14,25 @@ from pepagent.v37_local_worker_windows import (
     LocalWorkerRefusal,
     _exclusive_reservation,
     _powershell_process_snapshot,
+    _reject_mutable_pepagent_import_paths,
     inspect_local_worker_receipt,
     launch_local_worker,
     validate_local_worker_plan,
 )
+
+
+def test_runtime_rejects_mutable_pepagent_import_fallback(tmp_path: Path) -> None:
+    release = tmp_path / "release"
+    mutable_src = tmp_path / "workspace-src"
+    (release / "src" / "pepagent").mkdir(parents=True)
+    (mutable_src / "pepagent").mkdir(parents=True)
+    with pytest.raises(LocalWorkerRefusal, match="mutable pepagent source"):
+        _reject_mutable_pepagent_import_paths(
+            import_paths=[str(mutable_src)], release_root=release
+        )
+    _reject_mutable_pepagent_import_paths(
+        import_paths=[str(release / "src")], release_root=release
+    )
 
 
 def test_powershell_snapshot_forces_utf8_for_unicode_workspace_paths(
@@ -81,6 +96,7 @@ def _plan(tmp_path: Path, *, role: str = "metrics") -> dict[str, object]:
             role
         ].maximum_concurrent_activities,
         "source_revision": source_revision,
+        "worker_source_revision": source_revision,
         "implementation_revision": "2" * 40,
         "release_root": str(release),
         "release_archive_path": str(archive),
@@ -141,6 +157,7 @@ def test_plan_rehash_rejects_archive_python_entrypoint_and_runtime_drift(
             "environment_sha256": "3" * 64,
             "manifest": {},
             "pepagent_origin": plan["pepagent_origin"],
+            "import_paths": [],
         },
     )
     validate_local_worker_plan(plan, rehash_live_files=True)
@@ -178,6 +195,7 @@ def test_inspector_rejects_pid_reuse_python_and_command_drift(
             "environment_sha256": "3" * 64,
             "manifest": {},
             "pepagent_origin": plan["pepagent_origin"],
+            "import_paths": [],
         },
     )
     receipt: dict[str, object] = {
@@ -229,6 +247,7 @@ def test_inspector_rejects_runtime_identity_file_drift(
             "environment_sha256": "3" * 64,
             "manifest": {},
             "pepagent_origin": plan["pepagent_origin"],
+            "import_paths": [],
         },
     )
     receipt: dict[str, object] = {
@@ -270,6 +289,7 @@ async def test_launch_refuses_existing_temporal_poller_before_spawn_or_reservati
             "environment_sha256": "3" * 64,
             "manifest": {},
             "pepagent_origin": plan["pepagent_origin"],
+            "import_paths": [],
         },
     )
 

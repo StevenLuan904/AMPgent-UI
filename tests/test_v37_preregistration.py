@@ -23,6 +23,9 @@ def test_v37_is_single_arm_fixed_budget_and_execution_authorized() -> None:
     assert manifest["design"]["fixed_full_budget_required"] is True
     assert manifest["design"]["adaptive_early_stopping"] is False
     assert manifest["design"]["weighted_total_score_forbidden"] is True
+    assert manifest["execution"]["worker_source_revision"] == (
+        "8bdeb39fcc0df7c635e13a4aefa56a6c6a2bb4e3"
+    )
     assert manifest["formal_run"] == {
         "direction_authorized": True,
         "execution_authorized": True,
@@ -195,6 +198,7 @@ def test_v37_freezes_five_metric_calls_and_eleven_observations() -> None:
         "capacity_contract_sha256": (
             "bdc8e3cb294d92009509efbb6a859475d49bb5bd3a702e73b374a0f97c2fef19"
         ),
+        "worker_source_revision": "8bdeb39fcc0df7c635e13a4aefa56a6c6a2bb4e3",
         "task_queues": {
             "workflow_and_control": "pepagent-control-v37",
             "generator": "pepagent-generator-v37",

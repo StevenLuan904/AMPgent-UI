@@ -1407,6 +1407,8 @@ def validate_v37_database_object_replay(
             for stage, logical_id in item["stage_logical_ids"].items()
         }
         validate_v37_capacity_replay_artifacts(
+            expected_task_queues=manifest["execution"]["task_queues"],
+            expected_source_revision=manifest["execution"]["worker_source_revision"],
             worker_placement_snapshot=payloads[
                 ("v37:replay", "worker_placement_snapshot")
             ],

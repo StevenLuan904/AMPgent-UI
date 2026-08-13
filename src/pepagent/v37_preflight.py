@@ -75,7 +75,7 @@ def build_v37_static_preflight(config_path: Path) -> dict[str, Any]:
         }
     )
     result: dict[str, Any] = {
-        "schema_version": "1.2",
+        "schema_version": "1.3",
         "benchmark_id": manifest.benchmark_id,
         "benchmark_version": manifest.version,
         "manifest_sha256": manifest_sha256,
@@ -90,6 +90,7 @@ def build_v37_static_preflight(config_path: Path) -> dict[str, Any]:
         },
         "config_execution_authorized": manifest.formal_run.execution_authorized,
         "implementation_revision": manifest.formal_run.implementation_revision,
+        "worker_source_revision": manifest.execution["worker_source_revision"],
         "direction_authorized": True,
         "execution_authorized": False,
         "formal_run_submitted": False,
@@ -123,6 +124,13 @@ def authorize_v37_submission_preflight(
     revision = static_record.get("implementation_revision")
     if not isinstance(revision, str) or not revision.strip():
         failed.append("implementation_revision_frozen")
+    worker_revision = static_record.get("worker_source_revision")
+    if (
+        not isinstance(worker_revision, str)
+        or len(worker_revision) != 40
+        or any(char not in "0123456789abcdef" for char in worker_revision)
+    ):
+        failed.append("worker_source_revision_frozen")
     required_inputs = {
         "manifest",
         "experiment_spec",

@@ -1363,3 +1363,47 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
 - `.32 GPU0/GPU1` 仍由协调任务预留，`.32 GPU2/GPU3` 仍为绝对禁区；synth 资源仍有外部任务，未触碰。
   当前安全可用的 AMPgent Boltz 容量为 `.19 GPU4/GPU5` 两张卡。v37.0.4 formal run 仍未提交；提交前还需
   将其余必需 worker 迁移到同一 source/release、等待历史 poller 变旧并重新生成完整 placement/preflight。
+
+### 21.19 2026-08-13 submission GPU gate 勘误与最终 `.19` release
+
+- 21.18 部署后复核发现 benchmark 的 `pre_execution_gates` 仍含旧的“.32 整机与 .19 GPU4 禁用”字符串。
+  该文字与用户最新资源边界及 capacity-v2 相冲突，因此在 formal submit 前 fail closed；没有提交 workflow，
+  也没有产生候选或科学证据。
+- 最小勘误 commit `8bdeb39fcc0df7c635e13a4aefa56a6c6a2bb4e3` 已 push：门禁现为
+  `no_worker_uses_192_168_99_32_GPU2_or_GPU3_or_uncoordinated_shared_resources`。它不改变候选、seed、
+  评价、结构预算、Rosetta 或 Pareto 规则。相关 38 项 v37 preregistration/submission 测试通过。
+- 勘误内容归档 `var/archives/ampgent-v37-gpu-gate-8bdeb39.zip` 为 6,600 bytes，SHA-256 为
+  `68cbf211d90861791326c3d2dd3d331f5ef261e6913bc80e599b38945fdccb24`。新的 immutable platform archive
+  为 1,124,763 bytes，SHA-256 `cda153111e3e4f6bbb01720f0587e899b178cf9ec2626cdae65bcaf17b3146f3`，
+  已验证上传并激活；本地临时 release archive 已删除。
+- 在 Temporal active workflow 数为 0 且旧 GPU4/GPU5 worker 的 immutable receipt、PID、release 和
+  `foreign_process_present=false` 均复核后，仅停止了 AMPgent-owned PID `288726`/`289268`。新 `.19 GPU4`
+  worker PID 为 `290062`，新 `.19 GPU5` worker PID 为 `290212`；两者均绑定 source
+  `8bdeb39fcc0df7c635e13a4aefa56a6c6a2bb4e3`、release
+  `cda153111e3e4f6bbb01720f0587e899b178cf9ec2626cdae65bcaf17b3146f3`、environment SHA-256
+  `bd8f9aca3cafda51bfb1b8e48e9204fccd183da5436f2ac3fa0fae9775160946` 和既有 Boltz weights SHA-256
+  `090e82ac8c92f5e943fa1b39e7410a44027bea7243c0bbb3caa67a77fc1428e1`；两个物理检查均无 foreign
+  process，Temporal 已看到两个精确新 poller。
+- `.32 GPU0/GPU1` 仍未分配，GPU2/GPU3 仍为双方绝对禁区；其他共享卡未触碰。formal run 仍未提交。
+  当前剩余门禁是本地 control/generator/provider/metrics 与必需 Rosetta worker 的同 release 对齐，以及
+  排除仍在同一 Boltz queue 上的历史/共享 poller 后生成完整 placement 与 exact-once preflight。
+
+### 21.20 2026-08-13 implementation/worker revision identity correction
+
+- Read-only gate audit found that v37 had conflated the frozen scientific implementation revision
+  with the independently deployable worker source revision. This was an engineering identity
+  blocker: valid workers on the corrected GPU-gate release would be rejected even though the
+  candidate, seed, metric, structure, Rosetta and Pareto contracts were unchanged.
+- The benchmark now freezes two distinct identities. `formal_run.implementation_revision` remains
+  `22f564e0fdde67aed97779d9185dbe929661c882`; `execution.worker_source_revision` is
+  `8bdeb39fcc0df7c635e13a4aefa56a6c6a2bb4e3`, matching the current immutable `.19 GPU4/GPU5`
+  worker release `cda153111e3e4f6bbb01720f0587e899b178cf9ec2626cdae65bcaf17b3146f3`.
+- Static preflight schema `1.3`, live preflight, exact-once submission, Windows worker planning and
+  database/object-store replay now independently enforce the frozen worker revision. Replay also
+  rechecks the exact frozen task-queue mapping; a syntactically valid but wrong revision or queue
+  fails closed.
+- This correction deliberately points to an earlier, already published commit and therefore does
+  not create a circular self-hash. It does not authorize a replacement run, change scientific
+  budgets or reuse any failed v37.0.0-v37.0.3 output. The formal run remains unsubmitted pending
+  exact local/Rosetta worker alignment, removal of stale queue ambiguity, final placement and all
+  submission gates.

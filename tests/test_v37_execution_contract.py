@@ -77,6 +77,9 @@ def test_v37_static_and_dynamic_preflight_honors_config_authorization() -> None:
     assert static["implementation_revision"] == (
         "22f564e0fdde67aed97779d9185dbe929661c882"
     )
+    assert static["worker_source_revision"] == (
+        "8bdeb39fcc0df7c635e13a4aefa56a6c6a2bb4e3"
+    )
     gates = {
         "implementation_committed_pushed_archived": True,
         "database_schema_exact": True,

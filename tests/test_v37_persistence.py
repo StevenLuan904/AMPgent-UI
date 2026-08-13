@@ -903,7 +903,7 @@ def _fixture() -> tuple[dict, dict, dict, dict[str, dict]]:
                 "task_queue": task_queue,
                 "poller_identity": f"{1234 + index}@test",
                 "poller_last_access_at": "2026-08-12T00:00:00Z",
-                "source_revision": "a" * 40,
+                "source_revision": "8bdeb39fcc0df7c635e13a4aefa56a6c6a2bb4e3",
                 "release_sha256": "b" * 64,
                 "environment_sha256": "c" * 64,
                 "weights_sha256": "d" * 64 if role == "boltz2" else None,

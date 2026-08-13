@@ -70,3 +70,8 @@ def test_large_data_ledger_records_remote_release_placement() -> None:
         "platform-926a1c9cc9c1c52ffd12404190b3397bd0b2649dee941cc5a0cb8ff142cc8eba.tar.gz"
         in ledger
     )
+    assert "1,124,763 bytes" in ledger
+    assert (
+        "platform-cda153111e3e4f6bbb01720f0587e899b178cf9ec2626cdae65bcaf17b3146f3.tar.gz"
+        in ledger
+    )

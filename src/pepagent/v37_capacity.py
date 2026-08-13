@@ -540,12 +540,19 @@ def _validate_activity_transition_receipt(payload: Any) -> dict[str, Any]:
 def validate_v37_capacity_replay_artifacts(
     *,
     contract: V37CapacityContract | None = None,
+    expected_task_queues: dict[str, str],
+    expected_source_revision: str,
     worker_placement_snapshot: dict[str, Any],
     pipeline_manifest: dict[str, Any],
     queue_transition_ledger: dict[str, Any],
     expected_stage_outcomes: dict[str, str] | None = None,
 ) -> None:
-    validate_v37_worker_placement_snapshot(worker_placement_snapshot, contract=contract)
+    validate_v37_worker_placement_snapshot(
+        worker_placement_snapshot,
+        contract=contract,
+        expected_task_queues=expected_task_queues,
+        expected_source_revision=expected_source_revision,
+    )
     if pipeline_manifest.get("pipeline_manifest_sha256") != sha256_json(
         {
             key: value

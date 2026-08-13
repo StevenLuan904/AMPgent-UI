@@ -47,6 +47,7 @@
 | 2026-08-13 | AMPgent 大数据分层目录约定 | cache/execution-copy | `/data1/huangyueshan/pepagent/data/{models,runtimes,artifacts,run-cache}/<content-or-run-id>/` | AMPgent | n/a | 待首次写入核验 | 待首次写入核验 | 每个具体对象单独登记；不得覆盖内容地址目录 | planned |
 | 2026-08-13 | v37.0.4 平台发布归档 | immutable execution release | `/data1/huangyueshan/pepagent/bootstrap/platform-e1f1d0a3e7211a83cc1fdd62e2989ba2511844f9eb8ed791b85caf87c130a3dd.tar.gz` | AMPgent | source `22f564e0fdde67aed97779d9185dbe929661c882` | 1,114,245 bytes | `e1f1d0a3e7211a83cc1fdd62e2989ba2511844f9eb8ed791b85caf87c130a3dd` | 保留至该 release 不再承担 worker/replay；删除前核对无 active worker 和可恢复权威副本 | active |
 | 2026-08-13 | v37 capacity-v2 平台发布归档 | immutable execution release | `/data1/huangyueshan/pepagent/bootstrap/platform-926a1c9cc9c1c52ffd12404190b3397bd0b2649dee941cc5a0cb8ff142cc8eba.tar.gz` | AMPgent | source `ace90cd0e383c079caff7735bd7e664f2ca31c70` | 1,123,713 bytes | `926a1c9cc9c1c52ffd12404190b3397bd0b2649dee941cc5a0cb8ff142cc8eba` | 保留至 GPU4/GPU5 worker 与对应 replay 不再使用；删除前核对无 active worker 和可恢复权威副本 | active |
+| 2026-08-13 | v37 corrected GPU-gate 平台发布归档 | immutable execution release | `/data1/huangyueshan/pepagent/bootstrap/platform-cda153111e3e4f6bbb01720f0587e899b178cf9ec2626cdae65bcaf17b3146f3.tar.gz` | AMPgent | source `8bdeb39fcc0df7c635e13a4aefa56a6c6a2bb4e3` | 1,124,763 bytes | `cda153111e3e4f6bbb01720f0587e899b178cf9ec2626cdae65bcaf17b3146f3` | 当前 GPU4/GPU5 worker release；删除前核对无 active worker 和可恢复权威副本 | active |
 
 ## 5. 写入、迁移与清理清单
 

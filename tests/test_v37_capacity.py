@@ -57,6 +57,17 @@ def _worker_snapshot() -> dict:
     }
 
 
+def _expected_task_queues() -> dict[str, str]:
+    return {
+        "workflow_and_control": "pepagent-control-v37",
+        "generator": "pepagent-generator-v37",
+        "provider": "pepagent-provider-v37",
+        "sequence_metrics": "pepagent-cpu-metrics",
+        "boltz": "pepagent-gpu-boltz2",
+        "rosetta": "pepagent-cpu-rosetta",
+    }
+
+
 def _stage_receipts(stage: str, logical_id: str) -> list[dict]:
     activity_type, task_queue, count = {
         "proposal": ("generate_v37_batch", "pepagent-generator-v37", 1),
@@ -197,6 +208,8 @@ def test_v37_capacity_replay_rejects_transition_tampering() -> None:
         stage_outcomes=outcomes,
     )
     validate_v37_capacity_replay_artifacts(
+        expected_task_queues=_expected_task_queues(),
+        expected_source_revision="a" * 40,
         worker_placement_snapshot=_worker_snapshot(),
         pipeline_manifest=manifest,
         queue_transition_ledger=ledger,
@@ -207,6 +220,44 @@ def test_v37_capacity_replay_rejects_transition_tampering() -> None:
     )
     with pytest.raises(ValueError, match="semantics"):
         validate_v37_capacity_replay_artifacts(
+            expected_task_queues=_expected_task_queues(),
+            expected_source_revision="a" * 40,
+            worker_placement_snapshot=_worker_snapshot(),
+            pipeline_manifest=manifest,
+            queue_transition_ledger=ledger,
+        )
+
+
+def test_capacity_replay_rejects_worker_source_and_queue_drift() -> None:
+    manifest = build_v37_pipeline_manifest(
+        [{"proposal_ordinal": 1, "occurrence_id": "occ-1"}]
+    )
+    outcomes = {
+        logical_id: {
+            "outcome": "succeeded",
+            "activity_receipts": _stage_receipts(stage, logical_id),
+        }
+        for item in manifest["items"]
+        for stage, logical_id in item["stage_logical_ids"].items()
+    }
+    ledger = build_v37_pipeline_queue_transition_ledger(
+        pipeline_manifest=manifest,
+        stage_outcomes=outcomes,
+    )
+    with pytest.raises(ValueError, match="source revision drifted"):
+        validate_v37_capacity_replay_artifacts(
+            expected_task_queues=_expected_task_queues(),
+            expected_source_revision="f" * 40,
+            worker_placement_snapshot=_worker_snapshot(),
+            pipeline_manifest=manifest,
+            queue_transition_ledger=ledger,
+        )
+    wrong_queues = _expected_task_queues()
+    wrong_queues["boltz"] = "wrong-boltz-queue"
+    with pytest.raises(ValueError, match="task queue .*drifted"):
+        validate_v37_capacity_replay_artifacts(
+            expected_task_queues=wrong_queues,
+            expected_source_revision="a" * 40,
             worker_placement_snapshot=_worker_snapshot(),
             pipeline_manifest=manifest,
             queue_transition_ledger=ledger,

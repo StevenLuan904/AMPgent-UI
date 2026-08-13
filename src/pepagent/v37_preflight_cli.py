@@ -260,7 +260,7 @@ def build_v37_preflight_files(
         worker_snapshot,
         contract=load_v37_capacity_contract(capacity_contract_path),
         expected_task_queues=manifest.execution["task_queues"],
-        expected_source_revision=manifest.formal_run.implementation_revision,
+        expected_source_revision=manifest.execution["worker_source_revision"],
         reference_time=datetime.now(UTC),
     )
     bundle = build_v37_execution_bundle(

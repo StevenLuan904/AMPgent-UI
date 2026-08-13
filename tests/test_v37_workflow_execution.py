@@ -262,7 +262,7 @@ def test_v37_preflight_freezes_database_submission_identity() -> None:
     static = build_v37_static_preflight(
         ROOT / "config/benchmarks/amp_rapid_champion_generation_v37.yaml"
     )
-    assert static["schema_version"] == "1.2"
+    assert static["schema_version"] == "1.3"
     assert static["formal_submission_key"] == build_v37_formal_submission_key(
         benchmark_id=static["benchmark_id"],
         benchmark_version=static["benchmark_version"],
