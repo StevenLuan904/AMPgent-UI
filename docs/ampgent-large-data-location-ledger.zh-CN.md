@@ -45,6 +45,7 @@
 | 日期 | 数据集/工件 | canonical/cache | 精确路径 | owner | 来源 run/release | 大小 | SHA-256/manifest | 保留/删除条件 | 状态 |
 |---|---|---|---|---|---|---:|---|---|---|
 | 2026-08-13 | AMPgent 大数据分层目录约定 | cache/execution-copy | `/data1/huangyueshan/pepagent/data/{models,runtimes,artifacts,run-cache}/<content-or-run-id>/` | AMPgent | n/a | 待首次写入核验 | 待首次写入核验 | 每个具体对象单独登记；不得覆盖内容地址目录 | planned |
+| 2026-08-13 | v37.0.4 平台发布归档 | immutable execution release | `/data1/huangyueshan/pepagent/bootstrap/platform-e1f1d0a3e7211a83cc1fdd62e2989ba2511844f9eb8ed791b85caf87c130a3dd.tar.gz` | AMPgent | source `22f564e0fdde67aed97779d9185dbe929661c882` | 1,114,245 bytes | `e1f1d0a3e7211a83cc1fdd62e2989ba2511844f9eb8ed791b85caf87c130a3dd` | 保留至该 release 不再承担 worker/replay；删除前核对无 active worker 和可恢复权威副本 | active |
 
 ## 5. 写入、迁移与清理清单
 

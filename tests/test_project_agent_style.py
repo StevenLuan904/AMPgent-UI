@@ -55,3 +55,13 @@ def test_agent_periodically_assesses_the_measured_critical_path() -> None:
     assert "Do not equate absent active workflows with healthy readiness" in normalized_rules
     assert "Scale workers, processes, or parallel agents only when" in normalized_rules
     assert "durable evidence-count deltas" in normalized_rules
+
+
+def test_large_data_ledger_records_remote_release_placement() -> None:
+    ledger = LARGE_DATA_LEDGER.read_text(encoding="utf-8")
+    assert "v37.0.4 平台发布归档" in ledger
+    assert (
+        "platform-e1f1d0a3e7211a83cc1fdd62e2989ba2511844f9eb8ed791b85caf87c130a3dd.tar.gz"
+        in ledger
+    )
+    assert "1,114,245 bytes" in ledger

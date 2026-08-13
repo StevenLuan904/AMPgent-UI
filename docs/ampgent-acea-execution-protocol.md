@@ -1300,3 +1300,23 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   remote worker 统一迁移到 v37.0.4 release、精确 placement/preflight，以及 synth GPU5/GPU6 外部占用。
 - 后续 health 检查必须从 `docs/runbook.md` 或冻结 service config 解析端口，不能凭记忆硬编码；连接失败前
   先验证目标地址，避免把错误探针解释为服务故障。
+
+### 21.16 2026-08-13 `.19` GPU5 v37.0.4 worker 迁移
+
+- 周期性瓶颈检查确认 `.19` GPU5 有 24,110 MiB 空闲、利用率 0 且无计算进程；旧 PID `162983`
+  可由 immutable receipt 精确识别为 AMPgent-owned v37.0.3 Boltz worker。检查未访问 `.19` GPU4 或
+  `192.168.99.32`。
+- v37.0.4 内容寻址 archive 从本地已验证副本上传到
+  `/data1/huangyueshan/pepagent/bootstrap/platform-e1f1d0a3e7211a83cc1fdd62e2989ba2511844f9eb8ed791b85caf87c130a3dd.tar.gz`；
+  远端 SHA-256 为 `e1f1d0a3e7211a83cc1fdd62e2989ba2511844f9eb8ed791b85caf87c130a3dd`，大小
+  1,114,245 bytes。位置与生命周期已登记到 `docs/ampgent-large-data-location-ledger.zh-CN.md`。
+- 新 `.19` GPU5 Boltz worker PID `269615` 已从 immutable release `e1f1d0a3e7211a83cc1fdd62e2989ba2511844f9eb8ed791b85caf87c130a3dd`
+  启动，source revision 为 `22f564e0fdde67aed97779d9185dbe929661c882`，environment SHA-256 为
+  `5800a86d19e219bd5c6ddddf58250706c2d7120d9161089b959eecfffce68296`，Boltz weights SHA-256 为
+  `090e82ac8c92f5e943fa1b39e7410a44027bea7243c0bbb3caa67a77fc1428e1`。物理检查无 foreign process，
+  Temporal 已观察到精确新 poller。随后仅停止了已核验的旧 `.19` PID `162983`。
+- 同次 synth 只读快照显示 GPU5/GPU6 仍由外部 OmniEpic Python PID `1762511`/`1762519` 占用，
+  各约使用 11,566 MiB。没有停止、探测其内部任务或争抢资源；synth 旧 worker/release 未迁移。
+- API、PostgreSQL、MinIO、Temporal 健康且无 active v37 workflow；v37.0.4 formal run 仍未提交。
+  当前剩余关键路径收敛为 synth GPU5/GPU6 释放后的完整 remote worker/release 对齐、最终 placement
+  snapshot 和全部 submission preflight。

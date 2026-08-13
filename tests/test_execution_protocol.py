@@ -54,6 +54,9 @@ def test_ampgent_acea_execution_protocol_preserves_nonnegotiable_rules() -> None
     assert "错误检查 `127.0.0.1:8000`" in protocol
     assert "权威 API 地址为 `127.0.0.1:8080`" in normalized_protocol
     assert "不能凭记忆硬编码" in normalized_protocol
+    assert "### 21.16 2026-08-13 `.19` GPU5 v37.0.4 worker 迁移" in protocol
+    assert "PID `269615`" in protocol
+    assert "v37.0.4 formal run 仍未提交" in normalized_protocol
 
     assert "sjtu@" not in protocol
     assert "forbids a weighted total" in protocol.lower()
