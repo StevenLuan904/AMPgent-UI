@@ -63,6 +63,7 @@ def test_ampgent_acea_execution_protocol_preserves_nonnegotiable_rules() -> None
     assert "### 21.20 2026-08-13 implementation/worker revision identity correction" in protocol
     assert "execution.worker_source_revision" in protocol
     assert "Static preflight schema `1.3`" in protocol
+    assert "073d24de432a784943379fcdb62d376e780d4164bb240695ab09cec5350d5711" in protocol
 
     assert "sjtu@" not in protocol
     assert "forbids a weighted total" in protocol.lower()

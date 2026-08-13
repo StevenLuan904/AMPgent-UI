@@ -1407,3 +1407,7 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   budgets or reuse any failed v37.0.0-v37.0.3 output. The formal run remains unsubmitted pending
   exact local/Rosetta worker alignment, removal of stale queue ambiguity, final placement and all
   submission gates.
+- The correction checkpoint is commit `5a86a8a`; repository validation is Ruff clean with
+  `679 passed, 4 skipped`. Compact content archive
+  `var/archives/ampgent-v37-worker-identity-5a86a8a.zip` is 141,630 bytes with SHA-256
+  `073d24de432a784943379fcdb62d376e780d4164bb240695ab09cec5350d5711`.
