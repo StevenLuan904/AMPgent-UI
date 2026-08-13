@@ -502,3 +502,8 @@ L0–L5 成熟度与 Q1–Q6 完成证据矩阵 checkpoint 为 commit
 `v37.0.4-subprocess-environment-recovery` 仅隔离 provider、metric 与 generator 子进程环境，科学模型、
 seed、预算、结构协议、Pareto 和停止条件不变。其完成仍只用于追求一次数据库可回放的高质量 champion
 portfolio，不改变 Q1/Q2/Q6 的回答标准，也不提前恢复已延期的工具消融。
+
+2026-08-13 资源边界勘误：`.19 GPU4` 可供 AMPgent 使用；`.32 GPU2/GPU3` 是绝对禁区。
+`.32 GPU0/GPU1` 及其他共享卡必须先与任务 `019fcd9b-a14e-7741-a3ff-2fd0e1d3d4c7` 协调精确归属，
+不得抢占。当前协调结果将 `.19 GPU4/GPU5` 明确留给 AMPgent，其他卡仍有外部任务。该勘误只提高
+v37 的安全执行容量，不改变科学问题、固定预算、评价端点、Pareto 规则或长期成熟度判据。

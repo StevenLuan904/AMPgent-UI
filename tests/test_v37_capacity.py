@@ -88,7 +88,7 @@ def test_v37_capacity_contract_freezes_rapid_pipeline_without_authorization() ->
         "boltz",
         "rosetta",
     ]
-    assert contract.resource_capacity["gpu"]["maximum_concurrent_workers"] == 3
+    assert contract.resource_capacity["gpu"]["maximum_concurrent_workers"] == 4
     assert contract.resource_capacity["cpu"]["rosetta_activity_slots"] == 16
     assert contract.formal_run.execution_authorized is False
     assert contract.formal_run.submitted is False
@@ -113,7 +113,7 @@ def test_v37_static_capacity_preflight_never_touches_or_authorizes_hosts() -> No
     assert record["stage_concurrency"] == {
         "proposal": 8,
         "evaluation": 16,
-        "boltz": 3,
+        "boltz": 4,
         "rosetta": 16,
     }
     assert record["host_or_process_observation_performed"] is False
@@ -125,7 +125,7 @@ def test_v37_static_capacity_preflight_never_touches_or_authorizes_hosts() -> No
 @pytest.mark.parametrize(
     ("path", "value"),
     [
-        (("resource_capacity", "gpu", "maximum_concurrent_workers"), 4),
+        (("resource_capacity", "gpu", "maximum_concurrent_workers"), 3),
         (("resource_capacity", "cpu", "rosetta_activity_slots"), 8),
         (("pipeline_contract", "order"), ["proposal", "boltz", "evaluation", "rosetta"]),
         (("retry_contract", "maximum_attempts_per_logical_stage_call"), 3),

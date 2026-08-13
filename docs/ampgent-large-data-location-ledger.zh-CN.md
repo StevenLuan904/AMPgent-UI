@@ -21,8 +21,8 @@
 1. 本地工作站只长期保存代码、配置、文档、manifest、紧凑报告和内容地址指针；大文件下载只作有界临时缓存。
 2. 正式运行的权威字节进入内容寻址对象存储；PostgreSQL 保存 ToolCall、依赖、候选、Evaluation、AgentDecision、Artifact 和生命周期事件。CSV/JSON/远端目录只是导出或执行副本。
 3. `192.168.99.19` 被授权作为 AMPgent 大文件存储主机，可承载模型、独立运行时、结构中间产物和运行缓存。首次写入任何新目录前，必须确认目录属于 AMPgent、容量充足且不会干扰他人，并在下表登记精确路径。
-4. `.19` 的存储授权不改变 GPU 边界：`.19` GPU4 仍绝对禁止；存文件也不授权启动未经批准的 formal run、访问他人目录或停止他人进程。
-5. `192.168.99.32` 仍为整机禁止访问/探测/使用，不能作为存储位置。
+4. `.19` GPU4/GPU5 可在精确归属、release 和非干扰门禁通过后用于 AMPgent；存文件仍不授权启动未经批准的 formal run、访问他人目录或停止他人进程。
+5. `192.168.99.32` 的 GPU2/GPU3 为绝对禁区。GPU0/GPU1 与该主机上的任何存储位置，均须先与任务 `019fcd9b-a14e-7741-a3ff-2fd0e1d3d4c7` 协调精确归属；当前未分配给 AMPgent，也不是本账本的允许存储位置。
 6. 迁移必须先记录计划位置，再校验源/目标 SHA-256 或 manifest；只有权威副本和 replay 路径验证通过后，才可删除明确归属于 AMPgent 的临时副本。
 
 ## 3. 当前位置与归属
@@ -50,7 +50,7 @@
 ## 5. 写入、迁移与清理清单
 
 1. 在写入前确定数据类别、预计大小、canonical/cache 角色、owner、来源 run/release 和目标精确路径。
-2. 对 `.19` 做最小只读所有权/容量核验；不得调度或探测 `.19` GPU4，不得停止共享 session 或他人任务。
+2. 对 `.19` 做最小只读所有权/容量核验；GPU4/GPU5 仅用于已明确归属的 AMPgent worker，不得停止共享 session 或他人任务。
 3. 写入后计算 SHA-256 或生成有序 manifest，记录实际大小和完成时间。
 4. 若属于 formal Agent 流，将 proposal occurrence、ToolCall、依赖、Evaluation、AgentDecision、Artifact、重试/失败和对象引用写入 PostgreSQL；权威 artifact 字节写入内容寻址对象存储。
 5. 从 PostgreSQL + 对象存储执行 replay/完整性验证。远端目录存在或文件可打开不等于证据闭环完成。

@@ -1,5 +1,5 @@
 capacity_contract_id: acea_v37_rapid_champion_capacity
-version: v37-capacity-v1
+version: v37-capacity-v2
 execution_status: preregistered_not_authorized
 
 scope:
@@ -13,17 +13,18 @@ scope:
 resource_capacity:
   gpu:
     boltz_worker_role: boltz2
-    maximum_concurrent_workers: 3
+    maximum_concurrent_workers: 4
     activity_slots_per_worker: 1
     one_worker_process_per_physical_gpu: true
     gpu_oversubscription_forbidden: true
     eligible_placements:
+      - {host: "192.168.99.19", gpu_index: 4, activation: exact_preflight_required}
       - {host: "192.168.99.19", gpu_index: 5, activation: exact_preflight_required}
       - {host: synth, gpu_index: 5, activation: exact_preflight_required}
       - {host: synth, gpu_index: 6, activation: exact_preflight_required}
     prohibited_placements:
-      - {host: "192.168.99.32", gpu_index: any}
-      - {host: "192.168.99.19", gpu_index: 4}
+      - {host: "192.168.99.32", gpu_index: 2}
+      - {host: "192.168.99.32", gpu_index: 3}
     placement_gates:
       - physical_host_gpu_pid_role_identity_exact
       - active_release_and_source_revision_exact
@@ -60,8 +61,8 @@ pipeline_contract:
       output_manifest_role: prestructure_evaluation_manifest
       rejection_must_be_persisted_before_downstream_skip: true
     boltz:
-      concurrent_activity_slots: 3
-      maximum_queued_items: 12
+      concurrent_activity_slots: 4
+      maximum_queued_items: 16
       input_manifest_role: prestructure_evaluation_manifest
       output_manifest_role: boltz_pose_manifest
     rosetta:
@@ -119,4 +120,3 @@ database_evidence:
 formal_run:
   execution_authorized: false
   submitted: false
-

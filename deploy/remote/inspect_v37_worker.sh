@@ -50,6 +50,7 @@ allowed = {
     ("synth", "boltz2", "5"),
     ("synth", "boltz2", "6"),
     ("synth", "rosetta", "cpu"),
+    ("192.168.99.19", "boltz2", "4"),
     ("192.168.99.19", "boltz2", "5"),
 }
 if (host, role, resource) not in allowed:

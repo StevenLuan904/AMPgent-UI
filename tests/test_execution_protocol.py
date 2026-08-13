@@ -36,16 +36,11 @@ def test_ampgent_acea_execution_protocol_preserves_nonnegotiable_rules() -> None
         assert footprint in protocol
 
     assert "资源许可不等于 formal run 科学授权" in protocol
-    assert "用户随后明确禁止 `.19` 的 GPU4" in protocol
-
-    assert (
-        "`192.168.99.32` remains a whole-host prohibition explicitly including GPU3 and GPU4"
-        in protocol
-    )
-    assert "no login or probe is allowed" in normalized_protocol
-    assert "must not be contacted even for inspection" in normalized_protocol
+    assert "### 21.17 2026-08-13 GPU 边界勘误与跨任务协调" in protocol
+    assert "`.19 GPU4` 没有被禁止；`.32 GPU2/GPU3` 才是双方共同的绝对禁区" in normalized_protocol
+    assert "019fcd9b-a14e-7741-a3ff-2fd0e1d3d4c7" in protocol
     assert "docs/ampgent-large-data-location-ledger.zh-CN.md" in protocol
-    assert "该存储许可不授权 `.19` GPU4" in normalized_protocol
+    assert "eligible Boltz placement 为 `.19 GPU4`、`.19 GPU5`" in normalized_protocol
     assert "database-plus-object-store replay" in protocol
     assert "### 21.15 2026-08-13 持续工程环境与瓶颈评估规则" in protocol
     assert "pipeline barrier/backpressure → Agent 分析/决策延迟" in normalized_protocol

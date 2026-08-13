@@ -67,8 +67,8 @@ verified.
   database-plus-object-store evidence closure.
 - Host `192.168.99.19` may store AMPgent-owned large models, immutable runtimes, run caches, and
   intermediate scientific files under an exact project path whose ownership and non-interference
-  have been verified. This storage permission does not authorize `.19` GPU4, an unapproved formal
-  run, access to another user's files, or stopping another user's processes.
+  have been verified. This storage permission does not authorize an unapproved formal run, access
+  to another user's files, or stopping another user's processes.
 - Register every large-data location and migration in
   `docs/ampgent-large-data-location-ledger.zh-CN.md`. Record the data class, canonical/cache role,
   physical host, exact path or object prefix, owner, source/run/release identity, SHA-256 or manifest,
@@ -150,15 +150,15 @@ Apply the following style to AMPgent/AceA research work in this repository:
   clearly and move on instead of spending repeated iterations rescuing it.
 - AMPlify is retired from this project by user decision. Do not debug, rerun, shard, replace, or use
   AMPlify in future scoring unless the user explicitly reverses that decision.
-- Host `192.168.99.32` is temporarily prohibited by user decision. Do not run jobs, inspect or use
-  its GPUs, stop processes, or otherwise touch workloads on that host until the user explicitly
-  lifts the restriction. This whole-host prohibition explicitly includes GPU3 and GPU4; it is not
-  permission to contact the host or use a different GPU there.
-- As of 2026-08-12, GPUs on other hosts may be used for AMPgent work after exact worker ownership,
-  physical host, PID, role, active release/source revision, and workload non-interference are
-  verified. This resource permission does not authorize an otherwise unapproved scientific run.
-- GPU4 on host `192.168.99.19` is explicitly prohibited by the user's latest instruction. Do not
-  schedule work on it even if it appears idle.
+- GPU2 and GPU3 on host `192.168.99.32` are absolutely prohibited by the user's latest decision.
+  Do not run jobs on them, inspect them, stop their processes, or use them indirectly. GPU0/GPU1
+  on that host are not automatically assigned to AMPgent: coordinate exact ownership and timing
+  with Codex task `019fcd9b-a14e-7741-a3ff-2fd0e1d3d4c7` before any access or deployment, and
+  preserve every foreign process.
+- As of 2026-08-13, GPU4 on host `192.168.99.19` is allowed for AMPgent. GPUs on allowed hosts may
+  be used only after exact worker ownership, physical host, PID, role, active release/source
+  revision, and workload non-interference are verified. Use safely available capacity, but never
+  preempt another workload or change an otherwise frozen scientific protocol silently.
 - Preserve historical records without retroactively rewriting them. Historical ultra-strict gates
   may be described as engineering-policy failures rather than scientific contradictions when that
   distinction is accurate.

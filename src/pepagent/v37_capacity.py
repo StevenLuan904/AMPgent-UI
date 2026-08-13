@@ -48,7 +48,7 @@ class CapacityFormalRun(BaseModel):
 
 class V37CapacityContract(BaseModel):
     capacity_contract_id: Literal["acea_v37_rapid_champion_capacity"]
-    version: Literal["v37-capacity-v1"]
+    version: Literal["v37-capacity-v2"]
     execution_status: Literal["preregistered_not_authorized"]
     scope: dict[str, Any]
     resource_capacity: dict[str, Any]
@@ -76,6 +76,7 @@ class V37CapacityContract(BaseModel):
         resources = self.resource_capacity
         gpu = resources.get("gpu", {})
         expected_eligible = {
+            ("192.168.99.19", 4),
             ("192.168.99.19", 5),
             ("synth", 5),
             ("synth", 6),
@@ -90,12 +91,12 @@ class V37CapacityContract(BaseModel):
             (str(item.get("host")), str(item.get("gpu_index")))
             for item in gpu.get("prohibited_placements", [])
         }
-        if ("192.168.99.32", "any") not in prohibited or (
-            "192.168.99.19",
-            "4",
-        ) not in prohibited:
+        if not {
+            ("192.168.99.32", "2"),
+            ("192.168.99.32", "3"),
+        } <= prohibited:
             raise ValueError("v37 prohibited GPU placement set is incomplete")
-        if gpu.get("maximum_concurrent_workers") != 3 or gpu.get("activity_slots_per_worker") != 1:
+        if gpu.get("maximum_concurrent_workers") != 4 or gpu.get("activity_slots_per_worker") != 1:
             raise ValueError("v37 Boltz capacity drifted")
         required_gpu_guards = (
             "one_worker_process_per_physical_gpu",
@@ -141,13 +142,13 @@ class V37CapacityContract(BaseModel):
         expected_concurrency = {
             "proposal": 8,
             "evaluation": 16,
-            "boltz": 3,
+            "boltz": 4,
             "rosetta": 16,
         }
         expected_queues = {
             "proposal": 32,
             "evaluation": 64,
-            "boltz": 12,
+            "boltz": 16,
             "rosetta": 64,
         }
         stages = pipeline.get("stages", {})
@@ -328,7 +329,12 @@ def validate_v37_worker_placement_snapshot(
             for item in contract.resource_capacity["gpu"]["eligible_placements"]
         }
         if contract is not None
-        else {("192.168.99.19", 5), ("synth", 5), ("synth", 6)}
+        else {
+            ("192.168.99.19", 4),
+            ("192.168.99.19", 5),
+            ("synth", 5),
+            ("synth", 6),
+        }
     )
     gpu_placements: set[tuple[str, int]] = set()
     identities: set[tuple[str, int, str]] = set()
@@ -392,7 +398,7 @@ def validate_v37_worker_placement_snapshot(
     maximum_workers = (
         int(contract.resource_capacity["gpu"]["maximum_concurrent_workers"])
         if contract is not None
-        else 3
+        else 4
     )
     if len(gpu_placements) > maximum_workers:
         raise ValueError("v37 worker placement exceeds frozen GPU capacity")

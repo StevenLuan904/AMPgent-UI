@@ -91,7 +91,9 @@ decoy、所有排除、最终 lane 顺序、shortfall 和停止理由时，v37 �
 用户关于快速获得高质量结果的最新指令已记录为 v37 formal direction authorized；这不是越过门禁的
 执行授权，也没有提交 workflow。正式执行前必须完成可执行实现、内容归档、全量测试、数据库
 schema 验收、服务与 duplicate-run 检查，以及所有 worker 的物理主机、GPU、PID、角色、task queue、
-源码/release 映射。绝不使用 `192.168.99.32` 或 `.19` GPU4，也不停止、争抢或干扰他人任务。
+源码/release 映射。`.19 GPU4/GPU5` 可在精确归属门禁通过后使用；`.32 GPU2/GPU3` 绝对禁止，
+`.32 GPU0/GPU1` 未经任务 `019fcd9b-a14e-7741-a3ff-2fd0e1d3d4c7` 明确协调不得使用。任何情况下
+都不停止、争抢或干扰他人任务。
 
 不再要求用户提供额外固定短语。只有全部预执行门禁实际通过并由主任务记录执行授权后，才可注册正式
 activity、生成序列或提交唯一 run。

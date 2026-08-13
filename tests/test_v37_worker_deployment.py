@@ -18,6 +18,9 @@ def test_v37_remote_targets_allow_only_frozen_placements() -> None:
         V37RemoteTarget("synth", "boltz2", 6, "/sdd_data/pepagent", "gpu6"),
         V37RemoteTarget("synth", "rosetta", "cpu", "/sdd_data/pepagent", "cpu"),
         V37RemoteTarget(
+            "192.168.99.19", "boltz2", 4, "/data1/huangyueshan/pepagent", "gpu4"
+        ),
+        V37RemoteTarget(
             "192.168.99.19", "boltz2", 5, "/data1/huangyueshan/pepagent", "gpu5"
         ),
     ):
@@ -27,9 +30,6 @@ def test_v37_remote_targets_allow_only_frozen_placements() -> None:
 @pytest.mark.parametrize(
     "target",
     [
-        V37RemoteTarget(
-            "192.168.99.19", "boltz2", 4, "/data1/huangyueshan/pepagent", "gpu4"
-        ),
         V37RemoteTarget("synth", "boltz2", 4, "/sdd_data/pepagent", "gpu4"),
         V37RemoteTarget("synth", "boltz2", 7, "/sdd_data/pepagent", "gpu7"),
         V37RemoteTarget(

@@ -21,7 +21,7 @@ PHYSICAL_HOST="${PEPAGENT_PHYSICAL_HOST:?PEPAGENT_PHYSICAL_HOST is required}"
 case "$PHYSICAL_HOST:$ROOT:$ROLE:$RESOURCE" in
   "synth:/sdd_data/pepagent:boltz2:5"|"synth:/sdd_data/pepagent:boltz2:6") ;;
   "synth:/sdd_data/pepagent:rosetta:cpu") ;;
-  "192.168.99.19:/data1/huangyueshan/pepagent:boltz2:5") ;;
+  "192.168.99.19:/data1/huangyueshan/pepagent:boltz2:4"|"192.168.99.19:/data1/huangyueshan/pepagent:boltz2:5") ;;
   *) echo "placement is outside the frozen v37 allowlist" >&2; exit 22 ;;
 esac
 

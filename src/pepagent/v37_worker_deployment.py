@@ -57,8 +57,8 @@ def validate_v37_remote_target(target: V37RemoteTarget) -> V37RemoteTarget:
     elif target.physical_host == "192.168.99.19":
         if target.root != "/data1/huangyueshan/pepagent":
             raise ValueError("v37 .19 root drifted")
-        if target.role != "boltz2" or target.resource != 5:
-            raise ValueError("v37 .19 permits only the frozen GPU5 Boltz placement")
+        if target.role != "boltz2" or target.resource not in {4, 5}:
+            raise ValueError("v37 .19 permits only the frozen GPU4/GPU5 Boltz placements")
     else:  # pragma: no cover - Literal protects typed callers
         raise ValueError("v37 physical host is prohibited")
     return target

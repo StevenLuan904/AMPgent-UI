@@ -89,7 +89,7 @@ def test_v37_static_preflight_freezes_capacity_bytes() -> None:
     assert static["capacity_contract"] == {
         "capacity_contract_path": "../experiments/acea_v37_rapid_champion_capacity.yaml",
         "capacity_contract_sha256": (
-            "34f83c5a6df92a1d07779014c407211daefc80210581a840b7cea19cea46c3f0"
+            "bdc8e3cb294d92009509efbb6a859475d49bb5bd3a702e73b374a0f97c2fef19"
         ),
     }
 

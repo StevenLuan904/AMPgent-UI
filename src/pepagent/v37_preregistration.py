@@ -164,7 +164,7 @@ class V37Manifest(BaseModel):
         if self.execution != {
             "capacity_contract_path": "../experiments/acea_v37_rapid_champion_capacity.yaml",
             "capacity_contract_sha256": (
-                "34f83c5a6df92a1d07779014c407211daefc80210581a840b7cea19cea46c3f0"
+                "bdc8e3cb294d92009509efbb6a859475d49bb5bd3a702e73b374a0f97c2fef19"
             ),
             "task_queues": {
                 "workflow_and_control": "pepagent-control-v37",
@@ -176,7 +176,7 @@ class V37Manifest(BaseModel):
             },
             "generation_concurrency": 8,
             "metric_concurrency": 5,
-            "boltz_concurrency": 3,
+            "boltz_concurrency": 4,
             "rosetta_concurrency": 16,
             "ordered_collection_key": "source_ordinal",
         }:

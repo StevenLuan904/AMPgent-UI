@@ -12,9 +12,9 @@
 
 v37 是单臂流水，不再承担四臂公平比较，因此按 proposal ordinal 做确定性 FIFO：
 
-`proposal(8) → cheap evaluation(16) → Boltz(3) → Rosetta(16)`
+`proposal(8) → cheap evaluation(16) → Boltz(4) → Rosetta(16)`
 
-括号内是并发 activity slot。各级队列有界，分别最多积压 32、64、12、64 项；下游满载时暂停上游派发，
+括号内是并发 activity slot。各级队列有界，分别最多积压 32、64、16、64 项；下游满载时暂停上游派发，
 不丢弃、不重排。每一级必须先把输入/输出 manifest 提交 PostgreSQL 并由对象存储 SHA 定位，下游不能直接
 读取尚未落库的本地临时输出。cheap evaluation 的拒绝也必须先落库，才能跳过后续结构计算。
 
@@ -23,8 +23,9 @@ v37 是单臂流水，不再承担四臂公平比较，因此按 proposal ordina
 
 ## 可用资源
 
-最多使用 `.19 GPU5`、synth GPU5、synth GPU6 三个单卡 Boltz worker；`.32` 全部 GPU 和 `.19 GPU4`
-永久排除于本合同。每卡一个 worker、一个 activity slot，不做 GPU oversubscription。Rosetta 为 16 个
+最多使用 `.19 GPU4`、`.19 GPU5`、synth GPU5、synth GPU6 四个单卡 Boltz worker；`.32 GPU2/GPU3`
+永久排除于本合同。`.32 GPU0/GPU1` 只有在任务 `019fcd9b-a14e-7741-a3ff-2fd0e1d3d4c7` 明确协调
+归属、且全部精确门禁通过后，才可在新的容量修订中加入；本合同当前不把它们列为 eligible。每卡一个 worker、一个 activity slot，不做 GPU oversubscription。Rosetta 为 16 个
 单线程 slot，`OMP_NUM_THREADS=1`、`MKL_NUM_THREADS=1`。
 
 这些只是 eligible placement。启动前仍要核实物理主机、GPU、PID、role、task queue、环境、模型权重、
@@ -42,4 +43,3 @@ release/环境/资源归属、非有限值或映射错误 fail closed。重试�
 进入 PostgreSQL typed evidence graph；大型字节进入内容寻址对象存储。静态实现
 `pepagent.v37_capacity` 只构建流水依赖和 no-host-touch preflight，始终返回
 `formal_run_authorized=false`、`formal_run_submitted=false`。
-

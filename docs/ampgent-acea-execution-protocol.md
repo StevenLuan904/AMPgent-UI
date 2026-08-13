@@ -1323,3 +1323,20 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
 - 迁移 checkpoint 为 commit `becdf71`；Ruff clean，pytest `678 passed, 4 skipped`。紧凑内容归档
   `var/archives/ampgent-v37-host19-migration-becdf71.zip` 为 51,348 bytes，SHA-256 为
   `b314a4ebc80b9ba15dae1338569fb974b9aed0ffcad4155df1bdf67f821034d5`。
+
+### 21.17 2026-08-13 GPU 边界勘误与跨任务协调
+
+- 用户最新指令纠正了资源边界：`.19 GPU4` 没有被禁止；`.32 GPU2/GPU3` 才是双方共同的绝对禁区。
+  旧章节中关于“.19 GPU4 禁止”或“.32 整机禁止”的文字保留为历史事实，但自本节起不再是当前执行规则。
+- 已与 Codex 任务 `019fcd9b-a14e-7741-a3ff-2fd0e1d3d4c7` 完成只读资源协调。对方确认 `.19 GPU4`
+  当前空闲并可立即划给 AMPgent 独占，`.19 GPU5` 的 AMPgent worker PID `269615` 继续保留，OmniEpic
+  不会调度到这两张卡。
+- `.32 GPU0/GPU1` 近期仍由 OmniEpic 的正式训练/采样链预留，不分配给 AMPgent；`.32 GPU2/GPU3`
+  双方均不得访问、探测或使用。synth GPU5/GPU6/GPU7 与 `.19 GPU1/GPU2/GPU3/GPU6/GPU7` 均有
+  对方或其他任务，不能视为 AMPgent 可独占容量，且不得停止或抢占。
+- v37 容量合同升级为 `v37-capacity-v2`：eligible Boltz placement 为 `.19 GPU4`、`.19 GPU5`、
+  synth GPU5、synth GPU6，最大 worker/activity 并发为 4。synth 两张卡仍须等外部任务释放并重新通过
+  精确门禁；本次只立即部署 `.19 GPU4`。科学候选数、seed、评价、结构预算、Rosetta decoy 和 Pareto
+  判定不变；变化只涉及已预注册运行前的资源拓扑与派发容量。
+- 新 worker 必须来自包含本次资源合同的内容寻址 release，并重新记录物理主机、GPU、PID、role、queue、
+  source revision、release、environment、weights 和 foreign-process 门禁。该变更不允许重复提交 formal run。

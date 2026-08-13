@@ -16,16 +16,16 @@ def test_agent_style_distinguishes_numeric_tolerance_from_integrity() -> None:
     assert "Do not use fail-closed as a reflex" in rules
 
 
-def test_retired_metric_and_prohibited_host_are_explicit() -> None:
+def test_retired_metric_and_current_gpu_boundaries_are_explicit() -> None:
     rules = AGENT_RULES.read_text(encoding="utf-8")
     normalized_rules = " ".join(rules.split())
     assert "AMPlify is retired from this project by user decision" in rules
-    assert "Host `192.168.99.32` is temporarily prohibited by user decision" in rules
-    assert "This whole-host prohibition explicitly includes GPU3 and GPU4" in rules
+    assert "GPU2 and GPU3 on host `192.168.99.32` are absolutely prohibited" in rules
     assert (
-        "it is not permission to contact the host or use a different GPU there"
+        "coordinate exact ownership and timing with Codex task"
         in normalized_rules
     )
+    assert "GPU4 on host `192.168.99.19` is allowed for AMPgent" in rules
 
 
 def test_large_data_policy_separates_storage_from_scientific_authorization() -> None:
@@ -33,9 +33,9 @@ def test_large_data_policy_separates_storage_from_scientific_authorization() -> 
     ledger = LARGE_DATA_LEDGER.read_text(encoding="utf-8")
     assert "Keep the local repository and workstation focused" in rules
     assert "Host `192.168.99.19` may store AMPgent-owned large models" in rules
-    assert "This storage permission does not authorize `.19` GPU4" in rules
+    assert "This storage permission does not authorize an unapproved formal run" in rules
     assert "PostgreSQL + 对象存储" in ledger
-    assert "192.168.99.32` 仍为整机禁止访问/探测/使用" in ledger
+    assert "192.168.99.32` 的 GPU2/GPU3 为绝对禁区" in ledger
     assert "/data1/huangyueshan/pepagent/data/{models,runtimes,artifacts,run-cache}" in ledger
 
 
