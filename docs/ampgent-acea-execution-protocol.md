@@ -1446,16 +1446,14 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   after the commit but was temporarily blocked by network connectivity; the local commit remains
   the authoritative repair checkpoint until push succeeds.
 
-### 21.22 2026-08-13 `.32` all-GPU execution prohibition
+### 21.22 2026-08-13 current `.32` scoped GPU boundary
 
-- The user's latest instruction supersedes the immediately preceding GPU0 allocation discussion:
-  AMPgent must not run or schedule any task on any `192.168.99.32` GPU, including GPU0/GPU1.
-  GPU2/GPU3 retain the stricter shared absolute prohibition: do not access, inspect, schedule, stop
-  or indirectly use them. No existing process was stopped, migrated or preempted while updating the
-  boundary.
+- The user's latest instruction makes `192.168.99.32 GPU0/GPU1` available to AMPgent subject to a
+  fresh exact process-ownership and non-interference check. GPU2/GPU3 retain the stricter shared
+  absolute prohibition: do not access, inspect, schedule, stop or indirectly use them. Every `.32`
+  inspection must explicitly target only indices `0,1`; unscoped GPU enumeration is forbidden.
 - Cross-task coordination with Codex task `019fcd9b-a14e-7741-a3ff-2fd0e1d3d4c7` acknowledged the
-  new boundary. `.32` capacity must not appear in any AMPgent placement, preflight, worker release
-  or recovery proposal unless the user later reverses this rule explicitly.
+  new boundary. No existing process was stopped, migrated or preempted while updating it.
 - This resource correction does not authorize a new formal run and does not alter the immutable
   failed status of v37.0.4. The frozen v37.0.4 configs and failed evidence must not be rewritten.
 
@@ -1478,3 +1476,16 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   is `680 passed, 4 skipped`, and the focused policy/protocol suite is `6 passed`. Compact content
   archive `var/archives/ampgent-gpu-boundary-2fcd757.zip` is 78,814 bytes with SHA-256
   `4a50fe1b2e93fc19b0d93d75c3a75e0e6a042f496f1cba0408c4a900d5a2ea18`.
+
+### 21.24 scheduled idle-capacity wake rule
+
+- `.19` may be inspected read-only during every scheduled patrol. The monitor
+  `deploy/windows/check_ampgent_gpu_capacity.ps1` probes `.19 GPU0--GPU7` and only the explicitly
+  allowed `.32 GPU0/GPU1`; it never probes or enumerates `.32 GPU2/GPU3`. A GPU is reported idle
+  only when memory and utilization are below the frozen conservative bounds, there is no compute
+  process and no matching `CUDA_VISIBLE_DEVICES` declaration.
+- The script writes only the small state file `var/state/ampgent-gpu-capacity.json` and emits
+  `WAKE_REQUIRED=true` when reachability, observation status or the idle GPU set changes. The existing 30-minute heartbeat is the
+  supported mechanism that invokes the script and wakes this thread; the script does not submit a
+  run, start a worker, terminate a process or mutate scientific evidence. A wake triggers fresh
+  placement/release review, not automatic deployment.

@@ -151,14 +151,19 @@ Apply the following style to AMPgent/AceA research work in this repository:
 - AMPlify is retired from this project by user decision. Do not debug, rerun, shard, replace, or use
   AMPlify in future scoring unless the user explicitly reverses that decision.
 - GPU2 and GPU3 on host `192.168.99.32` are absolutely prohibited by the user's latest decision.
-  Do not run jobs on them, inspect them, stop their processes, or use them indirectly. AMPgent must
-  not run or schedule work on any GPU on host `192.168.99.32`, including GPU0/GPU1. Preserve every
-  foreign process. Resource coordination does not authorize access to prohibited devices or a new
-  formal run.
+  Do not run jobs on them, inspect them, stop their processes, or use them indirectly. GPU0/GPU1 on
+  that host are available to AMPgent, but every inspection must target only those explicit indices
+  and every deployment still requires exact process ownership and non-interference checks. Never
+  enumerate or infer GPU2/GPU3 state. Preserve every foreign process. Resource availability does
+  not authorize a new formal run.
 - As of 2026-08-13, GPU4 on host `192.168.99.19` is allowed for AMPgent. GPUs on allowed hosts may
   be used only after exact worker ownership, physical host, PID, role, active release/source
   revision, and workload non-interference are verified. Use safely available capacity, but never
   preempt another workload or change an otherwise frozen scientific protocol silently.
+- Host `192.168.99.19` may be checked read-only at every scheduled patrol without waiting for a new
+  user instruction. Use only GPUs that the same fresh check proves idle, AMPgent-owned or explicitly
+  allocated, and free of foreign processes. Run `deploy/windows/check_ampgent_gpu_capacity.ps1` from
+  the heartbeat; a changed idle set is a reason to wake this thread, not permission to submit a run.
 - Preserve historical records without retroactively rewriting them. Historical ultra-strict gates
   may be described as engineering-policy failures rather than scientific contradictions when that
   distinction is accurate.
