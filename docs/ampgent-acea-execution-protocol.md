@@ -1254,3 +1254,19 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   clean with `675 passed, 4 skipped`; content archive
   `var/archives/ampgent-v37-worker-migration-3e11066.zip` has SHA-256
   `c23158f41027db94bff7f8971aa1aa9ba55f5cd33dc79d2aaa018be849963370`.
+
+### 21.14 2026-08-13 大数据归属与本地存储规则
+
+- 用户要求本地工作站尽量不保存大文件，并授权 `192.168.99.19` 保存 AMPgent 大文件。仓库级规则已写入
+  `AGENTS.md`，独立位置账本为 `docs/ampgent-large-data-location-ledger.zh-CN.md`。
+- 账本区分权威证据与执行副本：formal Agent 流仍以 PostgreSQL typed evidence graph 加内容寻址对象
+  存储为权威；`.19` 可存模型、独立运行时、结构中间产物和运行缓存，但每个具体对象必须登记精确
+  路径、owner、来源 run/release、SHA/manifest、canonical/cache 角色和生命周期。
+- 该授权只扩大大文件存储位置，不扩大计算或科学权限。`.19` GPU4 仍绝对禁止，`192.168.99.32`
+  仍为整机禁止访问/探测/使用；不得访问他人目录、停止他人进程或据此提交未经批准的 formal run。
+- 既有本地 `var/`、`runtime/`、`output/`、`outputs/` 与用户产物保持原状；未完成逐项所有权、大小、
+  SHA 和 replay 核验前不做批量迁移或删除。后续新大文件默认不在本地无登记累积。
+- 规则实现 checkpoint 为 commit `0bb6112`。Ruff clean，pytest `676 passed, 4 skipped`。紧凑治理归档
+  `var/archives/ampgent-large-data-policy-0bb6112.zip` 为 52,426 bytes，SHA-256 为
+  `07cf6c903e4c51e403129d889d7a001b7678d176a1395efe7abaf0458c32cb65`；该小型归档只包含本次 5 个
+  已跟踪规则/契约文件，不包含模型、数据库、运行结果或用户产物。
