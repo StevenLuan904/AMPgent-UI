@@ -1436,3 +1436,12 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   the exact scientific budget and failed evidence, pass an adversarial fixture containing both
   receipt event types, rebuild immutable releases/placements/preflight, and receive an independent
   exact-once identity; local or Temporal generator return values may not repair PostgreSQL.
+- The isolated projection repair is recorded in commit `e5d0171`. It filters to the four attempt
+  lifecycle event types before applying the `v37.attempt-event.1` schema contract and adds an
+  adversarial fixture containing both launch-receipt event types in the same lineage. Validation is
+  Ruff clean; the targeted ledger suite is `13 passed`, and the pre-commit full suite was
+  `680 passed, 4 skipped`. Compact content archive
+  `var/archives/ampgent-v37-attempt-projection-e5d0171.zip` is 79,219 bytes with SHA-256
+  `94dce2940983bf41b582ccd8981f979bbac18f4338f3d7eb046c735c4d803a4f`. GitHub push was attempted
+  after the commit but was temporarily blocked by network connectivity; the local commit remains
+  the authoritative repair checkpoint until push succeeds.
