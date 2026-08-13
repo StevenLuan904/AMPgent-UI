@@ -99,6 +99,14 @@
 ## 5. Git、测试、归档与用户文件
 
 - 分支：`agent/mvp-v2-autoresearch`；远端：`https://github.com/StevenLuan904/AMPgent.git`。
+- 大数据位置与生命周期遵循 `docs/ampgent-large-data-location-ledger.zh-CN.md`。本地仓库/工作站默认只保存
+  代码、冻结配置、manifest、文档、紧凑报告和内容地址指针；模型、原始生成批次、结构/decoy、数据库
+  备份与运行时归档不得在本地无登记累积。
+- `192.168.99.19` 可作为 AMPgent 大文件存储主机，精确目录、owner、来源 run/release、SHA/manifest、
+  canonical/cache 角色和保留条件必须写入独立位置账本。该存储许可不授权 `.19` GPU4、未经批准的
+  formal run、访问他人目录或停止他人进程。
+- 正式运行的权威大对象仍进入内容寻址对象存储，typed identities/edges/lifecycle 进入 PostgreSQL；
+  `.19` 文件系统副本、本地 CSV/JSON 或报告均不能替代 database-plus-object-store replay。
 - 稳定变更必须依次执行：检查 diff → `ruff check .` → `pytest -q` → 有意图地 commit → push。
 - 生成新的内容归档并记录 SHA；不得把未提交工作树部署到 worker。
 - 用户已有 `docs`、handoff ZIP、既有产物和无关 dirty worktree 默认不可修改。

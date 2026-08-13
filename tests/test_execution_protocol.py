@@ -44,6 +44,9 @@ def test_ampgent_acea_execution_protocol_preserves_nonnegotiable_rules() -> None
     )
     assert "no login or probe is allowed" in normalized_protocol
     assert "must not be contacted even for inspection" in normalized_protocol
+    assert "docs/ampgent-large-data-location-ledger.zh-CN.md" in protocol
+    assert "该存储许可不授权 `.19` GPU4" in normalized_protocol
+    assert "database-plus-object-store replay" in protocol
 
     assert "sjtu@" not in protocol
     assert "forbids a weighted total" in protocol.lower()

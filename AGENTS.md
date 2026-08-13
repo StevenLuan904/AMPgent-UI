@@ -55,6 +55,28 @@ verified.
 - Store large model assets and run evidence in the model registry/object store, not GitHub or Git
   LFS. Git records their immutable identifiers and SHA-256 hashes.
 
+## Large-data placement and local-disk discipline
+
+- Keep the local repository and workstation focused on code, frozen configs, manifests,
+  documentation, compact reports, and content-addressed pointers. Do not accumulate model weights,
+  raw generation batches, structure ensembles, Rosetta decoys, database dumps, runtime archives,
+  or duplicated formal-run artifacts locally.
+- Canonical formal-run evidence bytes belong in the content-addressed object store, with typed
+  identities, provenance, dependencies, lifecycle events, and artifact references in PostgreSQL.
+  A remote filesystem copy or local report is a cache/export and never substitutes for this
+  database-plus-object-store evidence closure.
+- Host `192.168.99.19` may store AMPgent-owned large models, immutable runtimes, run caches, and
+  intermediate scientific files under an exact project path whose ownership and non-interference
+  have been verified. This storage permission does not authorize `.19` GPU4, an unapproved formal
+  run, access to another user's files, or stopping another user's processes.
+- Register every large-data location and migration in
+  `docs/ampgent-large-data-location-ledger.zh-CN.md`. Record the data class, canonical/cache role,
+  physical host, exact path or object prefix, owner, source/run/release identity, SHA-256 or manifest,
+  retention rule, and recovery route. Do not put credentials in the ledger.
+- Before deleting a disposable local or remote cache, verify the canonical bytes and evidence edges.
+  Never silently migrate, overwrite, or broadly delete large-data trees; verify source/destination
+  identities and update the location ledger first.
+
 ## Deployment
 
 - Deploy a content-addressed source revision; never deploy an uncommitted working tree.

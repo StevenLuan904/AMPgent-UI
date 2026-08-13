@@ -4,6 +4,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).parents[1]
 AGENT_RULES = ROOT / "AGENTS.md"
+LARGE_DATA_LEDGER = ROOT / "docs" / "ampgent-large-data-location-ledger.zh-CN.md"
 
 
 def test_agent_style_distinguishes_numeric_tolerance_from_integrity() -> None:
@@ -25,3 +26,14 @@ def test_retired_metric_and_prohibited_host_are_explicit() -> None:
         "it is not permission to contact the host or use a different GPU there"
         in normalized_rules
     )
+
+
+def test_large_data_policy_separates_storage_from_scientific_authorization() -> None:
+    rules = AGENT_RULES.read_text(encoding="utf-8")
+    ledger = LARGE_DATA_LEDGER.read_text(encoding="utf-8")
+    assert "Keep the local repository and workstation focused" in rules
+    assert "Host `192.168.99.19` may store AMPgent-owned large models" in rules
+    assert "This storage permission does not authorize `.19` GPU4" in rules
+    assert "PostgreSQL + 对象存储" in ledger
+    assert "192.168.99.32` 仍为整机禁止访问/探测/使用" in ledger
+    assert "/data1/huangyueshan/pepagent/data/{models,runtimes,artifacts,run-cache}" in ledger
