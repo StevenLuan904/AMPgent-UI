@@ -1489,3 +1489,6 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   supported mechanism that invokes the script and wakes this thread; the script does not submit a
   run, start a worker, terminate a process or mutate scientific evidence. A wake triggers fresh
   placement/release review, not automatic deployment.
+- Monitor checkpoint commit `e979745` is pushed. Validation is Ruff clean and `682 passed, 4
+  skipped`. Compact archive `var/archives/ampgent-gpu-idle-monitor-e979745.zip` is 82,237 bytes with
+  SHA-256 `918c2d333049cd8f4704a25b783166e2d5496738321b39f182a70db124ddb9b1`.
