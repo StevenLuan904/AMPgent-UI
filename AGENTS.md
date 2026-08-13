@@ -151,10 +151,10 @@ Apply the following style to AMPgent/AceA research work in this repository:
 - AMPlify is retired from this project by user decision. Do not debug, rerun, shard, replace, or use
   AMPlify in future scoring unless the user explicitly reverses that decision.
 - GPU2 and GPU3 on host `192.168.99.32` are absolutely prohibited by the user's latest decision.
-  Do not run jobs on them, inspect them, stop their processes, or use them indirectly. GPU0/GPU1
-  on that host are not automatically assigned to AMPgent: coordinate exact ownership and timing
-  with Codex task `019fcd9b-a14e-7741-a3ff-2fd0e1d3d4c7` before any access or deployment, and
-  preserve every foreign process.
+  Do not run jobs on them, inspect them, stop their processes, or use them indirectly. AMPgent must
+  not run or schedule work on any GPU on host `192.168.99.32`, including GPU0/GPU1. Preserve every
+  foreign process. Resource coordination does not authorize access to prohibited devices or a new
+  formal run.
 - As of 2026-08-13, GPU4 on host `192.168.99.19` is allowed for AMPgent. GPUs on allowed hosts may
   be used only after exact worker ownership, physical host, PID, role, active release/source
   revision, and workload non-interference are verified. Use safely available capacity, but never

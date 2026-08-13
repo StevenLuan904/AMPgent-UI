@@ -514,3 +514,8 @@ v37 的安全执行容量，不改变科学问题、固定预算、评价端点�
 0 proposal occurrence、0 Evaluation、0 AgentDecision，因此没有新的可解释短肽结果，也不能更新 Q1/Q2
 或声称搜索进展。该结果只暴露 persistence-verifier 的事件分类顺序缺陷；修复必须版本化、带对抗 fixture，
 且不得从 Temporal 返回值或本地文件回填失败 run。v37.0.4 保持不可变 failed，新的正式恢复不由本条自动授权。
+
+2026-08-13 `.32` 全 GPU 追加勘误：用户最新指令覆盖了此前短暂讨论的 GPU0 分配；AMPgent 不在
+`192.168.99.32` 的任何 GPU（包括 GPU0/GPU1）上运行或调度任务。GPU2/GPU3 继续保持更严格的双方绝对
+禁区，不访问、不探测、不使用。该规则已同步任务 `019fcd9b-a14e-7741-a3ff-2fd0e1d3d4c7`，不改变科学预算、
+评价端点、Pareto 规则或 v37.0.4 的不可变失败状态，也不授权新 formal run。

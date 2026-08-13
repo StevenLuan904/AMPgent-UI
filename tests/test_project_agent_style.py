@@ -18,14 +18,10 @@ def test_agent_style_distinguishes_numeric_tolerance_from_integrity() -> None:
 
 def test_retired_metric_and_current_gpu_boundaries_are_explicit() -> None:
     rules = AGENT_RULES.read_text(encoding="utf-8")
-    normalized_rules = " ".join(rules.split())
     assert "AMPlify is retired from this project by user decision" in rules
     assert "GPU2 and GPU3 on host `192.168.99.32` are absolutely prohibited" in rules
-    assert (
-        "coordinate exact ownership and timing with Codex task"
-        in normalized_rules
-    )
     assert "GPU4 on host `192.168.99.19` is allowed for AMPgent" in rules
+    assert "not run or schedule work on any GPU on host `192.168.99.32`" in rules
 
 
 def test_large_data_policy_separates_storage_from_scientific_authorization() -> None:

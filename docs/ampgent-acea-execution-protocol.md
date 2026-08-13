@@ -1445,3 +1445,32 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   `94dce2940983bf41b582ccd8981f979bbac18f4338f3d7eb046c735c4d803a4f`. GitHub push was attempted
   after the commit but was temporarily blocked by network connectivity; the local commit remains
   the authoritative repair checkpoint until push succeeds.
+
+### 21.22 2026-08-13 `.32` all-GPU execution prohibition
+
+- The user's latest instruction supersedes the immediately preceding GPU0 allocation discussion:
+  AMPgent must not run or schedule any task on any `192.168.99.32` GPU, including GPU0/GPU1.
+  GPU2/GPU3 retain the stricter shared absolute prohibition: do not access, inspect, schedule, stop
+  or indirectly use them. No existing process was stopped, migrated or preempted while updating the
+  boundary.
+- Cross-task coordination with Codex task `019fcd9b-a14e-7741-a3ff-2fd0e1d3d4c7` acknowledged the
+  new boundary. `.32` capacity must not appear in any AMPgent placement, preflight, worker release
+  or recovery proposal unless the user later reverses this rule explicitly.
+- This resource correction does not authorize a new formal run and does not alter the immutable
+  failed status of v37.0.4. The frozen v37.0.4 configs and failed evidence must not be rewritten.
+
+### 21.23 2026-08-13 non-`.32` GPU availability snapshot
+
+- A coordinated read-only snapshot at `2026-08-13T22:28:00+08:00` did not access `.32` and did not
+  stop, migrate or preempt any process. In addition to AMPgent's existing `.19 GPU4/GPU5` workers,
+  `.19 GPU6` was the only newly available GPU: 15 MiB used, 0% utilization, no compute process, and
+  no process environment declaring `CUDA_VISIBLE_DEVICES=6`. It may be considered for a future
+  versioned worker placement only after a fresh direct ownership/occupancy/release preflight.
+- `.19 GPU0/GPU1/GPU2/GPU3/GPU7` remain occupied or conflicted. In particular, `.19 GPU3` has an
+  existing compute workload plus a stale AMPgent process declaration and must not receive another
+  worker. synth GPU0--GPU4 are occupied or ownership-opaque; synth GPU5/GPU6/GPU7 remain reserved by
+  long-running external Boltz runners despite low instantaneous memory use. None is safely
+  assignable to AMPgent at this snapshot.
+- Direct SSH recheck from this workstation timed out during jump-host banner exchange, so no remote
+  connection was terminated and the coordinated snapshot is the current evidence. Availability is
+  ephemeral: do not deploy from this paragraph alone. No new run or worker was started.
