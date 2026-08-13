@@ -50,6 +50,10 @@ def test_ampgent_acea_execution_protocol_preserves_nonnegotiable_rules() -> None
     assert "### 21.15 2026-08-13 持续工程环境与瓶颈评估规则" in protocol
     assert "pipeline barrier/backpressure → Agent 分析/决策延迟" in normalized_protocol
     assert "无 active workflow 不自动表示“可运行”或“健康”" in protocol
+    assert "#### 21.15.1 API 端口勘误与关键路径修正" in protocol
+    assert "错误检查 `127.0.0.1:8000`" in protocol
+    assert "权威 API 地址为 `127.0.0.1:8080`" in normalized_protocol
+    assert "不能凭记忆硬编码" in normalized_protocol
 
     assert "sjtu@" not in protocol
     assert "forbids a weighted total" in protocol.lower()

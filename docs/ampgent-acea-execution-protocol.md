@@ -1289,3 +1289,14 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
 - 规则 checkpoint 为 commit `26480cd`；Ruff clean，pytest `677 passed, 4 skipped`。紧凑内容归档
   `var/archives/ampgent-bottleneck-assessment-26480cd.zip` 为 52,097 bytes，SHA-256 为
   `6fd61fa1a724295eadbcd9cc792843438368a0bf38f5d1504ffa8e290323dc38`。
+
+#### 21.15.1 API 端口勘误与关键路径修正
+
+- 上述“本地 API 未监听”来自错误检查 `127.0.0.1:8000`，不是服务故障。仓库 runbook 的权威 API
+  地址为 `127.0.0.1:8080`；2026-08-13 复核 `/healthz` 返回 `{"status":"ok"}`，监听 PID 为
+  `18168`。旧观察保留用于说明错误，不能继续作为瓶颈证据。
+- 同次只读复核确认 PostgreSQL/MinIO 健康，Temporal 可从实际容器地址查询且没有 active v37 workflow；
+  v37.0.2/v37.0.3 的不可变失败计数无漂移。因此当前关键路径不是 API、CPU 或 Agent 思考，而是允许的
+  remote worker 统一迁移到 v37.0.4 release、精确 placement/preflight，以及 synth GPU5/GPU6 外部占用。
+- 后续 health 检查必须从 `docs/runbook.md` 或冻结 service config 解析端口，不能凭记忆硬编码；连接失败前
+  先验证目标地址，避免把错误探针解释为服务故障。
