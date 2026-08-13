@@ -1286,3 +1286,6 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   只有历史 failed v37 workflows；本地 API 未监听；v37.0.4 无 formal run。synth GPU5/GPU6 的最新可信
   placement 快照仍显示外部 `ecd_pred` 占用，`.19` GPU5 worker 尚未迁移至 v37.0.4。因此当前关键路径是
   控制面恢复和允许 worker/release 对齐，之后才是 Boltz GPU 容量；该快照是日期化观察，不是永久配置。
+- 规则 checkpoint 为 commit `26480cd`；Ruff clean，pytest `677 passed, 4 skipped`。紧凑内容归档
+  `var/archives/ampgent-bottleneck-assessment-26480cd.zip` 为 52,097 bytes，SHA-256 为
+  `6fd61fa1a724295eadbcd9cc792843438368a0bf38f5d1504ffa8e290323dc38`。
