@@ -1474,3 +1474,7 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
 - Direct SSH recheck from this workstation timed out during jump-host banner exchange, so no remote
   connection was terminated and the coordinated snapshot is the current evidence. Availability is
   ephemeral: do not deploy from this paragraph alone. No new run or worker was started.
+- Current-boundary checkpoint commit `2fcd757` is pushed. Validation is Ruff clean; the full suite
+  is `680 passed, 4 skipped`, and the focused policy/protocol suite is `6 passed`. Compact content
+  archive `var/archives/ampgent-gpu-boundary-2fcd757.zip` is 78,814 bytes with SHA-256
+  `4a50fe1b2e93fc19b0d93d75c3a75e0e6a042f496f1cba0408c4a900d5a2ea18`.
