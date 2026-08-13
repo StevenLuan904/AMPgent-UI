@@ -344,7 +344,7 @@ pre_execution_gates:
   - API_PostgreSQL_MinIO_and_Temporal_healthy_with_zero_user_active_workflows
   - database_schema_supports_all_required_typed_evidence
   - all_worker_host_GPU_PID_role_task_queue_and_source_revision_mappings_verified
-  - no_worker_uses_192_168_99_32_or_192_168_99_19_GPU4_or_interferes_with_other_workloads
+  - no_worker_uses_192_168_99_32_GPU2_or_GPU3_or_uncoordinated_shared_resources
   - no_existing_v37_formal_run_or_workflow
   - v37_formal_direction_authorization_recorded
 
