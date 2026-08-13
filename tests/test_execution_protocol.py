@@ -52,6 +52,10 @@ def test_ampgent_acea_execution_protocol_preserves_nonnegotiable_rules() -> None
     assert "### 21.16 2026-08-13 `.19` GPU5 v37.0.4 worker 迁移" in protocol
     assert "PID `269615`" in protocol
     assert "v37.0.4 formal run 仍未提交" in normalized_protocol
+    assert "### 21.18 2026-08-13 `.19 GPU4/GPU5` capacity-v2 部署" in protocol
+    assert "PID `288726`" in protocol
+    assert "PID 为 `289268`" in normalized_protocol
+    assert "926a1c9cc9c1c52ffd12404190b3397bd0b2649dee941cc5a0cb8ff142cc8eba" in protocol
 
     assert "sjtu@" not in protocol
     assert "forbids a weighted total" in protocol.lower()

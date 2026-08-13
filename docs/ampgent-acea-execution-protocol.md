@@ -1340,3 +1340,26 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   判定不变；变化只涉及已预注册运行前的资源拓扑与派发容量。
 - 新 worker 必须来自包含本次资源合同的内容寻址 release，并重新记录物理主机、GPU、PID、role、queue、
   source revision、release、environment、weights 和 foreign-process 门禁。该变更不允许重复提交 formal run。
+
+### 21.18 2026-08-13 `.19 GPU4/GPU5` capacity-v2 部署
+
+- 资源合同修订 commit `ace90cd0e383c079caff7735bd7e664f2ca31c70` 已 push。容量合同 SHA-256 为
+  `bdc8e3cb294d92009509efbb6a859475d49bb5bd3a702e73b374a0f97c2fef19`；Ruff clean，pytest
+  `677 passed, 4 skipped`。紧凑内容归档 `var/archives/ampgent-v37-capacity-ace90cd.zip` 为 120,223 bytes，
+  SHA-256 为 `35c2ab9fae54a7bdd52723000bf2b9d2a2d02a087faae9f08fc010bb1f9cec96`。
+- 由该提交构建并验证的 immutable platform archive 为 1,123,713 bytes，SHA-256 为
+  `926a1c9cc9c1c52ffd12404190b3397bd0b2649dee941cc5a0cb8ff142cc8eba`。远端副本位于
+  `/data1/huangyueshan/pepagent/bootstrap/platform-926a1c9cc9c1c52ffd12404190b3397bd0b2649dee941cc5a0cb8ff142cc8eba.tar.gz`，
+  激活 release 与 source revision 的绑定验证通过；本地临时 release archive 已删除。
+- `.19 GPU4` 在启动前再次确认 24,110 MiB 空闲、利用率 0、无计算进程。新 Boltz worker PID `288726`
+  已启动。`.19 GPU5` 的旧 worker PID `269615` 经旧 immutable receipt 验证为 AMPgent-owned、无 foreign
+  process，且 Temporal 无 active workflow 后才正常停止；新 GPU5 worker PID 为 `289268`。
+- GPU4/GPU5 两个 worker 当前均绑定 physical host `192.168.99.19`、source
+  `ace90cd0e383c079caff7735bd7e664f2ca31c70`、release
+  `926a1c9cc9c1c52ffd12404190b3397bd0b2649dee941cc5a0cb8ff142cc8eba`、environment SHA-256
+  `7386ade33154f183492bf438260c683458161beddd07ebf3a6e0aa983c48dbeb` 和 weights SHA-256
+  `090e82ac8c92f5e943fa1b39e7410a44027bea7243c0bbb3caa67a77fc1428e1`；物理检查均无 foreign process，
+  Temporal 已观察到两个精确新 poller。
+- `.32 GPU0/GPU1` 仍由协调任务预留，`.32 GPU2/GPU3` 仍为绝对禁区；synth 资源仍有外部任务，未触碰。
+  当前安全可用的 AMPgent Boltz 容量为 `.19 GPU4/GPU5` 两张卡。v37.0.4 formal run 仍未提交；提交前还需
+  将其余必需 worker 迁移到同一 source/release、等待历史 poller 变旧并重新生成完整 placement/preflight。
