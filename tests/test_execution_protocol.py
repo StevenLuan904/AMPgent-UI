@@ -5,6 +5,7 @@ def test_ampgent_acea_execution_protocol_preserves_nonnegotiable_rules() -> None
     root = Path(__file__).parents[1]
     protocol_path = root / "docs" / "ampgent-acea-execution-protocol.md"
     protocol = protocol_path.read_text(encoding="utf-8")
+    normalized_protocol = " ".join(protocol.split())
     agents = (root / "AGENTS.md").read_text(encoding="utf-8")
 
     assert "docs/ampgent-acea-execution-protocol.md" in agents
@@ -36,6 +37,13 @@ def test_ampgent_acea_execution_protocol_preserves_nonnegotiable_rules() -> None
 
     assert "资源许可不等于 formal run 科学授权" in protocol
     assert "用户随后明确禁止 `.19` 的 GPU4" in protocol
+
+    assert (
+        "`192.168.99.32` remains a whole-host prohibition explicitly including GPU3 and GPU4"
+        in protocol
+    )
+    assert "no login or probe is allowed" in normalized_protocol
+    assert "must not be contacted even for inspection" in normalized_protocol
 
     assert "sjtu@" not in protocol
     assert "forbids a weighted total" in protocol.lower()

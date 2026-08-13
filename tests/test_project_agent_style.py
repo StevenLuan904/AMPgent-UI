@@ -17,5 +17,11 @@ def test_agent_style_distinguishes_numeric_tolerance_from_integrity() -> None:
 
 def test_retired_metric_and_prohibited_host_are_explicit() -> None:
     rules = AGENT_RULES.read_text(encoding="utf-8")
+    normalized_rules = " ".join(rules.split())
     assert "AMPlify is retired from this project by user decision" in rules
     assert "Host `192.168.99.32` is temporarily prohibited by user decision" in rules
+    assert "This whole-host prohibition explicitly includes GPU3 and GPU4" in rules
+    assert (
+        "it is not permission to contact the host or use a different GPU there"
+        in normalized_rules
+    )
