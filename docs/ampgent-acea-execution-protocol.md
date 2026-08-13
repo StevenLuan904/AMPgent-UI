@@ -1320,3 +1320,6 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
 - API、PostgreSQL、MinIO、Temporal 健康且无 active v37 workflow；v37.0.4 formal run 仍未提交。
   当前剩余关键路径收敛为 synth GPU5/GPU6 释放后的完整 remote worker/release 对齐、最终 placement
   snapshot 和全部 submission preflight。
+- 迁移 checkpoint 为 commit `becdf71`；Ruff clean，pytest `678 passed, 4 skipped`。紧凑内容归档
+  `var/archives/ampgent-v37-host19-migration-becdf71.zip` 为 51,348 bytes，SHA-256 为
+  `b314a4ebc80b9ba15dae1338569fb974b9aed0ffcad4155df1bdf67f821034d5`。
