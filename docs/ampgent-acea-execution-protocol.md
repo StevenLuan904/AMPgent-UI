@@ -1579,11 +1579,12 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   但只把声明指标按确定顺序写入 Evaluation。额外 provider 指标继续保留在 content-addressed 原始 artifact/
   replay 中，不被静默提升为本 run 的评价、筛选或 Pareto 变量。focused Ruff clean，相关 pytest 40 passed。
 - 独立恢复版本 `v37.0.6-metric-observation-projection-recovery` 已预注册；benchmark SHA-256 为
-  `8db772b04efb06160790c0dc46da10d256dcc177072e47dd5a34e4ebd14edff9`，结构 spec SHA-256 为
+  `1ecadf9537f2bc6db05c27cf0999f6cc4f3f31295ef09ff2ce47f2c40e4ea518`，结构 spec SHA-256 为
   `70a675a70bb6b430b87ac0a280f8798820bf203a202d993b53e46ad4a04a34f4`。除版本身份、结构 spec 绑定和
   implementation revision 外，它与 v37.0.5 的全部科学变量、seed、900/48/3/16 预算、11 个 required
-  metrics、非加权 Pareto 和 replay 合同逐字段相同。下一步只做最小 release/placement 更新后 exact-once
-  提交一个 v37.0.6 run；严禁再次提交 v37.0.5。
+  metrics、非加权 Pareto 和 replay 合同逐字段相同。worker source revision 单独更新为包含该修复与恢复
+  合同的 `f6c754566405494739f7318afc47ed92ca3d9eda`；下一步只做最小 release/placement 更新后 exact-once
+  提交一个 v37.0.6 run，严禁再次提交 v37.0.5。
 - 修复、恢复合同和失败事实 checkpoint 为 commit `bfe7a51b953cfe1fd667bb56064328b51ef24c8c`；其紧凑
   tracked-content 归档 `var/archives/ampgent-v37-006-recovery-bfe7a51.zip` 为 1,404,863 bytes，SHA-256
   `34a08a2e8b9315802aed9fcad8b921fd1c0ef16114ee8c90219721bec9796508`。归档不包含运行工作目录、模型权重

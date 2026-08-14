@@ -36,6 +36,9 @@ def test_v37_0_6_is_new_identity_with_metric_projection_fix() -> None:
     assert manifest.formal_run.implementation_revision == (
         "e5e9d50bcd1d5b63b02cca1d80beca0478ce9376"
     )
+    assert manifest.execution["worker_source_revision"] == (
+        "f6c754566405494739f7318afc47ed92ca3d9eda"
+    )
     assert validate_v37_experiment_spec(manifest, V37_0_6) == {
         "experiment_spec_path": (
             "../experiments/acea_v37_rapid_champion_structure_v37_0_6.yaml"
@@ -62,6 +65,8 @@ def test_v37_0_6_preserves_every_v37_0_5_scientific_field() -> None:
         new_structure.pop(key)
     old["formal_run"].pop("implementation_revision")
     new["formal_run"].pop("implementation_revision")
+    old["execution"].pop("worker_source_revision")
+    new["execution"].pop("worker_source_revision")
     assert new == old
 
     old_spec = _yaml(STRUCTURE_0_5)
