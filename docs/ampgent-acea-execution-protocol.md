@@ -1539,3 +1539,21 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
 - 完成标准不是“所有门禁文件齐全”，而是新版本从生成到评价、结构、portfolio 的科学证据持续落入
   PostgreSQL，并能由数据库和对象存储复原；随后以候选质量、冲突、方向稳定性和多样性解释结果。
   在没有这些可解释候选之前，不把工程修复或 GPU 在线称为阶段性科研成果。
+
+### 21.26 2026-08-14 v37.0.5 唯一正式运行
+
+- 结果优先恢复版本 `v37.0.5-attempt-receipt-projection-recovery` 已在不改变科学预算、模型、seed、评价、结构协议、Pareto 语义或停止条件的前提下完成冻结。benchmark SHA-256 为
+  `39d750ca9f1fe3de45aae4cd763845569b1f2501a4b40c8ffdc4f246758a6854`，结构 spec SHA-256 为
+  `42757a1ba22d4e8c8c5e73246bc19814e814baf4b3f59b239a0197f31be80017`。
+- 唯一正式 run 为 `1655ba61-f380-4669-8b03-ccda4ae33c7d`，workflow 为
+  `pepagent-rapid-champion-v37-ab6d1d6b70b82262dc2d4408f6644cfcd0fabfbf03942af6bfc6ac830611844e`，
+  Temporal run ID 为 `669d7577-98bc-4daf-ac0b-1e297175e0e2`。它于
+  `2026-08-14T13:54:29.026483Z` exact-once 提交；禁止重复提交、创建替代 run、原地重试、回填或复用
+  v37.0.0--v37.0.4 的未持久化输出。
+- 执行 worker source revision 为 `5bd1f9595ca8767230ee9a2b8a12686862ebf665`，immutable release SHA-256 为
+  `b58a5591a9eefa933cfa75ffce3e9c9d74bdd57336a499cdfe058da0888f60b2`。最小 placement 记录为本地
+  control/generator/provider/metrics、`.19 GPU4/GPU5` Boltz 和 synth CPU Rosetta；全部已核验 PID/role、
+  source revision 与无外来进程冲突。`.32 GPU2/GPU3` 仍为绝对禁区，本次运行未使用 `.32`。
+- 当前状态为 `running`。知识调用已经首先进入 PostgreSQL；九个冻结生成批次已派发。科学进度只按
+  Candidate、proposal occurrence、Evaluation、结构证据、Pareto decision 与 database/object-store replay
+  的实际持久化计数报告，worker 在线和预检通过不单独算作短肽成果。

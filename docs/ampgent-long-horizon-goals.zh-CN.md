@@ -550,3 +550,11 @@ v37.0.4 不可变失败状态或 formal-run 授权边界。
 host、GPU/CPU、PID/role、source revision、无外来冲突的最小集合执行；其余不影响短肽结果、证据闭环
 或资源安全的仪式性检查不得延迟 Candidate/Evaluation 落库。routine 修复默认直接推进，直到出现真正
 会改变科学意义、造成证据丢失、重复提交、资源冲突或需要扩大用户授权的边界。
+
+2026-08-14 v37.0.5 执行事实：结果优先恢复版本已作为唯一正式 run
+`1655ba61-f380-4669-8b03-ccda4ae33c7d` exact-once 启动，workflow 为
+`pepagent-rapid-champion-v37-ab6d1d6b70b82262dc2d4408f6644cfcd0fabfbf03942af6bfc6ac830611844e`。
+该版本只修复 v37.0.4 的持久化事件分类顺序并换用独立身份；900 条候选、五类序列评价、48 条结构短名单、
+每条 3 个 Boltz seed、每 pose 16 个 Rosetta decoy、非加权 Pareto 与数据库/对象存储 replay 均不变。
+当前问题仍为 `in_progress`：只有候选、评价、结构和最终 portfolio 实际持久化后，才更新 Q1/Q2/Q6 的科学判断；
+运行启动、worker 在线和 GPU 可用本身不构成短肽质量结论。
