@@ -53,6 +53,29 @@ else
 fi
 [[ -x "$PYTHON" ]] || { echo "managed worker Python is missing" >&2; exit 4; }
 
+# A worker that can poll Temporal but cannot reach PostgreSQL or the object
+# store is not runnable.  Fail before claiming the GPU/PID identity; the
+# supervised reverse-tunnel process may reconnect and the launch can then be
+# retried without changing any scientific work.
+"$PYTHON" - <<'PY'
+import socket
+
+services = {
+    "PostgreSQL": ("127.0.0.1", 55432),
+    "Temporal": ("127.0.0.1", 17233),
+    "object store": ("127.0.0.1", 19000),
+}
+failures = []
+for name, address in services.items():
+    try:
+        with socket.create_connection(address, timeout=3):
+            pass
+    except OSError as error:
+        failures.append(f"{name} {address[0]}:{address[1]} ({error})")
+if failures:
+    raise SystemExit("v37 service tunnel preflight failed: " + "; ".join(failures))
+PY
+
 ENVIRONMENT_SHA256="$(env \
   CUDA_VISIBLE_DEVICES="$CUDA_DEVICE" \
   PYTHONPATH="$RELEASE_DIR/src" \
