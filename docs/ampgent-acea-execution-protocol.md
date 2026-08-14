@@ -1754,9 +1754,22 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   No `.32` resource or foreign process was accessed or stopped.
 - Independent `v37.0.11-supervised-remote-service-tunnel-recovery` preserves every v37.0.10
   scientific field and the 900/11/48/3/16 budget, unweighted Pareto semantics, database/object-store
-  replay, and no-ablation policy. Its benchmark source contract is committed and pushed; a fresh
-  immutable worker release, live three-service probes, placement, and unique-run preflight are required
-  before one exact-once submission.
+  replay, and no-ablation policy. Benchmark SHA-256 is
+  `1b80183e6cb28535d0619fb82051561e0acf72fffbcb3e5d625efa3cc29e8fd5`; structure SHA-256 is
+  `1f4b67dfb9f2bd609bc95e24ef64662ec06df8c35a984add44fdffad397fbad4`.
+  Worker source is `9784a6629a4c41cf9f986660ab6b3a99dec11090`; immutable release SHA-256 is
+  `1b1654e70c7bfaca0d570f7240403915e4f396f726fd64e4c321d0855f14a530`. The live topology is local
+  control/generator/provider/metrics, `.19 GPU4/GPU5` Boltz, and synth CPU Rosetta; real `.19` probes
+  passed before and after migration, active workflows were zero, and unique-run preflight reported
+  `ready_to_submit_unique_run` with no failed gate.
+- v37.0.11 was submitted exactly once at `2026-08-14T20:29:40.785147Z`. The unique database run is
+  `1b1dedea-fd1d-4dfa-816b-f69421ea8158`; workflow is
+  `pepagent-rapid-champion-v37-ff1c1369cc260452aa403b952f623ba664aa7335a35bab831ce38e946d54addb`
+  with Temporal run ID `7fd3ad92-89bc-45eb-9338-a484a7ed0db9`. Never submit it again, create a
+  replacement, retry it in place, backfill it, or reuse v37.0.0--v37.0.10 working outputs. Initial
+  DB/Temporal state is `running`/`RUNNING`: one succeeded knowledge ToolCall, two evidence artifacts,
+  zero Candidate/occurrence/Evaluation/Decision, nine generation attempts started, one succeeded,
+  eight pending, and no failed or retried ToolCall.
 
 ### 21.24 scheduled idle-capacity wake rule
 
