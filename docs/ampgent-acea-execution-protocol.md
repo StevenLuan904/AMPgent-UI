@@ -1524,6 +1524,9 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
 - Initial state is `running`. The knowledge ToolCall and its runtime receipts are already persisted.
   Subsequent progress and completion are reported only from actual Candidate, proposal occurrence,
   Evaluation, structure evidence, Pareto decision, and replay counts in PostgreSQL/object storage.
+- Formal-run checkpoint commit `2b8a746` is pushed. Its compact tracked-content archive is
+  `var/archives/ampgent-v37-006-formal-2b8a746.zip`, 1,405,803 bytes, SHA-256
+  `39c9b347e6f4afdfb71dc301eafabbd2b3695790dd7827040ef91056f8ba0ce1`.
 
 ### 21.24 scheduled idle-capacity wake rule
 
