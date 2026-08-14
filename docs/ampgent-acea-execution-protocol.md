@@ -1677,6 +1677,9 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   state is `running`/`RUNNING`, with one succeeded knowledge ToolCall, two linked artifacts, zero
   Candidate/Evaluation/Decision, nine started generation attempts, one succeeded and eight pending
   on attempt one. Progress is reported only from durable scientific evidence.
+- Formal checkpoint commit `6eba4fa` is pushed. Compact tracked-content archive
+  `var/archives/ampgent-v37-009-formal-6eba4fa.zip` is 1,440,785 bytes with SHA-256
+  `d7595d6270a5cf1b6b04d4d525e8be68ed92024d85b981dcb5ea3d1dcd3cebb0`.
 
 ### 21.24 scheduled idle-capacity wake rule
 
