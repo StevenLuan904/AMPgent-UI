@@ -1584,3 +1584,7 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   implementation revision 外，它与 v37.0.5 的全部科学变量、seed、900/48/3/16 预算、11 个 required
   metrics、非加权 Pareto 和 replay 合同逐字段相同。下一步只做最小 release/placement 更新后 exact-once
   提交一个 v37.0.6 run；严禁再次提交 v37.0.5。
+- 修复、恢复合同和失败事实 checkpoint 为 commit `bfe7a51b953cfe1fd667bb56064328b51ef24c8c`；其紧凑
+  tracked-content 归档 `var/archives/ampgent-v37-006-recovery-bfe7a51.zip` 为 1,404,863 bytes，SHA-256
+  `34a08a2e8b9315802aed9fcad8b921fd1c0ef16114ee8c90219721bec9796508`。归档不包含运行工作目录、模型权重
+  或结构大对象。
