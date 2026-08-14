@@ -1563,3 +1563,24 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   `var/archives/ampgent-v37-005-formal-fb4f6c3.zip`，96,377 bytes，SHA-256
   `e0572610dab5e958fec32994c4c0f8c96bc45d435c83c36ea15dda952d08fb65`。归档不包含大型模型、运行工作目录
   或结构产物；这些大对象继续由既定远端位置和内容寻址对象存储承载。
+
+### 21.27 2026-08-14 v37.0.5 失败事实与 v37.0.6 指标投影恢复
+
+- v37.0.5 唯一正式 run `1655ba61-f380-4669-8b03-ccda4ae33c7d` 已于
+  `2026-08-14T14:21:33.549365Z` failed 并永久保持不可变。数据库实际足迹为 900 Candidate、9000
+  proposal occurrence、19 succeeded ToolCall、83 evidence artifact、0 Evaluation、0 AgentDecision；
+  因评价尚未持久化，不能从该 run 给出可解释短肽排序、结构结论或 Pareto portfolio，也不得原地重试、
+  回填、删除或复用其未持久化结果。
+- 只读诊断确认五类序列评价均已开始，首个完成的 ToxinPred3 runtime 对每条候选返回冻结合同声明的
+  `toxinpred3_hybrid_score`、`toxinpred3_label`，并额外返回 provider 自带的
+  `toxinpred3_ml_score`。旧 persistence projection 错误要求 provider 输出集合与冻结声明集合严格相等，
+  因而将合法 provider 超集误判为漂移；这不是生成器、候选身份、模型执行或 GPU 失败。
+- 修复 commit `e5e9d50bcd1d5b63b02cca1d80beca0478ce9376` 要求每条记录完整包含冻结声明指标并拒绝重复名，
+  但只把声明指标按确定顺序写入 Evaluation。额外 provider 指标继续保留在 content-addressed 原始 artifact/
+  replay 中，不被静默提升为本 run 的评价、筛选或 Pareto 变量。focused Ruff clean，相关 pytest 40 passed。
+- 独立恢复版本 `v37.0.6-metric-observation-projection-recovery` 已预注册；benchmark SHA-256 为
+  `8db772b04efb06160790c0dc46da10d256dcc177072e47dd5a34e4ebd14edff9`，结构 spec SHA-256 为
+  `70a675a70bb6b430b87ac0a280f8798820bf203a202d993b53e46ad4a04a34f4`。除版本身份、结构 spec 绑定和
+  implementation revision 外，它与 v37.0.5 的全部科学变量、seed、900/48/3/16 预算、11 个 required
+  metrics、非加权 Pareto 和 replay 合同逐字段相同。下一步只做最小 release/placement 更新后 exact-once
+  提交一个 v37.0.6 run；严禁再次提交 v37.0.5。

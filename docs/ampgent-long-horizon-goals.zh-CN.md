@@ -558,3 +558,11 @@ host、GPU/CPU、PID/role、source revision、无外来冲突的最小集合执�
 每条 3 个 Boltz seed、每 pose 16 个 Rosetta decoy、非加权 Pareto 与数据库/对象存储 replay 均不变。
 当前问题仍为 `in_progress`：只有候选、评价、结构和最终 portfolio 实际持久化后，才更新 Q1/Q2/Q6 的科学判断；
 运行启动、worker 在线和 GPU 可用本身不构成短肽质量结论。
+
+2026-08-14 v37.0.5 失败与恢复追加：唯一 run `1655ba61-f380-4669-8b03-ccda4ae33c7d` 已在 900 条候选和
+9000 条 proposal occurrence 落库后失败；Evaluation 与 AgentDecision 均为 0，因此没有可解释排序或
+Pareto 结果，Q1/Q2/Q6 不更新。根因是消费者错误要求 ToxinPred3 的全部输出与冻结选择严格相等；provider
+除合同所需 hybrid score 和 label 外还合法返回 ml score。修复只将冻结声明的指标投影为 Evaluation，额外
+输出仍进入原始 replay，不参与选择。独立 `v37.0.6-metric-observation-projection-recovery` 保持全部科学预算
+和 11 个 required metrics 不变，目标仍是尽快获得 900×11 条序列 Evaluation、48 条结构短名单和最终非加权
+Pareto portfolio；v37.0.5 保持不可变且不得回填或重跑。
