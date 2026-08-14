@@ -22,7 +22,7 @@ STRUCTURE_0_9 = (
 )
 
 IMPLEMENTATION_REVISION = "36b40b7329813f6ebc6ea1963a51555052f0a139"
-PENDING_WORKER_SOURCE_REVISION = "0" * 40
+WORKER_SOURCE_REVISION = "365f2460c08636b6ca596dd6ed481996b27fa04b"
 
 
 def _yaml(path: Path) -> dict[str, object]:
@@ -39,7 +39,7 @@ def test_v37_0_9_is_new_identity_with_temporal_metric_reference_recovery() -> No
     assert manifest.formal_run.implementation_revision == IMPLEMENTATION_REVISION
     assert (
         manifest.execution["worker_source_revision"]
-        == PENDING_WORKER_SOURCE_REVISION
+        == WORKER_SOURCE_REVISION
     )
     assert validate_v37_experiment_spec(manifest, V37_0_9) == {
         "experiment_spec_path": (
