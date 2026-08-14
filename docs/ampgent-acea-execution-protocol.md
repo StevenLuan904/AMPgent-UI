@@ -1798,6 +1798,25 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   and completing a real provider smoke before worker launch. Resource availability or a passing
   static gate is not formal-run authorization; no replacement run is authorized by this entry.
 
+### 21.39 2026-08-15 Boltz real-smoke cache dependency
+
+- The `.19` managed environment now contains the exact `boltz` console script and importable Boltz
+  2.2.1 package. A real GPU4 AceA-pocket smoke then reached the provider executable but exited before
+  inference because Boltz attempted to fetch its CCD/model cache from the public network and `.19`
+  has no outbound route. This is a second deployment dependency exposed by the required real smoke,
+  not a peptide-science or GPU-compute result; the smoke produced no output artifact.
+- The authoritative existing cache is on synth at
+  `/sdd_data/pepagent/models/boltz2/cache`: `boltz2_conf.ckpt` is 2,286,561,469 bytes with SHA-256
+  `090e82ac8c92f5e943fa1b39e7410a44027bea7243c0bbb3caa67a77fc1428e1`, and `mols.tar` is
+  1,855,662,080 bytes with SHA-256
+  `39e076d96dbec6b4e86982bbda16f3a53a2a60c9bdc17828d88f6f9a0c7d1fd7`. These large files remain
+  server-owned; a streaming synth-to-`.19` transfer is in progress through the local SSH client and
+  does not materialize either file in the workspace. Final paths are not promoted until their full
+  SHA-256 matches.
+- The next deployment smoke must use the verified `.19` cache and complete one real AceA-pocket
+  prediction before any new worker/release placement is accepted. This repair does not authorize a
+  new formal run and does not change the frozen 900/11/48/3/16 science contract.
+
 ### 21.24 scheduled idle-capacity wake rule
 
 - `.19` may be inspected read-only during every scheduled patrol. The monitor

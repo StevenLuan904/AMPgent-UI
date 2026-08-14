@@ -573,3 +573,10 @@ Pareto portfolio；v37.0.5 保持不可变且不得回填或重跑。
 worker runtime 验证不足，不更新 Q1/Q2/Q6 的短肽科学判断。v37.0.11 保持不可变且不得回填或复用；
 下一次独立恢复必须先以真实 provider smoke 证明 Boltz 可执行、包、CLI、权重与目标 GPU 环境共同可用，
 同时保持 900/11/48/3/16、非加权 Pareto、数据库/对象存储 replay 和不做消融的科学合同不变。
+
+2026-08-15 Boltz runtime 修复追加：`.19` 已具备可执行的 Boltz 2.2.1，但首次真实 GPU4
+AceA-pocket smoke 在推理前暴露第二个部署缺口——`.19` 没有公网路由，Boltz 本地缓存又未包含
+CCD 和结构模型。该 smoke 未产生结构 artifact，不是短肽质量、Boltz 模型或 GPU 失败证据。
+权威大文件位于 synth `/sdd_data/pepagent/models/boltz2/cache`；当前以不落本地大文件的流式
+SSH 输送到 `.19`，只有完整 SHA-256 一致才提升为可用缓存。下一小阶段是完成输送并通过
+同一真实 provider smoke；在此之前不启动新正式 run，冻结科学合同不变。
