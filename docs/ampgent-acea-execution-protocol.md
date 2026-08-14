@@ -1770,6 +1770,9 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   DB/Temporal state is `running`/`RUNNING`: one succeeded knowledge ToolCall, two evidence artifacts,
   zero Candidate/occurrence/Evaluation/Decision, nine generation attempts started, one succeeded,
   eight pending, and no failed or retried ToolCall.
+- Formal checkpoint commit `dacf477` is pushed. Compact tracked-content archive
+  `var/archives/ampgent-v37-011-formal-dacf477.zip` is 1,466,112 bytes with SHA-256
+  `b8dbaeafde2624c9129bc10cb638de1a717ac560f8efbd6412e4b5be70ca4df5`.
 
 ### 21.24 scheduled idle-capacity wake rule
 
