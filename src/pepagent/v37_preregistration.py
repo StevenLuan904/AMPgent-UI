@@ -80,6 +80,7 @@ class V37Manifest(BaseModel):
         "v37.0.8-worker-schema-recovery",
         "v37.0.9-temporal-metric-result-reference-recovery",
         "v37.0.10-lifecycle-sequence-concurrency-recovery",
+        "v37.0.11-supervised-remote-service-tunnel-recovery",
     ]
     execution_status: Literal["direction_authorized_pending_preexecution_gates"]
     track: Literal["single_arm_rapid_champion_generation"]
