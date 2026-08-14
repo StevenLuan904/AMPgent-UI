@@ -162,12 +162,19 @@ class V37Manifest(BaseModel):
             self.stage_1_sequence_evaluation["required_metric_names"]
         ):
             raise ValueError("v37 five plugin calls must emit the eleven frozen observations")
-        if self.execution != {
+        execution = dict(self.execution)
+        worker_source_revision = execution.pop("worker_source_revision", None)
+        if (
+            not isinstance(worker_source_revision, str)
+            or len(worker_source_revision) != 40
+            or any(character not in "0123456789abcdef" for character in worker_source_revision)
+        ):
+            raise ValueError("v37 worker source revision is invalid")
+        if execution != {
             "capacity_contract_path": "../experiments/acea_v37_rapid_champion_capacity.yaml",
             "capacity_contract_sha256": (
                 "bdc8e3cb294d92009509efbb6a859475d49bb5bd3a702e73b374a0f97c2fef19"
             ),
-            "worker_source_revision": "8bdeb39fcc0df7c635e13a4aefa56a6c6a2bb4e3",
             "task_queues": {
                 "workflow_and_control": "pepagent-control-v37",
                 "generator": "pepagent-generator-v37",
