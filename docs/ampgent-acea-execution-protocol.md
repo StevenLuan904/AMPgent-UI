@@ -1560,6 +1560,29 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   `var/archives/ampgent-v37-007-heartbeat-fix-4289acf.zip` is 1,407,708 bytes with SHA-256
   `af1c185bcb76033b6f6a96445478df383828a214ef0ffb4e50eb398598d70823`.
 
+### 21.30 2026-08-15 v37.0.7 unique formal run
+
+- The execution-liveness recovery `v37.0.7-generation-heartbeat-recovery` was submitted exactly
+  once at `2026-08-14T16:14:07Z`. The unique database run is
+  `046f9867-450b-4b66-ac95-af4f37e9673a`; the Temporal workflow is
+  `pepagent-rapid-champion-v37-1552c99fc2be29ef88d3d7861add6a88503fc2fe084a177bf5820527c851e237`
+  with Temporal run ID `0c09bb7c-4cd0-4f56-9986-dfede4a3041c`. Never submit it again, replace it,
+  retry it in place, backfill it, or reuse output from v37.0.0--v37.0.6.
+- The new version changes no scientific field relative to v37.0.6: the same models, nine generator
+  seeds, 900 candidates, 11 declared sequence observations per candidate, 48 structure candidates,
+  three Boltz seeds, 16 Rosetta decoys per pose, unweighted Pareto portfolio, database/object-store
+  replay, and no ablation remain frozen. Its only change is heartbeat coverage during HydrAMP model
+  materialization plus cancellation-safe subprocess cleanup.
+- Benchmark SHA-256 is `c81911de68acec45c6fdb0ae74924845271a877223116a03c20abd5a8623af6a`;
+  structure spec SHA-256 is `85bb6030b913d961ad4a105d4d56fee42b8d986790c2feb92bcd05ba1ba1fadd`.
+  Worker source is `4289acfdca1750a37415e81f9e168e40e50b9ee6`; immutable release SHA-256 is
+  `b37f5eafa94435c04ca10291eda04dd804490f798aee005e5c7d61922f69c774`.
+- The active topology is local control/generator/provider/metrics, `.19 GPU4/GPU5` Boltz, and synth
+  CPU Rosetta. All selected processes are AMPgent-owned with no foreign conflict. `.32` is not used;
+  `.32 GPU2/GPU3` remain absolute no-access/no-probe resources. Initial DB and Temporal status is
+  `running`; progress is reported only from durable Candidate, occurrence, Evaluation, structure,
+  decision, and replay evidence.
+
 ### 21.24 scheduled idle-capacity wake rule
 
 - `.19` may be inspected read-only during every scheduled patrol. The monitor
