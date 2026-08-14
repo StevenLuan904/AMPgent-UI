@@ -22,7 +22,7 @@ STRUCTURE_0_11 = (
 )
 
 IMPLEMENTATION_REVISION = "59c28ed259a6870b236804a13751f7e744a11ab8"
-PENDING_WORKER_SOURCE_REVISION = "0" * 40
+WORKER_SOURCE_REVISION = "9784a6629a4c41cf9f986660ab6b3a99dec11090"
 
 
 def _yaml(path: Path) -> dict[str, object]:
@@ -39,7 +39,7 @@ def test_v37_0_11_is_new_identity_with_supervised_tunnel_recovery() -> None:
     assert manifest.formal_run.implementation_revision == IMPLEMENTATION_REVISION
     assert (
         manifest.execution["worker_source_revision"]
-        == PENDING_WORKER_SOURCE_REVISION
+        == WORKER_SOURCE_REVISION
     )
     assert validate_v37_experiment_spec(manifest, V37_0_11) == {
         "experiment_spec_path": (
