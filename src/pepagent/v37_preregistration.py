@@ -78,6 +78,7 @@ class V37Manifest(BaseModel):
         "v37.0.6-metric-observation-projection-recovery",
         "v37.0.7-generation-heartbeat-recovery",
         "v37.0.8-worker-schema-recovery",
+        "v37.0.9-temporal-metric-result-reference-recovery",
     ]
     execution_status: Literal["direction_authorized_pending_preexecution_gates"]
     track: Literal["single_arm_rapid_champion_generation"]
