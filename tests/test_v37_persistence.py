@@ -27,9 +27,44 @@ from pepagent.v37_provider_consumers import (
     PEPSHOT_RUNTIME_MANIFEST_SHA256,
 )
 from pepagent.v37_selection import select_v37_lanes
+from pepagent.workers.v37_activities import _select_v37_declared_observations
 
 ROOT = Path(__file__).parents[1]
 CONFIG = ROOT / "config" / "benchmarks" / "amp_rapid_champion_generation_v37.yaml"
+
+
+def test_v37_metric_projection_keeps_only_frozen_declared_observations() -> None:
+    observations = [
+        {"metric_name": "toxinpred3_ml_score", "numeric_value": 0.45},
+        {"metric_name": "toxinpred3_hybrid_score", "numeric_value": 0.0},
+        {"metric_name": "toxinpred3_label", "text_value": "Non-Toxin"},
+    ]
+
+    selected = _select_v37_declared_observations(
+        observations,
+        {"toxinpred3_hybrid_score", "toxinpred3_label"},
+    )
+
+    assert [item["metric_name"] for item in selected] == [
+        "toxinpred3_hybrid_score",
+        "toxinpred3_label",
+    ]
+
+
+def test_v37_metric_projection_still_rejects_missing_or_duplicate_observations() -> None:
+    with pytest.raises(ValueError, match="missing declared"):
+        _select_v37_declared_observations(
+            [{"metric_name": "toxinpred3_label"}],
+            {"toxinpred3_hybrid_score", "toxinpred3_label"},
+        )
+    with pytest.raises(ValueError, match="duplicate"):
+        _select_v37_declared_observations(
+            [
+                {"metric_name": "toxinpred3_label"},
+                {"metric_name": "toxinpred3_label"},
+            ],
+            {"toxinpred3_label"},
+        )
 
 
 @pytest.mark.asyncio

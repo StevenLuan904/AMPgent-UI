@@ -1185,6 +1185,20 @@ async def persist_v37_generation_batch(request: dict[str, Any]) -> dict[str, Any
     }
 
 
+def _select_v37_declared_observations(
+    observations: list[dict[str, Any]], expected_metrics: set[str]
+) -> list[dict[str, Any]]:
+    observations_by_name: dict[str, dict[str, Any]] = {}
+    for observation in observations:
+        metric_name = observation["metric_name"]
+        if metric_name in observations_by_name:
+            raise ValueError("v37 metric plugin emitted duplicate observations")
+        observations_by_name[metric_name] = observation
+    if not expected_metrics.issubset(observations_by_name):
+        raise ValueError("v37 metric plugin is missing declared observations")
+    return [observations_by_name[name] for name in sorted(expected_metrics)]
+
+
 @activity.defn(name="persist_v37_sequence_metric")
 async def persist_v37_sequence_metric(request: dict[str, Any]) -> dict[str, Any]:
     """Persist one frozen metric plugin directly onto its canonical logical call."""
@@ -1213,10 +1227,13 @@ async def persist_v37_sequence_metric(request: dict[str, Any]) -> dict[str, Any]
             raise ValueError("v37 metric candidate identity or sequence mismatch")
         if record.get("status") not in {"complete", "ok", "success"}:
             raise ValueError("v37 required metric contains a failed candidate record")
-        observed_names = {item["metric_name"] for item in record["observations"]}
-        if observed_names != expected_metrics:
-            raise ValueError("v37 metric plugin emitted undeclared or missing observations")
-        for observation in record["observations"]:
+        # A frozen benchmark selects the observations that participate in its
+        # scientific contract.  A provider may expose additional, versioned
+        # outputs; retain those in the raw receipt without silently promoting
+        # them into Evaluations for this run.
+        for observation in _select_v37_declared_observations(
+            record["observations"], expected_metrics
+        ):
             rows.append(
                 {
                     "candidate_id": record["candidate_id"],
