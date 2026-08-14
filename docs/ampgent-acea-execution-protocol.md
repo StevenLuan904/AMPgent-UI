@@ -1586,6 +1586,51 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   `var/archives/ampgent-v37-007-formal-fb0f844.zip` is 1,417,862 bytes with SHA-256
   `2c727c8252fc19ff5dc741c42b29484d5a96b6ac17f1070ae6dfe2fecb251128`.
 
+### 21.31 2026-08-15 v37.0.7 immutable failure and v37.0.8 recovery
+
+- The unique v37.0.7 run `046f9867-450b-4b66-ac95-af4f37e9673a` and Temporal run
+  `0c09bb7c-4cd0-4f56-9986-dfede4a3041c` failed before candidate persistence. Its immutable
+  database footprint is one succeeded knowledge ToolCall, two evidence artifacts, zero Candidate,
+  zero proposal occurrence, zero Evaluation, and zero AgentDecision. It has no interpretable peptide
+  result and must not be rerun, retried in place, backfilled, deleted, or used as a result source.
+- Temporal history identifies `persist_v37_generation_batch` activity ID `12` as the terminal
+  failure. The v37.0.7 worker release was built from source `4289acfd...`, which contains the
+  generation-heartbeat repair but predates the manifest loader's v37.0.7 version Literal. The worker
+  therefore rejected the frozen v37.0.7 manifest during persistence. This is an execution-schema
+  identity defect, not a generator, sequence, metric, structure, or GPU scientific result.
+- The independent recovery identity is `v37.0.8-worker-schema-recovery`. It changes only the version,
+  structure-spec identity, implementation identity, and worker source needed to recognize that new
+  manifest. Every model, generator seed, 900/11/48/3/16 budget, selection rule, unweighted Pareto
+  rule, database/object-store replay requirement, and no-ablation constraint remains identical to
+  v37.0.7. No working output from v37.0.7 may be reused.
+- The worker-loader source is commit `42e495c8b76e2c0eb0fa89cefcf1768322679142` and the bound
+  benchmark checkpoint is commit `fa16e1d`. The frozen v37.0.8 benchmark SHA-256 is
+  `9f939d0b06151390fc7257cbd27eb1fcd4629ac44a57e5bdb8b49593cbc3c7f3`; structure-spec SHA-256 is
+  `f29a854ad35be090a2b866d33b6a7abeeea09cd275b7917564fff10818ee116b`. Focused validation is Ruff
+  clean and `3 passed`. A formal run may be submitted exactly once only after workers are rebuilt
+  from the bound loader source and the active placement is rechecked.
+
+### 21.32 2026-08-15 v37.0.8 unique formal run
+
+- `v37.0.8-worker-schema-recovery` was submitted exactly once at
+  `2026-08-14T16:56:51.054968Z`. The unique database run is
+  `1bc90f87-c01a-4187-a9b8-660dcd9aab43`; the workflow is
+  `pepagent-rapid-champion-v37-af9647e8c389220b0a21ad6bb4411f360adfab2584aea85071ccaa91c7eb9250`
+  with Temporal run ID `b74466c6-1e3e-4086-b680-3ef260389e18`. Never submit it again, create a
+  replacement, retry it in place, backfill it, or reuse working output from v37.0.0--v37.0.7.
+- Frozen science remains nine generator seeds, 900 candidates, 11 declared evaluations per
+  candidate, 48 structure candidates, three Boltz seeds each, 16 Rosetta decoys per pose, an
+  unweighted Pareto portfolio, database/object-store replay, and no ablation. The only recovery
+  difference is worker manifest recognition of the new version identity.
+- The active worker source is `42e495c8b76e2c0eb0fa89cefcf1768322679142`; immutable release SHA-256
+  is `ba515bf492d6306143305f03279cbf67beed4d23cec25f0fc2cf8f061a668898`. The execution topology is
+  local control/generator/provider/metrics, `.19 GPU4/GPU5` Boltz, and synth CPU Rosetta. All selected
+  remote workers were verified AMPgent-owned with no foreign-process conflict; `.32` was not used.
+- Submission preflight reported `ready_to_submit_unique_run` with no failed gate. Initial state is
+  DB `running` and Temporal `RUNNING`, with one succeeded knowledge ToolCall, two evidence artifacts,
+  and zero Candidate/Evaluation/Decision. Subsequent progress is reported only from durable
+  Candidate, occurrence, Evaluation, structure, decision, and replay evidence.
+
 ### 21.24 scheduled idle-capacity wake rule
 
 - `.19` may be inspected read-only during every scheduled patrol. The monitor
