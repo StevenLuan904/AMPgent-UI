@@ -1554,6 +1554,8 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   `b58a5591a9eefa933cfa75ffce3e9c9d74bdd57336a499cdfe058da0888f60b2`。最小 placement 记录为本地
   control/generator/provider/metrics、`.19 GPU4/GPU5` Boltz 和 synth CPU Rosetta；全部已核验 PID/role、
   source revision 与无外来进程冲突。`.32 GPU2/GPU3` 仍为绝对禁区，本次运行未使用 `.32`。
-- 当前状态为 `running`。知识调用已经首先进入 PostgreSQL；九个冻结生成批次已派发。科学进度只按
+- 当前状态为 `running`。知识调用已经首先进入 PostgreSQL；九个冻结生成批次均在确定性执行计划中，
+  当前实现按并发上限 8 分批，前 8 个先派发，第 9 个在首批屏障完成后自动派发。该屏障只影响吞吐，
+  不改变 900 条科学预算；后续工程演进应改为保持顺序的滑动并发，避免空闲槽等待最慢任务。科学进度只按
   Candidate、proposal occurrence、Evaluation、结构证据、Pareto decision 与 database/object-store replay
   的实际持久化计数报告，worker 在线和预检通过不单独算作短肽成果。
