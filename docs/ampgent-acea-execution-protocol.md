@@ -1728,6 +1728,36 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   `var/archives/ampgent-v37-010-formal-4052ca3.zip` is 1,453,044 bytes with SHA-256
   `7c233b70c0390618e9924f58366ad4e927db723e105d018c9cdff8d93f2abae6`.
 
+### 21.37 2026-08-15 v37.0.10 immutable failure and supervised `.19` service tunnel recovery
+
+- The unique v37.0.10 run `ae0e52be-bf0f-4c41-a8a4-8fbd061bbf78` and Temporal run
+  `d9013db6-562f-40ed-b022-c09b830e9b58` failed and remain immutable. Its durable footprint is
+  900 Candidate, 9,000 proposal occurrence, 26 succeeded ToolCall, all 9,900 required Evaluation
+  rows (11 declared metrics for every candidate), 118 evidence links, 46 dependencies, and two
+  succeeded AgentDecision rows. The sequence-stage decision excluded 257 concordant toxicity-plus-
+  hemolysis red flags, retained 643 eligible candidates, and deterministically selected the frozen
+  48-member structure shortlist. This is a complete sequence panel and a structure shortlist, not a
+  final structural Pareto portfolio or an experimental activity, safety, affinity, or binding result.
+- Boltz activity dispatch began, but both `.19` workers failed before `_begin_database_attempt` could
+  acquire a database attempt record because remote `127.0.0.1:55432` refused connections. Boltz
+  inference never started: there are zero Boltz ToolCall rows, zero structure Evaluation rows, and no
+  orphan coordinates or structure scores. The missing PostgreSQL reverse forward was an execution-
+  dependency liveness failure, not a candidate-quality, model, seed, GPU, or structure-science failure.
+  Never rerun, retry in place, backfill, delete, or reuse v37.0.10 candidates, evaluations, shortlist,
+  working outputs, or activity identities in a recovery run.
+- Repair commit `59c28ed259a6870b236804a13751f7e744a11ab8` replaces the temporary `.19` forwards with one
+  hidden supervised SSH session that holds PostgreSQL `55432`, Temporal `17233`, and object-store
+  `19000` together, uses keepalives and a bounded reconnect loop, and fails worker launch before GPU/
+  PID claim unless all three remote loopback services accept TCP connections. A forced termination of
+  the exact AMPgent SSH child demonstrated watchdog reconnection in under 20 seconds; subsequent real
+  remote probes passed PostgreSQL `SELECT 1`, Temporal active-workflow query, and MinIO health.
+  No `.32` resource or foreign process was accessed or stopped.
+- Independent `v37.0.11-supervised-remote-service-tunnel-recovery` preserves every v37.0.10
+  scientific field and the 900/11/48/3/16 budget, unweighted Pareto semantics, database/object-store
+  replay, and no-ablation policy. Its benchmark source contract is committed and pushed; a fresh
+  immutable worker release, live three-service probes, placement, and unique-run preflight are required
+  before one exact-once submission.
+
 ### 21.24 scheduled idle-capacity wake rule
 
 - `.19` may be inspected read-only during every scheduled patrol. The monitor
