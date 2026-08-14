@@ -22,6 +22,28 @@
 旧 heartbeat 可能滞后，不能据此重跑已完成阶段或绕过新门禁。遇到不一致时先只读核查仓库、
 数据库、Temporal 和对象存储，再决定是否行动。
 
+### 1.1 第一性原则与结果优先执行方式
+
+当前工作的首要目标是直接提高短肽候选质量，而不是把基础设施整洁、部署仪式或门禁数量本身当作
+交付。候选质量包括生物学合理性、抗菌与膜作用潜力、风险控制、靶点相关结构证据、跨 seed 稳定性和
+有用的序列多样性。每项工作都应反问：它能否改善候选、解释改善或失败的原因，或者保存复现该判断
+不可缺少的证据；若三者皆否，默认删除、合并或降为非阻塞检查。
+
+严格性只保留在会改变科学意义或资源安全的部分：冻结的科学变量与预算、精确序列/candidate 身份、
+输入输出映射、候选选择与比较规则、PostgreSQL 证据落库、对象存储 artifact、database+object-store
+replay、不可变失败历史，以及用户规定的资源禁区和外来进程保护。任何会改变这些内容的修复必须使用
+新版本身份，不能回填旧 run，也不能静默改变科学合同。
+
+不影响短肽结果的工程门禁应压缩到最小。worker 的正常最低记录只有：physical host、GPU（CPU worker
+可记为 CPU）、PID/role、source revision，以及没有外来进程冲突的当前核验。除非额外 release、环境、
+dashboard、receipt 或审计字段的缺失可能改变实际执行字节、丢失证据、破坏 replay 或越过资源边界，
+否则不得让它们阻塞候选生成。routine 工程缺陷先做只读定位，再直接修复、做与风险相称的测试、记录
+变更并继续；无需为每个普通修复反复等待用户确认，也不得在已有安全下一步时停在状态汇报上。
+
+这不是降低科学标准。它把时间从无关仪式转回候选生成、五类序列评价、结构确认和非加权 Pareto
+portfolio。追求速度时可以简化部署和记录形式，但不能简化序列身份、科学预算、证据落库/replay、
+exact-once 新 run 身份、外来进程保护或 GPU 禁区。
+
 ## 2. 不可变科学边界
 
 - `v20/v20b/v20c`：`conflicted`。
@@ -1500,3 +1522,20 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   PID `2001800`, `bash tools/watch_v4_sample_milestones.sh`, declares `CUDA_VISIBLE_DEVICES=0`;
   therefore GPU0 must not be used or displaced. `.19` remained unreachable through the jump host,
   so its earlier GPU6 availability is not current authorization. No GPU2/GPU3 probe occurred.
+
+### 21.25 2026-08-14 第一性原则恢复目标
+
+- 用户要求调整执行风格：以尽快产生质量更高、可解释且可查看的短肽为唯一当前主线，不再把
+  worker 证书、部署仪式或门禁完备度当作独立成果。安全且在范围内的 routine fix 应直接实施并继续，
+  不能因为等待普通确认而空转。
+- v37.0.4 及更早失败 run 仍保持不可变。下一独立恢复版本的目的仅是让已修复的持久化路径尽快完成
+  一次新身份的端到端 champion run；不得复用失败输出，也不得改变原定 900 条候选、五类序列评价、
+  48 条结构短名单、每条 3 个 Boltz seed、每 pose 16 个 Rosetta decoy、非加权 Pareto portfolio 与
+  database+object-store replay 的科学预算和判定语义。
+- 恢复前的最低工程记录收敛为 host、GPU/CPU、PID/role、source revision、无外来进程冲突，以及
+  API/PostgreSQL/MinIO/Temporal 足以接收和持久化本次 run 的健康状态。只有能够改变执行字节、科学
+  输出、证据完整性、重复提交或资源安全的异常才阻塞；其余部署元数据和审计细节可在不影响主线时
+  追加，不能延迟首批 Candidate/Evaluation 落库。
+- 完成标准不是“所有门禁文件齐全”，而是新版本从生成到评价、结构、portfolio 的科学证据持续落入
+  PostgreSQL，并能由数据库和对象存储复原；随后以候选质量、冲突、方向稳定性和多样性解释结果。
+  在没有这些可解释候选之前，不把工程修复或 GPU 在线称为阶段性科研成果。

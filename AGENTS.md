@@ -125,6 +125,25 @@ Apply the following style to AMPgent/AceA research work in this repository:
 > iteration—not ceremonial precision. Preserve provenance and safety rigor, but do not confuse
 > floating-point bit identity with scientific reproducibility.
 
+### First-principles objective
+
+- The primary objective is to improve the quality of the peptide candidates: biological plausibility,
+  target-relevant evidence, antimicrobial potential, safety-risk profile, structural robustness, and
+  useful sequence diversity. Judge every proposed task by whether it can materially improve that
+  result, reveal why it did or did not improve, or preserve the evidence needed to reproduce it.
+- Work backward from the peptide decision. Keep scientific variables, candidate identity, causal
+  comparisons, evidence persistence, and prohibited-resource boundaries strict. Simplify everything
+  else by default. Worker metadata normally needs only host, GPU, PID/role, source revision, and proof
+  of no foreign-process conflict; additional deployment ceremony is advisory unless its failure could
+  alter peptide outputs, lose evidence, violate a resource boundary, or make the run irreproducible.
+- Do not turn infrastructure cleanliness, release paperwork, optional dashboards, exhaustive audits,
+  or tool validation into independent goals. Prefer the shortest safe path from an observed problem
+  to another informative generation/evaluation iteration. Fix routine engineering defects directly,
+  record the change, and continue without waiting for repeated confirmation.
+- When speed and rigor conflict, protect the parts that determine scientific meaning and compress the
+  rest. Never trade away exact sequence identity, frozen scientific settings, database evidence,
+  replayability, or user resource prohibitions; aggressively reduce checks that do not affect them.
+
 - Treat model scores as approximate. Unless a protocol has a scientifically justified tighter
   bound, repeated finite floating-point outputs are equivalent when either
   `absolute_difference <= 1e-8` or `relative_difference <= 1e-6`. A difference around `1e-15`
@@ -148,6 +167,19 @@ Apply the following style to AMPgent/AceA research work in this repository:
 - Favor progress per unit time. Add only the minimum harness needed to protect scientific meaning,
   provenance, and safety. When a low-value optional metric is slow or brittle, record the failure
   clearly and move on instead of spending repeated iterations rescuing it.
+- Keep the operational objective centered on producing the strongest scientifically defensible
+  peptide candidates. Infrastructure, worker identity, persistence checks, and documentation are
+  enabling work, not endpoints: finish the minimum necessary gate, then immediately resume the
+  next candidate-generation, evaluation, structure, or portfolio step that can improve the peptide
+  result. Do not remain idle waiting for routine user confirmation when a safe in-scope repair or
+  next step is available. Diagnose failures read-only first, repair versionedly without changing a
+  frozen scientific contract, verify proportionately, and continue until a genuine external or
+  authorization boundary is reached.
+- Speed never permits silent evidence loss. Every generation attempt, retry, evaluation, selection,
+  failure, and decision that influences a formal peptide result must still enter the PostgreSQL
+  evidence graph and remain replayable with its object-store artifacts. Compute may be parallelized
+  across freshly verified allowed resources, but exact-once submission, foreign-process protection,
+  prohibited-resource boundaries, and immutable failed-run history remain mandatory.
 - AMPlify is retired from this project by user decision. Do not debug, rerun, shard, replace, or use
   AMPlify in future scoring unless the user explicitly reverses that decision.
 - GPU2 and GPU3 on host `192.168.99.32` are absolutely prohibited by the user's latest decision.
