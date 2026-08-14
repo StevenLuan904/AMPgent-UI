@@ -74,6 +74,7 @@ class V37Manifest(BaseModel):
         "v37.0.2-persistence-recovery",
         "v37.0.3-interrupted-attempt-recovery",
         "v37.0.4-subprocess-environment-recovery",
+        "v37.0.5-attempt-receipt-projection-recovery",
     ]
     execution_status: Literal["direction_authorized_pending_preexecution_gates"]
     track: Literal["single_arm_rapid_champion_generation"]
