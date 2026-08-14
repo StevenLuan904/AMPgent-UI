@@ -1499,6 +1499,32 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   archive `var/archives/ampgent-gpu-boundary-2fcd757.zip` is 78,814 bytes with SHA-256
   `4a50fe1b2e93fc19b0d93d75c3a75e0e6a042f496f1cba0408c4a900d5a2ea18`.
 
+### 21.28 2026-08-14 v37.0.6 unique formal run
+
+- The execution-only recovery `v37.0.6-metric-observation-projection-recovery` was submitted
+  exactly once at `2026-08-14T15:27:05Z`. The unique database run is
+  `be7fcf5b-d3a8-49c7-8369-286d34a04599`; the Temporal workflow is
+  `pepagent-rapid-champion-v37-316344bc35c74431b1c3680a94f21b686114f2c49ae3abbf65bbf229bcdb6acc`
+  with Temporal run ID `f05913ea-ac0d-4f3f-8b0b-47f789a21af5`. It must not be submitted again,
+  replaced, backfilled, or retried in place.
+- Frozen science is unchanged: 900 candidates, 11 declared sequence observations per candidate,
+  48 structure-shortlist candidates, three Boltz seeds per candidate, 16 Rosetta decoys per pose,
+  an unweighted Pareto portfolio, database/object-store replay, and no ablation. The only behavior
+  change is projection of provider observation supersets onto the declared metric set; auxiliary
+  ToxinPred3 `toxinpred3_ml_score` remains in raw content-addressed evidence and does not enter
+  Evaluation, selection, risk, or Pareto semantics.
+- Submission inputs passed the minimal result-relevant preflight. Benchmark SHA-256 is
+  `1ecadf9537f2bc6db05c27cf0999f6cc4f3f31295ef09ff2ce47f2c40e4ea518`, structure spec SHA-256 is
+  `70a675a70bb6b430b87ac0a280f8798820bf203a202d993b53e46ad4a04a34f4`, worker source is
+  `f6c754566405494739f7318afc47ed92ca3d9eda`, and immutable release SHA-256 is
+  `571916a54a132bce8b5639328e849b5f24116a0464272bb6bafa998f15fb21e6`.
+- Active workers are local control/generator/provider/metrics, `.19 GPU4/GPU5` Boltz, and synth CPU
+  Rosetta. Every selected worker was checked as AMPgent-owned with no foreign process conflict.
+  `.32` was not used for this run; `.32 GPU2/GPU3` remain absolute no-access/no-probe resources.
+- Initial state is `running`. The knowledge ToolCall and its runtime receipts are already persisted.
+  Subsequent progress and completion are reported only from actual Candidate, proposal occurrence,
+  Evaluation, structure evidence, Pareto decision, and replay counts in PostgreSQL/object storage.
+
 ### 21.24 scheduled idle-capacity wake rule
 
 - `.19` may be inspected read-only during every scheduled patrol. The monitor
