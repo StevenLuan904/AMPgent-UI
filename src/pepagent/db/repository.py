@@ -4,7 +4,7 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pepagent.db.models import (
@@ -49,6 +49,20 @@ def _candidate_occurrence_identity_matches(
     existing: CandidateOccurrence, identity: dict[str, Any]
 ) -> bool:
     return all(getattr(existing, key) == value for key, value in identity.items())
+
+
+def _lifecycle_event_lock_id(aggregate_type: str, aggregate_id: uuid.UUID) -> int:
+    """Return a stable signed PostgreSQL advisory-lock key for one aggregate."""
+    digest = bytes.fromhex(
+        sha256_json(
+            {
+                "lock_domain": "pepagent.lifecycle_event_sequence.v1",
+                "aggregate_type": aggregate_type,
+                "aggregate_id": str(aggregate_id),
+            }
+        )
+    )
+    return int.from_bytes(digest[:8], byteorder="big", signed=True)
 
 
 class ExperimentRepository:
@@ -109,6 +123,13 @@ class ExperimentRepository:
         actor: str,
         payload: dict[str, Any],
     ) -> LifecycleEvent:
+        # Sequence allocation is a read-modify-write operation.  Concurrent
+        # workers may append to the same run aggregate, so serialize only this
+        # short aggregate-local critical section for the current transaction.
+        await self.session.execute(
+            text("SELECT pg_advisory_xact_lock(:lock_id)"),
+            {"lock_id": _lifecycle_event_lock_id(aggregate_type, aggregate_id)},
+        )
         last = await self.session.scalar(
             select(func.max(LifecycleEvent.sequence_no)).where(
                 LifecycleEvent.aggregate_type == aggregate_type,
