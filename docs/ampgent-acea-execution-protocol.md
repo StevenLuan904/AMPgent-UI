@@ -1774,6 +1774,30 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   `var/archives/ampgent-v37-011-formal-dacf477.zip` is 1,466,112 bytes with SHA-256
   `b8dbaeafde2624c9129bc10cb638de1a717ac560f8efbd6412e4b5be70ca4df5`.
 
+### 21.38 2026-08-15 v37.0.11 immutable failure and Boltz runtime repair
+
+- The unique v37.0.11 run `1b1dedea-fd1d-4dfa-816b-f69421ea8158` and Temporal run
+  `7fd3ad92-89bc-45eb-9338-a484a7ed0db9` failed at `2026-08-14T20:51:14Z` and remain immutable.
+  Its durable footprint is 900 Candidate, 9,000 proposal occurrences, all 9,900 declared sequence
+  Evaluation rows, 26 succeeded ToolCalls, 118 evidence links, two decisions, and the deterministic
+  48-member structure shortlist. There is no Boltz/structure evidence and no final Pareto decision.
+- The supervised PostgreSQL/Temporal/object-store tunnel remained live and the sequence stage
+  completed. Boltz activity 35 instead failed twice before inference because the frozen worker
+  environment did not contain the configured executable
+  `/data1/huangyueshan/pepagent/envs/gpu-worker-py311-v1/bin/boltz`. This is a worker runtime and
+  placement-verification defect, not a peptide, model, seed, GPU-compute, or structure-science result.
+  Never rerun, retry in place, backfill, delete, or reuse v37.0.11 candidates, evaluations, shortlist,
+  working files, or activity outputs.
+- Recovery preparation now fails Boltz worker launch before GPU inspection or PID claim unless the
+  exact managed console script is executable, the `boltz` Python package imports, and `boltz predict
+  --help` exposes every required frozen CLI option. The adapter also rejects a missing executable
+  explicitly instead of manufacturing a path that fails later inside a formal activity. This is an
+  execution-only repair; it does not alter sequences, models, seeds, metrics, structure budgets,
+  Pareto semantics, or evidence requirements.
+- A future recovery additionally requires rebuilding or repairing the `.19` managed Boltz environment
+  and completing a real provider smoke before worker launch. Resource availability or a passing
+  static gate is not formal-run authorization; no replacement run is authorized by this entry.
+
 ### 21.24 scheduled idle-capacity wake rule
 
 - `.19` may be inspected read-only during every scheduled patrol. The monitor

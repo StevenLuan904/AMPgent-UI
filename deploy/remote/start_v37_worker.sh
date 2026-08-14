@@ -38,8 +38,32 @@ SCRIPT_RELEASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 
 if [[ "$ROLE" = "boltz2" ]]; then
   PYTHON="$ROOT/envs/gpu-worker-py311-v1/bin/python"
+  BOLTZ_EXECUTABLE="$ROOT/envs/gpu-worker-py311-v1/bin/boltz"
   CUDA_DEVICE="$RESOURCE"
   MAX_CONCURRENT=1
+  [[ -x "$BOLTZ_EXECUTABLE" ]] || {
+    echo "managed Boltz executable is missing: $BOLTZ_EXECUTABLE" >&2
+    exit 4
+  }
+  "$PYTHON" -c 'import boltz' || {
+    echo "managed Boltz Python package is unavailable" >&2
+    exit 4
+  }
+  BOLTZ_HELP="$($BOLTZ_EXECUTABLE predict --help)"
+  for option in \
+    --cache \
+    --diffusion_samples \
+    --recycling_steps \
+    --sampling_steps \
+    --use_msa_server \
+    --use_potentials \
+    --write_full_pae \
+    --write_full_pde; do
+    grep -q -- "$option" <<<"$BOLTZ_HELP" || {
+      echo "managed Boltz executable is missing required option: $option" >&2
+      exit 4
+    }
+  done
   OCCUPANTS="$(nvidia-smi -i "$RESOURCE" --query-compute-apps=pid --format=csv,noheader,nounits 2>/dev/null | tr -d '[:space:]')"
   [[ -z "$OCCUPANTS" ]] || { echo "GPU has compute processes; refusing launch" >&2; exit 21; }
 else

@@ -566,3 +566,10 @@ Pareto 结果，Q1/Q2/Q6 不更新。根因是消费者错误要求 ToxinPred3 �
 输出仍进入原始 replay，不参与选择。独立 `v37.0.6-metric-observation-projection-recovery` 保持全部科学预算
 和 11 个 required metrics 不变，目标仍是尽快获得 900×11 条序列 Evaluation、48 条结构短名单和最终非加权
 Pareto portfolio；v37.0.5 保持不可变且不得回填或重跑。
+
+2026-08-15 v37.0.11 追加事实：唯一正式 run 已在完整持久化 900 条候选、9,000 条 occurrence、
+9,900 条序列评价和 48 条结构短名单后，因 `.19` 的冻结 Boltz worker 环境缺少实际 `boltz`
+可执行文件而失败；Boltz 推理未开始，结构证据为 0，也没有最终 Pareto portfolio。该失败只说明
+worker runtime 验证不足，不更新 Q1/Q2/Q6 的短肽科学判断。v37.0.11 保持不可变且不得回填或复用；
+下一次独立恢复必须先以真实 provider smoke 证明 Boltz 可执行、包、CLI、权重与目标 GPU 环境共同可用，
+同时保持 900/11/48/3/16、非加权 Pareto、数据库/对象存储 replay 和不做消融的科学合同不变。

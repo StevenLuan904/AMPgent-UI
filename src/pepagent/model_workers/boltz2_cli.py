@@ -67,7 +67,12 @@ def main() -> None:
     prediction_dir = args.work_dir / "boltz-output"
     input_path.write_text(yaml.safe_dump(build_input(request), sort_keys=False), encoding="utf-8")
 
-    boltz_executable = shutil.which("boltz") or str(Path(sys.executable).with_name("boltz"))
+    boltz_executable = shutil.which("boltz")
+    if boltz_executable is None:
+        expected = Path(sys.executable).with_name("boltz")
+        raise FileNotFoundError(
+            f"Boltz executable is unavailable; expected a runnable console script at {expected}"
+        )
     command = [
         boltz_executable,
         "predict",
