@@ -1582,6 +1582,9 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   `.32 GPU2/GPU3` remain absolute no-access/no-probe resources. Initial DB and Temporal status is
   `running`; progress is reported only from durable Candidate, occurrence, Evaluation, structure,
   decision, and replay evidence.
+- Formal-run checkpoint commit `fb0f844` is pushed. Compact tracked-content archive
+  `var/archives/ampgent-v37-007-formal-fb0f844.zip` is 1,417,862 bytes with SHA-256
+  `2c727c8252fc19ff5dc741c42b29484d5a96b6ac17f1070ae6dfe2fecb251128`.
 
 ### 21.24 scheduled idle-capacity wake rule
 
