@@ -1634,6 +1634,50 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   `var/archives/ampgent-v37-008-formal-713d7fa.zip` is 1,428,183 bytes with SHA-256
   `5e8c06ecb722175e6bbbf511b7185eafe4e59b5f0fda4217a88c5963598ce8b0`.
 
+### 21.33 2026-08-15 v37.0.8 immutable failure and metric-reference repair
+
+- The unique v37.0.8 run `1bc90f87-c01a-4187-a9b8-660dcd9aab43` and Temporal run
+  `b74466c6-1e3e-4086-b680-3ef260389e18` failed and remain immutable. The durable database footprint
+  is 900 Candidate, 9,000 proposal occurrence, 20 succeeded ToolCall, 900 Evaluation, 87 linked
+  evidence artifacts, nine dependencies, and zero AgentDecision. The only complete Evaluation family
+  is 900 `amp_read_log10_mic_um` observations; there is no complete sequence panel, structure
+  shortlist, Pareto portfolio, or interpretable final peptide result. Never rerun, retry in place,
+  backfill, delete, or reuse its candidates, working outputs, or orphan objects.
+- Temporal activity ID `21`, `evaluate_v37_sequence_metric` for
+  `physicochemical_developability`, completed computation but its 2,263,234-byte completion blob
+  exceeded the 2,097,152-byte server limit by 166,082 bytes (7.919%). The full 900-record metric
+  object exists in object storage but never entered the PostgreSQL evidence graph, so it is an
+  orphan and is not a result source. This is an execution-transport defect, not a peptide, metric,
+  model, or GPU scientific failure.
+- Execution-only repair commit `36b40b7329813f6ebc6ea1963a51555052f0a139` stores the complete
+  metric result and provenance as canonical content-addressed JSON and returns only a compact typed
+  SHA/URI receipt through Temporal. The persistence activity retrieves the full object, verifies
+  byte length, SHA, canonical payload identity, plugin, and transition receipt, then follows the
+  unchanged ToolCall/Evaluation/artifact/replay path. Scientific values, models, seeds, 900/11/48/3/16
+  budgets, unweighted Pareto semantics, and no-ablation policy are unchanged. Focused Ruff is clean
+  and the new reference tests pass.
+
+### 21.34 2026-08-15 v37.0.9 unique formal run
+
+- `v37.0.9-temporal-metric-result-reference-recovery` was submitted exactly once at
+  `2026-08-14T18:25:41.136215Z`. The unique database run is
+  `ee86c78a-d316-4cc6-870a-be93f22b769f`; workflow is
+  `pepagent-rapid-champion-v37-a116d44c28b9bb604587054d0045594c0a11651d5f4924822154f29387f5d445`
+  with Temporal run ID `24c1665c-e454-43df-9eeb-40b92121b926`. Never submit it again, create a
+  replacement, retry in place, backfill, or reuse v37.0.0--v37.0.8 working output.
+- Frozen science remains nine generator seeds, 900 candidates, 11 declared evaluations each,
+  48 structure candidates, three Boltz seeds each, 16 Rosetta decoys per pose, unweighted Pareto,
+  database/object-store replay, and no ablation. Only metric-result transport changed: full evidence
+  is content-addressed in object storage while Temporal carries a verified compact reference.
+- Benchmark SHA-256 is `750d63ec69977aa24f417e7d3827e69eb86df67c5a6cd444c851e41e31af66f4`;
+  structure SHA-256 is `330418085b45d0863e3937439e1a11b8a877b7dc71207a9c99b531471d17b045`.
+  Worker source is `365f2460c08636b6ca596dd6ed481996b27fa04b`; immutable release SHA-256 is
+  `ed4cbe1826d8b75a93ba29a3241156dd89f463537f5da7c9f1574bcc9d9d8636`.
+- Submission preflight was `ready_to_submit_unique_run` with no failed gate. Initial DB/Temporal
+  state is `running`/`RUNNING`, with one succeeded knowledge ToolCall, two linked artifacts, zero
+  Candidate/Evaluation/Decision, nine started generation attempts, one succeeded and eight pending
+  on attempt one. Progress is reported only from durable scientific evidence.
+
 ### 21.24 scheduled idle-capacity wake rule
 
 - `.19` may be inspected read-only during every scheduled patrol. The monitor
