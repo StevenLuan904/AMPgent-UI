@@ -5,6 +5,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 TUNNEL = ROOT / "deploy/tunnels/start_019_pepagent_tunnels.ps1"
 WORKER = ROOT / "deploy/remote/start_v37_worker.sh"
+GPU_BOOTSTRAP = ROOT / "deploy/remote/bootstrap_gpu_env_synth.sh"
+GPU_VERIFY = ROOT / "deploy/remote/verify_gpu_env_synth.sh"
 
 
 def test_host19_tunnel_supervisor_covers_all_worker_control_services() -> None:
@@ -56,3 +58,14 @@ def test_v37_boltz_worker_validates_the_real_provider_runtime_before_gpu_claim()
         "--write_full_pde",
     ):
         assert option in source
+
+
+def test_gpu_environment_scripts_use_the_deployed_uv_runtime_and_fail_closed() -> None:
+    for path in (GPU_BOOTSTRAP, GPU_VERIFY):
+        source = path.read_text(encoding="utf-8")
+        assert 'PEPAGENT_UV:-$ROOT/runtime/uv-0.12.0/bin/uv' in source
+        assert '[[ -x "$UV" ]]' in source
+        assert "managed uv executable is missing" in source
+    bootstrap = GPU_BOOTSTRAP.read_text(encoding="utf-8")
+    assert 'if [[ ! -x "$ENV_DIR/bin/python" ]]; then' in bootstrap
+    assert '"$UV" venv --python "$PYTHON" "$ENV_DIR"' in bootstrap

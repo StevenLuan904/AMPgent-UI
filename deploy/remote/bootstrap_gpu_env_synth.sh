@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="${PEPAGENT_ROOT:-/sdd_data/pepagent}"
-UV="$ROOT/runtime/uv-0.11.12/bin/uv"
+UV="${PEPAGENT_UV:-$ROOT/runtime/uv-0.12.0/bin/uv}"
 PYTHON="$ROOT/runtime/python/cpython-3.11.10-linux-x86_64-gnu/bin/python3.11"
 ENV_DIR="$ROOT/envs/gpu-worker-py311-v1"
 LOG_DIR="$ROOT/runs/gpu-env-bootstrap-v1"
@@ -12,8 +12,11 @@ INDEX="https://pypi.tuna.tsinghua.edu.cn/simple"
 mkdir -p "$ROOT/envs" "$ROOT/cache/uv" "$LOG_DIR"
 exec > >(tee -a "$LOG_DIR/bootstrap.log") 2>&1
 export UV_CACHE_DIR="$ROOT/cache/uv"
+[[ -x "$UV" ]] || { echo "managed uv executable is missing: $UV" >&2; exit 4; }
 
-"$UV" venv --python "$PYTHON" "$ENV_DIR"
+if [[ ! -x "$ENV_DIR/bin/python" ]]; then
+  "$UV" venv --python "$PYTHON" "$ENV_DIR"
+fi
 "$UV" pip install --python "$ENV_DIR/bin/python" --index-url "$INDEX" \
   "torch==2.6.0"
 "$UV" pip install --python "$ENV_DIR/bin/python" --index-url "$INDEX" \

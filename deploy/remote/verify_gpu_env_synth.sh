@@ -3,8 +3,10 @@ set -euo pipefail
 
 ROOT="${PEPAGENT_ROOT:-/sdd_data/pepagent}"
 ENV_DIR="$ROOT/envs/gpu-worker-py311-v1"
-UV="$ROOT/runtime/uv-0.11.12/bin/uv"
+UV="${PEPAGENT_UV:-$ROOT/runtime/uv-0.12.0/bin/uv}"
 REPORT_DIR="$ROOT/runs/gpu-env-bootstrap-v1"
+
+[[ -x "$UV" ]] || { echo "managed uv executable is missing: $UV" >&2; exit 4; }
 
 "$ENV_DIR/bin/python" - <<'PY'
 from importlib.metadata import version
