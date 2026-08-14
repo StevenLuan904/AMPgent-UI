@@ -90,6 +90,7 @@ from pepagent.workers.activities import (
 )
 
 V37_ACTIVITY_VERSION = "v37.0.0"
+V37_METRIC_RESULT_REFERENCE_SCHEMA = "v37.metric-result-reference.1"
 
 
 def _isolated_v37_runtime_environment(
@@ -134,6 +135,61 @@ def _with_activity_transition(result: dict[str, Any]) -> dict[str, Any]:
     if "activity_transition_receipt" in result:
         raise ValueError("v37 activity result already contains a transition receipt")
     return {**result, "activity_transition_receipt": _activity_transition_receipt()}
+
+
+async def _compact_v37_metric_result(result: dict[str, Any]) -> dict[str, Any]:
+    """Store the full metric payload and return a Temporal-safe content reference."""
+    transitioned = _with_activity_transition(result)
+    stored = await _store_json(transitioned)
+    plugin_name = str(transitioned["result"]["plugin"]["name"])
+    return {
+        "schema_version": V37_METRIC_RESULT_REFERENCE_SCHEMA,
+        "plugin_name": plugin_name,
+        "metric_result_sha256": sha256_json(transitioned),
+        "metric_result_artifact": asdict(stored),
+        "activity_transition_receipt": transitioned["activity_transition_receipt"],
+    }
+
+
+async def _resolve_v37_metric_result(reference: dict[str, Any]) -> dict[str, Any]:
+    """Resolve and verify a compact metric result, retaining legacy direct payloads."""
+    if "result" in reference and "provenance" in reference:
+        return reference
+    if reference.get("schema_version") != V37_METRIC_RESULT_REFERENCE_SCHEMA:
+        raise ValueError("v37 metric result reference schema is invalid")
+    artifact = reference.get("metric_result_artifact")
+    if not isinstance(artifact, dict) or set(artifact) != {
+        "sha256",
+        "size_bytes",
+        "uri",
+        "media_type",
+    }:
+        raise ValueError("v37 metric result artifact reference is invalid")
+    if artifact["media_type"] != "application/json":
+        raise ValueError("v37 metric result artifact media type is invalid")
+    raw = await asyncio.to_thread(
+        ContentAddressedObjectStore().get_bytes, str(artifact["uri"])
+    )
+    if len(raw) != int(artifact["size_bytes"]) or sha256_bytes(raw) != artifact["sha256"]:
+        raise ValueError("v37 metric result artifact identity is invalid")
+    try:
+        result = json.loads(raw)
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ValueError("v37 metric result artifact is not canonical JSON") from error
+    if not isinstance(result, dict) or sha256_json(result) != reference.get(
+        "metric_result_sha256"
+    ):
+        raise ValueError("v37 metric result payload identity is invalid")
+    if artifact["sha256"] != reference["metric_result_sha256"]:
+        raise ValueError("v37 metric result content hashes disagree")
+    if (
+        result.get("result", {}).get("plugin", {}).get("name")
+        != reference.get("plugin_name")
+        or result.get("activity_transition_receipt")
+        != reference.get("activity_transition_receipt")
+    ):
+        raise ValueError("v37 metric result compact receipt differs from payload")
+    return result
 
 
 @activity.defn(name="evaluate_v37_sequence_metric")
@@ -335,7 +391,10 @@ async def evaluate_v37_sequence_metric(request: dict[str, Any]) -> dict[str, Any
             },
         }
 
-    return _with_activity_transition(await execute_v37_durable_attempt(operation, context=context))
+    async def compact_operation() -> dict[str, Any]:
+        return await _compact_v37_metric_result(await operation())
+
+    return await execute_v37_durable_attempt(compact_operation, context=context)
 
 
 @activity.defn(name="predict_v37_boltz2_complex")
@@ -1239,8 +1298,9 @@ async def persist_v37_sequence_metric(request: dict[str, Any]) -> dict[str, Any]
     """Persist one frozen metric plugin directly onto its canonical logical call."""
     run_id = uuid.UUID(request["run_id"])
     manifest = request["manifest"]
-    result = request["metric_result"]["result"]
-    provenance = request["metric_result"]["provenance"]
+    metric_result = await _resolve_v37_metric_result(request["metric_result"])
+    result = metric_result["result"]
+    provenance = metric_result["provenance"]
     plugin = result["plugin"]
     logical_id = f"v37:metric:{plugin['name']}"
     plan_item = next(
@@ -1314,7 +1374,7 @@ async def persist_v37_sequence_metric(request: dict[str, Any]) -> dict[str, Any]
                 "contract_reliability": result["contract"]["reliability"],
                 "registry_sha256": result.get("registry_sha256"),
             },
-            output_payload=request["metric_result"],
+            output_payload=metric_result,
             artifacts={
                 "evaluation_vector": {"evaluations": rows},
                 "source_runtime_receipt": source_runtime_receipt,
