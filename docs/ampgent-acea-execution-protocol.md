@@ -1681,6 +1681,50 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   `var/archives/ampgent-v37-009-formal-6eba4fa.zip` is 1,440,785 bytes with SHA-256
   `d7595d6270a5cf1b6b04d4d525e8be68ed92024d85b981dcb5ea3d1dcd3cebb0`.
 
+### 21.35 2026-08-15 v37.0.9 immutable failure and lifecycle concurrency repair
+
+- The unique v37.0.9 run `ee86c78a-d316-4cc6-870a-be93f22b769f` and Temporal run
+  `24c1665c-e454-43df-9eeb-40b92121b926` failed and remain immutable. Its durable footprint is
+  900 generated Candidate, 9,000 proposal occurrence, 21 succeeded ToolCall, 2,700 succeeded
+  Evaluation, 91 linked evidence artifacts, 18 dependencies, and zero AgentDecision. Complete
+  Evaluation families are AMP-READ (900), ToxinPred3 hybrid (900), and ToxinPred3 label (900).
+  There is no complete sequence panel, structure shortlist, Pareto portfolio, or final peptide result.
+- All five metric computations completed on attempt one and returned compact 842--863-byte Temporal
+  references; the prior metric-result size repair therefore worked. Failure occurred when concurrent
+  persistence transactions both used unlocked `max(sequence_no)+1` lifecycle allocation. Hemolysis
+  lost two races for run sequences 9042 and 9044 and exhausted retries with a PostgreSQL unique-key
+  violation. This is database event-ordering concurrency, not a peptide, metric, model, or GPU failure.
+- Unlinked hemolysis, physicochemical, and LLAMP metric-result objects remain orphan evidence and may
+  not be backfilled or reused. The complete v37.0.9 Candidate set and its partial evaluations likewise
+  must not seed a recovery run. Preserve the run and objects as immutable failure evidence only.
+- Repair commit `447cb3928c8763681b3043cbc27a1dc83d56828e` acquires a stable transaction-scoped
+  PostgreSQL advisory lock for each lifecycle aggregate before allocating `max(sequence_no)+1`.
+  This serializes only the short same-aggregate event-number allocation; metric compute, object-store
+  writes, Evaluation persistence, and different aggregates remain concurrent. A deterministic 32-way
+  adversarial test produces exactly sequences 1--32 without evidence loss; the full suite is
+  `709 passed, 4 skipped` and Ruff is clean.
+
+### 21.36 2026-08-15 v37.0.10 unique formal run
+
+- `v37.0.10-lifecycle-sequence-concurrency-recovery` was submitted exactly once at
+  `2026-08-14T19:23:38.125519Z`. The unique database run is
+  `ae0e52be-bf0f-4c41-a8a4-8fbd061bbf78`; workflow is
+  `pepagent-rapid-champion-v37-0ff398195e60f5b334284199e52e205a9331ca043635d9092b5b09bd984f7061`
+  with Temporal run ID `d9013db6-562f-40ed-b022-c09b830e9b58`. Never submit it again, create a
+  replacement, retry in place, backfill, or reuse v37.0.0--v37.0.9 working output.
+- Frozen science is unchanged: nine generator seeds, 900 candidates, 11 declared evaluations each,
+  48 structures, three Boltz seeds each, 16 Rosetta decoys per pose, unweighted Pareto,
+  database/object replay, and no ablation. Only same-aggregate lifecycle sequence allocation is
+  serialized; scientific computation and evaluation persistence remain concurrent.
+- Benchmark SHA-256 is `f5a029b91f7701bc85f63ff2e9970a735d4ef53bad1ff60013e4857dbe6dbc1a`;
+  structure SHA-256 is `cd9877f19fc5fd9fe685fa7760634b8681b87dcfcaee641deec36122e85ff538`.
+  Worker source is `6c458612e09d57af5d3bf60ea6454dcb8d49d6a0`; release SHA-256 is
+  `72046ad3ab5882b62411009a8fff94582be1bdaedefa6db854eaf5abb45785e1`.
+- Submission preflight was `ready_to_submit_unique_run` with no failed gate. Initial DB/Temporal
+  state is `running`/`RUNNING`, with one succeeded knowledge ToolCall, two linked artifacts, zero
+  Candidate/Evaluation/Decision, nine started generation attempts, one succeeded and eight pending
+  on attempt one.
+
 ### 21.24 scheduled idle-capacity wake rule
 
 - `.19` may be inspected read-only during every scheduled patrol. The monitor
