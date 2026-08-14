@@ -580,3 +580,10 @@ CCD 和结构模型。该 smoke 未产生结构 artifact，不是短肽质量、
 权威大文件位于 synth `/sdd_data/pepagent/models/boltz2/cache`；当前以不落本地大文件的流式
 SSH 输送到 `.19`，只有完整 SHA-256 一致才提升为可用缓存。下一小阶段是完成输送并通过
 同一真实 provider smoke；在此之前不启动新正式 run，冻结科学合同不变。
+
+2026-08-15 Boltz runtime 修复完成：两个大缓存对象已经过流式 SSH 输送到 `.19` 并通过
+SHA-256 校验，全程未在工作区落地大文件。第二次真实 GPU4 AceA-pocket smoke 已完成一次
+Boltz-2 结构预测，紧凑输出 SHA-256 为
+`892373b095e8a4b5fa777df98fdd0f76ed61f82e85f24918502e9b06853abf73`，且 CIF、PAE/PDE、pLDDT、置信度与约束产物都存在。
+这只证明 Boltz 可执行、包、缓存、GPU 和 AceA 口袋输入能共同工作；哨兵肽的分数不是 v37
+候选证据，不更新 Q1/Q2/Q6，也不授权新正式 run。

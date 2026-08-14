@@ -1816,6 +1816,17 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
 - The next deployment smoke must use the verified `.19` cache and complete one real AceA-pocket
   prediction before any new worker/release placement is accepted. This repair does not authorize a
   new formal run and does not change the frozen 900/11/48/3/16 science contract.
+- The server-to-server cache transfer completed without local large-file materialization. Both large
+  objects passed the SHA-256 checks above, the CCD archive expanded to 45,227 molecule files, and a
+  second real GPU4 smoke completed an AceA-pocket prediction with seed `20270380`. Its compact result
+  is `/data1/huangyueshan/pepagent/runs/v37-boltz-runtime-smoke-20260815-3/output.json`, 1,952 bytes,
+  SHA-256 `892373b095e8a4b5fa777df98fdd0f76ed61f82e85f24918502e9b06853abf73`; it references the CIF,
+  PAE/PDE, pLDDT, confidence, processed-structure and constraint artifacts. The smoke reported
+  confidence `0.3135782778`, ipTM `0.3917916715`, peptide-target pair ipTM `0.2151030749`, and complex
+  ipLDDT `0.2859012485`. These are runtime-smoke observations for a sentinel peptide, not selectable
+  v37 scientific evidence and not a champion claim. The Boltz executable/package/cache/GPU runtime
+  repair is now complete; a future formal recovery still requires a new immutable version and
+  explicit formal-run authorization.
 
 ### 21.24 scheduled idle-capacity wake rule
 
