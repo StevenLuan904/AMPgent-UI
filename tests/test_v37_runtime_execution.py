@@ -185,6 +185,69 @@ def test_guarded_launch_emits_progress_while_process_is_running(tmp_path: Path) 
     assert progress
 
 
+@pytest.mark.parametrize("failure_mode", ["cancel", "progress_error"])
+def test_guarded_launch_terminates_spawned_process_on_cancel_or_error(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, failure_mode: str
+) -> None:
+    manifest, expectation, paths = _fixture(tmp_path)
+
+    class FakeProcess:
+        def __init__(self) -> None:
+            self.returncode: int | None = None
+            self.terminated = False
+            self._finished = asyncio.Event()
+
+        async def communicate(self) -> tuple[bytes, None]:
+            await self._finished.wait()
+            return b"", None
+
+        def terminate(self) -> None:
+            self.terminated = True
+            self.returncode = -15
+            self._finished.set()
+
+    process = FakeProcess()
+    spawned = asyncio.Event()
+
+    async def create_process(*_args: object, **_kwargs: object) -> FakeProcess:
+        spawned.set()
+        return process
+
+    async def writer(_receipt: dict[str, object]) -> None:
+        return None
+
+    async def progress_writer() -> None:
+        raise RuntimeError("progress persistence failed")
+
+    monkeypatch.setattr(asyncio, "create_subprocess_exec", create_process)
+
+    async def exercise() -> None:
+        task = asyncio.create_task(
+            run_v37_guarded_subprocess(
+                [sys.executable, str(paths.adapter_path)],
+                manifest=manifest,
+                expectation=expectation,
+                paths=paths,
+                receipt_writer=writer,
+                progress_writer=progress_writer,
+                progress_interval_seconds=(60.0 if failure_mode == "cancel" else 0.001),
+                cwd=tmp_path,
+            )
+        )
+        await spawned.wait()
+        if failure_mode == "cancel":
+            task.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await task
+        else:
+            with pytest.raises(RuntimeError, match="progress persistence failed"):
+                await task
+
+    asyncio.run(exercise())
+
+    assert process.terminated is True
+
+
 def test_guarded_launch_rejects_mutation_while_receipt_is_persisted(
     tmp_path: Path,
 ) -> None:

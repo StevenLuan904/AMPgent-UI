@@ -1528,6 +1528,27 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   `var/archives/ampgent-v37-006-formal-2b8a746.zip`, 1,405,803 bytes, SHA-256
   `39c9b347e6f4afdfb71dc301eafabbd2b3695790dd7827040ef91056f8ba0ce1`.
 
+### 21.29 2026-08-14 v37.0.6 immutable failure and next execution repair
+
+- The unique v37.0.6 run `be7fcf5b-d3a8-49c7-8369-286d34a04599` and Temporal run
+  `f05913ea-ac0d-4f3f-8b0b-47f789a21af5` failed before candidate persistence. Its immutable
+  database footprint is one succeeded knowledge ToolCall, two evidence artifacts, zero Candidate,
+  zero proposal occurrence, zero Evaluation, and zero AgentDecision. It has no interpretable peptide
+  result and must not be rerun, retried in place, backfilled, deleted, or used as a result source.
+- Temporal history identifies `generate_v37_batch` activity ID `5`, HydrAMP seed `20270373`, as the
+  terminal failure. Both attempts reached the generator worker but exceeded the 300-second heartbeat
+  timeout. The activity performed the large HydrAMP model materialization before installing its
+  30-second subprocess heartbeat, so a slow/concurrent materialization was incorrectly treated as a
+  dead worker. This is an execution-liveness defect, not a generator, sequence, metric, or GPU result.
+- The failed workflow left two still-running AMP-Designer subprocess trees tied exactly to this run.
+  After verifying their run ID and parent lineage, PIDs `51472`, `52172`, `46236`, and `45384` were
+  stopped; a follow-up process scan found no remaining process carrying the failed run ID. No foreign
+  process was touched.
+- The next versioned recovery may only add heartbeat coverage around HydrAMP materialization and
+  cancellation-safe cleanup of generator subprocesses. It must preserve every scientific variable,
+  seed, 900/11/48/3/16 budget, unweighted Pareto rule, and replay requirement. A future formal run
+  requires a new exact identity and must never reuse v37.0.6 working-directory output.
+
 ### 21.24 scheduled idle-capacity wake rule
 
 - `.19` may be inspected read-only during every scheduled patrol. The monitor

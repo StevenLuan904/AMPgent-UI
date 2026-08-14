@@ -587,14 +587,22 @@ async def _communicate_with_progress(
     if progress_interval_seconds <= 0:
         raise ValueError("v37 subprocess progress interval must be positive")
     communicate_task = asyncio.create_task(process.communicate())
-    while True:
+    try:
+        while True:
+            try:
+                return await asyncio.wait_for(
+                    asyncio.shield(communicate_task), timeout=progress_interval_seconds
+                )
+            except TimeoutError:
+                if progress_writer is not None:
+                    await progress_writer()
+    except BaseException:
+        communicate_task.cancel()
         try:
-            return await asyncio.wait_for(
-                asyncio.shield(communicate_task), timeout=progress_interval_seconds
-            )
-        except TimeoutError:
-            if progress_writer is not None:
-                await progress_writer()
+            await communicate_task
+        except asyncio.CancelledError:
+            pass
+        raise
 
 
 async def run_v37_guarded_subprocess(
@@ -644,32 +652,34 @@ async def run_v37_guarded_subprocess(
     try:
         post_spawn = await snapshot("post_spawn")
         _require_same_identity(pre_snapshot, post_spawn)
+        stdout, _ = await _communicate_with_progress(
+            process,
+            progress_writer=progress_writer,
+            progress_interval_seconds=progress_interval_seconds,
+        )
+        completion = await snapshot("completion")
+        _require_same_identity(pre_snapshot, completion)
+        output = stdout.decode(errors="replace")
+        receipts: dict[str, Any] = {
+            "schema_version": "v37.guarded-runtime-receipts.2",
+            "pre_snapshot": pre_snapshot,
+            "prelaunch": prelaunch,
+            "post_spawn": post_spawn,
+            "completion": completion,
+            "byte_identity_sha256": pre_snapshot["byte_identity_sha256"],
+            "all_boundaries_match": True,
+        }
+        receipts["launch_receipt_sha256"] = sha256_json(receipts)
+        if aggregate_receipt_writer is not None:
+            await aggregate_receipt_writer(receipts)
+        if process.returncode:
+            raise RuntimeError(
+                f"v37 subprocess failed ({process.returncode}): {output[-8000:]}"
+            )
+        return output, receipts
     except BaseException:
         await _terminate_process(process)
         raise
-    stdout, _ = await _communicate_with_progress(
-        process,
-        progress_writer=progress_writer,
-        progress_interval_seconds=progress_interval_seconds,
-    )
-    completion = await snapshot("completion")
-    _require_same_identity(pre_snapshot, completion)
-    output = stdout.decode(errors="replace")
-    receipts: dict[str, Any] = {
-        "schema_version": "v37.guarded-runtime-receipts.2",
-        "pre_snapshot": pre_snapshot,
-        "prelaunch": prelaunch,
-        "post_spawn": post_spawn,
-        "completion": completion,
-        "byte_identity_sha256": pre_snapshot["byte_identity_sha256"],
-        "all_boundaries_match": True,
-    }
-    receipts["launch_receipt_sha256"] = sha256_json(receipts)
-    if aggregate_receipt_writer is not None:
-        await aggregate_receipt_writer(receipts)
-    if process.returncode:
-        raise RuntimeError(f"v37 subprocess failed ({process.returncode}): {output[-8000:]}")
-    return output, receipts
 
 
 async def run_v37_guarded_provider_subprocess(

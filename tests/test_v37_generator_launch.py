@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import stat
+import time
 import zipfile
 from pathlib import Path
 
@@ -24,10 +26,40 @@ from pepagent.v37_runtime_manifests import V37GeneratorRuntimeExpectation
 from pepagent.workers.v37_activities import (
     _generator_command,
     _materialize_hydramp_models,
+    _materialize_hydramp_models_with_progress,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNTIME_ROOT = ROOT / "config/environments/v37_generator_runtimes"
+
+
+def test_hydramp_materialization_emits_progress_while_archive_is_processed(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    progress: list[str] = []
+
+    def slow_materialization(_binding: dict, _work: Path) -> tuple[Path, dict]:
+        time.sleep(0.05)
+        return tmp_path / "models", {"destination_name": "models"}
+
+    async def progress_writer() -> None:
+        progress.append("heartbeat")
+
+    monkeypatch.setattr(
+        "pepagent.workers.v37_activities._materialize_hydramp_models",
+        slow_materialization,
+    )
+    result = asyncio.run(
+        _materialize_hydramp_models_with_progress(
+            {},
+            tmp_path,
+            progress_writer=progress_writer,
+            progress_interval_seconds=0.01,
+        )
+    )
+
+    assert result[1]["destination_name"] == "models"
+    assert progress
 
 
 def test_actual_frozen_generator_launch_bindings_are_byte_exact(tmp_path: Path) -> None:

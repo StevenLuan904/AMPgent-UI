@@ -6,7 +6,7 @@ import math
 import statistics
 import uuid
 from collections import defaultdict
-from collections.abc import Mapping
+from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
@@ -798,6 +798,28 @@ def _materialize_hydramp_models(
     return model_path, receipt
 
 
+async def _materialize_hydramp_models_with_progress(
+    binding: dict[str, Any],
+    work: Path,
+    *,
+    progress_writer: Callable[[], Awaitable[None]],
+    progress_interval_seconds: float = 30.0,
+) -> tuple[Path, dict[str, Any]]:
+    """Materialize HydrAMP off-loop while keeping the Temporal activity alive."""
+    if progress_interval_seconds <= 0:
+        raise ValueError("v37 materialization progress interval must be positive")
+    materialization_task = asyncio.create_task(
+        asyncio.to_thread(_materialize_hydramp_models, binding, work)
+    )
+    while True:
+        try:
+            return await asyncio.wait_for(
+                asyncio.shield(materialization_task), timeout=progress_interval_seconds
+            )
+        except TimeoutError:
+            await progress_writer()
+
+
 @activity.defn(name="generate_v37_batch")
 async def generate_v37_batch(request: dict[str, Any]) -> dict[str, Any]:
     engine = request["engine"]
@@ -839,8 +861,21 @@ async def generate_v37_batch(request: dict[str, Any]) -> dict[str, Any]:
     )
 
     async def operation() -> dict[str, Any]:
+        async def materialization_progress_writer() -> None:
+            activity.heartbeat(
+                {
+                    "v37_logical_id": context.logical_id,
+                    "attempt": context.attempt,
+                    "status": "hydramp_model_materialization_running",
+                }
+            )
+
         hydramp_materialization = (
-            await asyncio.to_thread(_materialize_hydramp_models, launch_binding, work)
+            await _materialize_hydramp_models_with_progress(
+                launch_binding,
+                work,
+                progress_writer=materialization_progress_writer,
+            )
             if generator == "hydramp"
             else None
         )
