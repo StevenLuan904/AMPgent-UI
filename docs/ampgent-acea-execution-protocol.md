@@ -1559,3 +1559,7 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   不改变 900 条科学预算；后续工程演进应改为保持顺序的滑动并发，避免空闲槽等待最慢任务。科学进度只按
   Candidate、proposal occurrence、Evaluation、结构证据、Pareto decision 与 database/object-store replay
   的实际持久化计数报告，worker 在线和预检通过不单独算作短肽成果。
+- v37.0.5 合同、第一性原则风格、执行身份与提交事实的紧凑内容归档为
+  `var/archives/ampgent-v37-005-formal-fb4f6c3.zip`，96,377 bytes，SHA-256
+  `e0572610dab5e958fec32994c4c0f8c96bc45d435c83c36ea15dda952d08fb65`。归档不包含大型模型、运行工作目录
+  或结构产物；这些大对象继续由既定远端位置和内容寻址对象存储承载。
