@@ -1630,6 +1630,9 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   DB `running` and Temporal `RUNNING`, with one succeeded knowledge ToolCall, two evidence artifacts,
   and zero Candidate/Evaluation/Decision. Subsequent progress is reported only from durable
   Candidate, occurrence, Evaluation, structure, decision, and replay evidence.
+- Formal recovery checkpoint commit `713d7fa` is pushed. Compact tracked-content archive
+  `var/archives/ampgent-v37-008-formal-713d7fa.zip` is 1,428,183 bytes with SHA-256
+  `5e8c06ecb722175e6bbbf511b7185eafe4e59b5f0fda4217a88c5963598ce8b0`.
 
 ### 21.24 scheduled idle-capacity wake rule
 
