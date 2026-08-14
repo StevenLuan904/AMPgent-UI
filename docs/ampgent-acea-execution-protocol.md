@@ -1548,6 +1548,17 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   cancellation-safe cleanup of generator subprocesses. It must preserve every scientific variable,
   seed, 900/11/48/3/16 budget, unweighted Pareto rule, and replay requirement. A future formal run
   requires a new exact identity and must never reuse v37.0.6 working-directory output.
+- Of the nine logical generation batches, only the three AMP-GAN v2 seeds `20270374/75/76` returned
+  successfully to Temporal. HydrAMP `20270371/72` and AMP-Designer `20270377/78` were scheduled but
+  have no durable terminal result; AMP-Designer `20270379` was not scheduled before the barrier
+  failed. None of these returns or local files entered the PostgreSQL evidence graph, so they remain
+  non-results and are forbidden inputs to a later run.
+- Execution-only repair commit `4289acf` is pushed. It adds 30-second Temporal heartbeats during
+  HydrAMP materialization and terminates a spawned generator subprocess on cancellation or other
+  post-spawn failure. Focused Ruff is clean; the repair suite is `22 passed, 1 deselected`, and the
+  final critical checks are `4 passed`. Compact tracked-content archive
+  `var/archives/ampgent-v37-007-heartbeat-fix-4289acf.zip` is 1,407,708 bytes with SHA-256
+  `af1c185bcb76033b6f6a96445478df383828a214ef0ffb4e50eb398598d70823`.
 
 ### 21.24 scheduled idle-capacity wake rule
 
