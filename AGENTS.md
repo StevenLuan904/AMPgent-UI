@@ -135,6 +135,12 @@ Apply the following style to AMPgent/AceA research work in this repository:
   A patrol that only repeats unchanged health checks is acceptable only when a formal run is active,
   no safe action can accelerate its scientific critical path, or an explicit authorization boundary
   prevents further execution.
+- Every patrol response must include a compact execution review, even when no anomaly occurred:
+  state the current Agent-flow stage, the material actions completed since the previous response,
+  the durable scientific/evidence counts that define progress, the immediate next critical-path
+  action, and the answers to the three first-principles questions above. Keep this short and factual;
+  do not replace scientific progress with infrastructure detail. This progress review supersedes the
+  older "stay silent when unchanged" convention for the AMPgent AceA long-running task.
 - The primary objective is to improve the quality of the peptide candidates: biological plausibility,
   target-relevant evidence, antimicrobial potential, safety-risk profile, structural robustness, and
   useful sequence diversity. Judge every proposed task by whether it can materially improve that
