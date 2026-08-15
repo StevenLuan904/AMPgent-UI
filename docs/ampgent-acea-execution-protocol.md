@@ -1948,3 +1948,7 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   ToolCall、两个 evidence artifact、零 Candidate/occurrence/Evaluation/Decision；九个生成 attempt
   已开始，一个完成，八个 attempt 1 activity 在运行。严禁再次提交、创建替代 run、原地重试、
   回填或复用 v37.0.0--v37.0.11 工作输出。
+- 正式 checkpoint commit `ac94818b750e797af3bea49000c0ef67da73c4c1` 已推送。紧凑 tracked-content
+  归档 `var/archives/ampgent-v37-012-formal-ac94818.zip` 为 1,480,196 bytes，SHA-256
+  `92684167729a47a9896d613281e04beb2c1678684af5890c924f24f3cbf0fa8b`；不包含模型、运行工作目录或
+  科学大对象。
