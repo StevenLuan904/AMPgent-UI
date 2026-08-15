@@ -11,7 +11,7 @@ from pepagent.domain.schemas import (
     PocketCatalogSpec,
     TargetSpec,
 )
-from pepagent.model_workers.boltz2_cli import build_input
+from pepagent.model_workers.boltz2_cli import build_input, resolve_boltz_executable
 from pepagent.provenance.environment import runtime_manifest
 from pepagent.provenance.hashing import sha256_json
 from pepagent.workers.activities import _boltz_weight_manifest, persist_rosetta_evidence
@@ -90,6 +90,21 @@ def test_boltz_input_can_make_blind_single_sequence_run_explicit() -> None:
     assert payload["sequences"][0]["protein"]["msa"] == "empty"
     assert payload["sequences"][1]["protein"]["msa"] == "empty"
     assert "constraints" not in payload
+
+
+def test_boltz_resolution_falls_back_to_active_python_environment(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    python = tmp_path / "python"
+    python.write_text("", encoding="utf-8")
+    boltz = tmp_path / "boltz"
+    boltz.write_text("#!/bin/sh\n", encoding="utf-8")
+    boltz.chmod(0o755)
+    monkeypatch.setattr("pepagent.model_workers.boltz2_cli.shutil.which", lambda _: None)
+    monkeypatch.setattr("pepagent.model_workers.boltz2_cli.sys.executable", str(python))
+    monkeypatch.setattr("pepagent.model_workers.boltz2_cli.os.access", lambda *_: True)
+
+    assert resolve_boltz_executable() == str(boltz)
 
 
 def test_peppap_is_frozen_out_of_active_contract() -> None:

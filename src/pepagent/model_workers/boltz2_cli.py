@@ -1,5 +1,6 @@
 import argparse
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -45,6 +46,19 @@ def pair_iptm(confidence: dict[str, Any]) -> float | None:
     return None
 
 
+def resolve_boltz_executable() -> str:
+    """Resolve Boltz from PATH or from the active Python environment."""
+    discovered = shutil.which("boltz")
+    if discovered is not None:
+        return discovered
+    expected = Path(sys.executable).with_name("boltz")
+    if expected.is_file() and os.access(expected, os.X_OK):
+        return str(expected)
+    raise FileNotFoundError(
+        f"Boltz executable is unavailable; expected a runnable console script at {expected}"
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--request", type=Path, required=True)
@@ -67,12 +81,7 @@ def main() -> None:
     prediction_dir = args.work_dir / "boltz-output"
     input_path.write_text(yaml.safe_dump(build_input(request), sort_keys=False), encoding="utf-8")
 
-    boltz_executable = shutil.which("boltz")
-    if boltz_executable is None:
-        expected = Path(sys.executable).with_name("boltz")
-        raise FileNotFoundError(
-            f"Boltz executable is unavailable; expected a runnable console script at {expected}"
-        )
+    boltz_executable = resolve_boltz_executable()
     command = [
         boltz_executable,
         "predict",
