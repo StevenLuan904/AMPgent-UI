@@ -23,7 +23,7 @@ STRUCTURE_0_12 = (
 )
 
 IMPLEMENTATION_REVISION = "142d8a37c7603c83e6b58b24036993d7fe8f5b96"
-WORKER_SOURCE_REVISION = "0000000000000000000000000000000000000000"
+WORKER_SOURCE_REVISION = "e64e310517af1d3fc16437552fff476fd70a87a7"
 
 
 def _yaml(path: Path) -> dict[str, object]:
@@ -86,4 +86,3 @@ def test_v37_0_11_frozen_files_remain_at_recorded_hashes() -> None:
     assert sha256_file(STRUCTURE_0_11) == (
         "1f4b67dfb9f2bd609bc95e24ef64662ec06df8c35a984add44fdffad397fbad4"
     )
-

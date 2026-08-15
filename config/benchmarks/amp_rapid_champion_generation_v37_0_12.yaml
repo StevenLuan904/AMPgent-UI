@@ -206,7 +206,7 @@ execution:
   capacity_contract_sha256: bdc8e3cb294d92009509efbb6a859475d49bb5bd3a702e73b374a0f97c2fef19
   # Bound by the parent task after committing this contract; an all-zero value
   # cannot match a deployable worker and therefore fails closed meanwhile.
-  worker_source_revision: "0000000000000000000000000000000000000000"
+  worker_source_revision: e64e310517af1d3fc16437552fff476fd70a87a7
   task_queues:
     workflow_and_control: pepagent-control-v37
     generator: pepagent-generator-v37
@@ -372,4 +372,3 @@ formal_run:
   implementation_revision: 142d8a37c7603c83e6b58b24036993d7fe8f5b96
   run_id: null
   workflow_id: null
-
