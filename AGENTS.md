@@ -188,6 +188,12 @@ Apply the following style to AMPgent/AceA research work in this repository:
   evidence graph and remain replayable with its object-store artifacts. Compute may be parallelized
   across freshly verified allowed resources, but exact-once submission, foreign-process protection,
   prohibited-resource boundaries, and immutable failed-run history remain mandatory.
+- For the AMPgent AceA v37 recovery line, the user's 2026-08-16 instruction is standing execution
+  authorization: after a formal run fails for a routine engineering defect, preserve it unchanged,
+  repair the defect, create a new versioned exact-science identity, verify proportionately, and
+  exact-once submit the next run without waiting for another confirmation. This never authorizes an
+  in-place retry, reuse or backfill of failed-run outputs, a scientific-protocol change, duplicate
+  submission, foreign-process interference, or use of a prohibited resource.
 - AMPlify is retired from this project by user decision. Do not debug, rerun, shard, replace, or use
   AMPlify in future scoring unless the user explicitly reverses that decision.
 - GPU2 and GPU3 on host `192.168.99.32` are absolutely prohibited by the user's latest decision.
