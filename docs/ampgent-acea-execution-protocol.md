@@ -1918,3 +1918,33 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   tracked-content 归档 `var/archives/ampgent-v37-006-recovery-bfe7a51.zip` 为 1,404,863 bytes，SHA-256
   `34a08a2e8b9315802aed9fcad8b921fd1c0ef16114ee8c90219721bec9796508`。归档不包含运行工作目录、模型权重
   或结构大对象。
+
+### 21.40 2026-08-15 v37.0.12 唯一正式运行
+
+- 用户于本轮明确指令“执行”，授权提交新的唯一正式恢复 run。独立身份
+  `v37.0.12-boltz-runtime-smoke-recovery` 仅绑定已经通过真实 GPU4 AceA-pocket smoke 的 Boltz
+  2.2.1 可执行环境与离线模型/CCD cache；九个生成 seed、900 Candidate、每条 11 个声明评价、
+  48 条结构短名单、每条 3 个 Boltz seed、每 pose 16 个 Rosetta decoy、非加权 Pareto、
+  database/object-store replay 与不做消融均逐字段继承 v37.0.11。benchmark SHA-256 为
+  `e262d307a1017ccaf4013b696ecca9016e37606ab018c7b41971ed015cba0ca8`，结构 spec SHA-256 为
+  `4565a988c76af6059f4427c7adf286a1838470a36c52466da81bc65a183d8c82`。
+- worker source revision 为 `e64e310517af1d3fc16437552fff476fd70a87a7`，immutable release SHA-256
+  为 `090825489cf6c8e43288728e0b9eff32e9dca8600f8f6223500c2620ccfd56b8`。执行拓扑为本地
+  control/generator/provider/metrics、`.19 GPU4/GPU5` Boltz 与 synth CPU Rosetta；七个 worker
+  均由新 source/release poller 精确匹配，GPU4/GPU5 启动前无计算进程或外来 CUDA 声明，三条
+  `.19` 反向服务隧道均在线，真实 smoke output SHA-256 仍为
+  `892373b095e8a4b5fa777df98fdd0f76ed61f82e85f24918502e9b06853abf73`。未访问 `.32 GPU2/GPU3`。
+- placement SHA-256 为 `73ab4f5c45a870357b5b5087388fac241c4ef339a7f93685e197ebb8761f32b0`；
+  execution bundle、static preflight 与 submission preflight 文件 SHA-256 分别为
+  `b75e1844b37630b8ced96bb22ad78d24770d4f24d7ddcc71bc3662a0304e907b`、
+  `03f5302a21b296fd2cea4d9cf954f1e2f47cc4fa2a5cdec93511018f936ccf8d` 与
+  `8da09fdd0a5ae06899e3f990d4a4f9e551d6f83d3a9ad49f269d345e220fc1ee`。所有动态门禁通过；
+  canonical submission-preflight identity 为
+  `2d8ed95836475459fad40de7dab604ea7589f028883f3846cfa52f8169f25502`。
+- 提交命令仅执行一次。唯一数据库 run 为 `69d50a9d-ccdb-4345-89ed-2e00f02fe9b8`，workflow 为
+  `pepagent-rapid-champion-v37-b4e7d029cc07d24b15274991cc985daba92685818eee7a98f347d3e3dcde0c9d`，
+  Temporal run ID 为 `9a58ac69-0aa1-48e2-bed0-6f5a9d5efe78`，提交时间为
+  `2026-08-15T14:09:12.748949Z`。初始 DB/Temporal 状态为 `running`/`RUNNING`：一个 knowledge
+  ToolCall、两个 evidence artifact、零 Candidate/occurrence/Evaluation/Decision；九个生成 attempt
+  已开始，一个完成，八个 attempt 1 activity 在运行。严禁再次提交、创建替代 run、原地重试、
+  回填或复用 v37.0.0--v37.0.11 工作输出。
