@@ -127,6 +127,14 @@ Apply the following style to AMPgent/AceA research work in this repository:
 
 ### First-principles objective
 
+- At every scheduled patrol, explicitly ask and answer three questions before choosing the next
+  action: What am I doing now? Is it materially advancing the production of excellent short-peptide
+  candidates? Have I made sufficient use of the currently allowed resources and available tools?
+  If the answer to either of the last two questions is no, immediately redirect effort to the
+  highest-leverage generation, evaluation, structure, or evidence-closing action that is authorized.
+  A patrol that only repeats unchanged health checks is acceptable only when a formal run is active,
+  no safe action can accelerate its scientific critical path, or an explicit authorization boundary
+  prevents further execution.
 - The primary objective is to improve the quality of the peptide candidates: biological plausibility,
   target-relevant evidence, antimicrobial potential, safety-risk profile, structural robustness, and
   useful sequence diversity. Judge every proposed task by whether it can materially improve that
