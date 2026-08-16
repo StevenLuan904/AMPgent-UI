@@ -1729,6 +1729,7 @@ async def score_rosetta_complex(request: dict[str, Any]) -> dict[str, Any]:
         "--input-structure",
         str(input_pdb),
     )
+    _bind_rosetta_decoy_hashes(result)
     if spec.get("structure_protocol") == "diagnostic_fast":
         result.setdefault("limitations", []).append(
             "Predicted-pose decoys are a same-protocol local-energy diagnostic, not "
@@ -1794,6 +1795,45 @@ async def score_rosetta_complex(request: dict[str, Any]) -> dict[str, Any]:
             "engine_artifacts": engine_artifacts,
         },
     }
+
+
+def _bind_rosetta_decoy_hashes(result: dict[str, Any]) -> None:
+    """Attach exact per-decoy input, output, and score-term identities."""
+
+    input_sha256 = result.get("prepacked_input_sha256")
+    if not isinstance(input_sha256, str) or len(input_sha256) != 64:
+        raise ValueError("Rosetta result lacks an exact prepacked input hash")
+    decoys = result.get("decoys")
+    if not isinstance(decoys, list) or not decoys:
+        raise ValueError("Rosetta result lacks decoys for exact hash binding")
+    excluded_score_fields = {
+        "index",
+        "seed",
+        "structure",
+        "structure_sha256",
+        "input_sha256",
+        "output_sha256",
+        "score_terms_sha256",
+    }
+    for decoy in decoys:
+        output_sha256 = decoy.get("structure_sha256")
+        if not isinstance(output_sha256, str) or len(output_sha256) != 64:
+            raise ValueError("Rosetta decoy lacks an exact structure output hash")
+        score_terms = {
+            key: value for key, value in decoy.items() if key not in excluded_score_fields
+        }
+        if not score_terms:
+            raise ValueError("Rosetta decoy lacks score terms for exact hash binding")
+        expected = {
+            "input_sha256": input_sha256,
+            "output_sha256": output_sha256,
+            "score_terms_sha256": sha256_json(score_terms),
+        }
+        for field, value in expected.items():
+            observed = decoy.get(field)
+            if observed is not None and observed != value:
+                raise ValueError(f"Rosetta decoy {field} drifted")
+            decoy[field] = value
 
 
 @activity.defn(name="persist_rosetta_evidence")
