@@ -1973,3 +1973,26 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   所有分支使用相同成熟序列输入、相同预注册结构预算、独立 evidence namespace、native/wrong-pocket
   controls 和完整失败分母，一个靶点结果不得改变另一分支。当前
   `formal_run_authorized=false`、`formal_run_submitted=false`。
+
+### 21.42 2026-08-17 v38.1 分层准入、多靶点证据与控制 run
+
+- 用户随后授权实现并启动新版 Agent。v38.1 不再把不易跨模型、菌株和实验条件校准的外部 MIC/活性数值
+  作为硬生物学门；有效性、缺失/域外、毒性和溶血仍严格处理，MIC、AMP 活性和理化可开发性进入非加权
+  Pareto。成熟核心不足时最多执行三轮带父子谱系和知识卡理由的 refinement；核心为零不降安全门，结构
+  名额可以留空。最多 20% 的结构预算可给安全但不确定的固定探索 lane，禁止强制补满。
+- 第一面板冻结为 GyrA/LEI-800 与 PBP2a/allosteric。两者均绑定独立 target、coordinate SHA、native pocket、
+  wrong-pocket control 和证据 namespace；当前 AceA 只有一个合格 pocket，因此未被伪造为首轮多靶点分支。
+  GyrA 坐标为 RCSB `8QQI`，SHA-256
+  `f316a9c7efb6ca84224400ba944cd21627ad3fa4ab7e7f2ac45ea44d3f46e0d2`；PBP2a 为 `3ZFZ`，SHA-256
+  `4613740b7fb41a89913b28681998e3d75ac84ba7e0d3813549e94de1e6982fc7`。
+- provider task `019fad3e-76b8-7e32-8455-d2e9b31d33e5` 已做真实只读 smoke，context-pack SHA-256 为
+  `d918d8faac581eebdf665593dbd81f50f24482924ea2ede302b3d273595f0c53`。通用 AMP 改写规则可进入 refinement，
+  AceA 特异内容不得冒充 GyrA/PBP2a 靶向证据；每次采用或拒绝都需保存 query/passage SHA 和理由。
+- 新 schema `experiment_run_target_branches` 与 `run_stage_checkpoints` 已迁移到 PostgreSQL。控制 run
+  `b931b9df-c618-4d89-a1d1-ec52acc6e74e` 已冻结 54 个终态历史 run、两个 target branch 和 knowledge identity，
+  当前停在 `proposal_generation` 前：formal science workflow 未提交，Candidate/occurrence/Evaluation/Decision
+  均为 0。这不是短肽生成完成或失败，而是诚实的 staged-preflight run。
+- 控制器每 5 分钟检查 durable 进展，每 15 分钟持久化阶段计划 review，每 120 分钟触发用户 review；
+  30 秒 heartbeat 用于未来长 activity。远端容量探测在 durable tick 之后运行。当前卡点是兼容 v38 的
+  score-all/refinement/multi-target executor 尚未部署，且本次获准结构 GPU 不可达；禁止用 v37 的 first-100、
+  单靶点 workflow 冒充 v38 正式 run。

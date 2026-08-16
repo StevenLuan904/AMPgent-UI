@@ -245,3 +245,25 @@ Apply the following style to AMPgent/AceA research work in this repository:
 - Apply the same rule to the literature knowledge-card provider task
   `019fad3e-76b8-7e32-8455-d2e9b31d33e5`. Record each rejection, provider request, replacement
   release, and acceptance decision in the AMPgent evidence graph when part of an Agent run.
+
+# v38 sequence-first multi-target control
+
+- The v38 sequence admission policy must not use an arbitrary external MIC or activity threshold as
+  a hard biological gate. Activity, MIC, and physicochemical developability are nonweighted Pareto
+  objectives after strict validity, missing/out-of-domain, toxicity, and hemolysis handling. A small
+  mature core triggers knowledge-traced refinement; it never lowers safety or forces structure fill.
+- The first frozen v38 target panel is GyrA/LEI-800 and PBP2a/allosteric, each with a distinct native
+  and wrong-pocket control and verified coordinate SHA. AceA remains historically important but is
+  not in this first panel because only one qualified pocket is currently registered; do not invent a
+  wrong-pocket witness to make the panel look broader.
+- Controller run `b931b9df-c618-4d89-a1d1-ec52acc6e74e` is an active staged-preflight control run,
+  not a formal peptide science workflow. It has frozen 54 terminal historical runs, two target
+  branches, and knowledge context-pack SHA
+  `d918d8faac581eebdf665593dbd81f50f24482924ea2ede302b3d273595f0c53`.
+  Candidate generation is still false and Candidate/occurrence/Evaluation/Decision counts are zero.
+- The controller ticks every 5 minutes, persists a plan review every 15 minutes, and marks a user
+  review due every 120 minutes. It runs the scoped capacity probe after writing its own durable tick,
+  so an unreachable remote host cannot blind control. It must not submit the legacy v37 workflow:
+  formal v38 science dispatch waits for an executor that scores all valid proposals before promotion,
+  performs bounded knowledge-traced refinement, and fans one frozen cohort into isolated target
+  branches.

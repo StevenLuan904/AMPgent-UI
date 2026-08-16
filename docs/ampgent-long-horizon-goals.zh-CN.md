@@ -599,3 +599,14 @@ v36 typed harness lineage，用来改进证据到决策过程，不构成新的�
 能力复用 v35 qualification witness，要求在肽结果前冻结至少两个靶点，让同一成熟序列 cohort 进入相互
 隔离、可并行、等预算的 target branches，AceA 不再是唯一靶点。当前只完成框架合同和验证，不执行目标
 选择、候选生成或结构 run；因此 Q1–Q6 的科学状态不因该工程升级而改变。
+
+2026-08-17 v38.1 追加：外部 MIC/活性阈值不再作为一刀切硬门，避免模型标定或实验条件差异导致整批清空。
+有效性、缺失/域外、毒性和溶血维持严格；MIC、AMP 活性及理化可开发性使用非加权 Pareto。安全但模型冲突
+或排序不稳的候选可进入不超过结构预算 20% 的固定探索 lane，成熟核心不足则触发最多三轮知识卡可追溯
+refinement，不降低安全门、不强制补满。
+
+第一真实多靶点面板已冻结为 GyrA/LEI-800 与 PBP2a/allosteric，均有独立坐标、native/wrong-pocket 和证据
+namespace。控制 run `b931b9df-c618-4d89-a1d1-ec52acc6e74e` 已继承 54 个终态历史 run 并冻结用户指定知识卡
+provider 的 context-pack SHA；当前只有控制/预检身份，未提交正式科学 workflow，候选、评价、结构和决策
+计数均为 0。下一科学进展必须来自兼容 score-all、迭代 refinement 和隔离多靶点分支的新执行器，不能退回
+旧 v37 单靶点 first-100 流程；因此 Q1–Q6 尚不更新。
