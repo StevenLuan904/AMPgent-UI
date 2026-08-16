@@ -1952,3 +1952,24 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   归档 `var/archives/ampgent-v37-012-formal-ac94818.zip` 为 1,480,196 bytes，SHA-256
   `92684167729a47a9896d613281e04beb2c1678684af5890c924f24f3cbf0fa8b`；不包含模型、运行工作目录或
   科学大对象。
+
+### 21.41 2026-08-17 v37.0.15 用户终止与 v38 framework-only 升级
+
+- 用户明确要求停止当前版本、先优化 Agent 框架且暂不运行短肽生成。v37.0.15 run
+  `a9e8dfc7-9da4-4c99-b014-f2b597d22adc` 的 Temporal workflow 已以
+  `user_requested_stop_for_sequence_first_historical_multitarget_framework_upgrade` 终止，PostgreSQL
+  已闭合为 `cancelled`。不可变持久化基线为 900 Candidate、9000 proposal occurrence、11468
+  Evaluation、282/282 succeeded ToolCall 和 2 AgentDecision；候选状态为 852 generated、22
+  rosetta_scored、26 structure_scored。没有删除、回填、复用或替代 run，也没有提交新的 formal run。
+- 新的 v38 framework-only 合同定义三段式 Agent：历史终态证据快照；知识卡驱动的全量序列评价、迭代
+  refinement 和序列成熟度准入；同一成熟序列 cohort 向多个已资质化靶点的隔离结构分支并行分发。
+  历史快照必须完整包含 succeeded/failed/cancelled 分母，但只保存身份、哈希和持久化计数，禁止复制
+  历史候选或结果。新框架复用 v36 typed harness lineage 和 v35 target qualification/panel witness。
+- 序列成熟度明确使用双 MIC、毒性、溶血和理化可开发性，并加入域外检测、模型一致性和排序稳定性；
+  阈值必须来自外部冻结证据，禁止用本批分位数产生生物学阈值。知识 provider task
+  `019fad3e-76b8-7e32-8455-d2e9b31d33e5` 前置到 proposal/refinement，每次采用或拒绝都保存查询、
+  passage 哈希和理由。知识支持不是选择分数。
+- 多靶点面板必须在看到新肽结果前冻结，至少两个唯一靶点；AceA 可以是 anchor，但不能是唯一靶点。
+  所有分支使用相同成熟序列输入、相同预注册结构预算、独立 evidence namespace、native/wrong-pocket
+  controls 和完整失败分母，一个靶点结果不得改变另一分支。当前
+  `formal_run_authorized=false`、`formal_run_submitted=false`。

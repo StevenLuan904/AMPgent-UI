@@ -1,0 +1,142 @@
+benchmark_id: amp_sequence_first_multitarget_v38
+version: v38.0.0-sequence-first-history-aware-multitarget-framework
+execution_status: framework_implemented_not_authorized
+track: sequence_maturity_before_parallel_multitarget_structure
+
+scope:
+  framework_implementation_authorized: true
+  framework_implementation_completed_in_repository: true
+  historical_index_read_authorized: true
+  target_selection_authorized: false
+  candidate_generation_authorized: false
+  structure_execution_authorized: false
+  formal_run_authorized: false
+  formal_run_submitted: false
+
+first_principles:
+  goal: better_explainable_traceable_short_peptides
+  sequence_evidence_must_mature_before_structure: true
+  structure_is_expensive_confirmation_not_a_rescue_for_weak_sequences: true
+  weighted_total_score_forbidden: true
+  self_generated_biological_thresholds_forbidden: true
+  no_forced_fill: true
+
+history_inheritance:
+  implementation: pepagent.v38_sequence_first_multitarget.HistoricalEvidenceSnapshot
+  chronological_cutoff_required: true
+  include_terminal_statuses:
+    - succeeded
+    - failed
+    - cancelled
+  exclude_nonterminal_statuses:
+    - created
+    - running
+  complete_failure_and_cancellation_denominator_required: true
+  inherited_material:
+    - run_identity_and_spec_hash
+    - target_identity
+    - terminal_status_and_terminal_event
+    - parent_run_lineage
+    - persisted_stage_counts
+    - tool_call_outcome_counts
+    - evidence_link_and_artifact_counts
+  immutable_reference_only: true
+  copying_candidate_sequences_for_a_new_run_forbidden: true
+  backfill_or_reuse_of_historical_outputs_forbidden: true
+  holdout_outcome_leakage_forbidden: true
+  existing_typed_harness_lineage: amp_harness_evolution_v36
+
+knowledge_use:
+  retrieval_precedes_proposal_and_refinement: true
+  provider_task_id: 019fad3e-76b8-7e32-8455-d2e9b31d33e5
+  card_level_query_and_passage_sha_required: true
+  adopt_or_reject_decision_and_rationale_required: true
+  refined_candidate_requires_at_least_one_adopted_card: true
+  knowledge_support_is_not_a_selection_score: true
+
+sequence_first_agent:
+  raw_proposal_policy:
+    score_all_valid_unique_proposals_before_promotion: true
+    first_k_retention_forbidden: true
+    duplicate_and_invalid_occurrence_denominator_preserved: true
+  iterative_refinement:
+    supported: true
+    default_rounds: 3
+    immutable_parent_child_lineage_required: true
+    mutation_rationale_and_knowledge_trace_required: true
+    unchanged_parent_control_required: true
+  required_declared_metrics:
+    - hydrophobicity
+    - hydrophobic_moment
+    - net_charge
+    - instability_index
+    - hemolysis_risk
+    - llamp_log10_mic_um
+    - amp_read_log10_mic_um
+    - toxinpred3_hybrid_score
+    - toxinpred3_label
+    - pair_iptm
+    - rosetta_interface_delta_reu
+  sequence_maturity_metrics:
+    - hydrophobicity
+    - hydrophobic_moment
+    - net_charge
+    - instability_index
+    - hemolysis_risk
+    - llamp_log10_mic_um
+    - amp_read_log10_mic_um
+    - toxinpred3_hybrid_score
+    - toxinpred3_label
+  gates:
+    activity:
+      dual_MIC_model_agreement_required: true
+      absolute_threshold_source_must_be_external_and_frozen: true
+    safety:
+      hemolysis_and_toxicity_both_required: true
+      missing_failed_or_out_of_domain_prediction_rejects_core_lane: true
+    developability:
+      physicochemical_metrics_required: true
+      rank_stability_across_frozen_perturbations_required: true
+    threshold_derivation_from_current_batch_quantiles_forbidden: true
+    diversity_applied_only_after_quality_admission: true
+    conflict_lane_is_non_structure_eligible_by_default: true
+  structure_admission:
+    mature_core_only: true
+    target_agnostic_sequence_evidence_persisted_once: true
+
+multitarget_parallelism:
+  existing_qualification_contract: amp_multitarget_qualification_v35
+  minimum_target_count: 2
+  maximum_target_count: 6
+  AceA_may_be_anchor_but_cannot_be_only_target: true
+  target_panel_frozen_before_peptide_outcomes: true
+  evidence_grade_allowed:
+    - A
+    - B
+  same_mature_sequence_cohort_across_all_targets: true
+  parallel_isolated_target_branches: true
+  per_target_evidence_namespace_required: true
+  native_and_wrong_pocket_controls_required: true
+  per_target_failure_denominator_required: true
+  one_target_outcome_cannot_mutate_another_branch: true
+  equal_preregistered_structure_budget_across_targets: true
+  no_forced_target_refill: true
+
+evidence_graph:
+  required_objects:
+    - HistoricalEvidenceSnapshot
+    - HarnessRelease
+    - HarnessLineageEdge
+    - KnowledgeUseTrace
+    - SequenceCandidateEvidence
+    - SequenceMaturityDecision
+    - TargetPanelSelectionWitness
+    - MultiTargetExecutionPlan
+    - TargetDispatch
+  database_and_object_store_replay_required: true
+  stage_counts_reported_per_target_and_globally: true
+
+authorization:
+  framework_only: true
+  new_peptide_run_forbidden: true
+  reason: user_requested_framework_upgrade_before_any_new_generation

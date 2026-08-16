@@ -587,3 +587,15 @@ Boltz-2 结构预测，紧凑输出 SHA-256 为
 `892373b095e8a4b5fa777df98fdd0f76ed61f82e85f24918502e9b06853abf73`，且 CIF、PAE/PDE、pLDDT、置信度与约束产物都存在。
 这只证明 Boltz 可执行、包、缓存、GPU 和 AceA 口袋输入能共同工作；哨兵肽的分数不是 v37
 候选证据，不更新 Q1/Q2/Q6，也不授权新正式 run。
+
+2026-08-17 v38 framework-only 追加：用户终止 v37.0.15 并要求在再次生成前重构 Agent。旧 run 已闭合
+为 `cancelled`，900 Candidate、9000 occurrence、11468 Evaluation、282 succeeded ToolCall 与 2 个
+Decision 保持不可变。新框架把“继承历史”定义为对全部 succeeded/failed/cancelled run 的按时间截断、
+内容寻址、只读证据快照；失败和取消必须留在分母，旧候选与输出不得复制、回填或跨 run 复用。该能力复用
+v36 typed harness lineage，用来改进证据到决策过程，不构成新的肽科学结果。
+
+同一追加将序列阶段改为知识卡前置、全量有效 proposal 评价、多轮父子改写、双 MIC/毒性/溶血/理化/
+域外/稳定性成熟度准入，只有成熟序列才进入结构；模型冲突保留为探索证据但默认不消耗结构预算。多靶点
+能力复用 v35 qualification witness，要求在肽结果前冻结至少两个靶点，让同一成熟序列 cohort 进入相互
+隔离、可并行、等预算的 target branches，AceA 不再是唯一靶点。当前只完成框架合同和验证，不执行目标
+选择、候选生成或结构 run；因此 Q1–Q6 的科学状态不因该工程升级而改变。
