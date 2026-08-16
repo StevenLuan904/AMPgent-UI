@@ -61,6 +61,10 @@ Temporal history, queue pollers, service probes and allowed-capacity receipts.
 所有有效、去重 proposal 都先完成序列评价。评价包括 LLAMP 与 AMP-READ 的 MIC/活性、ToxinPred3、
 溶血风险以及电荷、疏水性、疏水矩和不稳定指数。结构预算不会用来挽救序列证据薄弱的候选。
 
+`V38SequenceExecutionContract` 将 3 个生成器 × 3 个 seed 冻结为 9 个 cell，每个 cell 请求 100 条，
+共 900 个 raw occurrence。`build_score_all_proposal_cohort` 保存每一个有效、无效和重复 occurrence；所有
+有效唯一序列按原始 source ordinal 进入评分，不存在“先生成 1000、只取前 100”的隐藏截断。
+
 ### 4.1 为什么不用任意外部活性阈值一刀切
 
 外部活性阈值容易受模型标定、菌株和实验条件影响，可能把整批候选清空。因此 v38 只把以下项目作为硬门：
@@ -81,6 +85,9 @@ MIC、AMP 活性和可开发性不使用本批分位数，也不使用任意外�
 若成熟核心少于预注册最低数量，Agent 最多执行三轮有界 refinement。每个子代必须保存父候选、未改变父本
 对照、知识卡采用理由和 mutation rationale。核心为零时继续 refinement，不降低毒性或溶血标准；轮数耗尽后
 仍为零则 fail closed。未使用的结构名额保持为空，不强制填满。
+
+`RefinementChildProposal` 对上述字段做机器校验：子序列必须真实改变、仍是 10–25 aa 合法短肽、至少有一条
+采用的知识卡 trace，并与同轮未改父本 control SHA 精确绑定。这样 refinement 不能成为无来源的随机改写。
 
 ## 5. 知识卡进入真实决策链
 

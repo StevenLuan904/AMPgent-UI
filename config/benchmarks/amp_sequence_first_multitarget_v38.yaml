@@ -61,10 +61,15 @@ knowledge_use:
 
 sequence_first_agent:
   raw_proposal_policy:
+    execution_contract: pepagent.v38_science_execution.V38SequenceExecutionContract
+    generator_cells: 9
+    requested_proposals_per_cell: 100
+    expected_raw_occurrences: 900
     score_all_valid_unique_proposals_before_promotion: true
     first_k_retention_forbidden: true
     duplicate_and_invalid_occurrence_denominator_preserved: true
   iterative_refinement:
+    child_contract: pepagent.v38_science_execution.RefinementChildProposal
     supported: true
     default_rounds: 3
     immutable_parent_child_lineage_required: true
