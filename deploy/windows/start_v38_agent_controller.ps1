@@ -20,9 +20,9 @@ $log = Join-Path $logRoot 'v38-agent-controller.log'
 while ($true) {
     $observedAt = [DateTimeOffset]::UtcNow.ToString('o')
     try {
-        & $capacity 2>&1 | Out-File -LiteralPath $log -Append -Encoding utf8
         & $python -m pepagent.v38_agent_controller_cli --mode tick --state $state 2>&1 |
             Out-File -LiteralPath $log -Append -Encoding utf8
+        & $capacity 2>&1 | Out-File -LiteralPath $log -Append -Encoding utf8
         "[$observedAt] controller_tick=ok" | Out-File -LiteralPath $log -Append -Encoding utf8
     }
     catch {
