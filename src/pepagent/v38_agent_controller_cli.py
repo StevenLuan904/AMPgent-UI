@@ -219,20 +219,30 @@ async def initialize_controller(
 
 async def _run_counts(run_id: UUID) -> dict[str, int]:
     async with SessionFactory() as session:
-        counts: dict[str, int] = {}
-        for name, model in (
-            ("candidates", Candidate),
-            ("occurrences", CandidateOccurrence),
-            ("evaluations", Evaluation),
-            ("tool_calls", ToolCall),
-            ("decisions", AgentDecision),
-        ):
-            counts[name] = int(
+        direct_models = {
+            "candidates": Candidate,
+            "occurrences": CandidateOccurrence,
+            "tool_calls": ToolCall,
+            "decisions": AgentDecision,
+        }
+        counts = {
+            name: int(
                 await session.scalar(
                     select(func.count()).select_from(model).where(model.run_id == run_id)
                 )
                 or 0
             )
+            for name, model in direct_models.items()
+        }
+        counts["evaluations"] = int(
+            await session.scalar(
+                select(func.count())
+                .select_from(Evaluation)
+                .join(Candidate, Candidate.id == Evaluation.candidate_id)
+                .where(Candidate.run_id == run_id)
+            )
+            or 0
+        )
         return counts
 
 

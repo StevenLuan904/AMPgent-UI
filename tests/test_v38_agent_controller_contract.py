@@ -4,7 +4,6 @@ import yaml
 
 from pepagent.v38_agent_controller_cli import _validate_panel
 
-
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -42,6 +41,7 @@ def test_controller_supervisor_runs_capacity_and_five_minute_ticks() -> None:
     ).read_text(encoding="utf-8")
     assert "check_ampgent_gpu_capacity.ps1" in script
     assert "--mode tick" in script
+    assert script.count("$LASTEXITCODE -ne 0") == 2
     assert "[int]$TickSeconds = 300" in script
     assert "Start-Sleep -Seconds $TickSeconds" in script
     assert ".32" not in script

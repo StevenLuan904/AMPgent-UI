@@ -22,7 +22,13 @@ while ($true) {
     try {
         & $python -m pepagent.v38_agent_controller_cli --mode tick --state $state 2>&1 |
             Out-File -LiteralPath $log -Append -Encoding utf8
+        if ($LASTEXITCODE -ne 0) {
+            throw "controller tick exited with code $LASTEXITCODE"
+        }
         & $capacity 2>&1 | Out-File -LiteralPath $log -Append -Encoding utf8
+        if ($LASTEXITCODE -ne 0) {
+            throw "capacity probe exited with code $LASTEXITCODE"
+        }
         "[$observedAt] controller_tick=ok" | Out-File -LiteralPath $log -Append -Encoding utf8
     }
     catch {
