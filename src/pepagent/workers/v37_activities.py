@@ -47,6 +47,11 @@ from pepagent.v37_attempt_ledger import (
     build_v37_attempt_artifacts,
     execute_v37_durable_attempt,
 )
+from pepagent.v37_capacity import (
+    V37_PIPELINE_STAGES,
+    build_v37_pipeline_manifest,
+    build_v37_pipeline_queue_transition_ledger,
+)
 from pepagent.v37_evidence import build_v37_evidence_plan
 from pepagent.v37_generator_launch import verify_v37_generator_launch_binding
 from pepagent.v37_hydramp_archive import (
@@ -91,6 +96,31 @@ from pepagent.workers.activities import (
 
 V37_ACTIVITY_VERSION = "v37.0.0"
 V37_METRIC_RESULT_REFERENCE_SCHEMA = "v37.metric-result-reference.1"
+V37_STRUCTURE_SUMMARY_REFERENCE_SCHEMA = "v37.structure-summary-reference.1"
+
+
+async def _resolve_v37_structure_summary_reference(
+    reference: dict[str, Any],
+) -> dict[str, Any]:
+    if reference.get("schema_version") != V37_STRUCTURE_SUMMARY_REFERENCE_SCHEMA:
+        raise ValueError("v37 structure summary reference schema is invalid")
+    artifact = reference.get("artifact")
+    if not isinstance(artifact, dict) or artifact.get("media_type") != "application/json":
+        raise ValueError("v37 structure summary artifact identity is invalid")
+    raw = await asyncio.to_thread(
+        ContentAddressedObjectStore().get_bytes, str(artifact["uri"])
+    )
+    if len(raw) != int(artifact["size_bytes"]) or sha256_bytes(raw) != artifact["sha256"]:
+        raise ValueError("v37 structure summary artifact bytes drifted")
+    try:
+        payload = json.loads(raw)
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ValueError("v37 structure summary artifact is not canonical JSON") from error
+    if not isinstance(payload, dict) or sha256_json(payload) != reference.get(
+        "summary_sha256"
+    ):
+        raise ValueError("v37 structure summary payload identity drifted")
+    return payload
 
 
 def _isolated_v37_runtime_environment(
@@ -770,6 +800,8 @@ async def _complete_v37_replay_call(
 
 
 def _select_v37_coordinate_artifact(structure: dict[str, Any]) -> dict[str, Any]:
+    if "coordinate_artifact" in structure:
+        return structure["coordinate_artifact"]
     artifacts = structure["provenance"]["engine_artifacts"]
     coordinates = [
         item for item in artifacts if Path(item["path"]).suffix.lower() in {".cif", ".pdb"}
@@ -2275,12 +2307,9 @@ async def persist_v37_structure_stage_summaries(
         pose_id = str(pose["tool_call_id"])
         seed = int(pose["input"]["seed"])
         coordinate = _select_v37_coordinate_artifact(pose)
-        audits = pose["interface_audit"]["sample_audits"]
-        audit = next(
-            item
-            for item in audits
-            if str(item["tool_call_id"]) == pose_id and int(item["seed"]) == seed
-        )
+        audit = pose["interface_audit_sample"]
+        if str(audit["tool_call_id"]) != pose_id or int(audit["seed"]) != seed:
+            raise ValueError("v37 compact interface audit identity drifted")
         decoys = rosetta_result["rosetta"]["decoys"]
         displacement = statistics.median(float(item["peptide_bb_rmsd"]) for item in decoys)
         pose_rows.append(
@@ -2397,7 +2426,9 @@ async def persist_v37_structure_stage_summaries(
             artifacts={
                 "pose_manifest": {"poses": pose_rows},
                 "coordinate_audit": {
-                    "pose_audits": [pose["interface_audit"] for pose in flattened_poses]
+                    "pose_audits": [
+                        pose["interface_audit_sample"] for pose in flattened_poses
+                    ]
                 },
                 "structure_inputs_outputs": structure_output,
                 "stop_event": structure_stop,
@@ -2457,11 +2488,14 @@ async def persist_v37_structure_stage_summaries(
         await repository.record_tool_dependency(
             rosetta.id, structure.id, "scores_frozen_structure_stage"
         )
+        summary_payload = {"poses": pose_rows, "decoys": decoy_rows}
+        summary_artifact = await _store_json(summary_payload)
     return {
         "structure_call_id": str(structure.id),
         "rosetta_call_id": str(rosetta.id),
-        "poses": pose_rows,
-        "decoys": decoy_rows,
+        "schema_version": V37_STRUCTURE_SUMMARY_REFERENCE_SCHEMA,
+        "summary_sha256": sha256_json(summary_payload),
+        "artifact": asdict(summary_artifact),
     }
 
 
@@ -2471,6 +2505,31 @@ async def persist_v37_final_portfolio_and_replay(
 ) -> dict[str, Any]:
     run_id = uuid.UUID(request["run_id"])
     manifest = request["manifest"]
+    structure_summary = await _resolve_v37_structure_summary_reference(
+        request["structure_summary"]
+    )
+    pipeline_manifest = build_v37_pipeline_manifest(request["pipeline_occurrences"])
+    transition_receipts = request["pipeline_transition_receipts"]
+    shortlisted_ids = set(transition_receipts["shortlisted_ids"])
+    stage_outcomes: dict[str, dict[str, Any]] = {}
+    for item in pipeline_manifest["items"]:
+        occurrence_id = str(item["occurrence_id"])
+        for stage in V37_PIPELINE_STAGES:
+            succeeded = stage in {"proposal", "evaluation"} or occurrence_id in shortlisted_ids
+            stage_outcomes[item["stage_logical_ids"][stage]] = {
+                "outcome": "succeeded" if succeeded else "skipped_not_selected",
+                "activity_receipts": (
+                    [transition_receipts["proposal"][occurrence_id]]
+                    if stage == "proposal"
+                    else transition_receipts["evaluation"]
+                    if stage == "evaluation"
+                    else transition_receipts[stage].get(occurrence_id, [])
+                ),
+            }
+    transition_ledger = build_v37_pipeline_queue_transition_ledger(
+        pipeline_manifest=pipeline_manifest,
+        stage_outcomes=stage_outcomes,
+    )
     async with SessionFactory() as session, session.begin():
         candidates = await _candidate_payloads(session, run_id)
         eligible_ids = {
@@ -2481,10 +2540,10 @@ async def persist_v37_final_portfolio_and_replay(
         if eligible_ids != set(request["structurally_eligible_candidate_ids"]):
             raise ValueError("v37 final eligibility differs from PepShot evidence")
         poses_by_candidate: dict[str, list[dict[str, Any]]] = defaultdict(list)
-        for pose in request["structure_summary"]["poses"]:
+        for pose in structure_summary["poses"]:
             poses_by_candidate[str(pose["candidate_id"])].append(pose)
         scores_by_pose: dict[str, list[float]] = defaultdict(list)
-        for decoy in request["structure_summary"]["decoys"]:
+        for decoy in structure_summary["decoys"]:
             scores_by_pose[str(decoy["pose_id"])].append(float(decoy["interface_delta_g_reu"]))
         eligible = []
         for item in candidates:
@@ -2706,8 +2765,8 @@ async def persist_v37_final_portfolio_and_replay(
             "database_object_replay": replay_payload,
             "committed_graph_snapshot": committed_graph_snapshot,
             "worker_placement_snapshot": request["worker_placement_snapshot"],
-            "pipeline_manifest": request["pipeline_manifest"],
-            "pipeline_queue_transition_ledger": request["pipeline_queue_transition_ledger"],
+            "pipeline_manifest": pipeline_manifest,
+            "pipeline_queue_transition_ledger": transition_ledger,
             "agent_decision": replay_payload,
             "stop_event": replay_stop,
             **replay_ledgers,

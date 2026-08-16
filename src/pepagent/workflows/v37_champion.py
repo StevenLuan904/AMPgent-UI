@@ -7,11 +7,50 @@ from typing import Any
 from temporalio import workflow
 from temporalio.common import RetryPolicy
 
-from pepagent.v37_capacity import (
-    V37_PIPELINE_STAGES,
-    build_v37_pipeline_manifest,
-    build_v37_pipeline_queue_transition_ledger,
-)
+
+def _compact_v37_pose(structure: dict[str, Any]) -> dict[str, Any]:
+    """Project a persisted pose to the exact fields needed after Rosetta."""
+    coordinates = [
+        item
+        for item in structure["provenance"]["engine_artifacts"]
+        if str(item["path"]).lower().endswith((".cif", ".pdb"))
+    ]
+    preferred = [item for item in coordinates if "model_0" in str(item["path"])]
+    if not (preferred or coordinates):
+        raise ValueError("v37 compact pose requires a persisted coordinate artifact")
+    coordinate = sorted(preferred or coordinates, key=lambda item: str(item["path"]))[0]
+    seed = int(structure["input"]["seed"])
+    pose_id = str(structure["tool_call_id"])
+    audit = next(
+        item
+        for item in structure["interface_audit"]["sample_audits"]
+        if str(item["tool_call_id"]) == pose_id and int(item["seed"]) == seed
+    )
+    candidate = structure["candidate"]
+    return {
+        "candidate": {
+            "id": candidate["id"],
+            "sequence": candidate["sequence"],
+            "sequence_sha256": candidate["sequence_sha256"],
+        },
+        "input": {"seed": seed},
+        "tool_call_id": pose_id,
+        "boltz2": {"pair_iptm": structure["boltz2"]["pair_iptm"]},
+        "coordinate_artifact": coordinate,
+        "interface_audit_sample": audit,
+        "interface_audit_tool_call_id": structure["interface_audit_tool_call_id"],
+    }
+
+
+def _compact_v37_rosetta(result: dict[str, Any]) -> dict[str, Any]:
+    """Project one persisted Rosetta result without changing any decoy evidence."""
+    return {
+        "tool_call_id": result["tool_call_id"],
+        "provenance": {
+            "parent_tool_call_id": result["provenance"]["parent_tool_call_id"]
+        },
+        "rosetta": {"decoys": result["rosetta"]["decoys"]},
+    }
 
 
 async def _bounded_ordered_map(
@@ -137,15 +176,13 @@ class RapidChampionGenerationV37Workflow:
                 for result in generation_results
                 for candidate in result["candidates"]
             ]
-            pipeline_manifest = build_v37_pipeline_manifest(
-                [
-                    {
-                        "proposal_ordinal": ordinal,
-                        "occurrence_id": candidate["id"],
-                    }
-                    for ordinal, candidate in enumerate(all_candidates, start=1)
-                ]
-            )
+            pipeline_occurrences = [
+                {
+                    "proposal_ordinal": ordinal,
+                    "occurrence_id": candidate["id"],
+                }
+                for ordinal, candidate in enumerate(all_candidates, start=1)
+            ]
 
             metric_plugins = manifest["stage_1_sequence_evaluation"]["metric_plugins"]
 
@@ -364,18 +401,22 @@ class RapidChampionGenerationV37Workflow:
                 operation=score_and_persist_pose,
             )
             rosetta_results_with_ordinals.sort(key=lambda item: item["ordinal"])
-            rosetta_results = [item["rosetta"] for item in rosetta_results_with_ordinals]
+            compact_structures_by_candidate = {
+                candidate_id: [_compact_v37_pose(pose) for pose in item["poses"]]
+                for candidate_id, item in audited_by_candidate.items()
+            }
+            compact_rosetta_results = [
+                _compact_v37_rosetta(item["rosetta"])
+                for item in rosetta_results_with_ordinals
+            ]
             structure_summary = await workflow.execute_activity(
                 "persist_v37_structure_stage_summaries",
                 {
                     "run_id": run_id,
                     "manifest": manifest,
                     "candidate_ids": [item["id"] for item in shortlist["candidates"]],
-                    "structures_by_candidate": {
-                        candidate_id: item["poses"]
-                        for candidate_id, item in audited_by_candidate.items()
-                    },
-                    "rosetta_results": rosetta_results,
+                    "structures_by_candidate": compact_structures_by_candidate,
+                    "rosetta_results": compact_rosetta_results,
                 },
                 task_queue=queues["workflow_and_control"],
                 start_to_close_timeout=timedelta(hours=1),
@@ -392,10 +433,7 @@ class RapidChampionGenerationV37Workflow:
                     ],
                     "candidates": shortlist["candidates"],
                     "experiment_spec": request["experiment_spec"],
-                    "structures_by_candidate": {
-                        candidate_id: item["poses"]
-                        for candidate_id, item in audited_by_candidate.items()
-                    },
+                    "structures_by_candidate": compact_structures_by_candidate,
                 },
                 task_queue=queues["provider"],
                 start_to_close_timeout=timedelta(hours=12),
@@ -429,29 +467,6 @@ class RapidChampionGenerationV37Workflow:
                 rosetta_receipts.setdefault(candidate_id, []).append(
                     scored["activity_transition_receipt"]
                 )
-            stage_outcomes = {}
-            for item in pipeline_manifest["items"]:
-                occurrence_id = str(item["occurrence_id"])
-                for stage in V37_PIPELINE_STAGES:
-                    succeeded = (
-                        stage in {"proposal", "evaluation"}
-                        or occurrence_id in shortlisted_ids
-                    )
-                    stage_outcomes[item["stage_logical_ids"][stage]] = {
-                        "outcome": (
-                            "succeeded" if succeeded else "skipped_not_selected"
-                        ),
-                        "activity_receipts": {
-                            "proposal": [proposal_receipts[occurrence_id]],
-                            "evaluation": evaluation_receipts,
-                            "boltz": boltz_receipts.get(occurrence_id, []),
-                            "rosetta": rosetta_receipts.get(occurrence_id, []),
-                        }[stage],
-                    }
-            transition_ledger = build_v37_pipeline_queue_transition_ledger(
-                pipeline_manifest=pipeline_manifest,
-                stage_outcomes=stage_outcomes,
-            )
             final = await workflow.execute_activity(
                 "persist_v37_final_portfolio_and_replay",
                 {
@@ -461,8 +476,14 @@ class RapidChampionGenerationV37Workflow:
                     "structure_summary": structure_summary,
                     "pepshot": pepshot,
                     "worker_placement_snapshot": request["worker_placement_snapshot"],
-                    "pipeline_manifest": pipeline_manifest,
-                    "pipeline_queue_transition_ledger": transition_ledger,
+                    "pipeline_occurrences": pipeline_occurrences,
+                    "pipeline_transition_receipts": {
+                        "shortlisted_ids": sorted(shortlisted_ids),
+                        "proposal": proposal_receipts,
+                        "evaluation": evaluation_receipts,
+                        "boltz": boltz_receipts,
+                        "rosetta": rosetta_receipts,
+                    },
                 },
                 task_queue=queues["workflow_and_control"],
                 start_to_close_timeout=timedelta(hours=2),
