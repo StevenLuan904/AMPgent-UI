@@ -1,0 +1,374 @@
+benchmark_id: amp_rapid_champion_generation_v37
+version: v37.0.14-post-rosetta-reference-recovery
+execution_status: direction_authorized_pending_preexecution_gates
+track: single_arm_rapid_champion_generation
+
+scientific_question:
+  primary: Under a fixed rapid budget, can the Agent produce a diverse portfolio of computationally promising AceA AMP candidates with complete membrane, AMP/MIC, soft-risk, structure, Rosetta, and provenance evidence?
+  optimization_scope: frozen_generator_models_metrics_seeds_and_budget_only
+  forbidden_claims:
+    - global_or_sequence_space_optimum
+    - experimental_antimicrobial_activity_or_MIC
+    - experimental_safety_or_low_toxicity
+    - AceA_binding_affinity_or_selectivity
+    - knowledge_or_PepShot_effectiveness
+
+design:
+  arms: 1
+  arm_name: rapid_champion
+  ablation_or_tool_effect_comparison: false
+  adaptive_early_stopping: false
+  fixed_full_budget_required: true
+  no_score_based_refill: true
+  weighted_total_score_forbidden: true
+  forced_single_winner_forbidden: true
+  all_shortfalls_failures_and_exclusions_persisted: true
+
+target:
+  name: AceA
+  target_spec_path: ../experiments/acea_generator_structure_confirmation_v31b.yaml
+  target_spec_sha256: 7371dbf6a70821bd136a97a4a7e3ce0637f6d935a015dee3c218a7d82874a26d
+  pocket_definition_frozen_before_generation: true
+  pocket_forced_structure_prediction: true
+
+generators:
+  scientific_rationale: v31_locked_results_are_non_dominated_across_three_generators_so_all_three_are_proposal_engines_in_one_champion_arm
+  comparison_or_generator_winner_claim: false
+  frozen_source_contracts:
+    v23_path: amp_generator_de_novo_v23.yaml
+    v23_sha256: c1e613d819cce0d516abef05178a0105982395e3024941af538d0e37c9ca27d5
+    v24_path: amp_generator_hydramp_analogue_v24.yaml
+    v24_sha256: 6f859ba2b8c30c97382dd5033cb512e087cd74a0a7aa335f093568e34e69b84d
+    v32_path: amp_multiobjective_portfolio_v32.yaml
+    v32_sha256: 52788ee5f59f67f111977c05ba0311db9b800070e7d90e1bb3fed35948672dcc
+  engines:
+    - generator_id: hydramp
+      source_revision: 36b18003122f0d73323f9644b07e1ed267255c11
+      upstream_source_revision: 6590d2f4c2963f25d30669052a4c4a857e0e7279
+      formal_seed_acceptance_path: ../environments/v37_generator_runtimes/hydramp.formal-seed-acceptance.json
+      formal_seed_acceptance_sha256: 868905493a3118d2a35ce15ca38144a5c48e347ab31309ed84f2b424353ca8c8
+      consumer_launch_acceptance_path: ../environments/v37_generator_runtimes/hydramp.consumer-launch-acceptance.json
+      consumer_launch_acceptance_sha256: 29efc6e23fd3e8a2601c99a82e9cd34e5f00da1a2571aa39877f86b07ddd916f
+      weights_sha256: c2bf137ebe546fee8750b8c174486f1a9804e21a394a389a4f83d0bc6d743420
+      provider_adapter_version: hydramp-safe-pca-stateless-gumbel-v1
+      consumer_adapter_version: hydramp-generator-v1-raw-unfiltered-nattempts1
+      adapter_version: hydramp-safe-pca-stateless-gumbel-v1
+      mode: frozen_v23_unconstrained_de_novo
+      excluded_mode: v24_parent_conditioned_high_temperature_analogue
+      seeds: [20270371, 20270372, 20270373]
+    - generator_id: ampgan_v2
+      source_revision: 1009476bdb988707ff260def863d694549dc18b0
+      mode: frozen_v23_positive_condition_de_novo
+      adapter_version: ampgan-v2-generator-v1-positive-conditions-unfiltered
+      excluded_mode: v24_non_promoted_safety_optimization_arm
+      weights_sha256:
+        - a5e7cafa16c33010bd0fe22747c89f05d74f8781deac9eeeb91c6e4c371177e2
+        - df6b16408b05f21a6fdb1d675c12562257d619382d08af2fad391d7ed847084a
+        - 012fc17624f1fe6b0441622bebc71ee968e4d7db80bb7910e22af93b49d69890
+        - 7936298d0a7ac1802bbedc726d29e27911c3aa60778ac97395a24d5f82456902
+      seeds: [20270374, 20270375, 20270376]
+    - generator_id: amp_designer
+      source_revision: b554b1ac1507040d9d50356e037098e652ce4719
+      adapter_version: amp-designer-v25-raw-topk10-batch100-v1
+      weights_sha256: 47944ff42f7ea6a448340d44c2027329833205dd658ec4777e77777bdab1adc9
+      model_config_sha256: e8f1bed7607065b7a11e5f338a5a5e618947ae78ee0bc0314689cf9801d7d62a
+      environment_manifest_path: config/environments/amp_designer_v25_requirements.lock
+      environment_manifest_sha256: 68407982a09f66b4777bc30d8eb0ca276a4cd9473cce750a9f4d44464dd75127
+      seeds: [20270377, 20270378, 20270379]
+  raw_proposals_per_generator_seed: 1000
+  evaluated_valid_unique_per_generator_seed: 100
+  expected_candidate_count: 900
+  raw_selection_rule: raw_order_first_k_valid_unique
+  global_sequence_uniqueness: true
+  minimum_length: 10
+  maximum_length: 25
+  missing_policy: retain_shortfall_no_refill
+
+charge_policy:
+  mode: observe_only_not_an_optimization_axis
+  metric: net_charge_ph7_4
+  forbidden_uses:
+    - generation_conditioning
+    - mutation
+    - hard_threshold
+    - Pareto_objective
+    - tie_break
+  interpretation: explicit positive-charge intervention remains a separate versioned question
+
+verified_auxiliaries:
+  purpose: default_evidence_assistance_without_effectiveness_claim
+  knowledge:
+    required: true
+    provider_task_id: 019fad3e-76b8-7e32-8455-d2e9b31d33e5
+    release_revision: amp-kb-acea-shadow-6d0eea37f2c145df
+    release_manifest_sha256: 7fd21012bcbcbe519dd964b6c9c826f16532d257cbb721951cb3ab0c4023e518
+    runtime_manifest_sha256: 15b0ab24d3290ab1fe63b9f3bca0cb3376e871ec45b2ea6a903bcd242a7a0d65
+    active_policy_sha256: 4900ac9e54622132e5ea4e59ecfef6095329e77439977a8239c524e9cca73c52
+    query_path: ../experiments/acea_v37_knowledge_query.json
+    query_sha256: 53e133ec3079681e66420c24789b76be42f8cc33a74e123b979e8fe8a838df44
+    allowed_effects:
+      - annotate_mechanism_and_applicability
+      - record_verified_warning
+      - reject_only_with_directly_applicable_verified_warning_and_exact_passage
+    positive_support_is_not_a_selection_score: true
+    online_condensation_forbidden: true
+    query_scope: one_frozen_run_level_query_plus_candidate_specific_applicability_projection
+  pepshot:
+    required_for_every_structural_shortlist_candidate: true
+    provider_task_id: 019fb910-f2dd-7be1-a7e6-bfe381512c25
+    release_id: pepshot-34487cf9667a64c3-fe1e5382de8cab09
+    release_manifest_sha256: b4f4b848f603f431e5db49bd66e018904c35c9eacf97ae83882d92e6710f2c5d
+    runtime_manifest_sha256: 332350d31e7feea6ec545b579bf680c0b46a1fb38c5110e652274451a725feba
+    contract_sha256: 28eb1ad5dc8a1124b4ccf7e228d30eb864222c75516fcd933737e1b60e288522
+    required_route: deterministic_inspect
+    fallback_allowed: false
+    allowed_effects:
+      - retain
+      - reject_structural_conflict
+      - mark_insufficient_evidence
+    candidate_revision_or_extra_generation_forbidden: true
+  provider_failure_policy:
+    fail_closed_without_consumer_adaptation: true
+    active_run_release_hot_swap_forbidden: true
+    provider_defect_returned_to_owner_task: true
+  effectiveness_claim_allowed: false
+
+stage_1_sequence_evaluation:
+  expected_candidate_count: 900
+  metric_plugins:
+    - name: physicochemical_developability
+      observation_names:
+        - hydrophobic_moment_eisenberg
+        - hydrophobic_ratio_modlamp
+        - maximum_hydrophobic_run
+        - net_charge_ph7_4
+    - name: hemolysis_risk
+      observation_names:
+        - macrel_amp_probability
+        - macrel_hemolysis_probability
+        - macrel_hemolysis_label
+    - name: mic_potency
+      observation_names: [llamp_log10_mic_um]
+    - name: mic_potency_amp_read
+      observation_names: [amp_read_log10_mic_um]
+    - name: toxicity_risk
+      observation_names:
+        - toxinpred3_hybrid_score
+        - toxinpred3_label
+  required_metric_names:
+    - hydrophobic_moment_eisenberg
+    - hydrophobic_ratio_modlamp
+    - maximum_hydrophobic_run
+    - net_charge_ph7_4
+    - macrel_amp_probability
+    - llamp_log10_mic_um
+    - amp_read_log10_mic_um
+    - toxinpred3_hybrid_score
+    - toxinpred3_label
+    - macrel_hemolysis_probability
+    - macrel_hemolysis_label
+  endpoint_families:
+    membrane:
+      - {metric_name: hydrophobic_moment_eisenberg, direction: maximize}
+      - {metric_name: hydrophobic_ratio_modlamp, direction: target_interval, minimum: 0.35, maximum: 0.65}
+      - {metric_name: maximum_hydrophobic_run, direction: minimize}
+    activity_mic:
+      - {metric_name: macrel_amp_probability, direction: maximize}
+      - {metric_name: llamp_log10_mic_um, direction: minimize}
+      - {metric_name: amp_read_log10_mic_um, direction: minimize}
+    soft_risk:
+      - {metric_name: toxinpred3_hybrid_score, direction: minimize}
+      - {metric_name: macrel_hemolysis_probability, direction: minimize}
+  risk_guard:
+    policy: exclude_only_concordant_red_flags_no_refill
+    toxicity_red: {metric_name: toxinpred3_label, label: Toxin}
+    hemolysis_red: {metric_name: macrel_hemolysis_label, label: high}
+    single_model_warning_remains_eligible_and_must_be_reported: true
+    interpretation: soft-risk triage, not experimental safety
+  shortlist:
+    total_quota: 48
+    lane_quotas: {membrane: 12, activity_mic: 12, risk_control: 12, balanced: 12}
+    lane_objective_families:
+      membrane: [membrane]
+      activity_mic: [activity_mic]
+      risk_control: [soft_risk]
+      balanced: [membrane, activity_mic, soft_risk]
+    maximum_per_generator_per_lane: 6
+    maximum_per_generator_seed_per_lane: 2
+    maximum_pairwise_sequence_similarity: 0.80
+    method: lane_local_Pareto_depth_then_deterministic_normalized_Levenshtein_maximin
+    cross_lane_candidate_uniqueness: true
+    tie_break: sequence_sha256_ascending
+    missing_policy: retain_shortfall_no_refill
+
+execution:
+  capacity_contract_path: ../experiments/acea_v37_rapid_champion_capacity.yaml
+  capacity_contract_sha256: bdc8e3cb294d92009509efbb6a859475d49bb5bd3a702e73b374a0f97c2fef19
+  # Bound by the parent task after committing this contract; an all-zero value
+  # cannot match a deployable worker and therefore fails closed meanwhile.
+  worker_source_revision: "0000000000000000000000000000000000000000"
+  task_queues:
+    workflow_and_control: pepagent-control-v37
+    generator: pepagent-generator-v37
+    provider: pepagent-provider-v37
+    sequence_metrics: pepagent-cpu-metrics
+    boltz: pepagent-gpu-boltz2
+    rosetta: pepagent-cpu-rosetta
+  generation_concurrency: 8
+  metric_concurrency: 5
+  boltz_concurrency: 4
+  rosetta_concurrency: 16
+  ordered_collection_key: source_ordinal
+
+stage_2_structure_confirmation:
+  experiment_spec_path: ../experiments/acea_v37_rapid_champion_structure_v37_0_14.yaml
+  experiment_spec_sha256: 143c6ea1242f896db7299b387911fa99e86db4f444d6581c404ff68b7ed02054
+  expected_maximum_candidates: 48
+  boltz_seeds: [20270380, 20270381, 20270382]
+  poses_per_candidate: 3
+  all_poses_scored: true
+  rosetta_score_function: ref2015
+  rosetta_decoys_per_pose: 16
+  rosetta_seed_base: 20270400
+  rosetta_seed_rule: base_plus_frozen_pose_ordinal
+  expected_maximum_poses: 144
+  expected_maximum_rosetta_decoys: 2304
+  required_metric_families:
+    - pair_iptm
+    - pocket_coverage_and_contacts
+    - geometric_clashes
+    - peptide_backbone_displacement
+    - representative_and_minimum_rosetta_interface_delta_g
+  Pareto_objectives:
+    - {metric_name: median_pair_iptm, direction: maximize}
+    - {metric_name: median_pocket_coverage, direction: maximize}
+    - {metric_name: maximum_geometric_clash_count, direction: minimize}
+    - {metric_name: peptide_backbone_displacement_range, direction: minimize}
+    - {metric_name: median_representative_rosetta_interface_delta_g, direction: minimize}
+  candidate_summary:
+    central_tendency: median_across_boltz_seeds
+    instability_report: per_seed_values_range_and_direction_agreement
+    Rosetta_REU_interpretation: same_protocol_relative_only
+  PepShot_pose_selection:
+    inspected_poses_per_candidate: 1
+    representative_rule: pose_closest_to_candidate_median_pair_iptm
+    tie_break: boltz_seed_ascending
+    uninspected_pose_evidence_remains_reported: true
+  structural_eligibility:
+    exact_candidate_pose_mapping_required: true
+    coordinate_audit_required: true
+    non_finite_or_broken_mapping_excluded: true
+    PepShot_inspect_verdict_required: PASS
+    PepShot_structural_conflict_excluded: true
+    PepShot_insufficient_evidence_excluded_from_final_portfolio: true
+    no_numerical_binding_threshold: true
+    coordinate_audit_thresholds_observational_only: true
+
+final_portfolio:
+  total_quota: 16
+  lanes:
+    - name: membrane_led
+      quota: 4
+      Pareto_objective_families: [membrane]
+      lead_family: membrane
+    - name: activity_led
+      quota: 4
+      Pareto_objective_families: [activity_mic]
+      lead_family: activity_mic
+    - name: structure_led
+      quota: 4
+      Pareto_objective_families: [structure]
+      lead_family: structure
+    - name: balanced_risk
+      quota: 4
+      Pareto_objective_families: [soft_risk, activity_mic, membrane, structure]
+      lead_family: soft_risk
+      required_soft_labels:
+        macrel_hemolysis_label: low
+        toxinpred3_label: Non-Toxin
+      interpretation: lane_specific_soft_risk_eligibility_not_experimental_safety
+  selection_scope: structurally_eligible_stage_2_candidates_only
+  method:
+    - compute_lane_local_nondominated_layers_without_cross_family_weighting
+    - take_candidates_from_best_available_layer
+    - apply_deterministic_normalized_Levenshtein_maximin_within_lane
+    - enforce_global_candidate_and_sequence_uniqueness
+  maximum_per_generator_per_lane: 2
+  maximum_per_generator_seed_per_lane: 1
+  maximum_pairwise_sequence_similarity: 0.80
+  tie_break: sequence_sha256_ascending
+  missing_policy: retain_shortfall_no_refill
+  outputs:
+    - final_16_member_portfolio_or_audited_shortfall
+    - per_lane_and_per_seed_summaries
+    - candidate_evidence_cards_with_conflicts_and_limitations
+    - Pareto_dominance_and_diversity_witnesses
+    - computational_champion_labels_scoped_to_this_protocol
+
+stop_conditions:
+  generation_stops_after_all_nine_fixed_generator_seed_budgets_are_consumed: true
+  metric_stage_stops_after_all_retained_valid_unique_candidates_are_evaluated: true
+  structure_stage_stops_after_all_shortlisted_candidates_receive_three_poses_and_all_decoys: true
+  final_selection_runs_once_after_all_required_evidence_is_complete: true
+  adaptive_early_stop_forbidden: true
+  refill_after_failure_or_shortfall_forbidden: true
+  run_fails_closed_on_identity_mapping_nonfinite_or_required_provider_failure: true
+
+database_evidence_contract:
+  PostgreSQL_is_authoritative: true
+  object_store_is_content_addressed: true
+  persist_run_manifest_generator_raw_outputs_and_environment: true
+  persist_raw_proposal_order_validity_dedup_and_retention_witnesses: true
+  persist_candidates_sequence_hashes_seed_and_raw_rank: true
+  persist_all_metric_ToolCalls_Evaluations_and_dependencies: true
+  persist_knowledge_query_pack_trace_cards_passages_policy_and_adoption_edges: true
+  persist_Boltz_inputs_outputs_pose_mapping_and_coordinate_audit: true
+  persist_Rosetta_inputs_all_decoys_outputs_and_candidate_pose_edges: true
+  persist_PepShot_inspect_request_contract_receipt_structure_SHA_findings_and_decision_edges: true
+  persist_stage_1_shortlist_stage_2_exclusions_and_final_portfolio_AgentDecisions: true
+  persist_all_Pareto_layers_dominance_diversity_and_shortfall_witnesses: true
+  persist_cost_retry_failure_and_stop_events: true
+  persist_all_source_weight_runtime_policy_and_provider_release_receipts: true
+  database_object_store_only_replay_required: true
+  replay_must_reconstruct:
+    - exact_raw_and_retained_candidate_order
+    - exact_metric_and_structure_joins
+    - knowledge_and_PepShot_evidence_used_or_rejected
+    - risk_exclusions_and_structural_exclusions
+    - shortlist_Pareto_layers_and_diversity_selection
+    - final_lane_membership_ranks_conflicts_and_shortfalls
+    - exact_final_decision_and_stop_reason
+  CSV_JSON_and_Markdown_are_exports_only: true
+
+pre_execution_gates:
+  - config_and_executable_implementation_committed_pushed_and_archived
+  - exact_generator_metric_Boltz_Rosetta_knowledge_PepShot_and_environment_revisions_verified
+  - target_pocket_and_all_input_artifact_hashes_verified
+  - API_PostgreSQL_MinIO_and_Temporal_healthy_with_zero_user_active_workflows
+  - database_schema_supports_all_required_typed_evidence
+  - all_worker_host_GPU_PID_role_task_queue_and_source_revision_mappings_verified
+  - no_worker_uses_192_168_99_32_GPU2_or_GPU3_or_uncoordinated_shared_resources
+  - no_existing_v37_formal_run_or_workflow
+  - v37_formal_direction_authorization_recorded
+
+scientific_boundaries:
+  predictions_are_not_experiments: true
+  computational_activity_and_MIC_are_soft_predictions: true
+  toxicity_and_hemolysis_are_soft_risk_predictions: true
+  no_AceA_binding_affinity_or_selectivity_claim: true
+  PepShot_inspect_is_structural_audit_not_binding_evidence: true
+  knowledge_is_attributed_advice_not_ground_truth: true
+  Rosetta_REU_same_protocol_relative_only: true
+  PepMLM_used: false
+  AMPlify_used: false
+  weighted_total_used: false
+  explicit_positive_charge_optimization_used: false
+  v22_through_v36_backwrite_forbidden: true
+
+formal_run:
+  direction_authorized: true
+  execution_authorized: true
+  submitted: false
+  implementation_revision: cb5912e990659b48da71febb14d6279c559c817e
+  run_id: null
+  workflow_id: null
