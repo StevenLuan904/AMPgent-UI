@@ -1,16 +1,16 @@
 benchmark_id: amp_sequence_first_multitarget_v38
-version: v38.0.0-sequence-first-history-aware-multitarget-framework
-execution_status: framework_implemented_not_authorized
+version: v38.1.0-tiered-admission-controlled-multitarget-agent
+execution_status: implementation_and_staged_preflight
 track: sequence_maturity_before_parallel_multitarget_structure
 
 scope:
   framework_implementation_authorized: true
   framework_implementation_completed_in_repository: true
   historical_index_read_authorized: true
-  target_selection_authorized: false
-  candidate_generation_authorized: false
-  structure_execution_authorized: false
-  formal_run_authorized: false
+  target_selection_authorized: true
+  candidate_generation_authorized: true
+  structure_execution_authorized_after_sequence_and_resource_admission: true
+  formal_run_authorized: true
   formal_run_submitted: false
 
 first_principles:
@@ -19,6 +19,8 @@ first_principles:
   structure_is_expensive_confirmation_not_a_rescue_for_weak_sequences: true
   weighted_total_score_forbidden: true
   self_generated_biological_thresholds_forbidden: true
+  activity_and_developability_ranked_by_nonweighted_pareto: true
+  only_safety_and_operational_validity_are_hard_gates: true
   no_forced_fill: true
 
 history_inheritance:
@@ -53,6 +55,9 @@ knowledge_use:
   adopt_or_reject_decision_and_rationale_required: true
   refined_candidate_requires_at_least_one_adopted_card: true
   knowledge_support_is_not_a_selection_score: true
+  provider_smoke_completed: true
+  provider_smoke_context_pack_sha256: d918d8faac581eebdf665593dbd81f50f24482924ea2ede302b3d273595f0c53
+  target_specific_transfer_limit: AceA_target_claims_cannot_be_reused_for_GyrA_or_PBP2a
 
 sequence_first_agent:
   raw_proposal_policy:
@@ -90,19 +95,51 @@ sequence_first_agent:
   gates:
     activity:
       dual_MIC_model_agreement_required: true
-      absolute_threshold_source_must_be_external_and_frozen: true
+      arbitrary_absolute_activity_threshold_forbidden: true
+      MIC_and_AMP_activity_are_nonweighted_pareto_objectives: true
     safety:
       hemolysis_and_toxicity_both_required: true
       missing_failed_or_out_of_domain_prediction_rejects_core_lane: true
     developability:
       physicochemical_metrics_required: true
       rank_stability_across_frozen_perturbations_required: true
+      physicochemical_metrics_are_nonweighted_pareto_objectives: true
     threshold_derivation_from_current_batch_quantiles_forbidden: true
     diversity_applied_only_after_quality_admission: true
-    conflict_lane_is_non_structure_eligible_by_default: true
+    conflict_lane_is_fixed_budget_exploration_only: true
   structure_admission:
-    mature_core_only: true
+    mature_core_plus_bounded_safe_exploration: true
+    maximum_exploration_fraction: 0.20
+    hard_safety_bypass_forbidden: true
+    zero_mature_core_action: refine_without_lowering_safety
+    maximum_refinement_rounds: 3
+    no_structure_dispatch_while_refinement_required: true
     target_agnostic_sequence_evidence_persisted_once: true
+
+run_control:
+  implementation: pepagent.v38_run_control.RunControlPlan
+  activity_heartbeat_seconds: 30
+  durable_progress_check_seconds: 300
+  stage_plan_conformance_seconds: 900
+  operator_review_seconds: 7200
+  stall_windows_seconds:
+    proposal_generation: 1200
+    sequence_metrics: 900
+    sequence_refinement: 1200
+    parallel_target_structure: 1800
+    pareto_and_replay: 600
+  controller_actions:
+    - read_only_service_and_queue_probe
+    - exact_owned_worker_repair
+    - staged_capacity_scale_after_two_idle_confirmations
+    - fail_closed_on_evidence_or_identity_drift
+    - release_unused_stage_resources
+  resource_waste_guards:
+    structure_before_sequence_admission_forbidden: true
+    scale_only_for_sustained_backlog: true
+    allowed_idle_capacity_confirmations: 2
+    foreign_process_stop_forbidden: true
+    repeat_or_replacement_submission_forbidden: true
 
 multitarget_parallelism:
   existing_qualification_contract: amp_multitarget_qualification_v35
@@ -137,6 +174,8 @@ evidence_graph:
   stage_counts_reported_per_target_and_globally: true
 
 authorization:
-  framework_only: true
-  new_peptide_run_forbidden: true
-  reason: user_requested_framework_upgrade_before_any_new_generation
+  framework_only: false
+  new_exact_once_multitarget_run_authorized: true
+  old_output_reuse_forbidden: true
+  staged_preflight_required: true
+  reason: user_authorized_framework_upgrade_and_then_start_run

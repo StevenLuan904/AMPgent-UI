@@ -7,6 +7,7 @@ from pydantic import ValidationError
 
 from pepagent.v38_sequence_first_multitarget import (
     DEFAULT_KNOWLEDGE_PROVIDER_TASK_ID,
+    ExplorationPolicy,
     HistoricalEvidenceSnapshot,
     HistoricalRunSummary,
     KnowledgeUseTrace,
@@ -15,9 +16,13 @@ from pepagent.v38_sequence_first_multitarget import (
     MetricObservation,
     MultiTargetExecutionPlan,
     NumericGate,
+    ParetoObjective,
+    RefinementPolicy,
     SequenceCandidateEvidence,
     SequenceMaturityPolicy,
     TargetBranchSpec,
+    TargetQualificationWitness,
+    admit_sequence_cohort,
     assess_sequence_maturity,
     build_parallel_target_dispatch,
 )
@@ -62,17 +67,11 @@ def _history_run(*, status: str = "failed", created_day: int = 1) -> HistoricalR
 def _observations() -> tuple[MetricObservation, ...]:
     return (
         MetricObservation(metric_name="hydrophobicity", status="succeeded", numeric_value=0.45),
-        MetricObservation(
-            metric_name="hydrophobic_moment", status="succeeded", numeric_value=0.60
-        ),
+        MetricObservation(metric_name="hydrophobic_moment", status="succeeded", numeric_value=0.60),
         MetricObservation(metric_name="net_charge", status="succeeded", numeric_value=4.0),
-        MetricObservation(
-            metric_name="instability_index", status="succeeded", numeric_value=22.0
-        ),
+        MetricObservation(metric_name="instability_index", status="succeeded", numeric_value=22.0),
         MetricObservation(metric_name="hemolysis_risk", status="succeeded", text_value="low"),
-        MetricObservation(
-            metric_name="llamp_log10_mic_um", status="succeeded", numeric_value=0.80
-        ),
+        MetricObservation(metric_name="llamp_log10_mic_um", status="succeeded", numeric_value=0.80),
         MetricObservation(
             metric_name="amp_read_log10_mic_um", status="succeeded", numeric_value=0.95
         ),
@@ -93,21 +92,24 @@ def _policy() -> SequenceMaturityPolicy:
             NumericGate(
                 metric_name="llamp_log10_mic_um",
                 direction="max",
-                threshold=1.2,
-                threshold_source="external_reference",
+                threshold=4.0,
+                purpose="validity",
+                threshold_source="operational_guard",
                 evidence_sha256=SHA_A,
             ),
             NumericGate(
                 metric_name="amp_read_log10_mic_um",
                 direction="max",
-                threshold=1.2,
-                threshold_source="external_reference",
+                threshold=4.0,
+                purpose="validity",
+                threshold_source="operational_guard",
                 evidence_sha256=SHA_B,
             ),
             NumericGate(
                 metric_name="toxinpred3_hybrid_score",
                 direction="max",
                 threshold=0.5,
+                purpose="safety",
                 threshold_source="provider_contract",
                 evidence_sha256=SHA_C,
             ),
@@ -116,13 +118,21 @@ def _policy() -> SequenceMaturityPolicy:
             LabelGate(
                 metric_name="hemolysis_risk",
                 allowed_values=frozenset({"low"}),
+                purpose="safety",
                 evidence_sha256=SHA_A,
             ),
             LabelGate(
                 metric_name="toxinpred3_label",
                 allowed_values=frozenset({"Non-Toxin"}),
+                purpose="safety",
                 evidence_sha256=SHA_B,
             ),
+        ),
+        pareto_objectives=(
+            ParetoObjective(metric_name="llamp_log10_mic_um", direction="min"),
+            ParetoObjective(metric_name="amp_read_log10_mic_um", direction="min"),
+            ParetoObjective(metric_name="instability_index", direction="min"),
+            ParetoObjective(metric_name="hydrophobic_moment", direction="max"),
         ),
         agreement_gates=(
             MetricAgreementGate(
@@ -132,6 +142,13 @@ def _policy() -> SequenceMaturityPolicy:
             ),
         ),
         minimum_rank_stability=0.8,
+        structure_budget=10,
+        exploration=ExplorationPolicy(maximum_fraction_of_structure_budget=0.2),
+        refinement=RefinementPolicy(
+            maximum_rounds=3,
+            minimum_mature_core_size=2,
+            children_per_parent=2,
+        ),
     )
 
 
@@ -170,13 +187,13 @@ def _branch(name: str) -> TargetBranchSpec:
     )
 
 
-def test_framework_contract_is_sequence_first_multitarget_and_not_authorized() -> None:
+def test_framework_contract_is_sequence_first_multitarget_and_staged_authorized() -> None:
     with open(
         "config/benchmarks/amp_sequence_first_multitarget_v38.yaml",
         encoding="utf-8",
     ) as handle:
         config = yaml.safe_load(handle)
-    assert config["scope"]["formal_run_authorized"] is False
+    assert config["scope"]["formal_run_authorized"] is True
     assert config["scope"]["formal_run_submitted"] is False
     assert config["history_inheritance"]["include_terminal_statuses"] == [
         "succeeded",
@@ -186,9 +203,14 @@ def test_framework_contract_is_sequence_first_multitarget_and_not_authorized() -
     assert config["sequence_first_agent"]["raw_proposal_policy"][
         "score_all_valid_unique_proposals_before_promotion"
     ]
-    assert config["sequence_first_agent"]["gates"]["activity"][
-        "dual_MIC_model_agreement_required"
-    ]
+    activity = config["sequence_first_agent"]["gates"]["activity"]
+    assert activity["dual_MIC_model_agreement_required"]
+    assert activity["arbitrary_absolute_activity_threshold_forbidden"]
+    assert (
+        config["sequence_first_agent"]["structure_admission"]["zero_mature_core_action"]
+        == "refine_without_lowering_safety"
+    )
+    assert config["run_control"]["operator_review_seconds"] == 7200
     assert config["multitarget_parallelism"]["minimum_target_count"] >= 2
     assert config["knowledge_use"]["provider_task_id"] == DEFAULT_KNOWLEDGE_PROVIDER_TASK_ID
 
@@ -230,10 +252,10 @@ def test_history_snapshot_rejects_duplicate_or_miscounted_runs() -> None:
         )
 
 
-def test_sequence_maturity_requires_activity_safety_developability_and_stability() -> None:
+def test_sequence_maturity_hard_gates_only_safety_and_validity() -> None:
     decision = assess_sequence_maturity(_candidate(), _policy())
-    assert decision.status == "mature_core"
-    assert decision.structure_eligible is True
+    assert decision.status == "pareto_eligible"
+    assert decision.structure_eligible is False
 
     toxic = tuple(
         item.model_copy(update={"text_value": "Toxin"})
@@ -257,7 +279,7 @@ def test_sequence_maturity_routes_mic_disagreement_away_from_structure() -> None
         for item in _observations()
     )
     decision = assess_sequence_maturity(_candidate(observations=disagreement), _policy())
-    assert decision.status == "exploratory_conflict"
+    assert decision.status == "promising_uncertain"
     assert decision.structure_eligible is False
     assert any(reason.startswith("metric_disagreement:") for reason in decision.reasons)
 
@@ -280,7 +302,35 @@ def test_refinement_requires_adopted_knowledge_card_trace() -> None:
         _candidate(parent_candidate_id=parent_id, knowledge=(trace,)),
         _policy(),
     )
-    assert mature.status == "mature_core"
+    assert mature.status == "pareto_eligible"
+
+
+def test_cohort_uses_pareto_core_and_fixed_safe_exploration_without_forced_fill() -> None:
+    candidates = tuple(_candidate() for _ in range(4))
+    admission = admit_sequence_cohort(candidates, _policy(), refinement_round=0)
+    assert admission.structure_dispatch_allowed is True
+    assert admission.refinement_required is False
+    assert len(admission.mature_core_candidate_ids) == 4
+    assert admission.exploration_candidate_ids == ()
+    assert admission.unused_structure_slots == 6
+    assert admission.safety_thresholds_lowered is False
+    assert admission.forced_fill_used is False
+
+
+def test_zero_safe_core_triggers_refinement_without_lowering_safety() -> None:
+    toxic = tuple(
+        item.model_copy(update={"text_value": "Toxin"})
+        if item.metric_name == "toxinpred3_label"
+        else item
+        for item in _observations()
+    )
+    candidates = tuple(_candidate(observations=toxic) for _ in range(3))
+    admission = admit_sequence_cohort(candidates, _policy(), refinement_round=0)
+    assert admission.mature_core_candidate_ids == ()
+    assert admission.exploration_candidate_ids == ()
+    assert admission.refinement_required is True
+    assert admission.structure_dispatch_allowed is False
+    assert admission.unused_structure_slots == 10
 
 
 def test_multitarget_plan_dispatches_same_mature_sequences_in_parallel_isolation() -> None:
@@ -330,3 +380,14 @@ def test_multitarget_plan_rejects_single_target_and_unequal_science_budget() -> 
             target_branches=(branch_a, branch_b),
             max_parallel_targets=2,
         )
+
+
+def test_real_v38_panel_has_two_qualified_targets_and_distinct_controls() -> None:
+    with open("config/targets/amp_multitarget_panel_v38.yaml", encoding="utf-8") as handle:
+        panel = yaml.safe_load(handle)
+    witnesses = tuple(TargetQualificationWitness.model_validate(item) for item in panel["branches"])
+    assert len(witnesses) == 2
+    assert {item.coordinate_source_accession for item in witnesses} == {"8QQI", "3ZFZ"}
+    assert all(item.primary_pocket_id != item.wrong_pocket_id for item in witnesses)
+    assert all(item.primary_pocket_grade in {"A", "B"} for item in witnesses)
+    assert all(len(item.sha256()) == 64 for item in witnesses)

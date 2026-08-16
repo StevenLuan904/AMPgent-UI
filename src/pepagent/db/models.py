@@ -60,6 +60,74 @@ class ExperimentRun(Base, TimestampMixin):
     candidates: Mapped[list["Candidate"]] = relationship(back_populates="run")
 
 
+class ExperimentRunTargetBranch(Base):
+    """Frozen per-target branch identity for one multi-target experiment run."""
+
+    __tablename__ = "experiment_run_target_branches"
+    __table_args__ = (
+        UniqueConstraint("run_id", "target_id", name="uq_run_target_branch_target"),
+        UniqueConstraint("run_id", "branch_key", name="uq_run_target_branch_key"),
+        UniqueConstraint("run_id", "evidence_namespace", name="uq_run_target_branch_namespace"),
+        CheckConstraint(
+            "native_pocket_id <> wrong_pocket_id",
+            name="ck_run_target_branch_distinct_pockets",
+        ),
+        Index("ix_run_target_branch_status", "run_id", "status"),
+    )
+
+    run_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("experiment_runs.id"), primary_key=True)
+    branch_order: Mapped[int] = mapped_column(Integer, primary_key=True)
+    branch_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    target_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("targets.id"), nullable=False)
+    panel_role: Mapped[str] = mapped_column(String(32), nullable=False)
+    qualification_witness_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    coordinate_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    native_pocket_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("target_pockets.id"), nullable=False
+    )
+    wrong_pocket_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("target_pockets.id"), nullable=False
+    )
+    evidence_namespace: Mapped[str] = mapped_column(String(255), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class RunStageCheckpoint(Base):
+    """Append-only durable observation and controller decision for a run stage."""
+
+    __tablename__ = "run_stage_checkpoints"
+    __table_args__ = (
+        UniqueConstraint(
+            "run_id",
+            "stage_name",
+            "observation_no",
+            name="uq_run_stage_checkpoint_observation",
+        ),
+        Index("ix_run_stage_checkpoint_latest", "run_id", "stage_order", "observed_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    run_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("experiment_runs.id"), nullable=False)
+    stage_name: Mapped[str] = mapped_column(String(64), nullable=False)
+    stage_order: Mapped[int] = mapped_column(Integer, nullable=False)
+    observation_no: Mapped[int] = mapped_column(Integer, nullable=False)
+    durable_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    expected_durable_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    stage_status: Mapped[str] = mapped_column(String(32), nullable=False)
+    controller_action: Mapped[str] = mapped_column(String(64), nullable=False)
+    reasons_json: Mapped[list[str]] = mapped_column(JSONB, default=list, nullable=False)
+    tasks_json: Mapped[list[str]] = mapped_column(JSONB, default=list, nullable=False)
+    receipt_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
 class Candidate(Base, TimestampMixin):
     __tablename__ = "candidates"
     __table_args__ = (
@@ -296,9 +364,7 @@ class HarnessRelease(Base):
     """Immutable identity and evidence boundary for one Agent harness release."""
 
     __tablename__ = "harness_releases"
-    __table_args__ = (
-        Index("ix_harness_release_scope_status", "scope_id", "release_status"),
-    )
+    __table_args__ = (Index("ix_harness_release_scope_status", "scope_id", "release_status"),)
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     harness_id: Mapped[str] = mapped_column(String(128), nullable=False, unique=True)
@@ -396,9 +462,7 @@ class HarnessTrial(Base):
     budget_contract_artifact_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("artifacts.id"), nullable=False
     )
-    adjudication_run_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("experiment_runs.id")
-    )
+    adjudication_run_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("experiment_runs.id"))
     blinded: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     adjudication_locked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     unblinded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -504,12 +568,8 @@ class HarnessPromotionDecision(Base):
     )
     decision: Mapped[str] = mapped_column(String(64), nullable=False)
     scope_id: Mapped[str] = mapped_column(String(128), nullable=False)
-    promoted_release_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("harness_releases.id")
-    )
-    rollback_release_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("harness_releases.id")
-    )
+    promoted_release_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("harness_releases.id"))
+    rollback_release_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("harness_releases.id"))
     decision_artifact_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("artifacts.id"), nullable=False
     )
@@ -645,12 +705,8 @@ class TargetQualificationAudit(Base):
     sequence_structure_mapping_artifact_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("artifacts.id")
     )
-    primary_pocket_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("target_pockets.id")
-    )
-    wrong_pocket_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("target_pockets.id")
-    )
+    primary_pocket_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("target_pockets.id"))
+    wrong_pocket_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("target_pockets.id"))
     primary_pocket_grade: Mapped[str | None] = mapped_column(String(8))
     primary_pocket_definition_artifact_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("artifacts.id")

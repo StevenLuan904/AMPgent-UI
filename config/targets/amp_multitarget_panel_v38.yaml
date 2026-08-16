@@ -1,0 +1,58 @@
+panel_id: amp_multitarget_panel_v38_gyrA_pbp2a
+schema_version: v38.target-panel.1
+selection_frozen_before_peptide_outcomes: true
+peptide_or_structure_outcomes_used_for_selection: false
+target_agnostic_amp_lane_retained: true
+shared_sequence_cohort_required: true
+branches:
+  - target_key: ec_gyrA_lei800
+    target_id: be410449-e780-4f2d-99e3-3929ed69a2ca
+    target_sequence_sha256: dc1f995fc9985d8a8ebc2dfd7493a93bbae47b95419b65ae89790192cb5c0c81
+    coordinate_source_accession: 8QQI
+    coordinate_source_uri: https://files.rcsb.org/download/8QQI.cif
+    coordinate_sha256: f316a9c7efb6ca84224400ba944cd21627ad3fa4ab7e7f2ac45ea44d3f46e0d2
+    coordinate_size_bytes: 1753600
+    coordinate_model_count: 1
+    coordinate_atom_count: 15652
+    primary_pocket_id: 4c31c8c1-b6e9-41d9-bb39-52d9639a55f9
+    primary_pocket_definition_sha256: d20423e437ac3144df8efc72731c4b2441c3a66b49c6a412ca7ea714fefd9d4d
+    primary_pocket_grade: A
+    primary_evidence_sha256:
+      - 3380b243e8c6e8bd472af382858cfbc147b4423f0fa290c77e269e11d2c7e813
+      - 13fdb5b966ca81c53ff3e8491052d8983c5484f62b502d73c9f2d6bfcb77f4f4
+    wrong_pocket_id: 026aab18-ba7e-41fe-a896-0d36aa987dbd
+    wrong_pocket_definition_sha256: 9bcd59486aaddb39f63a69ac62e83ab048ae2c5e8ea52cd0ab1ed77d5c2731f7
+    wrong_pocket_grade: A
+    wrong_evidence_sha256:
+      - 9d691499009b0c4c95dd4a468bb728880a83c5444f6f56067b35461fe2110891
+    selected_before_peptide_outcomes: true
+    peptide_or_structure_outcomes_used_for_selection: false
+    target_agnostic_amp_lane_retained: true
+  - target_key: se_pbp2a_allosteric
+    target_id: c20a3cc7-1a5b-40a3-8139-dd99cfaf3fa4
+    target_sequence_sha256: 9d3e08f08cb97e0f1d1d7fbce900a69e8fe3784153222ace028efda5941f0597
+    coordinate_source_accession: 3ZFZ
+    coordinate_source_uri: https://files.rcsb.org/download/3ZFZ.cif
+    coordinate_sha256: 4613740b7fb41a89913b28681998e3d75ac84ba7e0d3813549e94de1e6982fc7
+    coordinate_size_bytes: 2116333
+    coordinate_model_count: 1
+    coordinate_atom_count: 11069
+    primary_pocket_id: 7a25d81b-7178-4626-a47d-bc00189b2e7f
+    primary_pocket_definition_sha256: 91d54be966080d795c1ec791ad64da5513f212bd7fe5059d0bba4ee95b1772bb
+    primary_pocket_grade: B
+    primary_evidence_sha256:
+      - 2a7fc0939d2fe0a5a63419053cde642dbffa5f4a425e03ad85d0f6b4720a492e
+      - 59a0e0ed460e96acef101cadeea2336833a8bf4098495305786613ba20641abd
+    wrong_pocket_id: 74b4260c-7869-401a-b1e8-2266c48104e8
+    wrong_pocket_definition_sha256: b78604555296c35c65508c4527270fba1501fe37c071d8e4f79c22296e271dc8
+    wrong_pocket_grade: B
+    wrong_evidence_sha256:
+      - c8fd7f043448af61c533e19a9cbcfc4caaccfcd9dd35a6c02f0022257b5708e0
+    selected_before_peptide_outcomes: true
+    peptide_or_structure_outcomes_used_for_selection: false
+    target_agnostic_amp_lane_retained: true
+science_budget_per_branch:
+  maximum_structure_candidates: 48
+  boltz_seeds_per_candidate: 3
+  rosetta_decoys_per_pose: 16
+  weighted_total_score_forbidden: true

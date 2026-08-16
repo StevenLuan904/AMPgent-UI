@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from datetime import UTC, datetime
+from math import floor
 from typing import Literal
 from uuid import UUID
 
@@ -63,9 +64,7 @@ class HistoricalRunSummary(FrozenModel):
     lifecycle_event_count: int = Field(ge=0)
     evidence_graph_manifest_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     terminal_event_type: str
-    historical_role: Literal[
-        "decision_replay", "failure_denominator", "cancelled_denominator"
-    ]
+    historical_role: Literal["decision_replay", "failure_denominator", "cancelled_denominator"]
     output_reuse_forbidden: Literal[True] = True
 
     @model_validator(mode="after")
@@ -199,9 +198,7 @@ async def build_historical_evidence_snapshot(
         )
         terminal_event_type = await session.scalar(
             select(LifecycleEvent.event_type)
-            .where(
-                LifecycleEvent.aggregate_type == "run", LifecycleEvent.aggregate_id == run.id
-            )
+            .where(LifecycleEvent.aggregate_type == "run", LifecycleEvent.aggregate_id == run.id)
             .order_by(LifecycleEvent.sequence_no.desc())
             .limit(1)
         )
@@ -371,13 +368,15 @@ class NumericGate(FrozenModel):
     metric_name: str
     direction: Literal["min", "max"]
     threshold: float
-    threshold_source: Literal["external_reference", "provider_contract", "operational_guard"]
+    purpose: Literal["safety", "validity"]
+    threshold_source: Literal["provider_contract", "operational_guard"]
     evidence_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
 
 
 class LabelGate(FrozenModel):
     metric_name: str
     allowed_values: frozenset[str]
+    purpose: Literal["safety", "validity"]
     evidence_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
 
 
@@ -387,16 +386,58 @@ class MetricAgreementGate(FrozenModel):
     evidence_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
 
 
+class ParetoObjective(FrozenModel):
+    metric_name: str
+    direction: Literal["min", "max"]
+
+
+class ExplorationPolicy(FrozenModel):
+    maximum_fraction_of_structure_budget: float = Field(ge=0, le=0.2)
+    hard_safety_bypass_forbidden: Literal[True] = True
+    deterministic_selection_required: Literal[True] = True
+    unused_exploration_slots_cannot_refill_from_rejected: Literal[True] = True
+
+
+class RefinementPolicy(FrozenModel):
+    maximum_rounds: int = Field(ge=1, le=5)
+    minimum_mature_core_size: int = Field(ge=1)
+    children_per_parent: int = Field(ge=1, le=8)
+    zero_core_action: Literal["refine_without_lowering_safety"] = "refine_without_lowering_safety"
+    parent_child_lineage_required: Literal[True] = True
+    unchanged_parent_control_required: Literal[True] = True
+
+
 class SequenceMaturityPolicy(FrozenModel):
     required_metrics: frozenset[str]
     numeric_gates: tuple[NumericGate, ...]
     label_gates: tuple[LabelGate, ...]
+    pareto_objectives: tuple[ParetoObjective, ...] = Field(min_length=2)
     agreement_gates: tuple[MetricAgreementGate, ...] = ()
     minimum_rank_stability: float = Field(ge=0, le=1)
+    structure_budget: int = Field(gt=0)
+    exploration: ExplorationPolicy
+    refinement: RefinementPolicy
     refined_candidate_requires_adopted_knowledge: Literal[True] = True
     threshold_derivation_from_current_batch_quantiles_forbidden: Literal[True] = True
     diversity_applied_after_quality_admission: Literal[True] = True
     no_forced_fill: Literal[True] = True
+
+    @model_validator(mode="after")
+    def validate_gate_and_objective_roles(self) -> SequenceMaturityPolicy:
+        objective_names = [item.metric_name for item in self.pareto_objectives]
+        if len(objective_names) != len(set(objective_names)):
+            raise ValueError("Pareto objective names must be unique")
+        if not set(objective_names).issubset(self.required_metrics):
+            raise ValueError("Pareto objectives must be required metrics")
+        gate_names = {
+            *(item.metric_name for item in self.numeric_gates),
+            *(item.metric_name for item in self.label_gates),
+        }
+        if not gate_names.issubset(self.required_metrics):
+            raise ValueError("hard gates must be required metrics")
+        if self.refinement.minimum_mature_core_size > self.structure_budget:
+            raise ValueError("minimum mature core exceeds the structure budget")
+        return self
 
 
 class SequenceCandidateEvidence(FrozenModel):
@@ -412,7 +453,7 @@ class SequenceCandidateEvidence(FrozenModel):
 
 class SequenceMaturityDecision(FrozenModel):
     candidate_id: UUID
-    status: Literal["mature_core", "exploratory_conflict", "rejected"]
+    status: Literal["pareto_eligible", "promising_uncertain", "rejected"]
     structure_eligible: bool
     reasons: tuple[str, ...]
 
@@ -445,9 +486,9 @@ def assess_sequence_maturity(
         if observation is None or observation.numeric_value is None:
             hard_failures.append(f"numeric_value_missing:{gate.metric_name}")
             continue
-        failed = (
-            gate.direction == "min" and observation.numeric_value < gate.threshold
-        ) or (gate.direction == "max" and observation.numeric_value > gate.threshold)
+        failed = (gate.direction == "min" and observation.numeric_value < gate.threshold) or (
+            gate.direction == "max" and observation.numeric_value > gate.threshold
+        )
         if failed:
             hard_failures.append(f"numeric_gate_failed:{gate.metric_name}")
     for gate in policy.label_gates:
@@ -480,15 +521,193 @@ def assess_sequence_maturity(
     if conflicts:
         return SequenceMaturityDecision(
             candidate_id=candidate.candidate_id,
-            status="exploratory_conflict",
+            status="promising_uncertain",
             structure_eligible=False,
             reasons=tuple(conflicts),
         )
     return SequenceMaturityDecision(
         candidate_id=candidate.candidate_id,
-        status="mature_core",
-        structure_eligible=True,
-        reasons=("all_frozen_sequence_maturity_gates_passed",),
+        status="pareto_eligible",
+        structure_eligible=False,
+        reasons=("hard_safety_and_validity_gates_passed",),
+    )
+
+
+class CohortCandidateDecision(FrozenModel):
+    candidate_id: UUID
+    status: Literal["mature_core", "promising_uncertain", "rejected"]
+    structure_eligible: bool
+    pareto_front: int | None = Field(default=None, ge=1)
+    reasons: tuple[str, ...]
+
+
+class SequenceCohortAdmission(FrozenModel):
+    schema_version: Literal["v38.sequence-cohort-admission.2"] = "v38.sequence-cohort-admission.2"
+    refinement_round: int = Field(ge=0)
+    decisions: tuple[CohortCandidateDecision, ...]
+    mature_core_candidate_ids: tuple[UUID, ...]
+    exploration_candidate_ids: tuple[UUID, ...]
+    rejected_candidate_ids: tuple[UUID, ...]
+    refinement_required: bool
+    structure_dispatch_allowed: bool
+    unused_structure_slots: int = Field(ge=0)
+    safety_thresholds_lowered: Literal[False] = False
+    forced_fill_used: Literal[False] = False
+
+
+def _objective_values(
+    candidate: SequenceCandidateEvidence,
+    policy: SequenceMaturityPolicy,
+) -> tuple[float, ...]:
+    observations = {item.metric_name: item for item in candidate.observations}
+    values: list[float] = []
+    for objective in policy.pareto_objectives:
+        value = observations[objective.metric_name].numeric_value
+        if value is None:
+            raise ValueError(f"Pareto objective is not numeric: {objective.metric_name}")
+        values.append(value if objective.direction == "min" else -value)
+    return tuple(values)
+
+
+def _dominates(left: tuple[float, ...], right: tuple[float, ...]) -> bool:
+    return all(a <= b for a, b in zip(left, right, strict=True)) and any(
+        a < b for a, b in zip(left, right, strict=True)
+    )
+
+
+def _pareto_fronts(
+    candidates: tuple[SequenceCandidateEvidence, ...],
+    policy: SequenceMaturityPolicy,
+) -> dict[UUID, int]:
+    remaining = {item.candidate_id: _objective_values(item, policy) for item in candidates}
+    fronts: dict[UUID, int] = {}
+    front_number = 1
+    while remaining:
+        current = sorted(
+            candidate_id
+            for candidate_id, values in remaining.items()
+            if not any(
+                other_id != candidate_id and _dominates(other_values, values)
+                for other_id, other_values in remaining.items()
+            )
+        )
+        if not current:
+            raise ValueError("unable to construct deterministic Pareto fronts")
+        for candidate_id in current:
+            fronts[candidate_id] = front_number
+            del remaining[candidate_id]
+        front_number += 1
+    return fronts
+
+
+def admit_sequence_cohort(
+    candidates: tuple[SequenceCandidateEvidence, ...],
+    policy: SequenceMaturityPolicy,
+    *,
+    refinement_round: int,
+) -> SequenceCohortAdmission:
+    """Admit a cohort without inventing activity cutoffs or bypassing safety gates."""
+
+    if not candidates:
+        raise ValueError("sequence cohort is empty")
+    if len({item.candidate_id for item in candidates}) != len(candidates):
+        raise ValueError("duplicate candidate identity in sequence cohort")
+    preliminary = {item.candidate_id: assess_sequence_maturity(item, policy) for item in candidates}
+    stable = tuple(
+        item for item in candidates if preliminary[item.candidate_id].status == "pareto_eligible"
+    )
+    uncertain = tuple(
+        item
+        for item in candidates
+        if preliminary[item.candidate_id].status == "promising_uncertain"
+    )
+    rejected = tuple(
+        item for item in candidates if preliminary[item.candidate_id].status == "rejected"
+    )
+    fronts = _pareto_fronts(stable, policy) if stable else {}
+    exploration_budget = floor(
+        policy.structure_budget * policy.exploration.maximum_fraction_of_structure_budget
+    )
+    core_budget = policy.structure_budget - exploration_budget
+    stable_ordered = sorted(
+        stable,
+        key=lambda item: (
+            fronts[item.candidate_id],
+            -item.rank_stability,
+            _objective_values(item, policy),
+            str(item.candidate_id),
+        ),
+    )
+    core = tuple(stable_ordered[:core_budget])
+    core_ids = {item.candidate_id for item in core}
+    exploration_pool = sorted(
+        (*uncertain, *stable_ordered[core_budget:]),
+        key=lambda item: (
+            0 if item in uncertain else 1,
+            -item.rank_stability,
+            str(item.candidate_id),
+        ),
+    )
+    exploration = tuple(exploration_pool[:exploration_budget])
+    exploration_ids = {item.candidate_id for item in exploration}
+    enough_core = len(core) >= policy.refinement.minimum_mature_core_size
+    rounds_remain = refinement_round < policy.refinement.maximum_rounds
+    refinement_required = not enough_core and rounds_remain
+    structure_dispatch_allowed = enough_core or (
+        bool(core) and refinement_round >= policy.refinement.maximum_rounds
+    )
+    decisions: list[CohortCandidateDecision] = []
+    for item in sorted(candidates, key=lambda candidate: str(candidate.candidate_id)):
+        base = preliminary[item.candidate_id]
+        if item.candidate_id in core_ids:
+            decisions.append(
+                CohortCandidateDecision(
+                    candidate_id=item.candidate_id,
+                    status="mature_core",
+                    structure_eligible=structure_dispatch_allowed,
+                    pareto_front=fronts[item.candidate_id],
+                    reasons=("selected_by_deterministic_nonweighted_pareto_front",),
+                )
+            )
+        elif item.candidate_id in exploration_ids:
+            decisions.append(
+                CohortCandidateDecision(
+                    candidate_id=item.candidate_id,
+                    status="promising_uncertain",
+                    structure_eligible=structure_dispatch_allowed,
+                    pareto_front=fronts.get(item.candidate_id),
+                    reasons=base.reasons + ("selected_within_fixed_exploration_budget",),
+                )
+            )
+        elif base.status == "rejected":
+            decisions.append(
+                CohortCandidateDecision(
+                    candidate_id=item.candidate_id,
+                    status="rejected",
+                    structure_eligible=False,
+                    reasons=base.reasons,
+                )
+            )
+        else:
+            decisions.append(
+                CohortCandidateDecision(
+                    candidate_id=item.candidate_id,
+                    status="promising_uncertain",
+                    structure_eligible=False,
+                    pareto_front=fronts.get(item.candidate_id),
+                    reasons=base.reasons + ("outside_frozen_structure_budget",),
+                )
+            )
+    used_slots = len(core) + len(exploration) if structure_dispatch_allowed else 0
+    return SequenceCohortAdmission(
+        refinement_round=refinement_round,
+        decisions=tuple(decisions),
+        mature_core_candidate_ids=tuple(item.candidate_id for item in core),
+        exploration_candidate_ids=tuple(item.candidate_id for item in exploration),
+        rejected_candidate_ids=tuple(item.candidate_id for item in rejected),
+        refinement_required=refinement_required,
+        structure_dispatch_allowed=structure_dispatch_allowed,
+        unused_structure_slots=policy.structure_budget - used_slots,
     )
 
 
@@ -506,6 +725,47 @@ class TargetBranchSpec(FrozenModel):
     boltz_seeds_per_candidate: int = Field(gt=0)
     rosetta_decoys_per_pose: int = Field(gt=0)
     target_agnostic_amp_lane_retained: Literal[True] = True
+
+
+class TargetQualificationWitness(FrozenModel):
+    schema_version: Literal["v38.target-qualification.1"] = (
+        "v38.target-qualification.1"
+    )
+    target_key: str
+    target_id: UUID
+    target_sequence_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    coordinate_source_accession: str
+    coordinate_source_uri: str
+    coordinate_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    coordinate_size_bytes: int = Field(gt=0)
+    coordinate_model_count: int = Field(gt=0)
+    coordinate_atom_count: int = Field(gt=0)
+    primary_pocket_id: UUID
+    primary_pocket_definition_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    primary_pocket_grade: Literal["A", "B"]
+    primary_evidence_sha256: tuple[str, ...] = Field(min_length=1)
+    wrong_pocket_id: UUID
+    wrong_pocket_definition_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    wrong_pocket_grade: Literal["A", "B"]
+    wrong_evidence_sha256: tuple[str, ...] = Field(min_length=1)
+    selected_before_peptide_outcomes: Literal[True] = True
+    peptide_or_structure_outcomes_used_for_selection: Literal[False] = False
+    target_agnostic_amp_lane_retained: Literal[True] = True
+
+    @model_validator(mode="after")
+    def validate_control(self) -> TargetQualificationWitness:
+        if self.primary_pocket_id == self.wrong_pocket_id:
+            raise ValueError("target qualification requires a distinct wrong pocket")
+        hashes = (*self.primary_evidence_sha256, *self.wrong_evidence_sha256)
+        if any(
+            len(item) != 64 or any(char not in "0123456789abcdef" for char in item)
+            for item in hashes
+        ):
+            raise ValueError("target qualification evidence SHA is invalid")
+        return self
+
+    def sha256(self) -> str:
+        return sha256_json(self.model_dump(mode="json"))
 
 
 class MultiTargetExecutionPlan(FrozenModel):
