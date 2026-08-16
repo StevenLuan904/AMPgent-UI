@@ -1996,3 +1996,8 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   30 秒 heartbeat 用于未来长 activity。远端容量探测在 durable tick 之后运行。当前卡点是兼容 v38 的
   score-all/refinement/multi-target executor 尚未部署，且本次获准结构 GPU 不可达；禁止用 v37 的 first-100、
   单靶点 workflow 冒充 v38 正式 run。
+- score-all 序列执行合同已在 commit `0b6e110` 实现：9 个生成 cell 各请求 100 条，900 个 raw occurrence
+  中的有效、无效和重复分母全部保留，所有有效唯一序列均按 source ordinal 进入评价，不存在 first-K 截断。
+  refinement 子代必须绑定父候选、未改父本 control SHA、真实序列变化、mutation rationale 和至少一条 adopted
+  knowledge trace。全量回归为 767 passed、4 skipped。该里程碑仍是执行合同，不代表 generator/Temporal/
+  persistence worker 已部署，也不改变当前 0 Candidate 的控制 run 事实。
