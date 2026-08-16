@@ -2,7 +2,7 @@ from pathlib import Path
 
 import yaml
 
-from pepagent.v38_agent_controller_cli import _validate_panel
+from pepagent.v38_agent_controller_cli import _probe_services, _validate_panel
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -45,3 +45,7 @@ def test_controller_supervisor_runs_capacity_and_five_minute_ticks() -> None:
     assert "[int]$TickSeconds = 300" in script
     assert "Start-Sleep -Seconds $TickSeconds" in script
     assert ".32" not in script
+
+
+def test_controller_has_live_control_plane_probes() -> None:
+    assert callable(_probe_services)

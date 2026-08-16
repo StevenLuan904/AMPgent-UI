@@ -8,8 +8,10 @@ from pathlib import Path
 from typing import Any
 from uuid import UUID, uuid4
 
+import httpx
 import yaml
 from sqlalchemy import func, select
+from temporalio.client import Client
 
 from pepagent.db.models import (
     AgentDecision,
@@ -24,6 +26,7 @@ from pepagent.db.models import (
 from pepagent.db.repository import ExperimentRepository
 from pepagent.db.session import SessionFactory
 from pepagent.provenance.hashing import sha256_bytes, sha256_json
+from pepagent.settings import get_settings
 from pepagent.v38_persistence import (
     MultiTargetRunBindingReceipt,
     StageCheckpointReceipt,
@@ -246,6 +249,37 @@ async def _run_counts(run_id: UUID) -> dict[str, int]:
         return counts
 
 
+async def _probe_services() -> dict[str, dict[str, object]]:
+    settings = get_settings()
+    health: dict[str, dict[str, object]] = {
+        "database": {"healthy": True, "detail": "controller_count_query_succeeded"}
+    }
+    async with httpx.AsyncClient(timeout=5.0) as client:
+        for name, url in (
+            ("api", "http://127.0.0.1:8080/healthz"),
+            ("object_store", f"{settings.s3_endpoint.rstrip('/')}/minio/health/live"),
+        ):
+            try:
+                response = await client.get(url)
+                response.raise_for_status()
+                health[name] = {"healthy": True, "status_code": response.status_code}
+            except Exception as exc:
+                health[name] = {"healthy": False, "detail": type(exc).__name__}
+    try:
+        temporal = await asyncio.wait_for(
+            Client.connect(
+                settings.temporal_address,
+                namespace=settings.temporal_namespace,
+            ),
+            timeout=5.0,
+        )
+        healthy = await asyncio.wait_for(temporal.service_client.check_health(), timeout=5.0)
+        health["temporal"] = {"healthy": bool(healthy)}
+    except Exception as exc:
+        health["temporal"] = {"healthy": False, "detail": type(exc).__name__}
+    return health
+
+
 def _parse_time(value: str) -> datetime:
     parsed = datetime.fromisoformat(value)
     if parsed.tzinfo is None:
@@ -302,6 +336,12 @@ async def tick_controller(*, state_path: Path) -> dict[str, Any]:
             )
     state["last_tick_at"] = now.isoformat()
     state["durable_counts"] = await _run_counts(run_id)
+    state["service_health"] = await _probe_services()
+    service_blocker = "control_plane_service_unhealthy"
+    if all(item.get("healthy") is True for item in state["service_health"].values()):
+        state["blockers"] = [item for item in state["blockers"] if item != service_blocker]
+    elif service_blocker not in state["blockers"]:
+        state["blockers"].append(service_blocker)
     state["progress_check_due"] = True
     state["plan_review_performed"] = plan_due
     state["user_review_due"] = user_review_due
