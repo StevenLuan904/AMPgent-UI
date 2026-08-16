@@ -84,6 +84,7 @@ class V37Manifest(BaseModel):
         "v37.0.12-boltz-runtime-smoke-recovery",
         "v37.0.13-boltz-path-resolution-recovery",
         "v37.0.14-post-rosetta-reference-recovery",
+        "v37.0.15-rosetta-decoy-hash-binding-recovery",
     ]
     execution_status: Literal["direction_authorized_pending_preexecution_gates"]
     track: Literal["single_arm_rapid_champion_generation"]
