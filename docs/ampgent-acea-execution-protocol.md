@@ -2101,3 +2101,14 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
 - v37 的单靶点、未按 target/control lane 隔离的结构持久化路径不能冒充 v38 证据。正式 science workflow
   仍须等待 v38 原生 structure Activity、逐任务持久化、最终三视图 Pareto/replay、provider refinement release、
   immutable worker release 与 exact-once preflight 全部完成；本次修复不提交短肽生成 run。
+
+### 21.50 2026-08-18 v38 逐 pose 与逐 decoy 证据身份
+
+- v38 的 Boltz 输出必须绑定完整 structure-task SHA，并显式保存 coordinate artifact、raw result、parameters
+  和 ToolCall identity；只提供 candidate 或 seed 的旧式结果不再满足多靶点证据合同。
+- 每个 Rosetta ensemble 必须反向绑定同一 structure task 与 Boltz evidence/coordinate SHA，完整给出冻结数量的
+  decoy。每个 decoy 都必须有连续 ordinal、输入结构 SHA、唯一输出结构 SHA、唯一 score-record SHA 和原始
+  total score；数量不足、输入坐标漂移、重复输出或重复 score hash 全部 fail closed。
+- 该信封直接修复历史上 producer/consumer 对逐 decoy 哈希理解不一致的问题，同时保证 GyrA/PBP2a 与
+  native/wrong-pocket 结果不能串线。它仍是 v38 原生执行器的证据前置条件，不代表已部署 structure worker，
+  也不授权提交正式 science workflow。

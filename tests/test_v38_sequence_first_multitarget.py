@@ -15,10 +15,13 @@ from pepagent.v38_sequence_first_multitarget import (
     LabelGate,
     MetricAgreementGate,
     MetricObservation,
+    MultiTargetBoltzEvidence,
     MultiTargetExecutionPlan,
+    MultiTargetRosettaEvidence,
     NumericGate,
     ParetoObjective,
     RefinementPolicy,
+    RosettaDecoyEvidence,
     SequenceCandidateEvidence,
     SequenceMaturityPolicy,
     TargetBranchSpec,
@@ -510,6 +513,101 @@ def test_multitarget_structure_tasks_reject_incomplete_seed_budget() -> None:
             plan,
             dispatches=dispatches,
             boltz_seeds=(20270380, 20270381),
+        )
+
+
+def test_multitarget_structure_evidence_binds_pose_and_all_decoy_hashes() -> None:
+    plan = MultiTargetExecutionPlan(
+        harness_release_id="v38-harness",
+        history_snapshot_sha256=SHA_A,
+        shared_sequence_cohort_sha256=SHA_B,
+        sequence_maturity_decision_sha256=SHA_C,
+        target_branches=(_branch("acea"), _branch("lpxc")),
+        max_parallel_targets=2,
+    )
+    dispatches = build_parallel_target_dispatch(plan, mature_candidate_ids=(uuid4(),))
+    task = build_multitarget_structure_tasks(
+        plan,
+        dispatches=dispatches,
+        boltz_seeds=(20270380, 20270381, 20270382),
+    )[0]
+    boltz = MultiTargetBoltzEvidence(
+        task=task,
+        task_sha256=task.sha256(),
+        tool_call_id=uuid4(),
+        coordinate_artifact_sha256=SHA_A,
+        raw_result_artifact_sha256=SHA_B,
+        parameters_sha256=SHA_C,
+    )
+    decoys = tuple(
+        RosettaDecoyEvidence(
+            decoy_ordinal=index,
+            input_structure_sha256=SHA_A,
+            output_structure_sha256=f"{index + 1:064x}",
+            score_record_sha256=f"{index + 100:064x}",
+            total_score=float(index),
+        )
+        for index in range(16)
+    )
+    rosetta = MultiTargetRosettaEvidence(
+        task=task,
+        task_sha256=task.sha256(),
+        boltz_evidence_sha256=boltz.sha256(),
+        boltz_coordinate_artifact_sha256=SHA_A,
+        tool_call_id=uuid4(),
+        raw_result_artifact_sha256=SHA_D,
+        decoys=decoys,
+    )
+
+    assert rosetta.task.control_lane == "native"
+    assert rosetta.task.target_id == plan.target_branches[0].target_id
+    assert len(rosetta.decoys) == 16
+    assert len(rosetta.sha256()) == 64
+
+
+def test_multitarget_structure_evidence_rejects_task_or_decoy_drift() -> None:
+    plan = MultiTargetExecutionPlan(
+        harness_release_id="v38-harness",
+        history_snapshot_sha256=SHA_A,
+        shared_sequence_cohort_sha256=SHA_B,
+        sequence_maturity_decision_sha256=SHA_C,
+        target_branches=(_branch("acea"), _branch("lpxc")),
+        max_parallel_targets=2,
+    )
+    dispatches = build_parallel_target_dispatch(plan, mature_candidate_ids=(uuid4(),))
+    task = build_multitarget_structure_tasks(
+        plan,
+        dispatches=dispatches,
+        boltz_seeds=(20270380, 20270381, 20270382),
+    )[0]
+    with pytest.raises(ValidationError, match="exact v38 structure task"):
+        MultiTargetBoltzEvidence(
+            task=task,
+            task_sha256=SHA_A,
+            tool_call_id=uuid4(),
+            coordinate_artifact_sha256=SHA_A,
+            raw_result_artifact_sha256=SHA_B,
+            parameters_sha256=SHA_C,
+        )
+    short_decoys = tuple(
+        RosettaDecoyEvidence(
+            decoy_ordinal=index,
+            input_structure_sha256=SHA_A,
+            output_structure_sha256=f"{index + 1:064x}",
+            score_record_sha256=f"{index + 100:064x}",
+            total_score=float(index),
+        )
+        for index in range(15)
+    )
+    with pytest.raises(ValidationError, match="decoy count"):
+        MultiTargetRosettaEvidence(
+            task=task,
+            task_sha256=task.sha256(),
+            boltz_evidence_sha256=SHA_B,
+            boltz_coordinate_artifact_sha256=SHA_A,
+            tool_call_id=uuid4(),
+            raw_result_artifact_sha256=SHA_D,
+            decoys=short_decoys,
         )
 
 
