@@ -1,0 +1,55 @@
+schema_version: v38.refinement-provider-acceptance-request.1
+status: requested_not_delivered
+owner_task_id: 019fad3e-76b8-7e32-8455-d2e9b31d33e5
+consumer: AMPgent-v38
+purpose: knowledge_traced_short_peptide_refinement
+
+required_temporal_interface:
+  activity_name: refine_v38_sequences_with_knowledge
+  dedicated_task_queue: pepagent-refinement-provider-v38
+  heartbeat_seconds: 30
+  request_schema: v38.refinement-provider-request.1
+  response_contract: pepagent.v38_science_execution.RefinementChildProposal
+
+request_requirements:
+  - exact_sequence_refinement_plan
+  - provider_task_id
+  - knowledge_context_pack_sha256
+  - provider_release_revision
+  - provider_runtime_manifest_sha256
+
+response_requirements:
+  exact_children_per_parent: true
+  exact_parent_sequence_echo: true
+  mutation_rationale_required: true
+  adopted_card_trace_required: true
+  query_and_passage_sha256_required: true
+  unchanged_parent_control_sha256_required: true
+  provenance_required:
+    - tool_version
+    - environment_sha256
+    - attempt
+    - immutable_release_sha256
+
+scientific_boundaries:
+  target_specific_claim_transfer_forbidden: true
+  acea_specific_claims_cannot_support_gyra_or_pbp2a: true
+  generic_amp_rules_may_be_adopted_with_trace: true
+  safety_gate_relaxation_forbidden: true
+  parent_replacement_forbidden: true
+  structure_feedback_in_sequence_refinement_forbidden: true
+  ampgent_provider_compatibility_layer_forbidden: true
+
+acceptance_tests:
+  - immutable_source_and_runtime_release_verified
+  - real_activity_poller_visible_on_dedicated_queue
+  - synthetic_two_parent_plan_returns_exact_child_denominator
+  - every_child_differs_from_parent_and_is_10_to_25_canonical_amino_acids
+  - every_adopted_trace_resolves_to_frozen_context_pack_passage
+  - cancellation_terminates_only_owned_child_processes
+  - duplicate_children_remain_explicit_occurrences
+  - output_passes_ampgent_fail_closed_consumer_without_repair
+
+delivery_gate:
+  formal_science_submission_before_acceptance_forbidden: true
+  provider_release_must_be_frozen_in_unique_run_preflight: true

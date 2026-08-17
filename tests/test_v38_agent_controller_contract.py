@@ -2,7 +2,12 @@ from pathlib import Path
 
 import yaml
 
-from pepagent.v38_agent_controller_cli import _capacity_blocker, _probe_services, _validate_panel
+from pepagent.v38_agent_controller_cli import (
+    _capacity_blocker,
+    _probe_services,
+    _refinement_provider_blocker,
+    _validate_panel,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -62,3 +67,9 @@ def test_controller_distinguishes_unreachable_busy_and_idle_gpu_capacity() -> No
     assert _capacity_blocker(
         {"observations": observed, "idle_gpu_keys": ["192.168.99.19:4"]}
     ) is None
+
+
+def test_controller_reports_unaccepted_refinement_provider_release() -> None:
+    assert _refinement_provider_blocker() == (
+        "v38_refinement_provider_release_not_delivered"
+    )

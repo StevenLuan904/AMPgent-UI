@@ -71,6 +71,22 @@ def _capacity_blocker(capacity: dict[str, Any]) -> str | None:
     return "authorized_structure_gpu_currently_busy"
 
 
+def _refinement_provider_blocker() -> str | None:
+    request_path = (
+        Path(__file__).resolve().parents[2]
+        / "config"
+        / "experiments"
+        / "v38_refinement_provider_acceptance.yaml"
+    )
+    try:
+        request = _load_yaml(request_path)
+    except (OSError, ValueError, yaml.YAMLError):
+        return "v38_refinement_provider_acceptance_contract_missing"
+    if request.get("status") != "accepted_immutable_release":
+        return "v38_refinement_provider_release_not_delivered"
+    return None
+
+
 def _validate_panel(
     panel_path: Path,
     coordinate_root: Path,
@@ -366,6 +382,16 @@ async def tick_controller(*, state_path: Path) -> dict[str, Any]:
         capacity_blocker = "authorized_structure_gpu_currently_unreachable"
     if capacity_blocker is not None:
         state["blockers"].append(capacity_blocker)
+    provider_blockers = {
+        "v38_refinement_provider_acceptance_contract_missing",
+        "v38_refinement_provider_release_not_delivered",
+    }
+    state["blockers"] = [
+        item for item in state["blockers"] if item not in provider_blockers
+    ]
+    provider_blocker = _refinement_provider_blocker()
+    if provider_blocker is not None:
+        state["blockers"].append(provider_blocker)
     state["progress_check_due"] = True
     state["plan_review_performed"] = plan_due
     state["user_review_due"] = user_review_due

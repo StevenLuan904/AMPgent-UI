@@ -2077,3 +2077,14 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   指向该 task 冻结的 provider task。当前代码已闭合 Temporal 编排协议，但 provider-owned Activity 的独立
   release、poller、真实 smoke 和全链路 immutable worker release/preflight 尚未完成；因此 formal science
   workflow 仍保持未提交。
+
+### 21.48 2026-08-18 v38 provider 交付门与阶段计数修正
+
+- 现有 knowledge runtime 只有只读 `context-pack`/`verify` invocation，没有产生 refinement 子代的 provider-owned
+  Activity；因此不得把已有 AceA context-pack adapter 误报为序列编辑器。新增
+  `config/experiments/v38_refinement_provider_acceptance.yaml`，将 provider task、独立 Temporal Activity/queue、
+  request/response、逐子代 knowledge trace、immutable release、真实 poller/smoke 与取消清理要求写成正式验收门。
+  状态保持 `requested_not_delivered`，交付并通过只读验收前禁止正式 science submission。
+- 控制器默认 sequence-metrics durable target 从错误的 8100 修正为 `900×11=9900`。这是阶段推进正确性修复：
+  任一候选缺少双 MIC/活性、毒性、溶血或理化指标时都不能提前进入 admission/structure；refinement 新子代仍按
+  实际唯一数量额外增加 `11×N` Evaluation，不纳入初始 9900 的静态分母。

@@ -36,7 +36,9 @@ def _observation(**updates: object) -> StageProgressObservation:
 def test_default_controller_has_sequence_first_stages_and_two_hour_review() -> None:
     plan = build_default_run_control_plan()
     names = [item.stage for item in plan.stages]
+    sequence_metrics = next(item for item in plan.stages if item.stage == "sequence_metrics")
     assert names.index("sequence_admission") < names.index("parallel_target_structure")
+    assert sequence_metrics.expected_durable_count == 900 * 11
     assert plan.activity_heartbeat_seconds == 30
     assert plan.operator_review_seconds == 7200
     assert plan.allowed_idle_capacity_confirmations == 2

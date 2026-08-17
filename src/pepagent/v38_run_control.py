@@ -123,7 +123,7 @@ class RunControlDecision(FrozenModel):
 def build_default_run_control_plan(
     *,
     proposal_count: int = 900,
-    evaluation_count: int = 8100,
+    evaluation_count: int = 9900,
     structure_branch_count: int = 3,
     structure_candidates_per_branch: int = 48,
     boltz_seeds: int = 3,
