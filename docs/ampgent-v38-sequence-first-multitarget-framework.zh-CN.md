@@ -58,8 +58,10 @@ Temporal history, queue pollers, service probes and allowed-capacity receipts.
 
 ## 4. 序列先成熟，再做结构
 
-所有有效、去重 proposal 都先完成序列评价。评价包括 LLAMP 与 AMP-READ 的 MIC/活性、ToxinPred3、
-溶血风险以及电荷、疏水性、疏水矩和不稳定指数。结构预算不会用来挽救序列证据薄弱的候选。
+所有有效、去重 proposal 都先完成 11 项序列评价：LLAMP MIC、AMP-READ MIC、MACREL AMP 概率、
+ToxinPred3 score/label、MACREL 溶血概率/label，以及 hydrophobic moment、hydrophobic ratio、最大连续
+疏水片段和 pH 7.4 净电荷。这里使用真实 provider 的规范 metric name，不用无法落库验证的概念别名。
+结构预算不会用来挽救序列证据薄弱的候选。
 
 `V38SequenceExecutionContract` 将 3 个生成器 × 3 个 seed 冻结为 9 个 cell，每个 cell 请求 100 条，
 共 900 个 raw occurrence。`build_score_all_proposal_cohort` 保存每一个有效、无效和重复 occurrence；所有
@@ -76,6 +78,12 @@ Candidate 的 proposal rank 沿用全局 source ordinal。完整且字节身份�
 `amp_designer_generator_v38_cli.py` 单 batch adapter。旧 v25/v37 adapter 不修改、SHA 不漂移。9 个 cell
 全部返回且身份、数量、raw rank 连续性通过校验后，才允许在一个事务中创建 ToolCall、对象证据、occurrence
 和 Candidate；缺一 cell、重复 cell 或任意 batch 不完整均不会产生部分科学 cohort。
+
+`evaluate_v38_sequence_metric` 复用五个冻结真实评分 runtime，但使用独立 v38 logical identity、工作目录、
+transition receipt 和 content-addressed compact reference。`persist_v38_sequence_metric` 只投影各插件声明的
+规范 observation，要求每一插件覆盖 score-all cohort 中每一个 Candidate；五个插件的 observation 并集必须
+精确等于上述 11 项。缺 Candidate、缺 observation、重复 observation、失败、对象 SHA/字节漂移或数据库 cohort
+漂移都会拒绝整笔指标持久化。因而进入 admission 的分母是“全部合法唯一序列 × 11”，不是部分成功子集。
 
 ### 4.1 为什么不用任意外部活性阈值一刀切
 

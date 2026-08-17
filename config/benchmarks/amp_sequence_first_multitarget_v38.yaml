@@ -76,11 +76,13 @@ sequence_first_agent:
     mutation_rationale_and_knowledge_trace_required: true
     unchanged_parent_control_required: true
   required_declared_metrics:
-    - hydrophobicity
-    - hydrophobic_moment
-    - net_charge
-    - instability_index
-    - hemolysis_risk
+    - hydrophobic_moment_eisenberg
+    - hydrophobic_ratio_modlamp
+    - maximum_hydrophobic_run
+    - net_charge_ph7_4
+    - macrel_amp_probability
+    - macrel_hemolysis_probability
+    - macrel_hemolysis_label
     - llamp_log10_mic_um
     - amp_read_log10_mic_um
     - toxinpred3_hybrid_score
@@ -88,11 +90,13 @@ sequence_first_agent:
     - pair_iptm
     - rosetta_interface_delta_reu
   sequence_maturity_metrics:
-    - hydrophobicity
-    - hydrophobic_moment
-    - net_charge
-    - instability_index
-    - hemolysis_risk
+    - hydrophobic_moment_eisenberg
+    - hydrophobic_ratio_modlamp
+    - maximum_hydrophobic_run
+    - net_charge_ph7_4
+    - macrel_amp_probability
+    - macrel_hemolysis_probability
+    - macrel_hemolysis_label
     - llamp_log10_mic_um
     - amp_read_log10_mic_um
     - toxinpred3_hybrid_score

@@ -39,6 +39,7 @@ from pepagent.workers.portfolio_activities import (
 )
 from pepagent.workers.v37_activities import (
     evaluate_v37_sequence_metric,
+    evaluate_v38_sequence_metric,
     predict_v37_boltz2_complex,
     score_v37_rosetta_complex,
 )
@@ -103,7 +104,11 @@ ROLE_CONFIG = {
     ),
     "metrics": (
         "pepagent-cpu-metrics",
-        [evaluate_optional_sequence_metric, evaluate_v37_sequence_metric],
+        [
+            evaluate_optional_sequence_metric,
+            evaluate_v37_sequence_metric,
+            evaluate_v38_sequence_metric,
+        ],
         [],
     ),
     "portfolio": ("pepagent-cpu-portfolio", [generate_amp_designer_v32], []),

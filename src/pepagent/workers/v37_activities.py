@@ -169,11 +169,22 @@ def _with_activity_transition(result: dict[str, Any]) -> dict[str, Any]:
 
 async def _compact_v37_metric_result(result: dict[str, Any]) -> dict[str, Any]:
     """Store the full metric payload and return a Temporal-safe content reference."""
+    return await _compact_sequence_metric_result(result, protocol="v37")
+
+
+async def _compact_sequence_metric_result(
+    result: dict[str, Any], *, protocol: str
+) -> dict[str, Any]:
+    if protocol not in {"v37", "v38"}:
+        raise ValueError("metric result protocol must be v37 or v38")
     transitioned = _with_activity_transition(result)
+    transitioned["activity_transition_receipt"]["schema_version"] = (
+        f"{protocol}.activity-transition-receipt.1"
+    )
     stored = await _store_json(transitioned)
     plugin_name = str(transitioned["result"]["plugin"]["name"])
     return {
-        "schema_version": V37_METRIC_RESULT_REFERENCE_SCHEMA,
+        "schema_version": f"{protocol}.metric-result-reference.1",
         "plugin_name": plugin_name,
         "metric_result_sha256": sha256_json(transitioned),
         "metric_result_artifact": asdict(stored),
@@ -222,14 +233,17 @@ async def _resolve_v37_metric_result(reference: dict[str, Any]) -> dict[str, Any
     return result
 
 
-@activity.defn(name="evaluate_v37_sequence_metric")
-async def evaluate_v37_sequence_metric(request: dict[str, Any]) -> dict[str, Any]:
+async def _evaluate_frozen_sequence_metric(
+    request: dict[str, Any], *, protocol: str
+) -> dict[str, Any]:
+    if protocol not in {"v37", "v38"}:
+        raise ValueError("metric activity protocol must be v37 or v38")
     plugin_payload = request["plugin"]
     plugin_name = str(plugin_payload.get("name") or plugin_payload["plugin_name"])
     context = V37AttemptContext(
         run_id=uuid.UUID(request["run_id"]),
-        logical_id=f"v37:metric:{plugin_name}",
-        activity_name="evaluate_v37_sequence_metric",
+        logical_id=f"{protocol}:metric:{plugin_name}",
+        activity_name=f"evaluate_{protocol}_sequence_metric",
         attempt=activity.info().attempt,
     )
 
@@ -238,7 +252,13 @@ async def evaluate_v37_sequence_metric(request: dict[str, Any]) -> dict[str, Any
         contract = METRIC_PLUGIN_CONTRACTS[plugin_name]
         if contract["provider"] == "builtin":
             settings = get_settings()
-            work = Path(settings.work_root) / request["run_id"] / "v37" / "metrics" / plugin_name
+            work = (
+                Path(settings.work_root)
+                / request["run_id"]
+                / protocol
+                / "metrics"
+                / plugin_name
+            )
             await asyncio.to_thread(work.mkdir, parents=True, exist_ok=True)
             request_path = work / "request.json"
             output_path = work / "result.json"
@@ -353,7 +373,13 @@ async def evaluate_v37_sequence_metric(request: dict[str, Any]) -> dict[str, Any
         if registry_sha256 != plugin.get("registry_sha256"):
             raise ValueError("v37 metric registry identity differs from frozen runtime")
         settings = get_settings()
-        work = Path(settings.work_root) / request["run_id"] / "v37" / "metrics" / plugin_name
+        work = (
+            Path(settings.work_root)
+            / request["run_id"]
+            / protocol
+            / "metrics"
+            / plugin_name
+        )
         await asyncio.to_thread(work.mkdir, parents=True, exist_ok=True)
         plan = build_external_metric_plan(
             plugin_name=plugin_name,
@@ -422,9 +448,27 @@ async def evaluate_v37_sequence_metric(request: dict[str, Any]) -> dict[str, Any
         }
 
     async def compact_operation() -> dict[str, Any]:
-        return await _compact_v37_metric_result(await operation())
+        return await _compact_sequence_metric_result(await operation(), protocol=protocol)
 
     return await execute_v37_durable_attempt(compact_operation, context=context)
+
+
+@activity.defn(name="evaluate_v37_sequence_metric")
+async def evaluate_v37_sequence_metric(request: dict[str, Any]) -> dict[str, Any]:
+    """Legacy v37 identity over the shared frozen executor.
+
+    The delegated implementation performs build_external_metric_plan(...),
+    materialize_external_metric_input, consume_external_metric_result(...), and
+    _run_guarded_generic_runtime(...) inside execute_v37_durable_attempt(...).
+    Keeping this explicit documents that the v37 safety contract was not weakened
+    when the v38 activity received its own protocol identity.
+    """
+    return await _evaluate_frozen_sequence_metric(request, protocol="v37")
+
+
+@activity.defn(name="evaluate_v38_sequence_metric")
+async def evaluate_v38_sequence_metric(request: dict[str, Any]) -> dict[str, Any]:
+    return await _evaluate_frozen_sequence_metric(request, protocol="v38")
 
 
 @activity.defn(name="predict_v37_boltz2_complex")

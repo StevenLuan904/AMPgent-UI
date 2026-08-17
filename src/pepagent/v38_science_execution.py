@@ -10,6 +10,28 @@ from pepagent.provenance.hashing import sha256_json, sha256_text
 from pepagent.v38_sequence_first_multitarget import KnowledgeUseTrace
 
 CANONICAL_AMINO_ACIDS = frozenset("ACDEFGHIKLMNPQRSTVWY")
+V38_METRIC_OBSERVATIONS: dict[str, frozenset[str]] = {
+    "physicochemical_developability": frozenset(
+        {
+            "hydrophobic_moment_eisenberg",
+            "hydrophobic_ratio_modlamp",
+            "maximum_hydrophobic_run",
+            "net_charge_ph7_4",
+        }
+    ),
+    "hemolysis_risk": frozenset(
+        {
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "macrel_hemolysis_label",
+        }
+    ),
+    "mic_potency": frozenset({"llamp_log10_mic_um"}),
+    "mic_potency_amp_read": frozenset({"amp_read_log10_mic_um"}),
+    "toxicity_risk": frozenset(
+        {"toxinpred3_hybrid_score", "toxinpred3_label"}
+    ),
+}
 
 
 class FrozenModel(BaseModel):
@@ -46,6 +68,13 @@ class V38SequenceExecutionContract(FrozenModel):
             raise ValueError("raw occurrence budget does not match generator cells")
         if len(self.metric_plugins) != len(set(self.metric_plugins)):
             raise ValueError("sequence metric plugins must be unique")
+        if set(self.metric_plugins) != set(V38_METRIC_OBSERVATIONS):
+            raise ValueError("sequence metric plugins differ from the executable registry")
+        declared = frozenset().union(
+            *(V38_METRIC_OBSERVATIONS[name] for name in self.metric_plugins)
+        )
+        if self.required_sequence_metrics != declared:
+            raise ValueError("required sequence metrics differ from plugin observations")
         return self
 
     def sha256(self) -> str:
@@ -86,11 +115,13 @@ def build_default_v38_sequence_contract() -> V38SequenceExecutionContract:
         ),
         required_sequence_metrics=frozenset(
             {
-                "hydrophobicity",
-                "hydrophobic_moment",
-                "net_charge",
-                "instability_index",
-                "hemolysis_risk",
+                "hydrophobic_moment_eisenberg",
+                "hydrophobic_ratio_modlamp",
+                "maximum_hydrophobic_run",
+                "net_charge_ph7_4",
+                "macrel_amp_probability",
+                "macrel_hemolysis_probability",
+                "macrel_hemolysis_label",
                 "llamp_log10_mic_um",
                 "amp_read_log10_mic_um",
                 "toxinpred3_hybrid_score",
