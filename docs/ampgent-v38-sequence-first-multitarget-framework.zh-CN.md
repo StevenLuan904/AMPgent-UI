@@ -71,6 +71,12 @@ Candidate 的 proposal rank 沿用全局 source ordinal。完整且字节身份�
 只要检测到部分 occurrence、跨 run ToolCall、未完成 ToolCall、cell/seed/arm 漂移，就整笔 fail closed，禁止
 把半批旧结果补齐成新证据。调用方必须用单一数据库事务包围整批写入。
 
+执行侧使用 `generate_v38_sequence_cell` 和 `persist_v38_score_all_generation`。HydrAMP 与 AMPGAN-v2 复用
+冻结模型/runtime 字节，但把 request contract 独立派生为每 cell 100 条；AMP-Designer 使用新的
+`amp_designer_generator_v38_cli.py` 单 batch adapter。旧 v25/v37 adapter 不修改、SHA 不漂移。9 个 cell
+全部返回且身份、数量、raw rank 连续性通过校验后，才允许在一个事务中创建 ToolCall、对象证据、occurrence
+和 Candidate；缺一 cell、重复 cell 或任意 batch 不完整均不会产生部分科学 cohort。
+
 ### 4.1 为什么不用任意外部活性阈值一刀切
 
 外部活性阈值容易受模型标定、菌株和实验条件影响，可能把整批候选清空。因此 v38 只把以下项目作为硬门：

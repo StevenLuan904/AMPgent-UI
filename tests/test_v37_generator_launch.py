@@ -25,12 +25,49 @@ from pepagent.v37_runtime_execution import (
 from pepagent.v37_runtime_manifests import V37GeneratorRuntimeExpectation
 from pepagent.workers.v37_activities import (
     _generator_command,
+    _generator_request_payload,
     _materialize_hydramp_models,
     _materialize_hydramp_models_with_progress,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNTIME_ROOT = ROOT / "config/environments/v37_generator_runtimes"
+
+
+def test_v38_generator_payload_is_one_score_all_cell() -> None:
+    payload = _generator_request_payload(
+        generator="amp_designer",
+        seed=20270377,
+        protocol="v38",
+        raw_proposal_budget=100,
+        device="cpu",
+    )
+    assert payload == {
+        "schema_version": "v38.generator-request.1",
+        "generator_id": "amp_designer",
+        "seed": 20270377,
+        "raw_proposal_budget": 100,
+        "batch_size": 100,
+        "batches": 1,
+        "top_k": 10,
+        "top_p": 1.0,
+        "temperature": None,
+        "decode_steps": 34,
+        "device": "cpu",
+    }
+
+
+def test_v37_generator_payload_keeps_legacy_ten_batch_contract() -> None:
+    payload = _generator_request_payload(
+        generator="amp_designer",
+        seed=20270377,
+        protocol="v37",
+        raw_proposal_budget=1000,
+        device="cpu",
+    )
+    assert "schema_version" not in payload
+    assert payload["batches"] == 10
+    assert payload["raw_proposal_budget"] == 1000
 
 
 def test_hydramp_materialization_emits_progress_while_archive_is_processed(

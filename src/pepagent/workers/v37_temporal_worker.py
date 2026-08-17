@@ -19,6 +19,7 @@ from pepagent.workers.activities import (
 from pepagent.workers.v37_activities import (
     finalize_v37_run,
     generate_v37_batch,
+    generate_v38_sequence_cell,
     persist_v37_final_portfolio_and_replay,
     persist_v37_generation_batch,
     persist_v37_knowledge_projection,
@@ -28,6 +29,7 @@ from pepagent.workers.v37_activities import (
     run_and_persist_v37_knowledge,
     run_and_persist_v37_pepshot,
 )
+from pepagent.workers.v38_activities import persist_v38_score_all_generation
 from pepagent.workflows.v37_champion import RapidChampionGenerationV37Workflow
 
 V37_ROLE_CONFIG = {
@@ -36,6 +38,7 @@ V37_ROLE_CONFIG = {
         [
             mark_run_started,
             mark_run_failed,
+            persist_v38_score_all_generation,
             persist_v37_generation_batch,
             persist_v37_sequence_metric,
             persist_v37_knowledge_projection,
@@ -50,7 +53,11 @@ V37_ROLE_CONFIG = {
         ],
         [RapidChampionGenerationV37Workflow],
     ),
-    "v37-generator": ("pepagent-generator-v37", [generate_v37_batch], []),
+    "v37-generator": (
+        "pepagent-generator-v37",
+        [generate_v37_batch, generate_v38_sequence_cell],
+        [],
+    ),
     "v37-provider": (
         "pepagent-provider-v37",
         [run_and_persist_v37_knowledge, run_and_persist_v37_pepshot],

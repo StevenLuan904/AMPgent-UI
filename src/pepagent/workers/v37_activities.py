@@ -911,8 +911,52 @@ async def _materialize_hydramp_models_with_progress(
             await progress_writer()
 
 
-@activity.defn(name="generate_v37_batch")
-async def generate_v37_batch(request: dict[str, Any]) -> dict[str, Any]:
+def _generator_request_payload(
+    *,
+    generator: str,
+    seed: int,
+    protocol: str,
+    raw_proposal_budget: int,
+    device: str | None = None,
+) -> dict[str, Any]:
+    if protocol not in {"v37", "v38"}:
+        raise ValueError("generator protocol must be v37 or v38")
+    if raw_proposal_budget <= 0:
+        raise ValueError("generator raw proposal budget must be positive")
+    payload: dict[str, Any] = {
+        "generator_id": generator,
+        "seed": seed,
+        "raw_proposal_budget": raw_proposal_budget,
+    }
+    if protocol == "v38":
+        payload["schema_version"] = "v38.generator-request.1"
+    if generator == "amp_designer":
+        if raw_proposal_budget % 100:
+            raise ValueError("AMP-Designer budget must be a multiple of its batch size")
+        if device not in {"cpu", "cuda"}:
+            raise ValueError("AMP-Designer requires an explicit frozen device")
+        payload.update(
+            batch_size=100,
+            batches=raw_proposal_budget // 100,
+            top_k=10,
+            top_p=1.0,
+            temperature=None,
+            decode_steps=34,
+            device=device,
+        )
+    return payload
+
+
+async def _generate_frozen_sequence_batch(
+    request: dict[str, Any],
+    *,
+    protocol: str,
+    raw_proposal_budget: int,
+) -> dict[str, Any]:
+    if protocol not in {"v37", "v38"}:
+        raise ValueError("generator protocol must be v37 or v38")
+    if raw_proposal_budget <= 0:
+        raise ValueError("generator raw proposal budget must be positive")
     engine = request["engine"]
     runtime = request["runtime"]
     launch_binding = request["launch_binding"]
@@ -920,25 +964,23 @@ async def generate_v37_batch(request: dict[str, Any]) -> dict[str, Any]:
     generator = engine["generator_id"]
     seed = int(request["seed"])
     settings = get_settings()
-    work = Path(settings.work_root) / request["run_id"] / "v37" / generator / str(seed)
+    work = (
+        Path(settings.work_root)
+        / request["run_id"]
+        / protocol
+        / generator
+        / str(seed)
+    )
     await asyncio.to_thread(work.mkdir, parents=True, exist_ok=True)
     request_path = work / "request.json"
     output_path = work / "raw-output.json"
-    payload: dict[str, Any] = {
-        "generator_id": generator,
-        "seed": seed,
-        "raw_proposal_budget": 1000,
-    }
-    if generator == "amp_designer":
-        payload.update(
-            batch_size=100,
-            batches=10,
-            top_k=10,
-            top_p=1.0,
-            temperature=None,
-            decode_steps=34,
-            device=launch_binding["device"],
-        )
+    payload = _generator_request_payload(
+        generator=generator,
+        seed=seed,
+        protocol=protocol,
+        raw_proposal_budget=raw_proposal_budget,
+        device=launch_binding.get("device"),
+    )
     await asyncio.to_thread(
         request_path.write_text,
         json.dumps(payload, ensure_ascii=False, indent=2),
@@ -946,8 +988,8 @@ async def generate_v37_batch(request: dict[str, Any]) -> dict[str, Any]:
     )
     context = V37AttemptContext(
         run_id=uuid.UUID(request["run_id"]),
-        logical_id=f"v37:generate:{generator}:{seed}",
-        activity_name="generate_v37_batch",
+        logical_id=f"{protocol}:generate:{generator}:{seed}",
+        activity_name=f"generate_{protocol}_batch",
         attempt=activity.info().attempt,
     )
 
@@ -1027,9 +1069,14 @@ async def generate_v37_batch(request: dict[str, Any]) -> dict[str, Any]:
                 await asyncio.to_thread(output_path.read_text, encoding="utf-8")
             )
             if result.get("generator_id") != generator or result.get("seed") != seed:
-                raise ValueError("v37 generator output identity mismatch")
-            if len(result.get("records", [])) != 1000:
-                raise ValueError("v37 generator output must contain exactly 1000 records")
+                raise ValueError(f"{protocol} generator output identity mismatch")
+            if int(result.get("raw_proposal_budget", -1)) != raw_proposal_budget:
+                raise ValueError(f"{protocol} generator output budget identity mismatch")
+            if len(result.get("records", [])) != raw_proposal_budget:
+                raise ValueError(
+                    f"{protocol} generator output must contain exactly "
+                    f"{raw_proposal_budget} records"
+                )
             return {
                 "result": result,
                 "runtime_identity": runtime["runtime_manifest_sha256"],
@@ -1050,7 +1097,42 @@ async def generate_v37_batch(request: dict[str, Any]) -> dict[str, Any]:
                     work=work,
                 )
 
-    return _with_activity_transition(await execute_v37_durable_attempt(operation, context=context))
+    transitioned = _with_activity_transition(
+        await execute_v37_durable_attempt(operation, context=context)
+    )
+    if protocol == "v38":
+        transitioned["activity_transition_receipt"]["schema_version"] = (
+            "v38.activity-transition-receipt.1"
+        )
+    return transitioned
+
+
+@activity.defn(name="generate_v37_batch")
+async def generate_v37_batch(request: dict[str, Any]) -> dict[str, Any]:
+    return await _generate_frozen_sequence_batch(
+        request,
+        protocol="v37",
+        raw_proposal_budget=1000,
+    )
+
+
+@activity.defn(name="generate_v38_sequence_cell")
+async def generate_v38_sequence_cell(request: dict[str, Any]) -> dict[str, Any]:
+    cell = request.get("cell")
+    if not isinstance(cell, dict) or int(cell.get("requested_proposals", -1)) != 100:
+        raise ValueError("v38 generator activity requires a frozen 100-proposal cell")
+    engine = request.get("engine")
+    if not isinstance(engine, dict) or engine.get("generator_id") != cell.get(
+        "generator_id"
+    ):
+        raise ValueError("v38 generator activity engine and cell differ")
+    if int(request.get("seed", -1)) != int(cell.get("seed", -2)):
+        raise ValueError("v38 generator activity seed and cell differ")
+    return await _generate_frozen_sequence_batch(
+        request,
+        protocol="v38",
+        raw_proposal_budget=100,
+    )
 
 
 @activity.defn(name="persist_v37_generation_batch")

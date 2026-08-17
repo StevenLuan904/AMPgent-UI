@@ -314,7 +314,7 @@ async def tick_controller(*, state_path: Path) -> dict[str, Any]:
                 action="wait_for_executable_release",
                 reasons=("v38_scientific_executor_not_yet_deployed",),
                 tasks=(
-                    "integrate_three_generator_activities_with_persisted_score_all_cohort",
+                    "integrate_score_all_cohort_with_all_sequence_metric_activities",
                     "integrate_knowledge_traced_refinement_with_temporal_workflow",
                     "integrate_isolated_parallel_target_branches_with_structure_workers",
                     "do_not_submit_legacy_v37_workflow",
