@@ -46,6 +46,7 @@ def test_v38_control_worker_registers_sequence_workflow_and_admission_activities
     registered = {activity.__temporal_activity_definition.name for activity in activities}
     assert {
         "persist_v38_score_all_generation",
+        "persist_v38_refinement_children",
         "persist_v38_sequence_metric",
         "evaluate_v38_sequence_admission",
         "persist_v38_sequence_admission",

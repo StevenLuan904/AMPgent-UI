@@ -2049,3 +2049,17 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
 - control worker 已注册该 workflow。refinement 子代执行、双靶点 Boltz/Rosetta 隔离分支、最终 target-agnostic/
   per-target/cross-target Pareto 与 database/object-store replay 仍是下一关键闭环；这些完成并冻结 immutable
   worker release 与 exact-once preflight 前，formal science workflow 继续保持未提交。
+
+### 21.46 2026-08-17 v38 refinement 子代持久化门
+
+- 新增 `persist_v38_refinement_children`，严格消费独立 producer 的冻结输出，不在 AMPgent 内实现知识 provider
+  兼容层。每个子代必须通过 `RefinementChildProposal`：属于预注册 parent、轮次一致、序列真实变化且为合法
+  10--25 aa 短肽、至少一条 adopted knowledge trace，并与未改父本 control SHA 精确绑定；每个 work order
+  的子代数量必须逐项完整覆盖，不能静默少产或跨 parent 填补。
+- activity 原子持久化 refinement ToolCall、content-addressed 原始输出/plan/parent-control artifact、父 ToolCall
+  dependency、全部 child occurrence、唯一新 Candidate 和 run lifecycle event。重复子序列保留 occurrence 分母但
+  不复制 Candidate；新子代标记 `score_all_sequence_metrics_required=true`，结构在重新完成全部 11 项评价并
+  readmission 前保持禁止。
+- `persist_v38_sequence_metric` 现允许对一个明确的 run 内候选子集执行完整 plugin 评价，因此 refinement 新子代
+  可逐轮全量重评；它仍拒绝跨 run、未知 candidate 或 plugin 内候选覆盖不完整。当前仍缺独立、冻结、可审计的
+  refinement producer activity，故不会用未声明的本地启发式编辑器伪造知识卡生成能力。

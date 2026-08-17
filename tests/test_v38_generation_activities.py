@@ -1,4 +1,5 @@
 import json
+from uuid import uuid4
 
 import pytest
 
@@ -6,11 +7,18 @@ from pepagent.provenance.hashing import sha256_bytes, sha256_json
 from pepagent.v38_science_execution import (
     V38_METRIC_OBSERVATIONS,
     build_default_v38_sequence_contract,
+    unchanged_parent_control_sha256,
+)
+from pepagent.v38_sequence_first_multitarget import (
+    KnowledgeUseTrace,
+    SequenceRefinementPlan,
+    SequenceRefinementTask,
 )
 from pepagent.workers import v38_activities
 from pepagent.workers.v38_activities import (
     build_v38_metric_evaluation_rows,
     build_v38_score_all_cohort_from_results,
+    validate_v38_refinement_result,
 )
 
 
@@ -181,3 +189,55 @@ async def test_sequence_admission_reference_resolves_and_rejects_identity_drift(
     reference["admission_artifact"]["size_bytes"] += 1
     with pytest.raises(ValueError, match="identity"):
         await v38_activities._resolve_v38_admission(reference)
+
+
+def test_refinement_result_exactly_covers_plan_and_retains_parent_control() -> None:
+    parent_id = uuid4()
+    parent_sequence = "KACDEFGHIKLM"
+    task = SequenceRefinementTask(
+        parent_candidate_id=parent_id,
+        parent_sequence=parent_sequence,
+        parent_sequence_sha256=sha256_bytes(parent_sequence.encode()),
+        refinement_round=1,
+        requested_children=2,
+        knowledge_context_pack_sha256="a" * 64,
+        objective_metric_names=(
+            "llamp_log10_mic_um",
+            "amp_read_log10_mic_um",
+        ),
+        parent_control_sha256=unchanged_parent_control_sha256(
+            parent_candidate_id=parent_id,
+            parent_sequence=parent_sequence,
+            refinement_round=1,
+        ),
+    )
+    plan = SequenceRefinementPlan(
+        refinement_round=1,
+        admission_sha256="b" * 64,
+        tasks=(task,),
+    )
+    trace = KnowledgeUseTrace(
+        card_id="general-amp-amphipathicity",
+        query_sha256="c" * 64,
+        passage_sha256="d" * 64,
+        decision="adopt",
+        rationale="test a conservative amphipathicity edit",
+    )
+    proposals = [
+        {
+            "parent_candidate_id": str(parent_id),
+            "parent_sequence": parent_sequence,
+            "child_sequence": child,
+            "refinement_round": 1,
+            "mutation_rationale": "single conservative residue edit",
+            "knowledge_traces": [trace.model_dump(mode="json")],
+            "unchanged_parent_control_sha256": task.parent_control_sha256,
+        }
+        for child in ("KACDEFGHIKLL", "KACDEFGHIKKM")
+    ]
+    observed = validate_v38_refinement_result(plan, {"proposals": proposals})
+    assert len(observed) == 2
+    assert {item.parent_candidate_id for item in observed} == {parent_id}
+
+    with pytest.raises(ValueError, match="exactly cover"):
+        validate_v38_refinement_result(plan, {"proposals": proposals[:1]})

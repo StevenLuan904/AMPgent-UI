@@ -31,6 +31,7 @@ from pepagent.workers.v37_activities import (
 )
 from pepagent.workers.v38_activities import (
     evaluate_v38_sequence_admission,
+    persist_v38_refinement_children,
     persist_v38_score_all_generation,
     persist_v38_sequence_admission,
     persist_v38_sequence_metric,
@@ -45,6 +46,7 @@ V37_ROLE_CONFIG = {
             mark_run_started,
             mark_run_failed,
             evaluate_v38_sequence_admission,
+            persist_v38_refinement_children,
             persist_v38_score_all_generation,
             persist_v38_sequence_admission,
             persist_v38_sequence_metric,

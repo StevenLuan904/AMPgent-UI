@@ -6,14 +6,14 @@ import uuid
 from dataclasses import asdict
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from temporalio import activity
 
 from pepagent.db.models import AgentDecision, Candidate, Evaluation
 from pepagent.db.repository import ExperimentRepository
 from pepagent.db.session import SessionFactory
-from pepagent.provenance.hashing import sha256_bytes, sha256_json
+from pepagent.provenance.hashing import sha256_bytes, sha256_json, sha256_text
 from pepagent.storage.object_store import ContentAddressedObjectStore
 from pepagent.v38_persistence import (
     GeneratorCellToolBinding,
@@ -22,6 +22,7 @@ from pepagent.v38_persistence import (
 from pepagent.v38_science_execution import (
     V38_METRIC_OBSERVATIONS,
     RawProposal,
+    RefinementChildProposal,
     ScoreAllProposalCohort,
     V38SequenceExecutionContract,
     build_score_all_proposal_cohort,
@@ -30,6 +31,7 @@ from pepagent.v38_sequence_first_multitarget import (
     KnowledgeUseTrace,
     MetricObservation,
     SequenceCandidateEvidence,
+    SequenceRefinementPlan,
     admit_sequence_cohort,
     build_default_v38_maturity_policy,
     build_sequence_refinement_plan,
@@ -40,6 +42,29 @@ from pepagent.workers.v37_activities import _select_v37_declared_observations
 
 V38_METRIC_RESULT_REFERENCE_SCHEMA = "v38.metric-result-reference.1"
 V38_ADMISSION_REFERENCE_SCHEMA = "v38.sequence-admission-reference.1"
+
+
+def validate_v38_refinement_result(
+    plan: SequenceRefinementPlan,
+    result: dict[str, Any],
+) -> tuple[RefinementChildProposal, ...]:
+    raw = result.get("proposals")
+    if not isinstance(raw, list):
+        raise ValueError("v38 refinement result lacks proposals")
+    proposals = tuple(RefinementChildProposal.model_validate(item) for item in raw)
+    expected = {
+        task.parent_candidate_id: task.requested_children for task in plan.tasks
+    }
+    observed = {parent_id: 0 for parent_id in expected}
+    for proposal in proposals:
+        if proposal.refinement_round != plan.refinement_round:
+            raise ValueError("v38 refinement proposal round differs from plan")
+        if proposal.parent_candidate_id not in observed:
+            raise ValueError("v38 refinement proposal parent is not planned")
+        observed[proposal.parent_candidate_id] += 1
+    if observed != expected:
+        raise ValueError("v38 refinement result does not exactly cover planned children")
+    return proposals
 
 
 def build_v38_score_all_cohort_from_results(
@@ -458,15 +483,19 @@ async def persist_v38_sequence_metric(request: dict[str, Any]) -> dict[str, Any]
     plugin_name = str(plugin["name"])
     async with SessionFactory() as session, session.begin():
         repository = ExperimentRepository(session)
-        db_candidates = {
+        run_candidates = {
             str(item.id): item
             for item in await session.scalars(
                 select(Candidate).where(Candidate.run_id == run_id)
             )
         }
         expected_candidate_ids = {str(item["id"]) for item in candidates}
-        if set(db_candidates) != expected_candidate_ids:
+        if not expected_candidate_ids <= set(run_candidates):
             raise ValueError("v38 metric persistence candidate cohort differs from database")
+        db_candidates = {
+            candidate_id: run_candidates[candidate_id]
+            for candidate_id in expected_candidate_ids
+        }
         call = await repository.record_completed_tool_call(
             run_id,
             f"v38-metric-{plugin_name}",
@@ -552,6 +581,184 @@ async def persist_v38_sequence_metric(request: dict[str, Any]) -> dict[str, Any]
         "plugin": plugin_name,
         "evaluation_count": len(rows),
         "tool_call_id": str(call.id),
+    }
+
+
+@activity.defn(name="persist_v38_refinement_children")
+async def persist_v38_refinement_children(request: dict[str, Any]) -> dict[str, Any]:
+    run_id = uuid.UUID(str(request["run_id"]))
+    plan = SequenceRefinementPlan.model_validate(request["refinement_plan"])
+    result = request["refinement_result"]
+    if not isinstance(result, dict):
+        raise ValueError("v38 refinement result is invalid")
+    proposals = validate_v38_refinement_result(plan, result)
+    provenance = result.get("provenance")
+    if not isinstance(provenance, dict):
+        raise ValueError("v38 refinement result lacks provenance")
+    async with SessionFactory() as session, session.begin():
+        repository = ExperimentRepository(session)
+        parents = {
+            item.id: item
+            for item in await session.scalars(
+                select(Candidate).where(
+                    Candidate.run_id == run_id,
+                    Candidate.id.in_([task.parent_candidate_id for task in plan.tasks]),
+                )
+            )
+        }
+        if set(parents) != {task.parent_candidate_id for task in plan.tasks}:
+            raise ValueError("v38 refinement parent cohort differs from database")
+        for task in plan.tasks:
+            parent = parents[task.parent_candidate_id]
+            if (
+                parent.sequence != task.parent_sequence
+                or parent.sequence_sha256 != task.parent_sequence_sha256
+            ):
+                raise ValueError("v38 refinement parent sequence identity drifted")
+        call = await repository.record_completed_tool_call(
+            run_id,
+            "v38-knowledge-traced-refinement",
+            str(provenance["tool_version"]),
+            str(provenance["environment_sha256"]),
+            {
+                "stage": "v38_sequence_refinement",
+                "refinement_plan_sha256": plan.sha256(),
+                "knowledge_context_pack_sha256": plan.tasks[0].knowledge_context_pack_sha256,
+            },
+            {
+                "refinement_round": plan.refinement_round,
+                "parent_controls_retained": True,
+                "full_rescoring_required": True,
+                "structure_dispatch_forbidden_until_readmission": True,
+            },
+            result,
+            weights_sha256=provenance.get("weights_sha256"),
+            model_uri=provenance.get("model_uri"),
+            attempt=int(provenance["attempt"]),
+        )
+        artifact = await _store_json(
+            {
+                "refinement_plan": plan.model_dump(mode="json"),
+                "refinement_result": result,
+            }
+        )
+        await _register_artifact(
+            session,
+            call.id,
+            asdict(artifact),
+            "v38_refinement_children_and_parent_controls",
+            {
+                "refinement_plan_sha256": plan.sha256(),
+                "refinement_round": plan.refinement_round,
+            },
+        )
+        for parent in parents.values():
+            if parent.generator_call_id is not None:
+                await repository.record_tool_dependency(
+                    call.id,
+                    parent.generator_call_id,
+                    "refines_v38_parent_candidate",
+                )
+        maximum_rank = int(
+            await session.scalar(
+                select(func.coalesce(func.max(Candidate.proposal_rank), 0)).where(
+                    Candidate.run_id == run_id
+                )
+            )
+            or 0
+        )
+        existing_by_sha = {
+            item.sequence_sha256: item
+            for item in await session.scalars(
+                select(Candidate).where(Candidate.run_id == run_id)
+            )
+        }
+        children: list[Candidate] = []
+        duplicate_count = 0
+        for ordinal, proposal in enumerate(proposals, start=1):
+            sequence = "".join(proposal.child_sequence.split()).upper()
+            sequence_sha256 = sha256_text(sequence)
+            candidate = existing_by_sha.get(sequence_sha256)
+            disposition = "duplicate" if candidate is not None else "promoted_for_scoring"
+            if candidate is None:
+                candidate = await repository.add_candidate(
+                    run_id=run_id,
+                    sequence=sequence,
+                    generation=plan.refinement_round,
+                    proposal_rank=maximum_rank + ordinal,
+                    generator_call_id=call.id,
+                    parent_id=proposal.parent_candidate_id,
+                    metadata={
+                        "schema_version": "v38.refinement-child.1",
+                        "refinement_plan_sha256": plan.sha256(),
+                        "mutation_rationale": proposal.mutation_rationale,
+                        "knowledge_traces": [
+                            trace.model_dump(mode="json")
+                            for trace in proposal.knowledge_traces
+                        ],
+                        "unchanged_parent_control_sha256": (
+                            proposal.unchanged_parent_control_sha256
+                        ),
+                        "score_all_sequence_metrics_required": True,
+                    },
+                    actor="v38-knowledge-traced-refinement",
+                )
+                existing_by_sha[sequence_sha256] = candidate
+                children.append(candidate)
+            else:
+                duplicate_count += 1
+            await repository.record_candidate_occurrence(
+                run_id=run_id,
+                tool_call_id=call.id,
+                parent_candidate_id=proposal.parent_candidate_id,
+                occurrence_rank=ordinal,
+                occurrence_kind="refinement",
+                opaque_arm_label=f"v38-refinement-round-{plan.refinement_round}",
+                sequence=sequence,
+                candidate_id=candidate.id,
+                metadata={
+                    "schema_version": "v38.refinement-occurrence.1",
+                    "refinement_plan_sha256": plan.sha256(),
+                    "disposition": disposition,
+                    "mutation_rationale": proposal.mutation_rationale,
+                    "knowledge_traces": [
+                        trace.model_dump(mode="json") for trace in proposal.knowledge_traces
+                    ],
+                    "unchanged_parent_control_sha256": (
+                        proposal.unchanged_parent_control_sha256
+                    ),
+                },
+            )
+        await repository.append_event(
+            "run",
+            run_id,
+            "v38.sequence_refinement.persisted",
+            "v38-knowledge-traced-refinement",
+            {
+                "tool_call_id": str(call.id),
+                "refinement_round": plan.refinement_round,
+                "raw_child_occurrence_count": len(proposals),
+                "promoted_unique_child_count": len(children),
+                "duplicate_child_count": duplicate_count,
+                "full_rescoring_required": True,
+            },
+        )
+    return {
+        "tool_call_id": str(call.id),
+        "raw_child_occurrence_count": len(proposals),
+        "promoted_unique_child_count": len(children),
+        "duplicate_child_count": duplicate_count,
+        "candidates": [
+            {
+                "id": str(candidate.id),
+                "sequence": candidate.sequence,
+                "sequence_sha256": candidate.sequence_sha256,
+                "proposal_rank": candidate.proposal_rank,
+                "parent_candidate_id": str(candidate.parent_id),
+            }
+            for candidate in children
+        ],
+        "full_rescoring_required": True,
     }
 
 
