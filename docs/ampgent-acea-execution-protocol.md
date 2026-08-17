@@ -2063,3 +2063,17 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
 - `persist_v38_sequence_metric` 现允许对一个明确的 run 内候选子集执行完整 plugin 评价，因此 refinement 新子代
   可逐轮全量重评；它仍拒绝跨 run、未知 candidate 或 plugin 内候选覆盖不完整。当前仍缺独立、冻结、可审计的
   refinement producer activity，故不会用未声明的本地启发式编辑器伪造知识卡生成能力。
+
+### 21.47 2026-08-18 v38 provider-owned refinement 编排闭环
+
+- `V38SequenceFirstAgentWorkflow` 现要求 preflight 冻结唯一的 refinement provider Activity 名、task queue、
+  provider task、release revision 和 runtime manifest SHA。AMPgent 只调度该 provider-owned Activity 并验证
+  输出，不用本地规则或兼容层冒充知识生成器；provider task/context-pack 身份随每个 work order 传递。
+- 当首轮 admission 阻止结构 dispatch 时，workflow 读取 admission artifact 内的精确 refinement plan，调用
+  provider，原子持久化全部子代 occurrence 和父子谱系，再仅对新唯一子代执行五类 plugin、11 项指标的完整
+  score-all。随后基于数据库中父本与子代的完整证据重新 admission；最多三轮，安全门不降、父本保留、不得
+  强制填满。若一轮只产生重复子代，流程停止为 `sequence_evidence_concluded_without_structure`，不会空转。
+- consumer 校验进一步要求子代回报的 parent sequence 与 work order 完全相同，且每条 knowledge trace 必须
+  指向该 task 冻结的 provider task。当前代码已闭合 Temporal 编排协议，但 provider-owned Activity 的独立
+  release、poller、真实 smoke 和全链路 immutable worker release/preflight 尚未完成；因此 formal science
+  workflow 仍保持未提交。

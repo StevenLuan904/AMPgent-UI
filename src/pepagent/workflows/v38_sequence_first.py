@@ -46,6 +46,26 @@ def _validate_request(request: dict[str, Any]) -> None:
         raise ValueError("v38 workflow requires all five sequence metric plugins")
     if len(plugin_names) != len(set(plugin_names)):
         raise ValueError("v38 workflow metric plugins are duplicated")
+    provider = request.get("refinement_provider")
+    if not isinstance(provider, dict) or set(provider) != {
+        "activity_name",
+        "task_queue",
+        "provider_task_id",
+        "release_revision",
+        "runtime_manifest_sha256",
+    }:
+        raise ValueError("v38 workflow requires one frozen refinement provider")
+    if not all(
+        isinstance(provider.get(key), str) and provider[key]
+        for key in ("activity_name", "task_queue", "provider_task_id", "release_revision")
+    ):
+        raise ValueError("v38 refinement provider identity is incomplete")
+    runtime_sha = provider["runtime_manifest_sha256"]
+    if not isinstance(runtime_sha, str) or len(runtime_sha) != 64:
+        raise ValueError("v38 refinement provider runtime identity is invalid")
+    context_sha = request.get("knowledge_context_pack_sha256")
+    if not isinstance(context_sha, str) or len(context_sha) != 64:
+        raise ValueError("v38 knowledge context-pack identity is invalid")
 
 
 @workflow.defn(name="V38SequenceFirstAgentWorkflow")
@@ -115,16 +135,21 @@ class V38SequenceFirstAgentWorkflow:
             if len(candidates) != int(generation["candidate_count"]):
                 raise ValueError("v38 workflow candidate projection count drifted")
 
-            async def evaluate_and_persist_metric(item: dict[str, Any]) -> dict[str, Any]:
+            async def evaluate_and_persist_metric(
+                item: dict[str, Any],
+                cohort: list[dict[str, Any]],
+                *,
+                generation: int,
+            ) -> dict[str, Any]:
                 plugin_name = str(item["plugin_name"])
                 reference = await workflow.execute_activity(
                     "evaluate_v38_sequence_metric",
                     {
                         "run_id": run_id,
-                        "generation": 0,
+                        "generation": generation,
                         "stage": "v38_sequence_score_all",
                         "plugin": request["metric_plugins_by_name"][plugin_name],
-                        "candidates": candidates,
+                        "candidates": cohort,
                     },
                     task_queue=str(queues["sequence_metrics"]),
                     start_to_close_timeout=timedelta(hours=12),
@@ -136,7 +161,7 @@ class V38SequenceFirstAgentWorkflow:
                     {
                         "run_id": run_id,
                         "execution_contract": contract,
-                        "candidates": candidates,
+                        "candidates": cohort,
                         "metric_result": reference,
                     },
                     task_queue=control_queue,
@@ -144,14 +169,26 @@ class V38SequenceFirstAgentWorkflow:
                     retry_policy=retry,
                 )
 
-            metric_results = await _bounded_ordered_map(
-                [
-                    {"ordinal": ordinal, "plugin_name": plugin_name}
-                    for ordinal, plugin_name in enumerate(contract["metric_plugins"])
-                ],
-                limit=int(request["metric_concurrency"]),
-                operation=evaluate_and_persist_metric,
-            )
+            metric_items = [
+                {"ordinal": ordinal, "plugin_name": plugin_name}
+                for ordinal, plugin_name in enumerate(contract["metric_plugins"])
+            ]
+
+            async def score_cohort(
+                cohort: list[dict[str, Any]], *, generation: int
+            ) -> list[dict[str, Any]]:
+                async def operation(item: dict[str, Any]) -> dict[str, Any]:
+                    return await evaluate_and_persist_metric(
+                        item, cohort, generation=generation
+                    )
+
+                return await _bounded_ordered_map(
+                    metric_items,
+                    limit=int(request["metric_concurrency"]),
+                    operation=operation,
+                )
+
+            metric_results = await score_cohort(candidates, generation=0)
             if sum(int(item["evaluation_count"]) for item in metric_results) != (
                 len(candidates) * len(contract["required_sequence_metrics"])
             ):
@@ -185,10 +222,95 @@ class V38SequenceFirstAgentWorkflow:
                 start_to_close_timeout=timedelta(hours=1),
                 retry_policy=retry,
             )
+            refinement_rounds_completed = 0
+            refinement_occurrence_count = 0
+            promoted_refinement_count = 0
+            provider = request["refinement_provider"]
+            while admission["refinement_required"]:
+                plan = admission_reference.get("refinement_plan")
+                if not isinstance(plan, dict):
+                    raise ValueError("v38 blocked admission lacks a refinement plan")
+                provider_result = await workflow.execute_activity(
+                    str(provider["activity_name"]),
+                    {
+                        "schema_version": "v38.refinement-provider-request.1",
+                        "run_id": run_id,
+                        "refinement_plan": plan,
+                        "provider_task_id": provider["provider_task_id"],
+                        "knowledge_context_pack_sha256": request[
+                            "knowledge_context_pack_sha256"
+                        ],
+                        "provider_release_revision": provider["release_revision"],
+                        "provider_runtime_manifest_sha256": provider[
+                            "runtime_manifest_sha256"
+                        ],
+                    },
+                    task_queue=str(provider["task_queue"]),
+                    start_to_close_timeout=timedelta(hours=12),
+                    heartbeat_timeout=timedelta(minutes=5),
+                    retry_policy=retry,
+                )
+                persisted = await workflow.execute_activity(
+                    "persist_v38_refinement_children",
+                    {
+                        "run_id": run_id,
+                        "refinement_plan": plan,
+                        "refinement_result": provider_result,
+                    },
+                    task_queue=control_queue,
+                    start_to_close_timeout=timedelta(hours=1),
+                    retry_policy=retry,
+                )
+                refinement_rounds_completed += 1
+                refinement_occurrence_count += int(
+                    persisted["raw_child_occurrence_count"]
+                )
+                promoted = list(persisted["candidates"])
+                promoted_refinement_count += len(promoted)
+                if not promoted:
+                    break
+                child_metric_results = await score_cohort(
+                    promoted, generation=int(plan["refinement_round"])
+                )
+                if sum(
+                    int(item["evaluation_count"]) for item in child_metric_results
+                ) != len(promoted) * len(contract["required_sequence_metrics"]):
+                    raise ValueError("v38 refinement child evaluation count drifted")
+                metric_results.extend(child_metric_results)
+                admission_reference = await workflow.execute_activity(
+                    "evaluate_v38_sequence_admission",
+                    {
+                        "run_id": run_id,
+                        "refinement_round": int(plan["refinement_round"]),
+                        "knowledge_context_pack_sha256": request[
+                            "knowledge_context_pack_sha256"
+                        ],
+                    },
+                    task_queue=control_queue,
+                    start_to_close_timeout=timedelta(hours=1),
+                    retry_policy=retry,
+                )
+                admission = await workflow.execute_activity(
+                    "persist_v38_sequence_admission",
+                    {
+                        "run_id": run_id,
+                        "admission_reference": admission_reference,
+                        "knowledge_context_pack_sha256": request[
+                            "knowledge_context_pack_sha256"
+                        ],
+                        "environment_sha256": request[
+                            "control_environment_sha256"
+                        ],
+                        "worker_source_revision": request["worker_source_revision"],
+                    },
+                    task_queue=control_queue,
+                    start_to_close_timeout=timedelta(hours=1),
+                    retry_policy=retry,
+                )
             status = (
                 "sequence_admitted_for_multitarget_structure"
                 if admission["structure_dispatch_allowed"]
-                else "sequence_refinement_required"
+                else "sequence_evidence_concluded_without_structure"
             )
             return {
                 "schema_version": "v38.sequence-first-prefix-result.1",
@@ -196,10 +318,13 @@ class V38SequenceFirstAgentWorkflow:
                 "raw_occurrence_count": generation["score_all_cohort"][
                     "raw_occurrence_count"
                 ],
-                "candidate_count": len(candidates),
+                "candidate_count": len(candidates) + promoted_refinement_count,
                 "evaluation_count": sum(
                     int(item["evaluation_count"]) for item in metric_results
                 ),
+                "refinement_rounds_completed": refinement_rounds_completed,
+                "refinement_raw_occurrence_count": refinement_occurrence_count,
+                "refinement_promoted_unique_count": promoted_refinement_count,
                 "admission": admission,
                 "admission_reference": admission_reference,
                 "formal_structure_workflow_complete": False,

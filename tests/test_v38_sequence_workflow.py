@@ -13,6 +13,14 @@ from pepagent.workflows.v38_sequence_first import (
 def _request() -> dict:
     return {
         "submission_preflight": {"status": "ready_to_submit_unique_run"},
+        "knowledge_context_pack_sha256": "a" * 64,
+        "refinement_provider": {
+            "activity_name": "refine_v38_sequences_with_knowledge",
+            "task_queue": "pepagent-refinement-provider-v38",
+            "provider_task_id": "019fad3e-76b8-7e32-8455-d2e9b31d33e5",
+            "release_revision": "provider-release-v1",
+            "runtime_manifest_sha256": "b" * 64,
+        },
         "execution_contract": build_default_v38_sequence_contract().model_dump(
             mode="json"
         ),
@@ -38,6 +46,18 @@ def test_v38_sequence_workflow_rejects_first_k_and_missing_metric_plugin() -> No
     missing_metric["execution_contract"]["metric_plugins"].pop()
     with pytest.raises(ValueError, match="five sequence metric plugins"):
         _validate_request(missing_metric)
+
+
+def test_v38_sequence_workflow_requires_frozen_refinement_provider() -> None:
+    request = _request()
+    request.pop("refinement_provider")
+    with pytest.raises(ValueError, match="frozen refinement provider"):
+        _validate_request(request)
+
+    invalid = _request()
+    invalid["refinement_provider"]["runtime_manifest_sha256"] = "not-a-sha"
+    with pytest.raises(ValueError, match="runtime identity"):
+        _validate_request(invalid)
 
 
 def test_v38_control_worker_registers_sequence_workflow_and_admission_activities() -> None:

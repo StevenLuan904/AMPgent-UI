@@ -52,15 +52,22 @@ def validate_v38_refinement_result(
     if not isinstance(raw, list):
         raise ValueError("v38 refinement result lacks proposals")
     proposals = tuple(RefinementChildProposal.model_validate(item) for item in raw)
-    expected = {
-        task.parent_candidate_id: task.requested_children for task in plan.tasks
-    }
+    tasks = {task.parent_candidate_id: task for task in plan.tasks}
+    expected = {parent_id: task.requested_children for parent_id, task in tasks.items()}
     observed = {parent_id: 0 for parent_id in expected}
     for proposal in proposals:
         if proposal.refinement_round != plan.refinement_round:
             raise ValueError("v38 refinement proposal round differs from plan")
         if proposal.parent_candidate_id not in observed:
             raise ValueError("v38 refinement proposal parent is not planned")
+        task = tasks[proposal.parent_candidate_id]
+        if "".join(proposal.parent_sequence.split()).upper() != task.parent_sequence:
+            raise ValueError("v38 refinement proposal parent sequence drifted")
+        if any(
+            trace.provider_task_id != task.provider_task_id
+            for trace in proposal.knowledge_traces
+        ):
+            raise ValueError("v38 refinement proposal cites another knowledge provider task")
         observed[proposal.parent_candidate_id] += 1
     if observed != expected:
         raise ValueError("v38 refinement result does not exactly cover planned children")
@@ -788,6 +795,7 @@ async def evaluate_v38_sequence_admission(request: dict[str, Any]) -> dict[str, 
         "rejected_count": len(admission["rejected_candidate_ids"]),
         "refinement_required": admission["refinement_required"],
         "structure_dispatch_allowed": admission["structure_dispatch_allowed"],
+        "refinement_plan": payload["refinement_plan"],
     }
 
 
