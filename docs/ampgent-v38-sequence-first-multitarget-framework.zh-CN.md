@@ -65,6 +65,12 @@ Temporal history, queue pollers, service probes and allowed-capacity receipts.
 共 900 个 raw occurrence。`build_score_all_proposal_cohort` 保存每一个有效、无效和重复 occurrence；所有
 有效唯一序列按原始 source ordinal 进入评分，不存在“先生成 1000、只取前 100”的隐藏截断。
 
+`persist_score_all_proposal_cohort` 将该合同接入规范数据库：9 个 generator cell 各绑定一个已经成功的
+ToolCall，900 个 raw occurrence 无论有效、无效或重复都逐条写入；只有有效唯一序列物化为 Candidate，且
+Candidate 的 proposal rank 沿用全局 source ordinal。完整且字节身份一致的重复调用只返回 recovered receipt；
+只要检测到部分 occurrence、跨 run ToolCall、未完成 ToolCall、cell/seed/arm 漂移，就整笔 fail closed，禁止
+把半批旧结果补齐成新证据。调用方必须用单一数据库事务包围整批写入。
+
 ### 4.1 为什么不用任意外部活性阈值一刀切
 
 外部活性阈值容易受模型标定、菌株和实验条件影响，可能把整批候选清空。因此 v38 只把以下项目作为硬门：
