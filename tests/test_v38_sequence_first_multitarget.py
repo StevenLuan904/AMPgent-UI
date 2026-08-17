@@ -5,6 +5,7 @@ import pytest
 import yaml
 from pydantic import ValidationError
 
+from pepagent.provenance.hashing import sha256_text
 from pepagent.v38_sequence_first_multitarget import (
     DEFAULT_KNOWLEDGE_PROVIDER_TASK_ID,
     ExplorationPolicy,
@@ -24,7 +25,9 @@ from pepagent.v38_sequence_first_multitarget import (
     TargetQualificationWitness,
     admit_sequence_cohort,
     assess_sequence_maturity,
+    build_default_v38_maturity_policy,
     build_parallel_target_dispatch,
+    build_sequence_refinement_plan,
 )
 
 SHA_A = "a" * 64
@@ -204,7 +207,8 @@ def test_framework_contract_is_sequence_first_multitarget_and_staged_authorized(
         "score_all_valid_unique_proposals_before_promotion"
     ]
     activity = config["sequence_first_agent"]["gates"]["activity"]
-    assert activity["dual_MIC_model_agreement_required"]
+    assert activity["dual_MIC_models_must_both_succeed_and_remain_independent_pareto_axes"]
+    assert activity["fixed_numeric_MIC_agreement_cutoff_forbidden"]
     assert activity["arbitrary_absolute_activity_threshold_forbidden"]
     assert (
         config["sequence_first_agent"]["structure_admission"]["zero_mature_core_action"]
@@ -315,6 +319,73 @@ def test_cohort_uses_pareto_core_and_fixed_safe_exploration_without_forced_fill(
     assert admission.unused_structure_slots == 6
     assert admission.safety_thresholds_lowered is False
     assert admission.forced_fill_used is False
+
+
+def test_dominated_safe_candidate_is_not_promoted_into_mature_core() -> None:
+    strong = _candidate()
+    weak_observations = tuple(
+        item.model_copy(update={"numeric_value": item.numeric_value + 1.0})
+        if item.metric_name in {"llamp_log10_mic_um", "amp_read_log10_mic_um"}
+        else item.model_copy(update={"numeric_value": item.numeric_value + 10.0})
+        if item.metric_name == "instability_index"
+        else item.model_copy(update={"numeric_value": item.numeric_value - 0.2})
+        if item.metric_name == "hydrophobic_moment"
+        else item
+        for item in _observations()
+    )
+    weak = _candidate(observations=weak_observations)
+    admission = admit_sequence_cohort((strong, weak), _policy(), refinement_round=0)
+    assert admission.mature_core_candidate_ids == (strong.candidate_id,)
+    assert weak.candidate_id in admission.exploration_candidate_ids
+    assert admission.refinement_required is True
+    assert admission.structure_dispatch_allowed is False
+
+
+def test_refinement_plan_is_bounded_knowledge_traced_and_keeps_parent_control() -> None:
+    strong = _candidate()
+    weak_observations = tuple(
+        item.model_copy(update={"numeric_value": item.numeric_value + 1.0})
+        if item.metric_name in {"llamp_log10_mic_um", "amp_read_log10_mic_um"}
+        else item
+        for item in _observations()
+    )
+    weak = _candidate(observations=weak_observations)
+    strong_sequence = "ACDEFGHIKLMN"
+    weak_sequence = "ACDEFGHIKLMP"
+    strong = strong.model_copy(update={"sequence_sha256": sha256_text(strong_sequence)})
+    weak = weak.model_copy(update={"sequence_sha256": sha256_text(weak_sequence)})
+    candidates = (strong, weak)
+    admission = admit_sequence_cohort(candidates, _policy(), refinement_round=0)
+    plan = build_sequence_refinement_plan(
+        admission=admission,
+        candidates=candidates,
+        parent_sequences={
+            strong.candidate_id: strong_sequence,
+            weak.candidate_id: weak_sequence,
+        },
+        policy=_policy(),
+        knowledge_context_pack_sha256=SHA_D,
+    )
+    assert plan.refinement_round == 1
+    assert len(plan.tasks) == 1
+    assert plan.tasks[0].parent_candidate_id == weak.candidate_id
+    assert plan.tasks[0].provider_task_id == DEFAULT_KNOWLEDGE_PROVIDER_TASK_ID
+    assert plan.tasks[0].requested_children == 2
+    assert plan.structure_dispatch_forbidden_until_readmission is True
+    assert plan.safety_thresholds_lowered is False
+    assert len(plan.sha256()) == 64
+
+
+def test_default_policy_has_no_absolute_mic_cutoff_and_uses_both_mic_objectives() -> None:
+    policy = build_default_v38_maturity_policy()
+    assert policy.numeric_gates == ()
+    assert policy.agreement_gates == ()
+    objectives = {item.metric_name for item in policy.pareto_objectives}
+    assert {"llamp_log10_mic_um", "amp_read_log10_mic_um"} <= objectives
+    assert {item.metric_name for item in policy.label_gates} == {
+        "macrel_hemolysis_label",
+        "toxinpred3_label",
+    }
 
 
 def test_zero_safe_core_triggers_refinement_without_lowering_safety() -> None:

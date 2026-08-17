@@ -2001,3 +2001,11 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   refinement 子代必须绑定父候选、未改父本 control SHA、真实序列变化、mutation rationale 和至少一条 adopted
   knowledge trace。全量回归为 767 passed、4 skipped。该里程碑仍是执行合同，不代表 generator/Temporal/
   persistence worker 已部署，也不改变当前 0 Candidate 的控制 run 事实。
+- 序列准入现已收敛为可执行的 cohort 决策，而不是为每个序列设一个容易清空全批的 MIC 数值线。LLAMP
+  与 AMP-READ 必须都成功，并作为两个独立的非加权 Pareto 轴；二者的分歧保留为权衡证据，不使用固定
+  差值阈值。只有 provider 合同中的 `macrel_hemolysis_label=low` 与
+  `toxinpred3_label=Non-Toxin` 是安全硬门；缺失、失败、重复或域外仍 fail closed。
+- 只有第一非支配前沿可以进入 `mature_core`，被全面支配的安全序列不会因为结构名额未满被硬塞进核心。
+  `promising_uncertain` 最多占结构预算 20%；核心不足 12 条时结构 dispatch 完全冻结，并生成有界的知识卡
+  refinement work order。每个 work order 绑定 provider task/context-pack、父序列哈希、未改父本 control、
+  改写目标和完整 11 指标重评义务；最多三轮，绝不降低安全门或强制填满。

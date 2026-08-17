@@ -103,7 +103,8 @@ sequence_first_agent:
     - toxinpred3_label
   gates:
     activity:
-      dual_MIC_model_agreement_required: true
+      dual_MIC_models_must_both_succeed_and_remain_independent_pareto_axes: true
+      fixed_numeric_MIC_agreement_cutoff_forbidden: true
       arbitrary_absolute_activity_threshold_forbidden: true
       MIC_and_AMP_activity_are_nonweighted_pareto_objectives: true
     safety:
@@ -176,6 +177,9 @@ evidence_graph:
     - KnowledgeUseTrace
     - SequenceCandidateEvidence
     - SequenceMaturityDecision
+    - SequenceCohortAdmission
+    - SequenceRefinementPlan
+    - SequenceRefinementTask
     - TargetPanelSelectionWitness
     - MultiTargetExecutionPlan
     - TargetDispatch

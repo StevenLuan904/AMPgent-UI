@@ -21,7 +21,7 @@ from pepagent.db.models import (
     Target,
     ToolCall,
 )
-from pepagent.provenance.hashing import sha256_json
+from pepagent.provenance.hashing import sha256_json, sha256_text
 
 TERMINAL_RUN_STATUSES = frozenset({"succeeded", "failed", "cancelled"})
 DEFAULT_KNOWLEDGE_PROVIDER_TASK_ID = "019fad3e-76b8-7e32-8455-d2e9b31d33e5"
@@ -629,8 +629,10 @@ def admit_sequence_cohort(
         policy.structure_budget * policy.exploration.maximum_fraction_of_structure_budget
     )
     core_budget = policy.structure_budget - exploration_budget
+    pareto_front = tuple(item for item in stable if fronts[item.candidate_id] == 1)
+    nonfront_stable = tuple(item for item in stable if fronts[item.candidate_id] != 1)
     stable_ordered = sorted(
-        stable,
+        pareto_front,
         key=lambda item: (
             fronts[item.candidate_id],
             -item.rank_stability,
@@ -641,7 +643,7 @@ def admit_sequence_cohort(
     core = tuple(stable_ordered[:core_budget])
     core_ids = {item.candidate_id for item in core}
     exploration_pool = sorted(
-        (*uncertain, *stable_ordered[core_budget:]),
+        (*uncertain, *stable_ordered[core_budget:], *nonfront_stable),
         key=lambda item: (
             0 if item in uncertain else 1,
             -item.rank_stability,
@@ -708,6 +710,203 @@ def admit_sequence_cohort(
         refinement_required=refinement_required,
         structure_dispatch_allowed=structure_dispatch_allowed,
         unused_structure_slots=policy.structure_budget - used_slots,
+    )
+
+
+class SequenceRefinementTask(FrozenModel):
+    schema_version: Literal["v38.sequence-refinement-task.1"] = (
+        "v38.sequence-refinement-task.1"
+    )
+    parent_candidate_id: UUID
+    parent_sequence: str = Field(min_length=10, max_length=25)
+    parent_sequence_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    refinement_round: int = Field(ge=1, le=5)
+    requested_children: int = Field(ge=1, le=8)
+    provider_task_id: str = DEFAULT_KNOWLEDGE_PROVIDER_TASK_ID
+    knowledge_context_pack_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    objective_metric_names: tuple[str, ...] = Field(min_length=2)
+    parent_control_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    knowledge_trace_required: Literal[True] = True
+    unchanged_parent_control_required: Literal[True] = True
+    child_must_repeat_full_sequence_panel: Literal[True] = True
+    safety_gate_relaxation_forbidden: Literal[True] = True
+
+    @model_validator(mode="after")
+    def validate_parent_identity(self) -> SequenceRefinementTask:
+        sequence = "".join(self.parent_sequence.split()).upper()
+        if sha256_text(sequence) != self.parent_sequence_sha256:
+            raise ValueError("refinement parent sequence identity drifted")
+        expected_control = sha256_json(
+            {
+                "parent_candidate_id": str(self.parent_candidate_id),
+                "parent_sequence": sequence,
+                "control": "unchanged_parent",
+                "refinement_round": self.refinement_round,
+            }
+        )
+        if self.parent_control_sha256 != expected_control:
+            raise ValueError("refinement parent control identity drifted")
+        return self
+
+
+class SequenceRefinementPlan(FrozenModel):
+    schema_version: Literal["v38.sequence-refinement-plan.1"] = (
+        "v38.sequence-refinement-plan.1"
+    )
+    refinement_round: int = Field(ge=1, le=5)
+    admission_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    tasks: tuple[SequenceRefinementTask, ...]
+    parent_controls_retained: Literal[True] = True
+    full_rescoring_required: Literal[True] = True
+    structure_dispatch_forbidden_until_readmission: Literal[True] = True
+    safety_thresholds_lowered: Literal[False] = False
+    forced_fill_used: Literal[False] = False
+
+    def sha256(self) -> str:
+        return sha256_json(self.model_dump(mode="json"))
+
+
+def build_sequence_refinement_plan(
+    *,
+    admission: SequenceCohortAdmission,
+    candidates: tuple[SequenceCandidateEvidence, ...],
+    parent_sequences: dict[UUID, str],
+    policy: SequenceMaturityPolicy,
+    knowledge_context_pack_sha256: str,
+) -> SequenceRefinementPlan:
+    """Create bounded knowledge work without lowering gates or dispatching structure."""
+
+    if not admission.refinement_required or admission.structure_dispatch_allowed:
+        raise ValueError("refinement plan requires a blocked refinement admission")
+    next_round = admission.refinement_round + 1
+    if next_round > policy.refinement.maximum_rounds:
+        raise ValueError("refinement rounds are exhausted")
+    decisions = {item.candidate_id: item for item in admission.decisions}
+    by_id = {item.candidate_id: item for item in candidates}
+    if set(decisions) != set(by_id):
+        raise ValueError("admission and refinement cohort identities differ")
+    invalid_prefixes = (
+        "duplicate_metrics:",
+        "missing_metrics:",
+        "metric_failed:",
+        "out_of_domain:",
+        "refinement_without_adopted_knowledge",
+    )
+    eligible = [
+        item
+        for item in candidates
+        if not any(
+            reason.startswith(invalid_prefixes)
+            for reason in decisions[item.candidate_id].reasons
+        )
+    ]
+    eligible.sort(
+        key=lambda item: (
+            0 if decisions[item.candidate_id].status == "promising_uncertain" else 1,
+            -item.rank_stability,
+            str(item.candidate_id),
+        )
+    )
+    parent_limit = max(
+        1,
+        (
+            policy.refinement.minimum_mature_core_size
+            + policy.refinement.children_per_parent
+            - 1
+        )
+        // policy.refinement.children_per_parent,
+    )
+    objective_names = tuple(item.metric_name for item in policy.pareto_objectives)
+    tasks: list[SequenceRefinementTask] = []
+    for candidate in eligible[:parent_limit]:
+        sequence = "".join(parent_sequences.get(candidate.candidate_id, "").split()).upper()
+        if not 10 <= len(sequence) <= 25:
+            raise ValueError(f"missing valid parent sequence: {candidate.candidate_id}")
+        tasks.append(
+            SequenceRefinementTask(
+                parent_candidate_id=candidate.candidate_id,
+                parent_sequence=sequence,
+                parent_sequence_sha256=candidate.sequence_sha256,
+                refinement_round=next_round,
+                requested_children=policy.refinement.children_per_parent,
+                knowledge_context_pack_sha256=knowledge_context_pack_sha256,
+                objective_metric_names=objective_names,
+                parent_control_sha256=sha256_json(
+                    {
+                        "parent_candidate_id": str(candidate.candidate_id),
+                        "parent_sequence": sequence,
+                        "control": "unchanged_parent",
+                        "refinement_round": next_round,
+                    }
+                ),
+            )
+        )
+    if not tasks:
+        raise ValueError("no evidence-complete parent is eligible for refinement")
+    return SequenceRefinementPlan(
+        refinement_round=next_round,
+        admission_sha256=sha256_json(admission.model_dump(mode="json")),
+        tasks=tuple(tasks),
+    )
+
+
+def build_default_v38_maturity_policy() -> SequenceMaturityPolicy:
+    """Freeze validity/safety gates while keeping activity threshold-free."""
+
+    required = frozenset(
+        {
+            "hydrophobic_moment_eisenberg",
+            "hydrophobic_ratio_modlamp",
+            "maximum_hydrophobic_run",
+            "net_charge_ph7_4",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "macrel_hemolysis_label",
+            "llamp_log10_mic_um",
+            "amp_read_log10_mic_um",
+            "toxinpred3_hybrid_score",
+            "toxinpred3_label",
+        }
+    )
+    return SequenceMaturityPolicy(
+        required_metrics=required,
+        numeric_gates=(),
+        label_gates=(
+            LabelGate(
+                metric_name="macrel_hemolysis_label",
+                allowed_values=frozenset({"low"}),
+                purpose="safety",
+                evidence_sha256=sha256_json(
+                    {"provider": "macrel", "contract_label": "low"}
+                ),
+            ),
+            LabelGate(
+                metric_name="toxinpred3_label",
+                allowed_values=frozenset({"Non-Toxin"}),
+                purpose="safety",
+                evidence_sha256=sha256_json(
+                    {"provider": "toxinpred3", "contract_label": "Non-Toxin"}
+                ),
+            ),
+        ),
+        pareto_objectives=(
+            ParetoObjective(metric_name="llamp_log10_mic_um", direction="min"),
+            ParetoObjective(metric_name="amp_read_log10_mic_um", direction="min"),
+            ParetoObjective(metric_name="macrel_amp_probability", direction="max"),
+            ParetoObjective(metric_name="macrel_hemolysis_probability", direction="min"),
+            ParetoObjective(metric_name="toxinpred3_hybrid_score", direction="min"),
+            ParetoObjective(metric_name="hydrophobic_moment_eisenberg", direction="max"),
+            ParetoObjective(metric_name="maximum_hydrophobic_run", direction="min"),
+        ),
+        agreement_gates=(),
+        minimum_rank_stability=0.8,
+        structure_budget=48,
+        exploration=ExplorationPolicy(maximum_fraction_of_structure_budget=0.2),
+        refinement=RefinementPolicy(
+            maximum_rounds=3,
+            minimum_mature_core_size=12,
+            children_per_parent=3,
+        ),
     )
 
 
