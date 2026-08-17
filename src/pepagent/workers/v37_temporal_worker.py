@@ -36,6 +36,7 @@ from pepagent.workers.v38_activities import (
     persist_v38_sequence_metric,
 )
 from pepagent.workflows.v37_champion import RapidChampionGenerationV37Workflow
+from pepagent.workflows.v38_sequence_first import V38SequenceFirstAgentWorkflow
 
 V37_ROLE_CONFIG = {
     "v37-control": (
@@ -59,7 +60,7 @@ V37_ROLE_CONFIG = {
             persist_v37_final_portfolio_and_replay,
             finalize_v37_run,
         ],
-        [RapidChampionGenerationV37Workflow],
+        [RapidChampionGenerationV37Workflow, V38SequenceFirstAgentWorkflow],
     ),
     "v37-generator": (
         "pepagent-generator-v37",

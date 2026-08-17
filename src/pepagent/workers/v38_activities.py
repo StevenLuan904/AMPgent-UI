@@ -413,10 +413,28 @@ async def persist_v38_score_all_generation(request: dict[str, Any]) -> dict[str,
                     "execution_contract_sha256": contract.sha256(),
                 },
             )
+        persisted_candidates = list(
+            await session.scalars(
+                select(Candidate)
+                .where(Candidate.run_id == run_id)
+                .order_by(Candidate.proposal_rank, Candidate.id)
+            )
+        )
+        if len(persisted_candidates) != cohort.promoted_unique_count:
+            raise ValueError("v38 score-all candidate result count drifted")
     return {
         "persistence_receipt": receipt.model_dump(mode="json"),
         "score_all_cohort": cohort.model_dump(mode="json"),
         "candidate_count": cohort.promoted_unique_count,
+        "candidates": [
+            {
+                "id": str(candidate.id),
+                "sequence": candidate.sequence,
+                "sequence_sha256": candidate.sequence_sha256,
+                "proposal_rank": candidate.proposal_rank,
+            }
+            for candidate in persisted_candidates
+        ],
     }
 
 

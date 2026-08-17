@@ -2035,3 +2035,17 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   绑定 provider task/context-pack、父本序列和未改父本对照的最多三轮 refinement plan。该里程碑只完成
   序列阶段 evidence closure 与 worker 注册；正式 science workflow、immutable worker release 和双靶点
   结构编排尚未完成，因此 control run 持久化科学计数仍保持为 0。
+
+### 21.45 2026-08-17 v38 序列优先 Temporal 前缀
+
+- 新增 `V38SequenceFirstAgentWorkflow`，以唯一提交 preflight 为入口，严格执行 9 个冻结 generator cell，
+  一次性持久化 900 个 raw occurrence 及全部有效唯一候选，再让五类 metric plugin 覆盖每个候选的完整
+  11 项声明评价。workflow 在 runtime 同时核对候选投影数和最终 Evaluation 数，禁止 first-K 截断或漏跑
+  某一类打分器。
+- 五类评价闭合后 workflow 才调度 sequence admission：数据库证据被重新计算并写入 content-addressed
+  artifact、ToolCall、AgentDecision 和 typed edges。输出明确区分
+  `sequence_refinement_required` 与 `sequence_admitted_for_multitarget_structure`；本里程碑不会把序列前缀
+  完成伪报为结构或正式科学 workflow 完成。
+- control worker 已注册该 workflow。refinement 子代执行、双靶点 Boltz/Rosetta 隔离分支、最终 target-agnostic/
+  per-target/cross-target Pareto 与 database/object-store replay 仍是下一关键闭环；这些完成并冻结 immutable
+  worker release 与 exact-once preflight 前，formal science workflow 继续保持未提交。
