@@ -2009,3 +2009,15 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   `promising_uncertain` 最多占结构预算 20%；核心不足 12 条时结构 dispatch 完全冻结，并生成有界的知识卡
   refinement work order。每个 work order 绑定 provider task/context-pack、父序列哈希、未改父本 control、
   改写目标和完整 11 指标重评义务；最多三轮，绝不降低安全门或强制填满。
+
+### 21.43 2026-08-17 v38 授权 GPU 连接恢复
+
+- `.19` 原 AMPgent 三服务 reverse tunnel 的 SSH 子进程卡在 banner；仅在精确父子 ownership 核验后终止
+  该 SSH 子进程，由原 watchdog 自动建立新连接。远端 `55432`、`17233`、`19000` 均重新接受连接，
+  MinIO health 为 HTTP 200；未停止 worker 或外来进程。
+- Windows 当前保留端口覆盖旧的 `2222/2223`。新增只负责 SSH 连接、不运行 `nvidia-smi` 的本地 watchdog，
+  用 `32222` 连接 `.19`、`32223` 连接 `.32`。容量监控仍逐卡显式调用；`.32` 只检查 GPU0/GPU1，
+  GPU2/GPU3 从未访问或探测。
+- 恢复后的快照中 `.19 GPU0--GPU7` 与 `.32 GPU0/GPU1` 全部可观测，但每张卡均有计算进程、显式
+  device 声明或高利用率，因此空闲集合仍为空。控制器现在区分 `unreachable` 与 `busy`；连接恢复不等于
+  可用容量，也不触发 formal science workflow。

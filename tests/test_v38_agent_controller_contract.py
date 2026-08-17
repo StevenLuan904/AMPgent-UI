@@ -2,7 +2,7 @@ from pathlib import Path
 
 import yaml
 
-from pepagent.v38_agent_controller_cli import _probe_services, _validate_panel
+from pepagent.v38_agent_controller_cli import _capacity_blocker, _probe_services, _validate_panel
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -49,3 +49,16 @@ def test_controller_supervisor_runs_capacity_and_five_minute_ticks() -> None:
 
 def test_controller_has_live_control_plane_probes() -> None:
     assert callable(_probe_services)
+
+
+def test_controller_distinguishes_unreachable_busy_and_idle_gpu_capacity() -> None:
+    assert _capacity_blocker({"observations": []}) == (
+        "authorized_structure_gpu_currently_unreachable"
+    )
+    observed = [{"status": "observed"}, {"status": "observed"}]
+    assert _capacity_blocker({"observations": observed, "idle_gpu_keys": []}) == (
+        "authorized_structure_gpu_currently_busy"
+    )
+    assert _capacity_blocker(
+        {"observations": observed, "idle_gpu_keys": ["192.168.99.19:4"]}
+    ) is None

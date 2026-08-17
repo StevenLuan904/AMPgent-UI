@@ -1,7 +1,9 @@
 [CmdletBinding()]
 param(
-    [string]$Host19SshTarget = "TargetServer",
+    [string]$Host19SshTarget = "TargetServerDirect",
+    [int]$Host19SshPort = 32222,
     [string]$Host32SshTarget = "LabServerNewDirect",
+    [int]$Host32SshPort = 32223,
     [string]$StatePath = "var/state/ampgent-gpu-capacity.json",
     [int]$ConnectTimeoutSeconds = 10,
     [int]$MaximumUsedMemoryMiB = 256,
@@ -14,7 +16,8 @@ function Invoke-CardProbe {
     param(
         [Parameter(Mandatory)] [string]$SshTarget,
         [Parameter(Mandatory)] [string]$HostLabel,
-        [Parameter(Mandatory)] [int]$GpuIndex
+        [Parameter(Mandatory)] [int]$GpuIndex,
+        [int]$SshPort = 0
     )
 
     # Probe one explicitly allowed device at a time. Never replace this with an
@@ -33,7 +36,12 @@ done
 "@
     $previousErrorActionPreference = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
-    $output = & ssh -o BatchMode=yes -o ConnectTimeout=$ConnectTimeoutSeconds $SshTarget $remote 2>&1
+    $sshArguments = @('-o', 'BatchMode=yes', '-o', "ConnectTimeout=$ConnectTimeoutSeconds")
+    if ($SshPort -gt 0) {
+        $sshArguments += @('-p', "$SshPort")
+    }
+    $sshArguments += @($SshTarget, $remote)
+    $output = & ssh @sshArguments 2>&1
     $sshExitCode = $LASTEXITCODE
     $ErrorActionPreference = $previousErrorActionPreference
     if ($sshExitCode -ne 0) {
@@ -89,11 +97,11 @@ done
 
 $observations = @()
 foreach ($gpuIndex in 0..7) {
-    $observations += Invoke-CardProbe -SshTarget $Host19SshTarget -HostLabel "192.168.99.19" -GpuIndex $gpuIndex
+    $observations += Invoke-CardProbe -SshTarget $Host19SshTarget -HostLabel "192.168.99.19" -GpuIndex $gpuIndex -SshPort $Host19SshPort
 }
 # Only GPU0/GPU1 are authorized on .32. GPU2/GPU3 must never be probed.
 foreach ($gpuIndex in 0..1) {
-    $observations += Invoke-CardProbe -SshTarget $Host32SshTarget -HostLabel "192.168.99.32" -GpuIndex $gpuIndex
+    $observations += Invoke-CardProbe -SshTarget $Host32SshTarget -HostLabel "192.168.99.32" -GpuIndex $gpuIndex -SshPort $Host32SshPort
 }
 
 $idleKeys = @(

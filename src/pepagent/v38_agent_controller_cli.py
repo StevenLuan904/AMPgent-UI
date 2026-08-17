@@ -59,6 +59,18 @@ def _atomic_json(path: Path, payload: dict[str, Any]) -> None:
     temporary.replace(path)
 
 
+def _capacity_blocker(capacity: dict[str, Any]) -> str | None:
+    observations = capacity.get("observations")
+    if not isinstance(observations, list) or not observations:
+        return "authorized_structure_gpu_currently_unreachable"
+    if any(item.get("status") != "observed" for item in observations):
+        return "authorized_structure_gpu_currently_unreachable"
+    idle = capacity.get("idle_gpu_keys")
+    if isinstance(idle, list) and idle:
+        return None
+    return "authorized_structure_gpu_currently_busy"
+
+
 def _validate_panel(
     panel_path: Path,
     coordinate_root: Path,
@@ -341,6 +353,19 @@ async def tick_controller(*, state_path: Path) -> dict[str, Any]:
         state["blockers"] = [item for item in state["blockers"] if item != service_blocker]
     elif service_blocker not in state["blockers"]:
         state["blockers"].append(service_blocker)
+    capacity_blockers = {
+        "authorized_structure_gpu_currently_unreachable",
+        "authorized_structure_gpu_currently_busy",
+    }
+    state["blockers"] = [item for item in state["blockers"] if item not in capacity_blockers]
+    capacity_path = state_path.with_name("ampgent-gpu-capacity.json")
+    try:
+        capacity = json.loads(capacity_path.read_text(encoding="utf-8"))
+        capacity_blocker = _capacity_blocker(capacity)
+    except (OSError, json.JSONDecodeError):
+        capacity_blocker = "authorized_structure_gpu_currently_unreachable"
+    if capacity_blocker is not None:
+        state["blockers"].append(capacity_blocker)
     state["progress_check_due"] = True
     state["plan_review_performed"] = plan_due
     state["user_review_due"] = user_review_due
