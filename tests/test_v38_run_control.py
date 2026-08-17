@@ -37,12 +37,23 @@ def test_default_controller_has_sequence_first_stages_and_two_hour_review() -> N
     plan = build_default_run_control_plan()
     names = [item.stage for item in plan.stages]
     sequence_metrics = next(item for item in plan.stages if item.stage == "sequence_metrics")
+    structure = next(item for item in plan.stages if item.stage == "parallel_target_structure")
     assert names.index("sequence_admission") < names.index("parallel_target_structure")
     assert sequence_metrics.expected_durable_count == 900 * 11
+    assert structure.expected_durable_count == (3 * 48 * 3 * 2) + (3 * 48 * 3 * 2 * 16)
     assert plan.activity_heartbeat_seconds == 30
     assert plan.operator_review_seconds == 7200
     assert plan.allowed_idle_capacity_confirmations == 2
     assert plan.structure_before_sequence_admission_forbidden is True
+
+
+def test_controller_refuses_structure_budget_without_both_control_lanes() -> None:
+    try:
+        build_default_run_control_plan(structure_control_lanes_per_target=1)
+    except ValueError as exc:
+        assert "native and wrong-pocket" in str(exc)
+    else:
+        raise AssertionError("missing wrong-pocket control lane was accepted")
 
 
 def test_controller_advances_only_on_durable_stage_count() -> None:

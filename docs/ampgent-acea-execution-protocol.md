@@ -2088,3 +2088,16 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
 - 控制器默认 sequence-metrics durable target 从错误的 8100 修正为 `900×11=9900`。这是阶段推进正确性修复：
   任一候选缺少双 MIC/活性、毒性、溶血或理化指标时都不能提前进入 admission/structure；refinement 新子代仍按
   实际唯一数量额外增加 `11×N` Evaluation，不纳入初始 9900 的静态分母。
+
+### 21.49 2026-08-18 v38 双靶点结构任务与对照预算闭合
+
+- 每个冻结靶点的每条 admitted 序列必须同时展开 `native` 与 `wrong_pocket` 两条对照 lane；每条 lane
+  完整执行冻结的 3 个 Boltz seed，每个 pose 再执行 16 个 Rosetta decoy。任务 identity 逐项绑定 target、
+  candidate、control lane、pocket SHA、seed、decoy budget 和确定性 ordinal，证据 namespace 细分到
+  `target/<key>/<id>/<lane>`，禁止跨靶点或跨 lane 混写。
+- 控制器结构阶段的 durable 预算现显式乘以两条 control lane。当前两个靶点、每靶点最多 48 条序列时，
+  完整预算为 `2×48×2×3=576` 个 Boltz pose 与 `576×16=9216` 个 Rosetta decoy；成熟核心不足时按实际
+  admitted 数量缩减，不得强制填满，但任何已 admitted 序列都不能省略 wrong-pocket 对照或 seed。
+- v37 的单靶点、未按 target/control lane 隔离的结构持久化路径不能冒充 v38 证据。正式 science workflow
+  仍须等待 v38 原生 structure Activity、逐任务持久化、最终三视图 Pareto/replay、provider refinement release、
+  immutable worker release 与 exact-once preflight 全部完成；本次修复不提交短肽生成 run。

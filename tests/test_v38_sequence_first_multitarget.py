@@ -26,6 +26,7 @@ from pepagent.v38_sequence_first_multitarget import (
     admit_sequence_cohort,
     assess_sequence_maturity,
     build_default_v38_maturity_policy,
+    build_multitarget_structure_tasks,
     build_parallel_target_dispatch,
     build_sequence_refinement_plan,
     compute_leave_one_objective_out_rank_stability,
@@ -461,6 +462,55 @@ def test_multitarget_plan_dispatches_same_mature_sequences_in_parallel_isolation
     assert {dispatch.parallel_wave for dispatch in dispatches} == {0}
     assert all(dispatch.candidate_ids == candidates for dispatch in dispatches)
     assert len({dispatch.evidence_namespace for dispatch in dispatches}) == 3
+
+
+def test_multitarget_structure_tasks_expand_both_control_lanes_and_all_seeds() -> None:
+    plan = MultiTargetExecutionPlan(
+        harness_release_id="v38-harness",
+        history_snapshot_sha256=SHA_A,
+        shared_sequence_cohort_sha256=SHA_B,
+        sequence_maturity_decision_sha256=SHA_C,
+        target_branches=(_branch("acea"), _branch("lpxc")),
+        max_parallel_targets=2,
+    )
+    candidates = (uuid4(), uuid4())
+    dispatches = build_parallel_target_dispatch(plan, mature_candidate_ids=candidates)
+    tasks = build_multitarget_structure_tasks(
+        plan,
+        dispatches=dispatches,
+        boltz_seeds=(20270380, 20270381, 20270382),
+    )
+
+    assert len(tasks) == 2 * 2 * 2 * 3
+    assert tuple(task.ordinal for task in tasks) == tuple(range(len(tasks)))
+    assert {task.control_lane for task in tasks} == {"native", "wrong_pocket"}
+    assert {task.boltz_seed for task in tasks} == {20270380, 20270381, 20270382}
+    assert all(task.rosetta_decoys_per_pose == 16 for task in tasks)
+    for branch in plan.target_branches:
+        branch_tasks = [task for task in tasks if task.target_key == branch.target_key]
+        assert {task.pocket_sha256 for task in branch_tasks} == {
+            branch.native_pocket_sha256,
+            branch.wrong_pocket_sha256,
+        }
+        assert len({task.evidence_namespace for task in branch_tasks}) == 2
+
+
+def test_multitarget_structure_tasks_reject_incomplete_seed_budget() -> None:
+    plan = MultiTargetExecutionPlan(
+        harness_release_id="v38-harness",
+        history_snapshot_sha256=SHA_A,
+        shared_sequence_cohort_sha256=SHA_B,
+        sequence_maturity_decision_sha256=SHA_C,
+        target_branches=(_branch("acea"), _branch("lpxc")),
+        max_parallel_targets=2,
+    )
+    dispatches = build_parallel_target_dispatch(plan, mature_candidate_ids=(uuid4(),))
+    with pytest.raises(ValueError, match="seed count"):
+        build_multitarget_structure_tasks(
+            plan,
+            dispatches=dispatches,
+            boltz_seeds=(20270380, 20270381),
+        )
 
 
 def test_multitarget_plan_rejects_single_target_and_unequal_science_budget() -> None:

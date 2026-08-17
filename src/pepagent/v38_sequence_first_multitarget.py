@@ -1058,6 +1058,19 @@ class TargetDispatch(FrozenModel):
     candidate_ids: tuple[UUID, ...]
 
 
+class MultiTargetStructureTask(FrozenModel):
+    target_key: str
+    target_id: UUID
+    candidate_id: UUID
+    parallel_wave: int = Field(ge=0)
+    control_lane: Literal["native", "wrong_pocket"]
+    pocket_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    boltz_seed: int = Field(ge=0)
+    rosetta_decoys_per_pose: int = Field(gt=0)
+    evidence_namespace: str
+    ordinal: int = Field(ge=0)
+
+
 def build_parallel_target_dispatch(
     plan: MultiTargetExecutionPlan,
     *,
@@ -1077,3 +1090,56 @@ def build_parallel_target_dispatch(
         )
         for index, branch in enumerate(plan.target_branches)
     )
+
+
+def build_multitarget_structure_tasks(
+    plan: MultiTargetExecutionPlan,
+    *,
+    dispatches: tuple[TargetDispatch, ...],
+    boltz_seeds: tuple[int, ...],
+) -> tuple[MultiTargetStructureTask, ...]:
+    if len(boltz_seeds) != len(set(boltz_seeds)):
+        raise ValueError("Boltz seeds must be unique")
+    branches = {branch.target_key: branch for branch in plan.target_branches}
+    if {dispatch.target_key for dispatch in dispatches} != set(branches):
+        raise ValueError("dispatches must cover every preregistered target exactly once")
+    if len(dispatches) != len(branches):
+        raise ValueError("duplicate target dispatch")
+
+    tasks: list[MultiTargetStructureTask] = []
+    ordinal = 0
+    for dispatch in dispatches:
+        branch = branches[dispatch.target_key]
+        if dispatch.target_id != branch.target_id:
+            raise ValueError("dispatch target identity does not match the frozen branch")
+        if len(dispatch.candidate_ids) > branch.structure_budget:
+            raise ValueError("admitted sequence cohort exceeds the target structure budget")
+        if len(boltz_seeds) != branch.boltz_seeds_per_candidate:
+            raise ValueError("Boltz seed count differs from the frozen target budget")
+        expected_namespace = f"target/{branch.target_key}/{branch.target_id}"
+        if dispatch.evidence_namespace != expected_namespace:
+            raise ValueError("dispatch evidence namespace is not target-isolated")
+        for candidate_id in dispatch.candidate_ids:
+            for control_lane, pocket_sha256 in (
+                ("native", branch.native_pocket_sha256),
+                ("wrong_pocket", branch.wrong_pocket_sha256),
+            ):
+                for seed in boltz_seeds:
+                    tasks.append(
+                        MultiTargetStructureTask(
+                            target_key=branch.target_key,
+                            target_id=branch.target_id,
+                            candidate_id=candidate_id,
+                            parallel_wave=dispatch.parallel_wave,
+                            control_lane=control_lane,
+                            pocket_sha256=pocket_sha256,
+                            boltz_seed=seed,
+                            rosetta_decoys_per_pose=branch.rosetta_decoys_per_pose,
+                            evidence_namespace=(
+                                f"{dispatch.evidence_namespace}/{control_lane}"
+                            ),
+                            ordinal=ordinal,
+                        )
+                    )
+                    ordinal += 1
+    return tuple(tasks)

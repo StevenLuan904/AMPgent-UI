@@ -128,8 +128,16 @@ def build_default_run_control_plan(
     structure_candidates_per_branch: int = 48,
     boltz_seeds: int = 3,
     rosetta_decoys: int = 16,
+    structure_control_lanes_per_target: int = 2,
 ) -> RunControlPlan:
-    structure_count = structure_branch_count * structure_candidates_per_branch * boltz_seeds
+    if structure_control_lanes_per_target != 2:
+        raise ValueError("v38 requires exactly native and wrong-pocket structure control lanes")
+    structure_count = (
+        structure_branch_count
+        * structure_candidates_per_branch
+        * boltz_seeds
+        * structure_control_lanes_per_target
+    )
     rosetta_count = structure_count * rosetta_decoys
     return RunControlPlan(
         stages=(
