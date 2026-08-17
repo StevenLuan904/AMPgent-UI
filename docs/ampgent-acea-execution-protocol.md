@@ -2021,3 +2021,17 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
 - 恢复后的快照中 `.19 GPU0--GPU7` 与 `.32 GPU0/GPU1` 全部可观测，但每张卡均有计算进程、显式
   device 声明或高利用率，因此空闲集合仍为空。控制器现在区分 `unreachable` 与 `busy`；连接恢复不等于
   可用容量，也不触发 formal science workflow。
+
+### 21.44 2026-08-17 v38 全序列准入证据闭环
+
+- v38 control worker 新增 `evaluate_v38_sequence_admission` 与
+  `persist_v38_sequence_admission`。前者从 PostgreSQL 读取本 run 全部唯一候选和逐候选 11 项声明评价，
+  缺失、重复或失败证据 fail closed；后者从 content-addressed object store 解析紧凑引用、重新按数据库
+  证据计算并逐字节比对，再持久化 ToolCall、Artifact、AgentDecision 及其输入/输出 evidence edges。
+- 排序稳定性不引入新的外部数值阈值：对冻结的 MIC、活性、毒性风险、溶血风险和可开发性非加权
+  Pareto 轴执行完整集合及逐轴 leave-one-objective-out 前沿成员复算。稳定性不足只进入
+  `promising_uncertain`/refinement 证据，不得降低毒性与溶血安全门，也不得为了填满结构预算放行。
+- admission artifact 同时包含成熟核心、探索 lane、拒绝分母、结构是否允许 dispatch，以及在核心不足时
+  绑定 provider task/context-pack、父本序列和未改父本对照的最多三轮 refinement plan。该里程碑只完成
+  序列阶段 evidence closure 与 worker 注册；正式 science workflow、immutable worker release 和双靶点
+  结构编排尚未完成，因此 control run 持久化科学计数仍保持为 0。

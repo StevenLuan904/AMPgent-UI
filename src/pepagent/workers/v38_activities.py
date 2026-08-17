@@ -7,9 +7,10 @@ from dataclasses import asdict
 from typing import Any
 
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from temporalio import activity
 
-from pepagent.db.models import Candidate
+from pepagent.db.models import AgentDecision, Candidate, Evaluation
 from pepagent.db.repository import ExperimentRepository
 from pepagent.db.session import SessionFactory
 from pepagent.provenance.hashing import sha256_bytes, sha256_json
@@ -25,10 +26,20 @@ from pepagent.v38_science_execution import (
     V38SequenceExecutionContract,
     build_score_all_proposal_cohort,
 )
+from pepagent.v38_sequence_first_multitarget import (
+    KnowledgeUseTrace,
+    MetricObservation,
+    SequenceCandidateEvidence,
+    admit_sequence_cohort,
+    build_default_v38_maturity_policy,
+    build_sequence_refinement_plan,
+    compute_leave_one_objective_out_rank_stability,
+)
 from pepagent.workers.activities import _register_artifact, _store_json
 from pepagent.workers.v37_activities import _select_v37_declared_observations
 
 V38_METRIC_RESULT_REFERENCE_SCHEMA = "v38.metric-result-reference.1"
+V38_ADMISSION_REFERENCE_SCHEMA = "v38.sequence-admission-reference.1"
 
 
 def build_v38_score_all_cohort_from_results(
@@ -107,6 +118,143 @@ async def _resolve_v38_metric_result(reference: dict[str, Any]) -> dict[str, Any
     ):
         raise ValueError("v38 metric compact receipt differs from payload")
     return payload
+
+
+async def _resolve_v38_admission(reference: dict[str, Any]) -> dict[str, Any]:
+    if reference.get("schema_version") != V38_ADMISSION_REFERENCE_SCHEMA:
+        raise ValueError("v38 sequence admission reference schema is invalid")
+    artifact = reference.get("admission_artifact")
+    if not isinstance(artifact, dict) or set(artifact) != {
+        "sha256",
+        "size_bytes",
+        "uri",
+        "media_type",
+    }:
+        raise ValueError("v38 sequence admission artifact reference is invalid")
+    if artifact["media_type"] != "application/json":
+        raise ValueError("v38 sequence admission artifact media type is invalid")
+    raw = await asyncio.to_thread(
+        ContentAddressedObjectStore().get_bytes, str(artifact["uri"])
+    )
+    if len(raw) != int(artifact["size_bytes"]) or sha256_bytes(raw) != artifact["sha256"]:
+        raise ValueError("v38 sequence admission artifact identity is invalid")
+    payload = json.loads(raw)
+    if not isinstance(payload, dict) or sha256_json(payload) != reference.get(
+        "admission_sha256"
+    ):
+        raise ValueError("v38 sequence admission payload identity is invalid")
+    if artifact["sha256"] != reference["admission_sha256"]:
+        raise ValueError("v38 sequence admission hashes disagree")
+    return payload
+
+
+async def _build_v38_sequence_admission_payload(
+    *,
+    session: AsyncSession,
+    run_id: uuid.UUID,
+    refinement_round: int,
+    knowledge_context_pack_sha256: str,
+) -> tuple[dict[str, Any], set[uuid.UUID]]:
+    policy = build_default_v38_maturity_policy()
+    candidates = list(
+        await session.scalars(
+            select(Candidate).where(Candidate.run_id == run_id).order_by(Candidate.id)
+        )
+    )
+    if not candidates:
+        raise ValueError("v38 sequence admission requires persisted candidates")
+    evaluations = list(
+        await session.scalars(
+            select(Evaluation)
+            .where(Evaluation.candidate_id.in_([item.id for item in candidates]))
+            .order_by(Evaluation.candidate_id, Evaluation.metric_name, Evaluation.id)
+        )
+    )
+    by_candidate: dict[uuid.UUID, list[Evaluation]] = {
+        item.id: [] for item in candidates
+    }
+    evidence_call_ids: set[uuid.UUID] = set()
+    for evaluation in evaluations:
+        if evaluation.metric_name in policy.required_metrics:
+            by_candidate[evaluation.candidate_id].append(evaluation)
+            evidence_call_ids.add(evaluation.tool_call_id)
+    provisional: list[SequenceCandidateEvidence] = []
+    parent_sequences: dict[uuid.UUID, str] = {}
+    for candidate in candidates:
+        rows = by_candidate[candidate.id]
+        names = [item.metric_name for item in rows]
+        if len(rows) != len(policy.required_metrics) or set(names) != policy.required_metrics:
+            raise ValueError(f"v38 candidate metric coverage is incomplete: {candidate.id}")
+        if len(names) != len(set(names)):
+            raise ValueError(f"v38 candidate metric evidence is duplicated: {candidate.id}")
+        traces = tuple(
+            KnowledgeUseTrace.model_validate(item)
+            for item in candidate.metadata_json.get("knowledge_traces", [])
+        )
+        context_sha = candidate.metadata_json.get("cohort_sha256")
+        if not isinstance(context_sha, str) or len(context_sha) != 64:
+            context_sha = sha256_json(candidate.metadata_json)
+        provisional.append(
+            SequenceCandidateEvidence(
+                candidate_id=candidate.id,
+                sequence_sha256=candidate.sequence_sha256,
+                parent_candidate_id=candidate.parent_id,
+                generation=candidate.generation,
+                observations=tuple(
+                    MetricObservation(
+                        metric_name=row.metric_name,
+                        status=("succeeded" if row.status == "succeeded" else "failed"),
+                        numeric_value=row.numeric_value,
+                        text_value=row.text_value,
+                        out_of_domain=row.out_of_domain,
+                    )
+                    for row in rows
+                ),
+                rank_stability=1.0,
+                knowledge_traces=traces,
+                proposal_context_sha256=context_sha,
+            )
+        )
+        parent_sequences[candidate.id] = candidate.sequence
+        if candidate.generator_call_id is not None:
+            evidence_call_ids.add(candidate.generator_call_id)
+    provisional_tuple = tuple(provisional)
+    stability = compute_leave_one_objective_out_rank_stability(
+        provisional_tuple, policy
+    )
+    evidence = tuple(
+        item.model_copy(update={"rank_stability": stability[item.candidate_id]})
+        for item in provisional_tuple
+    )
+    admission = admit_sequence_cohort(
+        evidence,
+        policy,
+        refinement_round=refinement_round,
+    )
+    refinement = (
+        build_sequence_refinement_plan(
+            admission=admission,
+            candidates=evidence,
+            parent_sequences=parent_sequences,
+            policy=policy,
+            knowledge_context_pack_sha256=knowledge_context_pack_sha256,
+        )
+        if admission.refinement_required
+        else None
+    )
+    payload = {
+        "schema_version": "v38.sequence-admission-evidence.1",
+        "run_id": str(run_id),
+        "policy": policy.model_dump(mode="json"),
+        "candidate_evidence_sha256": sha256_json(
+            [item.model_dump(mode="json") for item in evidence]
+        ),
+        "admission": admission.model_dump(mode="json"),
+        "refinement_plan": (
+            refinement.model_dump(mode="json") if refinement is not None else None
+        ),
+    }
+    return payload, evidence_call_ids
 
 
 def build_v38_metric_evaluation_rows(
@@ -386,4 +534,164 @@ async def persist_v38_sequence_metric(request: dict[str, Any]) -> dict[str, Any]
         "plugin": plugin_name,
         "evaluation_count": len(rows),
         "tool_call_id": str(call.id),
+    }
+
+
+@activity.defn(name="evaluate_v38_sequence_admission")
+async def evaluate_v38_sequence_admission(request: dict[str, Any]) -> dict[str, Any]:
+    run_id = uuid.UUID(str(request["run_id"]))
+    refinement_round = int(request.get("refinement_round", 0))
+    context_sha = str(request["knowledge_context_pack_sha256"])
+    if len(context_sha) != 64:
+        raise ValueError("v38 knowledge context-pack SHA is invalid")
+    async with SessionFactory() as session:
+        payload, _ = await _build_v38_sequence_admission_payload(
+            session=session,
+            run_id=run_id,
+            refinement_round=refinement_round,
+            knowledge_context_pack_sha256=context_sha,
+        )
+    artifact = await _store_json(payload)
+    admission = payload["admission"]
+    return {
+        "schema_version": V38_ADMISSION_REFERENCE_SCHEMA,
+        "admission_sha256": sha256_json(payload),
+        "admission_artifact": asdict(artifact),
+        "refinement_round": refinement_round,
+        "mature_core_count": len(admission["mature_core_candidate_ids"]),
+        "exploration_count": len(admission["exploration_candidate_ids"]),
+        "rejected_count": len(admission["rejected_candidate_ids"]),
+        "refinement_required": admission["refinement_required"],
+        "structure_dispatch_allowed": admission["structure_dispatch_allowed"],
+    }
+
+
+@activity.defn(name="persist_v38_sequence_admission")
+async def persist_v38_sequence_admission(request: dict[str, Any]) -> dict[str, Any]:
+    run_id = uuid.UUID(str(request["run_id"]))
+    reference = request["admission_reference"]
+    payload = await _resolve_v38_admission(reference)
+    if payload.get("run_id") != str(run_id):
+        raise ValueError("v38 sequence admission reference belongs to another run")
+    refinement_round = int(reference["refinement_round"])
+    context_sha = str(request["knowledge_context_pack_sha256"])
+    environment_sha256 = str(request["environment_sha256"])
+    worker_source_revision = str(request["worker_source_revision"])
+    if len(context_sha) != 64 or len(environment_sha256) != 64:
+        raise ValueError("v38 sequence admission persistence identity is invalid")
+    async with SessionFactory() as verify_session:
+        recomputed, _ = await _build_v38_sequence_admission_payload(
+            session=verify_session,
+            run_id=run_id,
+            refinement_round=refinement_round,
+            knowledge_context_pack_sha256=context_sha,
+        )
+    if sha256_json(recomputed) != reference["admission_sha256"] or recomputed != payload:
+        raise ValueError("v38 sequence admission differs from authoritative database evidence")
+
+    async with SessionFactory() as session, session.begin():
+        _, evidence_call_ids = await _build_v38_sequence_admission_payload(
+            session=session,
+            run_id=run_id,
+            refinement_round=refinement_round,
+            knowledge_context_pack_sha256=context_sha,
+        )
+        repository = ExperimentRepository(session)
+        call = await repository.record_completed_tool_call(
+            run_id,
+            "v38-sequence-maturity-admission",
+            worker_source_revision,
+            environment_sha256,
+            {
+                "stage": "v38_sequence_admission",
+                "candidate_evidence_sha256": payload["candidate_evidence_sha256"],
+                "knowledge_context_pack_sha256": context_sha,
+                "refinement_round": refinement_round,
+            },
+            {
+                "nonweighted_pareto": True,
+                "absolute_mic_threshold_forbidden": True,
+                "fixed_mic_agreement_cutoff_forbidden": True,
+                "full_sequence_panel_required": True,
+            },
+            reference,
+            model_uri="deterministic://v38-sequence-maturity-admission",
+            attempt=activity.info().attempt,
+        )
+        for parent_id in sorted(evidence_call_ids, key=str):
+            await repository.record_tool_dependency(
+                call.id,
+                parent_id,
+                "v38_admission_uses_sequence_evidence",
+            )
+        artifact_row = await _register_artifact(
+            session,
+            call.id,
+            reference["admission_artifact"],
+            "v38_sequence_admission_evidence",
+            {
+                "admission_sha256": reference["admission_sha256"],
+                "refinement_round": refinement_round,
+            },
+        )
+        existing_decisions = list(
+            await session.scalars(
+                select(AgentDecision).where(
+                    AgentDecision.run_id == run_id,
+                    AgentDecision.generation == refinement_round,
+                    AgentDecision.decision_type == "v38_sequence_maturity_admission",
+                )
+            )
+        )
+        if len(existing_decisions) > 1:
+            raise ValueError("duplicate v38 sequence admission decisions detected")
+        response = json.dumps(
+            payload,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        if existing_decisions:
+            decision = existing_decisions[0]
+            if decision.structured_json != payload or decision.response_text != response:
+                raise ValueError("existing v38 sequence admission decision drifted")
+        else:
+            decision = await repository.record_agent_decision(
+                run_id,
+                refinement_round,
+                "v38_sequence_maturity_admission",
+                "deterministic-v38-sequence-first-agent",
+                worker_source_revision,
+                (
+                    "Apply the frozen validity and safety gates, independent MIC/activity and "
+                    "developability Pareto axes, rank-stability check, and bounded knowledge "
+                    "refinement policy to every persisted valid unique sequence."
+                ),
+                response,
+                payload,
+                model_name="deterministic://v38-sequence-first-agent",
+                response_artifact_id=artifact_row.id,
+            )
+        for parent_id in sorted(evidence_call_ids, key=str):
+            await repository.record_agent_tool_edge(
+                decision.id,
+                parent_id,
+                "input",
+                "observes_complete_sequence_evidence",
+            )
+        await repository.record_agent_tool_edge(
+            decision.id,
+            call.id,
+            "output",
+            "materializes_sequence_admission",
+        )
+    return {
+        "tool_call_id": str(call.id),
+        "decision_id": str(decision.id),
+        "admission_sha256": reference["admission_sha256"],
+        "mature_core_count": reference["mature_core_count"],
+        "exploration_count": reference["exploration_count"],
+        "rejected_count": reference["rejected_count"],
+        "refinement_required": reference["refinement_required"],
+        "structure_dispatch_allowed": reference["structure_dispatch_allowed"],
     }

@@ -1,9 +1,13 @@
+import json
+
 import pytest
 
+from pepagent.provenance.hashing import sha256_bytes, sha256_json
 from pepagent.v38_science_execution import (
     V38_METRIC_OBSERVATIONS,
     build_default_v38_sequence_contract,
 )
+from pepagent.workers import v38_activities
 from pepagent.workers.v38_activities import (
     build_v38_metric_evaluation_rows,
     build_v38_score_all_cohort_from_results,
@@ -139,3 +143,41 @@ def test_metric_rows_fail_closed_when_one_candidate_observation_is_missing() -> 
             candidates=candidates,
             metric_result=result,
         )
+
+
+@pytest.mark.asyncio
+async def test_sequence_admission_reference_resolves_and_rejects_identity_drift(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    payload = {
+        "schema_version": "v38.sequence-admission-evidence.1",
+        "run_id": "00000000-0000-0000-0000-000000000001",
+        "admission": {"mature_core_candidate_ids": []},
+    }
+    raw = json.dumps(
+        payload,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+
+    class Store:
+        def get_bytes(self, _uri: str) -> bytes:
+            return raw
+
+    monkeypatch.setattr(v38_activities, "ContentAddressedObjectStore", Store)
+    reference = {
+        "schema_version": v38_activities.V38_ADMISSION_REFERENCE_SCHEMA,
+        "admission_sha256": sha256_json(payload),
+        "admission_artifact": {
+            "sha256": sha256_bytes(raw),
+            "size_bytes": len(raw),
+            "uri": "s3://evidence/admission.json",
+            "media_type": "application/json",
+        },
+    }
+    assert await v38_activities._resolve_v38_admission(reference) == payload
+
+    reference["admission_artifact"]["size_bytes"] += 1
+    with pytest.raises(ValueError, match="identity"):
+        await v38_activities._resolve_v38_admission(reference)

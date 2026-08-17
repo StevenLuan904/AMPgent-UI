@@ -28,6 +28,7 @@ from pepagent.v38_sequence_first_multitarget import (
     build_default_v38_maturity_policy,
     build_parallel_target_dispatch,
     build_sequence_refinement_plan,
+    compute_leave_one_objective_out_rank_stability,
 )
 
 SHA_A = "a" * 64
@@ -171,6 +172,47 @@ def _candidate(
         knowledge_traces=knowledge,
         proposal_context_sha256=SHA_B,
     )
+
+
+def _with_numeric_metrics(**updates: float) -> tuple[MetricObservation, ...]:
+    return tuple(
+        item.model_copy(update={"numeric_value": updates[item.metric_name]})
+        if item.metric_name in updates
+        else item
+        for item in _observations()
+    )
+
+
+def test_rank_stability_uses_leave_one_objective_out_pareto_membership() -> None:
+    left = _candidate(
+        observations=_with_numeric_metrics(
+            llamp_log10_mic_um=0.0,
+            amp_read_log10_mic_um=2.0,
+            instability_index=0.0,
+            hydrophobic_moment=1.0,
+        )
+    )
+    right = _candidate(
+        observations=_with_numeric_metrics(
+            llamp_log10_mic_um=2.0,
+            amp_read_log10_mic_um=0.0,
+            instability_index=0.0,
+            hydrophobic_moment=1.0,
+        )
+    )
+    stability = compute_leave_one_objective_out_rank_stability(
+        (left, right), _policy()
+    )
+    assert stability[left.candidate_id] == pytest.approx(0.8)
+    assert stability[right.candidate_id] == pytest.approx(0.8)
+
+
+def test_rank_stability_rejects_duplicate_candidate_identity() -> None:
+    candidate = _candidate()
+    with pytest.raises(ValueError, match="duplicate"):
+        compute_leave_one_objective_out_rank_stability(
+            (candidate, candidate), _policy()
+        )
 
 
 def _branch(name: str) -> TargetBranchSpec:

@@ -600,6 +600,45 @@ def _pareto_fronts(
     return fronts
 
 
+def compute_leave_one_objective_out_rank_stability(
+    candidates: tuple[SequenceCandidateEvidence, ...],
+    policy: SequenceMaturityPolicy,
+) -> dict[UUID, float]:
+    """Measure front membership stability without inventing metric cutoffs."""
+
+    if not candidates:
+        raise ValueError("rank stability requires a non-empty cohort")
+    if len({item.candidate_id for item in candidates}) != len(candidates):
+        raise ValueError("rank stability cohort contains duplicate candidates")
+    objective_count = len(policy.pareto_objectives)
+    objective_values = {
+        item.candidate_id: _objective_values(item, policy) for item in candidates
+    }
+    projections = [tuple(range(objective_count))]
+    if objective_count > 2:
+        projections.extend(
+            tuple(index for index in range(objective_count) if index != omitted)
+            for omitted in range(objective_count)
+        )
+    front_counts = {item.candidate_id: 0 for item in candidates}
+    for axes in projections:
+        projected = {
+            candidate_id: tuple(values[index] for index in axes)
+            for candidate_id, values in objective_values.items()
+        }
+        for candidate_id, values in projected.items():
+            dominated = any(
+                other_id != candidate_id and _dominates(other_values, values)
+                for other_id, other_values in projected.items()
+            )
+            if not dominated:
+                front_counts[candidate_id] += 1
+    return {
+        candidate_id: count / len(projections)
+        for candidate_id, count in front_counts.items()
+    }
+
+
 def admit_sequence_cohort(
     candidates: tuple[SequenceCandidateEvidence, ...],
     policy: SequenceMaturityPolicy,
