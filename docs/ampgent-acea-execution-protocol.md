@@ -2169,3 +2169,21 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   双父本 smoke、逐子代 trace、取消清理和 immutable release 要求退回 provider；provider 已确认开始独立交付。
   在真实 poller、release/runtime manifest 和 smoke receipt 通过只读验收前，唯一 blocker 保持
   `v38_refinement_provider_release_not_delivered`，不得启动 900 occurrence 的正式生成。
+
+### 21.56 v38 refinement provider 只读验收完成（2026-08-18）
+
+- provider 已发布独立 release `amp-kb-v38-refinement-99e27f376dc955eb91bb`，Activity 为
+  `refine_v38_sequences_with_knowledge`，专用 queue 为 `pepagent-refinement-provider-v38`。AMPgent 未修改
+  provider 文件或添加兼容层，独立复算 release manifest
+  `49217875bd3c04d01722cd6a3427f45cb524328a40e022bf230c46cc0ed2737e`、runtime manifest
+  `10dbc770c0f62de95401a2a4eba4f683e6601486ba623c1852601d7877672d61` 与 environment
+  `72365659512995afc259d25b798367dd7b9036506c374b45c7a22d8bf277cc37`。
+- 消费侧逐字节验证 2,769 个 runtime 文件；真实 Temporal 两父本 smoke 返回 `8+5=13` 个 occurrence，全部
+  通过 AMPgent 原生 `RefinementChildProposal`，重复 occurrence 保留，父序列、未改父本 control SHA、query、
+  passage 与 provider task 身份均精确闭合。smoke receipt 为
+  `82c86bd894b78e2758c22a21e320f5a9536e28fdce5101d690f305ec66005c01`，acceptance receipt 为
+  `21790d2dc7b0911cdbe0315bf89f33a062e6fcbb6ebe9c4387ee9815e323fe78`。
+- 专用 poller identity `amp-kb-v38-refinement-99e27f376dc955eb91bb@STEVENSOMEN9` 当前可见；控制器现会逐 tick
+  验证 accepted release 字段和该 poller，漂移时重新阻断。provider blocker 已解除，但正式 workflow 仍未提交；
+  下一关键路径是用包含上述冻结绑定的新 AMPgent source/release 部署完整 v38 control/generator/metrics/Boltz/
+  Rosetta placement，并完成唯一 exact-once preflight。

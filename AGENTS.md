@@ -274,3 +274,9 @@ Apply the following style to AMPgent/AceA research work in this repository:
   provider-owned refinement Activity release on `pepagent-refinement-provider-v38`. The existing
   candidate-specific paired-shadow challenger is useful protocol evidence but does not generate
   refinement children and must not be accepted as that Activity release.
+- The provider-owned refinement release `amp-kb-v38-refinement-99e27f376dc955eb91bb` is now accepted.
+  AMPgent independently rehashed all 2,769 runtime files, validated all 13 synthetic child occurrences
+  with its native strict model, resolved every query/passage trace, and observed the exact dedicated
+  Temporal poller. Its release, runtime, environment, acceptance, and smoke hashes are frozen in the
+  v38 benchmark and acceptance config. The controller must fail closed if that poller disappears;
+  acceptance does not itself submit the formal science workflow.

@@ -76,19 +76,72 @@ def _capacity_blocker(capacity: dict[str, Any]) -> str | None:
     return "authorized_structure_gpu_currently_busy"
 
 
-def _refinement_provider_blocker() -> str | None:
-    request_path = (
+def _refinement_provider_request_path() -> Path:
+    return (
         Path(__file__).resolve().parents[2]
         / "config"
         / "experiments"
         / "v38_refinement_provider_acceptance.yaml"
     )
+
+
+def _load_refinement_provider_request() -> dict[str, Any]:
+    return _load_yaml(_refinement_provider_request_path())
+
+
+def _refinement_provider_blocker() -> str | None:
     try:
-        request = _load_yaml(request_path)
+        request = _load_refinement_provider_request()
     except (OSError, ValueError, yaml.YAMLError):
         return "v38_refinement_provider_acceptance_contract_missing"
     if request.get("status") != "accepted_immutable_release":
         return "v38_refinement_provider_release_not_delivered"
+    accepted = request.get("accepted_release")
+    if not isinstance(accepted, dict):
+        return "v38_refinement_provider_release_identity_drifted"
+    sha_fields = (
+        "release_manifest_sha256",
+        "runtime_manifest_sha256",
+        "environment_sha256",
+        "immutable_release_receipt_sha256",
+        "acceptance_receipt_sha256",
+        "smoke_receipt_sha256",
+    )
+    if any(
+        not isinstance(accepted.get(field), str) or len(accepted[field]) != 64
+        for field in sha_fields
+    ):
+        return "v38_refinement_provider_release_identity_drifted"
+    if (
+        accepted.get("release_revision") is None
+        or accepted.get("poller_identity") is None
+        or not isinstance(accepted.get("poller_pid"), int)
+    ):
+        return "v38_refinement_provider_release_identity_drifted"
+    return None
+
+
+async def _refinement_provider_poller_blocker() -> str | None:
+    try:
+        request = _load_refinement_provider_request()
+        accepted = request["accepted_release"]
+        queue = request["required_temporal_interface"]["dedicated_task_queue"]
+        expected = accepted["poller_identity"].lower()
+        settings = get_settings()
+        client = await Client.connect(
+            settings.temporal_address, namespace=settings.temporal_namespace
+        )
+        response = await client.workflow_service.describe_task_queue(
+            DescribeTaskQueueRequest(
+                namespace=settings.temporal_namespace,
+                task_queue=TaskQueue(name=queue),
+                task_queue_type=TaskQueueType.TASK_QUEUE_TYPE_ACTIVITY,
+            )
+        )
+        if expected not in {item.identity.lower() for item in response.pollers}:
+            return "v38_refinement_provider_poller_not_visible"
+    except Exception:
+        return "v38_refinement_provider_poller_not_visible"
     return None
 
 
@@ -475,6 +528,8 @@ async def tick_controller(*, state_path: Path) -> dict[str, Any]:
     provider_blockers = {
         "v38_refinement_provider_acceptance_contract_missing",
         "v38_refinement_provider_release_not_delivered",
+        "v38_refinement_provider_release_identity_drifted",
+        "v38_refinement_provider_poller_not_visible",
     }
     state["blockers"] = [
         item for item in state["blockers"] if item not in provider_blockers
@@ -482,6 +537,13 @@ async def tick_controller(*, state_path: Path) -> dict[str, Any]:
     provider_blocker = _refinement_provider_blocker()
     if provider_blocker is not None:
         state["blockers"].append(provider_blocker)
+    else:
+        provider_poller_blocker = await _refinement_provider_poller_blocker()
+        if provider_poller_blocker is not None:
+            state["blockers"].append(provider_poller_blocker)
+        else:
+            request = _load_refinement_provider_request()
+            state["refinement_provider_release"] = request["accepted_release"]
     worker_blockers = {
         "v38_sequence_generation_and_refinement_worker_release_not_deployed",
         "v38_sequence_worker_release_identity_drifted",

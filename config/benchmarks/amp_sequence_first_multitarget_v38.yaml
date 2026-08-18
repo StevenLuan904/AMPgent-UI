@@ -58,6 +58,15 @@ knowledge_use:
   provider_smoke_completed: true
   provider_smoke_context_pack_sha256: d918d8faac581eebdf665593dbd81f50f24482924ea2ede302b3d273595f0c53
   target_specific_transfer_limit: AceA_target_claims_cannot_be_reused_for_GyrA_or_PBP2a
+  refinement_provider:
+    activity_name: refine_v38_sequences_with_knowledge
+    task_queue: pepagent-refinement-provider-v38
+    release_revision: amp-kb-v38-refinement-99e27f376dc955eb91bb
+    release_manifest_sha256: 49217875bd3c04d01722cd6a3427f45cb524328a40e022bf230c46cc0ed2737e
+    runtime_manifest_sha256: 10dbc770c0f62de95401a2a4eba4f683e6601486ba623c1852601d7877672d61
+    environment_sha256: 72365659512995afc259d25b798367dd7b9036506c374b45c7a22d8bf277cc37
+    acceptance_receipt_sha256: 21790d2dc7b0911cdbe0315bf89f33a062e6fcbb6ebe9c4387ee9815e323fe78
+    smoke_receipt_sha256: 82c86bd894b78e2758c22a21e320f5a9536e28fdce5101d690f305ec66005c01
 
 sequence_first_agent:
   raw_proposal_policy:
