@@ -36,3 +36,4 @@ def test_v38_local_launcher_replacement_is_opt_in_and_exactly_scoped() -> None:
     assert tree_gate < stop
     assert "Stop-Process -Id ([int]$previous.pid)" in text
     assert "Stop-Process -Id ([int]$previous.supervisor_pid)" in text
+    assert "Treat that exact-PID exit race as successful" in text

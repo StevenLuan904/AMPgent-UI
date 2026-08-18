@@ -89,7 +89,10 @@ foreach ($role in $roles) {
             $supervisorStillLive = Get-Process -Id ([int]$previous.supervisor_pid) `
                 -ErrorAction SilentlyContinue
             if ($null -ne $supervisorStillLive) {
-                Stop-Process -Id ([int]$previous.supervisor_pid) -ErrorAction Stop
+                # The supervisor normally exits as soon as its poller child is
+                # stopped.  Treat that exact-PID exit race as successful.
+                Stop-Process -Id ([int]$previous.supervisor_pid) `
+                    -ErrorAction SilentlyContinue
                 Wait-Process -Id ([int]$previous.supervisor_pid) -Timeout 15 `
                     -ErrorAction SilentlyContinue
             }
