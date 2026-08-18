@@ -2143,3 +2143,11 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
 - Rosetta ToolCall、依赖边和全部逐 decoy 结构记录在同一数据库事务中提交；缺失、重复、跨靶点、跨对照或哈希漂移均 fail closed，不产生部分结构证据。
 - native 与 wrong-pocket、两个靶点和不同 seed 使用隔离目录及 evidence namespace。结构指标不得混入靶点无关的序列评价；后续只从隔离证据构建 per-target、cross-target 和 target-agnostic 三类视图。
 - 这一层完成后，正式 workflow 仍须显式接入任务规划、双靶点并行派发、三视图非加权 Pareto 与 database/object-store replay；在这些闭环及 worker release/preflight 完成前，`formal_science_workflow_submitted` 保持 `false`。
+
+### 21.54 v38 admission 后多靶点任务图与 Temporal 派发（2026-08-18）
+
+- 正式请求只冻结不含未来结果的 `multitarget_plan_template`：harness release、历史快照、靶点分支与最大靶点并行度。序列成熟决策和共享候选证据的 SHA 只能在 score-all/admission 完成后产生，禁止在 preflight 中伪造占位身份。
+- `plan_v38_multitarget_structure` 从内容寻址 admission artifact 重新取回成熟核心与探索候选，并把实际 `candidate_evidence_sha256`、`admission_sha256` 注入 `MultiTargetExecutionPlan`；计划与数据库候选身份不一致时 fail closed。
+- 每个 admitted candidate 必须展开为 `target × native/wrong-pocket × 3 Boltz seeds` 的完整任务笛卡尔积；任务数必须与候选数、靶点数、两条控制 lane 和 seed 数精确相乘，禁止 first-K、静默漏项或强制补齐。
+- workflow 对每个任务依次执行 Boltz compute→Boltz evidence commit→Rosetta 16-decoy compute→Rosetta/逐-decoy原子 commit；计算队列与控制提交队列隔离，并受冻结并发上限约束。
+- 当前 Temporal 闭环已覆盖到完整多靶点结构证据，但最终三视图 Pareto、AgentDecision 与 database/object-store replay 尚未接入，因此 workflow 只能报告 `multitarget_structure_evidence_complete_pending_pareto_replay`，不得标记正式完成。

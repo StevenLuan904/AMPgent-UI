@@ -21,6 +21,7 @@ from pepagent.workers.v38_activities import (
     persist_v38_score_all_generation,
     persist_v38_sequence_admission,
     persist_v38_sequence_metric,
+    plan_v38_multitarget_structure,
     predict_v38_multitarget_structure,
     score_v38_multitarget_rosetta,
 )
@@ -32,6 +33,7 @@ V38_ROLE_CONFIG = {
         [
             mark_run_started,
             mark_run_failed,
+            plan_v38_multitarget_structure,
             evaluate_v38_sequence_admission,
             persist_v38_refinement_children,
             persist_v38_score_all_generation,

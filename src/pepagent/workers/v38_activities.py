@@ -32,14 +32,18 @@ from pepagent.v38_sequence_first_multitarget import (
     KnowledgeUseTrace,
     MetricObservation,
     MultiTargetBoltzEvidence,
+    MultiTargetExecutionPlan,
     MultiTargetRosettaEvidence,
     MultiTargetStructureTask,
     RosettaDecoyEvidence,
     SequenceCandidateEvidence,
+    SequenceCohortAdmission,
     SequenceRefinementPlan,
     TargetBranchSpec,
     admit_sequence_cohort,
     build_default_v38_maturity_policy,
+    build_multitarget_structure_tasks,
+    build_parallel_target_dispatch,
     build_sequence_refinement_plan,
     compute_leave_one_objective_out_rank_stability,
 )
@@ -83,6 +87,111 @@ def _validate_v38_structure_request(
 
 def _v38_structure_work_scope(task: MultiTargetStructureTask) -> list[str]:
     return [str(task.target_id), task.control_lane, task.sha256()]
+
+
+def build_v38_multitarget_task_plan(
+    *,
+    execution_plan: MultiTargetExecutionPlan,
+    admission_payload: dict[str, Any],
+    boltz_seeds: tuple[int, ...],
+) -> dict[str, Any]:
+    admission = SequenceCohortAdmission.model_validate(admission_payload["admission"])
+    if admission.refinement_required or not admission.structure_dispatch_allowed:
+        raise ValueError("v38 structure tasks require a concluded sequence admission")
+    if execution_plan.shared_sequence_cohort_sha256 != admission_payload.get(
+        "candidate_evidence_sha256"
+    ):
+        raise ValueError("v38 execution plan does not bind the admitted sequence cohort")
+    admitted_ids = (
+        *admission.mature_core_candidate_ids,
+        *admission.exploration_candidate_ids,
+    )
+    if not admitted_ids:
+        raise ValueError("v38 sequence admission produced no structure candidates")
+    if len(admitted_ids) != len(set(admitted_ids)):
+        raise ValueError("v38 sequence admission duplicated a structure candidate")
+    dispatches = build_parallel_target_dispatch(
+        execution_plan,
+        mature_candidate_ids=admitted_ids,
+    )
+    tasks = build_multitarget_structure_tasks(
+        execution_plan,
+        dispatches=dispatches,
+        boltz_seeds=boltz_seeds,
+    )
+    expected_count = (
+        len(admitted_ids)
+        * len(execution_plan.target_branches)
+        * 2
+        * len(boltz_seeds)
+    )
+    if len(tasks) != expected_count:
+        raise ValueError("v38 multi-target structure task cardinality drifted")
+    return {
+        "schema_version": "v38.multitarget-structure-task-plan.1",
+        "execution_plan_sha256": sha256_json(
+            execution_plan.model_dump(mode="json")
+        ),
+        "candidate_evidence_sha256": admission_payload["candidate_evidence_sha256"],
+        "admitted_candidate_ids": [str(item) for item in admitted_ids],
+        "mature_core_count": len(admission.mature_core_candidate_ids),
+        "exploration_count": len(admission.exploration_candidate_ids),
+        "target_count": len(execution_plan.target_branches),
+        "control_lanes": ["native", "wrong_pocket"],
+        "boltz_seeds": list(boltz_seeds),
+        "task_count": len(tasks),
+        "tasks": [item.model_dump(mode="json") for item in tasks],
+    }
+
+
+@activity.defn(name="plan_v38_multitarget_structure")
+async def plan_v38_multitarget_structure(request: dict[str, Any]) -> dict[str, Any]:
+    run_id = uuid.UUID(str(request["run_id"]))
+    reference = request["admission_reference"]
+    admission_payload = await _resolve_v38_admission(reference)
+    if admission_payload.get("run_id") != str(run_id):
+        raise ValueError("v38 structure planning admission belongs to another run")
+    template = request["multitarget_plan_template"]
+    if not isinstance(template, dict) or set(template) != {
+        "harness_release_id",
+        "history_snapshot_sha256",
+        "target_branches",
+        "max_parallel_targets",
+    }:
+        raise ValueError("v38 multitarget plan template is invalid")
+    execution_plan = MultiTargetExecutionPlan(
+        **template,
+        shared_sequence_cohort_sha256=admission_payload[
+            "candidate_evidence_sha256"
+        ],
+        sequence_maturity_decision_sha256=reference["admission_sha256"],
+    )
+    planned = build_v38_multitarget_task_plan(
+        execution_plan=execution_plan,
+        admission_payload=admission_payload,
+        boltz_seeds=tuple(int(item) for item in request["boltz_seeds"]),
+    )
+    candidate_ids = [uuid.UUID(item) for item in planned["admitted_candidate_ids"]]
+    async with SessionFactory() as session:
+        candidates = list(
+            await session.scalars(
+                select(Candidate)
+                .where(Candidate.run_id == run_id, Candidate.id.in_(candidate_ids))
+                .order_by(Candidate.id)
+            )
+        )
+    if {item.id for item in candidates} != set(candidate_ids):
+        raise ValueError("v38 structure plan references a missing or cross-run candidate")
+    planned["candidates"] = [
+        {
+            "id": str(item.id),
+            "sequence": item.sequence,
+            "sequence_sha256": item.sequence_sha256,
+        }
+        for item in candidates
+    ]
+    planned["task_plan_sha256"] = sha256_json(planned)
+    return planned
 
 
 @activity.defn(name="predict_v38_multitarget_structure")

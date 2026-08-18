@@ -66,6 +66,53 @@ def _validate_request(request: dict[str, Any]) -> None:
     context_sha = request.get("knowledge_context_pack_sha256")
     if not isinstance(context_sha, str) or len(context_sha) != 64:
         raise ValueError("v38 knowledge context-pack identity is invalid")
+    plan_template = request.get("multitarget_plan_template")
+    if not isinstance(plan_template, dict) or set(plan_template) != {
+        "harness_release_id",
+        "history_snapshot_sha256",
+        "target_branches",
+        "max_parallel_targets",
+    }:
+        raise ValueError("v38 workflow requires one frozen multitarget plan template")
+    branches = plan_template["target_branches"]
+    if not isinstance(branches, list) or not 2 <= len(branches) <= 6:
+        raise ValueError("v38 workflow requires two to six target branches")
+    target_keys = [str(item.get("target_key", "")) for item in branches]
+    if not all(target_keys) or len(target_keys) != len(set(target_keys)):
+        raise ValueError("v38 workflow target branch keys are invalid")
+    runtimes = request.get("structure_runtime_by_target_key")
+    if not isinstance(runtimes, dict) or set(runtimes) != set(target_keys):
+        raise ValueError("v38 workflow structure runtimes do not cover target branches")
+    for target_key, runtime in runtimes.items():
+        if not isinstance(runtime, dict) or set(runtime) != {
+            "target_sequence",
+            "pocket_residues_by_lane",
+            "structure_spec",
+        }:
+            raise ValueError(f"v38 structure runtime is invalid: {target_key}")
+        lanes = runtime["pocket_residues_by_lane"]
+        if not isinstance(lanes, dict) or set(lanes) != {"native", "wrong_pocket"}:
+            raise ValueError(f"v38 structure control lanes are invalid: {target_key}")
+    seeds = request.get("boltz_seeds")
+    if (
+        not isinstance(seeds, list)
+        or len(seeds) != 3
+        or len({int(item) for item in seeds}) != 3
+    ):
+        raise ValueError("v38 workflow requires three distinct Boltz seeds")
+    queues = request.get("task_queues")
+    required_queues = {
+        "workflow_and_control",
+        "generator",
+        "sequence_metrics",
+        "structure_boltz",
+        "structure_rosetta",
+    }
+    if not isinstance(queues, dict) or not required_queues <= set(queues):
+        raise ValueError("v38 workflow task queues are incomplete")
+    for key in ("generation_concurrency", "metric_concurrency", "structure_concurrency"):
+        if not isinstance(request.get(key), int) or int(request[key]) < 1:
+            raise ValueError(f"v38 workflow concurrency is invalid: {key}")
 
 
 @workflow.defn(name="V38SequenceFirstAgentWorkflow")
@@ -307,11 +354,123 @@ class V38SequenceFirstAgentWorkflow:
                     start_to_close_timeout=timedelta(hours=1),
                     retry_policy=retry,
                 )
-            status = (
-                "sequence_admitted_for_multitarget_structure"
-                if admission["structure_dispatch_allowed"]
-                else "sequence_evidence_concluded_without_structure"
-            )
+            structure_task_count = 0
+            structure_evidence_count = 0
+            if admission["structure_dispatch_allowed"]:
+                structure_plan = await workflow.execute_activity(
+                    "plan_v38_multitarget_structure",
+                    {
+                        "run_id": run_id,
+                        "admission_reference": admission_reference,
+                        "multitarget_plan_template": request[
+                            "multitarget_plan_template"
+                        ],
+                        "boltz_seeds": request["boltz_seeds"],
+                    },
+                    task_queue=control_queue,
+                    start_to_close_timeout=timedelta(hours=1),
+                    retry_policy=retry,
+                )
+                tasks = list(structure_plan["tasks"])
+                candidates_by_id = {
+                    str(item["id"]): item for item in structure_plan["candidates"]
+                }
+                branches_by_key = {
+                    str(item["target_key"]): item
+                    for item in request["multitarget_plan_template"][
+                        "target_branches"
+                    ]
+                }
+
+                async def execute_structure_task(
+                    task: dict[str, Any],
+                ) -> dict[str, Any]:
+                    target_key = str(task["target_key"])
+                    candidate = candidates_by_id[str(task["candidate_id"])]
+                    runtime = request["structure_runtime_by_target_key"][target_key]
+                    raw_boltz = await workflow.execute_activity(
+                        "predict_v38_multitarget_structure",
+                        {
+                            "run_id": run_id,
+                            "candidate": candidate,
+                            "structure_task": task,
+                            "target_branch": branches_by_key[target_key],
+                            "target_sequence": runtime["target_sequence"],
+                            "pocket_definition_sha256": task["pocket_sha256"],
+                            "pocket_residues": runtime[
+                                "pocket_residues_by_lane"
+                            ][task["control_lane"]],
+                            "structure_spec": runtime["structure_spec"],
+                            "seed": task["boltz_seed"],
+                        },
+                        task_queue=str(queues["structure_boltz"]),
+                        start_to_close_timeout=timedelta(hours=12),
+                        heartbeat_timeout=timedelta(minutes=5),
+                        retry_policy=retry,
+                    )
+                    boltz = await workflow.execute_activity(
+                        "persist_v38_multitarget_boltz",
+                        {"run_id": run_id, "structure_result": raw_boltz},
+                        task_queue=control_queue,
+                        start_to_close_timeout=timedelta(hours=1),
+                        retry_policy=retry,
+                    )
+                    raw_rosetta = await workflow.execute_activity(
+                        "score_v38_multitarget_rosetta",
+                        {
+                            "run_id": run_id,
+                            "candidate": candidate,
+                            "structure_task": task,
+                            "target_branch": branches_by_key[target_key],
+                            "target_sequence": runtime["target_sequence"],
+                            "pocket_definition_sha256": task["pocket_sha256"],
+                            "pocket_residues": runtime[
+                                "pocket_residues_by_lane"
+                            ][task["control_lane"]],
+                            "structure_spec": runtime["structure_spec"],
+                            "structure": boltz["structure"],
+                        },
+                        task_queue=str(queues["structure_rosetta"]),
+                        start_to_close_timeout=timedelta(hours=12),
+                        heartbeat_timeout=timedelta(minutes=5),
+                        retry_policy=retry,
+                    )
+                    return await workflow.execute_activity(
+                        "persist_v38_multitarget_rosetta",
+                        {
+                            "run_id": run_id,
+                            "rosetta_result": raw_rosetta,
+                            "boltz_evidence": boltz["boltz_evidence"],
+                        },
+                        task_queue=control_queue,
+                        start_to_close_timeout=timedelta(hours=1),
+                        retry_policy=retry,
+                    )
+
+                structure_results = await _bounded_ordered_map(
+                    tasks,
+                    limit=int(request["structure_concurrency"]),
+                    operation=execute_structure_task,
+                )
+                structure_task_count = len(tasks)
+                structure_evidence_count = sum(
+                    1
+                    + int(item["persistence_receipt"]["rosetta_decoy_count"])
+                    for item in structure_results
+                )
+                expected_evidence_count = structure_task_count * (
+                    1
+                    + int(
+                        request["multitarget_plan_template"]["target_branches"][0][
+                            "rosetta_decoys_per_pose"
+                        ]
+                    )
+                )
+                if structure_evidence_count != expected_evidence_count:
+                    raise ValueError("v38 structure evidence cardinality drifted")
+                status = "multitarget_structure_evidence_complete_pending_pareto_replay"
+            else:
+                status = "sequence_evidence_concluded_without_structure"
             return {
                 "schema_version": "v38.sequence-first-prefix-result.1",
                 "status": status,
@@ -327,6 +486,8 @@ class V38SequenceFirstAgentWorkflow:
                 "refinement_promoted_unique_count": promoted_refinement_count,
                 "admission": admission,
                 "admission_reference": admission_reference,
+                "structure_task_count": structure_task_count,
+                "structure_evidence_count": structure_evidence_count,
                 "formal_structure_workflow_complete": False,
             }
         except Exception as exc:

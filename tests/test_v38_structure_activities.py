@@ -3,7 +3,12 @@ from uuid import uuid4
 import pytest
 
 from pepagent.provenance.hashing import sha256_text
-from pepagent.v38_sequence_first_multitarget import MultiTargetStructureTask, TargetBranchSpec
+from pepagent.v38_sequence_first_multitarget import (
+    MultiTargetExecutionPlan,
+    MultiTargetStructureTask,
+    SequenceCohortAdmission,
+    TargetBranchSpec,
+)
 from pepagent.workers import v38_activities
 from pepagent.workers.v38_temporal_worker import V38_ROLE_CONFIG
 
@@ -204,3 +209,89 @@ def test_v38_rosetta_evidence_builder_rejects_incomplete_decoy_budget() -> None:
     }
     with pytest.raises(ValueError, match="decoy count"):
         v38_activities.build_v38_rosetta_evidence(result, boltz)
+
+
+def test_v38_task_plan_covers_candidates_targets_controls_and_seeds() -> None:
+    candidate_ids = (uuid4(), uuid4())
+    first = _branch()
+    second = _branch().model_copy(
+        update={"target_key": "se_pbp2a_allosteric", "target_id": uuid4()}
+    )
+    admission = SequenceCohortAdmission(
+        refinement_round=0,
+        decisions=(),
+        mature_core_candidate_ids=(candidate_ids[0],),
+        exploration_candidate_ids=(candidate_ids[1],),
+        rejected_candidate_ids=(),
+        refinement_required=False,
+        structure_dispatch_allowed=True,
+        unused_structure_slots=46,
+    )
+    cohort_sha = "1" * 64
+    plan = MultiTargetExecutionPlan(
+        harness_release_id="v38-test",
+        history_snapshot_sha256="2" * 64,
+        shared_sequence_cohort_sha256=cohort_sha,
+        sequence_maturity_decision_sha256="3" * 64,
+        target_branches=(first, second),
+        max_parallel_targets=2,
+    )
+    result = v38_activities.build_v38_multitarget_task_plan(
+        execution_plan=plan,
+        admission_payload={
+            "candidate_evidence_sha256": cohort_sha,
+            "admission": admission.model_dump(mode="json"),
+        },
+        boltz_seeds=(20270380, 20270381, 20270382),
+    )
+
+    assert result["task_count"] == 24
+    identities = {
+        (
+            item["candidate_id"],
+            item["target_key"],
+            item["control_lane"],
+            item["boltz_seed"],
+        )
+        for item in result["tasks"]
+    }
+    assert len(identities) == 24
+    assert {item["control_lane"] for item in result["tasks"]} == {
+        "native",
+        "wrong_pocket",
+    }
+
+
+def test_v38_task_plan_rejects_unconcluded_admission() -> None:
+    branch_a = _branch()
+    branch_b = _branch().model_copy(
+        update={"target_key": "se_pbp2a_allosteric", "target_id": uuid4()}
+    )
+    cohort_sha = "1" * 64
+    plan = MultiTargetExecutionPlan(
+        harness_release_id="v38-test",
+        history_snapshot_sha256="2" * 64,
+        shared_sequence_cohort_sha256=cohort_sha,
+        sequence_maturity_decision_sha256="3" * 64,
+        target_branches=(branch_a, branch_b),
+        max_parallel_targets=2,
+    )
+    admission = SequenceCohortAdmission(
+        refinement_round=0,
+        decisions=(),
+        mature_core_candidate_ids=(uuid4(),),
+        exploration_candidate_ids=(),
+        rejected_candidate_ids=(),
+        refinement_required=True,
+        structure_dispatch_allowed=False,
+        unused_structure_slots=48,
+    )
+    with pytest.raises(ValueError, match="concluded sequence admission"):
+        v38_activities.build_v38_multitarget_task_plan(
+            execution_plan=plan,
+            admission_payload={
+                "candidate_evidence_sha256": cohort_sha,
+                "admission": admission.model_dump(mode="json"),
+            },
+            boltz_seeds=(20270380, 20270381, 20270382),
+        )
