@@ -2151,3 +2151,21 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
 - 每个 admitted candidate 必须展开为 `target × native/wrong-pocket × 3 Boltz seeds` 的完整任务笛卡尔积；任务数必须与候选数、靶点数、两条控制 lane 和 seed 数精确相乘，禁止 first-K、静默漏项或强制补齐。
 - workflow 对每个任务依次执行 Boltz compute→Boltz evidence commit→Rosetta 16-decoy compute→Rosetta/逐-decoy原子 commit；计算队列与控制提交队列隔离，并受冻结并发上限约束。
 - 当前 Temporal 闭环已覆盖到完整多靶点结构证据，但最终三视图 Pareto、AgentDecision 与 database/object-store replay 尚未接入，因此 workflow 只能报告 `multitarget_structure_evidence_complete_pending_pareto_replay`，不得标记正式完成。
+
+### 21.55 v38 本地序列 worker 交付与 refinement provider 退回（2026-08-18）
+
+- control、generator、sequence-metrics 三类本地 worker 已从 immutable source
+  `3643a492f19d82244a0039783a7dc1a792b35570`、release
+  `c50e098ff74954ad541563d81822732a777a139aa1698e73ddfa5b46fd8d6aa3` 部署。当前实际 poller PID
+  分别为 `64480`、`66236`、`40340`；启动 receipt 同时保存 supervisor PID、host、source/release 和
+  AMPgent ownership，且不停止任何非精确 owned 进程。
+- 控制器现在逐 tick 同时校验本地 receipt、三类 worker 的统一 source/release，以及 Temporal workflow/activity
+  poller 的精确 identity。序列 worker 静态交付门已解除；API、PostgreSQL、对象存储和 Temporal 健康，控制
+  run 仍为 0 Candidate、0 occurrence、0 Evaluation、0 structure、0 Decision、0 replay，正式科学 workflow
+  未提交。
+- provider task `019fad3e-76b8-7e32-8455-d2e9b31d33e5` 的既有
+  `amp-kb-challenger-75b8b313c72b79dcb416` 是 candidate-specific paired-shadow 协议，明确不生成序列，故
+  不能冒充 `refine_v38_sequences_with_knowledge` Activity。已把冻结 acceptance YAML 的 Activity、专用 queue、
+  双父本 smoke、逐子代 trace、取消清理和 immutable release 要求退回 provider；provider 已确认开始独立交付。
+  在真实 poller、release/runtime manifest 和 smoke receipt 通过只读验收前，唯一 blocker 保持
+  `v38_refinement_provider_release_not_delivered`，不得启动 900 occurrence 的正式生成。

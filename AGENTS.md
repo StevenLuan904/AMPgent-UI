@@ -267,3 +267,10 @@ Apply the following style to AMPgent/AceA research work in this repository:
   formal v38 science dispatch waits for an executor that scores all valid proposals before promotion,
   performs bounded knowledge-traced refinement, and fans one frozen cohort into isolated target
   branches.
+- Local v38 control, generator, and sequence-metrics pollers are deployed from immutable source
+  `3643a492f19d82244a0039783a7dc1a792b35570` and release
+  `c50e098ff74954ad541563d81822732a777a139aa1698e73ddfa5b46fd8d6aa3`; the controller verifies
+  their exact receipt and Temporal identities on every tick. The remaining submission blocker is the
+  provider-owned refinement Activity release on `pepagent-refinement-provider-v38`. The existing
+  candidate-specific paired-shadow challenger is useful protocol evidence but does not generate
+  refinement children and must not be accepted as that Activity release.
