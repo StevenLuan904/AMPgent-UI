@@ -18,8 +18,21 @@ def test_v38_local_launcher_is_immutable_and_sequence_stage_only() -> None:
 def test_v38_local_launcher_refuses_foreign_or_mismatched_live_processes() -> None:
     text = SCRIPT.read_text(encoding="utf-8")
     assert "$previous.ampgent_owned -ne $true" in text
-    assert "$previous.source_revision -ne $SourceRevision" in text
-    assert "$previous.release_sha256 -ne $ArchiveSha256" in text
+    assert "$previous.foreign -eq $true" in text
+    assert "$previous.role -ne $roleName" in text
     assert "supervisor_pid" in text
-    assert "exactly one poller child" in text
-    assert "Stop-Process" not in text
+    assert "process tree does not match its exact receipt" in text
+
+
+def test_v38_local_launcher_replacement_is_opt_in_and_exactly_scoped() -> None:
+    text = SCRIPT.read_text(encoding="utf-8")
+    assert "[switch]$ReplaceOwned" in text
+    assert "if (-not $ReplaceOwned)" in text
+    assert "use -ReplaceOwned" in text
+    ownership_gate = text.index("$previous.ampgent_owned -ne $true")
+    tree_gate = text.index("process tree does not match its exact receipt")
+    stop = text.index("Stop-Process")
+    assert ownership_gate < stop
+    assert tree_gate < stop
+    assert "Stop-Process -Id ([int]$previous.pid)" in text
+    assert "Stop-Process -Id ([int]$previous.supervisor_pid)" in text

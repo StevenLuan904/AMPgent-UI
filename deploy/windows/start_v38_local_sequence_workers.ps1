@@ -4,7 +4,8 @@ param(
     [Parameter(Mandatory = $true)][string]$SourceRevision,
     [Parameter(Mandatory = $true)][string]$Python,
     [string]$ReleaseRoot = "var/platform/releases-v38",
-    [string]$StateRoot = "var/run/v38-workers"
+    [string]$StateRoot = "var/run/v38-workers",
+    [switch]$ReplaceOwned
 )
 
 $ErrorActionPreference = "Stop"
@@ -54,30 +55,44 @@ foreach ($role in $roles) {
     $receiptPath = Join-Path $stateBase ("$roleName.json")
     if (Test-Path -LiteralPath $receiptPath -PathType Leaf) {
         $previous = Get-Content -Raw -LiteralPath $receiptPath | ConvertFrom-Json
-        $previousProcess = Get-Process -Id ([int]$previous.pid) -ErrorAction SilentlyContinue
-        if ($null -ne $previousProcess) {
-            if ($previous.ampgent_owned -ne $true -or $previous.source_revision -ne $SourceRevision -or
-                $previous.release_sha256 -ne $ArchiveSha256) {
-                throw "live v38 worker receipt is foreign or has another immutable identity"
-            }
+        if ($previous.ampgent_owned -ne $true -or $previous.foreign -eq $true -or
+            $previous.role -ne $roleName) {
+            throw "v38 worker receipt is not exact AMPgent ownership for this role"
+        }
+        $poller = Get-CimInstance Win32_Process -Filter "ProcessId=$([int]$previous.pid)" `
+            -ErrorAction SilentlyContinue
+        if ($null -ne $poller) {
             if ($null -eq $previous.supervisor_pid) {
-                $children = @(Get-CimInstance Win32_Process | Where-Object {
-                    $_.ParentProcessId -eq [int]$previous.pid -and
-                    $_.Name -eq "python.exe" -and
-                    $_.CommandLine -like "*pepagent.workers.v38_temporal_worker*"
-                })
-                if ($children.Count -ne 1) {
-                    throw "v38 worker launcher could not resolve exactly one poller child"
-                }
-                $supervisorPid = [int]$previous.pid
-                $previous | Add-Member -NotePropertyName supervisor_pid `
-                    -NotePropertyValue $supervisorPid -Force
-                $previous.pid = [int]$children[0].ProcessId
-                $previous | ConvertTo-Json -Depth 5 | Set-Content `
-                    -LiteralPath $receiptPath -Encoding utf8
+                throw "live v38 worker receipt has no supervisor identity"
             }
-            $receipts += $previous
-            continue
+            $supervisor = Get-CimInstance Win32_Process `
+                -Filter "ProcessId=$([int]$previous.supervisor_pid)" -ErrorAction SilentlyContinue
+            if ($null -eq $supervisor -or
+                $poller.ParentProcessId -ne [int]$previous.supervisor_pid -or
+                $poller.CommandLine -notlike "*pepagent.workers.v38_temporal_worker*" -or
+                $supervisor.CommandLine -notlike "*pepagent.workers.v38_temporal_worker*") {
+                throw "live v38 worker process tree does not match its exact receipt"
+            }
+            $sameIdentity = (
+                $previous.source_revision -eq $SourceRevision -and
+                $previous.release_sha256 -eq $ArchiveSha256
+            )
+            if ($sameIdentity) {
+                $receipts += $previous
+                continue
+            }
+            if (-not $ReplaceOwned) {
+                throw "live exact-owned v38 worker has another immutable identity; use -ReplaceOwned"
+            }
+            Stop-Process -Id ([int]$previous.pid) -ErrorAction Stop
+            Wait-Process -Id ([int]$previous.pid) -Timeout 15 -ErrorAction SilentlyContinue
+            $supervisorStillLive = Get-Process -Id ([int]$previous.supervisor_pid) `
+                -ErrorAction SilentlyContinue
+            if ($null -ne $supervisorStillLive) {
+                Stop-Process -Id ([int]$previous.supervisor_pid) -ErrorAction Stop
+                Wait-Process -Id ([int]$previous.supervisor_pid) -Timeout 15 `
+                    -ErrorAction SilentlyContinue
+            }
         }
     }
     $stdout = Join-Path $stateBase ("$roleName.stdout.log")
