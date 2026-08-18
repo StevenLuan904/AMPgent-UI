@@ -11,6 +11,9 @@ from uuid import UUID, uuid4
 import httpx
 import yaml
 from sqlalchemy import func, select
+from temporalio.api.enums.v1 import TaskQueueType
+from temporalio.api.taskqueue.v1 import TaskQueue
+from temporalio.api.workflowservice.v1 import DescribeTaskQueueRequest
 from temporalio.client import Client
 
 from pepagent.db.models import (
@@ -87,6 +90,78 @@ def _refinement_provider_blocker() -> str | None:
     if request.get("status") != "accepted_immutable_release":
         return "v38_refinement_provider_release_not_delivered"
     return None
+
+
+async def _sequence_worker_release_status(
+    state_path: Path,
+) -> tuple[str | None, dict[str, Any] | None]:
+    required = {
+        "v38-control": (
+            "pepagent-control-v38",
+            (
+                TaskQueueType.TASK_QUEUE_TYPE_WORKFLOW,
+                TaskQueueType.TASK_QUEUE_TYPE_ACTIVITY,
+            ),
+        ),
+        "v38-generator": ("pepagent-generator-v38", (TaskQueueType.TASK_QUEUE_TYPE_ACTIVITY,)),
+        "v38-metrics": ("pepagent-cpu-metrics-v38", (TaskQueueType.TASK_QUEUE_TYPE_ACTIVITY,)),
+    }
+    receipt_root = state_path.parent.parent / "run" / "v38-workers"
+    receipts: dict[str, dict[str, Any]] = {}
+    try:
+        for role in required:
+            receipt = json.loads((receipt_root / f"{role}.json").read_text(encoding="utf-8"))
+            if (
+                receipt.get("schema_version") != "v38.local-sequence-worker-receipt.1"
+                or receipt.get("role") != role
+                or receipt.get("ampgent_owned") is not True
+                or receipt.get("foreign") is not False
+                or not isinstance(receipt.get("pid"), int)
+            ):
+                raise ValueError("invalid v38 worker receipt")
+            receipts[role] = receipt
+    except (OSError, ValueError, json.JSONDecodeError):
+        return "v38_sequence_generation_and_refinement_worker_release_not_deployed", None
+    sources = {item["source_revision"] for item in receipts.values()}
+    releases = {item["release_sha256"] for item in receipts.values()}
+    if (
+        len(sources) != 1
+        or len(releases) != 1
+        or any(len(item) != 40 for item in sources)
+        or any(len(item) != 64 for item in releases)
+    ):
+        return "v38_sequence_worker_release_identity_drifted", None
+    settings = get_settings()
+    try:
+        client = await Client.connect(
+            settings.temporal_address, namespace=settings.temporal_namespace
+        )
+        for role, (queue, kinds) in required.items():
+            receipt = receipts[role]
+            expected = (
+                f"pepagent:{role}:{receipt['pid']}@{receipt['host']}:"
+                f"{receipt['source_revision']}"
+            ).lower()
+            for kind in kinds:
+                response = await client.workflow_service.describe_task_queue(
+                    DescribeTaskQueueRequest(
+                        namespace=settings.temporal_namespace,
+                        task_queue=TaskQueue(name=queue),
+                        task_queue_type=kind,
+                    )
+                )
+                if expected not in {item.identity.lower() for item in response.pollers}:
+                    return "v38_sequence_worker_poller_identity_not_visible", None
+    except Exception:
+        return "v38_sequence_worker_poller_identity_not_visible", None
+    return None, {
+        "source_revision": next(iter(sources)),
+        "release_sha256": next(iter(releases)),
+        "roles": {
+            role: {"pid": item["pid"], "host": item["host"]}
+            for role, item in receipts.items()
+        },
+    }
 
 
 def _validate_panel(
@@ -407,6 +482,20 @@ async def tick_controller(*, state_path: Path) -> dict[str, Any]:
     provider_blocker = _refinement_provider_blocker()
     if provider_blocker is not None:
         state["blockers"].append(provider_blocker)
+    worker_blockers = {
+        "v38_sequence_generation_and_refinement_worker_release_not_deployed",
+        "v38_sequence_worker_release_identity_drifted",
+        "v38_sequence_worker_poller_identity_not_visible",
+    }
+    state["blockers"] = [
+        item for item in state["blockers"] if item not in worker_blockers
+    ]
+    worker_blocker, worker_release = await _sequence_worker_release_status(state_path)
+    if worker_blocker is not None:
+        state["blockers"].append(worker_blocker)
+        state.pop("sequence_worker_release", None)
+    else:
+        state["sequence_worker_release"] = worker_release
     state["progress_check_due"] = True
     state["plan_review_performed"] = plan_due
     state["user_review_due"] = user_review_due
