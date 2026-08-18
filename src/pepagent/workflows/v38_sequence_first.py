@@ -468,8 +468,29 @@ class V38SequenceFirstAgentWorkflow:
                 )
                 if structure_evidence_count != expected_evidence_count:
                     raise ValueError("v38 structure evidence cardinality drifted")
-                status = "multitarget_structure_evidence_complete_pending_pareto_replay"
+                final_portfolio = await workflow.execute_activity(
+                    "persist_v38_final_portfolio_replay",
+                    {
+                        "run_id": run_id,
+                        "admission_reference": admission_reference,
+                        "boltz_seeds": request["boltz_seeds"],
+                        "rosetta_decoys_per_pose": request[
+                            "multitarget_plan_template"
+                        ]["target_branches"][0]["rosetta_decoys_per_pose"],
+                        "environment_sha256": request[
+                            "control_environment_sha256"
+                        ],
+                        "worker_source_revision": request["worker_source_revision"],
+                    },
+                    task_queue=control_queue,
+                    start_to_close_timeout=timedelta(hours=1),
+                    retry_policy=retry,
+                )
+                if not final_portfolio["replay_verified"]:
+                    raise ValueError("v38 final portfolio replay was not verified")
+                status = "multitarget_final_portfolio_replay_complete"
             else:
+                final_portfolio = None
                 status = "sequence_evidence_concluded_without_structure"
             return {
                 "schema_version": "v38.sequence-first-prefix-result.1",
@@ -488,7 +509,8 @@ class V38SequenceFirstAgentWorkflow:
                 "admission_reference": admission_reference,
                 "structure_task_count": structure_task_count,
                 "structure_evidence_count": structure_evidence_count,
-                "formal_structure_workflow_complete": False,
+                "final_portfolio": final_portfolio,
+                "formal_structure_workflow_complete": final_portfolio is not None,
             }
         except Exception as exc:
             await workflow.execute_activity(

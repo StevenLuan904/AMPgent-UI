@@ -10,11 +10,21 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from temporalio import activity
 
-from pepagent.db.models import AgentDecision, Candidate, Evaluation
+from pepagent.db.models import (
+    AgentDecision,
+    Candidate,
+    Evaluation,
+    ExperimentRunTargetBranch,
+    MultiTargetStructureEvidenceRecord,
+)
 from pepagent.db.repository import ExperimentRepository
 from pepagent.db.session import SessionFactory
 from pepagent.provenance.hashing import sha256_bytes, sha256_json, sha256_text
 from pepagent.storage.object_store import ContentAddressedObjectStore
+from pepagent.v38_final_portfolio import (
+    StructureScoreEvidence,
+    build_v38_final_portfolio,
+)
 from pepagent.v38_persistence import (
     GeneratorCellToolBinding,
     persist_multitarget_structure_evidence,
@@ -1312,4 +1322,233 @@ async def persist_v38_sequence_admission(request: dict[str, Any]) -> dict[str, A
         "rejected_count": reference["rejected_count"],
         "refinement_required": reference["refinement_required"],
         "structure_dispatch_allowed": reference["structure_dispatch_allowed"],
+    }
+
+
+async def _build_v38_final_portfolio_payload(
+    *,
+    session: AsyncSession,
+    run_id: uuid.UUID,
+    admission_payload: dict[str, Any],
+    expected_seeds: tuple[int, ...],
+    decoys_per_seed: int,
+) -> tuple[dict[str, Any], set[uuid.UUID]]:
+    admission = SequenceCohortAdmission.model_validate(admission_payload["admission"])
+    admitted_ids = (
+        *admission.mature_core_candidate_ids,
+        *admission.exploration_candidate_ids,
+    )
+    if not admitted_ids or admission.refinement_required:
+        raise ValueError("v38 final portfolio requires a concluded admitted cohort")
+    decisions = {item.candidate_id: item for item in admission.decisions}
+    sequence_fronts: dict[uuid.UUID, int] = {}
+    for candidate_id in admitted_ids:
+        decision = decisions.get(candidate_id)
+        if decision is None or decision.pareto_front is None:
+            raise ValueError("v38 admitted candidate lacks its sequence Pareto front")
+        sequence_fronts[candidate_id] = decision.pareto_front
+
+    branches = list(
+        await session.scalars(
+            select(ExperimentRunTargetBranch)
+            .where(ExperimentRunTargetBranch.run_id == run_id)
+            .order_by(ExperimentRunTargetBranch.branch_order)
+        )
+    )
+    if not branches:
+        raise ValueError("v38 final portfolio requires frozen target branches")
+    target_key_by_id = {item.target_id: item.branch_key for item in branches}
+    rows = list(
+        await session.scalars(
+            select(MultiTargetStructureEvidenceRecord)
+            .where(MultiTargetStructureEvidenceRecord.run_id == run_id)
+            .order_by(
+                MultiTargetStructureEvidenceRecord.candidate_id,
+                MultiTargetStructureEvidenceRecord.target_id,
+                MultiTargetStructureEvidenceRecord.control_lane,
+                MultiTargetStructureEvidenceRecord.boltz_seed,
+                MultiTargetStructureEvidenceRecord.evidence_kind,
+                MultiTargetStructureEvidenceRecord.decoy_ordinal,
+            )
+        )
+    )
+    expected_tasks = len(admitted_ids) * len(branches) * 2 * len(expected_seeds)
+    poses = [item for item in rows if item.evidence_kind == "boltz_pose"]
+    decoys = [item for item in rows if item.evidence_kind == "rosetta_decoy"]
+    if len(poses) != expected_tasks or len(decoys) != expected_tasks * decoys_per_seed:
+        raise ValueError("v38 final portfolio structure evidence cardinality is incomplete")
+    pose_tasks = {item.task_sha256 for item in poses}
+    if len(pose_tasks) != expected_tasks or any(
+        item.task_sha256 not in pose_tasks for item in decoys
+    ):
+        raise ValueError("v38 final portfolio has an incomplete Boltz/Rosetta task graph")
+    evidence = tuple(
+        StructureScoreEvidence(
+            candidate_id=item.candidate_id,
+            target_key=target_key_by_id[item.target_id],
+            control_lane=item.control_lane,
+            boltz_seed=item.boltz_seed,
+            decoy_ordinal=item.decoy_ordinal,
+            total_score=float(item.metadata_json["total_score"]),
+        )
+        for item in decoys
+    )
+    portfolio = build_v38_final_portfolio(
+        sequence_pareto_fronts=sequence_fronts,
+        evidence=evidence,
+        target_keys=tuple(item.branch_key for item in branches),
+        expected_seeds=expected_seeds,
+        decoys_per_seed=decoys_per_seed,
+    )
+    evidence_snapshot = [
+        {
+            "task_sha256": item.task_sha256,
+            "kind": item.evidence_kind,
+            "ordinal": item.decoy_ordinal,
+            "input_sha256": item.input_artifact_sha256,
+            "output_sha256": item.output_artifact_sha256,
+            "score_sha256": item.score_artifact_sha256,
+        }
+        for item in rows
+    ]
+    payload = {
+        "schema_version": "v38.final-portfolio-replay.1",
+        "run_id": str(run_id),
+        "admission_sha256": sha256_json(admission_payload),
+        "structure_evidence_snapshot_sha256": sha256_json(evidence_snapshot),
+        "structure_evidence_record_count": len(rows),
+        "portfolio": portfolio.model_dump(mode="json"),
+        "replay_verified": True,
+    }
+    return payload, {item.tool_call_id for item in rows}
+
+
+@activity.defn(name="persist_v38_final_portfolio_replay")
+async def persist_v38_final_portfolio_replay(
+    request: dict[str, Any],
+) -> dict[str, Any]:
+    run_id = uuid.UUID(str(request["run_id"]))
+    admission_payload = await _resolve_v38_admission(request["admission_reference"])
+    if admission_payload.get("run_id") != str(run_id):
+        raise ValueError("v38 final portfolio admission belongs to another run")
+    expected_seeds = tuple(int(item) for item in request["boltz_seeds"])
+    decoys_per_seed = int(request["rosetta_decoys_per_pose"])
+    environment_sha256 = str(request["environment_sha256"])
+    worker_source_revision = str(request["worker_source_revision"])
+    async with SessionFactory() as verify_session:
+        payload, _ = await _build_v38_final_portfolio_payload(
+            session=verify_session,
+            run_id=run_id,
+            admission_payload=admission_payload,
+            expected_seeds=expected_seeds,
+            decoys_per_seed=decoys_per_seed,
+        )
+    artifact = await _store_json(payload)
+    reference = {
+        "schema_version": "v38.final-portfolio-reference.1",
+        "portfolio_sha256": sha256_json(payload),
+        "portfolio_artifact": asdict(artifact),
+        "replay_verified": True,
+    }
+    async with SessionFactory() as session, session.begin():
+        recomputed, evidence_call_ids = await _build_v38_final_portfolio_payload(
+            session=session,
+            run_id=run_id,
+            admission_payload=admission_payload,
+            expected_seeds=expected_seeds,
+            decoys_per_seed=decoys_per_seed,
+        )
+        if recomputed != payload or sha256_json(recomputed) != reference["portfolio_sha256"]:
+            raise ValueError("v38 final portfolio replay drifted before persistence")
+        repository = ExperimentRepository(session)
+        call = await repository.record_completed_tool_call(
+            run_id,
+            "v38-final-multiview-portfolio-replay",
+            worker_source_revision,
+            environment_sha256,
+            {
+                "admission_sha256": payload["admission_sha256"],
+                "structure_evidence_snapshot_sha256": payload[
+                    "structure_evidence_snapshot_sha256"
+                ],
+            },
+            {
+                "weighted_total_used": False,
+                "target_agnostic_view": True,
+                "per_target_view": True,
+                "cross_target_view": True,
+            },
+            reference,
+            model_uri="deterministic://v38-final-multiview-portfolio-replay",
+            attempt=activity.info().attempt,
+        )
+        for parent_id in sorted(evidence_call_ids, key=str):
+            await repository.record_tool_dependency(
+                call.id, parent_id, "v38_final_portfolio_uses_structure_evidence"
+            )
+        artifact_row = await _register_artifact(
+            session,
+            call.id,
+            reference["portfolio_artifact"],
+            "v38_final_portfolio_and_replay",
+            {
+                "portfolio_sha256": reference["portfolio_sha256"],
+                "replay_verified": True,
+            },
+        )
+        response = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        existing = list(
+            await session.scalars(
+                select(AgentDecision).where(
+                    AgentDecision.run_id == run_id,
+                    AgentDecision.decision_type == "v38_final_multiview_portfolio",
+                )
+            )
+        )
+        if len(existing) > 1:
+            raise ValueError("duplicate v38 final portfolio decisions detected")
+        if existing:
+            decision = existing[0]
+            if decision.structured_json != payload or decision.response_text != response:
+                raise ValueError("existing v38 final portfolio decision drifted")
+        else:
+            decision = await repository.record_agent_decision(
+                run_id,
+                int(admission_payload["admission"]["refinement_round"]),
+                "v38_final_multiview_portfolio",
+                "deterministic-v38-multitarget-agent",
+                worker_source_revision,
+                (
+                    "Preserve the admitted sequence Pareto result, calculate independent "
+                    "native-pocket and wrong-pocket structural contrasts per target, and "
+                    "derive an unweighted cross-target Pareto view with full replay."
+                ),
+                response,
+                payload,
+                model_name="deterministic://v38-multitarget-agent",
+                response_artifact_id=artifact_row.id,
+            )
+        for parent_id in sorted(evidence_call_ids, key=str):
+            await repository.record_agent_tool_edge(
+                decision.id, parent_id, "input", "observes_structure_evidence"
+            )
+        await repository.record_agent_tool_edge(
+            decision.id, call.id, "output", "materializes_final_portfolio_replay"
+        )
+    portfolio = payload["portfolio"]
+    return {
+        "tool_call_id": str(call.id),
+        "decision_id": str(decision.id),
+        "portfolio_sha256": reference["portfolio_sha256"],
+        "replay_verified": True,
+        "target_agnostic_front_one_count": len(
+            portfolio["target_agnostic_front_one_candidate_ids"]
+        ),
+        "cross_target_front_one_count": len(
+            portfolio["cross_target_front_one_candidate_ids"]
+        ),
+        "per_target_front_one_count": {
+            key: len(value)
+            for key, value in portfolio["per_target_front_one_candidate_ids"].items()
+        },
     }

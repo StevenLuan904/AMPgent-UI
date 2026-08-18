@@ -143,4 +143,5 @@ def test_v38_control_worker_registers_sequence_workflow_and_admission_activities
         "evaluate_v38_sequence_admission",
         "persist_v38_sequence_admission",
         "plan_v38_multitarget_structure",
+        "persist_v38_final_portfolio_replay",
     } <= registered
