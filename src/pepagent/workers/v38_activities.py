@@ -17,6 +17,7 @@ from pepagent.provenance.hashing import sha256_bytes, sha256_json, sha256_text
 from pepagent.storage.object_store import ContentAddressedObjectStore
 from pepagent.v38_persistence import (
     GeneratorCellToolBinding,
+    persist_multitarget_structure_evidence,
     persist_score_all_proposal_cohort,
 )
 from pepagent.v38_science_execution import (
@@ -30,7 +31,10 @@ from pepagent.v38_science_execution import (
 from pepagent.v38_sequence_first_multitarget import (
     KnowledgeUseTrace,
     MetricObservation,
+    MultiTargetBoltzEvidence,
+    MultiTargetRosettaEvidence,
     MultiTargetStructureTask,
+    RosettaDecoyEvidence,
     SequenceCandidateEvidence,
     SequenceRefinementPlan,
     TargetBranchSpec,
@@ -41,6 +45,7 @@ from pepagent.v38_sequence_first_multitarget import (
 )
 from pepagent.workers.activities import (
     _register_artifact,
+    _select_boltz_structure_artifact,
     _store_json,
     predict_boltz2_complex,
     score_rosetta_complex,
@@ -138,6 +143,180 @@ async def score_v38_multitarget_rosetta(request: dict[str, Any]) -> dict[str, An
         **result,
         "v38_structure_task": task.model_dump(mode="json"),
         "v38_structure_task_sha256": task.sha256(),
+    }
+
+
+def build_v38_boltz_evidence(result: dict[str, Any]) -> MultiTargetBoltzEvidence:
+    task = MultiTargetStructureTask.model_validate(result["v38_structure_task"])
+    if result.get("v38_structure_task_sha256") != task.sha256():
+        raise ValueError("v38 Boltz result task SHA drifted")
+    coordinate = _select_boltz_structure_artifact(result)
+    provenance = result["provenance"]
+    return MultiTargetBoltzEvidence(
+        task=task,
+        task_sha256=task.sha256(),
+        tool_call_id=uuid.UUID(result["tool_call_id"]),
+        coordinate_artifact_sha256=coordinate["sha256"],
+        raw_result_artifact_sha256=provenance["raw_output_artifact"]["sha256"],
+        parameters_sha256=sha256_json(result["parameters"]),
+    )
+
+
+def build_v38_rosetta_evidence(
+    result: dict[str, Any],
+    boltz: MultiTargetBoltzEvidence,
+) -> MultiTargetRosettaEvidence:
+    task = MultiTargetStructureTask.model_validate(result["v38_structure_task"])
+    if result.get("v38_structure_task_sha256") != task.sha256() or task != boltz.task:
+        raise ValueError("v38 Rosetta result task differs from its Boltz evidence")
+    raw_decoys = result.get("rosetta", {}).get("decoys")
+    if not isinstance(raw_decoys, list):
+        raise ValueError("v38 Rosetta result lacks exact decoy evidence")
+    decoys = tuple(
+        RosettaDecoyEvidence(
+            decoy_ordinal=index,
+            input_structure_sha256=item["input_sha256"],
+            output_structure_sha256=item["output_sha256"],
+            score_record_sha256=item["score_terms_sha256"],
+            total_score=float(item["total_score"]),
+        )
+        for index, item in enumerate(raw_decoys)
+    )
+    return MultiTargetRosettaEvidence(
+        task=task,
+        task_sha256=task.sha256(),
+        boltz_evidence_sha256=boltz.sha256(),
+        boltz_coordinate_artifact_sha256=boltz.coordinate_artifact_sha256,
+        tool_call_id=uuid.UUID(result["tool_call_id"]),
+        raw_result_artifact_sha256=result["provenance"]["raw_output_artifact"]["sha256"],
+        decoys=decoys,
+    )
+
+
+async def _register_v38_runtime_artifacts(
+    session: AsyncSession,
+    *,
+    tool_call_id: uuid.UUID,
+    provenance: dict[str, Any],
+    tool: str,
+    candidate_id: str,
+) -> None:
+    await _register_artifact(
+        session,
+        tool_call_id,
+        provenance["raw_output_artifact"],
+        "raw_output",
+        {"tool": tool, "candidate_id": candidate_id, "protocol": "v38-multitarget"},
+    )
+    await _register_artifact(
+        session,
+        tool_call_id,
+        provenance["environment_artifact"],
+        "environment_manifest",
+        {"tool": tool, "protocol": "v38-multitarget"},
+    )
+    for index, artifact in enumerate(provenance["engine_artifacts"]):
+        await _register_artifact(
+            session,
+            tool_call_id,
+            artifact,
+            f"engine_output_{index}",
+            {
+                "tool": tool,
+                "candidate_id": candidate_id,
+                "relative_path": artifact["path"],
+                "protocol": "v38-multitarget",
+            },
+        )
+
+
+@activity.defn(name="persist_v38_multitarget_boltz")
+async def persist_v38_multitarget_boltz(request: dict[str, Any]) -> dict[str, Any]:
+    run_id = uuid.UUID(request["run_id"])
+    result = request["structure_result"]
+    task = MultiTargetStructureTask.model_validate(result["v38_structure_task"])
+    if result.get("v38_structure_task_sha256") != task.sha256():
+        raise ValueError("v38 Boltz persistence task SHA drifted")
+    provenance = result["provenance"]
+    async with SessionFactory() as session, session.begin():
+        repository = ExperimentRepository(session)
+        call = await repository.record_completed_tool_call(
+            run_id,
+            provenance["tool_name"],
+            provenance["tool_version"],
+            provenance["environment_sha256"],
+            {**result["input"], "v38_structure_task_sha256": task.sha256()},
+            result["parameters"],
+            result["boltz2"],
+            weights_sha256=provenance["weights_sha256"],
+            model_uri=provenance["model_uri"],
+            random_seed=task.boltz_seed,
+            attempt=provenance["attempt"],
+        )
+        await _register_v38_runtime_artifacts(
+            session,
+            tool_call_id=call.id,
+            provenance=provenance,
+            tool="boltz2",
+            candidate_id=str(task.candidate_id),
+        )
+        await _register_artifact(
+            session,
+            call.id,
+            provenance["weight_manifest_artifact"],
+            "weight_manifest",
+            {"tool": "boltz2", "weights_sha256": provenance["weights_sha256"]},
+        )
+        result = {**result, "tool_call_id": str(call.id)}
+        evidence = build_v38_boltz_evidence(result)
+    return {"structure": result, "boltz_evidence": evidence.model_dump(mode="json")}
+
+
+@activity.defn(name="persist_v38_multitarget_rosetta")
+async def persist_v38_multitarget_rosetta(request: dict[str, Any]) -> dict[str, Any]:
+    run_id = uuid.UUID(request["run_id"])
+    result = request["rosetta_result"]
+    boltz = MultiTargetBoltzEvidence.model_validate(request["boltz_evidence"])
+    task = MultiTargetStructureTask.model_validate(result["v38_structure_task"])
+    if task != boltz.task or result.get("v38_structure_task_sha256") != task.sha256():
+        raise ValueError("v38 Rosetta persistence is not bound to its Boltz task")
+    provenance = result["provenance"]
+    if uuid.UUID(provenance["parent_tool_call_id"]) != boltz.tool_call_id:
+        raise ValueError("v38 Rosetta parent ToolCall differs from Boltz evidence")
+    async with SessionFactory() as session, session.begin():
+        repository = ExperimentRepository(session)
+        call = await repository.record_completed_tool_call(
+            run_id,
+            provenance["tool_name"],
+            provenance["tool_version"],
+            provenance["environment_sha256"],
+            {**result["input"], "v38_structure_task_sha256": task.sha256()},
+            result["parameters"],
+            result["rosetta"],
+            weights_sha256=provenance["weights_sha256"],
+            model_uri=provenance["model_uri"],
+            random_seed=task.boltz_seed,
+            attempt=provenance["attempt"],
+        )
+        await repository.record_tool_dependency(call.id, boltz.tool_call_id, "refines")
+        await _register_v38_runtime_artifacts(
+            session,
+            tool_call_id=call.id,
+            provenance=provenance,
+            tool="rosetta",
+            candidate_id=str(task.candidate_id),
+        )
+        result = {**result, "tool_call_id": str(call.id)}
+        rosetta = build_v38_rosetta_evidence(result, boltz)
+        receipt = await persist_multitarget_structure_evidence(
+            session,
+            run_id=run_id,
+            boltz=boltz,
+            rosetta=rosetta,
+        )
+    return {
+        "rosetta_evidence": rosetta.model_dump(mode="json"),
+        "persistence_receipt": receipt.model_dump(mode="json"),
     }
 
 

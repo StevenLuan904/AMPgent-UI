@@ -15,6 +15,8 @@ from pepagent.workers.v37_activities import (
 )
 from pepagent.workers.v38_activities import (
     evaluate_v38_sequence_admission,
+    persist_v38_multitarget_boltz,
+    persist_v38_multitarget_rosetta,
     persist_v38_refinement_children,
     persist_v38_score_all_generation,
     persist_v38_sequence_admission,
@@ -35,6 +37,8 @@ V38_ROLE_CONFIG = {
             persist_v38_score_all_generation,
             persist_v38_sequence_admission,
             persist_v38_sequence_metric,
+            persist_v38_multitarget_boltz,
+            persist_v38_multitarget_rosetta,
         ],
         [V38SequenceFirstAgentWorkflow],
     ),

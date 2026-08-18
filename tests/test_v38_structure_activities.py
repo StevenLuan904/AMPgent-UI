@@ -130,3 +130,77 @@ def test_v38_worker_roles_isolate_generator_metrics_and_structure_queues() -> No
     assert len(set(queues.values())) == len(queues)
     assert queues["v38-boltz"] == "pepagent-gpu-boltz2-v38"
     assert queues["v38-rosetta"] == "pepagent-cpu-rosetta-v38"
+
+
+def test_v38_structure_evidence_builders_bind_pose_and_all_decoys() -> None:
+    request = _request()
+    task = MultiTargetStructureTask.model_validate(request["structure_task"])
+    boltz_result = {
+        "v38_structure_task": task.model_dump(mode="json"),
+        "v38_structure_task_sha256": task.sha256(),
+        "tool_call_id": str(uuid4()),
+        "parameters": {"seed": task.boltz_seed},
+        "provenance": {
+            "raw_output_artifact": {"sha256": SHA_D},
+            "engine_artifacts": [{"path": "model_0.cif", "sha256": SHA_A}],
+        },
+    }
+    boltz = v38_activities.build_v38_boltz_evidence(boltz_result)
+    decoys = [
+        {
+            "input_sha256": SHA_A,
+            "output_sha256": f"{index + 1:064x}",
+            "score_terms_sha256": f"{index + 100:064x}",
+            "total_score": float(-index),
+        }
+        for index in range(16)
+    ]
+    rosetta_result = {
+        "v38_structure_task": task.model_dump(mode="json"),
+        "v38_structure_task_sha256": task.sha256(),
+        "tool_call_id": str(uuid4()),
+        "rosetta": {"decoys": decoys},
+        "provenance": {"raw_output_artifact": {"sha256": SHA_C}},
+    }
+    rosetta = v38_activities.build_v38_rosetta_evidence(rosetta_result, boltz)
+
+    assert boltz.coordinate_artifact_sha256 == SHA_A
+    assert rosetta.boltz_evidence_sha256 == boltz.sha256()
+    assert len(rosetta.decoys) == 16
+    assert rosetta.decoys[15].decoy_ordinal == 15
+
+
+def test_v38_rosetta_evidence_builder_rejects_incomplete_decoy_budget() -> None:
+    request = _request()
+    task = MultiTargetStructureTask.model_validate(request["structure_task"])
+    boltz = v38_activities.build_v38_boltz_evidence(
+        {
+            "v38_structure_task": task.model_dump(mode="json"),
+            "v38_structure_task_sha256": task.sha256(),
+            "tool_call_id": str(uuid4()),
+            "parameters": {"seed": task.boltz_seed},
+            "provenance": {
+                "raw_output_artifact": {"sha256": SHA_D},
+                "engine_artifacts": [{"path": "model_0.cif", "sha256": SHA_A}],
+            },
+        }
+    )
+    result = {
+        "v38_structure_task": task.model_dump(mode="json"),
+        "v38_structure_task_sha256": task.sha256(),
+        "tool_call_id": str(uuid4()),
+        "rosetta": {
+            "decoys": [
+                {
+                    "input_sha256": SHA_A,
+                    "output_sha256": f"{index + 1:064x}",
+                    "score_terms_sha256": f"{index + 100:064x}",
+                    "total_score": float(index),
+                }
+                for index in range(15)
+            ]
+        },
+        "provenance": {"raw_output_artifact": {"sha256": SHA_C}},
+    }
+    with pytest.raises(ValueError, match="decoy count"):
+        v38_activities.build_v38_rosetta_evidence(result, boltz)

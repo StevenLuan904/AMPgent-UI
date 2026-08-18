@@ -2135,3 +2135,11 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
 - 新增独立 `pepagent-v38-worker` 入口和 control/generator/metrics/Boltz/Rosetta 五类隔离队列；refinement
   provider 仍由独立 provider-owned queue/release 交付。当前只是可构建 worker 代码，尚未冻结 immutable
   release、部署 poller 或提交 formal science workflow。
+### 21.53 v38 多靶点结构证据提交边界（2026-08-18）
+
+- GPU/CPU 结构计算 Activity 只产生内容寻址的原始结果；控制队列负责数据库提交，远端计算 worker 不直接决定候选状态或 Pareto。
+- `persist_v38_multitarget_boltz` 必须先记录 Boltz ToolCall、运行环境、权重清单、原始结果和坐标文件，并生成严格绑定 `target × control_lane × candidate × seed × task_sha256` 的 `MultiTargetBoltzEvidence`。
+- Rosetta 只能消费上述已落库 Boltz ToolCall 和坐标身份；`persist_v38_multitarget_rosetta` 必须验证父 ToolCall、任务 SHA、坐标 SHA，以及冻结的 16 个逐 decoy input/output/score hashes。
+- Rosetta ToolCall、依赖边和全部逐 decoy 结构记录在同一数据库事务中提交；缺失、重复、跨靶点、跨对照或哈希漂移均 fail closed，不产生部分结构证据。
+- native 与 wrong-pocket、两个靶点和不同 seed 使用隔离目录及 evidence namespace。结构指标不得混入靶点无关的序列评价；后续只从隔离证据构建 per-target、cross-target 和 target-agnostic 三类视图。
+- 这一层完成后，正式 workflow 仍须显式接入任务规划、双靶点并行派发、三视图非加权 Pareto 与 database/object-store replay；在这些闭环及 worker release/preflight 完成前，`formal_science_workflow_submitted` 保持 `false`。
