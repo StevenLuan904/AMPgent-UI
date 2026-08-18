@@ -38,6 +38,7 @@ dev = ["mypy>=1.12,<2", "pytest>=8.3,<9", "pytest-asyncio>=0.24,<1", "ruff>=0.7,
 pepagent = "pepagent.cli:app"
 pepagent-api = "pepagent.api.main:run"
 pepagent-worker = "pepagent.workers.temporal_worker:main"
+pepagent-v38-worker = "pepagent.workers.v38_temporal_worker:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pepagent"]

@@ -30,18 +30,115 @@ from pepagent.v38_science_execution import (
 from pepagent.v38_sequence_first_multitarget import (
     KnowledgeUseTrace,
     MetricObservation,
+    MultiTargetStructureTask,
     SequenceCandidateEvidence,
     SequenceRefinementPlan,
+    TargetBranchSpec,
     admit_sequence_cohort,
     build_default_v38_maturity_policy,
     build_sequence_refinement_plan,
     compute_leave_one_objective_out_rank_stability,
 )
-from pepagent.workers.activities import _register_artifact, _store_json
+from pepagent.workers.activities import (
+    _register_artifact,
+    _store_json,
+    predict_boltz2_complex,
+    score_rosetta_complex,
+)
 from pepagent.workers.v37_activities import _select_v37_declared_observations
 
 V38_METRIC_RESULT_REFERENCE_SCHEMA = "v38.metric-result-reference.1"
 V38_ADMISSION_REFERENCE_SCHEMA = "v38.sequence-admission-reference.1"
+
+
+def _validate_v38_structure_request(
+    request: dict[str, Any],
+) -> tuple[MultiTargetStructureTask, TargetBranchSpec, dict[str, Any]]:
+    task = MultiTargetStructureTask.model_validate(request["structure_task"])
+    branch = TargetBranchSpec.model_validate(request["target_branch"])
+    candidate = request["candidate"]
+    if not isinstance(candidate, dict) or str(candidate.get("id")) != str(task.candidate_id):
+        raise ValueError("v38 structure candidate does not match the frozen task")
+    if task.target_id != branch.target_id or task.target_key != branch.target_key:
+        raise ValueError("v38 structure target does not match the frozen branch")
+    expected_pocket = (
+        branch.native_pocket_sha256
+        if task.control_lane == "native"
+        else branch.wrong_pocket_sha256
+    )
+    if task.pocket_sha256 != expected_pocket:
+        raise ValueError("v38 structure task uses the wrong control pocket")
+    target_sequence = str(request["target_sequence"])
+    if sha256_text(target_sequence) != branch.target_sequence_sha256:
+        raise ValueError("v38 structure target sequence SHA drifted")
+    if request.get("pocket_definition_sha256") != task.pocket_sha256:
+        raise ValueError("v38 structure pocket definition SHA drifted")
+    return task, branch, candidate
+
+
+def _v38_structure_work_scope(task: MultiTargetStructureTask) -> list[str]:
+    return [str(task.target_id), task.control_lane, task.sha256()]
+
+
+@activity.defn(name="predict_v38_multitarget_structure")
+async def predict_v38_multitarget_structure(request: dict[str, Any]) -> dict[str, Any]:
+    task, _, candidate = _validate_v38_structure_request(request)
+    if int(request.get("seed", task.boltz_seed)) != task.boltz_seed:
+        raise ValueError("v38 Boltz seed differs from the frozen task")
+    spec = dict(request["structure_spec"])
+    spec["seed"] = task.boltz_seed
+    spec["target"] = {
+        "sequence": request["target_sequence"],
+        "pocket_residues": list(request["pocket_residues"]),
+    }
+    result = await predict_boltz2_complex(
+        {
+            "run_id": request["run_id"],
+            "candidate": candidate,
+            "spec": spec,
+            "seed": task.boltz_seed,
+            "work_scope": _v38_structure_work_scope(task),
+        }
+    )
+    if str(result["candidate"]["id"]) != str(task.candidate_id):
+        raise ValueError("v38 Boltz result candidate identity drifted")
+    if int(result["input"]["seed"]) != task.boltz_seed:
+        raise ValueError("v38 Boltz result seed identity drifted")
+    return {
+        **result,
+        "v38_structure_task": task.model_dump(mode="json"),
+        "v38_structure_task_sha256": task.sha256(),
+    }
+
+
+@activity.defn(name="score_v38_multitarget_rosetta")
+async def score_v38_multitarget_rosetta(request: dict[str, Any]) -> dict[str, Any]:
+    task, _, candidate = _validate_v38_structure_request(request)
+    structure = request["structure"]
+    if structure.get("v38_structure_task_sha256") != task.sha256():
+        raise ValueError("v38 Rosetta input is not the bound Boltz task")
+    if str(structure.get("candidate", {}).get("id")) != str(task.candidate_id):
+        raise ValueError("v38 Rosetta input candidate identity drifted")
+    spec = dict(request["structure_spec"])
+    spec["seed"] = task.boltz_seed
+    spec["rosetta_nstruct"] = task.rosetta_decoys_per_pose
+    result = await score_rosetta_complex(
+        {
+            "run_id": request["run_id"],
+            "candidate": candidate,
+            "structure": structure,
+            "spec": spec,
+            "seed": task.boltz_seed,
+            "work_scope": _v38_structure_work_scope(task),
+        }
+    )
+    if int(result["parameters"]["nstruct"]) != task.rosetta_decoys_per_pose:
+        raise ValueError("v38 Rosetta result decoy budget drifted")
+    return {
+        **result,
+        "v38_structure_task": task.model_dump(mode="json"),
+        "v38_structure_task_sha256": task.sha256(),
+    }
 
 
 def validate_v38_refinement_result(

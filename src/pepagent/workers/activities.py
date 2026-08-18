@@ -87,6 +87,28 @@ async def _terminate_subprocess_tree(process: asyncio.subprocess.Process) -> Non
     await process.wait()
 
 
+def _structure_work_dir(
+    *,
+    root: str,
+    run_id: str,
+    lane: str,
+    candidate_id: str,
+    seed: int,
+    work_scope: object = None,
+) -> Path:
+    path = Path(root) / run_id / lane
+    if work_scope is not None:
+        if not isinstance(work_scope, list) or not work_scope:
+            raise ValueError("structure work scope must be a non-empty list")
+        for segment in work_scope:
+            if not isinstance(segment, str) or not segment or segment in {".", ".."}:
+                raise ValueError("structure work scope contains an invalid segment")
+            if Path(segment).name != segment or "/" in segment or "\\" in segment:
+                raise ValueError("structure work scope must not contain path separators")
+            path /= segment
+    return path / candidate_id / f"seed-{seed}"
+
+
 async def _run_json_cli(module: str, request: dict[str, Any], work_dir: Path, *extra: str) -> dict:
     await asyncio.to_thread(work_dir.mkdir, parents=True, exist_ok=True)
     request_path = work_dir / "request.json"
@@ -1132,8 +1154,13 @@ async def predict_boltz2_complex(request: dict[str, Any]) -> dict[str, Any]:
     candidate = request["candidate"]
     spec = request["spec"]
     seed = int(request.get("seed", spec["seed"]))
-    work_dir = (
-        Path(settings.work_root) / request["run_id"] / "boltz2" / candidate["id"] / f"seed-{seed}"
+    work_dir = _structure_work_dir(
+        root=settings.work_root,
+        run_id=request["run_id"],
+        lane="boltz2",
+        candidate_id=candidate["id"],
+        seed=seed,
+        work_scope=request.get("work_scope"),
     )
     payload = {
         "target_sequence": spec["target"]["sequence"],
@@ -1687,12 +1714,13 @@ async def score_rosetta_complex(request: dict[str, Any]) -> dict[str, Any]:
     spec = request["spec"]
     validation_case = request.get("validation_case")
     lane = "rosetta-validation" if validation_case else "rosetta"
-    work_dir = (
-        Path(settings.work_root)
-        / request["run_id"]
-        / lane
-        / candidate["id"]
-        / str(request["seed"])
+    work_dir = _structure_work_dir(
+        root=settings.work_root,
+        run_id=request["run_id"],
+        lane=lane,
+        candidate_id=candidate["id"],
+        seed=int(request["seed"]),
+        work_scope=request.get("work_scope"),
     )
     coordinate_artifact = _select_boltz_structure_artifact(structure)
     coordinate_bytes = await asyncio.to_thread(

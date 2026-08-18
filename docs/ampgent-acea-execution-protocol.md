@@ -2123,3 +2123,15 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   closed；仅字节等价的完整重放可恢复，禁止回填残缺记录。
 - 迁移 `0015_multitarget_structure_evidence` 已在实际 PostgreSQL 成功升级。控制器 durable counts 现单独报告
   structure evidence records 与 replay evidence links；这仍不启动正式 science workflow。
+
+### 21.52 2026-08-18 v38 靶点隔离结构 worker Activity
+
+- 新增 `predict_v38_multitarget_structure` 与 `score_v38_multitarget_rosetta`。两者在调用现有冻结引擎前先
+  校验 candidate、target branch、target sequence SHA、native/wrong-pocket pocket SHA、Boltz seed 和 task SHA；
+  Rosetta 还必须消费同一 task 的 Boltz 输出，并把 `nstruct` 锁为该 pose 冻结的 16 decoy。
+- 通用结构引擎工作目录新增安全 scope：`target UUID/control lane/task SHA/candidate/seed`。scope 的每个 path
+  segment 都拒绝空值、`.`、`..` 和路径分隔符，因此两个靶点或两条对照 lane 使用相同 candidate/seed 时也
+  不会覆盖文件，且不能通过输入逃逸工作根目录。
+- 新增独立 `pepagent-v38-worker` 入口和 control/generator/metrics/Boltz/Rosetta 五类隔离队列；refinement
+  provider 仍由独立 provider-owned queue/release 交付。当前只是可构建 worker 代码，尚未冻结 immutable
+  release、部署 poller 或提交 formal science workflow。
