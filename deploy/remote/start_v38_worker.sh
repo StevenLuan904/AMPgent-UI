@@ -43,7 +43,8 @@ if [[ "$ROLE" = "v38-boltz" ]]; then
   MAX_CONCURRENT=1
   [[ -x "$BOLTZ_EXECUTABLE" ]] || { echo "managed Boltz executable is missing" >&2; exit 4; }
   "$PYTHON" -c 'import boltz' || { echo "managed Boltz package is unavailable" >&2; exit 4; }
-  [[ "$($BOLTZ_EXECUTABLE --version 2>&1)" = *"2.2.1"* ]] || {
+  BOLTZ_VERSION="$($PYTHON -c 'from importlib.metadata import version; print(version("boltz"))')"
+  [[ "$BOLTZ_VERSION" = "2.2.1" ]] || {
     echo "managed Boltz version drifted" >&2
     exit 4
   }
