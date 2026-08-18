@@ -128,6 +128,67 @@ class RunStageCheckpoint(Base):
     )
 
 
+class MultiTargetStructureEvidenceRecord(Base):
+    """One target/control/seed-specific Boltz pose or Rosetta decoy."""
+
+    __tablename__ = "multitarget_structure_evidence_records"
+    __table_args__ = (
+        UniqueConstraint(
+            "run_id",
+            "candidate_id",
+            "target_id",
+            "control_lane",
+            "boltz_seed",
+            "evidence_kind",
+            "decoy_ordinal",
+            name="uq_multitarget_structure_evidence_identity",
+        ),
+        CheckConstraint(
+            "control_lane IN ('native', 'wrong_pocket')",
+            name="ck_multitarget_structure_control_lane",
+        ),
+        CheckConstraint(
+            "(evidence_kind = 'boltz_pose' AND decoy_ordinal = -1) OR "
+            "(evidence_kind = 'rosetta_decoy' AND decoy_ordinal >= 0)",
+            name="ck_multitarget_structure_evidence_kind_ordinal",
+        ),
+        Index(
+            "ix_multitarget_structure_evidence_branch",
+            "run_id",
+            "target_id",
+            "control_lane",
+            "evidence_kind",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    run_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("experiment_runs.id"), nullable=False
+    )
+    candidate_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("candidates.id"), nullable=False
+    )
+    target_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("targets.id"), nullable=False)
+    tool_call_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("tool_calls.id"), nullable=False
+    )
+    evidence_namespace: Mapped[str] = mapped_column(String(255), nullable=False)
+    control_lane: Mapped[str] = mapped_column(String(32), nullable=False)
+    boltz_seed: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    evidence_kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    decoy_ordinal: Mapped[int] = mapped_column(Integer, nullable=False)
+    task_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    input_artifact_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    output_artifact_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    score_artifact_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
 class Candidate(Base, TimestampMixin):
     __tablename__ = "candidates"
     __table_args__ = (

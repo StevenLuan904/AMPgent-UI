@@ -18,7 +18,9 @@ from pepagent.db.models import (
     Candidate,
     CandidateOccurrence,
     Evaluation,
+    EvidenceArtifact,
     ExperimentRun,
+    MultiTargetStructureEvidenceRecord,
     RunStageCheckpoint,
     Target,
     ToolCall,
@@ -255,6 +257,7 @@ async def _run_counts(run_id: UUID) -> dict[str, int]:
             "occurrences": CandidateOccurrence,
             "tool_calls": ToolCall,
             "decisions": AgentDecision,
+            "structure_evidence_records": MultiTargetStructureEvidenceRecord,
         }
         counts = {
             name: int(
@@ -271,6 +274,18 @@ async def _run_counts(run_id: UUID) -> dict[str, int]:
                 .select_from(Evaluation)
                 .join(Candidate, Candidate.id == Evaluation.candidate_id)
                 .where(Candidate.run_id == run_id)
+            )
+            or 0
+        )
+        counts["replay_evidence_links"] = int(
+            await session.scalar(
+                select(func.count())
+                .select_from(EvidenceArtifact)
+                .join(ToolCall, ToolCall.id == EvidenceArtifact.tool_call_id)
+                .where(
+                    ToolCall.run_id == run_id,
+                    EvidenceArtifact.role.like("%replay%"),
+                )
             )
             or 0
         )

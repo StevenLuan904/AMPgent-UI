@@ -12,6 +12,7 @@ from pepagent.db.models import (
     CandidateOccurrence,
     ExperimentRun,
     ExperimentRunTargetBranch,
+    MultiTargetStructureEvidenceRecord,
     RunStageCheckpoint,
     Target,
     TargetPocket,
@@ -24,6 +25,10 @@ from pepagent.v38_run_control import RunControlDecision, StageName
 from pepagent.v38_science_execution import (
     ScoreAllProposalCohort,
     V38SequenceExecutionContract,
+)
+from pepagent.v38_sequence_first_multitarget import (
+    MultiTargetBoltzEvidence,
+    MultiTargetRosettaEvidence,
 )
 
 
@@ -119,6 +124,153 @@ class ScoreAllCohortPersistenceReceipt(FrozenModel):
 
     def sha256(self) -> str:
         return sha256_json(self.model_dump(mode="json"))
+
+
+class MultiTargetStructurePersistenceReceipt(FrozenModel):
+    schema_version: str = "v38.multitarget-structure-persistence.1"
+    run_id: UUID
+    task_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    target_id: UUID
+    candidate_id: UUID
+    control_lane: str
+    boltz_seed: int
+    boltz_pose_count: int = Field(ge=0)
+    rosetta_decoy_count: int = Field(ge=0)
+    action: str
+
+    def sha256(self) -> str:
+        return sha256_json(self.model_dump(mode="json"))
+
+
+def _structure_evidence_payloads(
+    *,
+    run_id: UUID,
+    boltz: MultiTargetBoltzEvidence,
+    rosetta: MultiTargetRosettaEvidence,
+) -> tuple[dict[str, object], ...]:
+    task = boltz.task
+    if rosetta.task != task or rosetta.task_sha256 != boltz.task_sha256:
+        raise ValueError("Boltz and Rosetta evidence refer to different v38 tasks")
+    if rosetta.boltz_evidence_sha256 != boltz.sha256():
+        raise ValueError("Rosetta evidence does not bind the supplied Boltz evidence")
+    if rosetta.boltz_coordinate_artifact_sha256 != boltz.coordinate_artifact_sha256:
+        raise ValueError("Rosetta evidence does not consume the supplied Boltz coordinate")
+    common: dict[str, object] = {
+        "run_id": run_id,
+        "candidate_id": task.candidate_id,
+        "target_id": task.target_id,
+        "evidence_namespace": task.evidence_namespace,
+        "control_lane": task.control_lane,
+        "boltz_seed": task.boltz_seed,
+        "task_sha256": task.sha256(),
+    }
+    rows: list[dict[str, object]] = [
+        {
+            **common,
+            "tool_call_id": boltz.tool_call_id,
+            "evidence_kind": "boltz_pose",
+            "decoy_ordinal": -1,
+            "input_artifact_sha256": task.pocket_sha256,
+            "output_artifact_sha256": boltz.coordinate_artifact_sha256,
+            "score_artifact_sha256": boltz.raw_result_artifact_sha256,
+            "metadata_json": {
+                "boltz_evidence_sha256": boltz.sha256(),
+                "parameters_sha256": boltz.parameters_sha256,
+            },
+        }
+    ]
+    rows.extend(
+        {
+            **common,
+            "tool_call_id": rosetta.tool_call_id,
+            "evidence_kind": "rosetta_decoy",
+            "decoy_ordinal": decoy.decoy_ordinal,
+            "input_artifact_sha256": decoy.input_structure_sha256,
+            "output_artifact_sha256": decoy.output_structure_sha256,
+            "score_artifact_sha256": decoy.score_record_sha256,
+            "metadata_json": {
+                "rosetta_evidence_sha256": rosetta.sha256(),
+                "boltz_evidence_sha256": boltz.sha256(),
+                "total_score": decoy.total_score,
+            },
+        }
+        for decoy in rosetta.decoys
+    )
+    return tuple(rows)
+
+
+async def persist_multitarget_structure_evidence(
+    session: AsyncSession,
+    *,
+    run_id: UUID,
+    boltz: MultiTargetBoltzEvidence,
+    rosetta: MultiTargetRosettaEvidence,
+) -> MultiTargetStructurePersistenceReceipt:
+    """Atomically persist one target/control/seed pose and all frozen decoys."""
+    expected = _structure_evidence_payloads(run_id=run_id, boltz=boltz, rosetta=rosetta)
+    task = boltz.task
+    run = await session.get(ExperimentRun, run_id)
+    candidate = await session.get(Candidate, task.candidate_id)
+    if run is None or candidate is None or candidate.run_id != run_id:
+        raise ValueError("v38 structure evidence run or candidate identity is invalid")
+    branch = await session.scalar(
+        select(ExperimentRunTargetBranch).where(
+            ExperimentRunTargetBranch.run_id == run_id,
+            ExperimentRunTargetBranch.target_id == task.target_id,
+        )
+    )
+    if branch is None:
+        raise ValueError("v38 structure evidence target is not a frozen run branch")
+    if task.evidence_namespace != f"{branch.evidence_namespace}/{task.control_lane}":
+        raise ValueError("v38 structure evidence namespace does not match its branch lane")
+    for tool_call_id in (boltz.tool_call_id, rosetta.tool_call_id):
+        call = await session.get(ToolCall, tool_call_id)
+        if call is None or call.run_id != run_id or call.status != EvaluationStatus.SUCCEEDED:
+            raise ValueError("v38 structure evidence ToolCall is missing, cross-run, or incomplete")
+
+    existing = list(
+        await session.scalars(
+            select(MultiTargetStructureEvidenceRecord)
+            .where(
+                MultiTargetStructureEvidenceRecord.run_id == run_id,
+                MultiTargetStructureEvidenceRecord.task_sha256 == task.sha256(),
+            )
+            .order_by(MultiTargetStructureEvidenceRecord.decoy_ordinal)
+        )
+    )
+    if existing:
+        if len(existing) != len(expected):
+            raise ValueError("partial v38 structure evidence persistence detected")
+        for row, payload in zip(existing, expected, strict=True):
+            for key, value in payload.items():
+                if getattr(row, key) != value:
+                    raise ValueError("v38 structure evidence recovery payload drifted")
+        action = "recovered_complete"
+    else:
+        session.add_all(MultiTargetStructureEvidenceRecord(**payload) for payload in expected)
+        await session.flush()
+        action = "persisted"
+
+    receipt = MultiTargetStructurePersistenceReceipt(
+        run_id=run_id,
+        task_sha256=task.sha256(),
+        target_id=task.target_id,
+        candidate_id=task.candidate_id,
+        control_lane=task.control_lane,
+        boltz_seed=task.boltz_seed,
+        boltz_pose_count=1,
+        rosetta_decoy_count=len(rosetta.decoys),
+        action=action,
+    )
+    if action == "persisted":
+        await ExperimentRepository(session).append_event(
+            "run",
+            run_id,
+            "v38.multitarget_structure.persisted",
+            "v38-multitarget-structure-persistence",
+            receipt.model_dump(mode="json"),
+        )
+    return receipt
 
 
 def _validate_score_all_bindings(

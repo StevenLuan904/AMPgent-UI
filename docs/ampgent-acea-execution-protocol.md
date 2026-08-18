@@ -2112,3 +2112,14 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
 - 该信封直接修复历史上 producer/consumer 对逐 decoy 哈希理解不一致的问题，同时保证 GyrA/PBP2a 与
   native/wrong-pocket 结果不能串线。它仍是 v38 原生执行器的证据前置条件，不代表已部署 structure worker，
   也不授权提交正式 science workflow。
+
+### 21.51 2026-08-18 v38 多靶点结构证据数据库投影
+
+- 新增 `multitarget_structure_evidence_records`：每行绑定 run、candidate、target、control lane、Boltz seed、
+  evidence kind 和 decoy ordinal。Boltz pose 使用 ordinal `-1`，Rosetta decoy 使用从 `0` 开始的非负序号；
+  数据库唯一约束禁止同一任务重复落库，check constraint 禁止 native/wrong-pocket 或 pose/decoy 语义漂移。
+- 原子持久化先验证 Candidate 属于当前 run、target 属于冻结 branch、namespace 精确落在对应 control lane，且
+  Boltz/Rosetta ToolCall 均为同 run 的成功调用。一个 pose 与完整 16 decoy 要么一次提交，要么部分状态 fail
+  closed；仅字节等价的完整重放可恢复，禁止回填残缺记录。
+- 迁移 `0015_multitarget_structure_evidence` 已在实际 PostgreSQL 成功升级。控制器 durable counts 现单独报告
+  structure evidence records 与 replay evidence links；这仍不启动正式 science workflow。
