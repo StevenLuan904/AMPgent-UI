@@ -63,3 +63,18 @@
   SHA-256 全部匹配后原子提升，并在同一拟部署 launcher 上完成真实结构 smoke。
 - v38 preflight 新增 fail-closed runtime cache attestation：必须绑定 Boltz 可执行文件、权重与分子归档的
   文件名/字节数/SHA、解包分子数和 guarded smoke SHA。只声明 worker/poller/weights SHA 不再足以提交。
+
+## recovery-009/011 运行时闭环与新 run（2026-08-19 16:29 UTC）
+
+- `.19 -> .32` 内网直传完成；`.32 GPU1` 的正式 Boltz cache 已验证：`boltz2_conf.ckpt`
+  SHA `090e82ac...28e1`、`mols.tar` SHA `39e076d9...1fd7`、45,227 个解包分子文件。
+- 最终 source `fefbdbc86d1499dfe04ff109f5cde4823f0924de` / release
+  `d8e2871b1f0dfab96b4d934cd0fca757b3cfbebb77f96001b76ede024b3d4dc7` 在 `.32 GPU1`
+  完成真实最小 Boltz smoke；输出 SHA `aec3c3fdcebd18f1e1925b1c79828b0e10a500048f6960649503ead47f084aa6`，
+  产生 CIF、PAE/PDE、pLDDT、confidence 与 processed constraints/structure 等产物。它只作为工程哨兵。
+- local launcher 也改为 `python -S` 加显式 site-packages/release source，防止 worker 自身再次被中文路径
+  editable `.pth` 的 GBK 解码阻断。五个 science worker 已统一到上述 source/release；Boltz PID 287161，
+  Rosetta PID 320310，本地 control/generator/metrics PID 76692/24040/76496。
+- 新控制 run `d85e7ca1-5d1a-4d23-a439-c4e3ee225e80` 继承 63 个 terminal run；新 science run
+  `acd2c705-82ce-4505-b72f-4bb6a9790428` / Temporal `10228478-75bc-4053-b664-e6b6f9470561`
+  已以 formal key `94d7d625...a8432b` exact-once 提交。旧 run 均保持不可变，未回填或复用输出。
