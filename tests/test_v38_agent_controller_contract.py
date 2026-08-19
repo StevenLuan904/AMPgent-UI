@@ -74,6 +74,23 @@ def test_controller_distinguishes_unreachable_busy_and_idle_gpu_capacity() -> No
     assert _capacity_blocker(
         {"observations": observed, "idle_gpu_keys": ["192.168.99.32:1"]}
     ) == "authorized_structure_gpu_currently_busy"
+    owned_ready = [
+        {
+            "host": "192.168.99.19",
+            "gpu_index": 6,
+            "status": "observed",
+            "compute_processes": None,
+            "cuda_visible_devices_declarations": "769035",
+        }
+    ]
+    assert _capacity_blocker(
+        {"observations": owned_ready, "idle_gpu_keys": []},
+        owned_structure_worker_pid=769035,
+    ) is None
+    assert _capacity_blocker(
+        {"observations": owned_ready, "idle_gpu_keys": []},
+        owned_structure_worker_pid=123,
+    ) == "authorized_structure_gpu_currently_busy"
 
 
 def test_controller_accepts_frozen_refinement_provider_release() -> None:

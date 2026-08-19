@@ -66,7 +66,9 @@ def _atomic_json(path: Path, payload: dict[str, Any]) -> None:
     temporary.replace(path)
 
 
-def _capacity_blocker(capacity: dict[str, Any]) -> str | None:
+def _capacity_blocker(
+    capacity: dict[str, Any], *, owned_structure_worker_pid: int | None = None
+) -> str | None:
     observations = capacity.get("observations")
     if not isinstance(observations, list) or not observations:
         return "authorized_structure_gpu_currently_unreachable"
@@ -81,7 +83,40 @@ def _capacity_blocker(capacity: dict[str, Any]) -> str | None:
     idle = set(capacity.get("idle_gpu_keys") or [])
     if _FROZEN_V38_STRUCTURE_GPU_KEYS <= idle:
         return None
+    frozen_observation = frozen[0]
+    declarations = frozen_observation.get("cuda_visible_devices_declarations")
+    declared_pids = (
+        {str(item) for item in declarations}
+        if isinstance(declarations, list)
+        else ({str(declarations)} if declarations is not None else set())
+    )
+    if (
+        owned_structure_worker_pid is not None
+        and frozen_observation.get("compute_processes") in (None, "")
+        and declared_pids == {str(owned_structure_worker_pid)}
+    ):
+        return None
     return "authorized_structure_gpu_currently_busy"
+
+
+def _owned_structure_worker_pid(state_path: Path) -> int | None:
+    placement_path = (
+        state_path.parent.parent / "run" / "v38-workers" / "v38-structure-placement.json"
+    )
+    try:
+        placement = json.loads(placement_path.read_text(encoding="utf-8"))
+        worker = placement["workers"]["v38-boltz"]
+        if (
+            placement.get("schema_version") != "v38.worker-placement.1"
+            or worker.get("resource") != "192.168.99.19:6"
+            or worker.get("ampgent_owned") is not True
+            or worker.get("foreign") is not False
+            or not isinstance(worker.get("pid"), int)
+        ):
+            return None
+        return worker["pid"]
+    except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError):
+        return None
 
 
 def _refinement_provider_request_path() -> Path:
@@ -562,7 +597,10 @@ async def tick_controller(*, state_path: Path) -> dict[str, Any]:
     capacity_path = state_path.with_name("ampgent-gpu-capacity.json")
     try:
         capacity = json.loads(capacity_path.read_text(encoding="utf-8"))
-        capacity_blocker = _capacity_blocker(capacity)
+        capacity_blocker = _capacity_blocker(
+            capacity,
+            owned_structure_worker_pid=_owned_structure_worker_pid(state_path),
+        )
     except (OSError, json.JSONDecodeError):
         capacity_blocker = "authorized_structure_gpu_currently_unreachable"
     if capacity_blocker is not None:
