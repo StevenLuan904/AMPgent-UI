@@ -1,3 +1,6 @@
+import os
+import subprocess
+import sys
 from pathlib import Path
 
 from pepagent.provenance.hashing import sha256_json
@@ -66,3 +69,21 @@ def test_v38_execution_bundle_projects_all_generator_cells_to_100() -> None:
         if key != "execution_bundle_identity_sha256"
     }
     assert projected["execution_bundle_identity_sha256"] == sha256_json(identity)
+
+
+def test_v38_amp_designer_adapter_is_directly_executable_without_package_path(
+    tmp_path: Path,
+) -> None:
+    adapter = ROOT / "src/pepagent/model_workers/amp_designer_generator_v38_cli.py"
+    environment = os.environ.copy()
+    environment.pop("PYTHONPATH", None)
+    completed = subprocess.run(
+        [sys.executable, str(adapter), "--help"],
+        cwd=tmp_path,
+        env=environment,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+    assert "--request" in completed.stdout

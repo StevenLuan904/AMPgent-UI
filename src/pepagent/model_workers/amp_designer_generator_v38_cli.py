@@ -1,12 +1,28 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import random
 from pathlib import Path
+from types import ModuleType
 from typing import Any
 
-from pepagent.model_workers import amp_designer_generator_cli as legacy
+
+def _load_legacy_adapter() -> ModuleType:
+    adapter_path = Path(__file__).with_name("amp_designer_generator_cli.py")
+    spec = importlib.util.spec_from_file_location(
+        "pepagent_amp_designer_generator_legacy",
+        adapter_path,
+    )
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load AMP-Designer legacy adapter: {adapter_path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+legacy = _load_legacy_adapter()
 
 ADAPTER_VERSION = "amp-designer-v38-score-all-batch100-v1"
 REQUEST_SCHEMA = "v38.generator-request.1"
