@@ -39,6 +39,7 @@ SCRIPT_RELEASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 if [[ "$ROLE" = "v38-boltz" ]]; then
   PYTHON="$ROOT/envs/gpu-worker-py311-v1/bin/python"
   BOLTZ_EXECUTABLE="$ROOT/envs/gpu-worker-py311-v1/bin/boltz"
+  BOLTZ_CACHE="$ROOT/models/boltz2/cache"
   CUDA_DEVICE="$RESOURCE"
   MAX_CONCURRENT=1
   [[ -x "$BOLTZ_EXECUTABLE" ]] || { echo "managed Boltz executable is missing" >&2; exit 4; }
@@ -48,6 +49,14 @@ if [[ "$ROLE" = "v38-boltz" ]]; then
     echo "managed Boltz version drifted" >&2
     exit 4
   }
+  BOLTZ_GUARDED_SMOKE_SHA256="${PEPAGENT_BOLTZ_GUARDED_SMOKE_SHA256:?guarded Boltz smoke SHA-256 is required}"
+  BOLTZ_CACHE_ATTESTATION="$(
+    "$RELEASE_DIR/deploy/remote/attest_v38_boltz_runtime.sh" \
+      "$BOLTZ_CACHE" "$BOLTZ_EXECUTABLE" "$BOLTZ_GUARDED_SMOKE_SHA256"
+  )"
+  BOLTZ_CACHE_ATTESTATION_SHA256="$(
+    printf '%s' "$BOLTZ_CACHE_ATTESTATION" | sha256sum | cut -d ' ' -f 1
+  )"
   OCCUPANTS="$(nvidia-smi -i "$RESOURCE" --query-compute-apps=pid --format=csv,noheader,nounits 2>/dev/null | tr -d '[:space:]')"
   [[ -z "$OCCUPANTS" ]] || { echo "GPU has compute processes; refusing launch" >&2; exit 21; }
 else
@@ -96,6 +105,10 @@ if [[ -f "$PID_FILE" ]] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
   exit 20
 fi
 
+if [[ "$ROLE" = "v38-boltz" ]]; then
+  printf '%s\n' "$BOLTZ_CACHE_ATTESTATION" >"$RUN_DIR/runtime-cache-attestation.json"
+fi
+
 STAMP="$(date +%Y%m%d-%H%M%S)"
 LOG_FILE="$RUN_DIR/worker-$STAMP.log"
 nohup env \
@@ -127,5 +140,6 @@ printf '%s\n' \
   "release_sha256=$EXPECTED_RELEASE" \
   "source_revision=$SOURCE_REVISION" \
   "environment_sha256=$ENVIRONMENT_SHA256" \
-  "weights_sha256=$WEIGHTS_SHA256" >"$RUN_DIR/worker.receipt"
+  "weights_sha256=$WEIGHTS_SHA256" \
+  "runtime_cache_attestation_sha256=${BOLTZ_CACHE_ATTESTATION_SHA256:-}" >"$RUN_DIR/worker.receipt"
 echo "started role=$ROLE instance=$INSTANCE resource=$RESOURCE pid=$PID release=$EXPECTED_RELEASE revision=$SOURCE_REVISION environment=$ENVIRONMENT_SHA256"

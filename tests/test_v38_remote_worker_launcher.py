@@ -24,6 +24,8 @@ def test_v38_remote_launcher_verifies_immutable_runtime_before_launch() -> None:
         "v38 service tunnel preflight failed",
         "ENVIRONMENT_SHA256",
         "WEIGHTS_SHA256",
+        "attest_v38_boltz_runtime.sh",
+        "PEPAGENT_BOLTZ_GUARDED_SMOKE_SHA256",
         "GPU has compute processes; refusing launch",
     )
     for marker in required_before_launch:
@@ -41,3 +43,5 @@ def test_v38_remote_launcher_never_replaces_a_live_process() -> None:
     assert "schema=v38.remote-worker-receipt.1" in text
     assert "ampgent_owned=true" in text
     assert "foreign=false" in text
+    assert "runtime-cache-attestation.json" in text
+    assert "runtime_cache_attestation_sha256=" in text
