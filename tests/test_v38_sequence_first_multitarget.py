@@ -542,7 +542,7 @@ def test_multitarget_structure_evidence_binds_pose_and_all_decoy_hashes() -> Non
     decoys = tuple(
         RosettaDecoyEvidence(
             decoy_ordinal=index,
-            input_structure_sha256=SHA_A,
+            input_structure_sha256=SHA_D,
             output_structure_sha256=f"{index + 1:064x}",
             score_record_sha256=f"{index + 100:064x}",
             total_score=float(index),
@@ -554,6 +554,9 @@ def test_multitarget_structure_evidence_binds_pose_and_all_decoy_hashes() -> Non
         task_sha256=task.sha256(),
         boltz_evidence_sha256=boltz.sha256(),
         boltz_coordinate_artifact_sha256=SHA_A,
+        converted_input_artifact_sha256=SHA_B,
+        prepared_input_artifact_sha256=SHA_C,
+        prepacked_input_artifact_sha256=SHA_D,
         tool_call_id=uuid4(),
         raw_result_artifact_sha256=SHA_D,
         decoys=decoys,
@@ -592,7 +595,7 @@ def test_multitarget_structure_evidence_rejects_task_or_decoy_drift() -> None:
     short_decoys = tuple(
         RosettaDecoyEvidence(
             decoy_ordinal=index,
-            input_structure_sha256=SHA_A,
+            input_structure_sha256=SHA_D,
             output_structure_sha256=f"{index + 1:064x}",
             score_record_sha256=f"{index + 100:064x}",
             total_score=float(index),
@@ -605,6 +608,9 @@ def test_multitarget_structure_evidence_rejects_task_or_decoy_drift() -> None:
             task_sha256=task.sha256(),
             boltz_evidence_sha256=SHA_B,
             boltz_coordinate_artifact_sha256=SHA_A,
+            converted_input_artifact_sha256=SHA_B,
+            prepared_input_artifact_sha256=SHA_C,
+            prepacked_input_artifact_sha256=SHA_D,
             tool_call_id=uuid4(),
             raw_result_artifact_sha256=SHA_D,
             decoys=short_decoys,

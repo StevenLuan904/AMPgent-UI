@@ -191,6 +191,18 @@ def _structure_evidence_payloads(
             "metadata_json": {
                 "rosetta_evidence_sha256": rosetta.sha256(),
                 "boltz_evidence_sha256": boltz.sha256(),
+                "boltz_coordinate_artifact_sha256": (
+                    rosetta.boltz_coordinate_artifact_sha256
+                ),
+                "converted_input_artifact_sha256": (
+                    rosetta.converted_input_artifact_sha256
+                ),
+                "prepared_input_artifact_sha256": (
+                    rosetta.prepared_input_artifact_sha256
+                ),
+                "prepacked_input_artifact_sha256": (
+                    rosetta.prepacked_input_artifact_sha256
+                ),
                 "total_score": decoy.total_score,
             },
         }

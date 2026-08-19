@@ -78,3 +78,17 @@
 - 新控制 run `d85e7ca1-5d1a-4d23-a439-c4e3ee225e80` 继承 63 个 terminal run；新 science run
   `acd2c705-82ce-4505-b72f-4bb6a9790428` / Temporal `10228478-75bc-4053-b664-e6b6f9470561`
   已以 formal key `94d7d625...a8432b` exact-once 提交。旧 run 均保持不可变，未回填或复用输出。
+
+## recovery-009 结构证据链失败与修复（2026-08-19 17:34 UTC）
+
+- science run `acd2c705-82ce-4505-b72f-4bb6a9790428` 已 terminal failed 并保持不可变：900
+  occurrence、773 Candidate、8,503 Evaluation、17 ToolCall、1 Decision、0 durable structure、0 replay。
+- Boltz 与 Rosetta 科学计算均实际成功：首个 pose 生成完整 Boltz 坐标，Rosetta 生成 16/16 个唯一 decoy；
+  失败发生在 `persist_v38_multitarget_rosetta` 的证据模型校验，不是结构计算失败。
+- 原模型错误地要求 decoy 输入哈希等于 Boltz CIF 哈希。真实可靠链是 `Boltz CIF -> 转换后的 PDB ->
+  prepared PDB -> prepacked PDB -> decoy`；这五个对象内容不同，哈希理应不同。
+- evidence schema 已升级为 `.2`，显式绑定上述四个输入节点，并要求所有 decoy 精确绑定 prepacked
+  输入；同时仍要求 provenance 中的源坐标精确等于 Boltz artifact。
+- 28 项 focused tests 与 Ruff 通过；对 Temporal event 168 的真实 payload 原样重放通过，16 个 decoy
+  输出均唯一，receipt SHA `d9459ec501d4957a91f6b7a3c3ccec9f014a7b9572ac3db526c278fb85d366d0`。
+  该 smoke 只验证工程证据链，不回填旧 run，也不作为候选科学证据。

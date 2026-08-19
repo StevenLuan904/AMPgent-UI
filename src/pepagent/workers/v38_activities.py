@@ -291,6 +291,10 @@ def build_v38_rosetta_evidence(
     raw_decoys = result.get("rosetta", {}).get("decoys")
     if not isinstance(raw_decoys, list):
         raise ValueError("v38 Rosetta result lacks exact decoy evidence")
+    rosetta_result = result["rosetta"]
+    source_coordinate = result.get("provenance", {}).get("source_coordinate_artifact", {})
+    if source_coordinate.get("sha256") != boltz.coordinate_artifact_sha256:
+        raise ValueError("v38 Rosetta source coordinate differs from its Boltz artifact")
     decoys = tuple(
         RosettaDecoyEvidence(
             decoy_ordinal=index,
@@ -306,6 +310,9 @@ def build_v38_rosetta_evidence(
         task_sha256=task.sha256(),
         boltz_evidence_sha256=boltz.sha256(),
         boltz_coordinate_artifact_sha256=boltz.coordinate_artifact_sha256,
+        converted_input_artifact_sha256=rosetta_result["input_sha256"],
+        prepared_input_artifact_sha256=rosetta_result["prepared_input_sha256"],
+        prepacked_input_artifact_sha256=rosetta_result["prepacked_input_sha256"],
         tool_call_id=uuid.UUID(result["tool_call_id"]),
         raw_result_artifact_sha256=result["provenance"]["raw_output_artifact"]["sha256"],
         decoys=decoys,

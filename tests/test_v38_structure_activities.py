@@ -151,9 +151,11 @@ def test_v38_structure_evidence_builders_bind_pose_and_all_decoys() -> None:
         },
     }
     boltz = v38_activities.build_v38_boltz_evidence(boltz_result)
+    prepared_sha = "e" * 64
+    prepacked_sha = "f" * 64
     decoys = [
         {
-            "input_sha256": SHA_A,
+            "input_sha256": prepacked_sha,
             "output_sha256": f"{index + 1:064x}",
             "score_terms_sha256": f"{index + 100:064x}",
             "total_score": float(-index),
@@ -164,13 +166,24 @@ def test_v38_structure_evidence_builders_bind_pose_and_all_decoys() -> None:
         "v38_structure_task": task.model_dump(mode="json"),
         "v38_structure_task_sha256": task.sha256(),
         "tool_call_id": str(uuid4()),
-        "rosetta": {"decoys": decoys},
-        "provenance": {"raw_output_artifact": {"sha256": SHA_C}},
+        "rosetta": {
+            "input_sha256": SHA_A,
+            "prepared_input_sha256": prepared_sha,
+            "prepacked_input_sha256": prepacked_sha,
+            "decoys": decoys,
+        },
+        "provenance": {
+            "source_coordinate_artifact": {"sha256": SHA_A},
+            "raw_output_artifact": {"sha256": SHA_C},
+        },
     }
     rosetta = v38_activities.build_v38_rosetta_evidence(rosetta_result, boltz)
 
     assert boltz.coordinate_artifact_sha256 == SHA_A
     assert rosetta.boltz_evidence_sha256 == boltz.sha256()
+    assert rosetta.converted_input_artifact_sha256 == SHA_A
+    assert rosetta.prepared_input_artifact_sha256 == prepared_sha
+    assert rosetta.prepacked_input_artifact_sha256 == prepacked_sha
     assert len(rosetta.decoys) == 16
     assert rosetta.decoys[15].decoy_ordinal == 15
 
@@ -195,9 +208,12 @@ def test_v38_rosetta_evidence_builder_rejects_incomplete_decoy_budget() -> None:
         "v38_structure_task_sha256": task.sha256(),
         "tool_call_id": str(uuid4()),
         "rosetta": {
+            "input_sha256": SHA_A,
+            "prepared_input_sha256": "e" * 64,
+            "prepacked_input_sha256": "f" * 64,
             "decoys": [
                 {
-                    "input_sha256": SHA_A,
+                    "input_sha256": "f" * 64,
                     "output_sha256": f"{index + 1:064x}",
                     "score_terms_sha256": f"{index + 100:064x}",
                     "total_score": float(index),
@@ -205,7 +221,10 @@ def test_v38_rosetta_evidence_builder_rejects_incomplete_decoy_budget() -> None:
                 for index in range(15)
             ]
         },
-        "provenance": {"raw_output_artifact": {"sha256": SHA_C}},
+        "provenance": {
+            "source_coordinate_artifact": {"sha256": SHA_A},
+            "raw_output_artifact": {"sha256": SHA_C},
+        },
     }
     with pytest.raises(ValueError, match="decoy count"):
         v38_activities.build_v38_rosetta_evidence(result, boltz)

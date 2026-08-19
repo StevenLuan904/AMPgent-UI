@@ -1105,13 +1105,16 @@ class RosettaDecoyEvidence(FrozenModel):
 
 
 class MultiTargetRosettaEvidence(FrozenModel):
-    schema_version: Literal["v38.multitarget-rosetta-evidence.1"] = (
-        "v38.multitarget-rosetta-evidence.1"
+    schema_version: Literal["v38.multitarget-rosetta-evidence.2"] = (
+        "v38.multitarget-rosetta-evidence.2"
     )
     task: MultiTargetStructureTask
     task_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     boltz_evidence_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     boltz_coordinate_artifact_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    converted_input_artifact_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    prepared_input_artifact_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    prepacked_input_artifact_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     tool_call_id: UUID
     raw_result_artifact_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     decoys: tuple[RosettaDecoyEvidence, ...] = Field(min_length=1)
@@ -1126,10 +1129,10 @@ class MultiTargetRosettaEvidence(FrozenModel):
         if [item.decoy_ordinal for item in self.decoys] != list(range(len(self.decoys))):
             raise ValueError("Rosetta decoy ordinals must be contiguous")
         if any(
-            item.input_structure_sha256 != self.boltz_coordinate_artifact_sha256
+            item.input_structure_sha256 != self.prepacked_input_artifact_sha256
             for item in self.decoys
         ):
-            raise ValueError("Rosetta decoy input is not the bound Boltz coordinate")
+            raise ValueError("Rosetta decoy input is not the bound prepacked coordinate")
         output_hashes = [item.output_structure_sha256 for item in self.decoys]
         score_hashes = [item.score_record_sha256 for item in self.decoys]
         if len(output_hashes) != len(set(output_hashes)):
