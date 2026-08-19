@@ -91,3 +91,33 @@ def build_v38_generator_runtime(
         manifest=manifest,
     )
     return manifest, launch
+
+
+def build_v38_execution_bundle(
+    workspace: Path, v37_execution_bundle: dict[str, Any]
+) -> dict[str, Any]:
+    """Project frozen v37 runtime bytes onto the v38 100-proposal contract.
+
+    The model, source release, Python environment, weights, and sampling settings
+    remain unchanged.  Only the consumer request contracts are rebound to the
+    v38 cell size; AMP-Designer uses its already-frozen one-batch v38 adapter.
+    """
+    if v37_execution_bundle.get("schema_version") != "v37.execution-bundle.1":
+        raise ValueError("v38 runtime projection requires a v37 execution bundle")
+    bundle = copy.deepcopy(v37_execution_bundle)
+    generator_ids = ("hydramp", "ampgan_v2", "amp_designer")
+    if set(bundle.get("generator_runtimes", {})) != set(generator_ids) or set(
+        bundle.get("generator_launch_bindings", {})
+    ) != set(generator_ids):
+        raise ValueError("v38 runtime projection generator coverage drifted")
+    for generator_id in generator_ids:
+        manifest, launch = build_v38_generator_runtime(workspace, generator_id)
+        bundle["generator_runtimes"][generator_id] = manifest
+        bundle["generator_launch_bindings"][generator_id] = launch
+    identity = {
+        key: value
+        for key, value in bundle.items()
+        if key != "execution_bundle_identity_sha256"
+    }
+    bundle["execution_bundle_identity_sha256"] = sha256_json(identity)
+    return bundle

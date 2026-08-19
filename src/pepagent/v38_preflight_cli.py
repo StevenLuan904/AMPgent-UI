@@ -14,6 +14,7 @@ from pepagent.db.models import Target, TargetPocket
 from pepagent.db.session import SessionFactory
 from pepagent.provenance.environment import fingerprint_runtime
 from pepagent.provenance.hashing import sha256_file
+from pepagent.v38_generator_runtime import build_v38_execution_bundle
 from pepagent.v38_preflight import build_v38_submission_preflight
 from pepagent.v38_request_builder import build_v38_request_template
 
@@ -94,6 +95,9 @@ async def build_v38_preflight_artifacts(
     panel = _load_yaml(panel_path)
     controller = _load_json(controller_state_path)
     placement = _load_json(worker_placement_path)
+    execution_bundle = build_v38_execution_bundle(
+        benchmark_path.parents[2], _load_json(execution_bundle_path)
+    )
     target_runtimes = await _load_target_runtimes(panel)
     request = build_v38_request_template(
         benchmark=benchmark,
@@ -101,7 +105,7 @@ async def build_v38_preflight_artifacts(
         controller_state=controller,
         worker_placement=placement,
         generator_manifest=_load_yaml(generator_manifest_path),
-        execution_bundle=_load_json(execution_bundle_path),
+        execution_bundle=execution_bundle,
         structure_spec=_load_yaml(structure_spec_path),
         target_runtime_by_id=target_runtimes,
         control_environment_sha256=fingerprint_runtime()[0],
