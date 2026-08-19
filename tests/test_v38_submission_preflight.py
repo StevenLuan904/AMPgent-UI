@@ -157,6 +157,26 @@ def test_v38_preflight_binds_one_unsubmitted_request_and_full_placement() -> Non
     )
     assert result["status"] == "ready_to_submit_unique_run"
     assert result["execution_authorized"] is True
+    assert set(result["worker_component_identities"]) == set(_placement()["workers"])
+
+
+def test_v38_preflight_allows_explicitly_bound_structure_release_identity() -> None:
+    placement = _placement()
+    placement["workers"]["v38-rosetta"].update(
+        source_revision="f" * 40,
+        release_sha256="0" * 64,
+    )
+    result = build_v38_submission_preflight(
+        request_template=_request(),
+        controller_state=_state(),
+        worker_placement=placement,
+        benchmark_sha256="1" * 64,
+        target_panel_sha256="2" * 64,
+    )
+    assert result["worker_component_identities"]["v38-rosetta"] == {
+        "source_revision": "f" * 40,
+        "release_sha256": "0" * 64,
+    }
     assert result["failed_gates"] == []
     assert result["workflow_id"].endswith(result["formal_submission_key"])
 
@@ -204,10 +224,10 @@ def test_v38_preflight_rejects_a_template_that_self_asserts_readiness() -> None:
             "prohibited GPU",
         ),
         (
-            lambda state, placement: placement["workers"]["v38-rosetta"].update(
+            lambda state, placement: placement["workers"]["v38-metrics"].update(
                 source_revision="f" * 40
             ),
-            "one immutable source",
+            "sequence workers do not share one immutable source",
         ),
         (
             lambda state, placement: placement["workers"]["v38-boltz"].pop(

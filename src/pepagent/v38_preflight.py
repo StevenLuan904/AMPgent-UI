@@ -46,8 +46,6 @@ def _validate_worker_placement(
     serialized = str(placement)
     if "192.168.99.32:2" in serialized or "192.168.99.32:3" in serialized:
         raise ValueError("v38 worker placement references a prohibited GPU")
-    sources: set[str] = set()
-    releases: set[str] = set()
     for role, queue in V38_ROLE_QUEUES.items():
         worker = workers[role]
         if (
@@ -62,10 +60,13 @@ def _validate_worker_placement(
             or not worker["poller_identity"]
         ):
             raise ValueError(f"v38 worker placement is invalid: {role}")
-        sources.add(_require_sha(worker.get("source_revision"), length=40, label="source"))
-        releases.add(_require_sha(worker.get("release_sha256"), length=64, label="release"))
-    if len(sources) != 1 or len(releases) != 1:
-        raise ValueError("v38 workers do not share one immutable source and release")
+        _require_sha(worker.get("source_revision"), length=40, label="source")
+        _require_sha(worker.get("release_sha256"), length=64, label="release")
+    sequence_roles = ("v38-control", "v38-generator", "v38-metrics")
+    sequence_sources = {workers[role]["source_revision"] for role in sequence_roles}
+    sequence_releases = {workers[role]["release_sha256"] for role in sequence_roles}
+    if len(sequence_sources) != 1 or len(sequence_releases) != 1:
+        raise ValueError("v38 sequence workers do not share one immutable source and release")
     if workers["v38-boltz"].get("resource") != "192.168.99.32:1":
         raise ValueError("v38 Boltz placement differs from the authorized GPU")
     boltz_worker = workers["v38-boltz"]
@@ -103,8 +104,11 @@ def _validate_worker_placement(
     sequence_release = controller_state.get("sequence_worker_release")
     if not isinstance(sequence_release, dict):
         raise ValueError("controller has no accepted sequence worker release")
-    if sequence_release.get("source_revision") != next(iter(sources)) or (
-        sequence_release.get("release_sha256") != next(iter(releases))
+    if sequence_release.get("source_revision") != workers["v38-control"][
+        "source_revision"
+    ] or (
+        sequence_release.get("release_sha256")
+        != workers["v38-control"]["release_sha256"]
     ):
         raise ValueError("controller and placement worker identities drifted")
     provider = placement.get("refinement_provider")
@@ -183,6 +187,17 @@ def build_v38_submission_preflight(
         "target_panel_sha256": target_panel_sha256,
         "request_template_sha256": sha256_json(request),
         "worker_placement_sha256": sha256_json(worker_placement),
+        "worker_component_identities": {
+            role: {
+                "source_revision": worker_placement["workers"][role][
+                    "source_revision"
+                ],
+                "release_sha256": worker_placement["workers"][role][
+                    "release_sha256"
+                ],
+            }
+            for role in sorted(V38_ROLE_QUEUES)
+        },
         "sequence_worker_source_revision": worker_placement["workers"]["v38-control"][
             "source_revision"
         ],
