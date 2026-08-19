@@ -108,7 +108,7 @@ def _owned_structure_worker_pid(state_path: Path) -> int | None:
         worker = placement["workers"]["v38-boltz"]
         if (
             placement.get("schema_version") != "v38.worker-placement.1"
-            or worker.get("resource") != "192.168.99.19:6"
+            or worker.get("resource") not in _FROZEN_V38_STRUCTURE_GPU_KEYS
             or worker.get("ampgent_owned") is not True
             or worker.get("foreign") is not False
             or not isinstance(worker.get("pid"), int)
