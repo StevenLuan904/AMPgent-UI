@@ -10,6 +10,7 @@ import yaml
 
 from pepagent.provenance.hashing import sha256_json
 from pepagent.v38_submit_cli import (
+    _build_target_binding_receipt,
     _start_or_recover_v38_workflow,
     _v38_controller_lock_id,
     _validate_v38_submission_bundle,
@@ -60,6 +61,21 @@ def test_v38_submission_bundle_accepts_exact_frozen_inputs() -> None:
         controller_state=controller,
         panel=panel,
     )
+
+
+def test_v38_submission_binding_uses_structure_task_namespace() -> None:
+    request, _, _, panel = _bundle()
+    run_id = UUID("8b9da868-359e-4da4-8ae9-91843881ef60")
+    receipt = _build_target_binding_receipt(
+        run_id=run_id,
+        request_template=request,
+        panel=panel,
+    )
+    assert receipt.branches
+    for binding in receipt.branches:
+        assert binding.evidence_namespace == (
+            f"target/{binding.branch_key}/{binding.target_id}"
+        )
 
 
 @pytest.mark.parametrize(

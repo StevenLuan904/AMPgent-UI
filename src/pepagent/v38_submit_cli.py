@@ -177,7 +177,9 @@ def _build_target_binding_receipt(
                 coordinate_sha256=branch["coordinate_sha256"],
                 native_pocket_id=UUID(str(branch["primary_pocket_id"])),
                 wrong_pocket_id=UUID(str(branch["wrong_pocket_id"])),
-                evidence_namespace=f"v38/{branch['target_key']}",
+                evidence_namespace=(
+                    f"target/{branch['target_key']}/{branch['target_id']}"
+                ),
                 metadata={
                     "target_sequence_sha256": branch["target_sequence_sha256"],
                     "native_pocket_sha256": branch[
