@@ -114,8 +114,19 @@ def build_v38_submission_preflight(
     counts = controller_state.get("durable_counts")
     if not isinstance(counts, dict) or any(int(value) != 0 for value in counts.values()):
         raise ValueError("v38 control run contains unexpected science outputs")
-    if int(controller_state.get("history_terminal_run_count", -1)) != 54:
-        raise ValueError("v38 historical terminal-run denominator drifted")
+    history_terminal_run_count = controller_state.get("history_terminal_run_count")
+    if (
+        not isinstance(history_terminal_run_count, int)
+        or history_terminal_run_count < 1
+    ):
+        raise ValueError("v38 historical terminal-run denominator is invalid")
+    plan = request_template.get("multitarget_plan_template")
+    if (
+        not isinstance(plan, dict)
+        or plan.get("history_snapshot_sha256")
+        != controller_state.get("history_snapshot_sha256")
+    ):
+        raise ValueError("v38 request does not inherit the controller history snapshot")
     _validate_worker_placement(worker_placement, controller_state=controller_state)
     benchmark_sha256 = _require_sha(
         benchmark_sha256, length=64, label="benchmark SHA-256"

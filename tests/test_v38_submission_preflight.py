@@ -86,7 +86,7 @@ def _state() -> dict:
             "replay_evidence_links": 0,
             "tool_calls": 0,
         },
-        "history_snapshot_sha256": "b" * 64,
+        "history_snapshot_sha256": "f" * 64,
         "history_terminal_run_count": 54,
         "sequence_worker_release": {
             "source_revision": "c" * 40,
@@ -142,6 +142,25 @@ def test_v38_preflight_binds_one_unsubmitted_request_and_full_placement() -> Non
     assert result["execution_authorized"] is True
     assert result["failed_gates"] == []
     assert result["workflow_id"].endswith(result["formal_submission_key"])
+
+
+def test_v38_recovery_preflight_accepts_newer_bound_history() -> None:
+    state = _state()
+    state["history_terminal_run_count"] = 55
+    request = _request()
+    request["multitarget_plan_template"]["history_snapshot_sha256"] = state[
+        "history_snapshot_sha256"
+    ]
+
+    result = build_v38_submission_preflight(
+        request_template=request,
+        controller_state=state,
+        worker_placement=_placement(),
+        benchmark_sha256="1" * 64,
+        target_panel_sha256="2" * 64,
+    )
+
+    assert result["history_terminal_run_count"] == 55
 
 
 def test_v38_preflight_rejects_a_template_that_self_asserts_readiness() -> None:
