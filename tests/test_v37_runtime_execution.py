@@ -142,12 +142,18 @@ def test_guarded_launch_persists_receipt_before_process_creation(tmp_path: Path)
     assert output.strip() == "adapter"
     assert receipts == [receipt["pre_snapshot"]]
     assert receipt["all_boundaries_match"] is True
-    assert [receipt[key]["stage"] for key in (
-        "pre_snapshot", "prelaunch", "post_spawn", "completion"
-    )] == ["pre_snapshot", "prelaunch", "post_spawn", "completion"]
-    assert len({receipt[key]["byte_identity_sha256"] for key in (
-        "pre_snapshot", "prelaunch", "post_spawn", "completion"
-    )}) == 1
+    assert [
+        receipt[key]["stage"] for key in ("pre_snapshot", "prelaunch", "post_spawn", "completion")
+    ] == ["pre_snapshot", "prelaunch", "post_spawn", "completion"]
+    assert (
+        len(
+            {
+                receipt[key]["byte_identity_sha256"]
+                for key in ("pre_snapshot", "prelaunch", "post_spawn", "completion")
+            }
+        )
+        == 1
+    )
     identity = receipt["pre_snapshot"]["identity"]
     assert identity["environment_sha256"] == sha256_json(
         {"PYTHONPATH": str(paths.source_root), "V37_TEST": "stable"}
@@ -347,11 +353,7 @@ def test_guarded_launch_rehashes_again_after_spawn_and_completion(tmp_path: Path
         **{**expectation.__dict__, "adapter_sha256": _sha(paths.adapter_path)}
     )
     manifest["runtime_manifest_sha256"] = sha256_json(
-        {
-            key: value
-            for key, value in manifest.items()
-            if key != "runtime_manifest_sha256"
-        }
+        {key: value for key, value in manifest.items() if key != "runtime_manifest_sha256"}
     )
 
     async def writer(_receipt: dict[str, object]) -> None:
@@ -453,12 +455,51 @@ def test_generic_provider_guard_binds_all_four_boundaries(tmp_path: Path) -> Non
     assert persisted == [receipts["pre_snapshot"]]
     assert aggregates == [receipts]
     assert receipts["all_boundaries_match"] is True
-    assert len(
-        {
-            receipts[stage]["byte_identity_sha256"]
-            for stage in ("pre_snapshot", "prelaunch", "post_spawn", "completion")
-        }
-    ) == 1
+    assert (
+        len(
+            {
+                receipts[stage]["byte_identity_sha256"]
+                for stage in ("pre_snapshot", "prelaunch", "post_spawn", "completion")
+            }
+        )
+        == 1
+    )
+
+
+def test_generic_provider_guard_accepts_only_frozen_no_site_prefix(
+    tmp_path: Path,
+) -> None:
+    contract, expectation, paths = _generic_fixture(tmp_path)
+    contract["command_entities"] = {"executable_index": 0, "adapter_index": 2}
+    contract["execution_contract_sha256"] = sha256_json(
+        {key: value for key, value in contract.items() if key != "execution_contract_sha256"}
+    )
+    expectation = V37GenericRuntimeExpectation(
+        runtime_id=expectation.runtime_id,
+        execution_contract_sha256=str(contract["execution_contract_sha256"]),
+    )
+
+    receipt = build_v37_generic_launch_receipt(
+        contract=contract,
+        expectation=expectation,
+        paths=paths,
+        command=[sys.executable, "-S", str(paths.adapter_path)],
+        cwd=tmp_path,
+        env={},
+        input_paths={},
+    )
+    assert receipt["identity"]["command"][1] == "-S"
+
+    with pytest.raises(ValueError, match="must freeze Python -S"):
+        build_v37_generic_launch_receipt(
+            contract=contract,
+            expectation=expectation,
+            paths=paths,
+            command=[sys.executable, "-E", str(paths.adapter_path)],
+            cwd=tmp_path,
+            env={},
+            input_paths={},
+        )
 
 
 def test_generic_provider_guard_rejects_runtime_manifest_drift(tmp_path: Path) -> None:
@@ -515,9 +556,7 @@ def _frozen_descriptor(tmp_path: Path) -> dict:
             }
         },
         "execution_guard": {
-            "contract": {
-                "command_entities": {"executable_index": 0, "adapter_index": 3}
-            },
+            "contract": {"command_entities": {"executable_index": 0, "adapter_index": 3}},
             "paths": {"executable_path": executable, "adapter_path": adapter},
         },
     }
@@ -528,9 +567,7 @@ def test_frozen_invocation_is_consumed_without_rebuilding_provider_cli(
 ) -> None:
     descriptor = _frozen_descriptor(tmp_path)
 
-    command, cwd = resolve_v37_frozen_invocation(
-        descriptor, "formal_context_pack"
-    )
+    command, cwd = resolve_v37_frozen_invocation(descriptor, "formal_context_pack")
 
     assert command == descriptor["invocations"]["formal_context_pack"]["argv"]
     assert cwd == tmp_path
@@ -541,9 +578,7 @@ def test_frozen_adapter_command_preserves_declared_adapter_prefix(
 ) -> None:
     descriptor = _frozen_descriptor(tmp_path)
 
-    command = build_v37_frozen_adapter_command(
-        descriptor, ["inspect", "--spec", "request.json"]
-    )
+    command = build_v37_frozen_adapter_command(descriptor, ["inspect", "--spec", "request.json"])
 
     assert command[:4] == descriptor["launch_argv"][:4]
     assert command[4:] == ["inspect", "--spec", "request.json"]
@@ -551,9 +586,7 @@ def test_frozen_adapter_command_preserves_declared_adapter_prefix(
 
 def test_frozen_command_helpers_reject_descriptor_entity_drift(tmp_path: Path) -> None:
     descriptor = _frozen_descriptor(tmp_path)
-    descriptor["execution_guard"]["paths"]["adapter_path"] = str(
-        tmp_path / "other.py"
-    )
+    descriptor["execution_guard"]["paths"]["adapter_path"] = str(tmp_path / "other.py")
 
     with pytest.raises(ValueError, match="adapter differs"):
         resolve_v37_frozen_invocation(descriptor, "formal_context_pack")

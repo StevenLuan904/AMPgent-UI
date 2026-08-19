@@ -99,9 +99,7 @@ def _inventory(root: Path, *, label: str) -> list[dict[str, Any]]:
     result: list[dict[str, Any]] = []
     for path in resolved_root.rglob("*"):
         file_attributes = getattr(path.lstat(), "st_file_attributes", 0)
-        if path.is_symlink() or file_attributes & getattr(
-            stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0
-        ):
+        if path.is_symlink() or file_attributes & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0):
             raise ValueError(f"v37 {label} release contains a symlink or reparse point")
         if not path.is_file():
             continue
@@ -186,13 +184,11 @@ def freeze_v37_generic_runtime_descriptor(
     model = _directory(model_root, label="model release")
     working_directory = _directory(cwd, label="working directory")
     adapter = (
-        _regular_file(adapter_path, label="runtime adapter")
-        if adapter_path is not None
-        else None
+        _regular_file(adapter_path, label="runtime adapter") if adapter_path is not None else None
     )
     if (adapter is None) != (adapter_index is None):
         raise ValueError("v37 adapter path/index mapping is inconsistent")
-    if executable_index != 0 or (adapter_index is not None and adapter_index < 1):
+    if executable_index != 0 or adapter_index not in {None, 1, 2}:
         raise ValueError("v37 runtime command entity indices are invalid")
     _validate_base_path_bindings(
         base,
@@ -219,9 +215,7 @@ def freeze_v37_generic_runtime_descriptor(
         "runtime_manifest_sha256": manifest_sha256,
         "executable": {"path": executable.name, "sha256": _sha256_file(executable)},
         "adapter": (
-            {"path": adapter.name, "sha256": _sha256_file(adapter)}
-            if adapter is not None
-            else None
+            {"path": adapter.name, "sha256": _sha256_file(adapter)} if adapter is not None else None
         ),
         "packages_lock_sha256": _sha256_file(packages_lock),
         "source_release": {
@@ -260,12 +254,12 @@ def freeze_v37_generic_runtime_descriptor(
     }
     descriptor["runtime_identity_sha256"] = sha256_json(descriptor)
 
-    command = ["v37-runtime-entity"] * (
-        max(executable_index, adapter_index or 0) + 1
-    )
+    command = ["v37-runtime-entity"] * (max(executable_index, adapter_index or 0) + 1)
     command[executable_index] = str(executable)
     if adapter_index is not None:
         command[adapter_index] = str(adapter)
+    if adapter_index == 2:
+        command[1] = "-S"
     build_v37_generic_launch_receipt(
         contract=contract,
         expectation=V37GenericRuntimeExpectation(**expectation),
@@ -289,9 +283,9 @@ def write_v37_runtime_descriptor(*, descriptor: Mapping[str, Any], output_path: 
     parent = _directory(output_path.parent, label="descriptor output parent")
     output = parent / output_path.name
     _validate_text(output.name, label="descriptor output filename")
-    payload = json.dumps(
-        descriptor, ensure_ascii=False, indent=2, sort_keys=True
-    ).encode("utf-8") + b"\n"
+    payload = (
+        json.dumps(descriptor, ensure_ascii=False, indent=2, sort_keys=True).encode("utf-8") + b"\n"
+    )
     temporary = output.with_name(f".{output.name}.tmp")
     temporary.write_bytes(payload)
     os.replace(temporary, output)

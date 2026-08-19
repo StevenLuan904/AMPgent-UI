@@ -249,9 +249,7 @@ def verify_v37_generic_runtime_contract(
         raise ValueError("v37 generic runtime execution contract schema drifted")
     if contract["runtime_id"] != expectation.runtime_id:
         raise ValueError("v37 generic runtime identity drifted")
-    identity = {
-        key: value for key, value in contract.items() if key != "execution_contract_sha256"
-    }
+    identity = {key: value for key, value in contract.items() if key != "execution_contract_sha256"}
     contract_sha256 = _require_sha256(
         contract["execution_contract_sha256"], label="execution contract SHA-256"
     )
@@ -298,9 +296,9 @@ def verify_v37_generic_runtime_contract(
             if not isinstance(item, Mapping) or set(item) != {"path", "size_bytes", "sha256"}:
                 raise ValueError(f"v37 generic runtime {label} file identity is malformed")
             _require_sha256(item["sha256"], label=f"{label} file SHA-256")
-        if _require_sha256(
-            release["files_sha256"], label=f"{label} files SHA-256"
-        ) != sha256_json(files):
+        if _require_sha256(release["files_sha256"], label=f"{label} files SHA-256") != sha256_json(
+            files
+        ):
             raise ValueError(f"v37 generic runtime {label} file-list hash drifted")
 
 
@@ -324,9 +322,7 @@ def _validate_command_entities(
         raise ValueError("v37 command[0] is not the declared Python executable")
     if not os.path.samefile(adapter, declared_adapter):
         raise ValueError("v37 command[1] is not the declared adapter entrypoint")
-    if not _path_ends_with_declared(
-        declared_python, manifest["runtime"]["python_executable"]
-    ):
+    if not _path_ends_with_declared(declared_python, manifest["runtime"]["python_executable"]):
         raise ValueError("v37 declared Python path does not match the runtime manifest")
     if not _path_ends_with_declared(declared_adapter, manifest["adapter"]["entrypoint"]):
         raise ValueError("v37 declared adapter path does not match the runtime manifest")
@@ -359,7 +355,8 @@ def _pythonpath_identity(env: Mapping[str, str]) -> dict[str, Any]:
 def _infer_input_paths(command: Sequence[str]) -> dict[str, Path]:
     inferred: dict[str, Path] = {}
     skip_next = False
-    for index, value in enumerate(command[2:], start=2):
+    argument_start = 3 if len(command) > 2 and command[1] == "-S" else 2
+    for index, value in enumerate(command[argument_start:], start=argument_start):
         if skip_next:
             skip_next = False
             continue
@@ -495,6 +492,10 @@ def build_v37_generic_launch_receipt(
     adapter_index = entities["adapter_index"]
     if adapter_index is not None:
         index = int(adapter_index)
+        if index not in {1, 2}:
+            raise ValueError("v37 generic runtime adapter index is unsupported")
+        if index == 2 and (len(command_values) <= 1 or command_values[1] != "-S"):
+            raise ValueError("v37 no-site runtime must freeze Python -S before its adapter")
         if len(command_values) <= index or paths.adapter_path is None:
             raise ValueError("v37 generic runtime command lacks its declared adapter")
         command_adapter = _checked_regular_file(
@@ -505,9 +506,7 @@ def build_v37_generic_launch_receipt(
             raise ValueError("v37 generic runtime command adapter differs from declaration")
         if not _path_ends_with_declared(adapter, contract["adapter"]["path"]):
             raise ValueError("v37 generic runtime adapter path differs from contract")
-    runtime_manifest = _checked_regular_file(
-        paths.runtime_manifest_path, label="runtime manifest"
-    )
+    runtime_manifest = _checked_regular_file(paths.runtime_manifest_path, label="runtime manifest")
     packages_lock = _checked_regular_file(paths.packages_lock_path, label="package lock")
     observed_hashes = {
         "runtime_manifest_sha256": _sha256_file(runtime_manifest),
@@ -673,9 +672,7 @@ async def run_v37_guarded_subprocess(
         if aggregate_receipt_writer is not None:
             await aggregate_receipt_writer(receipts)
         if process.returncode:
-            raise RuntimeError(
-                f"v37 subprocess failed ({process.returncode}): {output[-8000:]}"
-            )
+            raise RuntimeError(f"v37 subprocess failed ({process.returncode}): {output[-8000:]}")
         return output, receipts
     except BaseException:
         await _terminate_process(process)
@@ -759,7 +756,6 @@ async def run_v37_guarded_provider_subprocess(
         await aggregate_receipt_writer(receipts)
     if process.returncode:
         raise RuntimeError(
-            f"v37 subprocess failed ({process.returncode}): "
-            f"{(output + error_output)[-8000:]}"
+            f"v37 subprocess failed ({process.returncode}): {(output + error_output)[-8000:]}"
         )
     return output, receipts

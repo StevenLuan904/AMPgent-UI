@@ -63,6 +63,7 @@ def _v37_json_default(value: Any) -> str:
         return value.astimezone(UTC).isoformat().replace("+00:00", "Z")
     raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable")
 
+
 _WORKFLOW_TYPE = "RapidChampionGenerationV37Workflow"
 _WORKFLOW_TASK_QUEUE = "pepagent-control-v37"
 _WORKFLOW_MEMO_KEY = "v37_submission_identity"
@@ -316,6 +317,8 @@ def _validate_generic_execution_guard(runtime: dict[str, Any], *, label: str) ->
     command[int(entities["executable_index"])] = str(paths.executable_path)
     if entities["adapter_index"] is not None:
         command[int(entities["adapter_index"])] = str(paths.adapter_path)
+    if entities["adapter_index"] == 2:
+        command[1] = "-S"
     build_v37_generic_launch_receipt(
         contract=guard["contract"],
         expectation=expectation,
@@ -419,9 +422,7 @@ def _validate_execution_runtime_identities(
     ):
         raise ValueError("v37 generator runtime index identity drifted")
     by_id = {item["generator_id"]: item for item in index["entries"]}
-    engines_by_id = {
-        str(item["generator_id"]): item for item in manifest.generators["engines"]
-    }
+    engines_by_id = {str(item["generator_id"]): item for item in manifest.generators["engines"]}
     from pepagent.v37_generator_launch import verify_v37_generator_launch_binding
 
     launch_bindings = execution.get("generator_launch_bindings")
@@ -442,14 +443,10 @@ def _validate_execution_runtime_identities(
             "consumer_adapter_version", engine.get("adapter_version")
         )
         if (
-            runtime.get("source_release", {}).get("revision")
-            != engine.get("source_revision")
-            or runtime.get("adapter", {}).get("adapter_version")
-            != expected_adapter_version
+            runtime.get("source_release", {}).get("revision") != engine.get("source_revision")
+            or runtime.get("adapter", {}).get("adapter_version") != expected_adapter_version
         ):
-            raise ValueError(
-                f"v37 {generator_id} benchmark/runtime engine identity drifted"
-            )
+            raise ValueError(f"v37 {generator_id} benchmark/runtime engine identity drifted")
         verify_v37_generator_runtime_manifest(
             runtime,
             expectation=V37GeneratorRuntimeExpectation(**entry["expectation"]),
@@ -465,34 +462,26 @@ def _validate_execution_runtime_identities(
         if (
             binding.get("generator_id") != generator_id
             or binding.get("runtime_index_sha256") != index["runtime_index_sha256"]
-            or binding.get("runtime_manifest_sha256")
-            != runtime["runtime_manifest_sha256"]
+            or binding.get("runtime_manifest_sha256") != runtime["runtime_manifest_sha256"]
             or binding.get("expectation") != entry["expectation"]
         ):
             raise ValueError(f"v37 {generator_id} launch binding identity drifted")
         if generator_id == "hydramp":
             if (
-                engine.get("provider_adapter_version")
-                != engine.get("adapter_version")
+                engine.get("provider_adapter_version") != engine.get("adapter_version")
                 or engine.get("formal_seed_acceptance_sha256")
                 != entry["expectation"]["formal_seed_acceptance_sha256"]
             ):
                 raise ValueError("v37 HydrAMP provider evidence lineage drifted")
             relative_receipt = str(engine.get("consumer_launch_acceptance_path", ""))
-            receipt_path = (
-                workspace / "config/benchmarks" / relative_receipt
-            ).resolve()
-            allowed_root = (
-                workspace / "config/environments/v37_generator_runtimes"
-            ).resolve()
+            receipt_path = (workspace / "config/benchmarks" / relative_receipt).resolve()
+            allowed_root = (workspace / "config/environments/v37_generator_runtimes").resolve()
             if receipt_path.parent != allowed_root or receipt_path.is_symlink():
                 raise ValueError("v37 HydrAMP consumer launch receipt path is unsafe")
             receipt_bytes = receipt_path.read_bytes()
             receipt = json.loads(receipt_bytes)
             receipt_identity = {
-                key: value
-                for key, value in receipt.items()
-                if key != "acceptance_receipt_sha256"
+                key: value for key, value in receipt.items() if key != "acceptance_receipt_sha256"
             }
             if (
                 receipt.get("acceptance_receipt_sha256") != sha256_json(receipt_identity)
@@ -612,9 +601,10 @@ def load_v37_submission_bundle(
         "capacity_contract_path": manifest.execution["capacity_contract_path"],
         "capacity_contract_sha256": sha256_bytes(capacity_contract_path.read_bytes()),
     }
-    if capacity_binding["capacity_contract_sha256"] != manifest.execution[
-        "capacity_contract_sha256"
-    ]:
+    if (
+        capacity_binding["capacity_contract_sha256"]
+        != manifest.execution["capacity_contract_sha256"]
+    ):
         raise ValueError("v37 capacity contract bytes drifted")
     spec = ExperimentSpec.model_validate(
         yaml.safe_load(experiment_spec_path.read_text(encoding="utf-8"))
@@ -752,9 +742,7 @@ async def submit_v37_once(
         "execution_bundle_sha256": sha256_bytes(execution_bundle_bytes),
         "experiment_spec_sha256": sha256_bytes(experiment_spec_bytes),
         "capacity_contract_sha256": sha256_bytes(capacity_contract_bytes),
-        "worker_placement_snapshot_sha256": sha256_bytes(
-            worker_placement_snapshot_bytes
-        ),
+        "worker_placement_snapshot_sha256": sha256_bytes(worker_placement_snapshot_bytes),
         "all_agent_evidence_persisted": True,
         "database_object_store_replay_required": True,
     }

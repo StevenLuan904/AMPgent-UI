@@ -85,9 +85,72 @@ def test_v37_child_runtime_environment_drops_worker_python_bootstrap(monkeypatch
 
 def test_v37_child_runtime_environment_rejects_python_bootstrap_override() -> None:
     with pytest.raises(ValueError, match="parent Python bootstrap keys: PYTHONPATH"):
-        v37_activities._isolated_v37_runtime_environment(
-            {"PYTHONPATH": "undeclared-provider-path"}
-        )
+        v37_activities._isolated_v37_runtime_environment({"PYTHONPATH": "undeclared-provider-path"})
+
+
+def test_windows_no_site_metric_bootstrap_is_explicit_and_scoped(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    venv = tmp_path / "venv"
+    executable = venv / "Scripts" / "python.exe"
+    site_packages = venv / "Lib" / "site-packages"
+    source_release = tmp_path / "src" / "pepagent" / "model_workers" / "metric"
+    adapter = source_release / "cli.py"
+    executable.parent.mkdir(parents=True)
+    site_packages.mkdir(parents=True)
+    source_release.mkdir(parents=True)
+    executable.write_bytes(b"python")
+    adapter.write_text("print('metric')\n", encoding="utf-8")
+    (site_packages / "editable.pth").write_text(
+        str(tmp_path / "\u77ed\u80bd" / "src"), encoding="utf-8"
+    )
+    runtime = {
+        "execution_guard": {
+            "contract": {"command_entities": {"executable_index": 0, "adapter_index": 2}},
+            "paths": {
+                "executable_path": str(executable),
+                "adapter_path": str(adapter),
+                "source_root": str(source_release),
+            },
+        }
+    }
+    monkeypatch.setattr(v37_activities.os, "name", "nt")
+
+    command, environment = v37_activities._prepare_builtin_metric_python_bootstrap(
+        command=[str(executable), str(adapter), "--request", "request.json"],
+        runtime=runtime,
+        environment={"PATH": "system"},
+    )
+
+    assert command == [
+        str(executable),
+        "-S",
+        str(adapter),
+        "--request",
+        "request.json",
+    ]
+    assert environment["PYTHONPATH"].split(";") == [
+        str(site_packages.resolve()),
+        str((tmp_path / "src").resolve()),
+    ]
+    assert environment["PEPAGENT_PYTHON_BOOTSTRAP"] == (
+        v37_activities.V37_WINDOWS_NO_SITE_BOOTSTRAP
+    )
+    assert environment["PATH"] == "system"
+
+
+def test_default_metric_bootstrap_does_not_add_pythonpath() -> None:
+    runtime = {
+        "execution_guard": {
+            "contract": {"command_entities": {"executable_index": 0, "adapter_index": 1}},
+            "paths": {},
+        }
+    }
+    command, environment = v37_activities._prepare_builtin_metric_python_bootstrap(
+        command=["python", "adapter.py"], runtime=runtime, environment={"PATH": "system"}
+    )
+    assert command == ["python", "adapter.py"]
+    assert environment == {"PATH": "system"}
 
 
 def test_v37_generator_environment_keeps_only_frozen_provider_source(
@@ -95,9 +158,7 @@ def test_v37_generator_environment_keeps_only_frozen_provider_source(
 ) -> None:
     monkeypatch.setenv("PYTHONPATH", "worker-release;worker-dependencies")
 
-    environment = v37_activities._isolated_v37_generator_environment(
-        "frozen-generator-source"
-    )
+    environment = v37_activities._isolated_v37_generator_environment("frozen-generator-source")
 
     assert environment["PYTHONPATH"] == "frozen-generator-source"
     assert "worker-release" not in environment["PYTHONPATH"]
@@ -196,9 +257,7 @@ def test_v37_worker_registry_contains_only_callables() -> None:
 
 
 def test_v37_physical_wrappers_bind_real_operations_to_attempt_ledgers() -> None:
-    source = (ROOT / "src/pepagent/workers/v37_activities.py").read_text(
-        encoding="utf-8"
-    )
+    source = (ROOT / "src/pepagent/workers/v37_activities.py").read_text(encoding="utf-8")
     for activity_name in (
         "evaluate_v37_sequence_metric",
         "predict_v37_boltz2_complex",
@@ -237,9 +296,7 @@ async def test_v37_submit_duplicate_gate_fails_closed() -> None:
     )
     with pytest.raises(ValueError, match="formal run already exists"):
         await ensure_no_existing_v37_run(
-            _DuplicateSession(
-                SimpleNamespace(id="prior-run", formal_submission_key="b" * 64)
-            ),  # type: ignore[arg-type]
+            _DuplicateSession(SimpleNamespace(id="prior-run", formal_submission_key="b" * 64)),  # type: ignore[arg-type]
             benchmark_id="amp_rapid_champion_generation_v37",
             benchmark_version="v37.0.0-preregistered",
             formal_submission_key="a" * 64,

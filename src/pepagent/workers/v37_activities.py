@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import math
+import os
 import statistics
 import uuid
 from collections import defaultdict
@@ -97,6 +98,64 @@ from pepagent.workers.activities import (
 V37_ACTIVITY_VERSION = "v37.0.0"
 V37_METRIC_RESULT_REFERENCE_SCHEMA = "v37.metric-result-reference.1"
 V37_STRUCTURE_SUMMARY_REFERENCE_SCHEMA = "v37.structure-summary-reference.1"
+V37_WINDOWS_NO_SITE_BOOTSTRAP = "windows-nonascii-pth-v1"
+
+
+def _prepare_builtin_metric_python_bootstrap(
+    *,
+    command: list[str],
+    runtime: Mapping[str, Any],
+    environment: dict[str, str],
+) -> tuple[list[str], dict[str, str]]:
+    """Apply a frozen no-site bootstrap declared by adapter_index=2.
+
+    Python 3.11 can decode editable-install ``.pth`` files with the Windows
+    locale before an adapter starts.  A descriptor that freezes its adapter
+    at index 2 explicitly opts into ``python -S adapter.py``.  Dependencies
+    then come only from that interpreter's site-packages and the frozen
+    project ``src`` root, both recorded in the four-boundary launch receipt.
+    """
+
+    guard = runtime.get("execution_guard")
+    if not isinstance(guard, Mapping):
+        raise ValueError("v37 builtin metric runtime lacks an execution guard")
+    contract = guard.get("contract")
+    paths = guard.get("paths")
+    if not isinstance(contract, Mapping) or not isinstance(paths, Mapping):
+        raise ValueError("v37 builtin metric execution guard is incomplete")
+    entities = contract.get("command_entities")
+    if not isinstance(entities, Mapping):
+        raise ValueError("v37 builtin metric command entities are missing")
+    adapter_index = int(entities.get("adapter_index", -1))
+    if adapter_index == 1:
+        return command, environment
+    if adapter_index != 2:
+        raise ValueError("v37 builtin metric adapter index is unsupported")
+    if os.name != "nt":
+        raise ValueError("v37 no-site metric bootstrap is Windows-only")
+
+    executable = Path(str(paths["executable_path"])).resolve(strict=True)
+    adapter = Path(str(paths["adapter_path"])).resolve(strict=True)
+    site_packages = executable.parent.parent / "Lib" / "site-packages"
+    if not site_packages.is_dir():
+        raise ValueError("v37 no-site metric bootstrap lacks interpreter site-packages")
+    project_src = next(
+        (
+            parent
+            for parent in (adapter.parent, *adapter.parents)
+            if parent.name == "src" and (parent / "pepagent").is_dir()
+        ),
+        None,
+    )
+    if project_src is None:
+        raise ValueError("v37 no-site metric bootstrap lacks a frozen project src root")
+
+    prepared_environment = dict(environment)
+    prepared_environment["PYTHONPATH"] = os.pathsep.join(
+        (str(site_packages.resolve()), str(project_src.resolve()))
+    )
+    prepared_environment["PEPAGENT_PYTHON_BOOTSTRAP"] = V37_WINDOWS_NO_SITE_BOOTSTRAP
+    return [command[0], "-S", *command[1:]], prepared_environment
 
 
 async def _resolve_v37_structure_summary_reference(
@@ -107,18 +166,14 @@ async def _resolve_v37_structure_summary_reference(
     artifact = reference.get("artifact")
     if not isinstance(artifact, dict) or artifact.get("media_type") != "application/json":
         raise ValueError("v37 structure summary artifact identity is invalid")
-    raw = await asyncio.to_thread(
-        ContentAddressedObjectStore().get_bytes, str(artifact["uri"])
-    )
+    raw = await asyncio.to_thread(ContentAddressedObjectStore().get_bytes, str(artifact["uri"]))
     if len(raw) != int(artifact["size_bytes"]) or sha256_bytes(raw) != artifact["sha256"]:
         raise ValueError("v37 structure summary artifact bytes drifted")
     try:
         payload = json.loads(raw)
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
         raise ValueError("v37 structure summary artifact is not canonical JSON") from error
-    if not isinstance(payload, dict) or sha256_json(payload) != reference.get(
-        "summary_sha256"
-    ):
+    if not isinstance(payload, dict) or sha256_json(payload) != reference.get("summary_sha256"):
         raise ValueError("v37 structure summary payload identity drifted")
     return payload
 
@@ -208,27 +263,20 @@ async def _resolve_v37_metric_result(reference: dict[str, Any]) -> dict[str, Any
         raise ValueError("v37 metric result artifact reference is invalid")
     if artifact["media_type"] != "application/json":
         raise ValueError("v37 metric result artifact media type is invalid")
-    raw = await asyncio.to_thread(
-        ContentAddressedObjectStore().get_bytes, str(artifact["uri"])
-    )
+    raw = await asyncio.to_thread(ContentAddressedObjectStore().get_bytes, str(artifact["uri"]))
     if len(raw) != int(artifact["size_bytes"]) or sha256_bytes(raw) != artifact["sha256"]:
         raise ValueError("v37 metric result artifact identity is invalid")
     try:
         result = json.loads(raw)
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
         raise ValueError("v37 metric result artifact is not canonical JSON") from error
-    if not isinstance(result, dict) or sha256_json(result) != reference.get(
-        "metric_result_sha256"
-    ):
+    if not isinstance(result, dict) or sha256_json(result) != reference.get("metric_result_sha256"):
         raise ValueError("v37 metric result payload identity is invalid")
     if artifact["sha256"] != reference["metric_result_sha256"]:
         raise ValueError("v37 metric result content hashes disagree")
-    if (
-        result.get("result", {}).get("plugin", {}).get("name")
-        != reference.get("plugin_name")
-        or result.get("activity_transition_receipt")
-        != reference.get("activity_transition_receipt")
-    ):
+    if result.get("result", {}).get("plugin", {}).get("name") != reference.get(
+        "plugin_name"
+    ) or result.get("activity_transition_receipt") != reference.get("activity_transition_receipt"):
         raise ValueError("v37 metric result compact receipt differs from payload")
     return result
 
@@ -252,13 +300,7 @@ async def _evaluate_frozen_sequence_metric(
         contract = METRIC_PLUGIN_CONTRACTS[plugin_name]
         if contract["provider"] == "builtin":
             settings = get_settings()
-            work = (
-                Path(settings.work_root)
-                / request["run_id"]
-                / protocol
-                / "metrics"
-                / plugin_name
-            )
+            work = Path(settings.work_root) / request["run_id"] / protocol / "metrics" / plugin_name
             await asyncio.to_thread(work.mkdir, parents=True, exist_ok=True)
             request_path = work / "request.json"
             output_path = work / "result.json"
@@ -373,13 +415,7 @@ async def _evaluate_frozen_sequence_metric(
         if registry_sha256 != plugin.get("registry_sha256"):
             raise ValueError("v37 metric registry identity differs from frozen runtime")
         settings = get_settings()
-        work = (
-            Path(settings.work_root)
-            / request["run_id"]
-            / protocol
-            / "metrics"
-            / plugin_name
-        )
+        work = Path(settings.work_root) / request["run_id"] / protocol / "metrics" / plugin_name
         await asyncio.to_thread(work.mkdir, parents=True, exist_ok=True)
         plan = build_external_metric_plan(
             plugin_name=plugin_name,
@@ -714,6 +750,11 @@ async def _run_guarded_generic_runtime(
         )
 
     environment = _isolated_v37_runtime_environment(env_overrides)
+    command, environment = _prepare_builtin_metric_python_bootstrap(
+        command=command,
+        runtime=runtime,
+        environment=environment,
+    )
     return await run_v37_guarded_provider_subprocess(
         command,
         contract=contract,
@@ -910,9 +951,7 @@ def _generator_command(
     raise ValueError(f"unknown v37 generator: {generator}")
 
 
-def _materialize_hydramp_models(
-    binding: dict[str, Any], work: Path
-) -> tuple[Path, dict[str, Any]]:
+def _materialize_hydramp_models(binding: dict[str, Any], work: Path) -> tuple[Path, dict[str, Any]]:
     materialization = binding["materialization"]
     archive = Path(materialization["archive_path"])
     destination, receipt = materialize_hydramp_archive(
@@ -924,9 +963,7 @@ def _materialize_hydramp_models(
     if not model_path.is_dir():
         raise ValueError("v37 HydrAMP archive lacks its frozen model directory")
     receipt = {
-        key: value
-        for key, value in receipt.items()
-        if key != "materialization_receipt_sha256"
+        key: value for key, value in receipt.items() if key != "materialization_receipt_sha256"
     }
     receipt["destination_name"] = destination.name
     receipt["materialization_receipt_sha256"] = sha256_json(receipt)
@@ -1008,13 +1045,7 @@ async def _generate_frozen_sequence_batch(
     generator = engine["generator_id"]
     seed = int(request["seed"])
     settings = get_settings()
-    work = (
-        Path(settings.work_root)
-        / request["run_id"]
-        / protocol
-        / generator
-        / str(seed)
-    )
+    work = Path(settings.work_root) / request["run_id"] / protocol / generator / str(seed)
     await asyncio.to_thread(work.mkdir, parents=True, exist_ok=True)
     request_path = work / "request.json"
     output_path = work / "raw-output.json"
@@ -1072,9 +1103,7 @@ async def _generate_frozen_sequence_batch(
             )
             expectation = V37GeneratorRuntimeExpectation(**launch_binding["expectation"])
             paths_payload = launch_binding["paths"]
-            launch_env = _isolated_v37_generator_environment(
-                str(paths_payload["source_root"])
-            )
+            launch_env = _isolated_v37_generator_environment(str(paths_payload["source_root"]))
             live_paths = V37LiveRuntimePaths(
                 adapter_path=Path(paths_payload["adapter_path"]),
                 python_path=Path(paths_payload["python_path"]),
@@ -1109,9 +1138,7 @@ async def _generate_frozen_sequence_batch(
                 cwd=work,
                 env=launch_env,
             )
-            result = json.loads(
-                await asyncio.to_thread(output_path.read_text, encoding="utf-8")
-            )
+            result = json.loads(await asyncio.to_thread(output_path.read_text, encoding="utf-8"))
             if result.get("generator_id") != generator or result.get("seed") != seed:
                 raise ValueError(f"{protocol} generator output identity mismatch")
             if int(result.get("raw_proposal_budget", -1)) != raw_proposal_budget:
@@ -1166,9 +1193,7 @@ async def generate_v38_sequence_cell(request: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(cell, dict) or int(cell.get("requested_proposals", -1)) != 100:
         raise ValueError("v38 generator activity requires a frozen 100-proposal cell")
     engine = request.get("engine")
-    if not isinstance(engine, dict) or engine.get("generator_id") != cell.get(
-        "generator_id"
-    ):
+    if not isinstance(engine, dict) or engine.get("generator_id") != cell.get("generator_id"):
         raise ValueError("v38 generator activity engine and cell differ")
     if int(request.get("seed", -1)) != int(cell.get("seed", -2)):
         raise ValueError("v38 generator activity seed and cell differ")
@@ -2552,9 +2577,7 @@ async def persist_v37_structure_stage_summaries(
             artifacts={
                 "pose_manifest": {"poses": pose_rows},
                 "coordinate_audit": {
-                    "pose_audits": [
-                        pose["interface_audit_sample"] for pose in flattened_poses
-                    ]
+                    "pose_audits": [pose["interface_audit_sample"] for pose in flattened_poses]
                 },
                 "structure_inputs_outputs": structure_output,
                 "stop_event": structure_stop,
@@ -2631,9 +2654,7 @@ async def persist_v37_final_portfolio_and_replay(
 ) -> dict[str, Any]:
     run_id = uuid.UUID(request["run_id"])
     manifest = request["manifest"]
-    structure_summary = await _resolve_v37_structure_summary_reference(
-        request["structure_summary"]
-    )
+    structure_summary = await _resolve_v37_structure_summary_reference(request["structure_summary"])
     pipeline_manifest = build_v37_pipeline_manifest(request["pipeline_occurrences"])
     transition_receipts = request["pipeline_transition_receipts"]
     shortlisted_ids = set(transition_receipts["shortlisted_ids"])
