@@ -37,3 +37,12 @@ def test_v38_local_launcher_replacement_is_opt_in_and_exactly_scoped() -> None:
     assert "Stop-Process -Id ([int]$previous.pid)" in text
     assert "Stop-Process -Id ([int]$previous.supervisor_pid)" in text
     assert "Treat that exact-PID exit race as successful" in text
+
+
+def test_v38_local_launcher_uses_short_workspace_work_root() -> None:
+    text = SCRIPT.read_text(encoding="utf-8")
+    assert '$workRoot = [IO.Path]::GetFullPath((Join-Path $workspace "var/work-v38"))' in text
+    assert '$env:PEPAGENT_WORK_ROOT = $workRoot' in text
+    assert '$env:PEPAGENT_WORK_ROOT = $oldWorkRoot' in text
+    assert 'work_root = $workRoot' in text
+    assert '$env:PEPAGENT_WORK_ROOT = $releasePath' not in text

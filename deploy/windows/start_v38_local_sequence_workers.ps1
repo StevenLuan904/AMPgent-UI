@@ -24,12 +24,14 @@ if ($actualArchiveSha -ne $ArchiveSha256) {
 $workspace = (Resolve-Path -LiteralPath ".").Path
 $releaseBase = [IO.Path]::GetFullPath((Join-Path $workspace $ReleaseRoot))
 $stateBase = [IO.Path]::GetFullPath((Join-Path $workspace $StateRoot))
+$workRoot = [IO.Path]::GetFullPath((Join-Path $workspace "var/work-v38"))
 if (-not $releaseBase.StartsWith($workspace, [StringComparison]::OrdinalIgnoreCase) -or
-    -not $stateBase.StartsWith($workspace, [StringComparison]::OrdinalIgnoreCase)) {
+    -not $stateBase.StartsWith($workspace, [StringComparison]::OrdinalIgnoreCase) -or
+    -not $workRoot.StartsWith($workspace, [StringComparison]::OrdinalIgnoreCase)) {
     throw "v38 worker paths escaped the workspace"
 }
 $releasePath = Join-Path $releaseBase $ArchiveSha256
-New-Item -ItemType Directory -Force -Path $releaseBase, $stateBase | Out-Null
+New-Item -ItemType Directory -Force -Path $releaseBase, $stateBase, $workRoot | Out-Null
 if (-not (Test-Path -LiteralPath $releasePath -PathType Container)) {
     New-Item -ItemType Directory -Path $releasePath | Out-Null
     tar -xzf $archivePath -C $releasePath
@@ -104,11 +106,13 @@ foreach ($role in $roles) {
     $oldSource = $env:PEPAGENT_WORKER_SOURCE_REVISION
     $oldMaximum = $env:PEPAGENT_WORKER_MAX_CONCURRENT_ACTIVITIES
     $oldPythonPath = $env:PYTHONPATH
+    $oldWorkRoot = $env:PEPAGENT_WORK_ROOT
     try {
         $env:PEPAGENT_WORKER_ROLE = $roleName
         $env:PEPAGENT_WORKER_SOURCE_REVISION = $SourceRevision
         $env:PEPAGENT_WORKER_MAX_CONCURRENT_ACTIVITIES = $role.Maximum
         $env:PYTHONPATH = (Join-Path $releasePath "src")
+        $env:PEPAGENT_WORK_ROOT = $workRoot
         $process = Start-Process -FilePath $pythonPath -ArgumentList @(
             "-m", "pepagent.workers.v38_temporal_worker"
         ) -WorkingDirectory $releasePath -WindowStyle Hidden -PassThru `
@@ -119,6 +123,7 @@ foreach ($role in $roles) {
         $env:PEPAGENT_WORKER_SOURCE_REVISION = $oldSource
         $env:PEPAGENT_WORKER_MAX_CONCURRENT_ACTIVITIES = $oldMaximum
         $env:PYTHONPATH = $oldPythonPath
+        $env:PEPAGENT_WORK_ROOT = $oldWorkRoot
     }
     Start-Sleep -Seconds 2
     if ($process.HasExited) {
@@ -143,6 +148,7 @@ foreach ($role in $roles) {
         release_sha256 = $ArchiveSha256
         archive_path = $archivePath
         release_path = $releasePath
+        work_root = $workRoot
         python_path = $pythonPath
         ampgent_owned = $true
         foreign = $false
