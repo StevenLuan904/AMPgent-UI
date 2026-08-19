@@ -45,6 +45,8 @@ from pepagent.v38_sequence_first_multitarget import (
     build_historical_evidence_snapshot,
 )
 
+_FROZEN_V38_STRUCTURE_GPU_KEYS = frozenset({"192.168.99.19:6"})
+
 
 def _load_yaml(path: Path) -> dict[str, Any]:
     payload = yaml.safe_load(path.read_text(encoding="utf-8"))
@@ -68,10 +70,16 @@ def _capacity_blocker(capacity: dict[str, Any]) -> str | None:
     observations = capacity.get("observations")
     if not isinstance(observations, list) or not observations:
         return "authorized_structure_gpu_currently_unreachable"
-    if any(item.get("status") != "observed" for item in observations):
+    by_key = {
+        f"{item.get('host')}:{item.get('gpu_index')}": item
+        for item in observations
+        if isinstance(item, dict)
+    }
+    frozen = [by_key.get(key) for key in _FROZEN_V38_STRUCTURE_GPU_KEYS]
+    if any(item is None or item.get("status") != "observed" for item in frozen):
         return "authorized_structure_gpu_currently_unreachable"
-    idle = capacity.get("idle_gpu_keys")
-    if isinstance(idle, list) and idle:
+    idle = set(capacity.get("idle_gpu_keys") or [])
+    if _FROZEN_V38_STRUCTURE_GPU_KEYS <= idle:
         return None
     return "authorized_structure_gpu_currently_busy"
 

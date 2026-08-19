@@ -61,13 +61,19 @@ def test_controller_distinguishes_unreachable_busy_and_idle_gpu_capacity() -> No
     assert _capacity_blocker({"observations": []}) == (
         "authorized_structure_gpu_currently_unreachable"
     )
-    observed = [{"status": "observed"}, {"status": "observed"}]
+    observed = [
+        {"host": "192.168.99.19", "gpu_index": 6, "status": "observed"},
+        {"host": "192.168.99.32", "gpu_index": 1, "status": "observed"},
+    ]
     assert _capacity_blocker({"observations": observed, "idle_gpu_keys": []}) == (
         "authorized_structure_gpu_currently_busy"
     )
     assert _capacity_blocker(
-        {"observations": observed, "idle_gpu_keys": ["192.168.99.19:4"]}
+        {"observations": observed, "idle_gpu_keys": ["192.168.99.19:6"]}
     ) is None
+    assert _capacity_blocker(
+        {"observations": observed, "idle_gpu_keys": ["192.168.99.32:1"]}
+    ) == "authorized_structure_gpu_currently_busy"
 
 
 def test_controller_accepts_frozen_refinement_provider_release() -> None:
