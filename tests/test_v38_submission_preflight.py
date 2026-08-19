@@ -117,7 +117,7 @@ def _placement() -> dict:
         }
         for index, (role, queue) in enumerate(queues.items())
     }
-    workers["v38-boltz"]["resource"] = "192.168.99.19:6"
+    workers["v38-boltz"]["resource"] = "192.168.99.32:1"
     workers["v38-rosetta"]["resource"] = "synth:cpu"
     return {
         "schema_version": "v38.worker-placement.1",

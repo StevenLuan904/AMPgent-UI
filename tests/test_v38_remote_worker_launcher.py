@@ -6,9 +6,10 @@ SCRIPT = Path("deploy/remote/start_v38_worker.sh")
 def test_v38_remote_launcher_is_role_and_placement_scoped() -> None:
     text = SCRIPT.read_text(encoding="utf-8")
     assert "v38-boltz|v38-rosetta" in text
-    assert "192.168.99.19:/data1/huangyueshan/pepagent:v38-boltz:6" in text
+    assert "192.168.99.32:/data1/luanhaoyang/pepagent:v38-boltz:1" in text
     assert "synth:/sdd_data/pepagent:v38-rosetta:cpu" in text
-    assert "192.168.99.32" not in text
+    assert "v38-boltz:2" not in text
+    assert "v38-boltz:3" not in text
     assert "GPU2" not in text
     assert "GPU3" not in text
 

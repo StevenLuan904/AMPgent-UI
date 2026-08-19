@@ -58,7 +58,7 @@ def _validate_worker_placement(
         releases.add(_require_sha(worker.get("release_sha256"), length=64, label="release"))
     if len(sources) != 1 or len(releases) != 1:
         raise ValueError("v38 workers do not share one immutable source and release")
-    if workers["v38-boltz"].get("resource") != "192.168.99.19:6":
+    if workers["v38-boltz"].get("resource") != "192.168.99.32:1":
         raise ValueError("v38 Boltz placement differs from the authorized GPU")
     if workers["v38-rosetta"].get("resource") != "synth:cpu":
         raise ValueError("v38 Rosetta placement differs from the authorized CPU")

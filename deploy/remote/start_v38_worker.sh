@@ -19,7 +19,7 @@ PHYSICAL_HOST="${PEPAGENT_PHYSICAL_HOST:?PEPAGENT_PHYSICAL_HOST is required}"
 [[ "$SOURCE_REVISION" =~ ^[0-9a-f]{40}$ ]] || { echo "invalid source revision" >&2; exit 2; }
 
 case "$PHYSICAL_HOST:$ROOT:$ROLE:$RESOURCE" in
-  "192.168.99.19:/data1/huangyueshan/pepagent:v38-boltz:6") ;;
+  "192.168.99.32:/data1/luanhaoyang/pepagent:v38-boltz:1") ;;
   "synth:/sdd_data/pepagent:v38-rosetta:cpu") ;;
   *) echo "placement is outside the frozen v38 allowlist" >&2; exit 22 ;;
 esac

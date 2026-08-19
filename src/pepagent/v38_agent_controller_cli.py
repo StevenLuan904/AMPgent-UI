@@ -45,7 +45,7 @@ from pepagent.v38_sequence_first_multitarget import (
     build_historical_evidence_snapshot,
 )
 
-_FROZEN_V38_STRUCTURE_GPU_KEYS = frozenset({"192.168.99.19:6"})
+_FROZEN_V38_STRUCTURE_GPU_KEYS = frozenset({"192.168.99.32:1"})
 
 
 def _load_yaml(path: Path) -> dict[str, Any]:
