@@ -70,6 +70,8 @@ def test_v37_child_runtime_environment_drops_worker_python_bootstrap(monkeypatch
     assert environment["V37_PROVIDER_SETTING"] == "frozen-value"
     assert environment["PYTHONDONTWRITEBYTECODE"] == "1"
     assert environment["PYTHONNOUSERSITE"] == "1"
+    assert environment["PYTHONUTF8"] == "1"
+    assert environment["PYTHONIOENCODING"] == "utf-8"
     for key in (
         "PYTHONPATH",
         "PYTHONHOME",

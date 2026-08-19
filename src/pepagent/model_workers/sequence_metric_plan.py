@@ -52,6 +52,12 @@ def isolated_external_runtime_environment(
     environment.update(explicit)
     environment["PYTHONDONTWRITEBYTECODE"] = "1"
     environment["PYTHONNOUSERSITE"] = "1"
+    # Windows provider environments can contain UTF-8 .pth paths even when
+    # the inherited process code page is GBK.  Force Python's UTF-8 mode at
+    # interpreter startup so site initialization and captured output are
+    # deterministic across worker locales.
+    environment["PYTHONUTF8"] = "1"
+    environment["PYTHONIOENCODING"] = "utf-8"
     return environment
 
 
