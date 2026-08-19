@@ -4,6 +4,7 @@ import yaml
 
 from pepagent.v38_agent_controller_cli import (
     _capacity_blocker,
+    _infer_science_stage,
     _probe_services,
     _refinement_provider_blocker,
     _validate_panel,
@@ -71,3 +72,25 @@ def test_controller_distinguishes_unreachable_busy_and_idle_gpu_capacity() -> No
 
 def test_controller_accepts_frozen_refinement_provider_release() -> None:
     assert _refinement_provider_blocker() is None
+
+
+def test_controller_infers_submitted_science_stage_from_durable_evidence() -> None:
+    counts = {
+        "candidates": 900,
+        "occurrences": 900,
+        "tool_calls": 9,
+        "decisions": 0,
+        "structure_evidence_records": 0,
+        "evaluations": 11,
+        "replay_evidence_links": 0,
+    }
+    assert _infer_science_stage(counts, run_status="running") == "sequence_metrics"
+    counts["decisions"] = 1
+    assert _infer_science_stage(counts, run_status="running") == "sequence_admission"
+    counts["structure_evidence_records"] = 1
+    assert _infer_science_stage(counts, run_status="running") == (
+        "parallel_target_structure"
+    )
+    counts["replay_evidence_links"] = 1
+    assert _infer_science_stage(counts, run_status="running") == "pareto_and_replay"
+    assert _infer_science_stage(counts, run_status="succeeded") == "terminal"

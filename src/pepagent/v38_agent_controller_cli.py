@@ -420,6 +420,20 @@ async def _run_counts(run_id: UUID) -> dict[str, int]:
         return counts
 
 
+def _infer_science_stage(counts: dict[str, int], *, run_status: str) -> str:
+    if run_status in {"succeeded", "failed", "cancelled"}:
+        return "terminal"
+    if counts["replay_evidence_links"]:
+        return "pareto_and_replay"
+    if counts["structure_evidence_records"]:
+        return "parallel_target_structure"
+    if counts["decisions"]:
+        return "sequence_admission"
+    if counts["evaluations"]:
+        return "sequence_metrics"
+    return "proposal_generation"
+
+
 async def _probe_services() -> dict[str, dict[str, object]]:
     settings = get_settings()
     health: dict[str, dict[str, object]] = {
@@ -462,6 +476,8 @@ async def tick_controller(*, state_path: Path) -> dict[str, Any]:
     state_text = await asyncio.to_thread(state_path.read_text, encoding="utf-8")
     state = json.loads(state_text)
     run_id = UUID(state["controller_run_id"])
+    submitted = state.get("formal_science_workflow_submitted") is True
+    science_run_id = UUID(state["science_run_id"]) if submitted else None
     now = datetime.now(UTC)
     plan_due = now >= _parse_time(state["next_plan_review_at"])
     user_review_due = now >= _parse_time(state["next_user_review_at"])
@@ -480,7 +496,14 @@ async def tick_controller(*, state_path: Path) -> dict[str, Any]:
             .order_by(RunStageCheckpoint.observation_no.desc())
             .limit(1)
         )
-        if plan_due:
+        science_run = (
+            await session.get(ExperimentRun, science_run_id)
+            if science_run_id is not None
+            else None
+        )
+        if science_run_id is not None and science_run is None:
+            raise ValueError("submitted v38 science run identity is missing")
+        if plan_due and not submitted:
             decision = RunControlDecision(
                 action="wait_for_executable_release",
                 reasons=("v38_scientific_executor_not_yet_deployed",),
@@ -505,7 +528,18 @@ async def tick_controller(*, state_path: Path) -> dict[str, Any]:
                 ),
             )
     state["last_tick_at"] = now.isoformat()
-    state["durable_counts"] = await _run_counts(run_id)
+    monitored_run_id = science_run_id or run_id
+    state["durable_counts"] = await _run_counts(monitored_run_id)
+    if science_run is not None:
+        state["current_stage"] = _infer_science_stage(
+            state["durable_counts"], run_status=science_run.status
+        )
+        state["science_run_status"] = science_run.status
+        state["status"] = (
+            "formal_science_workflow_terminal"
+            if science_run.status in {"succeeded", "failed", "cancelled"}
+            else "formal_science_workflow_running"
+        )
     state["service_health"] = await _probe_services()
     service_blocker = "control_plane_service_unhealthy"
     if all(item.get("healthy") is True for item in state["service_health"].values()):
