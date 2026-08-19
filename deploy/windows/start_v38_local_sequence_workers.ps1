@@ -16,6 +16,11 @@ if ($SourceRevision -notmatch $expected40 -or $ArchiveSha256 -notmatch $expected
 }
 $archivePath = (Resolve-Path -LiteralPath $Archive).Path
 $pythonPath = (Resolve-Path -LiteralPath $Python).Path
+$pythonEnvironment = Split-Path (Split-Path $pythonPath -Parent) -Parent
+$sitePackages = Join-Path $pythonEnvironment "Lib\site-packages"
+if (-not (Test-Path -LiteralPath $sitePackages -PathType Container)) {
+    throw "v38 worker Python site-packages is missing"
+}
 $actualArchiveSha = (Get-FileHash -Algorithm SHA256 -LiteralPath $archivePath).Hash.ToLower()
 if ($actualArchiveSha -ne $ArchiveSha256) {
     throw "v38 worker archive SHA drifted"
@@ -111,10 +116,12 @@ foreach ($role in $roles) {
         $env:PEPAGENT_WORKER_ROLE = $roleName
         $env:PEPAGENT_WORKER_SOURCE_REVISION = $SourceRevision
         $env:PEPAGENT_WORKER_MAX_CONCURRENT_ACTIVITIES = $role.Maximum
-        $env:PYTHONPATH = (Join-Path $releasePath "src")
+        # Avoid decoding a UTF-8 editable-install .pth through the Windows ANSI codec.
+        # The same immutable environment packages and release source remain explicit.
+        $env:PYTHONPATH = "$sitePackages;$(Join-Path $releasePath 'src')"
         $env:PEPAGENT_WORK_ROOT = $workRoot
         $process = Start-Process -FilePath $pythonPath -ArgumentList @(
-            "-m", "pepagent.workers.v38_temporal_worker"
+            "-S", "-m", "pepagent.workers.v38_temporal_worker"
         ) -WorkingDirectory $releasePath -WindowStyle Hidden -PassThru `
           -RedirectStandardOutput $stdout -RedirectStandardError $stderr
     }

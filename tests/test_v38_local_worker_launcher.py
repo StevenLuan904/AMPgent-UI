@@ -46,3 +46,10 @@ def test_v38_local_launcher_uses_short_workspace_work_root() -> None:
     assert '$env:PEPAGENT_WORK_ROOT = $oldWorkRoot' in text
     assert 'work_root = $workRoot' in text
     assert '$env:PEPAGENT_WORK_ROOT = $releasePath' not in text
+
+
+def test_v38_local_launcher_uses_no_site_python_with_explicit_packages() -> None:
+    text = SCRIPT.read_text(encoding="utf-8")
+    assert '"-S", "-m", "pepagent.workers.v38_temporal_worker"' in text
+    assert 'Lib\\site-packages' in text
+    assert '$env:PYTHONPATH = "$sitePackages;' in text
