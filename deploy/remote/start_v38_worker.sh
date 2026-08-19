@@ -51,7 +51,7 @@ if [[ "$ROLE" = "v38-boltz" ]]; then
   }
   BOLTZ_GUARDED_SMOKE_SHA256="${PEPAGENT_BOLTZ_GUARDED_SMOKE_SHA256:?guarded Boltz smoke SHA-256 is required}"
   BOLTZ_CACHE_ATTESTATION="$(
-    "$RELEASE_DIR/deploy/remote/attest_v38_boltz_runtime.sh" \
+    bash "$RELEASE_DIR/deploy/remote/attest_v38_boltz_runtime.sh" \
       "$BOLTZ_CACHE" "$BOLTZ_EXECUTABLE" "$BOLTZ_GUARDED_SMOKE_SHA256"
   )"
   BOLTZ_CACHE_ATTESTATION_SHA256="$(

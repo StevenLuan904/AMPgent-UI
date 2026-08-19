@@ -32,6 +32,7 @@ def test_v38_remote_launcher_verifies_immutable_runtime_before_launch() -> None:
         assert text.index(marker) < launch
     assert "pepagent.workers.v38_temporal_worker" in text
     assert "pepagent.workers.temporal_worker" not in text
+    assert 'bash "$RELEASE_DIR/deploy/remote/attest_v38_boltz_runtime.sh"' in text
 
 
 def test_v38_remote_launcher_never_replaces_a_live_process() -> None:
