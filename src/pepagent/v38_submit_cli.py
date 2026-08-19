@@ -45,6 +45,16 @@ def _load_yaml(path: Path) -> dict[str, Any]:
     return value
 
 
+def _atomic_json(path: Path, value: dict[str, Any]) -> None:
+    temporary = path.with_name(f".{path.name}.{uuid.uuid4().hex}.tmp")
+    temporary.write_text(
+        json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    temporary.replace(path)
+
+
 def _v38_controller_lock_id(controller_run_id: UUID) -> int:
     digest = bytes.fromhex(
         sha256_json(
@@ -426,12 +436,12 @@ async def submit_v38_once(
             raise ValueError("v38 Temporal run identity drifted")
         run.temporal_run_id = temporal_run_id or run.temporal_run_id
         run.status = "running"
-        controller_state_db = dict(controller.spec_json.get("controller_state", {}))
-        if controller_state_db.get("formal_science_workflow_submitted") is True:
-            if controller_state_db.get("science_run_id") != run_id:
+        controller_spec = dict(controller.spec_json)
+        if controller_spec.get("formal_science_workflow_submitted") is True:
+            if controller_spec.get("science_run_id") != run_id:
                 raise ValueError("v38 controller already points at another science run")
         else:
-            controller_state_db.update(
+            controller_spec.update(
                 {
                     "formal_science_workflow_submitted": True,
                     "candidate_generation_started": True,
@@ -441,9 +451,8 @@ async def submit_v38_once(
                     "status": "formal_science_workflow_running",
                 }
             )
-            updated = {**controller.spec_json, "controller_state": controller_state_db}
-            controller.spec_json = updated
-            controller.spec_sha256 = sha256_json(updated)
+            controller.spec_json = controller_spec
+            controller.spec_sha256 = sha256_json(controller_spec)
             repository = ExperimentRepository(session)
             await repository.append_event(
                 "run",
@@ -464,6 +473,17 @@ async def submit_v38_once(
                     "formal_submission_key": formal_key,
                 },
             )
+    controller_state.update(
+        {
+            "formal_science_workflow_submitted": True,
+            "candidate_generation_started": True,
+            "science_run_id": run_id,
+            "science_workflow_id": workflow_id,
+            "science_temporal_run_id": temporal_run_id,
+            "status": "formal_science_workflow_running",
+        }
+    )
+    await asyncio.to_thread(_atomic_json, controller_state_path, controller_state)
     return {
         "run_id": run_id,
         "controller_run_id": str(controller_run_id),
