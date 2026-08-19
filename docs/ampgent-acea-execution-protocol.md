@@ -2187,3 +2187,25 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   验证 accepted release 字段和该 poller，漂移时重新阻断。provider blocker 已解除，但正式 workflow 仍未提交；
   下一关键路径是用包含上述冻结绑定的新 AMPgent source/release 部署完整 v38 control/generator/metrics/Boltz/
   Rosetta placement，并完成唯一 exact-once preflight。
+
+### 21.57 定时 Agent 的持续推进合同（2026-08-19）
+
+- AMPgent heartbeat 不是只读巡检器，而是长期研究执行器。每次唤醒必须执行
+  `观察 -> 诊断 -> 行动 -> 验证 -> 持久化 -> 汇报`；API、数据库、Temporal、对象存储、poller 与 GPU 检查
+  只完成第一步，不能作为一次唤醒的全部工作。
+- 每次唤醒至少形成一个可审计的前向增量：推进当前 activity/stage、执行能够区分假设的实验、修复并测试
+  当前关键路径、完成真实部署环境 smoke、持久化/回放证据、输出带缺失证据标签的候选报告，或向独立 provider
+  发出带验收条件的具体任务。禁止连续重复相同检查、只描述停滞、或把 terminal run 当成研究终点。
+- active run 内部每 5 分钟检查 durable count/activity heartbeat；每 15 分钟执行计划复核。连续两个应有进展的
+  检查窗口没有 Candidate/Evaluation/structure/Decision/replay 或明确 activity heartbeat 增量，即判定为卡点，
+  必须定位到具体 queue、activity、executable、环境、路径或证据事务，并在同次唤醒采取最小安全修复。每
+  120 分钟向用户汇报一次，但两次汇报之间持续执行，不等待下一次 heartbeat 才工作。
+- formal run 失败后旧身份立即冻结，不原地重试、不回填、不复用工作输出；但同一唤醒必须提取其已持久化的
+  部分科学结果、标注缺失指标、定位精确失败边界并启动独立版本修复。再次 exact-once 提交前，必须用拟部署
+  release 在与失败相同的 executable、环境、工作路径和输入类别上通过真实 smoke；仅 helper 单测、替代路径
+  smoke 或未经过 guarded launcher 的成功不能解除 blocker。
+- 资源调度以短肽科学关键路径为准：能用隔离 smoke 验证的修复不得消耗一次完整 900-sequence run；已经存在的
+  MIC/活性/毒性等 durable evidence 必须及时形成 provisional pool 报告，不能因溶血、理化或结构尚缺而对用户
+  表述为“零产出”。provisional 不得冒充 champion，系统同时继续补齐安全与结构闭环。
+- 只有用户明确暂停、安全/非干扰边界、需要用户决定的科学变量变化，或已穷尽安全替代方案的外部依赖，才允许
+  停止主动推进。即使 blocked，也必须持久化 blocker、建立验收条件，并推进不依赖该 blocker 的工作。

@@ -116,6 +116,37 @@ verified.
   execution protocol. Routine unchanged checks stay quiet; notify the user when a bottleneck changes
   the expected completion path, creates a serious anomaly, requires input, or yields a stage result.
 
+### Scheduled research loops must advance, not merely observe
+
+- A scheduled AMPgent wake is an execution loop, not a monitoring report. Follow
+  `observe -> diagnose -> act -> verify -> persist -> report`. A health check is only the observation
+  step and never counts as the completed wake while the scientific objective remains unfinished.
+- Every wake must create at least one material forward delta within the authorized boundary: advance
+  an active stage, run a discriminating experiment or deployed-runtime smoke, repair and test the
+  current critical-path defect, persist/replay scientific evidence, extract a useful partial-result
+  artifact, or dispatch a concrete provider/worker task with explicit acceptance criteria. Repeating
+  unchanged checks or restating a blocker without attempting a safe resolution is prohibited.
+- During active execution, use the controller's 5-minute progress checks to detect stalled durable
+  counts and the 15-minute plan review to change tactics. Two consecutive due progress checks with no
+  expected evidence delta constitute stagnation: inspect the exact pending activity/queue/runtime,
+  take the smallest evidence-safe corrective action, and verify it. The 120-minute user review is a
+  reporting cadence, not a work cadence; work continues between reviews.
+- A failed formal run must be frozen immediately, but failure does not pause the research program.
+  In the same wake, preserve and summarize partial durable science, identify the exact failed launch
+  boundary, and begin an independently versioned repair. Before another formal submission, reproduce
+  the prior failure boundary with the exact deployed executable, environment, path, and input class;
+  a unit test or helper-level smoke that bypasses that boundary is insufficient.
+- Spend resources on the current scientific critical path. Do not launch a replacement run merely to
+  test infrastructure when an isolated smoke can falsify the repair, and do not leave usable partial
+  Candidate/Evaluation evidence hidden behind an all-or-nothing workflow status. Report provisional
+  candidates with explicit missing-evidence labels while continuing toward the full safety/structure
+  contract.
+- The loop may stop only for an explicit user pause, a safety/non-interference boundary, a genuinely
+  science-changing choice requiring user input, or an external dependency for which safe alternatives
+  have been exhausted. In those cases, persist the blocker and continue any independent useful work;
+  elapsed time, a terminal workflow, an idle queue, or an unchanged dashboard is never by itself a
+  reason to stop thinking or acting.
+
 ## Project scientific execution style prompt
 
 Apply the following style to AMPgent/AceA research work in this repository:
