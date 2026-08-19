@@ -24,8 +24,8 @@ class V37AttemptContext:
     attempt: int
 
     def __post_init__(self) -> None:
-        if not self.logical_id.startswith("v37:"):
-            raise ValueError("v37 attempt logical_id is invalid")
+        if not self.logical_id.startswith(("v37:", "v38:")):
+            raise ValueError("v37/v38 attempt logical_id is invalid")
         if not self.activity_name or self.attempt < 1:
             raise ValueError("v37 attempt identity is invalid")
 

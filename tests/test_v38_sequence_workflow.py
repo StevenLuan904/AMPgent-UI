@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import inspect
+
 import pytest
 
 from pepagent.v38_science_execution import build_default_v38_sequence_contract
@@ -145,3 +147,8 @@ def test_v38_control_worker_registers_sequence_workflow_and_admission_activities
         "plan_v38_multitarget_structure",
         "persist_v38_final_portfolio_replay",
     } <= registered
+
+
+def test_v38_workflow_failure_closure_supplies_error_type() -> None:
+    source = inspect.getsource(V38SequenceFirstAgentWorkflow.run)
+    assert '"error_type": type(exc).__name__' in source

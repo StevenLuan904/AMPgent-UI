@@ -515,7 +515,11 @@ class V38SequenceFirstAgentWorkflow:
         except Exception as exc:
             await workflow.execute_activity(
                 "mark_run_failed",
-                {"run_id": run_id, "error": f"{type(exc).__name__}: {exc}"},
+                {
+                    "run_id": run_id,
+                    "error_type": type(exc).__name__,
+                    "error": f"{type(exc).__name__}: {exc}",
+                },
                 task_queue=control_queue,
                 start_to_close_timeout=timedelta(minutes=2),
                 retry_policy=retry,

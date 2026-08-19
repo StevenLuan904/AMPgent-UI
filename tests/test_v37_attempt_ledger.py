@@ -13,6 +13,16 @@ from pepagent.v37_attempt_ledger import (
 )
 
 
+def test_attempt_context_accepts_versioned_v38_logical_ids() -> None:
+    context = V37AttemptContext(
+        uuid.uuid4(), "v38:generate:hydramp:20270371", "generate_v38_batch", 1
+    )
+    assert context.logical_id.startswith("v38:")
+
+    with pytest.raises(ValueError, match="v37/v38"):
+        V37AttemptContext(uuid.uuid4(), "v39:generate:test", "generate_v39_batch", 1)
+
+
 def test_transient_failure_and_retry_success_are_both_durable() -> None:
     run_id = uuid.uuid4()
     events: list[dict[str, object]] = []
