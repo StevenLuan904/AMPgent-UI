@@ -13,7 +13,7 @@ from sqlalchemy import select
 from pepagent.db.models import Target, TargetPocket
 from pepagent.db.session import SessionFactory
 from pepagent.provenance.environment import fingerprint_runtime
-from pepagent.provenance.hashing import sha256_file
+from pepagent.provenance.hashing import sha256_file, sha256_json
 from pepagent.v38_generator_runtime import build_v38_execution_bundle
 from pepagent.v38_preflight import build_v38_submission_preflight
 from pepagent.v38_request_builder import build_v38_request_template
@@ -44,6 +44,36 @@ def _write_json(path: Path, value: dict[str, Any]) -> None:
     temporary.replace(path)
 
 
+def apply_v38_metric_runtime_overrides(
+    execution_bundle: dict[str, Any], overrides: list[str]
+) -> dict[str, Any]:
+    """Bind explicit metric descriptors into the preflighted execution bundle."""
+
+    plugins = execution_bundle.get("metric_plugins_by_name")
+    if not isinstance(plugins, dict):
+        raise ValueError("v38 execution bundle lacks metric plugins")
+    observed: set[str] = set()
+    for value in overrides:
+        name, separator, raw_path = value.partition("=")
+        if not separator or not name or not raw_path:
+            raise ValueError("v38 metric runtime override must be NAME=PATH")
+        if name in observed or name not in plugins:
+            raise ValueError("v38 metric runtime override is duplicate or unknown")
+        runtime = _load_json(Path(raw_path).resolve())
+        runtime_name = str(runtime.get("name") or runtime.get("plugin_name") or "")
+        if runtime_name != name or not isinstance(runtime.get("execution_guard"), dict):
+            raise ValueError("v38 metric runtime override identity is invalid")
+        plugins[name] = runtime
+        observed.add(name)
+    identity = {
+        key: value
+        for key, value in execution_bundle.items()
+        if key != "execution_bundle_identity_sha256"
+    }
+    execution_bundle["execution_bundle_identity_sha256"] = sha256_json(identity)
+    return execution_bundle
+
+
 async def _load_target_runtimes(panel: dict[str, Any]) -> dict[str, dict[str, Any]]:
     branches = panel.get("branches")
     if not isinstance(branches, list):
@@ -55,9 +85,7 @@ async def _load_target_runtimes(panel: dict[str, Any]) -> dict[str, dict[str, An
         for key in ("primary_pocket_id", "wrong_pocket_id")
     }
     async with SessionFactory() as session:
-        targets = list(
-            await session.scalars(select(Target).where(Target.id.in_(target_ids)))
-        )
+        targets = list(await session.scalars(select(Target).where(Target.id.in_(target_ids))))
         pockets = list(
             await session.scalars(select(TargetPocket).where(TargetPocket.id.in_(pocket_ids)))
         )
@@ -90,13 +118,15 @@ async def build_v38_preflight_artifacts(
     structure_spec_path: Path,
     request_output_path: Path,
     preflight_output_path: Path,
+    metric_runtime_overrides: list[str] | None = None,
 ) -> dict[str, Any]:
     benchmark = _load_yaml(benchmark_path)
     panel = _load_yaml(panel_path)
     controller = _load_json(controller_state_path)
     placement = _load_json(worker_placement_path)
-    execution_bundle = build_v38_execution_bundle(
-        benchmark_path.parents[2], _load_json(execution_bundle_path)
+    execution_bundle = apply_v38_metric_runtime_overrides(
+        build_v38_execution_bundle(benchmark_path.parents[2], _load_json(execution_bundle_path)),
+        metric_runtime_overrides or [],
     )
     target_runtimes = await _load_target_runtimes(panel)
     request = build_v38_request_template(
@@ -142,6 +172,12 @@ def main() -> None:
     parser.add_argument("--structure-spec", type=Path, required=True)
     parser.add_argument("--request-output", type=Path, required=True)
     parser.add_argument("--preflight-output", type=Path, required=True)
+    parser.add_argument(
+        "--metric-runtime-override",
+        action="append",
+        default=[],
+        help="Bind one metric descriptor as NAME=PATH; repeat for multiple runtimes",
+    )
     args = parser.parse_args()
     result = asyncio.run(
         build_v38_preflight_artifacts(
@@ -154,6 +190,7 @@ def main() -> None:
             structure_spec_path=args.structure_spec.resolve(),
             request_output_path=args.request_output.resolve(),
             preflight_output_path=args.preflight_output.resolve(),
+            metric_runtime_overrides=args.metric_runtime_override,
         )
     )
     print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))
