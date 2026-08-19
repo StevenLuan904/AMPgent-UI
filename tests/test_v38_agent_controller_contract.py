@@ -5,6 +5,7 @@ import yaml
 from pepagent.v38_agent_controller_cli import (
     _capacity_blocker,
     _infer_science_stage,
+    _owned_structure_worker_pid,
     _probe_services,
     _refinement_provider_blocker,
     _validate_panel,
@@ -47,10 +48,35 @@ def test_controller_supervisor_runs_capacity_and_five_minute_ticks() -> None:
     ).read_text(encoding="utf-8")
     assert "check_ampgent_gpu_capacity.ps1" in script
     assert "--mode tick" in script
+    assert "$python -S -m pepagent.v38_agent_controller_cli" in script
+    assert ".venv\\Lib\\site-packages" in script
     assert script.count("$LASTEXITCODE -ne 0") == 2
     assert "[int]$TickSeconds = 300" in script
     assert "Start-Sleep -Seconds $TickSeconds" in script
     assert ".32" not in script
+
+
+def test_controller_reads_latest_versioned_owned_structure_placement(
+    tmp_path: Path,
+) -> None:
+    state_path = tmp_path / "var" / "state" / "controller.json"
+    placement_root = tmp_path / "var" / "run" / "v38-workers"
+    placement_root.mkdir(parents=True)
+    (placement_root / "v38-structure-placement-recovery.json").write_text(
+        """{
+  "schema_version": "v38.worker-placement.1",
+  "workers": {
+    "v38-boltz": {
+      "resource": "192.168.99.32:1",
+      "pid": 168748,
+      "ampgent_owned": true,
+      "foreign": false
+    }
+  }
+}\n""",
+        encoding="utf-8",
+    )
+    assert _owned_structure_worker_pid(state_path) == 168748
 
 
 def test_controller_has_live_control_plane_probes() -> None:

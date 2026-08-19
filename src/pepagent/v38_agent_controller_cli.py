@@ -100,23 +100,27 @@ def _capacity_blocker(
 
 
 def _owned_structure_worker_pid(state_path: Path) -> int | None:
-    placement_path = (
-        state_path.parent.parent / "run" / "v38-workers" / "v38-structure-placement.json"
+    placement_root = state_path.parent.parent / "run" / "v38-workers"
+    placement_paths = sorted(
+        placement_root.glob("v38-structure-placement*.json"),
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
     )
-    try:
-        placement = json.loads(placement_path.read_text(encoding="utf-8"))
-        worker = placement["workers"]["v38-boltz"]
-        if (
-            placement.get("schema_version") != "v38.worker-placement.1"
-            or worker.get("resource") not in _FROZEN_V38_STRUCTURE_GPU_KEYS
-            or worker.get("ampgent_owned") is not True
-            or worker.get("foreign") is not False
-            or not isinstance(worker.get("pid"), int)
-        ):
-            return None
-        return worker["pid"]
-    except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError):
-        return None
+    for placement_path in placement_paths:
+        try:
+            placement = json.loads(placement_path.read_text(encoding="utf-8"))
+            worker = placement["workers"]["v38-boltz"]
+            if (
+                placement.get("schema_version") == "v38.worker-placement.1"
+                and worker.get("resource") in _FROZEN_V38_STRUCTURE_GPU_KEYS
+                and worker.get("ampgent_owned") is True
+                and worker.get("foreign") is False
+                and isinstance(worker.get("pid"), int)
+            ):
+                return worker["pid"]
+        except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError):
+            continue
+    return None
 
 
 def _refinement_provider_request_path() -> Path:
