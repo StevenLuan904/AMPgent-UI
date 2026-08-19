@@ -14,6 +14,14 @@ V38_ROLE_QUEUES = {
     "v38-rosetta": "pepagent-cpu-rosetta-v38",
 }
 
+V38_BOLTZ_WEIGHTS_FILENAME = "boltz2_conf.ckpt"
+V38_BOLTZ_WEIGHTS_SIZE_BYTES = 2_286_561_469
+V38_BOLTZ_MOLS_ARCHIVE_FILENAME = "mols.tar"
+V38_BOLTZ_MOLS_ARCHIVE_SIZE_BYTES = 1_855_662_080
+V38_BOLTZ_MOLS_ARCHIVE_SHA256 = (
+    "39e076d96dbec6b4e86982bbda16f3a53a2a60c9bdc17828d88f6f9a0c7d1fd7"
+)
+
 
 def _require_sha(value: object, *, length: int, label: str) -> str:
     if (
@@ -60,6 +68,36 @@ def _validate_worker_placement(
         raise ValueError("v38 workers do not share one immutable source and release")
     if workers["v38-boltz"].get("resource") != "192.168.99.32:1":
         raise ValueError("v38 Boltz placement differs from the authorized GPU")
+    boltz_worker = workers["v38-boltz"]
+    _require_sha(
+        boltz_worker.get("weights_sha256"), length=64, label="Boltz weights"
+    )
+    attestation = boltz_worker.get("runtime_cache_attestation")
+    if not isinstance(attestation, dict):
+        raise ValueError("v38 Boltz placement lacks a verified runtime cache attestation")
+    weights = attestation.get("weights")
+    molecular_archive = attestation.get("molecular_archive")
+    if (
+        attestation.get("schema_version") != "v38.boltz-runtime-cache-attestation.1"
+        or not isinstance(attestation.get("boltz_executable"), str)
+        or not attestation["boltz_executable"]
+        or not isinstance(weights, dict)
+        or weights.get("filename") != V38_BOLTZ_WEIGHTS_FILENAME
+        or weights.get("size_bytes") != V38_BOLTZ_WEIGHTS_SIZE_BYTES
+        or weights.get("sha256") != boltz_worker.get("weights_sha256")
+        or not isinstance(molecular_archive, dict)
+        or molecular_archive.get("filename") != V38_BOLTZ_MOLS_ARCHIVE_FILENAME
+        or molecular_archive.get("size_bytes") != V38_BOLTZ_MOLS_ARCHIVE_SIZE_BYTES
+        or molecular_archive.get("sha256") != V38_BOLTZ_MOLS_ARCHIVE_SHA256
+        or not isinstance(attestation.get("molecule_file_count"), int)
+        or attestation["molecule_file_count"] < 1
+    ):
+        raise ValueError("v38 Boltz runtime cache attestation is invalid")
+    _require_sha(
+        attestation.get("guarded_smoke_sha256"),
+        length=64,
+        label="Boltz guarded smoke",
+    )
     if workers["v38-rosetta"].get("resource") != "synth:cpu":
         raise ValueError("v38 Rosetta placement differs from the authorized CPU")
     sequence_release = controller_state.get("sequence_worker_release")

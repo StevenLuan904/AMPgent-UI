@@ -50,3 +50,16 @@
 - 自动控制循环曾错误绑定默认旧 state，且普通 `.venv` 启动会在 UTF-8 editable `.pth` 上按 GBK
   崩溃。commit `5dd7845` 已让 supervisor 使用显式 site-packages/source 的 `python -S`，读取最新
   versioned structure placement，并把当前 recovery state 绑定到 5 分钟 tick；后台 supervisor PID 30832。
+
+## recovery-008 结构失败与 recovery-009 门（2026-08-19 15:38 UTC）
+
+- recovery-008 已在结构阶段 terminal failed 并保持不可变：900 occurrence、773 Candidate、8503
+  Evaluation、15 ToolCall、1 Decision、0 structure、0 replay。序列层 26 条 mature core 与 9 条探索候选
+  仍是有效的本 run 证据，但不得回填或复用于恢复 run。
+- 两个双靶点 Boltz Activity 都在 attempt 2 因无网络下载模型失败；实际 `.32 GPU1` cache 只有 0 字节
+  `boltz2_aff.ckpt` 禁用哨兵，缺失 `boltz2_conf.ckpt` 与 `mols` 资源。这是结构 worker 部署完整性缺陷，
+  不是短肽科学失败。
+- 已从 `.19` 的已验证缓存向 `.32 GPU1` 隔离临时目录流式复制权重与分子资源；仅在固定字节数和
+  SHA-256 全部匹配后原子提升，并在同一拟部署 launcher 上完成真实结构 smoke。
+- v38 preflight 新增 fail-closed runtime cache attestation：必须绑定 Boltz 可执行文件、权重与分子归档的
+  文件名/字节数/SHA、解包分子数和 guarded smoke SHA。只声明 worker/poller/weights SHA 不再足以提交。

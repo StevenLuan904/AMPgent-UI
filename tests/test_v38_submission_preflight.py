@@ -118,6 +118,23 @@ def _placement() -> dict:
         for index, (role, queue) in enumerate(queues.items())
     }
     workers["v38-boltz"]["resource"] = "192.168.99.32:1"
+    workers["v38-boltz"]["weights_sha256"] = "9" * 64
+    workers["v38-boltz"]["runtime_cache_attestation"] = {
+        "schema_version": "v38.boltz-runtime-cache-attestation.1",
+        "boltz_executable": "/opt/pepagent/bin/boltz",
+        "weights": {
+            "filename": "boltz2_conf.ckpt",
+            "size_bytes": 2_286_561_469,
+            "sha256": "9" * 64,
+        },
+        "molecular_archive": {
+            "filename": "mols.tar",
+            "size_bytes": 1_855_662_080,
+            "sha256": "39e076d96dbec6b4e86982bbda16f3a53a2a60c9bdc17828d88f6f9a0c7d1fd7",
+        },
+        "molecule_file_count": 45_227,
+        "guarded_smoke_sha256": "8" * 64,
+    }
     workers["v38-rosetta"]["resource"] = "synth:cpu"
     return {
         "schema_version": "v38.worker-placement.1",
@@ -191,6 +208,18 @@ def test_v38_preflight_rejects_a_template_that_self_asserts_readiness() -> None:
                 source_revision="f" * 40
             ),
             "one immutable source",
+        ),
+        (
+            lambda state, placement: placement["workers"]["v38-boltz"].pop(
+                "runtime_cache_attestation"
+            ),
+            "lacks a verified runtime cache attestation",
+        ),
+        (
+            lambda state, placement: placement["workers"]["v38-boltz"][
+                "runtime_cache_attestation"
+            ]["weights"].update(size_bytes=0),
+            "runtime cache attestation is invalid",
         ),
     ],
 )
