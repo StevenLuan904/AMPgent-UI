@@ -489,6 +489,13 @@ def test_multitarget_structure_tasks_expand_both_control_lanes_and_all_seeds() -
     assert {task.control_lane for task in tasks} == {"native", "wrong_pocket"}
     assert {task.boltz_seed for task in tasks} == {20270380, 20270381, 20270382}
     assert all(task.rosetta_decoys_per_pose == 16 for task in tasks)
+    expected_target_keys = {branch.target_key for branch in plan.target_branches}
+    for start in range(0, len(tasks), plan.max_parallel_targets):
+        parallel_batch = tasks[start : start + plan.max_parallel_targets]
+        assert {task.target_key for task in parallel_batch} == expected_target_keys
+        assert len({task.candidate_id for task in parallel_batch}) == 1
+        assert len({task.control_lane for task in parallel_batch}) == 1
+        assert len({task.boltz_seed for task in parallel_batch}) == 1
     for branch in plan.target_branches:
         branch_tasks = [task for task in tasks if task.target_key == branch.target_key]
         assert {task.pocket_sha256 for task in branch_tasks} == {

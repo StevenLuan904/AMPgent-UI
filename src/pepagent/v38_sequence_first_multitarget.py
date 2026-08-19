@@ -1180,8 +1180,7 @@ def build_multitarget_structure_tasks(
     if len(dispatches) != len(branches):
         raise ValueError("duplicate target dispatch")
 
-    tasks: list[MultiTargetStructureTask] = []
-    ordinal = 0
+    dispatches_by_wave: dict[int, list[TargetDispatch]] = {}
     for dispatch in dispatches:
         branch = branches[dispatch.target_key]
         if dispatch.target_id != branch.target_id:
@@ -1193,27 +1192,44 @@ def build_multitarget_structure_tasks(
         expected_namespace = f"target/{branch.target_key}/{branch.target_id}"
         if dispatch.evidence_namespace != expected_namespace:
             raise ValueError("dispatch evidence namespace is not target-isolated")
-        for candidate_id in dispatch.candidate_ids:
+        dispatches_by_wave.setdefault(dispatch.parallel_wave, []).append(dispatch)
+
+    tasks: list[MultiTargetStructureTask] = []
+    ordinal = 0
+    for parallel_wave in sorted(dispatches_by_wave):
+        wave_dispatches = dispatches_by_wave[parallel_wave]
+        candidate_ids = wave_dispatches[0].candidate_ids
+        if any(dispatch.candidate_ids != candidate_ids for dispatch in wave_dispatches):
+            raise ValueError("parallel target wave must share one sequence cohort")
+        for candidate_id in candidate_ids:
             for control_lane, pocket_sha256 in (
-                ("native", branch.native_pocket_sha256),
-                ("wrong_pocket", branch.wrong_pocket_sha256),
+                ("native", "native_pocket_sha256"),
+                ("wrong_pocket", "wrong_pocket_sha256"),
             ):
                 for seed in boltz_seeds:
-                    tasks.append(
-                        MultiTargetStructureTask(
-                            target_key=branch.target_key,
-                            target_id=branch.target_id,
-                            candidate_id=candidate_id,
-                            parallel_wave=dispatch.parallel_wave,
-                            control_lane=control_lane,
-                            pocket_sha256=pocket_sha256,
-                            boltz_seed=seed,
-                            rosetta_decoys_per_pose=branch.rosetta_decoys_per_pose,
-                            evidence_namespace=(
-                                f"{dispatch.evidence_namespace}/{control_lane}"
-                            ),
-                            ordinal=ordinal,
+                    # Interleave one task from every target in this wave. The
+                    # workflow consumes consecutive bounded batches, so a
+                    # target-major list would silently serialize targets even
+                    # when max_parallel_targets is greater than one.
+                    for dispatch in wave_dispatches:
+                        branch = branches[dispatch.target_key]
+                        tasks.append(
+                            MultiTargetStructureTask(
+                                target_key=branch.target_key,
+                                target_id=branch.target_id,
+                                candidate_id=candidate_id,
+                                parallel_wave=parallel_wave,
+                                control_lane=control_lane,
+                                pocket_sha256=getattr(branch, pocket_sha256),
+                                boltz_seed=seed,
+                                rosetta_decoys_per_pose=(
+                                    branch.rosetta_decoys_per_pose
+                                ),
+                                evidence_namespace=(
+                                    f"{dispatch.evidence_namespace}/{control_lane}"
+                                ),
+                                ordinal=ordinal,
+                            )
                         )
-                    )
-                    ordinal += 1
+                        ordinal += 1
     return tuple(tasks)

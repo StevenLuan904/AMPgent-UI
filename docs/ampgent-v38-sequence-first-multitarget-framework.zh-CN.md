@@ -131,6 +131,10 @@ wrong-pocket control 和 qualification witness；只允许 A/B 级证据。AceA 
 证据 namespace。最终同时保留 target-agnostic AMP Pareto、每靶点 Pareto 和跨靶点稳健性视图，禁止压成
 不透明加权总分。
 
+“并行”必须是可执行的调度合同，不能只是配置字段：结构任务表必须在每个 `parallel_wave` 内按靶点交错，
+使 workflow 取出一个有界并发 batch 时同时包含不同靶点。按靶点整块排列、然后对连续项做并发，会悄然退化为
+“单靶点内并发，多靶点间串行”，必须由合同测试拒绝。
+
 ## 7. Run Controller：多久检查、发什么任务
 
 `pepagent.v38_run_control.RunControlPlan` 使用确定性阶段表：
