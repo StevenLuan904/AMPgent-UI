@@ -92,3 +92,17 @@
 - 28 项 focused tests 与 Ruff 通过；对 Temporal event 168 的真实 payload 原样重放通过，16 个 decoy
   输出均唯一，receipt SHA `d9459ec501d4957a91f6b7a3c3ccec9f014a7b9572ac3db526c278fb85d366d0`。
   该 smoke 只验证工程证据链，不回填旧 run，也不作为候选科学证据。
+
+## recovery-010 指标 descriptor 回退与 fail-closed 修复（2026-08-19 19:37 UTC）
+
+- science run `56e0acd2-72a3-41f8-8e95-7a1b464aafaa` / Temporal
+  `d8cc4660-1bae-4a35-ad07-cd4a67c85330` 已 terminal failed 并保持不可变：900 occurrence、
+  773 Candidate、3,092 Evaluation、12 ToolCall、0 Decision、0 structure、0 replay。
+- AMP-READ、LLAMP 与 ToxinPred3 证据已落库；Macrel hemolysis 与 physicochemical Activity 在解释器执行
+  adapter 之前因中文路径 `.pth` 的 GBK 解码失败。根因不是 no-site launcher 失效，而是 recovery-010
+  preflight 未绑定已验证的两个 runtime override，允许 `adapter_index=1` 的旧 descriptor 通过。
+- v38 preflight 现已 fail-closed：`physicochemical_developability` 与 `hemolysis_risk` 都必须冻结
+  `adapter_index=2`（`python -S adapter.py`），否则在生成请求或提交之前立即拒绝。
+- recovery-011 的真实 guarded smoke 已再次通过：physicochemical 2/2、Macrel 2/2，二者 returncode 均为 0；
+  receipt 文件 SHA-256 为 `11d6f77415a9708212e6cbd621c7eaf544552aca7de16924ddbd8b668cdc6c2d`。
+- 未使用 recovery-010 的科学输出进行回填；新 run 仍必须从 900 raw occurrence 独立开始。

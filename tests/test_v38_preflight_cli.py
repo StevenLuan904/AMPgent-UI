@@ -6,7 +6,10 @@ from pathlib import Path
 import pytest
 
 from pepagent.provenance.hashing import sha256_json
-from pepagent.v38_preflight_cli import apply_v38_metric_runtime_overrides
+from pepagent.v38_preflight_cli import (
+    apply_v38_metric_runtime_overrides,
+    require_v38_no_site_metric_bootstrap,
+)
 
 
 def _bundle() -> dict[str, object]:
@@ -27,7 +30,11 @@ def _descriptor(path: Path, name: str) -> None:
             {
                 "name": name,
                 "runtime_identity_sha256": "a" * 64,
-                "execution_guard": {"contract": {}, "expectation": {}, "paths": {}},
+                "execution_guard": {
+                    "contract": {"command_entities": {"adapter_index": 2}},
+                    "expectation": {},
+                    "paths": {},
+                },
             }
         ),
         encoding="utf-8",
@@ -58,6 +65,22 @@ def test_metric_runtime_overrides_are_explicit_and_rehash_bundle(tmp_path: Path)
         key: value for key, value in result.items() if key != "execution_bundle_identity_sha256"
     }
     assert result["execution_bundle_identity_sha256"] == sha256_json(identity)
+    require_v38_no_site_metric_bootstrap(result)
+
+
+def test_v38_preflight_rejects_metric_without_no_site_bootstrap() -> None:
+    bundle = _bundle()
+    plugins = bundle["metric_plugins_by_name"]
+    assert isinstance(plugins, dict)
+    plugins["physicochemical_developability"] = {
+        "execution_guard": {"contract": {"command_entities": {"adapter_index": 1}}}
+    }
+    plugins["hemolysis_risk"] = {
+        "execution_guard": {"contract": {"command_entities": {"adapter_index": 2}}}
+    }
+
+    with pytest.raises(ValueError, match="physicochemical_developability.*no-site"):
+        require_v38_no_site_metric_bootstrap(bundle)
 
 
 @pytest.mark.parametrize(

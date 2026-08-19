@@ -74,6 +74,29 @@ def apply_v38_metric_runtime_overrides(
     return execution_bundle
 
 
+def require_v38_no_site_metric_bootstrap(execution_bundle: dict[str, Any]) -> None:
+    """Fail closed unless vulnerable Windows metric runtimes freeze ``python -S``.
+
+    Both adapters run from this repository's non-ASCII Windows path.  Merely
+    setting UTF-8 environment variables does not protect Python's earlier
+    ``site``/``.pth`` initialization, so the guarded descriptor must bind the
+    adapter at argv index 2 (``python -S adapter.py``).
+    """
+
+    plugins = execution_bundle.get("metric_plugins_by_name")
+    if not isinstance(plugins, dict):
+        raise ValueError("v38 execution bundle lacks metric plugins")
+    for name in ("physicochemical_developability", "hemolysis_risk"):
+        runtime = plugins.get(name)
+        guard = runtime.get("execution_guard") if isinstance(runtime, dict) else None
+        contract = guard.get("contract") if isinstance(guard, dict) else None
+        entities = contract.get("command_entities") if isinstance(contract, dict) else None
+        if not isinstance(entities, dict) or entities.get("adapter_index") != 2:
+            raise ValueError(
+                f"v38 {name} runtime must freeze the Windows no-site bootstrap"
+            )
+
+
 async def _load_target_runtimes(panel: dict[str, Any]) -> dict[str, dict[str, Any]]:
     branches = panel.get("branches")
     if not isinstance(branches, list):
@@ -128,6 +151,7 @@ async def build_v38_preflight_artifacts(
         build_v38_execution_bundle(benchmark_path.parents[2], _load_json(execution_bundle_path)),
         metric_runtime_overrides or [],
     )
+    require_v38_no_site_metric_bootstrap(execution_bundle)
     target_runtimes = await _load_target_runtimes(panel)
     request = build_v38_request_template(
         benchmark=benchmark,
