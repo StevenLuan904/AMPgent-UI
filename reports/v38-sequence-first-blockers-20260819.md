@@ -34,3 +34,19 @@
 3. 生成全新版本控制 run、请求、静态/动态 preflight；旧 run 保持不可变，绝不回填其 773 条结果。
 4. exact-once 提交新 science run，从 900 occurrence 重新生成和 score-all；只有序列安全/活性层闭合后才进入双靶点结构。
 5. 每次定时唤醒若阶段无推进，必须立即定位阻塞并执行安全修复或下一实验，不能把“检查无变化”当作完成。
+
+## recovery-008 实际推进（2026-08-19 15:26 UTC）
+
+- 新 science run `01124f6e-1a0d-4256-8d71-78c192244179` / Temporal
+  `692938bb-4b91-4197-944b-609411b50d68` 已 exact-once 启动；不得再次提交、原地重试或回填。
+- 九个生成 cell 已全部完成：900 个 raw occurrence，去重后 773 条有效唯一序列。
+- 五个序列评分 Activity 已全部完成并持久化 8,503 条 Evaluation，等于 773×11；此前缺失的
+  理化和 Macrel 溶血证据已在正式边界补齐。
+- 序列 admission 得到 26 条 `mature_core`、124 条 `promising_uncertain` 和 623 条拒绝；其中
+  26 条成熟核心与 9 条固定探索候选进入结构，共 35 条。结构预算余下 13 个位置未强制填充，未降低
+  毒性或溶血安全门，也未触发知识卡 refinement（成熟核心已经达到最小 12 条）。
+- 两个隔离靶点的结构 Activity 已同时调度到冻结 Boltz 队列；当前一项运行、一项等待同一获准 GPU1。
+  此时 26 条只能称序列层成熟候选，必须等待双靶点结构、controls、Pareto 和 replay 后才可称最终组合。
+- 自动控制循环曾错误绑定默认旧 state，且普通 `.venv` 启动会在 UTF-8 editable `.pth` 上按 GBK
+  崩溃。commit `5dd7845` 已让 supervisor 使用显式 site-packages/source 的 `python -S`，读取最新
+  versioned structure placement，并把当前 recovery state 绑定到 5 分钟 tick；后台 supervisor PID 30832。
