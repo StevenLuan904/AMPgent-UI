@@ -135,6 +135,11 @@ wrong-pocket control 和 qualification witness；只允许 A/B 级证据。AceA 
 使 workflow 取出一个有界并发 batch 时同时包含不同靶点。按靶点整块排列、然后对连续项做并发，会悄然退化为
 “单靶点内并发，多靶点间串行”，必须由合同测试拒绝。
 
+Boltz 与 Rosetta 是两个独立资源阶段，必须各自用有界信号量形成流水线。禁止把“一个 Boltz + 一个
+Rosetta”包成整链批次后再统一等待；这种 batch barrier 会在 Rosetta 计分时让 GPU 空闲，在 Boltz 推理时
+让 CPU 空闲。正确调度是：前一个 pose 释放 Boltz slot 后立即发下一个 Boltz，同时由独立 Rosetta slot
+处理已完成 pose；两阶段仍各自受冻结并发上限和 worker 物理容量约束。
+
 ## 7. Run Controller：多久检查、发什么任务
 
 `pepagent.v38_run_control.RunControlPlan` 使用确定性阶段表：

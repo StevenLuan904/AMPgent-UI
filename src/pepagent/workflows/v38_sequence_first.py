@@ -381,6 +381,9 @@ class V38SequenceFirstAgentWorkflow:
                         "target_branches"
                     ]
                 }
+                structure_limit = int(request["structure_concurrency"])
+                boltz_slots = asyncio.Semaphore(structure_limit)
+                rosetta_slots = asyncio.Semaphore(structure_limit)
 
                 async def execute_structure_task(
                     task: dict[str, Any],
@@ -388,26 +391,27 @@ class V38SequenceFirstAgentWorkflow:
                     target_key = str(task["target_key"])
                     candidate = candidates_by_id[str(task["candidate_id"])]
                     runtime = request["structure_runtime_by_target_key"][target_key]
-                    raw_boltz = await workflow.execute_activity(
-                        "predict_v38_multitarget_structure",
-                        {
-                            "run_id": run_id,
-                            "candidate": candidate,
-                            "structure_task": task,
-                            "target_branch": branches_by_key[target_key],
-                            "target_sequence": runtime["target_sequence"],
-                            "pocket_definition_sha256": task["pocket_sha256"],
-                            "pocket_residues": runtime[
-                                "pocket_residues_by_lane"
-                            ][task["control_lane"]],
-                            "structure_spec": runtime["structure_spec"],
-                            "seed": task["boltz_seed"],
-                        },
-                        task_queue=str(queues["structure_boltz"]),
-                        start_to_close_timeout=timedelta(hours=12),
-                        heartbeat_timeout=timedelta(minutes=5),
-                        retry_policy=retry,
-                    )
+                    async with boltz_slots:
+                        raw_boltz = await workflow.execute_activity(
+                            "predict_v38_multitarget_structure",
+                            {
+                                "run_id": run_id,
+                                "candidate": candidate,
+                                "structure_task": task,
+                                "target_branch": branches_by_key[target_key],
+                                "target_sequence": runtime["target_sequence"],
+                                "pocket_definition_sha256": task["pocket_sha256"],
+                                "pocket_residues": runtime[
+                                    "pocket_residues_by_lane"
+                                ][task["control_lane"]],
+                                "structure_spec": runtime["structure_spec"],
+                                "seed": task["boltz_seed"],
+                            },
+                            task_queue=str(queues["structure_boltz"]),
+                            start_to_close_timeout=timedelta(hours=12),
+                            heartbeat_timeout=timedelta(minutes=5),
+                            retry_policy=retry,
+                        )
                     boltz = await workflow.execute_activity(
                         "persist_v38_multitarget_boltz",
                         {"run_id": run_id, "structure_result": raw_boltz},
@@ -415,26 +419,27 @@ class V38SequenceFirstAgentWorkflow:
                         start_to_close_timeout=timedelta(hours=1),
                         retry_policy=retry,
                     )
-                    raw_rosetta = await workflow.execute_activity(
-                        "score_v38_multitarget_rosetta",
-                        {
-                            "run_id": run_id,
-                            "candidate": candidate,
-                            "structure_task": task,
-                            "target_branch": branches_by_key[target_key],
-                            "target_sequence": runtime["target_sequence"],
-                            "pocket_definition_sha256": task["pocket_sha256"],
-                            "pocket_residues": runtime[
-                                "pocket_residues_by_lane"
-                            ][task["control_lane"]],
-                            "structure_spec": runtime["structure_spec"],
-                            "structure": boltz["structure"],
-                        },
-                        task_queue=str(queues["structure_rosetta"]),
-                        start_to_close_timeout=timedelta(hours=12),
-                        heartbeat_timeout=timedelta(minutes=5),
-                        retry_policy=retry,
-                    )
+                    async with rosetta_slots:
+                        raw_rosetta = await workflow.execute_activity(
+                            "score_v38_multitarget_rosetta",
+                            {
+                                "run_id": run_id,
+                                "candidate": candidate,
+                                "structure_task": task,
+                                "target_branch": branches_by_key[target_key],
+                                "target_sequence": runtime["target_sequence"],
+                                "pocket_definition_sha256": task["pocket_sha256"],
+                                "pocket_residues": runtime[
+                                    "pocket_residues_by_lane"
+                                ][task["control_lane"]],
+                                "structure_spec": runtime["structure_spec"],
+                                "structure": boltz["structure"],
+                            },
+                            task_queue=str(queues["structure_rosetta"]),
+                            start_to_close_timeout=timedelta(hours=12),
+                            heartbeat_timeout=timedelta(minutes=5),
+                            retry_policy=retry,
+                        )
                     return await workflow.execute_activity(
                         "persist_v38_multitarget_rosetta",
                         {
@@ -447,10 +452,14 @@ class V38SequenceFirstAgentWorkflow:
                         retry_policy=retry,
                     )
 
-                structure_results = await _bounded_ordered_map(
-                    tasks,
-                    limit=int(request["structure_concurrency"]),
-                    operation=execute_structure_task,
+                # Bound Boltz and Rosetta independently so the GPU can begin
+                # the next pose while completed poses are scored on CPU. A
+                # batch barrier around the whole chain leaves one resource
+                # idle whenever the other stage is active.
+                structure_results = list(
+                    await asyncio.gather(
+                        *(execute_structure_task(task) for task in tasks)
+                    )
                 )
                 structure_task_count = len(tasks)
                 structure_evidence_count = sum(

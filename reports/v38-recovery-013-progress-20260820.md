@@ -56,3 +56,12 @@ Next critical path: finish all 420 target/control/seed tasks, verify exactly 7,1
 ## Framework audit performed during this review
 
 The absence of PBP2a records exposed a real scheduling defect rather than a scientific result. The planner emitted all GyrA tasks before all PBP2a tasks, while the workflow consumed consecutive bounded batches. Consequently, `max_parallel_targets=2` produced two concurrent tasks from the same target instead of one task from each target. The active immutable run is not modified. The framework task planner was changed for future identities to interleave targets within every `parallel_wave`; its focused Ruff check and 26 workflow/planner tests passed. This preserves candidate, target, seed, lane, and decoy budgets while making the declared multi-target parallelism operational.
+
+## 09:30 checkpoint and second scheduling correction
+
+- Durable structure evidence increased from 170 to 340 records: 20 / 420 tasks complete.
+- All 57 current ToolCalls succeeded; the workflow remained running with two attempt-1 Rosetta activities actively heartbeating.
+- All six required queue roles had their expected poller identities.
+- The sequence pool remained unchanged at 26 mature-core plus 9 exploration candidates; no final champion or replay exists yet.
+
+The live trace also exposed a second future-framework inefficiency: the workflow placed a batch barrier around two complete Boltz-to-Rosetta chains. While both chains were in Rosetta, the authorized GPU had no next Boltz activity to run. Future workflow identities now use independent bounded semaphores for Boltz and Rosetta, allowing the next pose inference to overlap prior CPU scoring. The active run remains on its immutable loaded workflow code.

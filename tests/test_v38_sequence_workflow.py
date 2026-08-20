@@ -152,3 +152,13 @@ def test_v38_control_worker_registers_sequence_workflow_and_admission_activities
 def test_v38_workflow_failure_closure_supplies_error_type() -> None:
     source = inspect.getsource(V38SequenceFirstAgentWorkflow.run)
     assert '"error_type": type(exc).__name__' in source
+
+
+def test_v38_structure_execution_is_stage_pipelined_without_batch_barrier() -> None:
+    source = inspect.getsource(V38SequenceFirstAgentWorkflow.run)
+    assert "boltz_slots = asyncio.Semaphore(structure_limit)" in source
+    assert "rosetta_slots = asyncio.Semaphore(structure_limit)" in source
+    assert "async with boltz_slots:" in source
+    assert "async with rosetta_slots:" in source
+    assert "*(execute_structure_task(task) for task in tasks)" in source
+    assert "_bounded_ordered_map(\n                    tasks," not in source
