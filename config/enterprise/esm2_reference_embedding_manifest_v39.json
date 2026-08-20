@@ -1,0 +1,51 @@
+{
+  "schema_version": "ampgent.esm2-reference-embedding-deployment-witness.1",
+  "witness_id": "ampgent_esm2_reference_embedding_v39_20260820",
+  "observed_at": "2026-08-20T15:30:30Z",
+  "status": "reference_embedding_frozen_reproduced_calibration_pending",
+  "model": {
+    "identity": "facebook/esm2_t6_8M_UR50D",
+    "revision": "c731040fcd8d73dceaa04b0a8e6329b345b0f5df",
+    "license": "MIT",
+    "weights_sha256": "24c5fa474c48f3b754b86efe752d5f189d2bcd88190fa2270fc92b2ef3034189"
+  },
+  "reference": {
+    "fasta_sha256": "d1004b1398df723b2e4a044aaab13b6d9628d7fec23042e2cccd88f8534d6787",
+    "sequence_count": 17131,
+    "candidate_data_used": false
+  },
+  "embedding": {
+    "pooling": "mean_last_hidden_state_excluding_special_and_padding_tokens",
+    "l2_normalized": true,
+    "dtype": "float32",
+    "shape": [17131, 320],
+    "npy_bytes": 21927808,
+    "npy_sha256": "0c9fb13c1654f3ea394aa6b0b1b50602e95e61e6c9d70dcfb6a63910bf8c9f7f",
+    "rows_bytes": 5742362,
+    "rows_sha256": "3d736b9d3954a6481f902046f0d8d8c68ddf0a7955592f58e8862ca888f13173"
+  },
+  "deployment": {
+    "host": "192.168.99.19",
+    "gpu_index": 6,
+    "device_name": "NVIDIA GeForce RTX 3090",
+    "runtime_python": "3.11.10",
+    "runtime_torch": "2.6.0+cu124",
+    "runtime_transformers": "4.57.6",
+    "batch_size": 256,
+    "tf32_allowed": false,
+    "source_module_sha256": "41b856c94c72f6fbc70f4cece1a2bdc29b4b12c98462e8860a41ffb7a5f394b0",
+    "remote_root": "/data1/huangyueshan/pepagent/tools/esm2-reference/c731040fcd8d73dceaa04b0a8e6329b345b0f5df",
+    "runtime_manifest_sha256": "7f5cbbdd44c1d454973804ace6ffe83a1042f7e6fb2f1bb31c336d3da49eaa56"
+  },
+  "reproducibility": {
+    "independent_execution_count": 2,
+    "embedding_sha256_match": true,
+    "rows_sha256_match": true,
+    "runtime_manifest_sha256_match": true
+  },
+  "limitations": [
+    "This artifact freezes a reference representation, not a calibrated OOD threshold.",
+    "ESM-2 was trained on UniRef50 and training-set overlap remains to be audited.",
+    "Embedding novelty cannot rescue an inactive or unsafe candidate."
+  ]
+}

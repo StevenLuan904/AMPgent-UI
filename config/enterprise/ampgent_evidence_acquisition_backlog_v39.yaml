@@ -112,7 +112,10 @@ tasks:
       candidate_data_used_for_threshold_fit: false
       mmseqs_index_manifest: config/enterprise/mmseqs_reference_index_manifest_v39.json
       mmseqs_real_deployment_smoke: passed
-      pending: [esm_embedding_manifest, external_holdout_calibration, training_overlap_audit]
+      esm2_embedding_manifest: config/enterprise/esm2_reference_embedding_manifest_v39.json
+      esm2_embedding_sha256: 0c9fb13c1654f3ea394aa6b0b1b50602e95e61e6c9d70dcfb6a63910bf8c9f7f
+      esm2_real_deployment_smoke: passed_reproduced
+      pending: [external_holdout_calibration, training_overlap_audit]
   - task_id: synthesis_feasibility_ruleset_qualification
     status: completed
     priority_tier: 1

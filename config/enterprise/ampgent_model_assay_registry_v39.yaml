@@ -84,14 +84,19 @@ models:
     index_manifest: config/enterprise/mmseqs_reference_index_manifest_v39.json
     blockers: [independent_validation_missing, calibrated_operating_point_missing, training_overlap_audit_missing]
   - model_id: esm2_ood
-    version: plugin_available
+    version: facebook_esm2_t6_8M_UR50D_c731040f
     evidence_domain: novelty_and_ood
     endpoint_semantics: embedding_distance_from_frozen_reference_distribution
     independence_group: protein_language_model_ood
-    training_domain: public_protein_language_model_corpus
+    training_domain: UniRef50_protein_language_model_corpus
     status: shadow
     reference_snapshot_sha256: d1004b1398df723b2e4a044aaab13b6d9628d7fec23042e2cccd88f8534d6787
-    blockers: [embedding_reference_manifest_missing, ood_threshold_calibration_missing]
+    model_weights_sha256: 24c5fa474c48f3b754b86efe752d5f189d2bcd88190fa2270fc92b2ef3034189
+    embedding_reference_manifest: config/enterprise/esm2_reference_embedding_manifest_v39.json
+    embedding_reference_sha256: 0c9fb13c1654f3ea394aa6b0b1b50602e95e61e6c9d70dcfb6a63910bf8c9f7f
+    embedding_shape: [17131, 320]
+    real_deployment_smoke: passed_reproduced
+    blockers: [ood_threshold_calibration_missing, training_overlap_audit_missing]
   - model_id: ampgent_sequence_only_spps_review
     version: v39_20260820
     evidence_domain: synthesis_feasibility

@@ -26,7 +26,7 @@ class FrozenFastaReference:
         return asdict(self)
 
 
-def _parse_fasta(text: str) -> list[tuple[str, str]]:
+def parse_fasta_records(text: str) -> list[tuple[str, str]]:
     records: list[tuple[str, str]] = []
     identifier: str | None = None
     sequence_parts: list[str] = []
@@ -59,7 +59,7 @@ def normalize_fasta_reference(
 
     if minimum_length < 1 or maximum_length < minimum_length:
         raise ValueError("reference length domain is invalid")
-    records = _parse_fasta(text)
+    records = parse_fasta_records(text)
     source_ids_by_sequence: dict[str, list[str]] = defaultdict(list)
     rejected_length = 0
     rejected_noncanonical = 0

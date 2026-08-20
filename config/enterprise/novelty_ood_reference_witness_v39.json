@@ -2,7 +2,7 @@
   "schema_version": "ampgent.novelty-ood-reference-witness.1",
   "witness_id": "ampgent_novelty_ood_reference_v39_20260820",
   "observed_at": "2026-08-20T11:30:30Z",
-  "status": "reference_snapshot_frozen_calibration_pending",
+  "status": "reference_snapshot_and_embedding_frozen_calibration_pending",
   "source": {
     "provider": "DRAMP",
     "dataset": "Antibacterial FASTA",
@@ -45,8 +45,16 @@
     "index_file_set_sha256": "9fe1a7eb74832f9b231dc09e5cdcd71524465937b955361e5f5faed3ddef9359",
     "real_deployment_smoke": "passed"
   },
+  "esm2_embedding": {
+    "manifest_path": "config/enterprise/esm2_reference_embedding_manifest_v39.json",
+    "model_revision": "c731040fcd8d73dceaa04b0a8e6329b345b0f5df",
+    "model_weights_sha256": "24c5fa474c48f3b754b86efe752d5f189d2bcd88190fa2270fc92b2ef3034189",
+    "embedding_sha256": "0c9fb13c1654f3ea394aa6b0b1b50602e95e61e6c9d70dcfb6a63910bf8c9f7f",
+    "shape": [17131, 320],
+    "independent_execution_count": 2,
+    "real_deployment_smoke": "passed_reproduced"
+  },
   "remaining_blockers": [
-    "esm_embedding_reference_manifest_missing",
     "external_temporal_or_non_amp_holdout_calibration_missing",
     "training_overlap_audit_missing"
   ]
