@@ -69,3 +69,24 @@ The live trace also exposed a second future-framework inefficiency: the workflow
 ## Final-portfolio blocker found before resource exhaustion
 
 The immutable recovery-013 admission correctly assigns no sequence Pareto front to its nine bounded exploration candidates. The loaded final-portfolio activity incorrectly required an integer sequence front for every structure-admitted candidate, so recovery-013 would fail after completing all structure work. This is an execution/schema defect, not peptide science. The corrected framework preserves `null` for exploration sequence fronts, excludes them from the target-agnostic sequence-front-one set, and still evaluates them in per-target and cross-target structural views. A full-cardinality pure replay smoke covered 35 candidates and 6,720 Rosetta decoys and retained exactly nine null sequence fronts without weighted totals or structural safety gates.
+
+## 10:33 enterprise audit fail-closed cancellation
+
+The run was cancelled by exact Temporal workflow/run identity and reconciled to PostgreSQL
+`cancelled`; no row was deleted, backfilled, or reused. The final immutable counts at the cancellation
+boundary were 900 raw occurrences, 773 Candidates, 8,503 Evaluations, 68 ToolCalls, one admission
+Decision, and 442 structure evidence records. Final Pareto/replay remained zero.
+
+Two independent reasons made continued compute wasteful and scientifically invalid:
+
+1. the loaded workflow would inevitably fail in final portfolio because it rejected the legitimate
+   null sequence-Pareto fronts of all nine exploration candidates; and
+2. the branch registered as *S. epidermidis* PBP2a used 3ZFZ, whose official experimental source is
+   MRSA *S. aureus* Mu50. The runtime 633-aa target sequence is the 3ZFZ chain minus its first 12
+   residues, while the registered and coordinate polymer accessions also differ. This target cannot
+   be interpreted as direct *S. epidermidis* structure evidence.
+
+The enterprise redesign is documented in
+`docs/ampgent-enterprise-core-pipeline-audit-20260820.zh-CN.md`. No replacement formal science run was
+submitted. The 26 mature-core and nine exploration candidates remain provisional immutable evidence,
+not champions.

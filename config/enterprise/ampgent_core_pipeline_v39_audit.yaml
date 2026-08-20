@@ -1,0 +1,126 @@
+schema_version: ampgent.enterprise-core.1
+contract_id: ampgent_core_pipeline_v39_audit_20260820
+
+scope:
+  audit_only: true
+  formal_science_run_authorized: false
+  current_v38_science_inputs_mutable: false
+
+target_coverage:
+  strategy: phenotype_first_then_qualified_mechanism_targets
+  pathogen_phenotype_panels:
+    - priority_skin_pathogens_and_resistant_strains
+    - gram_positive_and_gram_negative_eskap_e_coverage
+  commensal_counter_screen_panels:
+    - representative_skin_commensals
+  protein_target_identity_gate:
+    organism_and_strain_match_required: true
+    polymer_accession_match_required: true
+    coordinate_chain_sequence_alignment_required: true
+    minimum_target_sequence_coverage: 0.95
+    minimum_sequence_identity: 0.90
+    explicit_cross_species_homology_mode_required: true
+    native_and_wrong_pocket_controls_required: true
+  protein_structure_lane_rule: require_delivery_and_mechanism_plausibility_before_dispatch
+
+evidence_domains:
+  pathogen_conditioned_potency:
+    minimum_independent_models: 2
+    calibration_and_ood_required: true
+    current_v38_status: generic_dual_mic_without_strain_conditioning
+  amp_likeness:
+    minimum_independent_models: 1
+    calibration_and_ood_required: true
+    current_v38_status: missing_amplify_is_retired_by_user_and_must_not_be_used
+  hemolysis:
+    minimum_independent_models: 2
+    calibration_and_ood_required: true
+    current_v38_status: macrel_only_despite_available_hemopi2_plugin
+  mammalian_cytotoxicity:
+    minimum_independent_models: 1
+    calibration_and_ood_required: true
+    current_v38_status: missing
+  toxicity:
+    minimum_independent_models: 2
+    calibration_and_ood_required: true
+    current_v38_status: toxinpred3_only
+  physicochemical:
+    minimum_independent_models: 0
+    calibration_and_ood_required: false
+    current_v38_status: transparent_descriptors_present
+  solubility_and_aggregation:
+    minimum_independent_models: 1
+    calibration_and_ood_required: true
+    current_v38_status: aggrescanai_shadow_only_and_no_solubility_model
+  serum_and_protease_stability:
+    minimum_independent_models: 1
+    calibration_and_ood_required: true
+    current_v38_status: peptiverse_shadow_only
+  novelty_and_ood:
+    minimum_independent_models: 1
+    calibration_and_ood_required: true
+    current_v38_status: mmseqs_esm2_plugin_available_not_formal
+  synthesis_feasibility:
+    minimum_independent_models: 1
+    calibration_and_ood_required: false
+    current_v38_status: canonical_sequence_validity_only
+  resistance_propensity:
+    minimum_independent_models: 1
+    calibration_and_ood_required: true
+    current_v38_status: missing
+  commensal_selectivity:
+    minimum_independent_models: 1
+    calibration_and_ood_required: true
+    current_v38_status: missing
+
+selection:
+  quality_admission_before_pareto: true
+  pareto_policy: constrained_epsilon_reference_point
+  weighted_total_score_forbidden: true
+  current_batch_quantile_thresholds_forbidden: true
+  external_reference_points_require_calibration_or_controls: true
+  inactive_candidate_cannot_be_rescued_by_one_extreme_axis: true
+  uncertainty_aware_dominance_required: true
+  diversity_after_quality_admission_only: true
+  no_forced_fill: true
+  empty_admission_action: targeted_refinement_or_new_discriminating_experiment
+
+adaptive_structure:
+  sequence_quality_gate_required: true
+  minimum_candidates: 12
+  maximum_candidates: 24
+  initial_boltz_seeds_per_candidate_target_lane: 1
+  maximum_boltz_seeds_per_candidate_target_lane: 3
+  preregistered_sequential_stopping: true
+  target_interleaving_required: true
+  boltz_rosetta_pipeline_required: true
+  wrong_pocket_and_native_controls_required: true
+  structure_cannot_rescue_sequence_inactivity: true
+
+autoresearch_loop:
+  cycle:
+    - observe
+    - diagnose
+    - propose_experiment
+    - act
+    - verify
+    - persist
+    - learn
+  monitor_only_iteration_forbidden: true
+  model_disagreement_is_active_learning_signal: true
+  historical_failures_update_execution_policy_not_science_labels: true
+  wetlab_results_update_calibration_registry: true
+  five_minute_durable_progress_check: true
+  fifteen_minute_strategy_change_on_stall: true
+  operator_review_minutes: 120
+
+readiness:
+  status: not_ready
+  blocking_gaps:
+    - correct_or_explicitly_reclassify_the_3ZFZ_species_and_accession_identity
+    - add_pathogen_and_strain_conditioned_activity_models
+    - select_and_validate_a_non_amplify_amp_likeness_model
+    - add_second_independent_hemolysis_and_toxicity_models
+    - add_mammalian_cytotoxicity_and_commensal_selectivity
+    - promote_novelty_ood_stability_and_aggregation_from_optional_or_shadow
+    - implement_adaptive_structure_stopping_and_cost_aware_acquisition

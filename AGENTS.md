@@ -311,3 +311,31 @@ Apply the following style to AMPgent/AceA research work in this repository:
   Temporal poller. Its release, runtime, environment, acceptance, and smoke hashes are frozen in the
   v38 benchmark and acceptance config. The controller must fail closed if that poller disappears;
   acceptance does not itself submit the formal science workflow.
+
+# Enterprise core pipeline and autoresearch
+
+- Treat `docs/ampgent-enterprise-core-pipeline-audit-20260820.zh-CN.md` and
+  `config/enterprise/ampgent_core_pipeline_v39_audit.yaml` as the current enterprise-readiness
+  audit, not as authorization to launch a formal science run. A scheduled research loop must choose
+  the next action by expected information gain and decision value, not merely continue a fixed
+  workflow or report health.
+- "Multi-target" is phenotype-first coverage, not indiscriminate protein docking. Maintain pathogen
+  and resistant-strain potency panels, commensal counter-screens, mammalian safety, mechanism and
+  environment panels; dispatch a protein structure branch only after target accessibility and
+  mechanism plausibility are evidenced.
+- Every direct experimental structure target must pass a machine-verifiable identity witness before
+  submit: organism/strain, target and polymer accessions, coordinate-chain alignment, sequence
+  coverage, sequence identity and pocket-residue mapping. Cross-species structures require explicit
+  homology mode and uncertainty. The current PBP2a/3ZFZ registration is not acceptable as direct
+  *S. epidermidis* evidence until its species/accession identity is corrected or reclassified.
+- Do not equate nonweighted Pareto membership with quality admission. Apply evidence-backed quality
+  and uncertainty admission first, then constrained epsilon/reference-point Pareto and diversity.
+  One extreme safety or descriptor axis must not rescue an inactive peptide. Current-batch quantiles,
+  weighted totals, safety relaxation and forced fill remain forbidden.
+- Structure is adaptive confirmation. Future science contracts should start with one preregistered
+  seed per candidate/target/lane, expand only when uncertainty and decision value justify it, and use
+  preregistered sequential stopping. Keep target interleaving and independent Boltz/Rosetta resource
+  pipelines. Any adaptive policy must be frozen before outcomes and fully replayable.
+- A model is formal only when its registry records provider/version, immutable bytes, license, training
+  domain, leakage controls, calibration, OOD behavior, uncertainty, units and assay conditions. Code
+  presence is not acceptance. AMPlify remains retired; do not restore it as the AMP-likeness model.

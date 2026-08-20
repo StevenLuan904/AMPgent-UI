@@ -521,6 +521,20 @@ class V38SequenceFirstAgentWorkflow:
                 "final_portfolio": final_portfolio,
                 "formal_structure_workflow_complete": final_portfolio is not None,
             }
+        except asyncio.CancelledError:
+            await asyncio.shield(
+                workflow.execute_activity(
+                    "mark_run_cancelled",
+                    {
+                        "run_id": run_id,
+                        "reason": "workflow_cancelled_before_scientific_completion",
+                    },
+                    task_queue=control_queue,
+                    start_to_close_timeout=timedelta(minutes=2),
+                    retry_policy=retry,
+                )
+            )
+            raise
         except Exception as exc:
             await workflow.execute_activity(
                 "mark_run_failed",
