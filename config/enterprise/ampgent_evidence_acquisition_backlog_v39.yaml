@@ -110,7 +110,9 @@ tasks:
       frozen_dramp_reference_sha256: d1004b1398df723b2e4a044aaab13b6d9628d7fec23042e2cccd88f8534d6787
       unique_reference_sequences: 17131
       candidate_data_used_for_threshold_fit: false
-      pending: [mmseqs_index, esm_embedding_manifest, external_holdout_calibration, training_overlap_audit]
+      mmseqs_index_manifest: config/enterprise/mmseqs_reference_index_manifest_v39.json
+      mmseqs_real_deployment_smoke: passed
+      pending: [esm_embedding_manifest, external_holdout_calibration, training_overlap_audit]
   - task_id: synthesis_feasibility_ruleset_qualification
     status: completed
     priority_tier: 1

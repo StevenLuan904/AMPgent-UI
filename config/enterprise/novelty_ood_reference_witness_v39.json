@@ -38,8 +38,14 @@
     "current_candidate_batch_used_for_threshold_fit": false,
     "formal_ood_label_allowed": false
   },
+  "mmseqs_index": {
+    "manifest_path": "config/enterprise/mmseqs_reference_index_manifest_v39.json",
+    "runtime_release": "18-8cc5c",
+    "runtime_binary_sha256": "b7ef6e0e33df5dd4fa9cf988cbd8b4988c11a3a1255d2c377f13e1bb40c157fb",
+    "index_file_set_sha256": "9fe1a7eb74832f9b231dc09e5cdcd71524465937b955361e5f5faed3ddef9359",
+    "real_deployment_smoke": "passed"
+  },
   "remaining_blockers": [
-    "mmseqs_runtime_and_content_addressed_index_missing",
     "esm_embedding_reference_manifest_missing",
     "external_temporal_or_non_amp_holdout_calibration_missing",
     "training_overlap_audit_missing"

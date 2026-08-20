@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import pytest
 
 from pepagent.novelty_reference import (
@@ -58,3 +61,22 @@ def test_threshold_policy_accepts_pinned_independent_calibration() -> None:
             "external_holdout_calibration_artifact_sha256": "a" * 64,
         }
     )
+
+
+def test_pinned_mmseqs_manifest_binds_runtime_reference_and_smoke() -> None:
+    root = Path(__file__).parents[1]
+    manifest = json.loads(
+        (root / "config/enterprise/mmseqs_reference_index_manifest_v39.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert manifest["runtime"]["commit"] == "8cc5ce367b5638c4306c2d7cfc652dd099a4643f"
+    assert manifest["reference"]["normalized_fasta_sha256"] == (
+        "d1004b1398df723b2e4a044aaab13b6d9628d7fec23042e2cccd88f8534d6787"
+    )
+    assert manifest["build"]["use_gpu"] is False
+    assert manifest["build"]["index_file_set_sha256"] == (
+        "9fe1a7eb74832f9b231dc09e5cdcd71524465937b955361e5f5faed3ddef9359"
+    )
+    assert manifest["smoke"]["status"] == "passed"
+    assert manifest["smoke"]["top_hit_identity"] == 1.0
