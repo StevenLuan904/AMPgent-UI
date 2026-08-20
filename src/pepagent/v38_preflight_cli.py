@@ -14,6 +14,7 @@ from pepagent.db.models import Target, TargetPocket
 from pepagent.db.session import SessionFactory
 from pepagent.provenance.environment import fingerprint_runtime
 from pepagent.provenance.hashing import sha256_file, sha256_json
+from pepagent.target_identity_preflight import verify_target_identity_bundle
 from pepagent.v38_generator_runtime import build_v38_execution_bundle
 from pepagent.v38_preflight import build_v38_submission_preflight
 from pepagent.v38_request_builder import build_v38_request_template
@@ -141,6 +142,7 @@ async def build_v38_preflight_artifacts(
     structure_spec_path: Path,
     request_output_path: Path,
     preflight_output_path: Path,
+    target_identity_bundle_path: Path,
     metric_runtime_overrides: list[str] | None = None,
 ) -> dict[str, Any]:
     benchmark = _load_yaml(benchmark_path)
@@ -153,6 +155,13 @@ async def build_v38_preflight_artifacts(
     )
     require_v38_no_site_metric_bootstrap(execution_bundle)
     target_runtimes = await _load_target_runtimes(panel)
+    target_panel_sha256 = sha256_file(panel_path)
+    target_identity_witness = verify_target_identity_bundle(
+        bundle=_load_yaml(target_identity_bundle_path),
+        panel=panel,
+        target_runtime_by_id=target_runtimes,
+        target_panel_sha256=target_panel_sha256,
+    )
     request = build_v38_request_template(
         benchmark=benchmark,
         panel=panel,
@@ -169,7 +178,8 @@ async def build_v38_preflight_artifacts(
         controller_state=controller,
         worker_placement=placement,
         benchmark_sha256=sha256_file(benchmark_path),
-        target_panel_sha256=sha256_file(panel_path),
+        target_panel_sha256=target_panel_sha256,
+        target_identity_witness=target_identity_witness,
     )
     _write_json(request_output_path, request)
     _write_json(preflight_output_path, preflight)
@@ -197,6 +207,12 @@ def main() -> None:
     parser.add_argument("--request-output", type=Path, required=True)
     parser.add_argument("--preflight-output", type=Path, required=True)
     parser.add_argument(
+        "--target-identity-bundle",
+        type=Path,
+        required=True,
+        help="Raw source/sequence identity evidence recomputed before authorization",
+    )
+    parser.add_argument(
         "--metric-runtime-override",
         action="append",
         default=[],
@@ -214,6 +230,7 @@ def main() -> None:
             structure_spec_path=args.structure_spec.resolve(),
             request_output_path=args.request_output.resolve(),
             preflight_output_path=args.preflight_output.resolve(),
+            target_identity_bundle_path=args.target_identity_bundle.resolve(),
             metric_runtime_overrides=args.metric_runtime_override,
         )
     )

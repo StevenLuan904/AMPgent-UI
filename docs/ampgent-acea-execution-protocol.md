@@ -2209,3 +2209,16 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
   表述为“零产出”。provisional 不得冒充 champion，系统同时继续补齐安全与结构闭环。
 - 只有用户明确暂停、安全/非干扰边界、需要用户决定的科学变量变化，或已穷尽安全替代方案的外部依赖，才允许
   停止主动推进。即使 blocked，也必须持久化 blocker、建立验收条件，并推进不依赖该 blocker 的工作。
+
+### 21.58 正式结构靶点身份的可复算 preflight（2026-08-20）
+
+- target panel 的 SHA、coordinate SHA 或 pocket qualification SHA 只能证明字节没有漂移，不能证明注册物种、
+  蛋白 accession 与坐标链属于同一生物实体。正式提交现在额外要求独立的
+  `v39.target-identity-bundle.1`：每个分支必须给出数据库注册序列、坐标链序列、注册/坐标物种、注册/坐标
+  accession、坐标来源 artifact SHA 和 pocket mapping SHA。
+- preflight 从 PostgreSQL 重新读取注册序列，核对 target/panel/coordinate SHA，并重新计算序列 identity 与
+  target coverage。`direct_experimental` 必须同时满足物种和 accession 一致；跨物种或跨 accession 坐标只有
+  显式标为 `homology` 才能继续，且仍必须满足冻结的 identity/coverage 下限。
+- 复算结果压缩为 `v39.verified-target-identity.1` 并把 witness SHA 纳入 formal submission key。缺少 witness、
+  panel 绑定漂移、任一分支未接受或 witness SHA 漂移都会 fail closed，不能只凭人写的说明或旧 qualification
+  进入 structure。该工程门不回填或修改任何历史 run。

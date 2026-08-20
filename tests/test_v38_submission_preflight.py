@@ -2,6 +2,7 @@ from copy import deepcopy
 
 import pytest
 
+from pepagent.provenance.hashing import sha256_json
 from pepagent.v38_preflight import build_v38_submission_preflight
 from pepagent.v38_science_execution import build_default_v38_sequence_contract
 
@@ -147,6 +148,19 @@ def _placement() -> dict:
     }
 
 
+def _identity() -> dict:
+    value = {
+        "schema_version": "v39.verified-target-identity.1",
+        "target_panel_sha256": "2" * 64,
+        "all_branches_accepted": True,
+        "branches": [
+            {"target_key": "ec_gyrA_lei800", "accepted": True},
+            {"target_key": "se_pbp2a_allosteric", "accepted": True},
+        ],
+    }
+    return {**value, "witness_sha256": sha256_json(value)}
+
+
 def test_v38_preflight_binds_one_unsubmitted_request_and_full_placement() -> None:
     result = build_v38_submission_preflight(
         request_template=_request(),
@@ -154,6 +168,7 @@ def test_v38_preflight_binds_one_unsubmitted_request_and_full_placement() -> Non
         worker_placement=_placement(),
         benchmark_sha256="1" * 64,
         target_panel_sha256="2" * 64,
+        target_identity_witness=_identity(),
     )
     assert result["status"] == "ready_to_submit_unique_run"
     assert result["execution_authorized"] is True
@@ -172,6 +187,7 @@ def test_v38_preflight_allows_explicitly_bound_structure_release_identity() -> N
         worker_placement=placement,
         benchmark_sha256="1" * 64,
         target_panel_sha256="2" * 64,
+        target_identity_witness=_identity(),
     )
     assert result["worker_component_identities"]["v38-rosetta"] == {
         "source_revision": "f" * 40,
@@ -195,6 +211,7 @@ def test_v38_recovery_preflight_accepts_newer_bound_history() -> None:
         worker_placement=_placement(),
         benchmark_sha256="1" * 64,
         target_panel_sha256="2" * 64,
+        target_identity_witness=_identity(),
     )
 
     assert result["history_terminal_run_count"] == 55
@@ -210,6 +227,7 @@ def test_v38_preflight_rejects_a_template_that_self_asserts_readiness() -> None:
             worker_placement=_placement(),
             benchmark_sha256="1" * 64,
             target_panel_sha256="2" * 64,
+            target_identity_witness=_identity(),
         )
 
 
@@ -256,4 +274,19 @@ def test_v38_preflight_fails_closed_on_control_or_placement_drift(
             worker_placement=placement,
             benchmark_sha256="1" * 64,
             target_panel_sha256="2" * 64,
+            target_identity_witness=_identity(),
+        )
+
+
+def test_v38_preflight_rejects_unverified_target_identity() -> None:
+    witness = _identity()
+    witness["branches"][1]["accepted"] = False
+    with pytest.raises(ValueError, match="rejected or absent"):
+        build_v38_submission_preflight(
+            request_template=_request(),
+            controller_state=_state(),
+            worker_placement=_placement(),
+            benchmark_sha256="1" * 64,
+            target_panel_sha256="2" * 64,
+            target_identity_witness=witness,
         )

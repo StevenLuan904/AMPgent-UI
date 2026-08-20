@@ -4,6 +4,7 @@ from copy import deepcopy
 from typing import Any
 
 from pepagent.provenance.hashing import sha256_json
+from pepagent.target_identity_preflight import require_verified_target_identity_witness
 from pepagent.workflows.v38_sequence_first import _validate_request
 
 V38_ROLE_QUEUES = {
@@ -133,6 +134,7 @@ def build_v38_submission_preflight(
     worker_placement: dict[str, Any],
     benchmark_sha256: str,
     target_panel_sha256: str,
+    target_identity_witness: dict[str, Any],
 ) -> dict[str, Any]:
     """Bind one not-yet-submitted v38 science request to its executable placement."""
 
@@ -176,6 +178,9 @@ def build_v38_submission_preflight(
     target_panel_sha256 = _require_sha(
         target_panel_sha256, length=64, label="target panel SHA-256"
     )
+    target_identity_witness_sha256 = require_verified_target_identity_witness(
+        target_identity_witness, target_panel_sha256=target_panel_sha256
+    )
     request = deepcopy(request_template)
     preflight_identity = {
         "schema_version": "v38.submission-preflight.1",
@@ -185,6 +190,7 @@ def build_v38_submission_preflight(
         "history_terminal_run_count": controller_state["history_terminal_run_count"],
         "benchmark_sha256": benchmark_sha256,
         "target_panel_sha256": target_panel_sha256,
+        "target_identity_witness_sha256": target_identity_witness_sha256,
         "request_template_sha256": sha256_json(request),
         "worker_placement_sha256": sha256_json(worker_placement),
         "worker_component_identities": {

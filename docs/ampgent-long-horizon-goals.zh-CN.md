@@ -625,3 +625,9 @@ provider 的 context-pack SHA；当前只有控制/预检身份，未提交正�
 Pareto 轴，避免“一个都进不来”，同时保留模型分歧。安全硬门只采用 provider 合同标签；只有第一非支配
 前沿进入成熟核心，被支配但安全的序列进入有界探索或知识卡 refinement。成熟核心不足 12 条时不上结构，
 而是最多三轮带父本 control、知识 passage 哈希和完整 11 指标重评的改写；当前仍未提交正式科学 workflow。
+
+2026-08-20 v39 靶点身份门追加：`target qualification` 不再只依赖面板声明和文件 SHA。正式 preflight 必须从
+数据库注册序列与独立坐标链序列重新计算 coverage/identity，并核对注册物种/accession 与坐标来源
+物种/polymer accession。direct experimental 与 homology 两类证据分开；跨物种同源结构不得冒充直接实验
+结构。verified witness 的 SHA 进入 exact-once submission identity，使“多靶点”既能扩展，也不会把错误靶点
+元数据规模化复制进企业管线。
