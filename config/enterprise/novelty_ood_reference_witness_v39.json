@@ -2,7 +2,7 @@
   "schema_version": "ampgent.novelty-ood-reference-witness.1",
   "witness_id": "ampgent_novelty_ood_reference_v39_20260820",
   "observed_at": "2026-08-20T11:30:30Z",
-  "status": "reference_snapshot_and_embedding_frozen_calibration_pending",
+  "status": "reference_snapshot_complete_esm2_shadow_only",
   "source": {
     "provider": "DRAMP",
     "dataset": "Antibacterial FASTA",
@@ -34,7 +34,7 @@
   },
   "threshold_policy": {
     "path": "config/enterprise/novelty_ood_threshold_policy_v39.yaml",
-    "sha256": "c10171bf341a41a9c45066acf46daedfd7b31cc2ae79dceab61eae9fd148fe3c",
+    "sha256": "d245cddc2943ff7a94214724ef474e44e86312c26a13bf472d0b4c71dcfc1d4b",
     "current_candidate_batch_used_for_threshold_fit": false,
     "formal_ood_label_allowed": false
   },
@@ -63,8 +63,14 @@
     "diagnostic_clean_holdout_flag_rate": 0.2509505703422053,
     "formal_ood_label_allowed": false
   },
+  "training_overlap_audit": {
+    "witness_path": "config/enterprise/esm2_training_overlap_audit_v39.json",
+    "status": "exact_membership_audit_not_feasible_model_shadow_only",
+    "formal_ood_label_allowed": false,
+    "model_usage": "shadow_diagnostic_only"
+  },
   "remaining_blockers": [
-    "external_holdout_calibration_is_diagnostic_until_training_overlap_audit",
-    "training_overlap_audit_missing"
+    "esm2_embedding_distance_is_diagnostic_only",
+    "mmseqs_alignment_operating_point_requires_independent_validation"
   ]
 }

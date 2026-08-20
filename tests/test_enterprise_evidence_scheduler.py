@@ -98,7 +98,7 @@ def test_current_backlog_selects_three_high_information_cpu_tasks() -> None:
     assert plan.selected_task_ids == (
         "cytotoxicity_and_commensal_reference_panel_freeze",
         "pathogen_conditioned_activity_reference_freeze",
-        "novelty_ood_reference_freeze",
+        "toxicity_second_family_qualification",
     )
     assert plan.estimated_gpu_minutes == 0
     assert plan.formal_run_submission_allowed is False

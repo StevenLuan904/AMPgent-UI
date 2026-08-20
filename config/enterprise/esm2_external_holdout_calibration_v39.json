@@ -2,7 +2,7 @@
   "schema_version": "ampgent.esm2-external-holdout-calibration-witness.1",
   "witness_id": "ampgent_esm2_external_holdout_calibration_v39_20260820",
   "observed_at": "2026-08-20T17:42:31Z",
-  "status": "diagnostic_completed_training_overlap_pending",
+  "status": "diagnostic_completed_model_shadow_only",
   "candidate_data_used": false,
   "model": {
     "identity": "facebook/esm2_t6_8M_UR50D",
@@ -54,7 +54,7 @@
   },
   "limitations": [
     "Non-antimicrobial keyword exclusion is an imperfect negative label.",
-    "ESM-2 UniRef50 training overlap remains unaudited.",
-    "The operating point is diagnostic and must not hard-filter candidates yet."
+    "Exact ESM-2 UR50/D training membership is not reproducible within the bounded audit and the model is shadow-only.",
+    "The operating point is diagnostic and must not hard-filter candidates."
   ]
 }

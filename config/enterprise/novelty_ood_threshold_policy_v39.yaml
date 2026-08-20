@@ -1,12 +1,14 @@
 schema_version: ampgent.novelty-ood-threshold-policy.1
 policy_id: ampgent_novelty_ood_threshold_policy_v39_20260820
 current_candidate_batch_used_for_threshold_fit: false
-external_holdout_calibration_status: diagnostic_completed_training_overlap_pending
-external_holdout_calibration_artifact_sha256: d8e07b4739fe5208b4e8888f522a24ddc106329e6a6125741fcac09cffdbaa36
+external_holdout_calibration_status: diagnostic_completed_esm2_shadow_only
+external_holdout_calibration_artifact_sha256: 96e894a750509260e4d28a3c58190a85b5fd7c24b217d578bae454e6b9ffaedc
+esm2_training_overlap_audit: config/enterprise/esm2_training_overlap_audit_v39.json
+esm2_formal_hard_gate_eligibility: ineligible_exact_training_membership_unverifiable
 reference_semantics:
   exact_sequence_match: report_as_known_sequence_and_training_leakage_risk
   alignment_near_neighbor: report_identity_coverage_and_reference_ids_without_hard_rejection
-  embedding_distance: report_only_until_external_holdout_and_training_overlap_audits_pass
+  embedding_distance: shadow_diagnostic_only_no_formal_ood_label
 decision_semantics:
   threshold_free_reporting_allowed: true
   formal_ood_label_allowed: false
@@ -19,3 +21,8 @@ calibration_requirements:
   - candidate-overlap and model-training-overlap audit
   - preregistered identity-coverage and embedding-distance operating points
   - uncertainty and applicability-domain report
+future_esm2_hard_gate_requirements:
+  - exact UniRef50 2021_04 cluster-member corpus or a verified equivalent
+  - reproducible UR50/D training membership semantics
+  - completed candidate-to-training membership audit
+  - independent operating-point validation

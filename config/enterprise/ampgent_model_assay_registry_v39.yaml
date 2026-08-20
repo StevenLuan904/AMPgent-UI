@@ -82,7 +82,7 @@ models:
     runtime_binary_sha256: b7ef6e0e33df5dd4fa9cf988cbd8b4988c11a3a1255d2c377f13e1bb40c157fb
     index_file_set_sha256: 9fe1a7eb74832f9b231dc09e5cdcd71524465937b955361e5f5faed3ddef9359
     index_manifest: config/enterprise/mmseqs_reference_index_manifest_v39.json
-    blockers: [independent_validation_missing, calibrated_operating_point_missing, training_overlap_audit_missing]
+    blockers: [independent_validation_missing, calibrated_operating_point_missing]
   - model_id: esm2_ood
     version: facebook_esm2_t6_8M_UR50D_c731040f
     evidence_domain: novelty_and_ood
@@ -97,8 +97,9 @@ models:
     embedding_shape: [17131, 320]
     real_deployment_smoke: passed_reproduced
     external_holdout_calibration: config/enterprise/esm2_external_holdout_calibration_v39.json
+    training_overlap_audit: config/enterprise/esm2_training_overlap_audit_v39.json
     diagnostic_holdout_flag_rate: 0.2509505703422053
-    blockers: [formal_ood_operating_point_pending_training_overlap_audit, training_overlap_audit_missing]
+    blockers: [formal_ood_ineligible_training_membership_unverifiable, diagnostic_only]
   - model_id: ampgent_sequence_only_spps_review
     version: v39_20260820
     evidence_domain: synthesis_feasibility

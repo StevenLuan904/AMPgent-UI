@@ -91,7 +91,7 @@ tasks:
       - stop_on_training_or_validation_leakage
       - stop_if_probability_semantics_are_not_reproducible
   - task_id: novelty_ood_reference_freeze
-    status: in_progress
+    status: completed
     priority_tier: 1
     evidence_domains: [novelty_and_ood]
     action_type: frozen_reference_and_threshold_contract
@@ -105,8 +105,9 @@ tasks:
     stop_conditions:
       - stop_if_reference_database_is_mutable
       - stop_if_threshold_is_fit_on_current_candidates
-    progress:
+    completion:
       witness_path: config/enterprise/novelty_ood_reference_witness_v39.json
+      witness_sha256: 0238a1b3fd97af3f687aff2f07f36927d5597d0c6a08ceb06ef8f28331e3683c
       frozen_dramp_reference_sha256: d1004b1398df723b2e4a044aaab13b6d9628d7fec23042e2cccd88f8534d6787
       unique_reference_sequences: 17131
       candidate_data_used_for_threshold_fit: false
@@ -117,8 +118,13 @@ tasks:
       esm2_real_deployment_smoke: passed_reproduced
       external_holdout_manifest: config/enterprise/uniprot_non_antimicrobial_holdout_manifest_v39.json
       external_holdout_calibration: config/enterprise/esm2_external_holdout_calibration_v39.json
-      external_holdout_calibration_status: diagnostic_completed_training_overlap_pending
-      pending: [training_overlap_audit, formal_ood_operating_point_after_overlap_audit]
+      external_holdout_calibration_status: diagnostic_completed_esm2_shadow_only
+      training_overlap_audit: config/enterprise/esm2_training_overlap_audit_v39.json
+      training_overlap_audit_sha256: 9751e01f5079d7d79278a5ef3d984eb457daabe084b0b89cf7495b085149c97a
+      external_holdout_calibration_sha256: 96e894a750509260e4d28a3c58190a85b5fd7c24b217d578bae454e6b9ffaedc
+      esm2_formal_ood_status: ineligible_training_membership_unverifiable
+      mmseqs_formal_status: shadow_pending_independent_operating_point_validation
+      completed_at: "2026-08-20T19:31:51Z"
   - task_id: synthesis_feasibility_ruleset_qualification
     status: completed
     priority_tier: 1

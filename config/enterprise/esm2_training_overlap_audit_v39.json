@@ -1,0 +1,59 @@
+{
+  "schema_version": "ampgent.esm2-training-overlap-audit.1",
+  "audit_id": "ampgent_esm2_training_overlap_v39_20260820",
+  "observed_at": "2026-08-20T19:31:51Z",
+  "status": "exact_membership_audit_not_feasible_model_shadow_only",
+  "model": {
+    "identity": "facebook/esm2_t6_8M_UR50D",
+    "revision": "c731040fcd8d73dceaa04b0a8e6329b345b0f5df",
+    "declared_training_corpus": "UR50/D 2021_04",
+    "declared_training_semantics": "cluster_and_member_sampling_during_training",
+    "primary_documentation_uri": "https://github.com/facebookresearch/esm/blob/main/README.md",
+    "sampling_semantics_uri": "https://github.com/facebookresearch/esm/discussions/667"
+  },
+  "official_release": {
+    "provider": "UniProt via EMBL-EBI historical archive",
+    "release": "2021_04",
+    "archive_uri": "https://ftp.ebi.ac.uk/pub/databases/uniprot/previous_releases/release-2021_04/uniref/uniref2021_04.tar.gz",
+    "content_length_bytes": 169188630923,
+    "etag": "27646da18b-5d93aa17ca66d",
+    "last_modified": "Wed, 02 Mar 2022 11:32:04 GMT",
+    "accept_ranges": "bytes",
+    "downloaded": false,
+    "reason_not_downloaded": "exceeds_bounded_audit_download_budget"
+  },
+  "alternative_inventory": {
+    "provider": "Hugging Face community dataset nferruz/UR50_2021_04",
+    "status": "secondary_tokenized_mirror_equivalence_unverified",
+    "inventory_sha256": "d6db3110eb88a8f5ee84771487d16b622bdbcfa7ac4d79c26a8a2f00a265fa79",
+    "download_size_bytes": 20635873370,
+    "train_examples": 8716143,
+    "validation_examples": 1219069,
+    "total_examples": 9935212,
+    "available_fields": ["attention_mask", "input_ids", "labels"],
+    "raw_sequence_or_cluster_identity_present": false,
+    "accepted_as_exact_training_membership_source": false
+  },
+  "resource_policy": {
+    "maximum_download_bytes": 25000000000,
+    "official_archive_exceeds_budget": true,
+    "partial_or_secondary_data_must_not_be_promoted_to_formal_overlap_evidence": true
+  },
+  "decision": {
+    "exact_membership_audit_allowed": false,
+    "formal_ood_label_allowed": false,
+    "model_usage": "shadow_diagnostic_only",
+    "alignment_novelty_reporting_remains_available": true,
+    "reasons": [
+      "official_archive_exceeds_download_budget",
+      "alternative_source_equivalence_unverified",
+      "ur50d_training_membership_sampling_not_reproducible"
+    ]
+  },
+  "implementation": {
+    "module": "src/pepagent/esm2_training_overlap.py",
+    "module_sha256": "72ddedcbb8686de786dedd5c6109e79d49cfaa943b66e9196c1cf2d648d51466",
+    "test": "tests/test_esm2_training_overlap.py",
+    "test_sha256": "917576fc6b7d0c113cf14a7c657a794f1fdcaeef4bfaba8e9285dc5547152ac5"
+  }
+}
