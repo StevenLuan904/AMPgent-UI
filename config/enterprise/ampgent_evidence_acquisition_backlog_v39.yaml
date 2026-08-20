@@ -59,7 +59,7 @@ tasks:
       - stop_if_cell_line_or_endpoint_semantics_are_missing
       - stop_if_commensal_taxonomy_or_assay_conditions_are_missing
   - task_id: toxicity_second_family_qualification
-    status: ready
+    status: completed
     priority_tier: 1
     evidence_domains: [toxicity]
     action_type: independent_model_qualification
@@ -74,6 +74,30 @@ tasks:
       - stop_on_same_independence_group_as_toxinpred3
       - stop_on_pickle_or_opaque_runtime_without_isolation
       - stop_if_commercial_use_is_not_confirmed
+    completion:
+      outcome: no_external_candidate_qualified
+      witness_path: config/enterprise/toxicity_second_family_triage_v39.json
+      witness_sha256: 805d5c8c8267e40f661d00bd59757d3c1aad592191ef52e1e30c5e18fbcd7471
+      external_candidates_reviewed: 4
+      safety_gate_lowered: false
+      completed_at: "2026-08-20T21:31:34Z"
+  - task_id: toxicity_independent_dataset_model_contract
+    status: ready
+    priority_tier: 1
+    evidence_domains: [toxicity]
+    action_type: independent_dataset_and_sequence_model_contract
+    prerequisites: [toxicity_second_family_qualification]
+    estimated_cpu_minutes: 60
+    estimated_gpu_minutes: 0
+    acceptance_artifacts:
+      - non_toxinpred3_training_dataset_manifest_sha256
+      - training_lineage_and_license_witness_sha256
+      - leakage_safe_train_calibration_ood_split_sha256
+      - transparent_runtime_and_model_card_contract_sha256
+    stop_conditions:
+      - stop_if_dataset_lineage_overlaps_toxinpred3_without_auditable_partition
+      - stop_if_commercial_use_is_not_confirmed
+      - stop_if_toxicity_endpoint_semantics_are_not_peptide_specific
   - task_id: hemopi2_calibration_and_ood_benchmark
     status: ready
     priority_tier: 1

@@ -1,0 +1,83 @@
+{
+  "schema_version": "ampgent.toxicity-second-family-triage.1",
+  "triage_id": "ampgent_toxicity_second_family_v39_20260820",
+  "observed_at": "2026-08-20T21:31:34Z",
+  "status": "completed_no_external_candidate_qualified",
+  "incumbent": {
+    "model_id": "toxinpred3",
+    "independence_group": "toxinpred3_benchmark_family"
+  },
+  "candidates": [
+    {
+      "model_id": "toxteller",
+      "repository": "https://github.com/comics-asiis/ToxicPeptidePrediction",
+      "commit": "8c28956d20f4530648c7085c40df8161a62e0bad",
+      "readme_sha256": "87106919485ae3e7b6bcbfaa2ae0040288c1f8a773d2338402130c090ca0ebed",
+      "license_spdx": null,
+      "root_license_file_present": false,
+      "runtime": "four serialized pickle models and scalers",
+      "qualified": false,
+      "blockers": [
+        "commercial_use_not_confirmed",
+        "training_lineage_independence_not_demonstrated",
+        "opaque_pickle_runtime"
+      ]
+    },
+    {
+      "model_id": "toxibtl",
+      "repository": "https://github.com/WLYLab/ToxIBTL",
+      "commit": "f0a9412ff563e45051a2aea2241e64930b6f1a92",
+      "readme_sha256": "fb36964877cf4ec0aa5d2d83ed6a121e7b9a8c2c3a289fae78c1bd34078bee62",
+      "license_spdx": null,
+      "root_license_file_present": false,
+      "runtime": "research notebook without frozen production checkpoint contract",
+      "qualified": false,
+      "blockers": [
+        "commercial_use_not_confirmed",
+        "pretrained_weights_and_runtime_manifest_missing"
+      ]
+    },
+    {
+      "model_id": "hypeptox_fuse",
+      "repository": "https://github.com/duongttr/HyPepTox-Fuse",
+      "commit": "1c723b5607a6ba53c5243fbf142d462da6312382",
+      "readme_sha256": "0066fe84962ddc8566531ea390697750028f225a75bb2afff27ac041e31f6ad3",
+      "license_spdx": "Apache-2.0",
+      "license_sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "training_source": "ToxinPred3 benchmark dataset",
+      "qualified": false,
+      "blockers": [
+        "same_training_evidence_family_as_incumbent",
+        "independent_calibration_and_ood_missing"
+      ]
+    },
+    {
+      "model_id": "tamper",
+      "repository": "https://github.com/BirolLab/tAMPer",
+      "commit": "28d43acfb2239a69611e22ed9f250e70e923a74e",
+      "readme_sha256": "381a6d1b56b42390d44bf874ac7775c06e82686838729d090964f4d6f42df45e",
+      "license_spdx": "GPL-3.0",
+      "license_sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "runtime": "sequence plus ColabFold-derived three-dimensional structure",
+      "qualified": false,
+      "permitted_usage": "future_post_structure_shadow_only",
+      "blockers": [
+        "requires_structure_before_sequence_gate",
+        "independent_calibration_and_ood_missing"
+      ]
+    }
+  ],
+  "decision": {
+    "external_model_admitted": false,
+    "safety_gate_lowered": false,
+    "next_action": "freeze_independent_non_toxinpred3_dataset_then_build_or_source_sequence_model",
+    "formal_science_run_submission_allowed": false
+  },
+  "implementation": {
+    "module": "src/pepagent/toxicity_model_qualification.py",
+    "module_sha256": "fdc090e5598608eadfdc208a4a5c54b5168292227c882cb262dfe970d9e7a7e2",
+    "test": "tests/test_toxicity_model_qualification.py",
+    "test_sha256": "f90368923662475208e88f29d615965c60ecdac13d2e19b914ab1859b53a51b5",
+    "focused_tests_passed": 4
+  }
+}

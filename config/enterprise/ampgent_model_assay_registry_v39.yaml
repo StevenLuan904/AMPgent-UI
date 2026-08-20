@@ -54,6 +54,46 @@ models:
     training_domain: public_peptide_toxicity_data
     status: incumbent_not_enterprise_eligible
     blockers: [independent_validation_missing, calibration_artifact_missing, ood_artifact_missing]
+  - model_id: toxteller
+    version: git_8c28956d20f4530648c7085c40df8161a62e0bad
+    evidence_domain: toxicity
+    endpoint_semantics: peptide_toxicity_binary_consensus
+    independence_group: unresolved_public_toxicity_datasets
+    training_domain: collected_public_toxic_and_non_toxic_peptides_lineage_not_fully_pinned
+    status: blocked
+    qualification_witness: config/enterprise/toxicity_second_family_triage_v39.json
+    qualification_witness_sha256: 805d5c8c8267e40f661d00bd59757d3c1aad592191ef52e1e30c5e18fbcd7471
+    blockers: [commercial_use_not_confirmed, opaque_pickle_runtime, training_lineage_independence_not_demonstrated]
+  - model_id: toxibtl
+    version: git_f0a9412ff563e45051a2aea2241e64930b6f1a92
+    evidence_domain: toxicity
+    endpoint_semantics: peptide_and_protein_toxicity_classification
+    independence_group: unresolved_public_toxicity_datasets
+    training_domain: peptide_and_protein_transfer_learning_corpus
+    status: blocked
+    qualification_witness: config/enterprise/toxicity_second_family_triage_v39.json
+    qualification_witness_sha256: 805d5c8c8267e40f661d00bd59757d3c1aad592191ef52e1e30c5e18fbcd7471
+    blockers: [commercial_use_not_confirmed, pretrained_weights_and_runtime_manifest_missing]
+  - model_id: hypeptox_fuse
+    version: git_1c723b5607a6ba53c5243fbf142d462da6312382
+    evidence_domain: toxicity
+    endpoint_semantics: peptide_toxicity_classification
+    independence_group: toxinpred3_benchmark_family
+    training_domain: toxinpred3_benchmark_dataset
+    status: blocked
+    qualification_witness: config/enterprise/toxicity_second_family_triage_v39.json
+    qualification_witness_sha256: 805d5c8c8267e40f661d00bd59757d3c1aad592191ef52e1e30c5e18fbcd7471
+    blockers: [same_training_evidence_family_as_toxinpred3, independent_calibration_and_ood_missing]
+  - model_id: tamper_toxicity
+    version: git_28d43acfb2239a69611e22ed9f250e70e923a74e
+    evidence_domain: toxicity
+    endpoint_semantics: sequence_and_structure_peptide_toxicity_classification
+    independence_group: tamper_sequence_structure
+    training_domain: public_peptide_toxicity_sequence_and_structure_data
+    status: shadow
+    qualification_witness: config/enterprise/toxicity_second_family_triage_v39.json
+    qualification_witness_sha256: 805d5c8c8267e40f661d00bd59757d3c1aad592191ef52e1e30c5e18fbcd7471
+    blockers: [requires_structure_before_sequence_gate, independent_calibration_and_ood_missing]
   - model_id: aggrescanai
     version: plugin_available
     evidence_domain: solubility_and_aggregation
