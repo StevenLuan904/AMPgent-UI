@@ -16,6 +16,7 @@ from pepagent.db.models import (
     AgentDecision,
     Candidate,
     Evaluation,
+    ExperimentRun,
     ExperimentRunTargetBranch,
     MultiTargetStructureEvidenceRecord,
 )
@@ -68,13 +69,39 @@ from pepagent.workers.activities import (
 )
 from pepagent.workers.v37_activities import _select_v37_declared_observations
 from pepagent.workflow_observer_contract import (
+    ActivityLifecyclePayload,
+    FormalWorkflowTopology,
     KnowledgeCardReadPayload,
     append_typed_lifecycle_event,
     build_candidate_decision_projection,
+    persist_observer_checkpoints,
 )
 
 V38_METRIC_RESULT_REFERENCE_SCHEMA = "v38.metric-result-reference.1"
 V38_ADMISSION_REFERENCE_SCHEMA = "v38.sequence-admission-reference.1"
+
+
+@activity.defn(name="persist_v38_external_activity_lifecycle")
+async def persist_v38_external_activity_lifecycle(
+    request: dict[str, Any],
+) -> dict[str, Any]:
+    payload = ActivityLifecyclePayload.model_validate(request["payload"])
+    async with SessionFactory() as session, session.begin():
+        run = await session.get(ExperimentRun, payload.run_id)
+        if run is None:
+            raise ValueError("external activity lifecycle run does not exist")
+        topology = FormalWorkflowTopology.model_validate(
+            run.spec_json["workflow_topology"]
+        )
+        event = await append_typed_lifecycle_event(session, payload)
+        await persist_observer_checkpoints(
+            session, run_id=payload.run_id, topology=topology
+        )
+    return {
+        "event_id": str(event.id),
+        "event_type": f"activity.{payload.status}",
+        "payload_sha256": event.payload_sha256,
+    }
 
 
 def _validate_v38_structure_request(

@@ -133,6 +133,41 @@ class V38SequenceFirstAgentWorkflow:
         contract = request["execution_contract"]
         queues = request["task_queues"]
         control_queue = str(queues["workflow_and_control"])
+
+        async def record_external_lifecycle(
+            *,
+            activity_id: str,
+            activity_type: str,
+            task_queue: str,
+            status: str,
+            completed: int,
+            expected: int,
+            attempt: int = 1,
+        ) -> None:
+            await workflow.execute_activity(
+                "persist_v38_external_activity_lifecycle",
+                {
+                    "run_id": run_id,
+                    "payload": {
+                        "schema_version": "v38.activity-lifecycle.1",
+                        "run_id": run_id,
+                        "activity_id": activity_id,
+                        "activity_type": activity_type,
+                        "tool_call_id": None,
+                        "logical_stage": "refinement",
+                        "display_category": "design",
+                        "attempt": attempt,
+                        "status": status,
+                        "completed": completed,
+                        "expected": expected,
+                        "worker_role": "external-refinement-provider",
+                        "task_queue": task_queue,
+                    },
+                },
+                task_queue=control_queue,
+                start_to_close_timeout=timedelta(minutes=2),
+                retry_policy=retry,
+            )
         try:
             await workflow.execute_activity(
                 "mark_run_started",
@@ -277,25 +312,77 @@ class V38SequenceFirstAgentWorkflow:
                 plan = admission_reference.get("refinement_plan")
                 if not isinstance(plan, dict):
                     raise ValueError("v38 blocked admission lacks a refinement plan")
-                provider_result = await workflow.execute_activity(
-                    str(provider["activity_name"]),
-                    {
-                        "schema_version": "v38.refinement-provider-request.1",
-                        "run_id": run_id,
-                        "refinement_plan": plan,
-                        "provider_task_id": provider["provider_task_id"],
-                        "knowledge_context_pack_sha256": request[
-                            "knowledge_context_pack_sha256"
-                        ],
-                        "provider_release_revision": provider["release_revision"],
-                        "provider_runtime_manifest_sha256": provider[
-                            "runtime_manifest_sha256"
-                        ],
-                    },
-                    task_queue=str(provider["task_queue"]),
-                    start_to_close_timeout=timedelta(hours=12),
-                    heartbeat_timeout=timedelta(minutes=5),
-                    retry_policy=retry,
+                provider_activity_type = str(provider["activity_name"])
+                provider_task_queue = str(provider["task_queue"])
+                provider_activity_id = (
+                    f"v38-refinement-provider-{int(plan['refinement_round'])}"
+                )
+                expected_children = sum(
+                    int(item["requested_children"]) for item in plan["tasks"]
+                )
+                await record_external_lifecycle(
+                    activity_id=provider_activity_id,
+                    activity_type=provider_activity_type,
+                    task_queue=provider_task_queue,
+                    status="started",
+                    completed=0,
+                    expected=expected_children,
+                )
+                try:
+                    provider_result = await workflow.execute_activity(
+                        provider_activity_type,
+                        {
+                            "schema_version": "v38.refinement-provider-request.1",
+                            "run_id": run_id,
+                            "refinement_plan": plan,
+                            "provider_task_id": provider["provider_task_id"],
+                            "knowledge_context_pack_sha256": request[
+                                "knowledge_context_pack_sha256"
+                            ],
+                            "provider_release_revision": provider["release_revision"],
+                            "provider_runtime_manifest_sha256": provider[
+                                "runtime_manifest_sha256"
+                            ],
+                        },
+                        task_queue=provider_task_queue,
+                        start_to_close_timeout=timedelta(hours=12),
+                        heartbeat_timeout=timedelta(minutes=5),
+                        retry_policy=retry,
+                        activity_id=provider_activity_id,
+                    )
+                except asyncio.CancelledError:
+                    await asyncio.shield(
+                        record_external_lifecycle(
+                            activity_id=provider_activity_id,
+                            activity_type=provider_activity_type,
+                            task_queue=provider_task_queue,
+                            status="cancelled",
+                            completed=0,
+                            expected=expected_children,
+                        )
+                    )
+                    raise
+                except Exception:
+                    await record_external_lifecycle(
+                        activity_id=provider_activity_id,
+                        activity_type=provider_activity_type,
+                        task_queue=provider_task_queue,
+                        status="failed",
+                        completed=0,
+                        expected=expected_children,
+                    )
+                    raise
+                provider_attempt = int(
+                    provider_result.get("provenance", {}).get("attempt", 1)
+                )
+                await record_external_lifecycle(
+                    activity_id=provider_activity_id,
+                    activity_type=provider_activity_type,
+                    task_queue=provider_task_queue,
+                    status="succeeded",
+                    completed=expected_children,
+                    expected=expected_children,
+                    attempt=provider_attempt,
                 )
                 persisted = await workflow.execute_activity(
                     "persist_v38_refinement_children",

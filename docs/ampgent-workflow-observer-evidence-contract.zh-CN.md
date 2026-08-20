@@ -26,6 +26,9 @@ structure_rosetta → final_portfolio → replay`
   `activity.started|progress|succeeded|failed|cancelled`；包含 run、activity identity、可用时的
   ToolCall ID、logical stage、display category、attempt、completed/expected、worker role 和
   task queue。不得写自由文本日志、异常正文或凭据。
+  AMPgent worker 由 interceptor 写入；独立 knowledge refinement provider 由 workflow 在
+  control queue 上用同一 schema 桥接 started/succeeded/failed/cancelled，避免外部队列成为
+  决策树盲区。
 - `lifecycle_events`：知识读取使用 `knowledge_card.read` 与
   `v38.knowledge-card-read.1`。冻结 context pack 记录 pack SHA；refinement 对实际引用的
   passage 记录 card key、provider 版本、passage SHA、来源 URI、adopt/reject 和 read time。
