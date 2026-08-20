@@ -4,6 +4,8 @@ import asyncio
 import json
 import uuid
 from dataclasses import asdict
+from datetime import UTC, datetime
+from pathlib import PurePosixPath
 from typing import Any
 
 from sqlalchemy import func, select
@@ -65,6 +67,11 @@ from pepagent.workers.activities import (
     score_rosetta_complex,
 )
 from pepagent.workers.v37_activities import _select_v37_declared_observations
+from pepagent.workflow_observer_contract import (
+    KnowledgeCardReadPayload,
+    append_typed_lifecycle_event,
+    build_candidate_decision_projection,
+)
 
 V38_METRIC_RESULT_REFERENCE_SCHEMA = "v38.metric-result-reference.1"
 V38_ADMISSION_REFERENCE_SCHEMA = "v38.sequence-admission-reference.1"
@@ -319,40 +326,80 @@ def build_v38_rosetta_evidence(
     )
 
 
+def build_v38_structure_artifact_link(
+    *,
+    task: MultiTargetStructureTask,
+    tool: str,
+    artifact: dict[str, Any],
+    index: int,
+) -> tuple[str, dict[str, Any]]:
+    suffix = PurePosixPath(str(artifact.get("path", ""))).suffix.lower()
+    is_coordinate = artifact.get("media_type") in {
+        "chemical/x-cif",
+        "chemical/x-mmcif",
+        "chemical/x-pdb",
+    } or suffix in {".cif", ".mmcif", ".pdb"}
+    role = "structure_coordinate" if is_coordinate else f"engine_output_{index}"
+    return role, {
+        "schema_version": "v38.structure-artifact-link.1",
+        "tool": tool,
+        "protocol": "v38-multitarget",
+        "target_id": str(task.target_id),
+        "target_key": task.target_key,
+        "candidate_id": str(task.candidate_id),
+        "control_lane": task.control_lane,
+        "boltz_seed": task.boltz_seed,
+        "structure_task_sha256": task.sha256(),
+        "artifact_role": role,
+        "relative_path": artifact["path"],
+        "coordinate_format": suffix.lstrip(".") if is_coordinate else None,
+    }
+
+
 async def _register_v38_runtime_artifacts(
     session: AsyncSession,
     *,
     tool_call_id: uuid.UUID,
     provenance: dict[str, Any],
     tool: str,
-    candidate_id: str,
+    task: MultiTargetStructureTask,
 ) -> None:
+    candidate_id = str(task.candidate_id)
+    common_metadata = {
+        "schema_version": "v38.structure-artifact-link.1",
+        "tool": tool,
+        "protocol": "v38-multitarget",
+        "target_id": str(task.target_id),
+        "target_key": task.target_key,
+        "candidate_id": candidate_id,
+        "control_lane": task.control_lane,
+        "boltz_seed": task.boltz_seed,
+        "structure_task_sha256": task.sha256(),
+    }
     await _register_artifact(
         session,
         tool_call_id,
         provenance["raw_output_artifact"],
         "raw_output",
-        {"tool": tool, "candidate_id": candidate_id, "protocol": "v38-multitarget"},
+        {**common_metadata, "artifact_role": "raw_output"},
     )
     await _register_artifact(
         session,
         tool_call_id,
         provenance["environment_artifact"],
         "environment_manifest",
-        {"tool": tool, "protocol": "v38-multitarget"},
+        {**common_metadata, "artifact_role": "environment_manifest"},
     )
     for index, artifact in enumerate(provenance["engine_artifacts"]):
+        role, metadata = build_v38_structure_artifact_link(
+            task=task, tool=tool, artifact=artifact, index=index
+        )
         await _register_artifact(
             session,
             tool_call_id,
             artifact,
-            f"engine_output_{index}",
-            {
-                "tool": tool,
-                "candidate_id": candidate_id,
-                "relative_path": artifact["path"],
-                "protocol": "v38-multitarget",
-            },
+            role,
+            metadata,
         )
 
 
@@ -378,13 +425,15 @@ async def persist_v38_multitarget_boltz(request: dict[str, Any]) -> dict[str, An
             model_uri=provenance["model_uri"],
             random_seed=task.boltz_seed,
             attempt=provenance["attempt"],
+            logical_stage="structure_boltz",
+            display_category="structure",
         )
         await _register_v38_runtime_artifacts(
             session,
             tool_call_id=call.id,
             provenance=provenance,
             tool="boltz2",
-            candidate_id=str(task.candidate_id),
+            task=task,
         )
         await _register_artifact(
             session,
@@ -423,6 +472,8 @@ async def persist_v38_multitarget_rosetta(request: dict[str, Any]) -> dict[str, 
             model_uri=provenance["model_uri"],
             random_seed=task.boltz_seed,
             attempt=provenance["attempt"],
+            logical_stage="structure_rosetta",
+            display_category="structure",
         )
         await repository.record_tool_dependency(call.id, boltz.tool_call_id, "refines")
         await _register_v38_runtime_artifacts(
@@ -430,7 +481,7 @@ async def persist_v38_multitarget_rosetta(request: dict[str, Any]) -> dict[str, 
             tool_call_id=call.id,
             provenance=provenance,
             tool="rosetta",
-            candidate_id=str(task.candidate_id),
+            task=task,
         )
         result = {**result, "tool_call_id": str(call.id)}
         rosetta = build_v38_rosetta_evidence(result, boltz)
@@ -688,6 +739,9 @@ async def _build_v38_sequence_admission_payload(
             refinement.model_dump(mode="json") if refinement is not None else None
         ),
     }
+    payload["observer_decision_projection"] = build_candidate_decision_projection(
+        payload
+    )
     return payload, evidence_call_ids
 
 
@@ -797,6 +851,8 @@ async def persist_v38_score_all_generation(request: dict[str, Any]) -> dict[str,
                 weights_sha256=weights_sha256,
                 random_seed=cell.seed,
                 attempt=int(generated["attempt"]),
+                logical_stage="generation",
+                display_category="design",
             )
             artifact = await _store_json(
                 {
@@ -925,6 +981,8 @@ async def persist_v38_sequence_metric(request: dict[str, Any]) -> dict[str, Any]
             weights_sha256=provenance.get("weights_sha256"),
             model_uri=provenance.get("model_uri"),
             attempt=int(provenance["attempt"]),
+            logical_stage="sequence_metrics",
+            display_category="evaluation",
         )
         await _register_artifact(
             session,
@@ -1044,6 +1102,8 @@ async def persist_v38_refinement_children(request: dict[str, Any]) -> dict[str, 
             weights_sha256=provenance.get("weights_sha256"),
             model_uri=provenance.get("model_uri"),
             attempt=int(provenance["attempt"]),
+            logical_stage="refinement",
+            display_category="design",
         )
         artifact = await _store_json(
             {
@@ -1084,6 +1144,7 @@ async def persist_v38_refinement_children(request: dict[str, Any]) -> dict[str, 
         }
         children: list[Candidate] = []
         duplicate_count = 0
+        observed_knowledge_reads: set[tuple[str, str, str]] = set()
         for ordinal, proposal in enumerate(proposals, start=1):
             sequence = "".join(proposal.child_sequence.split()).upper()
             sequence_sha256 = sha256_text(sequence)
@@ -1138,6 +1199,31 @@ async def persist_v38_refinement_children(request: dict[str, Any]) -> dict[str, 
                     ),
                 },
             )
+            for trace in proposal.knowledge_traces:
+                identity = (
+                    trace.card_id,
+                    trace.passage_sha256,
+                    trace.decision,
+                )
+                if identity in observed_knowledge_reads:
+                    continue
+                observed_knowledge_reads.add(identity)
+                await append_typed_lifecycle_event(
+                    session,
+                    KnowledgeCardReadPayload(
+                        run_id=run_id,
+                        card_key=trace.card_id,
+                        card_version=str(provenance["tool_version"]),
+                        content_sha256=trace.passage_sha256,
+                        content_kind="passage_evidence",
+                        source_uri=(
+                            f"provider-task://{trace.provider_task_id}/cards/"
+                            f"{trace.card_id}/passages/{trace.passage_sha256}"
+                        ),
+                        read_at=datetime.now(UTC),
+                        status=("adopted" if trace.decision == "adopt" else "rejected"),
+                    ),
+                )
         await repository.append_event(
             "run",
             run_id,
@@ -1252,6 +1338,8 @@ async def persist_v38_sequence_admission(request: dict[str, Any]) -> dict[str, A
             reference,
             model_uri="deterministic://v38-sequence-maturity-admission",
             attempt=activity.info().attempt,
+            logical_stage="admission",
+            display_category="decision",
         )
         for parent_id in sorted(evidence_call_ids, key=str):
             await repository.record_tool_dependency(
@@ -1493,6 +1581,8 @@ async def persist_v38_final_portfolio_replay(
             reference,
             model_uri="deterministic://v38-final-multiview-portfolio-replay",
             attempt=activity.info().attempt,
+            logical_stage="final_portfolio",
+            display_category="decision",
         )
         for parent_id in sorted(evidence_call_ids, key=str):
             await repository.record_tool_dependency(

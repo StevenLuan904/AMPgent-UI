@@ -4,6 +4,7 @@ import argparse
 import asyncio
 import json
 import uuid
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 from uuid import UUID
@@ -24,6 +25,12 @@ from pepagent.v38_persistence import (
     MultiTargetRunBindingReceipt,
     TargetBranchBinding,
     persist_multitarget_run_binding,
+)
+from pepagent.workflow_observer_contract import (
+    KnowledgeCardReadPayload,
+    append_typed_lifecycle_event,
+    build_formal_workflow_topology,
+    persist_observer_checkpoints,
 )
 
 _WORKFLOW_TYPE = "V38SequenceFirstAgentWorkflow"
@@ -348,6 +355,15 @@ async def submit_v38_once(
     controller_run_id = UUID(str(preflight["controller_run_id"]))
     formal_key = str(preflight["formal_submission_key"])
     workflow_id = str(preflight["workflow_id"])
+    topology = build_formal_workflow_topology(request_template)
+    topology_payload = topology.model_dump(mode="json")
+    topology_bytes = json.dumps(
+        topology_payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
+    object_store = await asyncio.to_thread(ContentAddressedObjectStore)
+    topology_stored = await asyncio.to_thread(
+        object_store.put_bytes, topology_bytes, "application/json"
+    )
     spec = {
         "schema_version": "v38.formal-science-run.1",
         "run_kind": "multitarget_sequence_first_formal_science",
@@ -365,8 +381,15 @@ async def submit_v38_once(
         "history_terminal_run_count": preflight["history_terminal_run_count"],
         "historical_outputs_reused": False,
         "database_object_store_replay_required": True,
+        "workflow_topology_schema_version": topology.schema_version,
+        "workflow_topology": topology_payload,
+        "workflow_topology_artifact": {
+            "sha256": topology_stored.sha256,
+            "size_bytes": topology_stored.size_bytes,
+            "media_type": topology_stored.media_type,
+            "storage_uri": topology_stored.uri,
+        },
     }
-    object_store = await asyncio.to_thread(ContentAddressedObjectStore)
     async with SessionFactory() as session, session.begin():
         run, created = await _reserve_v38_formal_run(
             session,
@@ -383,6 +406,7 @@ async def submit_v38_once(
             "run_id": run_id,
             "controller_run_id": str(controller_run_id),
             "submission_preflight": preflight,
+            "workflow_topology": topology_payload,
         }
         request_bytes = json.dumps(
             request, ensure_ascii=False, sort_keys=True, separators=(",", ":")
@@ -393,6 +417,9 @@ async def submit_v38_once(
         )
         await _register_stored_artifact(
             session, stored=stored, role="v38_temporal_workflow_request"
+        )
+        await _register_stored_artifact(
+            session, stored=topology_stored, role="v38_formal_workflow_topology"
         )
         enriched = {
             **run.spec_json,
@@ -407,6 +434,39 @@ async def submit_v38_once(
         if created:
             run.spec_json = enriched
             run.spec_sha256 = sha256_json(enriched)
+            repository = ExperimentRepository(session)
+            await repository.append_event(
+                "run",
+                run.id,
+                "run.workflow_topology_frozen",
+                "v38-exact-once-submission-cli",
+                {
+                    "schema_version": topology.schema_version,
+                    "topology_version": topology.topology_version,
+                    "artifact_sha256": topology_stored.sha256,
+                    "stage_count": len(topology.stages),
+                },
+            )
+            provider = request_template["refinement_provider"]
+            await append_typed_lifecycle_event(
+                session,
+                KnowledgeCardReadPayload(
+                    run_id=run.id,
+                    card_key=f"context-pack:{provider['provider_task_id']}",
+                    card_version=str(provider["release_revision"]),
+                    content_sha256=topology.knowledge_context_pack_sha256,
+                    content_kind="context_pack",
+                    source_uri=(
+                        f"provider-task://{provider['provider_task_id']}/context-pack/"
+                        f"{topology.knowledge_context_pack_sha256}"
+                    ),
+                    read_at=datetime.now(UTC),
+                    status="frozen_for_run",
+                ),
+            )
+            await persist_observer_checkpoints(
+                session, run_id=run.id, topology=topology
+            )
         elif run.spec_json != enriched:
             raise ValueError("recovered v38 workflow request artifact drifted")
 

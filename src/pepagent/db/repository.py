@@ -312,7 +312,11 @@ class ExperimentRepository:
         model_uri: str | None = None,
         random_seed: int | None = None,
         attempt: int = 1,
+        logical_stage: str | None = None,
+        display_category: str | None = None,
     ) -> ToolCall:
+        if (logical_stage is None) != (display_category is None):
+            raise ValueError("tool-call observer stage and category must be supplied together")
         input_sha256 = sha256_json(input_payload)
         output_sha256 = sha256_json(output_payload)
         idempotency_key = sha256_json(
@@ -364,6 +368,15 @@ class ExperimentRepository:
                 "idempotency_key": idempotency_key,
                 "input_sha256": input_sha256,
                 "output_sha256": output_sha256,
+                **(
+                    {
+                        "observer_schema_version": "v38.tool-call-display.1",
+                        "logical_stage": logical_stage,
+                        "display_category": display_category,
+                    }
+                    if logical_stage is not None
+                    else {}
+                ),
             },
         )
         return call

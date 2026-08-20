@@ -26,6 +26,7 @@ from pepagent.workers.v38_activities import (
     predict_v38_multitarget_structure,
     score_v38_multitarget_rosetta,
 )
+from pepagent.workers.v38_observer_interceptor import V38WorkflowObserverInterceptor
 from pepagent.workflows.v38_sequence_first import V38SequenceFirstAgentWorkflow
 
 V38_ROLE_CONFIG = {
@@ -87,6 +88,7 @@ async def run_worker() -> None:
         activities=activities,
         workflows=workflows,
         max_concurrent_activities=settings.worker_max_concurrent_activities,
+        interceptors=[V38WorkflowObserverInterceptor(settings.worker_role)],
         identity=identity,
         build_id=settings.worker_source_revision,
     )
