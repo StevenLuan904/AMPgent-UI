@@ -106,7 +106,7 @@ tasks:
       - stop_if_reference_database_is_mutable
       - stop_if_threshold_is_fit_on_current_candidates
   - task_id: synthesis_feasibility_ruleset_qualification
-    status: ready
+    status: completed
     priority_tier: 1
     evidence_domains: [synthesis_feasibility]
     action_type: transparent_ruleset_qualification
@@ -120,3 +120,7 @@ tasks:
     stop_conditions:
       - stop_if_rule_sources_or_endpoint_semantics_are_untraceable
       - stop_if_rule_changes_are_fit_to_current_candidate_rank
+    completion:
+      witness_path: config/enterprise/synthesis_feasibility_qualification_witness_v39.json
+      witness_sha256: 33c3e1abce4086415a11b10b045d83407edd25474cdd807467a0fb101fb28f0a
+      completed_at: "2026-08-20T09:30:23Z"

@@ -1,0 +1,46 @@
+{
+  "schema_version": "ampgent.synthesis-feasibility-qualification-witness.1",
+  "witness_id": "ampgent_synthesis_feasibility_ruleset_v39_20260820",
+  "qualified_at": "2026-08-20T09:30:23Z",
+  "qualified_scope": "transparent_sequence_only_manual_review_triage_for_unmodified_canonical_8_to_30_residue_peptides",
+  "ruleset_path": "config/enterprise/synthesis_feasibility_ruleset_v39.yaml",
+  "ruleset_file_sha256": "cc0c87b4ba6562a54fa17fd2085d65b138fb3f91ccf708e3fcd8ef65e02e7004",
+  "implementation_path": "src/pepagent/synthesis_feasibility.py",
+  "implementation_file_sha256": "5481625972e844784cf6c964d57c6cbb52318424e896e5d3fd5587f08894a91a",
+  "edge_case_test_path": "tests/test_synthesis_feasibility.py",
+  "edge_case_test_file_sha256": "a34f7e03dd869b96d1f5cb79e7434a4f91cc76316b26c60b25560f21031adafa",
+  "verification": {
+    "ruff": "passed",
+    "focused_tests_passed": 25,
+    "test_command_contract": "python -S with explicit immutable workspace site-packages and src PYTHONPATH",
+    "covered_boundaries": [
+      "routine_in_domain_sequence",
+      "all_frozen_manual_review_flags",
+      "out_of_domain_length",
+      "noncanonical_residue_fail_closed",
+      "ruleset_identity_binding"
+    ]
+  },
+  "independent_method_context": [
+    {
+      "doi": "10.1038/nprot.2007.454",
+      "role": "standard_and_difficult_fmoc_spps_method_context"
+    },
+    {
+      "doi": "10.1002/psc.2836",
+      "role": "fmoc_spps_failure_mode_and_side_reaction_context"
+    }
+  ],
+  "decision": {
+    "engineering_ruleset_qualification": "passed",
+    "formal_predictive_model_eligibility": "not_established",
+    "hard_rejection_allowed": false,
+    "reason": "The deterministic ruleset is qualified for transparent triage and manual-review routing only; retrospective synthesis yield, purity, and scale-up outcomes have not yet validated it as a predictive model."
+  },
+  "limitations": [
+    "No isolated-yield, purity, cost, or scale-up prediction.",
+    "No resin, reagent, protecting-group, termini, modification, or purification model.",
+    "Internal review thresholds are not published universal cutoffs.",
+    "No activity, safety, solubility, or stability inference."
+  ]
+}

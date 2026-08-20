@@ -86,8 +86,19 @@ models:
     training_domain: public_protein_language_model_corpus
     status: shadow
     blockers: [frozen_reference_artifact_missing, ood_threshold_calibration_missing]
+  - model_id: ampgent_sequence_only_spps_review
+    version: v39_20260820
+    evidence_domain: synthesis_feasibility
+    endpoint_semantics: transparent_manual_review_triage_for_standard_fmoc_spps
+    independence_group: deterministic_spps_review_rules
+    training_domain: no_fitted_training_data_method_literature_and_preregistered_internal_review_thresholds
+    status: available_unvalidated
+    ruleset_file_sha256: cc0c87b4ba6562a54fa17fd2085d65b138fb3f91ccf708e3fcd8ef65e02e7004
+    implementation_file_sha256: 5481625972e844784cf6c964d57c6cbb52318424e896e5d3fd5587f08894a91a
+    qualification_witness: config/enterprise/synthesis_feasibility_qualification_witness_v39.json
+    blockers: [retrospective_synthesis_outcome_validation_missing]
 
 # Domains with no entry are intentional and machine-audited as gaps:
-# mammalian_cytotoxicity, synthesis_feasibility, resistance_propensity,
+# mammalian_cytotoxicity, resistance_propensity,
 # commensal_selectivity. Physicochemical descriptors require no independent
 # predictive model under the current enterprise contract.
