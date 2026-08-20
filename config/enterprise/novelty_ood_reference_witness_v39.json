@@ -1,0 +1,47 @@
+{
+  "schema_version": "ampgent.novelty-ood-reference-witness.1",
+  "witness_id": "ampgent_novelty_ood_reference_v39_20260820",
+  "observed_at": "2026-08-20T11:30:30Z",
+  "status": "reference_snapshot_frozen_calibration_pending",
+  "source": {
+    "provider": "DRAMP",
+    "dataset": "Antibacterial FASTA",
+    "download_uri": "https://dramp.cpu-bioinfor.org/downloads/download.php?filename=download_data%2FDRAMP3.0_new%2FAntibacterial_amps.fasta",
+    "download_page": "https://dramp.cpu-bioinfor.org/downloads/",
+    "license": "CC-BY-4.0",
+    "raw_path": "data/reference/enterprise/dramp_antibacterial_20260820.fasta",
+    "raw_sha256": "a0d484eb6176e123298d19d06f23ccc6398a1f5c75d169cccbbf7590a6e6c835"
+  },
+  "normalization": {
+    "candidate_data_used": false,
+    "applicability_domain": "canonical_unmodified_peptides_8_to_30_residues",
+    "source_record_count": 28702,
+    "accepted_record_count": 19837,
+    "unique_sequence_count": 17131,
+    "duplicate_record_count": 2706,
+    "rejected_length_count": 7474,
+    "rejected_noncanonical_count": 1391,
+    "normalized_path": "data/reference/enterprise/dramp_antibacterial_canonical_8_30_v39.fasta",
+    "normalized_sha256": "d1004b1398df723b2e4a044aaab13b6d9628d7fec23042e2cccd88f8534d6787",
+    "sequence_set_sha256": "fdebb0b08195c65dc35e6a7acb0d773542bd7b5098a2014e81ef944740b0bf39",
+    "manifest_path": "data/reference/enterprise/dramp_antibacterial_canonical_8_30_v39.manifest.json",
+    "manifest_sha256": "fe823f977b29f76b7f74d0ee0226493806c66cc9e92b0df94b3b3cf35e139a2a"
+  },
+  "implementation": {
+    "module_sha256": "45fbbf14ed06433b9d30b1ef9841b59da1bf8615efc80c6969ce30624252b6e1",
+    "edge_case_test_sha256": "f023a160d5a63363fb265a5c5696699573628adf3e7a73241dc7ac225f66696c",
+    "focused_tests_passed": 5
+  },
+  "threshold_policy": {
+    "path": "config/enterprise/novelty_ood_threshold_policy_v39.yaml",
+    "sha256": "c10171bf341a41a9c45066acf46daedfd7b31cc2ae79dceab61eae9fd148fe3c",
+    "current_candidate_batch_used_for_threshold_fit": false,
+    "formal_ood_label_allowed": false
+  },
+  "remaining_blockers": [
+    "mmseqs_runtime_and_content_addressed_index_missing",
+    "esm_embedding_reference_manifest_missing",
+    "external_temporal_or_non_amp_holdout_calibration_missing",
+    "training_overlap_audit_missing"
+  ]
+}

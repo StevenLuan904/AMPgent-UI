@@ -61,6 +61,19 @@ def test_scheduler_honors_dependencies_and_zero_gpu_budget() -> None:
     assert plan.deferred_reasons["gpu_task"] == "gpu_budget"
 
 
+def test_scheduler_keeps_in_progress_work_in_the_action_plan() -> None:
+    active = _task("active", "novelty", group=1)
+    active["status"] = "in_progress"
+    backlog = {
+        "schema_version": "ampgent.enterprise-evidence-backlog.1",
+        "tasks": [active, _task("ready", "novelty", group=1)],
+    }
+    plan = plan_enterprise_evidence_actions(
+        model_registry_audit=_audit("novelty"), backlog=backlog, maximum_actions=1
+    )
+    assert plan.selected_task_ids == ("active",)
+
+
 def test_current_backlog_selects_three_high_information_cpu_tasks() -> None:
     root = Path(__file__).parents[1]
     backlog = yaml.safe_load(

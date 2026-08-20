@@ -74,7 +74,7 @@ def plan_enterprise_evidence_actions(
     for raw_task in tasks:
         if isinstance(raw_task, Mapping) and raw_task.get("status") == "completed":
             completed.add(_text(raw_task.get("task_id"), label="completed task_id"))
-    candidates: list[tuple[tuple[int, int, int, int, str], Mapping[str, Any]]] = []
+    candidates: list[tuple[tuple[int, int, int, int, int, str], Mapping[str, Any]]] = []
     deferred: dict[str, str] = {}
     seen: set[str] = set()
 
@@ -110,7 +110,7 @@ def plan_enterprise_evidence_actions(
         if missing:
             deferred[task_id] = "waiting_for:" + ",".join(missing)
             continue
-        if status != "ready":
+        if status not in {"ready", "in_progress"}:
             deferred[task_id] = f"status:{status}"
             continue
         cpu_minutes = int(raw_task.get("estimated_cpu_minutes", 0))
@@ -119,6 +119,7 @@ def plan_enterprise_evidence_actions(
             raise ValueError(f"enterprise evidence task cost is invalid: {task_id}")
         order = (
             int(raw_task.get("priority_tier", 100)),
+            0 if status == "in_progress" else 1,
             -len(covered),
             gpu_minutes,
             cpu_minutes,

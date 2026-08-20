@@ -77,7 +77,9 @@ models:
     independence_group: alignment_novelty
     training_domain: frozen_reference_sequence_database
     status: shadow
-    blockers: [frozen_reference_artifact_missing, independent_validation_missing]
+    reference_snapshot_sha256: d1004b1398df723b2e4a044aaab13b6d9628d7fec23042e2cccd88f8534d6787
+    reference_sequence_set_sha256: fdebb0b08195c65dc35e6a7acb0d773542bd7b5098a2014e81ef944740b0bf39
+    blockers: [content_addressed_mmseqs_index_missing, independent_validation_missing]
   - model_id: esm2_ood
     version: plugin_available
     evidence_domain: novelty_and_ood
@@ -85,7 +87,8 @@ models:
     independence_group: protein_language_model_ood
     training_domain: public_protein_language_model_corpus
     status: shadow
-    blockers: [frozen_reference_artifact_missing, ood_threshold_calibration_missing]
+    reference_snapshot_sha256: d1004b1398df723b2e4a044aaab13b6d9628d7fec23042e2cccd88f8534d6787
+    blockers: [embedding_reference_manifest_missing, ood_threshold_calibration_missing]
   - model_id: ampgent_sequence_only_spps_review
     version: v39_20260820
     evidence_domain: synthesis_feasibility
