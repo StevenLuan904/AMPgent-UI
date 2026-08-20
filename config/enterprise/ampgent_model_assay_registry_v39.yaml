@@ -52,8 +52,8 @@ models:
     endpoint_semantics: peptide_toxicity_classification
     independence_group: toxinpred3
     training_domain: public_peptide_toxicity_data
-    status: incumbent_not_enterprise_eligible
-    blockers: [independent_validation_missing, calibration_artifact_missing, ood_artifact_missing]
+    status: shadow
+    blockers: [generic_endpoint_lacks_dose_duration_and_cell_context, diagnostic_only]
   - model_id: toxteller
     version: git_8c28956d20f4530648c7085c40df8161a62e0bad
     evidence_domain: toxicity
@@ -86,10 +86,10 @@ models:
     blockers: [same_training_evidence_family_as_toxinpred3, independent_calibration_and_ood_missing]
   - model_id: tamper_toxicity
     version: git_28d43acfb2239a69611e22ed9f250e70e923a74e
-    evidence_domain: toxicity
-    endpoint_semantics: sequence_and_structure_peptide_toxicity_classification
+    evidence_domain: hemolysis
+    endpoint_semantics: sequence_and_structure_hemolysis_classification
     independence_group: tamper_sequence_structure
-    training_domain: public_peptide_toxicity_sequence_and_structure_data
+    training_domain: public_hemolysis_sequence_and_structure_data
     status: shadow
     qualification_witness: config/enterprise/toxicity_second_family_triage_v39.json
     qualification_witness_sha256: 805d5c8c8267e40f661d00bd59757d3c1aad592191ef52e1e30c5e18fbcd7471

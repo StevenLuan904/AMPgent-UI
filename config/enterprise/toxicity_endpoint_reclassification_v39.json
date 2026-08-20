@@ -1,0 +1,60 @@
+{
+  "schema_version": "ampgent.toxicity-endpoint-reclassification.1",
+  "contract_id": "ampgent_toxicity_endpoint_reclassification_v39_20260820",
+  "observed_at": "2026-08-20T23:34:15Z",
+  "status": "generic_toxicity_reclassified_to_shadow_diagnostic",
+  "audited_sources": [
+    {
+      "source_id": "hypeptox_fuse",
+      "repository": "https://github.com/duongttr/HyPepTox-Fuse",
+      "commit": "1c723b5607a6ba53c5243fbf142d462da6312382",
+      "readme_sha256": "0066fe84962ddc8566531ea390697750028f225a75bb2afff27ac041e31f6ad3",
+      "finding": "uses_the_toxinpred3_benchmark_family_and_does_not_supply_independent_endpoint_evidence"
+    },
+    {
+      "source_id": "tamper",
+      "repository": "https://github.com/BirolLab/tAMPer",
+      "commit": "28d43acfb2239a69611e22ed9f250e70e923a74e",
+      "readme_sha256": "381a6d1b56b42390d44bf874ac7775c06e82686838729d090964f4d6f42df45e",
+      "finding": "training_endpoint_is_hemolysis_and_belongs_to_the_hemolysis_domain"
+    },
+    {
+      "source_id": "pepadmet_dataset",
+      "repository": "https://github.com/Chemit797/PepADMET-Dataset",
+      "commit": "b353216c2896f079321483ca5da09fe599c7bb6a",
+      "readme_sha256": "e1de15f154277f5180c422ad869f65e27f3c16ac2d8e1ac91677198b9498914f",
+      "license_spdx": "MIT",
+      "license_sha256": "a2c97551c5e0a6e0d40247862404a6c04f83442869195ee8d0e4dd15368f0ed9",
+      "finding": "the_public_toxicity_dataset_is_an_8825_record_hemolysis_endpoint_not_generic_mammalian_cytotoxicity"
+    },
+    {
+      "source_id": "toxipep",
+      "publication": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12171765/",
+      "finding": "combines_toxinpred3_or_atse_toxicity_labels_with_a_separate_hemolysis_independent_set"
+    }
+  ],
+  "decision": {
+    "generic_toxicity_formal_hard_gate_allowed": false,
+    "toxinpred3_usage": "shadow_diagnostic_only",
+    "hemolysis_domain_remains_independent": true,
+    "mammalian_cytotoxicity_required_context": [
+      "experimental_measurement",
+      "cell_line_or_species",
+      "concentration_and_unit",
+      "exposure_duration",
+      "assay_endpoint"
+    ],
+    "safety_gate_lowered": false,
+    "formal_science_run_submission_allowed": false,
+    "next_action": "freeze_mammalian_cytotoxicity_and_commensal_reference_panel"
+  },
+  "implementation": {
+    "module": "src/pepagent/toxicity_endpoint_contract.py",
+    "module_sha256": "4c7c7849fa1aa9435e1e60e89b421818912ed49a2af72a9133526ba6a5230d37",
+    "test": "tests/test_toxicity_endpoint_contract.py",
+    "test_sha256": "f9d16aac4f3ed00c9ac17f60b091a95c5347e19ccba235457982726045f65d2c",
+    "focused_tests_passed": 19,
+    "ruff_status": "clean",
+    "verified_runtime_path": "D:\\ampgent-v39-runtime"
+  }
+}

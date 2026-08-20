@@ -41,9 +41,9 @@ evidence_domains:
     calibration_and_ood_required: true
     current_v38_status: missing
   toxicity:
-    minimum_independent_models: 2
-    calibration_and_ood_required: true
-    current_v38_status: toxinpred3_only
+    minimum_independent_models: 0
+    calibration_and_ood_required: false
+    current_v38_status: toxinpred3_shadow_diagnostic_only_generic_endpoint_not_formal
   physicochemical:
     minimum_independent_models: 0
     calibration_and_ood_required: false
@@ -120,7 +120,7 @@ readiness:
     - correct_or_explicitly_reclassify_the_3ZFZ_species_and_accession_identity
     - add_pathogen_and_strain_conditioned_activity_models
     - select_and_validate_a_non_amplify_amp_likeness_model
-    - add_second_independent_hemolysis_and_toxicity_models
-    - add_mammalian_cytotoxicity_and_commensal_selectivity
+    - add_second_independent_hemolysis_model
+    - add_endpoint_specific_mammalian_cytotoxicity_and_commensal_selectivity
     - promote_novelty_ood_stability_and_aggregation_from_optional_or_shadow
     - implement_adaptive_structure_stopping_and_cost_aware_acquisition

@@ -106,3 +106,4 @@ def test_current_inventory_remains_honestly_not_ready() -> None:
     assert "amp_likeness:independent_models=0,required=1" in audit.gaps
     assert "mammalian_cytotoxicity:independent_models=0,required=1" in audit.gaps
     assert "commensal_selectivity:independent_models=0,required=1" in audit.gaps
+    assert not any(gap.startswith("toxicity:") for gap in audit.gaps)

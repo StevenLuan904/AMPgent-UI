@@ -1,15 +1,14 @@
 {
   "schema_version": "ampgent.enterprise-evidence-action-plan.1",
   "plan_id": "ampgent_evidence_action_plan_v39_20260820",
-  "registry_sha256": "8e9300772d0f598c7a58d69f20a1751669ee58a9ce6ce7f8493a0e1cbbf6a066",
-  "backlog_sha256": "180060d6f83c45b182eab6fbf20a2cb0a86cb624532687c0828627ced358b7d7",
+  "registry_sha256": "364c334b7203a3205a4427b74b8ed28c9da6edde3b5a79dfcc40a4df5a3b52a7",
+  "backlog_sha256": "c19122c2c7242ab157634b11156ef74e3938d89a2125b0a298d6987089642b60",
   "formal_run_submission_allowed": false,
-  "estimated_cpu_minutes": 240,
+  "estimated_cpu_minutes": 180,
   "estimated_gpu_minutes": 0,
   "selected_task_ids": [
     "cytotoxicity_and_commensal_reference_panel_freeze",
-    "pathogen_conditioned_activity_reference_freeze",
-    "toxicity_independent_dataset_model_contract"
+    "pathogen_conditioned_activity_reference_freeze"
   ],
   "unresolved_domains": [
     "amp_likeness",
@@ -21,14 +20,14 @@
     "resistance_propensity",
     "serum_and_protease_stability",
     "solubility_and_aggregation",
-    "synthesis_feasibility",
-    "toxicity"
+    "synthesis_feasibility"
   ],
   "deferred_reasons": {
-    "hemopi2_calibration_and_ood_benchmark": "action_limit",
+    "hemopi2_calibration_and_ood_benchmark": "cpu_budget",
     "hemopi2_primary_license_scope_audit": "already_completed",
     "novelty_ood_reference_freeze": "already_completed",
     "synthesis_feasibility_ruleset_qualification": "already_completed",
+    "toxicity_independent_dataset_model_contract": "already_completed",
     "toxicity_second_family_qualification": "already_completed"
   }
 }

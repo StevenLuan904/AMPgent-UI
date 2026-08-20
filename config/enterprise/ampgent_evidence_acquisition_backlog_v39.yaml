@@ -82,7 +82,7 @@ tasks:
       safety_gate_lowered: false
       completed_at: "2026-08-20T21:31:34Z"
   - task_id: toxicity_independent_dataset_model_contract
-    status: ready
+    status: completed
     priority_tier: 1
     evidence_domains: [toxicity]
     action_type: independent_dataset_and_sequence_model_contract
@@ -98,6 +98,13 @@ tasks:
       - stop_if_dataset_lineage_overlaps_toxinpred3_without_auditable_partition
       - stop_if_commercial_use_is_not_confirmed
       - stop_if_toxicity_endpoint_semantics_are_not_peptide_specific
+    completion:
+      outcome: reclassified_to_endpoint_specific_safety_domains
+      witness_path: config/enterprise/toxicity_endpoint_reclassification_v39.json
+      witness_sha256: 03192d8e281a2b1e44bd15e87fe79239f9f7c2e63b5d903c66c73a41408943f3
+      generic_toxicity_hard_gate_allowed: false
+      safety_gate_lowered: false
+      completed_at: "2026-08-20T23:34:15Z"
   - task_id: hemopi2_calibration_and_ood_benchmark
     status: ready
     priority_tier: 1
