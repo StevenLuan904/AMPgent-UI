@@ -2222,3 +2222,15 @@ migration、完成允许主机/GPU/PID/release 映射和全部动态门禁后执
 - 复算结果压缩为 `v39.verified-target-identity.1` 并把 witness SHA 纳入 formal submission key。缺少 witness、
   panel 绑定漂移、任一分支未接受或 witness SHA 漂移都会 fail closed，不能只凭人写的说明或旧 qualification
   进入 structure。该工程门不回填或修改任何历史 run。
+### Enterprise model/assay eligibility gate
+
+Before any new enterprise formal science run, audit the versioned model inventory in
+`config/enterprise/ampgent_model_assay_registry_v39.yaml` against
+`config/enterprise/ampgent_core_pipeline_v39_audit.yaml` with
+`pepagent.enterprise_model_registry.audit_model_assay_registry`. A model name or a successful
+subprocess is not evidence of fitness for selection. A model counts only when endpoint semantics,
+training domain, deployed runtime manifest, commercial-use license, independent validation, and
+the required calibration/OOD artifacts are pinned. Models sharing one `independence_group` count
+as one evidence source. Shadow, unvalidated, blocked, and retired models never satisfy a formal
+minimum. The resulting audit must be persisted with the frozen workflow topology; any gap keeps
+`formal_science_run_authorized=false`.

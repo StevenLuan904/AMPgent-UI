@@ -161,6 +161,15 @@ def _identity() -> dict:
     return {**value, "witness_sha256": sha256_json(value)}
 
 
+def _model_registry_audit() -> dict:
+    return {
+        "schema_version": "ampgent.model-assay-registry-audit.1",
+        "registry_sha256": "3" * 64,
+        "formal_science_run_authorized": True,
+        "gaps": [],
+    }
+
+
 def test_v38_preflight_binds_one_unsubmitted_request_and_full_placement() -> None:
     result = build_v38_submission_preflight(
         request_template=_request(),
@@ -169,6 +178,7 @@ def test_v38_preflight_binds_one_unsubmitted_request_and_full_placement() -> Non
         benchmark_sha256="1" * 64,
         target_panel_sha256="2" * 64,
         target_identity_witness=_identity(),
+        model_registry_audit=_model_registry_audit(),
     )
     assert result["status"] == "ready_to_submit_unique_run"
     assert result["execution_authorized"] is True
@@ -188,6 +198,7 @@ def test_v38_preflight_allows_explicitly_bound_structure_release_identity() -> N
         benchmark_sha256="1" * 64,
         target_panel_sha256="2" * 64,
         target_identity_witness=_identity(),
+        model_registry_audit=_model_registry_audit(),
     )
     assert result["worker_component_identities"]["v38-rosetta"] == {
         "source_revision": "f" * 40,
@@ -212,6 +223,7 @@ def test_v38_recovery_preflight_accepts_newer_bound_history() -> None:
         benchmark_sha256="1" * 64,
         target_panel_sha256="2" * 64,
         target_identity_witness=_identity(),
+        model_registry_audit=_model_registry_audit(),
     )
 
     assert result["history_terminal_run_count"] == 55
@@ -228,6 +240,7 @@ def test_v38_preflight_rejects_a_template_that_self_asserts_readiness() -> None:
             benchmark_sha256="1" * 64,
             target_panel_sha256="2" * 64,
             target_identity_witness=_identity(),
+            model_registry_audit=_model_registry_audit(),
         )
 
 
@@ -275,6 +288,7 @@ def test_v38_preflight_fails_closed_on_control_or_placement_drift(
             benchmark_sha256="1" * 64,
             target_panel_sha256="2" * 64,
             target_identity_witness=_identity(),
+            model_registry_audit=_model_registry_audit(),
         )
 
 
@@ -289,4 +303,21 @@ def test_v38_preflight_rejects_unverified_target_identity() -> None:
             benchmark_sha256="1" * 64,
             target_panel_sha256="2" * 64,
             target_identity_witness=witness,
+            model_registry_audit=_model_registry_audit(),
+        )
+
+
+def test_v38_preflight_rejects_incomplete_enterprise_model_panel() -> None:
+    audit = _model_registry_audit()
+    audit["formal_science_run_authorized"] = False
+    audit["gaps"] = ["mammalian_cytotoxicity:independent_models=0,required=1"]
+    with pytest.raises(ValueError, match="unresolved enterprise evidence gaps"):
+        build_v38_submission_preflight(
+            request_template=_request(),
+            controller_state=_state(),
+            worker_placement=_placement(),
+            benchmark_sha256="1" * 64,
+            target_panel_sha256="2" * 64,
+            target_identity_witness=_identity(),
+            model_registry_audit=audit,
         )

@@ -631,3 +631,12 @@ Pareto 轴，避免“一个都进不来”，同时保留模型分歧。安全�
 物种/polymer accession。direct experimental 与 homology 两类证据分开；跨物种同源结构不得冒充直接实验
 结构。verified witness 的 SHA 进入 exact-once submission identity，使“多靶点”既能扩展，也不会把错误靶点
 元数据规模化复制进企业管线。
+### 企业模型/实验注册门
+
+下一次正式科学运行不得仅凭“已有两个打分器”启动。机器必须先用
+`config/enterprise/ampgent_model_assay_registry_v39.yaml` 对照企业证据域合同完成资格审计：
+模型的终点语义、训练域、部署 runtime 哈希、商业使用许可、独立验证、校准与 OOD 证据均需
+版本化绑定；同一 `independence_group` 的多个模型只算一个独立证据源。shadow、未验证、blocked
+或 retired 模型不得满足最低数量。缺任一必需证据域时保持
+`formal_science_run_authorized=false`，优先补验证/校准或安排区分性实验，而不是扩大候选库或提前
+消耗结构 GPU。

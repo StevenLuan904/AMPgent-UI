@@ -1,0 +1,89 @@
+schema_version: ampgent.model-assay-registry.1
+registry_id: ampgent_model_assay_registry_v39_20260820
+purpose: enterprise_readiness_inventory_not_a_science_result
+models:
+  - model_id: amp_read
+    version: current_v38_runtime
+    evidence_domain: pathogen_conditioned_potency
+    endpoint_semantics: generic_predicted_mic_micromolar
+    independence_group: generic_mic_sequence_models
+    training_domain: public_amp_activity_data_not_conditioned_to_frozen_pathogen_strains
+    status: incumbent_not_enterprise_eligible
+    blockers: [pathogen_conditioning_missing, calibration_artifact_missing, ood_artifact_missing]
+  - model_id: llamp
+    version: current_v38_runtime
+    evidence_domain: pathogen_conditioned_potency
+    endpoint_semantics: generic_predicted_mic_micromolar
+    independence_group: generic_mic_sequence_models
+    training_domain: public_amp_activity_data_not_conditioned_to_frozen_pathogen_strains
+    status: incumbent_not_enterprise_eligible
+    blockers: [pathogen_conditioning_missing, calibration_artifact_missing, ood_artifact_missing]
+  - model_id: amplify
+    version: retired_by_user
+    evidence_domain: amp_likeness
+    endpoint_semantics: amp_classification
+    independence_group: amplify
+    training_domain: public_amp_classification_data
+    status: retired
+    blockers: [retired_by_user_must_not_be_used]
+  - model_id: macrel_hemolysis
+    version: current_v38_runtime
+    evidence_domain: hemolysis
+    endpoint_semantics: sequence_level_hemolysis_probability
+    independence_group: macrel
+    training_domain: public_hemolysis_classification_data
+    status: incumbent_not_enterprise_eligible
+    blockers: [independent_validation_missing, calibration_artifact_missing, ood_artifact_missing]
+  - model_id: hemopi2
+    version: plugin_available
+    evidence_domain: hemolysis
+    endpoint_semantics: sequence_level_hemolysis_classification
+    independence_group: hemopi2
+    training_domain: public_hemolysis_classification_data
+    status: available_unvalidated
+    blockers: [deployed_runtime_manifest_missing, independent_validation_missing]
+  - model_id: toxinpred3
+    version: current_v38_runtime
+    evidence_domain: toxicity
+    endpoint_semantics: peptide_toxicity_classification
+    independence_group: toxinpred3
+    training_domain: public_peptide_toxicity_data
+    status: incumbent_not_enterprise_eligible
+    blockers: [independent_validation_missing, calibration_artifact_missing, ood_artifact_missing]
+  - model_id: aggrescanai
+    version: plugin_available
+    evidence_domain: solubility_and_aggregation
+    endpoint_semantics: aggregation_propensity
+    independence_group: aggrescanai
+    training_domain: public_protein_and_peptide_aggregation_data
+    status: shadow
+    blockers: [solubility_endpoint_missing, independent_validation_missing]
+  - model_id: peptiverse_stability
+    version: plugin_available
+    evidence_domain: serum_and_protease_stability
+    endpoint_semantics: peptide_stability_prediction
+    independence_group: peptiverse
+    training_domain: public_peptide_stability_data
+    status: shadow
+    blockers: [independent_validation_missing, calibration_artifact_missing, ood_artifact_missing]
+  - model_id: mmseqs2_novelty
+    version: plugin_available
+    evidence_domain: novelty_and_ood
+    endpoint_semantics: nearest_known_sequence_identity_and_coverage
+    independence_group: alignment_novelty
+    training_domain: frozen_reference_sequence_database
+    status: shadow
+    blockers: [frozen_reference_artifact_missing, independent_validation_missing]
+  - model_id: esm2_ood
+    version: plugin_available
+    evidence_domain: novelty_and_ood
+    endpoint_semantics: embedding_distance_from_frozen_reference_distribution
+    independence_group: protein_language_model_ood
+    training_domain: public_protein_language_model_corpus
+    status: shadow
+    blockers: [frozen_reference_artifact_missing, ood_threshold_calibration_missing]
+
+# Domains with no entry are intentional and machine-audited as gaps:
+# mammalian_cytotoxicity, synthesis_feasibility, resistance_propensity,
+# commensal_selectivity. Physicochemical descriptors require no independent
+# predictive model under the current enterprise contract.

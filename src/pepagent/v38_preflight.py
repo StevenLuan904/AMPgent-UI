@@ -3,6 +3,7 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any
 
+from pepagent.enterprise_model_registry import require_formal_model_registry_audit
 from pepagent.provenance.hashing import sha256_json
 from pepagent.target_identity_preflight import require_verified_target_identity_witness
 from pepagent.workflows.v38_sequence_first import _validate_request
@@ -135,6 +136,7 @@ def build_v38_submission_preflight(
     benchmark_sha256: str,
     target_panel_sha256: str,
     target_identity_witness: dict[str, Any],
+    model_registry_audit: dict[str, Any],
 ) -> dict[str, Any]:
     """Bind one not-yet-submitted v38 science request to its executable placement."""
 
@@ -181,6 +183,7 @@ def build_v38_submission_preflight(
     target_identity_witness_sha256 = require_verified_target_identity_witness(
         target_identity_witness, target_panel_sha256=target_panel_sha256
     )
+    model_registry_sha256 = require_formal_model_registry_audit(model_registry_audit)
     request = deepcopy(request_template)
     preflight_identity = {
         "schema_version": "v38.submission-preflight.1",
@@ -191,6 +194,8 @@ def build_v38_submission_preflight(
         "benchmark_sha256": benchmark_sha256,
         "target_panel_sha256": target_panel_sha256,
         "target_identity_witness_sha256": target_identity_witness_sha256,
+        "model_registry_sha256": model_registry_sha256,
+        "model_registry_audit_sha256": sha256_json(model_registry_audit),
         "request_template_sha256": sha256_json(request),
         "worker_placement_sha256": sha256_json(worker_placement),
         "worker_component_identities": {

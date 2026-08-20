@@ -12,6 +12,7 @@ from sqlalchemy import select
 
 from pepagent.db.models import Target, TargetPocket
 from pepagent.db.session import SessionFactory
+from pepagent.enterprise_model_registry import audit_model_assay_registry
 from pepagent.provenance.environment import fingerprint_runtime
 from pepagent.provenance.hashing import sha256_file, sha256_json
 from pepagent.target_identity_preflight import verify_target_identity_bundle
@@ -143,6 +144,8 @@ async def build_v38_preflight_artifacts(
     request_output_path: Path,
     preflight_output_path: Path,
     target_identity_bundle_path: Path,
+    model_registry_path: Path,
+    enterprise_contract_path: Path,
     metric_runtime_overrides: list[str] | None = None,
 ) -> dict[str, Any]:
     benchmark = _load_yaml(benchmark_path)
@@ -162,6 +165,10 @@ async def build_v38_preflight_artifacts(
         target_runtime_by_id=target_runtimes,
         target_panel_sha256=target_panel_sha256,
     )
+    model_registry_audit = audit_model_assay_registry(
+        registry=_load_yaml(model_registry_path),
+        enterprise_contract=_load_yaml(enterprise_contract_path),
+    ).to_dict()
     request = build_v38_request_template(
         benchmark=benchmark,
         panel=panel,
@@ -180,6 +187,7 @@ async def build_v38_preflight_artifacts(
         benchmark_sha256=sha256_file(benchmark_path),
         target_panel_sha256=target_panel_sha256,
         target_identity_witness=target_identity_witness,
+        model_registry_audit=model_registry_audit,
     )
     _write_json(request_output_path, request)
     _write_json(preflight_output_path, preflight)
@@ -213,6 +221,18 @@ def main() -> None:
         help="Raw source/sequence identity evidence recomputed before authorization",
     )
     parser.add_argument(
+        "--model-registry",
+        type=Path,
+        required=True,
+        help="Versioned model/assay inventory; unresolved evidence domains fail closed",
+    )
+    parser.add_argument(
+        "--enterprise-contract",
+        type=Path,
+        required=True,
+        help="Enterprise evidence-domain and independence requirements",
+    )
+    parser.add_argument(
         "--metric-runtime-override",
         action="append",
         default=[],
@@ -231,6 +251,8 @@ def main() -> None:
             request_output_path=args.request_output.resolve(),
             preflight_output_path=args.preflight_output.resolve(),
             target_identity_bundle_path=args.target_identity_bundle.resolve(),
+            model_registry_path=args.model_registry.resolve(),
+            enterprise_contract_path=args.enterprise_contract.resolve(),
             metric_runtime_overrides=args.metric_runtime_override,
         )
     )
