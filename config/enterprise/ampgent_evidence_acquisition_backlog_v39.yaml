@@ -9,7 +9,7 @@ policy:
   ordering: priority_tier_then_gap_coverage_then_gpu_then_cpu_then_task_id
 tasks:
   - task_id: hemopi2_primary_license_scope_audit
-    status: ready
+    status: completed
     priority_tier: 0
     evidence_domains: [hemolysis]
     action_type: primary_source_provenance_audit
@@ -23,6 +23,10 @@ tasks:
     stop_conditions:
       - stop_if_only_zenodo_metadata_license_is_available
       - stop_if_archive_content_scope_is_ambiguous
+    completion:
+      witness_path: config/enterprise/hemopi2_license_scope_witness_v39.json
+      witness_sha256: 0efc8009ec0b37d9f0bcc9749d2248cced9efb7b9b9b48ace19a304fe871ea98
+      completed_at: "2026-08-20T07:36:00Z"
   - task_id: pathogen_conditioned_activity_reference_freeze
     status: ready
     priority_tier: 0
@@ -71,7 +75,7 @@ tasks:
       - stop_on_pickle_or_opaque_runtime_without_isolation
       - stop_if_commercial_use_is_not_confirmed
   - task_id: hemopi2_calibration_and_ood_benchmark
-    status: waiting_dependency
+    status: ready
     priority_tier: 1
     evidence_domains: [hemolysis]
     action_type: independent_calibration_and_ood_experiment

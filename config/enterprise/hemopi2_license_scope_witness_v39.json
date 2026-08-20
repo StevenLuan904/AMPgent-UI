@@ -1,0 +1,58 @@
+{
+  "schema_version": "ampgent.license-scope-witness.1",
+  "witness_id": "hemopi2_license_scope_v39_20260820",
+  "observed_at": "2026-08-20T07:36:00Z",
+  "model_id": "hemopi2",
+  "model_version": "zenodo_record_14676712",
+  "primary_sources": [
+    {
+      "role": "zenodo_record_metadata",
+      "uri": "https://zenodo.org/api/records/14676712",
+      "record_id": 14676712,
+      "declared_license": "cc-by-4.0",
+      "scope_interpretation": "record_level_metadata_declaration"
+    },
+    {
+      "role": "zenodo_attached_package_license",
+      "uri": "https://zenodo.org/api/records/14676712/files/LICENSE.txt/content",
+      "filename": "LICENSE.txt",
+      "size_bytes": 35149,
+      "upstream_checksum": "md5:1ebbd3e34237af26da5dc08a4e440464",
+      "content_sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "identified_license": "GPL-3.0"
+    },
+    {
+      "role": "official_repository_license",
+      "uri": "https://raw.githubusercontent.com/raghavagps/hemopi2/2b67a5c85422b25ae847100ebaa81ad586950928/LICENSE.txt",
+      "repository": "raghavagps/hemopi2",
+      "commit": "2b67a5c85422b25ae847100ebaa81ad586950928",
+      "git_blob_sha1": "f288702d2fa16d3cdf0035b15a9fcbc552cd88e7",
+      "size_bytes": 35149,
+      "content_sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "identified_license": "GPL-3.0"
+    }
+  ],
+  "scope_decision": {
+    "status": "accepted_with_copyleft_obligations",
+    "governing_package_license": "GPL-3.0",
+    "metadata_license_conflict_preserved": true,
+    "commercial_internal_evaluation_allowed": true,
+    "unrestricted_proprietary_redistribution_allowed": false,
+    "redistribution_requires_gpl_compliance_review": true,
+    "model_weight_scope": "distributed_inside_the_same_licensed_package_but_no_separate_weight_license_found",
+    "legal_counsel_not_substituted": true
+  },
+  "acceptance_artifacts": {
+    "immutable_primary_license_source_sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+    "archive_content_license_scope_decision": "accepted_with_copyleft_obligations",
+    "commercial_use_allowed_boolean_with_reason": {
+      "value": true,
+      "scope": "internal_execution_and_evaluation",
+      "reason": "GPL-3.0 permits commercial use while imposing source_and_copyleft_obligations_on_covered_distribution"
+    }
+  },
+  "remaining_nonlicense_blockers": [
+    "independent_probability_calibration_artifact_missing",
+    "candidate_applicability_domain_and_ood_artifact_missing"
+  ]
+}

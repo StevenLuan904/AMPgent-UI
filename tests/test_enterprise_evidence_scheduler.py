@@ -6,6 +6,7 @@ from pathlib import Path
 import yaml
 
 from pepagent.enterprise_evidence_scheduler import plan_enterprise_evidence_actions
+from pepagent.enterprise_model_registry import audit_model_assay_registry
 
 
 def _audit(*domains: str) -> dict:
@@ -67,18 +68,24 @@ def test_current_backlog_selects_three_high_information_cpu_tasks() -> None:
             encoding="utf-8"
         )
     )
-    audit = _audit(
-        "pathogen_conditioned_potency",
-        "hemolysis",
-        "mammalian_cytotoxicity",
-        "commensal_selectivity",
-        "toxicity",
+    registry = yaml.safe_load(
+        (root / "config/enterprise/ampgent_model_assay_registry_v39.yaml").read_text(
+            encoding="utf-8"
+        )
     )
+    contract = yaml.safe_load(
+        (root / "config/enterprise/ampgent_core_pipeline_v39_audit.yaml").read_text(
+            encoding="utf-8"
+        )
+    )
+    audit = audit_model_assay_registry(
+        registry=registry, enterprise_contract=contract
+    ).to_dict()
     plan = plan_enterprise_evidence_actions(model_registry_audit=audit, backlog=backlog)
     assert plan.selected_task_ids == (
         "cytotoxicity_and_commensal_reference_panel_freeze",
-        "hemopi2_primary_license_scope_audit",
         "pathogen_conditioned_activity_reference_freeze",
+        "synthesis_feasibility_ruleset_qualification",
     )
     assert plan.estimated_gpu_minutes == 0
     assert plan.formal_run_submission_allowed is False

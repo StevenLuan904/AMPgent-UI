@@ -70,7 +70,10 @@ def plan_enterprise_evidence_actions(
         raise ValueError("enterprise evidence action limits are invalid")
 
     unresolved = _gap_domains(model_registry_audit)
-    completed = completed_task_ids or set()
+    completed = set(completed_task_ids or set())
+    for raw_task in tasks:
+        if isinstance(raw_task, Mapping) and raw_task.get("status") == "completed":
+            completed.add(_text(raw_task.get("task_id"), label="completed task_id"))
     candidates: list[tuple[tuple[int, int, int, int, str], Mapping[str, Any]]] = []
     deferred: dict[str, str] = {}
     seen: set[str] = set()

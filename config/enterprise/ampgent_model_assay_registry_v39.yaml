@@ -41,7 +41,11 @@ models:
     independence_group: hemopi2
     training_domain: public_hemolysis_classification_data
     status: available_unvalidated
-    blockers: [deployed_runtime_manifest_missing, independent_validation_missing]
+    runtime_environment_manifest_sha256: f0a636907aad51585f5e9ce466446dd11c4277c67dd039ad89572e038c281b91
+    archive_manifest_sha256: cee0e36faa7efa69c5e8f208ea9f8a765b90e12d4b683d182ccb36d6d64f3fac
+    prior_independent_soft_validation_artifact_sha256: 96f74a51074843b8abc2968bc031d2f54a03774d4bf903ccc58bf34c71650382
+    license_scope_witness: config/enterprise/hemopi2_license_scope_witness_v39.json
+    blockers: [independent_probability_calibration_missing, applicability_domain_and_ood_missing]
   - model_id: toxinpred3
     version: current_v38_runtime
     evidence_domain: toxicity
