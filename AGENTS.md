@@ -118,6 +118,14 @@ verified.
 
 ### Scheduled research loops must advance, not merely observe
 
+When enterprise model-registry gaps block a formal science run, load
+`config/enterprise/ampgent_evidence_acquisition_backlog_v39.yaml` and create a deterministic
+action plan with `pepagent.enterprise_evidence_scheduler.plan_enterprise_evidence_actions`.
+Claim at least one ready task whose acceptance artifacts can be produced within the current loop.
+Monitoring, repeating a whole generation run, or using idle structure GPUs does not satisfy the
+advance requirement. A task is complete only when every declared acceptance artifact is pinned;
+any stop condition keeps it incomplete and changes the next strategy.
+
 - A scheduled AMPgent wake is an execution loop, not a monitoring report. Follow
   `observe -> diagnose -> act -> verify -> persist -> report`. A health check is only the observation
   step and never counts as the completed wake while the scientific objective remains unfinished.

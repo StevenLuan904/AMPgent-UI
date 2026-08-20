@@ -1,0 +1,118 @@
+schema_version: ampgent.enterprise-evidence-backlog.1
+backlog_id: ampgent_evidence_acquisition_backlog_v39_20260820
+policy:
+  formal_science_run_submission_forbidden_while_registry_gaps_exist: true
+  monitor_only_iteration_forbidden: true
+  default_maximum_actions_per_loop: 3
+  default_maximum_cpu_minutes_per_loop: 240
+  default_maximum_gpu_minutes_per_loop: 0
+  ordering: priority_tier_then_gap_coverage_then_gpu_then_cpu_then_task_id
+tasks:
+  - task_id: hemopi2_primary_license_scope_audit
+    status: ready
+    priority_tier: 0
+    evidence_domains: [hemolysis]
+    action_type: primary_source_provenance_audit
+    prerequisites: []
+    estimated_cpu_minutes: 30
+    estimated_gpu_minutes: 0
+    acceptance_artifacts:
+      - immutable_primary_license_source_sha256
+      - archive_content_license_scope_decision
+      - commercial_use_allowed_boolean_with_reason
+    stop_conditions:
+      - stop_if_only_zenodo_metadata_license_is_available
+      - stop_if_archive_content_scope_is_ambiguous
+  - task_id: pathogen_conditioned_activity_reference_freeze
+    status: ready
+    priority_tier: 0
+    evidence_domains: [pathogen_conditioned_potency]
+    action_type: reference_dataset_and_endpoint_contract
+    prerequisites: []
+    estimated_cpu_minutes: 90
+    estimated_gpu_minutes: 0
+    acceptance_artifacts:
+      - organism_strain_conditioned_assay_table_sha256
+      - mic_unit_and_condition_normalization_contract_sha256
+      - train_calibration_ood_split_witness_sha256
+    stop_conditions:
+      - stop_if_species_or_strain_identity_is_missing
+      - stop_if_mic_units_or_assay_conditions_cannot_be_normalized
+      - stop_if_candidate_overlap_cannot_be_audited
+  - task_id: cytotoxicity_and_commensal_reference_panel_freeze
+    status: ready
+    priority_tier: 0
+    evidence_domains: [mammalian_cytotoxicity, commensal_selectivity]
+    action_type: reference_dataset_and_counter_screen_contract
+    prerequisites: []
+    estimated_cpu_minutes: 90
+    estimated_gpu_minutes: 0
+    acceptance_artifacts:
+      - mammalian_cell_line_endpoint_table_sha256
+      - skin_commensal_panel_and_assay_conditions_sha256
+      - leakage_and_candidate_overlap_audit_sha256
+    stop_conditions:
+      - stop_if_cell_line_or_endpoint_semantics_are_missing
+      - stop_if_commensal_taxonomy_or_assay_conditions_are_missing
+  - task_id: toxicity_second_family_qualification
+    status: ready
+    priority_tier: 1
+    evidence_domains: [toxicity]
+    action_type: independent_model_qualification
+    prerequisites: []
+    estimated_cpu_minutes: 60
+    estimated_gpu_minutes: 0
+    acceptance_artifacts:
+      - immutable_runtime_manifest_sha256
+      - license_and_training_domain_witness_sha256
+      - independent_calibration_and_ood_artifact_sha256
+    stop_conditions:
+      - stop_on_same_independence_group_as_toxinpred3
+      - stop_on_pickle_or_opaque_runtime_without_isolation
+      - stop_if_commercial_use_is_not_confirmed
+  - task_id: hemopi2_calibration_and_ood_benchmark
+    status: waiting_dependency
+    priority_tier: 1
+    evidence_domains: [hemolysis]
+    action_type: independent_calibration_and_ood_experiment
+    prerequisites: [hemopi2_primary_license_scope_audit]
+    estimated_cpu_minutes: 180
+    estimated_gpu_minutes: 0
+    acceptance_artifacts:
+      - frozen_reference_split_sha256
+      - calibration_curve_and_threshold_artifact_sha256
+      - length_composition_novelty_ood_report_sha256
+    stop_conditions:
+      - stop_if_license_scope_does_not_cover_execution
+      - stop_on_training_or_validation_leakage
+      - stop_if_probability_semantics_are_not_reproducible
+  - task_id: novelty_ood_reference_freeze
+    status: ready
+    priority_tier: 1
+    evidence_domains: [novelty_and_ood]
+    action_type: frozen_reference_and_threshold_contract
+    prerequisites: []
+    estimated_cpu_minutes: 45
+    estimated_gpu_minutes: 0
+    acceptance_artifacts:
+      - mmseqs_reference_database_sha256
+      - esm_embedding_reference_manifest_sha256
+      - preregistered_ood_threshold_artifact_sha256
+    stop_conditions:
+      - stop_if_reference_database_is_mutable
+      - stop_if_threshold_is_fit_on_current_candidates
+  - task_id: synthesis_feasibility_ruleset_qualification
+    status: ready
+    priority_tier: 1
+    evidence_domains: [synthesis_feasibility]
+    action_type: transparent_ruleset_qualification
+    prerequisites: []
+    estimated_cpu_minutes: 30
+    estimated_gpu_minutes: 0
+    acceptance_artifacts:
+      - versioned_synthesis_rule_table_sha256
+      - edge_case_test_artifact_sha256
+      - applicability_domain_statement_sha256
+    stop_conditions:
+      - stop_if_rule_sources_or_endpoint_semantics_are_untraceable
+      - stop_if_rule_changes_are_fit_to_current_candidate_rank

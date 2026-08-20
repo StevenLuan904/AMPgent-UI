@@ -1,0 +1,33 @@
+{
+  "schema_version": "ampgent.enterprise-evidence-action-plan.1",
+  "plan_id": "ampgent_evidence_action_plan_v39_20260820",
+  "registry_sha256": "7286dc40535a558e362efa5c87c504f876f91633e59661401ef9eddb883ee786",
+  "backlog_sha256": "b24e1e654465f95af25a777df12c07c663d018bcbdfebd18c857beb76142ab64",
+  "formal_run_submission_allowed": false,
+  "estimated_cpu_minutes": 210,
+  "estimated_gpu_minutes": 0,
+  "selected_task_ids": [
+    "cytotoxicity_and_commensal_reference_panel_freeze",
+    "hemopi2_primary_license_scope_audit",
+    "pathogen_conditioned_activity_reference_freeze"
+  ],
+  "unresolved_domains": [
+    "amp_likeness",
+    "commensal_selectivity",
+    "hemolysis",
+    "mammalian_cytotoxicity",
+    "novelty_and_ood",
+    "pathogen_conditioned_potency",
+    "resistance_propensity",
+    "serum_and_protease_stability",
+    "solubility_and_aggregation",
+    "synthesis_feasibility",
+    "toxicity"
+  ],
+  "deferred_reasons": {
+    "hemopi2_calibration_and_ood_benchmark": "waiting_for:hemopi2_primary_license_scope_audit",
+    "novelty_ood_reference_freeze": "action_limit",
+    "synthesis_feasibility_ruleset_qualification": "action_limit",
+    "toxicity_second_family_qualification": "action_limit"
+  }
+}

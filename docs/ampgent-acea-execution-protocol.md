@@ -2234,3 +2234,11 @@ the required calibration/OOD artifacts are pinned. Models sharing one `independe
 as one evidence source. Shadow, unvalidated, blocked, and retired models never satisfy a formal
 minimum. The resulting audit must be persisted with the frozen workflow topology; any gap keeps
 `formal_science_run_authorized=false`.
+
+When that gate is closed, scheduled work is drawn from the versioned acquisition backlog
+`config/enterprise/ampgent_evidence_acquisition_backlog_v39.yaml`. The scheduler uses a stable
+lexicographic order (priority tier, unresolved-domain coverage, GPU cost, CPU cost, task id), not
+a scientific weighted score. Every task declares prerequisites, bounded resource estimates,
+content-addressed acceptance artifacts, and fail-closed stop conditions. The default gap-removal
+loop allocates no GPU: idle structure capacity is not evidence and must remain unused until the
+sequence/assay panel is qualified.

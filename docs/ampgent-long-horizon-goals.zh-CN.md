@@ -640,3 +640,9 @@ Pareto 轴，避免“一个都进不来”，同时保留模型分歧。安全�
 或 retired 模型不得满足最低数量。缺任一必需证据域时保持
 `formal_science_run_authorized=false`，优先补验证/校准或安排区分性实验，而不是扩大候选库或提前
 消耗结构 GPU。
+
+模型资格门关闭时，定时 Agent 必须从
+`config/enterprise/ampgent_evidence_acquisition_backlog_v39.yaml` 领取可验收任务；默认每轮最多
+3 项、240 CPU 分钟、0 GPU 分钟。排序按优先级、可同时消除的证据域数量、GPU/CPU 成本和稳定
+task id，不能用模糊总分。只有声明的哈希化验收产物全部形成才算完成；许可证覆盖不明、数据泄漏、
+终点语义不清或 OOD 不可复现时必须停该任务并换策略，不能把 smoke 或“模型能运行”冒充晋级。
