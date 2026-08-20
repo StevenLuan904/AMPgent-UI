@@ -140,6 +140,10 @@ Rosetta”包成整链批次后再统一等待；这种 batch barrier 会在 Ros
 让 CPU 空闲。正确调度是：前一个 pose 释放 Boltz slot 后立即发下一个 Boltz，同时由独立 Rosetta slot
 处理已完成 pose；两阶段仍各自受冻结并发上限和 worker 物理容量约束。
 
+探索名额是“通过安全门、但序列排名稳定性不足”的独立证据类别，不得为了满足最终 schema 而伪造序列
+Pareto front。最终 portfolio 必须允许这些候选的 `sequence_pareto_front=null`，将它们保留在结构和跨靶点
+视图中，同时仅用真实 front 1 候选构成 target-agnostic 序列前沿。
+
 ## 7. Run Controller：多久检查、发什么任务
 
 `pepagent.v38_run_control.RunControlPlan` 使用确定性阶段表：

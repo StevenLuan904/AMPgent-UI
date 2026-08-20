@@ -30,7 +30,7 @@ class StructureScoreEvidence(FrozenModel):
 
 class CandidatePortfolioRow(FrozenModel):
     candidate_id: UUID
-    sequence_pareto_front: int = Field(ge=1)
+    sequence_pareto_front: int | None = Field(default=None, ge=1)
     native_median_by_target: dict[str, float]
     wrong_pocket_median_by_target: dict[str, float]
     specificity_margin_by_target: dict[str, float]
@@ -84,7 +84,7 @@ def _pareto_fronts(values: dict[UUID, tuple[float, ...]]) -> dict[UUID, int]:
 
 def build_v38_final_portfolio(
     *,
-    sequence_pareto_fronts: dict[UUID, int],
+    sequence_pareto_fronts: dict[UUID, int | None],
     evidence: tuple[StructureScoreEvidence, ...],
     target_keys: tuple[str, ...],
     expected_seeds: tuple[int, ...],

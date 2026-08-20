@@ -51,6 +51,21 @@ def test_final_portfolio_keeps_three_unweighted_views() -> None:
     assert result.structure_used_as_hard_safety_gate is False
 
 
+def test_final_portfolio_retains_exploration_candidate_without_invented_sequence_front() -> None:
+    result = build_v38_final_portfolio(
+        sequence_pareto_fronts={IDS[0]: 1, IDS[1]: None},
+        evidence=_evidence(),
+        target_keys=("gyrA", "pbp2a"),
+        expected_seeds=(11, 12),
+        decoys_per_seed=2,
+    )
+
+    rows = {item.candidate_id: item for item in result.rows}
+    assert rows[IDS[1]].sequence_pareto_front is None
+    assert result.target_agnostic_front_one_candidate_ids == (IDS[0],)
+    assert IDS[1] in result.per_target_front_one_candidate_ids["pbp2a"]
+
+
 def test_final_portfolio_rejects_incomplete_decoy_evidence() -> None:
     with pytest.raises(ValueError, match="incomplete"):
         build_v38_final_portfolio(

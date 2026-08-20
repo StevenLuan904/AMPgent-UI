@@ -1348,11 +1348,16 @@ async def _build_v38_final_portfolio_payload(
     if not admitted_ids or admission.refinement_required:
         raise ValueError("v38 final portfolio requires a concluded admitted cohort")
     decisions = {item.candidate_id: item for item in admission.decisions}
-    sequence_fronts: dict[uuid.UUID, int] = {}
+    sequence_fronts: dict[uuid.UUID, int | None] = {}
     for candidate_id in admitted_ids:
         decision = decisions.get(candidate_id)
-        if decision is None or decision.pareto_front is None:
-            raise ValueError("v38 admitted candidate lacks its sequence Pareto front")
+        if decision is None:
+            raise ValueError("v38 admitted candidate lacks its sequence decision")
+        if (
+            candidate_id in admission.mature_core_candidate_ids
+            and decision.pareto_front is None
+        ):
+            raise ValueError("v38 mature-core candidate lacks its sequence Pareto front")
         sequence_fronts[candidate_id] = decision.pareto_front
 
     branches = list(

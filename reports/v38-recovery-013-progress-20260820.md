@@ -65,3 +65,7 @@ The absence of PBP2a records exposed a real scheduling defect rather than a scie
 - The sequence pool remained unchanged at 26 mature-core plus 9 exploration candidates; no final champion or replay exists yet.
 
 The live trace also exposed a second future-framework inefficiency: the workflow placed a batch barrier around two complete Boltz-to-Rosetta chains. While both chains were in Rosetta, the authorized GPU had no next Boltz activity to run. Future workflow identities now use independent bounded semaphores for Boltz and Rosetta, allowing the next pose inference to overlap prior CPU scoring. The active run remains on its immutable loaded workflow code.
+
+## Final-portfolio blocker found before resource exhaustion
+
+The immutable recovery-013 admission correctly assigns no sequence Pareto front to its nine bounded exploration candidates. The loaded final-portfolio activity incorrectly required an integer sequence front for every structure-admitted candidate, so recovery-013 would fail after completing all structure work. This is an execution/schema defect, not peptide science. The corrected framework preserves `null` for exploration sequence fronts, excludes them from the target-agnostic sequence-front-one set, and still evaluates them in per-target and cross-target structural views. A full-cardinality pure replay smoke covered 35 candidates and 6,720 Rosetta decoys and retained exactly nine null sequence fronts without weighted totals or structural safety gates.
