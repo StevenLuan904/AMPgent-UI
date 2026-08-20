@@ -54,8 +54,17 @@
     "independent_execution_count": 2,
     "real_deployment_smoke": "passed_reproduced"
   },
+  "external_holdout_calibration": {
+    "witness_path": "config/enterprise/esm2_external_holdout_calibration_v39.json",
+    "holdout_source": "UniProtKB/Swiss-Prot 2026_02 reviewed non-antimicrobial 8-30 aa",
+    "holdout_unique_count": 3513,
+    "exact_reference_overlap_count": 94,
+    "clean_holdout_count": 3419,
+    "diagnostic_clean_holdout_flag_rate": 0.2509505703422053,
+    "formal_ood_label_allowed": false
+  },
   "remaining_blockers": [
-    "external_temporal_or_non_amp_holdout_calibration_missing",
+    "external_holdout_calibration_is_diagnostic_until_training_overlap_audit",
     "training_overlap_audit_missing"
   ]
 }

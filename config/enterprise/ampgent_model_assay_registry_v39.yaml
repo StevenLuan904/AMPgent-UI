@@ -96,7 +96,9 @@ models:
     embedding_reference_sha256: 0c9fb13c1654f3ea394aa6b0b1b50602e95e61e6c9d70dcfb6a63910bf8c9f7f
     embedding_shape: [17131, 320]
     real_deployment_smoke: passed_reproduced
-    blockers: [ood_threshold_calibration_missing, training_overlap_audit_missing]
+    external_holdout_calibration: config/enterprise/esm2_external_holdout_calibration_v39.json
+    diagnostic_holdout_flag_rate: 0.2509505703422053
+    blockers: [formal_ood_operating_point_pending_training_overlap_audit, training_overlap_audit_missing]
   - model_id: ampgent_sequence_only_spps_review
     version: v39_20260820
     evidence_domain: synthesis_feasibility

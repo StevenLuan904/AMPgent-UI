@@ -1,0 +1,60 @@
+{
+  "schema_version": "ampgent.esm2-external-holdout-calibration-witness.1",
+  "witness_id": "ampgent_esm2_external_holdout_calibration_v39_20260820",
+  "observed_at": "2026-08-20T17:42:31Z",
+  "status": "diagnostic_completed_training_overlap_pending",
+  "candidate_data_used": false,
+  "model": {
+    "identity": "facebook/esm2_t6_8M_UR50D",
+    "revision": "c731040fcd8d73dceaa04b0a8e6329b345b0f5df",
+    "weights_sha256": "24c5fa474c48f3b754b86efe752d5f189d2bcd88190fa2270fc92b2ef3034189"
+  },
+  "reference": {
+    "identity": "DRAMP antibacterial canonical 8-30 aa",
+    "count": 17131,
+    "fasta_sha256": "d1004b1398df723b2e4a044aaab13b6d9628d7fec23042e2cccd88f8534d6787",
+    "embedding_sha256": "0c9fb13c1654f3ea394aa6b0b1b50602e95e61e6c9d70dcfb6a63910bf8c9f7f"
+  },
+  "holdout": {
+    "identity": "UniProtKB Swiss-Prot 2026_02 reviewed 8-30 aa excluding KW-0929",
+    "source_manifest": "config/enterprise/uniprot_non_antimicrobial_holdout_manifest_v39.json",
+    "source_manifest_sha256": "fbc8fd8e94af179a6ae5c1a39711297bae06495f0eabe6aa00a9697707701f97",
+    "count": 3513,
+    "fasta_sha256": "37cb83e2d0e1917b0f218905bdaf2ec8fdf68e0c0d9ca17e1bbf509d94dd35d8",
+    "embedding_sha256": "29bb58d499f1f60e2af1475cf12a8b0eb5be75d869a4f06bcb69578a5f1183f3",
+    "exact_reference_overlap_count": 94,
+    "clean_count": 3419
+  },
+  "distance": {
+    "definition": "one_minus_maximum_cosine_similarity_to_frozen_dramp_reference",
+    "reference_leave_one_out_quantiles": {
+      "p50": 0.008414089679718018,
+      "p90": 0.018494904041290283,
+      "p95": 0.024114996194839478,
+      "p99": 0.04763159155845664
+    },
+    "clean_holdout_quantiles": {
+      "p50": 0.016921639442443848,
+      "p90": 0.03536834716796875,
+      "p95": 0.048522824048995966,
+      "p99": 0.1381019115448002
+    }
+  },
+  "diagnostic_operating_point": {
+    "rule": "reference_leave_one_out_distance_p95",
+    "distance_threshold": 0.024114996194839478,
+    "expected_reference_false_ood_rate": 0.050026268168816765,
+    "clean_holdout_flag_rate": 0.2509505703422053,
+    "formal_ood_label_allowed": false
+  },
+  "artifacts": {
+    "remote_runtime_manifest_sha256": "dfcc2288a0f4cc28beaa972d8efb3e930bc33971ef6470357ddc554d4967bee0",
+    "remote_scores_sha256": "4062529b1618751d0adaea19c5ae1a6fbeb7cb597a1bd7dc16e919a3b8999ff3",
+    "calibration_module_sha256": "3d844c7d5d8ba406b6ffb6aee70e7579a93420b368bdf7e3f211c63db16a36ab"
+  },
+  "limitations": [
+    "Non-antimicrobial keyword exclusion is an imperfect negative label.",
+    "ESM-2 UniRef50 training overlap remains unaudited.",
+    "The operating point is diagnostic and must not hard-filter candidates yet."
+  ]
+}

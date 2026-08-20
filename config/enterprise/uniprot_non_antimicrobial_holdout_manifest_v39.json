@@ -1,0 +1,117 @@
+{
+  "schema_version": "ampgent.uniprot-external-holdout-manifest.1",
+  "observed_at": "2026-08-20T17:42:31.862969+00:00",
+  "source": {
+    "provider": "UniProtKB/Swiss-Prot",
+    "api": "https://rest.uniprot.org/uniprotkb/search",
+    "query": "(reviewed:true) AND (length:[8 TO 30]) AND NOT (keyword:KW-0929)",
+    "wire_format": "tsv",
+    "fields": [
+      "accession",
+      "sequence",
+      "length",
+      "keyword"
+    ],
+    "license": "CC-BY-4.0",
+    "release": "2026_02",
+    "release_date": "10-June-2026",
+    "expected_total_results": 4885
+  },
+  "raw": {
+    "record_count": 4885,
+    "bytes": 149489,
+    "sha256": "3dcf14f1ca7d9c24a671788e8e7290bf64eac4920a2c41145c9aab4755338131",
+    "pages": [
+      {
+        "page_no": 1,
+        "record_count": 500,
+        "bytes": 76210,
+        "sha256": "32f1737540a0efdc69812c21bda349c54c341fd33d00d727a5eca091a98a39c0",
+        "wire_format": "tsv"
+      },
+      {
+        "page_no": 2,
+        "record_count": 500,
+        "bytes": 64860,
+        "sha256": "55c0b9e08bf240c99ffdcee5f7c29fca08387f0fe745b6696285394081e16d38",
+        "wire_format": "tsv"
+      },
+      {
+        "page_no": 3,
+        "record_count": 500,
+        "bytes": 65231,
+        "sha256": "cb89812dba590a4c2a2de226d894afe27824bb4f451eed80c2b04c3272e84b2d",
+        "wire_format": "tsv"
+      },
+      {
+        "page_no": 4,
+        "record_count": 500,
+        "bytes": 52413,
+        "sha256": "4ba652c23058e352254dd6c5039f26ad32f5532a46874dfbe2409c6b4a5845df",
+        "wire_format": "tsv"
+      },
+      {
+        "page_no": 5,
+        "record_count": 500,
+        "bytes": 53769,
+        "sha256": "92f107cb0853ff83b7b0e16dbb8e98396971b06d0c3d2b5dec0ec83a390adaed",
+        "wire_format": "tsv"
+      },
+      {
+        "page_no": 6,
+        "record_count": 500,
+        "bytes": 51753,
+        "sha256": "fe27d794b465884933fe5ff29fe6feb818f94dc99b4cedeff5f159927afe643e",
+        "wire_format": "tsv"
+      },
+      {
+        "page_no": 7,
+        "record_count": 500,
+        "bytes": 52594,
+        "sha256": "98dbf9af5e7e0c3f6aa6de60d2e1801202fa3f98121b2bbe663416eb1f186402",
+        "wire_format": "tsv"
+      },
+      {
+        "page_no": 8,
+        "record_count": 500,
+        "bytes": 54725,
+        "sha256": "622010268ab1ddbb22801ddd6dd66a02a73922c5e19170f0cc6e0e97373487df",
+        "wire_format": "tsv"
+      },
+      {
+        "page_no": 9,
+        "record_count": 500,
+        "bytes": 33339,
+        "sha256": "cd3cbd2b38b29e117d2155fa48d2ee710d653bacf57ca2a07c32a281bcc40d12",
+        "wire_format": "tsv"
+      },
+      {
+        "page_no": 10,
+        "record_count": 385,
+        "bytes": 24969,
+        "sha256": "9705963c66cae3751f1195834e1acb6afad9e4fcf0e62cecff46e6ad7fac5dc6",
+        "wire_format": "tsv"
+      }
+    ]
+  },
+  "normalization": {
+    "schema_version": "ampgent.frozen-fasta-reference.1",
+    "source_record_count": 4885,
+    "accepted_record_count": 4463,
+    "unique_sequence_count": 3513,
+    "duplicate_record_count": 950,
+    "rejected_length_count": 0,
+    "rejected_noncanonical_count": 422,
+    "minimum_length": 8,
+    "maximum_length": 30,
+    "normalized_fasta_sha256": "37cb83e2d0e1917b0f218905bdaf2ec8fdf68e0c0d9ca17e1bbf509d94dd35d8",
+    "sequence_set_sha256": "c4752c9bdfb16ed09819a304978395cac048983c083d08f717f7c09411701480"
+  },
+  "candidate_data_used": false,
+  "label_semantics": "reviewed 8-30-aa UniProtKB entries lacking the Antimicrobial keyword; this is a negative-distribution holdout, not proof that every entry is inactive",
+  "limitations": [
+    "Keyword exclusion can retain unannotated antimicrobial peptides and peptide toxins.",
+    "The holdout is not matched to a specific pathogen, assay, or concentration endpoint.",
+    "It may calibrate distributional novelty but cannot establish antimicrobial activity."
+  ]
+}
