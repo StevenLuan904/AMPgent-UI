@@ -2297,3 +2297,17 @@ fragment m/z、保留时间和归属单独保存，fragment 信号不得计入 i
 模型选择、split 和 operating point，只能在 assay/model lock 后盲测。合同 witness 为
 `config/enterprise/serum_protease_stability_contract_v39.json`；它没有产生湿实验测量、模型或候选门。
 下一 CPU 任务转为溶解度/聚集端点合同，稳定性 provider/reference pilot 保留为需要数据权利与 QC 的后续项。
+
+### 2026-08-21 溶解度/聚集采集合同
+
+开发性端点不再压成一个理化分数。主矩阵冻结 pH 5.5/7.4/8.5、NaCl 0/150/300 mM、肽浓度
+10/50/100/250/500 µM、25/37°C 与 0/1/4/24 h，每条件 3 个技术重复并跨至少 2 个实验日。
+样本在浊度与 DLS 前禁止过滤：未过滤浊度、DLS count rate/粒径分布、固定离心后上清 intact-parent
+定量和可见沉淀必须作为分离的正交端点。500 µM 预孵育后十倍稀释并复测，用于区分可逆自聚集和
+持久颗粒/沉淀；broth 与皮肤应用 bridge matrix 不能和 buffer 主端点混池。
+
+DLS 无信号不得解释为“无聚集”，高 PDI/多峰必须保留原始分布而非报告单一粒径；低于 LLOQ 的
+上清 parent 和超出仪器量程的粒径均保留删失，失败批次与有因复测同时保存。当前 773 条候选只允许
+在 assay/model lock 后盲测，完全排除于训练、校准、模型选择、split 和 operating point。合同 witness
+为 `config/enterprise/solubility_aggregation_contract_v39.json`；尚未产生测量、模型或候选门。
+下一 CPU 任务转为 resistance propensity 的 serial-passage/cross-resistance 合同。

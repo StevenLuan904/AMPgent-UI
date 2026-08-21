@@ -264,7 +264,7 @@ tasks:
       formal_science_run_submitted: false
       completed_at: "2026-08-21T13:38:00Z"
   - task_id: solubility_aggregation_contract_freeze
-    status: ready
+    status: completed
     priority_tier: 1
     evidence_domains: [solubility_and_aggregation]
     action_type: prospective_solubility_and_aggregation_assay_and_model_contract
@@ -281,6 +281,55 @@ tasks:
       - stop_if_precipitation_turbidity_and_reversible_self_association_are_collapsed
       - stop_if_current_candidates_define_the_operating_point
       - stop_if_commercial_internal_use_and_data_ownership_are_not_confirmed
+    completion:
+      outcome: prospective_solubility_and_aggregation_contract_frozen_measurements_pending
+      witness_path: config/enterprise/solubility_aggregation_contract_v39.json
+      witness_sha256: d1689ee2b71a77954544352edcc7c80fcdc75dd4341c4271ec89ebcf17784028
+      pH_ionic_strength_concentration_condition_matrix_sha256: f9471bc127a6c918a8ac28030057518075ac056e5acf7fd8e7a64164c4d7b08a
+      raw_solubility_turbidity_and_particle_measurement_schema_sha256: fb3a2f2072b0de86f9319ec7a63d23b3311a3181e4df106590bf453659b1e81c
+      leakage_safe_reference_and_candidate_blinding_plan_sha256: 2e6817193a39da8c8cbd3f38250985c09397ab8e403f9110805a7be13217eb68
+      aggregation_model_card_and_qualification_contract_sha256: 47ac1c7e429e04b991400ba78fbfcfa7eb4f09e1bdd21c823575df778a5220f2
+      measurements_collected: false
+      model_trained: false
+      candidate_operating_point_created: false
+      formal_science_run_submitted: false
+      completed_at: "2026-08-21T15:38:00Z"
+  - task_id: resistance_propensity_contract_freeze
+    status: ready
+    priority_tier: 1
+    evidence_domains: [resistance_propensity]
+    action_type: prospective_serial_passage_cross_resistance_and_model_contract
+    prerequisites: []
+    estimated_cpu_minutes: 120
+    estimated_gpu_minutes: 0
+    acceptance_artifacts:
+      - serial_passage_organism_drug_and_control_matrix_sha256
+      - raw_MIC_population_and_timecourse_measurement_schema_sha256
+      - cross_resistance_and_genotype_endpoint_contract_sha256
+      - leakage_safe_model_card_and_candidate_blinding_plan_sha256
+    stop_conditions:
+      - stop_if_strain_passage_schedule_exposure_rule_or_controls_are_missing
+      - stop_if_MIC_shift_and_population_extinction_are_collapsed
+      - stop_if_current_candidates_define_the_operating_point
+      - stop_if_commercial_internal_use_and_data_ownership_are_not_confirmed
+  - task_id: solubility_aggregation_provider_and_pilot_qualification
+    status: ready
+    priority_tier: 2
+    evidence_domains: [solubility_and_aggregation]
+    action_type: external_or_internal_lab_provider_and_reference_pilot
+    prerequisites: [solubility_aggregation_contract_freeze]
+    estimated_cpu_minutes: 180
+    estimated_gpu_minutes: 0
+    acceptance_artifacts:
+      - qualified_provider_and_data_rights_witness_sha256
+      - blinded_reference_peptide_orthogonal_measurement_bundle_sha256
+      - pilot_condition_matrix_QC_and_reversibility_report_sha256
+      - candidate_unblinding_authorization_decision_sha256
+    stop_conditions:
+      - stop_if_provider_cannot_grant_raw_data_and_derivative_model_rights
+      - stop_if_unfiltered_turbidity_DLS_and_soluble_parent_cannot_be_separated
+      - stop_if_reference_pilot_fails_predeclared_QC
+      - stop_if_current_candidates_are_unblinded_before_pilot_acceptance
   - task_id: serum_protease_stability_provider_and_pilot_qualification
     status: ready
     priority_tier: 2

@@ -1,0 +1,172 @@
+{
+  "schema_version": "ampgent.solubility-aggregation-contract.1",
+  "contract_id": "solubility_aggregation_contract_v39_20260821",
+  "frozen_at": "2026-08-21T15:38:00Z",
+  "primary_sources": [
+    "https://www.ema.europa.eu/en/ich-q6b-specifications-test-procedures-acceptance-criteria-biotechnological-biological-products-scientific-guideline",
+    "https://pubmed.ncbi.nlm.nih.gov/24464772/",
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC8140080/",
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC7358464/"
+  ],
+  "source_scope": {
+    "purpose": "prospective_sequence_first_peptide_solubility_and_aggregation_acquisition_and_model_qualification",
+    "interpretation": "orthogonal soluble-mass, turbidity and particle-size measurements are required because concentration, pH, salt, temperature and sample handling can change peptide assembly; this artifact contains no measurements",
+    "measurements_in_this_artifact": false
+  },
+  "condition_matrix": {
+    "primary_buffer_system": "matched_low_absorbance_buffers",
+    "buffer_identity_and_concentration_required": true,
+    "pH_values": [5.5, 7.4, 8.5],
+    "nacl_mM": [0, 150, 300],
+    "peptide_concentration_um": [10, 50, 100, 250, 500],
+    "temperature_c": [25, 37],
+    "timepoints_hours": [0, 1, 4, 24],
+    "technical_replicates_per_condition": 3,
+    "minimum_independent_assay_days": 2,
+    "premeasurement_filtration_allowed": false,
+    "centrifugation_for_soluble_mass_lane": "validated_fixed_g_and_duration_recorded_per_observation",
+    "reversibility_dilution_challenge_required": true,
+    "reversibility_protocol": "preincubate_at_500_uM_for_24_h_then_dilute_10_fold_into_identical_buffer_and_remeasure_at_0_1_4_h",
+    "required_controls": [
+      "buffer_blank",
+      "vehicle_matched_blank",
+      "low_turbidity_soluble_reference_peptide",
+      "aggregation_prone_reference_peptide",
+      "instrument_particle_size_reference",
+      "post_centrifugation_spike_recovery_control"
+    ],
+    "bridge_matrices": [
+      {
+        "matrix": "cation_adjusted_Mueller_Hinton_broth",
+        "role": "activity_assay_compatibility_bridge",
+        "may_be_pooled_with_buffer": false,
+        "may_define_global_candidate_gate": false
+      },
+      {
+        "matrix": "skin_relevant_synthetic_wound_fluid",
+        "role": "application_context_bridge",
+        "may_be_pooled_with_buffer": false,
+        "may_define_global_candidate_gate": false
+      }
+    ],
+    "serum_or_broth_results_may_be_pooled_with_buffer": false,
+    "condition_specific_endpoints_required": true
+  },
+  "raw_measurement_schema": {
+    "required_observation_fields": [
+      "sequence_sha256",
+      "material_lot",
+      "purity_percent",
+      "molecular_weight_g_mol",
+      "buffer_identity",
+      "buffer_concentration_mM",
+      "pH_measured",
+      "nacl_mM",
+      "nominal_concentration_um",
+      "temperature_c",
+      "timepoint_hours",
+      "technical_replicate",
+      "unfiltered_turbidity_absorbance",
+      "turbidity_wavelength_nm",
+      "dls_count_rate",
+      "dls_z_average_nm",
+      "dls_pdi",
+      "dls_size_distribution_raw",
+      "centrifugation_g_time_minutes",
+      "supernatant_parent_concentration_um",
+      "supernatant_quantification_method",
+      "pellet_or_visible_precipitate_status",
+      "post_dilution_recovery_measurements",
+      "lloq",
+      "uloq",
+      "qc_status",
+      "qc_reason_codes"
+    ],
+    "raw_values_are_immutable": true,
+    "turbidity_dls_and_soluble_mass_stored_separately": true,
+    "dls_non_detection_means_no_aggregation": false,
+    "visible_precipitate_means_zero_solubility": false,
+    "negative_blank_corrected_turbidity_preserved": true,
+    "failed_runs_and_retests_both_retained": true,
+    "sample_order_randomization_and_operator_blinding_required": true,
+    "orthogonal_readout_roles": {
+      "quantitative_LCMS_or_validated_HPLC": "soluble_intact_parent_after_fixed_centrifugation",
+      "unfiltered_turbidity": "bulk_scattering_and_precipitation_signal",
+      "unfiltered_DLS": "particle_size_distribution_and_count_rate",
+      "dilution_challenge": "reversible_versus_persistent_self_association"
+    },
+    "censoring_rules": {
+      "soluble_parent_below_lloq": "left_censored_at_lloq_not_zero",
+      "soluble_parent_above_uloq": "right_censored_at_uloq_pending_validated_dilution",
+      "particle_size_outside_validated_range": "interval_censored_with_instrument_range_and_raw_count_rate",
+      "multimodal_or_high_PDI_DLS": "retain_raw_distribution_and_flag_no_single_size_summary",
+      "visible_precipitate": "retain_ordinal_observation_and_quantified_supernatant_separately"
+    },
+    "retest_policy": {
+      "assignable_causes_only": true,
+      "unexpected_candidate_result_is_not_assignable_cause": true,
+      "original_and_retest_link_required": true
+    }
+  },
+  "reference_and_candidate_blinding_plan": {
+    "prospective_measurements_only": true,
+    "reference_panel_roles": ["high_solubility_low_aggregation", "low_solubility_precipitating", "reversible_self_association", "persistent_particle_formation", "charge_and_hydrophobicity_controls"],
+    "reference_peptides_cannot_be_selected_from_current_ampgent_candidates": true,
+    "current_773_candidates_excluded_from_fitting": true,
+    "current_773_candidates_excluded_from_calibration": true,
+    "current_773_candidates_excluded_from_model_selection": true,
+    "current_773_candidates_excluded_from_operating_point_selection": true,
+    "current_773_candidates_reserved_for_blind_test_only": true,
+    "candidate_identity_unblinded_before_assay_and_model_lock": false,
+    "sequence_family_grouping": {"maximum_global_identity": 0.4, "minimum_bidirectional_coverage": 0.8},
+    "required_data_rights": {
+      "commercial_internal_use": true,
+      "raw_measurement_ownership_or_perpetual_license": true,
+      "derivative_model_training": true,
+      "derived_model_weights_internal_use": true,
+      "audit_and_reanalysis": true
+    }
+  },
+  "split_contract": {
+    "partition_roles": ["train", "calibration", "sequence_family_OOD", "prospective_blind_candidate_test"],
+    "exact_sequence_groups_disjoint": true,
+    "design_campaign_groups_disjoint": true,
+    "maximum_cross_split_global_identity": 0.4,
+    "minimum_bidirectional_alignment_coverage": 0.8,
+    "material_lot_assay_day_and_instrument_effects_audited": true,
+    "current_candidates_used_to_define_split": false,
+    "current_candidates_used_to_define_operating_point": false,
+    "blind_candidate_results_may_refit_model": false,
+    "split_assignment_frozen_before_candidate_unblinding": true
+  },
+  "model_card_contract": {
+    "primary_endpoint": "conditioned_soluble_parent_and_particle_state",
+    "derived_endpoints": ["soluble_parent_fraction", "turbidity_timecourse", "DLS_distribution", "critical_aggregation_interval", "dilution_reversibility"],
+    "single_global_soluble_insoluble_label_allowed": false,
+    "precipitation_and_reversible_self_association_separate": true,
+    "condition_covariates_required": true,
+    "multi_endpoint_uncertainty_required": true,
+    "censoring_aware_estimation_required": true,
+    "calibration_and_sequence_family_OOD_report_required": true,
+    "transparent_descriptor_baseline_required": true,
+    "content_addressed_runtime_required": true,
+    "training_data_manifest_sha256_required": true,
+    "commercial_license_witness_required": true,
+    "candidate_operating_point_is_separate_versioned_artifact": true,
+    "current_candidates_may_not_select_model_or_operating_point": true
+  },
+  "decision": {
+    "outcome": "prospective_solubility_and_aggregation_contract_frozen_measurements_pending",
+    "measurements_collected": false,
+    "model_trained": false,
+    "candidate_operating_point_created": false,
+    "formal_science_run_submitted": false,
+    "next_action": "qualify_data_rights_and_run_blinded_reference_peptide_pilot_before_current_candidate_unblinding"
+  },
+  "acceptance_artifacts": {
+    "pH_ionic_strength_concentration_condition_matrix_sha256": "f9471bc127a6c918a8ac28030057518075ac056e5acf7fd8e7a64164c4d7b08a",
+    "raw_solubility_turbidity_and_particle_measurement_schema_sha256": "fb3a2f2072b0de86f9319ec7a63d23b3311a3181e4df106590bf453659b1e81c",
+    "leakage_safe_reference_and_candidate_blinding_plan_sha256": "2e6817193a39da8c8cbd3f38250985c09397ab8e403f9110805a7be13217eb68",
+    "aggregation_model_card_and_qualification_contract_sha256": "47ac1c7e429e04b991400ba78fbfcfa7eb4f09e1bdd21c823575df778a5220f2"
+  }
+}

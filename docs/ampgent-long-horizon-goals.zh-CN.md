@@ -674,3 +674,10 @@ elastase 仅作独立机制诊断，不与 serum endpoint 合并。降解 fragme
 低于 LLOQ 和未达到半衰期保留删失。当前 773 条候选只允许在 assay/model lock 后盲测，不参与模型、
 split、校准或 operating point，因此该合同不会提前清空候选池。当前仍没有新稳定性湿实验或正式候选门；
 下一独立任务转为溶解度/聚集条件矩阵与原始测量合同，同时保留稳定性 provider/pilot 的外部执行路径。
+
+2026-08-21 v39 溶解度/聚集合同追加：pH、盐度、浓度、温度和时间被保留为显式条件轴；未过滤浊度、
+DLS 原始粒径分布、固定离心后的可溶 intact parent 与可见沉淀是分离端点。高浓度预孵育后的十倍稀释
+复测用于区分可逆自聚集与持久颗粒，禁止用过滤后样本掩盖大聚集体，也禁止把 DLS 无信号解释为
+“无聚集”。当前 773 条候选只作 assay/model lock 后盲测，不能定义 split、模型或 operating point。
+该 checkpoint 没有新增湿实验开发性证据；provider/reference pilot 留作后续，下一独立合同转向
+serial-passage resistance propensity 与 cross-resistance，继续补齐企业核心管线而不消耗结构 GPU。
