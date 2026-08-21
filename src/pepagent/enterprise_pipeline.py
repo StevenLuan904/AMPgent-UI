@@ -25,7 +25,6 @@ ENSEMBLE_DOMAINS = frozenset(
     {
         "pathogen_conditioned_potency",
         "hemolysis",
-        "toxicity",
     }
 )
 

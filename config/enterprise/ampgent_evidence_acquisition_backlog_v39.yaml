@@ -28,7 +28,7 @@ tasks:
       witness_sha256: 0efc8009ec0b37d9f0bcc9749d2248cced9efb7b9b9b48ace19a304fe871ea98
       completed_at: "2026-08-20T07:36:00Z"
   - task_id: pathogen_conditioned_activity_reference_freeze
-    status: ready
+    status: completed
     priority_tier: 0
     evidence_domains: [pathogen_conditioned_potency]
     action_type: reference_dataset_and_endpoint_contract
@@ -43,6 +43,16 @@ tasks:
       - stop_if_species_or_strain_identity_is_missing
       - stop_if_mic_units_or_assay_conditions_cannot_be_normalized
       - stop_if_candidate_overlap_cannot_be_audited
+    completion:
+      outcome: strain_assay_normalization_and_split_contracts_frozen_measurements_pending
+      witness_path: config/enterprise/pathogen_conditioned_activity_reference_freeze_witness_v39.json
+      witness_sha256: eaef2f51a1b91b197b7861ae47381bc06b698afdecb3a5bdd6c7ca5ce80ce5c1
+      organism_strain_conditioned_assay_table_sha256: 3380557247a9db19812dc1b8b4a9ed40da8fe6794775fd2331e6f191339b0948
+      mic_unit_and_condition_normalization_contract_sha256: 882a097182d46840afe5bd10655c7a9506aaad111bae2a12b6463e9295bf8efb
+      train_calibration_ood_split_witness_sha256: d8c8df31c07329fb6c8032043ae2e151c8469a69bd682a023bdcf037e63fc8a6
+      measurements_ingested: false
+      candidate_activity_threshold_created: false
+      completed_at: "2026-08-21T03:32:17Z"
   - task_id: cytotoxicity_and_commensal_reference_panel_freeze
     status: completed
     priority_tier: 0

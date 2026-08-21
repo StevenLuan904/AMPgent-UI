@@ -1,0 +1,105 @@
+{
+  "schema_version": "ampgent.pathogen-conditioned-assay-table.1",
+  "table_id": "ampgent_pathogen_conditioned_assay_table_v39_20260821",
+  "panel_kind": "pathogen_conditioned_potency",
+  "frozen_at": "2026-08-21T03:32:17Z",
+  "status": "qualified_for_dataset_acquisition_measurements_not_yet_ingested",
+  "scope_note": "Reference skin and wound pathogen panel; it does not claim complete clinical-isolate or resistance diversity.",
+  "protocol_sources": [
+    "https://clsi.org/shop/standards/m07/",
+    "https://clsi.org/standards/products/microbiology/documents/m100/"
+  ],
+  "assay_profiles": {
+    "clsi_m07_cam_hb_aerobic": {
+      "protocol_family": "CLSI_M07",
+      "protocol_edition": "M07-Ed12",
+      "method": "broth_microdilution",
+      "assay_medium": "cation_adjusted_mueller_hinton_broth",
+      "final_inoculum_cfu_ml": 500000,
+      "inoculum_tolerance_fold": 2.0,
+      "incubation_temperature_c": {"minimum": 33.0, "maximum": 37.0},
+      "incubation_hours": {"minimum": 16, "maximum": 20},
+      "atmosphere": "ambient_air",
+      "endpoint": "lowest_tested_concentration_with_no_visible_growth",
+      "dilution_series": "two_fold",
+      "required_controls": ["growth_control", "sterility_control", "reference_qc_control"],
+      "required_metadata": [
+        "broth_manufacturer_and_lot",
+        "plate_material_and_surface_treatment",
+        "inoculum_verification_cfu_ml",
+        "incubation_temperature_c",
+        "incubation_duration_hours",
+        "reader_and_readout_rule"
+      ]
+    }
+  },
+  "entries": [
+    {
+      "catalog_id": "ATCC_29213",
+      "organism": "Staphylococcus aureus subsp. aureus",
+      "strain_designation": "Wichita",
+      "source_uri": "https://www.atcc.org/products/29213",
+      "isolation_source": "wound",
+      "resistance_context": "reference_susceptibility_qc",
+      "panel_roles": ["gram_positive_reference", "skin_wound_reference"],
+      "assay_profile_id": "clsi_m07_cam_hb_aerobic"
+    },
+    {
+      "catalog_id": "ATCC_43300",
+      "organism": "Staphylococcus aureus subsp. aureus",
+      "strain_designation": "F-182",
+      "source_uri": "https://www.atcc.org/products/43300",
+      "isolation_source": "clinical isolate, Kansas",
+      "resistance_context": "MRSA_methicillin_and_oxacillin_resistant_SCCmec_II",
+      "panel_roles": ["methicillin_resistant_staphylococcus", "resistant_skin_wound_context"],
+      "assay_profile_id": "clsi_m07_cam_hb_aerobic"
+    },
+    {
+      "catalog_id": "ATCC_35984",
+      "organism": "Staphylococcus epidermidis",
+      "strain_designation": "RP62A",
+      "source_uri": "https://www.atcc.org/products/35984",
+      "isolation_source": "catheter sepsis",
+      "resistance_context": "polysaccharide_adhesin_biofilm_context",
+      "panel_roles": ["biofilm_associated_coagulase_negative_staphylococcus", "skin_opportunist_context"],
+      "assay_profile_id": "clsi_m07_cam_hb_aerobic"
+    },
+    {
+      "catalog_id": "ATCC_25922",
+      "organism": "Escherichia coli",
+      "strain_designation": "FDA strain Seattle 1946",
+      "source_uri": "https://www.atcc.org/products/25922",
+      "isolation_source": "clinical isolate",
+      "resistance_context": "reference_susceptibility_qc",
+      "panel_roles": ["gram_negative_reference", "enterobacterales_reference"],
+      "assay_profile_id": "clsi_m07_cam_hb_aerobic"
+    },
+    {
+      "catalog_id": "ATCC_27853",
+      "organism": "Pseudomonas aeruginosa",
+      "strain_designation": "Boston 41501",
+      "source_uri": "https://www.atcc.org/products/27853",
+      "isolation_source": "blood culture",
+      "resistance_context": "reference_susceptibility_qc",
+      "panel_roles": ["nonfermenting_gram_negative_reference", "opportunistic_wound_pathogen"],
+      "assay_profile_id": "clsi_m07_cam_hb_aerobic"
+    },
+    {
+      "catalog_id": "ATCC_19606",
+      "organism": "Acinetobacter baumannii",
+      "strain_designation": "2208 [81, DSM 6974]",
+      "source_uri": "https://www.atcc.org/products/19606",
+      "isolation_source": "human source reference strain",
+      "resistance_context": "reference_type_strain_not_a_multidrug_resistant_claim",
+      "panel_roles": ["nonfermenting_gram_negative_reference", "eskap_e_wound_context"],
+      "assay_profile_id": "clsi_m07_cam_hb_aerobic"
+    }
+  ],
+  "coverage_gaps": [
+    "independent_contemporary_clinical_isolate_panel_not_yet_frozen",
+    "Streptococcus_pyogenes_fastidious_assay_profile_not_yet_frozen",
+    "strain_specific_biofilm_MBIC_and_MBEC_are_separate_future_endpoints"
+  ],
+  "candidate_batch_threshold_fit_forbidden": true,
+  "no_candidate_admission_threshold_defined": true
+}

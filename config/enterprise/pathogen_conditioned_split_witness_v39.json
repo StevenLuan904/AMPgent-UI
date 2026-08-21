@@ -1,0 +1,45 @@
+{
+  "schema_version": "ampgent.pathogen-conditioned-split-witness.1",
+  "witness_id": "ampgent_pathogen_conditioned_split_witness_v39_20260821",
+  "frozen_at": "2026-08-21T03:32:17Z",
+  "status": "split_policy_frozen_dataset_not_yet_ingested",
+  "dataset_measurements_present": false,
+  "current_candidate_sequences_used_to_define_split": false,
+  "current_candidate_scores_used_to_define_split": false,
+  "split_purpose": "future_train_calibration_external_ood_evaluation_not_candidate_admission",
+  "exact_sequence_groups_must_be_disjoint": true,
+  "publication_groups_must_be_disjoint": true,
+  "parent_peptide_family_groups_must_be_disjoint": true,
+  "sequence_family_cluster": {
+    "algorithm": "connected_components_over_global_pairwise_alignment",
+    "minimum_global_identity": 0.7,
+    "minimum_bidirectional_coverage": 0.8,
+    "threshold_purpose": "leakage_prevention_only_not_candidate_gate",
+    "cluster_assignments_must_be_content_addressed": true
+  },
+  "split_assignment": {
+    "unit": "sequence_family_cluster_plus_publication_group",
+    "development_fraction": 0.6,
+    "calibration_fraction": 0.2,
+    "internal_test_fraction": 0.2,
+    "deterministic_assignment": "sha256_group_key_modulo_100_after_group_closure",
+    "stratification_axes": ["organism", "strain_designation", "assay_profile_id", "mic_censoring_status"],
+    "minimum_group_count_action": "fail_closed_without_changing_fractions_after_outcomes"
+  },
+  "external_ood_views": [
+    "leave_one_organism_out",
+    "leave_one_strain_out",
+    "remote_sequence_family",
+    "assay_condition_shift"
+  ],
+  "candidate_overlap_audit_required_before_training": true,
+  "candidate_overlap_audit_scope": [
+    "exact_sequence",
+    "sequence_family_cluster",
+    "publication_or_source_lineage",
+    "current_and_historical_ampgent_candidates"
+  ],
+  "candidate_overlap_action": "exclude_from_training_and_report_separately_never_reassign_candidate_label",
+  "thresholds_are_not_activity_thresholds": true,
+  "no_candidate_admission_threshold_defined": true
+}

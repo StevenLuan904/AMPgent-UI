@@ -23,6 +23,10 @@ def test_enterprise_audit_contract_is_machine_valid() -> None:
     assert_enterprise_pipeline_contract(payload)
     assert payload["readiness"]["status"] == "not_ready"
     assert payload["scope"]["formal_science_run_authorized"] is False
+    assert payload["evidence_domains"]["toxicity"]["minimum_independent_models"] == 0
+    assert payload["evidence_domains"]["mammalian_cytotoxicity"][
+        "minimum_independent_models"
+    ] == 1
 
 
 def test_direct_structure_rejects_cross_species_metadata_even_for_matching_sequence() -> None:

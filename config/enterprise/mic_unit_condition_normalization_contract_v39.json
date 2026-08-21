@@ -1,0 +1,62 @@
+{
+  "schema_version": "ampgent.mic-unit-condition-normalization.1",
+  "contract_id": "ampgent_mic_unit_condition_normalization_v39_20260821",
+  "frozen_at": "2026-08-21T03:32:17Z",
+  "status": "qualified_for_dataset_acquisition_no_measurements_ingested",
+  "raw_value_and_unit_preserved": true,
+  "allowed_reported_units": ["micromolar", "microgram_per_milliliter", "milligram_per_liter"],
+  "mass_to_molar_conversion": {
+    "formula": "mic_um=(mic_ug_per_ml*1000)/material_molecular_weight_g_per_mol",
+    "milligram_per_liter_equals_microgram_per_milliliter": true,
+    "molecular_weight_source_required": true,
+    "material_form_required": true,
+    "counterion_and_salt_state_required_when_applicable": true,
+    "conversion_forbidden_when_material_molecular_weight_is_ambiguous": true,
+    "rounding": "retain_unrounded_binary_value_and_report_at_least_six_significant_digits"
+  },
+  "inequality_semantics": {
+    "allowed_qualifiers": ["equal", "less_than_or_equal", "greater_than"],
+    "censored_values_remain_censored": true,
+    "substitution_with_plate_limit_forbidden": true
+  },
+  "required_raw_fields": [
+    "dataset_id",
+    "publication_or_source_id",
+    "candidate_sequence",
+    "candidate_sequence_sha256",
+    "organism",
+    "strain_designation",
+    "assay_profile_id",
+    "reported_mic_value",
+    "reported_mic_unit",
+    "mic_qualifier",
+    "material_molecular_weight_g_per_mol",
+    "material_form",
+    "medium",
+    "inoculum_cfu_ml",
+    "incubation_temperature_c",
+    "incubation_duration_hours",
+    "atmosphere",
+    "plate_material",
+    "biological_replicate",
+    "raw_growth_readout",
+    "control_batch_id"
+  ],
+  "condition_identity_key": [
+    "organism",
+    "strain_designation",
+    "assay_profile_id",
+    "medium",
+    "inoculum_cfu_ml",
+    "incubation_temperature_c",
+    "incubation_duration_hours",
+    "atmosphere",
+    "plate_material"
+  ],
+  "cross_condition_numeric_pooling_forbidden": true,
+  "cross_strain_label_collapse_forbidden": true,
+  "missing_condition_action": "retain_raw_record_as_unqualified_not_training_or_calibration_evidence",
+  "replicate_summary": "geometric_summary_only_within_identical_condition_identity_key_and_censoring_stratum",
+  "candidate_batch_threshold_fit_forbidden": true,
+  "no_candidate_admission_threshold_defined": true
+}

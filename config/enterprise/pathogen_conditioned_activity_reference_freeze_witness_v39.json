@@ -1,0 +1,60 @@
+{
+  "schema_version": "ampgent.pathogen-conditioned-activity-reference-freeze.1",
+  "witness_id": "ampgent_pathogen_conditioned_activity_reference_freeze_v39_20260821",
+  "completed_at": "2026-08-21T03:32:17Z",
+  "status": "strain_assay_normalization_and_split_contracts_frozen_measurements_pending",
+  "artifacts": {
+    "organism_strain_conditioned_assay_table": {
+      "path": "config/enterprise/pathogen_conditioned_assay_table_v39.json",
+      "sha256": "3380557247a9db19812dc1b8b4a9ed40da8fe6794775fd2331e6f191339b0948",
+      "strain_count": 6,
+      "assay_profile_count": 1
+    },
+    "mic_unit_and_condition_normalization_contract": {
+      "path": "config/enterprise/mic_unit_condition_normalization_contract_v39.json",
+      "sha256": "882a097182d46840afe5bd10655c7a9506aaad111bae2a12b6463e9295bf8efb"
+    },
+    "train_calibration_ood_split_witness": {
+      "path": "config/enterprise/pathogen_conditioned_split_witness_v39.json",
+      "sha256": "d8c8df31c07329fb6c8032043ae2e151c8469a69bd682a023bdcf037e63fc8a6"
+    }
+  },
+  "identity_sources": [
+    "https://www.atcc.org/products/29213",
+    "https://www.atcc.org/products/43300",
+    "https://www.atcc.org/products/35984",
+    "https://www.atcc.org/products/25922",
+    "https://www.atcc.org/products/27853",
+    "https://www.atcc.org/products/19606"
+  ],
+  "method_sources": [
+    "https://clsi.org/shop/standards/m07/",
+    "https://clsi.org/standards/products/microbiology/documents/m100/"
+  ],
+  "decision": {
+    "reference_strain_identities_frozen": true,
+    "assay_condition_profile_frozen": true,
+    "raw_and_normalized_mic_semantics_frozen": true,
+    "leakage_safe_split_policy_frozen": true,
+    "measurements_ingested": false,
+    "model_training_or_calibration_complete": false,
+    "current_candidate_batch_used_to_fit_policy": false,
+    "candidate_activity_threshold_created": false,
+    "formal_science_run_submission_allowed": false,
+    "next_action": "acquire_and_license_a_condition_complete_reference_dataset_then_execute_the_frozen_leakage_audit"
+  },
+  "implementation": {
+    "module": "src/pepagent/pathogen_activity_contract.py",
+    "module_sha256": "116ae47fe624692cbef21e72eb674a7078bfe0c4dc75c7e1b338ddc624e453e1",
+    "test": "tests/test_pathogen_activity_contract.py",
+    "test_sha256": "5d55481bfe0aededb787724971a160d27cb03fbef7e24818b4db9d30bb48e0e0",
+    "focused_tests_passed": 26,
+    "ruff_status": "clean"
+  },
+  "known_scope_limits": [
+    "reference_panel_not_complete_clinical_isolate_diversity",
+    "no_fastidious_Streptococcus_pyogenes_profile_yet",
+    "no_reference_measurements_or_calibrated_pathogen_conditioned_model_yet",
+    "split_similarity_thresholds_are_leakage_controls_not_candidate_admission_gates"
+  ]
+}
