@@ -388,7 +388,7 @@ tasks:
       formal_science_run_submitted: false
       completed_at: "2026-08-21T21:38:00Z"
   - task_id: commensal_selectivity_assay_contract_freeze
-    status: ready
+    status: completed
     priority_tier: 1
     evidence_domains: [commensal_selectivity]
     action_type: prospective_skin_commensal_pathogen_selectivity_assay_and_model_contract
@@ -405,6 +405,37 @@ tasks:
       - stop_if_pathogen_potency_and_commensal_preservation_are_collapsed
       - stop_if_current_candidates_define_the_operating_point
       - stop_if_commercial_internal_use_and_data_ownership_are_not_confirmed
+    completion:
+      outcome: prospective_strain_conditioned_selectivity_contract_frozen_measurements_pending
+      witness_path: config/enterprise/commensal_selectivity_assay_contract_v39.json
+      witness_sha256: 9861ee2c4cb47e5c9ace7fe0714fe5b7d4827f18df7b251a9ee9ca9223868741
+      pathogen_commensal_strain_and_condition_matrix_sha256: b1cd1e9e38c30881a25092d1b2f6605087b50f3387cde803e4b00aff3983490c
+      raw_growth_kill_and_selectivity_measurement_schema_sha256: d2f3b3690520eb7d4bb019aa4516001cebe1b1c8a88b5ba11897016365e4dedf
+      leakage_safe_reference_and_candidate_blinding_plan_sha256: ab88edc8bc5295a8f0992c7942041af9658e26cf501cd894f06511c17d7a42b8
+      commensal_selectivity_model_card_and_qualification_contract_sha256: bdf6246b8dd4f1bbd6ad89aef841de84ffb2ee9a1b8f05c12cf19082b5550cdb
+      measurements_collected: false
+      model_trained: false
+      candidate_operating_point_created: false
+      formal_science_run_submitted: false
+      completed_at: "2026-08-21T23:31:31Z"
+  - task_id: commensal_selectivity_provider_and_reference_pilot_qualification
+    status: ready
+    priority_tier: 2
+    evidence_domains: [commensal_selectivity]
+    action_type: external_or_internal_microbiology_provider_and_blinded_reference_pilot
+    prerequisites: [commensal_selectivity_assay_contract_freeze]
+    estimated_cpu_minutes: 180
+    estimated_gpu_minutes: 0
+    acceptance_artifacts:
+      - qualified_strain_use_provider_and_data_rights_witness_sha256
+      - blinded_reference_agent_aerobic_anaerobic_and_skin_bridge_bundle_sha256
+      - strain_condition_growth_kill_recovery_and_QC_report_sha256
+      - candidate_unblinding_authorization_decision_sha256
+    stop_conditions:
+      - stop_if_provider_cannot_grant_strain_use_raw_data_and_derivative_model_rights
+      - stop_if_strain_identity_role_condition_or_inoculum_contract_drifts
+      - stop_if_reference_pilot_fails_predeclared_growth_recovery_or_assay_QC
+      - stop_if_current_candidates_are_unblinded_before_pilot_acceptance
   - task_id: mammalian_cytotoxicity_provider_and_pilot_qualification
     status: ready
     priority_tier: 2

@@ -1,0 +1,219 @@
+{
+  "schema_version": "ampgent.commensal-selectivity-assay-model-contract.1",
+  "contract_id": "commensal_selectivity_assay_contract_v39_20260821",
+  "frozen_at": "2026-08-21T23:31:31Z",
+  "primary_sources": [
+    "https://clsi.org/shop/standards/m07/",
+    "https://www.atcc.org/products/29213",
+    "https://www.atcc.org/products/43300",
+    "https://www.atcc.org/products/25922",
+    "https://www.atcc.org/products/35984",
+    "https://www.atcc.org/products/12228",
+    "https://www.atcc.org/products/27844",
+    "https://www.atcc.org/products/6919",
+    "https://www.nature.com/articles/s41467-018-07368-7",
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC8917079/",
+    "https://www.nature.com/articles/nature14052"
+  ],
+  "source_scope": {
+    "purpose": "prospective_strain_conditioned_skin_pathogen_potency_and_resident_preservation_assay_and_model_qualification",
+    "interpretation": "CLSI M07 anchors aerobic dilution susceptibility methods; authenticated strain records and strain-level skin microbiome evidence prevent species-wide pathogen or commensal labels; this artifact contains no microbiology measurement",
+    "measurements_in_this_artifact": false
+  },
+  "strain_and_condition_matrix": {
+    "strain_roles": [
+      {
+        "strain_identity": "Staphylococcus_aureus_ATCC_29213",
+        "evidence_role": "wound_MSSA_pathogen_reference",
+        "identity_evidence": "authenticated_ATCC_catalog_genome_and_master_stock_SHA_required"
+      },
+      {
+        "strain_identity": "Staphylococcus_aureus_ATCC_43300_MRSA",
+        "evidence_role": "MRSA_pathogen_and_PBP2a_target_context",
+        "identity_evidence": "authenticated_ATCC_catalog_genome_and_master_stock_SHA_required"
+      },
+      {
+        "strain_identity": "Escherichia_coli_ATCC_25922",
+        "evidence_role": "Gram_negative_pathogen_and_GyrA_target_context",
+        "identity_evidence": "authenticated_ATCC_catalog_genome_and_master_stock_SHA_required"
+      },
+      {
+        "strain_identity": "Staphylococcus_epidermidis_ATCC_35984_RP62A",
+        "evidence_role": "opportunistic_infection_and_biofilm_pathogen_context",
+        "identity_evidence": "authenticated_ATCC_catalog_genome_and_master_stock_SHA_required"
+      },
+      {
+        "strain_identity": "Staphylococcus_epidermidis_ATCC_12228",
+        "evidence_role": "lower_virulence_non_biofilm_carriage_comparator",
+        "identity_evidence": "authenticated_ATCC_catalog_genome_and_master_stock_SHA_required"
+      },
+      {
+        "strain_identity": "Staphylococcus_hominis_ATCC_27844_DM122",
+        "evidence_role": "human_skin_resident_preservation_comparator",
+        "identity_evidence": "authenticated_ATCC_catalog_and_master_stock_SHA_required"
+      },
+      {
+        "strain_identity": "Cutibacterium_acnes_ATCC_6919_NCTC_737",
+        "evidence_role": "anaerobic_skin_resident_and_acne_associated_context_comparator",
+        "identity_evidence": "authenticated_ATCC_catalog_genome_and_master_stock_SHA_required"
+      }
+    ],
+    "species_name_alone_defines_pathogen_or_commensal_role": false,
+    "strain_role_is_contextual_not_universal_benefit_claim": true,
+    "minimum_independent_experiment_days": 2,
+    "minimum_biological_replicates_per_strain_condition": 3,
+    "technical_replicates_per_biological_replicate": 2,
+    "peptide_concentration_um": [0.5, 1, 2, 4, 8, 16, 32, 64, 128, 256],
+    "absolute_concentration_time_kill_hours": [0, 1, 2, 4, 8, 24],
+    "absolute_concentration_time_kill_um": [1, 4, 16, 64],
+    "assay_lanes": [
+      {
+        "lane_id": "aerobic_reference_MIC_lane",
+        "strains": ["S_aureus_29213", "S_aureus_43300", "E_coli_25922", "S_epidermidis_RP62A", "S_epidermidis_12228", "S_hominis_27844"],
+        "method": "CLSI_compatible_broth_microdilution_with_exact_medium_inoculum_temperature_and_18_to_24_hour_endpoint_frozen",
+        "target_inoculum_CFU_per_mL": 500000
+      },
+      {
+        "lane_id": "anaerobic_C_acnes_context_lane",
+        "strains": ["C_acnes_6919"],
+        "method": "organism_appropriate_anaerobic_medium_atmosphere_temperature_and_48_to_72_hour_endpoint_frozen_separately",
+        "directly_pooled_with_aerobic_MIC": false
+      },
+      {
+        "lane_id": "common_skin_mimetic_bridge_lane",
+        "strains": "all_strains_with_prequalified_growth_and_recovery",
+        "method": "common_absolute_concentrations_with_pH_salt_sebum_protein_temperature_and_inoculum_explicit",
+        "primary_reference_endpoint": false
+      }
+    ],
+    "cross_medium_MIC_ratio_or_pooling_allowed": false,
+    "only_common_condition_absolute_concentrations_may_form_selectivity_pairs": true,
+    "planktonic_endpoints": ["MIC_interval", "MBC_interval", "time_kill_CFU_curve"],
+    "biofilm_endpoint": "separate_RP62A_diagnostic_lane_after_planktonic_qualification",
+    "biofilm_endpoint_pooled_with_planktonic_endpoint": false,
+    "required_controls": [
+      "growth_control_each_strain_condition",
+      "sterility_control_each_medium",
+      "vehicle_control",
+      "peptide_free_matrix_control",
+      "peptide_recovery_and_adsorption_control",
+      "mupirocin_reference",
+      "chlorhexidine_reference",
+      "LL_37_reference_peptide",
+      "species_appropriate_antibiotic_QC_control"
+    ],
+    "reference_agents_are_assay_controls_not_candidate_thresholds": true,
+    "same_plate_randomization_and_blind_candidate_codes_required": true,
+    "medium_matrix_interference_and_peptide_recovery_QC_required": true
+  },
+  "raw_measurement_schema": {
+    "required_observation_fields": [
+      "candidate_or_control_blind_id",
+      "exact_sequence_and_modification_sha256",
+      "strain_identity_genome_and_master_stock_sha256",
+      "evidence_role",
+      "assay_lane_medium_lot_pH_atmosphere_temperature",
+      "inoculum_CFU_per_mL_and_preparation",
+      "experiment_day_plate_well_and_randomization",
+      "peptide_concentration_um_and_exposure_time_hours",
+      "raw_OD_or_growth_signal",
+      "raw_colony_counts_dilutions_plating_volume_and_LOD",
+      "MIC_interval_and_censoring",
+      "MBC_interval_and_censoring",
+      "biofilm_readout_when_scheduled",
+      "peptide_recovery_fraction_when_scheduled",
+      "control_raw_values",
+      "QC_status_and_reason_codes"
+    ],
+    "raw_values_are_immutable": true,
+    "normalized_values_are_derived_with_versioned_formula": true,
+    "failed_runs_and_assignable_cause_retests_both_retained": true,
+    "manual_outlier_deletion_forbidden": true,
+    "pathogen_potency_and_resident_preservation_stored_separately": true,
+    "single_weighted_selectivity_score_allowed": false,
+    "no_growth_or_no_kill_may_be_imputed_as_exact_value": false,
+    "derived_endpoints": [
+      "strain_conditioned_MIC_and_MBC_interval",
+      "absolute_concentration_time_kill_log10_CFU_change_with_interval",
+      "common_condition_pathogen_potency_vector",
+      "common_condition_resident_preservation_vector",
+      "interval_aware_non_weighted_selectivity_Pareto_view"
+    ],
+    "censoring_rules": {
+      "MIC_above_maximum_tested": "right_censored_above_256_um",
+      "MIC_at_or_below_minimum_tested": "left_censored_at_or_below_0_5_um",
+      "CFU_below_quantification": "interval_censored_between_zero_and_assay_LOQ_not_zero",
+      "failed_growth_control": "invalid_strain_condition_batch_with_raw_evidence_retained"
+    },
+    "retest_policy": {
+      "assignable_causes_only": true,
+      "unexpected_pathogen_failure_or_resident_kill_is_not_assignable_cause": true,
+      "original_and_retest_link_required": true
+    }
+  },
+  "reference_and_candidate_blinding_plan": {
+    "prospective_measurements_only": true,
+    "current_773_candidates_used_for_training": false,
+    "current_773_candidates_used_for_calibration": false,
+    "current_773_candidates_used_for_model_selection": false,
+    "current_773_candidates_used_for_operating_point": false,
+    "current_773_candidates_reserved_for_blind_test_only": true,
+    "candidate_identity_unblinded_before_protocol_assay_and_model_lock": false,
+    "reference_agents_run_before_candidate_unblinding": true,
+    "candidate_results_may_not_redefine_QC_roles_or_operating_point": true,
+    "reference_records_require_exact_strain_condition_concentration_time_and_raw_measurement_lineage": true,
+    "species_level_database_label_is_not_a_selectivity_endpoint": true,
+    "required_data_and_strain_rights": {
+      "commercial_internal_strain_use_or_supplier_license": true,
+      "raw_measurement_ownership_or_perpetual_license": true,
+      "strain_genome_stock_and_condition_metadata_retention": true,
+      "normalized_derivative_dataset": true,
+      "derivative_model_training": true,
+      "derived_model_weights_internal_use": true,
+      "audit_and_reanalysis": true
+    }
+  },
+  "split_contract": {
+    "partition_roles": ["train", "calibration", "sequence_family_OOD", "publication_database_campaign_OOD", "strain_condition_OOD", "prospective_candidate_blind_test"],
+    "exact_sequence_groups_disjoint": true,
+    "publication_database_and_design_campaign_groups_disjoint": true,
+    "maximum_cross_split_global_identity": 0.4,
+    "minimum_bidirectional_alignment_coverage": 0.8,
+    "all_strains_and_conditions_for_one_sequence_stay_in_one_partition": true,
+    "current_candidates_used_to_define_split": false,
+    "current_candidates_used_to_define_operating_point": false,
+    "blind_candidate_results_may_refit_model": false,
+    "split_assignment_frozen_before_candidate_unblinding": true
+  },
+  "model_card_contract": {
+    "primary_endpoint": "strain_and_condition_specific_pathogen_potency_and_skin_resident_preservation",
+    "global_species_pathogen_or_commensal_label_allowed": false,
+    "single_weighted_selectivity_score_allowed": false,
+    "outputs": ["strain_conditioned_growth_inhibition_curve", "strain_conditioned_time_kill_curve", "MIC_MBC_interval_or_censoring", "separate_pathogen_potency_and_resident_preservation_vectors", "calibrated_uncertainty", "applicability_domain_and_OOD_status"],
+    "common_condition_only_selectivity_join_required": true,
+    "strain_role_and_condition_subgroup_reports_required": true,
+    "transparent_descriptor_baseline_required": true,
+    "content_addressed_runtime_required": true,
+    "training_data_manifest_sha256_required": true,
+    "weights_and_inference_code_sha256_required": true,
+    "commercial_license_witness_required": true,
+    "candidate_operating_point_is_separate_versioned_artifact": true,
+    "current_candidates_may_not_select_model_or_operating_point": true,
+    "primary_decision_use": "non_weighted_Pareto_with_interval_uncertainty",
+    "formal_selectivity_gate_requires_independent_assay_evidence_not_model_score_alone": true
+  },
+  "decision": {
+    "outcome": "prospective_strain_conditioned_selectivity_contract_frozen_measurements_pending",
+    "measurements_collected": false,
+    "model_trained": false,
+    "candidate_operating_point_created": false,
+    "formal_science_run_submitted": false,
+    "next_action": "qualify_strain_use_and_data_rights_then_run_blinded_reference_agent_pilot_in_separate_aerobic_anaerobic_and_common_skin_mimetic_lanes"
+  },
+  "acceptance_artifacts": {
+    "pathogen_commensal_strain_and_condition_matrix_sha256": "b1cd1e9e38c30881a25092d1b2f6605087b50f3387cde803e4b00aff3983490c",
+    "raw_growth_kill_and_selectivity_measurement_schema_sha256": "d2f3b3690520eb7d4bb019aa4516001cebe1b1c8a88b5ba11897016365e4dedf",
+    "leakage_safe_reference_and_candidate_blinding_plan_sha256": "ab88edc8bc5295a8f0992c7942041af9658e26cf501cd894f06511c17d7a42b8",
+    "commensal_selectivity_model_card_and_qualification_contract_sha256": "bdf6246b8dd4f1bbd6ad89aef841de84ffb2ee9a1b8f05c12cf19082b5550cdb"
+  }
+}

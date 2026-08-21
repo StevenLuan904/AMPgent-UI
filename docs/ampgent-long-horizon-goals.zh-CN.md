@@ -711,3 +711,16 @@ OOD；全局 AMP/not-AMP 预测不得成为安全硬门，只能进入非加权 
 通用序列标签明确不等于细胞实验，正式安全门需要独立的条件化细胞证据。该 checkpoint 只冻结
 `config/enterprise/prospective_mammalian_cytotoxicity_contract_v39.json`，尚无新湿实验结果。
 下一独立任务转为皮肤 pathogen/commensal selectivity 合同，补齐“杀病原、保共生”的产品端点。
+
+2026-08-21 v39 病原/皮肤常驻菌选择性合同追加：选择性不再由物种名或跨培养基 MIC 比值定义。
+同一 `S. epidermidis` 物种同时保留 RP62A 感染/生物膜株与 ATCC 12228 低毒力、非生物膜
+carriage comparator，证明角色必须绑定菌株、来源和实验情境；`C. acnes` 也只作厌氧皮肤常驻且
+痤疮相关的 context comparator，不被宣称为普遍“有益菌”。
+
+有氧 CLSI-compatible MIC、`C. acnes` 厌氧 lane 与共同 skin-mimetic bridge 相互隔离；只有同一
+条件、相同绝对浓度下的数据可形成选择性配对。MIC/MBC、绝对浓度 time-kill CFU、生物膜诊断、
+病原效力与常驻菌保留分别持久化，禁止压成单一加权分数；删失、培养失败、肽回收/吸附和复测均保留。
+当前 773 条候选仍只在 assay/model lock 后盲测，不能定义模型、split 或 operating point。该 checkpoint
+只冻结 `config/enterprise/commensal_selectivity_assay_contract_v39.json`，尚无新湿实验选择性证据。
+下一调度任务转为 phenotype-grounded AMP-likeness 授权参考数据、分组拆分与模型资格执行；选择性
+provider/reference pilot 作为独立可验收任务保留。
