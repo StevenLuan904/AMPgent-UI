@@ -1,0 +1,65 @@
+{
+  "schema_version": "ampgent.mammalian-cytotoxicity-reference-panel.1",
+  "panel_id": "ampgent_mammalian_cytotoxicity_reference_panel_v39_20260821",
+  "panel_kind": "mammalian_cytotoxicity",
+  "frozen_at": "2026-08-21T01:31:59Z",
+  "status": "qualified_for_measurement_acquisition_measurements_not_yet_collected",
+  "entries": [
+    {
+      "catalog_id": "ATCC_PCS-200-011",
+      "material_name": "Primary Epidermal Keratinocytes Normal Human Adult HEKa",
+      "source_uri": "https://www.atcc.org/products/pcs-200-011",
+      "organism": "Homo sapiens",
+      "tissue": "skin_epidermis",
+      "cell_type": "keratinocyte",
+      "normal_primary_cells": true,
+      "orthogonal_endpoints": ["atp_viability", "ldh_membrane_integrity"]
+    },
+    {
+      "catalog_id": "ATCC_PCS-201-012",
+      "material_name": "Primary Dermal Fibroblast Normal Human Adult HDFa",
+      "source_uri": "https://www.atcc.org/products/pcs-201-012",
+      "organism": "Homo sapiens",
+      "tissue": "skin_dermis",
+      "cell_type": "fibroblast",
+      "normal_primary_cells": true,
+      "orthogonal_endpoints": ["atp_viability", "ldh_membrane_integrity"]
+    }
+  ],
+  "assay_contract": {
+    "endpoint_sources": [
+      "https://www.ncbi.nlm.nih.gov/books/NBK144065/",
+      "https://www.ncbi.nlm.nih.gov/books/NBK540958/"
+    ],
+    "concentration_unit": "micromolar",
+    "minimum_log2_spaced_concentrations": 8,
+    "minimum_concentration_um_at_or_below": 1.0,
+    "maximum_concentration_um_at_or_above": 64.0,
+    "solubility_limited_maximum_must_be_reported": true,
+    "exposure_hours": [4, 24],
+    "minimum_biological_replicates": 3,
+    "required_controls": [
+      "medium_only",
+      "cells_vehicle_only",
+      "maximum_ldh_release",
+      "peptide_without_cells_interference_control"
+    ],
+    "required_observation_fields": [
+      "candidate_sequence_sha256",
+      "catalog_id",
+      "lot_id",
+      "passage_number",
+      "concentration_um",
+      "exposure_hours",
+      "replicate",
+      "assay_endpoint",
+      "raw_signal",
+      "normalized_signal",
+      "control_batch_id"
+    ],
+    "raw_measurements_and_controls_required": true,
+    "candidate_batch_threshold_fit_forbidden": true,
+    "admission_threshold_status": "not_set_until_external_controls_and_calibration_are_frozen",
+    "no_forced_fill": true
+  }
+}

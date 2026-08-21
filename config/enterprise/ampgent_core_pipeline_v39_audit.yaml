@@ -39,7 +39,7 @@ evidence_domains:
   mammalian_cytotoxicity:
     minimum_independent_models: 1
     calibration_and_ood_required: true
-    current_v38_status: missing
+    current_v38_status: reference_panel_frozen_measurements_and_calibration_pending
   toxicity:
     minimum_independent_models: 0
     calibration_and_ood_required: false
@@ -71,7 +71,7 @@ evidence_domains:
   commensal_selectivity:
     minimum_independent_models: 1
     calibration_and_ood_required: true
-    current_v38_status: missing
+    current_v38_status: four_member_counter_screen_panel_frozen_measurements_pending
 
 selection:
   quality_admission_before_pareto: true

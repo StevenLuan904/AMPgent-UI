@@ -44,7 +44,7 @@ tasks:
       - stop_if_mic_units_or_assay_conditions_cannot_be_normalized
       - stop_if_candidate_overlap_cannot_be_audited
   - task_id: cytotoxicity_and_commensal_reference_panel_freeze
-    status: ready
+    status: completed
     priority_tier: 0
     evidence_domains: [mammalian_cytotoxicity, commensal_selectivity]
     action_type: reference_dataset_and_counter_screen_contract
@@ -58,6 +58,16 @@ tasks:
     stop_conditions:
       - stop_if_cell_line_or_endpoint_semantics_are_missing
       - stop_if_commensal_taxonomy_or_assay_conditions_are_missing
+    completion:
+      outcome: reference_identities_and_endpoint_contracts_frozen_measurements_pending
+      witness_path: config/enterprise/cytotoxicity_commensal_reference_freeze_witness_v39.json
+      witness_sha256: 0094f1c99e311e8da182f423e4db2b70e92bf285cc4d236b5564fcfeea0e712d
+      mammalian_cell_line_endpoint_table_sha256: 98bc4c878267fa3e20d7de3804a2d9faa290242a1fe1ce4dd2a8d1605badfc85
+      skin_commensal_panel_and_assay_conditions_sha256: 89c8f6e1d52957155ee493bfb0410b9dcd0f075f10bf83e2758b8f23ab48ecf6
+      leakage_and_candidate_overlap_audit_sha256: 32d29d72757566bf9444ed7d2a94611a7e05e50eee8c4f609df71366dfc45d06
+      measurements_collected: false
+      safety_or_selectivity_gate_lowered: false
+      completed_at: "2026-08-21T01:31:59Z"
   - task_id: toxicity_second_family_qualification
     status: completed
     priority_tier: 1

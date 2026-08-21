@@ -1,0 +1,20 @@
+{
+  "schema_version": "ampgent.reference-panel-leakage-audit.1",
+  "audit_id": "ampgent_cytotoxicity_commensal_leakage_audit_v39_20260821",
+  "observed_at": "2026-08-21T01:31:59Z",
+  "current_candidate_sequences_used_to_choose_panel": false,
+  "current_candidate_scores_used_to_set_thresholds": false,
+  "current_candidate_assay_measurements_present": false,
+  "training_dataset_present": false,
+  "candidate_overlap_status": "not_applicable_until_measurements_or_training_records_are_ingested",
+  "future_ingestion_fail_closed_requirements": [
+    "candidate_and_reference_sequence_sha256",
+    "exact_catalog_strain_or_cell_identity",
+    "lot_and_assay_batch_identity",
+    "train_calibration_ood_partition_before_model_fit",
+    "exact_sequence_overlap_and_near_neighbor_cluster_audit",
+    "thresholds_frozen_without_current_candidate_quantiles"
+  ],
+  "formal_model_eligibility": false,
+  "formal_science_run_submission_allowed": false
+}

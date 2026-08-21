@@ -1,0 +1,53 @@
+{
+  "schema_version": "ampgent.cytotoxicity-commensal-reference-freeze.1",
+  "witness_id": "ampgent_cytotoxicity_commensal_reference_freeze_v39_20260821",
+  "completed_at": "2026-08-21T01:31:59Z",
+  "status": "reference_identities_and_endpoint_contracts_frozen_measurements_pending",
+  "artifacts": {
+    "mammalian_cell_line_endpoint_table": {
+      "path": "config/enterprise/mammalian_cytotoxicity_reference_panel_v39.json",
+      "sha256": "98bc4c878267fa3e20d7de3804a2d9faa290242a1fe1ce4dd2a8d1605badfc85",
+      "entries": 2
+    },
+    "skin_commensal_panel_and_assay_conditions": {
+      "path": "config/enterprise/skin_commensal_counter_screen_panel_v39.json",
+      "sha256": "89c8f6e1d52957155ee493bfb0410b9dcd0f075f10bf83e2758b8f23ab48ecf6",
+      "entries": 4
+    },
+    "leakage_and_candidate_overlap_audit": {
+      "path": "config/enterprise/cytotoxicity_commensal_leakage_audit_v39.json",
+      "sha256": "32d29d72757566bf9444ed7d2a94611a7e05e50eee8c4f609df71366dfc45d06"
+    }
+  },
+  "identity_sources": [
+    "https://www.atcc.org/products/pcs-200-011",
+    "https://www.atcc.org/products/pcs-201-012",
+    "https://www.atcc.org/products/12228",
+    "https://www.atcc.org/products/27844",
+    "https://genomes.atcc.org/genomes/d47ff4d638ca4f13",
+    "https://www.atcc.org/products/6919"
+  ],
+  "method_sources": [
+    "https://www.ncbi.nlm.nih.gov/books/NBK144065/",
+    "https://www.ncbi.nlm.nih.gov/books/NBK540958/",
+    "https://clsi.org/shop/standards/m07/",
+    "https://clsi.org/shop/standards/m11/"
+  ],
+  "decision": {
+    "panel_identity_frozen": true,
+    "measurements_collected": false,
+    "model_calibration_complete": false,
+    "candidate_batch_threshold_fit_forbidden": true,
+    "safety_or_selectivity_gate_lowered": false,
+    "formal_science_run_submission_allowed": false,
+    "next_action": "acquire_blinded_reference_measurements_then_freeze_train_calibration_ood_partitions"
+  },
+  "implementation": {
+    "module": "src/pepagent/reference_panel_contract.py",
+    "module_sha256": "2aa404130440e477ae61a8aa6b41894eda93b832031d12918db51ccea4fb8ac4",
+    "test": "tests/test_reference_panel_contract.py",
+    "test_sha256": "3c45f31486821b74f3518191aef57ce38e0823274250eef06c02cadd7bfe1ac6",
+    "focused_tests_passed": 22,
+    "ruff_status": "clean"
+  }
+}

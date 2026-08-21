@@ -1,0 +1,68 @@
+{
+  "schema_version": "ampgent.skin-commensal-counter-screen-panel.1",
+  "panel_id": "ampgent_skin_commensal_counter_screen_panel_v39_20260821",
+  "panel_kind": "skin_commensal_counter_screen",
+  "frozen_at": "2026-08-21T01:31:59Z",
+  "status": "qualified_for_measurement_acquisition_measurements_not_yet_collected",
+  "entries": [
+    {
+      "catalog_id": "ATCC_12228",
+      "organism": "Staphylococcus epidermidis",
+      "strain_designation": "FDA strain PCI 1200",
+      "source_uri": "https://www.atcc.org/products/12228",
+      "isolation_source": "FDA deposited reference strain",
+      "panel_role": "within_species_non_biofilm_forming_reference",
+      "medium": "ATCC-recommended medium frozen at assay lot qualification",
+      "atmosphere": "aerobic"
+    },
+    {
+      "catalog_id": "ATCC_27844",
+      "organism": "Staphylococcus hominis subsp. hominis",
+      "strain_designation": "DM 122",
+      "source_uri": "https://www.atcc.org/products/27844",
+      "isolation_source": "human skin",
+      "panel_role": "coagulase_negative_skin_commensal",
+      "medium": "ATCC Medium 18 Trypticase Soy Agar or Broth",
+      "atmosphere": "aerobic"
+    },
+    {
+      "catalog_id": "ATCC_49726",
+      "organism": "Corynebacterium accolens",
+      "strain_designation": "CNCTC Th 4/63",
+      "source_uri": "https://genomes.atcc.org/genomes/d47ff4d638ca4f13",
+      "isolation_source": "human nose",
+      "panel_role": "lipophilic_corynebacterial_skin_resident",
+      "medium": "ATCC-recommended medium frozen at assay lot qualification",
+      "atmosphere": "aerobic"
+    },
+    {
+      "catalog_id": "ATCC_6919",
+      "organism": "Cutibacterium acnes",
+      "strain_designation": "NCTC 737 VPI 0389",
+      "source_uri": "https://www.atcc.org/products/6919",
+      "isolation_source": "facial acne",
+      "panel_role": "skin_resident_opportunist_context_not_benign_only_control",
+      "medium": "ATCC Medium 2107 or 260 pre-reduced",
+      "atmosphere": "anaerobic"
+    }
+  ],
+  "assay_contract": {
+    "protocol_sources": [
+      "https://clsi.org/shop/standards/m07/",
+      "https://clsi.org/shop/standards/m11/"
+    ],
+    "protocol_family": "CLSI_M07",
+    "anaerobe_protocol_family": "CLSI_M11",
+    "measurement": "broth_microdilution_mic",
+    "concentration_unit": "micromolar",
+    "minimum_biological_replicates": 3,
+    "species_specific_medium_and_atmosphere_required": true,
+    "raw_growth_curve_or_endpoint_absorbance_required": true,
+    "raw_measurements_and_controls_required": true,
+    "candidate_batch_threshold_fit_forbidden": true,
+    "cross_medium_raw_mic_direct_comparison_forbidden": true,
+    "selectivity_requires_paired_pathogen_and_commensal_controls": true,
+    "admission_threshold_status": "not_set_until_external_controls_and_calibration_are_frozen",
+    "no_forced_fill": true
+  }
+}

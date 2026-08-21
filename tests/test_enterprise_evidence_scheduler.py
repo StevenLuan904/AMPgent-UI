@@ -74,7 +74,7 @@ def test_scheduler_keeps_in_progress_work_in_the_action_plan() -> None:
     assert plan.selected_task_ids == ("active",)
 
 
-def test_current_backlog_selects_two_endpoint_specific_high_information_tasks() -> None:
+def test_current_backlog_selects_next_endpoint_specific_high_information_task() -> None:
     root = Path(__file__).parents[1]
     backlog = yaml.safe_load(
         (root / "config/enterprise/ampgent_evidence_acquisition_backlog_v39.yaml").read_text(
@@ -96,7 +96,6 @@ def test_current_backlog_selects_two_endpoint_specific_high_information_tasks() 
     ).to_dict()
     plan = plan_enterprise_evidence_actions(model_registry_audit=audit, backlog=backlog)
     assert plan.selected_task_ids == (
-        "cytotoxicity_and_commensal_reference_panel_freeze",
         "pathogen_conditioned_activity_reference_freeze",
     )
     assert plan.estimated_gpu_minutes == 0

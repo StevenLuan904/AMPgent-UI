@@ -2,12 +2,11 @@
   "schema_version": "ampgent.enterprise-evidence-action-plan.1",
   "plan_id": "ampgent_evidence_action_plan_v39_20260820",
   "registry_sha256": "364c334b7203a3205a4427b74b8ed28c9da6edde3b5a79dfcc40a4df5a3b52a7",
-  "backlog_sha256": "c19122c2c7242ab157634b11156ef74e3938d89a2125b0a298d6987089642b60",
+  "backlog_sha256": "4cf7a2f660bcc5226c71f1032934955f51d355d9c873cef003e7de08beb1949d",
   "formal_run_submission_allowed": false,
-  "estimated_cpu_minutes": 180,
+  "estimated_cpu_minutes": 90,
   "estimated_gpu_minutes": 0,
   "selected_task_ids": [
-    "cytotoxicity_and_commensal_reference_panel_freeze",
     "pathogen_conditioned_activity_reference_freeze"
   ],
   "unresolved_domains": [
@@ -23,6 +22,7 @@
     "synthesis_feasibility"
   ],
   "deferred_reasons": {
+    "cytotoxicity_and_commensal_reference_panel_freeze": "already_completed",
     "hemopi2_calibration_and_ood_benchmark": "cpu_budget",
     "hemopi2_primary_license_scope_audit": "already_completed",
     "novelty_ood_reference_freeze": "already_completed",
