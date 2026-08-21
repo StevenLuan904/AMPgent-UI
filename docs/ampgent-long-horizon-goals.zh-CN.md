@@ -689,3 +689,15 @@ cross-resistance 同时覆盖宿主防御肽、colistin 及靶点相关抗生素
 只有在独立重建/互补后才可称因果。当前 773 条候选只作 protocol/model lock 后盲测，因此本 checkpoint
 没有新增耐药实验结论或正式门。下一独立任务转为 phenotype-grounded AMP-likeness reference/model 合同，
 专门避免用数据库 membership 和随机负序列制造虚假的模型性能。
+
+2026-08-21 v39 AMP-likeness 合同追加：正例必须回到有菌种/菌株、方法、培养基、温度、暴露时间、
+接种量、浓度和原始/删失端点的真实实验记录；数据库收录不能代替表型。MIC 保留条件化连续/区间语义，
+不设会把整批候选清空的统一阈值。主负例只能来自匹配 assay 中的实验无活性/低活性记录；随机序列、
+shuffle、未实验蛋白片段和无 AMP 注释条目不能进入主负类，只能做 shortcut/OOD 诊断。
+
+数据按 exact sequence、40% identity family、publication/database/design campaign 隔离，并先拆分后采负例。
+当前 773 条及其 refinement 谱系不参与 fitting、校准、模型/split/operating-point 选择，仅作前瞻盲测。
+未来模型需同时给出透明 descriptor baseline、conditioned activity/MIC、校准和 family/campaign/organism-assay
+OOD；全局 AMP/not-AMP 预测不得成为安全硬门，只能进入非加权 Pareto。当前 checkpoint 只冻结
+`config/enterprise/amp_likeness_reference_model_contract_v39.json`，没有新训练数据、模型或正式 science run。
+下一独立任务转为 prospective mammalian cytotoxicity assay/model 合同。

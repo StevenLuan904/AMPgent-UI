@@ -2328,3 +2328,22 @@ WGS 覆盖祖先、群体和每 surviving lineage 至少 3 个 clone，但 varia
 当前 773 条候选继续完全排除于训练、校准、model/split/operating-point 选择，只允许在协议与模型锁定后盲测。
 合同 witness 为 `config/enterprise/resistance_propensity_contract_v39.json`；没有产生细菌实验、模型或候选门。
 下一 CPU 任务转为 phenotype-grounded AMP-likeness reference/model 合同，防止把数据库 membership 当活性真值。
+
+### 2026-08-21 phenotype-grounded AMP-likeness 合同
+
+AMP 正例现定义为“精确成熟序列/修饰 + 可追溯菌种/菌株 + 方法、培养基、温度、暴露时间、接种量、
+浓度/单位和原始或删失活性端点”的实验记录；DRAMP/APD 等数据库仅作为发现索引，membership 本身不是
+标签。MIC 保留为条件化连续值或区间，不设跨菌种、跨方法的统一二元阈值，因此不会因为一个外部阈值
+把候选池清空。冲突记录按条件保留，禁止隐式多数表决。
+
+主 hard-negative 必须是匹配条件下经过实验但无活性或高于测试上限的序列；低活性记录保留为连续对照。
+随机序列、正例 shuffle、未实验的蛋白片段和仅凭“没有 AMP 注释”的 UniProt 条目都不得作为训练主负例，
+最多用于 shortcut/OOD 诊断。正负样本须在长度、电荷、疏水比例、修饰、来源/设计 campaign 和 assay context
+上匹配，避免模型只学会分泌定位或简单理化差异。
+
+拆分按精确序列、40% identity/80% 双向覆盖 family、publication/database/design campaign 分组，且先分组后
+采负例。当前 773 条及其父子 refinement 完全排除于训练、校准、模型选择、split 和 operating point，只作
+prospective blind test。模型必须报告透明 descriptor baseline、条件化 activity/MIC、校准不确定性和三个 OOD
+视图；全局 AMP/not-AMP 分类器不得成为安全硬门，只能作为非加权 Pareto 轴。合同 witness 为
+`config/enterprise/amp_likeness_reference_model_contract_v39.json`；当前尚未取得训练记录、训练模型或创建阈值。
+下一 CPU 任务转为 prospective mammalian cytotoxicity assay/model 合同，继续补安全域而不消耗结构 GPU。

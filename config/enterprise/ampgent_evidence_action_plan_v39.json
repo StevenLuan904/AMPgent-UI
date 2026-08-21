@@ -2,12 +2,12 @@
   "schema_version": "ampgent.enterprise-evidence-action-plan.1",
   "plan_id": "ampgent_evidence_action_plan_v39_20260820",
   "registry_sha256": "ffc815093229652a62df2e4430d39bca9de572e1eb7e22192087999b88a9d9cc",
-  "backlog_sha256": "2aedab6f17fc1b2c83bf538a31c28ccfd0a31c08834c6e2d7bf5ce81fa6ac217",
+  "backlog_sha256": "968e7362475a91a3986a14636753f9811b948d9632488dfa3957c5ad6b140469",
   "formal_run_submission_allowed": false,
   "estimated_cpu_minutes": 90,
   "estimated_gpu_minutes": 0,
   "selected_task_ids": [
-    "amp_likeness_reference_and_model_contract_freeze"
+    "prospective_mammalian_cytotoxicity_assay_contract_freeze"
   ],
   "unresolved_domains": [
     "amp_likeness",
@@ -22,6 +22,8 @@
     "synthesis_feasibility"
   ],
   "deferred_reasons": {
+    "amp_likeness_reference_and_model_contract_freeze": "already_completed",
+    "amp_likeness_reference_dataset_and_model_qualification": "cpu_budget",
     "cytotoxicity_and_commensal_reference_panel_freeze": "already_completed",
     "hemopi2_calibration_and_ood_benchmark": "already_completed",
     "hemopi2_primary_license_scope_audit": "already_completed",

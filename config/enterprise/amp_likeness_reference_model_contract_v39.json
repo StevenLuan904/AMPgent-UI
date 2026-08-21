@@ -1,0 +1,183 @@
+{
+  "schema_version": "ampgent.amp-likeness-reference-model-contract.1",
+  "contract_id": "amp_likeness_reference_model_contract_v39_20260821",
+  "frozen_at": "2026-08-21T19:38:00Z",
+  "primary_sources": [
+    "https://academic.oup.com/nar/article/50/D1/D488/6352447",
+    "https://academic.oup.com/nar/article/54/D1/D363/8250474",
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC9487607/",
+    "https://github.com/BioGenies/NegativeDatasets",
+    "https://www.uniprot.org/help/evidence_table",
+    "https://www.uniprot.org/help/license/",
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC6692298/"
+  ],
+  "source_scope": {
+    "purpose": "phenotype_grounded_reference_dataset_and_transparent_model_qualification",
+    "interpretation": "DRAMP and APD are discovery indices whose records require assay-level verification; the negative-data benchmark establishes that negative sampling can dominate apparent classifier performance; UniProt evidence and license metadata support lineage and rights checks",
+    "measurements_or_training_records_in_this_artifact": false
+  },
+  "endpoint_semantics": {
+    "primary_endpoint": "assay_conditioned_antibacterial_activity",
+    "database_membership_alone_is_positive_label": false,
+    "positive_evidence_rule": "exact_mature_sequence_and_modification_with_traceable_experimental_activity_against_a_named_organism_under_a_recorded_assay_context",
+    "required_positive_fields": [
+      "sequence_and_modification_identity",
+      "organism_species_and_strain",
+      "assay_method",
+      "medium_buffer_and_matrix",
+      "temperature_and_exposure_time",
+      "inoculum_or_cell_density",
+      "concentration_series_and_unit",
+      "raw_or_censored_activity_endpoint",
+      "publication_and_source_record_id"
+    ],
+    "MIC_is_conditioned_continuous_or_interval_endpoint": true,
+    "universal_MIC_threshold_allowed": false,
+    "qualitative_activity_without_concentration_and_condition_is_discovery_only": true,
+    "negative_evidence_classes": [
+      {
+        "class": "matched_experimentally_inactive",
+        "priority": 1,
+        "requirement": "same_or_compatible_organism_assay_matrix_and_concentration_range_with_no_detected_activity_or_right_censoring_above_tested_maximum"
+      },
+      {
+        "class": "assayed_low_activity_contrast",
+        "priority": 2,
+        "requirement": "conditioned_potency_record_retained_as_continuous_or_interval_contrast_not_forced_to_binary_negative"
+      },
+      {
+        "class": "reviewed_non_antimicrobial_peptide_diagnostic",
+        "priority": 3,
+        "requirement": "manually_reviewed_evidence_and_matched_properties_for_OOD_or_shortcut_diagnostic_only_not_primary_negative_without_negative_assay"
+      }
+    ],
+    "unreviewed_random_sequences_allowed_as_primary_negatives": false,
+    "shuffled_positive_decoys_allowed_as_primary_negatives": false,
+    "protein_fragments_without_negative_assay_allowed_as_primary_negatives": false,
+    "negative_matching_axes": [
+      "length",
+      "net_charge",
+      "hydrophobic_fraction",
+      "modification_class",
+      "source_or_design_campaign",
+      "assay_context"
+    ],
+    "conflicting_activity_records_retained": true,
+    "conflicts_resolved_by_hidden_majority_vote": false
+  },
+  "lineage_license_and_overlap_contract": {
+    "exact_source_records_content_addressed": true,
+    "publication_and_database_record_lineage_required": true,
+    "record_fields": [
+      "source_name_and_release",
+      "source_record_id",
+      "publication_id",
+      "retrieved_at",
+      "raw_record_sha256",
+      "normalized_record_sha256",
+      "sequence_modification_sha256",
+      "assay_context_sha256",
+      "license_or_permission_witness_sha256"
+    ],
+    "commercial_internal_use_must_be_confirmed_per_source": true,
+    "unknown_license_records_may_enter_training": false,
+    "DRAMP_records_require_record_level_assay_verification": true,
+    "UniProt_CC_BY_4_0_attribution_and_third_party_rights_notice_required": true,
+    "exact_sequence_conflicts_preserved_as_conditioned_records": true,
+    "cross_database_duplicates_linked_not_counted_as_independent_evidence": true,
+    "overlap_exclusions": {
+      "excluded_from_all_fitting": [
+        "current_773_candidates",
+        "current_candidates_parents_and_refinements",
+        "prospective_candidate_blind_test"
+      ],
+      "exact_sequence_overlap_report_required": true,
+      "family_cluster_overlap_report_required": true,
+      "publication_and_design_campaign_overlap_report_required": true,
+      "other_enterprise_endpoint_training_overlap_report_required": true
+    },
+    "required_rights": {
+      "commercial_internal_use": true,
+      "raw_record_retention_and_audit": true,
+      "normalized_derivative_dataset": true,
+      "derivative_model_training": true,
+      "derived_model_weights_internal_use": true,
+      "publication_and_attribution_compliance": true
+    }
+  },
+  "split_contract": {
+    "partition_roles": [
+      "train",
+      "calibration",
+      "sequence_family_OOD",
+      "publication_campaign_OOD",
+      "organism_assay_OOD",
+      "prospective_candidate_blind_test"
+    ],
+    "exact_sequence_groups_disjoint": true,
+    "publication_database_and_design_campaign_groups_disjoint": true,
+    "maximum_cross_split_global_identity": 0.4,
+    "minimum_bidirectional_alignment_coverage": 0.8,
+    "family_clusters_assigned_before_label_balancing": true,
+    "condition_and_organism_strata_preserved_without_record_leakage": true,
+    "negative_sampling_performed_after_group_split": true,
+    "current_candidates_used_to_define_split": false,
+    "current_candidates_used_to_define_model_selection": false,
+    "current_candidates_used_to_define_operating_point": false,
+    "blind_candidate_results_may_refit_model": false,
+    "split_assignment_frozen_before_candidate_unblinding": true,
+    "required_reports": [
+      "exact_and_family_overlap",
+      "label_source_and_campaign_overlap",
+      "physicochemical_shortcut_diagnostics",
+      "calibration_by_organism_assay_and_length",
+      "sequence_family_OOD",
+      "publication_campaign_OOD",
+      "organism_assay_OOD"
+    ]
+  },
+  "model_card_contract": {
+    "primary_task": "conditioned_activity_and_potency_estimation",
+    "outputs": [
+      "organism_and_assay_conditioned_activity_probability",
+      "MIC_or_activity_interval_with_censoring",
+      "calibrated_uncertainty",
+      "applicability_domain_and_OOD_status"
+    ],
+    "single_global_AMP_non_AMP_classifier_as_hard_gate_allowed": false,
+    "transparent_descriptor_baseline_required": true,
+    "sequence_model_must_beat_baseline_on_independent_OOD_not_only_random_split": true,
+    "content_addressed_runtime_required": true,
+    "training_data_manifest_sha256_required": true,
+    "weights_and_inference_code_sha256_required": true,
+    "commercial_license_witness_required": true,
+    "calibration_and_all_OOD_reports_required": true,
+    "subgroup_reports": [
+      "organism_and_strain",
+      "assay_method_and_medium",
+      "sequence_length",
+      "charge_and_hydrophobicity",
+      "modification_class",
+      "natural_vs_designed",
+      "source_database_and_publication_campaign"
+    ],
+    "abstention_required_outside_applicability_domain": true,
+    "candidate_use": "non_weighted_Pareto_axis_not_safety_hard_gate",
+    "operating_point_is_separate_versioned_artifact": true,
+    "current_candidates_may_not_select_model_or_operating_point": true
+  },
+  "decision": {
+    "outcome": "phenotype_grounded_AMP_reference_and_model_contract_frozen_data_and_model_pending",
+    "training_records_acquired": false,
+    "model_trained": false,
+    "operating_point_created": false,
+    "formal_science_run_submitted": false,
+    "next_action": "qualify_commercially_usable_assay_records_and_matched_experimentally_inactive_controls_then_freeze_grouped_split_before_model_training"
+  },
+  "acceptance_artifacts": {
+    "positive_and_hard_negative_endpoint_semantics_sha256": "902950d2f1232e1e2fb77fa014e0bde79b932f817ba5647b916725941fbfc761",
+    "training_lineage_license_and_overlap_witness_sha256": "8055ce86e73e7ae77fb6e14af67545814868a75962e174d6d1ed4a3486c9b4bc",
+    "leakage_safe_train_calibration_ood_split_sha256": "79a1f4ad6ced2c865017cc8c1c9d36eb53b17bc1bbc69ccc1f7727a10b2e7398",
+    "transparent_runtime_and_model_card_contract_sha256": "2577ad0fd4e100ba448662c43179828b48f45c0fa187115281479781cde770be"
+  }
+}

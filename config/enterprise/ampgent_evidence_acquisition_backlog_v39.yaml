@@ -326,7 +326,7 @@ tasks:
       formal_science_run_submitted: false
       completed_at: "2026-08-21T17:38:00Z"
   - task_id: amp_likeness_reference_and_model_contract_freeze
-    status: ready
+    status: completed
     priority_tier: 1
     evidence_domains: [amp_likeness]
     action_type: phenotype_grounded_reference_dataset_and_model_contract
@@ -343,6 +343,55 @@ tasks:
       - stop_if_negatives_are_unreviewed_random_sequences
       - stop_if_current_candidates_define_the_split_or_operating_point
       - stop_if_commercial_internal_use_is_not_confirmed
+    completion:
+      outcome: phenotype_grounded_AMP_reference_and_model_contract_frozen_data_and_model_pending
+      witness_path: config/enterprise/amp_likeness_reference_model_contract_v39.json
+      witness_sha256: 145babc4a46b7274f835e61be533842ec4746a392d196ee63c1010a016ad3112
+      positive_and_hard_negative_endpoint_semantics_sha256: 902950d2f1232e1e2fb77fa014e0bde79b932f817ba5647b916725941fbfc761
+      training_lineage_license_and_overlap_witness_sha256: 8055ce86e73e7ae77fb6e14af67545814868a75962e174d6d1ed4a3486c9b4bc
+      leakage_safe_train_calibration_ood_split_sha256: 79a1f4ad6ced2c865017cc8c1c9d36eb53b17bc1bbc69ccc1f7727a10b2e7398
+      transparent_runtime_and_model_card_contract_sha256: 2577ad0fd4e100ba448662c43179828b48f45c0fa187115281479781cde770be
+      training_records_acquired: false
+      model_trained: false
+      operating_point_created: false
+      formal_science_run_submitted: false
+      completed_at: "2026-08-21T19:38:00Z"
+  - task_id: prospective_mammalian_cytotoxicity_assay_contract_freeze
+    status: ready
+    priority_tier: 1
+    evidence_domains: [mammalian_cytotoxicity]
+    action_type: prospective_cell_conditioned_cytotoxicity_assay_and_model_contract
+    prerequisites: []
+    estimated_cpu_minutes: 90
+    estimated_gpu_minutes: 0
+    acceptance_artifacts:
+      - cell_line_exposure_concentration_and_control_matrix_sha256
+      - raw_viability_membrane_damage_and_censoring_schema_sha256
+      - leakage_safe_reference_and_candidate_blinding_plan_sha256
+      - cytotoxicity_model_card_and_qualification_contract_sha256
+    stop_conditions:
+      - stop_if_cell_line_concentration_exposure_time_or_controls_are_missing
+      - stop_if_viability_and_membrane_damage_are_collapsed
+      - stop_if_current_candidates_define_the_operating_point
+      - stop_if_commercial_internal_use_and_data_ownership_are_not_confirmed
+  - task_id: amp_likeness_reference_dataset_and_model_qualification
+    status: ready
+    priority_tier: 2
+    evidence_domains: [amp_likeness]
+    action_type: licensed_reference_acquisition_grouped_split_and_model_qualification
+    prerequisites: [amp_likeness_reference_and_model_contract_freeze]
+    estimated_cpu_minutes: 180
+    estimated_gpu_minutes: 0
+    acceptance_artifacts:
+      - licensed_assay_record_manifest_and_overlap_report_sha256
+      - matched_experimentally_inactive_reference_bundle_sha256
+      - frozen_grouped_split_and_shortcut_diagnostic_report_sha256
+      - transparent_baseline_and_sequence_model_OOD_qualification_sha256
+    stop_conditions:
+      - stop_if_record_level_commercial_internal_use_is_not_confirmed
+      - stop_if_experimentally_inactive_hard_negatives_cannot_be_obtained
+      - stop_if_current_candidates_or_relatives_enter_fitting
+      - stop_if_sequence_model_only_beats_baseline_on_random_split
   - task_id: resistance_propensity_provider_and_pilot_qualification
     status: ready
     priority_tier: 2
