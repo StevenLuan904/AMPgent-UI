@@ -1,0 +1,65 @@
+{
+  "schema_version": "ampgent.hemopi2-calibration-ood-witness.1",
+  "witness_id": "hemopi2_calibration_ood_v39_20260821",
+  "observed_at": "2026-08-21T05:40:23Z",
+  "status": "benchmark_completed_model_remains_shadow",
+  "candidate_data_used": false,
+  "model": {
+    "model_id": "hemopi2",
+    "model_version": "zenodo_record_14676712_rf_only_v27",
+    "runtime_environment_manifest_sha256": "f0a636907aad51585f5e9ce466446dd11c4277c67dd039ad89572e038c281b91",
+    "license_scope_witness": "config/enterprise/hemopi2_license_scope_witness_v39.json",
+    "license_scope_witness_sha256": "0efc8009ec0b37d9f0bcc9749d2248cced9efb7b9b9b48ace19a304fe871ea98"
+  },
+  "leakage_audit": {
+    "training_count": 1540,
+    "independent_count": 386,
+    "exact_sequence_overlap_count": 0,
+    "current_candidate_batch_used_for_split_or_fit": false,
+    "split_feature_labels_used": false
+  },
+  "acceptance_artifacts": {
+    "frozen_reference_split": {
+      "path": "config/enterprise/hemopi2_reference_split_v39.json",
+      "canonical_sha256": "dd939b33a855f422520ed7553e77331d42e7d1993e228a390fa5233ff2d47c46",
+      "file_sha256": "4edf758dba5c9eb3ada12636dac007a1e57b97113e4dfe64828d463ba33f4e90"
+    },
+    "calibration_curve_and_threshold": {
+      "path": "config/enterprise/hemopi2_calibration_threshold_v39.json",
+      "canonical_sha256": "d1eb08211496b4ed42c79b818f1fae29ba097b5e6df77792fb3d792f5976caf5",
+      "file_sha256": "d9cbe209019de9d625ca0806fafc1b41bec0fdc9f537ab49ca4019a39d4839d9"
+    },
+    "length_composition_novelty_ood_report": {
+      "path": "config/enterprise/hemopi2_ood_report_v39.json",
+      "canonical_sha256": "ec134291a3f31e5db118e9ee1b23ebfb3023f859820fde0198258e110c56c196",
+      "file_sha256": "db416c3feaf26b2a09132c84dbb73195f8b7435881d155c1c585c9ee9b3f3e87"
+    }
+  },
+  "verification": {
+    "prediction_reproduction_count": 2,
+    "prediction_payload_sha256": "bf973f34d3e3bcd6dce3a678327c591e06bd8e2a0247027684feb487ebb340ca",
+    "calibration_partition_count": 289,
+    "calibration_auroc": 0.8974842767295599,
+    "calibration_brier": 0.12661675751126622,
+    "held_out_ood_count": 97,
+    "held_out_ood_auroc": 0.8505527210884354,
+    "held_out_ood_sensitivity": 0.8979591836734694,
+    "held_out_ood_specificity": 0.5416666666666666,
+    "focused_tests_passed": 31
+  },
+  "implementation": {
+    "module_path": "src/pepagent/hemopi2_qualification.py",
+    "module_sha256": "6a5db439aa094bfa0b0ae91b3f897c30956e22270b472f19e1dba6259070f3e1",
+    "test_path": "tests/test_hemopi2_qualification.py",
+    "test_sha256": "40cd0a760367a08119698afa238e9bb5edd06726810576069bc62da77f00713e"
+  },
+  "decision": {
+    "model_registry_status": "shadow",
+    "candidate_hard_gate_allowed": false,
+    "reason_codes": [
+      "ood_sensitivity_below_0_90",
+      "single_model_cannot_supply_independent_hemolysis_panel"
+    ],
+    "safety_gate_lowered": false
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "schema_version": "ampgent.hemopi2-reference-split.1",
+  "candidate_data_used": false,
+  "training_source": "hemopi2/Dataset/cross_val_dataset.csv",
+  "training_source_sha256": "7bdaf3ede499d1eda2712585d2e52d7700f3f138776d1a0a46e2ca88e8152da0",
+  "training_count": 1540,
+  "independent_source": "hemopi2/Dataset/independent_dataset.csv",
+  "independent_source_sha256": "500013c2244219762ff3ff4a03401c7419790c83d0ef0c3aeebfdbea426b3eb5",
+  "independent_count": 386,
+  "exact_train_independent_overlap_count": 0,
+  "split_rule": {
+    "label_blind": true,
+    "ood_fraction": 0.25,
+    "features": [
+      "one_minus_maximum_training_3mer_jaccard",
+      "minimum_training_amino_acid_composition_l1_over_two",
+      "training_length_empirical_cdf_two_sided_tailness"
+    ],
+    "aggregation": "arithmetic_mean_of_equal_rank_percentiles",
+    "selection": "highest_aggregate_rank_with_stable_index_tie_break"
+  },
+  "calibration_count": 289,
+  "calibration_member_set_sha256": "27178678eb19133d3739d1d3ef750d4dd29b96740a295ef4193c5f06a24a4ee1",
+  "ood_count": 97,
+  "ood_member_set_sha256": "ede036b708d435a572558ba7b5d402a6cd55d52da053098b69998caaedc7d281"
+}

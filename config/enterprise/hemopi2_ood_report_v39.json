@@ -1,0 +1,36 @@
+{
+  "schema_version": "ampgent.hemopi2-ood-report.1",
+  "candidate_data_used": false,
+  "partition": "held_out_high_domain_distance_quartile",
+  "metrics": {
+    "n": 97,
+    "negative_count": 48,
+    "positive_count": 49,
+    "raw_probability_auroc": 0.8505527210884354,
+    "calibrated_probability_auroc": 0.8505527210884354,
+    "calibrated_probability_auprc": 0.8501464404067776,
+    "calibrated_probability_brier": 0.1569193821989571,
+    "threshold_sensitivity": 0.8979591836734694,
+    "threshold_specificity": 0.5416666666666666,
+    "threshold_balanced_accuracy": 0.719812925170068,
+    "confusion_matrix": {
+      "true_negative": 26,
+      "false_positive": 22,
+      "false_negative": 5,
+      "true_positive": 44
+    }
+  },
+  "domain_feature_quantiles_all_independent": {
+    "sequence_novelty": [0.0, 0.2185990338164251, 0.4, 0.663265306122449, 0.9523809523809523],
+    "composition_distance": [0.0, 0.041666666666666664, 0.07692307692307693, 0.14797008547008544, 0.4757834757834758],
+    "length_tailness": [0.0025974025974024872, 0.28701298701298694, 0.5084415584415585, 0.7298701298701299, 0.9967532467532467]
+  },
+  "enterprise_gate_assessment": {
+    "status": "insufficient_for_solo_hard_gate",
+    "reason_codes": [
+      "ood_sensitivity_below_0_90",
+      "single_model_cannot_supply_independent_hemolysis_panel"
+    ],
+    "candidate_hard_gate_allowed": false
+  }
+}

@@ -35,17 +35,21 @@ models:
     status: incumbent_not_enterprise_eligible
     blockers: [independent_validation_missing, calibration_artifact_missing, ood_artifact_missing]
   - model_id: hemopi2
-    version: plugin_available
+    version: zenodo_record_14676712_rf_only_v27
     evidence_domain: hemolysis
     endpoint_semantics: sequence_level_hemolysis_classification
     independence_group: hemopi2
     training_domain: public_hemolysis_classification_data
-    status: available_unvalidated
+    status: shadow
     runtime_environment_manifest_sha256: f0a636907aad51585f5e9ce466446dd11c4277c67dd039ad89572e038c281b91
     archive_manifest_sha256: cee0e36faa7efa69c5e8f208ea9f8a765b90e12d4b683d182ccb36d6d64f3fac
     prior_independent_soft_validation_artifact_sha256: 96f74a51074843b8abc2968bc031d2f54a03774d4bf903ccc58bf34c71650382
     license_scope_witness: config/enterprise/hemopi2_license_scope_witness_v39.json
-    blockers: [independent_probability_calibration_missing, applicability_domain_and_ood_missing]
+    qualification_witness: config/enterprise/hemopi2_calibration_ood_witness_v39.json
+    qualification_witness_sha256: d0e0f20f7f18f6fe79ca7a09ca6cf6931c205853452ddba1b8df719836e7acf0
+    calibration_artifact_sha256: d1eb08211496b4ed42c79b818f1fae29ba097b5e6df77792fb3d792f5976caf5
+    ood_artifact_sha256: ec134291a3f31e5db118e9ee1b23ebfb3023f859820fde0198258e110c56c196
+    blockers: [ood_sensitivity_below_enterprise_hard_gate, independent_second_hemolysis_model_missing, diagnostic_only]
   - model_id: toxinpred3
     version: current_v38_runtime
     evidence_domain: toxicity

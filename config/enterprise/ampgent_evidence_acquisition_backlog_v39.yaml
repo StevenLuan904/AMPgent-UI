@@ -126,7 +126,7 @@ tasks:
       safety_gate_lowered: false
       completed_at: "2026-08-20T23:34:15Z"
   - task_id: hemopi2_calibration_and_ood_benchmark
-    status: ready
+    status: completed
     priority_tier: 1
     evidence_domains: [hemolysis]
     action_type: independent_calibration_and_ood_experiment
@@ -141,6 +141,34 @@ tasks:
       - stop_if_license_scope_does_not_cover_execution
       - stop_on_training_or_validation_leakage
       - stop_if_probability_semantics_are_not_reproducible
+    completion:
+      outcome: benchmark_completed_model_remains_shadow
+      witness_path: config/enterprise/hemopi2_calibration_ood_witness_v39.json
+      witness_sha256: d0e0f20f7f18f6fe79ca7a09ca6cf6931c205853452ddba1b8df719836e7acf0
+      frozen_reference_split_sha256: dd939b33a855f422520ed7553e77331d42e7d1993e228a390fa5233ff2d47c46
+      calibration_curve_and_threshold_artifact_sha256: d1eb08211496b4ed42c79b818f1fae29ba097b5e6df77792fb3d792f5976caf5
+      length_composition_novelty_ood_report_sha256: ec134291a3f31e5db118e9ee1b23ebfb3023f859820fde0198258e110c56c196
+      candidate_hard_gate_allowed: false
+      safety_gate_lowered: false
+      completed_at: "2026-08-21T05:40:23Z"
+  - task_id: macrel_hemolysis_independence_and_external_benchmark
+    status: ready
+    priority_tier: 1
+    evidence_domains: [hemolysis]
+    action_type: independent_hemolysis_model_qualification
+    prerequisites: [hemopi2_calibration_and_ood_benchmark]
+    estimated_cpu_minutes: 180
+    estimated_gpu_minutes: 0
+    acceptance_artifacts:
+      - immutable_runtime_and_probability_semantics_sha256
+      - training_lineage_and_hemopi2_independence_audit_sha256
+      - leakage_safe_external_calibration_sha256
+      - held_out_length_composition_novelty_ood_report_sha256
+    stop_conditions:
+      - stop_if_training_lineage_cannot_exclude_same_evidence_family_as_hemopi2
+      - stop_on_training_or_validation_leakage
+      - stop_if_probability_semantics_are_not_reproducible
+      - stop_if_license_scope_does_not_cover_internal_execution
   - task_id: novelty_ood_reference_freeze
     status: completed
     priority_tier: 1
