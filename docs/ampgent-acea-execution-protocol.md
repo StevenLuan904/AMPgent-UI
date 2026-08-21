@@ -2242,3 +2242,13 @@ a scientific weighted score. Every task declares prerequisites, bounded resource
 content-addressed acceptance artifacts, and fail-closed stop conditions. The default gap-removal
 loop allocates no GPU: idle structure capacity is not evidence and must remain unused until the
 sequence/assay panel is qualified.
+
+### 2026-08-21 Macrel 溶血独立性审计
+
+Macrel 1.6.1 的固定训练代码和官方数据入口证明其 `Hemo.onnx` 直接使用 HemoPI-1 main
+正负集。对冻结 HemoPI2 归档的精确序列审计发现：Macrel 训练集与 HemoPI2 cross-validation
+重叠 167 条，与 HemoPI2 independent 重叠 32 条；后者还含 6 个标签冲突。因此预注册的
+`stop_if_training_lineage_cannot_exclude_same_evidence_family_as_hemopi2` 已触发，未继续做会被
+训练泄漏污染的 Macrel 校准。Macrel 不计为第二个独立溶血证据源，也不进入候选硬门；完整来源、
+哈希和重叠集合见 `config/enterprise/macrel_hemopi_lineage_overlap_witness_v39.json`。下一动作切换为
+真正不同训练数据族的第二溶血模型资格筛选，不提交正式 science run。

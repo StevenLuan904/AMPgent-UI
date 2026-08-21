@@ -96,7 +96,7 @@ def test_current_backlog_selects_next_endpoint_specific_high_information_task() 
     ).to_dict()
     plan = plan_enterprise_evidence_actions(model_registry_audit=audit, backlog=backlog)
     assert plan.selected_task_ids == (
-        "macrel_hemolysis_independence_and_external_benchmark",
+        "independent_hemolysis_second_family_triage",
     )
     assert plan.estimated_gpu_minutes == 0
     assert plan.formal_run_submission_allowed is False

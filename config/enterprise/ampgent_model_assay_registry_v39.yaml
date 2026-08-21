@@ -27,13 +27,17 @@ models:
     status: retired
     blockers: [retired_by_user_must_not_be_used]
   - model_id: macrel_hemolysis
-    version: current_v38_runtime
+    version: macrel_1.6.1_8c1f732
     evidence_domain: hemolysis
     endpoint_semantics: sequence_level_hemolysis_probability
-    independence_group: macrel
-    training_domain: public_hemolysis_classification_data
-    status: incumbent_not_enterprise_eligible
-    blockers: [independent_validation_missing, calibration_artifact_missing, ood_artifact_missing]
+    independence_group: hemopi1_family
+    training_domain: hemopi1_main_training_dataset
+    status: blocked
+    runtime_environment_manifest_sha256: b550e4604825b0227706fcb4a49ce329c1e93c1c3876fe42946def347eb0d8d2
+    model_sha256: 6c68af240d43f6fde2eff64645f7f5cedf215b619e510b75c47b257b0713e8b1
+    qualification_witness: config/enterprise/macrel_hemopi_lineage_overlap_witness_v39.json
+    qualification_witness_sha256: cc4bf1e2a3fce3658c62a09b6bf4b5862c533bcf1ebd9698183b882b5a5deb25
+    blockers: [same_training_evidence_family_as_hemopi2, hemopi2_independent_benchmark_training_overlap, endpoint_label_conflicts_present]
   - model_id: hemopi2
     version: zenodo_record_14676712_rf_only_v27
     evidence_domain: hemolysis

@@ -1,0 +1,113 @@
+{
+  "schema_version": "ampgent.macrel-hemopi-lineage-witness.1",
+  "witness_id": "macrel_hemopi_lineage_overlap_v39_20260821",
+  "observed_at": "2026-08-21T07:38:00Z",
+  "status": "stop_condition_triggered_same_evidence_family",
+  "candidate_data_used": false,
+  "macrel": {
+    "repository": "https://github.com/BigDataBiology/macrel",
+    "commit": "8c1f7321618ccde2a28b960d32525620d2c737e3",
+    "version": "1.6.1",
+    "license": "MIT",
+    "runtime_manifest_sha256": "b550e4604825b0227706fcb4a49ce329c1e93c1c3876fe42946def347eb0d8d2",
+    "model_asset_sha256": "6c68af240d43f6fde2eff64645f7f5cedf215b619e510b75c47b257b0713e8b1",
+    "training_contract_sources": [
+      {
+        "path": "train/README.md",
+        "git_blob_sha1": "639572b28d6729e9f5e7de9cb85b41b631cb80cc",
+        "content_sha256": "4d53a4ab0bc5f125710a21dd6e050c59ee2bd2b94041ea82647ad2ec07969798"
+      },
+      {
+        "path": "train/build-Hemo-table.py",
+        "git_blob_sha1": "8a5935b21fe57df2d3e440a6bd10e4206a4f9939",
+        "content_sha256": "f7cad535c92271b8aa0426575ed2d1a5dc2b6e48789ca816ecc8e17d7f04b106"
+      },
+      {
+        "path": "train/train-models.py",
+        "git_blob_sha1": "dee13d1dd5dea54b417bf5836f779d807842969f",
+        "content_sha256": "2837bd693fc87a91f00eae57e344c34e7e63e7d6ef94057e8b18c06f5588decb"
+      }
+    ],
+    "training_lineage_decision": "HemoPI-1 main positive and negative FASTA are direct Hemo.onnx training inputs"
+  },
+  "primary_reference_sources": [
+    {
+      "role": "hemopi1_training_positive",
+      "uri": "https://webs.iiitd.edu.in/raghava/hemopi/data/HemoPI_1_dataset/main/pos.fa",
+      "sha256": "7e59f6f1b73bb681b7e0a3be6acfb811ccdfbfbcbeb94641ba264b4baff34a76",
+      "count": 442
+    },
+    {
+      "role": "hemopi1_training_negative",
+      "uri": "https://webs.iiitd.edu.in/raghava/hemopi/data/HemoPI_1_dataset/main/neg.fa",
+      "sha256": "ac422da76e9c48f55f56de5abb2d169ad97f928d01835ece00c2bcd8f2477de4",
+      "count": 442
+    },
+    {
+      "role": "hemopi1_validation_positive",
+      "uri": "https://webs.iiitd.edu.in/raghava/hemopi/data/HemoPI_1_dataset/validation/pos.fa",
+      "sha256": "ba42d37a79b6b788e44d62b6d1d05a63fc86d5c00339963b414efd449a577e3c",
+      "count": 110
+    },
+    {
+      "role": "hemopi1_validation_negative",
+      "uri": "https://webs.iiitd.edu.in/raghava/hemopi/data/HemoPI_1_dataset/validation/neg.fa",
+      "sha256": "c02e6e50d7fe74389f231e035bbcbf8db06c1e5579c28d2f9ac4c8e870a2eb95",
+      "count": 110
+    }
+  ],
+  "hemopi2_reference": {
+    "archive_sha256": "ac0b5567fbb4bd08869bf3c43facb0883d96cf7dfd0afddef9919255e31e1c81",
+    "cross_validation_sha256": "7bdaf3ede499d1eda2712585d2e52d7700f3f138776d1a0a46e2ca88e8152da0",
+    "cross_validation_count": 1540,
+    "independent_sha256": "500013c2244219762ff3ff4a03401c7419790c83d0ef0c3aeebfdbea426b3eb5",
+    "independent_count": 386
+  },
+  "exact_overlap_audit": {
+    "macrel_training_vs_hemopi2_cross_validation": {
+      "exact_sequence_overlap_count": 167,
+      "label_agreement_count": 132,
+      "label_conflict_count": 35,
+      "shared_sequence_set_sha256": "14a4dbdcda34111f46771fc541f8593ac3986addae25dd2349b37896b7e4c19c"
+    },
+    "macrel_training_vs_hemopi2_independent": {
+      "exact_sequence_overlap_count": 32,
+      "label_agreement_count": 26,
+      "label_conflict_count": 6,
+      "shared_sequence_set_sha256": "9d07b415c70058852fdb7229aeeb23b3b107b50fa7885eec2d6efb05b6cb9428"
+    },
+    "macrel_validation_vs_hemopi2_cross_validation": {
+      "exact_sequence_overlap_count": 30,
+      "label_agreement_count": 22,
+      "label_conflict_count": 8,
+      "shared_sequence_set_sha256": "adc90fad43136f19f26f0fb869f3ca8ec1af0e358cbd61505f32c01dacdfffca"
+    },
+    "macrel_validation_vs_hemopi2_independent": {
+      "exact_sequence_overlap_count": 12,
+      "label_agreement_count": 10,
+      "label_conflict_count": 2,
+      "shared_sequence_set_sha256": "23c6b3b232f5098f8a718e0da41e2994082b8506920ab257a5d17d1705413e6b"
+    }
+  },
+  "decision": {
+    "same_evidence_family": true,
+    "second_independent_hemolysis_source_allowed": false,
+    "hemopi2_independent_set_valid_for_unfiltered_macrel_benchmark": false,
+    "macrel_calibration_executed": false,
+    "reason_codes": [
+      "direct_hemopi1_training_lineage",
+      "hemopi2_independent_contains_32_macrel_training_sequences",
+      "same_hemopi_evidence_family",
+      "endpoint_label_conflicts_present"
+    ],
+    "candidate_hard_gate_allowed": false,
+    "safety_gate_lowered": false
+  },
+  "implementation": {
+    "module_path": "src/pepagent/macrel_lineage_audit.py",
+    "module_sha256": "2604652c4f1c57958a7815c06abc2d2db7069ba61ee070b3910f8978c5ce4394",
+    "test_path": "tests/test_macrel_lineage_audit.py",
+    "test_sha256": "0abec0d30c8515080693efd1b6059982fe08d8cc4e4a5dc22f0cadb02fe123be",
+    "focused_tests_passed": 13
+  }
+}

@@ -152,7 +152,7 @@ tasks:
       safety_gate_lowered: false
       completed_at: "2026-08-21T05:40:23Z"
   - task_id: macrel_hemolysis_independence_and_external_benchmark
-    status: ready
+    status: blocked
     priority_tier: 1
     evidence_domains: [hemolysis]
     action_type: independent_hemolysis_model_qualification
@@ -169,6 +169,32 @@ tasks:
       - stop_on_training_or_validation_leakage
       - stop_if_probability_semantics_are_not_reproducible
       - stop_if_license_scope_does_not_cover_internal_execution
+    stop_evidence:
+      outcome: stop_condition_triggered_same_evidence_family
+      witness_path: config/enterprise/macrel_hemopi_lineage_overlap_witness_v39.json
+      witness_sha256: cc4bf1e2a3fce3658c62a09b6bf4b5862c533bcf1ebd9698183b882b5a5deb25
+      macrel_training_vs_hemopi2_independent_exact_overlap_count: 32
+      label_conflict_count: 6
+      calibration_executed: false
+      safety_gate_lowered: false
+      observed_at: "2026-08-21T07:38:00Z"
+  - task_id: independent_hemolysis_second_family_triage
+    status: ready
+    priority_tier: 1
+    evidence_domains: [hemolysis]
+    action_type: independent_model_and_dataset_family_qualification
+    prerequisites: [hemopi2_calibration_and_ood_benchmark]
+    estimated_cpu_minutes: 120
+    estimated_gpu_minutes: 0
+    acceptance_artifacts:
+      - primary_source_candidate_matrix_sha256
+      - training_dataset_independence_witness_sha256
+      - license_and_runtime_feasibility_witness_sha256
+      - selected_provider_benchmark_contract_or_no_candidate_witness_sha256
+    stop_conditions:
+      - stop_if_all_candidates_share_hemopi_or_toxinpred3_evidence_lineage
+      - stop_if_commercial_internal_execution_is_not_confirmed
+      - stop_if_model_weights_or_probability_semantics_are_not_reproducible
   - task_id: novelty_ood_reference_freeze
     status: completed
     priority_tier: 1
