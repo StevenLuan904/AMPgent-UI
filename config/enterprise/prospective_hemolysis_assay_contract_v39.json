@@ -1,0 +1,196 @@
+{
+  "schema_version": "ampgent.prospective-hemolysis-assay-contract.1",
+  "contract_id": "prospective_hemolysis_assay_contract_v39_20260821",
+  "frozen_at": "2026-08-21T11:36:00Z",
+  "primary_sources": [
+    "https://store.astm.org/standards/f756",
+    "https://www.fda.gov/media/182026/download",
+    "https://pubmed.ncbi.nlm.nih.gov/38604530/",
+    "https://www.frontiersin.org/journals/microbiology/articles/10.3389/fmicb.2018.00325/full",
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC4468694/"
+  ],
+  "source_scope": {
+    "astm_revision": "ASTM_F756-17_2025",
+    "fda_asca_document": "direct_and_indirect_hemolysis_ISO_10993-4_ASTMF756_appendix_J",
+    "amp_specific_method_doi": "10.1016/j.jim.2024.113670",
+    "interpretation": "AMP-specific soluble-peptide method layered on auditable hemolysis controls; not a claim of medical-device equivalence"
+  },
+  "rbc_species_donor_and_assay_condition_matrix": {
+    "primary_matrix": {
+      "species": "Homo sapiens",
+      "blood_preparation": "defibrinated",
+      "source": "commercial_deidentified_or_ethics_approved_collection",
+      "minimum_independent_donors": 3,
+      "donor_pooling_allowed": false,
+      "minimum_independent_assay_days": 2,
+      "donor_metadata_required": [
+        "supplier_or_collection_protocol",
+        "collection_to_assay_hours",
+        "storage_temperature_c",
+        "age_range_if_available",
+        "sex_if_available",
+        "ABO_Rh_if_available",
+        "defibrination_method"
+      ],
+      "ethics_and_biosafety_evidence_required": true
+    },
+    "bridge_matrices": [
+      {
+        "matrix": "human_EDTA_RBC",
+        "role": "method_bridge_only",
+        "may_be_pooled_with_primary": false,
+        "may_define_candidate_gate": false,
+        "reason": "anticoagulant preparation can materially change AMP hemolysis"
+      },
+      {
+        "matrix": "nonhuman_RBC",
+        "role": "species_transfer_diagnostic_only",
+        "may_be_pooled_with_primary": false,
+        "may_define_candidate_gate": false,
+        "reason": "species effects must remain explicit"
+      }
+    ],
+    "frozen_assay_conditions": {
+      "format": "soluble_peptide_direct_contact",
+      "final_rbc_volume_percent": 2.0,
+      "buffer": "PBS_pH_7.4",
+      "temperature_c": 37,
+      "incubation_minutes": 60,
+      "mixing": "gentle_resuspension_every_15_minutes",
+      "concentration_um": [1, 2, 4, 8, 16, 32, 64, 128, 256],
+      "technical_replicates_per_donor_concentration": 3,
+      "readout": "supernatant_absorbance_540_to_541_nm",
+      "required_controls": [
+        "PBS_negative",
+        "vehicle_matched_negative",
+        "Triton_X100_1pct_complete_lysis",
+        "melittin_reference_curve",
+        "peptide_without_RBC_interference_blank"
+      ],
+      "plate_randomization": "candidate_and_concentration_blocks_randomized_with_controls_on_every_plate",
+      "operator_blinding": "sequence_identity_masked_until_plate_QC_is_frozen",
+      "minimum_plate_QC": {
+        "negative_control_mean_percent_hemolysis_lt": 2.0,
+        "hemoglobin_absorbance_standard_curve_required": true,
+        "color_turbidity_particle_interference_review_required": true,
+        "assignable_cause_retest_only": true
+      }
+    }
+  },
+  "sequence_acquisition_and_overlap_exclusion": {
+    "prospective_measurements_only": true,
+    "existing_database_measurements_forbidden": true,
+    "forbidden_measurement_sources": ["DBAASP", "Hemolytik", "HemoPI-1", "HemoPI-2", "HemoPI-3"],
+    "sequence_sources": [
+      "prospectively_synthesized_diversity_panel_not_selected_from_current_ampgent_candidates",
+      "commercial_reference_peptides_with_new_measurements",
+      "mechanism_and_composition_controls"
+    ],
+    "current_ampgent_candidates_excluded_from_fitting": true,
+    "current_ampgent_candidates_reserved_for_blind_test_only": true,
+    "exact_sequence_overlap_exclusion": true,
+    "sequence_family_overlap_exclusion": {
+      "maximum_global_identity": 0.4,
+      "minimum_bidirectional_coverage": 0.8,
+      "action": "same_family_sequences_must_share_one_partition"
+    },
+    "design_campaign_and_publication_grouping_required": true,
+    "required_data_rights": {
+      "commercial_internal_use": true,
+      "raw_measurement_ownership_or_perpetual_license": true,
+      "derivative_model_training": true,
+      "derived_model_weights_internal_use": true,
+      "audit_and_reanalysis": true
+    }
+  },
+  "raw_measurement_and_censoring_schema": {
+    "required_observation_fields": [
+      "sequence_sha256",
+      "material_lot",
+      "purity_percent",
+      "molecular_weight_g_mol",
+      "donor_id_pseudonym",
+      "blood_preparation",
+      "assay_day",
+      "operator_id_pseudonym",
+      "plate_id",
+      "well_id",
+      "concentration_um",
+      "technical_replicate",
+      "raw_sample_absorbance",
+      "raw_negative_absorbance",
+      "raw_positive_absorbance",
+      "raw_interference_blank_absorbance",
+      "normalized_percent_hemolysis_unclipped",
+      "qc_status",
+      "qc_reason_codes"
+    ],
+    "normalization_formula": "100*(A_sample-A_interference_blank-A_negative)/(A_positive-A_negative)",
+    "raw_values_are_immutable": true,
+    "negative_or_above_100_values_are_preserved": true,
+    "display_clipping_may_not_change_evidence": true,
+    "donor_level_curves_retained": true,
+    "failed_runs_and_retests_both_retained": true,
+    "censoring_rules": {
+      "hc10_not_reached": "right_censored_above_max_tested_um",
+      "hc50_not_reached": "right_censored_above_max_tested_um",
+      "hc10_below_minimum": "left_censored_at_or_below_min_tested_um",
+      "hc50_below_minimum": "left_censored_at_or_below_min_tested_um",
+      "nonmonotone_curve": "retain_all_points_and_flag_model_misfit_no_manual_relabel"
+    },
+    "retest_policy": {
+      "allowed_reasons": [
+        "control_failure",
+        "documented_pipetting_failure",
+        "instrument_failure",
+        "documented_color_or_turbidity_interference"
+      ],
+      "candidate_result_disagreement_is_not_assignable_cause": true,
+      "original_and_retest_link_required": true
+    }
+  },
+  "split_contract": {
+    "partition_roles": ["train", "calibration", "sequence_family_OOD", "prospective_blind_candidate_test"],
+    "exact_sequence_groups_disjoint": true,
+    "design_campaign_groups_disjoint": true,
+    "maximum_cross_split_global_identity": 0.4,
+    "minimum_bidirectional_alignment_coverage": 0.8,
+    "donors_stratified_not_pooled": true,
+    "assay_day_and_plate_effects_audited": true,
+    "current_candidate_batch_used_to_define_split": false,
+    "current_candidate_batch_used_to_fit_operating_point": false,
+    "blind_candidate_results_may_refit_model": false,
+    "split_assignment_frozen_before_candidate_unblinding": true,
+    "minimum_dataset_rule": "no_model_qualification_until_each_partition_has_both_low_and_high_hemolysis_controls_across_at_least_three_donors"
+  },
+  "model_card_contract": {
+    "primary_endpoint": "donor_conditioned_concentration_response",
+    "derived_endpoints": ["HC10_with_censoring", "HC50_with_censoring", "hemolysis_at_each_concentration"],
+    "single_global_binary_label_allowed": false,
+    "donor_and_assay_condition_covariates_required": true,
+    "uncertainty_interval_required": true,
+    "probability_or_interval_calibration_required": true,
+    "sequence_family_OOD_report_required": true,
+    "content_addressed_runtime_required": true,
+    "training_data_manifest_sha256_required": true,
+    "commercial_license_witness_required": true,
+    "transparent_descriptor_baseline_required": true,
+    "candidate_gate_policy_is_separate_versioned_artifact": true,
+    "current_candidates_may_not_select_model_or_threshold": true
+  },
+  "decision": {
+    "outcome": "prospective_assay_and_model_contract_frozen_measurements_pending",
+    "measurements_collected": false,
+    "model_trained": false,
+    "candidate_safety_threshold_created": false,
+    "formal_science_run_submitted": false,
+    "safety_gate_lowered": false,
+    "next_action": "qualify_external_or_internal_lab_provider_and_execute_reference_peptide_pilot_before_candidate_unblinding"
+  },
+  "acceptance_artifacts": {
+    "rbc_species_donor_and_assay_condition_matrix_sha256": "ef58fe9ff96b7239984e1735c3af2418e441a7d7fff654b89a987cc6fb976a90",
+    "prospective_sequence_acquisition_and_overlap_exclusion_plan_sha256": "a8638ff750fc0706579d8b4ffcc3c74fbbfb36bf42981dba143e47f713ee6dfa",
+    "raw_measurement_and_censoring_schema_sha256": "d0d15e14f555adddd2efac5b178f09b186b116f6fcfdb5986a1b34749671bbbe",
+    "train_calibration_ood_split_and_model_card_contract_sha256": "3c832e3773205de53111fd5d40830e689e9b189cf6d9c19ecca2c4deea840114"
+  }
+}

@@ -359,7 +359,13 @@ def test_guarded_launch_rehashes_again_after_spawn_and_completion(tmp_path: Path
     async def writer(_receipt: dict[str, object]) -> None:
         return None
 
-    with pytest.raises(ValueError, match="live source release bytes drifted"):
+    with pytest.raises(
+        ValueError,
+        match=(
+            "live (?:source release bytes drifted|runtime bytes or launch context "
+            "drifted across boundaries)"
+        ),
+    ):
         asyncio.run(
             run_v37_guarded_subprocess(
                 [

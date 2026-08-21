@@ -205,7 +205,7 @@ tasks:
       safety_gate_lowered: false
       completed_at: "2026-08-21T09:34:00Z"
   - task_id: prospective_hemolysis_assay_contract_freeze
-    status: ready
+    status: completed
     priority_tier: 1
     evidence_domains: [hemolysis]
     action_type: prospective_independent_rbc_assay_and_model_contract
@@ -222,6 +222,52 @@ tasks:
       - stop_if_rbc_species_donor_concentration_time_or_readout_are_missing
       - stop_if_commercial_internal_use_and_data_ownership_are_not_confirmed
       - stop_if_current_candidates_are_used_to_fit_the_safety_threshold
+    completion:
+      outcome: prospective_assay_and_model_contract_frozen_measurements_pending
+      witness_path: config/enterprise/prospective_hemolysis_assay_contract_v39.json
+      witness_sha256: 12cdba1c4b13bb861cb14a61f2f3463c415b096b28be20083897e29665c9eea2
+      measurements_collected: false
+      model_trained: false
+      candidate_safety_threshold_created: false
+      formal_science_run_submitted: false
+      safety_gate_lowered: false
+      completed_at: "2026-08-21T11:36:00Z"
+  - task_id: serum_protease_stability_contract_freeze
+    status: ready
+    priority_tier: 1
+    evidence_domains: [serum_and_protease_stability]
+    action_type: prospective_stability_assay_and_model_contract
+    prerequisites: []
+    estimated_cpu_minutes: 90
+    estimated_gpu_minutes: 0
+    acceptance_artifacts:
+      - serum_and_protease_condition_matrix_sha256
+      - timecourse_lcms_measurement_and_censoring_schema_sha256
+      - leakage_safe_reference_and_candidate_blinding_plan_sha256
+      - stability_model_card_and_qualification_contract_sha256
+    stop_conditions:
+      - stop_if_serum_species_fraction_temperature_or_timepoints_are_missing
+      - stop_if_intact_parent_peptide_cannot_be_distinguished_from_fragments
+      - stop_if_current_candidates_define_the_operating_point
+      - stop_if_commercial_internal_use_and_data_ownership_are_not_confirmed
+  - task_id: prospective_hemolysis_assay_provider_and_pilot_qualification
+    status: ready
+    priority_tier: 2
+    evidence_domains: [hemolysis]
+    action_type: external_or_internal_lab_provider_and_reference_pilot
+    prerequisites: [prospective_hemolysis_assay_contract_freeze]
+    estimated_cpu_minutes: 180
+    estimated_gpu_minutes: 0
+    acceptance_artifacts:
+      - qualified_provider_and_data_rights_witness_sha256
+      - reference_peptide_pilot_raw_measurement_bundle_sha256
+      - pilot_QC_and_between_donor_reproducibility_report_sha256
+      - candidate_unblinding_authorization_decision_sha256
+    stop_conditions:
+      - stop_if_provider_cannot_grant_raw_data_and_derivative_model_rights
+      - stop_if_primary_defibrinated_human_RBC_contract_drifts
+      - stop_if_reference_peptide_pilot_fails_predeclared_QC
+      - stop_if_current_candidates_are_unblinded_before_pilot_acceptance
   - task_id: novelty_ood_reference_freeze
     status: completed
     priority_tier: 1

@@ -2266,3 +2266,20 @@ DBAASP/Hemolytik/HemoPI 数据族，或缺许可证、可部署权重/概率运�
 读出、阳性/阴性对照、原始值与删失语义、商业内部使用和数据所有权；采集序列必须排除既有
 DBAASP/Hemolytik/HemoPI 记录，并预先冻结 train/calibration/OOD 拆分。当前候选不得用于拟合
 安全阈值。在合同和独立测量形成前，禁止正式 science run，也不为补齐证据数量重复评测同源模型。
+
+### 2026-08-21 前瞻性 RBC 溶血实验合同
+
+第二证据族的下一步已从“继续找公开二分类器”切换为条件化实验端点。主矩阵冻结为至少 3 位独立
+供体的去纤维蛋白人 RBC，供体不得合并，至少跨 2 个实验日；2% RBC、PBS pH 7.4、37°C、60 分钟、
+1–256 µM 两倍浓度梯度、540–541 nm 上清吸光度和每供体/浓度 3 个技术重复均已固定。PBS、匹配
+vehicle、1% Triton X-100、melittin 曲线及无 RBC 干扰空白必须同板。EDTA 人血与非人 RBC 只能作为
+明确分开的 bridge diagnostic，不能与主矩阵合并或定义候选硬门。
+
+每个原始吸光度、供体、实验日、板/孔、浓度、干扰空白、失败 run 与有因复测都必须保留；归一化
+结果不静默截到 0–100%，HC10/HC50 未跨越测试范围时保存左右删失而不是伪造数值。既有
+DBAASP/Hemolytik/HemoPI 测量不得进入该数据集，当前 AMPgent 候选只允许在实验和模型锁定后作为
+盲测，不能参与模型、split、operating point 或安全阈值拟合。合同完成不等于已获得测量或安全结论；
+完整合同见 `config/enterprise/prospective_hemolysis_assay_contract_v39.json`。
+
+为避免等待外部实验室时停滞，provider/pilot 资格任务保留在 backlog 的下一层，同时当前 CPU 关键
+路径转到血清/蛋白酶稳定性实验合同。正式 science run 仍由企业模型/实验注册门禁止。
