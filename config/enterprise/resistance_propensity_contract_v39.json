@@ -1,0 +1,182 @@
+{
+  "schema_version": "ampgent.resistance-propensity-contract.1",
+  "contract_id": "resistance_propensity_contract_v39_20260821",
+  "frozen_at": "2026-08-21T17:38:00Z",
+  "primary_sources": [
+    "https://clsi.org/shop/standards/m07/",
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC11218975/",
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC7529437/",
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC7033599/",
+    "https://pubmed.ncbi.nlm.nih.gov/35712084/",
+    "https://www.who.int/publications/i/item/9789240076600"
+  ],
+  "source_scope": {
+    "purpose": "prospective_sequence_first_resistance_evolution_and_model_qualification",
+    "interpretation": "CLSI supplies standardized MIC measurement principles; experimental-evolution studies support replicated serial passage, cross-resistance and WGS; this artifact contains no bacterial experiment or resistance result",
+    "measurements_in_this_artifact": false
+  },
+  "serial_passage_matrix": {
+    "organisms": [
+      {
+        "organism_strain": "Escherichia_coli_ATCC_25922",
+        "target_branch": "GyrA_8QQI",
+        "role": "Gram_negative_reference_and_target_context",
+        "strain_identity_and_master_stock_genome_sha256_required": true
+      },
+      {
+        "organism_strain": "Staphylococcus_epidermidis_ATCC_35984_RP62A",
+        "target_branch": "PBP2a_3ZFZ",
+        "role": "Gram_positive_skin_pathogen_reference_and_target_context",
+        "strain_identity_and_master_stock_genome_sha256_required": true
+      }
+    ],
+    "medium": "cation_adjusted_Mueller_Hinton_broth_with_candidate_specific_recovery_and_adsorption_QC",
+    "temperature_c": 37,
+    "independent_selected_lineages_per_candidate_organism": 8,
+    "independent_no_drug_control_lineages_per_organism": 4,
+    "passage_interval_hours": 24,
+    "total_passages": 30,
+    "transfer_fraction": 0.01,
+    "exposure_ladder_relative_to_ancestral_MIC": [0, 0.125, 0.25, 0.5, 1, 2, 4, 8, 16, 32],
+    "transfer_source_rule": "highest_concentration_with_at_least_20_percent_growth_relative_to_no_drug_control",
+    "no_growth_is_recorded_as_population_extinction": true,
+    "extinct_lineages_may_be_resurrected_for_primary_analysis": false,
+    "contamination_or_documented_technical_failure_may_restart_from_immediately_prior_archive": true,
+    "archive_every_n_passages": 5,
+    "MIC_remeasurement_every_n_passages": 5,
+    "post_selection_drug_free_passages": 5,
+    "stable_resistance_definition": "MIC_shift_persists_after_five_drug_free_passages_with_ancestor_and_no_drug_controls_retested_same_day",
+    "reference_agents": ["pexiganan", "melittin", "colistin_or_daptomycin_species_appropriate"],
+    "plate_randomization_and_blind_candidate_codes_required": true,
+    "biosafety_and_strain_use_authorization_required": true
+  },
+  "raw_measurement_schema": {
+    "required_observation_fields": [
+      "candidate_or_control_blind_id",
+      "organism_strain",
+      "ancestor_stock_sha256",
+      "lineage_id",
+      "passage_number",
+      "assay_day",
+      "plate_id",
+      "well_id",
+      "exposure_concentration_um",
+      "growth_OD600_raw",
+      "no_drug_control_OD600_raw",
+      "transfer_source_well",
+      "transfer_volume_and_fraction",
+      "viable_count_CFU_ml_when_scheduled",
+      "MIC_dilution_series_raw",
+      "MIC_endpoint_um",
+      "MIC_fold_change_vs_ancestor",
+      "population_status",
+      "archive_artifact_sha256",
+      "contamination_QC_status",
+      "qc_reason_codes"
+    ],
+    "raw_values_are_immutable": true,
+    "MIC_shift_and_population_extinction_stored_separately": true,
+    "ancestor_and_no_drug_controls_retested_with_each_scheduled_MIC": true,
+    "growth_curves_and_endpoint_OD_both_retained": true,
+    "failed_runs_and_retests_both_retained": true,
+    "manual_well_selection_forbidden": true,
+    "censoring_rules": {
+      "MIC_above_highest_tested": "right_censored_above_max_tested_um",
+      "MIC_below_lowest_tested": "left_censored_at_or_below_min_tested_um",
+      "lineage_extinction": "competing_outcome_not_zero_resistance",
+      "contaminated_lineage": "invalid_from_last_clean_archive_forward_with_full_evidence_retained"
+    },
+    "retest_policy": {
+      "assignable_causes_only": true,
+      "unexpected_MIC_shift_is_not_assignable_cause": true,
+      "original_and_retest_link_required": true
+    }
+  },
+  "cross_resistance_and_genotype_contract": {
+    "cross_resistance_agents": [
+      "LL_37",
+      "human_beta_defensin_3",
+      "colistin",
+      "ciprofloxacin",
+      "cefoxitin",
+      "vancomycin",
+      "daptomycin"
+    ],
+    "species_inapplicable_agents_reported_as_not_applicable": true,
+    "ancestor_selected_no_drug_and_evolved_lineages_tested_together": true,
+    "cross_resistance_and_collateral_sensitivity_both_reported": true,
+    "fitness_endpoints": ["drug_free_growth_rate", "lag_time", "maximum_OD", "competitive_fitness_if_validated"],
+    "ancestor_population_and_clone_WGS_required": true,
+    "WGS_sampling": {
+      "ancestor_master_stock": true,
+      "evolved_population_each_surviving_lineage": true,
+      "minimum_clones_per_surviving_lineage": 3,
+      "no_drug_control_population": true
+    },
+    "required_genotype_fields": ["reference_genome_sha256", "read_artifact_sha256", "coverage", "variant_allele_fraction", "structural_variant_and_copy_number_calls", "contamination_QC", "annotation_release"],
+    "variant_alone_proves_causality": false,
+    "causal_validation_requires_independent_reconstruction_or_complementation": true
+  },
+  "reference_and_candidate_blinding_plan": {
+    "prospective_measurements_only": true,
+    "current_773_candidates_excluded_from_model_fitting": true,
+    "current_773_candidates_excluded_from_calibration": true,
+    "current_773_candidates_excluded_from_model_selection": true,
+    "current_773_candidates_excluded_from_operating_point_selection": true,
+    "current_773_candidates_reserved_for_blind_test_only": true,
+    "candidate_identity_unblinded_before_protocol_and_model_lock": false,
+    "reference_peptides_and_antibiotics_run_before_candidate_unblinding": true,
+    "sequence_family_grouping": {"maximum_global_identity": 0.4, "minimum_bidirectional_coverage": 0.8},
+    "required_data_rights": {
+      "commercial_internal_use": true,
+      "raw_measurement_ownership_or_perpetual_license": true,
+      "genomic_data_and_derived_variant_use": true,
+      "derivative_model_training": true,
+      "derived_model_weights_internal_use": true,
+      "audit_and_reanalysis": true
+    }
+  },
+  "split_contract": {
+    "partition_roles": ["train", "calibration", "sequence_family_OOD", "organism_OOD", "prospective_blind_candidate_test"],
+    "exact_sequence_groups_disjoint": true,
+    "design_campaign_groups_disjoint": true,
+    "maximum_cross_split_global_identity": 0.4,
+    "minimum_bidirectional_alignment_coverage": 0.8,
+    "lineages_from_one_ancestor_may_cross_partitions": false,
+    "strain_and_species_effects_explicit": true,
+    "current_candidates_used_to_define_split": false,
+    "current_candidates_used_to_define_operating_point": false,
+    "blind_candidate_results_may_refit_model": false,
+    "split_assignment_frozen_before_candidate_unblinding": true
+  },
+  "model_card_contract": {
+    "primary_endpoint": "organism_conditioned_resistance_trajectory",
+    "derived_endpoints": ["stable_MIC_fold_change", "time_to_MIC_shift", "population_extinction", "cross_resistance_profile", "fitness_cost", "genotype_pathway"],
+    "single_global_low_high_resistance_label_allowed": false,
+    "competing_outcome_modeling_required": true,
+    "organism_strain_medium_and_exposure_covariates_required": true,
+    "lineage_level_uncertainty_required": true,
+    "censoring_aware_estimation_required": true,
+    "calibration_sequence_family_and_organism_OOD_reports_required": true,
+    "transparent_descriptor_baseline_required": true,
+    "content_addressed_runtime_required": true,
+    "training_data_manifest_sha256_required": true,
+    "commercial_license_witness_required": true,
+    "candidate_operating_point_is_separate_versioned_artifact": true,
+    "current_candidates_may_not_select_model_or_operating_point": true
+  },
+  "decision": {
+    "outcome": "prospective_resistance_propensity_contract_frozen_measurements_pending",
+    "measurements_collected": false,
+    "model_trained": false,
+    "candidate_operating_point_created": false,
+    "formal_science_run_submitted": false,
+    "next_action": "qualify_biosafety_data_rights_and_run_reference_agent_serial_passage_pilot_before_current_candidate_unblinding"
+  },
+  "acceptance_artifacts": {
+    "serial_passage_organism_drug_and_control_matrix_sha256": "341b0630168e9586dc8c5883ccf8bf220fbc831767f07c6328d4d8d6aecf49a0",
+    "raw_MIC_population_and_timecourse_measurement_schema_sha256": "eea428ceeea4a48f4e82c391cce53e7f028ef67137bfe5d51cd2064a96c978ec",
+    "cross_resistance_and_genotype_endpoint_contract_sha256": "700f66bb6fba866ad2b208efcd9e13654f4bc2446e05d0d46460477fb2094cbc",
+    "leakage_safe_model_card_and_candidate_blinding_plan_sha256": "02dbed228ade688d4145d7946ba487cf11f11944eb962ae69a5986ddc899b73f"
+  }
+}

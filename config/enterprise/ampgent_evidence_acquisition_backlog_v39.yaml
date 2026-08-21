@@ -295,7 +295,7 @@ tasks:
       formal_science_run_submitted: false
       completed_at: "2026-08-21T15:38:00Z"
   - task_id: resistance_propensity_contract_freeze
-    status: ready
+    status: completed
     priority_tier: 1
     evidence_domains: [resistance_propensity]
     action_type: prospective_serial_passage_cross_resistance_and_model_contract
@@ -312,6 +312,55 @@ tasks:
       - stop_if_MIC_shift_and_population_extinction_are_collapsed
       - stop_if_current_candidates_define_the_operating_point
       - stop_if_commercial_internal_use_and_data_ownership_are_not_confirmed
+    completion:
+      outcome: prospective_resistance_propensity_contract_frozen_measurements_pending
+      witness_path: config/enterprise/resistance_propensity_contract_v39.json
+      witness_sha256: e05e79123cff488ee0f5c7a06b5545c34ef9c37151f998be10d638ead65518e7
+      serial_passage_organism_drug_and_control_matrix_sha256: 341b0630168e9586dc8c5883ccf8bf220fbc831767f07c6328d4d8d6aecf49a0
+      raw_MIC_population_and_timecourse_measurement_schema_sha256: eea428ceeea4a48f4e82c391cce53e7f028ef67137bfe5d51cd2064a96c978ec
+      cross_resistance_and_genotype_endpoint_contract_sha256: 700f66bb6fba866ad2b208efcd9e13654f4bc2446e05d0d46460477fb2094cbc
+      leakage_safe_model_card_and_candidate_blinding_plan_sha256: 02dbed228ade688d4145d7946ba487cf11f11944eb962ae69a5986ddc899b73f
+      measurements_collected: false
+      model_trained: false
+      candidate_operating_point_created: false
+      formal_science_run_submitted: false
+      completed_at: "2026-08-21T17:38:00Z"
+  - task_id: amp_likeness_reference_and_model_contract_freeze
+    status: ready
+    priority_tier: 1
+    evidence_domains: [amp_likeness]
+    action_type: phenotype_grounded_reference_dataset_and_model_contract
+    prerequisites: []
+    estimated_cpu_minutes: 90
+    estimated_gpu_minutes: 0
+    acceptance_artifacts:
+      - positive_and_hard_negative_endpoint_semantics_sha256
+      - training_lineage_license_and_overlap_witness_sha256
+      - leakage_safe_train_calibration_ood_split_sha256
+      - transparent_runtime_and_model_card_contract_sha256
+    stop_conditions:
+      - stop_if_positive_labels_are_database_membership_without_assay_evidence
+      - stop_if_negatives_are_unreviewed_random_sequences
+      - stop_if_current_candidates_define_the_split_or_operating_point
+      - stop_if_commercial_internal_use_is_not_confirmed
+  - task_id: resistance_propensity_provider_and_pilot_qualification
+    status: ready
+    priority_tier: 2
+    evidence_domains: [resistance_propensity]
+    action_type: external_or_internal_lab_provider_and_reference_pilot
+    prerequisites: [resistance_propensity_contract_freeze]
+    estimated_cpu_minutes: 180
+    estimated_gpu_minutes: 0
+    acceptance_artifacts:
+      - qualified_biosafety_provider_and_data_rights_witness_sha256
+      - blinded_reference_agent_serial_passage_bundle_sha256
+      - MIC_extinction_cross_resistance_and_WGS_QC_report_sha256
+      - candidate_unblinding_authorization_decision_sha256
+    stop_conditions:
+      - stop_if_provider_cannot_grant_raw_data_genomic_and_derivative_model_rights
+      - stop_if_organism_exposure_transfer_or_archive_contract_drifts
+      - stop_if_reference_pilot_fails_predeclared_QC
+      - stop_if_current_candidates_are_unblinded_before_pilot_acceptance
   - task_id: solubility_aggregation_provider_and_pilot_qualification
     status: ready
     priority_tier: 2

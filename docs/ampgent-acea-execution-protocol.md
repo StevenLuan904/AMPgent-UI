@@ -2311,3 +2311,20 @@ DLS 无信号不得解释为“无聚集”，高 PDI/多峰必须保留原始�
 在 assay/model lock 后盲测，完全排除于训练、校准、模型选择、split 和 operating point。合同 witness
 为 `config/enterprise/solubility_aggregation_contract_v39.json`；尚未产生测量、模型或候选门。
 下一 CPU 任务转为 resistance propensity 的 serial-passage/cross-resistance 合同。
+
+### 2026-08-21 耐药倾向采集合同
+
+耐药倾向端点已冻结为双菌种、重复 lineage 的条件化演化轨迹，而不是序列打分器给出的单一高低标签。
+E. coli ATCC 25922 与 S. epidermidis ATCC 35984/RP62A 各自保留 8 条选择 lineage 和 4 条无药
+control lineage；每日传代、共 30 代，按祖先 MIC 的固定梯度从达到无药对照至少 20% 生长的最高浓度
+转移 1%。每 5 代归档并复测 MIC，末端再做 5 代无药传代验证表型是否稳定。
+
+无生长 lineage 必须作为 population-extinction competing outcome 保存，不能复活后继续计入主分析，也不能
+当成“零耐药”。MIC 上下量程保留删失，所有 OD、转移孔、浓度、CFU、原始稀释系列、污染和复测边均需
+可重放。末端对 LL-37、人 beta-defensin-3、colistin、ciprofloxacin、cefoxitin、vancomycin 与 daptomycin
+做物种适用的 cross-resistance/collateral-sensitivity；祖先、无药 control 与 evolved lineage 必须同批比较。
+WGS 覆盖祖先、群体和每 surviving lineage 至少 3 个 clone，但 variant 本身不证明因果，需独立重建或互补。
+
+当前 773 条候选继续完全排除于训练、校准、model/split/operating-point 选择，只允许在协议与模型锁定后盲测。
+合同 witness 为 `config/enterprise/resistance_propensity_contract_v39.json`；没有产生细菌实验、模型或候选门。
+下一 CPU 任务转为 phenotype-grounded AMP-likeness reference/model 合同，防止把数据库 membership 当活性真值。

@@ -681,3 +681,11 @@ DLS 原始粒径分布、固定离心后的可溶 intact parent 与可见沉淀�
 “无聚集”。当前 773 条候选只作 assay/model lock 后盲测，不能定义 split、模型或 operating point。
 该 checkpoint 没有新增湿实验开发性证据；provider/reference pilot 留作后续，下一独立合同转向
 serial-passage resistance propensity 与 cross-resistance，继续补齐企业核心管线而不消耗结构 GPU。
+
+2026-08-21 v39 耐药倾向合同追加：E. coli 与 S. epidermidis 使用相互隔离的 30 代 serial-passage
+lineages、固定祖先 MIC 相对暴露梯度、无药 controls、每 5 代归档/MIC 复测和末端 5 代无药稳定性挑战。
+population extinction 与 MIC 漂移是分离的 competing outcomes；灭绝 lineage 不得复活后进入主分析。
+cross-resistance 同时覆盖宿主防御肽、colistin 及靶点相关抗生素，WGS 覆盖祖先、群体和 clones，但基因变异
+只有在独立重建/互补后才可称因果。当前 773 条候选只作 protocol/model lock 后盲测，因此本 checkpoint
+没有新增耐药实验结论或正式门。下一独立任务转为 phenotype-grounded AMP-likeness reference/model 合同，
+专门避免用数据库 membership 和随机负序列制造虚假的模型性能。
