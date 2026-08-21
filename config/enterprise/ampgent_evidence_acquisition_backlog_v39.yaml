@@ -357,7 +357,7 @@ tasks:
       formal_science_run_submitted: false
       completed_at: "2026-08-21T19:38:00Z"
   - task_id: prospective_mammalian_cytotoxicity_assay_contract_freeze
-    status: ready
+    status: completed
     priority_tier: 1
     evidence_domains: [mammalian_cytotoxicity]
     action_type: prospective_cell_conditioned_cytotoxicity_assay_and_model_contract
@@ -374,6 +374,55 @@ tasks:
       - stop_if_viability_and_membrane_damage_are_collapsed
       - stop_if_current_candidates_define_the_operating_point
       - stop_if_commercial_internal_use_and_data_ownership_are_not_confirmed
+    completion:
+      outcome: prospective_skin_cell_cytotoxicity_contract_frozen_measurements_pending
+      witness_path: config/enterprise/prospective_mammalian_cytotoxicity_contract_v39.json
+      witness_sha256: 64d16f8b93c6f7e15a9f670296acf9f76c4420dee150ba4f5f16c8428adaceb3
+      cell_line_exposure_concentration_and_control_matrix_sha256: 5e39123801b4d80a5e30a0930de3784e0fe851e9186741c7e5a1797979c462f1
+      raw_viability_membrane_damage_and_censoring_schema_sha256: 012e22a30583990a5abe5a1075ba714ad16a75b82b15d440b501733a4555a441
+      leakage_safe_reference_and_candidate_blinding_plan_sha256: f999ece730b8d330ea638ed25b69e7980973f732e74037200e21a5e6ff3c08b1
+      cytotoxicity_model_card_and_qualification_contract_sha256: be018e19dcd7648e2a1687bb87e679a240630db62cf0bc0da9c86259d0ba8df4
+      measurements_collected: false
+      model_trained: false
+      candidate_operating_point_created: false
+      formal_science_run_submitted: false
+      completed_at: "2026-08-21T21:38:00Z"
+  - task_id: commensal_selectivity_assay_contract_freeze
+    status: ready
+    priority_tier: 1
+    evidence_domains: [commensal_selectivity]
+    action_type: prospective_skin_commensal_pathogen_selectivity_assay_and_model_contract
+    prerequisites: []
+    estimated_cpu_minutes: 90
+    estimated_gpu_minutes: 0
+    acceptance_artifacts:
+      - pathogen_commensal_strain_and_condition_matrix_sha256
+      - raw_growth_kill_and_selectivity_measurement_schema_sha256
+      - leakage_safe_reference_and_candidate_blinding_plan_sha256
+      - commensal_selectivity_model_card_and_qualification_contract_sha256
+    stop_conditions:
+      - stop_if_strain_identity_growth_condition_or_inoculum_is_missing
+      - stop_if_pathogen_potency_and_commensal_preservation_are_collapsed
+      - stop_if_current_candidates_define_the_operating_point
+      - stop_if_commercial_internal_use_and_data_ownership_are_not_confirmed
+  - task_id: mammalian_cytotoxicity_provider_and_pilot_qualification
+    status: ready
+    priority_tier: 2
+    evidence_domains: [mammalian_cytotoxicity]
+    action_type: external_or_internal_cell_lab_provider_and_reference_pilot
+    prerequisites: [prospective_mammalian_cytotoxicity_assay_contract_freeze]
+    estimated_cpu_minutes: 180
+    estimated_gpu_minutes: 0
+    acceptance_artifacts:
+      - qualified_cell_use_provider_and_data_rights_witness_sha256
+      - blinded_reference_peptide_primary_skin_cell_bundle_sha256
+      - donor_time_concentration_interference_and_QC_report_sha256
+      - candidate_unblinding_authorization_decision_sha256
+    stop_conditions:
+      - stop_if_provider_cannot_grant_cell_use_raw_data_and_derivative_model_rights
+      - stop_if_primary_keratinocyte_or_fibroblast_panel_drifts
+      - stop_if_reference_pilot_fails_predeclared_QC
+      - stop_if_current_candidates_are_unblinded_before_pilot_acceptance
   - task_id: amp_likeness_reference_dataset_and_model_qualification
     status: ready
     priority_tier: 2

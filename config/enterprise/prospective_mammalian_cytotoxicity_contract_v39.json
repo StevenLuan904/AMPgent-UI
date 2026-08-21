@@ -1,0 +1,195 @@
+{
+  "schema_version": "ampgent.mammalian-cytotoxicity-assay-model-contract.1",
+  "contract_id": "prospective_mammalian_cytotoxicity_contract_v39_20260821",
+  "frozen_at": "2026-08-21T21:38:00Z",
+  "primary_sources": [
+    "https://www.iso.org/standard/36406.html",
+    "https://www.ncbi.nlm.nih.gov/books/NBK144065/",
+    "https://www.ncbi.nlm.nih.gov/sites/books/NBK540958/",
+    "https://www.atcc.org/products/pcs-200-011",
+    "https://www.atcc.org/products/cells_and_microorganisms/human_primary_cells/cell_type/fibroblasts/pcs-201-012",
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC4980674/",
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC4089439/"
+  ],
+  "source_scope": {
+    "purpose": "prospective_skin_relevant_mammalian_cytotoxicity_assay_and_model_qualification",
+    "interpretation": "ISO 10993-5 and Assay Guidance Manual support in-vitro mammalian response and orthogonal viability/death readouts; authenticated adult primary epidermal keratinocytes and dermal fibroblasts anchor skin relevance; this artifact contains no cell measurement",
+    "measurements_in_this_artifact": false
+  },
+  "cell_exposure_matrix": {
+    "primary_cell_models": [
+      {
+        "cell_identity": "adult_primary_human_epidermal_keratinocytes_HEKa_ATCC_PCS_200_011",
+        "tissue_role": "epidermal_barrier_and_topical_exposure",
+        "minimum_independent_donor_lots": 3,
+        "authenticated_supplier_lot_and_certificate_sha256_required": true,
+        "mycoplasma_negative_before_use_required": true,
+        "maximum_passage_number": 4
+      },
+      {
+        "cell_identity": "adult_primary_human_dermal_fibroblasts_HDFa_ATCC_PCS_201_012",
+        "tissue_role": "dermal_repair_and_deeper_exposure",
+        "minimum_independent_donor_lots": 3,
+        "authenticated_supplier_lot_and_certificate_sha256_required": true,
+        "mycoplasma_negative_before_use_required": true,
+        "maximum_passage_number": 6
+      }
+    ],
+    "minimum_independent_experiment_days": 2,
+    "technical_replicates_per_condition": 3,
+    "peptide_concentration_um": [0.5, 1, 2, 4, 8, 16, 32, 64, 128, 256],
+    "exposure_time_hours": [1, 4, 24, 72],
+    "primary_medium_rule": "supplier_recommended_complete_medium_with_exact_serum_growth_supplement_and_antibiotic_status_frozen_per_cell_type",
+    "serum_free_low_serum_and_topical_formulation_bridges": "separate_diagnostic_lanes_not_pooled_with_primary_endpoint",
+    "primary_readouts": [
+      "intracellular_ATP_viable_cell_signal",
+      "extracellular_LDH_membrane_damage",
+      "automated_live_dead_cell_count_and_morphology"
+    ],
+    "viability_and_membrane_damage_may_be_collapsed": false,
+    "required_controls": [
+      "untreated_cells",
+      "vehicle_matched_cells",
+      "no_cell_peptide_interference_blank_each_concentration",
+      "maximum_lysis_control_for_LDH",
+      "staurosporine_apoptosis_control",
+      "medium_only_background"
+    ],
+    "reference_peptides": ["LL_37", "melittin"],
+    "reference_topical_agents": ["mupirocin", "chlorhexidine"],
+    "reference_agents_are_assay_controls_not_candidate_thresholds": true,
+    "same_plate_randomization_and_blind_candidate_codes_required": true,
+    "cell_seeding_density_linear_range_and_edge_effect_qualification_required": true,
+    "peptide_recovery_and_adsorption_QC_by_condition_required": true,
+    "immortalized_or_cancer_cell_line_may_replace_primary_panel": false,
+    "optional_immortalized_or_3D_skin_models_are_separate_bridge_views": true,
+    "serum_or_matrix_bridge_pooled_with_primary_endpoint": false
+  },
+  "raw_measurement_schema": {
+    "required_observation_fields": [
+      "candidate_or_control_blind_id",
+      "exact_sequence_and_modification_sha256",
+      "cell_identity_and_donor_lot",
+      "supplier_certificate_sha256",
+      "passage_number_and_population_doublings",
+      "mycoplasma_QC_status",
+      "experiment_day_plate_and_well",
+      "seeding_density_and_confluence",
+      "medium_serum_and_matrix_identity",
+      "peptide_concentration_um",
+      "exposure_time_hours",
+      "ATP_raw_luminescence",
+      "LDH_raw_signal",
+      "live_dead_cell_counts",
+      "morphology_image_artifact_sha256",
+      "peptide_only_interference_signal",
+      "control_raw_values",
+      "peptide_recovery_fraction_when_scheduled",
+      "QC_status_and_reason_codes"
+    ],
+    "raw_values_are_immutable": true,
+    "normalized_values_are_derived_with_versioned_formula": true,
+    "failed_runs_and_assignable_cause_retests_both_retained": true,
+    "manual_outlier_deletion_forbidden": true,
+    "metabolic_signal_alone_proves_viability": false,
+    "peptide_assay_interference_requires_orthogonal_resolution": true,
+    "cell_loss_cytostasis_and_membrane_lysis_reported_separately": true,
+    "derived_endpoints": [
+      "viability_fraction_by_cell_type_time_and_concentration",
+      "membrane_damage_fraction_by_cell_type_time_and_concentration",
+      "CC10_and_CC50_with_interval_or_censoring",
+      "maximum_non_cytotoxic_concentration_as_versioned_decision_artifact",
+      "interval_aware_selectivity_index_against_matched_pathogen_MIC"
+    ],
+    "censoring_rules": {
+      "CC50_above_maximum_tested": "right_censored_above_256_um",
+      "CC10_below_minimum_tested": "left_censored_at_or_below_0_5_um",
+      "interfering_readout": "invalid_for_that_readout_not_imputed_safe",
+      "cell_batch_QC_failure": "invalid_batch_with_raw_evidence_retained"
+    },
+    "retest_policy": {
+      "assignable_causes_only": true,
+      "unexpected_toxicity_is_not_assignable_cause": true,
+      "original_and_retest_link_required": true
+    }
+  },
+  "reference_and_candidate_blinding_plan": {
+    "prospective_measurements_only": true,
+    "current_773_candidates_used_for_training": false,
+    "current_773_candidates_used_for_calibration": false,
+    "current_773_candidates_used_for_model_selection": false,
+    "current_773_candidates_used_for_operating_point": false,
+    "current_773_candidates_reserved_for_blind_test_only": true,
+    "candidate_identity_unblinded_before_protocol_assay_and_model_lock": false,
+    "reference_peptides_and_agents_run_before_candidate_unblinding": true,
+    "candidate_results_may_not_redefine_QC_or_thresholds": true,
+    "reference_training_records_require_cell_type_time_concentration_and_raw_readout_lineage": true,
+    "generic_toxic_non_toxic_database_membership_is_not_a_cell_assay_label": true,
+    "required_data_and_cell_rights": {
+      "commercial_internal_cell_use_or_supplier_license": true,
+      "raw_measurement_ownership_or_perpetual_license": true,
+      "image_and_metadata_retention": true,
+      "normalized_derivative_dataset": true,
+      "derivative_model_training": true,
+      "derived_model_weights_internal_use": true,
+      "audit_and_reanalysis": true
+    }
+  },
+  "split_contract": {
+    "partition_roles": [
+      "train",
+      "calibration",
+      "sequence_family_OOD",
+      "publication_campaign_OOD",
+      "cell_donor_OOD",
+      "prospective_candidate_blind_test"
+    ],
+    "exact_sequence_groups_disjoint": true,
+    "publication_and_design_campaign_groups_disjoint": true,
+    "maximum_cross_split_global_identity": 0.4,
+    "minimum_bidirectional_alignment_coverage": 0.8,
+    "donor_lots_may_cross_model_evaluation_partitions": false,
+    "all_conditions_for_one_sequence_stay_in_one_partition": true,
+    "current_candidates_used_to_define_split": false,
+    "current_candidates_used_to_define_operating_point": false,
+    "blind_candidate_results_may_refit_model": false,
+    "split_assignment_frozen_before_candidate_unblinding": true
+  },
+  "model_card_contract": {
+    "primary_endpoint": "cell_type_time_and_concentration_conditioned_cytotoxicity",
+    "single_global_toxic_non_toxic_label_allowed": false,
+    "outputs": [
+      "cell_type_and_time_conditioned_viability_curve",
+      "cell_type_and_time_conditioned_membrane_damage_curve",
+      "CC10_CC50_interval_or_censoring",
+      "calibrated_uncertainty",
+      "applicability_domain_and_OOD_status"
+    ],
+    "concentration_response_and_censoring_aware_estimation_required": true,
+    "orthogonal_endpoint_disagreement_report_required": true,
+    "donor_cell_type_time_and_matrix_subgroup_reports_required": true,
+    "transparent_descriptor_baseline_required": true,
+    "content_addressed_runtime_required": true,
+    "training_data_manifest_sha256_required": true,
+    "weights_and_inference_code_sha256_required": true,
+    "commercial_license_witness_required": true,
+    "candidate_operating_point_is_separate_versioned_artifact": true,
+    "current_candidates_may_not_select_model_or_operating_point": true,
+    "ToxinPred_or_generic_sequence_label_counts_as_cell_assay": false,
+    "formal_safety_gate_requires_independent_cell_evidence_not_model_score_alone": true
+  },
+  "decision": {
+    "outcome": "prospective_skin_cell_cytotoxicity_contract_frozen_measurements_pending",
+    "measurements_collected": false,
+    "model_trained": false,
+    "candidate_operating_point_created": false,
+    "formal_science_run_submitted": false,
+    "next_action": "qualify_cell_use_and_data_rights_then_run_blinded_reference_peptide_pilot_across_primary_keratinocyte_and_fibroblast_donor_lots"
+  },
+  "acceptance_artifacts": {
+    "cell_line_exposure_concentration_and_control_matrix_sha256": "5e39123801b4d80a5e30a0930de3784e0fe851e9186741c7e5a1797979c462f1",
+    "raw_viability_membrane_damage_and_censoring_schema_sha256": "012e22a30583990a5abe5a1075ba714ad16a75b82b15d440b501733a4555a441",
+    "leakage_safe_reference_and_candidate_blinding_plan_sha256": "f999ece730b8d330ea638ed25b69e7980973f732e74037200e21a5e6ff3c08b1",
+    "cytotoxicity_model_card_and_qualification_contract_sha256": "be018e19dcd7648e2a1687bb87e679a240630db62cf0bc0da9c86259d0ba8df4"
+  }
+}

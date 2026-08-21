@@ -2347,3 +2347,20 @@ prospective blind test。模型必须报告透明 descriptor baseline、条件�
 视图；全局 AMP/not-AMP 分类器不得成为安全硬门，只能作为非加权 Pareto 轴。合同 witness 为
 `config/enterprise/amp_likeness_reference_model_contract_v39.json`；当前尚未取得训练记录、训练模型或创建阈值。
 下一 CPU 任务转为 prospective mammalian cytotoxicity assay/model 合同，继续补安全域而不消耗结构 GPU。
+
+### 2026-08-21 前瞻性哺乳动物细胞毒性合同
+
+皮肤适用安全端点冻结为成人原代人表皮角质形成细胞 HEKa（ATCC PCS-200-011）和成人原代人真皮
+成纤维细胞 HDFa（ATCC PCS-201-012）的相互隔离浓度-时间响应；每种细胞至少 3 个独立 donor lot、
+至少 2 个实验日，每条件 3 个技术重复。浓度为 0.5–256 µM 两倍梯度，暴露 1/4/24/72 h。
+永生化或肿瘤细胞系与 3D skin model 只能作 bridge，不能替代两个原代主端点，也不能与主端点混池。
+
+ATP 活细胞信号、胞外 LDH 膜损伤、自动 live/dead 计数与形态图像必须正交保存，禁止压成一个 toxicity
+分数；代谢信号本身不能证明细胞存活。每个浓度都需无细胞肽干扰空白，并配 untreated、vehicle、最大裂解、
+staurosporine 和 medium background controls。干扰的 readout 标为 invalid，不能插补为安全。CC10/CC50
+超出 0.5–256 µM 范围时保存左右删失；失败批次与有因复测都保留。
+
+当前 773 条候选继续只作 assay/model lock 后盲测，不参与训练、校准、模型/split/operating-point 选择；
+ToxinPred 或通用序列标签不能算作 cell assay 证据。正式安全门最终需要独立细胞实验，而不是模型分数单独决定。
+合同 witness 为 `config/enterprise/prospective_mammalian_cytotoxicity_contract_v39.json`，当前没有新增细胞测量、
+模型或候选阈值。下一 CPU 任务转为 skin pathogen/commensal selectivity assay/model 合同。

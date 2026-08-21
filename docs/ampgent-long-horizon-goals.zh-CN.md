@@ -701,3 +701,13 @@ shuffle、未实验蛋白片段和无 AMP 注释条目不能进入主负类，�
 OOD；全局 AMP/not-AMP 预测不得成为安全硬门，只能进入非加权 Pareto。当前 checkpoint 只冻结
 `config/enterprise/amp_likeness_reference_model_contract_v39.json`，没有新训练数据、模型或正式 science run。
 下一独立任务转为 prospective mammalian cytotoxicity assay/model 合同。
+
+2026-08-21 v39 哺乳动物细胞毒性合同追加：皮肤安全主面板固定为成人原代 HEKa 角质形成细胞与
+成人原代 HDFa 真皮成纤维细胞，各至少 3 个 donor lot、2 个实验日，覆盖 0.5–256 µM 和 1/4/24/72 h。
+永生化/肿瘤细胞和 3D 皮肤模型只能作独立 bridge，不能替代主面板。ATP、LDH、live/dead cell count 与
+形态必须分开保存；单一代谢读出不能证明安全，肽的发光/吸光/荧光干扰也不能插补成低毒。
+
+当前 773 条候选只在 assay/model lock 后盲测，不参与模型、拆分、校准或 operating point。ToxinPred 等
+通用序列标签明确不等于细胞实验，正式安全门需要独立的条件化细胞证据。该 checkpoint 只冻结
+`config/enterprise/prospective_mammalian_cytotoxicity_contract_v39.json`，尚无新湿实验结果。
+下一独立任务转为皮肤 pathogen/commensal selectivity 合同，补齐“杀病原、保共生”的产品端点。
