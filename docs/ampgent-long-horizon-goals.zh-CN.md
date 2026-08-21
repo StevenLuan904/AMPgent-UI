@@ -652,3 +652,11 @@ task id，不能用模糊总分。只有声明的哈希化验收产物全部形�
 重叠 167 条、与 independent 重叠 32 条，且后者有 6 个标签冲突。该负结果触发预注册 stop
 condition，未执行会被训练泄漏污染的校准，也未降低安全门。下一实验必须从 Hemolytik/DBAASP
 等不同数据谱系中筛选可商业执行、可复算且有独立校准/OOD 的模型；在此之前溶血域仍不满足企业门。
+
+2026-08-21 v39 第二溶血证据族资格筛选追加：已审计 BERT-HemoPep60、HemoPI、MLpeptide、
+HemoNet、PeptideBERT、HAPPENN、tAMPer 与 Hemolytik2 八个高优先级公开候选。没有候选同时
+通过独立数据谱系、商业内部使用权、不可变权重、可复算概率和 sequence-first 兼容性；因此不运行
+会重复计算同源证据的 benchmark，不放宽安全门，也不提交正式 science run。下一关键路径改为
+前瞻性独立 RBC 溶血实验与模型合同：冻结物种/供体/浓度/时间/读出、原始测量与删失 schema、
+数据所有权、既有数据库序列排除以及预注册 train/calibration/OOD 拆分。当前候选只能用于最终
+盲测，不能参与安全阈值拟合。

@@ -2252,3 +2252,17 @@ Macrel 1.6.1 的固定训练代码和官方数据入口证明其 `Hemo.onnx` 直
 训练泄漏污染的 Macrel 校准。Macrel 不计为第二个独立溶血证据源，也不进入候选硬门；完整来源、
 哈希和重叠集合见 `config/enterprise/macrel_hemopi_lineage_overlap_witness_v39.json`。下一动作切换为
 真正不同训练数据族的第二溶血模型资格筛选，不提交正式 science run。
+
+### 2026-08-21 第二溶血证据族资格筛选
+
+对 BERT-HemoPep60、HemoPI 系列、MLpeptide、HemoNet、PeptideBERT、HAPPENN、tAMPer 和
+Hemolytik2 八个高优先级公开候选完成主来源与固定版本审计，没有候选同时满足独立训练谱系、
+商业内部执行、不可变权重、可复算概率输出和 sequence-first 兼容性。主要阻断是重复使用
+DBAASP/Hemolytik/HemoPI 数据族，或缺许可证、可部署权重/概率运行时；tAMPer 还要求先预测
+结构。该结论是资格筛选的负证据，不是对所有未来模型的穷尽性断言，也不得降低现有溶血安全门。
+冻结 witness 为 `config/enterprise/independent_hemolysis_second_family_triage_v39.json`。
+
+下一项可验收任务改为冻结前瞻性独立 RBC 溶血实验合同：明确红细胞物种/供体、肽浓度、孵育时间、
+读出、阳性/阴性对照、原始值与删失语义、商业内部使用和数据所有权；采集序列必须排除既有
+DBAASP/Hemolytik/HemoPI 记录，并预先冻结 train/calibration/OOD 拆分。当前候选不得用于拟合
+安全阈值。在合同和独立测量形成前，禁止正式 science run，也不为补齐证据数量重复评测同源模型。

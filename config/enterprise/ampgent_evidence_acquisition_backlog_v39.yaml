@@ -179,7 +179,7 @@ tasks:
       safety_gate_lowered: false
       observed_at: "2026-08-21T07:38:00Z"
   - task_id: independent_hemolysis_second_family_triage
-    status: ready
+    status: completed
     priority_tier: 1
     evidence_domains: [hemolysis]
     action_type: independent_model_and_dataset_family_qualification
@@ -195,6 +195,33 @@ tasks:
       - stop_if_all_candidates_share_hemopi_or_toxinpred3_evidence_lineage
       - stop_if_commercial_internal_execution_is_not_confirmed
       - stop_if_model_weights_or_probability_semantics_are_not_reproducible
+    completion:
+      outcome: no_public_candidate_qualified
+      witness_path: config/enterprise/independent_hemolysis_second_family_triage_v39.json
+      witness_sha256: c38f22d4dedf69a6cebd980734deea26937516a1d63f708f13798c143c0e5430
+      candidates_reviewed: 8
+      selected_provider_id: null
+      benchmark_executed: false
+      safety_gate_lowered: false
+      completed_at: "2026-08-21T09:34:00Z"
+  - task_id: prospective_hemolysis_assay_contract_freeze
+    status: ready
+    priority_tier: 1
+    evidence_domains: [hemolysis]
+    action_type: prospective_independent_rbc_assay_and_model_contract
+    prerequisites: [independent_hemolysis_second_family_triage]
+    estimated_cpu_minutes: 90
+    estimated_gpu_minutes: 0
+    acceptance_artifacts:
+      - rbc_species_donor_and_assay_condition_matrix_sha256
+      - prospective_sequence_acquisition_and_overlap_exclusion_plan_sha256
+      - raw_measurement_and_censoring_schema_sha256
+      - train_calibration_ood_split_and_model_card_contract_sha256
+    stop_conditions:
+      - stop_if_measurements_are_derived_from_existing_dbaasp_hemolytik_hemopi_records
+      - stop_if_rbc_species_donor_concentration_time_or_readout_are_missing
+      - stop_if_commercial_internal_use_and_data_ownership_are_not_confirmed
+      - stop_if_current_candidates_are_used_to_fit_the_safety_threshold
   - task_id: novelty_ood_reference_freeze
     status: completed
     priority_tier: 1
