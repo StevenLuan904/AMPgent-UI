@@ -2283,3 +2283,17 @@ DBAASP/Hemolytik/HemoPI 测量不得进入该数据集，当前 AMPgent 候选�
 
 为避免等待外部实验室时停滞，provider/pilot 资格任务保留在 backlog 的下一层，同时当前 CPU 关键
 路径转到血清/蛋白酶稳定性实验合同。正式 science run 仍由企业模型/实验注册门禁止。
+
+### 2026-08-21 血清/蛋白酶稳定性采集合同
+
+稳定性端点已冻结为条件化的 intact-parent 时间曲线，而不是脱离基质和时间的单一“稳定/不稳定”标签。
+主矩阵为 50% 人血清、37°C、10 µM 肽、至少 3 位不混池供体、至少 2 个实验日和 0–1440 分钟时间序列；
+每个供体/时间点 3 个技术重复。trypsin、chymotrypsin 与 human neutrophil elastase 仅作为相互隔离的
+机制诊断 lane，必须固定供应商、批次、活性、buffer、pH 和时间点，不能与人血清端点合并。
+
+LC–MS 必须以保留时间、前体/产物离子条件确认 intact parent，并相对内部标准保存 t0 归一化曲线；
+fragment m/z、保留时间和归属单独保存，fragment 信号不得计入 intact parent。低于 LLOQ 和在末时间点
+仍未达到半衰期均保留左右删失，失败批次与有因复测同时保存。当前 773 条候选完全排除于训练、校准、
+模型选择、split 和 operating point，只能在 assay/model lock 后盲测。合同 witness 为
+`config/enterprise/serum_protease_stability_contract_v39.json`；它没有产生湿实验测量、模型或候选门。
+下一 CPU 任务转为溶解度/聚集端点合同，稳定性 provider/reference pilot 保留为需要数据权利与 QC 的后续项。

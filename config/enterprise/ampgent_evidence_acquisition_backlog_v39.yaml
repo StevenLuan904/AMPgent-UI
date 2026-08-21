@@ -233,7 +233,7 @@ tasks:
       safety_gate_lowered: false
       completed_at: "2026-08-21T11:36:00Z"
   - task_id: serum_protease_stability_contract_freeze
-    status: ready
+    status: completed
     priority_tier: 1
     evidence_domains: [serum_and_protease_stability]
     action_type: prospective_stability_assay_and_model_contract
@@ -250,6 +250,55 @@ tasks:
       - stop_if_intact_parent_peptide_cannot_be_distinguished_from_fragments
       - stop_if_current_candidates_define_the_operating_point
       - stop_if_commercial_internal_use_and_data_ownership_are_not_confirmed
+    completion:
+      outcome: prospective_serum_and_protease_contract_frozen_measurements_pending
+      witness_path: config/enterprise/serum_protease_stability_contract_v39.json
+      witness_sha256: 0c24a8ddb628974811bd8df248fff0a20e3202cf109bd875b0ee8ceb896edc63
+      serum_and_protease_condition_matrix_sha256: c89becb3441b3c0a2c334223dbe056525e591f75544ab473f3005d0cdb7df90e
+      timecourse_lcms_measurement_and_censoring_schema_sha256: 8664221205adf1504c9dc1ada4b8ba39b0759ed1b03c783a5bc654ecb8540cb6
+      leakage_safe_reference_and_candidate_blinding_plan_sha256: 3761400017f8852afc88b43e4d7f2f92e9eaca0292738d633fb024f87e7fcf96
+      stability_model_card_and_qualification_contract_sha256: 893eb15da9d1fa46a4f12e2fd10fbf76a2e9aeeb29ccefe360d5bfac67a34854
+      measurements_collected: false
+      model_trained: false
+      candidate_operating_point_created: false
+      formal_science_run_submitted: false
+      completed_at: "2026-08-21T13:38:00Z"
+  - task_id: solubility_aggregation_contract_freeze
+    status: ready
+    priority_tier: 1
+    evidence_domains: [solubility_and_aggregation]
+    action_type: prospective_solubility_and_aggregation_assay_and_model_contract
+    prerequisites: []
+    estimated_cpu_minutes: 90
+    estimated_gpu_minutes: 0
+    acceptance_artifacts:
+      - pH_ionic_strength_concentration_condition_matrix_sha256
+      - raw_solubility_turbidity_and_particle_measurement_schema_sha256
+      - leakage_safe_reference_and_candidate_blinding_plan_sha256
+      - aggregation_model_card_and_qualification_contract_sha256
+    stop_conditions:
+      - stop_if_pH_ionic_strength_temperature_or_concentration_are_missing
+      - stop_if_precipitation_turbidity_and_reversible_self_association_are_collapsed
+      - stop_if_current_candidates_define_the_operating_point
+      - stop_if_commercial_internal_use_and_data_ownership_are_not_confirmed
+  - task_id: serum_protease_stability_provider_and_pilot_qualification
+    status: ready
+    priority_tier: 2
+    evidence_domains: [serum_and_protease_stability]
+    action_type: external_or_internal_lab_provider_and_reference_pilot
+    prerequisites: [serum_protease_stability_contract_freeze]
+    estimated_cpu_minutes: 180
+    estimated_gpu_minutes: 0
+    acceptance_artifacts:
+      - qualified_provider_and_data_rights_witness_sha256
+      - blinded_reference_peptide_lcms_timecourse_bundle_sha256
+      - donor_batch_recovery_and_censoring_QC_report_sha256
+      - candidate_unblinding_authorization_decision_sha256
+    stop_conditions:
+      - stop_if_provider_cannot_grant_raw_data_and_derivative_model_rights
+      - stop_if_intact_parent_and_fragment_identity_cannot_be_separated
+      - stop_if_reference_pilot_fails_predeclared_QC
+      - stop_if_current_candidates_are_unblinded_before_pilot_acceptance
   - task_id: prospective_hemolysis_assay_provider_and_pilot_qualification
     status: ready
     priority_tier: 2

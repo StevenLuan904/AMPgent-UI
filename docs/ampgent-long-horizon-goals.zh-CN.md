@@ -667,3 +667,10 @@ HemoNet、PeptideBERT、HAPPENN、tAMPer 与 Hemolytik2 八个高优先级公开
 完全排除于训练、校准、模型选择和阈值拟合，只能在实验与模型锁定后盲测，因此不会因预设一个外部
 阈值而把候选池提前清空。该 checkpoint 只冻结采集/建模合同，尚无新湿实验安全证据。外部 provider
 pilot 作为后续任务保留；等待期间优先补血清/蛋白酶稳定性证据域，避免研究循环停滞。
+
+2026-08-21 v39 稳定性合同追加：血清稳定性主端点为至少 3 位独立人供体、至少 2 个实验日的
+50% serum intact-parent LC–MS 时间曲线；供体不可混池。trypsin、chymotrypsin 和 human neutrophil
+elastase 仅作独立机制诊断，不与 serum endpoint 合并。降解 fragment 单独持久化，不能冒充 intact parent；
+低于 LLOQ 和未达到半衰期保留删失。当前 773 条候选只允许在 assay/model lock 后盲测，不参与模型、
+split、校准或 operating point，因此该合同不会提前清空候选池。当前仍没有新稳定性湿实验或正式候选门；
+下一独立任务转为溶解度/聚集条件矩阵与原始测量合同，同时保留稳定性 provider/pilot 的外部执行路径。

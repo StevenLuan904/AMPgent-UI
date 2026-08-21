@@ -1,0 +1,189 @@
+{
+  "schema_version": "ampgent.serum-protease-stability-contract.1",
+  "contract_id": "serum_protease_stability_contract_v39_20260821",
+  "frozen_at": "2026-08-21T13:38:00Z",
+  "primary_sources": [
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC8301568/",
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC2937036/",
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC10322702/",
+    "https://www.ema.europa.eu/en/ich-m10-bioanalytical-method-validation-scientific-guideline"
+  ],
+  "source_scope": {
+    "purpose": "prospective_sequence_first_peptide_stability_acquisition_and_model_qualification",
+    "interpretation": "published AMP and peptide methods justify intact-parent time courses and LC-MS fragment separation; ICH M10 supplies auditable bioanalytical validation principles; this contract is not a claim of regulatory validation",
+    "measurements_in_this_artifact": false
+  },
+  "serum_and_protease_condition_matrix": {
+    "primary_human_serum_lane": {
+      "species": "Homo sapiens",
+      "matrix": "serum",
+      "serum_fraction_volume_percent": 50,
+      "temperature_c": 37,
+      "peptide_concentration_um": 10,
+      "minimum_independent_donors": 3,
+      "donor_pooling_allowed": false,
+      "minimum_independent_assay_days": 2,
+      "technical_replicates_per_donor_timepoint": 3,
+      "timepoints_minutes": [0, 5, 15, 30, 60, 120, 240, 480, 1440],
+      "quench": "ice_cold_acetonitrile_with_internal_standard_then_protein_precipitation",
+      "primary_readout": "LCMS_intact_parent_relative_to_isotope_or_sequence_internal_standard",
+      "required_controls": [
+        "buffer_only_no_serum",
+        "heat_inactivated_serum_mechanism_control",
+        "protease_stable_reference_peptide",
+        "protease_labile_reference_peptide",
+        "matrix_blank",
+        "zero_time_recovery_control"
+      ],
+      "heat_inactivated_serum_may_define_gate": false,
+      "donor_level_curves_retained": true
+    },
+    "purified_protease_diagnostic_lanes": [
+      {
+        "enzyme": "trypsin",
+        "supplier": "required_at_execution",
+        "lot": "required_at_execution",
+        "activity_units_per_ml": "required_and_frozen_at_execution",
+        "buffer": "50_mM_Tris_150_mM_NaCl",
+        "pH": 7.5,
+        "temperature_c": 37,
+        "peptide_concentration_um": 10,
+        "timepoints_minutes": [0, 5, 15, 30, 60, 120, 240]
+      },
+      {
+        "enzyme": "chymotrypsin",
+        "supplier": "required_at_execution",
+        "lot": "required_at_execution",
+        "activity_units_per_ml": "required_and_frozen_at_execution",
+        "buffer": "50_mM_Tris_150_mM_NaCl_10_mM_CaCl2",
+        "pH": 7.8,
+        "temperature_c": 37,
+        "peptide_concentration_um": 10,
+        "timepoints_minutes": [0, 5, 15, 30, 60, 120, 240]
+      },
+      {
+        "enzyme": "human_neutrophil_elastase",
+        "supplier": "required_at_execution",
+        "lot": "required_at_execution",
+        "activity_units_per_ml": "required_and_frozen_at_execution",
+        "buffer": "100_mM_Tris_500_mM_NaCl",
+        "pH": 7.5,
+        "temperature_c": 37,
+        "peptide_concentration_um": 10,
+        "timepoints_minutes": [0, 5, 15, 30, 60, 120, 240]
+      }
+    ],
+    "serum_and_purified_protease_endpoints_may_be_pooled": false,
+    "condition_specific_curves_and_half_lives_required": true,
+    "assay_randomization": "candidate_reference_and_timepoint_blocks_randomized_with_controls_in_each_batch"
+  },
+  "timecourse_lcms_measurement_and_censoring_schema": {
+    "required_observation_fields": [
+      "sequence_sha256",
+      "material_lot",
+      "purity_percent",
+      "molecular_weight_g_mol",
+      "matrix_or_enzyme_lane",
+      "donor_id_pseudonym",
+      "serum_supplier_and_lot",
+      "enzyme_supplier_lot_and_activity",
+      "assay_day",
+      "batch_id",
+      "timepoint_minutes",
+      "technical_replicate",
+      "raw_parent_peak_area",
+      "raw_internal_standard_peak_area",
+      "parent_to_internal_standard_ratio",
+      "intact_parent_fraction_of_t0_unclipped",
+      "fragment_mz_retention_time_and_assignment",
+      "lloq",
+      "uloq",
+      "qc_status",
+      "qc_reason_codes"
+    ],
+    "intact_parent_identity": "retention_time_plus_precursor_and_product_ion_criteria_frozen_per_sequence",
+    "intact_parent_and_fragments_stored_separately": true,
+    "fragment_signal_counts_as_intact_parent": false,
+    "raw_values_are_immutable": true,
+    "negative_or_above_one_normalized_values_are_preserved": true,
+    "failed_runs_and_retests_both_retained": true,
+    "recovery_and_matrix_effect_validation_required": true,
+    "freeze_thaw_and_processed_sample_stability_validation_required": true,
+    "censoring_rules": {
+      "parent_below_lloq": "left_censored_at_lloq_not_zero",
+      "parent_above_uloq": "right_censored_at_uloq_pending_validated_dilution",
+      "half_life_not_reached": "right_censored_above_last_timepoint",
+      "half_life_before_first_nonzero_timepoint": "left_censored_below_first_nonzero_timepoint",
+      "nonmonotone_curve": "retain_all_points_and_flag_model_misfit_no_manual_relabel"
+    },
+    "retest_policy": {
+      "assignable_causes_only": true,
+      "allowed_reasons": ["batch_QC_failure", "instrument_failure", "documented_pipetting_failure", "documented_matrix_interference"],
+      "unexpected_candidate_result_is_not_assignable_cause": true,
+      "original_and_retest_link_required": true
+    }
+  },
+  "reference_and_candidate_blinding_plan": {
+    "prospective_measurements_only": true,
+    "reference_panel_roles": ["fast_degradation_control", "slow_degradation_control", "composition_and_length_controls", "D_amino_acid_or_cyclized_mechanism_controls"],
+    "reference_peptides_cannot_be_selected_from_current_ampgent_candidates": true,
+    "current_773_candidates_excluded_from_fitting": true,
+    "current_773_candidates_excluded_from_calibration": true,
+    "current_773_candidates_excluded_from_model_selection": true,
+    "current_773_candidates_excluded_from_operating_point_selection": true,
+    "current_773_candidates_reserved_for_blind_test_only": true,
+    "candidate_identity_unblinded_before_assay_and_model_lock": false,
+    "exact_sequence_overlap_exclusion": true,
+    "sequence_family_grouping": {"maximum_global_identity": 0.4, "minimum_bidirectional_coverage": 0.8},
+    "required_data_rights": {
+      "commercial_internal_use": true,
+      "raw_measurement_ownership_or_perpetual_license": true,
+      "derivative_model_training": true,
+      "derived_model_weights_internal_use": true,
+      "audit_and_reanalysis": true
+    }
+  },
+  "split_contract": {
+    "partition_roles": ["train", "calibration", "sequence_family_OOD", "prospective_blind_candidate_test"],
+    "exact_sequence_groups_disjoint": true,
+    "design_campaign_groups_disjoint": true,
+    "maximum_cross_split_global_identity": 0.4,
+    "minimum_bidirectional_alignment_coverage": 0.8,
+    "donors_stratified_not_pooled": true,
+    "assay_day_batch_and_material_lot_effects_audited": true,
+    "current_candidates_used_to_define_split": false,
+    "current_candidates_used_to_define_operating_point": false,
+    "blind_candidate_results_may_refit_model": false,
+    "split_assignment_frozen_before_candidate_unblinding": true
+  },
+  "model_card_contract": {
+    "primary_endpoint": "conditioned_intact_parent_survival_curve",
+    "derived_endpoints": ["serum_half_life_with_censoring", "condition_specific_parent_fraction", "protease_specific_half_life", "fragment_map"],
+    "single_global_stable_unstable_label_allowed": false,
+    "serum_and_purified_protease_predictions_separate": true,
+    "donor_matrix_enzyme_and_assay_condition_covariates_required": true,
+    "censoring_aware_estimation_required": true,
+    "uncertainty_interval_required": true,
+    "calibration_and_sequence_family_OOD_report_required": true,
+    "transparent_descriptor_baseline_required": true,
+    "content_addressed_runtime_required": true,
+    "training_data_manifest_sha256_required": true,
+    "commercial_license_witness_required": true,
+    "candidate_operating_point_is_separate_versioned_artifact": true,
+    "current_candidates_may_not_select_model_or_operating_point": true
+  },
+  "decision": {
+    "outcome": "prospective_serum_and_protease_contract_frozen_measurements_pending",
+    "measurements_collected": false,
+    "model_trained": false,
+    "candidate_operating_point_created": false,
+    "formal_science_run_submitted": false,
+    "next_action": "qualify_data_rights_and_run_blinded_reference_peptide_pilot_before_current_candidate_unblinding"
+  },
+  "acceptance_artifacts": {
+    "serum_and_protease_condition_matrix_sha256": "c89becb3441b3c0a2c334223dbe056525e591f75544ab473f3005d0cdb7df90e",
+    "timecourse_lcms_measurement_and_censoring_schema_sha256": "8664221205adf1504c9dc1ada4b8ba39b0759ed1b03c783a5bc654ecb8540cb6",
+    "leakage_safe_reference_and_candidate_blinding_plan_sha256": "3761400017f8852afc88b43e4d7f2f92e9eaca0292738d633fb024f87e7fcf96",
+    "stability_model_card_and_qualification_contract_sha256": "893eb15da9d1fa46a4f12e2fd10fbf76a2e9aeeb29ccefe360d5bfac67a34854"
+  }
+}
