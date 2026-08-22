@@ -1,0 +1,94 @@
+{
+  "schema_version": "ampgent.serum-protease-stability-provider-rfq.1",
+  "rfq_id": "serum_protease_stability_provider_rfq_v39_20260823",
+  "frozen_at": "2026-08-22T16:15:57Z",
+  "primary_sources": [
+    "https://www.evotec.com/solutions/drug-discovery-preclinical-development/cyprotex-adme-tox-solutions/adme-pk/drug-metabolism/plasma-stability",
+    "https://www.genscript.com/RNAi-drug-stability-services.html",
+    "https://www.criver.com/products-services/discovery-services/discovery-facilities/budapest-and-szeged-hungary",
+    "https://clsi.org/shop/standards/c64/"
+  ],
+  "frozen_contract_binding": {
+    "contract_path": "config/enterprise/serum_protease_stability_contract_v39.json",
+    "contract_sha256": "0c24a8ddb628974811bd8df248fff0a20e3202cf109bd875b0ee8ceb896edc63",
+    "primary_matrix": "50_percent_unpooled_human_serum",
+    "minimum_independent_donors": 3,
+    "minimum_independent_assay_days": 2,
+    "peptide_concentration_um": 10,
+    "temperature_c": 37,
+    "maximum_time_minutes": 1440,
+    "primary_readout": "LCMS_intact_parent_relative_to_internal_standard",
+    "diagnostic_proteases": ["trypsin", "chymotrypsin", "human_neutrophil_elastase"],
+    "protocol_change_requires_new_version": true
+  },
+  "provider_capability_screen": [
+    {
+      "provider_id": "Evotec_Cyprotex",
+      "public_capability_status": "multi_donor_plasma_stability_LCMSMS_and_parent_remaining_publicly_demonstrated",
+      "publicly_demonstrated_capabilities": ["plasma_from_multiple_donors", "0_to_120_minute_timecourse", "LCMSMS", "parent_remaining_and_half_life", "optional_metabolite_profiling"],
+      "unconfirmed_requirements": ["serum_not_plasma_primary_matrix", "three_unpooled_human_donors", "two_assay_days", "10_uM_and_24_hour_timecourse", "peptide_specific_intact_parent_fragment_identity", "three_frozen_protease_lanes", "raw_data_and_derivative_model_rights"],
+      "qualification_status": "rfq_required_exact_serum_peptide_protocol_and_rights_unconfirmed"
+    },
+    {
+      "provider_id": "GenScript",
+      "public_capability_status": "serum_matrix_timecourse_LCMSMS_parent_and_metabolite_analysis_publicly_demonstrated",
+      "publicly_demonstrated_capabilities": ["serum_or_selected_biological_matrix", "custom_timepoints", "LCMSMS_quantitation", "remaining_parent_and_metabolite_identification"],
+      "unconfirmed_requirements": ["50_percent_human_serum", "three_unpooled_donors", "two_assay_days", "internal_standard_and_recovery_QC", "three_frozen_protease_lanes", "immutable_raw_peak_and_fragment_delivery", "raw_data_and_derivative_model_rights"],
+      "qualification_status": "rfq_required_donor_protocol_QC_raw_delivery_and_rights_unconfirmed"
+    },
+    {
+      "provider_id": "Charles_River_Budapest_Szeged",
+      "public_capability_status": "multispecies_plasma_stability_and_peptide_LCMSMS_quantification_publicly_demonstrated",
+      "publicly_demonstrated_capabilities": ["plasma_stability_in_multiple_species", "peptide_LCMSMS_quantification", "validated_LCMS_method_development"],
+      "unconfirmed_requirements": ["human_serum_primary_lane", "unpooled_donor_curves", "24_hour_intact_parent_timecourse", "fragment_map", "three_frozen_protease_lanes", "candidate_blinding", "raw_data_and_derivative_model_rights"],
+      "qualification_status": "rfq_required_serum_peptide_specific_execution_and_rights_unconfirmed"
+    }
+  ],
+  "mandatory_rfq_requirements": {
+    "exact_frozen_matrix_donor_timecourse_binding_required": true,
+    "donor_pooling_allowed": false,
+    "serum_supplier_lot_and_donor_pseudonym_required": true,
+    "intact_parent_and_fragments_stored_separately": true,
+    "isotope_or_sequence_internal_standard_required": true,
+    "raw_peak_areas_calibration_recovery_matrix_effect_and_censoring_required": true,
+    "failed_runs_retests_and_assignable_causes_retained": true,
+    "protease_supplier_lot_and_activity_units_frozen_at_execution": true,
+    "current_candidates_allowed_before_pilot_acceptance": false
+  },
+  "data_rights_acceptance": {
+    "required_executed_terms": {
+      "client_raw_measurement_ownership_or_perpetual_commercial_internal_license": "contract_required_not_yet_confirmed",
+      "normalized_derivative_dataset_creation_and_retention": "contract_required_not_yet_confirmed",
+      "derivative_model_training_and_internal_weights": "contract_required_not_yet_confirmed",
+      "audit_reanalysis_and_regulatory_use": "contract_required_not_yet_confirmed",
+      "client_sequence_confidentiality_non_use_and_subcontractor_flowdown": "contract_required_not_yet_confirmed"
+    },
+    "public_web_capability_description_satisfies_executed_rights": false,
+    "purchase_order_alone_satisfies_derivative_model_rights": false
+  },
+  "blinded_reference_pilot": {
+    "reference_roles": ["fast_degradation_control", "slow_degradation_control", "composition_and_length_controls", "D_amino_acid_or_cyclized_mechanism_control"],
+    "current_773_candidates_included": false,
+    "candidate_identity_unblinded": false,
+    "pilot_acceptance_requires": ["three_unpooled_donor_curves_on_two_assay_days_pass", "intact_parent_identity_recovery_and_matrix_effect_QC_pass", "left_and_right_censoring_replay_pass", "trypsin_chymotrypsin_and_HNE_lanes_pass", "immutable_raw_and_fragment_delivery_hash_pass", "executed_data_and_derivative_model_rights_pass"]
+  },
+  "decision": {
+    "task_status": "blocked",
+    "public_capability_screen_complete": true,
+    "exact_provider_qualified": false,
+    "data_and_derivative_model_rights_authorized": false,
+    "rfq_sent": false,
+    "purchase_or_contract_committed": false,
+    "reference_pilot_started": false,
+    "candidate_unblinding_authorized": false,
+    "formal_science_run_submitted": false,
+    "blocker": "external_provider_written_protocol_rights_procurement_and_reference_pilot_required",
+    "next_action": "obtain_procurement_authority_then_send_the_frozen_RFP_without_disclosing_current_candidate_sequences"
+  },
+  "progress_artifacts": {
+    "provider_gap_matrix_sha256": "29b2b36c9dfd9baf6ca6e3a0ed3e74e41aef740556951759a7d68263d167c42c",
+    "frozen_serum_protease_rfq_sha256": "0c16c759b763cb0792b3118acadf78b57630bde5479b81665cade8b82c75044d",
+    "data_and_derivative_model_rights_addendum_sha256": "94a1b1aaf98eead6e8b0704b921042d329f8bdab7e043f39c38be15388633705",
+    "blinded_reference_pilot_acceptance_plan_sha256": "64c276e70a975f6497c048dfa358771bfb5d070a046533514407896d5c91a30c"
+  }
+}

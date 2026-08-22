@@ -5,6 +5,11 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from pepagent.provenance.hashing import sha256_json
+from pepagent.v38_science_execution import (
+    GeneratorCell,
+    V38SequenceExecutionContract,
+    build_default_v38_sequence_contract,
+)
 
 
 class FrozenModel(BaseModel):
@@ -71,6 +76,27 @@ class ExplorationBatchObservation(FrozenModel):
     new_pareto_extensions: int = Field(ge=0)
 
 
+class V39ExplorationRoundBinding(FrozenModel):
+    """Bind one independently reserved science run to one frozen exploration round."""
+
+    schema_version: Literal["ampgent.sequence-space-exploration-round.1"] = (
+        "ampgent.sequence-space-exploration-round.1"
+    )
+    policy_version: Literal["v39.0.0"] = "v39.0.0"
+    exploration_contract_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    round_ordinal: int = Field(ge=0)
+    maximum_rounds: int = Field(ge=1)
+    expected_raw_occurrences: int = Field(gt=0)
+    execution_contract_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    independent_frozen_run_identity_required: Literal[True] = True
+
+    @model_validator(mode="after")
+    def validate_round(self) -> V39ExplorationRoundBinding:
+        if self.round_ordinal >= self.maximum_rounds:
+            raise ValueError("exploration round ordinal exceeds maximum rounds")
+        return self
+
+
 ControllerAction = Literal[
     "continue_diverse_generation",
     "switch_generators_seeds_and_underexplored_families",
@@ -121,3 +147,49 @@ def build_default_v39_exploration_contract() -> SequenceSpaceExplorationContract
         maximum_rounds=4,
         expected_maximum_raw_occurrences=7200,
     )
+
+
+def build_v39_round_execution_contract(
+    contract: SequenceSpaceExplorationContract,
+    *,
+    round_ordinal: int,
+) -> tuple[V39ExplorationRoundBinding, V38SequenceExecutionContract]:
+    """Project one v39 round onto the tested score-all execution contract.
+
+    The projection changes only generator breadth and seeds. Metric identities and score-all
+    semantics remain inherited from the executable sequence contract. The returned binding is
+    included in the Temporal request so an 18-cell run cannot be mistaken for historical v38.
+    """
+
+    if round_ordinal < 0 or round_ordinal >= contract.maximum_rounds:
+        raise ValueError("exploration round ordinal is outside the frozen contract")
+    round_cells = tuple(
+        cell for cell in contract.cells if cell.round_ordinal == round_ordinal
+    )
+    if len(round_cells) != 18:
+        raise ValueError("v39 exploration round requires exactly eighteen generator cells")
+    base = build_default_v38_sequence_contract()
+    execution = V38SequenceExecutionContract(
+        cells=tuple(
+            GeneratorCell(
+                ordinal=cell.cell_ordinal,
+                generator_id=cell.generator_id,
+                seed=cell.seed,
+                requested_proposals=cell.requested_occurrences,
+            )
+            for cell in round_cells
+        ),
+        expected_raw_occurrences=sum(
+            cell.requested_occurrences for cell in round_cells
+        ),
+        metric_plugins=base.metric_plugins,
+        required_sequence_metrics=base.required_sequence_metrics,
+    )
+    binding = V39ExplorationRoundBinding(
+        exploration_contract_sha256=contract.sha256(),
+        round_ordinal=round_ordinal,
+        maximum_rounds=contract.maximum_rounds,
+        expected_raw_occurrences=execution.expected_raw_occurrences,
+        execution_contract_sha256=execution.sha256(),
+    )
+    return binding, execution

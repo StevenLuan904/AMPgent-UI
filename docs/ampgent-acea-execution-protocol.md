@@ -1,5 +1,19 @@
 # AMPgent AceA 执行协议与足迹账本
 
+> 2026-08-23 immediate-loop checkpoint：enterprise registry 仍不授权 formal science run。耐药演化
+> provider 的本地可验证工作已穷尽并因采购/书面权利/reference pilot 外部依赖转为 blocked；随后完成
+> serum/protease stability 的三家官方 provider 能力筛查与冻结 RFQ witness，确认无人公开满足完整 donor、
+> intact-parent/fragment、protease lane、原始数据和衍生模型权利合同，故同样 blocked。候选未解盲、未送样、
+> 未提交 run。随后已完成 solubility/aggregation 三家 provider 的公开能力筛查与冻结 RFQ witness，
+> 同样因 exact protocol、书面数据权利、采购和 reference pilot 外部依赖而 blocked。当前确定性 backlog
+> 已无本机可闭合的 ready 项；下一独立工程动作恢复为 v39 Temporal 多轮探索执行器与测试，但在 enterprise
+> registry 门关闭期间不得提交正式 science run。
+
+> 2026-08-23 Temporal bridge checkpoint：已实现并测试 v39 单轮 18-cell/1800-occurrence 到现有 score-all
+> workflow 的哈希绑定投影；v38 无 binding 请求继续 fail-closed 于 9/900。定向测试 18 passed、Ruff clean。
+> 外层最多四轮的独立 run 调度、durable-yield checkpoint、runtime/release 冻结和真实 launcher smoke 尚未
+> 完成；enterprise registry 仍关闭，未提交 science run。
+
 状态：`active`
 维护者：执行本项目的 agent
 最后核对日期：2026-08-12（Asia/Shanghai）

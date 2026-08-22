@@ -812,3 +812,32 @@ developability Pareto，并与未来真实 serum/protease assay 保持证据域�
 occurrence 证据。每批必须报告 raw、valid unique、历史新颖、序列家族、安全合格、活性支持和新增
 Pareto extension。连续两批无历史新颖性时切换生成器/seed/欠采样家族；有新颖性但无前沿扩展时转为
 保留父本的知识引导 refinement；预算耗尽时冻结 successor contract，禁止静默停止或降低安全门换产量。
+
+2026-08-23 v39 血清/蛋白酶 provider 资格追加：确定性 evidence scheduler 复核发现耐药演化
+provider 任务的公开能力与冻结 RFP 已完成，剩余采购授权、书面生物安全/基因组数据/衍生模型权利和
+reference pilot 均为外部依赖，因此该任务转为 `blocked`，候选序列保持零披露。调度器随后立即领取
+serum/protease stability provider 任务，而不是等待下一次定时唤醒。
+
+Cyprotex/Evotec、GenScript 与 Charles River 的官方资料分别证明了多 donor plasma stability、serum
+matrix time course、peptide LC–MS/MS 等部分能力，但没有一家公开证明满足冻结的 50% human serum、
+3 位不混池 donor、2 assay days、24 h intact-parent/fragment 分离、trypsin/chymotrypsin/HNE 三 lane、
+不可变原始交付及衍生模型权利。新 witness
+`config/enterprise/serum_protease_stability_provider_rfq_v39.json` 冻结 exact gap、RFQ、权利 addendum
+和盲法 reference pilot 验收；provider、权利、采购和 pilot 均未资格化，773 条候选未解盲。该任务因此
+转为 `blocked`，调度器立即切换到 solubility/aggregation provider qualification。
+
+同一 immediate loop 已继续完成 solubility/aggregation provider 初筛：Solvias、Eurofins 与 MtoZ 的
+官方资料覆盖 peptide solubility、turbidity、DLS/particle 或 LC/LC–MS 的不同子集，但公开资料均未
+证明完整 pH×盐×浓度×温度×时间矩阵、未过滤 DLS/浊度、固定离心后 intact-parent、十倍稀释可逆性、
+两实验日及原始数据/衍生模型权利。witness
+`config/enterprise/solubility_aggregation_provider_rfq_v39.json` 已冻结 gap、RFQ、权利 addendum 与盲法
+pilot 验收；候选继续零披露。该任务也转为 `blocked` 后，确定性 backlog 已无可在本机独立闭合的 ready
+验收任务；剩余证据门均需要采购/书面许可/真实 reference pilot。此状态不授权 formal science run，
+但允许继续独立完成 v39 Temporal 多轮探索执行器与测试，供外部门解除后使用。
+
+同一 2026-08-23 immediate loop 继续完成首个 Temporal 接线增量：
+`build_v39_round_execution_contract` 将任一冻结 round 精确投影为 18 cells、1800 raw occurrences、12 metrics
+的 score-all execution contract，并生成含 exploration-contract SHA、round ordinal、最大轮数和 execution-
+contract SHA 的 `V39ExplorationRoundBinding`。现有 workflow 仅在该 binding 验证通过时接受 18/1800；没有
+binding 的历史 v38 请求仍严格限定 9/900。该变更尚未实现四轮外层 child-run 调度、yield checkpoint 或
+exact-once submission，因此不得声称 v39 连续探索已完整接通，也没有提交正式 run。

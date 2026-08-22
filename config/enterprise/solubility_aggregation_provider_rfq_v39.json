@@ -1,0 +1,95 @@
+{
+  "schema_version": "ampgent.solubility-aggregation-provider-rfq.1",
+  "rfq_id": "solubility_aggregation_provider_rfq_v39_20260823",
+  "frozen_at": "2026-08-22T16:15:57Z",
+  "primary_sources": [
+    "https://www.solvias.com/service/analytical-characterization-services/peptides-characterization-services/",
+    "https://www.eurofins.com/en/biopharma-services/cdmo/biologics/integrated-modality-support/peptides/",
+    "https://www.mtoz-biolabs.com/peptide-solubility-testing-service.html",
+    "https://www.genscript.com/peptide_solubility_testing.html"
+  ],
+  "frozen_contract_binding": {
+    "contract_path": "config/enterprise/solubility_aggregation_contract_v39.json",
+    "contract_sha256": "d1689ee2b71a77954544352edcc7c80fcdc75dd4341c4271ec89ebcf17784028",
+    "pH_values": [5.5, 7.4, 8.5],
+    "nacl_mM": [0, 150, 300],
+    "peptide_concentration_um": [10, 50, 100, 250, 500],
+    "temperature_c": [25, 37],
+    "timepoints_hours": [0, 1, 4, 24],
+    "minimum_independent_assay_days": 2,
+    "premeasurement_filtration_allowed": false,
+    "required_orthogonal_lanes": ["unfiltered_turbidity", "unfiltered_DLS_raw_distribution", "fixed_centrifugation_soluble_intact_parent", "ten_fold_dilution_reversibility"],
+    "protocol_change_requires_new_version": true
+  },
+  "provider_capability_screen": [
+    {
+      "provider_id": "Solvias",
+      "public_capability_status": "peptide_solubility_turbidity_DLS_particle_and_LCMS_HPLC_capabilities_publicly_demonstrated",
+      "publicly_demonstrated_capabilities": ["peptide_solubility", "turbidity", "DLS", "light_obscuration", "microflow_imaging", "LCMS", "HPLC"],
+      "unconfirmed_requirements": ["full_frozen_condition_matrix", "unfiltered_measurements", "fixed_centrifugation_soluble_intact_parent", "ten_fold_dilution_reversibility", "two_assay_days", "raw_DLS_distribution_and_count_rate", "raw_data_and_derivative_model_rights"],
+      "qualification_status": "rfq_required_exact_matrix_reversibility_raw_delivery_and_rights_unconfirmed"
+    },
+    {
+      "provider_id": "Eurofins_CDMO",
+      "public_capability_status": "peptide_solubility_aggregation_DLS_particle_and_HRMS_LC_capabilities_publicly_demonstrated",
+      "publicly_demonstrated_capabilities": ["peptide_solubility", "DLS", "microflow_imaging", "light_obscuration", "HRMS_coupled_LC", "stability_method_development"],
+      "unconfirmed_requirements": ["full_pH_salt_concentration_temperature_time_matrix", "unfiltered_turbidity_and_DLS", "fixed_centrifugation_parent_quantitation", "dilution_reversibility", "bridge_matrices", "raw_data_and_derivative_model_rights"],
+      "qualification_status": "rfq_required_exact_peptide_condition_matrix_and_rights_unconfirmed"
+    },
+    {
+      "provider_id": "MtoZ_Biolabs",
+      "public_capability_status": "peptide_turbidity_solubility_with_optional_UV_or_LC_quantitation_publicly_demonstrated",
+      "publicly_demonstrated_capabilities": ["peptide_turbidity_solubility_assay", "aqueous_and_organic_solvent_panel", "optional_UV_or_LC_quantitation", "raw_data_available_on_request"],
+      "unconfirmed_requirements": ["unfiltered_DLS", "raw_particle_distribution_and_count_rate", "fixed_centrifugation_intact_parent", "two_day_timecourse", "ten_fold_dilution_reversibility", "broth_and_skin_bridge_matrices", "executed_raw_data_and_derivative_model_rights"],
+      "qualification_status": "not_qualified_without_DLS_reversibility_and_executed_rights"
+    }
+  ],
+  "mandatory_rfq_requirements": {
+    "exact_frozen_condition_matrix_required": true,
+    "unfiltered_turbidity_and_DLS_required": true,
+    "DLS_count_rate_z_average_PDI_and_raw_distribution_required": true,
+    "fixed_centrifugation_g_and_duration_required": true,
+    "LCMS_or_validated_HPLC_soluble_intact_parent_required": true,
+    "visible_precipitate_and_supernatant_mass_stored_separately": true,
+    "ten_fold_dilution_reversibility_challenge_required": true,
+    "failed_runs_retests_and_assignable_causes_retained": true,
+    "current_candidates_allowed_before_pilot_acceptance": false
+  },
+  "data_rights_acceptance": {
+    "required_executed_terms": {
+      "client_raw_measurement_ownership_or_perpetual_commercial_internal_license": "contract_required_not_yet_confirmed",
+      "raw_DLS_distribution_turbidity_and_chromatogram_delivery": "contract_required_not_yet_confirmed",
+      "normalized_derivative_dataset_creation_and_retention": "contract_required_not_yet_confirmed",
+      "derivative_model_training_and_internal_weights": "contract_required_not_yet_confirmed",
+      "audit_reanalysis_and_regulatory_use": "contract_required_not_yet_confirmed",
+      "client_sequence_confidentiality_non_use_and_subcontractor_flowdown": "contract_required_not_yet_confirmed"
+    },
+    "public_web_capability_description_satisfies_executed_rights": false,
+    "raw_data_available_on_request_satisfies_immutable_delivery": false
+  },
+  "blinded_reference_pilot": {
+    "reference_roles": ["high_solubility_low_aggregation", "low_solubility_precipitating", "reversible_self_association", "persistent_particle_formation", "charge_and_hydrophobicity_controls"],
+    "current_773_candidates_included": false,
+    "candidate_identity_unblinded": false,
+    "pilot_acceptance_requires": ["full_condition_matrix_and_two_assay_days_pass", "unfiltered_turbidity_and_DLS_raw_delivery_pass", "fixed_centrifugation_intact_parent_recovery_and_censoring_pass", "ten_fold_dilution_reversibility_classification_pass", "buffer_broth_and_skin_bridge_lanes_remain_separate", "executed_data_and_derivative_model_rights_pass"]
+  },
+  "decision": {
+    "task_status": "blocked",
+    "public_capability_screen_complete": true,
+    "exact_provider_qualified": false,
+    "data_and_derivative_model_rights_authorized": false,
+    "rfq_sent": false,
+    "purchase_or_contract_committed": false,
+    "reference_pilot_started": false,
+    "candidate_unblinding_authorized": false,
+    "formal_science_run_submitted": false,
+    "blocker": "external_provider_written_protocol_rights_procurement_and_reference_pilot_required",
+    "next_action": "obtain_procurement_authority_then_send_the_frozen_RFP_without_disclosing_current_candidate_sequences"
+  },
+  "progress_artifacts": {
+    "provider_gap_matrix_sha256": "35fc8f3e926de6662dc0b8a888a90b1f336a987e29d64e58ec97197b2eec7314",
+    "frozen_condition_matrix_and_raw_delivery_rfq_sha256": "20dca25e6ba72a86dcf2ab78e3e049a378fe11740ea8259878df735d0a78b6e9",
+    "data_and_derivative_model_rights_addendum_sha256": "76bc0ce77e7c851cb57f5df572ccac88902fe93fef80a4150191cb5a9e88018a",
+    "blinded_reference_pilot_acceptance_plan_sha256": "bbf389acff88dd7c29122aaf7e5058e9546652d769160ae776f50cc467845588"
+  }
+}

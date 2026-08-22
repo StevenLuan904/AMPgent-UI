@@ -5,6 +5,7 @@ import yaml
 from pepagent.sequence_space_exploration import (
     ExplorationBatchObservation,
     build_default_v39_exploration_contract,
+    build_v39_round_execution_contract,
     next_exploration_action,
 )
 
@@ -73,3 +74,19 @@ def test_budget_exhaustion_freezes_successor_instead_of_silent_stop() -> None:
     assert next_exploration_action(observations, maximum_batches=4) == (
         "freeze_successor_exploration_contract"
     )
+
+
+def test_v39_round_projection_binds_eighteen_cells_and_score_all_metrics() -> None:
+    contract = build_default_v39_exploration_contract()
+    binding, execution = build_v39_round_execution_contract(
+        contract, round_ordinal=2
+    )
+    assert binding.round_ordinal == 2
+    assert binding.exploration_contract_sha256 == contract.sha256()
+    assert binding.execution_contract_sha256 == execution.sha256()
+    assert len(execution.cells) == 18
+    assert execution.expected_raw_occurrences == 1800
+    assert len(execution.required_sequence_metrics) == 12
+    assert {cell.seed for cell in execution.cells} == {
+        cell.seed for cell in contract.cells if cell.round_ordinal == 2
+    }

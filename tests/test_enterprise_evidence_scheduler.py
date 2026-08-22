@@ -74,7 +74,7 @@ def test_scheduler_keeps_in_progress_work_in_the_action_plan() -> None:
     assert plan.selected_task_ids == ("active",)
 
 
-def test_current_backlog_selects_next_endpoint_specific_high_information_task() -> None:
+def test_current_backlog_records_all_locally_actionable_tasks_exhausted() -> None:
     root = Path(__file__).parents[1]
     backlog = yaml.safe_load(
         (root / "config/enterprise/ampgent_evidence_acquisition_backlog_v39.yaml").read_text(
@@ -95,9 +95,7 @@ def test_current_backlog_selects_next_endpoint_specific_high_information_task() 
         registry=registry, enterprise_contract=contract
     ).to_dict()
     plan = plan_enterprise_evidence_actions(model_registry_audit=audit, backlog=backlog)
-    assert plan.selected_task_ids == (
-        "resistance_propensity_provider_and_pilot_qualification",
-    )
+    assert plan.selected_task_ids == ()
     assert plan.estimated_gpu_minutes == 0
     assert plan.formal_run_submission_allowed is False
     pinned = json.loads(

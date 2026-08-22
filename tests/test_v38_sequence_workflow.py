@@ -4,6 +4,10 @@ import inspect
 
 import pytest
 
+from pepagent.sequence_space_exploration import (
+    build_default_v39_exploration_contract,
+    build_v39_round_execution_contract,
+)
 from pepagent.v38_science_execution import build_default_v38_sequence_contract
 from pepagent.workers.v38_temporal_worker import V38_ROLE_CONFIG
 from pepagent.workflows.v38_sequence_first import (
@@ -95,6 +99,20 @@ def test_v38_sequence_workflow_accepts_only_full_score_all_contract() -> None:
 
     request["execution_contract"]["cells"].pop()
     with pytest.raises(ValueError, match="nine generator cells"):
+        _validate_request(request)
+
+
+def test_sequence_workflow_accepts_identity_bound_v39_exploration_round() -> None:
+    request = _request()
+    binding, execution = build_v39_round_execution_contract(
+        build_default_v39_exploration_contract(), round_ordinal=0
+    )
+    request["execution_contract"] = execution.model_dump(mode="json")
+    request["exploration_round"] = binding.model_dump(mode="json")
+    _validate_request(request)
+
+    request["exploration_round"]["execution_contract_sha256"] = "0" * 64
+    with pytest.raises(ValueError, match="identity drifted"):
         _validate_request(request)
 
 

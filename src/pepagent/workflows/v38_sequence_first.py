@@ -7,6 +7,9 @@ from typing import Any
 from temporalio import workflow
 from temporalio.common import RetryPolicy
 
+from pepagent.provenance.hashing import sha256_json
+from pepagent.sequence_space_exploration import V39ExplorationRoundBinding
+
 
 async def _bounded_ordered_map(
     items: list[dict[str, Any]],
@@ -33,10 +36,21 @@ def _validate_request(request: dict[str, Any]) -> None:
     if not isinstance(contract, dict):
         raise ValueError("v38 workflow requires an execution contract")
     cells = contract.get("cells")
-    if not isinstance(cells, list) or len(cells) != 9:
-        raise ValueError("v38 workflow requires exactly nine generator cells")
-    if sum(int(item.get("requested_proposals", 0)) for item in cells) != 900:
-        raise ValueError("v38 workflow raw occurrence budget must equal 900")
+    exploration_round_payload = request.get("exploration_round")
+    if exploration_round_payload is None:
+        if not isinstance(cells, list) or len(cells) != 9:
+            raise ValueError("v38 workflow requires exactly nine generator cells")
+        if sum(int(item.get("requested_proposals", 0)) for item in cells) != 900:
+            raise ValueError("v38 workflow raw occurrence budget must equal 900")
+    else:
+        binding = V39ExplorationRoundBinding.model_validate(exploration_round_payload)
+        if not isinstance(cells, list) or len(cells) != 18:
+            raise ValueError("v39 exploration round requires exactly eighteen generator cells")
+        raw_budget = sum(int(item.get("requested_proposals", 0)) for item in cells)
+        if raw_budget != binding.expected_raw_occurrences or raw_budget != 1800:
+            raise ValueError("v39 exploration round raw occurrence budget must equal 1800")
+        if sha256_json(contract) != binding.execution_contract_sha256:
+            raise ValueError("v39 exploration round execution contract identity drifted")
     if contract.get("score_all_valid_unique_proposals") is not True:
         raise ValueError("v38 workflow requires score-all sequence evaluation")
     if contract.get("first_k_retention_forbidden") is not True:

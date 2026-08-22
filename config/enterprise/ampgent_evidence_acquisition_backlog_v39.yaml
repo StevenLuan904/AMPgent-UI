@@ -552,7 +552,7 @@ tasks:
       formal_science_run_submitted: false
       blocked_at: "2026-08-22T01:31:30Z"
   - task_id: resistance_propensity_provider_and_pilot_qualification
-    status: in_progress
+    status: blocked
     priority_tier: 2
     evidence_domains: [resistance_propensity]
     action_type: external_or_internal_lab_provider_and_reference_pilot
@@ -586,8 +586,15 @@ tasks:
       candidate_unblinding_authorized: false
       formal_science_run_submitted: false
       updated_at: "2026-08-22T11:31:48Z"
+    blocker:
+      outcome: public_provider_screen_and_frozen_RFP_complete_external_procurement_written_biosafety_genomic_data_derivative_model_rights_and_reference_pilot_required
+      witness_path: config/enterprise/resistance_propensity_provider_rfq_v39.json
+      witness_sha256: 3b153e766d612786952b8dae6d0097b583e495ee01001dcd10fe44ecbeb65217
+      procurement_authority_granted: false
+      candidate_sequences_disclosed: false
+      blocked_at: "2026-08-22T16:15:57Z"
   - task_id: solubility_aggregation_provider_and_pilot_qualification
-    status: ready
+    status: blocked
     priority_tier: 2
     evidence_domains: [solubility_and_aggregation]
     action_type: external_or_internal_lab_provider_and_reference_pilot
@@ -604,8 +611,26 @@ tasks:
       - stop_if_unfiltered_turbidity_DLS_and_soluble_parent_cannot_be_separated
       - stop_if_reference_pilot_fails_predeclared_QC
       - stop_if_current_candidates_are_unblinded_before_pilot_acceptance
+    blocker:
+      outcome: public_provider_screen_and_frozen_orthogonal_solubility_aggregation_RFP_complete_external_exact_protocol_written_data_rights_procurement_and_reference_pilot_required
+      witness_path: config/enterprise/solubility_aggregation_provider_rfq_v39.json
+      witness_sha256: af0f1b04d761c32d513390ad1205d3a72218930ff96565b7f94206f0f8862596
+      provider_gap_matrix_sha256: 35fc8f3e926de6662dc0b8a888a90b1f336a987e29d64e58ec97197b2eec7314
+      frozen_condition_matrix_and_raw_delivery_rfq_sha256: 20dca25e6ba72a86dcf2ab78e3e049a378fe11740ea8259878df735d0a78b6e9
+      data_and_derivative_model_rights_addendum_sha256: 76bc0ce77e7c851cb57f5df572ccac88902fe93fef80a4150191cb5a9e88018a
+      blinded_reference_pilot_acceptance_plan_sha256: bbf389acff88dd7c29122aaf7e5058e9546652d769160ae776f50cc467845588
+      providers_screened: 3
+      exact_provider_qualified: false
+      data_and_derivative_model_rights_authorized: false
+      rfq_sent: false
+      purchase_or_contract_committed: false
+      reference_pilot_started: false
+      candidate_unblinding_authorized: false
+      candidate_sequences_disclosed: false
+      formal_science_run_submitted: false
+      blocked_at: "2026-08-22T16:15:57Z"
   - task_id: serum_protease_stability_provider_and_pilot_qualification
-    status: ready
+    status: blocked
     priority_tier: 2
     evidence_domains: [serum_and_protease_stability]
     action_type: external_or_internal_lab_provider_and_reference_pilot
@@ -622,6 +647,24 @@ tasks:
       - stop_if_intact_parent_and_fragment_identity_cannot_be_separated
       - stop_if_reference_pilot_fails_predeclared_QC
       - stop_if_current_candidates_are_unblinded_before_pilot_acceptance
+    blocker:
+      outcome: public_provider_screen_and_frozen_serum_protease_RFP_complete_external_exact_protocol_written_data_rights_procurement_and_reference_pilot_required
+      witness_path: config/enterprise/serum_protease_stability_provider_rfq_v39.json
+      witness_sha256: 1103dfa8177eb115a6c2cf73548b783d89ce903a9c84184165e1c5226b3df3a5
+      provider_gap_matrix_sha256: 29b2b36c9dfd9baf6ca6e3a0ed3e74e41aef740556951759a7d68263d167c42c
+      frozen_serum_protease_rfq_sha256: 0c16c759b763cb0792b3118acadf78b57630bde5479b81665cade8b82c75044d
+      data_and_derivative_model_rights_addendum_sha256: 94a1b1aaf98eead6e8b0704b921042d329f8bdab7e043f39c38be15388633705
+      blinded_reference_pilot_acceptance_plan_sha256: 64c276e70a975f6497c048dfa358771bfb5d070a046533514407896d5c91a30c
+      providers_screened: 3
+      exact_provider_qualified: false
+      data_and_derivative_model_rights_authorized: false
+      rfq_sent: false
+      purchase_or_contract_committed: false
+      reference_pilot_started: false
+      candidate_unblinding_authorized: false
+      candidate_sequences_disclosed: false
+      formal_science_run_submitted: false
+      blocked_at: "2026-08-22T16:15:57Z"
   - task_id: prospective_hemolysis_assay_provider_and_pilot_qualification
     status: blocked
     priority_tier: 2
