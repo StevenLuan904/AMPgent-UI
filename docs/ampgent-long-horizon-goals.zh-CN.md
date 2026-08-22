@@ -724,3 +724,16 @@ carriage comparator，证明角色必须绑定菌株、来源和实验情境；`
 只冻结 `config/enterprise/commensal_selectivity_assay_contract_v39.json`，尚无新湿实验选择性证据。
 下一调度任务转为 phenotype-grounded AMP-likeness 授权参考数据、分组拆分与模型资格执行；选择性
 provider/reference pilot 作为独立可验收任务保留。
+
+2026-08-22 v39 AMP-likeness 来源资格追加：公开可访问不等于企业模型可训练。DRAMP 官方页明示
+CC BY 4.0，可进入 release snapshot 和记录级 assay/第三方权利审计，但在完成前仍不得 fitting；
+DBAASP 条款同时出现 public-domain/free-copy 与 non-distribution、research/education 语义，必须取得
+商业内部衍生模型书面许可；APD6 明示数据库受版权保护，且官方 conditioned MIC 导出尚未就绪，
+同样不能直接训练。UniProtKB 虽为 CC BY 4.0，缺少匹配的抗菌无活性实验，只能作 OOD/shortcut
+诊断，不能把“无 AMP 注释”当负例。
+
+因此 `amp_likeness_reference_dataset_and_model_qualification` 触发预注册 stop condition 并持久化
+`config/enterprise/amp_likeness_source_rights_endpoint_triage_v39.json`：合格训练记录 0、匹配实验
+无活性记录 0、模型 0，当前 773 条也未参与来源选择、拆分或模型选择。这是防止许可证和负例污染的
+区分性负结果，不是研究停顿；调度器转向 commensal-selectivity provider/reference pilot，同时保留
+DRAMP 记录级审计和 DBAASP/APD6 书面授权为外部恢复路径。

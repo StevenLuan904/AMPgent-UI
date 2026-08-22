@@ -455,7 +455,7 @@ tasks:
       - stop_if_reference_pilot_fails_predeclared_QC
       - stop_if_current_candidates_are_unblinded_before_pilot_acceptance
   - task_id: amp_likeness_reference_dataset_and_model_qualification
-    status: ready
+    status: blocked
     priority_tier: 2
     evidence_domains: [amp_likeness]
     action_type: licensed_reference_acquisition_grouped_split_and_model_qualification
@@ -472,6 +472,18 @@ tasks:
       - stop_if_experimentally_inactive_hard_negatives_cannot_be_obtained
       - stop_if_current_candidates_or_relatives_enter_fitting
       - stop_if_sequence_model_only_beats_baseline_on_random_split
+    blocker:
+      outcome: source_rights_and_endpoint_triage_complete_training_acquisition_blocked
+      witness_path: config/enterprise/amp_likeness_source_rights_endpoint_triage_v39.json
+      witness_sha256: 1f504e8b1435685d14e76676ae4105246ba8f1d398da19f3f61d3105cd816502
+      source_rights_and_endpoint_audit_sha256: 29ee588f96b5ba511ac56ec4ead4b352494ee245d8ea2234a1a8e1ad8f546c5d
+      candidate_exclusion_and_acquisition_boundary_sha256: d7067e3c47c72bcba2daf2aacb2604f9481e4adff43645b8978e0d6cd045c7ee
+      fail_closed_decision_sha256: cc6d45bcfe7cdc229f638acd0ba825226b49c798d81f3b5f58f5bc198ca1c8d2
+      qualified_training_records_acquired: 0
+      matched_experimentally_inactive_records_acquired: 0
+      model_trained: false
+      formal_science_run_submitted: false
+      blocked_at: "2026-08-22T01:31:30Z"
   - task_id: resistance_propensity_provider_and_pilot_qualification
     status: ready
     priority_tier: 2

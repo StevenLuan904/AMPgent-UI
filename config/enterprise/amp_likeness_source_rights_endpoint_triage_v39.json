@@ -1,0 +1,100 @@
+{
+  "schema_version": "ampgent.amp-likeness-source-rights-endpoint-triage.1",
+  "witness_id": "amp_likeness_source_rights_endpoint_triage_v39_20260822",
+  "observed_at": "2026-08-22T01:31:30Z",
+  "primary_sources": [
+    "https://dramp.cpu-bioinfor.com/",
+    "https://dbaasp.org/docs/DBAASP_Terms_And_Conditions.pdf",
+    "https://aps.unmc.edu/faq",
+    "https://aps.unmc.edu/about",
+    "https://www.uniprot.org/help/license/",
+    "https://www.uniprot.org/help/programmatic_access"
+  ],
+  "source_qualification": [
+    {
+      "source_id": "DRAMP",
+      "source_role": "candidate_positive_and_conditioned_activity_records",
+      "database_license_status": "CC_BY_4_0_source_level_eligible",
+      "official_source_facts": [
+        "official_landing_page_states_CC_BY_4_0",
+        "official_landing_page_allows_download_or_extraction"
+      ],
+      "record_level_training_status": "blocked_pending_release_snapshot_assay_field_and_third_party_rights_audit",
+      "required_next_evidence": [
+        "content_addressed_release_snapshot",
+        "record_level_sequence_modification_organism_strain_method_medium_time_inoculum_concentration_endpoint_audit",
+        "publication_patent_and_third_party_rights_witness",
+        "current_candidate_exact_and_family_overlap_report"
+      ]
+    },
+    {
+      "source_id": "DBAASP",
+      "source_role": "candidate_conditioned_activity_and_inactive_records",
+      "database_license_status": "ambiguous_public_domain_statement_with_non_distribution_and_research_education_terms",
+      "official_source_facts": [
+        "terms_call_data_public_domain_and_freely_copyable",
+        "terms_also_require_non_distribution_and_no_sale",
+        "terms_encourage_research_and_educational_use",
+        "terms_assign_third_party_patent_and_license_checks_to_user"
+      ],
+      "written_commercial_derivative_model_permission_required": true,
+      "record_level_training_status": "blocked_pending_written_permission_and_third_party_rights_audit"
+    },
+    {
+      "source_id": "APD6",
+      "source_role": "discovery_index_and_possible_conditioned_activity_contrast",
+      "database_license_status": "copyright_protected_commercial_derivative_model_rights_not_explicit",
+      "official_source_facts": [
+        "FAQ_allows_download_with_acknowledgement_for_research_and_education",
+        "about_page_states_database_is_copyright_protected",
+        "official_FAQ_says_unified_MIC_export_is_still_being_prepared"
+      ],
+      "conditioned_MIC_export_status": "official_export_not_yet_ready",
+      "record_level_training_status": "blocked_pending_written_commercial_derivative_model_permission_and_conditioned_export"
+    },
+    {
+      "source_id": "UniProtKB",
+      "source_role": "reviewed_non_antimicrobial_sequence_diagnostic_only",
+      "database_license_status": "CC_BY_4_0_with_patent_and_third_party_rights_notice",
+      "official_source_facts": [
+        "copyrightable_database_content_is_CC_BY_4_0",
+        "license_page_warns_some_data_may_be_covered_by_patents_or_other_rights",
+        "stable_programmatic_access_is_available"
+      ],
+      "primary_negative_endpoint_status": "ineligible_without_matched_negative_antimicrobial_assay",
+      "record_level_training_status": "diagnostic_OOD_only_not_primary_negative"
+    }
+  ],
+  "candidate_exclusion_and_acquisition_boundary": {
+    "current_773_candidates_downloaded_into_reference_corpus": false,
+    "current_773_candidates_used_for_source_selection": false,
+    "current_773_candidates_used_for_split_or_model_selection": false,
+    "random_or_shuffled_sequences_used_as_primary_negatives": false,
+    "database_membership_used_as_positive_endpoint": false,
+    "qualified_training_records_acquired": 0,
+    "matched_experimentally_inactive_records_acquired": 0,
+    "source_pages_observed_not_training_records": true,
+    "no_model_or_operating_point_may_be_fit_from_this_witness": true
+  },
+  "decision": {
+    "outcome": "source_rights_and_endpoint_triage_complete_enterprise_training_acquisition_blocked",
+    "task_status": "blocked",
+    "stop_condition_triggered": "commercial_internal_use_or_matched_experimentally_inactive_records_not_confirmed",
+    "licensed_assay_record_manifest_complete": false,
+    "matched_experimentally_inactive_bundle_complete": false,
+    "grouped_split_frozen": false,
+    "model_trained": false,
+    "formal_science_run_submitted": false,
+    "next_actions": [
+      "request_written_commercial_internal_derivative_model_permission_from_DBAASP_and_APD6",
+      "acquire_and_content_address_a_DRAMP_release_then_audit_every_record_for_required_assay_fields_and_rights",
+      "source_matched_experimentally_inactive_records_from_original_publications_or_a_qualified_provider",
+      "continue_next_independent_enterprise_evidence_task_while_external_permissions_are_pending"
+    ]
+  },
+  "acceptance_artifacts": {
+    "source_rights_and_endpoint_audit_sha256": "29ee588f96b5ba511ac56ec4ead4b352494ee245d8ea2234a1a8e1ad8f546c5d",
+    "candidate_exclusion_and_acquisition_boundary_sha256": "d7067e3c47c72bcba2daf2aacb2604f9481e4adff43645b8978e0d6cd045c7ee",
+    "fail_closed_decision_sha256": "cc6d45bcfe7cdc229f638acd0ba825226b49c798d81f3b5f58f5bc198ca1c8d2"
+  }
+}
