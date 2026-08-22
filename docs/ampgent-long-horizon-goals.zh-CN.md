@@ -771,3 +771,14 @@ primary-cell 与 high-content 能力，但未证明冻结的双细胞、各 3 do
 `config/enterprise/mammalian_cytotoxicity_provider_rfq_v39.json` 将这些差距、盲法 LL-37/melittin/
 mupirocin/chlorhexidine pilot 和 fail-closed 验收冻结；当前 provider、lot、权利和 pilot 均未资格化，
 773 条候选仍零披露。
+
+2026-08-22 v39 原代细胞 provider 路径的公开能力与冻结 RFP 已完成；剩余 donor lot、MTA/CRO、原始
+图像/数据和衍生模型权利必须由外部书面合同与采购授权关闭，因此该任务转为 `blocked`，调度器继续进入
+人红细胞溶血 provider 资格化，不用重复网页巡检冒充进展。
+
+Nelson Labs 公开证明 ASTM F756、人血和分光读出能力，但其公开矩阵为 citrated human blood；Pacific
+BioLabs 公开矩阵为 rabbit blood，均不能直接满足冻结的 defibrinated human RBC 主端点。BioIVT 可提供
+新鲜人全血和 donor characterization，但公开资料不证明 defibrination、具体 lot、CRO 转移与数据权利。
+因此新 witness `config/enterprise/prospective_hemolysis_provider_rfq_v39.json` 冻结 3 个不混池 donor、
+2 assay days、2% RBC、1–256 µM、60 min、540–541 nm、逐样本干扰空白、原始吸光度和盲法 melittin
+pilot；当前 provider/lot/权利/pilot 均为未资格化，候选继续零披露。

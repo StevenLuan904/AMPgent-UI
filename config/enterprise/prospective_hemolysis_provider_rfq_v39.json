@@ -1,0 +1,108 @@
+{
+  "schema_version": "ampgent.prospective-hemolysis-provider-rfq.1",
+  "rfq_id": "prospective_hemolysis_provider_rfq_v39_20260822",
+  "frozen_at": "2026-08-22T09:31:41Z",
+  "primary_sources": [
+    "https://www.nelsonlabs.com/testing/hemocompatibility/",
+    "https://pacificbiolabs.com/biocompatibility/",
+    "https://info.bioivt.com/bioivt-fresh-specimen-solutions",
+    "https://store.astm.org/standards/f756",
+    "https://www.fda.gov/media/182026/download"
+  ],
+  "frozen_contract_binding": {
+    "contract_path": "config/enterprise/prospective_hemolysis_assay_contract_v39.json",
+    "contract_sha256": "12cdba1c4b13bb861cb14a61f2f3463c415b096b28be20083897e29665c9eea2",
+    "primary_matrix": {
+      "species": "Homo_sapiens",
+      "blood_preparation": "defibrinated",
+      "minimum_independent_donors": 3,
+      "donor_pooling_allowed": false,
+      "minimum_independent_assay_days": 2
+    },
+    "protocol_change_requires_new_version": true
+  },
+  "provider_capability_screen": [
+    {
+      "provider_id": "Nelson_Labs",
+      "provider_role": "candidate_hemocompatibility_CRO",
+      "public_capability_status": "ASTM_F756_human_blood_hemolysis_and_spectrophotometric_capability_publicly_demonstrated",
+      "public_matrix": "citrated_human_blood",
+      "unconfirmed_requirements": ["defibrinated_human_RBC", "soluble_peptide_direct_contact", "three_unpooled_donors", "AMP_specific_concentration_curve", "peptide_interference_blanks", "donor_level_raw_absorbance_delivery", "data_and_derivative_model_rights"],
+      "qualification_status": "rfq_required_exact_soluble_peptide_defibrinated_human_RBC_protocol_delivery_and_rights_unconfirmed"
+    },
+    {
+      "provider_id": "Pacific_BioLabs",
+      "provider_role": "candidate_biocompatibility_CRO",
+      "public_capability_status": "ASTM_F756_direct_and_extract_hemolysis_capability_publicly_demonstrated",
+      "public_matrix": "rabbit_blood",
+      "unconfirmed_requirements": ["human_defibrinated_RBC_custom_method", "soluble_peptide_direct_contact", "three_unpooled_donors", "AMP_specific_controls_and_interference", "raw_delivery_and_rights"],
+      "qualification_status": "not_qualified_public_method_uses_rabbit_blood_exact_human_defibrinated_custom_method_unconfirmed"
+    },
+    {
+      "provider_id": "BioIVT",
+      "provider_role": "prospective_human_blood_material_source_not_assay_provider",
+      "public_capability_status": "fresh_human_whole_blood_and_donor_characterization_publicly_demonstrated",
+      "unconfirmed_requirements": ["defibrinated_processing", "three_current_eligible_donor_lots", "collection_to_assay_window", "commercial_internal_and_CRO_transfer", "donor_metadata_and_raw_data_rights"],
+      "qualification_status": "material_source_only_defibrinated_processing_lot_ethics_transfer_and_data_rights_unconfirmed"
+    }
+  ],
+  "mandatory_rfq_requirements": {
+    "exact_unpooled_defibrinated_human_RBC_matrix_required": true,
+    "minimum_independent_donors": 3,
+    "minimum_independent_assay_days": 2,
+    "final_RBC_volume_percent": 2.0,
+    "buffer": "PBS_pH_7_4",
+    "temperature_c": 37,
+    "incubation_minutes": 60,
+    "mixing": "gentle_resuspension_every_15_minutes",
+    "concentration_um": [1, 2, 4, 8, 16, 32, 64, 128, 256],
+    "technical_replicates_per_donor_concentration": 3,
+    "readout": "supernatant_absorbance_540_to_541_nm",
+    "raw_immutable_delivery_required": true,
+    "donor_level_curves_retained": true,
+    "raw_delivery_fields": ["donor_pseudonym_and_collection_metadata", "blood_preparation_and_defibrination", "plate_map_randomization_and_blind_codes", "raw_sample_negative_positive_and_interference_absorbance", "hemoglobin_standard_curve", "unclipped_normalized_percent_hemolysis", "material_lot_purity_and_molecular_weight", "QC_reason_codes", "failure_retest_and_assignable_cause_edges"],
+    "failed_runs_and_assignable_cause_retests_retained": true,
+    "candidate_result_disagreement_is_assignable_cause": false
+  },
+  "commercial_ethics_and_data_rights_acceptance": {
+    "required_executed_agreement_terms": {
+      "ethics_consent_and_biosafety_evidence": "contract_required_not_yet_confirmed",
+      "commercial_internal_human_blood_use_and_CRO_transfer": "contract_required_not_yet_confirmed",
+      "client_raw_data_ownership_or_perpetual_commercial_internal_license": "contract_required_not_yet_confirmed",
+      "donor_metadata_and_raw_instrument_file_retention": "contract_required_not_yet_confirmed",
+      "normalized_derivative_dataset_creation_and_retention": "contract_required_not_yet_confirmed",
+      "derivative_model_training_and_internal_weights": "contract_required_not_yet_confirmed",
+      "audit_reanalysis_and_regulatory_use": "contract_required_not_yet_confirmed",
+      "client_sequence_confidentiality_non_use_and_subcontractor_flowdown": "contract_required_not_yet_confirmed"
+    },
+    "public_web_capability_description_satisfies_executed_rights": false,
+    "purchase_order_alone_satisfies_ethics_and_derivative_model_rights": false
+  },
+  "reference_pilot": {
+    "reference_controls": ["PBS_negative", "vehicle_matched_negative", "Triton_X100_1pct_complete_lysis", "melittin_reference_curve", "peptide_without_RBC_interference_blank"],
+    "blind_codes_required": true,
+    "current_773_candidates_included": false,
+    "candidate_samples_allowed_before_pilot_acceptance": false,
+    "candidate_identity_unblinded": false,
+    "pilot_acceptance_requires": ["three_unpooled_donor_and_two_day_matrix_pass", "negative_control_mean_percent_hemolysis_below_2", "hemoglobin_standard_curve_pass", "melittin_curve_between_donor_reproducibility_pass", "color_turbidity_and_particle_interference_resolution_pass", "raw_delivery_hash_and_replay_pass", "executed_ethics_data_and_derivative_model_rights_pass"],
+    "failed_pilot_may_change_candidate_threshold": false
+  },
+  "decision": {
+    "task_status": "in_progress",
+    "public_capability_screen_complete": true,
+    "provider_qualified": false,
+    "human_defibrinated_RBC_lots_qualified": false,
+    "rfq_sent": false,
+    "purchase_or_contract_committed": false,
+    "reference_pilot_started": false,
+    "candidate_unblinding_authorized": false,
+    "formal_science_run_submitted": false,
+    "next_action": "obtain_procurement_authority_then_send_the_frozen_RFP_and_require_exact_defibrinated_human_RBC_matrix_ethics_raw_delivery_and_rights_before_any_reference_or_candidate_material_transfer"
+  },
+  "acceptance_artifacts": {
+    "provider_and_human_RBC_source_gap_matrix_sha256": "729b859fbf7cec9595294a3dd690423d1636df3f47eb87f126ff7ae4c618af52",
+    "frozen_human_defibrinated_RBC_protocol_and_raw_delivery_rfq_sha256": "10358609c3db91a2c54c2db922e262dd418cd90eda145b72c9657b2dafef7ec5",
+    "blood_data_and_derivative_model_rights_addendum_sha256": "88c2a1fef564d75453d76c17eeebc6eb984f1ac984e9abfeaf6a3002ac61f777",
+    "blinded_reference_peptide_pilot_acceptance_plan_sha256": "6c1a3e67dc682b7a617d381a20b9cda45c8ead420f836993226822303c61e89c"
+  }
+}

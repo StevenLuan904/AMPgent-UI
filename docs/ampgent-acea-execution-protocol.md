@@ -2398,3 +2398,14 @@ ATCC 书面许可。ATCC Authenticated Data 也不得默认进入商业衍生模
 live/dead 与形态原图。`config/enterprise/mammalian_cytotoxicity_provider_rfq_v39.json` 是冻结 RFP：
 网页上具备通用 primary-cell/ATP/LDH/HCS 能力只允许进入 RFQ，不能认定 provider qualified；lot CoA、
 MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot 全部通过前，不得发送候选或提交正式 run。
+
+### 2026-08-22 人红细胞溶血 provider RFP 门
+
+原代细胞 provider 资格在公开证据与冻结 RFP 完成后，因 donor lot、采购及书面材料/数据权利转为
+`blocked`；调度器切换到前瞻性溶血 provider，不重复同一外部依赖检查。
+
+正式溶血委外只接受不混池的 defibrinated human RBC 主矩阵；citrated human blood 和 rabbit blood
+均只能证明基础能力，不能静默替代。`config/enterprise/prospective_hemolysis_provider_rfq_v39.json`
+绑定 3 donor、2 assay days、2% RBC、PBS pH 7.4、37°C/60 min、1–256 µM、540–541 nm 原始吸光度、
+未裁剪归一化、干扰空白、失败/复测边和 donor-level curves。伦理/同意、材料转移、原始数据、衍生模型
+权利以及盲法 melittin pilot 全部验收前，不得发送当前 773 条候选或提交正式 run。

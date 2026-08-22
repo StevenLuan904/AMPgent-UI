@@ -474,7 +474,7 @@ tasks:
       candidate_unblinding_authorized: false
       blocked_at: "2026-08-22T07:31:51Z"
   - task_id: mammalian_cytotoxicity_provider_and_pilot_qualification
-    status: in_progress
+    status: blocked
     priority_tier: 2
     evidence_domains: [mammalian_cytotoxicity]
     action_type: external_or_internal_cell_lab_provider_and_reference_pilot
@@ -509,6 +509,18 @@ tasks:
       candidate_unblinding_authorized: false
       formal_science_run_submitted: false
       updated_at: "2026-08-22T07:31:51Z"
+    blocker:
+      outcome: public_primary_skin_cell_provider_screen_and_frozen_RFP_complete_external_donor_lots_written_rights_and_procurement_authority_required
+      witness_path: config/enterprise/mammalian_cytotoxicity_provider_rfq_v39.json
+      witness_sha256: 6552475856898f6ff5c2ab1412efac1d50c32d66d317a08141643ac20405a6c2
+      exact_primary_cell_catalog_identities_verified: 2
+      current_donor_lots_qualified: 0
+      provider_qualified: false
+      rfq_sent: false
+      purchase_or_contract_committed: false
+      reference_pilot_started: false
+      candidate_unblinding_authorized: false
+      blocked_at: "2026-08-22T09:31:41Z"
   - task_id: amp_likeness_reference_dataset_and_model_qualification
     status: blocked
     priority_tier: 2
@@ -594,7 +606,7 @@ tasks:
       - stop_if_reference_pilot_fails_predeclared_QC
       - stop_if_current_candidates_are_unblinded_before_pilot_acceptance
   - task_id: prospective_hemolysis_assay_provider_and_pilot_qualification
-    status: ready
+    status: in_progress
     priority_tier: 2
     evidence_domains: [hemolysis]
     action_type: external_or_internal_lab_provider_and_reference_pilot
@@ -611,6 +623,23 @@ tasks:
       - stop_if_primary_defibrinated_human_RBC_contract_drifts
       - stop_if_reference_peptide_pilot_fails_predeclared_QC
       - stop_if_current_candidates_are_unblinded_before_pilot_acceptance
+    progress:
+      outcome: human_RBC_provider_material_source_screen_and_frozen_RFP_complete_external_exact_matrix_rights_and_reference_pilot_pending
+      witness_path: config/enterprise/prospective_hemolysis_provider_rfq_v39.json
+      witness_sha256: dca118901d94ccd78822b28fe714b801ca90d61b3f30cf232c5bfcacae3c3e60
+      provider_and_human_RBC_source_gap_matrix_sha256: 729b859fbf7cec9595294a3dd690423d1636df3f47eb87f126ff7ae4c618af52
+      frozen_human_defibrinated_RBC_protocol_and_raw_delivery_rfq_sha256: 10358609c3db91a2c54c2db922e262dd418cd90eda145b72c9657b2dafef7ec5
+      blood_data_and_derivative_model_rights_addendum_sha256: 88c2a1fef564d75453d76c17eeebc6eb984f1ac984e9abfeaf6a3002ac61f777
+      blinded_reference_peptide_pilot_acceptance_plan_sha256: 6c1a3e67dc682b7a617d381a20b9cda45c8ead420f836993226822303c61e89c
+      providers_screened: 3
+      exact_defibrinated_human_RBC_provider_qualified: false
+      current_human_RBC_lots_qualified: 0
+      rfq_sent: false
+      purchase_or_contract_committed: false
+      reference_pilot_started: false
+      candidate_unblinding_authorized: false
+      formal_science_run_submitted: false
+      updated_at: "2026-08-22T09:31:41Z"
   - task_id: novelty_ood_reference_freeze
     status: completed
     priority_tier: 1
