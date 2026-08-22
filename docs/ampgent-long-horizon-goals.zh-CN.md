@@ -797,3 +797,18 @@ TnSeq；Eurofins 公开证明 MIC/MBC、定制微生物方法和独立 WGS 能�
 lineage/archive/FASTQ/BAM/VCF 交付、盲法 pexiganan/melittin/物种适用抗生素 pilot 与 fail-closed 验收
 冻结。当前 integrated provider、biosafety/strain-use 权利、采购和 pilot 均未资格化；773 条候选仍
 不得送样或解盲，也未提交新的正式 science run。
+
+## 2026-08-22 v39 不稳定性代理与持续序列空间探索
+
+下一独立科学版本把 `guruprasad_instability_index` 加入全部有效唯一序列的 score-all。该指标按
+Guruprasad、Reddy 与 Pandit 的二肽权重方法（DOI `10.1093/protein/4.2.155`）由 Biopython 的
+确定性实现计算。它是蛋白来源的序列理化代理：小于 20 aa 必须标记 OOD，历史 40 分界只作蛋白参照
+解释，绝不作为短肽硬门，也不得宣称为血清半衰期、蛋白酶耐受或货架稳定性。指标进入不加权
+developability Pareto，并与未来真实 serum/protease assay 保持证据域隔离。
+
+探索合同 `amp_sequence_space_exploration_v39` 将每轮由 v38 的 9 个 generator cells 扩为 18 个，
+覆盖 3 个生成器各 6 个新 seed；最多 4 个独立冻结轮次、7200 raw occurrence。所有 occurrence 均落库，
+所有有效唯一序列均完成 12 项序列指标后才可裁剪；历史完全重复只从“新增唯一候选”分母剔除，但仍保留
+occurrence 证据。每批必须报告 raw、valid unique、历史新颖、序列家族、安全合格、活性支持和新增
+Pareto extension。连续两批无历史新颖性时切换生成器/seed/欠采样家族；有新颖性但无前沿扩展时转为
+保留父本的知识引导 refinement；预算耗尽时冻结 successor contract，禁止静默停止或降低安全门换产量。

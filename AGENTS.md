@@ -189,6 +189,11 @@ Apply the following style to AMPgent/AceA research work in this repository:
   same families as sufficient exploration. Continue proposing new, valid, non-duplicate sequences
   from multiple generator families, seeds, knowledge-guided edits, and deliberately diverse sequence
   neighborhoods until the frozen search-sufficiency evidence shows diminishing information gain.
+- Default to asking which next generation or refinement experiment can produce additional sequence
+  families and better defensible candidates. A merely stable pipeline, a completed ranking, or a
+  reusable shortlist is not the research outcome. Unless a frozen safety/scientific boundary blocks
+  execution, every scheduled research loop must either create new score-all-ready sequence evidence
+  or change the search policy in a way that is expected to improve novelty or frontier yield.
 - Measure forward progress in both breadth and quality: total raw occurrences, valid unique sequences,
   sequence-family/novelty coverage, generator and seed contribution, safety-qualified yield, activity-
   qualified yield, and the number of candidates that improve or extend the defensible frontier. More

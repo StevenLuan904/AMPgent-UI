@@ -89,6 +89,7 @@ sequence_first_agent:
     - hydrophobic_ratio_modlamp
     - maximum_hydrophobic_run
     - net_charge_ph7_4
+    - guruprasad_instability_index
     - macrel_amp_probability
     - macrel_hemolysis_probability
     - macrel_hemolysis_label
@@ -103,6 +104,7 @@ sequence_first_agent:
     - hydrophobic_ratio_modlamp
     - maximum_hydrophobic_run
     - net_charge_ph7_4
+    - guruprasad_instability_index
     - macrel_amp_probability
     - macrel_hemolysis_probability
     - macrel_hemolysis_label
@@ -121,6 +123,9 @@ sequence_first_agent:
       missing_failed_or_out_of_domain_prediction_rejects_core_lane: true
     developability:
       physicochemical_metrics_required: true
+      guruprasad_instability_is_nonweighted_pareto_axis: true
+      guruprasad_protein_boundary_is_not_a_peptide_hard_gate: true
+      short_peptide_out_of_domain_flag_required: true
       rank_stability_across_frozen_perturbations_required: true
       physicochemical_metrics_are_nonweighted_pareto_objectives: true
     threshold_derivation_from_current_batch_quantiles_forbidden: true

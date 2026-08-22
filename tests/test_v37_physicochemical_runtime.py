@@ -21,7 +21,7 @@ from pepagent.v37_runtime_execution import (
 from pepagent.v37_submit_cli import _validate_generic_execution_guard
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-RUNTIME_ID = "physicochemical-developability-modlamp-4.3.2-v37"
+RUNTIME_ID = "physicochemical-developability-modlamp-4.3.2-biopython-v39"
 ADAPTER = (
     REPO_ROOT
     / "src"
@@ -35,7 +35,7 @@ MODEL_ROOT = (
     REPO_ROOT
     / "config"
     / "environments"
-    / "v37_metric_runtimes"
+    / "v39_metric_runtimes"
     / "physicochemical_model_release"
 )
 RUNTIME_MANIFEST = (
@@ -43,7 +43,7 @@ RUNTIME_MANIFEST = (
     / "config"
     / "metrics"
     / "manifests"
-    / "physicochemical_developability_modlamp_4_3_2_v37.json"
+    / "physicochemical_developability_modlamp_4_3_2_biopython_v39.json"
 )
 PACKAGES_LOCK = REPO_ROOT / "uv.lock"
 
@@ -164,6 +164,7 @@ async def test_physicochemical_runtime_is_guarded_and_matches_pinned_protocol(
         "hydrophobic_ratio_modlamp",
         "maximum_hydrophobic_run",
         "net_charge_ph7_4",
+        "guruprasad_instability_index",
     }
     for candidate, row in zip(request["candidates"], result["raw_rows"], strict=True):
         expected = physicochemical_descriptors(candidate["sequence"])
@@ -176,6 +177,27 @@ async def test_physicochemical_runtime_is_guarded_and_matches_pinned_protocol(
         ):
             assert row[field] == pytest.approx(expected[field], rel=1e-12, abs=1e-12)
     assert [row["maximum_hydrophobic_run"] for row in result["raw_rows"]] == [5, 3]
+    for row in result["raw_rows"]:
+        assert isinstance(row["guruprasad_instability_index"], float)
+        assert row["guruprasad_instability_out_of_domain"] is False
+        assert row["assumptions"]["instability_protein_reference_boundary"] == 40.0
+
+
+def test_instability_index_marks_short_peptides_out_of_domain_without_rejecting() -> None:
+    from pepagent.model_workers.physicochemical_runtime.cli import describe
+
+    row = describe(
+        "KWKLFKKIEKVG",
+        ph=7.4,
+        c_terminal_amidated=False,
+        hydrophobic_moment_angle=100,
+    )
+    assert row["guruprasad_instability_out_of_domain"] is True
+    assert isinstance(row["guruprasad_instability_index"], float)
+    assert row["guruprasad_instability_interpretation"] in {
+        "protein_reference_stable_proxy",
+        "protein_reference_unstable_proxy",
+    }
 
 
 def test_v37_activity_uses_guarded_runtime_for_builtin_descriptors() -> None:

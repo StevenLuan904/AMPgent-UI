@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "metric_plugin": "physicochemical_developability",
+  "runtime_id": "physicochemical-developability-modlamp-4.3.2-biopython-v39",
+  "decision_role": "deterministic_descriptor_only",
+  "implementation": {
+    "distributions": {
+      "modlamp": "4.3.2",
+      "biopython": ">=1.84,<2"
+    },
+    "adapter": "src/pepagent/model_workers/physicochemical_runtime/cli.py",
+    "method_version": "2026.08.22-v2"
+  },
+  "model_assets": [],
+  "protocol": {
+    "default_ph": 7.4,
+    "default_c_terminal_amidated": false,
+    "hydrophobicity_scale": "Eisenberg consensus",
+    "default_hydrophobic_moment_angle_degrees": 100,
+    "hydrophobic_moment_window": 1000,
+    "instability_method": "Guruprasad-Reddy-Pandit dipeptide instability index",
+    "instability_reference_doi": "10.1093/protein/4.2.155",
+    "protein_reference_boundary": 40.0,
+    "short_peptide_ood_below_residues": 20
+  },
+  "outputs": [
+    "net_charge_ph7_4",
+    "hydrophobic_ratio_modlamp",
+    "hydrophobic_moment_eisenberg",
+    "maximum_hydrophobic_run",
+    "guruprasad_instability_index"
+  ],
+  "limitations": [
+    "These are transparent sequence descriptors, not experimental safety, stability, potency, or target binding evidence.",
+    "The hydrophobic moment is an idealized alpha-helical projection and does not establish peptide secondary structure.",
+    "Canonical sequences do not encode terminal capping, cyclization, D-residues, or other chemical modifications.",
+    "The Guruprasad index was derived from proteins; short peptides below 20 residues are marked out-of-domain.",
+    "The protein-reference value 40 is explanatory only, never a peptide hard gate, and is not serum, protease, or shelf stability."
+  ]
+}

@@ -42,13 +42,14 @@ def test_default_contract_is_nine_cells_and_900_score_all_occurrences() -> None:
     assert all(cell.requested_proposals == 100 for cell in contract.cells)
     assert contract.score_all_valid_unique_proposals
     assert contract.first_k_retention_forbidden
-    assert len(contract.required_sequence_metrics) == 11
+    assert len(contract.required_sequence_metrics) == 12
     assert {
         "llamp_log10_mic_um",
         "amp_read_log10_mic_um",
         "macrel_amp_probability",
         "toxinpred3_label",
         "macrel_hemolysis_label",
+        "guruprasad_instability_index",
     }.issubset(contract.required_sequence_metrics)
 
 

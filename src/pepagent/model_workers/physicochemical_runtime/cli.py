@@ -7,16 +7,21 @@ from pathlib import Path
 from typing import Any
 
 import modlamp
+from Bio.SeqUtils.ProtParam import ProteinAnalysis
 from modlamp.descriptors import GlobalDescriptor, PeptideDescriptor
 
-RUNTIME_ID = "physicochemical-developability-modlamp-4.3.2-v37"
-METHOD_VERSION = "2026.08.04-v1"
+RUNTIME_ID = "physicochemical-developability-modlamp-4.3.2-biopython-v39"
+METHOD_VERSION = "2026.08.22-v2"
 
 OUTPUTS: dict[str, tuple[str, str]] = {
     "net_charge_ph7_4": ("net_charge_ph7_4", "elementary_charge"),
     "hydrophobic_ratio_modlamp": ("hydrophobic_ratio", "fraction"),
     "hydrophobic_moment_eisenberg": ("hydrophobic_moment", "dimensionless"),
     "maximum_hydrophobic_run": ("maximum_hydrophobic_run", "residues"),
+    "guruprasad_instability_index": (
+        "guruprasad_instability_index",
+        "dimensionless",
+    ),
 }
 
 HYDROPHOBIC_RESIDUES = frozenset("AVILMFWY")
@@ -45,6 +50,15 @@ def describe(
     c_terminal_amidated: bool,
     hydrophobic_moment_angle: int,
 ) -> dict[str, Any]:
+    normalized_sequence = sequence.strip().upper()
+    if not normalized_sequence:
+        raise ValueError("sequence must not be empty")
+    invalid_residues = sorted(set(normalized_sequence) - set("ACDEFGHIKLMNPQRSTVWY"))
+    if invalid_residues:
+        raise ValueError(
+            "sequence contains non-canonical residues: " + ", ".join(invalid_residues)
+        )
+    sequence = normalized_sequence
     global_descriptor = GlobalDescriptor(sequence)
     global_descriptor.calculate_MW(amide=c_terminal_amidated)
     molecular_weight = _scalar(global_descriptor)
@@ -61,6 +75,8 @@ def describe(
         angle=hydrophobic_moment_angle,
         modality="max",
     )
+    instability_index = float(ProteinAnalysis(sequence).instability_index())
+    instability_out_of_domain = len(sequence) < 20
     return {
         "molecular_weight": molecular_weight,
         "net_charge_ph7_4": net_charge,
@@ -68,6 +84,13 @@ def describe(
         "hydrophobic_ratio": hydrophobic_ratio,
         "hydrophobic_moment": _scalar(moment_descriptor),
         "maximum_hydrophobic_run": _maximum_hydrophobic_run(sequence),
+        "guruprasad_instability_index": instability_index,
+        "guruprasad_instability_interpretation": (
+            "protein_reference_stable_proxy"
+            if instability_index <= 40.0
+            else "protein_reference_unstable_proxy"
+        ),
+        "guruprasad_instability_out_of_domain": instability_out_of_domain,
         "assumptions": {
             "ph": ph,
             "termini": (
@@ -80,6 +103,11 @@ def describe(
             "hydrophobic_moment_window": 1000,
             "modlamp_distribution_version": importlib.metadata.version("modlamp"),
             "modlamp_runtime_version": modlamp.__version__,
+            "biopython_distribution_version": importlib.metadata.version("biopython"),
+            "instability_method": "Guruprasad-Reddy-Pandit dipeptide instability index",
+            "instability_reference_doi": "10.1093/protein/4.2.155",
+            "instability_protein_reference_boundary": 40.0,
+            "instability_short_peptide_ood_below_residues": 20,
         },
         "limitations": [
             "Transparent sequence descriptors; not experimental safety, stability, or potency.",
@@ -87,6 +115,11 @@ def describe(
             "does not assert that the peptide forms an alpha helix.",
             "Canonical sequence inference does not represent terminal capping, cyclization, "
             "D-residues, or other chemical modifications.",
+            "The Guruprasad index was derived from proteins, not short antimicrobial peptides. "
+            "For sequences shorter than 20 residues it is explicitly marked out-of-domain.",
+            "The historical value 40 is retained only as a protein-reference interpretation; "
+            "it is not a peptide rejection gate and does not predict serum, protease, or "
+            "shelf stability.",
         ],
         "method_version": METHOD_VERSION,
     }

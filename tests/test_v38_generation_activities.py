@@ -119,7 +119,7 @@ def _metric_result(plugin_name: str, candidates: list[dict]) -> dict:
     }
 
 
-def test_all_five_metric_plugins_cover_every_candidate_and_exactly_11_metrics() -> None:
+def test_all_five_metric_plugins_cover_every_candidate_and_exactly_12_metrics() -> None:
     contract = build_default_v38_sequence_contract()
     candidates = [
         {"id": "candidate-a", "sequence": "KACDEFGHIKLM"},
@@ -137,7 +137,7 @@ def test_all_five_metric_plugins_cover_every_candidate_and_exactly_11_metrics() 
         observed.update(row["metric_name"] for row in rows)
         total_rows += len(rows)
     assert observed == set(contract.required_sequence_metrics)
-    assert total_rows == 22
+    assert total_rows == 24
 
 
 def test_metric_rows_fail_closed_when_one_candidate_observation_is_missing() -> None:

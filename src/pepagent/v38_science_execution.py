@@ -17,6 +17,7 @@ V38_METRIC_OBSERVATIONS: dict[str, frozenset[str]] = {
             "hydrophobic_ratio_modlamp",
             "maximum_hydrophobic_run",
             "net_charge_ph7_4",
+            "guruprasad_instability_index",
         }
     ),
     "hemolysis_risk": frozenset(
@@ -119,6 +120,7 @@ def build_default_v38_sequence_contract() -> V38SequenceExecutionContract:
                 "hydrophobic_ratio_modlamp",
                 "maximum_hydrophobic_run",
                 "net_charge_ph7_4",
+                "guruprasad_instability_index",
                 "macrel_amp_probability",
                 "macrel_hemolysis_probability",
                 "macrel_hemolysis_label",

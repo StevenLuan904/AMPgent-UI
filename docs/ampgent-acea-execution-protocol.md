@@ -2426,3 +2426,16 @@ MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot
 原始和基因组数据、衍生数据集/模型权重、审计再分析、序列保密与分包 flow-down 的书面权利。
 先运行 pexiganan、melittin 和物种适用 colistin/daptomycin 的盲法 reference pilot；全部验收前，当前
 773 条候选不得送样、解盲、用于 operating point，也不得提交新的正式 science run。
+
+### 2026-08-22 v39 instability score-all 与 exploration controller
+
+未来正式 run 的 physicochemical runtime 新增 `guruprasad_instability_index`，使序列阶段由每条 11 项
+评价增至 12 项。其 runtime、method version、Biopython/modlAMP 版本、DOI、连续数值、蛋白参照解释、
+`<20 aa` OOD 标记和 limitations 必须随 Evaluation 原始结果持久化。值 40 不是短肽 admission threshold；
+该指标只能作为非加权可开发性轴，不能替代 serum/protease/shelf-life 实验。
+
+`config/benchmarks/amp_sequence_space_exploration_v39.yaml` 与
+`pepagent.sequence_space_exploration.SequenceSpaceExplorationContract` 冻结持续探索控制：每轮 18 cells、
+1800 raw occurrence，3 个生成器各 6 个唯一 seed，最多 4 轮。轮次必须使用新 run identity，旧 run 和旧
+输出只作不可变历史去重/收益基线，禁止回填或复用。controller 以新增唯一序列、家族覆盖、安全/活性产率
+和 Pareto extension 判断下一动作；连续两批停滞必须换策略。Pareto 只负责组合选择，不拥有停止生成的权限。

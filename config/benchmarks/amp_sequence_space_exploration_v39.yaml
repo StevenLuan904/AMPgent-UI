@@ -1,0 +1,56 @@
+benchmark_id: amp_sequence_space_exploration_v39
+version: v39.0.0
+execution_status: implementation_complete_not_submitted
+
+objective:
+  primary: expand_valid_unique_safe_active_peptide_space
+  secondary: improve_nonweighted_pareto_front_without_collapsing_sequence_families
+  weighted_total_score_forbidden: true
+  pareto_does_not_stop_generation: true
+
+budget:
+  maximum_rounds: 4
+  generator_cells_per_round: 18
+  generators: [hydramp, ampgan_v2, amp_designer]
+  seeds_per_generator_per_round: 6
+  raw_occurrences_per_cell: 100
+  maximum_raw_occurrences: 7200
+  each_round_requires_new_frozen_run_identity: true
+
+evidence_contract:
+  persist_every_raw_occurrence: true
+  score_all_valid_unique_sequences: true
+  exact_deduplication_against_all_historical_sequences: true
+  historical_duplicates_remain_occurrence_evidence: true
+  parent_controls_required_for_refinement: true
+  required_batch_yields:
+    - raw_occurrences
+    - valid_unique_sequences
+    - historically_novel_sequences
+    - sequence_family_count
+    - safety_admissible_sequences
+    - activity_supported_sequences
+    - new_pareto_extensions
+
+sequence_metrics:
+  add_metric: guruprasad_instability_index
+  role: nonweighted_developability_pareto_axis
+  protein_reference_boundary_is_hard_gate: false
+  short_peptide_ood_below_residues: 20
+  forbidden_claims:
+    - serum_half_life
+    - protease_resistance
+    - shelf_stability
+
+controller:
+  plateau_window_batches: 2
+  no_historical_novelty_action: switch_generators_seeds_and_underexplored_families
+  novelty_without_pareto_extension_action: launch_frontier_refinement_with_parent_controls
+  budget_exhaustion_action: freeze_successor_exploration_contract
+  silent_stop_forbidden: true
+  lowering_safety_gates_for_yield_forbidden: true
+
+structure_admission:
+  sequence_first: true
+  all_sequence_metrics_converge_before_structure: true
+  structure_is_confirmation_not_search_substitute: true

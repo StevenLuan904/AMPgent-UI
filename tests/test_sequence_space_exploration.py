@@ -1,0 +1,75 @@
+from pathlib import Path
+
+import yaml
+
+from pepagent.sequence_space_exploration import (
+    ExplorationBatchObservation,
+    build_default_v39_exploration_contract,
+    next_exploration_action,
+)
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _observation(batch: int, *, novel: int, pareto: int) -> ExplorationBatchObservation:
+    return ExplorationBatchObservation(
+        batch_ordinal=batch,
+        raw_occurrences=1800,
+        valid_unique_sequences=1200,
+        historically_novel_sequences=novel,
+        sequence_family_count=100,
+        safety_admissible_sequences=300,
+        activity_supported_sequences=80,
+        new_pareto_extensions=pareto,
+    )
+
+
+def test_default_exploration_contract_expands_space_without_first_k() -> None:
+    contract = build_default_v39_exploration_contract()
+    assert contract.expected_maximum_raw_occurrences == 7200
+    assert len(contract.cells) == 72
+    assert contract.score_all_valid_unique_sequences is True
+    assert contract.persist_every_raw_occurrence is True
+    assert len({(cell.generator_id, cell.seed) for cell in contract.cells}) == 72
+
+
+def test_versioned_yaml_and_executable_exploration_contract_agree() -> None:
+    payload = yaml.safe_load(
+        (
+            REPO_ROOT / "config" / "benchmarks" / "amp_sequence_space_exploration_v39.yaml"
+        ).read_text(encoding="utf-8")
+    )
+    contract = build_default_v39_exploration_contract()
+    assert payload["version"] == contract.policy_version
+    assert payload["budget"]["maximum_rounds"] == contract.maximum_rounds
+    assert payload["budget"]["maximum_raw_occurrences"] == (
+        contract.expected_maximum_raw_occurrences
+    )
+    assert payload["sequence_metrics"]["protein_reference_boundary_is_hard_gate"] is False
+
+
+def test_plateau_changes_strategy_instead_of_stopping() -> None:
+    no_novelty = (
+        _observation(0, novel=0, pareto=0),
+        _observation(1, novel=0, pareto=0),
+    )
+    assert next_exploration_action(no_novelty, maximum_batches=4) == (
+        "switch_generators_seeds_and_underexplored_families"
+    )
+
+    no_front_extension = (
+        _observation(0, novel=50, pareto=0),
+        _observation(1, novel=40, pareto=0),
+    )
+    assert next_exploration_action(no_front_extension, maximum_batches=4) == (
+        "launch_frontier_refinement_with_parent_controls"
+    )
+
+
+def test_budget_exhaustion_freezes_successor_instead_of_silent_stop() -> None:
+    observations = tuple(
+        _observation(batch, novel=20, pareto=2) for batch in range(4)
+    )
+    assert next_exploration_action(observations, maximum_batches=4) == (
+        "freeze_successor_exploration_contract"
+    )
