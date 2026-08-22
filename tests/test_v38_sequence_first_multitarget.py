@@ -219,6 +219,37 @@ def test_rank_stability_rejects_duplicate_candidate_identity() -> None:
         )
 
 
+def test_explicit_non_gating_ood_metric_does_not_reject_candidate() -> None:
+    policy = _policy().model_copy(
+        update={"non_gating_out_of_domain_metrics": frozenset({"instability_index"})}
+    )
+    observations = tuple(
+        item.model_copy(update={"out_of_domain": True})
+        if item.metric_name == "instability_index"
+        else item
+        for item in _observations()
+    )
+    decision = assess_sequence_maturity(
+        _candidate(observations=observations),
+        policy,
+    )
+    assert decision.status == "pareto_eligible"
+    assert not any(reason.startswith("out_of_domain:") for reason in decision.reasons)
+
+
+def test_default_policy_uses_instability_as_non_gating_pareto_axis() -> None:
+    policy = build_default_v38_maturity_policy()
+    assert "guruprasad_instability_index" in policy.required_metrics
+    assert policy.non_gating_out_of_domain_metrics == frozenset(
+        {"guruprasad_instability_index"}
+    )
+    assert any(
+        objective.metric_name == "guruprasad_instability_index"
+        and objective.direction == "min"
+        for objective in policy.pareto_objectives
+    )
+
+
 def _branch(name: str) -> TargetBranchSpec:
     return TargetBranchSpec(
         target_key=name,

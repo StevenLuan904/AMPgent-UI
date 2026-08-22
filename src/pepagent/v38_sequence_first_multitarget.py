@@ -409,6 +409,7 @@ class RefinementPolicy(FrozenModel):
 
 class SequenceMaturityPolicy(FrozenModel):
     required_metrics: frozenset[str]
+    non_gating_out_of_domain_metrics: frozenset[str] = frozenset()
     numeric_gates: tuple[NumericGate, ...]
     label_gates: tuple[LabelGate, ...]
     pareto_objectives: tuple[ParetoObjective, ...] = Field(min_length=2)
@@ -435,6 +436,10 @@ class SequenceMaturityPolicy(FrozenModel):
         }
         if not gate_names.issubset(self.required_metrics):
             raise ValueError("hard gates must be required metrics")
+        if not self.non_gating_out_of_domain_metrics.issubset(self.required_metrics):
+            raise ValueError("non-gating OOD metrics must be required metrics")
+        if self.non_gating_out_of_domain_metrics.intersection(gate_names):
+            raise ValueError("hard-gated metrics cannot have non-gating OOD status")
         if self.refinement.minimum_mature_core_size > self.structure_budget:
             raise ValueError("minimum mature core exceeds the structure budget")
         return self
@@ -479,7 +484,10 @@ def assess_sequence_maturity(
         observation = observations[name]
         if observation.status != "succeeded":
             hard_failures.append(f"metric_failed:{name}")
-        if observation.out_of_domain:
+        if (
+            observation.out_of_domain
+            and name not in policy.non_gating_out_of_domain_metrics
+        ):
             hard_failures.append(f"out_of_domain:{name}")
     for gate in policy.numeric_gates:
         observation = observations.get(gate.metric_name)
@@ -898,6 +906,7 @@ def build_default_v38_maturity_policy() -> SequenceMaturityPolicy:
             "hydrophobic_ratio_modlamp",
             "maximum_hydrophobic_run",
             "net_charge_ph7_4",
+            "guruprasad_instability_index",
             "macrel_amp_probability",
             "macrel_hemolysis_probability",
             "macrel_hemolysis_label",
@@ -909,6 +918,9 @@ def build_default_v38_maturity_policy() -> SequenceMaturityPolicy:
     )
     return SequenceMaturityPolicy(
         required_metrics=required,
+        non_gating_out_of_domain_metrics=frozenset(
+            {"guruprasad_instability_index"}
+        ),
         numeric_gates=(),
         label_gates=(
             LabelGate(
@@ -936,6 +948,9 @@ def build_default_v38_maturity_policy() -> SequenceMaturityPolicy:
             ParetoObjective(metric_name="toxinpred3_hybrid_score", direction="min"),
             ParetoObjective(metric_name="hydrophobic_moment_eisenberg", direction="max"),
             ParetoObjective(metric_name="maximum_hydrophobic_run", direction="min"),
+            ParetoObjective(
+                metric_name="guruprasad_instability_index", direction="min"
+            ),
         ),
         agreement_gates=(),
         minimum_rank_stability=0.8,

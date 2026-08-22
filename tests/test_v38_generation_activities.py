@@ -153,6 +153,23 @@ def test_metric_rows_fail_closed_when_one_candidate_observation_is_missing() -> 
         )
 
 
+def test_short_peptide_instability_ood_is_persisted_without_affecting_other_metrics() -> None:
+    contract = build_default_v38_sequence_contract()
+    candidates = [{"id": "candidate-a", "sequence": "KACDEFGHIKLM"}]
+    result = _metric_result("physicochemical_developability", candidates)
+    result["result"]["records"][0]["raw"] = {
+        "guruprasad_instability_out_of_domain": True
+    }
+    rows = build_v38_metric_evaluation_rows(
+        contract=contract,
+        candidates=candidates,
+        metric_result=result,
+    )
+    by_name = {row["metric_name"]: row for row in rows}
+    assert by_name["guruprasad_instability_index"]["out_of_domain"] is True
+    assert by_name["net_charge_ph7_4"]["out_of_domain"] is False
+
+
 @pytest.mark.asyncio
 async def test_sequence_admission_reference_resolves_and_rejects_identity_drift(
     monkeypatch: pytest.MonkeyPatch,

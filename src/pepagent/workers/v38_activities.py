@@ -804,6 +804,14 @@ def build_v38_metric_evaluation_rows(
         for observation in _select_v37_declared_observations(
             record["observations"], expected_metrics
         ):
+            is_instability = observation["metric_name"] == (
+                "guruprasad_instability_index"
+            )
+            instability_ood = bool(
+                record.get("raw", {}).get(
+                    "guruprasad_instability_out_of_domain", False
+                )
+            )
             rows.append(
                 {
                     "candidate_id": str(record["candidate_id"]),
@@ -811,7 +819,7 @@ def build_v38_metric_evaluation_rows(
                     "numeric_value": observation["numeric_value"],
                     "text_value": observation["text_value"],
                     "unit": observation["unit"],
-                    "out_of_domain": False,
+                    "out_of_domain": is_instability and instability_ood,
                     "limitations": limitations,
                     "raw": {
                         "plugin": plugin,
