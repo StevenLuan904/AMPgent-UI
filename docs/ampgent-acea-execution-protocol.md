@@ -2364,3 +2364,15 @@ staurosporine 和 medium background controls。干扰的 readout 标为 invalid�
 ToxinPred 或通用序列标签不能算作 cell assay 证据。正式安全门最终需要独立细胞实验，而不是模型分数单独决定。
 合同 witness 为 `config/enterprise/prospective_mammalian_cytotoxicity_contract_v39.json`，当前没有新增细胞测量、
 模型或候选阈值。下一 CPU 任务转为 skin pathogen/commensal selectivity assay/model 合同。
+
+### 2026-08-22 选择性 provider RFP 与 reference-pilot 资格边界
+
+选择性实验不得因供应商网页写有 MIC、MBC 或 time-kill 就视为已资格化。正式委外前必须用
+`config/enterprise/commensal_selectivity_provider_rfq_v39.json` 的内容寻址 RFP 验证：冻结七菌株与
+三条 assay lane、独立实验日和重复数、0.5–256 µM 浓度系列、1/4/16/64 µM 绝对浓度 time-kill、
+逐孔 OD 与 CFU/稀释/铺板/LOD、删失、失败批次、回收/吸附和控制原始数据均可交付并可重放。
+
+合同还必须明确原始数据所有权或永久商业内部许可、衍生数据集、内部模型训练与权重、审计/再分析、
+肽序列保密与 provider 不复用、分包 flow-down 和发布审批。网页能力声明、报价单或普通采购订单不能
+替代这些权利。先只运行 LL-37、mupirocin、chlorhexidine 和物种适用 QC controls 的盲法 reference
+pilot；pilot、原始交付、权利与三 lane QC 全部验收前，当前 773 条候选不得送样或解盲。

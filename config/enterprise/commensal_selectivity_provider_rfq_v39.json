@@ -1,0 +1,189 @@
+{
+  "schema_version": "ampgent.commensal-selectivity-provider-rfq.1",
+  "rfq_id": "commensal_selectivity_provider_rfq_v39_20260822",
+  "frozen_at": "2026-08-22T03:31:32Z",
+  "primary_sources": [
+    "https://www.evotec.com/solutions/drug-discovery-preclinical-development/discovery/in-vitro-biology",
+    "https://www.criver.com/products-services/discovery-services/pharmacology-studies/infectious-disease-models-assays/antiviral-and-antimicrobial-testing",
+    "https://www.criver.com/therapeutic-area/infectious-disease",
+    "https://www.atcc.org/microquant",
+    "https://www.atcc.org/resources/application-notes/development-and-performance-evaluation-of-microquant",
+    "https://www.atcc.org/products/mq-51",
+    "https://www.atcc.org/resources/white-papers/authentication-of-prokaryotes-at-atcc"
+  ],
+  "frozen_contract_binding": {
+    "contract_path": "config/enterprise/commensal_selectivity_assay_contract_v39.json",
+    "contract_sha256": "9861ee2c4cb47e5c9ace7fe0714fe5b7d4827f18df7b251a9ee9ca9223868741",
+    "strain_identities": [
+      "Staphylococcus_aureus_ATCC_29213",
+      "Staphylococcus_aureus_ATCC_43300_MRSA",
+      "Escherichia_coli_ATCC_25922",
+      "Staphylococcus_epidermidis_ATCC_35984_RP62A",
+      "Staphylococcus_epidermidis_ATCC_12228",
+      "Staphylococcus_hominis_ATCC_27844_DM122",
+      "Cutibacterium_acnes_ATCC_6919_NCTC_737"
+    ],
+    "assay_lane_ids": [
+      "aerobic_reference_MIC_lane",
+      "anaerobic_C_acnes_context_lane",
+      "common_skin_mimetic_bridge_lane"
+    ],
+    "protocol_change_requires_new_version": true
+  },
+  "provider_capability_screen": [
+    {
+      "provider_id": "Evotec",
+      "provider_role": "candidate_full_service_microbiology_CRO",
+      "public_capability_status": "core_microbiology_capability_publicly_demonstrated",
+      "publicly_described_capabilities": [
+        "MIC",
+        "MBC_or_MFC",
+        "time_kill",
+        "biofilm",
+        "CLSI_EUCAST_BSAC_methods",
+        "bespoke_method_development",
+        "strain_bank"
+      ],
+      "unconfirmed_requirements": [
+        "exact_frozen_seven_strain_panel",
+        "common_skin_mimetic_bridge_lane",
+        "raw_well_OD_and_CFU_dilution_plating_delivery",
+        "censoring_and_failed_run_delivery",
+        "raw_data_and_derivative_model_rights",
+        "client_sequence_confidentiality_and_non_use"
+      ],
+      "qualification_status": "rfq_required_exact_panel_protocol_delivery_and_rights_unconfirmed"
+    },
+    {
+      "provider_id": "Charles_River",
+      "provider_role": "candidate_full_service_microbiology_CRO",
+      "public_capability_status": "core_microbiology_capability_publicly_demonstrated",
+      "publicly_described_capabilities": [
+        "MIC",
+        "MBC",
+        "time_kill",
+        "biofilm",
+        "artificial_body_fluids",
+        "infectious_disease_CRO_services"
+      ],
+      "unconfirmed_requirements": [
+        "exact_frozen_seven_strain_panel",
+        "frozen_common_skin_mimetic_bridge_lane",
+        "raw_well_OD_and_CFU_dilution_plating_delivery",
+        "censoring_and_failed_run_delivery",
+        "raw_data_and_derivative_model_rights",
+        "client_sequence_confidentiality_and_non_use"
+      ],
+      "qualification_status": "rfq_required_exact_panel_protocol_delivery_and_rights_unconfirmed"
+    },
+    {
+      "provider_id": "ATCC",
+      "provider_role": "authenticated_strain_supplier_and_QC_source_not_full_assay_provider",
+      "public_capability_status": "authenticated_material_and_single_assay_QC_product_publicly_demonstrated",
+      "publicly_described_capabilities": [
+        "authenticated_prokaryotic_material",
+        "strain_identity_and_QC_support",
+        "MicroQuant_single_assay_quantitative_QC"
+      ],
+      "unconfirmed_requirements": [
+        "exact_catalog_and_shipping_availability_for_all_frozen_strains",
+        "commercial_internal_strain_use_scope",
+        "MTA_and_additional_use_rights",
+        "full_external_assay_execution"
+      ],
+      "qualification_status": "material_source_only_pending_exact_catalog_and_MTA_review"
+    }
+  ],
+  "mandatory_rfq_requirements": {
+    "exact_frozen_seven_strain_panel_required": true,
+    "authenticated_master_stock_genome_or_CoA_identifiers_required": true,
+    "minimum_biological_replicates_per_strain_condition": 3,
+    "minimum_independent_experiment_days": 2,
+    "technical_replicates_per_biological_replicate": 2,
+    "peptide_concentration_um": [0.5, 1, 2, 4, 8, 16, 32, 64, 128, 256],
+    "time_kill_hours": [0, 1, 2, 4, 8, 24],
+    "time_kill_absolute_concentrations_um": [1, 4, 16, 64],
+    "all_three_frozen_lanes_required": true,
+    "raw_immutable_delivery_required": true,
+    "raw_delivery_fields": [
+      "plate_map_and_randomization",
+      "raw_well_OD_or_growth_signal",
+      "raw_CFU_colony_counts",
+      "dilution_factors_and_plating_volume",
+      "LOD_and_LOQ",
+      "MIC_and_MBC_intervals_and_censoring",
+      "inoculum_medium_lot_pH_atmosphere_temperature",
+      "control_and_QC_raw_values",
+      "peptide_recovery_and_adsorption_controls",
+      "failure_retest_and_assignable_cause_edges"
+    ],
+    "failed_runs_and_assignable_cause_retests_retained": true,
+    "unexpected_pathogen_failure_or_resident_kill_is_assignable_cause": false,
+    "cross_medium_MIC_ratio_or_pooling_allowed": false
+  },
+  "commercial_and_data_rights_acceptance": {
+    "required_executed_agreement_terms": {
+      "client_raw_data_ownership_or_perpetual_commercial_internal_license": "contract_required_not_yet_confirmed",
+      "normalized_derivative_dataset_creation_and_retention": "contract_required_not_yet_confirmed",
+      "derivative_model_training_and_internal_weights": "contract_required_not_yet_confirmed",
+      "audit_reanalysis_and_regulatory_use": "contract_required_not_yet_confirmed",
+      "client_peptide_sequence_and_result_confidentiality": "contract_required_not_yet_confirmed",
+      "provider_non_use_except_contract_performance": "contract_required_not_yet_confirmed",
+      "subcontractor_flowdown_and_approval": "contract_required_not_yet_confirmed",
+      "publication_or_external_disclosure_only_with_client_approval": "contract_required_not_yet_confirmed"
+    },
+    "public_web_capability_description_satisfies_executed_rights": false,
+    "purchase_order_alone_satisfies_derivative_model_rights": false
+  },
+  "reference_pilot": {
+    "reference_agents": [
+      "LL_37",
+      "mupirocin",
+      "chlorhexidine",
+      "species_appropriate_antibiotic_QC_controls"
+    ],
+    "blind_codes_required": true,
+    "current_773_candidates_included": false,
+    "candidate_samples_allowed_before_pilot_acceptance": false,
+    "candidate_identity_unblinded": false,
+    "pilot_acceptance_requires": [
+      "all_strain_growth_and_identity_QC_pass",
+      "reference_agent_curve_and_QC_control_reproducibility_pass",
+      "peptide_recovery_and_adsorption_QC_pass",
+      "aerobic_anaerobic_and_skin_bridge_lane_contract_match",
+      "raw_delivery_schema_and_hash_replay_pass",
+      "executed_data_and_derivative_model_rights_pass"
+    ],
+    "failed_pilot_may_change_candidate_threshold": false,
+    "failed_pilot_action": "retain_raw_evidence_diagnose_assignable_cause_and_create_new_version_if_protocol_changes"
+  },
+  "delivery_schema": {
+    "format": "content_addressed_UTF8_JSONL_plus_lossless_instrument_exports",
+    "row_identity": "provider_project_batch_day_plate_well_strain_condition_blind_sample_concentration_time",
+    "required_hashes": [
+      "source_instrument_file_sha256",
+      "plate_map_sha256",
+      "raw_observation_bundle_sha256",
+      "normalization_code_sha256",
+      "derived_endpoint_bundle_sha256"
+    ],
+    "database_ingest_requires_schema_validation_and_idempotency_key": true
+  },
+  "decision": {
+    "task_status": "in_progress",
+    "public_capability_screen_complete": true,
+    "provider_qualified": false,
+    "rfq_sent": false,
+    "purchase_or_contract_committed": false,
+    "reference_pilot_started": false,
+    "candidate_unblinding_authorized": false,
+    "formal_science_run_submitted": false,
+    "next_action": "obtain_procurement_authority_then_send_frozen_RFP_to_Evotec_and_Charles_River_and_review_ATCC_exact_catalog_and_MTA_terms_before_any_reference_or_candidate_material_transfer"
+  },
+  "acceptance_artifacts": {
+    "provider_capability_and_gap_matrix_sha256": "2a28915b8f0a930035506c3876b2186fb278ff3f9aeb516a011dd23f8a51ec05",
+    "frozen_protocol_and_raw_delivery_rfq_sha256": "dd03166bd116e3955a06eb07887aeb51f19fd5c4619e96130079fa77836885d3",
+    "commercial_data_and_derivative_model_rights_addendum_sha256": "5082e3d29a720beeb9540eb7a09678ae4b4160ddea86662304d2df9c60a73c93",
+    "blinded_reference_pilot_acceptance_plan_sha256": "d6d19df96f6b178d2547f7594ffbb4e46b8223f834a0038d25d0c9a1544ebc8a"
+  }
+}

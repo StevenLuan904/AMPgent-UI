@@ -737,3 +737,15 @@ DBAASP 条款同时出现 public-domain/free-copy 与 non-distribution、researc
 无活性记录 0、模型 0，当前 773 条也未参与来源选择、拆分或模型选择。这是防止许可证和负例污染的
 区分性负结果，不是研究停顿；调度器转向 commensal-selectivity provider/reference pilot，同时保留
 DRAMP 记录级审计和 DBAASP/APD6 书面授权为外部恢复路径。
+
+2026-08-22 v39 选择性 provider 资格追加：Evotec 与 Charles River 的官方服务页足以证明其公开提供
+MIC/MBC、time-kill、biofilm 等核心微生物能力，Charles River 还公开描述 artificial body-fluid assay；
+但公开网页不能证明冻结七菌株、skin-mimetic bridge、逐孔 OD/CFU/删失/失败批次交付，以及原始数据、
+衍生数据和内部模型权利。ATCC 只作为鉴定菌株与 QC 材料来源，MicroQuant 单次 QC 产品受 MTA 与附加
+用途权利约束，不能冒充完整 CRO。
+
+因此已冻结 `config/enterprise/commensal_selectivity_provider_rfq_v39.json`：完整绑定七株、三 lane、
+绝对浓度 time-kill、不可变原始交付、保密/非复用、衍生模型权利和盲法 reference pilot 验收。
+provider 尚未资格化、RFQ 未发送、未采购、pilot 未启动且 773 条候选未解盲；没有组织采购授权前不对外
+承诺费用或转移样品。下一动作是将同一内容寻址 RFP 发给两家 CRO 并单独审查 ATCC catalog/MTA，只有
+执行协议和 reference pilot 全部通过后才允许候选入场。
