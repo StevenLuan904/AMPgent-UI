@@ -15,10 +15,13 @@ from temporalio import activity
 from pepagent.db.models import (
     AgentDecision,
     Candidate,
+    CandidateOccurrence,
     Evaluation,
     ExperimentRun,
     ExperimentRunTargetBranch,
+    LifecycleEvent,
     MultiTargetStructureEvidenceRecord,
+    RunStageCheckpoint,
 )
 from pepagent.db.repository import ExperimentRepository
 from pepagent.db.session import SessionFactory
@@ -79,6 +82,173 @@ from pepagent.workflow_observer_contract import (
 
 V38_METRIC_RESULT_REFERENCE_SCHEMA = "v38.metric-result-reference.1"
 V38_ADMISSION_REFERENCE_SCHEMA = "v38.sequence-admission-reference.1"
+
+
+@activity.defn(name="persist_v39_exploration_round_yield")
+async def persist_v39_exploration_round_yield(
+    request: dict[str, Any],
+) -> dict[str, Any]:
+    """Measure one completed round from DB state and persist an idempotent receipt."""
+
+    controller_run_id = uuid.UUID(str(request["controller_run_id"]))
+    round_run_id = uuid.UUID(str(request["round_run_id"]))
+    prior_run_ids = tuple(
+        uuid.UUID(str(item)) for item in request.get("prior_round_run_ids", [])
+    )
+    round_ordinal = int(request["round_ordinal"])
+    child_result = request["child_result"]
+    admission = child_result.get("admission")
+    if not isinstance(admission, dict):
+        raise ValueError("v39 round result lacks durable admission evidence")
+    mature_ids = {uuid.UUID(str(item)) for item in admission["mature_core_candidate_ids"]}
+    exploration_ids = {
+        uuid.UUID(str(item)) for item in admission["exploration_candidate_ids"]
+    }
+
+    async with SessionFactory() as session, session.begin():
+        if await session.get(ExperimentRun, controller_run_id) is None:
+            raise ValueError("v39 controller run does not exist")
+        if await session.get(ExperimentRun, round_run_id) is None:
+            raise ValueError("v39 round run does not exist")
+        current_rows = tuple(
+            (
+                await session.execute(
+                    select(
+                        Candidate.id,
+                        Candidate.sequence_sha256,
+                        Candidate.metadata_json,
+                    ).where(Candidate.run_id == round_run_id)
+                )
+            ).all()
+        )
+        prior_hashes: set[str] = set()
+        if prior_run_ids:
+            prior_hashes = set(
+                (
+                    await session.scalars(
+                        select(Candidate.sequence_sha256).where(
+                            Candidate.run_id.in_(prior_run_ids)
+                        )
+                    )
+                ).all()
+            )
+        raw_occurrences = int(
+            await session.scalar(
+                select(func.count())
+                .select_from(CandidateOccurrence)
+                .where(CandidateOccurrence.run_id == round_run_id)
+            )
+            or 0
+        )
+        novel_ids = {
+            candidate_id
+            for candidate_id, sequence_sha256, _metadata in current_rows
+            if sequence_sha256 not in prior_hashes
+        }
+        family_keys = {
+            str(metadata.get("sequence_family_key"))
+            for _candidate_id, _sequence_sha256, metadata in current_rows
+            if isinstance(metadata, dict) and metadata.get("sequence_family_key")
+        }
+        observation = {
+            "batch_ordinal": round_ordinal,
+            "raw_occurrences": raw_occurrences,
+            "valid_unique_sequences": len(current_rows),
+            "historically_novel_sequences": len(novel_ids),
+            "sequence_family_count": len(family_keys),
+            "safety_admissible_sequences": len(mature_ids | exploration_ids),
+            "activity_supported_sequences": len(mature_ids),
+            "new_pareto_extensions": len(mature_ids & novel_ids),
+        }
+        payload = {
+            "schema_version": "ampgent.sequence-space-round-yield.1",
+            "controller_run_id": str(controller_run_id),
+            "round_run_id": str(round_run_id),
+            "round_ordinal": round_ordinal,
+            "observation": observation,
+            "sequence_family_observation_complete": bool(family_keys),
+            "exploration_contract_sha256": request[
+                "exploration_contract_sha256"
+            ],
+            "schedule_sha256": request["schedule_sha256"],
+        }
+        receipt_sha256 = sha256_json(payload)
+        existing = await session.scalar(
+            select(LifecycleEvent).where(
+                LifecycleEvent.aggregate_type == "run",
+                LifecycleEvent.aggregate_id == controller_run_id,
+                LifecycleEvent.event_type == "v39.exploration_round_yield_observed",
+                LifecycleEvent.payload_sha256 == receipt_sha256,
+            )
+        )
+        if existing is None:
+            await ExperimentRepository(session).append_event(
+                "run",
+                controller_run_id,
+                "v39.exploration_round_yield_observed",
+                "v39-sequence-space-controller",
+                payload,
+            )
+    return {"observation": observation, "receipt_sha256": receipt_sha256}
+
+
+@activity.defn(name="persist_v39_exploration_controller_action")
+async def persist_v39_exploration_controller_action(
+    request: dict[str, Any],
+) -> dict[str, Any]:
+    """Persist the replayable action selected from one durable round yield."""
+
+    controller_run_id = uuid.UUID(str(request["controller_run_id"]))
+    round_ordinal = int(request["round_ordinal"])
+    observation = request["observation"]
+    payload = {
+        "schema_version": "ampgent.sequence-space-controller-action.1",
+        "controller_run_id": str(controller_run_id),
+        "round_run_id": str(request["round_run_id"]),
+        "round_ordinal": round_ordinal,
+        "action": str(request["action"]),
+        "observation": observation,
+        "schedule_sha256": str(request["schedule_sha256"]),
+    }
+    receipt_sha256 = sha256_json(payload)
+    async with SessionFactory() as session, session.begin():
+        if await session.get(ExperimentRun, controller_run_id) is None:
+            raise ValueError("v39 controller run does not exist")
+        existing = await session.scalar(
+            select(RunStageCheckpoint).where(
+                RunStageCheckpoint.run_id == controller_run_id,
+                RunStageCheckpoint.stage_name == "sequence_space_exploration",
+                RunStageCheckpoint.observation_no == round_ordinal,
+            )
+        )
+        if existing is not None:
+            if existing.receipt_sha256 != receipt_sha256:
+                raise ValueError("v39 controller checkpoint identity drifted")
+        else:
+            session.add(
+                RunStageCheckpoint(
+                    run_id=controller_run_id,
+                    stage_name="sequence_space_exploration",
+                    stage_order=2,
+                    observation_no=round_ordinal,
+                    durable_count=int(observation["raw_occurrences"]),
+                    expected_durable_count=1800,
+                    stage_status=(
+                        "completed"
+                        if int(observation["raw_occurrences"]) == 1800
+                        else "failed"
+                    ),
+                    controller_action=str(request["action"]),
+                    reasons_json=[
+                        f"historically_novel={observation['historically_novel_sequences']}",
+                        f"new_pareto_extensions={observation['new_pareto_extensions']}",
+                    ],
+                    tasks_json=["execute_next_pre_frozen_round"],
+                    receipt_sha256=receipt_sha256,
+                    observed_at=datetime.now(UTC),
+                )
+            )
+    return {"receipt_sha256": receipt_sha256}
 
 
 @activity.defn(name="persist_v38_external_activity_lifecycle")

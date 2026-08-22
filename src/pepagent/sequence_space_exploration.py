@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -95,6 +96,60 @@ class V39ExplorationRoundBinding(FrozenModel):
         if self.round_ordinal >= self.maximum_rounds:
             raise ValueError("exploration round ordinal exceeds maximum rounds")
         return self
+
+
+class V39ExplorationRoundRequest(FrozenModel):
+    """One pre-reserved, independently frozen child run in the outer schedule."""
+
+    run_id: UUID
+    workflow_id: str = Field(min_length=1)
+    request: dict[str, Any]
+
+    @model_validator(mode="after")
+    def validate_request_binding(self) -> V39ExplorationRoundRequest:
+        if str(self.request.get("run_id")) != str(self.run_id):
+            raise ValueError("v39 round request run identity drifted")
+        V39ExplorationRoundBinding.model_validate(self.request.get("exploration_round"))
+        return self
+
+
+class V39ExplorationSchedule(FrozenModel):
+    """Frozen parent schedule; no child identity may be allocated during replay."""
+
+    schema_version: Literal["ampgent.sequence-space-exploration-schedule.1"] = (
+        "ampgent.sequence-space-exploration-schedule.1"
+    )
+    controller_run_id: UUID
+    exploration_contract: SequenceSpaceExplorationContract
+    rounds: tuple[V39ExplorationRoundRequest, ...]
+
+    @model_validator(mode="after")
+    def validate_rounds(self) -> V39ExplorationSchedule:
+        if len(self.rounds) != self.exploration_contract.maximum_rounds:
+            raise ValueError("v39 schedule must pre-freeze every exploration round")
+        run_ids = [item.run_id for item in self.rounds]
+        workflow_ids = [item.workflow_id for item in self.rounds]
+        if len(run_ids) != len(set(run_ids)) or len(workflow_ids) != len(
+            set(workflow_ids)
+        ):
+            raise ValueError("v39 child run and workflow identities must be unique")
+        bindings = tuple(
+            V39ExplorationRoundBinding.model_validate(
+                item.request["exploration_round"]
+            )
+            for item in self.rounds
+        )
+        if [item.round_ordinal for item in bindings] != list(
+            range(self.exploration_contract.maximum_rounds)
+        ):
+            raise ValueError("v39 rounds must be frozen in contiguous order")
+        expected_sha = self.exploration_contract.sha256()
+        if any(item.exploration_contract_sha256 != expected_sha for item in bindings):
+            raise ValueError("v39 round is bound to another exploration contract")
+        return self
+
+    def sha256(self) -> str:
+        return sha256_json(self.model_dump(mode="json"))
 
 
 ControllerAction = Literal[

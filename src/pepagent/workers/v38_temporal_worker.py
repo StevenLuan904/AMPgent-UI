@@ -23,12 +23,15 @@ from pepagent.workers.v38_activities import (
     persist_v38_score_all_generation,
     persist_v38_sequence_admission,
     persist_v38_sequence_metric,
+    persist_v39_exploration_controller_action,
+    persist_v39_exploration_round_yield,
     plan_v38_multitarget_structure,
     predict_v38_multitarget_structure,
     score_v38_multitarget_rosetta,
 )
 from pepagent.workers.v38_observer_interceptor import V38WorkflowObserverInterceptor
 from pepagent.workflows.v38_sequence_first import V38SequenceFirstAgentWorkflow
+from pepagent.workflows.v39_sequence_space import V39SequenceSpaceExplorationWorkflow
 
 V38_ROLE_CONFIG = {
     "v38-control": (
@@ -46,8 +49,10 @@ V38_ROLE_CONFIG = {
             persist_v38_multitarget_boltz,
             persist_v38_multitarget_rosetta,
             persist_v38_final_portfolio_replay,
+            persist_v39_exploration_round_yield,
+            persist_v39_exploration_controller_action,
         ],
-        [V38SequenceFirstAgentWorkflow],
+        [V38SequenceFirstAgentWorkflow, V39SequenceSpaceExplorationWorkflow],
     ),
     "v38-generator": (
         "pepagent-generator-v38",

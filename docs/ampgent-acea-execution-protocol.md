@@ -2453,3 +2453,14 @@ MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot
 1800 raw occurrence，3 个生成器各 6 个唯一 seed，最多 4 轮。轮次必须使用新 run identity，旧 run 和旧
 输出只作不可变历史去重/收益基线，禁止回填或复用。controller 以新增唯一序列、家族覆盖、安全/活性产率
 和 Pareto extension 判断下一动作；连续两批停滞必须换策略。Pareto 只负责组合选择，不拥有停止生成的权限。
+## v39 序列空间外层轮次调度（2026-08-23）
+
+- 四个科学 child run 必须在父 workflow 提交前全部预留并冻结；Temporal replay 期间禁止生成 run_id。
+- `V39ExplorationSchedule` 必须绑定同一 exploration contract SHA、连续 round ordinal、互异 run_id 与
+  workflow_id；每个 child 继续执行 18 cells、1800 raw occurrences、12 metrics score-all。
+- `V39SequenceSpaceExplorationWorkflow` 顺序执行独立 child run，每轮后从 PostgreSQL 读取 raw、unique、
+  exact-history-novel 和 admission/Pareto yield，再以 append-only event 与 `RunStageCheckpoint` 持久化。
+- family yield 仅在 Candidate 明确携带 `sequence_family_key` 时计数；缺失时记录为不完整，不得用任意
+  序列前缀伪造 family 聚类。
+- 父 workflow/activities 已接入 control worker；正式 schedule reservation CLI、release、guarded smoke、
+  full preflight 尚未闭合前，禁止提交 v39 正式 run。

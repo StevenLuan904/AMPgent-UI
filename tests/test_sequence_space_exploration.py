@@ -1,9 +1,11 @@
 from pathlib import Path
+from uuid import uuid4
 
 import yaml
 
 from pepagent.sequence_space_exploration import (
     ExplorationBatchObservation,
+    V39ExplorationSchedule,
     build_default_v39_exploration_contract,
     build_v39_round_execution_contract,
     next_exploration_action,
@@ -90,3 +92,62 @@ def test_v39_round_projection_binds_eighteen_cells_and_score_all_metrics() -> No
     assert {cell.seed for cell in execution.cells} == {
         cell.seed for cell in contract.cells if cell.round_ordinal == 2
     }
+
+
+def test_v39_outer_schedule_requires_unique_pre_frozen_round_runs() -> None:
+    contract = build_default_v39_exploration_contract()
+    rounds = []
+    for ordinal in range(contract.maximum_rounds):
+        binding, execution = build_v39_round_execution_contract(
+            contract, round_ordinal=ordinal
+        )
+        run_id = uuid4()
+        rounds.append(
+            {
+                "run_id": run_id,
+                "workflow_id": f"v39-round-{ordinal}-{run_id}",
+                "request": {
+                    "run_id": str(run_id),
+                    "exploration_round": binding.model_dump(mode="json"),
+                    "execution_contract": execution.model_dump(mode="json"),
+                },
+            }
+        )
+    schedule = V39ExplorationSchedule(
+        controller_run_id=uuid4(),
+        exploration_contract=contract,
+        rounds=tuple(rounds),
+    )
+    assert len(schedule.rounds) == 4
+    assert len({item.run_id for item in schedule.rounds}) == 4
+
+
+def test_v39_outer_schedule_rejects_reused_run_identity() -> None:
+    contract = build_default_v39_exploration_contract()
+    reused_run_id = uuid4()
+    rounds = []
+    for ordinal in range(contract.maximum_rounds):
+        binding, execution = build_v39_round_execution_contract(
+            contract, round_ordinal=ordinal
+        )
+        rounds.append(
+            {
+                "run_id": reused_run_id,
+                "workflow_id": f"v39-round-{ordinal}",
+                "request": {
+                    "run_id": str(reused_run_id),
+                    "exploration_round": binding.model_dump(mode="json"),
+                    "execution_contract": execution.model_dump(mode="json"),
+                },
+            }
+        )
+    try:
+        V39ExplorationSchedule(
+            controller_run_id=uuid4(),
+            exploration_contract=contract,
+            rounds=tuple(rounds),
+        )
+    except ValueError as exc:
+        assert "identities must be unique" in str(exc)
+    else:
+        raise AssertionError("reused v39 run identity was accepted")

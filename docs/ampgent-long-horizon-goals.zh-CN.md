@@ -839,5 +839,12 @@ pilot 验收；候选继续零披露。该任务也转为 `blocked` 后，确定
 `build_v39_round_execution_contract` 将任一冻结 round 精确投影为 18 cells、1800 raw occurrences、12 metrics
 的 score-all execution contract，并生成含 exploration-contract SHA、round ordinal、最大轮数和 execution-
 contract SHA 的 `V39ExplorationRoundBinding`。现有 workflow 仅在该 binding 验证通过时接受 18/1800；没有
-binding 的历史 v38 请求仍严格限定 9/900。该变更尚未实现四轮外层 child-run 调度、yield checkpoint 或
-exact-once submission，因此不得声称 v39 连续探索已完整接通，也没有提交正式 run。
+binding 的历史 v38 请求仍严格限定 9/900。
+
+2026-08-23 外层调度增量：新增 `V39ExplorationSchedule` 与
+`V39SequenceSpaceExplorationWorkflow`。父 workflow 只接受预先冻结、run/workflow identity
+互异且 round ordinal 连续的四个 child request，逐轮调用既有 score-all workflow；每轮完成后由
+数据库活动计算 raw/unique/exact-history-novel/admission/Pareto durable yield，并把下一控制动作写入
+`RunStageCheckpoint`。这消除了 Temporal replay 期间临时分配 run identity 的风险。当前仍未完成
+正式 schedule 构建/预留 CLI、拟部署 release guarded smoke 与 exact-once preflight，因此不得提交或
+声称 v39 正式连续探索已经运行。
