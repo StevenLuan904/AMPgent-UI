@@ -90,6 +90,7 @@ class V39ExplorationRoundBinding(FrozenModel):
     expected_raw_occurrences: int = Field(gt=0)
     execution_contract_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     independent_frozen_run_identity_required: Literal[True] = True
+    defer_structure_until_exploration_complete: Literal[True] = True
 
     @model_validator(mode="after")
     def validate_round(self) -> V39ExplorationRoundBinding:

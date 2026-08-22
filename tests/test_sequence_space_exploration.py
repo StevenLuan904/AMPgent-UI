@@ -86,6 +86,7 @@ def test_v39_round_projection_binds_eighteen_cells_and_score_all_metrics() -> No
     assert binding.round_ordinal == 2
     assert binding.exploration_contract_sha256 == contract.sha256()
     assert binding.execution_contract_sha256 == execution.sha256()
+    assert binding.defer_structure_until_exploration_complete is True
     assert len(execution.cells) == 18
     assert execution.expected_raw_occurrences == 1800
     assert len(execution.required_sequence_metrics) == 12

@@ -2464,3 +2464,6 @@ MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot
   序列前缀伪造 family 聚类。
 - 父 workflow/activities 已接入 control worker；正式 schedule reservation CLI、release、guarded smoke、
   full preflight 尚未闭合前，禁止提交 v39 正式 run。
+- v39 round binding 强制 `defer_structure_until_exploration_complete=true`：四轮只完成生成、12-metric
+  score-all、admission/refinement 与 durable yield，不允许每轮结构任务阻塞下一轮探索。四轮汇总 admission
+  与结构 portfolio 尚未闭合时，父 workflow 必须以 structure-pending 结束并禁止伪称最终完成。

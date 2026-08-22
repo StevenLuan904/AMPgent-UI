@@ -44,6 +44,13 @@ def _validate_request(request: dict[str, Any]) -> None:
             raise ValueError("v38 workflow raw occurrence budget must equal 900")
     else:
         binding = V39ExplorationRoundBinding.model_validate(exploration_round_payload)
+        if (
+            exploration_round_payload.get(
+                "defer_structure_until_exploration_complete"
+            )
+            is not True
+        ):
+            raise ValueError("v39 exploration round must explicitly defer structure")
         if not isinstance(cells, list) or len(cells) != 18:
             raise ValueError("v39 exploration round requires exactly eighteen generator cells")
         raw_budget = sum(int(item.get("requested_proposals", 0)) for item in cells)
@@ -457,7 +464,8 @@ class V38SequenceFirstAgentWorkflow:
                 )
             structure_task_count = 0
             structure_evidence_count = 0
-            if admission["structure_dispatch_allowed"]:
+            defer_structure = request.get("exploration_round") is not None
+            if admission["structure_dispatch_allowed"] and not defer_structure:
                 structure_plan = await workflow.execute_activity(
                     "plan_v38_multitarget_structure",
                     {
@@ -599,6 +607,9 @@ class V38SequenceFirstAgentWorkflow:
                 if not final_portfolio["replay_verified"]:
                     raise ValueError("v38 final portfolio replay was not verified")
                 status = "multitarget_final_portfolio_replay_complete"
+            elif defer_structure:
+                final_portfolio = None
+                status = "sequence_evidence_complete_deferred_structure"
             else:
                 final_portfolio = None
                 status = "sequence_evidence_concluded_without_structure"
@@ -621,6 +632,7 @@ class V38SequenceFirstAgentWorkflow:
                 "structure_evidence_count": structure_evidence_count,
                 "final_portfolio": final_portfolio,
                 "formal_structure_workflow_complete": final_portfolio is not None,
+                "structure_deferred_to_exploration_parent": defer_structure,
             }
         except asyncio.CancelledError:
             await asyncio.shield(

@@ -99,9 +99,13 @@ class V39SequenceSpaceExplorationWorkflow:
 
         return {
             "schema_version": "ampgent.sequence-space-exploration-result.1",
-            "status": "maximum_frozen_rounds_completed",
+            "status": "sequence_space_complete_structure_portfolio_pending",
             "controller_run_id": str(schedule.controller_run_id),
             "schedule_sha256": schedule.sha256(),
             "rounds": round_receipts,
             "observations": [item.model_dump(mode="json") for item in observations],
+            "structure_dispatch_allowed": False,
+            "structure_dispatch_blocker": (
+                "cross_round_admission_and_portfolio_plan_not_persisted"
+            ),
         }

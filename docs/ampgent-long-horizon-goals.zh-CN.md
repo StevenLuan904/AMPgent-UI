@@ -848,3 +848,8 @@ binding 的历史 v38 请求仍严格限定 9/900。
 `RunStageCheckpoint`。这消除了 Temporal replay 期间临时分配 run identity 的风险。当前仍未完成
 正式 schedule 构建/预留 CLI、拟部署 release guarded smoke 与 exact-once preflight，因此不得提交或
 声称 v39 正式连续探索已经运行。
+
+同日拓扑复核发现，若直接复用完整 v38 child 会让每轮 Pareto/结构阶段阻塞下一轮生成。现已把 v39
+round binding 冻结为 sequence-only：每轮完成生成、12-metric score-all、admission/refinement 和 yield
+即返回；只有四轮空间探索全部完成并持久化 cross-round admission 后才允许结构。cross-round portfolio
+尚未实现，因此父 workflow 当前 fail-closed 为 structure-pending，不能进入 release 或正式提交。

@@ -109,12 +109,27 @@ def test_sequence_workflow_accepts_identity_bound_v39_exploration_round() -> Non
     )
     request["execution_contract"] = execution.model_dump(mode="json")
     request["exploration_round"] = binding.model_dump(mode="json")
+    assert request["exploration_round"][
+        "defer_structure_until_exploration_complete"
+    ] is True
     _validate_request(request)
 
     request["exploration_round"]["execution_contract_sha256"] = "0" * 64
     with pytest.raises(ValueError, match="identity drifted"):
         _validate_request(request)
 
+
+def test_sequence_workflow_rejects_v39_round_without_explicit_structure_deferral() -> None:
+    request = _request()
+    binding, execution = build_v39_round_execution_contract(
+        build_default_v39_exploration_contract(), round_ordinal=0
+    )
+    request["execution_contract"] = execution.model_dump(mode="json")
+    payload = binding.model_dump(mode="json")
+    payload.pop("defer_structure_until_exploration_complete")
+    request["exploration_round"] = payload
+    with pytest.raises(ValueError, match="explicitly defer structure"):
+        _validate_request(request)
 
 def test_v38_sequence_workflow_rejects_first_k_and_missing_metric_plugin() -> None:
     first_k = _request()
