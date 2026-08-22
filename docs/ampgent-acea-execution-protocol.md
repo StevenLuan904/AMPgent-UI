@@ -2376,3 +2376,14 @@ ToxinPred 或通用序列标签不能算作 cell assay 证据。正式安全门�
 肽序列保密与 provider 不复用、分包 flow-down 和发布审批。网页能力声明、报价单或普通采购订单不能
 替代这些权利。先只运行 LL-37、mupirocin、chlorhexidine 和物种适用 QC controls 的盲法 reference
 pilot；pilot、原始交付、权利与三 lane QC 全部验收前，当前 773 条候选不得送样或解盲。
+
+### 2026-08-22 ATCC material-source 与 CRO 转移门
+
+冻结七株必须按 ATCC catalog number 29213、43300、25922、35984、12228、27844、6919 逐株采购与
+验收，不接受未经新版本审查的物种级替代。静态页面只确认 catalog identity；每次采购还必须取得当前
+quote/库存/运输许可、product-specific restrictions、lot CoA、master-stock/passaging 和增长/纯度/身份 QC。
+
+ATCC Original Material 或 Progeny 不得默认从 AMPgent 转交 CRO。RFP 应要求 CRO 明示其直接向 ATCC
+采购的 lot、适用 MTA/addendum 与自身商业/CRO license 路径；若拟由 AMPgent 持有或转移材料，必须先取得
+ATCC 书面许可。ATCC Authenticated Data 也不得默认进入商业衍生模型。上述权利、lot 和 reference pilot
+全部验收前，`provider_qualified=false`，候选序列/样品不披露且不提交正式 science run。

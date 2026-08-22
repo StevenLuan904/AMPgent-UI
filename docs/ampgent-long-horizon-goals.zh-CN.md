@@ -749,3 +749,14 @@ MIC/MBC、time-kill、biofilm 等核心微生物能力，Charles River 还公开
 provider 尚未资格化、RFQ 未发送、未采购、pilot 未启动且 773 条候选未解盲；没有组织采购授权前不对外
 承诺费用或转移样品。下一动作是将同一内容寻址 RFP 发给两家 CRO 并单独审查 ATCC catalog/MTA，只有
 执行协议和 reference pilot 全部通过后才允许候选入场。
+
+2026-08-22 v39 ATCC 七菌株来源审计追加：29213、43300、25922、35984/RP62A、12228、
+27844/DM122 和 6919/NCTC737 的官方 catalog identity 均已逐株核实；菌株 designation、来源情境、
+全基因组身份支持与冻结 assay role 分开保存。静态 catalog 审计不证明当前库存、出口、具体 lot 或 CoA，
+也不允许用同物种替代株静默替换。
+
+ATCC MTA 7.1、Commercial Use Licensing、Data Use Agreement 与 2026 screening addendum 共同表明：
+商业内部材料使用、收费 CRO 使用、原材料/后代转移、screening 以及认证数据进入商业衍生模型都需要相应
+书面路径，普通采购或 screening 年费不自动授权商业 CRO 服务。因此当前只关闭“七株身份”缺口，lot、
+商业使用、CRO 和数据/模型权利仍为零资格化；证据见
+`config/enterprise/commensal_selectivity_atcc_material_source_audit_v39.json`。候选序列和样品继续零披露。

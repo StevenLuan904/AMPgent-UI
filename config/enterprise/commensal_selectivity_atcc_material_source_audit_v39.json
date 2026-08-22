@@ -1,0 +1,175 @@
+{
+  "schema_version": "ampgent.commensal-selectivity-atcc-material-source-audit.1",
+  "audit_id": "commensal_selectivity_atcc_material_source_audit_v39_20260822",
+  "frozen_at": "2026-08-22T05:31:37Z",
+  "primary_sources": [
+    "https://www.atcc.org/products/29213",
+    "https://www.atcc.org/products/43300",
+    "https://www.atcc.org/products/25922",
+    "https://www.atcc.org/products/35984",
+    "https://www.atcc.org/products/12228",
+    "https://www.atcc.org/products/27844",
+    "https://www.atcc.org/products/6919",
+    "https://www.atcc.org/policies/product-use-policies/material-transfer-agreement",
+    "https://www.atcc.org/policies/product-use-policies/commercial-use-licensing",
+    "https://www.atcc.org/policies/product-use-policies/data-use-agreement",
+    "https://www.atcc.org/-/media/product-assets/documents/permits/material-transfer-agreement-addendum-for-screening-applications.pdf"
+  ],
+  "scope": {
+    "purpose": "verify_exact_frozen_strain_catalog_identities_and_identify_material_data_and_CRO_rights_documents_required_before_procurement",
+    "static_catalog_audit_only": true,
+    "bulk_ATCC_authenticated_data_imported": false,
+    "ATCC_sequence_or_genome_data_imported": false,
+    "material_measurements_created": false
+  },
+  "strain_catalog_identity_matrix": [
+    {
+      "strain_identity": "Staphylococcus_aureus_ATCC_29213",
+      "catalog_number": "29213",
+      "strain_designation": "Wichita",
+      "catalog_identity_publicly_verified": true,
+      "genome_sequenced": true,
+      "identity_support": "ATCC_catalog_and_whole_genome_sequencing_verification",
+      "source_context": "wound",
+      "frozen_assay_role": "wound_MSSA_pathogen_reference",
+      "culture_format_publicly_listed": "freeze_dried",
+      "lot_CoA_sha256": "required_after_procurement_not_yet_available",
+      "current_stock_shipping_and_export_status": "dynamic_not_qualified_by_static_catalog_audit"
+    },
+    {
+      "strain_identity": "Staphylococcus_aureus_ATCC_43300_MRSA",
+      "catalog_number": "43300",
+      "strain_designation": "F_182",
+      "catalog_identity_publicly_verified": true,
+      "genome_sequenced": true,
+      "identity_support": "ATCC_catalog_SCCmec_II_methicillin_and_oxacillin_resistance",
+      "source_context": "clinical_isolate",
+      "frozen_assay_role": "MRSA_pathogen_and_PBP2a_target_context",
+      "culture_format_publicly_listed": "freeze_dried",
+      "lot_CoA_sha256": "required_after_procurement_not_yet_available",
+      "current_stock_shipping_and_export_status": "dynamic_not_qualified_by_static_catalog_audit"
+    },
+    {
+      "strain_identity": "Escherichia_coli_ATCC_25922",
+      "catalog_number": "25922",
+      "strain_designation": "FDA_strain_Seattle_1946",
+      "catalog_identity_publicly_verified": true,
+      "genome_sequenced": true,
+      "identity_support": "ATCC_catalog_and_CLSI_antimicrobial_susceptibility_QC_role",
+      "source_context": "clinical_isolate",
+      "frozen_assay_role": "Gram_negative_pathogen_and_GyrA_target_context",
+      "culture_format_publicly_listed": "frozen_or_catalog_lot_specific_format",
+      "lot_CoA_sha256": "required_after_procurement_not_yet_available",
+      "current_stock_shipping_and_export_status": "dynamic_not_qualified_by_static_catalog_audit"
+    },
+    {
+      "strain_identity": "Staphylococcus_epidermidis_ATCC_35984_RP62A",
+      "catalog_number": "35984",
+      "strain_designation": "RP62A",
+      "catalog_identity_publicly_verified": true,
+      "genome_sequenced": true,
+      "identity_support": "ATCC_catalog_and_whole_genome_sequencing_verification",
+      "source_context": "catheter_sepsis_polysaccharide_adhesin",
+      "frozen_assay_role": "opportunistic_infection_and_biofilm_pathogen_context",
+      "culture_format_publicly_listed": "freeze_dried",
+      "lot_CoA_sha256": "required_after_procurement_not_yet_available",
+      "current_stock_shipping_and_export_status": "dynamic_not_qualified_by_static_catalog_audit"
+    },
+    {
+      "strain_identity": "Staphylococcus_epidermidis_ATCC_12228",
+      "catalog_number": "12228",
+      "strain_designation": "FDA_strain_PCI_1200",
+      "catalog_identity_publicly_verified": true,
+      "genome_sequenced": true,
+      "identity_support": "ATCC_catalog_whole_genome_sequence_and_non_biofilm_characterization",
+      "source_context": "microbiome_standard_component",
+      "frozen_assay_role": "lower_virulence_non_biofilm_carriage_comparator",
+      "culture_format_publicly_listed": "freeze_dried",
+      "lot_CoA_sha256": "required_after_procurement_not_yet_available",
+      "current_stock_shipping_and_export_status": "dynamic_not_qualified_by_static_catalog_audit"
+    },
+    {
+      "strain_identity": "Staphylococcus_hominis_ATCC_27844_DM122",
+      "catalog_number": "27844",
+      "strain_designation": "DM_122",
+      "catalog_identity_publicly_verified": true,
+      "genome_sequenced": true,
+      "identity_support": "ATCC_catalog_whole_genome_sequencing_and_type_strain_status",
+      "source_context": "human_skin",
+      "frozen_assay_role": "human_skin_resident_preservation_comparator",
+      "culture_format_publicly_listed": "freeze_dried",
+      "lot_CoA_sha256": "required_after_procurement_not_yet_available",
+      "current_stock_shipping_and_export_status": "dynamic_not_qualified_by_static_catalog_audit"
+    },
+    {
+      "strain_identity": "Cutibacterium_acnes_ATCC_6919_NCTC_737",
+      "catalog_number": "6919",
+      "strain_designation": "NCTC_737_VPI_0389",
+      "catalog_identity_publicly_verified": true,
+      "genome_sequenced": true,
+      "identity_support": "ATCC_catalog_whole_genome_sequence_and_type_strain_status",
+      "source_context": "facial_acne_anaerobe",
+      "frozen_assay_role": "anaerobic_skin_resident_and_acne_associated_context_comparator",
+      "culture_format_publicly_listed": "freeze_dried",
+      "lot_CoA_sha256": "required_after_procurement_not_yet_available",
+      "current_stock_shipping_and_export_status": "dynamic_not_qualified_by_static_catalog_audit"
+    }
+  ],
+  "material_and_data_rights_audit": {
+    "MTA_version": "7.1",
+    "catalog_identity_verification_equals_use_rights": false,
+    "commercial_internal_material_use": "written_ATCC_commercial_use_license_required_not_yet_confirmed",
+    "fee_for_service_CRO_use": "ATCC_license_required_for_CRO_not_yet_confirmed",
+    "original_material_or_progeny_transfer_to_CRO": "not_authorized_by_default_CRO_should_obtain_directly_from_ATCC",
+    "screening_use_for_for_profit_recipient": "screening_addendum_and_annual_fee_may_apply_not_yet_executed",
+    "screening_as_commercial_CRO_service": "not_authorized_by_screening_addendum_commercial_license_required",
+    "authenticated_ATCC_data_for_commercial_derivative_model": "prior_written_ATCC_permission_required_not_yet_confirmed",
+    "product_specific_contributor_patent_or_regulatory_restrictions": "must_be_checked_per_product_and_lot_before_order",
+    "inference": "an_external_CRO_should_quote_a_direct_ATCC_purchase_and_its_own_applicable_license_route_rather_than_receive_unmodified_material_from_AMPgent"
+  },
+  "procurement_and_lot_qualification_checklist": {
+    "required_before_material_order": [
+      "organization_and_project_use_classification",
+      "ATCC_commercial_use_or_project_specific_written_rights_decision",
+      "CRO_direct_purchase_or_ATCC_CRO_license_route",
+      "product_specific_permits_restrictions_and_screening_addenda",
+      "biosafety_import_export_and_shipping_authorizations",
+      "current_quote_stock_and_lead_time"
+    ],
+    "required_before_assay_start": [
+      "lot_specific_CoA_and_certificate_of_origin_when_applicable",
+      "master_stock_identity_and_passage_ledger",
+      "growth_purity_and_genome_or_orthogonal_identity_QC",
+      "provider_raw_data_and_derivative_model_rights_addendum",
+      "frozen_seven_strain_three_lane_protocol_receipt"
+    ],
+    "availability_and_price_are_not_scientific_identity": true,
+    "product_substitution_requires_new_contract_version": true
+  },
+  "candidate_and_execution_boundary": {
+    "procurement_started": false,
+    "purchase_or_license_committed": false,
+    "material_received": false,
+    "material_transferred_to_CRO": false,
+    "reference_pilot_started": false,
+    "current_773_candidate_sequences_disclosed": false,
+    "current_773_candidate_samples_transferred": false,
+    "formal_science_run_submitted": false
+  },
+  "decision": {
+    "exact_catalog_identity_status": "verified_for_all_seven_strains",
+    "current_lot_qualified": false,
+    "commercial_internal_material_use_qualified": false,
+    "CRO_use_and_transfer_qualified": false,
+    "authenticated_data_derivative_model_use_qualified": false,
+    "provider_fully_qualified": false,
+    "task_status": "in_progress",
+    "next_action": "require_Evotec_and_Charles_River_quotes_to_name_direct_ATCC_purchase_lot_CoA_product_restrictions_and_applicable_ATCC_CRO_or_commercial_license_route"
+  },
+  "acceptance_artifacts": {
+    "strain_catalog_identity_matrix_sha256": "3fbbfc815bda6bf9a3e20ff435518c76a31fbc986fa151aafb090920f3fe1873",
+    "material_transfer_commercial_use_and_CRO_rights_gap_sha256": "f42a3f44faf12d0d7b56f3cedd27d9c5fa97df133453429c22e6d15e94ac2573",
+    "procurement_and_lot_qualification_checklist_sha256": "770def43768df3ee071937a54521759ee7cf189a7f4bcb12a73a13796c2557a9",
+    "candidate_non_transfer_boundary_sha256": "864ca3e74fd272db4415d655d94464ac8bc855748bb9270e3e86bf6159590319"
+  }
+}

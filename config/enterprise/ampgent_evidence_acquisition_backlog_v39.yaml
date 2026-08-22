@@ -437,20 +437,28 @@ tasks:
       - stop_if_reference_pilot_fails_predeclared_growth_recovery_or_assay_QC
       - stop_if_current_candidates_are_unblinded_before_pilot_acceptance
     progress:
-      outcome: provider_capability_screen_and_fail_closed_RFP_package_frozen_external_RFP_and_reference_pilot_pending
+      outcome: provider_capability_screen_RFP_and_seven_strain_ATCC_identity_audit_frozen_external_rights_RFP_and_reference_pilot_pending
       witness_path: config/enterprise/commensal_selectivity_provider_rfq_v39.json
       witness_sha256: 4ba278d9d0a0151cab6742c1679e56e36dd2d09f65fd1c0b823300c53ab15560
       provider_capability_and_gap_matrix_sha256: 2a28915b8f0a930035506c3876b2186fb278ff3f9aeb516a011dd23f8a51ec05
       frozen_protocol_and_raw_delivery_rfq_sha256: dd03166bd116e3955a06eb07887aeb51f19fd5c4619e96130079fa77836885d3
       commercial_data_and_derivative_model_rights_addendum_sha256: 5082e3d29a720beeb9540eb7a09678ae4b4160ddea86662304d2df9c60a73c93
       blinded_reference_pilot_acceptance_plan_sha256: d6d19df96f6b178d2547f7594ffbb4e46b8223f834a0038d25d0c9a1544ebc8a
+      material_source_witness_path: config/enterprise/commensal_selectivity_atcc_material_source_audit_v39.json
+      material_source_witness_sha256: 2f5fdf03ee96699f512fba8861a3e0de0c89db28443143b3ac13f50b8e8541c6
+      strain_catalog_identity_matrix_sha256: 3fbbfc815bda6bf9a3e20ff435518c76a31fbc986fa151aafb090920f3fe1873
+      material_transfer_commercial_use_and_CRO_rights_gap_sha256: f42a3f44faf12d0d7b56f3cedd27d9c5fa97df133453429c22e6d15e94ac2573
+      procurement_and_lot_qualification_checklist_sha256: 770def43768df3ee071937a54521759ee7cf189a7f4bcb12a73a13796c2557a9
+      candidate_non_transfer_boundary_sha256: 864ca3e74fd272db4415d655d94464ac8bc855748bb9270e3e86bf6159590319
+      exact_ATCC_catalog_identities_verified: 7
+      current_ATCC_lots_qualified: 0
       provider_qualified: false
       rfq_sent: false
       purchase_or_contract_committed: false
       reference_pilot_started: false
       candidate_unblinding_authorized: false
       formal_science_run_submitted: false
-      updated_at: "2026-08-22T03:31:32Z"
+      updated_at: "2026-08-22T05:31:37Z"
   - task_id: mammalian_cytotoxicity_provider_and_pilot_qualification
     status: ready
     priority_tier: 2
