@@ -853,3 +853,9 @@ binding 的历史 v38 请求仍严格限定 9/900。
 round binding 冻结为 sequence-only：每轮完成生成、12-metric score-all、admission/refinement 和 yield
 即返回；只有四轮空间探索全部完成并持久化 cross-round admission 后才允许结构。cross-round portfolio
 尚未实现，因此父 workflow 当前 fail-closed 为 structure-pending，不能进入 release 或正式提交。
+
+2026-08-23 跨轮 admission 增量：父 workflow 在四轮 yield 完成后调用
+`persist_v39_cross_round_admission`，按冻结 round 顺序对 sequence SHA 全局去重，并直接引用四个 child
+run 的 Candidate/Evaluation/ToolCall 证据重新计算统一安全门、活性/可开发性和非加权 Pareto；不复制
+候选、不回填 child run，也不拼接局部 Pareto。结果写为 controller Decision、内容寻址 artifact 和 typed
+receipt。下一缺口缩小为由该统一 admission 生成唯一双靶点结构 portfolio 与 replay。

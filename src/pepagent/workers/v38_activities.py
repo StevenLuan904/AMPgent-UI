@@ -836,13 +836,21 @@ async def _build_v38_sequence_admission_payload(
     run_id: uuid.UUID,
     refinement_round: int,
     knowledge_context_pack_sha256: str,
+    source_run_ids: tuple[uuid.UUID, ...] | None = None,
 ) -> tuple[dict[str, Any], set[uuid.UUID]]:
     policy = build_default_v38_maturity_policy()
+    source_ids = source_run_ids or (run_id,)
+    run_order = {source_id: ordinal for ordinal, source_id in enumerate(source_ids)}
     candidates = list(
         await session.scalars(
-            select(Candidate).where(Candidate.run_id == run_id).order_by(Candidate.id)
+            select(Candidate).where(Candidate.run_id.in_(source_ids))
         )
     )
+    candidates.sort(key=lambda item: (run_order[item.run_id], str(item.id)))
+    unique_by_sequence: dict[str, Candidate] = {}
+    for candidate in candidates:
+        unique_by_sequence.setdefault(candidate.sequence_sha256, candidate)
+    candidates = list(unique_by_sequence.values())
     if not candidates:
         raise ValueError("v38 sequence admission requires persisted candidates")
     evaluations = list(
@@ -936,6 +944,8 @@ async def _build_v38_sequence_admission_payload(
             refinement.model_dump(mode="json") if refinement is not None else None
         ),
     }
+    if source_run_ids is not None:
+        payload["source_run_ids"] = [str(item) for item in source_ids]
     payload["observer_decision_projection"] = build_candidate_decision_projection(
         payload
     )
@@ -1489,6 +1499,115 @@ async def evaluate_v38_sequence_admission(request: dict[str, Any]) -> dict[str, 
         "refinement_required": admission["refinement_required"],
         "structure_dispatch_allowed": admission["structure_dispatch_allowed"],
         "refinement_plan": payload["refinement_plan"],
+    }
+
+
+@activity.defn(name="persist_v39_cross_round_admission")
+async def persist_v39_cross_round_admission(
+    request: dict[str, Any],
+) -> dict[str, Any]:
+    """Recompute one global Pareto/admission view over four frozen rounds."""
+
+    controller_run_id = uuid.UUID(str(request["controller_run_id"]))
+    source_run_ids = tuple(uuid.UUID(str(item)) for item in request["round_run_ids"])
+    if len(source_run_ids) != 4 or len(set(source_run_ids)) != 4:
+        raise ValueError("v39 cross-round admission requires four unique runs")
+    context_sha = str(request["knowledge_context_pack_sha256"])
+    if len(context_sha) != 64:
+        raise ValueError("v39 knowledge context-pack SHA is invalid")
+
+    async with SessionFactory() as session:
+        controller = await session.get(ExperimentRun, controller_run_id)
+        children = list(
+            await session.scalars(
+                select(ExperimentRun).where(ExperimentRun.id.in_(source_run_ids))
+            )
+        )
+        if controller is None or len(children) != 4 or any(
+            item.parent_run_id != controller_run_id for item in children
+        ):
+            raise ValueError("v39 source runs are not frozen controller children")
+        payload, _ = await _build_v38_sequence_admission_payload(
+            session=session,
+            run_id=controller_run_id,
+            refinement_round=3,
+            knowledge_context_pack_sha256=context_sha,
+            source_run_ids=source_run_ids,
+        )
+    payload.update(
+        {
+            "schema_version": "v39.cross-round-admission-evidence.1",
+            "exploration_contract_sha256": request[
+                "exploration_contract_sha256"
+            ],
+            "schedule_sha256": request["schedule_sha256"],
+            "historical_outputs_reused": False,
+            "cross_round_exact_sequence_deduplication": True,
+        }
+    )
+    artifact = await _store_json(payload)
+    admission_sha256 = sha256_json(payload)
+    response = json.dumps(payload, ensure_ascii=False, sort_keys=True)
+    async with SessionFactory() as session, session.begin():
+        existing = await session.scalar(
+            select(AgentDecision).where(
+                AgentDecision.run_id == controller_run_id,
+                AgentDecision.generation == 4,
+                AgentDecision.decision_type == "v39_cross_round_admission",
+            )
+        )
+        if existing is not None:
+            if existing.structured_json != payload:
+                raise ValueError("existing v39 cross-round admission drifted")
+        else:
+            existing = await ExperimentRepository(session).record_agent_decision(
+                controller_run_id,
+                4,
+                "v39_cross_round_admission",
+                "deterministic-v39-sequence-space-agent",
+                str(request["worker_source_revision"]),
+                (
+                    "Recompute validity, safety and nonweighted Pareto admission over "
+                    "all exact-sequence-deduplicated round evidence."
+                ),
+                response,
+                payload,
+                model_name="deterministic://v39-cross-round-admission",
+            )
+        event_payload = {
+            "schema_version": "v39.cross-round-admission-receipt.1",
+            "decision_id": str(existing.id),
+            "admission_sha256": admission_sha256,
+            "artifact": asdict(artifact),
+            "source_run_ids": [str(item) for item in source_run_ids],
+        }
+        receipt_sha256 = sha256_json(event_payload)
+        prior_event = await session.scalar(
+            select(LifecycleEvent).where(
+                LifecycleEvent.aggregate_type == "run",
+                LifecycleEvent.aggregate_id == controller_run_id,
+                LifecycleEvent.event_type == "v39.cross_round_admission_persisted",
+                LifecycleEvent.payload_sha256 == receipt_sha256,
+            )
+        )
+        if prior_event is None:
+            await ExperimentRepository(session).append_event(
+                "run",
+                controller_run_id,
+                "v39.cross_round_admission_persisted",
+                "v39-sequence-space-controller",
+                event_payload,
+            )
+    admission = payload["admission"]
+    return {
+        "schema_version": "v39.cross-round-admission-reference.1",
+        "admission_sha256": admission_sha256,
+        "artifact": asdict(artifact),
+        "mature_core_count": len(admission["mature_core_candidate_ids"]),
+        "exploration_count": len(admission["exploration_candidate_ids"]),
+        "rejected_count": len(admission["rejected_candidate_ids"]),
+        "structure_dispatch_allowed": admission["structure_dispatch_allowed"],
+        "source_run_ids": [str(item) for item in source_run_ids],
     }
 
 

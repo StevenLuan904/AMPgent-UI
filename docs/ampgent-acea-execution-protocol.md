@@ -2467,3 +2467,6 @@ MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot
 - v39 round binding 强制 `defer_structure_until_exploration_complete=true`：四轮只完成生成、12-metric
   score-all、admission/refinement 与 durable yield，不允许每轮结构任务阻塞下一轮探索。四轮汇总 admission
   与结构 portfolio 尚未闭合时，父 workflow 必须以 structure-pending 结束并禁止伪称最终完成。
+- 四轮完成后 `persist_v39_cross_round_admission` 必须按冻结 round 顺序对 sequence SHA 全局去重，引用各
+  child run 的 Candidate/Evaluation/ToolCall 证据并重新计算统一非加权 Pareto；禁止拼接四个局部 Pareto、
+  禁止复制候选或评价到 controller。该结果以 controller Decision、对象存储 artifact 和 typed receipt 固化。
