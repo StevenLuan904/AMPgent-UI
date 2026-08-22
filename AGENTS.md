@@ -184,6 +184,22 @@ Apply the following style to AMPgent/AceA research work in this repository:
   target-relevant evidence, antimicrobial potential, safety-risk profile, structural robustness, and
   useful sequence diversity. Judge every proposed task by whether it can materially improve that
   result, reveal why it did or did not improve, or preserve the evidence needed to reproduce it.
+- Treat sequence-space exploration and high-quality candidate yield as co-primary research outputs.
+  Do not regard one generated batch, one Pareto front, one shortlist, or repeated refinement of the
+  same families as sufficient exploration. Continue proposing new, valid, non-duplicate sequences
+  from multiple generator families, seeds, knowledge-guided edits, and deliberately diverse sequence
+  neighborhoods until the frozen search-sufficiency evidence shows diminishing information gain.
+- Measure forward progress in both breadth and quality: total raw occurrences, valid unique sequences,
+  sequence-family/novelty coverage, generator and seed contribution, safety-qualified yield, activity-
+  qualified yield, and the number of candidates that improve or extend the defensible frontier. More
+  rows alone are not success, but a small over-filtered pool is also not success; every valid unique
+  sequence must be persisted and receive the applicable score-all evaluation before pruning.
+- When candidate yield or family coverage stagnates, change the exploration strategy rather than only
+  re-ranking the existing pool: diagnose generator collapse and duplicated motifs, rebalance generator
+  cells or seeds, open under-sampled charge/length/composition neighborhoods, use evidence-traced
+  refinement while preserving parents, and introduce challenger generators or active-learning batches
+  under a newly frozen contract. Pareto selection is a downstream portfolio tool, not a reason to stop
+  generating or an excuse to compress exploration prematurely.
 - Work backward from the peptide decision. Keep scientific variables, candidate identity, causal
   comparisons, evidence persistence, and prohibited-resource boundaries strict. Simplify everything
   else by default. Worker metadata normally needs only host, GPU, PID/role, source revision, and proof
