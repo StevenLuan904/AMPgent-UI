@@ -760,3 +760,14 @@ ATCC MTA 7.1、Commercial Use Licensing、Data Use Agreement 与 2026 screening 
 书面路径，普通采购或 screening 年费不自动授权商业 CRO 服务。因此当前只关闭“七株身份”缺口，lot、
 商业使用、CRO 和数据/模型权利仍为零资格化；证据见
 `config/enterprise/commensal_selectivity_atcc_material_source_audit_v39.json`。候选序列和样品继续零披露。
+
+2026-08-22 v39 调度推进：选择性 provider 路径的公开能力、七株身份、冻结 RFP 与 ATCC 权利边界已
+穷尽本地可独立验证项；剩余项需要外部 CRO/ATCC 书面权利、实时 lot 与采购授权，因此该任务转为
+`blocked`，不重复网页巡检、不送样也不解盲。确定性调度器已切换到原代皮肤细胞毒性 provider 资格化。
+
+HEKa PCS-200-011 与 HDFa PCS-201-012 官方 catalog 身份已核实；Evotec/Cyprotex 公开证明 ATP、LDH、
+primary-cell 与 high-content 能力，但未证明冻结的双细胞、各 3 donor lot、passage、1/4/24/72 h、逐浓度
+肽干扰空白、原始图像交付及数据/衍生模型权利。新 witness
+`config/enterprise/mammalian_cytotoxicity_provider_rfq_v39.json` 将这些差距、盲法 LL-37/melittin/
+mupirocin/chlorhexidine pilot 和 fail-closed 验收冻结；当前 provider、lot、权利和 pilot 均未资格化，
+773 条候选仍零披露。

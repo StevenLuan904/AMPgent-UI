@@ -1,0 +1,100 @@
+{
+  "schema_version": "ampgent.mammalian-cytotoxicity-provider-rfq.1",
+  "rfq_id": "mammalian_cytotoxicity_provider_rfq_v39_20260822",
+  "frozen_at": "2026-08-22T07:31:51Z",
+  "primary_sources": [
+    "https://www.atcc.org/products/pcs-200-011",
+    "https://www.atcc.org/products/pcs-201-012",
+    "https://www.evotec.com/mechanistic-toxicity/cell-viability",
+    "https://www.evotec.com/solutions/drug-discovery-preclinical-development/cyprotex-adme-tox-solutions/toxicology/immunotoxicology/pbmc-cytotoxicity-assay",
+    "https://www.evotec.com/sciencepool/high-content-imaging-for-the-detection-of-compound-reactive-metabolite-formation-and-cytotoxicity"
+  ],
+  "frozen_contract_binding": {
+    "contract_path": "config/enterprise/prospective_mammalian_cytotoxicity_contract_v39.json",
+    "contract_sha256": "64d16f8b93c6f7e15a9f670296acf9f76c4420dee150ba4f5f16c8428adaceb3",
+    "primary_cell_models": [
+      {
+        "cell_identity": "adult_primary_human_epidermal_keratinocytes_HEKa_ATCC_PCS_200_011",
+        "maximum_passage_number": 4
+      },
+      {
+        "cell_identity": "adult_primary_human_dermal_fibroblasts_HDFa_ATCC_PCS_201_012",
+        "maximum_passage_number": 6
+      }
+    ],
+    "minimum_independent_donor_lots_per_cell_type": 3,
+    "protocol_change_requires_new_version": true
+  },
+  "provider_capability_screen": [
+    {
+      "provider_id": "Evotec_Cyprotex",
+      "provider_role": "candidate_full_service_primary_cell_cytotoxicity_CRO",
+      "public_capability_status": "generic_primary_cell_cytotoxicity_and_orthogonal_readout_capability_publicly_demonstrated",
+      "publicly_described_capabilities": ["ATP", "LDH", "primary_cells", "3D_models", "high_content_imaging", "multi_individual_PBMC"],
+      "unconfirmed_requirements": ["exact_HEKa_HDFa_panel", "three_donor_lots_each", "passage_limits", "exact_medium_and_times", "peptide_interference_blanks", "raw_wells_and_images", "cell_data_image_and_derivative_model_rights"],
+      "qualification_status": "rfq_required_exact_skin_panel_protocol_delivery_and_rights_unconfirmed"
+    },
+    {
+      "provider_id": "ATCC",
+      "provider_role": "authenticated_primary_skin_cell_supplier_not_full_assay_provider",
+      "public_capability_status": "exact_HEKa_and_HDFa_catalog_identities_publicly_verified",
+      "unconfirmed_requirements": ["three_current_donor_lots_each", "lot_CoA_and_certificate_of_origin", "commercial_internal_use", "CRO_transfer", "authenticated_data_and_derivative_model_rights"],
+      "qualification_status": "material_source_only_pending_lot_availability_MTA_and_data_rights_review"
+    }
+  ],
+  "mandatory_rfq_requirements": {
+    "exact_primary_cell_panel_and_passage_limits_required": true,
+    "minimum_independent_donor_lots_per_cell_type": 3,
+    "minimum_independent_experiment_days": 2,
+    "technical_replicates_per_condition": 3,
+    "peptide_concentration_um": [0.5, 1, 2, 4, 8, 16, 32, 64, 128, 256],
+    "exposure_time_hours": [1, 4, 24, 72],
+    "primary_readouts": ["intracellular_ATP_viable_cell_signal", "extracellular_LDH_membrane_damage", "automated_live_dead_cell_count_and_morphology"],
+    "no_cell_peptide_interference_blank_each_concentration_required": true,
+    "supplier_medium_lot_serum_growth_supplement_and_antibiotic_status_frozen_required": true,
+    "raw_immutable_delivery_required": true,
+    "raw_delivery_fields": ["plate_map_randomization_and_blind_codes", "donor_lot_and_supplier_certificate_sha256", "passage_population_doublings_and_mycoplasma", "seeding_density_confluence_medium_and_matrix", "raw_ATP_and_LDH", "raw_live_dead_counts_and_lossless_morphology_images", "peptide_interference_and_recovery", "control_raw_values", "normalization_code", "failure_retest_and_assignable_cause_edges"],
+    "failed_runs_and_assignable_cause_retests_retained": true,
+    "unexpected_cytotoxicity_is_assignable_cause": false
+  },
+  "commercial_and_data_rights_acceptance": {
+    "required_executed_agreement_terms": {
+      "commercial_internal_cell_material_use_or_supplier_license": "contract_required_not_yet_confirmed",
+      "client_raw_data_ownership_or_perpetual_commercial_internal_license": "contract_required_not_yet_confirmed",
+      "raw_image_and_metadata_retention": "contract_required_not_yet_confirmed",
+      "normalized_derivative_dataset_creation_and_retention": "contract_required_not_yet_confirmed",
+      "derivative_model_training_and_internal_weights": "contract_required_not_yet_confirmed",
+      "audit_reanalysis_and_regulatory_use": "contract_required_not_yet_confirmed",
+      "client_sequence_and_result_confidentiality_and_non_use": "contract_required_not_yet_confirmed",
+      "subcontractor_flowdown_and_publication_approval": "contract_required_not_yet_confirmed"
+    },
+    "public_web_capability_description_satisfies_executed_rights": false,
+    "purchase_order_alone_satisfies_derivative_model_rights": false
+  },
+  "reference_pilot": {
+    "reference_agents": ["LL_37", "melittin", "mupirocin", "chlorhexidine"],
+    "blind_codes_required": true,
+    "current_773_candidates_included": false,
+    "candidate_samples_allowed_before_pilot_acceptance": false,
+    "candidate_identity_unblinded": false,
+    "pilot_acceptance_requires": ["all_donor_cell_identity_passage_and_mycoplasma_QC_pass", "ATP_LDH_live_dead_endpoint_reproducibility_and_disagreement_report_pass", "peptide_interference_and_recovery_QC_pass", "exact_time_concentration_and_control_contract_match", "raw_delivery_image_hash_and_replay_pass", "executed_cell_data_image_and_derivative_model_rights_pass"],
+    "failed_pilot_may_change_candidate_threshold": false
+  },
+  "decision": {
+    "task_status": "in_progress",
+    "public_capability_screen_complete": true,
+    "provider_qualified": false,
+    "rfq_sent": false,
+    "purchase_or_contract_committed": false,
+    "reference_pilot_started": false,
+    "candidate_unblinding_authorized": false,
+    "formal_science_run_submitted": false,
+    "next_action": "obtain_procurement_authority_then_send_the_frozen_RFP_and_obtain_exact_ATCC_donor_lot_MTA_and_data_rights_before_any_reference_or_candidate_material_transfer"
+  },
+  "acceptance_artifacts": {
+    "primary_skin_cell_provider_capability_gap_matrix_sha256": "e4b46d269e4eda5de4398422309a23d71fc251853ce85fc8462546b0e4051eac",
+    "frozen_cell_panel_protocol_and_raw_delivery_rfq_sha256": "6d7637c5b133148f789cfd82b38d8ccbd2f7a74f0a999948a6472487b14c4016",
+    "cell_data_image_and_derivative_model_rights_addendum_sha256": "a5ca3d21f5a30f0dae3b2fb8a079834e3818c49ce5104a316647689b8a9a31eb",
+    "blinded_reference_pilot_acceptance_plan_sha256": "e570f0f1d5a2b196ead55d60133b1d9b464ba5f57ba483d842e45e6f5693f00b"
+  }
+}

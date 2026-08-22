@@ -2387,3 +2387,14 @@ ATCC Original Material 或 Progeny 不得默认从 AMPgent 转交 CRO。RFP 应�
 采购的 lot、适用 MTA/addendum 与自身商业/CRO license 路径；若拟由 AMPgent 持有或转移材料，必须先取得
 ATCC 书面许可。ATCC Authenticated Data 也不得默认进入商业衍生模型。上述权利、lot 和 reference pilot
 全部验收前，`provider_qualified=false`，候选序列/样品不披露且不提交正式 science run。
+
+### 2026-08-22 原代皮肤细胞 provider RFP 门
+
+选择性资格任务在公开证据、七株 catalog 与权利审计完成后，因 CRO/ATCC 书面授权、实时 lot 和采购
+权限属于外部依赖而标记 `blocked`；调度器必须切换到独立安全域，禁止用重复网页检查冒充前向进展。
+
+细胞毒性委外必须绑定 HEKa PCS-200-011（最大 passage 4）与 HDFa PCS-201-012（最大 passage 6），
+每种至少 3 donor lot、2 实验日、3 技术重复、0.5–256 µM、1/4/24/72 h，并分开交付 ATP、LDH、
+live/dead 与形态原图。`config/enterprise/mammalian_cytotoxicity_provider_rfq_v39.json` 是冻结 RFP：
+网页上具备通用 primary-cell/ATP/LDH/HCS 能力只允许进入 RFQ，不能认定 provider qualified；lot CoA、
+MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot 全部通过前，不得发送候选或提交正式 run。

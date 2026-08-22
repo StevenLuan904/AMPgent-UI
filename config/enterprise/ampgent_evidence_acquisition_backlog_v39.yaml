@@ -419,7 +419,7 @@ tasks:
       formal_science_run_submitted: false
       completed_at: "2026-08-21T23:31:31Z"
   - task_id: commensal_selectivity_provider_and_reference_pilot_qualification
-    status: in_progress
+    status: blocked
     priority_tier: 2
     evidence_domains: [commensal_selectivity]
     action_type: external_or_internal_microbiology_provider_and_blinded_reference_pilot
@@ -459,8 +459,22 @@ tasks:
       candidate_unblinding_authorized: false
       formal_science_run_submitted: false
       updated_at: "2026-08-22T05:31:37Z"
+    blocker:
+      outcome: public_provider_screen_exact_ATCC_identity_audit_and_RFP_complete_external_written_rights_procurement_and_contract_authority_required
+      provider_rfq_witness_path: config/enterprise/commensal_selectivity_provider_rfq_v39.json
+      provider_rfq_witness_sha256: 4ba278d9d0a0151cab6742c1679e56e36dd2d09f65fd1c0b823300c53ab15560
+      material_source_witness_path: config/enterprise/commensal_selectivity_atcc_material_source_audit_v39.json
+      material_source_witness_sha256: 2f5fdf03ee96699f512fba8861a3e0de0c89db28443143b3ac13f50b8e8541c6
+      exact_ATCC_catalog_identities_verified: 7
+      current_ATCC_lots_qualified: 0
+      provider_qualified: false
+      rfq_sent: false
+      purchase_or_contract_committed: false
+      reference_pilot_started: false
+      candidate_unblinding_authorized: false
+      blocked_at: "2026-08-22T07:31:51Z"
   - task_id: mammalian_cytotoxicity_provider_and_pilot_qualification
-    status: ready
+    status: in_progress
     priority_tier: 2
     evidence_domains: [mammalian_cytotoxicity]
     action_type: external_or_internal_cell_lab_provider_and_reference_pilot
@@ -477,6 +491,24 @@ tasks:
       - stop_if_primary_keratinocyte_or_fibroblast_panel_drifts
       - stop_if_reference_pilot_fails_predeclared_QC
       - stop_if_current_candidates_are_unblinded_before_pilot_acceptance
+    progress:
+      outcome: exact_primary_skin_cell_panel_public_provider_screen_and_frozen_RFP_complete_external_rights_and_reference_pilot_pending
+      witness_path: config/enterprise/mammalian_cytotoxicity_provider_rfq_v39.json
+      witness_sha256: 6552475856898f6ff5c2ab1412efac1d50c32d66d317a08141643ac20405a6c2
+      primary_skin_cell_provider_capability_gap_matrix_sha256: e4b46d269e4eda5de4398422309a23d71fc251853ce85fc8462546b0e4051eac
+      frozen_cell_panel_protocol_and_raw_delivery_rfq_sha256: 6d7637c5b133148f789cfd82b38d8ccbd2f7a74f0a999948a6472487b14c4016
+      cell_data_image_and_derivative_model_rights_addendum_sha256: a5ca3d21f5a30f0dae3b2fb8a079834e3818c49ce5104a316647689b8a9a31eb
+      blinded_reference_pilot_acceptance_plan_sha256: e570f0f1d5a2b196ead55d60133b1d9b464ba5f57ba483d842e45e6f5693f00b
+      exact_primary_cell_catalog_identities_verified: 2
+      minimum_donor_lots_required_per_cell_type: 3
+      current_donor_lots_qualified: 0
+      provider_qualified: false
+      rfq_sent: false
+      purchase_or_contract_committed: false
+      reference_pilot_started: false
+      candidate_unblinding_authorized: false
+      formal_science_run_submitted: false
+      updated_at: "2026-08-22T07:31:51Z"
   - task_id: amp_likeness_reference_dataset_and_model_qualification
     status: blocked
     priority_tier: 2
