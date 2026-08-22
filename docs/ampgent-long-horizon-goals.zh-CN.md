@@ -782,3 +782,18 @@ BioLabs 公开矩阵为 rabbit blood，均不能直接满足冻结的 defibrinat
 因此新 witness `config/enterprise/prospective_hemolysis_provider_rfq_v39.json` 冻结 3 个不混池 donor、
 2 assay days、2% RBC、1–256 µM、60 min、540–541 nm、逐样本干扰空白、原始吸光度和盲法 melittin
 pilot；当前 provider/lot/权利/pilot 均为未资格化，候选继续零披露。
+
+2026-08-22 v39 耐药倾向 provider 资格追加：人红细胞公开 provider 筛查与冻结 RFP 已穷尽本地可
+独立验证项；精确 defibrinated human RBC lot、伦理/数据权利、采购与 reference pilot 属于外部依赖，
+故该任务转为 `blocked`，调度器进入耐药演化 provider 资格，而不是继续重复网页巡检。
+
+Evotec 的官方能力页公开证明 MIC/MBC/MFC、frequency of resistance、time-kill、定制方法及 WGS/RNASeq/
+TnSeq；Eurofins 公开证明 MIC/MBC、定制微生物方法和独立 WGS 能力。这些信息只能证明可进入 RFQ，
+不能证明其已满足冻结的两个精确菌株、每候选/菌种 8 条选择 lineage、每菌种 4 条无药 control、30 代
+传代、固定暴露/转移/归档规则、灭绝 competing outcome、交叉耐药 panel、群体和 clone WGS 原始交付，
+以及菌株、基因组数据、衍生数据集和内部模型权利。
+
+新 witness `config/enterprise/resistance_propensity_provider_rfq_v39.json` 将上述缺口、不可变 OD/MIC/
+lineage/archive/FASTQ/BAM/VCF 交付、盲法 pexiganan/melittin/物种适用抗生素 pilot 与 fail-closed 验收
+冻结。当前 integrated provider、biosafety/strain-use 权利、采购和 pilot 均未资格化；773 条候选仍
+不得送样或解盲，也未提交新的正式 science run。

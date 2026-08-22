@@ -552,7 +552,7 @@ tasks:
       formal_science_run_submitted: false
       blocked_at: "2026-08-22T01:31:30Z"
   - task_id: resistance_propensity_provider_and_pilot_qualification
-    status: ready
+    status: in_progress
     priority_tier: 2
     evidence_domains: [resistance_propensity]
     action_type: external_or_internal_lab_provider_and_reference_pilot
@@ -569,6 +569,23 @@ tasks:
       - stop_if_organism_exposure_transfer_or_archive_contract_drifts
       - stop_if_reference_pilot_fails_predeclared_QC
       - stop_if_current_candidates_are_unblinded_before_pilot_acceptance
+    progress:
+      outcome: provider_capability_screen_and_frozen_serial_passage_WGS_RFP_complete_exact_integrated_provider_rights_and_reference_pilot_pending
+      witness_path: config/enterprise/resistance_propensity_provider_rfq_v39.json
+      witness_sha256: 3b153e766d612786952b8dae6d0097b583e495ee01001dcd10fe44ecbeb65217
+      provider_serial_passage_and_WGS_gap_matrix_sha256: 502d95240d8d6fadcd935ba82c047ccf7b5f1ad81063a63db7334383ee8e8b85
+      frozen_lineage_exposure_archive_and_raw_delivery_rfq_sha256: 6b0910181c4dce9f450af0339b8914d4ed9bcfdcc3175d85d5204f712575ec5e
+      biosafety_genomic_data_and_derivative_model_rights_addendum_sha256: 3e249e8c15dc34ce7bb595127f29b258fe4e039ff81882d36d51937a52b4602a
+      blinded_reference_serial_passage_pilot_acceptance_plan_sha256: f40396e6d454bf4430e793921063de87ffddd2689636beef53cbe25260120737
+      providers_screened: 2
+      integrated_provider_qualified: false
+      biosafety_and_strain_use_authorized: false
+      rfq_sent: false
+      purchase_or_contract_committed: false
+      reference_pilot_started: false
+      candidate_unblinding_authorized: false
+      formal_science_run_submitted: false
+      updated_at: "2026-08-22T11:31:48Z"
   - task_id: solubility_aggregation_provider_and_pilot_qualification
     status: ready
     priority_tier: 2
@@ -606,7 +623,7 @@ tasks:
       - stop_if_reference_pilot_fails_predeclared_QC
       - stop_if_current_candidates_are_unblinded_before_pilot_acceptance
   - task_id: prospective_hemolysis_assay_provider_and_pilot_qualification
-    status: in_progress
+    status: blocked
     priority_tier: 2
     evidence_domains: [hemolysis]
     action_type: external_or_internal_lab_provider_and_reference_pilot
@@ -623,8 +640,8 @@ tasks:
       - stop_if_primary_defibrinated_human_RBC_contract_drifts
       - stop_if_reference_peptide_pilot_fails_predeclared_QC
       - stop_if_current_candidates_are_unblinded_before_pilot_acceptance
-    progress:
-      outcome: human_RBC_provider_material_source_screen_and_frozen_RFP_complete_external_exact_matrix_rights_and_reference_pilot_pending
+    blocker:
+      outcome: public_provider_screen_and_frozen_RFP_complete_external_exact_defibrinated_human_RBC_provider_current_lots_ethics_rights_procurement_and_pilot_required
       witness_path: config/enterprise/prospective_hemolysis_provider_rfq_v39.json
       witness_sha256: dca118901d94ccd78822b28fe714b801ca90d61b3f30cf232c5bfcacae3c3e60
       provider_and_human_RBC_source_gap_matrix_sha256: 729b859fbf7cec9595294a3dd690423d1636df3f47eb87f126ff7ae4c618af52
@@ -639,7 +656,7 @@ tasks:
       reference_pilot_started: false
       candidate_unblinding_authorized: false
       formal_science_run_submitted: false
-      updated_at: "2026-08-22T09:31:41Z"
+      blocked_at: "2026-08-22T11:31:48Z"
   - task_id: novelty_ood_reference_freeze
     status: completed
     priority_tier: 1

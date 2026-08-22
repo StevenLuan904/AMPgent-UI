@@ -2409,3 +2409,20 @@ MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot
 绑定 3 donor、2 assay days、2% RBC、PBS pH 7.4、37°C/60 min、1–256 µM、540–541 nm 原始吸光度、
 未裁剪归一化、干扰空白、失败/复测边和 donor-level curves。伦理/同意、材料转移、原始数据、衍生模型
 权利以及盲法 melittin pilot 全部验收前，不得发送当前 773 条候选或提交正式 run。
+
+### 2026-08-22 耐药演化 provider RFP 与盲法 reference-pilot 门
+
+溶血 provider 路径在公开能力和冻结 RFP 完成后，因精确 defibrinated human RBC lot、伦理/数据权利、
+采购及 reference pilot 是外部依赖而标记 `blocked`；确定性调度器必须转向耐药演化 provider 资格化。
+
+`config/enterprise/resistance_propensity_provider_rfq_v39.json` 必须逐项绑定冻结合同：E. coli ATCC
+25922/GyrA 与 S. epidermidis ATCC 35984 RP62A/PBP2a、每候选/菌种 8 条选择 lineage、每菌种 4 条
+无药 control、30 代、24 h、1% transfer、相对祖先 MIC 的固定暴露梯度、每 5 代 archive/MIC 和末端
+5 代无药稳定性。灭绝必须作为 competing outcome，不能复活后并回主分析；协议漂移必须新版本化。
+
+公开的 MIC、frequency-of-resistance 或 WGS 能力只允许 provider 进入 RFQ，不能直接标记 qualified。
+正式资格化还要求不可变 plate/OD/MIC/lineage/transfer/CFU/archive 证据、失败与有因复测边、cross-resistance、
+祖先/无药/群体/每 surviving lineage 至少 3 clone 的 FASTQ/BAM/VCF 及 QC，并取得 biosafety/strain-use、
+原始和基因组数据、衍生数据集/模型权重、审计再分析、序列保密与分包 flow-down 的书面权利。
+先运行 pexiganan、melittin 和物种适用 colistin/daptomycin 的盲法 reference pilot；全部验收前，当前
+773 条候选不得送样、解盲、用于 operating point，也不得提交新的正式 science run。
