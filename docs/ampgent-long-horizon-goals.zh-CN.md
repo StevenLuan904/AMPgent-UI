@@ -914,3 +914,14 @@ release 的正式 worker-placement witness 与 enterprise registry 授权证据�
 有效性/安全性硬门和 12-metric score-all 的前提下启动。该拆分只放开探索计算，不把模型预测升级为实验
 验证，也不把 exploratory portfolio 冒充企业候选。当前 release audit 实测有 10 个 enterprise domain
 缺口；下一启动按 `exploratory_research` 范围准备，而不是等待所有湿实验和模型资质先完成。
+
+## 2026-08-23 v39 实际探索启动 checkpoint
+
+四轮身份已由最终 preflight formal key 以 UUID5 确定性派生，解决“数据库已预留、Temporal 尚未提交时
+崩溃”会生成替代 run 的 exact-once 缺陷。controller `41824229-8229-5abc-a66b-11618c87ca56` 已运行，
+round 0 `0bfd4220-d826-5918-9a33-5154b7711597` 已进入三生成器 cell 调度；预算仍为 4×18 cells、
+每轮 1800 raw、全部有效唯一序列 12-metric score-all、最大 7200 raw。
+
+当前新增科学计数为 0，不能把“已启动”冒充新候选。下一研究判断以 raw/valid unique/历史新颖/家族覆盖/
+安全与活性合格/Pareto extension 的 durable 增量为准；若两个到期 5 分钟窗口无增量，立即检查具体
+generator cell 并改变策略，不回退到只读巡检。

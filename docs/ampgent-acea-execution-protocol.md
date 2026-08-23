@@ -2511,3 +2511,19 @@ MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot
   `exploratory_research`：后者可在显式授权且完整披露 registry gaps 时启动，结果必须标记为 provisional、
   not-enterprise-ready、not-experimental-validation。企业结论仍 fail-closed；探索授权不降低有效性/安全性
   硬门，也不允许缺失指标或 first-K。
+
+### v39 唯一探索调度启动（2026-08-23）
+
+- controller `41824229-8229-5abc-a66b-11618c87ca56` 已 exact-once 提交到 Temporal workflow
+  `pepagent-sequence-space-v39-c226ebdb415678ee566e90ff7c78d7a461ffc15aa70b052bf46193128915abc8`，
+  Temporal run 为 `8a15aaa9-f312-4e98-b6f5-ac16a0170acf`。四个确定性 child run 为
+  `0bfd4220-d826-5918-9a33-5154b7711597`、`76620ad3-cc00-5e04-9cc3-e56ab581908d`、
+  `91d90150-7999-5671-a849-7a57f4f7618e`、`9b7a728f-02b3-5e71-84ce-cbef5c8e9ed7`；严禁再次提交、
+  替代或原地重试。
+- 冻结 source `6f8e8bef433895d3446df7ae2dbf7c38f4e45743`、release
+  `b5f3f5f6c0d373e1928701364093d058c53cc922ebf74bb2c5e08cfbd30ec2d4` 已在 control/generator/metrics、
+  `.32 GPU1` Boltz 和 synth CPU Rosetta 五个角色同源运行，并从 ASCII release junction 通过 34 项
+  guarded/workflow 回归。round 0 已运行并调度最初 3 个 `generate_v38_sequence_cell` activity；此时新增
+  occurrence/Candidate/Evaluation 仍为 0。
+- 启动 payload 约 587 KB，超过 Temporal 512 KB 告警线但未超过服务限制。后续应把大 request 改为内容
+  寻址引用；该性能债不授权改动或替换当前冻结 schedule。
