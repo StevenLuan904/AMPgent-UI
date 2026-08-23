@@ -87,6 +87,27 @@ V39_CROSS_ROUND_ADMISSION_REFERENCE_SCHEMA = (
 )
 
 
+async def _resolve_v39_round_admission(child_result: dict[str, Any]) -> dict[str, Any]:
+    """Resolve full candidate IDs from the child's content-addressed admission."""
+
+    summary = child_result.get("admission")
+    reference = child_result.get("admission_reference")
+    if not isinstance(summary, dict) or not isinstance(reference, dict):
+        raise ValueError("v39 round result lacks durable admission evidence")
+    payload = await _resolve_v38_admission(reference)
+    admission = payload.get("admission")
+    if not isinstance(admission, dict):
+        raise ValueError("v39 round admission artifact lacks an admission payload")
+    expected_counts = {
+        "mature_core_count": len(admission.get("mature_core_candidate_ids", [])),
+        "exploration_count": len(admission.get("exploration_candidate_ids", [])),
+        "rejected_count": len(admission.get("rejected_candidate_ids", [])),
+    }
+    if any(summary.get(key) != value for key, value in expected_counts.items()):
+        raise ValueError("v39 round admission summary differs from durable artifact")
+    return admission
+
+
 @activity.defn(name="persist_v39_exploration_round_yield")
 async def persist_v39_exploration_round_yield(
     request: dict[str, Any],
@@ -100,9 +121,7 @@ async def persist_v39_exploration_round_yield(
     )
     round_ordinal = int(request["round_ordinal"])
     child_result = request["child_result"]
-    admission = child_result.get("admission")
-    if not isinstance(admission, dict):
-        raise ValueError("v39 round result lacks durable admission evidence")
+    admission = await _resolve_v39_round_admission(child_result)
     mature_ids = {uuid.UUID(str(item)) for item in admission["mature_core_candidate_ids"]}
     exploration_ids = {
         uuid.UUID(str(item)) for item in admission["exploration_candidate_ids"]
