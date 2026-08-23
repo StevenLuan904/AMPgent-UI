@@ -3,6 +3,7 @@ from uuid import uuid4
 
 import yaml
 
+from pepagent.provenance.hashing import sha256_json
 from pepagent.sequence_space_exploration import (
     ExplorationBatchObservation,
     V39ExplorationSchedule,
@@ -10,12 +11,49 @@ from pepagent.sequence_space_exploration import (
     build_v39_round_execution_contract,
     next_exploration_action,
 )
+from pepagent.v39_preflight import build_v39_submission_preflight
 from pepagent.v39_schedule_reservation_cli import (
     build_v39_reservation_specs,
     build_v39_schedule,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _ready_preflight(request: dict) -> dict:
+    return {
+        "schema_version": "v39.exploration-submission-preflight.1",
+        "status": "ready_to_submit_unique_run",
+        "execution_authorized": True,
+        "failed_gates": [],
+        "request_template_sha256": sha256_json(request),
+    }
+
+
+def _placement(source: str, release: str) -> dict:
+    queues = {
+        "v38-control": "pepagent-control-v38",
+        "v38-generator": "pepagent-generator-v38",
+        "v38-metrics": "pepagent-cpu-metrics-v38",
+        "v38-boltz": "pepagent-gpu-boltz2-v38",
+        "v38-rosetta": "pepagent-cpu-rosetta-v38",
+    }
+    return {
+        "schema_version": "v38.worker-placement.1",
+        "workers": {
+            role: {
+                "role": role,
+                "task_queue": queue,
+                "ampgent_owned": True,
+                "foreign": False,
+                "pid": index + 1,
+                "poller_identity": f"{role}-poller",
+                "source_revision": source,
+                "release_sha256": release,
+            }
+            for index, (role, queue) in enumerate(queues.items())
+        },
+    }
 
 
 def _observation(batch: int, *, novel: int, pareto: int) -> ExplorationBatchObservation:
@@ -161,13 +199,14 @@ def test_v39_outer_schedule_rejects_reused_run_identity() -> None:
 def test_v39_reservation_freezes_controller_four_children_and_unique_keys() -> None:
     controller_run_id = uuid4()
     round_run_ids = tuple(uuid4() for _ in range(4))
-    schedule = build_v39_schedule(
-        request_template={
-            "submission_preflight": {"status": "ready_to_submit_unique_run"},
+    request = {
             "multitarget_plan_template": {
                 "target_branches": [],
             },
-        },
+        }
+    schedule = build_v39_schedule(
+        request_template=request,
+        submission_preflight=_ready_preflight(request),
         controller_run_id=controller_run_id,
         round_run_ids=round_run_ids,
     )
@@ -189,8 +228,8 @@ def test_v39_schedule_builder_rejects_runtime_identity_in_template() -> None:
         build_v39_schedule(
             request_template={
                 "run_id": str(uuid4()),
-                "submission_preflight": {"status": "ready_to_submit_unique_run"},
             },
+            submission_preflight=_ready_preflight({}),
             controller_run_id=uuid4(),
             round_run_ids=tuple(uuid4() for _ in range(4)),
         )
@@ -198,3 +237,40 @@ def test_v39_schedule_builder_rejects_runtime_identity_in_template() -> None:
         assert "run-time identity" in str(exc)
     else:
         raise AssertionError("v39 schedule accepted a template with a run identity")
+
+
+def test_v39_preflight_binds_expansion_budget_and_keeps_registry_gate_explicit() -> None:
+    source = "a" * 40
+    release = "b" * 64
+    request = {"worker_source_revision": source}
+    smoke = {
+        "schema_version": "v39.release-smoke.1",
+        "source_revision": source,
+        "release_sha256": release,
+        "same_executable": True,
+        "guarded_launcher": True,
+        "release_bytes_loaded": True,
+        "guarded_metric_tests": 5,
+        "workflow_tests": 19,
+        "metric_names": ["guruprasad_instability_index"],
+    }
+    blocked = build_v39_submission_preflight(
+        request_template=request,
+        worker_placement=_placement(source, release),
+        release_smoke=smoke,
+        source_revision=source,
+        release_sha256=release,
+        benchmark_sha256="c" * 64,
+        target_panel_sha256="d" * 64,
+        target_identity_witness_sha256="e" * 64,
+        model_registry_audit_sha256="f" * 64,
+        enterprise_registry_authorized=False,
+    )
+    assert blocked["execution_authorized"] is False
+    assert blocked["failed_gates"] == ["enterprise_registry_not_authorized"]
+    assert blocked["maximum_rounds"] == 4
+    assert blocked["cells_per_round"] == 18
+    assert blocked["raw_occurrences_per_round"] == 1800
+    assert blocked["maximum_raw_occurrences"] == 7200
+    assert blocked["required_sequence_metric_count"] == 12
+    assert blocked["maximum_initial_sequence_evaluations"] == 86400

@@ -2496,3 +2496,14 @@ MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot
 - pilot 核心验收是合理标准协议、阳性/阴性/基质或空白对照、目标 readout、机器可读结果和可重复性；
   扩展协议进入第二阶段，不再阻塞首选机构。
 - 选择 witness 为 `config/enterprise/preferred_development_providers_v39.json`；既有严格筛查 witness 保持不可变。
+
+### v39 专用提交前检（2026-08-23）
+
+- `pepagent.v39_preflight` 将拟部署 source/release、真实 guarded release smoke、五类 worker placement、
+  benchmark、双靶点 panel/identity witness 与 model-registry audit 绑定为单一可哈希证据。
+- 前检从可执行合同直接验证每轮 18 generator cells、1800 raw occurrence、12 项 score-all 指标（含
+  `guruprasad_instability_index`）、最多 4 轮/7200 raw 与最多 86400 个初始序列评价，不接受 v38 的
+  9/900/11 旧合同冒充 v39。
+- schedule builder 只接受显式传入、request SHA 匹配、`execution_authorized=true` 且无失败门的 v39
+  前检；preflight 不再由 request template 自我声明。企业 registry 尚未授权时输出 typed blocked 状态，
+  禁止预留或提交。因此本增量没有创建新 run，也没有复用或改写旧证据。

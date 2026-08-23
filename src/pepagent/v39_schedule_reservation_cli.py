@@ -48,16 +48,22 @@ def _load_yaml(path: Path) -> dict[str, Any]:
 def build_v39_schedule(
     *,
     request_template: dict[str, Any],
+    submission_preflight: dict[str, Any],
     controller_run_id: UUID,
     round_run_ids: tuple[UUID, ...],
 ) -> V39ExplorationSchedule:
     """Freeze every replay-visible identity before Temporal starts."""
 
-    if set(request_template) & {"run_id", "exploration_round"}:
+    if set(request_template) & {"run_id", "exploration_round", "submission_preflight"}:
         raise ValueError("v39 request template contains a run-time identity")
-    preflight = request_template.get("submission_preflight")
-    if not isinstance(preflight, dict) or preflight.get("status") != (
-        "ready_to_submit_unique_run"
+    if (
+        submission_preflight.get("schema_version")
+        != "v39.exploration-submission-preflight.1"
+        or submission_preflight.get("status") != "ready_to_submit_unique_run"
+        or submission_preflight.get("execution_authorized") is not True
+        or submission_preflight.get("failed_gates") != []
+        or submission_preflight.get("request_template_sha256")
+        != sha256_json(request_template)
     ):
         raise ValueError("v39 schedule requires a passed submission preflight template")
     contract = build_default_v39_exploration_contract()
@@ -74,6 +80,7 @@ def build_v39_schedule(
         request = copy.deepcopy(request_template)
         request.update(
             {
+                "submission_preflight": copy.deepcopy(submission_preflight),
                 "run_id": str(run_id),
                 "controller_run_id": str(controller_run_id),
                 "execution_contract": execution.model_dump(mode="json"),
@@ -329,6 +336,7 @@ def main() -> None:
         description="Atomically reserve a frozen v39 controller and four child runs"
     )
     parser.add_argument("--request-template", type=Path, required=True)
+    parser.add_argument("--preflight", type=Path, required=True)
     parser.add_argument("--panel", type=Path, required=True)
     parser.add_argument("--execute", action="store_true")
     args = parser.parse_args()
@@ -336,6 +344,7 @@ def main() -> None:
         raise SystemExit("v39 schedule reservation is inert without explicit --execute")
     schedule = build_v39_schedule(
         request_template=_load_json(args.request_template.resolve()),
+        submission_preflight=_load_json(args.preflight.resolve()),
         controller_run_id=uuid.uuid4(),
         round_run_ids=tuple(uuid.uuid4() for _ in range(4)),
     )

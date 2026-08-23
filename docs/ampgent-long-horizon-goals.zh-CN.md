@@ -898,3 +898,13 @@ guarded launcher 完成 12-metric/18-cell smoke 和 full preflight，随后才�
 和正式 `.venv` executable 完成真实 guarded physicochemical/instability 5/5 测试，并从 release 字节
 完成 v39 schedule/v38 child 19/19 回归。尚未执行 schedule reservation 或提交 Temporal；下一立即任务
 是生成绑定 18 cells、1800 raw/轮、12 metrics 与此 source/release 的 v39 preflight 和 worker placement。
+
+## 2026-08-23 v39 提交边界闭合增量
+
+新增 v39 专用 dual-state preflight：它验证四轮探索的 18 cells/轮、1800 raw/轮、12 metrics（含短肽域外
+仅作非门控证据的 Guruprasad instability）、最大 7200 raw 和 86400 初始评价预算，并绑定 immutable
+source/release、真实 guarded smoke、五类 worker placement 与 benchmark/target/model witnesses。
+schedule reservation 现在必须显式接收这份前检且 request SHA 完全匹配，不能再靠 request 中的
+`status=ready` 自证通过。当前 enterprise model registry 授权仍关闭，所以前检按设计返回 blocked；本轮
+完成了继续扩大短肽空间所需的安全启动边界，但没有创建 run 或声称产生新增候选。下一动作是补齐当前
+release 的正式 worker-placement witness 与 enterprise registry 授权证据，再进行一次全量 preflight。
