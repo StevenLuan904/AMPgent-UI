@@ -2470,3 +2470,7 @@ MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot
 - 四轮完成后 `persist_v39_cross_round_admission` 必须按冻结 round 顺序对 sequence SHA 全局去重，引用各
   child run 的 Candidate/Evaluation/ToolCall 证据并重新计算统一非加权 Pareto；禁止拼接四个局部 Pareto、
   禁止复制候选或评价到 controller。该结果以 controller Decision、对象存储 artifact 和 typed receipt 固化。
+- 仅当统一 admission 明确放行结构时，父 workflow 才在 controller namespace 生成一次双靶点
+  native/wrong-pocket × 3 Boltz seeds × 16 Rosetta decoys portfolio，并执行三视图最终 replay。结构持久化
+  只对 `run_kind=sequence_space_exploration_control` 且 Candidate 所属 run 的 parent 正是该 controller 的
+  情况允许跨 run 引用；其他任何 cross-run Candidate 继续 fail-closed。

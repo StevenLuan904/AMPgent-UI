@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from datetime import timedelta
 from typing import Any
 
@@ -118,16 +119,158 @@ class V39SequenceSpaceExplorationWorkflow:
             start_to_close_timeout=timedelta(hours=1),
             retry_policy=retry,
         )
+        structure_task_count = 0
+        structure_evidence_count = 0
+        final_portfolio = None
+        if cross_round_admission["structure_dispatch_allowed"]:
+            controller_run_id = str(schedule.controller_run_id)
+            queues = final_request["task_queues"]
+            structure_plan = await workflow.execute_activity(
+                "plan_v38_multitarget_structure",
+                {
+                    "run_id": controller_run_id,
+                    "admission_reference": cross_round_admission,
+                    "multitarget_plan_template": final_request[
+                        "multitarget_plan_template"
+                    ],
+                    "boltz_seeds": final_request["boltz_seeds"],
+                },
+                task_queue=str(queues["workflow_and_control"]),
+                start_to_close_timeout=timedelta(hours=1),
+                retry_policy=retry,
+            )
+            tasks = list(structure_plan["tasks"])
+            candidates_by_id = {
+                str(item["id"]): item for item in structure_plan["candidates"]
+            }
+            branches_by_key = {
+                str(item["target_key"]): item
+                for item in final_request["multitarget_plan_template"][
+                    "target_branches"
+                ]
+            }
+            structure_limit = int(final_request["structure_concurrency"])
+            boltz_slots = asyncio.Semaphore(structure_limit)
+            rosetta_slots = asyncio.Semaphore(structure_limit)
+
+            async def execute_structure_task(task: dict[str, Any]) -> dict[str, Any]:
+                target_key = str(task["target_key"])
+                candidate = candidates_by_id[str(task["candidate_id"])]
+                runtime = final_request["structure_runtime_by_target_key"][target_key]
+                async with boltz_slots:
+                    raw_boltz = await workflow.execute_activity(
+                        "predict_v38_multitarget_structure",
+                        {
+                            "run_id": controller_run_id,
+                            "candidate": candidate,
+                            "structure_task": task,
+                            "target_branch": branches_by_key[target_key],
+                            "target_sequence": runtime["target_sequence"],
+                            "pocket_definition_sha256": task["pocket_sha256"],
+                            "pocket_residues": runtime["pocket_residues_by_lane"][
+                                task["control_lane"]
+                            ],
+                            "structure_spec": runtime["structure_spec"],
+                            "seed": task["boltz_seed"],
+                        },
+                        task_queue=str(queues["structure_boltz"]),
+                        start_to_close_timeout=timedelta(hours=12),
+                        heartbeat_timeout=timedelta(minutes=5),
+                        retry_policy=retry,
+                    )
+                boltz = await workflow.execute_activity(
+                    "persist_v38_multitarget_boltz",
+                    {"run_id": controller_run_id, "structure_result": raw_boltz},
+                    task_queue=str(queues["workflow_and_control"]),
+                    start_to_close_timeout=timedelta(hours=1),
+                    retry_policy=retry,
+                )
+                async with rosetta_slots:
+                    raw_rosetta = await workflow.execute_activity(
+                        "score_v38_multitarget_rosetta",
+                        {
+                            "run_id": controller_run_id,
+                            "candidate": candidate,
+                            "structure_task": task,
+                            "target_branch": branches_by_key[target_key],
+                            "target_sequence": runtime["target_sequence"],
+                            "pocket_definition_sha256": task["pocket_sha256"],
+                            "pocket_residues": runtime["pocket_residues_by_lane"][
+                                task["control_lane"]
+                            ],
+                            "structure_spec": runtime["structure_spec"],
+                            "structure": boltz["structure"],
+                        },
+                        task_queue=str(queues["structure_rosetta"]),
+                        start_to_close_timeout=timedelta(hours=12),
+                        heartbeat_timeout=timedelta(minutes=5),
+                        retry_policy=retry,
+                    )
+                return await workflow.execute_activity(
+                    "persist_v38_multitarget_rosetta",
+                    {
+                        "run_id": controller_run_id,
+                        "rosetta_result": raw_rosetta,
+                        "boltz_evidence": boltz["boltz_evidence"],
+                    },
+                    task_queue=str(queues["workflow_and_control"]),
+                    start_to_close_timeout=timedelta(hours=1),
+                    retry_policy=retry,
+                )
+
+            structure_results = list(
+                await asyncio.gather(
+                    *(execute_structure_task(task) for task in tasks)
+                )
+            )
+            structure_task_count = len(tasks)
+            structure_evidence_count = sum(
+                1 + int(item["persistence_receipt"]["rosetta_decoy_count"])
+                for item in structure_results
+            )
+            decoys_per_pose = int(
+                final_request["multitarget_plan_template"]["target_branches"][0][
+                    "rosetta_decoys_per_pose"
+                ]
+            )
+            if structure_evidence_count != structure_task_count * (
+                1 + decoys_per_pose
+            ):
+                raise ValueError("v39 structure evidence cardinality drifted")
+            final_portfolio = await workflow.execute_activity(
+                "persist_v38_final_portfolio_replay",
+                {
+                    "run_id": controller_run_id,
+                    "admission_reference": cross_round_admission,
+                    "boltz_seeds": final_request["boltz_seeds"],
+                    "rosetta_decoys_per_pose": decoys_per_pose,
+                    "environment_sha256": final_request[
+                        "control_environment_sha256"
+                    ],
+                    "worker_source_revision": final_request[
+                        "worker_source_revision"
+                    ],
+                },
+                task_queue=str(queues["workflow_and_control"]),
+                start_to_close_timeout=timedelta(hours=1),
+                retry_policy=retry,
+            )
+            if not final_portfolio["replay_verified"]:
+                raise ValueError("v39 final portfolio replay was not verified")
         return {
             "schema_version": "ampgent.sequence-space-exploration-result.1",
-            "status": "sequence_space_complete_structure_portfolio_pending",
+            "status": (
+                "multitarget_final_portfolio_replay_complete"
+                if final_portfolio is not None
+                else "sequence_evidence_concluded_without_structure"
+            ),
             "controller_run_id": str(schedule.controller_run_id),
             "schedule_sha256": schedule.sha256(),
             "rounds": round_receipts,
             "observations": [item.model_dump(mode="json") for item in observations],
             "cross_round_admission": cross_round_admission,
-            "structure_dispatch_allowed": False,
-            "structure_dispatch_blocker": (
-                "cross_round_admission_and_portfolio_plan_not_persisted"
-            ),
+            "structure_task_count": structure_task_count,
+            "structure_evidence_count": structure_evidence_count,
+            "final_portfolio": final_portfolio,
+            "formal_structure_workflow_complete": final_portfolio is not None,
         }

@@ -223,7 +223,15 @@ async def persist_multitarget_structure_evidence(
     task = boltz.task
     run = await session.get(ExperimentRun, run_id)
     candidate = await session.get(Candidate, task.candidate_id)
-    if run is None or candidate is None or candidate.run_id != run_id:
+    candidate_scope_valid = candidate is not None and candidate.run_id == run_id
+    if run is not None and candidate is not None and not candidate_scope_valid:
+        candidate_run = await session.get(ExperimentRun, candidate.run_id)
+        candidate_scope_valid = bool(
+            run.spec_json.get("run_kind") == "sequence_space_exploration_control"
+            and candidate_run is not None
+            and candidate_run.parent_run_id == run_id
+        )
+    if run is None or candidate is None or not candidate_scope_valid:
         raise ValueError("v38 structure evidence run or candidate identity is invalid")
     branch = await session.scalar(
         select(ExperimentRunTargetBranch).where(

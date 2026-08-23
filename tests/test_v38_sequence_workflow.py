@@ -14,6 +14,7 @@ from pepagent.workflows.v38_sequence_first import (
     V38SequenceFirstAgentWorkflow,
     _validate_request,
 )
+from pepagent.workflows.v39_sequence_space import V39SequenceSpaceExplorationWorkflow
 
 
 def _request() -> dict:
@@ -196,3 +197,14 @@ def test_v38_structure_execution_is_stage_pipelined_without_batch_barrier() -> N
     assert "async with rosetta_slots:" in source
     assert "*(execute_structure_task(task) for task in tasks)" in source
     assert "_bounded_ordered_map(\n                    tasks," not in source
+
+
+def test_v39_runs_one_cross_round_structure_portfolio_after_all_rounds() -> None:
+    source = inspect.getsource(V39SequenceSpaceExplorationWorkflow.run)
+    cross_admission = source.index('"persist_v39_cross_round_admission"')
+    structure_plan = source.index('"plan_v38_multitarget_structure"')
+    final_replay = source.index('"persist_v38_final_portfolio_replay"')
+    assert cross_admission < structure_plan < final_replay
+    assert '"predict_v38_multitarget_structure"' in source
+    assert '"score_v38_multitarget_rosetta"' in source
+    assert '"formal_structure_workflow_complete"' in source

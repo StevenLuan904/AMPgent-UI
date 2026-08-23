@@ -859,3 +859,9 @@ round binding 冻结为 sequence-only：每轮完成生成、12-metric score-all
 run 的 Candidate/Evaluation/ToolCall 证据重新计算统一安全门、活性/可开发性和非加权 Pareto；不复制
 候选、不回填 child run，也不拼接局部 Pareto。结果写为 controller Decision、内容寻址 artifact 和 typed
 receipt。下一缺口缩小为由该统一 admission 生成唯一双靶点结构 portfolio 与 replay。
+
+2026-08-23 唯一结构portfolio增量：父 workflow 已在统一跨轮 admission 之后接入一次双靶点
+native/wrong-pocket、3 Boltz seeds、16 Rosetta decoys 和最终三视图 replay；四个 sequence-only child
+不会重复跑结构。为避免复制Candidate，结构证据归controller，但仅允许引用其直接child run内的候选；
+普通run仍严格禁止cross-run持久化。当前剩余工程门为controller目标分支绑定、四run schedule预留CLI、
+release与真实guarded smoke/preflight，尚未提交正式run。

@@ -82,6 +82,9 @@ from pepagent.workflow_observer_contract import (
 
 V38_METRIC_RESULT_REFERENCE_SCHEMA = "v38.metric-result-reference.1"
 V38_ADMISSION_REFERENCE_SCHEMA = "v38.sequence-admission-reference.1"
+V39_CROSS_ROUND_ADMISSION_REFERENCE_SCHEMA = (
+    "v39.cross-round-admission-reference.1"
+)
 
 
 @activity.defn(name="persist_v39_exploration_round_yield")
@@ -386,15 +389,36 @@ async def plan_v38_multitarget_structure(request: dict[str, Any]) -> dict[str, A
         boltz_seeds=tuple(int(item) for item in request["boltz_seeds"]),
     )
     candidate_ids = [uuid.UUID(item) for item in planned["admitted_candidate_ids"]]
+    source_run_ids = tuple(
+        uuid.UUID(str(item)) for item in admission_payload.get("source_run_ids", [])
+    )
     async with SessionFactory() as session:
         candidates = list(
             await session.scalars(
                 select(Candidate)
-                .where(Candidate.run_id == run_id, Candidate.id.in_(candidate_ids))
+                .where(Candidate.id.in_(candidate_ids))
                 .order_by(Candidate.id)
             )
         )
-    if {item.id for item in candidates} != set(candidate_ids):
+        if source_run_ids:
+            source_runs = list(
+                await session.scalars(
+                    select(ExperimentRun).where(ExperimentRun.id.in_(source_run_ids))
+                )
+            )
+            if len(source_runs) != len(source_run_ids) or any(
+                item.parent_run_id != run_id for item in source_runs
+            ):
+                raise ValueError("v39 structure sources are not controller children")
+            candidate_scope_valid = all(
+                item.run_id in source_run_ids for item in candidates
+            )
+        else:
+            candidate_scope_valid = all(item.run_id == run_id for item in candidates)
+    if (
+        {item.id for item in candidates} != set(candidate_ids)
+        or not candidate_scope_valid
+    ):
         raise ValueError("v38 structure plan references a missing or cross-run candidate")
     planned["candidates"] = [
         {
@@ -803,9 +827,17 @@ async def _resolve_v38_metric_result(reference: dict[str, Any]) -> dict[str, Any
 
 
 async def _resolve_v38_admission(reference: dict[str, Any]) -> dict[str, Any]:
-    if reference.get("schema_version") != V38_ADMISSION_REFERENCE_SCHEMA:
+    schema_version = reference.get("schema_version")
+    if schema_version not in {
+        V38_ADMISSION_REFERENCE_SCHEMA,
+        V39_CROSS_ROUND_ADMISSION_REFERENCE_SCHEMA,
+    }:
         raise ValueError("v38 sequence admission reference schema is invalid")
-    artifact = reference.get("admission_artifact")
+    artifact = reference.get(
+        "admission_artifact"
+        if schema_version == V38_ADMISSION_REFERENCE_SCHEMA
+        else "artifact"
+    )
     if not isinstance(artifact, dict) or set(artifact) != {
         "sha256",
         "size_bytes",
