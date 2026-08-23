@@ -84,6 +84,8 @@ def build_v39_submission_preflight(
     target_identity_witness_sha256: str,
     model_registry_audit_sha256: str,
     enterprise_registry_authorized: bool,
+    exploratory_research_authorized: bool = False,
+    disclosed_model_registry_gaps: tuple[str, ...] = (),
 ) -> dict[str, Any]:
     """Bind v39's multi-round budget to deployable evidence before reservation."""
 
@@ -146,7 +148,24 @@ def build_v39_submission_preflight(
         ),
         **evidence,
     }
-    authorized = enterprise_registry_authorized is True
+    enterprise_ready = enterprise_registry_authorized is True
+    exploratory_ready = exploratory_research_authorized is True
+    if exploratory_ready and not enterprise_ready and not disclosed_model_registry_gaps:
+        raise ValueError("exploratory v39 authorization must disclose registry gaps")
+    authorized = enterprise_ready or exploratory_ready
+    execution_scope = (
+        "enterprise_formal_science"
+        if enterprise_ready
+        else "exploratory_research"
+        if exploratory_ready
+        else "blocked"
+    )
+    identity = {
+        **identity,
+        "execution_scope": execution_scope,
+        "enterprise_ready": enterprise_ready,
+        "model_registry_gaps": list(disclosed_model_registry_gaps),
+    }
     return {
         **identity,
         "formal_submission_key": sha256_json(identity),
@@ -157,4 +176,13 @@ def build_v39_submission_preflight(
         ),
         "execution_authorized": authorized,
         "failed_gates": [] if authorized else ["enterprise_registry_not_authorized"],
+        "result_label_restrictions": (
+            []
+            if enterprise_ready
+            else [
+                "provisional_exploratory_evidence_only",
+                "not_enterprise_ready",
+                "not_experimental_validation",
+            ]
+        ),
     }

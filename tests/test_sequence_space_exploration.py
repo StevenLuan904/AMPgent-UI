@@ -274,3 +274,23 @@ def test_v39_preflight_binds_expansion_budget_and_keeps_registry_gate_explicit()
     assert blocked["maximum_raw_occurrences"] == 7200
     assert blocked["required_sequence_metric_count"] == 12
     assert blocked["maximum_initial_sequence_evaluations"] == 86400
+
+    exploratory = build_v39_submission_preflight(
+        request_template=request,
+        worker_placement=_placement(source, release),
+        release_smoke=smoke,
+        source_revision=source,
+        release_sha256=release,
+        benchmark_sha256="c" * 64,
+        target_panel_sha256="d" * 64,
+        target_identity_witness_sha256="e" * 64,
+        model_registry_audit_sha256="f" * 64,
+        enterprise_registry_authorized=False,
+        exploratory_research_authorized=True,
+        disclosed_model_registry_gaps=("hemolysis:independent_models=0,required=2",),
+    )
+    assert exploratory["status"] == "ready_to_submit_unique_run"
+    assert exploratory["execution_authorized"] is True
+    assert exploratory["execution_scope"] == "exploratory_research"
+    assert exploratory["enterprise_ready"] is False
+    assert "not_enterprise_ready" in exploratory["result_label_restrictions"]

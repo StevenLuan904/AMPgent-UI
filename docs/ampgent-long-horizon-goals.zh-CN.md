@@ -908,3 +908,9 @@ schedule reservation 现在必须显式接收这份前检且 request SHA 完全�
 `status=ready` 自证通过。当前 enterprise model registry 授权仍关闭，所以前检按设计返回 blocked；本轮
 完成了继续扩大短肽空间所需的安全启动边界，但没有创建 run 或声称产生新增候选。下一动作是补齐当前
 release 的正式 worker-placement witness 与 enterprise registry 授权证据，再进行一次全量 preflight。
+
+用户随后明确要求不要用过严的企业完备条件阻断短肽探索。v39 因此把启动资格拆成两层：企业正式结论
+继续要求 registry 全部通过；探索 run 可在完整披露 registry gaps、固定 provisional 标签且保持全部
+有效性/安全性硬门和 12-metric score-all 的前提下启动。该拆分只放开探索计算，不把模型预测升级为实验
+验证，也不把 exploratory portfolio 冒充企业候选。当前 release audit 实测有 10 个 enterprise domain
+缺口；下一启动按 `exploratory_research` 范围准备，而不是等待所有湿实验和模型资质先完成。

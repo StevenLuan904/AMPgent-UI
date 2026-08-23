@@ -2507,3 +2507,7 @@ MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot
 - schedule builder 只接受显式传入、request SHA 匹配、`execution_authorized=true` 且无失败门的 v39
   前检；preflight 不再由 request template 自我声明。企业 registry 尚未授权时输出 typed blocked 状态，
   禁止预留或提交。因此本增量没有创建新 run，也没有复用或改写旧证据。
+- 按用户“不要让企业级完备性阻断探索”的最新指令，v39 前检区分 `enterprise_formal_science` 与
+  `exploratory_research`：后者可在显式授权且完整披露 registry gaps 时启动，结果必须标记为 provisional、
+  not-enterprise-ready、not-experimental-validation。企业结论仍 fail-closed；探索授权不降低有效性/安全性
+  硬门，也不允许缺失指标或 first-K。
