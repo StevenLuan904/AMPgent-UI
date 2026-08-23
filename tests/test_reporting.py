@@ -62,3 +62,30 @@ def test_bulk_rows_preserve_run_provenance_and_protocol_identity() -> None:
     assert rows[0]["run_id"] == str(run_id)
     assert rows[0]["bulk_status"] == "succeeded"
     assert rows[0]["rosetta_adapter_version"] == "pepagent-pyrosetta-flexpepdock-v3"
+
+
+def test_bulk_rows_export_guruprasad_instability_and_short_peptide_ood() -> None:
+    run_id = uuid.uuid4()
+    candidate_id = uuid.uuid4()
+    candidate = SimpleNamespace(
+        id=candidate_id,
+        run_id=run_id,
+        sequence="KASVNVSPRA",
+        generation=1,
+    )
+    instability = SimpleNamespace(
+        candidate_id=candidate_id,
+        metric_name="guruprasad_instability_index",
+        numeric_value=45.4,
+        text_value=None,
+        raw_json={},
+        tool_call_id=uuid.uuid4(),
+        out_of_domain=True,
+    )
+
+    row = build_bulk_rosetta_rows([candidate], [instability])[0]
+
+    assert row["guruprasad_instability_index"] == 45.4
+    assert row["guruprasad_instability_out_of_domain"] is True
+    assert "guruprasad_instability_index" in BULK_ROSETTA_CSV_COLUMNS
+    assert "guruprasad_instability_out_of_domain" in BULK_ROSETTA_CSV_COLUMNS

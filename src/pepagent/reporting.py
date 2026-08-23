@@ -16,6 +16,8 @@ BULK_ROSETTA_CSV_COLUMNS = [
     "bulk_status",
     "conditional_ppl",
     "instability_index",
+    "guruprasad_instability_index",
+    "guruprasad_instability_out_of_domain",
     "hydrophobic_fraction",
     "maximum_hydrophobic_run",
     "maximum_identical_residue_run",
@@ -131,6 +133,20 @@ def build_bulk_rosetta_rows(
                 ),
                 "conditional_ppl": numeric(MetricName.CONDITIONAL_PPL),
                 "instability_index": numeric(MetricName.INSTABILITY_INDEX),
+                "guruprasad_instability_index": numeric(
+                    "guruprasad_instability_index"
+                ),
+                "guruprasad_instability_out_of_domain": (
+                    bool(
+                        getattr(
+                            metrics.get("guruprasad_instability_index"),
+                            "out_of_domain",
+                            False,
+                        )
+                    )
+                    if metrics.get("guruprasad_instability_index") is not None
+                    else None
+                ),
                 "hydrophobic_fraction": numeric(MetricName.HYDROPHOBIC_FRACTION),
                 "maximum_hydrophobic_run": numeric(MetricName.MAXIMUM_HYDROPHOBIC_RUN),
                 "maximum_identical_residue_run": numeric(
