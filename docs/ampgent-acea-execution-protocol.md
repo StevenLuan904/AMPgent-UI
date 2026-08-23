@@ -2527,3 +2527,19 @@ MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot
   occurrence/Candidate/Evaluation 仍为 0。
 - 启动 payload 约 587 KB，超过 Temporal 512 KB 告警线但未超过服务限制。后续应把大 request 改为内容
   寻址引用；该性能债不授权改动或替换当前冻结 schedule。
+
+### v39 round 0 指标身份失败与前检加固（2026-08-23）
+
+- 上述 controller/round 0 已 terminal failed 并保持不可变；round 0 在首个指标 Activity 前已持久化
+  1800 raw occurrence、1557 unique Candidate 和 18 个生成 ToolCall，Evaluation/Decision/structure/replay
+  仍为 0。其余三个预留 child 未启动，禁止原地续跑、回填或复用这些输出。
+- 根因不是算力或生成器，而是 12-metric 抽象合同已经加入 instability，但 request 仍绑定旧
+  `physicochemical-developability-modlamp-4.3.2-v37` descriptor；冻结 adapter SHA 与实际 v39
+  physicochemical/instability CLI 字节不同，真实 launch guard 因而正确 fail-closed。
+- v39 preflight 现在必须同时验证 v39 runtime id、`python -S` adapter index、专用
+  `no_site_bootstrap.py` 名称和 adapter 实际 SHA。bootstrap 只显式加入当前 executable 相邻的
+  `Lib/site-packages`，不调用 `site.main`/`addsitedir`，因此不读取 `.pth`；随后转交内容寻址的 v39 CLI。
+- 本地同 executable 的真实 `python -S` smoke 已对长、短两条序列完成五项 physicochemical 输出，
+  `guruprasad_instability_index` 存在且 `<20 aa` OOD 标记分别为 false/true；相关回归 17/17 通过。
+  这仍不是新正式 run 授权：必须冻结全新 source/release，在 ASCII 只读 release 上重复同边界 smoke、
+  重建完整 request/preflight、迁移五类 worker 后，才可 exact-once 创建新的独立 recovery schedule。

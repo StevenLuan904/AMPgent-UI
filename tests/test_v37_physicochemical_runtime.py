@@ -28,7 +28,7 @@ ADAPTER = (
     / "pepagent"
     / "model_workers"
     / "physicochemical_runtime"
-    / "cli.py"
+    / "no_site_bootstrap.py"
 )
 SOURCE_ROOT = ADAPTER.parent
 MODEL_ROOT = (
@@ -86,7 +86,7 @@ def _freeze_descriptor(tmp_path: Path) -> dict[str, object]:
         model_root=MODEL_ROOT,
         cwd=REPO_ROOT,
         executable_index=0,
-        adapter_index=1,
+        adapter_index=2,
     )
 
 
@@ -133,6 +133,7 @@ async def test_physicochemical_runtime_is_guarded_and_matches_pinned_protocol(
     output, aggregate = await run_v37_guarded_provider_subprocess(
         [
             sys.executable,
+            "-S",
             str(ADAPTER),
             "--request",
             str(request_path),
@@ -220,6 +221,7 @@ def test_physicochemical_runtime_descriptor_is_self_hashed_and_has_no_hidden_mod
     assert [item["path"] for item in contract["source_release"]["files"]] == [
         "__init__.py",
         "cli.py",
+        "no_site_bootstrap.py",
     ]
     assert [item["path"] for item in contract["model_release"]["files"]] == [
         "manifest.json"

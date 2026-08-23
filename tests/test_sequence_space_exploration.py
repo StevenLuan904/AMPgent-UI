@@ -3,7 +3,7 @@ from uuid import uuid4
 
 import yaml
 
-from pepagent.provenance.hashing import sha256_json
+from pepagent.provenance.hashing import sha256_file, sha256_json
 from pepagent.sequence_space_exploration import (
     ExplorationBatchObservation,
     V39ExplorationSchedule,
@@ -57,6 +57,35 @@ def _placement(source: str, release: str) -> dict:
     }
 
 
+def _v39_request(source: str) -> dict:
+    adapter = (
+        REPO_ROOT
+        / "src"
+        / "pepagent"
+        / "model_workers"
+        / "physicochemical_runtime"
+        / "no_site_bootstrap.py"
+    ).resolve()
+    runtime_id = "physicochemical-developability-modlamp-4.3.2-biopython-v39"
+    return {
+        "worker_source_revision": source,
+        "metric_plugins_by_name": {
+            "physicochemical_developability": {
+                "runtime_id": runtime_id,
+                "execution_guard": {
+                    "contract": {
+                        "runtime_id": runtime_id,
+                        "adapter": {
+                            "path": "no_site_bootstrap.py",
+                            "sha256": sha256_file(adapter),
+                        },
+                        "command_entities": {"adapter_index": 2},
+                    },
+                    "paths": {"adapter_path": str(adapter)},
+                },
+            }
+        },
+    }
 def _observation(batch: int, *, novel: int, pareto: int) -> ExplorationBatchObservation:
     return ExplorationBatchObservation(
         batch_ordinal=batch,
@@ -252,7 +281,7 @@ def test_v39_run_ids_are_deterministic_from_formal_submission_key() -> None:
 def test_v39_preflight_binds_expansion_budget_and_keeps_registry_gate_explicit() -> None:
     source = "a" * 40
     release = "b" * 64
-    request = {"worker_source_revision": source}
+    request = _v39_request(source)
     smoke = {
         "schema_version": "v39.release-smoke.1",
         "source_revision": source,
@@ -304,3 +333,55 @@ def test_v39_preflight_binds_expansion_budget_and_keeps_registry_gate_explicit()
     assert exploratory["execution_scope"] == "exploratory_research"
     assert exploratory["enterprise_ready"] is False
     assert "not_enterprise_ready" in exploratory["result_label_restrictions"]
+
+
+def test_v39_preflight_rejects_pre_instability_or_drifted_runtime() -> None:
+    source = "a" * 40
+    release = "b" * 64
+    smoke = {
+        "schema_version": "v39.release-smoke.1",
+        "source_revision": source,
+        "release_sha256": release,
+        "same_executable": True,
+        "guarded_launcher": True,
+        "release_bytes_loaded": True,
+        "guarded_metric_tests": 5,
+        "workflow_tests": 19,
+        "metric_names": ["guruprasad_instability_index"],
+    }
+
+    def build(request: dict) -> dict:
+        return build_v39_submission_preflight(
+            request_template=request,
+            worker_placement=_placement(source, release),
+            release_smoke=smoke,
+            source_revision=source,
+            release_sha256=release,
+            benchmark_sha256="c" * 64,
+            target_panel_sha256="d" * 64,
+            target_identity_witness_sha256="e" * 64,
+            model_registry_audit_sha256="f" * 64,
+            enterprise_registry_authorized=False,
+        )
+
+    request = _v39_request(source)
+    request["metric_plugins_by_name"]["physicochemical_developability"][
+        "runtime_id"
+    ] = "physicochemical-developability-modlamp-4.3.2-v37"
+    try:
+        build(request)
+    except ValueError as exc:
+        assert "frozen no-site v39 binding" in str(exc)
+    else:
+        raise AssertionError("v39 preflight accepted the pre-instability runtime")
+
+    request = _v39_request(source)
+    request["metric_plugins_by_name"]["physicochemical_developability"][
+        "execution_guard"
+    ]["contract"]["adapter"]["sha256"] = "0" * 64
+    try:
+        build(request)
+    except ValueError as exc:
+        assert "adapter bytes drifted" in str(exc)
+    else:
+        raise AssertionError("v39 preflight accepted drifted adapter bytes")

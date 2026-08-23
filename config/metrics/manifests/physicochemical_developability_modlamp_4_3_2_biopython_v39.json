@@ -8,7 +8,8 @@
       "modlamp": "4.3.2",
       "biopython": ">=1.84,<2"
     },
-    "adapter": "src/pepagent/model_workers/physicochemical_runtime/cli.py",
+    "adapter": "src/pepagent/model_workers/physicochemical_runtime/no_site_bootstrap.py",
+    "implementation_module": "src/pepagent/model_workers/physicochemical_runtime/cli.py",
     "method_version": "2026.08.22-v2"
   },
   "model_assets": [],

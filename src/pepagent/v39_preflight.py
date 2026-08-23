@@ -1,14 +1,59 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from pathlib import Path
 from typing import Any
 
-from pepagent.provenance.hashing import sha256_json
+from pepagent.provenance.hashing import sha256_file, sha256_json
 from pepagent.sequence_space_exploration import (
     build_default_v39_exploration_contract,
     build_v39_round_execution_contract,
 )
 from pepagent.v38_preflight import V38_ROLE_QUEUES
+
+
+V39_PHYSICOCHEMICAL_RUNTIME_ID = (
+    "physicochemical-developability-modlamp-4.3.2-biopython-v39"
+)
+V39_PHYSICOCHEMICAL_ADAPTER_NAME = "no_site_bootstrap.py"
+
+
+def _validate_v39_physicochemical_runtime(request_template: dict[str, Any]) -> None:
+    """Reject a v39 request that still binds the pre-instability runtime.
+
+    The abstract 12-metric execution contract is insufficient: the launch
+    payload must bind the v39 adapter bytes that actually emit the instability
+    observation.  Rehashing the launch path here also catches a descriptor
+    copied from an older release before any durable science run is reserved.
+    """
+
+    plugins = request_template.get("metric_plugins_by_name")
+    if not isinstance(plugins, dict):
+        raise ValueError("v39 request lacks metric runtime bindings")
+    runtime = plugins.get("physicochemical_developability")
+    if not isinstance(runtime, dict):
+        raise ValueError("v39 request lacks the physicochemical runtime")
+    guard = runtime.get("execution_guard")
+    contract = guard.get("contract") if isinstance(guard, dict) else None
+    paths = guard.get("paths") if isinstance(guard, dict) else None
+    adapter = contract.get("adapter") if isinstance(contract, dict) else None
+    entities = contract.get("command_entities") if isinstance(contract, dict) else None
+    if (
+        runtime.get("runtime_id") != V39_PHYSICOCHEMICAL_RUNTIME_ID
+        or not isinstance(contract, dict)
+        or contract.get("runtime_id") != V39_PHYSICOCHEMICAL_RUNTIME_ID
+        or not isinstance(adapter, dict)
+        or not isinstance(paths, dict)
+        or not isinstance(entities, dict)
+        or entities.get("adapter_index") != 2
+        or adapter.get("path") != V39_PHYSICOCHEMICAL_ADAPTER_NAME
+    ):
+        raise ValueError("v39 physicochemical runtime is not the frozen no-site v39 binding")
+    adapter_path = Path(str(paths.get("adapter_path", ""))).resolve()
+    if not adapter_path.is_file():
+        raise ValueError("v39 physicochemical adapter path is not a file")
+    if sha256_file(adapter_path) != adapter.get("sha256"):
+        raise ValueError("v39 physicochemical adapter bytes drifted before preflight")
 
 
 def _require_sha(value: object, *, length: int, label: str) -> str:
@@ -96,6 +141,7 @@ def build_v39_submission_preflight(
         "submission_preflight",
     }:
         raise ValueError("v39 preflight request contains a run-time identity")
+    _validate_v39_physicochemical_runtime(request_template)
     source_revision = _require_sha(source_revision, length=40, label="source")
     release_sha256 = _require_sha(release_sha256, length=64, label="release")
     evidence = {
