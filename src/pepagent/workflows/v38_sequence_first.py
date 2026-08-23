@@ -7,8 +7,9 @@ from typing import Any
 from temporalio import workflow
 from temporalio.common import RetryPolicy
 
-from pepagent.provenance.hashing import sha256_json
-from pepagent.sequence_space_exploration import V39ExplorationRoundBinding
+with workflow.unsafe.imports_passed_through():
+    from pepagent.provenance.hashing import sha256_json
+    from pepagent.sequence_space_exploration import V39ExplorationRoundBinding
 
 
 async def _bounded_ordered_map(

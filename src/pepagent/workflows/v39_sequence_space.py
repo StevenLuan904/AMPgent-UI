@@ -7,11 +7,12 @@ from typing import Any
 from temporalio import workflow
 from temporalio.common import RetryPolicy
 
-from pepagent.sequence_space_exploration import (
-    ExplorationBatchObservation,
-    V39ExplorationSchedule,
-    next_exploration_action,
-)
+with workflow.unsafe.imports_passed_through():
+    from pepagent.sequence_space_exploration import (
+        ExplorationBatchObservation,
+        V39ExplorationSchedule,
+        next_exploration_action,
+    )
 
 
 @workflow.defn(name="V39SequenceSpaceExplorationWorkflow")
