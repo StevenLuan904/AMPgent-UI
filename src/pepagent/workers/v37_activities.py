@@ -158,6 +158,23 @@ def _prepare_builtin_metric_python_bootstrap(
     return [command[0], "-S", *command[1:]], prepared_environment
 
 
+def _builtin_metric_output_contract(runtime_id: str) -> tuple[str, frozenset[str]]:
+    """Return the frozen result contract for one builtin metric runtime."""
+
+    metrics = {
+        "hydrophobic_moment_eisenberg",
+        "hydrophobic_ratio_modlamp",
+        "maximum_hydrophobic_run",
+        "net_charge_ph7_4",
+    }
+    if runtime_id == (
+        "physicochemical-developability-modlamp-4.3.2-biopython-v39"
+    ):
+        metrics.add("guruprasad_instability_index")
+        return "2026.08.22-v2", frozenset(metrics)
+    return "2026.08.04-v1", frozenset(metrics)
+
+
 async def _resolve_v37_structure_summary_reference(
     reference: dict[str, Any],
 ) -> dict[str, Any]:
@@ -337,10 +354,14 @@ async def _evaluate_frozen_sequence_metric(
                 input_paths={"request": request_path},
             )
             result = json.loads(await asyncio.to_thread(output_path.read_text, encoding="utf-8"))
+            runtime_id = str(plugin.get("runtime_id", ""))
+            expected_adapter_version, expected_metrics = (
+                _builtin_metric_output_contract(runtime_id)
+            )
             if (
                 result.get("status") != "complete"
-                or result.get("runtime_id") != plugin.get("runtime_id")
-                or result.get("adapter_version") != "2026.08.04-v1"
+                or result.get("runtime_id") != runtime_id
+                or result.get("adapter_version") != expected_adapter_version
             ):
                 raise ValueError("v37 builtin metric runtime identity or status drifted")
             expected_identities = [
@@ -361,12 +382,6 @@ async def _evaluate_frozen_sequence_metric(
                 observation["metric_name"]
                 for record in result.get("records", [])
                 for observation in record.get("observations", [])
-            }
-            expected_metrics = {
-                "hydrophobic_moment_eisenberg",
-                "hydrophobic_ratio_modlamp",
-                "maximum_hydrophobic_run",
-                "net_charge_ph7_4",
             }
             if emitted_metrics != expected_metrics:
                 raise ValueError("v37 builtin metric observation contract drifted")
