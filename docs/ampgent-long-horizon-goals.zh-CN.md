@@ -892,3 +892,9 @@ controller 与四个独立 child run，并在单一数据库事务中持久化�
 
 相关 v39/v38 workflow 回归测试共 19 项通过。下一步是冻结拟部署 release，使用相同 executable 与
 guarded launcher 完成 12-metric/18-cell smoke 和 full preflight，随后才允许 exact-once 启动四轮探索。
+
+同一轮已冻结 source `4cb773e6bf2f2b586196ed320f5f44bcff6ee407` 的内容归档 release
+`7447ec167f5e678b2c81afe2099062fd681ad78ef05fa1fab18e75ad04b23db6`。该 release 通过 ASCII junction
+和正式 `.venv` executable 完成真实 guarded physicochemical/instability 5/5 测试，并从 release 字节
+完成 v39 schedule/v38 child 19/19 回归。尚未执行 schedule reservation 或提交 Temporal；下一立即任务
+是生成绑定 18 cells、1800 raw/轮、12 metrics 与此 source/release 的 v39 preflight 和 worker placement。

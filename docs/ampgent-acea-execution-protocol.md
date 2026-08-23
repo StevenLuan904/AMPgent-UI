@@ -2481,6 +2481,11 @@ MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot
 - schedule reservation builder 与既有 v38 child workflow 回归测试已经通过；在拟部署 source/release、
   同 executable 的 guarded smoke 和全量 preflight 闭合前，仍禁止执行预留或正式提交。该门用于保证
   下一次启动能够真实完成最多 4×1800 raw occurrence 的探索，而非再留下半成品 run。
+- 当前拟部署 source 为 `4cb773e6bf2f2b586196ed320f5f44bcff6ee407`，内容归档 release SHA-256 为
+  `7447ec167f5e678b2c81afe2099062fd681ad78ef05fa1fab18e75ad04b23db6`。从该只读 release 经 ASCII
+  junction、同一 `.venv` executable 执行的真实 guarded physicochemical/instability 测试为 5/5 通过；
+  从同一 release 执行的 v39 外层调度与 v38 child 回归为 19/19 通过。剩余门缩小为 18-cell/12-metric
+  请求 preflight、worker placement/poller 迁移和 exact-once outer workflow submission。
 
 ### 开发性实验 provider 的 pilot-first 选择（2026-08-23）
 
