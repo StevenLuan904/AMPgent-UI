@@ -10,6 +10,10 @@ from pepagent.sequence_space_exploration import (
     build_v39_round_execution_contract,
     next_exploration_action,
 )
+from pepagent.v39_schedule_reservation_cli import (
+    build_v39_reservation_specs,
+    build_v39_schedule,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -152,3 +156,45 @@ def test_v39_outer_schedule_rejects_reused_run_identity() -> None:
         assert "identities must be unique" in str(exc)
     else:
         raise AssertionError("reused v39 run identity was accepted")
+
+
+def test_v39_reservation_freezes_controller_four_children_and_unique_keys() -> None:
+    controller_run_id = uuid4()
+    round_run_ids = tuple(uuid4() for _ in range(4))
+    schedule = build_v39_schedule(
+        request_template={
+            "submission_preflight": {"status": "ready_to_submit_unique_run"},
+            "multitarget_plan_template": {
+                "target_branches": [],
+            },
+        },
+        controller_run_id=controller_run_id,
+        round_run_ids=round_run_ids,
+    )
+    controller, children = build_v39_reservation_specs(schedule)
+
+    assert controller["run_kind"] == "sequence_space_exploration_control"
+    assert controller["formal_science_workflow_submitted"] is False
+    assert len(children) == 4
+    assert [item["round_ordinal"] for item in children] == [0, 1, 2, 3]
+    assert {item["controller_run_id"] for item in children} == {
+        str(controller_run_id)
+    }
+    assert len({item["formal_submission_key"] for item in children}) == 4
+    assert len({item.workflow_id for item in schedule.rounds}) == 4
+
+
+def test_v39_schedule_builder_rejects_runtime_identity_in_template() -> None:
+    try:
+        build_v39_schedule(
+            request_template={
+                "run_id": str(uuid4()),
+                "submission_preflight": {"status": "ready_to_submit_unique_run"},
+            },
+            controller_run_id=uuid4(),
+            round_run_ids=tuple(uuid4() for _ in range(4)),
+        )
+    except ValueError as exc:
+        assert "run-time identity" in str(exc)
+    else:
+        raise AssertionError("v39 schedule accepted a template with a run identity")

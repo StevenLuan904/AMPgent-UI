@@ -882,3 +882,13 @@ remaining/half-life，以及 peptide/serum matrix bioanalysis 能力。溶解度
 保持不可变。当前只推进到 `ready_for_procurement`：尚未发 RFQ、下单、披露候选或改变正式科学合同。
 盲测核心只要求 reference peptide、合理标准协议、必要对照、正交 readout 和机器可读结果；3 donor、
 24 h、三种蛋白酶 lane、fragment mapping、完整条件矩阵、可逆性和衍生模型权利转为 SOW/第二阶段选项。
+
+## 2026-08-23 v39 schedule 原子预留增量
+
+新增 `pepagent.v39_schedule_reservation_cli`，可从已通过的 request template 冻结一个 exploration
+controller 与四个独立 child run，并在单一数据库事务中持久化所有 run identity、formal submission key、
+父子 lineage、controller 双靶点分支、schedule artifact 和 typed events。重复执行只接受完全相同的五个
+身份与 spec；部分预留或内容漂移直接失败。CLI 默认惰性且尚未执行，因此没有新增正式 run 或候选。
+
+相关 v39/v38 workflow 回归测试共 19 项通过。下一步是冻结拟部署 release，使用相同 executable 与
+guarded launcher 完成 12-metric/18-cell smoke 和 full preflight，随后才允许 exact-once 启动四轮探索。

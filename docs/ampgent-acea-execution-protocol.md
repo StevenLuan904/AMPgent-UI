@@ -2474,6 +2474,13 @@ MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot
   native/wrong-pocket × 3 Boltz seeds × 16 Rosetta decoys portfolio，并执行三视图最终 replay。结构持久化
   只对 `run_kind=sequence_space_exploration_control` 且 Candidate 所属 run 的 parent 正是该 controller 的
   情况允许跨 run 引用；其他任何 cross-run Candidate 继续 fail-closed。
+- `pepagent.v39_schedule_reservation_cli` 负责在同一 PostgreSQL 事务内预留一个 controller 和四个 child
+  run，冻结互异的 run/workflow/formal-submission identity、controller 双靶点分支、schedule SHA 与内容
+  寻址 artifact。CLI 未显式传入 `--execute` 时保持惰性，预留动作本身不提交 Temporal，也不复用历史
+  输出；部分存在或内容漂移必须 fail-closed。
+- schedule reservation builder 与既有 v38 child workflow 回归测试已经通过；在拟部署 source/release、
+  同 executable 的 guarded smoke 和全量 preflight 闭合前，仍禁止执行预留或正式提交。该门用于保证
+  下一次启动能够真实完成最多 4×1800 raw occurrence 的探索，而非再留下半成品 run。
 
 ### 开发性实验 provider 的 pilot-first 选择（2026-08-23）
 
