@@ -2474,3 +2474,13 @@ MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot
   native/wrong-pocket × 3 Boltz seeds × 16 Rosetta decoys portfolio，并执行三视图最终 replay。结构持久化
   只对 `run_kind=sequence_space_exploration_control` 且 Candidate 所属 run 的 parent 正是该 controller 的
   情况允许跨 run 引用；其他任何 cross-run Candidate 继续 fail-closed。
+
+### 开发性实验 provider 的 pilot-first 选择（2026-08-23）
+
+- serum/protease stability 首选 `Evotec_Cyprotex`；solubility/aggregation 首选 `Eurofins_CDMO`。
+- provider 首选不再以“公开页面逐项证明冻结合同全部字段”为前置条件，而以核心能力、成熟度、服务覆盖
+  和协议匹配度为依据；未公开的 donor/timepoint/lane/可逆性/权利字段在 SOW 中确认。
+- 首轮只允许盲法 reference peptide pilot。pilot 通过、采购授权和候选解盲决定完成前，不发送当前候选。
+- pilot 核心验收是合理标准协议、阳性/阴性/基质或空白对照、目标 readout、机器可读结果和可重复性；
+  扩展协议进入第二阶段，不再阻塞首选机构。
+- 选择 witness 为 `config/enterprise/preferred_development_providers_v39.json`；既有严格筛查 witness 保持不可变。

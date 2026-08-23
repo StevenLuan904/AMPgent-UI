@@ -865,3 +865,20 @@ native/wrong-pocket、3 Boltz seeds、16 Rosetta decoys 和最终三视图 repla
 不会重复跑结构。为避免复制Candidate，结构证据归controller，但仅允许引用其直接child run内的候选；
 普通run仍严格禁止cross-run持久化。当前剩余工程门为controller目标分支绑定、四run schedule预留CLI、
 release与真实guarded smoke/preflight，尚未提交正式run。
+
+## 2026-08-23 开发性实验 provider 首选决策
+
+按用户指令，provider 选择不再要求所有精确协议、权利和扩展 lane 先由公开网页完整证明。新策略是先按
+核心能力、行业采用规模、服务覆盖和协议匹配度选择成熟机构，再用少量盲法 reference peptide pilot
+验证；缺失细节在 SOW 中确认，不再阻塞首选 provider。
+
+血清/蛋白酶稳定性首选 Evotec/Cyprotex：其公开资料提供多 donor plasma stability、LC-MS/MS parent
+remaining/half-life，以及 peptide/serum matrix bioanalysis 能力。溶解度/聚集首选 Eurofins CDMO：其
+公开 peptide 支持覆盖 solubility、DLS、MFI、light obscuration、HRMS-LC、方法开发和稳定性测试，是本轮
+筛查中正交测量覆盖最完整的单一机构。公开资料不能证明客观市场份额，因此只把 Cyprotex 公布的合作规模
+和两家机构的服务覆盖作为“常用、成熟”的代理，不作市场第一声明。
+
+新决策 witness 为 `config/enterprise/preferred_development_providers_v39.json`；原两个严格筛查 witness
+保持不可变。当前只推进到 `ready_for_procurement`：尚未发 RFQ、下单、披露候选或改变正式科学合同。
+盲测核心只要求 reference peptide、合理标准协议、必要对照、正交 readout 和机器可读结果；3 donor、
+24 h、三种蛋白酶 lane、fragment mapping、完整条件矩阵、可逆性和衍生模型权利转为 SOW/第二阶段选项。

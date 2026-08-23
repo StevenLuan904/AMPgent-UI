@@ -1,0 +1,78 @@
+{
+  "schema_version": "ampgent.preferred-development-providers.1",
+  "decision_id": "preferred_development_providers_v39_20260823",
+  "decided_at": "2026-08-23T02:00:00Z",
+  "selection_policy": {
+    "policy": "core_capability_reputation_and_protocol_fit_then_small_blinded_reference_pilot",
+    "public_market_share_required": false,
+    "all_contract_fields_publicly_documented_required": false,
+    "missing_details_resolved_in_sow": true,
+    "current_candidate_unblinding_before_pilot": false,
+    "procurement_or_order_authorized": false
+  },
+  "selections": [
+    {
+      "evidence_domain": "serum_and_protease_stability",
+      "preferred_provider": "Evotec_Cyprotex",
+      "selection_status": "preferred_for_rfq_and_blinded_reference_pilot",
+      "basis": [
+        "established_provider_reporting_more_than_1500_industry_partners",
+        "public_multiple_donor_plasma_stability_with_lcmsms_parent_remaining_and_half_life",
+        "public_peptide_bioanalysis_and_serum_matrix_support",
+        "custom_sow_can_confirm_long_timepoints_protease_lanes_and_fragment_mapping"
+      ],
+      "pilot_acceptance_core": [
+        "blinded_reference_peptides_only",
+        "provider_standard_validated_human_matrix_and_timecourse",
+        "lcmsms_intact_parent_percent_remaining_and_half_life",
+        "positive_negative_and_matrix_controls",
+        "machine_readable_result_export"
+      ],
+      "phase_2_or_sow_options_not_selection_blockers": [
+        "three_unpooled_donors",
+        "twenty_four_hour_timepoint",
+        "trypsin_chymotrypsin_and_hne_lanes",
+        "fragment_mapping",
+        "raw_data_and_derivative_model_rights"
+      ]
+    },
+    {
+      "evidence_domain": "solubility_and_aggregation",
+      "preferred_provider": "Eurofins_CDMO",
+      "selection_status": "preferred_for_rfq_and_blinded_reference_pilot",
+      "basis": [
+        "integrated_peptide_formulation_and_analytical_support",
+        "public_peptide_solubility_dls_mfi_light_obscuration_and_hrms_lc_capabilities",
+        "public_method_development_and_ich_stability_support",
+        "one_provider_covers_the_broadest_orthogonal_measurement_set_screened"
+      ],
+      "pilot_acceptance_core": [
+        "blinded_reference_peptides_only",
+        "solubility_measurement",
+        "dls_or_equivalent_particle_measurement",
+        "lc_or_hrms_intact_parent_measurement",
+        "positive_negative_and_blank_controls",
+        "machine_readable_result_export"
+      ],
+      "phase_2_or_sow_options_not_selection_blockers": [
+        "full_ph_salt_concentration_temperature_time_matrix",
+        "unfiltered_turbidity_and_dls",
+        "ten_fold_dilution_reversibility",
+        "two_assay_days",
+        "raw_data_and_derivative_model_rights"
+      ]
+    }
+  ],
+  "decision_boundaries": {
+    "market_share_claimed": false,
+    "choice_basis": "public_partner_scale_service_breadth_protocol_fit_and_small_pilot",
+    "rfq_or_sow_may_be_sent_only_after_procurement_authority": true,
+    "candidate_sequences_disclosed": false,
+    "formal_science_contract_changed": false,
+    "prior_screen_witnesses_remain_immutable": true
+  },
+  "prior_strict_screen_witnesses": [
+    "config/enterprise/serum_protease_stability_provider_rfq_v39.json",
+    "config/enterprise/solubility_aggregation_provider_rfq_v39.json"
+  ]
+}
