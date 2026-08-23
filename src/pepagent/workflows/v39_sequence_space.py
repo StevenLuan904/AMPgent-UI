@@ -35,14 +35,32 @@ class V39SequenceSpaceExplorationWorkflow:
         for frozen_round in schedule.rounds:
             binding = frozen_round.request["exploration_round"]
             round_ordinal = int(binding["round_ordinal"])
-            child_result = await workflow.execute_child_workflow(
-                "V38SequenceFirstAgentWorkflow",
-                frozen_round.request,
-                id=frozen_round.workflow_id,
-                task_queue=str(
-                    frozen_round.request["task_queues"]["workflow_and_control"]
-                ),
+            control_queue = str(
+                frozen_round.request["task_queues"]["workflow_and_control"]
             )
+            try:
+                child_result = await workflow.execute_child_workflow(
+                    "V38SequenceFirstAgentWorkflow",
+                    frozen_round.request,
+                    id=frozen_round.workflow_id,
+                    task_queue=control_queue,
+                )
+            except Exception as exc:
+                await workflow.execute_activity(
+                    "mark_run_failed",
+                    {
+                        "run_id": str(schedule.controller_run_id),
+                        "error_type": type(exc).__name__,
+                        "error": (
+                            f"v39 round {round_ordinal} child failed: "
+                            f"{type(exc).__name__}: {exc}"
+                        ),
+                    },
+                    task_queue=control_queue,
+                    start_to_close_timeout=timedelta(minutes=2),
+                    retry_policy=retry,
+                )
+                raise
             observation_payload = await workflow.execute_activity(
                 "persist_v39_exploration_round_yield",
                 {

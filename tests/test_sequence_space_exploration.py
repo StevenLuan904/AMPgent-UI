@@ -385,3 +385,12 @@ def test_v39_preflight_rejects_pre_instability_or_drifted_runtime() -> None:
         assert "adapter bytes drifted" in str(exc)
     else:
         raise AssertionError("v39 preflight accepted drifted adapter bytes")
+
+
+def test_v39_outer_workflow_closes_controller_when_child_fails() -> None:
+    source = (
+        REPO_ROOT / "src" / "pepagent" / "workflows" / "v39_sequence_space.py"
+    ).read_text(encoding="utf-8")
+    assert '"mark_run_failed"' in source
+    assert '"run_id": str(schedule.controller_run_id)' in source
+    assert "child failed" in source
