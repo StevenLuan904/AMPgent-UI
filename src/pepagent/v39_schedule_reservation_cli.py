@@ -13,6 +13,8 @@ from uuid import UUID
 import yaml
 from sqlalchemy import select, text
 from sqlalchemy.dialects.postgresql import insert as postgresql_insert
+from temporalio.client import Client, WorkflowHandle
+from temporalio.exceptions import WorkflowAlreadyStartedError
 
 from pepagent.db.models import Artifact, ExperimentRun
 from pepagent.db.repository import ExperimentRepository
@@ -23,12 +25,18 @@ from pepagent.sequence_space_exploration import (
     build_default_v39_exploration_contract,
     build_v39_round_execution_contract,
 )
+from pepagent.settings import get_settings
 from pepagent.storage.object_store import ContentAddressedObjectStore
 from pepagent.v38_persistence import (
     MultiTargetRunBindingReceipt,
     TargetBranchBinding,
     persist_multitarget_run_binding,
 )
+
+V39_ID_NAMESPACE = UUID("20cb3355-66a0-42ee-bb58-f9cafcc9bf73")
+V39_WORKFLOW_TYPE = "V39SequenceSpaceExplorationWorkflow"
+V39_TASK_QUEUE = "pepagent-control-v38"
+V39_MEMO_KEY = "ampgent_v39_submission_identity"
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -43,6 +51,20 @@ def _load_yaml(path: Path) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise ValueError(f"YAML root is not an object: {path}")
     return payload
+
+
+def derive_v39_schedule_run_ids(
+    submission_preflight: dict[str, Any],
+) -> tuple[UUID, tuple[UUID, ...]]:
+    formal_key = str(submission_preflight.get("formal_submission_key", ""))
+    if len(formal_key) != 64 or any(c not in "0123456789abcdef" for c in formal_key):
+        raise ValueError("v39 preflight formal submission key is invalid")
+    controller = uuid.uuid5(V39_ID_NAMESPACE, f"{formal_key}:controller")
+    rounds = tuple(
+        uuid.uuid5(V39_ID_NAMESPACE, f"{formal_key}:round:{ordinal}")
+        for ordinal in range(4)
+    )
+    return controller, rounds
 
 
 def build_v39_schedule(
@@ -331,6 +353,91 @@ async def reserve_v39_schedule(
     }
 
 
+async def _start_or_recover_v39_workflow(
+    client: Client, *, workflow_id: str, schedule: V39ExplorationSchedule
+) -> WorkflowHandle:
+    schedule_payload = schedule.model_dump(mode="json")
+    identity = {
+        "workflow_type": V39_WORKFLOW_TYPE,
+        "schedule_sha256": schedule.sha256(),
+        "controller_run_id": str(schedule.controller_run_id),
+    }
+    try:
+        return await client.start_workflow(
+            V39_WORKFLOW_TYPE,
+            schedule_payload,
+            id=workflow_id,
+            task_queue=V39_TASK_QUEUE,
+            memo={V39_MEMO_KEY: identity},
+        )
+    except WorkflowAlreadyStartedError as error:
+        handle = client.get_workflow_handle(workflow_id)
+        description = await handle.describe()
+        if getattr(description, "workflow_type", None) != V39_WORKFLOW_TYPE:
+            raise ValueError("existing v39 workflow type differs from reservation") from error
+        memo = getattr(description, "memo", None)
+        if not isinstance(memo, dict) or memo.get(V39_MEMO_KEY) != identity:
+            raise ValueError("existing v39 workflow submission identity drifted") from error
+        return handle
+
+
+async def submit_reserved_v39_schedule(
+    *, schedule: V39ExplorationSchedule
+) -> dict[str, Any]:
+    controller_spec, _ = build_v39_reservation_specs(schedule)
+    settings = get_settings()
+    client = await Client.connect(
+        settings.temporal_address, namespace=settings.temporal_namespace
+    )
+    handle = await _start_or_recover_v39_workflow(
+        client,
+        workflow_id=controller_spec["temporal_workflow_id"],
+        schedule=schedule,
+    )
+    description = await handle.describe()
+    temporal_run_id = str(getattr(description, "run_id", "") or "")
+    if not temporal_run_id:
+        raise ValueError("v39 Temporal submission returned no run identity")
+    lock_id = int.from_bytes(
+        bytes.fromhex(schedule.sha256())[:8], byteorder="big", signed=True
+    )
+    async with SessionFactory() as session, session.begin():
+        await session.execute(
+            text("SELECT pg_advisory_xact_lock(:lock_id)"), {"lock_id": lock_id}
+        )
+        run = await session.get(ExperimentRun, schedule.controller_run_id)
+        if run is None or run.spec_json != controller_spec:
+            raise ValueError("v39 controller reservation is missing or drifted")
+        if run.temporal_run_id not in (None, temporal_run_id):
+            raise ValueError("v39 Temporal run identity drifted")
+        already_recorded = (
+            run.temporal_run_id == temporal_run_id and run.status == "running"
+        )
+        run.temporal_run_id = temporal_run_id or run.temporal_run_id
+        run.status = "running"
+        if not already_recorded:
+            repository = ExperimentRepository(session)
+            await repository.append_event(
+                "run",
+                run.id,
+                "v39.exploration_workflow_submitted",
+                "v39-schedule-reservation-cli",
+                {
+                    "workflow_id": controller_spec["temporal_workflow_id"],
+                    "temporal_run_id": temporal_run_id,
+                    "schedule_sha256": schedule.sha256(),
+                    "exact_once": True,
+                },
+            )
+    return {
+        "controller_run_id": str(schedule.controller_run_id),
+        "workflow_id": controller_spec["temporal_workflow_id"],
+        "temporal_run_id": temporal_run_id,
+        "schedule_sha256": schedule.sha256(),
+        "status": "submitted_or_recovered",
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Atomically reserve a frozen v39 controller and four child runs"
@@ -339,20 +446,31 @@ def main() -> None:
     parser.add_argument("--preflight", type=Path, required=True)
     parser.add_argument("--panel", type=Path, required=True)
     parser.add_argument("--execute", action="store_true")
+    parser.add_argument("--submit", action="store_true")
     args = parser.parse_args()
     if not args.execute:
         raise SystemExit("v39 schedule reservation is inert without explicit --execute")
-    schedule = build_v39_schedule(
-        request_template=_load_json(args.request_template.resolve()),
-        submission_preflight=_load_json(args.preflight.resolve()),
-        controller_run_id=uuid.uuid4(),
-        round_run_ids=tuple(uuid.uuid4() for _ in range(4)),
+    request_template = _load_json(args.request_template.resolve())
+    submission_preflight = _load_json(args.preflight.resolve())
+    controller_run_id, round_run_ids = derive_v39_schedule_run_ids(
+        submission_preflight
     )
-    result = asyncio.run(
-        reserve_v39_schedule(
+    schedule = build_v39_schedule(
+        request_template=request_template,
+        submission_preflight=submission_preflight,
+        controller_run_id=controller_run_id,
+        round_run_ids=round_run_ids,
+    )
+    async def execute() -> dict[str, Any]:
+        reservation = await reserve_v39_schedule(
             schedule=schedule, panel=_load_yaml(args.panel.resolve())
         )
-    )
+        if not args.submit:
+            return reservation
+        submission = await submit_reserved_v39_schedule(schedule=schedule)
+        return {"reservation": reservation, "submission": submission}
+
+    result = asyncio.run(execute())
     print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))
 
 

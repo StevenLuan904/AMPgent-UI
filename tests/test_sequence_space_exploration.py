@@ -15,6 +15,7 @@ from pepagent.v39_preflight import build_v39_submission_preflight
 from pepagent.v39_schedule_reservation_cli import (
     build_v39_reservation_specs,
     build_v39_schedule,
+    derive_v39_schedule_run_ids,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -237,6 +238,15 @@ def test_v39_schedule_builder_rejects_runtime_identity_in_template() -> None:
         assert "run-time identity" in str(exc)
     else:
         raise AssertionError("v39 schedule accepted a template with a run identity")
+
+
+def test_v39_run_ids_are_deterministic_from_formal_submission_key() -> None:
+    preflight = {"formal_submission_key": "a" * 64}
+    first = derive_v39_schedule_run_ids(preflight)
+    second = derive_v39_schedule_run_ids(preflight)
+    assert first == second
+    assert len(set((first[0], *first[1]))) == 5
+    assert derive_v39_schedule_run_ids({"formal_submission_key": "b" * 64}) != first
 
 
 def test_v39_preflight_binds_expansion_budget_and_keeps_registry_gate_explicit() -> None:
