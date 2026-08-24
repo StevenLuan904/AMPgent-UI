@@ -16,7 +16,6 @@ from sqlalchemy import text
 
 from pepagent.db.session import SessionFactory
 
-
 METRICS: dict[str, dict[str, str]] = {
     "amp_read_log10_mic_um": {"direction": "min", "kind": "model_prediction"},
     "llamp_log10_mic_um": {"direction": "min", "kind": "model_prediction"},
@@ -49,9 +48,7 @@ def _quantile(values: list[float], q: float) -> float:
     return float(np.quantile(np.asarray(values, dtype=float), q))
 
 
-def _numeric_summary(
-    rows: list[dict[str, Any]], *, direction: str
-) -> dict[str, Any]:
+def _numeric_summary(rows: list[dict[str, Any]], *, direction: str) -> dict[str, Any]:
     values = [float(row["numeric_value"]) for row in rows]
     if not values:
         return {}
@@ -85,19 +82,24 @@ def _numeric_summary(
 async def build_report(controller_run_id: uuid.UUID) -> dict[str, Any]:
     async with SessionFactory() as session:
         runs = (
-            await session.execute(
-                text(
-                    """select id::text, spec_json->>'branch_key' branch_key, status
+            (
+                await session.execute(
+                    text(
+                        """select id::text, spec_json->>'branch_key' branch_key, status
                     from experiment_runs where parent_run_id=:controller
                     order by created_at, id"""
-                ),
-                {"controller": controller_run_id},
+                    ),
+                    {"controller": controller_run_id},
+                )
             )
-        ).mappings().all()
+            .mappings()
+            .all()
+        )
         rows = (
-            await session.execute(
-                text(
-                    """select r.id::text run_id, r.spec_json->>'branch_key' branch_key,
+            (
+                await session.execute(
+                    text(
+                        """select r.id::text run_id, r.spec_json->>'branch_key' branch_key,
                     c.id::text candidate_id, c.sequence, e.metric_name,
                     e.numeric_value, e.text_value, e.unit, e.status, e.out_of_domain
                     from experiment_runs r
@@ -106,26 +108,31 @@ async def build_report(controller_run_id: uuid.UUID) -> dict[str, Any]:
                     where r.parent_run_id=:controller
                     and e.metric_name=any(:metrics)
                     order by r.created_at, c.id, e.metric_name"""
-                ),
-                {"controller": controller_run_id, "metrics": list(METRICS)},
+                    ),
+                    {"controller": controller_run_id, "metrics": list(METRICS)},
+                )
             )
-        ).mappings().all()
+            .mappings()
+            .all()
+        )
         decisions = (
-            await session.execute(
-                text(
-                    """select distinct on (d.run_id) d.run_id::text, d.response_text
+            (
+                await session.execute(
+                    text(
+                        """select distinct on (d.run_id) d.run_id::text, d.response_text
                     from agent_decisions d join experiment_runs r on r.id=d.run_id
                     where r.parent_run_id=:controller
                     and d.decision_type='v38_sequence_maturity_admission'
                     order by d.run_id, d.created_at desc"""
-                ),
-                {"controller": controller_run_id},
+                    ),
+                    {"controller": controller_run_id},
+                )
             )
-        ).mappings().all()
+            .mappings()
+            .all()
+        )
 
-    cohort_ids: dict[str, dict[str, set[str]]] = defaultdict(
-        lambda: defaultdict(set)
-    )
+    cohort_ids: dict[str, dict[str, set[str]]] = defaultdict(lambda: defaultdict(set))
     for row in rows:
         cohort_ids[row["branch_key"]]["all"].add(row["candidate_id"])
     for row in decisions:
@@ -138,8 +145,7 @@ async def build_report(controller_run_id: uuid.UUID) -> dict[str, Any]:
             str(item) for item in payload["exploration_candidate_ids"]
         }
         cohort_ids[branch]["qualified"] = (
-            cohort_ids[branch]["mature_core"]
-            | cohort_ids[branch]["selected_exploration"]
+            cohort_ids[branch]["mature_core"] | cohort_ids[branch]["selected_exploration"]
         )
 
     by_branch_metric: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
@@ -161,7 +167,11 @@ async def build_report(controller_run_id: uuid.UUID) -> dict[str, Any]:
                 valid = [
                     row
                     for row in succeeded
-                    if (row["text_value"] is not None if metric in LABEL_METRICS else row["numeric_value"] is not None)
+                    if (
+                        row["text_value"] is not None
+                        if metric in LABEL_METRICS
+                        else row["numeric_value"] is not None
+                    )
                 ]
                 item: dict[str, Any] = {
                     "branch_key": branch,
@@ -189,9 +199,7 @@ async def build_report(controller_run_id: uuid.UUID) -> dict[str, Any]:
                         for key, value in sorted(counts.items())
                     }
                 else:
-                    item.update(
-                        _numeric_summary(valid, direction=contract["direction"])
-                    )
+                    item.update(_numeric_summary(valid, direction=contract["direction"]))
                 summaries.append(item)
     return {
         "schema_version": "ampgent.seven-branch-live-score-distribution.1",

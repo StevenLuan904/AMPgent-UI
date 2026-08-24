@@ -9,7 +9,6 @@ from temporalio.common import RetryPolicy
 
 with workflow.unsafe.imports_passed_through():
     from pepagent.seven_branch_design import (
-        BranchProgress,
         SevenBranchRoundBinding,
         SevenBranchTopUpSchedule,
     )
@@ -41,28 +40,55 @@ class SevenBranchPeptideTopUpWorkflow:
             start_to_close_timeout=timedelta(minutes=2),
             retry_policy=retry,
         )
-        branch_by_key = {
-            item.branch_key: item for item in schedule.design_contract.branches
-        }
+        branch_by_key = {item.branch_key: item for item in schedule.design_contract.branches}
         receipts: list[dict[str, Any]] = []
         current_round_run_id: str | None = None
         try:
-            for epoch_branch in schedule.branches:
+            child_results = await asyncio.gather(
+                *(
+                    workflow.execute_child_workflow(
+                        "V38SequenceFirstAgentWorkflow",
+                        epoch_branch.frozen_round.request,
+                        id=epoch_branch.frozen_round.workflow_id,
+                        task_queue=str(
+                            epoch_branch.frozen_round.request["task_queues"]["workflow_and_control"]
+                        ),
+                    )
+                    for epoch_branch in schedule.branches
+                ),
+                return_exceptions=True,
+            )
+            child_failures: list[tuple[str, BaseException]] = []
+            for epoch_branch, child_result in zip(schedule.branches, child_results, strict=True):
+                if not isinstance(child_result, BaseException):
+                    continue
+                child_run_id = str(epoch_branch.frozen_round.run_id)
+                child_failures.append((child_run_id, child_result))
+                await workflow.execute_activity(
+                    "mark_run_failed",
+                    {
+                        "run_id": child_run_id,
+                        "error_type": type(child_result).__name__,
+                        "error": f"parallel top-up child failure: {child_result}",
+                    },
+                    task_queue=control_queue,
+                    start_to_close_timeout=timedelta(minutes=2),
+                    retry_policy=retry,
+                )
+            if child_failures:
+                failed_ids = ",".join(item[0] for item in child_failures)
+                raise RuntimeError(f"top-up child workflows failed: {failed_ids}")
+
+            for epoch_branch, child_result in zip(schedule.branches, child_results, strict=True):
+                if not isinstance(child_result, dict):
+                    raise TypeError("top-up child result is not a mapping")
                 frozen_round = epoch_branch.frozen_round
                 current_round_run_id = str(frozen_round.run_id)
                 child_request = frozen_round.request
                 binding = SevenBranchRoundBinding.model_validate(
                     child_request["seven_branch_round"]
                 )
-                child_control_queue = str(
-                    child_request["task_queues"]["workflow_and_control"]
-                )
-                child_result = await workflow.execute_child_workflow(
-                    "V38SequenceFirstAgentWorkflow",
-                    child_request,
-                    id=frozen_round.workflow_id,
-                    task_queue=child_control_queue,
-                )
+                child_control_queue = str(child_request["task_queues"]["workflow_and_control"])
                 target_score_receipt = None
                 if binding.branch_kind == "target_specific":
                     cohort = await workflow.execute_activity(
@@ -104,31 +130,24 @@ class SevenBranchPeptideTopUpWorkflow:
                             *(str(item) for item in epoch_branch.prior_source_run_ids),
                             str(frozen_round.run_id),
                         ],
-                        "branch": branch_by_key[binding.branch_key].model_dump(
-                            mode="json"
-                        ),
+                        "branch": branch_by_key[binding.branch_key].model_dump(mode="json"),
                         "design_contract_sha256": schedule.design_contract.sha256(),
                         "knowledge_context_pack_sha256": child_request[
                             "knowledge_context_pack_sha256"
                         ],
-                        "worker_source_revision": child_request[
-                            "worker_source_revision"
-                        ],
+                        "worker_source_revision": child_request["worker_source_revision"],
                     },
                     task_queue=child_control_queue,
                     start_to_close_timeout=timedelta(hours=2),
                     retry_policy=retry,
                 )
-                progress = BranchProgress.model_validate(cumulative["progress"])
                 await workflow.execute_activity(
                     "mark_run_succeeded",
                     {
                         "run_id": str(frozen_round.run_id),
                         "result_status": "branch_top_up_sequence_and_target_complete",
                         "durable_counts": {
-                            "raw_occurrence_count": int(
-                                child_result["raw_occurrence_count"]
-                            ),
+                            "raw_occurrence_count": int(child_result["raw_occurrence_count"]),
                             "candidate_count": int(child_result["candidate_count"]),
                             "evaluation_count": int(child_result["evaluation_count"])
                             + (
@@ -152,8 +171,7 @@ class SevenBranchPeptideTopUpWorkflow:
                     }
                 )
             successor_required = any(
-                item["cumulative"]["top_up_plan"]["action"]
-                == "freeze_successor_round"
+                item["cumulative"]["top_up_plan"]["action"] == "freeze_successor_round"
                 for item in receipts
             )
             result = {
@@ -177,16 +195,14 @@ class SevenBranchPeptideTopUpWorkflow:
                     "durable_counts": {
                         "branch_round_count": len(receipts),
                         "cumulative_raw_occurrence_count": sum(
-                            item["cumulative"]["progress"]["raw_count"]
-                            for item in receipts
+                            item["cumulative"]["progress"]["raw_count"] for item in receipts
                         ),
                         "cumulative_candidate_count": sum(
                             item["cumulative"]["progress"]["valid_unique_count"]
                             for item in receipts
                         ),
                         "delivered_count": sum(
-                            item["cumulative"]["progress"]["delivered_count"]
-                            for item in receipts
+                            item["cumulative"]["progress"]["delivered_count"] for item in receipts
                         ),
                     },
                 },
