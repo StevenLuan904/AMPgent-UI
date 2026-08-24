@@ -29,10 +29,7 @@ def _inputs() -> tuple[SevenBranchDesignContract, dict, str]:
             encoding="utf-8"
         )
     )
-    manifest_path = (
-        REPO_ROOT
-        / "config/targets/ampgent_six_target_sequence_manifest_20260824.json"
-    )
+    manifest_path = REPO_ROOT / "config/targets/ampgent_six_target_sequence_manifest_20260824.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     return contract, manifest, sha256_file(manifest_path)
 
@@ -75,9 +72,7 @@ def test_initial_schedule_freezes_seven_exact_once_child_runs() -> None:
     template = _template()
     preflight = _preflight(template, contract)
     controller, children = derive_initial_seven_branch_run_ids(preflight)
-    repeated_controller, repeated_children = derive_initial_seven_branch_run_ids(
-        preflight
-    )
+    repeated_controller, repeated_children = derive_initial_seven_branch_run_ids(preflight)
     assert (controller, children) == (repeated_controller, repeated_children)
     schedule = build_initial_seven_branch_schedule(
         request_template=template,
@@ -89,14 +84,15 @@ def test_initial_schedule_freezes_seven_exact_once_child_runs() -> None:
         child_run_ids=children,
     )
     assert len(schedule.rounds) == 7
-    assert sum(
-        item.request["execution_contract"]["expected_raw_occurrences"]
-        for item in schedule.rounds
-    ) == 6600
-    assert len(schedule.target_runtime_by_key) == 6
-    assert schedule.rounds[-1].request["seven_branch_round"]["branch_kind"] == (
-        "target_agnostic"
+    assert (
+        sum(
+            item.request["execution_contract"]["expected_raw_occurrences"]
+            for item in schedule.rounds
+        )
+        == 6600
     )
+    assert len(schedule.target_runtime_by_key) == 6
+    assert schedule.rounds[-1].request["seven_branch_round"]["branch_kind"] == ("target_agnostic")
     controller_spec, child_specs = build_seven_branch_reservation_specs(schedule)
     assert controller_spec["run_kind"] == "seven_branch_peptide_design_control"
     assert controller_spec["delivery_quota"] == 1900
@@ -106,9 +102,7 @@ def test_initial_schedule_freezes_seven_exact_once_child_runs() -> None:
     assert contract.model_dump(mode="json")["required_sequence_metrics"] == sorted(
         contract.required_sequence_metrics
     )
-    assert schedule.sha256() == schedule.model_validate(
-        schedule.model_dump(mode="json")
-    ).sha256()
+    assert schedule.sha256() == schedule.model_validate(schedule.model_dump(mode="json")).sha256()
 
 
 def test_target_metadata_accepts_frozen_manifest_field_names() -> None:
@@ -197,9 +191,7 @@ def test_top_up_schedule_derives_new_ids_and_empirical_budget() -> None:
     assert len(schedule.branches) == 1
     assert schedule.branches[0].top_up_plan.recommended_raw_budget == 2100
     assert (
-        schedule.branches[0].frozen_round.request["execution_contract"][
-            "expected_raw_occurrences"
-        ]
+        schedule.branches[0].frozen_round.request["execution_contract"]["expected_raw_occurrences"]
         == 2100
     )
     repeated = derive_top_up_seven_branch_run_ids(
@@ -208,12 +200,8 @@ def test_top_up_schedule_derives_new_ids_and_empirical_budget() -> None:
         branch_evidence_sha256_by_key={"acea": "e" * 64},
     )
     assert repeated == (controller, child_ids)
-    controller_spec, child_specs = build_seven_branch_top_up_reservation_specs(
-        schedule
-    )
-    assert controller_spec["run_kind"] == (
-        "seven_branch_peptide_design_top_up_control"
-    )
+    controller_spec, child_specs = build_seven_branch_top_up_reservation_specs(schedule)
+    assert controller_spec["run_kind"] == ("seven_branch_peptide_design_top_up_control")
     assert controller_spec["parent_controller_run_id"] == str(parent)
     assert len(child_specs) == 1
     assert child_specs[0]["expected_raw_occurrences"] == 2100
