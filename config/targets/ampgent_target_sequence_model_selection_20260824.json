@@ -1,0 +1,66 @@
+{
+  "schema_version": "ampgent.target_sequence_model_selection.v1",
+  "selection_id": "ampgent-target-sequence-model-selection-20260824",
+  "selected_primary": "pepmlm_650m",
+  "selection_reason": "PepMLM is the strongest candidate with public runnable pinned weights and an already integrated target-plus-peptide adapter; PepInter remains the benchmark-leading challenger until runnable code and weights are published.",
+  "models": [
+    {
+      "model_key": "pepinter",
+      "role": "benchmark_leading_challenger",
+      "paper_doi": "10.1038/s42004-026-02168-3",
+      "paper_published": "2026-08-20",
+      "public_evidence": "The peer-reviewed paper reports consistent improvements over prior methods across multiple protein-peptide interaction benchmarks.",
+      "runnable_status": "blocked_no_public_code_or_weights_found_on_article_page",
+      "adoption_status": "recheck_when_release_appears"
+    },
+    {
+      "model_key": "pepmlm_650m",
+      "role": "selected_primary_target_conditioned_generator_and_likelihood",
+      "paper_doi": "10.1038/s41587-025-02761-2",
+      "source_uri": "https://huggingface.co/ChatterjeeLab/PepMLM-650M",
+      "license": "MIT",
+      "revision": "898fca941a9057aebdd1a6164b5ee09a1a71780e",
+      "weights_sha256": "8a3225bca1f9acd9f701ca2e46597c12bab92320e32b68f380ddf3b6d3b20770",
+      "adapter_sha256": "818f9d49e266e20cd458b14e4aea42e6b1e9aa5ffdf1b4c94a92827b84cba9ca",
+      "runnable_status": "six_target_gpu_smoke_passed",
+      "output_semantics": "conditional_nll_and_pseudo_perplexity_are_rank_only_model_fit_evidence"
+    },
+    {
+      "model_key": "camp",
+      "role": "independent_sequence_interaction_review",
+      "paper_doi": "10.1038/s41467-021-25772-4",
+      "source_uri": "https://github.com/twopin/CAMP",
+      "license": "non_commercial_only",
+      "runnable_status": "not_yet_accepted",
+      "known_issue": "legacy feature pipeline and default protein padding length 800 do not cover the 875-aa GyrA without an explicit tested policy",
+      "adoption_status": "challenger_after_no_truncation_or_versioned_windowing_smoke"
+    },
+    {
+      "model_key": "pepccd",
+      "role": "target_conditioned_diversity_challenger",
+      "paper_doi": "10.1609/aaai.v40i33.40053",
+      "runnable_status": "no_public_runnable_release_selected",
+      "adoption_status": "recheck_for_code_and_weights"
+    }
+  ],
+  "smoke": {
+    "schema_version": "ampgent.six_target_pepmlm_smoke.v1",
+    "executed_at": "2026-08-24",
+    "host": "192.168.99.19",
+    "gpu_index": 2,
+    "gpu_scope_status": "allowed_and_idle_before_launch",
+    "remote_work_path": "/data1/huangyueshan/pepagent/data/run-cache/six-target-pepmlm-smoke-20260824-1",
+    "manifest_path": "config/targets/ampgent_six_target_sequence_manifest_20260824.json",
+    "manifest_sha256": "25ce0a248e03111df00408d3f6bb3ec86a32a5e4286ea50b1b9f6d5ade81159c",
+    "summary_sha256": "6b8acdfe6ac200911c8117a0c13d9d5cabddbac0b2e1c3ec4b68737d2026d2fd",
+    "all_succeeded": true,
+    "target_results": [
+      {"target_key": "acea", "target_length": 434, "generated_count": 1, "conditional_ppl": 29.975807060355134},
+      {"target_key": "gyra", "target_length": 875, "generated_count": 1, "conditional_ppl": 7.4470091841784605},
+      {"target_key": "pbp2a", "target_length": 633, "generated_count": 1, "conditional_ppl": 9.432306184336436},
+      {"target_key": "vegfa", "target_length": 392, "generated_count": 1, "conditional_ppl": 26.505274475545082},
+      {"target_key": "fgf2", "target_length": 154, "generated_count": 1, "conditional_ppl": 10.258688448076699},
+      {"target_key": "angpt1", "target_length": 497, "generated_count": 1, "conditional_ppl": 6.425995513409064}
+    ]
+  }
+}

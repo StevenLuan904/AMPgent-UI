@@ -2621,3 +2621,15 @@ MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot
 - 公开模型可执行性判断：PepInter论文基准优先，但当前公开论文页未给出可运行代码/权重，先保持
   challenger；PepMLM固定MIT权重与现有adapter可直接接收target+peptide，进入六目标真实GPU smoke；
   CAMP保留独立复核候选，但其旧特征链和默认800 aa蛋白长度需先解决GyrA 875 aa适配，不能静默截断。
+- 六目标PepMLM真实smoke已在获准且启动前空闲的`.19 GPU2`完成，6/6目标均用CUDA生成1条12 aa
+  候选，最长875 aa GyrA也通过；无stderr、无失败。冻结选择见证为
+  `config/targets/ampgent_target_sequence_model_selection_20260824.json`，summary SHA-256为
+  `6b8acdfe6ac200911c8117a0c13d9d5cabddbac0b2e1c3ec4b68737d2026d2fd`。这些smoke候选只证明运行边界，
+  不计入1900条交付；下一动作是把该manifest和model witness接入七分支controller。
+- 七分支可执行合同已物化为 `config/workflows/ampgent_seven_branch_design_v1.json`，contract SHA-256为
+  `e1c51c7080d2edc62eeeb83dbf1dbe71fd36f5e8b4b35f29bea2f63cc07d521a`。六个靶点分支各以450 raw
+  作为首批预算、通用AMP以3000 raw作为首批预算，共5700 raw；这是起始批而非上限，controller按每个
+  分支的有效唯一、12指标完成、target-sequence评分、合格、家族和交付计数动态补量，直到7个配额分别闭合。
+- 历史6182条只通过winner-stability/family摘要哈希影响seed、新颖性和策略，不复制旧Candidate/Evaluation；
+  controller优先推进相对交付缺口最大的分支，并按`生成→12指标score-all→靶序列评分→质量/家族→交付`
+  补齐证据。相关新旧稳定性回归当前13项通过；下一工程增量是Temporal activity/workflow和数据库生命周期接线。

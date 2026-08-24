@@ -1013,3 +1013,15 @@ mouse mRNA版本解析其CDS蛋白，保留mRNA→protein映射与序列SHA。�
 PepMLM已有固定权重、MIT许可和本项目adapter，先承担可运行的target-conditioned生成/条件似然主线；
 CAMP作为独立复核候选，但需处理旧依赖和GyrA超过其默认800 aa输入上限的问题。正在使用获准的
 `.19 GPU2` 对六种实际靶长逐个做同adapter smoke，成功后即冻结模型witness并进入七分支controller。
+
+六目标真实GPU smoke现已6/6通过，包含最长875 aa的GyrA；固定权重SHA、adapter SHA、输入manifest SHA、
+逐目标PPL和summary SHA已写入
+`config/targets/ampgent_target_sequence_model_selection_20260824.json`。这些6条序列是运行性探针，不进入
+候选交付或winner统计。长期goal的当前阶段因此从“靶点输入/模型可运行性”推进到“七分支配额controller与
+新run证据拓扑实现”。
+
+七分支合同现已物化并通过测试：六个目标各150、通用AMP 1000，总交付1900；首批raw预算为
+`6×450 + 3000 = 5700`，不足时逐分支动态补量，不把5700当搜索上限。固定controller SHA为
+`e1c51c7080d2edc62eeeb83dbf1dbe71fd36f5e8b4b35f29bea2f63cc07d521a`。它保留12项序列指标、
+target-specific双序列评分、branch-local排序和可选结构语义，并把历史pool限定为新颖性/seed策略输入。
+下一阶段是将该合同接入Temporal与数据库，使七个配额能产生独立可观察、可补量、可导出的正式证据。
