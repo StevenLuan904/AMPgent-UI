@@ -37,6 +37,7 @@ _WINDOWS_RESERVED_NAMES = {
     *(f"LPT{index}" for index in range(1, 10)),
 }
 _WINDOWS_INVALID_CHARACTERS = frozenset('<>:"\\|?*')
+_PROCESS_VERIFIED_CACHE_ENTRIES: set[tuple[str, str]] = set()
 
 
 @contextmanager
@@ -336,6 +337,7 @@ def materialize_hydramp_archive_cached(
     with _exclusive_file_lock(lock_path):
         cache_hit = destination.exists()
         source_receipt: dict[str, Any] | None = None
+        process_key = (str(destination), str(expected["extracted_tree_sha256"]))
         if not cache_hit:
             contender, source_receipt = materialize_hydramp_archive(
                 archive,
@@ -343,11 +345,28 @@ def materialize_hydramp_archive_cached(
                 expected=expected,
             )
             contender.rename(destination)
-        verified = verify_hydramp_materialization(
-            destination,
-            cache_root=cache_root,
-            expected=expected,
-        )
+            verified = {
+                "file_count": source_receipt["file_count"],
+                "uncompressed_bytes": source_receipt["uncompressed_bytes"],
+                "extracted_tree_sha256": source_receipt["extracted_tree_sha256"],
+            }
+            _PROCESS_VERIFIED_CACHE_ENTRIES.add(process_key)
+            cache_validation = "cold_publish_full_tree"
+        elif process_key not in _PROCESS_VERIFIED_CACHE_ENTRIES:
+            verified = verify_hydramp_materialization(
+                destination,
+                cache_root=cache_root,
+                expected=expected,
+            )
+            _PROCESS_VERIFIED_CACHE_ENTRIES.add(process_key)
+            cache_validation = "first_use_full_tree"
+        else:
+            verified = {
+                "file_count": expected["file_count"],
+                "uncompressed_bytes": expected["uncompressed_bytes"],
+                "extracted_tree_sha256": expected["extracted_tree_sha256"],
+            }
+            cache_validation = "process_memoized_frozen_identity"
     receipt = {
         "schema_version": "v37.hydramp-materialization-cache-receipt.1",
         "archive_sha256": expected["archive_sha256"],
@@ -359,6 +378,7 @@ def materialize_hydramp_archive_cached(
         "archive_resource_limits": dict(HYDRAMP_ARCHIVE_RESOURCE_LIMITS),
         "cache_entry_name": destination.name,
         "cache_hit": cache_hit,
+        "cache_validation": cache_validation,
         "source_materialization_receipt_sha256": (
             source_receipt["materialization_receipt_sha256"]
             if source_receipt is not None

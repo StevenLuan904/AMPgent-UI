@@ -59,7 +59,6 @@ from pepagent.v37_hydramp_archive import (
     cleanup_hydramp_materialization,
     materialize_hydramp_archive,
     materialize_hydramp_archive_cached,
-    verify_hydramp_materialization,
 )
 from pepagent.v37_persistence import (
     _selection_witness_payloads,
@@ -1193,14 +1192,7 @@ async def _generate_frozen_sequence_batch(
             }
         finally:
             if hydramp_destination is not None:
-                if hydramp_materialization[1].get("persistent_cache"):
-                    await asyncio.to_thread(
-                        verify_hydramp_materialization,
-                        hydramp_destination,
-                        cache_root=Path(settings.work_root) / "_model-cache" / "hydramp",
-                        expected=launch_binding["materialization"],
-                    )
-                else:
+                if not hydramp_materialization[1].get("persistent_cache"):
                     await asyncio.to_thread(
                         cleanup_hydramp_materialization,
                         hydramp_destination,

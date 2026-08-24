@@ -141,6 +141,8 @@ def test_content_addressed_cache_reuses_and_reverifies_frozen_tree(tmp_path: Pat
     assert first == second
     assert first_receipt["cache_hit"] is False
     assert second_receipt["cache_hit"] is True
+    assert first_receipt["cache_validation"] == "cold_publish_full_tree"
+    assert second_receipt["cache_validation"] == "process_memoized_frozen_identity"
     assert second_receipt["extracted_tree_sha256"] == expected["extracted_tree_sha256"]
     (second / "models" / "HydrAMP" / "37" / "model.bin").write_bytes(b"changed")
     with pytest.raises(ValueError, match="byte count|tree drifted"):
