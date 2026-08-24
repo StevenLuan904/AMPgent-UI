@@ -86,6 +86,68 @@ def _numeric_summary(rows: list[dict[str, Any]], *, direction: str) -> dict[str,
     }
 
 
+def _metric_summary_item(
+    *,
+    branch_key: str,
+    run_status: str,
+    cohort: str,
+    candidate_ids: set[str],
+    metric: str,
+    contract: dict[str, str],
+    metric_rows: list[dict[str, Any]],
+) -> dict[str, Any]:
+    succeeded = [row for row in metric_rows if row["status"] == "succeeded"]
+    valid = [
+        row
+        for row in succeeded
+        if (
+            row["text_value"] is not None
+            if metric in LABEL_METRICS
+            else row["numeric_value"] is not None
+        )
+    ]
+    item: dict[str, Any] = {
+        "branch_key": branch_key,
+        "run_status": run_status,
+        "cohort": cohort,
+        "cohort_n": len(candidate_ids),
+        "metric": metric,
+        "evidence_kind": contract["kind"],
+        "favorable_direction": contract["direction"],
+        "valid_n": len(valid),
+        "missing_n": max(0, len(candidate_ids) - len(valid)),
+        "failed_n": sum(row["status"] != "succeeded" for row in metric_rows),
+        "ood_n": sum(bool(row["out_of_domain"]) for row in valid),
+        "unit": next((row["unit"] for row in valid if row["unit"]), None),
+        "tool_names": sorted({str(row["tool_name"]) for row in valid}),
+        "tool_versions": sorted({str(row["tool_version"]) for row in valid}),
+        "model_uris": sorted(
+            {str(row["model_uri"]) for row in valid if row["model_uri"]}
+        ),
+        "weights_sha256": sorted(
+            {
+                str(row["weights_sha256"])
+                for row in valid
+                if row["weights_sha256"]
+            }
+        ),
+    }
+    if metric in LABEL_METRICS:
+        counts: dict[str, int] = defaultdict(int)
+        for row in valid:
+            counts[str(row["text_value"])] += 1
+        item["categories"] = {
+            key: {
+                "count": value,
+                "percentage": (100.0 * value / len(valid)) if valid else math.nan,
+            }
+            for key, value in sorted(counts.items())
+        }
+    else:
+        item.update(_numeric_summary(valid, direction=contract["direction"]))
+    return item
+
+
 async def build_report(controller_run_id: uuid.UUID) -> dict[str, Any]:
     async with SessionFactory() as session:
         runs = (
@@ -272,58 +334,49 @@ async def build_report(controller_run_id: uuid.UUID) -> dict[str, Any]:
                     for row in by_branch_metric.get((branch, metric), [])
                     if row["candidate_id"] in ids
                 ]
-                succeeded = [row for row in metric_rows if row["status"] == "succeeded"]
-                valid = [
-                    row
-                    for row in succeeded
-                    if (
-                        row["text_value"] is not None
-                        if metric in LABEL_METRICS
-                        else row["numeric_value"] is not None
+                summaries.append(
+                    _metric_summary_item(
+                        branch_key=branch,
+                        run_status=run["status"],
+                        cohort=cohort,
+                        candidate_ids=ids,
+                        metric=metric,
+                        contract=contract,
+                        metric_rows=metric_rows,
                     )
-                ]
-                item: dict[str, Any] = {
-                    "branch_key": branch,
-                    "run_status": run["status"],
-                    "cohort": cohort,
-                    "cohort_n": len(ids),
-                    "metric": metric,
-                    "evidence_kind": contract["kind"],
-                    "favorable_direction": contract["direction"],
-                    "valid_n": len(valid),
-                    "missing_n": max(0, len(ids) - len(valid)),
-                    "failed_n": sum(row["status"] != "succeeded" for row in metric_rows),
-                    "ood_n": sum(bool(row["out_of_domain"]) for row in valid),
-                    "unit": next((row["unit"] for row in valid if row["unit"]), None),
-                    "tool_names": sorted({str(row["tool_name"]) for row in valid}),
-                    "tool_versions": sorted(
-                        {str(row["tool_version"]) for row in valid}
-                    ),
-                    "model_uris": sorted(
-                        {str(row["model_uri"]) for row in valid if row["model_uri"]}
-                    ),
-                    "weights_sha256": sorted(
-                        {
-                            str(row["weights_sha256"])
-                            for row in valid
-                            if row["weights_sha256"]
-                        }
-                    ),
-                }
-                if metric in LABEL_METRICS:
-                    counts: dict[str, int] = defaultdict(int)
-                    for row in valid:
-                        counts[str(row["text_value"])] += 1
-                    item["categories"] = {
-                        key: {
-                            "count": value,
-                            "percentage": (100.0 * value / len(valid)) if valid else math.nan,
-                        }
-                        for key, value in sorted(counts.items())
-                    }
-                else:
-                    item.update(_numeric_summary(valid, direction=contract["direction"]))
-                summaries.append(item)
+                )
+
+    # Give reviews an exact controller-wide distribution over all target-specific
+    # branches. The target-agnostic pool stays separate because conditional target
+    # scores are intentionally not applicable there.
+    target_branches = {
+        run["branch_key"]
+        for run in runs
+        if run["branch_key"] != "target_agnostic_amp"
+    }
+    for cohort in ("all", "mature_core", "selected_exploration", "qualified"):
+        aggregate_ids = set().union(
+            *(cohort_ids[branch].get(cohort, set()) for branch in target_branches)
+        )
+        for metric, contract in METRICS.items():
+            metric_rows = [
+                dict(row)
+                for row in rows
+                if row["branch_key"] in target_branches
+                and row["metric_name"] == metric
+                and row["candidate_id"] in aggregate_ids
+            ]
+            summaries.append(
+                _metric_summary_item(
+                    branch_key="all_target_branches",
+                    run_status="mixed",
+                    cohort=cohort,
+                    candidate_ids=aggregate_ids,
+                    metric=metric,
+                    contract=contract,
+                    metric_rows=metric_rows,
+                )
+            )
     source_groups: dict[tuple[str, str, str], list[str]] = defaultdict(list)
     for item in candidate_sources:
         source_groups[
