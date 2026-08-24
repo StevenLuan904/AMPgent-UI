@@ -23,6 +23,7 @@ import psycopg
 from matplotlib import font_manager
 from scipy.stats import mannwhitneyu, spearmanr
 
+from pepagent.sequence_family import cluster_sequence_families
 from pepagent.winner_stability import compute_weight_perturbation_stability
 
 DEFAULT_CONTROLLER_RUN_ID = "5557e950-5bd9-551d-ae1d-948f0ca29d0b"
@@ -1092,6 +1093,53 @@ def main() -> None:
         trials=2_000,
         random_seed=20260824,
     )
+    family_assignments = cluster_sequence_families(frame["sequence"])
+    family_frame = pd.DataFrame(
+        [
+            {
+                "sequence": item.sequence,
+                "sequence_family_key": item.family_key,
+                "family_representative_sequence": item.representative_sequence,
+                "family_size": item.family_size,
+            }
+            for item in family_assignments
+        ]
+    )
+    family_frame = frame[
+        ["candidate_id", "sequence", "status", "round", "generator_id", "run_id"]
+    ].merge(family_frame, on="sequence", how="left", validate="one_to_one")
+    family_round_summary = (
+        family_frame.groupby("round")
+        .agg(
+            candidates=("candidate_id", "size"),
+            observed_families=("sequence_family_key", "nunique"),
+            mature_core=("status", lambda values: int((values == "mature_core").sum())),
+        )
+        .reset_index()
+    )
+    first_round = family_frame.groupby("sequence_family_key")["round"].min()
+    family_round_summary["new_families"] = family_round_summary["round"].map(
+        first_round.value_counts()
+    ).fillna(0).astype(int)
+    core_family_counts = family_frame.loc[
+        family_frame["status"].eq("mature_core"), "sequence_family_key"
+    ].value_counts()
+    family_summary = {
+        "schema_version": "ampgent.sequence-family-audit.1",
+        "candidate_count": int(len(family_frame)),
+        "family_count": int(family_frame["sequence_family_key"].nunique()),
+        "singleton_family_count": int(
+            family_frame.loc[family_frame["family_size"].eq(1), "sequence_family_key"].nunique()
+        ),
+        "largest_family_size": int(family_frame["family_size"].max()),
+        "mature_core_count": int(family_frame["status"].eq("mature_core").sum()),
+        "mature_core_family_count": int(core_family_counts.size),
+        "largest_mature_core_family_count": int(core_family_counts.max()),
+        "minimum_identity": 0.8,
+        "minimum_coverage": 0.8,
+        "alignment": "best_ungapped_full_shorter_sequence",
+        "component_rule": "connected_components",
+    }
     data_quality = (
         evaluations.groupby("metric_name")
         .agg(
@@ -1127,6 +1175,8 @@ def main() -> None:
         "mature_core_candidates": output_dir / "mature_core_candidates.csv",
         "data_quality": output_dir / "data_quality.csv",
         "winner_stability": output_dir / "winner_stability.csv",
+        "sequence_family_assignments": output_dir / "sequence_family_assignments.csv",
+        "family_round_summary": output_dir / "family_round_summary.csv",
     }
     csv_options = {
         "index": False,
@@ -1144,9 +1194,17 @@ def main() -> None:
     )
     data_quality.to_csv(outputs["data_quality"], **csv_options)
     stability_frame.to_csv(outputs["winner_stability"], **csv_options)
+    family_frame.to_csv(outputs["sequence_family_assignments"], **csv_options)
+    family_round_summary.to_csv(outputs["family_round_summary"], **csv_options)
     stability_summary_path = output_dir / "winner_stability_summary.json"
     stability_summary_path.write_text(
         json.dumps(stability_summary, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    family_summary_path = output_dir / "sequence_family_summary.json"
+    family_summary_path.write_text(
+        json.dumps(family_summary, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
         newline="\n",
     )
@@ -1186,6 +1244,7 @@ def main() -> None:
         *figures.values(),
         report_path,
         stability_summary_path,
+        family_summary_path,
     ]
     manifest = {
         "schema_version": "v39.pragmatic-run-analysis.1",
@@ -1200,6 +1259,7 @@ def main() -> None:
         "structure_selected_count": int(frame["structure_selected"].sum()),
         "structure_progress_snapshot": structure_progress,
         "winner_stability_summary": stability_summary,
+        "sequence_family_summary": family_summary,
         "artifacts": {
             path.name: {"sha256": sha256_file(path), "size_bytes": path.stat().st_size}
             for path in artifact_paths
