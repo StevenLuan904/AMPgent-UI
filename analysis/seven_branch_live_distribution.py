@@ -33,6 +33,14 @@ METRICS: dict[str, dict[str, str]] = {
         "direction": "min_non_gating",
         "kind": "descriptor",
     },
+    "conditional_nll": {
+        "direction": "min",
+        "kind": "target_sequence_model_prediction",
+    },
+    "conditional_ppl": {
+        "direction": "min",
+        "kind": "target_sequence_model_prediction",
+    },
 }
 LABEL_METRICS = {"toxinpred3_label", "macrel_hemolysis_label"}
 
