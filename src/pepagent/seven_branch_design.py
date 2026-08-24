@@ -1,10 +1,16 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from pepagent.provenance.hashing import sha256_json
+from pepagent.provenance.hashing import sha256_json, sha256_text
+from pepagent.v38_science_execution import (
+    V38_METRIC_OBSERVATIONS,
+    GeneratorCell,
+    V38SequenceExecutionContract,
+)
 
 SEQUENCE_METRICS = frozenset(
     {
@@ -102,6 +108,196 @@ class SevenBranchDesignContract(FrozenModel):
 
     def sha256(self) -> str:
         return sha256_json(self.model_dump(mode="json"))
+
+
+class SevenBranchRoundBinding(FrozenModel):
+    """Bind one immutable score-all child run to one branch-local generation round."""
+
+    schema_version: Literal["ampgent.seven_branch_round.v1"] = (
+        "ampgent.seven_branch_round.v1"
+    )
+    design_contract_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    branch_key: str = Field(min_length=1)
+    branch_kind: Literal["target_specific", "target_agnostic"]
+    target_key: str | None = None
+    target_sequence_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    round_ordinal: int = Field(ge=0)
+    expected_raw_occurrences: int = Field(gt=0, multiple_of=100)
+    execution_contract_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    independent_frozen_run_identity_required: Literal[True] = True
+    defer_structure_to_optional_branch_enhancement: Literal[True] = True
+
+    @model_validator(mode="after")
+    def validate_branch_binding(self) -> SevenBranchRoundBinding:
+        if self.branch_kind == "target_specific":
+            if not self.target_key or not self.target_sequence_sha256:
+                raise ValueError("target-specific round requires a frozen target sequence")
+        elif self.target_key is not None or self.target_sequence_sha256 is not None:
+            raise ValueError("target-agnostic round cannot bind a target sequence")
+        return self
+
+
+class SevenBranchRoundRequest(FrozenModel):
+    """A pre-reserved child run; identities are never allocated during Temporal replay."""
+
+    run_id: UUID
+    workflow_id: str = Field(min_length=1)
+    request: dict[str, Any]
+
+    @model_validator(mode="after")
+    def validate_request_binding(self) -> SevenBranchRoundRequest:
+        if str(self.request.get("run_id")) != str(self.run_id):
+            raise ValueError("seven-branch child request run identity drifted")
+        binding = SevenBranchRoundBinding.model_validate(
+            self.request.get("seven_branch_round")
+        )
+        if sha256_json(self.request.get("execution_contract")) != (
+            binding.execution_contract_sha256
+        ):
+            raise ValueError("seven-branch child execution contract identity drifted")
+        return self
+
+
+class TargetSequenceRuntime(FrozenModel):
+    target_key: str = Field(min_length=1)
+    accession: str = Field(min_length=1)
+    sequence: str = Field(min_length=1)
+    sequence_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+    @model_validator(mode="after")
+    def validate_sequence_identity(self) -> TargetSequenceRuntime:
+        normalized = "".join(self.sequence.split()).upper()
+        if normalized != self.sequence:
+            raise ValueError("target runtime sequence must already be normalized")
+        if sha256_text(normalized) != self.sequence_sha256:
+            raise ValueError("target runtime sequence identity drifted")
+        return self
+
+
+class SevenBranchDesignSchedule(FrozenModel):
+    """One durable controller epoch over pre-frozen branch-local child runs."""
+
+    schema_version: Literal["ampgent.seven_branch_schedule.v1"] = (
+        "ampgent.seven_branch_schedule.v1"
+    )
+    controller_run_id: UUID
+    design_contract: SevenBranchDesignContract
+    target_runtime_by_key: dict[str, TargetSequenceRuntime]
+    rounds: tuple[SevenBranchRoundRequest, ...]
+
+    @model_validator(mode="after")
+    def validate_schedule(self) -> SevenBranchDesignSchedule:
+        if len(self.rounds) != 7:
+            raise ValueError("seven-branch v1 schedule requires one initial round per branch")
+        run_ids = [item.run_id for item in self.rounds]
+        workflow_ids = [item.workflow_id for item in self.rounds]
+        if len(run_ids) != len(set(run_ids)) or len(workflow_ids) != len(
+            set(workflow_ids)
+        ):
+            raise ValueError("seven-branch child run and workflow identities must be unique")
+        expected_contract_sha = self.design_contract.sha256()
+        bindings = [
+            SevenBranchRoundBinding.model_validate(item.request["seven_branch_round"])
+            for item in self.rounds
+        ]
+        if any(item.design_contract_sha256 != expected_contract_sha for item in bindings):
+            raise ValueError("seven-branch round is bound to another design contract")
+        branch_by_key = {item.branch_key: item for item in self.design_contract.branches}
+        target_branches = {
+            item.target_key: item
+            for item in self.design_contract.branches
+            if item.branch_kind == "target_specific"
+        }
+        if set(self.target_runtime_by_key) != set(target_branches):
+            raise ValueError("target runtimes do not cover the six target branches")
+        for target_key, runtime in self.target_runtime_by_key.items():
+            branch = target_branches[target_key]
+            if runtime.target_key != target_key:
+                raise ValueError("target runtime key drifted")
+            if runtime.sequence_sha256 != branch.target_sequence_sha256:
+                raise ValueError("target runtime sequence differs from design branch")
+        seen_ordinals: dict[str, list[int]] = {}
+        for frozen_round, binding in zip(self.rounds, bindings, strict=True):
+            branch = branch_by_key.get(binding.branch_key)
+            if branch is None:
+                raise ValueError("seven-branch round references an unknown branch")
+            if binding.branch_kind != branch.branch_kind:
+                raise ValueError("seven-branch round kind drifted")
+            if binding.target_key != branch.target_key:
+                raise ValueError("seven-branch round target drifted")
+            if binding.target_sequence_sha256 != branch.target_sequence_sha256:
+                raise ValueError("seven-branch round target sequence drifted")
+            queues = frozen_round.request.get("task_queues")
+            if not isinstance(queues, dict):
+                raise ValueError("seven-branch child task queues are missing")
+            if binding.branch_kind == "target_specific" and not isinstance(
+                queues.get("target_sequence"), str
+            ):
+                raise ValueError("target-specific child lacks target-sequence queue")
+            seen_ordinals.setdefault(binding.branch_key, []).append(binding.round_ordinal)
+        for ordinals in seen_ordinals.values():
+            if ordinals != [0]:
+                raise ValueError("seven-branch v1 initial round ordinal must be zero")
+        if set(seen_ordinals) != set(branch_by_key):
+            raise ValueError("seven-branch v1 schedule must cover all seven branches")
+        return self
+
+    def sha256(self) -> str:
+        return sha256_json(self.model_dump(mode="json"))
+
+
+def build_seven_branch_round_execution_contract(
+    contract: SevenBranchDesignContract,
+    *,
+    branch_key: str,
+    round_ordinal: int,
+    raw_budget: int | None = None,
+) -> tuple[SevenBranchRoundBinding, V38SequenceExecutionContract]:
+    """Project one branch budget into balanced, frozen 100-occurrence generator cells."""
+
+    try:
+        branch_index, branch = next(
+            (index, item)
+            for index, item in enumerate(contract.branches)
+            if item.branch_key == branch_key
+        )
+    except StopIteration as exc:
+        raise ValueError(f"unknown seven-branch key: {branch_key}") from exc
+    if round_ordinal < 0:
+        raise ValueError("branch round ordinal cannot be negative")
+    resolved_budget = branch.initial_raw_budget if raw_budget is None else raw_budget
+    if resolved_budget <= 0 or resolved_budget % 300 != 0:
+        raise ValueError("branch raw budget must be a positive multiple of 300")
+    cell_count = resolved_budget // 100
+    per_generator = cell_count // 3
+    generators = ("hydramp", "ampgan_v2", "amp_designer")
+    seed_base = 20_290_000 + branch_index * 10_000 + round_ordinal * 1_000
+    cells = tuple(
+        GeneratorCell(
+            ordinal=ordinal,
+            generator_id=generators[ordinal // per_generator],
+            seed=seed_base + ordinal + 1,
+            requested_proposals=100,
+        )
+        for ordinal in range(cell_count)
+    )
+    execution = V38SequenceExecutionContract(
+        cells=cells,
+        expected_raw_occurrences=resolved_budget,
+        metric_plugins=tuple(V38_METRIC_OBSERVATIONS),
+        required_sequence_metrics=contract.required_sequence_metrics,
+    )
+    binding = SevenBranchRoundBinding(
+        design_contract_sha256=contract.sha256(),
+        branch_key=branch.branch_key,
+        branch_kind=branch.branch_kind,
+        target_key=branch.target_key,
+        target_sequence_sha256=branch.target_sequence_sha256,
+        round_ordinal=round_ordinal,
+        expected_raw_occurrences=resolved_budget,
+        execution_contract_sha256=execution.sha256(),
+    )
+    return binding, execution
 
 
 class BranchProgress(FrozenModel):

@@ -539,6 +539,167 @@ async def score_target_specific_pepmlm_proxy(request: dict[str, Any]) -> dict[st
     }
 
 
+@activity.defn(name="score_seven_branch_target_sequence")
+async def score_seven_branch_target_sequence(request: dict[str, Any]) -> dict[str, Any]:
+    """Score one branch cohort directly against its frozen target sequence."""
+
+    settings = get_settings()
+    await _verify_pepmlm_release(settings.pepmlm_model_path, settings.pepmlm_weights_sha256)
+    environment_sha256, environment = fingerprint_runtime()
+    payload = {
+        "target": request["target"],
+        "peptides": request["peptides"],
+        "model": settings.pepmlm_model_path,
+        "revision": settings.pepmlm_model_revision,
+    }
+    result = await _run_json_cli(
+        "pepagent.model_workers.pepmlm_target_conditional_cli",
+        payload,
+        Path(settings.work_root)
+        / request["run_id"]
+        / "seven-branch-target-sequence"
+        / str(request["branch_key"]),
+    )
+    if result.get("schema_version") != "ampgent.pepmlm-target-conditional.1":
+        raise ValueError("seven-branch target score returned an unknown schema")
+    if result.get("target", {}).get("sequence_sha256") != request["target"].get(
+        "sequence_sha256"
+    ):
+        raise ValueError("seven-branch target score identity drifted")
+    raw_artifact = await _store_json(result)
+    environment_artifact = await _store_json(environment)
+    return {
+        "input": {
+            **payload,
+            "model": request.get("model_name", "ChatterjeeLab/PepMLM-650M"),
+        },
+        "parameters": {
+            "branch_key": request["branch_key"],
+            "metric_version": result["metric_version"],
+            "rank_only": True,
+            "admission_status": "out_of_domain",
+            "independence": "not_independent_from_pepmlm_generation",
+        },
+        "result": result,
+        "provenance": {
+            "tool_name": "pepmlm-target-conditional",
+            "tool_version": result["metric_version"],
+            "model_uri": "hf://ChatterjeeLab/PepMLM-650M",
+            "weights_sha256": settings.pepmlm_weights_sha256,
+            "environment_sha256": environment_sha256,
+            "attempt": activity.info().attempt,
+            "raw_output_artifact": asdict(raw_artifact),
+            "environment_artifact": asdict(environment_artifact),
+            "execution_model_path": settings.pepmlm_model_path,
+        },
+    }
+
+
+@activity.defn(name="persist_seven_branch_target_sequence")
+async def persist_seven_branch_target_sequence(request: dict[str, Any]) -> dict[str, Any]:
+    """Persist branch-local target+peptide conditional scores in the child run."""
+
+    run_id = uuid.UUID(str(request["run_id"]))
+    scored = request["scored"]
+    provenance = scored["provenance"]
+    result = scored["result"]
+    target = result["target"]
+    async with SessionFactory() as session, session.begin():
+        repository = ExperimentRepository(session)
+        call = await repository.record_completed_tool_call(
+            run_id,
+            provenance["tool_name"],
+            provenance["tool_version"],
+            provenance["environment_sha256"],
+            scored["input"],
+            scored["parameters"],
+            result,
+            weights_sha256=provenance["weights_sha256"],
+            model_uri=provenance["model_uri"],
+            attempt=provenance["attempt"],
+            logical_stage="target_sequence_scoring",
+            display_category="evaluation",
+        )
+        await _register_artifact(
+            session,
+            call.id,
+            provenance["raw_output_artifact"],
+            "seven_branch_target_sequence_scores",
+            {
+                "branch_key": scored["parameters"]["branch_key"],
+                "target_key": target["target_key"],
+                "target_sequence_sha256": target["sequence_sha256"],
+            },
+        )
+        await _register_artifact(
+            session,
+            call.id,
+            provenance["environment_artifact"],
+            "environment_manifest",
+            {"tool": provenance["tool_name"], "kind": "runtime_environment"},
+        )
+        candidates = {
+            item.sequence_sha256: item
+            for item in await session.scalars(
+                select(Candidate).where(Candidate.run_id == run_id)
+            )
+        }
+        persisted: list[dict[str, Any]] = []
+        for row in result["results"]:
+            candidate = candidates.get(row["sequence_sha256"])
+            if candidate is None or str(candidate.id) != str(row["candidate_id"]):
+                raise KeyError("target score does not resolve to a candidate in the child run")
+            raw = {
+                "branch_key": scored["parameters"]["branch_key"],
+                "target": target,
+                "metric_version": result["metric_version"],
+                "per_residue_log_probabilities": row[
+                    "per_residue_log_probabilities"
+                ],
+            }
+            limitations = [
+                "target-conditioned language-model score; rank-only",
+                "not a binding probability or affinity estimate",
+                "not independent from PepMLM-conditioned generation",
+            ]
+            await repository.record_evaluation(
+                candidate.id,
+                call.id,
+                MetricName.CONDITIONAL_NLL,
+                float(row["conditional_nll"]),
+                "nats_per_residue",
+                raw,
+                out_of_domain=True,
+                limitations=limitations,
+            )
+            await repository.record_evaluation(
+                candidate.id,
+                call.id,
+                MetricName.CONDITIONAL_PPL,
+                float(row["conditional_ppl"]),
+                "dimensionless",
+                raw,
+                out_of_domain=True,
+                limitations=limitations,
+            )
+            persisted.append(
+                {
+                    "candidate_id": str(candidate.id),
+                    "sequence_sha256": candidate.sequence_sha256,
+                    "conditional_nll": row["conditional_nll"],
+                    "conditional_ppl": row["conditional_ppl"],
+                }
+            )
+    return {
+        "tool_call_id": str(call.id),
+        "branch_key": scored["parameters"]["branch_key"],
+        "target_key": target["target_key"],
+        "target_sequence_sha256": target["sequence_sha256"],
+        "scored_candidate_count": len(persisted),
+        "results": persisted,
+    }
+
+
 def _validate_proxy_result_contract(scored: dict[str, Any]) -> str:
     metric_version = scored["parameters"].get("metric_version", "v21_pooled")
     if metric_version not in {"v21_pooled", "v22_stratified"}:

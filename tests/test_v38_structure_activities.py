@@ -128,6 +128,7 @@ def test_v38_worker_roles_isolate_generator_metrics_and_structure_queues() -> No
         "v38-control",
         "v38-generator",
         "v38-metrics",
+        "v39-target-sequence",
         "v38-boltz",
         "v38-rosetta",
     }
@@ -135,6 +136,7 @@ def test_v38_worker_roles_isolate_generator_metrics_and_structure_queues() -> No
     assert len(set(queues.values())) == len(queues)
     assert queues["v38-boltz"] == "pepagent-gpu-boltz2-v38"
     assert queues["v38-rosetta"] == "pepagent-cpu-rosetta-v38"
+    assert queues["v39-target-sequence"] == "pepagent-gpu-target-sequence-v39"
 
 
 def test_v38_structure_evidence_builders_bind_pose_and_all_decoys() -> None:

@@ -26,6 +26,14 @@ from pepagent.db.models import (
 from pepagent.db.repository import ExperimentRepository
 from pepagent.db.session import SessionFactory
 from pepagent.provenance.hashing import sha256_bytes, sha256_json, sha256_text
+from pepagent.sequence_family import cluster_sequence_families
+from pepagent.seven_branch_design import (
+    SEQUENCE_METRICS,
+    BranchProgress,
+    DesignBranch,
+    SevenBranchRoundBinding,
+    next_branch_action,
+)
 from pepagent.storage.object_store import ContentAddressedObjectStore
 from pepagent.v38_final_portfolio import (
     StructureScoreEvidence,
@@ -79,6 +87,212 @@ from pepagent.workflow_observer_contract import (
     build_candidate_decision_projection,
     persist_observer_checkpoints,
 )
+
+
+@activity.defn(name="load_seven_branch_target_score_cohort")
+async def load_seven_branch_target_score_cohort(
+    request: dict[str, Any],
+) -> dict[str, Any]:
+    """Read only fully score-all candidates from one target-specific child run."""
+
+    run_id = uuid.UUID(str(request["run_id"]))
+    binding = SevenBranchRoundBinding.model_validate(request["seven_branch_round"])
+    if binding.branch_kind != "target_specific":
+        raise ValueError("target score cohort requires a target-specific branch")
+    async with SessionFactory() as session:
+        candidates = list(
+            await session.scalars(
+                select(Candidate)
+                .where(Candidate.run_id == run_id)
+                .order_by(Candidate.proposal_rank, Candidate.id)
+            )
+        )
+        candidate_ids = [item.id for item in candidates]
+        rows = list(
+            await session.scalars(
+                select(Evaluation).where(
+                    Evaluation.candidate_id.in_(candidate_ids),
+                    Evaluation.metric_name.in_(SEQUENCE_METRICS),
+                )
+            )
+        ) if candidate_ids else []
+    metrics_by_candidate: dict[uuid.UUID, set[str]] = {
+        item.id: set() for item in candidates
+    }
+    for row in rows:
+        if row.status == "succeeded":
+            metrics_by_candidate[row.candidate_id].add(row.metric_name)
+    incomplete = [
+        str(candidate_id)
+        for candidate_id, metric_names in metrics_by_candidate.items()
+        if metric_names != set(SEQUENCE_METRICS)
+    ]
+    if incomplete:
+        raise ValueError(
+            "seven-branch target scoring cannot precede complete sequence score-all"
+        )
+    return {
+        "schema_version": "ampgent.seven-branch-target-cohort.1",
+        "run_id": str(run_id),
+        "branch_key": binding.branch_key,
+        "target_key": binding.target_key,
+        "target_sequence_sha256": binding.target_sequence_sha256,
+        "candidate_count": len(candidates),
+        "peptides": [
+            {
+                "candidate_id": str(item.id),
+                "sequence": item.sequence,
+                "sequence_sha256": item.sequence_sha256,
+            }
+            for item in candidates
+        ],
+    }
+
+
+@activity.defn(name="persist_seven_branch_round_progress")
+async def persist_seven_branch_round_progress(
+    request: dict[str, Any],
+) -> dict[str, Any]:
+    """Persist a controller checkpoint from child-run durable evidence, not workflow claims."""
+
+    controller_run_id = uuid.UUID(str(request["controller_run_id"]))
+    round_run_id = uuid.UUID(str(request["round_run_id"]))
+    binding = SevenBranchRoundBinding.model_validate(request["seven_branch_round"])
+    child_result = request["child_result"]
+    async with SessionFactory() as session, session.begin():
+        raw_count = int(
+            await session.scalar(
+                select(func.count(CandidateOccurrence.id)).where(
+                    CandidateOccurrence.run_id == round_run_id
+                )
+            )
+            or 0
+        )
+        candidates = list(
+            await session.scalars(
+                select(Candidate).where(Candidate.run_id == round_run_id)
+            )
+        )
+        candidate_ids = [item.id for item in candidates]
+        evaluations = list(
+            await session.scalars(
+                select(Evaluation).where(Evaluation.candidate_id.in_(candidate_ids))
+            )
+        ) if candidate_ids else []
+        sequence_metrics: dict[uuid.UUID, set[str]] = {
+            item.id: set() for item in candidates
+        }
+        target_metrics: dict[uuid.UUID, set[str]] = {
+            item.id: set() for item in candidates
+        }
+        for row in evaluations:
+            if row.status != "succeeded":
+                continue
+            if row.metric_name in SEQUENCE_METRICS:
+                sequence_metrics[row.candidate_id].add(row.metric_name)
+            if row.metric_name in {"conditional_nll", "conditional_ppl"} and (
+                row.raw_json.get("target", {}).get("sequence_sha256")
+                == binding.target_sequence_sha256
+            ):
+                target_metrics[row.candidate_id].add(row.metric_name)
+        fully_scored_count = sum(
+            metrics == set(SEQUENCE_METRICS) for metrics in sequence_metrics.values()
+        )
+        target_scored_count = (
+            sum(
+                metrics == {"conditional_nll", "conditional_ppl"}
+                for metrics in target_metrics.values()
+            )
+            if binding.branch_kind == "target_specific"
+            else 0
+        )
+        admission = child_result.get("admission") or {}
+        qualified_ids = set(admission.get("mature_core_candidate_ids", [])) | set(
+            admission.get("exploration_candidate_ids", [])
+        )
+        family_count = len(
+            {
+                item.family_key
+                for item in cluster_sequence_families(
+                    item.sequence for item in candidates
+                )
+            }
+        )
+        progress = BranchProgress(
+            branch_key=binding.branch_key,
+            raw_count=raw_count,
+            valid_unique_count=len(candidates),
+            fully_scored_count=fully_scored_count,
+            target_sequence_scored_count=target_scored_count,
+            qualified_count=len(qualified_ids),
+            delivered_count=0,
+            family_count=family_count,
+        )
+        branch = DesignBranch.model_validate(request["branch"])
+        controller_action = next_branch_action(branch, progress)
+        expected_scored = len(candidates) if candidates else 1
+        durable_count = (
+            target_scored_count
+            if binding.branch_kind == "target_specific"
+            else fully_scored_count
+        )
+        checkpoint_payload = {
+            "schema_version": "ampgent.seven-branch-checkpoint.1",
+            "controller_run_id": str(controller_run_id),
+            "round_run_id": str(round_run_id),
+            "binding": binding.model_dump(mode="json"),
+            "progress": progress.model_dump(mode="json"),
+            "controller_action": controller_action,
+            "schedule_sha256": request["schedule_sha256"],
+        }
+        receipt_sha256 = sha256_json(checkpoint_payload)
+        observation_no = int(request["observation_no"])
+        existing = await session.scalar(
+            select(RunStageCheckpoint).where(
+                RunStageCheckpoint.run_id == controller_run_id,
+                RunStageCheckpoint.stage_name == "seven_branch_design",
+                RunStageCheckpoint.observation_no == observation_no,
+            )
+        )
+        if existing is not None:
+            if existing.receipt_sha256 != receipt_sha256:
+                raise ValueError("seven-branch checkpoint retry identity drifted")
+        else:
+            session.add(
+                RunStageCheckpoint(
+                    run_id=controller_run_id,
+                    stage_name="seven_branch_design",
+                    stage_order=2,
+                    observation_no=observation_no,
+                    durable_count=durable_count,
+                    expected_durable_count=expected_scored,
+                    stage_status=(
+                        "completed" if durable_count == len(candidates) else "running"
+                    ),
+                    controller_action=controller_action,
+                    reasons_json=[
+                        f"branch={binding.branch_key}",
+                        f"qualified={len(qualified_ids)}",
+                        f"families={family_count}",
+                    ],
+                    tasks_json=[controller_action],
+                    receipt_sha256=receipt_sha256,
+                    observed_at=datetime.now(UTC),
+                )
+            )
+        repository = ExperimentRepository(session)
+        await repository.append_event(
+            "run",
+            controller_run_id,
+            "seven_branch.round_observed",
+            "seven-branch-controller",
+            checkpoint_payload,
+        )
+    return {
+        "progress": progress.model_dump(mode="json"),
+        "controller_action": controller_action,
+        "receipt_sha256": receipt_sha256,
+    }
 
 V38_METRIC_RESULT_REFERENCE_SCHEMA = "v38.metric-result-reference.1"
 V38_ADMISSION_REFERENCE_SCHEMA = "v38.sequence-admission-reference.1"

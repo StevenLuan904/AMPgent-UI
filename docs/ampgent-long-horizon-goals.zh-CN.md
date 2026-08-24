@@ -1026,3 +1026,19 @@ CAMP作为独立复核候选，但需处理旧依赖和GyrA超过其默认800 aa
 `dbff50d0955a6218e0378775891ff636df45ff4ea12be86e5709dd078ce2c08f`。它保留12项序列指标、
 target-specific双序列评分、branch-local排序和可选结构语义，并把历史pool限定为新颖性/seed策略输入。
 下一阶段是将该合同接入Temporal与数据库，使七个配额能产生独立可观察、可补量、可导出的正式证据。
+
+## 2026-08-24 七分支初始执行epoch实现增量
+
+七分支合同已经从静态JSON推进为Temporal可执行拓扑。初始epoch预先冻结7个独立child run：AceA、GyrA、
+PBP2a、VEGFA、FGF2、ANGPT1各600 raw，target-agnostic AMP为3000 raw，总计6600；每个分支均衡使用
+HydrAMP、AMP-GAN v2和AMP-Designer的100条cell。child沿用已验证的raw落库、全有效唯一序列12指标
+score-all和admission/refinement实现，不执行旧双靶点结构阶段。
+
+每个靶点child在序列评分完成后，使用冻结manifest中的完整目标氨基酸序列运行PepMLM条件似然，对全部
+候选持久化conditional NLL/PPL及target/model/weights/environment identity。controller只依据数据库真实行数
+生成每分支checkpoint，包含raw、unique、fully-scored、target-scored、qualified、delivered和family count。
+这使下一轮可以直接看到哪个`已合格/150`或`已合格/1000`不足，并把计算预算投向该分支。
+
+当前仍需完成两段闭环：第一，冻结新release并用相同executable/guarded launcher对新target scorer做真实
+GPU smoke和全量preflight；第二，实现初始epoch后的跨run去重、稳定排名、150/1000交付选择及确定性top-up
+successor epoch。达到1900条前，controller完成一次初始epoch不等于长期goal完成。

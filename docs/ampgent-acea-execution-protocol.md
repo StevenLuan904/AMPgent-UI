@@ -2634,3 +2634,22 @@ MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot
 - 历史6182条只通过winner-stability/family摘要哈希影响seed、新颖性和策略，不复制旧Candidate/Evaluation；
   controller优先推进相对交付缺口最大的分支，并按`生成→12指标score-all→靶序列评分→质量/家族→交付`
   补齐证据。相关新旧稳定性回归当前13项通过；下一工程增量是Temporal activity/workflow和数据库生命周期接线。
+
+### 七分支Temporal/数据库接线 checkpoint（2026-08-24）
+
+- 已新增 `SevenBranchRoundBinding`、`SevenBranchDesignSchedule` 和
+  `SevenBranchPeptideDesignWorkflow`。初始epoch在Temporal启动前冻结controller与7个child身份；六个靶点
+  child各执行6个100条cell，通用AMP child执行30个100条cell，总首批预算6600 raw。child复用经过历史
+  运行验证的v38生成、raw occurrence落库、有效唯一序列12指标score-all与admission/refinement前缀，
+  并通过新binding显式跳过旧多靶点结构请求。
+- 六个靶点child新增 `pepmlm-target-conditional` 活动：输入冻结target accession/sequence/SHA与该child
+  全部已完成12指标的candidate，输出并在同run持久化conditional NLL/PPL、模型/权重/环境与原始artifact；
+  通用AMP child不运行靶点评分。child在靶点评分和数据库checkpoint完成前不写succeeded，避免terminal后
+  追加正式证据。
+- controller从PostgreSQL重新计算raw、candidate、12指标完整数、目标序列评分数、mature/promising合格数
+  和seqfam80家族数，并写`RunStageCheckpoint`与typed event。初始schedule构建器把六靶点manifest逐条
+  绑定到运行时输入，并从通过的formal key确定性派生8个UUID，防止崩溃后产生替代run。
+- 当前验证为相关26项通过；全仓首轮1040通过、1项旧worker-role期望失败，已加入新的第六类
+  `v39-target-sequence`角色并通过其回归。尚未冻结新release、尚未跑同release guarded target scorer smoke、
+  尚未完成七分支preflight或提交正式run。下一动作依次为全仓复验、提交源码、冻结release、真实smoke、
+  preflight和exact-once初始epoch。

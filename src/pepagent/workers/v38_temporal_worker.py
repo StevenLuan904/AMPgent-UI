@@ -8,13 +8,22 @@ from temporalio.client import Client
 from temporalio.worker import Worker
 
 from pepagent.settings import get_settings
-from pepagent.workers.activities import mark_run_failed, mark_run_started, mark_run_succeeded
+from pepagent.workers.activities import (
+    mark_run_cancelled,
+    mark_run_failed,
+    mark_run_started,
+    mark_run_succeeded,
+    persist_seven_branch_target_sequence,
+    score_seven_branch_target_sequence,
+)
 from pepagent.workers.v37_activities import (
     evaluate_v38_sequence_metric,
     generate_v38_sequence_cell,
 )
 from pepagent.workers.v38_activities import (
     evaluate_v38_sequence_admission,
+    load_seven_branch_target_score_cohort,
+    persist_seven_branch_round_progress,
     persist_v38_external_activity_lifecycle,
     persist_v38_final_portfolio_replay,
     persist_v38_multitarget_boltz,
@@ -31,6 +40,7 @@ from pepagent.workers.v38_activities import (
     score_v38_multitarget_rosetta,
 )
 from pepagent.workers.v38_observer_interceptor import V38WorkflowObserverInterceptor
+from pepagent.workflows.seven_branch_design import SevenBranchPeptideDesignWorkflow
 from pepagent.workflows.v38_sequence_first import V38SequenceFirstAgentWorkflow
 from pepagent.workflows.v39_sequence_space import V39SequenceSpaceExplorationWorkflow
 
@@ -39,6 +49,7 @@ V38_ROLE_CONFIG = {
         "pepagent-control-v38",
         [
             mark_run_started,
+            mark_run_cancelled,
             mark_run_failed,
             mark_run_succeeded,
             plan_v38_multitarget_structure,
@@ -54,8 +65,15 @@ V38_ROLE_CONFIG = {
             persist_v39_exploration_round_yield,
             persist_v39_exploration_controller_action,
             persist_v39_cross_round_admission,
+            persist_seven_branch_target_sequence,
+            load_seven_branch_target_score_cohort,
+            persist_seven_branch_round_progress,
         ],
-        [V38SequenceFirstAgentWorkflow, V39SequenceSpaceExplorationWorkflow],
+        [
+            V38SequenceFirstAgentWorkflow,
+            V39SequenceSpaceExplorationWorkflow,
+            SevenBranchPeptideDesignWorkflow,
+        ],
     ),
     "v38-generator": (
         "pepagent-generator-v38",
@@ -65,6 +83,11 @@ V38_ROLE_CONFIG = {
     "v38-metrics": (
         "pepagent-cpu-metrics-v38",
         [evaluate_v38_sequence_metric],
+        [],
+    ),
+    "v39-target-sequence": (
+        "pepagent-gpu-target-sequence-v39",
+        [score_seven_branch_target_sequence],
         [],
     ),
     "v38-boltz": (

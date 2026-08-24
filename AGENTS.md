@@ -440,3 +440,23 @@ unchanged, but future planning and completion claims follow this target-by-targe
   three authority mRNAs to their exact CDS protein products and supplements AceA with canonical
   `NP_418439.1`; never substitute a different species, transcript, isoform, or full-length PBP2a for
   the authority-selected partial record without a newly versioned user-approved manifest.
+
+### Seven-branch execution topology checkpoint (2026-08-24)
+
+- The initial executable epoch is seven independently frozen child runs: six target-specific runs
+  with 600 raw occurrences each and one target-agnostic run with 3,000, for 6,600 initial raw
+  occurrences. Every generator cell contains exactly 100 occurrences and each branch balances the
+  three frozen generators. This is a starting epoch; later top-up epochs remain required whenever a
+  branch has not delivered its own quota.
+- Reuse `V38SequenceFirstAgentWorkflow` only for the branch-local sequence prefix: persist every raw
+  occurrence, deduplicate within that new child run, score every valid unique sequence on all 12
+  metrics, and run admission/refinement. A `SevenBranchRoundBinding` explicitly defers structure and
+  removes the legacy multi-target structure request from that child.
+- For each of the six target branches, finish the child only after `pepmlm-target-conditional` scores
+  every fully score-all candidate using that branch's exact target protein sequence. Persist
+  conditional NLL and PPL with target accession/SHA and rank-only/OOD semantics in the same child
+  run. The target-agnostic branch omits this step.
+- `SevenBranchPeptideDesignWorkflow` observes durable PostgreSQL rows after each child and records
+  raw, unique, fully scored, target-scored, qualified, delivered and sequence-family counts in a
+  controller checkpoint. Child and controller identities are UUID5-derived from a passed preflight
+  key before Temporal starts; workflow replay never allocates replacement identities.

@@ -4,10 +4,12 @@ import inspect
 
 import pytest
 
+from pepagent.provenance.hashing import sha256_json
 from pepagent.sequence_space_exploration import (
     build_default_v39_exploration_contract,
     build_v39_round_execution_contract,
 )
+from pepagent.seven_branch_design import SevenBranchRoundBinding
 from pepagent.v38_science_execution import build_default_v38_sequence_contract
 from pepagent.workers.v38_temporal_worker import V38_ROLE_CONFIG
 from pepagent.workflows.v38_sequence_first import (
@@ -132,6 +134,34 @@ def test_sequence_workflow_rejects_v39_round_without_explicit_structure_deferral
     with pytest.raises(ValueError, match="explicitly defer structure"):
         _validate_request(request)
 
+
+def test_sequence_workflow_accepts_variable_seven_branch_sequence_round() -> None:
+    request = _request()
+    contract = request["execution_contract"]
+    contract["cells"] = contract["cells"][:6]
+    contract["expected_raw_occurrences"] = 600
+    request["seven_branch_round"] = SevenBranchRoundBinding(
+        design_contract_sha256="c" * 64,
+        branch_key="acea",
+        branch_kind="target_specific",
+        target_key="acea",
+        target_sequence_sha256="d" * 64,
+        round_ordinal=0,
+        expected_raw_occurrences=600,
+        execution_contract_sha256=sha256_json(contract),
+    ).model_dump(mode="json")
+    request.pop("multitarget_plan_template")
+    request.pop("structure_runtime_by_target_key")
+    request.pop("boltz_seeds")
+    request["task_queues"].pop("structure_boltz")
+    request["task_queues"].pop("structure_rosetta")
+    request.pop("structure_concurrency")
+    _validate_request(request)
+
+    request["execution_contract"]["cells"][0]["requested_proposals"] = 50
+    with pytest.raises(ValueError, match="100-proposal cells"):
+        _validate_request(request)
+
 def test_v38_sequence_workflow_rejects_first_k_and_missing_metric_plugin() -> None:
     first_k = _request()
     first_k["execution_contract"]["first_k_retention_forbidden"] = False
@@ -195,7 +225,7 @@ def test_v38_workflow_closes_run_after_durable_result() -> None:
     success = source.index('"mark_run_succeeded"')
     result_return = source.index("return result")
     assert success < result_return
-    assert '"structure_evidence_count": result["structure_evidence_count"]' in source
+    assert '"structure_evidence_count": result[' in source
 
 
 def test_v38_structure_execution_is_stage_pipelined_without_batch_barrier() -> None:

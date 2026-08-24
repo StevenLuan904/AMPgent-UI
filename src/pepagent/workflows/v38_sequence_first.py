@@ -10,6 +10,7 @@ from temporalio.common import RetryPolicy
 with workflow.unsafe.imports_passed_through():
     from pepagent.provenance.hashing import sha256_json
     from pepagent.sequence_space_exploration import V39ExplorationRoundBinding
+    from pepagent.seven_branch_design import SevenBranchRoundBinding
 
 
 async def _bounded_ordered_map(
@@ -38,7 +39,21 @@ def _validate_request(request: dict[str, Any]) -> None:
         raise ValueError("v38 workflow requires an execution contract")
     cells = contract.get("cells")
     exploration_round_payload = request.get("exploration_round")
-    if exploration_round_payload is None:
+    seven_branch_round_payload = request.get("seven_branch_round")
+    if exploration_round_payload is not None and seven_branch_round_payload is not None:
+        raise ValueError("a sequence child run cannot bind two controller protocols")
+    if seven_branch_round_payload is not None:
+        binding = SevenBranchRoundBinding.model_validate(seven_branch_round_payload)
+        if not isinstance(cells, list) or not cells:
+            raise ValueError("seven-branch round requires generator cells")
+        if any(int(item.get("requested_proposals", 0)) != 100 for item in cells):
+            raise ValueError("seven-branch round requires frozen 100-proposal cells")
+        raw_budget = sum(int(item.get("requested_proposals", 0)) for item in cells)
+        if raw_budget != binding.expected_raw_occurrences:
+            raise ValueError("seven-branch round raw occurrence budget drifted")
+        if sha256_json(contract) != binding.execution_contract_sha256:
+            raise ValueError("seven-branch round execution contract identity drifted")
+    elif exploration_round_payload is None:
         if not isinstance(cells, list) or len(cells) != 9:
             raise ValueError("v38 workflow requires exactly nine generator cells")
         if sum(int(item.get("requested_proposals", 0)) for item in cells) != 900:
@@ -88,7 +103,36 @@ def _validate_request(request: dict[str, Any]) -> None:
     context_sha = request.get("knowledge_context_pack_sha256")
     if not isinstance(context_sha, str) or len(context_sha) != 64:
         raise ValueError("v38 knowledge context-pack identity is invalid")
+    sequence_only_branch = seven_branch_round_payload is not None
     plan_template = request.get("multitarget_plan_template")
+    if sequence_only_branch:
+        if plan_template is not None or request.get("structure_runtime_by_target_key") is not None:
+            raise ValueError("seven-branch sequence round cannot carry legacy structure bindings")
+        plan_template = None
+    else:
+        _validate_structure_request(request, plan_template)
+
+    queues = request.get("task_queues")
+    required_queues = {
+        "workflow_and_control",
+        "generator",
+        "sequence_metrics",
+    }
+    if not sequence_only_branch:
+        required_queues |= {"structure_boltz", "structure_rosetta"}
+    if not isinstance(queues, dict) or not required_queues <= set(queues):
+        raise ValueError("v38 workflow task queues are incomplete")
+    required_concurrency = ["generation_concurrency", "metric_concurrency"]
+    if not sequence_only_branch:
+        required_concurrency.append("structure_concurrency")
+    for key in required_concurrency:
+        if not isinstance(request.get(key), int) or int(request[key]) < 1:
+            raise ValueError(f"v38 workflow concurrency is invalid: {key}")
+
+
+def _validate_structure_request(
+    request: dict[str, Any], plan_template: Any
+) -> None:
     if not isinstance(plan_template, dict) or set(plan_template) != {
         "harness_release_id",
         "history_snapshot_sha256",
@@ -122,19 +166,6 @@ def _validate_request(request: dict[str, Any]) -> None:
         or len({int(item) for item in seeds}) != 3
     ):
         raise ValueError("v38 workflow requires three distinct Boltz seeds")
-    queues = request.get("task_queues")
-    required_queues = {
-        "workflow_and_control",
-        "generator",
-        "sequence_metrics",
-        "structure_boltz",
-        "structure_rosetta",
-    }
-    if not isinstance(queues, dict) or not required_queues <= set(queues):
-        raise ValueError("v38 workflow task queues are incomplete")
-    for key in ("generation_concurrency", "metric_concurrency", "structure_concurrency"):
-        if not isinstance(request.get(key), int) or int(request[key]) < 1:
-            raise ValueError(f"v38 workflow concurrency is invalid: {key}")
 
 
 @workflow.defn(name="V38SequenceFirstAgentWorkflow")
@@ -465,7 +496,10 @@ class V38SequenceFirstAgentWorkflow:
                 )
             structure_task_count = 0
             structure_evidence_count = 0
-            defer_structure = request.get("exploration_round") is not None
+            defer_structure = (
+                request.get("exploration_round") is not None
+                or request.get("seven_branch_round") is not None
+            )
             if admission["structure_dispatch_allowed"] and not defer_structure:
                 structure_plan = await workflow.execute_activity(
                     "plan_v38_multitarget_structure",
@@ -608,6 +642,9 @@ class V38SequenceFirstAgentWorkflow:
                 if not final_portfolio["replay_verified"]:
                     raise ValueError("v38 final portfolio replay was not verified")
                 status = "multitarget_final_portfolio_replay_complete"
+            elif request.get("seven_branch_round") is not None:
+                final_portfolio = None
+                status = "sequence_evidence_complete_deferred_target_scoring"
             elif defer_structure:
                 final_portfolio = None
                 status = "sequence_evidence_complete_deferred_structure"
@@ -635,22 +672,25 @@ class V38SequenceFirstAgentWorkflow:
                 "formal_structure_workflow_complete": final_portfolio is not None,
                 "structure_deferred_to_exploration_parent": defer_structure,
             }
-            await workflow.execute_activity(
-                "mark_run_succeeded",
-                {
-                    "run_id": run_id,
-                    "result_status": status,
-                    "durable_counts": {
-                        "raw_occurrence_count": result["raw_occurrence_count"],
-                        "candidate_count": result["candidate_count"],
-                        "evaluation_count": result["evaluation_count"],
-                        "structure_evidence_count": result["structure_evidence_count"],
+            if request.get("seven_branch_round") is None:
+                await workflow.execute_activity(
+                    "mark_run_succeeded",
+                    {
+                        "run_id": run_id,
+                        "result_status": status,
+                        "durable_counts": {
+                            "raw_occurrence_count": result["raw_occurrence_count"],
+                            "candidate_count": result["candidate_count"],
+                            "evaluation_count": result["evaluation_count"],
+                            "structure_evidence_count": result[
+                                "structure_evidence_count"
+                            ],
+                        },
                     },
-                },
-                task_queue=control_queue,
-                start_to_close_timeout=timedelta(minutes=2),
-                retry_policy=retry,
-            )
+                    task_queue=control_queue,
+                    start_to_close_timeout=timedelta(minutes=2),
+                    retry_policy=retry,
+                )
             return result
         except asyncio.CancelledError:
             await asyncio.shield(
