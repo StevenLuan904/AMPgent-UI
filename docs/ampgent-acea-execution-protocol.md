@@ -2561,3 +2561,46 @@ MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot
   结构结果还是实验测量；预测最优不得称实验最优。短肽域外的 Guruprasad instability 继续只作审计与探索轴，
   不能成为安全硬门。主回复保持一张紧凑汇总表加少量重点解释，完整行级数据放 CSV/JSON 导出；PostgreSQL
   与对象存储仍是证据源。
+
+## 2026-08-24 最新执行覆盖：按六个目标独立设计并交付1900条
+
+用户最新定义将项目从“双靶点共享结构portfolio”调整为“六个目标独立设计 + 通用AMP设计”。本节是
+当前执行源，优先于本文件中较早的双靶点、native/wrong-pocket和固定结构矩阵条款。历史run保持原样；
+其结构证据可作方法参考，但不能代替新的分支交付。
+
+### 固定设计拓扑
+
+- 目标inventory从 `../../权威文档/抗菌肽基因序列.md`解析并内容寻址。当前六分支为 AceA、GyrA、
+  PBP2a、VEGFA、FGF2、ANGPT1；每个分支的最终唯一候选数为150。
+- 新增一个 `target_agnostic_amp` 分支，最终唯一候选数为1000。
+- 交付总量为1900。controller按分支记录 `raw_count`、`valid_unique_count`、`fully_scored_count`、
+  `target_sequence_scored_count`、`qualified_count`、`delivered_count` 和 `family_count`，并在不足时立即
+  补充生成，不用其他分支的富余候选抵扣。
+- 靶点候选仅在所属分支内排序。一条候选服务一个目标分支，cross-target结合分数不参与准入。
+
+### 评分与模型选择
+
+- 所有候选先完成适用的抗菌活性、毒性、溶血、理化和Guruprasad instability序列评分；instability继续
+  作为短肽域外的描述/探索轴。
+- 六个靶点分支额外执行至少一个输入为 `(target_sequence, peptide_sequence)` 的公开序列交互预测器。
+  2026-08-24公开基准的首选评估顺序为：PepInter主评分、PepMLM条件生成/条件似然、CAMP独立复核；
+  PepCCD作为生成challenger。冻结前记录论文、代码/权重、许可、benchmark范围、版本和本地smoke。
+- PepInter论文：https://doi.org/10.1038/s42004-026-02168-3；PepMLM论文：
+  https://doi.org/10.1038/s41587-025-02761-2；CAMP论文：
+  https://doi.org/10.1038/s41467-021-25772-4；PepCCD论文：
+  https://doi.org/10.1609/aaai.v40i33.40053。
+- 公开信息少、结构缺失或结构可信度不足的目标直接使用序列预测完成该层证据。结构评分是可选排序轴；
+  可靠结构已经存在且预计能改变候选排序时再派发，不以缺少结构阻塞150条交付。
+
+### 当前run与下一动作
+
+- controller `5557e950-5bd9-551d-ae1d-948f0ca29d0b` 及其四轮6182条候选、74184项评价和已有结构证据
+  是此前v39目标下的不可变历史/进行中证据。它不再代表最新1900条交付拓扑，也不能把7/48结构进度
+  解释为新目标进度。
+- 下一执行增量是解析并冻结六个目标序列manifest，完成PepInter/PepMLM/CAMP的可运行性和适用性smoke，
+  建立六个 `150` 配额与一个 `1000` 配额的生成/评分controller，并把现有6182条序列仅作为去重、新颖性
+  和生成策略参考。新run生成自己的Candidate/Evaluation证据，不复制或回填旧run工作输出。
+- 本项目当前是纯计算实验。交付包括候选设计、模型评分、分布分析、target-specific与target-agnostic CSV、
+  配置和可复算证据。湿实验、CRO、donor、血清/蛋白酶实验和采购活动仅在用户以后明确提出时另立任务。
+- 后续汇报以七个配额的实际进展为主，结构证据为辅；每次明确最好的、最差的、平均数和分布，并说明
+  下一轮是扩大哪个目标的序列空间、修复哪个评分缺口或提高哪个分支的优质产出率。

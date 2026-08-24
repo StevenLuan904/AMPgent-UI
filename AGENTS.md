@@ -394,3 +394,40 @@ Apply the following style to AMPgent/AceA research work in this repository:
 - A model is formal only when its registry records provider/version, immutable bytes, license, training
   domain, leakage controls, calibration, OOD behavior, uncertainty, units and assay conditions. Code
   presence is not acceptance. AMPlify remains retired; do not restore it as the AMP-likeness model.
+
+## 2026-08-24 target-by-target peptide design objective (latest user direction)
+
+This section supersedes earlier project language that treated one shared cohort, dual-target binding,
+or a complete structure matrix as the scientific endpoint. Historical runs and evidence remain
+unchanged, but future planning and completion claims follow this target-by-target objective.
+
+- Read `../权威文档/抗菌肽基因序列.md` as the authoritative target inventory. The current inventory has
+  six independent target entries: AceA, *E. coli* GyrA, *S. epidermidis* PBP2a, mouse VEGFA, mouse
+  FGF2, and mouse ANGPT1. Preserve each entry's organism, accession, source sequence and sequence SHA.
+- Design and deliver **150 high-quality, valid, unique short-peptide candidates for each target**.
+  A peptide belongs to one target branch; it is not required to bind every target or pass a
+  cross-target/dual-target criterion. The target-specific deliverable is 6 × 150 = 900 candidates.
+- In parallel, design and deliver **1,000 additional target-agnostic antimicrobial peptides** that
+  are not conditioned on those six targets. Keep this pool distinct. The total delivery objective is
+  1,900 unique candidates; generate and score a larger raw pool as needed to fill it with diverse,
+  high-quality sequences after validation and deduplication.
+- Every target-specific candidate receives at least one reproducible score from a predictor that
+  consumes both target and peptide amino-acid sequences. Select the strongest currently public,
+  runnable sequence model using published held-out/external benchmarks, applicable domain, license
+  and a local smoke test. As of 2026-08-24, evaluate PepInter as the primary interaction scorer,
+  PepMLM as a target-conditioned generator/likelihood model, CAMP as an independent sequence-only
+  comparison, and PepCCD as a diversity challenger. Re-check public evidence for each new release.
+- Protein structure scoring is an optional enrichment lane. Use it when reliable coordinates and a
+  decision-relevant method are readily available; sparse-information targets proceed by sequence
+  prediction without a structure penalty. Do not spend the project budget proving that one peptide
+  binds multiple targets.
+- This project is a computational experiment. Produce candidates, model evaluations, diversity
+  analysis, ranking and experiment-ready exports. Add wet-lab execution, CRO procurement or donor
+  protocols only after a later explicit user request.
+- Prefer affirmative, operational language: state the objective, action, evidence and next design
+  experiment. Keep caveats proportional. Preserve sequence identity, provenance, reproducibility,
+  credential safety and non-interference as routine engineering requirements without making abstract
+  boundary discussion the main research output.
+- Report target-by-target yield toward 150, target-agnostic yield toward 1,000, family coverage, every
+  applicable sequence-score distribution, target-sequence interaction scores, missing evidence, and
+  the next generation/refinement action. Structure counts are supporting evidence, not the headline.
