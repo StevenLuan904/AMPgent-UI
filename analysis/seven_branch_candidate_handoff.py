@@ -14,6 +14,7 @@ from seven_branch_live_distribution import METRICS
 from sqlalchemy import text
 
 from pepagent.db.session import SessionFactory
+from pepagent.sequence_family import cluster_sequence_families
 
 
 def _decision_cohorts(decisions: list[dict[str, Any]]) -> dict[str, dict[str, str]]:
@@ -102,6 +103,67 @@ def assemble_rows(
     )
 
 
+def annotate_family_novelty(
+    rows: list[dict[str, Any]], *, historical_sequences: list[str]
+) -> dict[str, Any]:
+    current_sequences = [str(row["sequence"]) for row in rows]
+    current_assignments = {
+        item.sequence: item for item in cluster_sequence_families(current_sequences)
+    }
+    historical_set = set(historical_sequences)
+    combined_assignments = {
+        item.sequence: item
+        for item in cluster_sequence_families(historical_sequences + current_sequences)
+    }
+    historical_family_keys = {
+        combined_assignments[sequence].family_key for sequence in historical_set
+    }
+    for row in rows:
+        sequence = str(row["sequence"])
+        current = current_assignments[sequence]
+        combined = combined_assignments[sequence]
+        row["sequence_family_key"] = current.family_key
+        row["sequence_family_size"] = current.family_size
+        row["combined_historical_family_key"] = combined.family_key
+        row["historical_exact_duplicate"] = sequence in historical_set
+        row["historical_family_overlap_80_80"] = (
+            combined.family_key in historical_family_keys
+        )
+    current_family_keys = {
+        item.family_key for item in current_assignments.values()
+    }
+    combined_current_family_keys = {
+        combined_assignments[sequence].family_key for sequence in current_sequences
+    }
+    return {
+        "family_method": "ungapped_identity_0.8_coverage_0.8_connected_components",
+        "historical_sequence_count": len(historical_set),
+        "current_row_count": len(rows),
+        "current_unique_sequence_count": len(set(current_sequences)),
+        "current_family_count": len(current_family_keys),
+        "current_singleton_family_count": len(
+            {
+                item.family_key
+                for item in current_assignments.values()
+                if item.family_size == 1
+            }
+        ),
+        "historical_exact_duplicate_count": sum(
+            sequence in historical_set for sequence in current_sequences
+        ),
+        "current_family_overlapping_historical_count": len(
+            combined_current_family_keys & historical_family_keys
+        ),
+        "current_new_family_count": len(
+            combined_current_family_keys - historical_family_keys
+        ),
+        "current_sequences_in_historical_families": sum(
+            combined_assignments[sequence].family_key in historical_family_keys
+            for sequence in current_sequences
+        ),
+    }
+
+
 async def load_rows(controller_run_id: uuid.UUID) -> tuple[list[dict[str, Any]], ...]:
     async with SessionFactory() as session:
         candidates = (
@@ -174,6 +236,7 @@ def main() -> None:
     parser.add_argument("--target-manifest", type=Path, required=True)
     parser.add_argument("--output-prefix", type=Path, required=True)
     parser.add_argument("--cohort", choices=("qualified", "all"), default="qualified")
+    parser.add_argument("--historical-candidates", type=Path)
     args = parser.parse_args()
     candidates, evaluations, decisions = asyncio.run(
         load_rows(uuid.UUID(args.controller_run_id))
@@ -185,6 +248,15 @@ def main() -> None:
         decisions=decisions,
         target_manifest=target_manifest,
         cohort=args.cohort,
+    )
+    historical_sequences: list[str] = []
+    if args.historical_candidates:
+        with args.historical_candidates.open(newline="", encoding="utf-8-sig") as handle:
+            historical_sequences = [
+                str(item["sequence"]) for item in csv.DictReader(handle)
+            ]
+    family_summary = annotate_family_novelty(
+        rows, historical_sequences=historical_sequences
     )
     csv_path = args.output_prefix.with_suffix(".csv")
     json_path = args.output_prefix.with_suffix(".json")
@@ -202,6 +274,7 @@ def main() -> None:
         "cohort": args.cohort,
         "candidate_count": len(rows),
         "metric_contract": METRICS,
+        "family_summary": family_summary,
         "scope_note": "computational predictions/descriptors; no wet-lab measurements",
         "rows": rows,
     }
