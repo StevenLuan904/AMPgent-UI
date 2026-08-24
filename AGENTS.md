@@ -401,9 +401,12 @@ This section supersedes earlier project language that treated one shared cohort,
 or a complete structure matrix as the scientific endpoint. Historical runs and evidence remain
 unchanged, but future planning and completion claims follow this target-by-target objective.
 
-- Read `../权威文档/抗菌肽基因序列.md` as the authoritative target inventory. The current inventory has
-  six independent target entries: AceA, *E. coli* GyrA, *S. epidermidis* PBP2a, mouse VEGFA, mouse
-  FGF2, and mouse ANGPT1. Preserve each entry's organism, accession, source sequence and sequence SHA.
+- Read `../权威文档/抗菌肽基因序列.md` as the authoritative named-target inventory. It names six
+  independent branches: AceA, *E. coli* GyrA, *S. epidermidis* PBP2a, mouse VEGFA, mouse FGF2, and
+  mouse ANGPT1. Its main body contains five source records: two protein sequences and three mRNAs;
+  AceA appears only in the literature appendix. Resolve the three mRNAs to their referenced protein
+  products and source a canonical AceA protein sequence before sequence-model inference, preserving
+  organism, accession, source kind, resolved amino-acid sequence and SHA for every branch.
 - Design and deliver **150 high-quality, valid, unique short-peptide candidates for each target**.
   A peptide belongs to one target branch; it is not required to bind every target or pass a
   cross-target/dual-target criterion. The target-specific deliverable is 6 × 150 = 900 candidates.

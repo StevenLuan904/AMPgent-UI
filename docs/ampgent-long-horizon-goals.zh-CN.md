@@ -946,9 +946,10 @@ generator cell 并改变策略，不回退到只读巡检。
 
 ### 目标清单与交付量
 
-权威输入是 `../../权威文档/抗菌肽基因序列.md`。当前解析出的六个独立目标条目为：AceA、*E. coli*
-GyrA、*S. epidermidis* PBP2a、Mus musculus VEGFA、Mus musculus FGF2、Mus musculus ANGPT1。
-每次冻结设计任务时保存目标名称、物种、accession、原始氨基酸序列和序列SHA，不能只保存简称。
+权威输入是 `../../权威文档/抗菌肽基因序列.md`。当前命名的六个独立目标为：AceA、*E. coli* GyrA、
+*S. epidermidis* PBP2a、Mus musculus VEGFA、Mus musculus FGF2、Mus musculus ANGPT1。正文实际包含
+两条蛋白序列和三条mRNA；AceA只出现在文献附录。执行前把三条mRNA解析到其引用的蛋白产物，并为
+AceA补充公开canonical蛋白序列。每个分支保存名称、物种、源accession、源类型、解析后的氨基酸序列和SHA。
 
 1. 为六个目标分别交付150条高质量、有效、互不重复的短肽，共900条。每条短肽只需服务其所属目标
    分支，不要求同时结合其他目标。

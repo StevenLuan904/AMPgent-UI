@@ -2571,7 +2571,8 @@ MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot
 ### 固定设计拓扑
 
 - 目标inventory从 `../../权威文档/抗菌肽基因序列.md`解析并内容寻址。当前六分支为 AceA、GyrA、
-  PBP2a、VEGFA、FGF2、ANGPT1；每个分支的最终唯一候选数为150。
+  PBP2a、VEGFA、FGF2、ANGPT1；正文有两条蛋白序列和三条mRNA，AceA只在文献附录中。新manifest
+  将三条mRNA解析为引用蛋白产物，并为AceA固定公开canonical蛋白序列及来源；每个分支最终交付150条。
 - 新增一个 `target_agnostic_amp` 分支，最终唯一候选数为1000。
 - 交付总量为1900。controller按分支记录 `raw_count`、`valid_unique_count`、`fully_scored_count`、
   `target_sequence_scored_count`、`qualified_count`、`delivered_count` 和 `family_count`，并在不足时立即
