@@ -14,6 +14,27 @@ with workflow.unsafe.imports_passed_through():
     )
 
 
+def summarize_top_up_receipts(
+    receipts: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], bool, str]:
+    """Classify durable branch receipts without discarding successful siblings."""
+    failed = [item for item in receipts if item["status"] == "failed_successor_required"]
+    completed = [
+        item for item in receipts if item["status"] == "cumulative_selection_persisted"
+    ]
+    successor_required = bool(failed) or any(
+        item["cumulative"]["top_up_plan"]["action"] == "freeze_successor_round"
+        for item in completed
+    )
+    if failed:
+        status = "partial_success_successor_required"
+    elif successor_required:
+        status = "successor_top_up_required"
+    else:
+        status = "epoch_branch_quotas_complete"
+    return failed, completed, successor_required, status
+
+
 @workflow.defn(name="SevenBranchPeptideTopUpWorkflow")
 class SevenBranchPeptideTopUpWorkflow:
     """Execute one frozen top-up epoch and recompute cumulative branch delivery."""
@@ -58,12 +79,10 @@ class SevenBranchPeptideTopUpWorkflow:
                 ),
                 return_exceptions=True,
             )
-            child_failures: list[tuple[str, BaseException]] = []
             for epoch_branch, child_result in zip(schedule.branches, child_results, strict=True):
                 if not isinstance(child_result, BaseException):
                     continue
                 child_run_id = str(epoch_branch.frozen_round.run_id)
-                child_failures.append((child_run_id, child_result))
                 await workflow.execute_activity(
                     "mark_run_failed",
                     {
@@ -75,13 +94,39 @@ class SevenBranchPeptideTopUpWorkflow:
                     start_to_close_timeout=timedelta(minutes=2),
                     retry_policy=retry,
                 )
-            if child_failures:
-                failed_ids = ",".join(item[0] for item in child_failures)
-                raise RuntimeError(f"top-up child workflows failed: {failed_ids}")
-
             for epoch_branch, child_result in zip(schedule.branches, child_results, strict=True):
+                if isinstance(child_result, BaseException):
+                    receipts.append(
+                        {
+                            "branch_key": epoch_branch.branch_key,
+                            "round_run_id": str(epoch_branch.frozen_round.run_id),
+                            "status": "failed_successor_required",
+                            "error_type": type(child_result).__name__,
+                        }
+                    )
+                    continue
                 if not isinstance(child_result, dict):
-                    raise TypeError("top-up child result is not a mapping")
+                    child_run_id = str(epoch_branch.frozen_round.run_id)
+                    await workflow.execute_activity(
+                        "mark_run_failed",
+                        {
+                            "run_id": child_run_id,
+                            "error_type": "TypeError",
+                            "error": "top-up child result is not a mapping",
+                        },
+                        task_queue=control_queue,
+                        start_to_close_timeout=timedelta(minutes=2),
+                        retry_policy=retry,
+                    )
+                    receipts.append(
+                        {
+                            "branch_key": epoch_branch.branch_key,
+                            "round_run_id": child_run_id,
+                            "status": "failed_successor_required",
+                            "error_type": "TypeError",
+                        }
+                    )
+                    continue
                 frozen_round = epoch_branch.frozen_round
                 current_round_run_id = str(frozen_round.run_id)
                 child_request = frozen_round.request
@@ -166,21 +211,20 @@ class SevenBranchPeptideTopUpWorkflow:
                     {
                         "branch_key": binding.branch_key,
                         "round_run_id": str(frozen_round.run_id),
+                        "status": "cumulative_selection_persisted",
                         "target_score_receipt": target_score_receipt,
                         "cumulative": cumulative,
                     }
                 )
-            successor_required = any(
-                item["cumulative"]["top_up_plan"]["action"] == "freeze_successor_round"
-                for item in receipts
-            )
+            (
+                failed_receipts,
+                completed_receipts,
+                _successor_required,
+                result_status,
+            ) = summarize_top_up_receipts(receipts)
             result = {
-                "schema_version": "ampgent.seven-branch-top-up-result.1",
-                "status": (
-                    "successor_top_up_required"
-                    if successor_required
-                    else "epoch_branch_quotas_complete"
-                ),
+                "schema_version": "ampgent.seven-branch-top-up-result.2",
+                "status": result_status,
                 "controller_run_id": str(schedule.controller_run_id),
                 "parent_controller_run_id": str(schedule.parent_controller_run_id),
                 "epoch_ordinal": schedule.epoch_ordinal,
@@ -194,15 +238,19 @@ class SevenBranchPeptideTopUpWorkflow:
                     "result_status": result["status"],
                     "durable_counts": {
                         "branch_round_count": len(receipts),
+                        "completed_branch_count": len(completed_receipts),
+                        "failed_branch_count": len(failed_receipts),
                         "cumulative_raw_occurrence_count": sum(
-                            item["cumulative"]["progress"]["raw_count"] for item in receipts
+                            item["cumulative"]["progress"]["raw_count"]
+                            for item in completed_receipts
                         ),
                         "cumulative_candidate_count": sum(
                             item["cumulative"]["progress"]["valid_unique_count"]
-                            for item in receipts
+                            for item in completed_receipts
                         ),
                         "delivered_count": sum(
-                            item["cumulative"]["progress"]["delivered_count"] for item in receipts
+                            item["cumulative"]["progress"]["delivered_count"]
+                            for item in completed_receipts
                         ),
                     },
                 },
