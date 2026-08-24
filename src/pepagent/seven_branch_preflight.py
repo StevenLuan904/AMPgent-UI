@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import argparse
+import json
 from pathlib import Path
 from typing import Any
 
@@ -183,3 +185,53 @@ def build_seven_branch_submission_preflight(
         "execution_authorized": execution_authorized,
         "failed_gates": [] if execution_authorized else ["execution_not_authorized"],
     }
+
+
+def _load_json(path: Path) -> dict[str, Any]:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError(f"JSON root is not an object: {path}")
+    return payload
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Build the immutable seven-branch submission preflight"
+    )
+    parser.add_argument("--request-template", type=Path, required=True)
+    parser.add_argument("--design-contract", type=Path, required=True)
+    parser.add_argument("--target-manifest", type=Path, required=True)
+    parser.add_argument("--model-selection", type=Path, required=True)
+    parser.add_argument("--worker-placement", type=Path, required=True)
+    parser.add_argument("--target-smoke", type=Path, required=True)
+    parser.add_argument("--source-revision", required=True)
+    parser.add_argument("--release-sha256", required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--authorize-execution", action="store_true")
+    args = parser.parse_args()
+    contract_path = args.design_contract.resolve()
+    contract = SevenBranchDesignContract.model_validate(
+        _load_json(contract_path)
+    )
+    result = build_seven_branch_submission_preflight(
+        request_template=_load_json(args.request_template.resolve()),
+        design_contract=contract,
+        design_contract_path=contract_path,
+        target_manifest_path=args.target_manifest.resolve(),
+        model_selection_path=args.model_selection.resolve(),
+        worker_placement=_load_json(args.worker_placement.resolve()),
+        target_smoke=_load_json(args.target_smoke.resolve()),
+        source_revision=args.source_revision,
+        release_sha256=args.release_sha256,
+        execution_authorized=args.authorize_execution,
+    )
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(
+        json.dumps(result, ensure_ascii=False, sort_keys=True, indent=2),
+        encoding="utf-8",
+    )
+    print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+
+
+if __name__ == "__main__":
+    main()
