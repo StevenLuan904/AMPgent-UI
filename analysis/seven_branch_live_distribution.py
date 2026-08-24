@@ -8,6 +8,7 @@ import math
 import statistics
 import uuid
 from collections import defaultdict
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -101,10 +102,12 @@ async def build_report(controller_run_id: uuid.UUID) -> dict[str, Any]:
                     text(
                         """select r.id::text run_id, r.spec_json->>'branch_key' branch_key,
                     c.id::text candidate_id, c.sequence, e.metric_name,
-                    e.numeric_value, e.text_value, e.unit, e.status, e.out_of_domain
+                    e.numeric_value, e.text_value, e.unit, e.status, e.out_of_domain,
+                    t.tool_name, t.tool_version, t.model_uri, t.weights_sha256
                     from experiment_runs r
                     join candidates c on c.run_id=r.id
                     join evaluations e on e.candidate_id=c.id
+                    join tool_calls t on t.id=e.tool_call_id
                     where r.parent_run_id=:controller
                     and e.metric_name=any(:metrics)
                     order by r.created_at, c.id, e.metric_name"""
@@ -186,6 +189,20 @@ async def build_report(controller_run_id: uuid.UUID) -> dict[str, Any]:
                     "failed_n": sum(row["status"] != "succeeded" for row in metric_rows),
                     "ood_n": sum(bool(row["out_of_domain"]) for row in valid),
                     "unit": next((row["unit"] for row in valid if row["unit"]), None),
+                    "tool_names": sorted({str(row["tool_name"]) for row in valid}),
+                    "tool_versions": sorted(
+                        {str(row["tool_version"]) for row in valid}
+                    ),
+                    "model_uris": sorted(
+                        {str(row["model_uri"]) for row in valid if row["model_uri"]}
+                    ),
+                    "weights_sha256": sorted(
+                        {
+                            str(row["weights_sha256"])
+                            for row in valid
+                            if row["weights_sha256"]
+                        }
+                    ),
                 }
                 if metric in LABEL_METRICS:
                     counts: dict[str, int] = defaultdict(int)
@@ -203,8 +220,17 @@ async def build_report(controller_run_id: uuid.UUID) -> dict[str, Any]:
                 summaries.append(item)
     return {
         "schema_version": "ampgent.seven-branch-live-score-distribution.1",
+        "generated_at": datetime.now(UTC).isoformat(),
         "controller_run_id": str(controller_run_id),
         "scope_note": "computational predictions/descriptors only; no wet-lab measurements",
+        "cohort_definitions": {
+            "all": "all candidates persisted in the branch child run",
+            "mature_core": "candidates selected as mature_core by the frozen admission policy",
+            "selected_exploration": (
+                "promising candidates selected within the frozen exploration budget"
+            ),
+            "qualified": "union of mature_core and selected_exploration",
+        },
         "runs": [dict(item) for item in runs],
         "empty_downstream_cohorts": ["structure_pool", "final_portfolio"],
         "summaries": summaries,
@@ -231,9 +257,17 @@ def main() -> None:
         writer = csv.DictWriter(handle, fieldnames=scalar_keys + ["categories_json"])
         writer.writeheader()
         for item in report["summaries"]:
+            scalar_values = {}
+            for key in scalar_keys:
+                value = item.get(key)
+                scalar_values[key] = (
+                    json.dumps(value, ensure_ascii=False, sort_keys=True)
+                    if isinstance(value, (list, dict))
+                    else value
+                )
             writer.writerow(
                 {
-                    **{key: item.get(key) for key in scalar_keys},
+                    **scalar_values,
                     "categories_json": json.dumps(
                         item.get("categories"), ensure_ascii=False, sort_keys=True
                     )
