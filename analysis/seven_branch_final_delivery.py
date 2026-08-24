@@ -328,6 +328,9 @@ def main() -> None:
     parser.add_argument("--controller-run-id", required=True)
     parser.add_argument("--target-manifest", type=Path, required=True)
     parser.add_argument("--output-prefix", type=Path, required=True)
+    parser.add_argument("--historical-winner-sequence")
+    parser.add_argument("--historical-stability-summary", type=Path)
+    parser.add_argument("--historical-family-summary", type=Path)
     args = parser.parse_args()
     controller_run_id = uuid.UUID(args.controller_run_id)
     manifest = json.loads(args.target_manifest.read_text(encoding="utf-8"))
@@ -347,6 +350,24 @@ def main() -> None:
         raise ValueError(f"final delivery quota drifted: {dict(branch_counts)}")
     duplicate_counts = Counter(str(item["sequence_sha256"]) for item in rows)
     cross_branch_duplicates = {key: count for key, count in duplicate_counts.items() if count > 1}
+    historical_context: dict[str, Any] = {
+        "winner_sequence": args.historical_winner_sequence,
+        "winner_occurrences_in_final_delivery": sum(
+            row["sequence"] == args.historical_winner_sequence for row in rows
+        )
+        if args.historical_winner_sequence
+        else None,
+    }
+    for key, path in (
+        ("winner_stability", args.historical_stability_summary),
+        ("sequence_family_audit", args.historical_family_summary),
+    ):
+        if path is not None:
+            historical_context[key] = {
+                "path": str(path),
+                "sha256": _sha256(path),
+                "payload": json.loads(path.read_text(encoding="utf-8")),
+            }
 
     csv_path = args.output_prefix.with_suffix(".csv")
     json_path = args.output_prefix.with_suffix(".json")
@@ -375,6 +396,7 @@ def main() -> None:
             "Computational predictions and sequence descriptors; no wet-lab measurements."
         ),
         "branch_evidence": branch_evidence,
+        "historical_context": historical_context,
         "metric_summaries": metric_summaries,
         "rows": rows,
     }
