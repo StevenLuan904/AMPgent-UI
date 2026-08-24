@@ -218,3 +218,47 @@ def test_top_up_schedule_derives_new_ids_and_empirical_budget() -> None:
     assert len(child_specs) == 1
     assert child_specs[0]["expected_raw_occurrences"] == 2100
     assert child_specs[0]["prior_source_run_ids"] == [str(UUID(int=701))]
+
+
+def test_top_up_schedule_rejects_stale_preflight() -> None:
+    contract, manifest, manifest_sha = _inputs()
+    template = _template()
+    preflight = _preflight(template, contract)
+    parent = UUID(int=710)
+    evidence = {
+        "acea": {
+            "source_run_ids": [str(UUID(int=711))],
+            "progress": {
+                "branch_key": "acea",
+                "raw_count": 600,
+                "valid_unique_count": 515,
+                "fully_scored_count": 515,
+                "target_sequence_scored_count": 515,
+                "qualified_count": 48,
+                "delivered_count": 48,
+                "family_count": 48,
+            },
+            "next_round_ordinal": 1,
+            "snapshot_sha256": "d" * 64,
+        }
+    }
+    controller, child_ids = derive_top_up_seven_branch_run_ids(
+        parent_controller_run_id=parent,
+        epoch_ordinal=1,
+        branch_evidence_sha256_by_key={"acea": "d" * 64},
+    )
+    stale = dict(preflight)
+    stale["request_template_sha256"] = "0" * 64
+    with pytest.raises(ValueError, match="passed submission preflight"):
+        build_top_up_seven_branch_schedule(
+            request_template=template,
+            submission_preflight=stale,
+            design_contract=contract,
+            target_manifest=manifest,
+            target_manifest_sha256=manifest_sha,
+            parent_controller_run_id=parent,
+            controller_run_id=controller,
+            epoch_ordinal=1,
+            branch_evidence=evidence,
+            child_run_ids_by_key=child_ids,
+        )

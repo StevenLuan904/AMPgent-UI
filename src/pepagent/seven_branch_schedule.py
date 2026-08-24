@@ -19,6 +19,39 @@ from pepagent.seven_branch_design import (
 )
 
 SEVEN_BRANCH_ID_NAMESPACE = UUID("11897b4e-2a41-44dd-b741-a978e77d48ed")
+_RUNTIME_IDENTITY_FIELDS = {
+    "run_id",
+    "controller_run_id",
+    "execution_contract",
+    "exploration_round",
+    "seven_branch_round",
+    "submission_preflight",
+    "multitarget_plan_template",
+    "structure_runtime_by_target_key",
+    "boltz_seeds",
+}
+
+
+def _validate_schedule_preflight(
+    *,
+    request_template: dict[str, Any],
+    submission_preflight: dict[str, Any],
+    design_contract: SevenBranchDesignContract,
+) -> None:
+    if set(request_template) & _RUNTIME_IDENTITY_FIELDS:
+        raise ValueError("seven-branch request template contains a run-time identity")
+    if (
+        submission_preflight.get("schema_version")
+        != "ampgent.seven-branch-submission-preflight.1"
+        or submission_preflight.get("status") != "ready_to_submit_unique_run"
+        or submission_preflight.get("execution_authorized") is not True
+        or submission_preflight.get("failed_gates") != []
+        or submission_preflight.get("request_template_sha256")
+        != sha256_json(request_template)
+        or submission_preflight.get("design_contract_sha256")
+        != design_contract.sha256()
+    ):
+        raise ValueError("seven-branch schedule requires a passed submission preflight")
 
 
 def derive_initial_seven_branch_run_ids(
@@ -47,31 +80,11 @@ def build_initial_seven_branch_schedule(
 ) -> SevenBranchDesignSchedule:
     """Freeze the initial seven child runs before any Temporal history exists."""
 
-    forbidden = {
-        "run_id",
-        "controller_run_id",
-        "execution_contract",
-        "exploration_round",
-        "seven_branch_round",
-        "submission_preflight",
-        "multitarget_plan_template",
-        "structure_runtime_by_target_key",
-        "boltz_seeds",
-    }
-    if set(request_template) & forbidden:
-        raise ValueError("seven-branch request template contains a run-time identity")
-    if (
-        submission_preflight.get("schema_version")
-        != "ampgent.seven-branch-submission-preflight.1"
-        or submission_preflight.get("status") != "ready_to_submit_unique_run"
-        or submission_preflight.get("execution_authorized") is not True
-        or submission_preflight.get("failed_gates") != []
-        or submission_preflight.get("request_template_sha256")
-        != sha256_json(request_template)
-        or submission_preflight.get("design_contract_sha256")
-        != design_contract.sha256()
-    ):
-        raise ValueError("seven-branch schedule requires a passed submission preflight")
+    _validate_schedule_preflight(
+        request_template=request_template,
+        submission_preflight=submission_preflight,
+        design_contract=design_contract,
+    )
     if target_manifest_sha256 != design_contract.target_manifest_sha256:
         raise ValueError("target manifest file identity differs from design contract")
     if len(child_run_ids) != 7 or len(set(child_run_ids)) != 7:
@@ -169,6 +182,11 @@ def build_top_up_seven_branch_schedule(
 ) -> SevenBranchTopUpSchedule:
     """Freeze one successor epoch from durable cumulative branch observations."""
 
+    _validate_schedule_preflight(
+        request_template=request_template,
+        submission_preflight=submission_preflight,
+        design_contract=design_contract,
+    )
     if target_manifest_sha256 != design_contract.target_manifest_sha256:
         raise ValueError("target manifest file identity differs from design contract")
     if set(branch_evidence) != set(child_run_ids_by_key):
