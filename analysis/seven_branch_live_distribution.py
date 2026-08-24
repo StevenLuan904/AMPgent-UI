@@ -416,6 +416,38 @@ async def build_report(controller_run_id: uuid.UUID) -> dict[str, Any]:
                     "cohort_yield": selected_n / len(source_ids) if source_ids else None,
                 }
             )
+    pooled_generator_efficiency: list[dict[str, Any]] = []
+    qualified_by_generator: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(
+        list
+    )
+    for item in generator_cohort_yields:
+        if item["cohort"] == "qualified":
+            qualified_by_generator[(item["tool_name"], item["tool_version"])].append(
+                item
+            )
+    for (tool_name, tool_version), items in sorted(qualified_by_generator.items()):
+        raw_n = sum(int(item["raw_occurrence_n"]) for item in items)
+        valid_n = sum(int(item["generator_candidate_n"]) for item in items)
+        qualified_n = sum(int(item["cohort_candidate_n"]) for item in items)
+        pooled_generator_efficiency.append(
+            {
+                "tool_name": tool_name,
+                "tool_version": tool_version,
+                "completed_branch_n": len(items),
+                "raw_occurrence_n": raw_n,
+                "valid_candidate_n": valid_n,
+                "qualified_candidate_n": qualified_n,
+                "valid_candidate_per_raw_occurrence": (
+                    valid_n / raw_n if raw_n else None
+                ),
+                "qualified_candidate_per_raw_occurrence": (
+                    qualified_n / raw_n if raw_n else None
+                ),
+                "expected_qualified_per_1000_raw": (
+                    1000.0 * qualified_n / raw_n if raw_n else None
+                ),
+            }
+        )
     return {
         "schema_version": "ampgent.seven-branch-live-score-distribution.1",
         "generated_at": datetime.now(UTC).isoformat(),
@@ -476,6 +508,7 @@ async def build_report(controller_run_id: uuid.UUID) -> dict[str, Any]:
         ],
         "generation_arm_overlaps": [dict(item) for item in generation_arm_overlaps],
         "generator_cohort_yields": generator_cohort_yields,
+        "pooled_generator_efficiency": pooled_generator_efficiency,
         "empty_downstream_cohorts": ["structure_pool", "final_portfolio"],
         "summaries": summaries,
     }
