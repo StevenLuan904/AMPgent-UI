@@ -26,7 +26,9 @@ def summarize_top_up_receipts(
         item["cumulative"]["top_up_plan"]["action"] == "freeze_successor_round"
         for item in completed
     )
-    if failed:
+    if failed and not completed:
+        status = "all_branches_failed_successor_required"
+    elif failed:
         status = "partial_success_successor_required"
     elif successor_required:
         status = "successor_top_up_required"
@@ -222,6 +224,8 @@ class SevenBranchPeptideTopUpWorkflow:
                 _successor_required,
                 result_status,
             ) = summarize_top_up_receipts(receipts)
+            if failed_receipts and not completed_receipts:
+                raise RuntimeError("all seven-branch top-up child workflows failed")
             result = {
                 "schema_version": "ampgent.seven-branch-top-up-result.2",
                 "status": result_status,

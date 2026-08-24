@@ -64,6 +64,19 @@ def _advance_past_excluded_attempt(
     )
 
 
+def _excluded_controller_is_recoverable(
+    *, controller_status: str, child_statuses: list[str]
+) -> bool:
+    if controller_status in {"failed", "cancelled"}:
+        return True
+    # Compatibility for the short-lived result.2 controller bug that marked
+    # an all-failed epoch succeeded.  Such a controller contributed no
+    # cumulative selection and is safe to exclude without reusing its output.
+    return bool(child_statuses) and controller_status == "succeeded" and all(
+        status in {"failed", "cancelled"} for status in child_statuses
+    )
+
+
 async def _initial_branch_snapshot(
     *, child: ExperimentRun, contract: SevenBranchDesignContract
 ) -> dict[str, Any]:
@@ -200,10 +213,8 @@ async def build_top_up_branch_evidence(
             excluded_controller = await session.get(
                 ExperimentRun, excluded_attempt_controller_run_id
             )
-            if (
-                excluded_controller is None
-                or excluded_controller.status not in {"failed", "cancelled"}
-                or excluded_controller.parent_run_id != controller_run_id
+            if excluded_controller is None or (
+                excluded_controller.parent_run_id != controller_run_id
             ):
                 raise ValueError(
                     "excluded top-up attempt must be a terminal child of the evidence controller"
@@ -215,9 +226,19 @@ async def build_top_up_branch_evidence(
                     )
                 )
             )
-            for child in excluded_children:
-                if child.spec_json.get("run_kind") != "seven_branch_design_round":
-                    continue
+            design_children = [
+                item
+                for item in excluded_children
+                if item.spec_json.get("run_kind") == "seven_branch_design_round"
+            ]
+            if not _excluded_controller_is_recoverable(
+                controller_status=excluded_controller.status,
+                child_statuses=[item.status for item in design_children],
+            ):
+                raise ValueError(
+                    "excluded top-up attempt must be terminal or an all-failed legacy controller"
+                )
+            for child in design_children:
                 branch_key = str(child.spec_json["branch_key"])
                 round_ordinal = int(child.spec_json["round_ordinal"])
                 previous = excluded_round_by_branch.get(branch_key)
