@@ -382,9 +382,16 @@ async def build_report(controller_run_id: uuid.UUID) -> dict[str, Any]:
         source_groups[
             (item["branch_key"], item["tool_name"], item["tool_version"])
         ].append(item["candidate_id"])
+    raw_by_source = {
+        (item["branch_key"], item["tool_name"], item["tool_version"]): int(
+            item["raw_occurrence_count"]
+        )
+        for item in generation_arms
+    }
     generator_cohort_yields: list[dict[str, Any]] = []
     for (branch, tool_name, tool_version), candidate_ids in sorted(source_groups.items()):
         source_ids = set(candidate_ids)
+        raw_occurrence_n = raw_by_source[(branch, tool_name, tool_version)]
         for cohort in ("all", "mature_core", "selected_exploration", "qualified"):
             if cohort != "all" and cohort not in cohort_ids[branch]:
                 continue
@@ -395,8 +402,17 @@ async def build_report(controller_run_id: uuid.UUID) -> dict[str, Any]:
                     "tool_name": tool_name,
                     "tool_version": tool_version,
                     "cohort": cohort,
+                    "raw_occurrence_n": raw_occurrence_n,
                     "generator_candidate_n": len(source_ids),
                     "cohort_candidate_n": selected_n,
+                    "valid_candidate_per_raw_occurrence": (
+                        len(source_ids) / raw_occurrence_n
+                        if raw_occurrence_n
+                        else None
+                    ),
+                    "cohort_candidate_per_raw_occurrence": (
+                        selected_n / raw_occurrence_n if raw_occurrence_n else None
+                    ),
                     "cohort_yield": selected_n / len(source_ids) if source_ids else None,
                 }
             )
