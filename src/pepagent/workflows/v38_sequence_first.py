@@ -614,7 +614,7 @@ class V38SequenceFirstAgentWorkflow:
             else:
                 final_portfolio = None
                 status = "sequence_evidence_concluded_without_structure"
-            return {
+            result = {
                 "schema_version": "v38.sequence-first-prefix-result.1",
                 "status": status,
                 "raw_occurrence_count": generation["score_all_cohort"][
@@ -635,6 +635,23 @@ class V38SequenceFirstAgentWorkflow:
                 "formal_structure_workflow_complete": final_portfolio is not None,
                 "structure_deferred_to_exploration_parent": defer_structure,
             }
+            await workflow.execute_activity(
+                "mark_run_succeeded",
+                {
+                    "run_id": run_id,
+                    "result_status": status,
+                    "durable_counts": {
+                        "raw_occurrence_count": result["raw_occurrence_count"],
+                        "candidate_count": result["candidate_count"],
+                        "evaluation_count": result["evaluation_count"],
+                        "structure_evidence_count": result["structure_evidence_count"],
+                    },
+                },
+                task_queue=control_queue,
+                start_to_close_timeout=timedelta(minutes=2),
+                retry_policy=retry,
+            )
+            return result
         except asyncio.CancelledError:
             await asyncio.shield(
                 workflow.execute_activity(

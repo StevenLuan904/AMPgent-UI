@@ -394,3 +394,12 @@ def test_v39_outer_workflow_closes_controller_when_child_fails() -> None:
     assert '"mark_run_failed"' in source
     assert '"run_id": str(schedule.controller_run_id)' in source
     assert "child failed" in source
+
+
+def test_v39_outer_workflow_closes_controller_after_durable_result() -> None:
+    source = (
+        REPO_ROOT / "src" / "pepagent" / "workflows" / "v39_sequence_space.py"
+    ).read_text(encoding="utf-8")
+    assert '"mark_run_succeeded"' in source
+    assert '"structure_evidence_count": structure_evidence_count' in source
+    assert "return result" in source

@@ -181,12 +181,21 @@ def test_v38_control_worker_registers_sequence_workflow_and_admission_activities
         "plan_v38_multitarget_structure",
         "persist_v38_final_portfolio_replay",
         "persist_v39_cross_round_admission",
+        "mark_run_succeeded",
     } <= registered
 
 
 def test_v38_workflow_failure_closure_supplies_error_type() -> None:
     source = inspect.getsource(V38SequenceFirstAgentWorkflow.run)
     assert '"error_type": type(exc).__name__' in source
+
+
+def test_v38_workflow_closes_run_after_durable_result() -> None:
+    source = inspect.getsource(V38SequenceFirstAgentWorkflow.run)
+    success = source.index('"mark_run_succeeded"')
+    result_return = source.index("return result")
+    assert success < result_return
+    assert '"structure_evidence_count": result["structure_evidence_count"]' in source
 
 
 def test_v38_structure_execution_is_stage_pipelined_without_batch_barrier() -> None:

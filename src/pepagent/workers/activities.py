@@ -303,6 +303,37 @@ async def mark_run_failed(request: dict[str, Any]) -> None:
         )
 
 
+@activity.defn(name="mark_run_succeeded")
+async def mark_run_succeeded(request: dict[str, Any]) -> None:
+    """Close a run only after its workflow has produced its durable result."""
+
+    run_id = uuid.UUID(request["run_id"])
+    async with SessionFactory() as session, session.begin():
+        run = await session.scalar(
+            select(ExperimentRun).where(ExperimentRun.id == run_id).with_for_update()
+        )
+        if run is None:
+            raise KeyError(f"run not found: {run_id}")
+        if run.status == RunStatus.SUCCEEDED:
+            return
+        if run.status in {RunStatus.FAILED, RunStatus.CANCELLED}:
+            raise ValueError(
+                f"cannot mark terminal run {run_id} succeeded from {run.status}"
+            )
+        run.status = RunStatus.SUCCEEDED
+        run.finished_at = datetime.now(UTC)
+        await ExperimentRepository(session).append_event(
+            "run",
+            run_id,
+            "run.succeeded",
+            "temporal",
+            {
+                "result_status": str(request["result_status"]),
+                "durable_counts": dict(request.get("durable_counts") or {}),
+            },
+        )
+
+
 @activity.defn(name="mark_run_cancelled")
 async def mark_run_cancelled(request: dict[str, Any]) -> None:
     """Reconcile a Temporal cancellation into durable run and candidate state."""

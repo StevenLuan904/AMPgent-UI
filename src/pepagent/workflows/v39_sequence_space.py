@@ -276,7 +276,7 @@ class V39SequenceSpaceExplorationWorkflow:
             )
             if not final_portfolio["replay_verified"]:
                 raise ValueError("v39 final portfolio replay was not verified")
-        return {
+        result = {
             "schema_version": "ampgent.sequence-space-exploration-result.1",
             "status": (
                 "multitarget_final_portfolio_replay_complete"
@@ -293,3 +293,19 @@ class V39SequenceSpaceExplorationWorkflow:
             "final_portfolio": final_portfolio,
             "formal_structure_workflow_complete": final_portfolio is not None,
         }
+        await workflow.execute_activity(
+            "mark_run_succeeded",
+            {
+                "run_id": str(schedule.controller_run_id),
+                "result_status": result["status"],
+                "durable_counts": {
+                    "round_count": len(round_receipts),
+                    "structure_task_count": structure_task_count,
+                    "structure_evidence_count": structure_evidence_count,
+                },
+            },
+            task_queue=str(final_request["task_queues"]["workflow_and_control"]),
+            start_to_close_timeout=timedelta(minutes=2),
+            retry_policy=retry,
+        )
+        return result

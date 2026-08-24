@@ -8,7 +8,7 @@ from temporalio.client import Client
 from temporalio.worker import Worker
 
 from pepagent.settings import get_settings
-from pepagent.workers.activities import mark_run_failed, mark_run_started
+from pepagent.workers.activities import mark_run_failed, mark_run_started, mark_run_succeeded
 from pepagent.workers.v37_activities import (
     evaluate_v38_sequence_metric,
     generate_v38_sequence_cell,
@@ -40,6 +40,7 @@ V38_ROLE_CONFIG = {
         [
             mark_run_started,
             mark_run_failed,
+            mark_run_succeeded,
             plan_v38_multitarget_structure,
             evaluate_v38_sequence_admission,
             persist_v38_external_activity_lifecycle,
