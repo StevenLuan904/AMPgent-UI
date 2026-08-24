@@ -2627,8 +2627,9 @@ MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot
   `6b8acdfe6ac200911c8117a0c13d9d5cabddbac0b2e1c3ec4b68737d2026d2fd`。这些smoke候选只证明运行边界，
   不计入1900条交付；下一动作是把该manifest和model witness接入七分支controller。
 - 七分支可执行合同已物化为 `config/workflows/ampgent_seven_branch_design_v1.json`，contract SHA-256为
-  `e1c51c7080d2edc62eeeb83dbf1dbe71fd36f5e8b4b35f29bea2f63cc07d521a`。六个靶点分支各以450 raw
-  作为首批预算、通用AMP以3000 raw作为首批预算，共5700 raw；这是起始批而非上限，controller按每个
+  `dbff50d0955a6218e0378775891ff636df45ff4ea12be86e5709dd078ce2c08f`。六个靶点分支各以600 raw
+  作为首批预算、通用AMP以3000 raw作为首批预算，共6600 raw；靶点分支可直接映射为6个100条cell并
+  均衡覆盖三个生成器。这是起始批而非上限，controller按每个
   分支的有效唯一、12指标完成、target-sequence评分、合格、家族和交付计数动态补量，直到7个配额分别闭合。
 - 历史6182条只通过winner-stability/family摘要哈希影响seed、新颖性和策略，不复制旧Candidate/Evaluation；
   controller优先推进相对交付缺口最大的分支，并按`生成→12指标score-all→靶序列评分→质量/家族→交付`

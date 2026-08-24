@@ -24,7 +24,7 @@ def _contract() -> SevenBranchDesignContract:
             target_key=target_key,
             target_sequence_sha256=(f"{index + 1:x}" * 64)[:64],
             requested_delivery_count=150,
-            initial_raw_budget=450,
+            initial_raw_budget=600,
             target_sequence_interaction_required=True,
             structure_scoring="optional",
         )
@@ -83,7 +83,7 @@ def test_frozen_json_materializes_the_executable_contract() -> None:
     )
     contract = SevenBranchDesignContract.model_validate(payload)
     assert contract.sha256()
-    assert sum(branch.initial_raw_budget for branch in contract.branches) == 5700
+    assert sum(branch.initial_raw_budget for branch in contract.branches) == 6600
 
 
 def test_target_branch_requires_pair_scoring_but_not_structure() -> None:
