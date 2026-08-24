@@ -309,14 +309,23 @@ async def build_report(controller_run_id: uuid.UUID) -> dict[str, Any]:
     for row in decisions:
         payload = json.loads(row["response_text"])["admission"]
         branch = next(item["branch_key"] for item in runs if item["id"] == row["run_id"])
+        typed_decisions = payload["decisions"]
         cohort_ids[branch]["mature_core"] = {
-            str(item) for item in payload["mature_core_candidate_ids"]
+            str(item["candidate_id"])
+            for item in typed_decisions
+            if item["status"] == "mature_core"
+        }
+        cohort_ids[branch]["promising_uncertain"] = {
+            str(item["candidate_id"])
+            for item in typed_decisions
+            if item["status"] == "promising_uncertain"
         }
         cohort_ids[branch]["selected_exploration"] = {
             str(item) for item in payload["exploration_candidate_ids"]
         }
         cohort_ids[branch]["qualified"] = (
-            cohort_ids[branch]["mature_core"] | cohort_ids[branch]["selected_exploration"]
+            cohort_ids[branch]["mature_core"]
+            | cohort_ids[branch]["promising_uncertain"]
         )
 
     by_branch_metric: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
@@ -326,7 +335,13 @@ async def build_report(controller_run_id: uuid.UUID) -> dict[str, Any]:
     summaries: list[dict[str, Any]] = []
     for run in runs:
         branch = run["branch_key"]
-        for cohort in ("all", "mature_core", "selected_exploration", "qualified"):
+        for cohort in (
+            "all",
+            "mature_core",
+            "promising_uncertain",
+            "selected_exploration",
+            "qualified",
+        ):
             ids = cohort_ids[branch].get(cohort, set())
             for metric, contract in METRICS.items():
                 metric_rows = [
@@ -354,7 +369,13 @@ async def build_report(controller_run_id: uuid.UUID) -> dict[str, Any]:
         for run in runs
         if run["branch_key"] != "target_agnostic_amp"
     }
-    for cohort in ("all", "mature_core", "selected_exploration", "qualified"):
+    for cohort in (
+        "all",
+        "mature_core",
+        "promising_uncertain",
+        "selected_exploration",
+        "qualified",
+    ):
         aggregate_ids = set().union(
             *(cohort_ids[branch].get(cohort, set()) for branch in target_branches)
         )
@@ -392,7 +413,13 @@ async def build_report(controller_run_id: uuid.UUID) -> dict[str, Any]:
     for (branch, tool_name, tool_version), candidate_ids in sorted(source_groups.items()):
         source_ids = set(candidate_ids)
         raw_occurrence_n = raw_by_source[(branch, tool_name, tool_version)]
-        for cohort in ("all", "mature_core", "selected_exploration", "qualified"):
+        for cohort in (
+            "all",
+            "mature_core",
+            "promising_uncertain",
+            "selected_exploration",
+            "qualified",
+        ):
             if cohort != "all" and cohort not in cohort_ids[branch]:
                 continue
             selected_n = len(source_ids & cohort_ids[branch].get(cohort, set()))
@@ -456,10 +483,14 @@ async def build_report(controller_run_id: uuid.UUID) -> dict[str, Any]:
         "cohort_definitions": {
             "all": "all candidates persisted in the branch child run",
             "mature_core": "candidates selected as mature_core by the frozen admission policy",
-            "selected_exploration": (
-                "promising candidates selected within the frozen exploration budget"
+            "promising_uncertain": (
+                "all validity/safety-passing promising candidates before optional "
+                "downstream sampling"
             ),
-            "qualified": "union of mature_core and selected_exploration",
+            "selected_exploration": (
+                "legacy bounded subset selected for optional downstream expensive work"
+            ),
+            "qualified": "all mature_core plus all promising_uncertain delivery candidates",
         },
         "runs": [dict(item) for item in runs],
         "generation_cells": [
