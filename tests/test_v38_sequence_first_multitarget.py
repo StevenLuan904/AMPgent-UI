@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from random import Random
 from uuid import UUID, uuid4
 
 import pytest
@@ -26,6 +27,7 @@ from pepagent.v38_sequence_first_multitarget import (
     SequenceMaturityPolicy,
     TargetBranchSpec,
     TargetQualificationWitness,
+    _nondominated_candidate_ids,
     admit_sequence_cohort,
     assess_sequence_maturity,
     build_default_v38_maturity_policy,
@@ -217,6 +219,32 @@ def test_rank_stability_rejects_duplicate_candidate_identity() -> None:
         compute_leave_one_objective_out_rank_stability(
             (candidate, candidate), _policy()
         )
+
+
+def test_vectorized_nondominated_set_matches_pairwise_definition() -> None:
+    random = Random(20260825)
+    values = {
+        uuid4(): tuple(random.uniform(-2.0, 3.0) for _ in range(5))
+        for _ in range(257)
+    }
+    expected = {
+        candidate_id
+        for candidate_id, candidate_values in values.items()
+        if not any(
+            other_id != candidate_id
+            and all(
+                left <= right
+                for left, right in zip(other_values, candidate_values, strict=True)
+            )
+            and any(
+                left < right
+                for left, right in zip(other_values, candidate_values, strict=True)
+            )
+            for other_id, other_values in values.items()
+        )
+    }
+
+    assert _nondominated_candidate_ids(values, block_size=31) == expected
 
 
 def test_explicit_non_gating_ood_metric_does_not_reject_candidate() -> None:

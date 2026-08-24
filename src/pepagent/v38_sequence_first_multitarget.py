@@ -6,6 +6,7 @@ from math import floor
 from typing import Literal
 from uuid import UUID
 
+import numpy as np
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -583,6 +584,33 @@ def _dominates(left: tuple[float, ...], right: tuple[float, ...]) -> bool:
     )
 
 
+def _nondominated_candidate_ids(
+    values_by_id: dict[UUID, tuple[float, ...]],
+    *,
+    block_size: int = 256,
+) -> set[UUID]:
+    """Return the exact non-dominated set with bounded vectorized working memory."""
+
+    if not values_by_id:
+        return set()
+    candidate_ids = sorted(values_by_id)
+    values = np.asarray([values_by_id[item] for item in candidate_ids], dtype=float)
+    if values.ndim != 2 or values.shape[1] == 0:
+        raise ValueError("Pareto objective matrix must be non-empty")
+    dominated = np.zeros(len(candidate_ids), dtype=bool)
+    for start in range(0, len(candidate_ids), block_size):
+        stop = min(start + block_size, len(candidate_ids))
+        right = values[start:stop]
+        weakly_better = np.all(values[:, None, :] <= right[None, :, :], axis=2)
+        strictly_better = np.any(values[:, None, :] < right[None, :, :], axis=2)
+        dominated[start:stop] = np.any(weakly_better & strictly_better, axis=0)
+    return {
+        candidate_id
+        for candidate_id, is_dominated in zip(candidate_ids, dominated, strict=True)
+        if not bool(is_dominated)
+    }
+
+
 def _pareto_fronts(
     candidates: tuple[SequenceCandidateEvidence, ...],
     policy: SequenceMaturityPolicy,
@@ -591,14 +619,7 @@ def _pareto_fronts(
     fronts: dict[UUID, int] = {}
     front_number = 1
     while remaining:
-        current = sorted(
-            candidate_id
-            for candidate_id, values in remaining.items()
-            if not any(
-                other_id != candidate_id and _dominates(other_values, values)
-                for other_id, other_values in remaining.items()
-            )
-        )
+        current = sorted(_nondominated_candidate_ids(remaining))
         if not current:
             raise ValueError("unable to construct deterministic Pareto fronts")
         for candidate_id in current:
@@ -634,12 +655,9 @@ def compute_leave_one_objective_out_rank_stability(
             candidate_id: tuple(values[index] for index in axes)
             for candidate_id, values in objective_values.items()
         }
-        for candidate_id, values in projected.items():
-            dominated = any(
-                other_id != candidate_id and _dominates(other_values, values)
-                for other_id, other_values in projected.items()
-            )
-            if not dominated:
+        nondominated = _nondominated_candidate_ids(projected)
+        for candidate_id in projected:
+            if candidate_id in nondominated:
                 front_counts[candidate_id] += 1
     return {
         candidate_id: count / len(projections)
