@@ -1000,3 +1000,16 @@ raw序列，仅6个额外occurrence来自完全相同序列。当前6182条Candi
 
 可复算输出为 `reports/v39_run_analysis_5557e950_20260824/winner_stability.csv` 和
 `winner_stability_summary.json`；实现位于 `src/pepagent/winner_stability.py`，固定seed并有单元测试。
+
+## 2026-08-24 六目标序列输入冻结与模型落地增量
+
+六个独立分支的机器输入已冻结在
+`config/targets/ampgent_six_target_sequence_manifest_20260824.json`。AceA采用E. coli K-12 canonical
+`NP_418439.1`；GyrA和partial PBP2a沿用权威蛋白accession；VEGFA、FGF2、ANGPT1严格从权威文档指定的
+mouse mRNA版本解析其CDS蛋白，保留mRNA→protein映射与序列SHA。这样新一轮target-conditioned生成和
+评分可以证明模型收到的是哪一个物种、哪一个转录本和哪一串氨基酸。
+
+当前模型策略从论文名次转为可执行证据：PepInter仍是公开基准首选候选，但代码/权重尚未在论文页公开；
+PepMLM已有固定权重、MIT许可和本项目adapter，先承担可运行的target-conditioned生成/条件似然主线；
+CAMP作为独立复核候选，但需处理旧依赖和GyrA超过其默认800 aa输入上限的问题。正在使用获准的
+`.19 GPU2` 对六种实际靶长逐个做同adapter smoke，成功后即冻结模型witness并进入七分支controller。

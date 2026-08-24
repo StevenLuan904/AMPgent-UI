@@ -434,3 +434,9 @@ unchanged, but future planning and completion claims follow this target-by-targe
 - Report target-by-target yield toward 150, target-agnostic yield toward 1,000, family coverage, every
   applicable sequence-score distribution, target-sequence interaction scores, missing evidence, and
   the next generation/refinement action. Structure counts are supporting evidence, not the headline.
+- The frozen six-target amino-acid input is
+  `config/targets/ampgent_six_target_sequence_manifest_20260824.json`. Validate it with
+  `pepagent.target_sequence_manifest` before target-conditioned inference. The manifest resolves the
+  three authority mRNAs to their exact CDS protein products and supplements AceA with canonical
+  `NP_418439.1`; never substitute a different species, transcript, isoform, or full-length PBP2a for
+  the authority-selected partial record without a newly versioned user-approved manifest.

@@ -2607,3 +2607,17 @@ MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot
   配置和可复算证据。湿实验、CRO、donor、血清/蛋白酶实验和采购活动仅在用户以后明确提出时另立任务。
 - 后续汇报以七个配额的实际进展为主，结构证据为辅；每次明确最好的、最差的、平均数和分布，并说明
   下一轮是扩大哪个目标的序列空间、修复哪个评分缺口或提高哪个分支的优质产出率。
+
+### 六目标氨基酸输入冻结 checkpoint（2026-08-24）
+
+- 已冻结 `config/targets/ampgent_six_target_sequence_manifest_20260824.json`，schema 为
+  `ampgent.target_sequence_manifest.v1`。AceA=`NP_418439.1`（434 aa）、GyrA=`NP_416734.1`
+  （875 aa）、PBP2a=`WP_308061015.1`（633 aa，authority明确为partial）；VEGFA、FGF2、ANGPT1分别
+  从权威mRNA `NM_001025250.3`、`NM_008006.2`、`NM_001286062.1` 的GenBank CDS解析为
+  `NP_001020421.2`（392 aa）、`NP_032032.1`（154 aa）、`NP_001272991.1`（497 aa）。
+- 每条记录保存物种、源accession、蛋白accession、源类型、NCBI URI、解析方式、完整氨基酸序列、长度、
+  partial标记和sequence SHA-256；validator检查六个唯一target key、蛋白accession、canonical amino acid、
+  长度、哈希、每分支150及总配额900。相关manifest/winner/family回归共8项通过。
+- 公开模型可执行性判断：PepInter论文基准优先，但当前公开论文页未给出可运行代码/权重，先保持
+  challenger；PepMLM固定MIT权重与现有adapter可直接接收target+peptide，进入六目标真实GPU smoke；
+  CAMP保留独立复核候选，但其旧特征链和默认800 aa蛋白长度需先解决GyrA 875 aa适配，不能静默截断。
