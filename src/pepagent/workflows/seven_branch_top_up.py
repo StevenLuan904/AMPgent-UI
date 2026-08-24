@@ -131,7 +131,11 @@ class SevenBranchPeptideTopUpWorkflow:
                             ),
                             "candidate_count": int(child_result["candidate_count"]),
                             "evaluation_count": int(child_result["evaluation_count"])
-                            + progress.target_sequence_scored_count * 2,
+                            + (
+                                int(target_score_receipt["scored_candidate_count"]) * 2
+                                if target_score_receipt is not None
+                                else 0
+                            ),
                         },
                     },
                     task_queue=child_control_queue,
