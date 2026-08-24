@@ -460,3 +460,14 @@ unchanged, but future planning and completion claims follow this target-by-targe
   raw, unique, fully scored, target-scored, qualified, delivered and sequence-family counts in a
   controller checkpoint. Child and controller identities are UUID5-derived from a passed preflight
   key before Temporal starts; workflow replay never allocates replacement identities.
+- A completed initial epoch is not a stopping condition. `SevenBranchPeptideTopUpWorkflow` consumes
+  immutable prior child-run evidence, deduplicates exact sequences across rounds, reapplies the same
+  admission policy, ranks target branches with their own frozen target-sequence NLL/PPL, selects one
+  candidate per sequence family before filling repeated families, and persists the selected IDs.
+  It sizes the next round from observed qualified yield with a 50% duplicate/variance reserve,
+  rounded to balanced 300-occurrence blocks across the three generators. A zero-yield branch repeats
+  or expands its initial breadth; it never silently lowers qualification criteria.
+- Every top-up epoch must have a new controller, new child run IDs, a content-addressed prior-evidence
+  snapshot, a frozen schedule, and an exact-once Temporal submission. Identical evidence must derive
+  the same UUID5 identities and SHA, never a replacement run. Continue successor epochs until all six
+  150 quotas and the 1,000 target-agnostic quota are independently complete.

@@ -1042,3 +1042,15 @@ score-all和admission/refinement实现，不执行旧双靶点结构阶段。
 当前仍需完成两段闭环：第一，冻结新release并用相同executable/guarded launcher对新target scorer做真实
 GPU smoke和全量preflight；第二，实现初始epoch后的跨run去重、稳定排名、150/1000交付选择及确定性top-up
 successor epoch。达到1900条前，controller完成一次初始epoch不等于长期goal完成。
+
+## 2026-08-24 七分支补量与交付选择实现增量
+
+初始epoch之后的持续探索已实现为独立successor epoch：每个未满额分支从数据库冻结prior-evidence
+snapshot，按跨round完整序列去重后的真实合格产率估算新raw预算；预算含50%重复/波动余量并按300条
+三生成器均衡块取整。每个successor都有新的controller与child身份、完整lineage和exact-once提交语义，
+相同输入重复执行只能恢复同一身份。
+
+交付选择不使用跨靶点共享排名。六个目标分别使用自己的目标序列NLL/PPL，结合原有12项score-all准入、
+序列Pareto层和seqfam80家族覆盖形成branch-local清单；通用AMP分支不要求目标序列分数。AceA首轮真实
+证据为600 raw、515 unique、48条准入且48个家族，当前仅完成48/150，下一轮冻结预算为2100 raw。
+其余分支继续执行；只有六个150与一个1000都产生可复算候选ID、完整分数和CSV/JSON时，长期goal才完成。

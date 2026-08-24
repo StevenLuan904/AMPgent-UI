@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from uuid import UUID
 
 import pytest
 
@@ -10,10 +11,13 @@ from pepagent.seven_branch_design import SevenBranchDesignContract
 from pepagent.seven_branch_reservation_cli import (
     _target_metadata,
     build_seven_branch_reservation_specs,
+    build_seven_branch_top_up_reservation_specs,
 )
 from pepagent.seven_branch_schedule import (
     build_initial_seven_branch_schedule,
+    build_top_up_seven_branch_schedule,
     derive_initial_seven_branch_run_ids,
+    derive_top_up_seven_branch_run_ids,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -149,3 +153,68 @@ def test_initial_schedule_rejects_template_or_manifest_drift() -> None:
             controller_run_id=controller,
             child_run_ids=children,
         )
+
+
+def test_top_up_schedule_derives_new_ids_and_empirical_budget() -> None:
+    contract, manifest, manifest_sha = _inputs()
+    template = _template()
+    preflight = _preflight(template, contract)
+    parent = UUID(int=700)
+    evidence = {
+        "acea": {
+            "source_run_ids": [str(UUID(int=701))],
+            "progress": {
+                "branch_key": "acea",
+                "raw_count": 600,
+                "valid_unique_count": 515,
+                "fully_scored_count": 515,
+                "target_sequence_scored_count": 515,
+                "qualified_count": 48,
+                "delivered_count": 48,
+                "family_count": 48,
+            },
+            "next_round_ordinal": 1,
+            "snapshot_sha256": "e" * 64,
+        }
+    }
+    controller, child_ids = derive_top_up_seven_branch_run_ids(
+        parent_controller_run_id=parent,
+        epoch_ordinal=1,
+        branch_evidence_sha256_by_key={"acea": "e" * 64},
+    )
+    schedule = build_top_up_seven_branch_schedule(
+        request_template=template,
+        submission_preflight=preflight,
+        design_contract=contract,
+        target_manifest=manifest,
+        target_manifest_sha256=manifest_sha,
+        parent_controller_run_id=parent,
+        controller_run_id=controller,
+        epoch_ordinal=1,
+        branch_evidence=evidence,
+        child_run_ids_by_key=child_ids,
+    )
+    assert len(schedule.branches) == 1
+    assert schedule.branches[0].top_up_plan.recommended_raw_budget == 2100
+    assert (
+        schedule.branches[0].frozen_round.request["execution_contract"][
+            "expected_raw_occurrences"
+        ]
+        == 2100
+    )
+    repeated = derive_top_up_seven_branch_run_ids(
+        parent_controller_run_id=parent,
+        epoch_ordinal=1,
+        branch_evidence_sha256_by_key={"acea": "e" * 64},
+    )
+    assert repeated == (controller, child_ids)
+    controller_spec, child_specs = build_seven_branch_top_up_reservation_specs(
+        schedule
+    )
+    assert controller_spec["run_kind"] == (
+        "seven_branch_peptide_design_top_up_control"
+    )
+    assert controller_spec["parent_controller_run_id"] == str(parent)
+    assert len(child_specs) == 1
+    assert child_specs[0]["expected_raw_occurrences"] == 2100
+    assert child_specs[0]["prior_source_run_ids"] == [str(UUID(int=701))]

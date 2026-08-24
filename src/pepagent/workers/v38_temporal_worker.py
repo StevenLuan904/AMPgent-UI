@@ -23,6 +23,7 @@ from pepagent.workers.v37_activities import (
 from pepagent.workers.v38_activities import (
     evaluate_v38_sequence_admission,
     load_seven_branch_target_score_cohort,
+    persist_seven_branch_cumulative_selection,
     persist_seven_branch_round_progress,
     persist_v38_external_activity_lifecycle,
     persist_v38_final_portfolio_replay,
@@ -41,6 +42,7 @@ from pepagent.workers.v38_activities import (
 )
 from pepagent.workers.v38_observer_interceptor import V38WorkflowObserverInterceptor
 from pepagent.workflows.seven_branch_design import SevenBranchPeptideDesignWorkflow
+from pepagent.workflows.seven_branch_top_up import SevenBranchPeptideTopUpWorkflow
 from pepagent.workflows.v38_sequence_first import V38SequenceFirstAgentWorkflow
 from pepagent.workflows.v39_sequence_space import V39SequenceSpaceExplorationWorkflow
 
@@ -67,12 +69,14 @@ V38_ROLE_CONFIG = {
             persist_v39_cross_round_admission,
             persist_seven_branch_target_sequence,
             load_seven_branch_target_score_cohort,
+            persist_seven_branch_cumulative_selection,
             persist_seven_branch_round_progress,
         ],
         [
             V38SequenceFirstAgentWorkflow,
             V39SequenceSpaceExplorationWorkflow,
             SevenBranchPeptideDesignWorkflow,
+            SevenBranchPeptideTopUpWorkflow,
         ],
     ),
     "v38-generator": (

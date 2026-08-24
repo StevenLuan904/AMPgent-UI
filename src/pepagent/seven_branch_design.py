@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from typing import Any, Literal
 from uuid import UUID
 
@@ -250,6 +251,95 @@ class SevenBranchDesignSchedule(FrozenModel):
         return sha256_json(self.model_dump(mode="json"))
 
 
+class SevenBranchTopUpEpochBranch(FrozenModel):
+    branch_key: str
+    prior_source_run_ids: tuple[UUID, ...]
+    prior_evidence_snapshot_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    top_up_plan: BranchTopUpPlan
+    frozen_round: SevenBranchRoundRequest
+
+    @model_validator(mode="after")
+    def validate_epoch_branch(self) -> SevenBranchTopUpEpochBranch:
+        if not self.prior_source_run_ids or len(self.prior_source_run_ids) != len(
+            set(self.prior_source_run_ids)
+        ):
+            raise ValueError("top-up epoch requires unique prior source runs")
+        binding = SevenBranchRoundBinding.model_validate(
+            self.frozen_round.request["seven_branch_round"]
+        )
+        if binding.branch_key != self.branch_key:
+            raise ValueError("top-up epoch branch key drifted")
+        if self.top_up_plan.branch_key != self.branch_key:
+            raise ValueError("top-up plan belongs to another branch")
+        if self.top_up_plan.action != "freeze_successor_round":
+            raise ValueError("top-up epoch cannot freeze a completed branch")
+        if binding.round_ordinal != self.top_up_plan.next_round_ordinal:
+            raise ValueError("top-up epoch round ordinal drifted")
+        if (
+            binding.expected_raw_occurrences
+            != self.top_up_plan.recommended_raw_budget
+        ):
+            raise ValueError("top-up epoch raw budget drifted")
+        return self
+
+
+class SevenBranchTopUpSchedule(FrozenModel):
+    """One independently frozen successor epoch for incomplete branches."""
+
+    schema_version: Literal["ampgent.seven_branch_top_up_schedule.v1"] = (
+        "ampgent.seven_branch_top_up_schedule.v1"
+    )
+    controller_run_id: UUID
+    parent_controller_run_id: UUID
+    epoch_ordinal: int = Field(ge=1)
+    design_contract: SevenBranchDesignContract
+    target_runtime_by_key: dict[str, TargetSequenceRuntime]
+    branches: tuple[SevenBranchTopUpEpochBranch, ...]
+
+    @model_validator(mode="after")
+    def validate_schedule(self) -> SevenBranchTopUpSchedule:
+        if not self.branches:
+            raise ValueError("top-up schedule requires at least one incomplete branch")
+        keys = [item.branch_key for item in self.branches]
+        if len(keys) != len(set(keys)):
+            raise ValueError("top-up schedule branches must be unique within an epoch")
+        branch_by_key = {
+            item.branch_key: item for item in self.design_contract.branches
+        }
+        if any(key not in branch_by_key for key in keys):
+            raise ValueError("top-up schedule references an unknown branch")
+        run_ids = [item.frozen_round.run_id for item in self.branches]
+        workflow_ids = [item.frozen_round.workflow_id for item in self.branches]
+        if len(run_ids) != len(set(run_ids)) or len(workflow_ids) != len(
+            set(workflow_ids)
+        ):
+            raise ValueError("top-up child identities must be unique")
+        target_branches = {
+            item.target_key: item
+            for item in self.design_contract.branches
+            if item.branch_kind == "target_specific"
+        }
+        if set(self.target_runtime_by_key) != set(target_branches):
+            raise ValueError("top-up target runtimes do not cover the six targets")
+        for item in self.branches:
+            branch = branch_by_key[item.branch_key]
+            binding = SevenBranchRoundBinding.model_validate(
+                item.frozen_round.request["seven_branch_round"]
+            )
+            if binding.design_contract_sha256 != self.design_contract.sha256():
+                raise ValueError("top-up round is bound to another design contract")
+            if binding.branch_kind != branch.branch_kind:
+                raise ValueError("top-up round branch kind drifted")
+            if binding.target_key != branch.target_key:
+                raise ValueError("top-up round target drifted")
+            if binding.target_sequence_sha256 != branch.target_sequence_sha256:
+                raise ValueError("top-up round target sequence drifted")
+        return self
+
+    def sha256(self) -> str:
+        return sha256_json(self.model_dump(mode="json"))
+
+
 def build_seven_branch_round_execution_contract(
     contract: SevenBranchDesignContract,
     *,
@@ -313,6 +403,188 @@ class BranchProgress(FrozenModel):
     qualified_count: int = Field(ge=0)
     delivered_count: int = Field(ge=0)
     family_count: int = Field(ge=0)
+
+
+class BranchTopUpPlan(FrozenModel):
+    """A deterministic successor-round recommendation from durable branch yield."""
+
+    schema_version: Literal["ampgent.seven-branch-top-up-plan.1"] = (
+        "ampgent.seven-branch-top-up-plan.1"
+    )
+    branch_key: str
+    next_round_ordinal: int = Field(ge=1)
+    requested_delivery_count: int = Field(gt=0)
+    delivered_count: int = Field(ge=0)
+    remaining_delivery_count: int = Field(ge=0)
+    observed_raw_count: int = Field(ge=0)
+    observed_qualified_count: int = Field(ge=0)
+    observed_qualified_yield: float = Field(ge=0.0, le=1.0)
+    planning_yield: float = Field(gt=0.0, le=1.0)
+    safety_factor: float = Field(ge=1.0)
+    recommended_raw_budget: int = Field(ge=0, multiple_of=300)
+    action: Literal["quota_complete", "freeze_successor_round"]
+
+    def sha256(self) -> str:
+        return sha256_json(self.model_dump(mode="json"))
+
+
+class BranchDeliveryCandidate(FrozenModel):
+    candidate_id: UUID
+    sequence_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    family_key: str = Field(min_length=1)
+    admission_tier: Literal["mature_core", "exploration"]
+    sequence_pareto_front: int | None = Field(default=None, ge=0)
+    target_conditional_nll: float | None = None
+    target_conditional_ppl: float | None = None
+
+
+class BranchDeliverySelection(FrozenModel):
+    schema_version: Literal["ampgent.seven-branch-delivery-selection.1"] = (
+        "ampgent.seven-branch-delivery-selection.1"
+    )
+    branch_key: str
+    requested_delivery_count: int = Field(gt=0)
+    considered_candidate_ids: tuple[UUID, ...]
+    selected_candidate_ids: tuple[UUID, ...]
+    selected_family_count: int = Field(ge=0)
+    quota_complete: bool
+    exact_sequence_deduplicated: Literal[True] = True
+    family_first_pass: Literal[True] = True
+    target_sequence_ranking_applied: bool
+
+    def sha256(self) -> str:
+        return sha256_json(self.model_dump(mode="json"))
+
+
+def select_branch_delivery(
+    branch: DesignBranch,
+    candidates: tuple[BranchDeliveryCandidate, ...],
+) -> BranchDeliverySelection:
+    """Select a reproducible, family-diverse delivery set without weighted scores."""
+
+    unique_by_sequence: dict[str, BranchDeliveryCandidate] = {}
+    for item in candidates:
+        current = unique_by_sequence.get(item.sequence_sha256)
+        if current is None or str(item.candidate_id) < str(current.candidate_id):
+            unique_by_sequence[item.sequence_sha256] = item
+    unique = tuple(unique_by_sequence.values())
+    if branch.target_sequence_interaction_required and any(
+        item.target_conditional_nll is None or item.target_conditional_ppl is None
+        for item in unique
+    ):
+        raise ValueError("target-specific delivery requires target sequence scores")
+
+    def rank(item: BranchDeliveryCandidate) -> tuple[Any, ...]:
+        return (
+            0 if item.admission_tier == "mature_core" else 1,
+            item.sequence_pareto_front
+            if item.sequence_pareto_front is not None
+            else 1_000_000,
+            item.target_conditional_nll
+            if item.target_conditional_nll is not None
+            else 0.0,
+            item.target_conditional_ppl
+            if item.target_conditional_ppl is not None
+            else 0.0,
+            str(item.candidate_id),
+        )
+
+    ranked = sorted(unique, key=rank)
+    selected: list[BranchDeliveryCandidate] = []
+    selected_ids: set[UUID] = set()
+    seen_families: set[str] = set()
+    for item in ranked:
+        if item.family_key in seen_families:
+            continue
+        selected.append(item)
+        selected_ids.add(item.candidate_id)
+        seen_families.add(item.family_key)
+        if len(selected) == branch.requested_delivery_count:
+            break
+    if len(selected) < branch.requested_delivery_count:
+        for item in ranked:
+            if item.candidate_id in selected_ids:
+                continue
+            selected.append(item)
+            selected_ids.add(item.candidate_id)
+            if len(selected) == branch.requested_delivery_count:
+                break
+    return BranchDeliverySelection(
+        branch_key=branch.branch_key,
+        requested_delivery_count=branch.requested_delivery_count,
+        considered_candidate_ids=tuple(item.candidate_id for item in ranked),
+        selected_candidate_ids=tuple(item.candidate_id for item in selected),
+        selected_family_count=len({item.family_key for item in selected}),
+        quota_complete=len(selected) == branch.requested_delivery_count,
+        target_sequence_ranking_applied=branch.target_sequence_interaction_required,
+    )
+
+
+def plan_branch_top_up(
+    branch: DesignBranch,
+    progress: BranchProgress,
+    *,
+    next_round_ordinal: int,
+) -> BranchTopUpPlan:
+    """Size an immutable top-up round from observed qualified yield.
+
+    The planner never lowers admission criteria.  It adds a 50% occurrence reserve
+    for cross-round exact duplicates and yield variance, then rounds up to one
+    balanced three-generator block (300 occurrences).  When the first round has no
+    qualified candidates, it repeats at least the frozen initial breadth instead of
+    inventing an optimistic yield.
+    """
+
+    if branch.branch_key != progress.branch_key:
+        raise ValueError("progress belongs to another branch")
+    if next_round_ordinal < 1:
+        raise ValueError("top-up round ordinal must be positive")
+    delivered = min(progress.delivered_count, branch.requested_delivery_count)
+    remaining = branch.requested_delivery_count - delivered
+    observed_yield = (
+        min(1.0, progress.qualified_count / progress.raw_count)
+        if progress.raw_count
+        else 0.0
+    )
+    safety_factor = 1.5
+    if remaining == 0:
+        budget = 0
+        action: Literal["quota_complete", "freeze_successor_round"] = (
+            "quota_complete"
+        )
+        planning_yield = observed_yield if observed_yield > 0 else 1.0
+    else:
+        action = "freeze_successor_round"
+        if observed_yield > 0:
+            planning_yield = observed_yield
+            needed = math.ceil((remaining / planning_yield) * safety_factor)
+            budget = math.ceil(needed / 300) * 300
+        else:
+            planning_yield = min(
+                1.0,
+                branch.requested_delivery_count / branch.initial_raw_budget,
+            )
+            budget = max(
+                branch.initial_raw_budget,
+                math.ceil(
+                    ((remaining / planning_yield) * safety_factor) / 300
+                )
+                * 300,
+            )
+    return BranchTopUpPlan(
+        branch_key=branch.branch_key,
+        next_round_ordinal=next_round_ordinal,
+        requested_delivery_count=branch.requested_delivery_count,
+        delivered_count=delivered,
+        remaining_delivery_count=remaining,
+        observed_raw_count=progress.raw_count,
+        observed_qualified_count=progress.qualified_count,
+        observed_qualified_yield=observed_yield,
+        planning_yield=planning_yield,
+        safety_factor=safety_factor,
+        recommended_raw_budget=budget,
+        action=action,
+    )
 
 
 BranchAction = Literal[

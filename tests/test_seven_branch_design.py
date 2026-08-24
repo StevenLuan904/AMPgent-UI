@@ -9,14 +9,19 @@ import pytest
 
 from pepagent.seven_branch_design import (
     SEQUENCE_METRICS,
+    BranchDeliveryCandidate,
     BranchProgress,
     DesignBranch,
     SevenBranchDesignContract,
     SevenBranchDesignSchedule,
     SevenBranchRoundRequest,
+    SevenBranchTopUpEpochBranch,
+    SevenBranchTopUpSchedule,
     build_seven_branch_round_execution_contract,
     next_branch_action,
     next_controller_branch,
+    plan_branch_top_up,
+    select_branch_delivery,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -175,6 +180,133 @@ def test_branch_round_top_up_budget_must_keep_three_generator_balance() -> None:
         )
 
 
+def test_top_up_plan_uses_observed_yield_and_balanced_budget() -> None:
+    branch = _contract().branches[0]
+    plan = plan_branch_top_up(
+        branch,
+        _progress(
+            branch.branch_key,
+            raw_count=600,
+            valid_unique_count=510,
+            fully_scored_count=510,
+            target_sequence_scored_count=510,
+            qualified_count=90,
+            delivered_count=90,
+            family_count=500,
+        ),
+        next_round_ordinal=1,
+    )
+    assert plan.observed_qualified_yield == pytest.approx(0.15)
+    assert plan.remaining_delivery_count == 60
+    assert plan.recommended_raw_budget == 600
+    assert plan.action == "freeze_successor_round"
+    _, execution = build_seven_branch_round_execution_contract(
+        _contract(),
+        branch_key=branch.branch_key,
+        round_ordinal=plan.next_round_ordinal,
+        raw_budget=plan.recommended_raw_budget,
+    )
+    assert len(execution.cells) == 6
+
+
+def test_top_up_plan_repeats_initial_breadth_when_observed_yield_is_zero() -> None:
+    branch = _contract().branches[0]
+    plan = plan_branch_top_up(
+        branch,
+        _progress(branch.branch_key, raw_count=600),
+        next_round_ordinal=1,
+    )
+    assert plan.observed_qualified_yield == 0
+    assert plan.recommended_raw_budget == 900
+    assert plan.action == "freeze_successor_round"
+
+
+def test_top_up_plan_is_zero_after_quota_is_delivered() -> None:
+    branch = _contract().branches[-1]
+    plan = plan_branch_top_up(
+        branch,
+        _progress(
+            branch.branch_key,
+            raw_count=3000,
+            qualified_count=1200,
+            delivered_count=1000,
+        ),
+        next_round_ordinal=1,
+    )
+    assert plan.action == "quota_complete"
+    assert plan.recommended_raw_budget == 0
+
+
+def test_target_delivery_deduplicates_and_uses_target_score_with_family_first() -> None:
+    branch = _contract().branches[0]
+    records = (
+        BranchDeliveryCandidate(
+            candidate_id=UUID(int=1),
+            sequence_sha256="1" * 64,
+            family_key="family-a",
+            admission_tier="mature_core",
+            sequence_pareto_front=0,
+            target_conditional_nll=3.0,
+            target_conditional_ppl=20.0,
+        ),
+        BranchDeliveryCandidate(
+            candidate_id=UUID(int=2),
+            sequence_sha256="2" * 64,
+            family_key="family-a",
+            admission_tier="mature_core",
+            sequence_pareto_front=0,
+            target_conditional_nll=1.0,
+            target_conditional_ppl=10.0,
+        ),
+        BranchDeliveryCandidate(
+            candidate_id=UUID(int=3),
+            sequence_sha256="3" * 64,
+            family_key="family-b",
+            admission_tier="exploration",
+            target_conditional_nll=2.0,
+            target_conditional_ppl=15.0,
+        ),
+        BranchDeliveryCandidate(
+            candidate_id=UUID(int=4),
+            sequence_sha256="2" * 64,
+            family_key="family-c",
+            admission_tier="mature_core",
+            sequence_pareto_front=0,
+            target_conditional_nll=0.5,
+            target_conditional_ppl=5.0,
+        ),
+    )
+    selection = select_branch_delivery(branch, records)
+    assert selection.considered_candidate_ids == (
+        UUID(int=2),
+        UUID(int=1),
+        UUID(int=3),
+    )
+    assert selection.selected_candidate_ids == (
+        UUID(int=2),
+        UUID(int=3),
+        UUID(int=1),
+    )
+    assert selection.selected_family_count == 2
+    assert selection.quota_complete is False
+
+
+def test_target_delivery_rejects_missing_target_sequence_scores() -> None:
+    branch = _contract().branches[0]
+    with pytest.raises(ValueError, match="requires target sequence scores"):
+        select_branch_delivery(
+            branch,
+            (
+                BranchDeliveryCandidate(
+                    candidate_id=UUID(int=1),
+                    sequence_sha256="1" * 64,
+                    family_key="family-a",
+                    admission_tier="mature_core",
+                ),
+            ),
+        )
+
+
 def test_schedule_rejects_identity_or_contract_drift() -> None:
     contract = _contract()
     round_requests = []
@@ -217,3 +349,64 @@ def test_schedule_rejects_identity_or_contract_drift() -> None:
     drifted["request"]["execution_contract"]["expected_raw_occurrences"] = 900
     with pytest.raises(ValueError, match="identity drifted"):
         SevenBranchRoundRequest.model_validate(drifted)
+
+
+def test_top_up_schedule_freezes_prior_evidence_plan_and_new_child() -> None:
+    contract = _contract()
+    branch = contract.branches[0]
+    progress = _progress(
+        branch.branch_key,
+        raw_count=600,
+        valid_unique_count=515,
+        fully_scored_count=515,
+        target_sequence_scored_count=515,
+        qualified_count=48,
+        delivered_count=48,
+        family_count=48,
+    )
+    plan = plan_branch_top_up(
+        branch, progress, next_round_ordinal=1
+    )
+    binding, execution = build_seven_branch_round_execution_contract(
+        contract,
+        branch_key=branch.branch_key,
+        round_ordinal=1,
+        raw_budget=plan.recommended_raw_budget,
+    )
+    run_id = UUID(int=500)
+    frozen = SevenBranchRoundRequest(
+        run_id=run_id,
+        workflow_id="seven-branch-acea-r1",
+        request={
+            "run_id": str(run_id),
+            "seven_branch_round": binding.model_dump(mode="json"),
+            "execution_contract": execution.model_dump(mode="json"),
+            "task_queues": {"target_sequence": "target"},
+        },
+    )
+    schedule = SevenBranchTopUpSchedule(
+        controller_run_id=UUID(int=600),
+        parent_controller_run_id=UUID(int=599),
+        epoch_ordinal=1,
+        design_contract=contract,
+        target_runtime_by_key={
+            target_branch.target_key: {
+                "target_key": target_branch.target_key,
+                "accession": f"TEST_{index}",
+                "sequence": "A" * (index + 1),
+                "sequence_sha256": target_branch.target_sequence_sha256,
+            }
+            for index, target_branch in enumerate(contract.branches[:6])
+        },
+        branches=(
+            SevenBranchTopUpEpochBranch(
+                branch_key=branch.branch_key,
+                prior_source_run_ids=(UUID(int=100),),
+                prior_evidence_snapshot_sha256="e" * 64,
+                top_up_plan=plan,
+                frozen_round=frozen,
+            ),
+        ),
+    )
+    assert schedule.sha256()
+    assert schedule.branches[0].top_up_plan.recommended_raw_budget == 2100

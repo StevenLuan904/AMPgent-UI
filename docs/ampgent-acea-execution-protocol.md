@@ -2675,3 +2675,16 @@ MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot
   command line和AMPgent role核验，只终止旧自有三个supervisor/child；新control/generator/metrics和
   `.19 GPU2` target-sequence worker继续运行，未触碰外来任务或`.32 GPU2/GPU3`。下一动作是等待首批raw
   durable增量，随后连续完成12项score-all、六靶点序列评分、分支排名与不足分支top-up。
+
+### 七分支确定性补量闭环（2026-08-24）
+
+- 已实现`SevenBranchPeptideTopUpWorkflow`、`SevenBranchTopUpSchedule`和exact-once预留/提交入口。首轮
+  terminal不是停止条件；CLI从PostgreSQL读取每分支不可变child证据，冻结内容寻址snapshot，只为未满额
+  分支派生新的controller/child UUID5和schedule SHA，不原地追加或复用旧run工作输出。
+- 累计选择跨round按完整序列SHA去重，重新执行同一准入策略；靶点分支必须具备对应目标序列的
+  conditional NLL/PPL。候选先按mature/exploration、序列Pareto层和branch-local目标分数排序，再优先覆盖
+  不同seqfam80家族，之后才补同家族；选择ID、输入run、artifact、缺口和下一预算全部持久化。
+- 补量预算使用实际`qualified/raw`产率，给跨轮重复和产率波动保留50%，再向上取整到三生成器均衡的
+  300 raw块。若观察产率为0，则至少重复或扩大初始分支宽度，不降低准入条件。真实AceA首轮snapshot已
+  读到600 raw、515 unique、515条12指标完整、515条目标序列评分完整、48条合格且分属48个家族；据此
+  下一round预算为2100 raw。该结果是当前run数据库smoke，不是最终150条交付。

@@ -7,11 +7,15 @@ from uuid import UUID
 
 from pepagent.provenance.hashing import sha256_json
 from pepagent.seven_branch_design import (
+    BranchProgress,
     SevenBranchDesignContract,
     SevenBranchDesignSchedule,
     SevenBranchRoundRequest,
+    SevenBranchTopUpEpochBranch,
+    SevenBranchTopUpSchedule,
     TargetSequenceRuntime,
     build_seven_branch_round_execution_contract,
+    plan_branch_top_up,
 )
 
 SEVEN_BRANCH_ID_NAMESPACE = UUID("11897b4e-2a41-44dd-b741-a978e77d48ed")
@@ -117,4 +121,125 @@ def build_initial_seven_branch_schedule(
         design_contract=design_contract,
         target_runtime_by_key=runtime_by_key,
         rounds=tuple(rounds),
+    )
+
+
+def derive_top_up_seven_branch_run_ids(
+    *,
+    parent_controller_run_id: UUID,
+    epoch_ordinal: int,
+    branch_evidence_sha256_by_key: dict[str, str],
+) -> tuple[UUID, dict[str, UUID]]:
+    if epoch_ordinal < 1:
+        raise ValueError("seven-branch top-up epoch must be positive")
+    if not branch_evidence_sha256_by_key:
+        raise ValueError("seven-branch top-up requires incomplete branches")
+    identity = sha256_json(
+        {
+            "parent_controller_run_id": str(parent_controller_run_id),
+            "epoch_ordinal": epoch_ordinal,
+            "branch_evidence_sha256_by_key": branch_evidence_sha256_by_key,
+        }
+    )
+    controller = uuid.uuid5(
+        SEVEN_BRANCH_ID_NAMESPACE, f"{identity}:controller:epoch:{epoch_ordinal}"
+    )
+    children = {
+        branch_key: uuid.uuid5(
+            SEVEN_BRANCH_ID_NAMESPACE,
+            f"{identity}:branch:{branch_key}:epoch:{epoch_ordinal}",
+        )
+        for branch_key in branch_evidence_sha256_by_key
+    }
+    return controller, children
+
+
+def build_top_up_seven_branch_schedule(
+    *,
+    request_template: dict[str, Any],
+    submission_preflight: dict[str, Any],
+    design_contract: SevenBranchDesignContract,
+    target_manifest: dict[str, Any],
+    target_manifest_sha256: str,
+    parent_controller_run_id: UUID,
+    controller_run_id: UUID,
+    epoch_ordinal: int,
+    branch_evidence: dict[str, dict[str, Any]],
+    child_run_ids_by_key: dict[str, UUID],
+) -> SevenBranchTopUpSchedule:
+    """Freeze one successor epoch from durable cumulative branch observations."""
+
+    if target_manifest_sha256 != design_contract.target_manifest_sha256:
+        raise ValueError("target manifest file identity differs from design contract")
+    if set(branch_evidence) != set(child_run_ids_by_key):
+        raise ValueError("top-up child identities do not match incomplete branches")
+    targets = target_manifest.get("targets")
+    if not isinstance(targets, list) or len(targets) != 6:
+        raise ValueError("seven-branch target manifest must contain six targets")
+    runtime_by_key = {
+        str(item["target_key"]): TargetSequenceRuntime(
+            target_key=str(item["target_key"]),
+            accession=str(item["protein_accession"]),
+            sequence=str(item["sequence"]),
+            sequence_sha256=str(item["sequence_sha256"]),
+        )
+        for item in targets
+    }
+    branch_by_key = {item.branch_key: item for item in design_contract.branches}
+    epoch_branches: list[SevenBranchTopUpEpochBranch] = []
+    for branch_key in branch_by_key:
+        if branch_key not in branch_evidence:
+            continue
+        evidence = branch_evidence[branch_key]
+        progress = BranchProgress.model_validate(evidence["progress"])
+        plan = plan_branch_top_up(
+            branch_by_key[branch_key],
+            progress,
+            next_round_ordinal=int(evidence["next_round_ordinal"]),
+        )
+        if plan.action != "freeze_successor_round":
+            raise ValueError("top-up evidence includes a completed branch")
+        binding, execution = build_seven_branch_round_execution_contract(
+            design_contract,
+            branch_key=branch_key,
+            round_ordinal=plan.next_round_ordinal,
+            raw_budget=plan.recommended_raw_budget,
+        )
+        child_run_id = child_run_ids_by_key[branch_key]
+        child_request = copy.deepcopy(request_template)
+        child_request.update(
+            {
+                "submission_preflight": copy.deepcopy(submission_preflight),
+                "run_id": str(child_run_id),
+                "controller_run_id": str(controller_run_id),
+                "execution_contract": execution.model_dump(mode="json"),
+                "seven_branch_round": binding.model_dump(mode="json"),
+            }
+        )
+        frozen_round = SevenBranchRoundRequest(
+            run_id=child_run_id,
+            workflow_id=(
+                f"pepagent-seven-branch-{branch_key}-r{plan.next_round_ordinal}-"
+                f"{child_run_id.hex}"
+            ),
+            request=child_request,
+        )
+        epoch_branches.append(
+            SevenBranchTopUpEpochBranch(
+                branch_key=branch_key,
+                prior_source_run_ids=tuple(
+                    UUID(str(item)) for item in evidence["source_run_ids"]
+                ),
+                prior_evidence_snapshot_sha256=str(evidence["snapshot_sha256"]),
+                top_up_plan=plan,
+                frozen_round=frozen_round,
+            )
+        )
+    return SevenBranchTopUpSchedule(
+        controller_run_id=controller_run_id,
+        parent_controller_run_id=parent_controller_run_id,
+        epoch_ordinal=epoch_ordinal,
+        design_contract=design_contract,
+        target_runtime_by_key=runtime_by_key,
+        branches=tuple(epoch_branches),
     )

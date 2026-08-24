@@ -29,10 +29,13 @@ from pepagent.provenance.hashing import sha256_bytes, sha256_json, sha256_text
 from pepagent.sequence_family import cluster_sequence_families
 from pepagent.seven_branch_design import (
     SEQUENCE_METRICS,
+    BranchDeliveryCandidate,
     BranchProgress,
     DesignBranch,
     SevenBranchRoundBinding,
     next_branch_action,
+    plan_branch_top_up,
+    select_branch_delivery,
 )
 from pepagent.storage.object_store import ContentAddressedObjectStore
 from pepagent.v38_final_portfolio import (
@@ -292,6 +295,250 @@ async def persist_seven_branch_round_progress(
         "progress": progress.model_dump(mode="json"),
         "controller_action": controller_action,
         "receipt_sha256": receipt_sha256,
+    }
+
+
+@activity.defn(name="persist_seven_branch_cumulative_selection")
+async def persist_seven_branch_cumulative_selection(
+    request: dict[str, Any],
+) -> dict[str, Any]:
+    """Build one branch-local delivery view over immutable round evidence."""
+
+    controller_run_id = uuid.UUID(str(request["controller_run_id"]))
+    source_run_ids = tuple(
+        uuid.UUID(str(item)) for item in request["source_run_ids"]
+    )
+    if not source_run_ids or len(source_run_ids) != len(set(source_run_ids)):
+        raise ValueError("cumulative branch selection requires unique source runs")
+    branch = DesignBranch.model_validate(request["branch"])
+    context_sha = str(request["knowledge_context_pack_sha256"])
+    if len(context_sha) != 64:
+        raise ValueError("cumulative branch selection context SHA is invalid")
+    async with SessionFactory() as session:
+        controller = await session.get(ExperimentRun, controller_run_id)
+        sources = list(
+            await session.scalars(
+                select(ExperimentRun).where(ExperimentRun.id.in_(source_run_ids))
+            )
+        )
+        if controller is None or len(sources) != len(source_run_ids):
+            raise ValueError("cumulative branch selection run lineage is incomplete")
+        if any(
+            item.spec_json.get("branch_key") != branch.branch_key
+            or item.spec_json.get("design_contract_sha256")
+            != request["design_contract_sha256"]
+            for item in sources
+        ):
+            raise ValueError("cumulative branch selection mixes branch contracts")
+        admission_payload, _ = await _build_v38_sequence_admission_payload(
+            session=session,
+            run_id=controller_run_id,
+            refinement_round=max(
+                int(item.spec_json.get("round_ordinal", 0)) for item in sources
+            ),
+            knowledge_context_pack_sha256=context_sha,
+            source_run_ids=source_run_ids,
+        )
+        admission = admission_payload["admission"]
+        mature_ids = {
+            uuid.UUID(str(item)) for item in admission["mature_core_candidate_ids"]
+        }
+        exploration_ids = {
+            uuid.UUID(str(item)) for item in admission["exploration_candidate_ids"]
+        }
+        qualified_ids = mature_ids | exploration_ids
+        decision_by_id = {
+            uuid.UUID(str(item["candidate_id"])): item
+            for item in admission["decisions"]
+        }
+        candidates = list(
+            await session.scalars(
+                select(Candidate)
+                .where(Candidate.run_id.in_(source_run_ids))
+                .order_by(Candidate.id)
+            )
+        )
+        source_order = {item: index for index, item in enumerate(source_run_ids)}
+        candidates.sort(key=lambda item: (source_order[item.run_id], str(item.id)))
+        unique_by_sequence: dict[str, Candidate] = {}
+        for candidate in candidates:
+            unique_by_sequence.setdefault(candidate.sequence_sha256, candidate)
+        unique_candidates = list(unique_by_sequence.values())
+        candidate_by_id = {item.id: item for item in unique_candidates}
+        admitted_candidates = [
+            candidate_by_id[item]
+            for item in sorted(qualified_ids, key=str)
+            if item in candidate_by_id
+        ]
+        family_by_sequence = {
+            item.sequence: item.family_key
+            for item in cluster_sequence_families(
+                candidate.sequence for candidate in admitted_candidates
+            )
+        }
+        target_scores: dict[uuid.UUID, dict[str, float]] = {
+            item.id: {} for item in admitted_candidates
+        }
+        if admitted_candidates:
+            score_rows = list(
+                await session.scalars(
+                    select(Evaluation).where(
+                        Evaluation.candidate_id.in_(list(target_scores)),
+                        Evaluation.metric_name.in_(
+                            ("conditional_nll", "conditional_ppl")
+                        ),
+                        Evaluation.status == "succeeded",
+                    )
+                )
+            )
+            for row in score_rows:
+                if branch.target_sequence_sha256 is not None and (
+                    row.raw_json.get("target", {}).get("sequence_sha256")
+                    != branch.target_sequence_sha256
+                ):
+                    continue
+                if row.numeric_value is not None:
+                    target_scores[row.candidate_id][row.metric_name] = float(
+                        row.numeric_value
+                    )
+        delivery_candidates = tuple(
+            BranchDeliveryCandidate(
+                candidate_id=item.id,
+                sequence_sha256=item.sequence_sha256,
+                family_key=family_by_sequence[item.sequence],
+                admission_tier=(
+                    "mature_core" if item.id in mature_ids else "exploration"
+                ),
+                sequence_pareto_front=decision_by_id[item.id].get("pareto_front"),
+                target_conditional_nll=target_scores[item.id].get("conditional_nll"),
+                target_conditional_ppl=target_scores[item.id].get("conditional_ppl"),
+            )
+            for item in admitted_candidates
+        )
+        selection = select_branch_delivery(branch, delivery_candidates)
+        raw_count = int(
+            await session.scalar(
+                select(func.count(CandidateOccurrence.id)).where(
+                    CandidateOccurrence.run_id.in_(source_run_ids)
+                )
+            )
+            or 0
+        )
+        candidate_ids = [item.id for item in unique_candidates]
+        evaluation_rows = list(
+            await session.scalars(
+                select(Evaluation).where(Evaluation.candidate_id.in_(candidate_ids))
+            )
+        ) if candidate_ids else []
+        sequence_coverage = {item: set() for item in candidate_ids}
+        target_coverage = {item: set() for item in candidate_ids}
+        for row in evaluation_rows:
+            if row.status != "succeeded":
+                continue
+            if row.metric_name in SEQUENCE_METRICS:
+                sequence_coverage[row.candidate_id].add(row.metric_name)
+            if row.metric_name in {"conditional_nll", "conditional_ppl"} and (
+                branch.target_sequence_sha256 is not None
+                and row.raw_json.get("target", {}).get("sequence_sha256")
+                == branch.target_sequence_sha256
+            ):
+                target_coverage[row.candidate_id].add(row.metric_name)
+        progress = BranchProgress(
+            branch_key=branch.branch_key,
+            raw_count=raw_count,
+            valid_unique_count=len(unique_candidates),
+            fully_scored_count=sum(
+                item == set(SEQUENCE_METRICS) for item in sequence_coverage.values()
+            ),
+            target_sequence_scored_count=(
+                sum(
+                    item == {"conditional_nll", "conditional_ppl"}
+                    for item in target_coverage.values()
+                )
+                if branch.target_sequence_interaction_required
+                else 0
+            ),
+            qualified_count=len(qualified_ids),
+            delivered_count=len(selection.selected_candidate_ids),
+            family_count=len({item.family_key for item in delivery_candidates}),
+        )
+        top_up = plan_branch_top_up(
+            branch,
+            progress,
+            next_round_ordinal=max(
+                int(item.spec_json.get("round_ordinal", 0)) for item in sources
+            )
+            + 1,
+        )
+    payload = {
+        "schema_version": "ampgent.seven-branch-cumulative-selection.1",
+        "controller_run_id": str(controller_run_id),
+        "branch": branch.model_dump(mode="json"),
+        "source_run_ids": [str(item) for item in source_run_ids],
+        "admission_sha256": sha256_json(admission_payload),
+        "selection": selection.model_dump(mode="json"),
+        "progress": progress.model_dump(mode="json"),
+        "top_up_plan": top_up.model_dump(mode="json"),
+    }
+    artifact = await _store_json(payload)
+    response = json.dumps(payload, ensure_ascii=False, sort_keys=True)
+    async with SessionFactory() as session, session.begin():
+        existing = await session.scalar(
+            select(AgentDecision).where(
+                AgentDecision.run_id == controller_run_id,
+                AgentDecision.generation == top_up.next_round_ordinal,
+                AgentDecision.decision_type
+                == f"seven_branch_delivery:{branch.branch_key}",
+            )
+        )
+        if existing is not None:
+            if existing.structured_json != payload:
+                raise ValueError("existing seven-branch delivery selection drifted")
+        else:
+            existing = await ExperimentRepository(session).record_agent_decision(
+                controller_run_id,
+                top_up.next_round_ordinal,
+                f"seven_branch_delivery:{branch.branch_key}",
+                "deterministic-seven-branch-design-agent",
+                str(request["worker_source_revision"]),
+                (
+                    "Deduplicate exact sequences, apply frozen admission, rank within "
+                    "the branch and select families before filling repeated families."
+                ),
+                response,
+                payload,
+                model_name="deterministic://seven-branch-delivery-v1",
+            )
+        event_payload = {
+            "schema_version": "ampgent.seven-branch-selection-receipt.1",
+            "decision_id": str(existing.id),
+            "artifact": asdict(artifact),
+            "selection_sha256": selection.sha256(),
+            "top_up_plan_sha256": top_up.sha256(),
+        }
+        receipt_sha = sha256_json(event_payload)
+        prior_event = await session.scalar(
+            select(LifecycleEvent).where(
+                LifecycleEvent.aggregate_type == "run",
+                LifecycleEvent.aggregate_id == controller_run_id,
+                LifecycleEvent.event_type
+                == "seven_branch.cumulative_selection_persisted",
+                LifecycleEvent.payload_sha256 == receipt_sha,
+            )
+        )
+        if prior_event is None:
+            await ExperimentRepository(session).append_event(
+                "run",
+                controller_run_id,
+                "seven_branch.cumulative_selection_persisted",
+                "seven-branch-controller",
+                event_payload,
+            )
+    return {
+        "artifact": asdict(artifact),
+        "progress": progress.model_dump(mode="json"),
+        "selection": selection.model_dump(mode="json"),
+        "top_up_plan": top_up.model_dump(mode="json"),
     }
 
 V38_METRIC_RESULT_REFERENCE_SCHEMA = "v38.metric-result-reference.1"
