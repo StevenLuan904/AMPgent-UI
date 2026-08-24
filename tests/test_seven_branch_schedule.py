@@ -7,6 +7,7 @@ import pytest
 
 from pepagent.provenance.hashing import sha256_file, sha256_json
 from pepagent.seven_branch_design import SevenBranchDesignContract
+from pepagent.seven_branch_reservation_cli import build_seven_branch_reservation_specs
 from pepagent.seven_branch_schedule import (
     build_initial_seven_branch_schedule,
     derive_initial_seven_branch_run_ids,
@@ -89,6 +90,12 @@ def test_initial_schedule_freezes_seven_exact_once_child_runs() -> None:
     assert schedule.rounds[-1].request["seven_branch_round"]["branch_kind"] == (
         "target_agnostic"
     )
+    controller_spec, child_specs = build_seven_branch_reservation_specs(schedule)
+    assert controller_spec["run_kind"] == "seven_branch_peptide_design_control"
+    assert controller_spec["delivery_quota"] == 1900
+    assert len(child_specs) == 7
+    assert sum(item["expected_raw_occurrences"] for item in child_specs) == 6600
+    assert len({item["formal_submission_key"] for item in child_specs}) == 7
 
 
 def test_initial_schedule_rejects_template_or_manifest_drift() -> None:
