@@ -430,6 +430,71 @@ class ExperimentRepository:
         )
         return evaluation
 
+    async def record_evaluations_bulk(
+        self,
+        tool_call_id: uuid.UUID,
+        rows: list[dict[str, Any]],
+    ) -> list[Evaluation]:
+        """Persist a score-all metric batch with one read and one flush.
+
+        The scalar helper above remains appropriate for interactive/small writes and
+        retains its candidate-level lifecycle event.  Formal score-all activities
+        can contain thousands of candidates; issuing a select, flush, and lifecycle
+        allocation per row made otherwise finished metric activities serialize for
+        minutes.  Their durable lifecycle is already represented by the typed
+        tool-call event and the run-level ``v38.sequence_metric.persisted`` event, so
+        this method keeps the exact Evaluation evidence while avoiding redundant
+        per-candidate event traffic.
+        """
+        if not rows:
+            return []
+        identities = [
+            (
+                uuid.UUID(str(row["candidate_id"])),
+                str(row["metric_name"]),
+                tool_call_id,
+            )
+            for row in rows
+        ]
+        if len(set(identities)) != len(identities):
+            raise ValueError("bulk evaluation rows contain duplicate evidence identities")
+        candidate_ids = {identity[0] for identity in identities}
+        metric_names = {identity[1] for identity in identities}
+        existing_rows = list(
+            await self.session.scalars(
+                select(Evaluation).where(
+                    Evaluation.candidate_id.in_(candidate_ids),
+                    Evaluation.metric_name.in_(metric_names),
+                    Evaluation.tool_call_id == tool_call_id,
+                )
+            )
+        )
+        existing = {
+            (item.candidate_id, item.metric_name, item.tool_call_id): item
+            for item in existing_rows
+        }
+        created: dict[tuple[uuid.UUID, str, uuid.UUID], Evaluation] = {}
+        for row, identity in zip(rows, identities, strict=True):
+            if identity in existing:
+                continue
+            evaluation = Evaluation(
+                candidate_id=identity[0],
+                tool_call_id=tool_call_id,
+                metric_name=identity[1],
+                numeric_value=row.get("numeric_value"),
+                text_value=row.get("text_value"),
+                unit=row.get("unit"),
+                status=EvaluationStatus.SUCCEEDED,
+                out_of_domain=bool(row.get("out_of_domain", False)),
+                limitations_json=row.get("limitations") or [],
+                raw_json=row.get("raw") or {},
+            )
+            self.session.add(evaluation)
+            created[identity] = evaluation
+        if created:
+            await self.session.flush()
+        return [existing.get(identity) or created[identity] for identity in identities]
+
     async def record_tool_dependency(
         self,
         child_tool_call_id: uuid.UUID,

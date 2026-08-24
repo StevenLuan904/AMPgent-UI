@@ -1735,19 +1735,16 @@ async def persist_v38_sequence_metric(request: dict[str, Any]) -> dict[str, Any]
                 role,
                 {"plugin": plugin_name},
             )
-        for row in rows:
-            candidate = db_candidates[row["candidate_id"]]
-            await repository.record_evaluation(
-                candidate.id,
-                call.id,
-                row["metric_name"],
-                row["numeric_value"],
-                row["unit"],
-                row["raw"],
-                text_value=row["text_value"],
-                out_of_domain=row["out_of_domain"],
-                limitations=row["limitations"],
-            )
+        await repository.record_evaluations_bulk(
+            call.id,
+            [
+                {
+                    **row,
+                    "candidate_id": db_candidates[row["candidate_id"]].id,
+                }
+                for row in rows
+            ],
+        )
         generator_call_ids = {
             candidate.generator_call_id for candidate in db_candidates.values()
         }
