@@ -43,6 +43,27 @@ def _load_json(path: Path) -> dict[str, Any]:
     return payload
 
 
+def _advance_past_excluded_attempt(
+    normalized: dict[str, Any],
+    *,
+    excluded_attempt_controller_run_id: uuid.UUID,
+    excluded_round_ordinal: int,
+    excluded_run_id: uuid.UUID,
+) -> None:
+    normalized.update(
+        {
+            "next_round_ordinal": max(
+                int(normalized["next_round_ordinal"]), excluded_round_ordinal + 1
+            ),
+            "excluded_attempt_controller_run_id": str(
+                excluded_attempt_controller_run_id
+            ),
+            "excluded_attempt_run_ids": [str(excluded_run_id)],
+            "excluded_attempt_outputs_reused": False,
+        }
+    )
+
+
 async def _initial_branch_snapshot(
     *, child: ExperimentRun, contract: SevenBranchDesignContract
 ) -> dict[str, Any]:
@@ -143,7 +164,10 @@ async def _initial_branch_snapshot(
 
 
 async def build_top_up_branch_evidence(
-    *, controller_run_id: uuid.UUID, contract: SevenBranchDesignContract
+    *,
+    controller_run_id: uuid.UUID,
+    contract: SevenBranchDesignContract,
+    excluded_attempt_controller_run_id: uuid.UUID | None = None,
 ) -> dict[str, dict[str, Any]]:
     async with SessionFactory() as session:
         controller = await session.get(ExperimentRun, controller_run_id)
@@ -171,6 +195,34 @@ async def build_top_up_branch_evidence(
                 )
             )
         )
+        excluded_round_by_branch: dict[str, tuple[int, uuid.UUID]] = {}
+        if excluded_attempt_controller_run_id is not None:
+            excluded_controller = await session.get(
+                ExperimentRun, excluded_attempt_controller_run_id
+            )
+            if (
+                excluded_controller is None
+                or excluded_controller.status not in {"failed", "cancelled"}
+                or excluded_controller.parent_run_id != controller_run_id
+            ):
+                raise ValueError(
+                    "excluded top-up attempt must be a terminal child of the evidence controller"
+                )
+            excluded_children = list(
+                await session.scalars(
+                    select(ExperimentRun).where(
+                        ExperimentRun.parent_run_id == excluded_attempt_controller_run_id,
+                    )
+                )
+            )
+            for child in excluded_children:
+                if child.spec_json.get("run_kind") != "seven_branch_design_round":
+                    continue
+                branch_key = str(child.spec_json["branch_key"])
+                round_ordinal = int(child.spec_json["round_ordinal"])
+                previous = excluded_round_by_branch.get(branch_key)
+                if previous is None or round_ordinal > previous[0]:
+                    excluded_round_by_branch[branch_key] = (round_ordinal, child.id)
     snapshots: list[dict[str, Any]] = []
     if cumulative_decisions:
         snapshots = [item.structured_json for item in cumulative_decisions]
@@ -201,6 +253,14 @@ async def build_top_up_branch_evidence(
             ),
             "source_snapshot_sha256": sha256_json(snapshot),
         }
+        excluded_round = excluded_round_by_branch.get(progress.branch_key)
+        if excluded_round is not None:
+            _advance_past_excluded_attempt(
+                normalized,
+                excluded_attempt_controller_run_id=excluded_attempt_controller_run_id,
+                excluded_round_ordinal=excluded_round[0],
+                excluded_run_id=excluded_round[1],
+            )
         stored = await asyncio.to_thread(
             object_store.put_bytes,
             json.dumps(
@@ -223,6 +283,7 @@ def main() -> None:
         description="Freeze and exact-once submit one seven-branch top-up epoch"
     )
     parser.add_argument("--parent-controller-run-id", required=True)
+    parser.add_argument("--excluded-attempt-controller-run-id")
     parser.add_argument("--epoch-ordinal", type=int, required=True)
     parser.add_argument("--request-template", type=Path, required=True)
     parser.add_argument("--preflight", type=Path, required=True)
@@ -244,7 +305,13 @@ def main() -> None:
         manifest = _load_json(manifest_path)
         parent = uuid.UUID(args.parent_controller_run_id)
         evidence = await build_top_up_branch_evidence(
-            controller_run_id=parent, contract=contract
+            controller_run_id=parent,
+            contract=contract,
+            excluded_attempt_controller_run_id=(
+                uuid.UUID(args.excluded_attempt_controller_run_id)
+                if args.excluded_attempt_controller_run_id
+                else None
+            ),
         )
         if not evidence:
             return {"status": "all_branch_quotas_complete", "submitted": False}
