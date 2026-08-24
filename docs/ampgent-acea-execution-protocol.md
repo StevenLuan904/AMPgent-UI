@@ -2688,3 +2688,24 @@ MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot
   300 raw块。若观察产率为0，则至少重复或扩大初始分支宽度，不降低准入条件。真实AceA首轮snapshot已
   读到600 raw、515 unique、515条12指标完整、515条目标序列评分完整、48条合格且分属48个家族；据此
   下一round预算为2100 raw。该结果是当前run数据库smoke，不是最终150条交付。
+
+### 七分支首轮实时产率与并发补量release（2026-08-24）
+
+- 初始controller `7850aa85-190a-5966-9282-8b341ce5f838`继续使用冻结source/release运行，未热迁移。
+  截至`2026-08-24T11:50Z`，AceA为600 raw/515 unique/7210 Evaluation、GyrA为
+  600/514/7196，二者均完成12项score-all、目标序列conditional NLL/PPL和分支准入，各有39条
+  mature core及9条选中exploration候选。PBP2a已持久化600 raw/525 unique，12项评分正在attempt 1
+  执行；剩余VEGFA、FGF2、ANGPT1和target-agnostic分支尚未启动。controller保持`running`，旧run未
+  修改或重复提交。
+- 新增机器可复算的live distribution导出器，按分支及all/mature/exploration/qualified cohort覆盖12项
+  冻结指标与额外conditional NLL/PPL，输出有效、缺失、失败、OOD、最好/最差序列、min/max、均值、
+  中位数、标准差和P10/P25/P75/P90；标签输出全部类别比例。首份导出位于
+  `reports/seven_branch_live_distribution_7850aa85_20260824T1948.{csv,json}`，其证据源仍为PostgreSQL。
+- 补量workflow现并发启动所有独立branch child，使generator/CPU score-all可并行；单个获准PepMLM GPU
+  worker仍按队列顺序处理六个目标，评分、准入、top-up预算和exact-once身份均未改变。实现source
+  `440c59f65a607676d1818c5961940809d256d664`已通过Ruff及36项相关回归；内容release SHA-256为
+  `696c2230e8e2aa93bd26c28b60ed6615f4d79c512358fc4eb0837951d4559645`，release字节自身重复通过36项。
+  它只供首轮terminal后的successor epoch，当前active worker不得迁移。
+- 下一动作：首轮七个child全部terminal后，从数据库冻结七个累计snapshot；迁移上述release，使用同一
+  executable/真实guarded launcher重跑六目标smoke，生成绑定新placement的preflight，并仅exact-once
+  提交未满额分支的首个并发top-up epoch。
