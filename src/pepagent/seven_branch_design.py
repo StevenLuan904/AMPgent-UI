@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_serializer, model_validator
 
 from pepagent.provenance.hashing import sha256_json, sha256_text
 from pepagent.v38_science_execution import (
@@ -82,6 +82,10 @@ class SevenBranchDesignContract(FrozenModel):
     historical_work_output_reuse_allowed: Literal[False] = False
     historical_pool_guides_novelty_and_seed_policy: Literal[True] = True
     dynamic_top_up_until_every_quota_is_filled: Literal[True] = True
+
+    @field_serializer("required_sequence_metrics")
+    def serialize_required_sequence_metrics(self, value: frozenset[str]) -> list[str]:
+        return sorted(value)
 
     @model_validator(mode="after")
     def validate_topology(self) -> SevenBranchDesignContract:

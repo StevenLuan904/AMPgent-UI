@@ -96,6 +96,12 @@ def test_initial_schedule_freezes_seven_exact_once_child_runs() -> None:
     assert len(child_specs) == 7
     assert sum(item["expected_raw_occurrences"] for item in child_specs) == 6600
     assert len({item["formal_submission_key"] for item in child_specs}) == 7
+    assert contract.model_dump(mode="json")["required_sequence_metrics"] == sorted(
+        contract.required_sequence_metrics
+    )
+    assert schedule.sha256() == schedule.model_validate(
+        schedule.model_dump(mode="json")
+    ).sha256()
 
 
 def test_initial_schedule_rejects_template_or_manifest_drift() -> None:

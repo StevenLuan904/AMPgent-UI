@@ -4,7 +4,7 @@ from collections.abc import Iterable
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_serializer, model_validator
 
 from pepagent.provenance.hashing import sha256_json, sha256_text
 from pepagent.v38_sequence_first_multitarget import KnowledgeUseTrace
@@ -57,6 +57,10 @@ class V38SequenceExecutionContract(FrozenModel):
     invalid_and_duplicate_denominator_required: Literal[True] = True
     metric_plugins: tuple[str, ...]
     required_sequence_metrics: frozenset[str]
+
+    @field_serializer("required_sequence_metrics")
+    def serialize_required_sequence_metrics(self, value: frozenset[str]) -> list[str]:
+        return sorted(value)
 
     @model_validator(mode="after")
     def validate_contract(self) -> V38SequenceExecutionContract:
