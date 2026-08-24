@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import unicodedata
 import zipfile
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
@@ -13,6 +14,8 @@ from pepagent.v37_hydramp_archive import (
     cleanup_hydramp_materialization,
     inspect_hydramp_archive,
     materialize_hydramp_archive,
+    materialize_hydramp_archive_cached,
+    verify_hydramp_materialization,
 )
 
 
@@ -123,6 +126,57 @@ def test_materialization_receipt_freezes_limits_and_cleanup_is_scoped(
     assert not destination.exists()
     with pytest.raises(ValueError, match="direct materialization child"):
         cleanup_hydramp_materialization(tmp_path, work=work)
+
+
+def test_content_addressed_cache_reuses_and_reverifies_frozen_tree(tmp_path: Path) -> None:
+    path = _archive(tmp_path / "models.zip", {"models/HydrAMP/37/model.bin": b"x"})
+    expected = inspect_hydramp_archive(path)
+    cache_root = tmp_path / "cache"
+    first, first_receipt = materialize_hydramp_archive_cached(
+        path, cache_root=cache_root, expected=expected
+    )
+    second, second_receipt = materialize_hydramp_archive_cached(
+        path, cache_root=cache_root, expected=expected
+    )
+    assert first == second
+    assert first_receipt["cache_hit"] is False
+    assert second_receipt["cache_hit"] is True
+    assert second_receipt["extracted_tree_sha256"] == expected["extracted_tree_sha256"]
+    (second / "models" / "HydrAMP" / "37" / "model.bin").write_bytes(b"changed")
+    with pytest.raises(ValueError, match="byte count|tree drifted"):
+        verify_hydramp_materialization(
+            second, cache_root=cache_root, expected=expected
+        )
+
+
+def test_content_addressed_cache_serializes_cold_publishers(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = _archive(tmp_path / "models.zip", {"models/HydrAMP/37/model.bin": b"x"})
+    expected = inspect_hydramp_archive(path)
+    cache_root = tmp_path / "cache"
+    real_materialize = archive_module.materialize_hydramp_archive
+    calls: list[int] = []
+
+    def counted_materialize(*args, **kwargs):
+        calls.append(1)
+        return real_materialize(*args, **kwargs)
+
+    monkeypatch.setattr(
+        archive_module, "materialize_hydramp_archive", counted_materialize
+    )
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        results = list(
+            executor.map(
+                lambda _: materialize_hydramp_archive_cached(
+                    path, cache_root=cache_root, expected=expected
+                ),
+                range(2),
+            )
+        )
+    assert len(calls) == 1
+    assert results[0][0] == results[1][0]
+    assert sorted(item[1]["cache_hit"] for item in results) == [False, True]
 
 
 def test_materialization_rejects_symlink_work_root(tmp_path: Path) -> None:

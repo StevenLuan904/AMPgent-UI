@@ -7,6 +7,7 @@ import stat
 import tempfile
 import unicodedata
 import zipfile
+from contextlib import contextmanager
 from pathlib import Path, PurePosixPath
 from typing import Any, BinaryIO
 
@@ -36,6 +37,36 @@ _WINDOWS_RESERVED_NAMES = {
     *(f"LPT{index}" for index in range(1, 10)),
 }
 _WINDOWS_INVALID_CHARACTERS = frozenset('<>:"\\|?*')
+
+
+@contextmanager
+def _exclusive_file_lock(path: Path):
+    """Hold one OS-released cross-process byte lock for cache publication."""
+    _reject_existing_reparse_chain(path.parent)
+    with path.open("a+b") as handle:
+        _reject_existing_reparse_chain(path, stop=path.parent)
+        handle.seek(0, os.SEEK_END)
+        if handle.tell() == 0:
+            handle.write(b"0")
+            handle.flush()
+        handle.seek(0)
+        if os.name == "nt":
+            import msvcrt
+
+            msvcrt.locking(handle.fileno(), msvcrt.LK_LOCK, 1)
+            try:
+                yield
+            finally:
+                handle.seek(0)
+                msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+        else:
+            import fcntl
+
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
 
 def _sha256_open_file(source: BinaryIO) -> str:
@@ -229,6 +260,113 @@ def cleanup_hydramp_materialization(path: Path, *, work: Path) -> None:
     if destination.exists():
         _walk_tree_no_reparse(destination)
         shutil.rmtree(destination)
+
+
+def verify_hydramp_materialization(
+    destination: Path,
+    *,
+    cache_root: Path,
+    expected: dict[str, Any],
+) -> dict[str, Any]:
+    """Recompute the frozen tree identity before or after shared-cache use."""
+    cache_root = _absolute_lexical(cache_root)
+    destination = _absolute_lexical(destination)
+    _reject_existing_reparse_chain(cache_root)
+    if destination.parent != cache_root or not destination.name.startswith("hydramp-"):
+        raise ValueError("v37 HydrAMP cache entry is not a direct cache child")
+    _reject_existing_reparse_chain(destination, stop=cache_root)
+    if not destination.is_dir():
+        raise ValueError("v37 HydrAMP cache entry is missing")
+    files: list[dict[str, Any]] = []
+    observed_total = 0
+    for path in sorted(_walk_tree_no_reparse(destination), key=lambda item: item.as_posix()):
+        if not path.is_file():
+            continue
+        digest = hashlib.sha256()
+        observed_size = 0
+        with path.open("rb") as source:
+            for chunk in iter(lambda: source.read(1024 * 1024), b""):
+                observed_size += len(chunk)
+                observed_total += len(chunk)
+                if (
+                    observed_size > HYDRAMP_ARCHIVE_MAX_FILE_BYTES
+                    or observed_total > HYDRAMP_ARCHIVE_MAX_UNCOMPRESSED_BYTES
+                ):
+                    raise ValueError("v37 HydrAMP cached tree exceeded a size limit")
+                digest.update(chunk)
+        files.append(
+            {
+                "path": path.relative_to(destination).as_posix(),
+                "size": observed_size,
+                "sha256": digest.hexdigest(),
+            }
+        )
+    tree_sha256 = sha256_json(files)
+    if len(files) != expected["file_count"]:
+        raise ValueError("v37 HydrAMP cached model inventory drifted")
+    if observed_total != expected["uncompressed_bytes"]:
+        raise ValueError("v37 HydrAMP cached model byte count drifted")
+    if tree_sha256 != expected["extracted_tree_sha256"]:
+        raise ValueError("v37 HydrAMP cached model tree drifted")
+    return {
+        "file_count": len(files),
+        "uncompressed_bytes": observed_total,
+        "extracted_tree_sha256": tree_sha256,
+    }
+
+
+def materialize_hydramp_archive_cached(
+    archive: Path,
+    *,
+    cache_root: Path,
+    expected: dict[str, Any],
+) -> tuple[Path, dict[str, Any]]:
+    """Publish one immutable, content-addressed extraction for repeated cells.
+
+    Contenders extract into private temporary directories.  A rename publishes a
+    complete tree atomically; losing contenders discard their private tree and
+    verify the winner before reuse.
+    """
+    cache_root = _absolute_lexical(cache_root)
+    _reject_existing_reparse_chain(cache_root)
+    cache_root.mkdir(parents=True, exist_ok=True)
+    _reject_existing_reparse_chain(cache_root)
+    destination = cache_root / f"hydramp-{expected['archive_sha256']}"
+    lock_path = cache_root / f".{destination.name}.lock"
+    with _exclusive_file_lock(lock_path):
+        cache_hit = destination.exists()
+        source_receipt: dict[str, Any] | None = None
+        if not cache_hit:
+            contender, source_receipt = materialize_hydramp_archive(
+                archive,
+                work=cache_root,
+                expected=expected,
+            )
+            contender.rename(destination)
+        verified = verify_hydramp_materialization(
+            destination,
+            cache_root=cache_root,
+            expected=expected,
+        )
+    receipt = {
+        "schema_version": "v37.hydramp-materialization-cache-receipt.1",
+        "archive_sha256": expected["archive_sha256"],
+        "member_inventory_sha256": expected["member_inventory_sha256"],
+        "extracted_tree_sha256": verified["extracted_tree_sha256"],
+        "member_count": expected["member_count"],
+        "file_count": verified["file_count"],
+        "uncompressed_bytes": verified["uncompressed_bytes"],
+        "archive_resource_limits": dict(HYDRAMP_ARCHIVE_RESOURCE_LIMITS),
+        "cache_entry_name": destination.name,
+        "cache_hit": cache_hit,
+        "source_materialization_receipt_sha256": (
+            source_receipt["materialization_receipt_sha256"]
+            if source_receipt is not None
+            else None
+        ),
+    }
+    receipt["materialization_receipt_sha256"] = sha256_json(receipt)
+    return destination, receipt
 
 
 def materialize_hydramp_archive(

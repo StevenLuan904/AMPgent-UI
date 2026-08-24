@@ -99,6 +99,33 @@ def test_hydramp_materialization_emits_progress_while_archive_is_processed(
     assert progress
 
 
+def test_hydramp_worker_materialization_reuses_content_addressed_cache(
+    tmp_path: Path,
+) -> None:
+    archive = tmp_path / "models.zip"
+    with zipfile.ZipFile(archive, "w") as bundle:
+        bundle.writestr("models/HydrAMP/37/weights.bin", b"frozen")
+    expected = inspect_hydramp_archive(archive)
+    binding = {
+        "materialization": {
+            **expected,
+            "archive_path": str(archive),
+            "model_subdirectory": "models/HydrAMP/37",
+        }
+    }
+    cache_root = tmp_path / "cache"
+    first_model, first_receipt = _materialize_hydramp_models(
+        binding, tmp_path / "work-one", cache_root
+    )
+    second_model, second_receipt = _materialize_hydramp_models(
+        binding, tmp_path / "work-two", cache_root
+    )
+    assert first_model == second_model
+    assert first_receipt["persistent_cache"] is True
+    assert first_receipt["cache_hit"] is False
+    assert second_receipt["cache_hit"] is True
+
+
 def test_actual_frozen_generator_launch_bindings_are_byte_exact(tmp_path: Path) -> None:
     index = json.loads((RUNTIME_ROOT / "runtime-index.json").read_text(encoding="utf-8"))
     for entry in index["entries"]:

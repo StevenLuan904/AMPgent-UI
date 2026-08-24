@@ -58,6 +58,8 @@ from pepagent.v37_generator_launch import verify_v37_generator_launch_binding
 from pepagent.v37_hydramp_archive import (
     cleanup_hydramp_materialization,
     materialize_hydramp_archive,
+    materialize_hydramp_archive_cached,
+    verify_hydramp_materialization,
 )
 from pepagent.v37_persistence import (
     _selection_witness_payloads,
@@ -966,14 +968,23 @@ def _generator_command(
     raise ValueError(f"unknown v37 generator: {generator}")
 
 
-def _materialize_hydramp_models(binding: dict[str, Any], work: Path) -> tuple[Path, dict[str, Any]]:
+def _materialize_hydramp_models(
+    binding: dict[str, Any], work: Path, cache_root: Path | None = None
+) -> tuple[Path, dict[str, Any]]:
     materialization = binding["materialization"]
     archive = Path(materialization["archive_path"])
-    destination, receipt = materialize_hydramp_archive(
-        archive,
-        work=work,
-        expected=materialization,
-    )
+    if cache_root is None:
+        destination, receipt = materialize_hydramp_archive(
+            archive,
+            work=work,
+            expected=materialization,
+        )
+    else:
+        destination, receipt = materialize_hydramp_archive_cached(
+            archive,
+            cache_root=cache_root,
+            expected=materialization,
+        )
     model_path = destination / materialization["model_subdirectory"]
     if not model_path.is_dir():
         raise ValueError("v37 HydrAMP archive lacks its frozen model directory")
@@ -981,6 +992,7 @@ def _materialize_hydramp_models(binding: dict[str, Any], work: Path) -> tuple[Pa
         key: value for key, value in receipt.items() if key != "materialization_receipt_sha256"
     }
     receipt["destination_name"] = destination.name
+    receipt["persistent_cache"] = cache_root is not None
     receipt["materialization_receipt_sha256"] = sha256_json(receipt)
     return model_path, receipt
 
@@ -989,6 +1001,7 @@ async def _materialize_hydramp_models_with_progress(
     binding: dict[str, Any],
     work: Path,
     *,
+    cache_root: Path | None = None,
     progress_writer: Callable[[], Awaitable[None]],
     progress_interval_seconds: float = 30.0,
 ) -> tuple[Path, dict[str, Any]]:
@@ -997,6 +1010,10 @@ async def _materialize_hydramp_models_with_progress(
         raise ValueError("v37 materialization progress interval must be positive")
     materialization_task = asyncio.create_task(
         asyncio.to_thread(_materialize_hydramp_models, binding, work)
+        if cache_root is None
+        else asyncio.to_thread(
+            _materialize_hydramp_models, binding, work, cache_root
+        )
     )
     while True:
         try:
@@ -1097,6 +1114,7 @@ async def _generate_frozen_sequence_batch(
             await _materialize_hydramp_models_with_progress(
                 launch_binding,
                 work,
+                cache_root=Path(settings.work_root) / "_model-cache" / "hydramp",
                 progress_writer=materialization_progress_writer,
             )
             if generator == "hydramp"
@@ -1104,9 +1122,7 @@ async def _generate_frozen_sequence_batch(
         )
         hydramp_model_path = hydramp_materialization[0] if hydramp_materialization else None
         hydramp_destination = (
-            work / hydramp_materialization[1]["destination_name"]
-            if hydramp_materialization
-            else None
+            hydramp_model_path.parents[2] if hydramp_model_path is not None else None
         )
         try:
             command = _generator_command(
@@ -1177,11 +1193,19 @@ async def _generate_frozen_sequence_batch(
             }
         finally:
             if hydramp_destination is not None:
-                await asyncio.to_thread(
-                    cleanup_hydramp_materialization,
-                    hydramp_destination,
-                    work=work,
-                )
+                if hydramp_materialization[1].get("persistent_cache"):
+                    await asyncio.to_thread(
+                        verify_hydramp_materialization,
+                        hydramp_destination,
+                        cache_root=Path(settings.work_root) / "_model-cache" / "hydramp",
+                        expected=launch_binding["materialization"],
+                    )
+                else:
+                    await asyncio.to_thread(
+                        cleanup_hydramp_materialization,
+                        hydramp_destination,
+                        work=work,
+                    )
 
     transitioned = _with_activity_transition(
         await execute_v37_durable_attempt(operation, context=context)
