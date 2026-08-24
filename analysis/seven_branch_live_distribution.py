@@ -53,12 +53,14 @@ def _numeric_summary(rows: list[dict[str, Any]], *, direction: str) -> dict[str,
     values = [float(row["numeric_value"]) for row in rows]
     if not values:
         return {}
+    minimum = min(rows, key=lambda row: (float(row["numeric_value"]), row["candidate_id"]))
+    maximum = max(rows, key=lambda row: (float(row["numeric_value"]), row["candidate_id"]))
     if direction.startswith("min"):
-        best = min(rows, key=lambda row: (float(row["numeric_value"]), row["candidate_id"]))
-        worst = max(rows, key=lambda row: (float(row["numeric_value"]), row["candidate_id"]))
+        best = minimum
+        worst = maximum
     elif direction == "max":
-        best = max(rows, key=lambda row: (float(row["numeric_value"]), row["candidate_id"]))
-        worst = min(rows, key=lambda row: (float(row["numeric_value"]), row["candidate_id"]))
+        best = maximum
+        worst = minimum
     else:
         best = worst = None
     return {
@@ -71,6 +73,10 @@ def _numeric_summary(rows: list[dict[str, Any]], *, direction: str) -> dict[str,
         "p25": _quantile(values, 0.25),
         "p75": _quantile(values, 0.75),
         "p90": _quantile(values, 0.90),
+        "min_candidate_id": minimum["candidate_id"],
+        "min_sequence": minimum["sequence"],
+        "max_candidate_id": maximum["candidate_id"],
+        "max_sequence": maximum["sequence"],
         "best_candidate_id": best["candidate_id"] if best else None,
         "best_sequence": best["sequence"] if best else None,
         "best_value": float(best["numeric_value"]) if best else None,
