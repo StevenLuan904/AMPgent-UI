@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import threading
+import time
 import unicodedata
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
@@ -11,12 +13,44 @@ import pepagent.v37_hydramp_archive as archive_module
 from pepagent.v37_generator_launch import iter_v37_runtime_tree_no_reparse
 from pepagent.v37_hydramp_archive import (
     HYDRAMP_ARCHIVE_RESOURCE_LIMITS,
+    _exclusive_file_lock,
     cleanup_hydramp_materialization,
     inspect_hydramp_archive,
     materialize_hydramp_archive,
     materialize_hydramp_archive_cached,
     verify_hydramp_materialization,
 )
+
+
+def test_hydramp_cache_lock_serializes_threads(tmp_path: Path) -> None:
+    entered: list[str] = []
+    first_entered = threading.Event()
+    release_first = threading.Event()
+
+    def first() -> None:
+        with _exclusive_file_lock(tmp_path / "cache.lock"):
+            entered.append("first")
+            first_entered.set()
+            assert release_first.wait(timeout=5)
+
+    def second() -> None:
+        assert first_entered.wait(timeout=5)
+        with _exclusive_file_lock(tmp_path / "cache.lock"):
+            entered.append("second")
+
+    first_thread = threading.Thread(target=first)
+    second_thread = threading.Thread(target=second)
+    first_thread.start()
+    second_thread.start()
+    assert first_entered.wait(timeout=5)
+    time.sleep(0.1)
+    assert entered == ["first"]
+    release_first.set()
+    first_thread.join(timeout=5)
+    second_thread.join(timeout=5)
+    assert not first_thread.is_alive()
+    assert not second_thread.is_alive()
+    assert entered == ["first", "second"]
 
 
 def _archive(path: Path, members: dict[str, bytes], *, compressed: bool = False) -> Path:

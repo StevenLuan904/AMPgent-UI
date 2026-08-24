@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import errno
 import hashlib
 import os
 import shutil
 import stat
 import tempfile
+import time
 import unicodedata
 import zipfile
 from contextlib import contextmanager
@@ -38,6 +40,8 @@ _WINDOWS_RESERVED_NAMES = {
 }
 _WINDOWS_INVALID_CHARACTERS = frozenset('<>:"\\|?*')
 _PROCESS_VERIFIED_CACHE_ENTRIES: set[tuple[str, str]] = set()
+_WINDOWS_LOCK_TIMEOUT_SECONDS = 300.0
+_WINDOWS_LOCK_POLL_SECONDS = 0.05
 
 
 @contextmanager
@@ -54,7 +58,22 @@ def _exclusive_file_lock(path: Path):
         if os.name == "nt":
             import msvcrt
 
-            msvcrt.locking(handle.fileno(), msvcrt.LK_LOCK, 1)
+            deadline = time.monotonic() + _WINDOWS_LOCK_TIMEOUT_SECONDS
+            while True:
+                try:
+                    # LK_LOCK can raise EDEADLK when another thread in this
+                    # process owns the byte range.  A bounded non-blocking
+                    # retry gives threads and processes identical semantics.
+                    msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+                    break
+                except OSError as exc:
+                    if exc.errno not in {errno.EACCES, errno.EAGAIN, errno.EDEADLK}:
+                        raise
+                    if time.monotonic() >= deadline:
+                        raise TimeoutError(
+                            f"timed out waiting for HydrAMP cache lock: {path}"
+                        ) from exc
+                    time.sleep(_WINDOWS_LOCK_POLL_SECONDS)
             try:
                 yield
             finally:
