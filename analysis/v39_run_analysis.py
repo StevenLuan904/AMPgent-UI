@@ -23,6 +23,8 @@ import psycopg
 from matplotlib import font_manager
 from scipy.stats import mannwhitneyu, spearmanr
 
+from pepagent.winner_stability import compute_weight_perturbation_stability
+
 DEFAULT_CONTROLLER_RUN_ID = "5557e950-5bd9-551d-ae1d-948f0ca29d0b"
 DEFAULT_DATABASE_URL = "postgresql://pepagent:change-me@localhost:55432/pepagent"
 REQUIRED_METRICS = [
@@ -55,6 +57,15 @@ HIGHER_IS_BETTER = {
 }
 NON_DIRECTIONAL = {"net_charge_ph7_4", "hydrophobic_ratio_modlamp"}
 OOD_NON_GATING = {"guruprasad_instability_index"}
+STABILITY_METRIC_DIRECTIONS = {
+    "amp_read_log10_mic_um": "min",
+    "llamp_log10_mic_um": "min",
+    "macrel_amp_probability": "max",
+    "toxinpred3_hybrid_score": "min",
+    "macrel_hemolysis_probability": "min",
+    "hydrophobic_moment_eisenberg": "max",
+    "maximum_hydrophobic_run": "min",
+}
 DISPLAY_NAMES = {
     "amp_read_log10_mic_um": "AMP-READ log10 MIC",
     "llamp_log10_mic_um": "LLAMP log10 MIC",
@@ -1074,6 +1085,13 @@ def main() -> None:
     conflict_summary = build_conflict_summary(frame)
     flow = build_flow(frame, occurrence_summary)
     generator_summary = build_generator_summary(frame)
+    stability_frame, stability_summary = compute_weight_perturbation_stability(
+        frame.loc[frame["hard_safety_pass"]].copy(),
+        metric_directions=STABILITY_METRIC_DIRECTIONS,
+        top_k=39,
+        trials=2_000,
+        random_seed=20260824,
+    )
     data_quality = (
         evaluations.groupby("metric_name")
         .agg(
@@ -1108,6 +1126,7 @@ def main() -> None:
         "generator_round_summary": output_dir / "generator_round_summary.csv",
         "mature_core_candidates": output_dir / "mature_core_candidates.csv",
         "data_quality": output_dir / "data_quality.csv",
+        "winner_stability": output_dir / "winner_stability.csv",
     }
     csv_options = {
         "index": False,
@@ -1124,6 +1143,13 @@ def main() -> None:
         outputs["mature_core_candidates"], **csv_options
     )
     data_quality.to_csv(outputs["data_quality"], **csv_options)
+    stability_frame.to_csv(outputs["winner_stability"], **csv_options)
+    stability_summary_path = output_dir / "winner_stability_summary.json"
+    stability_summary_path.write_text(
+        json.dumps(stability_summary, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
 
     figures = {
         "run_overview": output_dir / "01_run_overview.png",
@@ -1155,7 +1181,12 @@ def main() -> None:
     report_path = output_dir / "REPORT.zh-CN.md"
     report_path.write_text(report, encoding="utf-8", newline="\n")
 
-    artifact_paths = [*outputs.values(), *figures.values(), report_path]
+    artifact_paths = [
+        *outputs.values(),
+        *figures.values(),
+        report_path,
+        stability_summary_path,
+    ]
     manifest = {
         "schema_version": "v39.pragmatic-run-analysis.1",
         "generated_at": datetime.now(UTC).isoformat(),
@@ -1168,6 +1199,7 @@ def main() -> None:
         "mature_core_count": int(frame["status"].eq("mature_core").sum()),
         "structure_selected_count": int(frame["structure_selected"].sum()),
         "structure_progress_snapshot": structure_progress,
+        "winner_stability_summary": stability_summary,
         "artifacts": {
             path.name: {"sha256": sha256_file(path), "size_bytes": path.stat().st_size}
             for path in artifact_paths
