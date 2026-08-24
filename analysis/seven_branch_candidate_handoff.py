@@ -164,6 +164,65 @@ def annotate_family_novelty(
     }
 
 
+WINNER_COMPARISON_METRICS = {
+    "amp_read_log10_mic_um": "min",
+    "llamp_log10_mic_um": "min",
+    "macrel_amp_probability": "max",
+    "toxinpred3_hybrid_score": "min",
+    "macrel_hemolysis_probability": "min",
+    "hydrophobic_moment_eisenberg": "max",
+    "maximum_hydrophobic_run": "min",
+}
+
+
+def compare_historical_winner(
+    rows: list[dict[str, Any]],
+    *,
+    historical_rows: list[dict[str, Any]],
+    winner_sequence: str | None,
+) -> dict[str, Any] | None:
+    if winner_sequence is None:
+        return None
+    winner = next(
+        (item for item in historical_rows if item.get("sequence") == winner_sequence),
+        None,
+    )
+    if winner is None:
+        raise ValueError("historical winner sequence is absent from historical candidates")
+    comparisons: list[dict[str, Any]] = []
+    for metric, direction in WINNER_COMPARISON_METRICS.items():
+        winner_value = float(winner[metric])
+        values = [
+            float(row[metric]) for row in rows if row.get(metric) not in (None, "")
+        ]
+        if direction == "min":
+            better = sum(value < winner_value for value in values)
+        else:
+            better = sum(value > winner_value for value in values)
+        equal = sum(value == winner_value for value in values)
+        comparisons.append(
+            {
+                "metric": metric,
+                "favorable_direction": direction,
+                "winner_value": winner_value,
+                "current_valid_n": len(values),
+                "current_better_count": better,
+                "current_equal_count": equal,
+                "current_worse_count": len(values) - better - equal,
+                "winner_rank_among_current_plus_winner": better + 1,
+                "winner_rank_fraction": (better + 1) / (len(values) + 1),
+            }
+        )
+    return {
+        "schema_version": "ampgent.historical-winner-current-cohort-comparison.1",
+        "diagnostic_only": True,
+        "winner_sequence": winner_sequence,
+        "winner_candidate_id": winner.get("candidate_id"),
+        "current_cohort_n": len(rows),
+        "comparisons": comparisons,
+    }
+
+
 async def load_rows(controller_run_id: uuid.UUID) -> tuple[list[dict[str, Any]], ...]:
     async with SessionFactory() as session:
         candidates = (
@@ -237,6 +296,7 @@ def main() -> None:
     parser.add_argument("--output-prefix", type=Path, required=True)
     parser.add_argument("--cohort", choices=("qualified", "all"), default="qualified")
     parser.add_argument("--historical-candidates", type=Path)
+    parser.add_argument("--historical-winner-sequence")
     args = parser.parse_args()
     candidates, evaluations, decisions = asyncio.run(
         load_rows(uuid.UUID(args.controller_run_id))
@@ -249,14 +309,18 @@ def main() -> None:
         target_manifest=target_manifest,
         cohort=args.cohort,
     )
-    historical_sequences: list[str] = []
+    historical_rows: list[dict[str, Any]] = []
     if args.historical_candidates:
         with args.historical_candidates.open(newline="", encoding="utf-8-sig") as handle:
-            historical_sequences = [
-                str(item["sequence"]) for item in csv.DictReader(handle)
-            ]
+            historical_rows = [dict(item) for item in csv.DictReader(handle)]
+    historical_sequences = [str(item["sequence"]) for item in historical_rows]
     family_summary = annotate_family_novelty(
         rows, historical_sequences=historical_sequences
+    )
+    winner_comparison = compare_historical_winner(
+        rows,
+        historical_rows=historical_rows,
+        winner_sequence=args.historical_winner_sequence,
     )
     csv_path = args.output_prefix.with_suffix(".csv")
     json_path = args.output_prefix.with_suffix(".json")
@@ -275,6 +339,7 @@ def main() -> None:
         "candidate_count": len(rows),
         "metric_contract": METRICS,
         "family_summary": family_summary,
+        "historical_winner_comparison": winner_comparison,
         "scope_note": "computational predictions/descriptors; no wet-lab measurements",
         "rows": rows,
     }
