@@ -282,6 +282,32 @@ Apply the following style to AMPgent/AceA research work in this repository:
 - Communicate in plain language. For every important number, explain whether it is good, bad,
   inconclusive, or merely technical, and state what decision it does or does not support.
 
+### Plain-language, score-by-score reporting contract
+
+- Write each AMPgent progress review as if briefly explaining the project to a technically literate
+  interviewer who has not seen the internal pipeline. Lead with the scientific outcome, define each
+  necessary term on first use, and then state the current limitation and next decision. Prefer plain
+  Chinese over internal workflow jargon; when an identifier or English status is necessary, explain
+  what it means in one short phrase.
+- Every review that has Candidate/Evaluation evidence must analyze every scorer in the frozen metric
+  contract, not only the favorable metrics. State the cohort and denominator first and keep the full
+  pool, safety/admission-qualified pool, and structure/final portfolio separate.
+- For every numeric scorer report: observed count; missing, failed, and OOD count; units and whether
+  higher or lower is favorable; the best and worst candidate identity/sequence; minimum, maximum,
+  arithmetic mean, median, standard deviation, and P10/P25/P75/P90. Add one plain-language sentence
+  describing concentration, spread, skew/tails, or an important subgroup shift. Use native assay
+  units or an explicitly explained transform; do not silently compare incompatible scales.
+- For every categorical or label scorer report: observed and missing/OOD count, every category's
+  count and percentage, the favorable/unfavorable interpretation, and any class imbalance or
+  disagreement that affects selection. Do not compute a meaningless numeric average of labels.
+- Extremes and averages are descriptive, not admission rules. Identify whether a score is a model
+  prediction, descriptor, structure result, or experimental measurement. Never call the highest
+  predicted score an experimentally best peptide, and never let an OOD instability score act as a
+  hard safety gate. If evidence is provisional, say what is still missing before champion status.
+- Keep the main explanation compact: use one score-summary table plus a short interpretation of the
+  important tails, conflicts, and changes from the previous review. A machine-readable CSV/JSON
+  export may carry the complete rows, but PostgreSQL and object-store evidence remain authoritative.
+
 # Evidence persistence and replay
 
 - Every Agent-flow observation and action must be persisted in PostgreSQL as a typed evidence graph:
