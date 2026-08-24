@@ -182,6 +182,27 @@ def test_branch_round_top_up_budget_must_keep_three_generator_balance() -> None:
         )
 
 
+def test_later_top_up_round_uses_yield_adaptive_mix_with_generator_floor() -> None:
+    _, target_execution = build_seven_branch_round_execution_contract(
+        _contract(), branch_key="acea", round_ordinal=2, raw_budget=600
+    )
+    target_generators = [cell.generator_id for cell in target_execution.cells]
+    assert target_generators.count("hydramp") == 3
+    assert target_generators.count("ampgan_v2") == 2
+    assert target_generators.count("amp_designer") == 1
+
+    _, amp_execution = build_seven_branch_round_execution_contract(
+        _contract(),
+        branch_key="target_agnostic_amp",
+        round_ordinal=2,
+        raw_budget=3000,
+    )
+    amp_generators = [cell.generator_id for cell in amp_execution.cells]
+    assert amp_generators.count("hydramp") == 15
+    assert amp_generators.count("ampgan_v2") == 9
+    assert amp_generators.count("amp_designer") == 6
+
+
 def test_top_up_plan_uses_observed_yield_and_balanced_budget() -> None:
     branch = _contract().branches[0]
     plan = plan_branch_top_up(

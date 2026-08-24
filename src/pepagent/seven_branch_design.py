@@ -347,7 +347,7 @@ def build_seven_branch_round_execution_contract(
     round_ordinal: int,
     raw_budget: int | None = None,
 ) -> tuple[SevenBranchRoundBinding, V38SequenceExecutionContract]:
-    """Project one branch budget into balanced, frozen 100-occurrence generator cells."""
+    """Project one branch budget into frozen 100-occurrence generator cells."""
 
     try:
         branch_index, branch = next(
@@ -363,13 +363,36 @@ def build_seven_branch_round_execution_contract(
     if resolved_budget <= 0 or resolved_budget % 300 != 0:
         raise ValueError("branch raw budget must be a positive multiple of 300")
     cell_count = resolved_budget // 100
-    per_generator = cell_count // 3
-    generators = ("hydramp", "ampgan_v2", "amp_designer")
+    if round_ordinal < 2:
+        per_generator = cell_count // 3
+        generators = tuple(
+            generator
+            for generator in ("hydramp", "ampgan_v2", "amp_designer")
+            for _ in range(per_generator)
+        )
+    else:
+        # Two balanced rounds established a durable yield ordering while showing
+        # that all three arms still contribute distinct sequence families.  Later
+        # rounds exploit the faster, higher-yield arm without dropping either
+        # independent generator below one 100-occurrence cell.
+        hydramp_cells = max(1, round(cell_count * 0.50))
+        ampgan_cells = max(1, round(cell_count * 0.30))
+        amp_designer_cells = cell_count - hydramp_cells - ampgan_cells
+        if amp_designer_cells < 1:
+            amp_designer_cells = 1
+            hydramp_cells = cell_count - ampgan_cells - amp_designer_cells
+        generators = (
+            *("hydramp" for _ in range(hydramp_cells)),
+            *("ampgan_v2" for _ in range(ampgan_cells)),
+            *("amp_designer" for _ in range(amp_designer_cells)),
+        )
+    if len(generators) != cell_count:
+        raise ValueError("generator allocation does not match the frozen cell budget")
     seed_base = 20_290_000 + branch_index * 10_000 + round_ordinal * 1_000
     cells = tuple(
         GeneratorCell(
             ordinal=ordinal,
-            generator_id=generators[ordinal // per_generator],
+            generator_id=generators[ordinal],
             seed=seed_base + ordinal + 1,
             requested_proposals=100,
         )
