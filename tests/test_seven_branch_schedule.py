@@ -7,7 +7,10 @@ import pytest
 
 from pepagent.provenance.hashing import sha256_file, sha256_json
 from pepagent.seven_branch_design import SevenBranchDesignContract
-from pepagent.seven_branch_reservation_cli import build_seven_branch_reservation_specs
+from pepagent.seven_branch_reservation_cli import (
+    _target_metadata,
+    build_seven_branch_reservation_specs,
+)
 from pepagent.seven_branch_schedule import (
     build_initial_seven_branch_schedule,
     derive_initial_seven_branch_run_ids,
@@ -102,6 +105,21 @@ def test_initial_schedule_freezes_seven_exact_once_child_runs() -> None:
     assert schedule.sha256() == schedule.model_validate(
         schedule.model_dump(mode="json")
     ).sha256()
+
+
+def test_target_metadata_accepts_frozen_manifest_field_names() -> None:
+    _, manifest, _ = _inputs()
+    metadata = [
+        _target_metadata(
+            item,
+            manifest_schema_version=manifest["schema_version"],
+        )
+        for item in manifest["targets"]
+    ]
+
+    assert len(metadata) == 6
+    assert metadata[0]["source_kind"] == "public_canonical_supplement"
+    assert all(isinstance(item["is_partial"], bool) for item in metadata)
 
 
 def test_initial_schedule_rejects_template_or_manifest_drift() -> None:

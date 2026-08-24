@@ -42,6 +42,26 @@ def _load_json(path: Path) -> dict[str, Any]:
     return payload
 
 
+def _target_metadata(
+    item: dict[str, Any], *, manifest_schema_version: str
+) -> dict[str, Any]:
+    source_kind = item.get("source_kind", item.get("source_type"))
+    if not source_kind:
+        raise ValueError("target manifest item is missing source_kind")
+    is_partial = item.get("is_partial", item.get("partial"))
+    if not isinstance(is_partial, bool):
+        raise ValueError("target manifest item is missing boolean is_partial")
+    return {
+        "target_key": item["target_key"],
+        "source_uri": item["source_uri"],
+        "source_kind": source_kind,
+        "is_partial": is_partial,
+        "retrieval_method": item.get("retrieval_method"),
+        "authority_accession": item.get("authority_accession"),
+        "manifest_schema_version": manifest_schema_version,
+    }
+
+
 def build_seven_branch_reservation_specs(
     schedule: SevenBranchDesignSchedule,
 ) -> tuple[dict[str, Any], tuple[dict[str, Any], ...]]:
@@ -115,13 +135,10 @@ async def _ensure_targets(
                 accession=item["protein_accession"],
                 sequence=item["sequence"],
                 sequence_sha256=item["sequence_sha256"],
-                metadata_json={
-                    "target_key": item["target_key"],
-                    "source_uri": item["source_uri"],
-                    "source_type": item["source_type"],
-                    "partial": item["partial"],
-                    "manifest_schema_version": target_manifest["schema_version"],
-                },
+                metadata_json=_target_metadata(
+                    item,
+                    manifest_schema_version=target_manifest["schema_version"],
+                ),
             )
             .on_conflict_do_nothing(index_elements=[Target.sequence_sha256])
         )
@@ -145,7 +162,7 @@ async def reserve_seven_branch_schedule(
         separators=(",", ":"),
     ).encode("utf-8")
     object_store = await asyncio.to_thread(ContentAddressedObjectStore)
-    stored = await asyncio.to_thread(
+    stored_artifact = await asyncio.to_thread(
         object_store.put_bytes, schedule_bytes, "application/json"
     )
     all_ids = [schedule.controller_run_id, *(item.run_id for item in schedule.rounds)]
@@ -165,10 +182,10 @@ async def reserve_seven_branch_schedule(
             by_id = {item.id: item for item in existing}
             expected = {schedule.controller_run_id: controller_spec}
             for frozen, spec in zip(schedule.rounds, child_specs, strict=True):
-                stored = by_id[frozen.run_id]
+                stored_run = by_id[frozen.run_id]
                 expected[frozen.run_id] = {
                     **spec,
-                    "target_id": str(stored.target_id),
+                    "target_id": str(stored_run.target_id),
                     "target_binding_role": (
                         "frozen_target_sequence"
                         if spec["branch_key"] in schedule.target_runtime_by_key
@@ -182,7 +199,7 @@ async def reserve_seven_branch_schedule(
                 "controller_run_id": str(schedule.controller_run_id),
                 "child_run_ids": [str(item.run_id) for item in schedule.rounds],
                 "schedule_sha256": schedule.sha256(),
-                "schedule_artifact_sha256": stored.sha256,
+                "schedule_artifact_sha256": stored_artifact.sha256,
             }
         targets = await _ensure_targets(session, target_manifest)
         anchor = targets["acea"]
@@ -235,10 +252,10 @@ async def reserve_seven_branch_schedule(
             postgresql_insert(Artifact)
             .values(
                 id=uuid.uuid4(),
-                sha256=stored.sha256,
-                size_bytes=stored.size_bytes,
-                media_type=stored.media_type,
-                storage_uri=stored.uri,
+                sha256=stored_artifact.sha256,
+                size_bytes=stored_artifact.size_bytes,
+                media_type=stored_artifact.media_type,
+                storage_uri=stored_artifact.uri,
                 metadata_json={
                     "role": "seven_branch_design_schedule",
                     "immutable": True,
@@ -255,7 +272,7 @@ async def reserve_seven_branch_schedule(
             "seven-branch-reservation-cli",
             {
                 "schedule_sha256": schedule.sha256(),
-                "schedule_artifact_sha256": stored.sha256,
+                "schedule_artifact_sha256": stored_artifact.sha256,
                 "child_run_ids": [str(item.run_id) for item in schedule.rounds],
                 "temporal_workflow_submitted": False,
             },
@@ -265,7 +282,7 @@ async def reserve_seven_branch_schedule(
         "controller_run_id": str(schedule.controller_run_id),
         "child_run_ids": [str(item.run_id) for item in schedule.rounds],
         "schedule_sha256": schedule.sha256(),
-        "schedule_artifact": asdict(stored),
+        "schedule_artifact": asdict(stored_artifact),
     }
 
 
