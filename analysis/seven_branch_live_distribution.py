@@ -216,6 +216,24 @@ async def build_report(controller_run_id: uuid.UUID) -> dict[str, Any]:
             .mappings()
             .all()
         )
+        candidate_sources = (
+            (
+                await session.execute(
+                    text(
+                        """select r.spec_json->>'branch_key' branch_key,
+                    c.id::text candidate_id, t.tool_name, t.tool_version
+                    from experiment_runs r
+                    join candidates c on c.run_id=r.id
+                    join tool_calls t on t.id=c.generator_call_id
+                    where r.parent_run_id=:controller
+                    order by r.spec_json->>'branch_key', t.tool_name, c.id"""
+                    ),
+                    {"controller": controller_run_id},
+                )
+            )
+            .mappings()
+            .all()
+        )
 
     cohort_ids: dict[str, dict[str, set[str]]] = defaultdict(lambda: defaultdict(set))
     for row in rows:
@@ -300,6 +318,29 @@ async def build_report(controller_run_id: uuid.UUID) -> dict[str, Any]:
                 else:
                     item.update(_numeric_summary(valid, direction=contract["direction"]))
                 summaries.append(item)
+    source_groups: dict[tuple[str, str, str], list[str]] = defaultdict(list)
+    for item in candidate_sources:
+        source_groups[
+            (item["branch_key"], item["tool_name"], item["tool_version"])
+        ].append(item["candidate_id"])
+    generator_cohort_yields: list[dict[str, Any]] = []
+    for (branch, tool_name, tool_version), candidate_ids in sorted(source_groups.items()):
+        source_ids = set(candidate_ids)
+        for cohort in ("all", "mature_core", "selected_exploration", "qualified"):
+            if cohort != "all" and cohort not in cohort_ids[branch]:
+                continue
+            selected_n = len(source_ids & cohort_ids[branch].get(cohort, set()))
+            generator_cohort_yields.append(
+                {
+                    "branch_key": branch,
+                    "tool_name": tool_name,
+                    "tool_version": tool_version,
+                    "cohort": cohort,
+                    "generator_candidate_n": len(source_ids),
+                    "cohort_candidate_n": selected_n,
+                    "cohort_yield": selected_n / len(source_ids) if source_ids else None,
+                }
+            )
     return {
         "schema_version": "ampgent.seven-branch-live-score-distribution.1",
         "generated_at": datetime.now(UTC).isoformat(),
@@ -359,6 +400,7 @@ async def build_report(controller_run_id: uuid.UUID) -> dict[str, Any]:
             for item in generation_arms
         ],
         "generation_arm_overlaps": [dict(item) for item in generation_arm_overlaps],
+        "generator_cohort_yields": generator_cohort_yields,
         "empty_downstream_cohorts": ["structure_pool", "final_portfolio"],
         "summaries": summaries,
     }
