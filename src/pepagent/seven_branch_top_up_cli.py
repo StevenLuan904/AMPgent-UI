@@ -23,6 +23,7 @@ from pepagent.seven_branch_design import (
     SEQUENCE_METRICS,
     BranchProgress,
     SevenBranchDesignContract,
+    delivery_eligible_candidate_ids,
 )
 from pepagent.seven_branch_reservation_cli import (
     reserve_seven_branch_top_up_schedule,
@@ -76,13 +77,7 @@ async def _initial_branch_snapshot(
             raise ValueError(f"branch child lacks scored admission evidence: {child.id}")
         admission_payload = json.loads(decisions[0].response_text)
         admission = admission_payload["admission"]
-        qualified_ids = {
-            uuid.UUID(str(item))
-            for item in (
-                *admission["mature_core_candidate_ids"],
-                *admission["exploration_candidate_ids"],
-            )
-        }
+        qualified_ids = set(delivery_eligible_candidate_ids(admission))
         sequence_coverage = {item.id: set() for item in candidates}
         target_coverage = {item.id: set() for item in candidates}
         for row in evaluations:
@@ -154,13 +149,18 @@ async def build_top_up_branch_evidence(
         controller = await session.get(ExperimentRun, controller_run_id)
         if controller is None or controller.status != "succeeded":
             raise ValueError("seven-branch controller is not durably succeeded")
-        children = list(
+        descendants = list(
             await session.scalars(
                 select(ExperimentRun)
                 .where(ExperimentRun.parent_run_id == controller_run_id)
                 .order_by(ExperimentRun.created_at, ExperimentRun.id)
             )
         )
+        children = [
+            item
+            for item in descendants
+            if item.spec_json.get("run_kind") == "seven_branch_design_round"
+        ]
         if not children or any(item.status != "succeeded" for item in children):
             raise ValueError("seven-branch child runs are not durably succeeded")
         cumulative_decisions = list(

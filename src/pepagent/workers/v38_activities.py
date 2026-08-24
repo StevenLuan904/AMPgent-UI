@@ -33,6 +33,7 @@ from pepagent.seven_branch_design import (
     BranchProgress,
     DesignBranch,
     SevenBranchRoundBinding,
+    delivery_eligible_candidate_ids,
     next_branch_action,
     plan_branch_top_up,
     select_branch_delivery,
@@ -343,10 +344,7 @@ async def persist_seven_branch_cumulative_selection(
         mature_ids = {
             uuid.UUID(str(item)) for item in admission["mature_core_candidate_ids"]
         }
-        exploration_ids = {
-            uuid.UUID(str(item)) for item in admission["exploration_candidate_ids"]
-        }
-        qualified_ids = mature_ids | exploration_ids
+        qualified_ids = set(delivery_eligible_candidate_ids(admission))
         decision_by_id = {
             uuid.UUID(str(item["candidate_id"])): item
             for item in admission["decisions"]
@@ -407,7 +405,9 @@ async def persist_seven_branch_cumulative_selection(
                 sequence_sha256=item.sequence_sha256,
                 family_key=family_by_sequence[item.sequence],
                 admission_tier=(
-                    "mature_core" if item.id in mature_ids else "exploration"
+                    "mature_core"
+                    if item.id in mature_ids
+                    else "promising_uncertain"
                 ),
                 sequence_pareto_front=decision_by_id[item.id].get("pareto_front"),
                 target_conditional_nll=target_scores[item.id].get("conditional_nll"),

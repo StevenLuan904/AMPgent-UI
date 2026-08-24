@@ -408,8 +408,11 @@ class BranchProgress(FrozenModel):
 class BranchTopUpPlan(FrozenModel):
     """A deterministic successor-round recommendation from durable branch yield."""
 
-    schema_version: Literal["ampgent.seven-branch-top-up-plan.1"] = (
-        "ampgent.seven-branch-top-up-plan.1"
+    schema_version: Literal[
+        "ampgent.seven-branch-top-up-plan.1",
+        "ampgent.seven-branch-top-up-plan.2",
+    ] = (
+        "ampgent.seven-branch-top-up-plan.2"
     )
     branch_key: str
     next_round_ordinal: int = Field(ge=1)
@@ -421,8 +424,24 @@ class BranchTopUpPlan(FrozenModel):
     observed_qualified_yield: float = Field(ge=0.0, le=1.0)
     planning_yield: float = Field(gt=0.0, le=1.0)
     safety_factor: float = Field(ge=1.0)
+    uncapped_recommended_raw_budget: int | None = Field(
+        default=None, ge=0, multiple_of=300
+    )
+    per_epoch_raw_budget_cap: int | None = Field(
+        default=None, ge=0, multiple_of=300
+    )
+    budget_cap_applied: bool = False
     recommended_raw_budget: int = Field(ge=0, multiple_of=300)
     action: Literal["quota_complete", "freeze_successor_round"]
+
+    @model_validator(mode="after")
+    def validate_v2_budget_audit(self) -> BranchTopUpPlan:
+        if self.schema_version == "ampgent.seven-branch-top-up-plan.2" and (
+            self.uncapped_recommended_raw_budget is None
+            or self.per_epoch_raw_budget_cap is None
+        ):
+            raise ValueError("v2 top-up plan requires bounded-budget audit fields")
+        return self
 
     def sha256(self) -> str:
         return sha256_json(self.model_dump(mode="json"))
@@ -432,7 +451,9 @@ class BranchDeliveryCandidate(FrozenModel):
     candidate_id: UUID
     sequence_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     family_key: str = Field(min_length=1)
-    admission_tier: Literal["mature_core", "exploration"]
+    admission_tier: Literal[
+        "mature_core", "promising_uncertain", "exploration"
+    ]
     sequence_pareto_front: int | None = Field(default=None, ge=0)
     target_conditional_nll: float | None = None
     target_conditional_ppl: float | None = None
@@ -520,6 +541,33 @@ def select_branch_delivery(
     )
 
 
+def delivery_eligible_candidate_ids(admission: dict[str, Any]) -> frozenset[UUID]:
+    """Return every validity/safety-passing candidate, independent of structure budget.
+
+    The legacy admission lists are deliberately capped by the optional structure
+    budget.  Seven-branch delivery is sequence-first, so its candidate pool must use
+    the complete typed decision set: mature core and promising/uncertain candidates
+    remain eligible, while rejected candidates do not.
+    """
+
+    decisions = admission.get("decisions")
+    if not isinstance(decisions, list):
+        raise ValueError("seven-branch admission decisions are missing")
+    eligible: set[UUID] = set()
+    observed: set[UUID] = set()
+    allowed = {"mature_core", "promising_uncertain", "rejected"}
+    for item in decisions:
+        if not isinstance(item, dict) or item.get("status") not in allowed:
+            raise ValueError("seven-branch admission decision is invalid")
+        candidate_id = UUID(str(item.get("candidate_id")))
+        if candidate_id in observed:
+            raise ValueError("seven-branch admission duplicated a candidate decision")
+        observed.add(candidate_id)
+        if item["status"] != "rejected":
+            eligible.add(candidate_id)
+    return frozenset(eligible)
+
+
 def plan_branch_top_up(
     branch: DesignBranch,
     progress: BranchProgress,
@@ -530,9 +578,12 @@ def plan_branch_top_up(
 
     The planner never lowers admission criteria.  It adds a 50% occurrence reserve
     for cross-round exact duplicates and yield variance, then rounds up to one
-    balanced three-generator block (300 occurrences).  When the first round has no
-    qualified candidates, it repeats at least the frozen initial breadth instead of
-    inventing an optimistic yield.
+    balanced three-generator block (300 occurrences).  The empirical estimate is
+    retained for audit, while each immutable epoch is capped at 2,400 target-specific
+    or 3,000 target-agnostic occurrences.  This prevents one low-yield observation
+    from creating a huge, slow batch and lets later epochs adapt to durable yield.
+    When the first round has no qualified candidates, it repeats at least the frozen
+    initial breadth instead of inventing an optimistic yield.
     """
 
     if branch.branch_key != progress.branch_key:
@@ -547,7 +598,9 @@ def plan_branch_top_up(
         else 0.0
     )
     safety_factor = 1.5
+    per_epoch_cap = 2400 if branch.branch_kind == "target_specific" else 3000
     if remaining == 0:
+        uncapped_budget = 0
         budget = 0
         action: Literal["quota_complete", "freeze_successor_round"] = (
             "quota_complete"
@@ -558,19 +611,20 @@ def plan_branch_top_up(
         if observed_yield > 0:
             planning_yield = observed_yield
             needed = math.ceil((remaining / planning_yield) * safety_factor)
-            budget = math.ceil(needed / 300) * 300
+            uncapped_budget = math.ceil(needed / 300) * 300
         else:
             planning_yield = min(
                 1.0,
                 branch.requested_delivery_count / branch.initial_raw_budget,
             )
-            budget = max(
+            uncapped_budget = max(
                 branch.initial_raw_budget,
                 math.ceil(
                     ((remaining / planning_yield) * safety_factor) / 300
                 )
                 * 300,
             )
+        budget = min(uncapped_budget, per_epoch_cap)
     return BranchTopUpPlan(
         branch_key=branch.branch_key,
         next_round_ordinal=next_round_ordinal,
@@ -582,6 +636,9 @@ def plan_branch_top_up(
         observed_qualified_yield=observed_yield,
         planning_yield=planning_yield,
         safety_factor=safety_factor,
+        uncapped_recommended_raw_budget=uncapped_budget,
+        per_epoch_raw_budget_cap=per_epoch_cap,
+        budget_cap_applied=uncapped_budget > budget,
         recommended_raw_budget=budget,
         action=action,
     )

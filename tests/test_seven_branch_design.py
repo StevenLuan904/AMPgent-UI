@@ -11,6 +11,7 @@ from pepagent.seven_branch_design import (
     SEQUENCE_METRICS,
     BranchDeliveryCandidate,
     BranchProgress,
+    BranchTopUpPlan,
     DesignBranch,
     SevenBranchDesignContract,
     SevenBranchDesignSchedule,
@@ -18,6 +19,7 @@ from pepagent.seven_branch_design import (
     SevenBranchTopUpEpochBranch,
     SevenBranchTopUpSchedule,
     build_seven_branch_round_execution_contract,
+    delivery_eligible_candidate_ids,
     next_branch_action,
     next_controller_branch,
     plan_branch_top_up,
@@ -235,6 +237,66 @@ def test_top_up_plan_is_zero_after_quota_is_delivered() -> None:
     )
     assert plan.action == "quota_complete"
     assert plan.recommended_raw_budget == 0
+
+
+def test_top_up_plan_caps_low_yield_target_agnostic_epoch() -> None:
+    branch = _contract().branches[-1]
+    plan = plan_branch_top_up(
+        branch,
+        _progress(
+            branch.branch_key,
+            raw_count=3000,
+            qualified_count=48,
+            delivered_count=48,
+        ),
+        next_round_ordinal=1,
+    )
+    assert plan.schema_version == "ampgent.seven-branch-top-up-plan.2"
+    assert plan.uncapped_recommended_raw_budget == 89400
+    assert plan.per_epoch_raw_budget_cap == 3000
+    assert plan.budget_cap_applied is True
+    assert plan.recommended_raw_budget == 3000
+
+
+def test_v1_top_up_plan_remains_readable_without_v2_audit_fields() -> None:
+    legacy = BranchTopUpPlan.model_validate(
+        {
+            "schema_version": "ampgent.seven-branch-top-up-plan.1",
+            "branch_key": "acea",
+            "next_round_ordinal": 1,
+            "requested_delivery_count": 150,
+            "delivered_count": 48,
+            "remaining_delivery_count": 102,
+            "observed_raw_count": 600,
+            "observed_qualified_count": 48,
+            "observed_qualified_yield": 0.08,
+            "planning_yield": 0.08,
+            "safety_factor": 1.5,
+            "recommended_raw_budget": 2100,
+            "action": "freeze_successor_round",
+        }
+    )
+    assert legacy.uncapped_recommended_raw_budget is None
+    assert legacy.per_epoch_raw_budget_cap is None
+
+
+def test_delivery_eligibility_is_not_truncated_by_structure_budget() -> None:
+    admission = {
+        "decisions": [
+            {"candidate_id": str(UUID(int=1)), "status": "mature_core"},
+            {
+                "candidate_id": str(UUID(int=2)),
+                "status": "promising_uncertain",
+            },
+            {"candidate_id": str(UUID(int=3)), "status": "rejected"},
+        ],
+        "mature_core_candidate_ids": [str(UUID(int=1))],
+        "exploration_candidate_ids": [],
+    }
+    assert delivery_eligible_candidate_ids(admission) == {
+        UUID(int=1),
+        UUID(int=2),
+    }
 
 
 def test_target_delivery_deduplicates_and_uses_target_score_with_family_first() -> None:
