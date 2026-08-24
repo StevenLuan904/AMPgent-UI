@@ -23,6 +23,8 @@ def test_dominating_candidate_is_stable_winner() -> None:
     winner = result.set_index("candidate_id").loc["a"]
     assert winner["random_weight_top_k_probability"] == 1.0
     assert winner["random_weight_winner_probability"] == 1.0
+    assert winner["score_noise_top_k_probability"] == 1.0
+    assert winner["score_noise_winner_probability"] == 1.0
     assert winner["leave_one_metric_out_top_k_fraction"] == 1.0
     assert summary["candidate_count"] == 3
 
@@ -53,3 +55,20 @@ def test_stability_is_deterministic_and_excludes_incomplete_rows() -> None:
     assert first_summary == second_summary
     assert first_summary["excluded_incomplete_count"] == 1
     assert set(first["candidate_id"]) == {"a", "b"}
+
+
+def test_negative_score_noise_is_rejected() -> None:
+    frame = pd.DataFrame(
+        [{"candidate_id": "a", "sequence": "AAAA", "score": 1.0}]
+    )
+    try:
+        compute_weight_perturbation_stability(
+            frame,
+            metric_directions={"score": "max"},
+            top_k=1,
+            score_noise_stddev=-0.01,
+        )
+    except ValueError as error:
+        assert str(error) == "score_noise_stddev must be non-negative"
+    else:
+        raise AssertionError("negative score noise must fail")

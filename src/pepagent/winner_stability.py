@@ -16,6 +16,7 @@ def compute_weight_perturbation_stability(
     top_k: int,
     trials: int = 2_000,
     random_seed: int = 20260824,
+    score_noise_stddev: float = 0.02,
 ) -> tuple[pd.DataFrame, dict[str, Any]]:
     """Measure ranking stability under many non-negative objective weightings.
 
@@ -30,6 +31,8 @@ def compute_weight_perturbation_stability(
         raise ValueError("winner stability requires at least one directional metric")
     if top_k <= 0 or trials <= 0:
         raise ValueError("top_k and trials must be positive")
+    if score_noise_stddev < 0:
+        raise ValueError("score_noise_stddev must be non-negative")
     required = {"candidate_id", "sequence", *metric_directions}
     missing_columns = required - set(frame.columns)
     if missing_columns:
@@ -65,6 +68,25 @@ def compute_weight_perturbation_stability(
         np.argmax(weighted_scores, axis=0), minlength=candidate_count
     )
 
+    # Independently perturb every percentile utility around the fixed equal-weight
+    # ranking. The mean of independent per-metric noise has this standard deviation;
+    # using a separate RNG preserves the historical random-weight result stream.
+    noise_rng = np.random.default_rng(random_seed + 1)
+    equal_weight_score = utility_matrix.mean(axis=1)
+    mean_noise_stddev = score_noise_stddev / np.sqrt(metric_count)
+    noisy_scores = equal_weight_score[:, None] + noise_rng.normal(
+        0.0, mean_noise_stddev, size=(candidate_count, trials)
+    )
+    noisy_top_indices = np.argpartition(
+        noisy_scores, candidate_count - effective_top_k, axis=0
+    )[candidate_count - effective_top_k :]
+    noisy_top_counts = np.bincount(
+        noisy_top_indices.ravel(), minlength=candidate_count
+    )
+    noisy_winner_counts = np.bincount(
+        np.argmax(noisy_scores, axis=0), minlength=candidate_count
+    )
+
     leave_one_out_counts = np.zeros(candidate_count, dtype=int)
     if metric_count == 1:
         leave_one_out_counts[:] = 1
@@ -79,7 +101,6 @@ def compute_weight_perturbation_stability(
             ]
             leave_one_out_counts[selected] += 1
 
-    equal_weight_score = utility_matrix.mean(axis=1)
     equal_weight_rank = pd.Series(equal_weight_score).rank(
         method="min", ascending=False
     )
@@ -92,6 +113,8 @@ def compute_weight_perturbation_stability(
     result["equal_weight_rank"] = equal_weight_rank.astype(int)
     result["random_weight_top_k_probability"] = top_counts / trials
     result["random_weight_winner_probability"] = winner_counts / trials
+    result["score_noise_top_k_probability"] = noisy_top_counts / trials
+    result["score_noise_winner_probability"] = noisy_winner_counts / trials
     result["leave_one_metric_out_top_k_fraction"] = (
         leave_one_out_counts / leave_one_out_denominator
     )
@@ -114,13 +137,15 @@ def compute_weight_perturbation_stability(
         else pd.Series(False, index=result.index)
     )
     summary = {
-        "schema_version": "ampgent.winner-stability.1",
+        "schema_version": "ampgent.winner-stability.2",
         "candidate_count": candidate_count,
         "excluded_incomplete_count": int((~complete).sum()),
         "metric_directions": dict(metric_directions),
         "top_k": effective_top_k,
         "random_weight_trials": trials,
         "random_seed": random_seed,
+        "score_noise_trials": trials,
+        "score_noise_stddev_percentile_units": score_noise_stddev,
         "historical_mature_core_count": int(historical_core.sum()),
         "historical_core_top_k_probability_ge_0_8": int(
             (historical_core & result["random_weight_top_k_probability"].ge(0.8)).sum()
