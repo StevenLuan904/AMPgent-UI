@@ -1,0 +1,85 @@
+{
+  "schema_version": "v39.pragmatic-run-analysis.1",
+  "generated_at": "2026-08-24T03:05:40.734300+00:00",
+  "controller_run_id": "5557e950-5bd9-551d-ae1d-948f0ca29d0b",
+  "source_run_ids": [
+    "2c807019-1590-5ba4-b456-8e71044b210b",
+    "49fb091d-e068-540d-865f-fbf601f21e8c",
+    "0c58f64c-2122-54df-b258-e38001bb9897",
+    "2c084e8b-856c-5319-b474-d280f2c4d7ec"
+  ],
+  "cross_round_decision_sha256": "b1cbf8cbd2a0a688ae1ec18fe35cafcce709b84e992bf6e945617bb71e972fc5",
+  "candidate_count": 6182,
+  "evaluation_count": 74184,
+  "metric_count": 12,
+  "mature_core_count": 39,
+  "structure_selected_count": 48,
+  "artifacts": {
+    "candidate_metrics.csv": {
+      "sha256": "bb134de2fbf34def306e673f095a0ddfd523277da93d519c5b30c86011ec0b63",
+      "size_bytes": 2692938
+    },
+    "metric_summary.csv": {
+      "sha256": "cef17bddff6892e67a336e38cfc334e59af62ea34641d14d16605752c1e398b2",
+      "size_bytes": 13402
+    },
+    "label_summary.csv": {
+      "sha256": "9c71c1a5c148fabe230e3fc9ba5434d1d5fcbde79a3e167dc40a71a7edac80c8",
+      "size_bytes": 610
+    },
+    "conflict_summary.csv": {
+      "sha256": "7d3c7f758cbf0f0338abff5d960caf0e05e389013a01b6dee6634ac0b9898ce2",
+      "size_bytes": 2347
+    },
+    "cohort_flow.csv": {
+      "sha256": "a541fd0988c5d950be66efb0eab11e2a7b585826339f68a69c0d72590471d64d",
+      "size_bytes": 206
+    },
+    "generator_round_summary.csv": {
+      "sha256": "c8293cc59308d97b54a3d834c55ca4e3bc9807af82f0659a34460cf010dde765",
+      "size_bytes": 1537
+    },
+    "mature_core_candidates.csv": {
+      "sha256": "907898705eb0173d3bfa3c6f235b024324a60d77c8edfae07cbe43a3ed558f7a",
+      "size_bytes": 16746
+    },
+    "data_quality.csv": {
+      "sha256": "269c3f6cbc657dab2a290e087ba9d20d4650e1b014a489e0f070c29aa1e89c26",
+      "size_bytes": 774
+    },
+    "01_run_overview.png": {
+      "sha256": "6562922670d5715be1c41080132c619e2365eaec5afc34435132775ca998abee",
+      "size_bytes": 120327
+    },
+    "02_metric_distributions.png": {
+      "sha256": "d30d63f83eb088a9b0b349e626cca7f839c4b54fc9c734ec2698c4b32696e315",
+      "size_bytes": 267216
+    },
+    "03_metric_correlations.png": {
+      "sha256": "214446675f5a498e23a35051fe7a6f54196154d8a81da41cdb082e1066222462",
+      "size_bytes": 212333
+    },
+    "04_objective_conflicts.png": {
+      "sha256": "b85145054c3a74ead2b263b7dac0463a690a48f1b9d372e5ab1af9e1ea308c80",
+      "size_bytes": 1291229
+    },
+    "05_generator_yield.png": {
+      "sha256": "9cce8c42860cb4565acdc068d369c099c22b16c901f557a484947299e9847773",
+      "size_bytes": 78883
+    },
+    "06_mature_core_tradeoffs.png": {
+      "sha256": "a16e111bb275e66fabb19f56619486d5ba59aec79f7de31d9ac2c6658e6c27cc",
+      "size_bytes": 264902
+    },
+    "REPORT.zh-CN.md": {
+      "sha256": "70de0fa0564d3168de72bf87da5a3b7024bf6a24b007b57abbbb1b3aa4b8e099",
+      "size_bytes": 11993
+    }
+  },
+  "limitations": [
+    "computational_predictions_and_descriptors_only",
+    "structure_and_final_replay_pending",
+    "guruprasad_instability_short_peptide_ood_non_gating",
+    "no_experimental_activity_or_safety_claim"
+  ]
+}
