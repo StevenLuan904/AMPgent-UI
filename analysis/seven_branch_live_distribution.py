@@ -86,8 +86,15 @@ async def build_report(controller_run_id: uuid.UUID) -> dict[str, Any]:
             (
                 await session.execute(
                     text(
-                        """select id::text, spec_json->>'branch_key' branch_key, status
-                    from experiment_runs where parent_run_id=:controller
+                        """select id::text, spec_json->>'branch_key' branch_key, status,
+                    (select count(*) from candidate_occurrences o where o.run_id=r.id)
+                        raw_occurrence_count,
+                    (select count(*) from candidates c where c.run_id=r.id) candidate_count,
+                    (select count(*) from evaluations e join candidates c on c.id=e.candidate_id
+                        where c.run_id=r.id) evaluation_count,
+                    (select count(*) from tool_calls t where t.run_id=r.id) tool_call_count,
+                    (select count(*) from agent_decisions d where d.run_id=r.id) decision_count
+                    from experiment_runs r where parent_run_id=:controller
                     order by created_at, id"""
                     ),
                     {"controller": controller_run_id},
@@ -127,6 +134,81 @@ async def build_report(controller_run_id: uuid.UUID) -> dict[str, Any]:
                     where r.parent_run_id=:controller
                     and d.decision_type='v38_sequence_maturity_admission'
                     order by d.run_id, d.created_at desc"""
+                    ),
+                    {"controller": controller_run_id},
+                )
+            )
+            .mappings()
+            .all()
+        )
+        generation_cells = (
+            (
+                await session.execute(
+                    text(
+                        """select r.spec_json->>'branch_key' branch_key,
+                    o.opaque_arm_label, t.tool_name, t.tool_version, t.random_seed,
+                    count(*) raw_occurrence_count,
+                    count(o.candidate_id) assigned_occurrence_count,
+                    count(distinct o.candidate_id) distinct_candidate_count,
+                    count(distinct o.sequence_sha256) distinct_sequence_count
+                    from experiment_runs r
+                    join candidate_occurrences o on o.run_id=r.id
+                    join tool_calls t on t.id=o.tool_call_id
+                    where r.parent_run_id=:controller
+                    group by r.spec_json->>'branch_key', o.opaque_arm_label,
+                        t.tool_name, t.tool_version, t.random_seed
+                    order by r.spec_json->>'branch_key', o.opaque_arm_label,
+                        t.tool_name, t.random_seed"""
+                    ),
+                    {"controller": controller_run_id},
+                )
+            )
+            .mappings()
+            .all()
+        )
+        generation_arms = (
+            (
+                await session.execute(
+                    text(
+                        """select r.spec_json->>'branch_key' branch_key,
+                    t.tool_name, t.tool_version,
+                    count(*) raw_occurrence_count,
+                    count(o.candidate_id) assigned_occurrence_count,
+                    count(distinct o.candidate_id) distinct_candidate_count,
+                    count(distinct o.sequence_sha256) distinct_sequence_count
+                    from experiment_runs r
+                    join candidate_occurrences o on o.run_id=r.id
+                    join tool_calls t on t.id=o.tool_call_id
+                    where r.parent_run_id=:controller
+                    group by r.spec_json->>'branch_key', t.tool_name, t.tool_version
+                    order by r.spec_json->>'branch_key', t.tool_name"""
+                    ),
+                    {"controller": controller_run_id},
+                )
+            )
+            .mappings()
+            .all()
+        )
+        generation_arm_overlaps = (
+            (
+                await session.execute(
+                    text(
+                        """with arm_sequences as (
+                    select distinct r.spec_json->>'branch_key' branch_key,
+                        t.tool_name, o.sequence_sha256
+                    from experiment_runs r
+                    join candidate_occurrences o on o.run_id=r.id
+                    join tool_calls t on t.id=o.tool_call_id
+                    where r.parent_run_id=:controller
+                    )
+                    select a.branch_key, a.tool_name left_tool_name,
+                        b.tool_name right_tool_name, count(*) overlap_sequence_count
+                    from arm_sequences a
+                    join arm_sequences b on b.branch_key=a.branch_key
+                        and b.sequence_sha256=a.sequence_sha256
+                        and b.tool_name>a.tool_name
+                    group by a.branch_key, a.tool_name, b.tool_name
+                    order by a.branch_key, a.tool_name, b.tool_name"""
                     ),
                     {"controller": controller_run_id},
                 )
@@ -232,6 +314,51 @@ async def build_report(controller_run_id: uuid.UUID) -> dict[str, Any]:
             "qualified": "union of mature_core and selected_exploration",
         },
         "runs": [dict(item) for item in runs],
+        "generation_cells": [
+            {
+                **dict(item),
+                "within_cell_duplicate_occurrence_count": (
+                    item["raw_occurrence_count"] - item["distinct_sequence_count"]
+                ),
+                "invalid_or_unassigned_occurrence_count": (
+                    item["raw_occurrence_count"] - item["assigned_occurrence_count"]
+                ),
+                "within_cell_unique_sequence_yield": (
+                    item["distinct_sequence_count"] / item["raw_occurrence_count"]
+                    if item["raw_occurrence_count"]
+                    else None
+                ),
+                "valid_candidate_yield": (
+                    item["assigned_occurrence_count"] / item["raw_occurrence_count"]
+                    if item["raw_occurrence_count"]
+                    else None
+                ),
+            }
+            for item in generation_cells
+        ],
+        "generation_arms": [
+            {
+                **dict(item),
+                "within_arm_duplicate_occurrence_count": (
+                    item["raw_occurrence_count"] - item["distinct_sequence_count"]
+                ),
+                "invalid_or_unassigned_occurrence_count": (
+                    item["raw_occurrence_count"] - item["assigned_occurrence_count"]
+                ),
+                "within_arm_unique_sequence_yield": (
+                    item["distinct_sequence_count"] / item["raw_occurrence_count"]
+                    if item["raw_occurrence_count"]
+                    else None
+                ),
+                "valid_candidate_yield": (
+                    item["assigned_occurrence_count"] / item["raw_occurrence_count"]
+                    if item["raw_occurrence_count"]
+                    else None
+                ),
+            }
+            for item in generation_arms
+        ],
+        "generation_arm_overlaps": [dict(item) for item in generation_arm_overlaps],
         "empty_downstream_cohorts": ["structure_pool", "final_portfolio"],
         "summaries": summaries,
     }
