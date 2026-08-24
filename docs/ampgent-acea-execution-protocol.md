@@ -2709,3 +2709,21 @@ MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot
 - 下一动作：首轮七个child全部terminal后，从数据库冻结七个累计snapshot；迁移上述release，使用同一
   executable/真实guarded launcher重跑六目标smoke，生成绑定新placement的preflight，并仅exact-once
   提交未满额分支的首个并发top-up epoch。
+
+### 七分支生成有效率与模型身份实时证据（2026-08-24）
+
+- controller仍为`running`且保持原release不变。AceA、GyrA、PBP2a均已完成，累计1800 raw、1554条
+  有效唯一Candidate、21756项Evaluation、39个ToolCall和3个准入Decision，失败ToolCall为0。VEGFA随后
+  完成600条raw occurrence落库，得到523条有效唯一Candidate；其12项score-all尚未落库时不得声称已完成。
+- live distribution导出器现在把每个指标的tool/model/version/weights SHA与统计口径一同写入JSON/CSV，
+  并增加branch、generator、seed/cell的raw、有效Candidate、无效/未分配及准入产率。实现commit依次为
+  `10cca98`、`0f207b0`和`3258a51`；最新本机证据为
+  `reports/seven_branch_live_distribution_7850aa85_20260824T121016.{csv,json}`。
+- 三个已完成分支每个generator的200条raw均为cell内唯一；有效Candidate产率显示HydrAMP为
+  `97.0%–98.5%`、AMP-Designer为`83.0%–86.5%`、AMPGAN v2为`72.0%–82.0%`。合格准入产率在AceA/
+  GyrA/PBP2a上分别为：HydrAMP `19.07%/18.27%/12.31%`、AMPGAN v2
+  `7.28%/6.25%/9.15%`、AMP-Designer `0.00%/1.73%/1.20%`。这些是当前三分支的观察结果，不能据此
+  删除低产generator；后续仍执行冻结的三生成器均衡top-up，同时持续报告独立generator对新家族和前沿的
+  贡献，只有新冻结合同才可改变生成器配比。
+- 下一动作仍是完成VEGFA、FGF2、ANGPT1和target-agnostic首轮score-all与准入，冻结全部分支snapshot，
+  然后迁移`440c59f`/`696c2230...59645`并发补量release并完成真实smoke、preflight和exact-once提交。
