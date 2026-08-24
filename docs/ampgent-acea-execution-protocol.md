@@ -2653,3 +2653,25 @@ MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot
   `v39-target-sequence`角色并通过其回归。尚未冻结新release、尚未跑同release guarded target scorer smoke、
   尚未完成七分支preflight或提交正式run。下一动作依次为全仓复验、提交源码、冻结release、真实smoke、
   preflight和exact-once初始epoch。
+
+### 七分支初始epoch正式启动 checkpoint（2026-08-24）
+
+- 预留时真实发现target manifest字段适配错误：代码读取旧名`source_type/partial`，冻结manifest实际使用
+  `source_kind/is_partial`。commit `db3bb75`已改为显式兼容并校验当前字段，同时修复重复预留路径中
+  schedule artifact变量被run对象遮蔽的问题；相关35项回归与Ruff通过。失败事务没有创建run或科学行。
+- 最终source为`db3bb753af120686303d71e7ec2a8dbe1d38689b`，release SHA-256为
+  `5b4cf79073d242a7027a62210e74d25cec26458c0572bc3152d72e2ae69e1f49`。同release、同executable、
+  同正式CLI的六目标GPU smoke为6/6成功；preflight formal key为
+  `50565880963afb3873d698da7f435e2b734c0f6ad3d1638dac85541a7158b7ca`，无失败gate。
+- controller `7850aa85-190a-5966-9282-8b341ce5f838`及七个child已在单事务中预留；第二次相同预留返回
+  `created=false`。提交前8个run均为`created`且Candidate/occurrence/Evaluation/ToolCall/Decision/structure/
+  checkpoint均为0。schedule artifact SHA-256为
+  `d6e17c7e5f533b1d9486971cb8a6992d251a9deb38012d457fa3782fcee8ef24`。
+- controller workflow `pepagent-seven-branch-design-94081452fedd18b46516248f2662f2173f2cbf89ae07596ea332a4493be48dd4`
+  / Temporal run `5136a3e3-84ca-4301-9ce4-3afbad2ca317`已exact-once提交。AceA首child
+  `a2c6f53f-8472-5c82-bf42-e3819a39c23a`已运行，三个生成器Activity中一个完成、两个attempt 1执行中；
+  生成汇合和raw持久化尚未完成，因此本checkpoint不声称新增候选。
+- worker迁移后发现旧Windows supervisor仍将上一release poller保持在线。依据旧placement、精确PID、父子
+  command line和AMPgent role核验，只终止旧自有三个supervisor/child；新control/generator/metrics和
+  `.19 GPU2` target-sequence worker继续运行，未触碰外来任务或`.32 GPU2/GPU3`。下一动作是等待首批raw
+  durable增量，随后连续完成12项score-all、六靶点序列评分、分支排名与不足分支top-up。
