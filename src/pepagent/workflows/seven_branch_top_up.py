@@ -6,6 +6,7 @@ from typing import Any
 
 from temporalio import workflow
 from temporalio.common import RetryPolicy
+from temporalio.exceptions import ApplicationError
 
 with workflow.unsafe.imports_passed_through():
     from pepagent.seven_branch_design import (
@@ -229,7 +230,14 @@ class SevenBranchPeptideTopUpWorkflow:
                 result_status,
             ) = summarize_top_up_receipts(receipts)
             if failed_receipts and not completed_receipts:
-                raise RuntimeError("all seven-branch top-up child workflows failed")
+                # A plain RuntimeError is treated as a workflow-task failure by
+                # Temporal and is retried forever.  The child runs and database
+                # status are already frozen failed at this point, so close the
+                # controller with an explicit non-retryable workflow failure.
+                raise ApplicationError(
+                    "all seven-branch top-up child workflows failed",
+                    non_retryable=True,
+                )
             if (
                 schedule.schema_version
                 == "ampgent.seven_branch_top_up_schedule.v2"

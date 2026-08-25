@@ -1,10 +1,14 @@
+import inspect
 import uuid
 
 from pepagent.seven_branch_top_up_cli import (
     _advance_past_excluded_attempt,
     _excluded_controller_is_recoverable,
 )
-from pepagent.workflows.seven_branch_top_up import summarize_top_up_receipts
+from pepagent.workflows.seven_branch_top_up import (
+    SevenBranchPeptideTopUpWorkflow,
+    summarize_top_up_receipts,
+)
 
 
 def _completed(action: str = "quota_complete") -> dict[str, object]:
@@ -72,6 +76,12 @@ def test_all_failed_epoch_is_not_reported_as_partial_success() -> None:
     assert completed == []
     assert successor_required is True
     assert status == "all_branches_failed_successor_required"
+
+
+def test_all_failed_epoch_closes_workflow_instead_of_retrying_workflow_task() -> None:
+    source = inspect.getsource(SevenBranchPeptideTopUpWorkflow.run)
+    assert 'ApplicationError(\n                    "all seven-branch' in source
+    assert "non_retryable=True" in source
 
 
 def test_legacy_all_failed_succeeded_controller_is_recoverable() -> None:
