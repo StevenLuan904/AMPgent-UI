@@ -245,13 +245,19 @@ def main() -> None:
         "audit_flags": dict(sorted(flag_counts.items())),
         "novelty": {
             "historical_exact_duplicate_count": sum(
-                row["historical_exact_duplicate"].lower() == "true" for row in rows
+                row.get("historical_exact_duplicate", "false").lower() == "true"
+                for row in rows
             ),
             "historical_family_overlap_count": sum(
-                row["historical_family_overlap_80_80"].lower() == "true" for row in rows
+                row.get("historical_family_overlap_80_80", "false").lower() == "true"
+                for row in rows
             ),
             "within_cohort_family_count": len(
-                {row["sequence_family_key"] for row in rows}
+                {
+                    row["sequence_family_key"]
+                    for row in rows
+                    if row.get("sequence_family_key")
+                }
             ),
         },
         "numeric_metrics": [
