@@ -8,6 +8,7 @@ from uuid import UUID
 from pepagent.provenance.hashing import sha256_json
 from pepagent.seven_branch_design import (
     BranchProgress,
+    BranchQualityProgress,
     SevenBranchDesignContract,
     SevenBranchDesignSchedule,
     SevenBranchRoundRequest,
@@ -15,6 +16,7 @@ from pepagent.seven_branch_design import (
     SevenBranchTopUpSchedule,
     TargetSequenceRuntime,
     build_seven_branch_round_execution_contract,
+    plan_branch_quality_top_up,
     plan_branch_top_up,
 )
 
@@ -25,6 +27,7 @@ _RUNTIME_IDENTITY_FIELDS = {
     "execution_contract",
     "exploration_round",
     "seven_branch_round",
+    "quality_continuation",
     "submission_preflight",
     "multitarget_plan_template",
     "structure_runtime_by_target_key",
@@ -210,12 +213,25 @@ def build_top_up_seven_branch_schedule(
             continue
         evidence = branch_evidence[branch_key]
         progress = BranchProgress.model_validate(evidence["progress"])
-        plan = plan_branch_top_up(
-            branch_by_key[branch_key],
-            progress,
-            next_round_ordinal=int(evidence["next_round_ordinal"]),
-        )
-        if plan.action != "freeze_successor_round":
+        quality_payload = evidence.get("quality_progress")
+        if quality_payload is None:
+            plan = plan_branch_top_up(
+                branch_by_key[branch_key],
+                progress,
+                next_round_ordinal=int(evidence["next_round_ordinal"]),
+            )
+        else:
+            quality = BranchQualityProgress.model_validate(quality_payload)
+            plan = plan_branch_quality_top_up(
+                branch_by_key[branch_key],
+                progress,
+                quality,
+                next_round_ordinal=int(evidence["next_round_ordinal"]),
+            )
+        if plan.action not in {
+            "freeze_successor_round",
+            "freeze_quality_successor_round",
+        }:
             raise ValueError("top-up evidence includes a completed branch")
         binding, execution = build_seven_branch_round_execution_contract(
             design_contract,
@@ -234,6 +250,14 @@ def build_top_up_seven_branch_schedule(
                 "seven_branch_round": binding.model_dump(mode="json"),
             }
         )
+        if quality_payload is not None:
+            child_request["quality_continuation"] = {
+                "schema_version": "ampgent.seven-branch-quality-continuation.1",
+                "quality_progress": quality.model_dump(mode="json"),
+                "quality_progress_sha256": quality.sha256(),
+                "quality_top_up_plan": plan.model_dump(mode="json"),
+                "preserve_overlapping_archives": True,
+            }
         frozen_round = SevenBranchRoundRequest(
             run_id=child_run_id,
             workflow_id=(
@@ -254,6 +278,11 @@ def build_top_up_seven_branch_schedule(
             )
         )
     return SevenBranchTopUpSchedule(
+        schema_version=(
+            "ampgent.seven_branch_top_up_schedule.v2"
+            if any("quality_progress" in item for item in branch_evidence.values())
+            else "ampgent.seven_branch_top_up_schedule.v1"
+        ),
         controller_run_id=controller_run_id,
         parent_controller_run_id=parent_controller_run_id,
         epoch_ordinal=epoch_ordinal,

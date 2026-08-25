@@ -40,6 +40,17 @@ def test_completed_branch_can_request_successor_without_failure() -> None:
     assert status == "successor_top_up_required"
 
 
+def test_quality_successor_action_is_not_misreported_as_complete() -> None:
+    failed, completed, successor_required, status = summarize_top_up_receipts(
+        [_completed("freeze_quality_successor_round")]
+    )
+
+    assert failed == []
+    assert len(completed) == 1
+    assert successor_required is True
+    assert status == "successor_top_up_required"
+
+
 def test_complete_epoch_needs_no_successor() -> None:
     failed, completed, successor_required, status = summarize_top_up_receipts([_completed()])
 

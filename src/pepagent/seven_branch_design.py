@@ -255,7 +255,7 @@ class SevenBranchTopUpEpochBranch(FrozenModel):
     branch_key: str
     prior_source_run_ids: tuple[UUID, ...]
     prior_evidence_snapshot_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
-    top_up_plan: BranchTopUpPlan
+    top_up_plan: BranchTopUpPlan | BranchQualityTopUpPlan
     frozen_round: SevenBranchRoundRequest
 
     @model_validator(mode="after")
@@ -271,7 +271,10 @@ class SevenBranchTopUpEpochBranch(FrozenModel):
             raise ValueError("top-up epoch branch key drifted")
         if self.top_up_plan.branch_key != self.branch_key:
             raise ValueError("top-up plan belongs to another branch")
-        if self.top_up_plan.action != "freeze_successor_round":
+        if self.top_up_plan.action not in {
+            "freeze_successor_round",
+            "freeze_quality_successor_round",
+        }:
             raise ValueError("top-up epoch cannot freeze a completed branch")
         if binding.round_ordinal != self.top_up_plan.next_round_ordinal:
             raise ValueError("top-up epoch round ordinal drifted")
@@ -286,7 +289,10 @@ class SevenBranchTopUpEpochBranch(FrozenModel):
 class SevenBranchTopUpSchedule(FrozenModel):
     """One independently frozen successor epoch for incomplete branches."""
 
-    schema_version: Literal["ampgent.seven_branch_top_up_schedule.v1"] = (
+    schema_version: Literal[
+        "ampgent.seven_branch_top_up_schedule.v1",
+        "ampgent.seven_branch_top_up_schedule.v2",
+    ] = (
         "ampgent.seven_branch_top_up_schedule.v1"
     )
     controller_run_id: UUID
@@ -334,6 +340,19 @@ class SevenBranchTopUpSchedule(FrozenModel):
                 raise ValueError("top-up round target drifted")
             if binding.target_sequence_sha256 != branch.target_sequence_sha256:
                 raise ValueError("top-up round target sequence drifted")
+        quality_plans = [
+            item
+            for item in self.branches
+            if isinstance(item.top_up_plan, BranchQualityTopUpPlan)
+        ]
+        if self.schema_version == "ampgent.seven_branch_top_up_schedule.v1" and (
+            quality_plans
+        ):
+            raise ValueError("quality top-up plans require schedule schema v2")
+        if self.schema_version == "ampgent.seven_branch_top_up_schedule.v2" and (
+            len(quality_plans) != len(self.branches)
+        ):
+            raise ValueError("quality schedule v2 requires quality plans for every branch")
         return self
 
     def sha256(self) -> str:

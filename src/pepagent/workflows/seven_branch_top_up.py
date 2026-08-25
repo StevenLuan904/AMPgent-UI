@@ -23,7 +23,8 @@ def summarize_top_up_receipts(
         item for item in receipts if item["status"] == "cumulative_selection_persisted"
     ]
     successor_required = bool(failed) or any(
-        item["cumulative"]["top_up_plan"]["action"] == "freeze_successor_round"
+        item["cumulative"]["top_up_plan"]["action"]
+        in {"freeze_successor_round", "freeze_quality_successor_round"}
         for item in completed
     )
     if failed and not completed:
@@ -183,6 +184,9 @@ class SevenBranchPeptideTopUpWorkflow:
                             "knowledge_context_pack_sha256"
                         ],
                         "worker_source_revision": child_request["worker_source_revision"],
+                        "quality_continuation": child_request.get(
+                            "quality_continuation"
+                        ),
                     },
                     task_queue=child_control_queue,
                     start_to_close_timeout=timedelta(hours=2),
@@ -226,6 +230,12 @@ class SevenBranchPeptideTopUpWorkflow:
             ) = summarize_top_up_receipts(receipts)
             if failed_receipts and not completed_receipts:
                 raise RuntimeError("all seven-branch top-up child workflows failed")
+            if (
+                schedule.schema_version
+                == "ampgent.seven_branch_top_up_schedule.v2"
+                and not failed_receipts
+            ):
+                result_status = "quality_reassessment_required"
             result = {
                 "schema_version": "ampgent.seven-branch-top-up-result.2",
                 "status": result_status,

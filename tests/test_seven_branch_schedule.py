@@ -250,3 +250,72 @@ def test_top_up_schedule_rejects_stale_preflight() -> None:
             branch_evidence=evidence,
             child_run_ids_by_key=child_ids,
         )
+
+
+def test_quality_top_up_schedule_continues_after_row_quota_is_complete() -> None:
+    contract, manifest, manifest_sha = _inputs()
+    template = _template()
+    preflight = _preflight(template, contract)
+    parent = UUID(int=720)
+    evidence = {
+        "acea": {
+            "source_run_ids": [str(UUID(int=721))],
+            "progress": {
+                "branch_key": "acea",
+                "raw_count": 600,
+                "valid_unique_count": 515,
+                "fully_scored_count": 515,
+                "target_sequence_scored_count": 515,
+                "qualified_count": 150,
+                "delivered_count": 150,
+                "family_count": 150,
+            },
+            "quality_progress": {
+                "schema_version": "ampgent.seven-branch-quality-progress.1",
+                "branch_key": "acea",
+                "quality_quota": 150,
+                "quality_qualified_count": 55,
+                "archive_counts": {
+                    "activity_consensus": 7,
+                    "amp_read_endpoint": 15,
+                    "llamp_endpoint": 15,
+                    "macrel_endpoint": 16,
+                    "activity_safety_balance": 4,
+                    "stability_degradation": 35,
+                    "novel_family": 150,
+                    "model_disagreement": 4,
+                },
+                "underfilled_archives": [],
+            },
+            "next_round_ordinal": 2,
+            "snapshot_sha256": "c" * 64,
+        }
+    }
+    controller, child_ids = derive_top_up_seven_branch_run_ids(
+        parent_controller_run_id=parent,
+        epoch_ordinal=2,
+        branch_evidence_sha256_by_key={"acea": "c" * 64},
+    )
+    schedule = build_top_up_seven_branch_schedule(
+        request_template=template,
+        submission_preflight=preflight,
+        design_contract=contract,
+        target_manifest=manifest,
+        target_manifest_sha256=manifest_sha,
+        parent_controller_run_id=parent,
+        controller_run_id=controller,
+        epoch_ordinal=2,
+        branch_evidence=evidence,
+        child_run_ids_by_key=child_ids,
+    )
+    epoch_branch = schedule.branches[0]
+    assert schedule.schema_version == "ampgent.seven_branch_top_up_schedule.v2"
+    assert epoch_branch.top_up_plan.action == "freeze_quality_successor_round"
+    assert epoch_branch.top_up_plan.remaining_quality_count == 95
+    assert epoch_branch.top_up_plan.recommended_raw_budget == 1800
+    assert epoch_branch.frozen_round.request["quality_continuation"][
+        "preserve_overlapping_archives"
+    ] is True
+    assert schedule.sha256() == schedule.model_validate(
+        schedule.model_dump(mode="json")
+    ).sha256()
