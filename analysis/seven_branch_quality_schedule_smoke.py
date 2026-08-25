@@ -61,6 +61,7 @@ def main() -> None:
     parser.add_argument("--delivery-csv", type=Path, required=True)
     parser.add_argument("--quality-json", type=Path, required=True)
     parser.add_argument("--target-manifest", type=Path, required=True)
+    parser.add_argument("--request-template", type=Path, required=True)
     parser.add_argument("--branch-key", default="target_agnostic_amp")
     parser.add_argument("--parent-controller-run-id", type=UUID, required=True)
     parser.add_argument("--epoch-ordinal", type=int, required=True)
@@ -92,9 +93,13 @@ def main() -> None:
         item for item in prior_schedule.branches if item.branch_key == args.branch_key
     )
     prior_request = prior_epoch_branch.frozen_round.request
-    request_template = {
-        key: value for key, value in prior_request.items() if key not in _RUNTIME_FIELDS
-    }
+    request_template = json.loads(args.request_template.read_text(encoding="utf-8"))
+    leaked_runtime_fields = sorted(_RUNTIME_FIELDS.intersection(request_template))
+    if leaked_runtime_fields:
+        parser.error(
+            "--request-template contains runtime fields: "
+            + ", ".join(leaked_runtime_fields)
+        )
     submission_preflight = prior_request["submission_preflight"]
     quality_snapshot = json.loads(args.quality_json.read_text(encoding="utf-8"))
     quality_progress = quality_snapshot["branches"][args.branch_key]
