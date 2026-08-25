@@ -67,6 +67,16 @@ def _preflight(template: dict, contract: SevenBranchDesignContract) -> dict:
     }
 
 
+def _quality_preflight(
+    template: dict, contract: SevenBranchDesignContract, *branch_keys: str
+) -> dict:
+    return {
+        **_preflight(template, contract),
+        "schema_version": "ampgent.seven-branch-quality-continuation-preflight.1",
+        "branch_keys": list(branch_keys),
+    }
+
+
 def test_initial_schedule_freezes_seven_exact_once_child_runs() -> None:
     contract, manifest, manifest_sha = _inputs()
     template = _template()
@@ -255,7 +265,7 @@ def test_top_up_schedule_rejects_stale_preflight() -> None:
 def test_quality_top_up_schedule_continues_after_row_quota_is_complete() -> None:
     contract, manifest, manifest_sha = _inputs()
     template = _template()
-    preflight = _preflight(template, contract)
+    preflight = _quality_preflight(template, contract, "acea")
     parent = UUID(int=720)
     evidence = {
         "acea": {
@@ -319,3 +329,65 @@ def test_quality_top_up_schedule_continues_after_row_quota_is_complete() -> None
     assert schedule.sha256() == schedule.model_validate(
         schedule.model_dump(mode="json")
     ).sha256()
+
+
+def test_quality_top_up_schedule_rejects_initial_or_wrong_branch_preflight() -> None:
+    contract, manifest, manifest_sha = _inputs()
+    template = _template()
+    parent = UUID(int=730)
+    evidence = {
+        "target_agnostic_amp": {
+            "source_run_ids": [str(UUID(int=731))],
+            "progress": {
+                "branch_key": "target_agnostic_amp",
+                "raw_count": 6000,
+                "valid_unique_count": 5203,
+                "fully_scored_count": 5203,
+                "target_sequence_scored_count": 0,
+                "qualified_count": 1000,
+                "delivered_count": 1000,
+                "family_count": 1000,
+            },
+            "quality_progress": {
+                "schema_version": "ampgent.seven-branch-quality-progress.1",
+                "branch_key": "target_agnostic_amp",
+                "quality_quota": 1000,
+                "quality_qualified_count": 165,
+                "archive_counts": {
+                    "activity_consensus": 56,
+                    "amp_read_endpoint": 100,
+                    "llamp_endpoint": 100,
+                    "macrel_endpoint": 99,
+                    "activity_safety_balance": 23,
+                    "stability_degradation": 225,
+                    "novel_family": 1000,
+                    "model_disagreement": 22,
+                },
+                "underfilled_archives": [],
+            },
+            "next_round_ordinal": 4,
+            "snapshot_sha256": "b" * 64,
+        }
+    }
+    controller, child_ids = derive_top_up_seven_branch_run_ids(
+        parent_controller_run_id=parent,
+        epoch_ordinal=4,
+        branch_evidence_sha256_by_key={"target_agnostic_amp": "b" * 64},
+    )
+    for preflight in (
+        _preflight(template, contract),
+        _quality_preflight(template, contract, "acea"),
+    ):
+        with pytest.raises(ValueError, match="preflight"):
+            build_top_up_seven_branch_schedule(
+                request_template=template,
+                submission_preflight=preflight,
+                design_contract=contract,
+                target_manifest=manifest,
+                target_manifest_sha256=manifest_sha,
+                parent_controller_run_id=parent,
+                controller_run_id=controller,
+                epoch_ordinal=4,
+                branch_evidence=evidence,
+                child_run_ids_by_key=child_ids,
+            )

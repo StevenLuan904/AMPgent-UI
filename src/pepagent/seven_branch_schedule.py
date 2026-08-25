@@ -40,12 +40,18 @@ def _validate_schedule_preflight(
     request_template: dict[str, Any],
     submission_preflight: dict[str, Any],
     design_contract: SevenBranchDesignContract,
+    quality_branch_keys: set[str] | None = None,
 ) -> None:
     if set(request_template) & _RUNTIME_IDENTITY_FIELDS:
         raise ValueError("seven-branch request template contains a run-time identity")
+    schema_version = submission_preflight.get("schema_version")
+    expected_schema = (
+        "ampgent.seven-branch-quality-continuation-preflight.1"
+        if quality_branch_keys is not None
+        else "ampgent.seven-branch-submission-preflight.1"
+    )
     if (
-        submission_preflight.get("schema_version")
-        != "ampgent.seven-branch-submission-preflight.1"
+        schema_version != expected_schema
         or submission_preflight.get("status") != "ready_to_submit_unique_run"
         or submission_preflight.get("execution_authorized") is not True
         or submission_preflight.get("failed_gates") != []
@@ -55,6 +61,10 @@ def _validate_schedule_preflight(
         != design_contract.sha256()
     ):
         raise ValueError("seven-branch schedule requires a passed submission preflight")
+    if quality_branch_keys is not None:
+        observed = submission_preflight.get("branch_keys")
+        if not isinstance(observed, list) or set(observed) != quality_branch_keys:
+            raise ValueError("quality preflight branches differ from continuation evidence")
 
 
 def derive_initial_seven_branch_run_ids(
@@ -185,10 +195,16 @@ def build_top_up_seven_branch_schedule(
 ) -> SevenBranchTopUpSchedule:
     """Freeze one successor epoch from durable cumulative branch observations."""
 
+    quality_branch_keys = (
+        set(branch_evidence)
+        if any("quality_progress" in evidence for evidence in branch_evidence.values())
+        else None
+    )
     _validate_schedule_preflight(
         request_template=request_template,
         submission_preflight=submission_preflight,
         design_contract=design_contract,
+        quality_branch_keys=quality_branch_keys,
     )
     if target_manifest_sha256 != design_contract.target_manifest_sha256:
         raise ValueError("target manifest file identity differs from design contract")
