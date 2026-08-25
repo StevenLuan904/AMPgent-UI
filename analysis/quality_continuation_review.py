@@ -11,16 +11,16 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 NUMERIC_METRICS = {
-    "amp_read_log10_mic_um": ("min", "model_prediction"),
-    "llamp_log10_mic_um": ("min", "model_prediction"),
-    "macrel_amp_probability": ("max", "model_prediction"),
-    "toxinpred3_hybrid_score": ("min", "model_prediction"),
-    "macrel_hemolysis_probability": ("min", "model_prediction"),
-    "hydrophobic_moment_eisenberg": ("max", "sequence_descriptor"),
-    "hydrophobic_ratio_modlamp": ("descriptive", "sequence_descriptor"),
-    "maximum_hydrophobic_run": ("min", "sequence_descriptor"),
-    "net_charge_ph7_4": ("descriptive", "sequence_descriptor"),
-    "guruprasad_instability_index": ("audit_min", "sequence_descriptor"),
+    "amp_read_log10_mic_um": ("min", "model_prediction", "log10(µM)"),
+    "llamp_log10_mic_um": ("min", "model_prediction", "log10(µM)"),
+    "macrel_amp_probability": ("max", "model_prediction", "probability"),
+    "toxinpred3_hybrid_score": ("min", "model_prediction", "unitless score"),
+    "macrel_hemolysis_probability": ("min", "model_prediction", "probability"),
+    "hydrophobic_moment_eisenberg": ("max", "sequence_descriptor", "unitless"),
+    "hydrophobic_ratio_modlamp": ("descriptive", "sequence_descriptor", "fraction"),
+    "maximum_hydrophobic_run": ("min", "sequence_descriptor", "residues"),
+    "net_charge_ph7_4": ("descriptive", "sequence_descriptor", "elementary charge"),
+    "guruprasad_instability_index": ("audit_min", "sequence_descriptor", "index"),
 }
 LABEL_METRICS = {
     "toxinpred3_label": ("Non-Toxin", "model_prediction"),
@@ -61,15 +61,21 @@ def _numeric_summary(rows: list[dict[str, str]], metric: str) -> dict[str, objec
     values = [float(row[metric]) for row in valid]
     low = min(valid, key=lambda row: float(row[metric]))
     high = max(valid, key=lambda row: float(row[metric]))
-    direction, evidence_kind = NUMERIC_METRICS[metric]
+    direction, evidence_kind, unit = NUMERIC_METRICS[metric]
     ood_count = sum(row.get(f"{metric}__ood", "").lower() == "true" for row in valid)
     failed_count = sum(
         row.get(f"{metric}__status", "") not in {"succeeded", ""} for row in rows
     )
+    preferred = low if direction in {"min", "audit_min"} else high
+    disfavored = high if direction in {"min", "audit_min"} else low
+    if direction == "descriptive":
+        preferred = disfavored = None
+    skew = "right-skewed" if statistics.fmean(values) > statistics.median(values) else "left-skewed_or_symmetric"
     return {
         "metric": metric,
         "evidence_kind": evidence_kind,
         "direction": direction,
+        "unit": unit,
         "cohort_n": len(rows),
         "valid_n": len(valid),
         "missing_n": len(rows) - len(valid),
@@ -92,6 +98,20 @@ def _numeric_summary(rows: list[dict[str, str]], metric: str) -> dict[str, objec
             "candidate_id": high["candidate_id"],
             "sequence": high["sequence"],
         },
+        "best_candidate": (
+            {"candidate_id": preferred["candidate_id"], "sequence": preferred["sequence"]}
+            if preferred is not None
+            else None
+        ),
+        "worst_candidate": (
+            {"candidate_id": disfavored["candidate_id"], "sequence": disfavored["sequence"]}
+            if disfavored is not None
+            else None
+        ),
+        "distribution_note": (
+            f"{skew}; central 50% spans {_quantile(values, 0.25):.6g} to "
+            f"{_quantile(values, 0.75):.6g}."
+        ),
     }
 
 
@@ -106,6 +126,10 @@ def _label_summary(rows: list[dict[str, str]], metric: str) -> dict[str, object]
         "cohort_n": len(rows),
         "valid_n": len(valid),
         "missing_n": len(rows) - len(valid),
+        "failed_n": sum(
+            row.get(f"{metric}__status", "") not in {"succeeded", ""}
+            for row in rows
+        ),
         "ood_n": sum(
             row.get(f"{metric}__ood", "").lower() == "true" for row in valid
         ),
