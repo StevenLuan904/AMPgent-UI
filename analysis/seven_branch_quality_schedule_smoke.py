@@ -71,6 +71,14 @@ def main() -> None:
     parser.add_argument("--qualified-count", type=int, required=True)
     parser.add_argument("--delivered-count", type=int, required=True)
     parser.add_argument("--family-count", type=int, required=True)
+    parser.add_argument("--excluded-attempt-controller-run-id", type=UUID)
+    parser.add_argument(
+        "--excluded-attempt-run-id",
+        dest="excluded_attempt_run_ids",
+        action="append",
+        type=UUID,
+        default=[],
+    )
     parser.add_argument("--current-head", required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
@@ -120,6 +128,23 @@ def main() -> None:
         "quality_progress": quality_progress,
         "next_round_ordinal": args.next_round_ordinal,
     }
+    if args.excluded_attempt_controller_run_id is not None:
+        if not args.excluded_attempt_run_ids:
+            parser.error(
+                "--excluded-attempt-controller-run-id requires at least one "
+                "--excluded-attempt-run-id"
+            )
+        evidence_core.update(
+            {
+                "excluded_attempt_controller_run_id": str(
+                    args.excluded_attempt_controller_run_id
+                ),
+                "excluded_attempt_run_ids": [
+                    str(item) for item in args.excluded_attempt_run_ids
+                ],
+                "excluded_attempt_outputs_reused": False,
+            }
+        )
     evidence = {
         args.branch_key: {
             **evidence_core,
@@ -164,6 +189,15 @@ def main() -> None:
         "child_run_id": str(epoch_branch.frozen_round.run_id),
         "workflow_id": epoch_branch.frozen_round.workflow_id,
         "quality_top_up_plan": epoch_branch.top_up_plan.model_dump(mode="json"),
+        "excluded_attempt_controller_run_id": frozen_request[
+            "quality_continuation"
+        ].get("excluded_attempt_controller_run_id"),
+        "excluded_attempt_run_ids": frozen_request["quality_continuation"].get(
+            "excluded_attempt_run_ids", []
+        ),
+        "excluded_attempt_outputs_reused": frozen_request[
+            "quality_continuation"
+        ].get("excluded_attempt_outputs_reused"),
         "expected_raw_occurrences": frozen_request["execution_contract"][
             "expected_raw_occurrences"
         ],

@@ -274,6 +274,42 @@ def build_top_up_seven_branch_schedule(
                 "quality_top_up_plan": plan.model_dump(mode="json"),
                 "preserve_overlapping_archives": True,
             }
+            excluded_controller_run_id = evidence.get(
+                "excluded_attempt_controller_run_id"
+            )
+            excluded_run_ids = evidence.get("excluded_attempt_run_ids")
+            excluded_outputs_reused = evidence.get(
+                "excluded_attempt_outputs_reused"
+            )
+            if any(
+                item is not None
+                for item in (
+                    excluded_controller_run_id,
+                    excluded_run_ids,
+                    excluded_outputs_reused,
+                )
+            ):
+                if (
+                    excluded_controller_run_id is None
+                    or not isinstance(excluded_run_ids, list)
+                    or not excluded_run_ids
+                    or excluded_outputs_reused is not False
+                ):
+                    raise ValueError(
+                        "excluded quality attempt evidence must identify the "
+                        "controller and child runs and forbid output reuse"
+                    )
+                child_request["quality_continuation"].update(
+                    {
+                        "excluded_attempt_controller_run_id": str(
+                            UUID(str(excluded_controller_run_id))
+                        ),
+                        "excluded_attempt_run_ids": [
+                            str(UUID(str(item))) for item in excluded_run_ids
+                        ],
+                        "excluded_attempt_outputs_reused": False,
+                    }
+                )
         frozen_round = SevenBranchRoundRequest(
             run_id=child_run_id,
             workflow_id=(
