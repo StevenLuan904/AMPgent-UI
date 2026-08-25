@@ -11,8 +11,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 NUMERIC_METRICS = {
-    "amp_read_log10_mic_um": ("min", "model_prediction", "log10(µM)"),
-    "llamp_log10_mic_um": ("min", "model_prediction", "log10(µM)"),
+    "amp_read_log10_mic_um": ("min", "model_prediction", "log10(uM)"),
+    "llamp_log10_mic_um": ("min", "model_prediction", "log10(uM)"),
     "macrel_amp_probability": ("max", "model_prediction", "probability"),
     "toxinpred3_hybrid_score": ("min", "model_prediction", "unitless score"),
     "macrel_hemolysis_probability": ("min", "model_prediction", "probability"),
@@ -70,7 +70,11 @@ def _numeric_summary(rows: list[dict[str, str]], metric: str) -> dict[str, objec
     disfavored = high if direction in {"min", "audit_min"} else low
     if direction == "descriptive":
         preferred = disfavored = None
-    skew = "right-skewed" if statistics.fmean(values) > statistics.median(values) else "left-skewed_or_symmetric"
+    skew = (
+        "right-skewed"
+        if statistics.fmean(values) > statistics.median(values)
+        else "left-skewed_or_symmetric"
+    )
     return {
         "metric": metric,
         "evidence_kind": evidence_kind,
