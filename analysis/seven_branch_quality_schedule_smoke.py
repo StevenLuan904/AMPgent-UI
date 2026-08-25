@@ -100,7 +100,6 @@ def main() -> None:
             "--request-template contains runtime fields: "
             + ", ".join(leaked_runtime_fields)
         )
-    submission_preflight = prior_request["submission_preflight"]
     quality_snapshot = json.loads(args.quality_json.read_text(encoding="utf-8"))
     quality_progress = quality_snapshot["branches"][args.branch_key]
     quality_progress = {
@@ -116,6 +115,20 @@ def main() -> None:
             "underfilled_archives",
         }
     }
+    submission_preflight = dict(prior_request["submission_preflight"])
+    submission_preflight.update(
+        {
+            "schema_version": (
+                "ampgent.seven-branch-quality-continuation-preflight.1"
+            ),
+            "status": "ready_to_submit_unique_run",
+            "execution_authorized": True,
+            "failed_gates": [],
+            "request_template_sha256": sha256_json(request_template),
+            "design_contract_sha256": prior_schedule.design_contract.sha256(),
+            "branch_keys": [args.branch_key],
+        }
+    )
     source_run_ids = _source_run_ids(args.delivery_csv, args.branch_key)
     progress = {
         "branch_key": args.branch_key,
@@ -209,6 +222,7 @@ def main() -> None:
         "worker_source_revision": worker_source_revision,
         "current_head": args.current_head,
         "worker_source_matches_current_head": worker_source_revision == args.current_head,
+        "schedule_preflight_ephemeral": True,
         "preflight_reused_for_submission": False,
         "temporal_submitted": False,
         "formal_runs_reserved": False,
