@@ -428,6 +428,53 @@ class BranchProgress(FrozenModel):
     family_count: int = Field(ge=0)
 
 
+QUALITY_ARCHIVE_KEYS = frozenset(
+    {
+        "activity_consensus",
+        "amp_read_endpoint",
+        "llamp_endpoint",
+        "macrel_endpoint",
+        "activity_safety_balance",
+        "stability_degradation",
+        "novel_family",
+        "model_disagreement",
+    }
+)
+
+
+class BranchQualityProgress(FrozenModel):
+    """Durable quality state, kept separate from the row-delivery quota.
+
+    Archive membership may overlap deliberately: a candidate can be both a novel
+    family representative and an AMP-READ endpoint.  The controller consumes a
+    frozen upstream quality policy; it does not invent weighted scores here.
+    """
+
+    schema_version: Literal["ampgent.seven-branch-quality-progress.1"] = (
+        "ampgent.seven-branch-quality-progress.1"
+    )
+    branch_key: str = Field(min_length=1)
+    quality_quota: int = Field(gt=0)
+    quality_qualified_count: int = Field(ge=0)
+    archive_counts: dict[str, int]
+    underfilled_archives: tuple[str, ...] = ()
+
+    @model_validator(mode="after")
+    def validate_archives(self) -> BranchQualityProgress:
+        if set(self.archive_counts) != QUALITY_ARCHIVE_KEYS:
+            raise ValueError("quality progress must report every frozen archive")
+        if any(count < 0 for count in self.archive_counts.values()):
+            raise ValueError("quality archive counts cannot be negative")
+        if not set(self.underfilled_archives).issubset(QUALITY_ARCHIVE_KEYS):
+            raise ValueError("underfilled quality archive is not frozen")
+        if len(self.underfilled_archives) != len(set(self.underfilled_archives)):
+            raise ValueError("underfilled quality archives must be unique")
+        return self
+
+    def sha256(self) -> str:
+        return sha256_json(self.model_dump(mode="json"))
+
+
 class BranchTopUpPlan(FrozenModel):
     """A deterministic successor-round recommendation from durable branch yield."""
 
@@ -465,6 +512,31 @@ class BranchTopUpPlan(FrozenModel):
         ):
             raise ValueError("v2 top-up plan requires bounded-budget audit fields")
         return self
+
+    def sha256(self) -> str:
+        return sha256_json(self.model_dump(mode="json"))
+
+
+class BranchQualityTopUpPlan(FrozenModel):
+    """A bounded successor-round plan driven by observed high-quality yield."""
+
+    schema_version: Literal["ampgent.seven-branch-quality-top-up-plan.1"] = (
+        "ampgent.seven-branch-quality-top-up-plan.1"
+    )
+    branch_key: str = Field(min_length=1)
+    next_round_ordinal: int = Field(ge=1)
+    quality_quota: int = Field(gt=0)
+    quality_qualified_count: int = Field(ge=0)
+    remaining_quality_count: int = Field(ge=0)
+    observed_raw_count: int = Field(ge=0)
+    observed_quality_yield: float = Field(ge=0.0, le=1.0)
+    planning_yield: float = Field(gt=0.0, le=1.0)
+    safety_factor: float = Field(ge=1.0)
+    uncapped_recommended_raw_budget: int = Field(ge=0, multiple_of=300)
+    per_epoch_raw_budget_cap: int = Field(ge=0, multiple_of=300)
+    budget_cap_applied: bool
+    recommended_raw_budget: int = Field(ge=0, multiple_of=300)
+    action: Literal["quality_quota_complete", "freeze_quality_successor_round"]
 
     def sha256(self) -> str:
         return sha256_json(self.model_dump(mode="json"))
@@ -667,6 +739,78 @@ def plan_branch_top_up(
     )
 
 
+def plan_branch_quality_top_up(
+    branch: DesignBranch,
+    progress: BranchProgress,
+    quality: BranchQualityProgress,
+    *,
+    next_round_ordinal: int,
+) -> BranchQualityTopUpPlan:
+    """Size the next immutable round from durable high-quality yield.
+
+    The quality quota normally equals the requested delivery quota, so a branch
+    keeps evolving until it contains enough candidates that pass the separately
+    frozen quality policy.  Model-disagreement endpoints remain valid archive
+    members and are not averaged away by this planner.
+    """
+
+    if branch.branch_key != progress.branch_key or branch.branch_key != quality.branch_key:
+        raise ValueError("progress belongs to another branch")
+    if quality.quality_quota != branch.requested_delivery_count:
+        raise ValueError("quality quota must equal the frozen branch delivery quota")
+    if next_round_ordinal < 1:
+        raise ValueError("quality top-up round ordinal must be positive")
+    qualified = min(quality.quality_qualified_count, quality.quality_quota)
+    remaining = quality.quality_quota - qualified
+    observed_yield = (
+        min(1.0, quality.quality_qualified_count / progress.raw_count)
+        if progress.raw_count
+        else 0.0
+    )
+    safety_factor = 1.5
+    per_epoch_cap = 2400 if branch.branch_kind == "target_specific" else 3000
+    if remaining == 0:
+        planning_yield = observed_yield if observed_yield > 0 else 1.0
+        uncapped_budget = 0
+        budget = 0
+        action: Literal[
+            "quality_quota_complete", "freeze_quality_successor_round"
+        ] = "quality_quota_complete"
+    else:
+        action = "freeze_quality_successor_round"
+        if observed_yield > 0:
+            planning_yield = observed_yield
+            needed = math.ceil((remaining / planning_yield) * safety_factor)
+            uncapped_budget = math.ceil(needed / 300) * 300
+        else:
+            planning_yield = min(
+                1.0,
+                branch.requested_delivery_count / branch.initial_raw_budget,
+            )
+            uncapped_budget = max(
+                branch.initial_raw_budget,
+                math.ceil(((remaining / planning_yield) * safety_factor) / 300)
+                * 300,
+            )
+        budget = min(uncapped_budget, per_epoch_cap)
+    return BranchQualityTopUpPlan(
+        branch_key=branch.branch_key,
+        next_round_ordinal=next_round_ordinal,
+        quality_quota=quality.quality_quota,
+        quality_qualified_count=qualified,
+        remaining_quality_count=remaining,
+        observed_raw_count=progress.raw_count,
+        observed_quality_yield=observed_yield,
+        planning_yield=planning_yield,
+        safety_factor=safety_factor,
+        uncapped_recommended_raw_budget=uncapped_budget,
+        per_epoch_raw_budget_cap=per_epoch_cap,
+        budget_cap_applied=uncapped_budget > budget,
+        recommended_raw_budget=budget,
+        action=action,
+    )
+
+
 BranchAction = Literal[
     "generate_or_refine_more",
     "complete_sequence_score_all",
@@ -674,6 +818,15 @@ BranchAction = Literal[
     "qualify_and_diversify",
     "deliver_quota",
     "quota_complete",
+]
+
+QualityBranchAction = Literal[
+    "generate_or_refine_more",
+    "complete_sequence_score_all",
+    "complete_target_sequence_scoring",
+    "qualify_and_diversify",
+    "construct_quality_archives",
+    "quality_quota_complete",
 ]
 
 
@@ -726,3 +879,74 @@ def next_controller_branch(
         ),
     )
     return branch.branch_key, next_branch_action(branch, progress_by_branch[branch.branch_key])
+
+
+def next_quality_branch_action(
+    branch: DesignBranch,
+    progress: BranchProgress,
+    quality: BranchQualityProgress,
+) -> QualityBranchAction:
+    """Continue after row delivery when the frozen high-quality quota is not met."""
+
+    if branch.branch_key != progress.branch_key or branch.branch_key != quality.branch_key:
+        raise ValueError("progress belongs to another branch")
+    if quality.quality_quota != branch.requested_delivery_count:
+        raise ValueError("quality quota must equal the frozen branch delivery quota")
+    if progress.valid_unique_count < branch.requested_delivery_count:
+        return "generate_or_refine_more"
+    if progress.fully_scored_count < progress.valid_unique_count:
+        return "complete_sequence_score_all"
+    if (
+        branch.target_sequence_interaction_required
+        and progress.target_sequence_scored_count < progress.fully_scored_count
+    ):
+        return "complete_target_sequence_scoring"
+    if progress.family_count == 0:
+        return "qualify_and_diversify"
+    if quality.underfilled_archives and quality.quality_qualified_count == 0:
+        return "construct_quality_archives"
+    if quality.quality_qualified_count < quality.quality_quota:
+        return "generate_or_refine_more"
+    return "quality_quota_complete"
+
+
+def next_quality_controller_branch(
+    contract: SevenBranchDesignContract,
+    progress_by_branch: dict[str, BranchProgress],
+    quality_by_branch: dict[str, BranchQualityProgress],
+) -> tuple[str, QualityBranchAction] | None:
+    """Choose the largest relative quality deficit, not the smallest row count."""
+
+    branch_by_key = {branch.branch_key: branch for branch in contract.branches}
+    for branch in contract.branches:
+        if (
+            branch.branch_key not in progress_by_branch
+            or branch.branch_key not in quality_by_branch
+        ):
+            return branch.branch_key, "generate_or_refine_more"
+    unfinished = [
+        branch
+        for branch in contract.branches
+        if quality_by_branch[branch.branch_key].quality_qualified_count
+        < quality_by_branch[branch.branch_key].quality_quota
+    ]
+    if not unfinished:
+        return None
+    branch = min(
+        unfinished,
+        key=lambda item: (
+            quality_by_branch[item.branch_key].quality_qualified_count
+            / quality_by_branch[item.branch_key].quality_quota,
+            item.branch_key,
+        ),
+    )
+    if branch.branch_key not in branch_by_key:
+        raise ValueError("quality progress references an unknown branch")
+    return (
+        branch.branch_key,
+        next_quality_branch_action(
+            branch,
+            progress_by_branch[branch.branch_key],
+            quality_by_branch[branch.branch_key],
+        ),
+    )

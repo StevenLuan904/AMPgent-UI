@@ -471,3 +471,49 @@ unchanged, but future planning and completion claims follow this target-by-targe
   snapshot, a frozen schedule, and an exact-once Temporal submission. Identical evidence must derive
   the same UUID5 identities and SHA, never a replacement run. Continue successor epochs until all six
   150 quotas and the 1,000 target-agnostic quota are independently complete.
+
+## Quality-complete multi-front evolution (2026-08-25 user direction)
+
+- Separate a **quantity-complete delivery** from a **quality-complete research objective**. The frozen
+  1,900-row delivery remains valid evidence, but it does not close the long-horizon goal when a branch
+  has fewer than its required 150/1,000 high-quality entries. Continue independently versioned
+  generation, scoring and refinement epochs until every branch fills its quality quota; never mutate
+  or backfill a completed run.
+- A high-quality entry must pass canonical-sequence validity, the frozen toxicity and hemolysis safety
+  labels, all applicable score-all observations, and one preregistered activity-evidence lane. It must
+  also occupy a named branch-local archive and satisfy the archive's family/novelty rules. Safety or a
+  favorable descriptor alone cannot qualify an inactive peptide. Freeze lane definitions before each
+  successor epoch; do not invent hard gates from that epoch's own quantiles.
+- Preserve disagreement instead of averaging it away. Maintain separate endpoint archives for
+  three-model activity consensus, each model-specific potency extreme, activity-safety balance,
+  stability/degradation, target-conditioned compatibility, and sequence-family novelty. If predictors
+  conflict, retain the scientifically useful endpoints in their respective archives, keep their model
+  identities and uncertainty visible, and allocate subsequent edits to every underfilled archive.
+- Treat the present delivery selector as an archive selector, not a complete genetic-algorithm elite
+  loop. Future successor epochs must select traceable parents from the named archives, retain unchanged
+  parent controls, produce local counterfactual edits or controlled recombinations, rescore every child,
+  and measure parent-to-child deltas. Continue broad de-novo generator cells alongside exploitation so
+  one historical family cannot monopolize the search.
+- Use a factorized `AMP backbone -> target-conditioned head/edit` design lane as a coherent research
+  hypothesis. First maintain reusable antimicrobial backbones that are active, safe and developable;
+  then make small target-conditional edits for AceA/GyrA/PBP2a/VEGFA/FGF2/ANGPT1. Compare every edited
+  child with its unchanged backbone and a target-agnostic sibling. The Agent may propose a cross-archive
+  mix only when it records the physicochemical or knowledge-card rationale and limits the edit so its
+  effect is attributable.
+- Record OOD per metric with an explicit basis such as `domain_rule`, `unsupported_representation`,
+  `feature_distance`, `calibration_failure`, `ensemble_disagreement`, or `method_policy`. The current
+  Guruprasad value is already Biopython `ProteinAnalysis.instability_index()` and is marked OOD below
+  20 residues because the formula was derived for proteins. The current PepMLM target score is globally
+  `method_policy` OOD/rank-only because it is not calibrated as a binding classifier for these branches;
+  this is not a candidate-by-candidate anomaly detector.
+- Do not add a second "Biopython instability" metric under another name: it would duplicate the same
+  Guruprasad dipeptide formula. Evaluate an independent peptide-relevant stability panel instead:
+  blood/serum half-life (PLifePred and the newer PeptiVerse as benchmarked candidates), protease-specific
+  cleavage burden (ProsperousPlus or a stronger reproducible successor), and transparent chemical-
+  liability features. Persist each model's training domain, units, uncertainty and OOD separately;
+  stability remains a multi-evidence archive axis unless a later frozen contract promotes it.
+- A knowledge card has demonstrated impact only when persisted lineage proves
+  `card read -> rationale/edit -> child sequence -> full rescore -> parent/child delta`. Merely binding a
+  context-pack SHA into a request is not knowledge use. For the 1,900-candidate seven-branch delivery,
+  all 14 source runs had `refinement_required=false` and zero knowledge/refinement ToolCalls, so report
+  honestly that the cards had no demonstrated causal effect on those candidates.

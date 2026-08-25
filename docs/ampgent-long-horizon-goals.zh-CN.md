@@ -1067,3 +1067,32 @@ snapshot，按跨round完整序列去重后的真实合格产率估算新raw预�
 只有3条曾在扰动试验中成为第1。完整可复算结果位于
 `reports/v39_run_analysis_5557e950_20260824_noise_v2/winner_stability.csv` 与
 `winner_stability_summary.json`，实现和固定seed测试位于 `src/pepagent/winner_stability.py`。
+
+## 2026-08-25 长期目标升级：质量配额、多冲突前沿与可归因进化
+
+现有1900条是首个完整计算交付，不是探索终点。长期目标改为：AceA/GyrA/PBP2a/VEGFA/FGF2/ANGPT1
+各自拥有150条达到冻结质量archive合同的候选，通用AMP拥有1000条；任一分支高质量数不足，就继续新的
+不可变generation/refinement epoch，直到数量与质量同时闭合。487条A档、112条三模型一致、27条robust
+core和39条activity-safety balanced是当前诊断基线，不把其中任一过严子集直接等同最终质量定义。
+
+核心方法亮点定为“因子化多前沿共同进化”：通用AMP骨架池负责抗菌活性、安全和可开发性，六个靶点池
+在保留骨架对照的前提下做少量target-conditioned编辑；活性共识、各模型独有高活性端点、安全平衡、
+稳定/降解、靶条件兼容和新家族分别维护archive。模型冲突不是待平均掉的噪声，而是可供下一轮验证和
+进化的不同假设。Agent通过parent-child反事实差值解释哪类局部电荷、疏水分布、序列motif或知识规则
+真正改善了哪一条前沿，再把计算预算投向仍未填满且边际新家族产率高的archive。
+
+当前候选机制应明确称为“安全准入后的确定性archive选择”，尚不是完整elite evolution：它先排除毒性/
+溶血标签不通过者，再按非加权Pareto层、靶条件NLL/PPL和seqfam80家族优先交付；top-up主要生成新批次，
+没有把多前沿elite系统地反馈成parent、受控变异、亲本对照和跨代收益。因此下一实现目标是补齐
+`archive -> parent selection -> 1–2位点编辑/有依据的受控mix -> 全量重评分 -> parent-child delta ->
+archive update`，并始终保留一定比例de-novo探索。
+
+OOD规则必须可解释到单个指标：Guruprasad是Biopython已经实现的蛋白来源二肽公式，<20 aa按长度规则
+标OOD；PepMLM目标条件分数是整个方法尚未校准为结合概率而统一rank-only/OOD。未来引入特征距离、
+校准失败或ensemble disagreement时分别记录，不能把几种OOD混成一个布尔值。稳定性证据增加独立短肽
+半衰期与蛋白酶切割panel；Biopython不得重复计票。首选实装评估PLifePred/PeptiVerse half-life与
+ProsperousPlus cleavage burden，保留训练集很小、测定条件异质和短肽长度域等限制。
+
+知识卡的论文贡献必须来自可追溯因果链。当前1900条的14个源run均未触发refinement，知识ToolCall为0，
+所以这些候选没有可证明的知识卡收益。后续只有卡片SHA、采用理由、parent、child、全分数变化与反例都
+落库，才能报告某条卡起效；若没有，继续诚实报告“知识包已绑定但未实际影响设计”。

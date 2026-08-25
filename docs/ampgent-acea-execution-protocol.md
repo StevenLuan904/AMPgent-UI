@@ -2727,3 +2727,64 @@ MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot
   贡献，只有新冻结合同才可改变生成器配比。
 - 下一动作仍是完成VEGFA、FGF2、ANGPT1和target-agnostic首轮score-all与准入，冻结全部分支snapshot，
   然后迁移`440c59f`/`696c2230...59645`并发补量release并完成真实smoke、preflight和exact-once提交。
+
+## 2026-08-25 用户覆盖：从数量交付升级为质量配额与多前沿持续进化
+
+### 当前证据与未闭合项
+
+- 已成功交付的1900条保持不可变：六个靶点各150、通用AMP 1000，且每条完成12项序列评价；它证明
+  数量闭合，不自动证明质量闭合。现有后验分层为487条A档、112条三活性模型同处本分支前25%、27条
+  扰动/删轴后仍稳定的robust core、39条activity-safety balanced。长期controller应以每个分支的
+  **高质量archive计数**判断是否继续，而不是看到`delivered_count`满额就停止。
+- 下一版合同增加`quality_qualified_count`、`quality_quota`、`archive_counts`和`underfilled_archives`。
+  六靶点的quality quota仍各150，通用AMP仍1000；不足即冻结新的successor epoch，持续生成、局部编辑、
+  score-all、双序列评分和家族去重，直到各分支质量配额满足。旧run不追加行、不回填新结论。
+
+### 多前沿archive，而不是一个总分或一个Pareto面
+
+- 固定保存至少六类branch-local archive：`activity_consensus`（三个活性模型一致）、
+  `activity_model_endpoint/<model>`（各模型独有的高活性端点）、`activity_safety_balance`、
+  `stability_degradation`、`target_conditioned`（仅六靶点）和`novel_family`。一条候选可属于多个archive；
+  冲突模型的两端或多端分别保留，禁止平均后只剩中间解。
+- 高质量候选先满足序列有效、ToxinPred3 Non-Toxin、MACREL low hemolysis、适用指标完整，再满足至少一个
+  有名称的activity证据lane；随后才由安全、稳定性、靶条件分数和家族新颖性决定进入哪个archive。
+  单独依靠安全极值、低疏水或任一理化描述符不能补足高质量名额。每轮archive定义在看结果前冻结。
+- 资源分配使用“缺口 × 新家族边际产率 × 模型不确定性”的可复算策略：underfilled archive获得更多
+  de-novo cell与parent-edit任务；已满archive只保留少量challenger。仍保留三个独立生成器和宽搜索，避免
+  退化成只围绕少数winner的小邻域爬山。
+
+### 因子化AMP骨架—靶向编辑闭环
+
+- 新增一条统一而非拼接式的设计假设：先从通用AMP archive选可复用的`backbone`，再由目标蛋白序列、
+  目标条件模型和知识卡对少数位点生成`target head/edit`。每个targeted child必须保留未修改backbone对照、
+  target-agnostic sibling及逐位点编辑说明；禁止无解释地把两条肽直接拼接。
+- Agent先比较前沿端点的理化/序列差异，再提出可检验解释，例如“LLAMP偏好该局部电荷模式而AMP-READ
+  不支持”；一次优先修改1–2个位点，重跑全部12项和靶条件评分。只有parent→child delta支持解释时，
+  才扩大同类编辑；反向结果进入反例archive并改变下一轮策略。
+
+### OOD、一致性和敏感性的正式记录
+
+- 每个OOD必须写`ood_basis`与判定证据。当前Guruprasad/Biopython规则为：长度小于20 aa时
+  `domain_rule` OOD，因为该二肽公式来自蛋白；1156/1900条命中。蛋白参考值40只作说明，不作短肽门。
+- 当前PepMLM conditional NLL/PPL对六靶点900条全部写`method_policy` OOD/rank-only：原因是该条件似然
+  尚未在这六类target-peptide分布上校准成结合概率，且与PepMLM生成并非独立；这不是逐条距离检测。
+- 活性一致性在分支内把AMP-READ、LLAMP和MACREL转为“越高越好”的百分位；三者均≥P75为一致，恰有
+  一个≥P90且另外两个<P50为单模型乐观冲突。敏感性通过逐次移除七个非加权目标、以及P70/P75/P80
+  三套共识要求，检查候选是否仍在前沿。所有诊断保留原始模型方向和版本，不升级成实验事实。
+
+### 独立稳定性panel
+
+- 现有`guruprasad_instability_index`已由Biopython `ProteinAnalysis.instability_index()`计算；不得再注册同公式
+  作为“第二模型”。下一工程增量优先做可部署对照smoke：PLifePred自然肽血液半衰期模型、PeptiVerse
+  sequence half-life challenger、ProsperousPlus蛋白酶切割位点/cleavage burden。依据公开权重、许可、训练
+  长度、外部验证与本地1900条覆盖选择至少一个半衰期模型和一个切割模型；各自独立报告OOD和不确定性。
+- 新稳定性分数先作为`stability_degradation` archive的排序/进化信号，不冒充血清实验。只在冻结的模型
+  适用域内比较数值；短肽、修饰、端基或非天然残基超域时保留结果和标志，不静默套用。
+
+### 知识卡因果审计
+
+- 1900条最终CSV涉及14个源run；数据库实查每个run的`refinement_required=false`，mature core为32–39，
+  knowledge/refinement ToolCall均为0。因此context-pack虽然随请求冻结，但没有实际读卡、生成child或改变
+  评分，当前不能举出一条“知识卡导致候选变好”的真实案例。
+- 后续知识卡只有形成`card_key/version/SHA -> parent -> edit rationale -> child -> 12项与target score delta`
+  才计为有效使用；每轮同时报告采用、反驳、无效三类卡片。没有这条lineage时明确写“无可证明影响”。

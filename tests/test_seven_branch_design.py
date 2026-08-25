@@ -8,9 +8,12 @@ from uuid import UUID
 import pytest
 
 from pepagent.seven_branch_design import (
+    QUALITY_ARCHIVE_KEYS,
     SEQUENCE_METRICS,
     BranchDeliveryCandidate,
     BranchProgress,
+    BranchQualityProgress,
+    BranchQualityTopUpPlan,
     BranchTopUpPlan,
     DesignBranch,
     SevenBranchDesignContract,
@@ -22,6 +25,9 @@ from pepagent.seven_branch_design import (
     delivery_eligible_candidate_ids,
     next_branch_action,
     next_controller_branch,
+    next_quality_branch_action,
+    next_quality_controller_branch,
+    plan_branch_quality_top_up,
     plan_branch_top_up,
     select_branch_delivery,
 )
@@ -77,6 +83,25 @@ def _progress(branch_key: str, **overrides: int) -> BranchProgress:
     }
     values.update(overrides)
     return BranchProgress(branch_key=branch_key, **values)
+
+
+def _quality(
+    branch_key: str,
+    quality_quota: int,
+    quality_qualified_count: int = 0,
+    *,
+    underfilled_archives: tuple[str, ...] = (),
+    archive_overrides: dict[str, int] | None = None,
+) -> BranchQualityProgress:
+    archives = {key: 0 for key in QUALITY_ARCHIVE_KEYS}
+    archives.update(archive_overrides or {})
+    return BranchQualityProgress(
+        branch_key=branch_key,
+        quality_quota=quality_quota,
+        quality_qualified_count=quality_qualified_count,
+        archive_counts=archives,
+        underfilled_archives=underfilled_archives,
+    )
 
 
 def test_contract_freezes_six_by_150_plus_one_thousand() -> None:
@@ -151,6 +176,121 @@ def test_controller_finishes_only_when_all_seven_quotas_are_delivered() -> None:
         for branch in contract.branches
     }
     assert next_controller_branch(contract, progress) is None
+
+
+def test_quality_controller_continues_after_row_quota_is_complete() -> None:
+    branch = _contract().branches[0]
+    progress = _progress(
+        branch.branch_key,
+        raw_count=600,
+        valid_unique_count=150,
+        fully_scored_count=150,
+        target_sequence_scored_count=150,
+        qualified_count=150,
+        delivered_count=150,
+        family_count=150,
+    )
+    quality = _quality(
+        branch.branch_key,
+        branch.requested_delivery_count,
+        55,
+        archive_overrides={"model_disagreement": 7, "amp_read_endpoint": 5},
+    )
+    assert next_branch_action(branch, progress) == "quota_complete"
+    assert next_quality_branch_action(branch, progress, quality) == (
+        "generate_or_refine_more"
+    )
+    plan = plan_branch_quality_top_up(
+        branch,
+        progress,
+        quality,
+        next_round_ordinal=1,
+    )
+    assert isinstance(plan, BranchQualityTopUpPlan)
+    assert plan.action == "freeze_quality_successor_round"
+    assert plan.remaining_quality_count == 95
+    assert plan.recommended_raw_budget > 0
+
+
+def test_quality_archives_preserve_overlapping_disagreement_endpoints() -> None:
+    quality = _quality(
+        "acea",
+        150,
+        55,
+        archive_overrides={
+            "activity_consensus": 20,
+            "amp_read_endpoint": 12,
+            "llamp_endpoint": 15,
+            "macrel_endpoint": 11,
+            "novel_family": 55,
+            "model_disagreement": 40,
+        },
+    )
+    assert quality.archive_counts["model_disagreement"] == 40
+    assert sum(quality.archive_counts.values()) > quality.quality_qualified_count
+    assert quality.sha256()
+
+
+def test_quality_controller_prioritizes_largest_relative_quality_shortfall() -> None:
+    contract = _contract()
+    progress = {
+        branch.branch_key: _progress(
+            branch.branch_key,
+            raw_count=branch.initial_raw_budget,
+            valid_unique_count=branch.requested_delivery_count,
+            fully_scored_count=branch.requested_delivery_count,
+            target_sequence_scored_count=(
+                branch.requested_delivery_count
+                if branch.target_sequence_interaction_required
+                else 0
+            ),
+            qualified_count=branch.requested_delivery_count,
+            delivered_count=branch.requested_delivery_count,
+            family_count=branch.requested_delivery_count,
+        )
+        for branch in contract.branches
+    }
+    quality = {
+        branch.branch_key: _quality(
+            branch.branch_key,
+            branch.requested_delivery_count,
+            branch.requested_delivery_count,
+        )
+        for branch in contract.branches
+    }
+    quality["acea"] = _quality("acea", 150, 55)
+    quality["target_agnostic_amp"] = _quality("target_agnostic_amp", 1000, 165)
+    assert next_quality_controller_branch(contract, progress, quality) == (
+        "target_agnostic_amp",
+        "generate_or_refine_more",
+    )
+
+
+def test_quality_controller_finishes_only_when_quality_quota_is_complete() -> None:
+    contract = _contract()
+    progress = {
+        branch.branch_key: _progress(
+            branch.branch_key,
+            valid_unique_count=branch.requested_delivery_count,
+            fully_scored_count=branch.requested_delivery_count,
+            target_sequence_scored_count=(
+                branch.requested_delivery_count
+                if branch.target_sequence_interaction_required
+                else 0
+            ),
+            family_count=branch.requested_delivery_count,
+        )
+        for branch in contract.branches
+    }
+    quality = {
+        branch.branch_key: _quality(
+            branch.branch_key,
+            branch.requested_delivery_count,
+            branch.requested_delivery_count,
+        )
+        for branch in contract.branches
+    }
+    assert next_quality_controller_branch(contract, progress, quality) is None
 
 
 def test_branch_round_projects_balanced_initial_generator_cells() -> None:
