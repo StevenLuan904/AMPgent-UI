@@ -32,6 +32,18 @@ def _sequence(index: int) -> str:
     return "K" + "".join(residues)
 
 
+def test_admission_policy_payload_normalizes_set_backed_fields() -> None:
+    payload = v38_activities._normalized_v38_maturity_policy_payload()
+    assert payload["required_metrics"] == sorted(payload["required_metrics"])
+    assert payload["non_gating_out_of_domain_metrics"] == sorted(
+        payload["non_gating_out_of_domain_metrics"]
+    )
+    assert all(
+        gate["allowed_values"] == sorted(gate["allowed_values"])
+        for gate in payload["label_gates"]
+    )
+
+
 def _generated_cells() -> list[dict]:
     contract = build_default_v38_sequence_contract()
     return [

@@ -1342,6 +1342,25 @@ async def _resolve_v38_admission(reference: dict[str, Any]) -> dict[str, Any]:
     return payload
 
 
+def _normalized_v38_maturity_policy_payload() -> dict[str, Any]:
+    policy = build_default_v38_maturity_policy()
+    policy_payload = policy.model_dump(mode="json")
+    # Pydantic serializes frozenset fields as lists in hash-iteration order.  That
+    # order is process-randomized, so evaluate and persist activities running in
+    # different worker processes could produce different evidence hashes despite
+    # identical authoritative rows.  Normalize every set-backed policy field
+    # before it enters a content-addressed admission artifact.
+    policy_payload["required_metrics"] = sorted(policy.required_metrics)
+    policy_payload["non_gating_out_of_domain_metrics"] = sorted(
+        policy.non_gating_out_of_domain_metrics
+    )
+    for gate_payload, gate in zip(
+        policy_payload["label_gates"], policy.label_gates, strict=True
+    ):
+        gate_payload["allowed_values"] = sorted(gate.allowed_values)
+    return policy_payload
+
+
 async def _build_v38_sequence_admission_payload(
     *,
     session: AsyncSession,
@@ -1351,6 +1370,7 @@ async def _build_v38_sequence_admission_payload(
     source_run_ids: tuple[uuid.UUID, ...] | None = None,
 ) -> tuple[dict[str, Any], set[uuid.UUID]]:
     policy = build_default_v38_maturity_policy()
+    policy_payload = _normalized_v38_maturity_policy_payload()
     source_ids = source_run_ids or (run_id,)
     run_order = {source_id: ordinal for ordinal, source_id in enumerate(source_ids)}
     candidates = list(
@@ -1447,7 +1467,7 @@ async def _build_v38_sequence_admission_payload(
     payload = {
         "schema_version": "v38.sequence-admission-evidence.1",
         "run_id": str(run_id),
-        "policy": policy.model_dump(mode="json"),
+        "policy": policy_payload,
         "candidate_evidence_sha256": sha256_json(
             [item.model_dump(mode="json") for item in evidence]
         ),
