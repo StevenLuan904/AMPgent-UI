@@ -26,12 +26,12 @@ $stagePath = Join-Path $tempRootPath ([guid]::NewGuid().ToString('N'))
 $null = New-Item -ItemType Directory -Path $stagePath
 
 try {
-    $candidateArchive = Join-Path $stagePath 'platform-release.tar'
+    $candidateArchive = Join-Path $stagePath 'platform-release.tar.gz'
     $markerArgument = "--add-virtual-file=.pepagent-source-revision:$resolvedRevision"
-    & git -C $repoRoot archive --format=tar --output=$candidateArchive $markerArgument $resolvedRevision
+    & git -C $repoRoot archive --format=tar.gz --output=$candidateArchive $markerArgument $resolvedRevision
     if ($LASTEXITCODE -ne 0) { throw 'git release archive failed' }
     $releaseSha = (Get-FileHash -LiteralPath $candidateArchive -Algorithm SHA256).Hash.ToLowerInvariant()
-    $archivePath = Join-Path $archiveRootPath "platform-$releaseSha.tar"
+    $archivePath = Join-Path $archiveRootPath "platform-$releaseSha.tar.gz"
     $releasePath = Join-Path $releaseRootPath $releaseSha
 
     if (-not (Test-Path -LiteralPath $archivePath)) {
