@@ -24,24 +24,12 @@ foreach ($path in @($releaseRootPath, $archiveRootPath, $tempRootPath)) {
 
 $stagePath = Join-Path $tempRootPath ([guid]::NewGuid().ToString('N'))
 $null = New-Item -ItemType Directory -Path $stagePath
-$sourceTar = Join-Path $stagePath 'source.tar'
-$treePath = Join-Path $stagePath 'tree'
-$null = New-Item -ItemType Directory -Path $treePath
 
 try {
-    & git -C $repoRoot archive --format=tar --output=$sourceTar $resolvedRevision
-    if ($LASTEXITCODE -ne 0) { throw 'git archive failed' }
-    & tar -xf $sourceTar -C $treePath
-    if ($LASTEXITCODE -ne 0) { throw 'source archive extraction failed' }
-    [IO.File]::WriteAllText(
-        (Join-Path $treePath '.pepagent-source-revision'),
-        $resolvedRevision,
-        [Text.UTF8Encoding]::new($false)
-    )
-
     $candidateArchive = Join-Path $stagePath 'platform-release.tar'
-    & tar -cf $candidateArchive -C $treePath .
-    if ($LASTEXITCODE -ne 0) { throw 'release archive creation failed' }
+    $markerArgument = "--add-virtual-file=.pepagent-source-revision:$resolvedRevision"
+    & git -C $repoRoot archive --format=tar --output=$candidateArchive $markerArgument $resolvedRevision
+    if ($LASTEXITCODE -ne 0) { throw 'git release archive failed' }
     $releaseSha = (Get-FileHash -LiteralPath $candidateArchive -Algorithm SHA256).Hash.ToLowerInvariant()
     $archivePath = Join-Path $archiveRootPath "platform-$releaseSha.tar"
     $releasePath = Join-Path $releaseRootPath $releaseSha
