@@ -343,6 +343,21 @@ def test_later_top_up_round_uses_yield_adaptive_mix_with_generator_floor() -> No
     assert amp_generators.count("amp_designer") == 6
 
 
+def test_later_round_supports_explicit_safety_biased_generator_mix() -> None:
+    _, execution = build_seven_branch_round_execution_contract(
+        _contract(),
+        branch_key="target_agnostic_amp",
+        round_ordinal=9,
+        raw_budget=3000,
+        generator_allocation_policy="safety_biased_hydramp_v1",
+    )
+    generators = [cell.generator_id for cell in execution.cells]
+
+    assert generators.count("hydramp") == 21
+    assert generators.count("ampgan_v2") == 6
+    assert generators.count("amp_designer") == 3
+
+
 def test_top_up_plan_uses_observed_yield_and_balanced_budget() -> None:
     branch = _contract().branches[0]
     plan = plan_branch_top_up(

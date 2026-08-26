@@ -10,6 +10,8 @@ from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
 
+import numpy as np
+
 NUMERIC_METRICS = {
     "amp_read_log10_mic_um": ("min", "model_prediction", "log10(uM)"),
     "llamp_log10_mic_um": ("min", "model_prediction", "log10(uM)"),
@@ -161,14 +163,46 @@ def _dominates(left: dict[str, str], right: dict[str, str]) -> bool:
 
 
 def _pareto_front(rows: list[dict[str, str]]) -> set[str]:
+    """Return the exact non-dominated set using bounded vectorized blocks.
+
+    The previous nested Python loop became the dominant cost once the quality
+    archive reached thousands of candidates.  This keeps the same strict
+    dominance semantics while moving comparisons into NumPy and bounding the
+    temporary comparison arrays to roughly 64 MiB.
+    """
+
+    if not rows:
+        return set()
+    values = np.asarray(
+        [
+            [
+                float(row[metric]) if direction == "min" else -float(row[metric])
+                for metric, direction in PARETO_OBJECTIVES
+            ]
+            for row in rows
+        ],
+        dtype=np.float64,
+    )
+    row_count, objective_count = values.shape
+    target_boolean_bytes = 64 * 1024 * 1024
+    block_size = max(
+        1,
+        min(
+            512,
+            target_boolean_bytes // max(1, row_count * objective_count * 2),
+        ),
+    )
+    dominated = np.zeros(row_count, dtype=np.bool_)
+    for start in range(0, row_count, block_size):
+        stop = min(start + block_size, row_count)
+        candidates = values[start:stop]
+        no_worse = np.all(values[:, None, :] <= candidates[None, :, :], axis=2)
+        strictly_better = np.any(values[:, None, :] < candidates[None, :, :], axis=2)
+        dominated[start:stop] = np.any(no_worse & strictly_better, axis=0)
     return {
-        candidate["candidate_id"]
-        for candidate in rows
-        if not any(
-            other["candidate_id"] != candidate["candidate_id"]
-            and _dominates(other, candidate)
-            for other in rows
-        )
+        row["candidate_id"]
+        for row, is_dominated in zip(rows, dominated, strict=True)
+        if not bool(is_dominated)
     }
 
 
@@ -183,6 +217,18 @@ def _audit_flags(row: dict[str, str]) -> list[str]:
     if float(row["guruprasad_instability_index"]) > 40:
         flags.append("instability_index_gt40_non_gating")
     return flags
+
+
+def _cohort_metric_summary(rows: list[dict[str, str]]) -> dict[str, object]:
+    return {
+        "cohort_n": len(rows),
+        "numeric_metrics": [
+            _numeric_summary(rows, metric) for metric in NUMERIC_METRICS
+        ],
+        "label_metrics": [
+            _label_summary(rows, metric) for metric in LABEL_METRICS
+        ],
+    }
 
 
 def main() -> None:
@@ -264,6 +310,16 @@ def main() -> None:
             _numeric_summary(rows, metric) for metric in NUMERIC_METRICS
         ],
         "label_metrics": [_label_summary(rows, metric) for metric in LABEL_METRICS],
+        "cohort_metric_summaries": {
+            "all": _cohort_metric_summary(rows),
+            "safety_eligible": _cohort_metric_summary(safety_eligible),
+            **{
+                tier: _cohort_metric_summary(
+                    [row for row in rows if row["quality_tier"] == tier]
+                )
+                for tier in sorted(tier_counts)
+            },
+        },
         "evidence_scope": "computational predictions and sequence descriptors; no wet-lab data",
         "csv": str(output_csv),
         "csv_sha256": _sha256(output_csv),

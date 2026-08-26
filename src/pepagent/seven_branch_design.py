@@ -29,6 +29,9 @@ SEQUENCE_METRICS = frozenset(
         "toxinpred3_label",
     }
 )
+GeneratorAllocationPolicy = Literal[
+    "balanced_then_yield_v1", "safety_biased_hydramp_v1"
+]
 
 
 class FrozenModel(BaseModel):
@@ -365,6 +368,7 @@ def build_seven_branch_round_execution_contract(
     branch_key: str,
     round_ordinal: int,
     raw_budget: int | None = None,
+    generator_allocation_policy: GeneratorAllocationPolicy = "balanced_then_yield_v1",
 ) -> tuple[SevenBranchRoundBinding, V38SequenceExecutionContract]:
     """Project one branch budget into frozen 100-occurrence generator cells."""
 
@@ -378,6 +382,11 @@ def build_seven_branch_round_execution_contract(
         raise ValueError(f"unknown seven-branch key: {branch_key}") from exc
     if round_ordinal < 0:
         raise ValueError("branch round ordinal cannot be negative")
+    if generator_allocation_policy not in {
+        "balanced_then_yield_v1",
+        "safety_biased_hydramp_v1",
+    }:
+        raise ValueError("unknown generator allocation policy")
     resolved_budget = branch.initial_raw_budget if raw_budget is None else raw_budget
     if resolved_budget <= 0 or resolved_budget % 300 != 0:
         raise ValueError("branch raw budget must be a positive multiple of 300")
@@ -388,6 +397,22 @@ def build_seven_branch_round_execution_contract(
             generator
             for generator in ("hydramp", "ampgan_v2", "amp_designer")
             for _ in range(per_generator)
+        )
+    elif generator_allocation_policy == "safety_biased_hydramp_v1":
+        # Round-7/8 target-agnostic audits showed joint low-toxicity/low-hemolysis
+        # yields of 38.46% (HydrAMP), 11.43% (AMP-GAN), and 4.53%
+        # (AMP-Designer). Keep all independent arms for frontier diversity while
+        # allocating most new evidence to the safer observed scaffold source.
+        hydramp_cells = max(1, round(cell_count * 0.70))
+        ampgan_cells = max(1, round(cell_count * 0.20))
+        amp_designer_cells = cell_count - hydramp_cells - ampgan_cells
+        if amp_designer_cells < 1:
+            amp_designer_cells = 1
+            hydramp_cells = cell_count - ampgan_cells - amp_designer_cells
+        generators = (
+            *("hydramp" for _ in range(hydramp_cells)),
+            *("ampgan_v2" for _ in range(ampgan_cells)),
+            *("amp_designer" for _ in range(amp_designer_cells)),
         )
     else:
         # Two balanced rounds established a durable yield ordering while showing

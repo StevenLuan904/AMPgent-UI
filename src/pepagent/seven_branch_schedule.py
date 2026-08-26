@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import copy
 import uuid
-from typing import Any
+from typing import Any, cast
 from uuid import UUID
 
 from pepagent.provenance.hashing import sha256_json
 from pepagent.seven_branch_design import (
     BranchProgress,
     BranchQualityProgress,
+    GeneratorAllocationPolicy,
     SevenBranchDesignContract,
     SevenBranchDesignSchedule,
     SevenBranchRoundRequest,
@@ -249,11 +250,20 @@ def build_top_up_seven_branch_schedule(
             "freeze_quality_successor_round",
         }:
             raise ValueError("top-up evidence includes a completed branch")
+        generator_allocation_policy = cast(
+            GeneratorAllocationPolicy,
+            str(
+                evidence.get(
+                    "generator_allocation_policy", "balanced_then_yield_v1"
+                )
+            ),
+        )
         binding, execution = build_seven_branch_round_execution_contract(
             design_contract,
             branch_key=branch_key,
             round_ordinal=plan.next_round_ordinal,
             raw_budget=plan.recommended_raw_budget,
+            generator_allocation_policy=generator_allocation_policy,
         )
         child_run_id = child_run_ids_by_key[branch_key]
         child_request = copy.deepcopy(request_template)
@@ -272,6 +282,7 @@ def build_top_up_seven_branch_schedule(
                 "quality_progress": quality.model_dump(mode="json"),
                 "quality_progress_sha256": quality.sha256(),
                 "quality_top_up_plan": plan.model_dump(mode="json"),
+                "generator_allocation_policy": generator_allocation_policy,
                 "preserve_overlapping_archives": True,
             }
             excluded_controller_run_id = evidence.get(

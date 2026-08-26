@@ -298,6 +298,7 @@ def test_quality_top_up_schedule_continues_after_row_quota_is_complete() -> None
                 "underfilled_archives": [],
             },
             "next_round_ordinal": 2,
+            "generator_allocation_policy": "safety_biased_hydramp_v1",
             "excluded_attempt_controller_run_id": str(UUID(int=722)),
             "excluded_attempt_run_ids": [str(UUID(int=723))],
             "excluded_attempt_outputs_reused": False,
@@ -329,6 +330,16 @@ def test_quality_top_up_schedule_continues_after_row_quota_is_complete() -> None
     assert epoch_branch.frozen_round.request["quality_continuation"][
         "preserve_overlapping_archives"
     ] is True
+    assert epoch_branch.frozen_round.request["quality_continuation"][
+        "generator_allocation_policy"
+    ] == "safety_biased_hydramp_v1"
+    generators = [
+        cell["generator_id"]
+        for cell in epoch_branch.frozen_round.request["execution_contract"]["cells"]
+    ]
+    assert generators.count("hydramp") == 13
+    assert generators.count("ampgan_v2") == 4
+    assert generators.count("amp_designer") == 1
     assert epoch_branch.frozen_round.request["quality_continuation"][
         "excluded_attempt_controller_run_id"
     ] == str(UUID(int=722))

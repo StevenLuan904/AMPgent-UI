@@ -51,13 +51,17 @@ def _load_s3_json(*, bucket: str, key: str) -> dict[str, Any]:
 def _source_run_ids(delivery_csv: Path, branch_key: str) -> list[str]:
     with delivery_csv.open("r", encoding="utf-8-sig", newline="") as handle:
         rows = [row for row in csv.DictReader(handle) if row["branch_key"] == branch_key]
-    return list(dict.fromkeys(row["source_run_id"] for row in rows))
+    run_ids = [row.get("source_run_id") or row.get("run_id") for row in rows]
+    return list(dict.fromkeys(run_id for run_id in run_ids if run_id))
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--prior-schedule-bucket", required=True)
-    parser.add_argument("--prior-schedule-key", required=True)
+    prior = parser.add_mutually_exclusive_group(required=True)
+    prior.add_argument("--prior-schedule-json", type=Path)
+    prior.add_argument("--prior-schedule-bucket")
+    parser.add_argument("--prior-schedule-key")
+    parser.add_argument("--prior-schedule-sha256")
     parser.add_argument("--delivery-csv", type=Path, required=True)
     parser.add_argument("--quality-json", type=Path, required=True)
     parser.add_argument("--target-manifest", type=Path, required=True)
@@ -72,6 +76,11 @@ def main() -> None:
     parser.add_argument("--qualified-count", type=int, required=True)
     parser.add_argument("--delivered-count", type=int, required=True)
     parser.add_argument("--family-count", type=int, required=True)
+    parser.add_argument(
+        "--generator-allocation-policy",
+        choices=("balanced_then_yield_v1", "safety_biased_hydramp_v1"),
+        default="balanced_then_yield_v1",
+    )
     parser.add_argument("--excluded-attempt-controller-run-id", type=UUID)
     parser.add_argument(
         "--excluded-attempt-run-id",
@@ -84,10 +93,25 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
 
-    prior_payload = _load_s3_json(
-        bucket=args.prior_schedule_bucket,
-        key=args.prior_schedule_key,
-    )
+    if args.prior_schedule_json is not None:
+        if not args.prior_schedule_sha256:
+            parser.error("--prior-schedule-json requires --prior-schedule-sha256")
+        actual_sha256 = sha256_file(args.prior_schedule_json)
+        if actual_sha256 != args.prior_schedule_sha256:
+            parser.error(
+                "--prior-schedule-json hash mismatch: "
+                f"expected {args.prior_schedule_sha256}, got {actual_sha256}"
+            )
+        prior_payload = json.loads(
+            args.prior_schedule_json.read_text(encoding="utf-8")
+        )
+    else:
+        if not args.prior_schedule_key:
+            parser.error("--prior-schedule-bucket requires --prior-schedule-key")
+        prior_payload = _load_s3_json(
+            bucket=args.prior_schedule_bucket,
+            key=args.prior_schedule_key,
+        )
     prior_schedule = SevenBranchTopUpSchedule.model_validate(prior_payload)
     prior_epoch_branch = next(
         item for item in prior_schedule.branches if item.branch_key == args.branch_key
@@ -145,6 +169,7 @@ def main() -> None:
         "progress": progress,
         "quality_progress": quality_progress,
         "next_round_ordinal": args.next_round_ordinal,
+        "generator_allocation_policy": args.generator_allocation_policy,
     }
     if args.excluded_attempt_controller_run_id is not None:
         if not args.excluded_attempt_run_ids:
@@ -207,6 +232,9 @@ def main() -> None:
         "child_run_id": str(epoch_branch.frozen_round.run_id),
         "workflow_id": epoch_branch.frozen_round.workflow_id,
         "quality_top_up_plan": epoch_branch.top_up_plan.model_dump(mode="json"),
+        "generator_allocation_policy": frozen_request["quality_continuation"][
+            "generator_allocation_policy"
+        ],
         "excluded_attempt_controller_run_id": frozen_request[
             "quality_continuation"
         ].get("excluded_attempt_controller_run_id"),
