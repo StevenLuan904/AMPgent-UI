@@ -226,7 +226,14 @@ function SparkIcon({ icon }: { icon: string }) {
   return icon === 'sequence' ? <Activity /> : <CircleDot />
 }
 
-function CanvasHeader({ detail, refreshing, onRefresh }: { detail: RunDetail; refreshing: boolean; onRefresh: () => void }) {
+function CanvasHeader({ detail, refreshing, selectionMode, selectedCount, onRefresh, onToggleSelection }: {
+  detail: RunDetail
+  refreshing: boolean
+  selectionMode: boolean
+  selectedCount: number
+  onRefresh: () => void
+  onToggleSelection: () => void
+}) {
   return (
     <header className="canvas-header">
       <div className="canvas-title-block">
@@ -241,6 +248,9 @@ function CanvasHeader({ detail, refreshing, onRefresh }: { detail: RunDetail; re
         </div>
       </div>
       <div className="header-actions">
+        <button className={`analysis-select-button ${selectionMode ? 'active' : ''}`} onClick={onToggleSelection}>
+          <ChartNoAxesCombined /><span>{selectionMode ? `已选 ${selectedCount} 个节点` : '组合分析'}</span>
+        </button>
         <span className={`run-pill status-${detail.run.status}`}><i />{statusText[detail.run.status] ?? detail.run.status}</span>
         <button className="icon-button" onClick={onRefresh} title="立即刷新"><RefreshCw className={refreshing ? 'spin' : ''} /></button>
         <button className="icon-button"><Ellipsis /></button>
@@ -253,13 +263,19 @@ function GraphView({
   detail,
   selectedStage,
   selectedEdge,
+  selectionMode,
+  analysisSelection,
   onSelect,
+  onToggleAnalysis,
   onSelectEdge,
 }: {
   detail: RunDetail
   selectedStage: string | null
   selectedEdge: GraphEdgeDetail | null
+  selectionMode: boolean
+  analysisSelection: string[]
   onSelect: (id: string) => void
+  onToggleAnalysis: (id: string) => void
   onSelectEdge: (edge: GraphEdgeDetail) => void
 }) {
   const nodes = useMemo<Array<StageNode | LaneNode>>(() => [
@@ -280,11 +296,11 @@ function GraphView({
         stage,
         branches: detail.branches,
         viewer: detail.viewers?.[stage.id] ?? (stage.kind === 'structure' ? detail.viewer : null),
-        selected: selectedStage === stage.id,
+        selected: selectionMode ? analysisSelection.includes(stage.id) : selectedStage === stage.id,
       },
       draggable: false,
     })),
-  ], [detail, selectedStage])
+  ], [analysisSelection, detail, selectedStage, selectionMode])
   const stageById = useMemo(() => Object.fromEntries(detail.graph.nodes.map((node) => [node.id, node])), [detail])
   const edges = useMemo<Edge[]>(() => detail.graph.edges.map((edge, index) => {
     const source = stageById[edge.source] as GraphStage | undefined
@@ -308,7 +324,9 @@ function GraphView({
     }
   }), [detail.graph.edges, selectedEdge, stageById])
   const handleNodeClick: NodeMouseHandler = (_, node) => {
-    if (node.type === 'stage') onSelect(node.id)
+    if (node.type !== 'stage') return
+    if (selectionMode) onToggleAnalysis(node.id)
+    else onSelect(node.id)
   }
   const handleEdgeClick: EdgeMouseHandler = (_, edge) => {
     const edgeDetail = (edge.data as { detail?: GraphEdgeDetail } | undefined)?.detail
@@ -634,6 +652,10 @@ export default function App() {
   const [activeView, setActiveView] = useState<'overview' | 'analysis'>('analysis')
   const [selectedStage, setSelectedStage] = useState<string | null>(null)
   const [selectedEdge, setSelectedEdge] = useState<GraphEdgeDetail | null>(null)
+  const [selectionMode, setSelectionMode] = useState(false)
+  const [analysisSelection, setAnalysisSelection] = useState<string[]>([])
+  const selectedAnalysisNodes = useMemo(() => data.detail?.graph.nodes.filter((node) => analysisSelection.includes(node.id)) ?? [], [analysisSelection, data.detail])
+  const toggleAnalysisNode = (id: string) => setAnalysisSelection((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
   return (
     <div className="app-shell">
       <div className="topbar"><button><ArrowLeft /></button><div className="brand"><span><FlaskConical /></span>AMPgent <i>科学分析</i></div><div className="source-state" title={data.detail ? 'PostgreSQL：只读访问科学运行与证据记录。' : '分析数据接口尚未连接。'}><Database />{data.detail ? 'PostgreSQL · 只读' : '分析数据待接入'} <span className="live-dot" /></div></div>
@@ -643,22 +665,50 @@ export default function App() {
           selectedId={data.selectedId}
           activeView={activeView}
           onView={(view) => { setActiveView(view); setSelectedStage(null); setSelectedEdge(null) }}
-          onSelect={(id) => { data.setSelectedId(id); setSelectedStage(null); setSelectedEdge(null) }}
+          onSelect={(id) => { data.setSelectedId(id); setSelectedStage(null); setSelectedEdge(null); setAnalysisSelection([]); setSelectionMode(false) }}
         />
         {activeView === 'analysis' ? (
-          <AnalysisDashboard detail={data.detail} />
+          <AnalysisDashboard detail={data.detail} seedNodeIds={analysisSelection} />
         ) : data.detail && !data.loading ? (
           <>
             <main className="main-canvas">
-              <CanvasHeader detail={data.detail} refreshing={data.refreshing} onRefresh={data.refresh} />
+              <CanvasHeader
+                detail={data.detail}
+                refreshing={data.refreshing}
+                selectionMode={selectionMode}
+                selectedCount={analysisSelection.length}
+                onRefresh={data.refresh}
+                onToggleSelection={() => {
+                  setSelectionMode((value) => !value)
+                  setSelectedStage(null)
+                  setSelectedEdge(null)
+                }}
+              />
               <GraphView
                 detail={data.detail}
                 selectedStage={selectedStage}
                 selectedEdge={selectedEdge}
+                selectionMode={selectionMode}
+                analysisSelection={analysisSelection}
                 onSelect={(id) => { setSelectedStage(id); setSelectedEdge(null) }}
+                onToggleAnalysis={toggleAnalysisNode}
                 onSelectEdge={(edge) => { setSelectedEdge(edge); setSelectedStage(null) }}
               />
-              <div className="canvas-footnote"><PanelLeftClose />拖拽画布 · 点击节点 · 5 秒更新</div>
+              {selectionMode && (
+                <div className="analysis-selection-bar">
+                  <div className="selection-summary">
+                    <ChartNoAxesCombined />
+                    <span><b>组合分析</b><small>{analysisSelection.length ? '已按节点语义准备分析条件' : '选择需要联合分析的节点'}</small></span>
+                  </div>
+                  <div className="selection-chips">
+                    {selectedAnalysisNodes.map((node) => <button key={node.id} onClick={() => toggleAnalysisNode(node.id)}>{node.label}<X /></button>)}
+                    {!selectedAnalysisNodes.length && <span>可连续选择多张流程卡片</span>}
+                  </div>
+                  {!!analysisSelection.length && <button className="clear-selection" onClick={() => setAnalysisSelection([])}>清除</button>}
+                  <button className="build-analysis" disabled={!analysisSelection.length} onClick={() => { setActiveView('analysis'); setSelectionMode(false) }}>生成分析卡片</button>
+                </div>
+              )}
+              {!selectionMode && <div className="canvas-footnote"><PanelLeftClose />拖拽画布 · 点击节点 · 5 秒更新</div>}
             </main>
             {selectedStage && <Inspector detail={data.detail} stageId={selectedStage} onClose={() => setSelectedStage(null)} />}
             {selectedEdge && <EdgeInspector detail={data.detail} edge={selectedEdge} onClose={() => setSelectedEdge(null)} />}

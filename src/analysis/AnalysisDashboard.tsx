@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import ReactECharts from 'echarts-for-react'
 import GridLayout, { WidthProvider, type Layout } from 'react-grid-layout'
 import {
@@ -19,16 +20,31 @@ import {
   SlidersHorizontal,
   Sparkles,
   TableProperties,
+  X,
   type LucideIcon,
 } from 'lucide-react'
 import type { RunDetail } from '../types'
 import { cardRegistry, defaultDashboardLayout } from './cardRegistry'
-import type { AnalysisGrain, AnalysisQuestion, AnalysisStage, DashboardCardDefinition } from './contracts'
+import type { AnalysisQuestion, DashboardCardDefinition } from './contracts'
 import { frameworkFixture } from './frameworkFixture'
+import {
+  chartLabels,
+  createDefaultQuery,
+  fieldById,
+  fieldCatalog,
+  moveField,
+  queriesFromNodes,
+  recommendChart,
+  removeField,
+  validateQuery,
+  type CardQuerySpec,
+  type ChartType,
+  type PivotSlot,
+} from './queryComposer'
 import './analysis-dashboard.css'
 
 const DashboardGrid = WidthProvider(GridLayout)
-const layoutStorageKey = 'ampgent.analysis-dashboard.layout.v1'
+const layoutStorageKey = 'ampgent.analysis-dashboard.layout.v2'
 
 const cardIcons: Record<AnalysisQuestion, LucideIcon> = {
   run_quality: CircleGauge,
@@ -42,29 +58,6 @@ const cardIcons: Record<AnalysisQuestion, LucideIcon> = {
 }
 
 const chartPalette = ['#4f7df3', '#9b7bd3', '#55bfc3', '#f3a76f', '#87bd55']
-
-const grainLabels: Record<AnalysisGrain, string> = {
-  proposal_occurrence: '原始生成记录',
-  unique_sequence: '唯一序列',
-  candidate_metric: '候选与指标',
-  candidate_target_structure: '候选、靶点与结构',
-}
-
-const stageLabels: Record<AnalysisStage, string> = {
-  raw_proposal: '原始生成',
-  deduplicated: '完成去重',
-  metric_complete: '完成评分',
-  safety_pass: '通过安全筛选',
-  candidate_pool: '候选池',
-  admitted: '最终入选',
-}
-
-const metricHelp: Record<string, string> = {
-  macrel_amp_probability: 'Macrel：预测序列具有抗菌活性的概率。',
-  llamp_log10_mic_um: 'LLAMP：预测最小抑菌浓度的对数值。',
-  macrel_hemolysis_probability: 'Macrel：预测序列造成溶血的概率。',
-  toxinpred3_hybrid_score: 'ToxinPred3：预测肽毒性的综合评分。',
-}
 
 const generatorHelp: Record<string, string> = {
   all: '同时查看全部生成来源。',
@@ -108,15 +101,80 @@ function Chart({ option, height = '100%' }: { option: object; height?: number | 
   )
 }
 
-function CardShell({ definition, editing, children, meta }: {
+const slotLabels: Record<PivotSlot, string> = {
+  rows: '行',
+  columns: '列',
+  values: '数值',
+  categories: '分类',
+}
+
+const chartChoices: ChartType[] = ['number', 'bar', 'line', 'boxplot', 'scatter', 'heatmap', 'table']
+
+function toggleQueryFilter(query: CardQuerySpec, key: string, value: string) {
+  const current = query.filters[key] ?? []
+  const next = current.includes(value) ? current.filter((item) => item !== value) : [...current, value]
+  return { ...query, filters: { ...query.filters, [key]: next } }
+}
+
+function PivotEditor({ query, onChange, onClose }: { query: CardQuerySpec; onChange: (query: CardQuerySpec) => void; onClose: () => void }) {
+  const used = new Set([...query.rows, ...query.columns, ...query.values, ...query.categories])
+  const recommendation = recommendChart(query)
+  const errors = validateQuery(query)
+  const handleDrop = (event: DragEvent, slot: PivotSlot) => {
+    event.preventDefault()
+    const fieldId = event.dataTransfer.getData('text/plain')
+    onChange(moveField(query, fieldId, slot))
+  }
+  return (
+    <div className="pivot-editor" onClick={(event) => event.stopPropagation()}>
+      <div className="pivot-editor-head">
+        <div><strong>卡片分析条件</strong><span>拖动字段改变数据透视结构</span></div>
+        <div className="pivot-head-actions"><span className="query-contract">独立查询</span><button onClick={onClose} title="关闭分析条件"><X /></button></div>
+      </div>
+      <div className="pivot-field-bank">
+        <span>可用字段</span>
+        <div>{fieldCatalog.filter((field) => !used.has(field.id)).map((field) => (
+          <button draggable key={field.id} onDragStart={(event) => event.dataTransfer.setData('text/plain', field.id)} className={field.kind}>
+            {field.label}
+          </button>
+        ))}</div>
+      </div>
+      <div className="pivot-slots">
+        {(Object.keys(slotLabels) as PivotSlot[]).map((slot) => (
+          <div className={`pivot-slot slot-${slot}`} key={slot} onDragOver={(event) => event.preventDefault()} onDrop={(event) => handleDrop(event, slot)}>
+            <span>{slotLabels[slot]}</span>
+            <div>{query[slot].map((fieldId) => <button draggable key={fieldId} onDragStart={(event) => event.dataTransfer.setData('text/plain', fieldId)} onClick={() => onChange(removeField(query, fieldId))}>{fieldById(fieldId)?.label}<i>×</i></button>)}</div>
+            {!query[slot].length && <small>拖入字段</small>}
+          </div>
+        ))}
+      </div>
+      <div className="query-filter-groups">
+        <div><span>生成来源</span>{frameworkFixture.generators.map((item) => <button className={(query.filters.generator ?? []).includes(item.id) ? 'active' : ''} key={item.id} title={generatorHelp[item.label]} onClick={() => onChange(toggleQueryFilter(query, 'generator', item.id))}>{item.label}</button>)}</div>
+        <div><span>评分指标</span>{[['mic', '抑菌浓度'], ['hemolysis', '溶血风险'], ['toxicity', '毒性风险'], ['developability', '成药性']].map(([id, label]) => <button className={(query.filters.metric ?? []).includes(id) ? 'active' : ''} key={id} onClick={() => onChange(toggleQueryFilter(query, 'metric', id))}>{label}</button>)}</div>
+      </div>
+      <div className="chart-recommendation">
+        <div><Sparkles /><span><b>推荐 {chartLabels[recommendation.chart]}</b>{recommendation.reason}</span></div>
+        <div className="chart-options">{chartChoices.map((chart) => <button className={query.chart === chart ? 'active' : ''} key={chart} onClick={() => onChange({ ...query, chart })}>{chartLabels[chart]}</button>)}</div>
+      </div>
+      {!!errors.length && <div className="query-errors"><b>当前组合不可执行</b>{errors.map((error) => <span key={error}>{error}</span>)}</div>}
+      {!!query.sourceNodeIds.length && <div className="query-source"><b>由概览自动编排</b><span>{query.sourceNodeIds.length} 个流程节点</span></div>}
+    </div>
+  )
+}
+
+function CardShell({ definition, editing, children, meta, query, onQueryChange }: {
   definition: DashboardCardDefinition
   editing: boolean
   children: ReactNode
   meta?: ReactNode
+  query: CardQuerySpec
+  onQueryChange: (query: CardQuerySpec) => void
 }) {
   const Icon = cardIcons[definition.id]
+  const [queryOpen, setQueryOpen] = useState(false)
+  const errors = validateQuery(query)
   return (
-    <article className={`analysis-card card-${definition.id} ${editing ? 'is-editing' : ''}`}>
+    <article className={`analysis-card card-${definition.id} ${editing ? 'is-editing' : ''} ${queryOpen ? 'query-open' : ''}`}>
       <header className="analysis-card-header">
         <span className="card-icon"><Icon /></span>
         <div>
@@ -124,11 +182,24 @@ function CardShell({ definition, editing, children, meta }: {
           <p>{definition.description}</p>
         </div>
         {meta && <div className="card-meta">{meta}</div>}
+        <button className={`card-query-button ${queryOpen ? 'active' : ''} ${errors.length ? 'invalid' : ''}`} onClick={() => setQueryOpen((value) => !value)} title="配置本卡片的数据透视条件">
+          <SlidersHorizontal /><span>{chartLabels[query.chart]}</span>
+        </button>
         <button className="card-drag-handle" aria-label={`拖动 ${definition.title}`} title="拖动卡片">
           {editing ? <Move /> : <GripVertical />}
         </button>
       </header>
-      <div className="analysis-card-body">{children}</div>
+      {queryOpen && createPortal(
+        <div className="pivot-editor-layer" onClick={() => setQueryOpen(false)}>
+          <PivotEditor query={query} onChange={onQueryChange} onClose={() => setQueryOpen(false)} />
+        </div>,
+        document.body,
+      )}
+      <div className="analysis-card-body">
+        {errors.length ? (
+          <div className="query-blocked"><SlidersHorizontal /><b>分析条件需要调整</b><span>{errors.join(' ')}</span></div>
+        ) : children}
+      </div>
     </article>
   )
 }
@@ -314,7 +385,19 @@ function CandidateTable({ generator }: { generator: string }) {
   )
 }
 
-function CardContent({ id, generator }: { id: AnalysisQuestion; generator: string }) {
+const generatorIdsToLabels: Record<string, string> = {
+  amp_designer: 'AMP Designer',
+  ampgan: 'AMPGAN v2',
+  hydramp: 'HydrAMP',
+}
+
+function generatorFromQuery(query: CardQuerySpec) {
+  const selected = query.filters.generator ?? []
+  return selected.length === 1 ? generatorIdsToLabels[selected[0]] ?? 'all' : 'all'
+}
+
+function CardContent({ id, query }: { id: AnalysisQuestion; query: CardQuerySpec }) {
+  const generator = generatorFromQuery(query)
   if (id === 'run_quality') return <RunQualityCard />
   if (id === 'lineage_and_yield') return <LineageCard />
   if (id === 'score_distribution') return <DistributionCard generator={generator} />
@@ -325,23 +408,30 @@ function CardContent({ id, generator }: { id: AnalysisQuestion; generator: strin
   return <div className="card-placeholder">扩展接口已就绪</div>
 }
 
-export function AnalysisDashboard({ detail }: { detail?: RunDetail | null }) {
+export function AnalysisDashboard({ detail, seedNodeIds = [] }: { detail?: RunDetail | null; seedNodeIds?: string[] }) {
   const [editing, setEditing] = useState(false)
   const [layout, setLayout] = useState<Layout[]>(readLayout)
   const [hiddenCards, setHiddenCards] = useState<Set<AnalysisQuestion>>(new Set())
   const [libraryOpen, setLibraryOpen] = useState(false)
-  const [grain, setGrain] = useState<AnalysisGrain>('unique_sequence')
-  const [stage, setStage] = useState<AnalysisStage>('candidate_pool')
-  const [generator, setGenerator] = useState('all')
-  const [metric, setMetric] = useState('macrel_amp_probability')
+  const [queries, setQueries] = useState<Record<AnalysisQuestion, CardQuerySpec>>(() => Object.fromEntries(cardRegistry.map((card) => [card.id, createDefaultQuery(card.id)])) as Record<AnalysisQuestion, CardQuerySpec>)
+  const seedKey = seedNodeIds.join('|')
 
   useEffect(() => {
     window.localStorage.setItem(layoutStorageKey, JSON.stringify(layout))
   }, [layout])
 
+  useEffect(() => {
+    if (!seedNodeIds.length) return
+    const seeded = queriesFromNodes(seedNodeIds)
+    if (!seeded.length) return
+    setQueries((current) => ({ ...current, ...Object.fromEntries(seeded.map((query) => [query.cardId, query])) }))
+    const seededIds = new Set(seeded.map((query) => query.cardId))
+    setHiddenCards(new Set(cardRegistry.filter((card) => !seededIds.has(card.id)).map((card) => card.id)))
+  }, [seedKey])
+
   const visibleCards = useMemo(() => cardRegistry.filter((card) => !hiddenCards.has(card.id)), [hiddenCards])
   const runLabel = detail
-    ? `框架示例 · 当前选择“${detail.run.name}”，分析数值尚未接入该运行`
+    ? `框架示例 · 当前轮次含 ${detail.counts.candidates.toLocaleString()} 条候选，分析数值尚未接入该轮次`
     : frameworkFixture.runLabel
 
   const toggleCard = (id: AnalysisQuestion) => {
@@ -385,13 +475,18 @@ export function AnalysisDashboard({ detail }: { detail?: RunDetail | null }) {
         </div>
       </header>
 
-      <div className="query-composer">
-        <div className="query-label"><SlidersHorizontal /><span>联动分析条件</span><small>所有卡片同步更新</small></div>
-        <label><span>数据粒度</span><select value={grain} onChange={(event) => setGrain(event.target.value as AnalysisGrain)}>{Object.entries(grainLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
-        <label><span>分析阶段</span><select value={stage} onChange={(event) => setStage(event.target.value as AnalysisStage)}>{Object.entries(stageLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
-        <label title={generatorHelp[generator]}><span>生成器</span><select value={generator} onChange={(event) => setGenerator(event.target.value)}><option value="all">全部生成器</option>{frameworkFixture.generators.map((item) => <option value={item.label} key={item.id}>{item.label}</option>)}</select></label>
-        <label className="metric-select" title={metricHelp[metric]}><span>评分器</span><select value={metric} onChange={(event) => setMetric(event.target.value)}><option value="macrel_amp_probability">Macrel · 抗菌概率</option><option value="llamp_log10_mic_um">LLAMP · 抑菌浓度</option><option value="macrel_hemolysis_probability">Macrel · 溶血概率</option><option value="toxinpred3_hybrid_score">ToxinPred3 · 毒性评分</option></select></label>
-        <div className="query-scope"><b>{grainLabels[grain]}</b><span>·</span><b>{stageLabels[stage]}</b><span>·</span><b>{generator === 'all' ? '三个生成器' : generator}</b><i /></div>
+      <div className="analysis-orchestration">
+        <div className="orchestration-label"><SlidersHorizontal /><span><b>卡片独立分析</b><small>每张卡片拥有自己的字段、筛选和图表</small></span></div>
+        <div className="orchestration-flow">
+          <span className="flow-step active">概览多选</span><i />
+          <span className="flow-step">自动编排字段</span><i />
+          <span className="flow-step">拖动微调</span><i />
+          <span className="flow-step">图表推荐</span>
+        </div>
+        <div className={`orchestration-result ${seedNodeIds.length ? 'has-selection' : ''}`}>
+          <Sparkles />
+          <span>{seedNodeIds.length ? `已根据 ${seedNodeIds.length} 个流程节点生成 ${queriesFromNodes(seedNodeIds).length} 张分析卡片` : '在概览中选择多个流程节点，即可自动生成分析卡片'}</span>
+        </div>
       </div>
 
       <div className={`layout-note ${editing ? 'visible' : ''}`}><Move /> 拖动卡片标题调整位置，拖动右下角调整尺寸；布局自动保存在本机。</div>
@@ -407,16 +502,21 @@ export function AnalysisDashboard({ detail }: { detail?: RunDetail | null }) {
           isDraggable={editing}
           isResizable={editing}
           draggableHandle=".card-drag-handle"
-          onLayoutChange={setLayout}
+          onLayoutChange={(visibleLayout) => setLayout((current) => [
+            ...visibleLayout,
+            ...current.filter((item) => hiddenCards.has(item.i as AnalysisQuestion)),
+          ])}
         >
           {visibleCards.map((definition) => (
             <div key={definition.id}>
               <CardShell
                 definition={definition}
                 editing={editing}
-                meta={definition.id === 'score_distribution' ? <><span>{metric.split('_')[0]}</span><b>900 条</b></> : definition.id === 'multi_objective_conflict' ? <><span>三个目标</span><b>已分层</b></> : undefined}
+                query={queries[definition.id]}
+                onQueryChange={(query) => setQueries((current) => ({ ...current, [definition.id]: query }))}
+                meta={<b>{queries[definition.id].sourceNodeIds.length ? `${queries[definition.id].sourceNodeIds.length} 个节点` : '独立条件'}</b>}
               >
-                <CardContent id={definition.id} generator={generator} />
+                <CardContent id={definition.id} query={queries[definition.id]} />
               </CardShell>
             </div>
           ))}

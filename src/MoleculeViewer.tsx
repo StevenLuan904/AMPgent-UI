@@ -61,7 +61,7 @@ export function MoleculeViewer({ artifact, compact = false, autoRotate = false }
       try {
         await plugin.clear()
         const artifactUrl = artifact.artifact_url.startsWith('/')
-          ? `http://127.0.0.1:8081${artifact.artifact_url}`
+          ? new URL(artifact.artifact_url, window.location.origin).toString()
           : artifact.artifact_url
         const data = await plugin.builders.data.download(
           { url: artifactUrl, isBinary: false },
@@ -72,7 +72,7 @@ export function MoleculeViewer({ artifact, compact = false, autoRotate = false }
         await plugin.builders.structure.hierarchy.applyPreset(trajectory, 'default')
         if (autoRotate) {
           plugin.canvas3d?.setProps({
-            trackball: { animate: { name: 'spin', params: { speed: 0.01, axis: [0, 1, 0] } } },
+            trackball: { animate: { name: 'spin', params: { speed: 0.0025, axis: [0, 1, 0] } } },
           })
         }
         if (!cancelled) setState('ready')
