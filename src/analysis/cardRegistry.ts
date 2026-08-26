@@ -7,7 +7,7 @@ import type { DashboardCardDefinition } from './contracts'
 export const cardRegistry: DashboardCardDefinition[] = [
   {
     id: 'run_quality',
-    title: 'Run quality',
+    title: '运行质量',
     description: '规模、去重、覆盖率、OOD 与最终产率',
     defaultLayout: { x: 0, y: 0, w: 12, h: 2, minW: 8, minH: 2 },
     compatibleGrains: ['proposal_occurrence', 'unique_sequence'],
@@ -15,7 +15,7 @@ export const cardRegistry: DashboardCardDefinition[] = [
   },
   {
     id: 'lineage_and_yield',
-    title: 'Lineage & yield',
+    title: '来源与产率',
     description: '生成、去重、评估与入池的逐级损失',
     defaultLayout: { x: 0, y: 2, w: 5, h: 5, minW: 4, minH: 4 },
     compatibleGrains: ['proposal_occurrence', 'unique_sequence'],
@@ -23,7 +23,7 @@ export const cardRegistry: DashboardCardDefinition[] = [
   },
   {
     id: 'score_distribution',
-    title: 'Score distribution',
+    title: '评分分布',
     description: '按生成器和阶段比较评分器分布',
     defaultLayout: { x: 5, y: 2, w: 7, h: 5, minW: 5, minH: 4 },
     compatibleGrains: ['proposal_occurrence', 'unique_sequence', 'candidate_metric'],
@@ -31,7 +31,7 @@ export const cardRegistry: DashboardCardDefinition[] = [
   },
   {
     id: 'generator_contribution',
-    title: 'Origin composition',
+    title: '来源构成',
     description: '独占来源、共享来源与最终贡献',
     defaultLayout: { x: 0, y: 7, w: 4, h: 4, minW: 3, minH: 4 },
     compatibleGrains: ['unique_sequence'],
@@ -39,7 +39,7 @@ export const cardRegistry: DashboardCardDefinition[] = [
   },
   {
     id: 'safety_profile',
-    title: 'Safety profile',
+    title: '安全性概览',
     description: '溶血、毒性、OOD 与缺失风险',
     defaultLayout: { x: 4, y: 7, w: 4, h: 4, minW: 3, minH: 4 },
     compatibleGrains: ['unique_sequence', 'candidate_metric'],
@@ -47,7 +47,7 @@ export const cardRegistry: DashboardCardDefinition[] = [
   },
   {
     id: 'multi_objective_conflict',
-    title: 'Multi-objective frontier',
+    title: '多目标前沿',
     description: 'Pareto 等级、约束与不可同时改善区间',
     defaultLayout: { x: 8, y: 7, w: 4, h: 4, minW: 4, minH: 4 },
     compatibleGrains: ['unique_sequence', 'candidate_metric'],
@@ -55,7 +55,7 @@ export const cardRegistry: DashboardCardDefinition[] = [
   },
   {
     id: 'candidate_laboratory',
-    title: 'Candidate laboratory',
+    title: '候选审查台',
     description: '可筛选候选表、证据与后续操作',
     defaultLayout: { x: 0, y: 11, w: 12, h: 5, minW: 8, minH: 4 },
     compatibleGrains: ['unique_sequence', 'candidate_metric', 'candidate_target_structure'],

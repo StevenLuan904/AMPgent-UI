@@ -215,7 +215,7 @@ function Sidebar({
       <div className="sidebar-sections">
         <button><span><SparkIcon icon="sequence" /></span><b>序列设计</b><small>生成模型与十一项指标</small></button>
         <button><span><GitBranch /></span><b>多靶点</b><small>原位与错误口袋对照</small></button>
-        <button title="Boltz用于预测复合物构象；Rosetta用于界面精修与评分。"><span><Atom /></span><b>结构证据</b><small>Boltz 2与Rosetta</small></button>
+        <button title="Boltz 2预测复合物构象；Rosetta进行界面精修与评分。"><span><Atom /></span><b>结构证据</b><small>Boltz 2 与 Rosetta</small></button>
         <button><span><ShieldCheck /></span><b>科学评审</b><small>证据来源追踪</small></button>
       </div>
     </aside>
@@ -636,7 +636,7 @@ export default function App() {
   const [selectedEdge, setSelectedEdge] = useState<GraphEdgeDetail | null>(null)
   return (
     <div className="app-shell">
-      <div className="topbar"><button><ArrowLeft /></button><div className="brand"><span><FlaskConical /></span>AMPgent <i>Analytics</i></div><div className="source-state" title="产品层只读取分析结果，不反写科学事实。"><Database />{data.detail ? 'PostgreSQL · 只读' : 'Analytics adapter · 待接入'} <span className="live-dot" /></div></div>
+      <div className="topbar"><button><ArrowLeft /></button><div className="brand"><span><FlaskConical /></span>AMPgent <i>科学分析</i></div><div className="source-state" title={data.detail ? 'PostgreSQL：只读访问科学运行与证据记录。' : '分析数据接口尚未连接。'}><Database />{data.detail ? 'PostgreSQL · 只读' : '分析数据待接入'} <span className="live-dot" /></div></div>
       <div className="workspace">
         <Sidebar
           runs={data.runs}

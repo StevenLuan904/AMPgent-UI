@@ -43,6 +43,36 @@ const cardIcons: Record<AnalysisQuestion, LucideIcon> = {
 
 const chartPalette = ['#4f7df3', '#9b7bd3', '#55bfc3', '#f3a76f', '#87bd55']
 
+const grainLabels: Record<AnalysisGrain, string> = {
+  proposal_occurrence: '原始生成记录',
+  unique_sequence: '唯一序列',
+  candidate_metric: '候选与指标',
+  candidate_target_structure: '候选、靶点与结构',
+}
+
+const stageLabels: Record<AnalysisStage, string> = {
+  raw_proposal: '原始生成',
+  deduplicated: '完成去重',
+  metric_complete: '完成评分',
+  safety_pass: '通过安全筛选',
+  candidate_pool: '候选池',
+  admitted: '最终入选',
+}
+
+const metricHelp: Record<string, string> = {
+  macrel_amp_probability: 'Macrel：预测序列具有抗菌活性的概率。',
+  llamp_log10_mic_um: 'LLAMP：预测最小抑菌浓度的对数值。',
+  macrel_hemolysis_probability: 'Macrel：预测序列造成溶血的概率。',
+  toxinpred3_hybrid_score: 'ToxinPred3：预测肽毒性的综合评分。',
+}
+
+const generatorHelp: Record<string, string> = {
+  all: '同时查看全部生成来源。',
+  'AMP Designer': 'AMP Designer：面向抗菌短肽的序列生成模型。',
+  'AMPGAN v2': 'AMPGAN v2：基于生成对抗网络的短肽生成模型。',
+  HydrAMP: 'HydrAMP：面向抗菌活性优化的短肽生成模型。',
+}
+
 function readLayout(): Layout[] {
   try {
     const value = window.localStorage.getItem(layoutStorageKey)
@@ -110,11 +140,11 @@ function RunQualityCard() {
   const complete = generators.reduce((sum, item) => sum + item.metricComplete, 0)
   const admitted = generators.reduce((sum, item) => sum + item.admitted, 0)
   const stats = [
-    { label: 'Raw proposals', value: raw.toLocaleString(), detail: '3 generators × 300', tone: 'blue' },
-    { label: 'Unique sequences', value: unique.toLocaleString(), detail: `${((unique / raw) * 100).toFixed(1)}% retained`, tone: 'violet' },
-    { label: 'Metric coverage', value: `${((complete / unique) * 100).toFixed(1)}%`, detail: '33 missing · 67 OOD', tone: 'teal' },
-    { label: 'Candidate pool', value: '35', detail: '4.5% of unique', tone: 'orange' },
-    { label: 'Admitted', value: admitted.toLocaleString(), detail: 'final portfolio', tone: 'green' },
+    { label: '原始生成', value: raw.toLocaleString(), detail: '三个生成器各 300 条', tone: 'blue' },
+    { label: '唯一序列', value: unique.toLocaleString(), detail: `保留 ${((unique / raw) * 100).toFixed(1)}%`, tone: 'violet' },
+    { label: '评分覆盖率', value: `${((complete / unique) * 100).toFixed(1)}%`, detail: '缺失 33 条 · 分布外 67 条', tone: 'teal' },
+    { label: '候选池', value: '35', detail: '占唯一序列 4.5%', tone: 'orange' },
+    { label: '最终入选', value: admitted.toLocaleString(), detail: '进入最终组合', tone: 'green' },
   ]
   return (
     <div className="quality-grid">
@@ -127,14 +157,14 @@ function RunQualityCard() {
       ))}
       <div className="quality-callout">
         <Sparkles />
-        <div><b>Data quality gate</b><span>先报告 coverage / missing / OOD，再比较生成器。</span></div>
+        <div><b>数据质量门槛</b><span>先核对覆盖、缺失与分布外数据，再比较生成器。</span></div>
       </div>
     </div>
   )
 }
 
 function LineageCard() {
-  const stages = ['Raw', 'Unique', 'Metric complete', 'Safety pass', 'Candidate pool']
+  const stages = ['原始生成', '唯一序列', '完成评分', '安全通过', '候选池']
   const stageKey = ['raw', 'unique', 'metricComplete', 'safetyPass', 'candidatePool'] as const
   return (
     <div className="chart-with-summary">
@@ -156,14 +186,14 @@ function LineageCard() {
           data: stageKey.map((key) => generator[key]),
         })),
       }} />
-      <div className="card-insight"><ArrowDownRight /><span><b>主要损失段</b> Unique → Safety pass · −68.2%</span></div>
+      <div className="card-insight"><ArrowDownRight /><span><b>主要损失段</b> 唯一序列 → 安全通过 · −68.2%</span></div>
     </div>
   )
 }
 
 function DistributionCard({ generator }: { generator: string }) {
   const rows = frameworkFixture.distributions.filter((item) => generator === 'all' || item.generator === generator)
-  const labels = rows.map((item) => `${item.generator.replace('AMP Designer', 'Designer')}\n${item.stage === 'raw_proposal' ? 'Raw' : 'Pool'}`)
+  const labels = rows.map((item) => `${item.generator}\n${item.stage === 'raw_proposal' ? '原始' : '候选池'}`)
   return (
     <div className="distribution-layout">
       <Chart option={{
@@ -171,9 +201,9 @@ function DistributionCard({ generator }: { generator: string }) {
         grid: { left: 44, right: 18, top: 20, bottom: 50 },
         tooltip: { trigger: 'item' },
         xAxis: { type: 'category', data: labels, axisTick: { show: false }, axisLine: { lineStyle: { color: '#dfe5ed' } }, axisLabel: { color: '#747e90', fontSize: 9, lineHeight: 14 } },
-        yAxis: { type: 'value', min: 0, max: 1, name: 'AMP probability', nameTextStyle: { color: '#9aa2af', fontSize: 9 }, splitLine: { lineStyle: { color: '#eef1f5' } }, axisLabel: { color: '#8b94a3', fontSize: 9 } },
+        yAxis: { type: 'value', min: 0, max: 1, name: '抗菌概率', nameTextStyle: { color: '#9aa2af', fontSize: 9 }, splitLine: { lineStyle: { color: '#eef1f5' } }, axisLabel: { color: '#8b94a3', fontSize: 9 } },
         series: [{
-          name: 'Five-number summary',
+          name: '五数概括',
           type: 'boxplot',
           data: rows.map((item, index) => ({
             value: item.fiveNumberSummary,
@@ -183,12 +213,12 @@ function DistributionCard({ generator }: { generator: string }) {
         }],
       }} />
       <aside className="distribution-summary">
-        <span className="summary-eyebrow">Selected comparison</span>
-        <strong>Raw → pool</strong>
-        <div><b>+0.19</b><span>median shift</span></div>
-        <div><b>n = 35</b><span>pool coverage</span></div>
-        <div><b>4 OOD</b><span>shown, not hidden</span></div>
-        <small>后续实现：ECDF、效应量与 bootstrap CI</small>
+        <span className="summary-eyebrow">当前比较</span>
+        <strong>原始生成 → 候选池</strong>
+        <div><b>+0.19</b><span>中位数变化</span></div>
+        <div><b>35 条</b><span>候选池覆盖</span></div>
+        <div><b>4 条</b><span>分布外数据</span></div>
+        <small>待补充：累积分布、效应量与自助法置信区间</small>
       </aside>
     </div>
   )
@@ -207,7 +237,7 @@ function OriginCard() {
 }
 
 function SafetyCard({ generator }: { generator: string }) {
-  const labels = generator === 'all' ? ['Designer', 'AMPGAN', 'HydrAMP'] : [generator.replace('AMP Designer', 'Designer')]
+  const labels = generator === 'all' ? ['AMP Designer', 'AMPGAN', 'HydrAMP'] : [generator]
   const index = generator === 'AMP Designer' ? 0 : generator === 'AMPGAN v2' ? 1 : 2
   const values = generator === 'all'
     ? { hemolysis: [31, 38, 22], toxicity: [12, 17, 9], ood: [6, 7, 10] }
@@ -220,9 +250,9 @@ function SafetyCard({ generator }: { generator: string }) {
     xAxis: { type: 'category', data: labels, axisTick: { show: false }, axisLine: { lineStyle: { color: '#dfe5ed' } }, axisLabel: { fontSize: 9, color: '#737d8d' } },
     yAxis: { type: 'value', max: 50, axisLabel: { formatter: '{value}%', fontSize: 9, color: '#8b94a3' }, splitLine: { lineStyle: { color: '#eef1f5' } } },
     series: [
-      { name: 'Hemolysis', type: 'bar', barWidth: 11, data: values.hemolysis, itemStyle: { borderRadius: [4, 4, 0, 0] } },
-      { name: 'Toxicity', type: 'bar', barWidth: 11, data: values.toxicity, itemStyle: { borderRadius: [4, 4, 0, 0] } },
-      { name: 'OOD', type: 'bar', barWidth: 11, data: values.ood, itemStyle: { borderRadius: [4, 4, 0, 0] } },
+      { name: '溶血风险', type: 'bar', barWidth: 11, data: values.hemolysis, itemStyle: { borderRadius: [4, 4, 0, 0] } },
+      { name: '毒性风险', type: 'bar', barWidth: 11, data: values.toxicity, itemStyle: { borderRadius: [4, 4, 0, 0] } },
+      { name: '分布外', type: 'bar', barWidth: 11, data: values.ood, itemStyle: { borderRadius: [4, 4, 0, 0] } },
     ],
   }} />
 }
@@ -238,10 +268,10 @@ function ParetoCard({ generator }: { generator: string }) {
       <Chart option={{
         color: groups.map((item) => item.color),
         grid: { left: 48, right: 18, top: 28, bottom: 38 },
-        tooltip: { formatter: (params: { data: { value: number[]; sequence: string; rank: number } }) => `${params.data.sequence}<br/>Activity ${params.data.value[0]} · Hemolysis ${params.data.value[1]}<br/>Pareto rank ${params.data.rank}` },
+        tooltip: { formatter: (params: { data: { value: number[]; sequence: string; rank: number } }) => `${params.data.sequence}<br/>抗菌活性 ${params.data.value[0]} · 溶血风险 ${params.data.value[1]}<br/>前沿层级 ${params.data.rank}` },
         legend: { top: 0, icon: 'circle', itemWidth: 7, textStyle: { fontSize: 9, color: '#737d8d' } },
-        xAxis: { type: 'value', min: 0.55, max: 1, name: 'Activity ↑', nameLocation: 'middle', nameGap: 25, nameTextStyle: { fontSize: 9, color: '#7b8494' }, axisLabel: { fontSize: 9, color: '#8b94a3' }, splitLine: { lineStyle: { color: '#eef1f5' } } },
-        yAxis: { type: 'value', min: 0, max: 0.5, inverse: true, name: 'Hemolysis risk ↓', nameTextStyle: { fontSize: 9, color: '#7b8494' }, axisLabel: { fontSize: 9, color: '#8b94a3' }, splitLine: { lineStyle: { color: '#eef1f5' } } },
+        xAxis: { type: 'value', min: 0.55, max: 1, name: '抗菌活性 ↑', nameLocation: 'middle', nameGap: 25, nameTextStyle: { fontSize: 9, color: '#7b8494' }, axisLabel: { fontSize: 9, color: '#8b94a3' }, splitLine: { lineStyle: { color: '#eef1f5' } } },
+        yAxis: { type: 'value', min: 0, max: 0.5, inverse: true, name: '溶血风险 ↓', nameTextStyle: { fontSize: 9, color: '#7b8494' }, axisLabel: { fontSize: 9, color: '#8b94a3' }, splitLine: { lineStyle: { color: '#eef1f5' } } },
         series: groups.map((group) => ({
           name: group.label,
           type: 'scatter',
@@ -251,8 +281,8 @@ function ParetoCard({ generator }: { generator: string }) {
         })),
       }} />
       <aside className="conflict-note">
-        <span>Binding constraint</span>
-        <strong>Hemolysis · 42%</strong>
+        <span>主要约束</span>
+        <strong>溶血风险 · 42%</strong>
         <p>前沿高活性区间同时抬升溶血风险。</p>
         <small>需由统计冲突、选择冲突与前沿冲突三层证据确认。</small>
       </aside>
@@ -265,7 +295,7 @@ function CandidateTable({ generator }: { generator: string }) {
   return (
     <div className="candidate-table-wrap">
       <table className="candidate-table">
-        <thead><tr><th>Candidate</th><th>Origin set</th><th>Activity ↑</th><th>Hemolysis ↓</th><th>Toxicity ↓</th><th>Charge</th><th>Pareto</th><th>Evidence state</th></tr></thead>
+        <thead><tr><th>候选序列</th><th>生成来源</th><th>抗菌活性 ↑</th><th>溶血风险 ↓</th><th>毒性风险 ↓</th><th>净电荷</th><th>前沿层级</th><th>证据状态</th></tr></thead>
         <tbody>{rows.map((item) => (
           <tr key={item.id}>
             <td><b>{item.id}</b><code>{item.sequence}</code></td>
@@ -275,11 +305,11 @@ function CandidateTable({ generator }: { generator: string }) {
             <td>{item.toxicity.toFixed(2)}</td>
             <td>+{item.charge.toFixed(1)}</td>
             <td><span className={`pareto-rank rank-${item.paretoRank}`}>P{item.paretoRank}</span></td>
-            <td>{item.flags.length ? item.flags.map((flag) => <span className="evidence-flag" key={flag}>{flag}</span>) : <span className="evidence-ok">Complete</span>}</td>
+            <td>{item.flags.length ? item.flags.map((flag) => <span className="evidence-flag" key={flag}>{flag === 'shared-origin' ? '多来源' : flag === 'safety-boundary' ? '安全边界' : flag}</span>) : <span className="evidence-ok">证据完整</span>}</td>
           </tr>
         ))}</tbody>
       </table>
-      <footer className="table-footer"><span>Showing {rows.length} of 35 candidates</span><span>Sequence identity preserved · shared origins not force-assigned</span></footer>
+      <footer className="table-footer"><span>显示 35 条中的 {rows.length} 条</span><span>保留序列身份 · 多来源不强制归属</span></footer>
     </div>
   )
 }
@@ -292,7 +322,7 @@ function CardContent({ id, generator }: { id: AnalysisQuestion; generator: strin
   if (id === 'safety_profile') return <SafetyCard generator={generator} />
   if (id === 'multi_objective_conflict') return <ParetoCard generator={generator} />
   if (id === 'candidate_laboratory') return <CandidateTable generator={generator} />
-  return <div className="card-placeholder">Extension point ready</div>
+  return <div className="card-placeholder">扩展接口已就绪</div>
 }
 
 export function AnalysisDashboard({ detail }: { detail?: RunDetail | null }) {
@@ -311,7 +341,7 @@ export function AnalysisDashboard({ detail }: { detail?: RunDetail | null }) {
 
   const visibleCards = useMemo(() => cardRegistry.filter((card) => !hiddenCards.has(card.id)), [hiddenCards])
   const runLabel = detail
-    ? `Framework preview · selected run ${detail.run.id.slice(0, 8)} is not connected to these values`
+    ? `框架示例 · 当前选择“${detail.run.name}”，分析数值尚未接入该运行`
     : frameworkFixture.runLabel
 
   const toggleCard = (id: AnalysisQuestion) => {
@@ -332,18 +362,18 @@ export function AnalysisDashboard({ detail }: { detail?: RunDetail | null }) {
     <section className="analysis-page">
       <header className="analysis-page-header">
         <div className="analysis-heading">
-          <div className="analysis-eyebrow"><DatabaseZap /> Deterministic analytics <span>NO AGENT</span></div>
-          <h1>Peptide analytics</h1>
+          <div className="analysis-eyebrow"><DatabaseZap /> 确定性科学分析 <span>无智能体</span></div>
+          <h1>短肽分析</h1>
           <p>{runLabel}</p>
         </div>
         <div className="analysis-header-actions">
-          <span className="fixture-badge"><FlaskConical /> Framework fixture</span>
+          <span className="fixture-badge" title="当前数值仅用于验证页面结构，不代表所选运行。"><FlaskConical /> 框架示例数据</span>
           <button className={editing ? 'active' : ''} onClick={() => setEditing((value) => !value)}><LayoutDashboard />{editing ? '完成布局' : '编辑布局'}</button>
           <div className="card-library-wrap">
             <button onClick={() => setLibraryOpen((value) => !value)}><Library />卡片库</button>
             {libraryOpen && (
               <div className="card-library-popover">
-                <div><strong>Analysis cards</strong><span>按科学问题组织</span></div>
+                <div><strong>分析卡片</strong><span>按科学问题组织</span></div>
                 {cardRegistry.map((card) => {
                   const Icon = cardIcons[card.id]
                   return <label key={card.id}><input type="checkbox" checked={!hiddenCards.has(card.id)} onChange={() => toggleCard(card.id)} /><span><Icon /></span><b>{card.title}</b><small>{card.description}</small></label>
@@ -356,12 +386,12 @@ export function AnalysisDashboard({ detail }: { detail?: RunDetail | null }) {
       </header>
 
       <div className="query-composer">
-        <div className="query-label"><SlidersHorizontal /><span>Query composer</span><small>所有卡片联动</small></div>
-        <label><span>数据粒度</span><select value={grain} onChange={(event) => setGrain(event.target.value as AnalysisGrain)}><option value="proposal_occurrence">Proposal occurrence</option><option value="unique_sequence">Unique sequence</option><option value="candidate_metric">Candidate × metric</option><option value="candidate_target_structure">Candidate × target × structure</option></select></label>
-        <label><span>分析阶段</span><select value={stage} onChange={(event) => setStage(event.target.value as AnalysisStage)}><option value="raw_proposal">Raw proposal</option><option value="deduplicated">Deduplicated</option><option value="metric_complete">Metric complete</option><option value="safety_pass">Safety pass</option><option value="candidate_pool">Candidate pool</option><option value="admitted">Admitted</option></select></label>
-        <label><span>生成器</span><select value={generator} onChange={(event) => setGenerator(event.target.value)}><option value="all">全部生成器</option>{frameworkFixture.generators.map((item) => <option value={item.label} key={item.id}>{item.label}</option>)}</select></label>
-        <label className="metric-select"><span>评分器</span><select value={metric} onChange={(event) => setMetric(event.target.value)}><option value="macrel_amp_probability">Macrel · AMP probability</option><option value="llamp_log10_mic_um">LLAMP · log₁₀ MIC</option><option value="macrel_hemolysis_probability">Macrel · Hemolysis</option><option value="toxinpred3_hybrid_score">ToxinPred3 · Toxicity</option></select></label>
-        <div className="query-scope"><b>{grain.replaceAll('_', ' ')}</b><span>·</span><b>{stage.replaceAll('_', ' ')}</b><span>·</span><b>{generator === 'all' ? '3 generators' : generator}</b><i /></div>
+        <div className="query-label"><SlidersHorizontal /><span>联动分析条件</span><small>所有卡片同步更新</small></div>
+        <label><span>数据粒度</span><select value={grain} onChange={(event) => setGrain(event.target.value as AnalysisGrain)}>{Object.entries(grainLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
+        <label><span>分析阶段</span><select value={stage} onChange={(event) => setStage(event.target.value as AnalysisStage)}>{Object.entries(stageLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
+        <label title={generatorHelp[generator]}><span>生成器</span><select value={generator} onChange={(event) => setGenerator(event.target.value)}><option value="all">全部生成器</option>{frameworkFixture.generators.map((item) => <option value={item.label} key={item.id}>{item.label}</option>)}</select></label>
+        <label className="metric-select" title={metricHelp[metric]}><span>评分器</span><select value={metric} onChange={(event) => setMetric(event.target.value)}><option value="macrel_amp_probability">Macrel · 抗菌概率</option><option value="llamp_log10_mic_um">LLAMP · 抑菌浓度</option><option value="macrel_hemolysis_probability">Macrel · 溶血概率</option><option value="toxinpred3_hybrid_score">ToxinPred3 · 毒性评分</option></select></label>
+        <div className="query-scope"><b>{grainLabels[grain]}</b><span>·</span><b>{stageLabels[stage]}</b><span>·</span><b>{generator === 'all' ? '三个生成器' : generator}</b><i /></div>
       </div>
 
       <div className={`layout-note ${editing ? 'visible' : ''}`}><Move /> 拖动卡片标题调整位置，拖动右下角调整尺寸；布局自动保存在本机。</div>
@@ -384,7 +414,7 @@ export function AnalysisDashboard({ detail }: { detail?: RunDetail | null }) {
               <CardShell
                 definition={definition}
                 editing={editing}
-                meta={definition.id === 'score_distribution' ? <><span>{metric.split('_')[0]}</span><b>n=900</b></> : definition.id === 'multi_objective_conflict' ? <><span>3 objectives</span><b>ranked</b></> : undefined}
+                meta={definition.id === 'score_distribution' ? <><span>{metric.split('_')[0]}</span><b>900 条</b></> : definition.id === 'multi_objective_conflict' ? <><span>三个目标</span><b>已分层</b></> : undefined}
               >
                 <CardContent id={definition.id} generator={generator} />
               </CardShell>
@@ -394,7 +424,7 @@ export function AnalysisDashboard({ detail }: { detail?: RunDetail | null }) {
       </div>
 
       <footer className="analysis-provenance-bar">
-        <div><DatabaseZap /><span><b>Source</b> framework_fixture</span><span><b>Snapshot</b> framework-preview</span><span><b>Query</b> analysis-query.1</span></div>
+        <div><DatabaseZap /><span><b>来源</b> 框架示例</span><span><b>快照</b> 页面结构预览</span><span><b>查询契约</b> 第一版</span></div>
         <p>{frameworkFixture.provenance.warnings[0]}</p>
       </footer>
     </section>
