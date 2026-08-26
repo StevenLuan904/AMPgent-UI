@@ -392,6 +392,10 @@ button:focus-visible { outline: 2px solid #315be8; outline-offset: 2px; }
 .loading-mark svg { width: 23px; }
 .loading-screen h2 { font-size: 17px; margin: 19px 0 7px; }
 .loading-screen p { color: #7b8495; font-size: 11px; }
+.loading-actions { display: flex; gap: 8px; margin-top: 18px; }
+.loading-actions button { min-width: 94px; height: 36px; padding: 0 15px; border: 1px solid #d9deea; border-radius: 9px; background: #fff; color: #344054; font: 600 12px/1 inherit; cursor: pointer; box-shadow: 0 2px 7px rgba(27, 36, 55, .05); }
+.loading-actions button.primary { border-color: #2f61df; background: #2f61df; color: #fff; }
+.loading-actions button:hover { border-color: #aeb8ca; }
 
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(22,166,198,.25) } 50% { box-shadow: 0 0 0 5px rgba(22,166,198,0) } }

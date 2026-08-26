@@ -42,7 +42,7 @@ export const fieldCatalog: AnalysisField[] = [
 const defaults: Record<AnalysisQuestion, Omit<CardQuerySpec, 'cardId' | 'sourceNodeIds'>> = {
   run_quality: { rows: [], columns: [], values: ['candidate_count'], categories: [], filters: {}, chart: 'number' },
   lineage_and_yield: { rows: ['stage'], columns: [], values: ['candidate_count'], categories: ['generator'], filters: {}, chart: 'line' },
-  score_distribution: { rows: ['stage'], columns: [], values: ['metric_value'], categories: ['generator'], filters: {}, chart: 'boxplot' },
+  score_distribution: { rows: ['generator'], columns: [], values: ['metric_value'], categories: [], filters: {}, chart: 'boxplot' },
   filtering_loss: { rows: ['stage'], columns: ['evidence_status'], values: ['candidate_count'], categories: [], filters: {}, chart: 'heatmap' },
   generator_contribution: { rows: ['origin_set'], columns: [], values: ['candidate_count'], categories: ['generator'], filters: {}, chart: 'bar' },
   safety_profile: { rows: ['generator'], columns: [], values: ['hemolysis', 'toxicity'], categories: ['evidence_status'], filters: {}, chart: 'bar' },
@@ -105,7 +105,7 @@ export function recommendChart(query: CardQuerySpec): { chart: ChartType; reason
   if (query.values.length >= 2 && query.rows.includes('candidate')) return { chart: 'scatter', reason: '候选级双数值最适合比较目标冲突。' }
   if (query.rows.includes('stage') && query.categories.length) return { chart: 'line', reason: '阶段具有顺序，按分类绘制趋势最清晰。' }
   if (query.columns.length && query.rows.length) return { chart: 'heatmap', reason: '行列维度形成矩阵，推荐热力图。' }
-  if (query.values.includes('metric_value') && query.rows.includes('stage')) return { chart: 'boxplot', reason: '连续评分按阶段比较，推荐箱线图。' }
+  if (query.values.includes('metric_value')) return { chart: 'boxplot', reason: '连续评分需要保留分布形状，推荐箱线图。' }
   if (!query.rows.length && !query.columns.length && !query.categories.length && query.values.length === 1) return { chart: 'number', reason: '单一汇总数值适合指标卡。' }
   if (query.rows.includes('candidate')) return { chart: 'table', reason: '候选身份需要保留完整序列与证据字段。' }
   return { chart: 'bar', reason: '分类与单一数值的比较适合条形图。' }

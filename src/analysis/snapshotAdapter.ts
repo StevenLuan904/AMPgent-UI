@@ -46,6 +46,7 @@ export function validateAnalysisSnapshot(value: unknown): SnapshotValidationIssu
 
 const DIGEST_PATTERN = /"snapshotSha256":"[a-f0-9]{64}"/
 const DIGEST_PLACEHOLDER = `"snapshotSha256":"${'0'.repeat(64)}"`
+let verifiedSessionSnapshot: AnalysisSnapshot | null = null
 
 export async function computeAnalysisSnapshotTextDigest(rawText: string): Promise<string> {
   const trimmed = rawText.trim()
@@ -78,7 +79,9 @@ async function fetchSnapshot(
   if (issues.length) throw new Error(issues.map((issue) => `${issue.path}: ${issue.message}`).join('; '))
   const snapshot = payload as AnalysisSnapshot
   if (verifyDigest && !(await verifyAnalysisSnapshotDigest(snapshot, rawText))) throw new Error('snapshotSha256: digest mismatch')
-  return { ...snapshot, source }
+  const verified = { ...snapshot, source }
+  if (source === 'frozen_release_snapshot') verifiedSessionSnapshot = verified
+  return verified
 }
 
 export async function loadAnalysisSnapshot(options: {
@@ -109,6 +112,12 @@ export async function loadAnalysisSnapshot(options: {
     return snapshot
   } catch (error) {
     attempts.push({ source: 'frozen_release_snapshot', url: snapshotUrl, error: error instanceof Error ? error.message : String(error) })
+    if (!options.fetchImpl && verifiedSessionSnapshot) {
+      return {
+        ...verifiedSessionSnapshot,
+        warnings: [...verifiedSessionSnapshot.warnings, '网络不可用；使用本次会话中已校验的冻结快照。'],
+      }
+    }
     throw new AnalysisSnapshotLoadError(attempts)
   }
 }

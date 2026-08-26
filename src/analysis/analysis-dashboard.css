@@ -54,6 +54,7 @@
 .analysis-header-actions button svg, .fixture-badge svg { width: 14px; }
 .analysis-header-actions .icon-only { width: 34px; padding: 0; justify-content: center; }
 .fixture-badge { color: #8c6e3d; border-color: #f0dfc4; background: #fffaf2; }
+.fixture-badge.verified { color: #39745c; border-color: #cce4d8; background: #f1faf5; }
 
 .card-library-wrap { position: relative; }
 .card-library-popover {
@@ -134,6 +135,33 @@
 .is-editing .card-drag-handle:active { cursor: grabbing; }
 .card-drag-handle svg { width: 13px; }
 .analysis-card-body { flex: 1; min-height: 0; position: relative; padding: 9px 12px 11px; }
+.analysis-card.presentation-compact .analysis-card-header { min-height: 48px; flex-basis: 48px; padding: 8px 9px; gap: 7px; }
+.analysis-card.presentation-compact .card-icon { width: 27px; height: 27px; flex-basis: 27px; }
+.analysis-card.presentation-compact .analysis-card-header p,
+.analysis-card.presentation-compact .card-meta,
+.analysis-card.presentation-compact .card-query-button span { display: none; }
+.analysis-card.presentation-compact .analysis-card-body { padding: 7px 9px 9px; }
+.analysis-card.presentation-compact .card-query-button { width: 27px; padding: 0; justify-content: center; }
+.analysis-card.presentation-compact .distribution-layout,
+.analysis-card.presentation-compact .pareto-layout { grid-template-columns: minmax(0, 1fr); }
+.analysis-card.presentation-compact .distribution-summary,
+.analysis-card.presentation-compact .conflict-note,
+.analysis-card.presentation-compact .card-insight,
+.analysis-card.presentation-compact .table-footer { display: none; }
+.analysis-card.presentation-compact .quality-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.analysis-card.presentation-compact .quality-stat:nth-child(n+3),
+.analysis-card.presentation-compact .quality-callout { display: none; }
+.analysis-card.presentation-compact .candidate-table th:nth-child(n+3),
+.analysis-card.presentation-compact .candidate-table td:nth-child(n+3),
+.analysis-card.presentation-compact .candidate-table tr:nth-child(n+5) { display: none; }
+.analysis-card.presentation-compact .candidate-table th:first-child,
+.analysis-card.presentation-compact .candidate-table td:first-child,
+.analysis-card.presentation-compact .candidate-table th:nth-child(2),
+.analysis-card.presentation-compact .candidate-table td:nth-child(2) { width: 50%; }
+.analysis-card.presentation-standard .distribution-summary small,
+.analysis-card.presentation-standard .conflict-note p,
+.analysis-card.presentation-standard .conflict-note small,
+.analysis-card.presentation-standard .table-footer span:last-child { display: none; }
 .query-blocked { height: 100%; display: grid; place-content: center; justify-items: center; gap: 6px; border: 1px dashed #e4c7b2; border-radius: 8px; color: #936341; background: #fffaf6; text-align: center; }
 .query-blocked svg { width: 20px; }
 .query-blocked b { font-size: 9px; }
@@ -203,6 +231,34 @@
 .analysis-provenance-bar svg { width: 13px; color: #6a84b9; }
 .analysis-provenance-bar b { color: #627086; margin-right: 4px; }
 .analysis-provenance-bar p { margin: 0; color: #a17855; font-size: 7px; }
+
+.snapshot-state-panel { min-height: 300px; margin: 14px 34px 30px; display: grid; place-content: center; justify-items: center; gap: 8px; border: 1px dashed #d8e0ec; border-radius: 12px; color: #8290a5; background: #fbfcfe; text-align: center; }
+.snapshot-state-panel > svg { width: 24px; color: #6681b8; }
+.snapshot-state-panel b { color: #485872; font-size: 11px; }
+.snapshot-state-panel span { font-size: 8px; }
+.snapshot-state-panel button { height: 30px; margin-top: 5px; padding: 0 12px; border: 1px solid #cbd7eb; border-radius: 7px; color: #4066ae; background: #fff; font-size: 8px; font-weight: 650; cursor: pointer; }
+
+.evidence-summary-grid { margin: 0 34px 14px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.evidence-summary-grid > div { min-height: 104px; padding: 15px 16px; display: grid; gap: 5px; border: 1px solid #e1e7ef; border-radius: 11px; background: #fff; box-shadow: 0 6px 18px rgba(48,65,100,.035); }
+.evidence-summary-grid span { color: #8793a5; font-size: 8px; font-weight: 650; }
+.evidence-summary-grid strong { color: #34425d; font-size: 23px; letter-spacing: -.04em; }
+.evidence-summary-grid small { color: #9aa4b2; font-size: 7px; }
+.evidence-table-card { margin: 0 34px 18px; overflow: hidden; border: 1px solid #e0e6ef; border-radius: 12px; background: #fff; }
+.evidence-table-card > header { height: 58px; padding: 0 15px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e9edf2; }
+.evidence-table-card > header > div { display: flex; align-items: center; gap: 9px; }
+.evidence-table-card > header svg { width: 16px; color: #4d8069; }
+.evidence-table-card > header span { display: grid; gap: 3px; color: #466079; font-size: 8px; }
+.evidence-table-card > header b { color: #36445c; font-size: 10px; }
+.evidence-table-card > header small { color: #98a2b0; font-size: 7px; }
+.evidence-table-card > header > span { padding: 4px 7px; border-radius: 5px; color: #4b7b66; background: #edf7f2; font-weight: 650; }
+.evidence-table-card table { width: 100%; border-collapse: collapse; }
+.evidence-table-card th { height: 32px; padding: 0 16px; color: #909baa; background: #fafbfd; font-size: 7px; text-align: left; }
+.evidence-table-card td { height: 43px; padding: 6px 16px; border-top: 1px solid #eff2f5; color: #58677c; font-size: 8px; }
+.evidence-table-card td:first-child { width: 48%; }
+.evidence-table-card td:first-child b { display: block; color: #3c4b65; font-size: 8px; }
+.evidence-table-card td:first-child small { display: block; margin-top: 3px; color: #9aa4b2; font-size: 7px; }
+.evidence-status-ok { display: inline-flex; align-items: center; gap: 5px; color: #4a8068; }
+.evidence-status-ok i { width: 6px; height: 6px; border-radius: 50%; background: #53ad82; }
 
 .analysis-orchestration { min-height: 66px; margin: 0 34px 8px; padding: 10px 12px; display: flex; align-items: center; gap: 16px; border: 1px solid #dfe6f1; border-radius: 11px; background: linear-gradient(105deg, #fbfcff, #f7f9fe); }
 .orchestration-label { min-width: 160px; display: flex; align-items: center; gap: 9px; }

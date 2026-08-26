@@ -34,6 +34,7 @@ import {
   X,
 } from 'lucide-react'
 import { AnalysisDashboard } from './analysis/AnalysisDashboard'
+import { EvidenceDashboard } from './analysis/EvidenceDashboard'
 import { MoleculeViewer } from './MoleculeViewer'
 import { LaneLabel, WorkflowNode, type LaneNode, type StageNode } from './WorkflowNode'
 import type {
@@ -120,7 +121,12 @@ function runTitle(run: RunListItem) {
   return `序列设计轮次 · ${run.candidate_count.toLocaleString()} 条候选`
 }
 
-function useRunData() {
+function readableDataError(cause: unknown, fallback: string) {
+  if (cause instanceof Error && /^(轮次|数据库|无法)/.test(cause.message)) return cause.message
+  return fallback
+}
+
+function useRunData(enabled: boolean) {
   const [runs, setRuns] = useState<RunListItem[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [detail, setDetail] = useState<RunDetail | null>(null)
@@ -145,7 +151,7 @@ function useRunData() {
       setDetail(await response.json() as RunDetail)
       setError(null)
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : '无法读取数据库观察数据')
+      setError(readableDataError(cause, '无法连接只读数据库'))
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -153,26 +159,46 @@ function useRunData() {
   }, [])
 
   useEffect(() => {
+    if (!enabled) {
+      setLoading(false)
+      return
+    }
+    setLoading(true)
     loadRuns().catch((cause) => {
-      setError(cause instanceof Error ? cause.message : '无法读取轮次列表')
+      setError(readableDataError(cause, '无法连接只读数据库'))
       setLoading(false)
     })
-  }, [loadRuns])
+  }, [enabled, loadRuns])
 
   useEffect(() => {
-    if (!selectedId) return
+    if (!enabled || !selectedId) return
     void loadDetail(selectedId)
     const timer = window.setInterval(() => {
       void loadRuns()
       void loadDetail(selectedId, true)
     }, 5000)
     return () => window.clearInterval(timer)
-  }, [selectedId, loadDetail, loadRuns])
+  }, [enabled, selectedId, loadDetail, loadRuns])
 
-  return { runs, selectedId, setSelectedId, detail, error, loading, refreshing, refresh: () => selectedId && loadDetail(selectedId, true) }
+  const retry = useCallback(async () => {
+    setError(null)
+    setLoading(true)
+    try {
+      await loadRuns()
+      if (selectedId) await loadDetail(selectedId)
+    } catch (cause) {
+      setError(readableDataError(cause, '无法连接只读数据库'))
+      setLoading(false)
+    }
+  }, [loadDetail, loadRuns, selectedId])
+
+  return { runs, selectedId, setSelectedId, detail, error, loading, refreshing, retry, refresh: () => selectedId && loadDetail(selectedId, true) }
 }
 
 function RunList({ runs, selectedId, onSelect }: { runs: RunListItem[]; selectedId: string | null; onSelect: (id: string) => void }) {
+  if (!runs.length) {
+    return <div className="run-list"><div className="run-row active frozen-run-row"><span className="run-status-dot status-cancelled" /><span className="run-row-copy"><strong>发布冻结轮次 · 773 条候选</strong><small>8月19日 21:46 · 已取消</small></span></div></div>
+  }
   return (
     <div className="run-list">
       {runs.map((run) => (
@@ -198,8 +224,8 @@ function Sidebar({
 }: {
   runs: RunListItem[]
   selectedId: string | null
-  activeView: 'overview' | 'analysis'
-  onView: (view: 'overview' | 'analysis') => void
+  activeView: 'overview' | 'analysis' | 'evidence'
+  onView: (view: 'overview' | 'analysis' | 'evidence') => void
   onSelect: (id: string) => void
 }) {
   return (
@@ -208,7 +234,7 @@ function Sidebar({
       <nav className="primary-nav">
         <button className={activeView === 'overview' ? 'active' : ''} onClick={() => onView('overview')}><Layers3 />概览</button>
         <button className={activeView === 'analysis' ? 'active' : ''} onClick={() => onView('analysis')}><ChartNoAxesCombined />分析</button>
-        <button><Database />证据库</button>
+        <button className={activeView === 'evidence' ? 'active' : ''} onClick={() => onView('evidence')}><Database />证据库</button>
       </nav>
       <div className="sidebar-label runs-label">轮次 · 科学运行</div>
       <RunList runs={runs} selectedId={selectedId} onSelect={onSelect} />
@@ -643,13 +669,13 @@ function TargetGlyph() {
   return <span className="target-glyph"><Box /></span>
 }
 
-function LoadingScreen({ error }: { error: string | null }) {
-  return <div className="loading-screen"><div className="loading-mark"><FlaskConical /></div><h2>{error ? '数据读取失败' : '正在读取数据库…'}</h2><p>{error ?? '同步实时运行记录'}</p></div>
+function LoadingScreen({ error, onRetry, onOpenAnalysis }: { error: string | null; onRetry: () => void; onOpenAnalysis: () => void }) {
+  return <div className="loading-screen"><div className="loading-mark"><FlaskConical /></div><h2>{error ? '数据库暂时不可用' : '正在读取数据库…'}</h2><p>{error ?? '同步实时运行记录'}</p>{error && <div className="loading-actions"><button onClick={onRetry}>重新读取</button><button className="primary" onClick={onOpenAnalysis}>查看冻结分析</button></div>}</div>
 }
 
 export default function App() {
-  const data = useRunData()
-  const [activeView, setActiveView] = useState<'overview' | 'analysis'>('analysis')
+  const [activeView, setActiveView] = useState<'overview' | 'analysis' | 'evidence'>('analysis')
+  const data = useRunData(activeView === 'overview')
   const [selectedStage, setSelectedStage] = useState<string | null>(null)
   const [selectedEdge, setSelectedEdge] = useState<GraphEdgeDetail | null>(null)
   const [selectionMode, setSelectionMode] = useState(false)
@@ -658,7 +684,7 @@ export default function App() {
   const toggleAnalysisNode = (id: string) => setAnalysisSelection((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
   return (
     <div className="app-shell">
-      <div className="topbar"><button><ArrowLeft /></button><div className="brand"><span><FlaskConical /></span>AMPgent <i>科学分析</i></div><div className="source-state" title={data.detail ? 'PostgreSQL：只读访问科学运行与证据记录。' : '分析数据接口尚未连接。'}><Database />{data.detail ? 'PostgreSQL · 只读' : '分析数据待接入'} <span className="live-dot" /></div></div>
+      <div className="topbar"><button><ArrowLeft /></button><div className="brand"><span><FlaskConical /></span>AMPgent <i>科学分析</i></div><div className="source-state" title={activeView !== 'overview' ? '已校验的发布快照，仅用于只读科学分析。' : data.detail ? 'PostgreSQL：只读访问科学运行与证据记录。' : '分析数据接口尚未连接。'}><Database />{activeView !== 'overview' ? '发布快照 · 只读' : data.detail ? 'PostgreSQL · 只读' : '分析数据待接入'} <span className="live-dot" /></div></div>
       <div className="workspace">
         <Sidebar
           runs={data.runs}
@@ -669,6 +695,8 @@ export default function App() {
         />
         {activeView === 'analysis' ? (
           <AnalysisDashboard detail={data.detail} seedNodeIds={analysisSelection} />
+        ) : activeView === 'evidence' ? (
+          <EvidenceDashboard runId={data.detail?.run.id} />
         ) : data.detail && !data.loading ? (
           <>
             <main className="main-canvas">
@@ -714,7 +742,7 @@ export default function App() {
             {selectedEdge && <EdgeInspector detail={data.detail} edge={selectedEdge} onClose={() => setSelectedEdge(null)} />}
           </>
         ) : (
-          <main className="main-canvas"><LoadingScreen error={data.error} /></main>
+          <main className="main-canvas"><LoadingScreen error={data.error} onRetry={() => { void data.retry() }} onOpenAnalysis={() => setActiveView('analysis')} /></main>
         )}
       </div>
     </div>

@@ -25,7 +25,11 @@ import {
 } from 'lucide-react'
 import type { RunDetail } from '../types'
 import { cardRegistry, defaultDashboardLayout } from './cardRegistry'
+import { planCardPresentation } from './cardPresentationRules'
 import type { AnalysisQuestion, DashboardCardDefinition } from './contracts'
+import type { AnalysisCardQueryState, PivotChartType } from './analysisDataContracts'
+import { loadAnalysisSnapshot, type AnalysisSnapshot } from './dataKernel'
+import { executeAnalysisQuery, type AnalysisPivotResult, type PivotDimensionKey } from './dataKernel'
 import { frameworkFixture } from './frameworkFixture'
 import {
   chartLabels,
@@ -45,6 +49,8 @@ import './analysis-dashboard.css'
 
 const DashboardGrid = WidthProvider(GridLayout)
 const layoutStorageKey = 'ampgent.analysis-dashboard.layout.v2'
+const queryStorageKey = 'ampgent.analysis-dashboard.queries.v1'
+const hiddenStorageKey = 'ampgent.analysis-dashboard.hidden.v1'
 
 const cardIcons: Record<AnalysisQuestion, LucideIcon> = {
   run_quality: CircleGauge,
@@ -59,6 +65,57 @@ const cardIcons: Record<AnalysisQuestion, LucideIcon> = {
 
 const chartPalette = ['#4f7df3', '#9b7bd3', '#55bfc3', '#f3a76f', '#87bd55']
 
+const generatorDisplay: Record<string, string> = {
+  amp_designer: 'AMP Designer',
+  ampgan: 'AMPGAN v2',
+  ampgan_v2: 'AMPGAN v2',
+  hydramp: 'HydrAMP',
+}
+
+const metricQueryKeys: Record<string, string> = {
+  mic: 'llamp_log10_mic_um',
+  hemolysis: 'macrel_hemolysis_probability',
+  toxicity: 'toxinpred3_hybrid_score',
+  developability: 'hydrophobic_moment_eisenberg',
+}
+
+const dimensionQueryKeys: Record<string, PivotDimensionKey> = {
+  stage: 'stage',
+  generator: 'generator',
+  origin_set: 'origin_set',
+  metric: 'metric',
+  cohort: 'admission_status',
+  evidence_status: 'admission_status',
+}
+
+function selectedMetric(query: CardQuerySpec) {
+  return metricQueryKeys[(query.filters.metric ?? [])[0]] ?? 'macrel_amp_probability'
+}
+
+function selectedGenerators(query: CardQuerySpec) {
+  return (query.filters.generator ?? []).map((id) => id === 'ampgan' ? 'ampgan_v2' : id)
+}
+
+function queryDimensions(query: CardQuerySpec, fallback: PivotDimensionKey[]) {
+  const mapped = [...query.rows, ...query.columns, ...query.categories].map((id) => dimensionQueryKeys[id]).filter((id): id is PivotDimensionKey => Boolean(id))
+  return mapped.length ? [...new Set(mapped)] : fallback
+}
+
+function runKernel(snapshot: AnalysisSnapshot, input: Parameters<typeof executeAnalysisQuery>[1]): AnalysisPivotResult {
+  return executeAnalysisQuery(snapshot, input)
+}
+
+function metricValue(candidate: AnalysisSnapshot['candidates'][number], key: string) {
+  return candidate.metrics[key]?.value ?? null
+}
+
+function fiveNumbers(values: number[]) {
+  if (!values.length) return [0, 0, 0, 0, 0]
+  const sorted = [...values].sort((a, b) => a - b)
+  const at = (fraction: number) => sorted[Math.min(sorted.length - 1, Math.round((sorted.length - 1) * fraction))]
+  return [at(0), at(.25), at(.5), at(.75), at(1)]
+}
+
 const generatorHelp: Record<string, string> = {
   all: '同时查看全部生成来源。',
   'AMP Designer': 'AMP Designer：面向抗菌短肽的序列生成模型。',
@@ -72,6 +129,24 @@ function readLayout(): Layout[] {
     return value ? JSON.parse(value) as Layout[] : defaultDashboardLayout
   } catch {
     return defaultDashboardLayout
+  }
+}
+
+function readQueries(): Record<AnalysisQuestion, CardQuerySpec> {
+  const defaults = Object.fromEntries(cardRegistry.map((card) => [card.id, createDefaultQuery(card.id)])) as Record<AnalysisQuestion, CardQuerySpec>
+  try {
+    const saved = window.localStorage.getItem(queryStorageKey)
+    return saved ? { ...defaults, ...JSON.parse(saved) as Partial<Record<AnalysisQuestion, CardQuerySpec>> } : defaults
+  } catch {
+    return defaults
+  }
+}
+
+function readHiddenCards() {
+  try {
+    return new Set<AnalysisQuestion>(JSON.parse(window.localStorage.getItem(hiddenStorageKey) ?? '[]'))
+  } catch {
+    return new Set<AnalysisQuestion>()
   }
 }
 
@@ -117,12 +192,27 @@ function toggleQueryFilter(query: CardQuerySpec, key: string, value: string) {
 }
 
 function PivotEditor({ query, onChange, onClose }: { query: CardQuerySpec; onChange: (query: CardQuerySpec) => void; onClose: () => void }) {
+  const [dropError, setDropError] = useState<string | null>(null)
   const used = new Set([...query.rows, ...query.columns, ...query.values, ...query.categories])
   const recommendation = recommendChart(query)
   const errors = validateQuery(query)
   const handleDrop = (event: DragEvent, slot: PivotSlot) => {
     event.preventDefault()
     const fieldId = event.dataTransfer.getData('text/plain')
+    const field = fieldById(fieldId)
+    if (!field) {
+      setDropError('无法识别该字段。')
+      return
+    }
+    if (slot === 'values' && field.kind !== 'measure') {
+      setDropError(`“${field.label}”是分组字段，不能放入数值。`)
+      return
+    }
+    if (slot !== 'values' && field.kind !== 'dimension') {
+      setDropError(`“${field.label}”是数值字段，只能放入数值。`)
+      return
+    }
+    setDropError(null)
     onChange(moveField(query, fieldId, slot))
   }
   return (
@@ -157,6 +247,7 @@ function PivotEditor({ query, onChange, onClose }: { query: CardQuerySpec; onCha
         <div className="chart-options">{chartChoices.map((chart) => <button className={query.chart === chart ? 'active' : ''} key={chart} onClick={() => onChange({ ...query, chart })}>{chartLabels[chart]}</button>)}</div>
       </div>
       {!!errors.length && <div className="query-errors"><b>当前组合不可执行</b>{errors.map((error) => <span key={error}>{error}</span>)}</div>}
+      {dropError && <div className="query-errors"><b>字段放置被拒绝</b><span>{dropError}</span></div>}
       {!!query.sourceNodeIds.length && <div className="query-source"><b>由概览自动编排</b><span>{query.sourceNodeIds.length} 个流程节点</span></div>}
     </div>
   )
@@ -172,9 +263,26 @@ function CardShell({ definition, editing, children, meta, query, onQueryChange }
 }) {
   const Icon = cardIcons[definition.id]
   const [queryOpen, setQueryOpen] = useState(false)
+  const cardRef = useRef<HTMLElement>(null)
+  const [presentation, setPresentation] = useState<{ mode: 'compact' | 'standard' | 'expanded'; effectiveChart: PivotChartType }>({ mode: 'standard', effectiveChart: 'bar' })
   const errors = validateQuery(query)
+  useEffect(() => {
+    const element = cardRef.current
+    if (!element) return
+    const chartMap: Record<ChartType, PivotChartType> = { number: 'kpi', bar: 'bar', line: 'funnel', boxplot: 'boxplot', scatter: 'scatter', heatmap: 'heatmap', table: 'table' }
+    const observer = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect
+      if (width < 180 || height < 120) return
+      const plan = planCardPresentation({ chart: chartMap[query.chart] } as AnalysisCardQueryState, { width, height })
+      setPresentation((current) => current.mode === plan.mode && current.effectiveChart === plan.effectiveChart
+        ? current
+        : { mode: plan.mode, effectiveChart: plan.effectiveChart })
+    })
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [query.chart])
   return (
-    <article className={`analysis-card card-${definition.id} ${editing ? 'is-editing' : ''} ${queryOpen ? 'query-open' : ''}`}>
+    <article ref={cardRef} data-presentation={presentation.mode} data-effective-chart={presentation.effectiveChart} className={`analysis-card card-${definition.id} presentation-${presentation.mode} ${editing ? 'is-editing' : ''} ${queryOpen ? 'query-open' : ''}`}>
       <header className="analysis-card-header">
         <span className="card-icon"><Icon /></span>
         <div>
@@ -204,7 +312,24 @@ function CardShell({ definition, editing, children, meta, query, onQueryChange }
   )
 }
 
-function RunQualityCard() {
+function RunQualityCard({ snapshot }: { snapshot: AnalysisSnapshot | null }) {
+  if (snapshot) {
+    const summary = snapshot.summary
+    const coverage = summary.expectedEvaluations ? (summary.observedEvaluations / summary.expectedEvaluations) * 100 : 0
+    const stats = [
+      { label: '原始提案', value: summary.rawOccurrences.toLocaleString(), detail: `${snapshot.generatorCells.length} 个生成批次`, tone: 'blue' },
+      { label: '唯一候选', value: summary.uniqueCandidates.toLocaleString(), detail: `剔除 ${summary.invalidOccurrences} 条无效记录`, tone: 'violet' },
+      { label: '评分证据', value: `${coverage.toFixed(1)}%`, detail: `${summary.observedEvaluations.toLocaleString()} / ${summary.expectedEvaluations.toLocaleString()} 项`, tone: 'teal' },
+      { label: '结构资格', value: summary.structureEligible.toLocaleString(), detail: '候选决策输出', tone: 'orange' },
+      { label: '成熟核心', value: (summary.admissionCounts.mature_core ?? 0).toLocaleString(), detail: '最高优先级队列', tone: 'green' },
+    ]
+    return (
+      <div className="quality-grid">
+        {stats.map((item) => <div className={`quality-stat tone-${item.tone}`} key={item.label}><span>{item.label}</span><strong>{item.value}</strong><small>{item.detail}</small></div>)}
+        <div className="quality-callout"><Sparkles /><div><b>轮次已取消</b><span>序列、评分与候选决策记录完整；结构阶段待续。</span></div></div>
+      </div>
+    )
+  }
   const generators = frameworkFixture.generators
   const raw = generators.reduce((sum, item) => sum + item.raw, 0)
   const unique = generators.reduce((sum, item) => sum + item.unique, 0)
@@ -234,22 +359,47 @@ function RunQualityCard() {
   )
 }
 
-function LineageCard() {
-  const stages = ['原始生成', '唯一序列', '完成评分', '安全通过', '候选池']
-  const stageKey = ['raw', 'unique', 'metricComplete', 'safetyPass', 'candidatePool'] as const
+function LineageCard({ snapshot, chart, query }: { snapshot: AnalysisSnapshot | null; chart: ChartType; query: CardQuerySpec }) {
+  const stages = ['原始生成', '唯一序列', '完成评分', '候选池', '安全通过', '结构资格']
+  const stageKey = ['raw', 'unique', 'metricComplete', 'candidatePool', 'safetyPass', 'admitted'] as const
+  const kernelResult = snapshot ? runKernel(snapshot, {
+    schemaVersion: 'analysis-pivot-query.1',
+    queryKey: 'generator_funnel',
+    dimensions: [...new Set([...queryDimensions(query, ['generator', 'stage']).filter((dimension) => ['generator', 'origin_set', 'stage', 'cohort'].includes(dimension)), 'stage' as PivotDimensionKey])],
+    filters: { generators: selectedGenerators(query) },
+  }) : null
+  const generators = snapshot && kernelResult
+    ? [...new Set(kernelResult.rows.map((item) => String(item.generator ?? item.origin_set ?? '全部候选')))].map((id, index) => {
+      const value = (stage: string) => Number(kernelResult.rows.find((item) => String(item.generator ?? item.origin_set ?? '全部候选') === id && item.stage === stage)?.unique_sequence_count ?? 0)
+      return {
+        id,
+        label: generatorDisplay[id] ?? id,
+        color: chartPalette[index],
+        raw: value('raw_proposal'),
+        unique: value('deduplicated'),
+        metricComplete: value('metric_complete'),
+        safetyPass: value('safety_pass'),
+        candidatePool: value('candidate_pool'),
+        admitted: value('admitted'),
+      }
+    })
+    : frameworkFixture.generators.map((item) => ({ ...item, admitted: item.candidatePool }))
+  const totals = stageKey.map((key) => generators.reduce((sum, item) => sum + Number(item[key]), 0))
+  const losses = totals.slice(1).map((value, index) => ({ index, rate: totals[index] ? (totals[index] - value) / totals[index] : 0 }))
+  const primaryLoss = losses.sort((left, right) => right.rate - left.rate)[0]
   return (
     <div className="chart-with-summary">
       <Chart option={{
         animationDuration: 500,
-        color: frameworkFixture.generators.map((item) => item.color),
+        color: generators.map((item) => item.color),
         grid: { left: 42, right: 18, top: 24, bottom: 42 },
         tooltip: { trigger: 'axis', valueFormatter: (value: unknown) => `${value} 条` },
         legend: { bottom: 0, icon: 'circle', itemWidth: 8, textStyle: { color: '#6f7888', fontSize: 10 } },
         xAxis: { type: 'category', data: stages, axisLine: { lineStyle: { color: '#dfe5ed' } }, axisTick: { show: false }, axisLabel: { color: '#7f8898', fontSize: 9 } },
         yAxis: { type: 'value', splitLine: { lineStyle: { color: '#eef1f5' } }, axisLabel: { color: '#8b94a3', fontSize: 9 } },
-        series: frameworkFixture.generators.map((generator) => ({
+        series: generators.map((generator) => ({
           name: generator.label,
-          type: 'line',
+          type: chart === 'bar' ? 'bar' : 'line',
           smooth: 0.28,
           symbolSize: 7,
           lineStyle: { width: 2 },
@@ -257,60 +407,120 @@ function LineageCard() {
           data: stageKey.map((key) => generator[key]),
         })),
       }} />
-      <div className="card-insight"><ArrowDownRight /><span><b>主要损失段</b> 唯一序列 → 安全通过 · −68.2%</span></div>
+      <div className="card-insight"><ArrowDownRight /><span><b>主要损失段</b> {primaryLoss ? `${stages[primaryLoss.index]} → ${stages[primaryLoss.index + 1]} · −${(primaryLoss.rate * 100).toFixed(1)}%` : '暂无可计算阶段'}</span></div>
     </div>
   )
 }
 
-function DistributionCard({ generator }: { generator: string }) {
-  const rows = frameworkFixture.distributions.filter((item) => generator === 'all' || item.generator === generator)
-  const labels = rows.map((item) => `${item.generator}\n${item.stage === 'raw_proposal' ? '原始' : '候选池'}`)
+function DistributionCard({ generator, snapshot, chart, query }: { generator: string; snapshot: AnalysisSnapshot | null; chart: ChartType; query: CardQuerySpec }) {
+  const metric = selectedMetric(query)
+  const kernelResult = snapshot ? runKernel(snapshot, {
+    schemaVersion: 'analysis-pivot-query.1',
+    queryKey: 'metric_distribution_by_generator',
+    dimensions: queryDimensions(query, ['generator', 'metric']).filter((dimension) => ['generator', 'origin_set', 'stage', 'metric', 'cohort', 'admission_status', 'ood_status'].includes(dimension)),
+    metrics: [metric],
+    filters: { generators: selectedGenerators(query) },
+    chart: chart === 'bar' ? 'bar' : chart === 'heatmap' ? 'heatmap' : 'boxplot',
+  }) : null
+  const rows = snapshot && kernelResult
+    ? (kernelResult.distributions ?? []).map((item) => ({
+      generator: generatorDisplay[item.key.generator] ?? item.key.generator ?? item.key.origin_set ?? '全部候选',
+      stage: item.key.stage ?? 'candidate_pool',
+      group: item.key.admission_status ?? '全部候选',
+      fiveNumberSummary: [item.summary.min ?? 0, item.summary.q1 ?? 0, item.summary.median ?? 0, item.summary.q3 ?? 0, item.summary.max ?? 0],
+      count: item.summary.count,
+    }))
+    : frameworkFixture.distributions.filter((item) => generator === 'all' || item.generator === generator).map((item) => ({ ...item, group: '全部候选' }))
+  const stageLabels: Record<string, string> = { raw_proposal: '原始', deduplicated: '去重', metric_complete: '评分完整', safety_pass: '安全通过', candidate_pool: '候选池', admitted: '结构资格' }
+  const labels = rows.map((item) => `${item.generator}\n${stageLabels[item.stage] ?? '候选池'}`)
+  const allValues = kernelResult?.distributions?.flatMap((item) => item.summary.values ?? []) ?? []
+  const overall = fiveNumbers(allValues)
+  const metricDescriptor = metric === 'llamp_log10_mic_um'
+    ? { label: '对数抑菌浓度 ↓', short: '抑菌浓度' }
+    : metric === 'macrel_hemolysis_probability'
+      ? { label: '溶血概率 ↓', short: '溶血概率' }
+      : metric === 'toxinpred3_hybrid_score'
+        ? { label: '毒性评分 ↓', short: '毒性评分' }
+        : metric === 'hydrophobic_moment_eisenberg'
+          ? { label: '疏水矩', short: '疏水矩' }
+          : { label: '抗菌概率 ↑', short: '抗菌概率' }
+  const observedMin = rows.length ? Math.min(...rows.map((item) => item.fiveNumberSummary[0])) : 0
+  const observedMax = rows.length ? Math.max(...rows.map((item) => item.fiveNumberSummary[4])) : 1
+  const isProbability = ['macrel_amp_probability', 'macrel_hemolysis_probability'].includes(metric)
+  const axisPadding = Math.max((observedMax - observedMin) * .08, .02)
+  const axisMin = isProbability ? 0 : Math.floor((observedMin - axisPadding) * 10) / 10
+  const axisMax = isProbability ? 1 : Math.ceil((observedMax + axisPadding) * 10) / 10
+  const heatmapColumns = [...new Set(rows.map((item) => item.generator))]
+  const heatmapGroups = [...new Set(rows.map((item) => item.group))]
+  const admissionLabels: Record<string, string> = { mature_core: '成熟核心', promising_uncertain: '潜力待确认', rejected: '未入选', all: '全部候选' }
+  const chartOption = chart === 'heatmap' ? {
+    grid: { left: 68, right: 24, top: 18, bottom: 42 },
+    tooltip: { formatter: (params: { data: number[] }) => `${heatmapColumns[params.data[0]]}<br/>${admissionLabels[heatmapGroups[params.data[1]]] ?? heatmapGroups[params.data[1]]}<br/>中位数 ${params.data[2].toFixed(3)}` },
+    xAxis: { type: 'category', data: heatmapColumns, axisTick: { show: false }, axisLabel: { color: '#747e90', fontSize: 9 } },
+    yAxis: { type: 'category', data: heatmapGroups.map((item) => admissionLabels[item] ?? item), axisTick: { show: false }, axisLabel: { color: '#747e90', fontSize: 9 } },
+    visualMap: { min: axisMin, max: axisMax, calculable: false, orient: 'horizontal', left: 'center', bottom: 0, itemWidth: 8, itemHeight: 70, textStyle: { fontSize: 7, color: '#8590a1' }, inRange: { color: ['#eef4ff', '#91b2ef', '#3f6fce'] } },
+    series: [{ type: 'heatmap', data: rows.map((item) => [heatmapColumns.indexOf(item.generator), heatmapGroups.indexOf(item.group), item.fiveNumberSummary[2]]), label: { show: true, formatter: (params: { data: number[] }) => params.data[2].toFixed(2), fontSize: 8, color: '#35435a' } }],
+  } : {
+    color: chartPalette,
+    grid: { left: 44, right: 18, top: 20, bottom: 50 },
+    tooltip: { trigger: 'item' },
+    xAxis: { type: 'category', data: labels, axisTick: { show: false }, axisLine: { lineStyle: { color: '#dfe5ed' } }, axisLabel: { color: '#747e90', fontSize: 9, lineHeight: 14 } },
+    yAxis: { type: 'value', min: axisMin, max: axisMax, name: metricDescriptor.label, nameTextStyle: { color: '#9aa2af', fontSize: 9 }, splitLine: { lineStyle: { color: '#eef1f5' } }, axisLabel: { color: '#8b94a3', fontSize: 9 } },
+    series: chart === 'bar' ? [{ name: '中位数', type: 'bar', barWidth: 24, data: rows.map((item, index) => ({ value: item.fiveNumberSummary[2], itemStyle: { color: chartPalette[index % chartPalette.length], borderRadius: [4, 4, 0, 0] } })) }] : [{ name: '五数概括', type: 'boxplot', data: rows.map((item, index) => ({ value: item.fiveNumberSummary, itemStyle: { color: `${chartPalette[index % chartPalette.length]}24`, borderColor: chartPalette[index % chartPalette.length], borderWidth: 1.5 } })), boxWidth: [12, 30] }],
+  }
   return (
     <div className="distribution-layout">
-      <Chart option={{
-        color: chartPalette,
-        grid: { left: 44, right: 18, top: 20, bottom: 50 },
-        tooltip: { trigger: 'item' },
-        xAxis: { type: 'category', data: labels, axisTick: { show: false }, axisLine: { lineStyle: { color: '#dfe5ed' } }, axisLabel: { color: '#747e90', fontSize: 9, lineHeight: 14 } },
-        yAxis: { type: 'value', min: 0, max: 1, name: '抗菌概率', nameTextStyle: { color: '#9aa2af', fontSize: 9 }, splitLine: { lineStyle: { color: '#eef1f5' } }, axisLabel: { color: '#8b94a3', fontSize: 9 } },
-        series: [{
-          name: '五数概括',
-          type: 'boxplot',
-          data: rows.map((item, index) => ({
-            value: item.fiveNumberSummary,
-            itemStyle: { color: `${chartPalette[Math.floor(index / 2)]}24`, borderColor: chartPalette[Math.floor(index / 2)], borderWidth: 1.5 },
-          })),
-          boxWidth: [12, 30],
-        }],
-      }} />
+      <Chart option={chartOption} />
       <aside className="distribution-summary">
         <span className="summary-eyebrow">当前比较</span>
-        <strong>原始生成 → 候选池</strong>
-        <div><b>+0.19</b><span>中位数变化</span></div>
-        <div><b>35 条</b><span>候选池覆盖</span></div>
-        <div><b>4 条</b><span>分布外数据</span></div>
-        <small>待补充：累积分布、效应量与自助法置信区间</small>
+        <strong>{metricDescriptor.short} · 当前分组</strong>
+        <div><b>{snapshot ? overall[2].toFixed(3) : '+0.19'}</b><span>总体中位数</span></div>
+        <div><b>{snapshot ? allValues.length.toLocaleString() : '35'} 条</b><span>有效评分</span></div>
+        <div><b>{snapshot ? snapshot.summary.outOfDomainEvaluations : 4} 条</b><span>全轮次分布外</span></div>
+        <small>{snapshot ? '箱体显示四分位区间，须结合模型适用域解释。' : '待补充：累积分布、效应量与自助法置信区间'}</small>
       </aside>
     </div>
   )
 }
 
-function OriginCard() {
-  const patterns = frameworkFixture.sourcePatterns
+function OriginCard({ snapshot }: { snapshot: AnalysisSnapshot | null }) {
+  const patterns = snapshot
+    ? Object.entries(snapshot.candidates.reduce<Record<string, number>>((accumulator, candidate) => {
+      const key = candidate.originSet.slice().sort().map((id) => generatorDisplay[id] ?? id).join(' + ')
+      accumulator[key] = (accumulator[key] ?? 0) + 1
+      return accumulator
+    }, {})).map(([label, count]) => ({ label, count })).sort((left, right) => right.count - left.count)
+    : frameworkFixture.sourcePatterns
   return <Chart option={{
     color: chartPalette,
     grid: { left: 118, right: 20, top: 8, bottom: 18 },
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-    xAxis: { type: 'value', max: 12, splitLine: { lineStyle: { color: '#eff2f6' } }, axisLabel: { color: '#8b94a3', fontSize: 9 } },
+    xAxis: { type: 'value', splitLine: { lineStyle: { color: '#eff2f6' } }, axisLabel: { color: '#8b94a3', fontSize: 9 } },
     yAxis: { type: 'category', inverse: true, data: patterns.map((item) => item.label), axisTick: { show: false }, axisLine: { show: false }, axisLabel: { color: '#626d7e', fontSize: 9 } },
     series: [{ type: 'bar', barWidth: 10, data: patterns.map((item, index) => ({ value: item.count, itemStyle: { color: chartPalette[index % chartPalette.length], borderRadius: [0, 4, 4, 0] } })), label: { show: true, position: 'right', color: '#4e5969', fontSize: 9 } }],
   }} />
 }
 
-function SafetyCard({ generator }: { generator: string }) {
-  const labels = generator === 'all' ? ['AMP Designer', 'AMPGAN', 'HydrAMP'] : [generator]
+function SafetyCard({ generator, snapshot }: { generator: string; snapshot: AnalysisSnapshot | null }) {
+  const generatorIds = snapshot ? [...new Set(snapshot.occurrences.map((item) => item.generator))] : []
+  const selectedIds = generator === 'all' ? generatorIds : generatorIds.filter((id) => generatorDisplay[id] === generator)
+  const labels = snapshot ? selectedIds.map((id) => generatorDisplay[id] ?? id) : generator === 'all' ? ['AMP Designer', 'AMPGAN', 'HydrAMP'] : [generator]
   const index = generator === 'AMP Designer' ? 0 : generator === 'AMPGAN v2' ? 1 : 2
-  const values = generator === 'all'
+  const values = snapshot ? {
+    hemolysis: selectedIds.map((id) => {
+      const rows = snapshot.candidates.filter((candidate) => candidate.originSet.includes(id))
+      return rows.length ? Math.round(rows.filter((candidate) => candidate.metrics.macrel_hemolysis_label?.text === 'high').length / rows.length * 100) : 0
+    }),
+    toxicity: selectedIds.map((id) => {
+      const rows = snapshot.candidates.filter((candidate) => candidate.originSet.includes(id))
+      return rows.length ? Math.round(rows.filter((candidate) => candidate.metrics.toxinpred3_label?.text === 'Toxin').length / rows.length * 100) : 0
+    }),
+    ood: selectedIds.map((id) => {
+      const rows = snapshot.candidates.filter((candidate) => candidate.originSet.includes(id))
+      const total = rows.flatMap((candidate) => Object.values(candidate.metrics))
+      return total.length ? Math.round(total.filter((metric) => metric.outOfDomain).length / total.length * 100) : 0
+    }),
+  } : generator === 'all'
     ? { hemolysis: [31, 38, 22], toxicity: [12, 17, 9], ood: [6, 7, 10] }
     : { hemolysis: [[31, 38, 22][index]], toxicity: [[12, 17, 9][index]], ood: [[6, 7, 10][index]] }
   return <Chart option={{
@@ -328,9 +538,28 @@ function SafetyCard({ generator }: { generator: string }) {
   }} />
 }
 
-function ParetoCard({ generator }: { generator: string }) {
-  const points = frameworkFixture.pareto.filter((item) => generator === 'all' || item.generator === generator)
-  const groups = frameworkFixture.generators.map((item) => ({
+function ParetoCard({ generator, snapshot, query }: { generator: string; snapshot: AnalysisSnapshot | null; query: CardQuerySpec }) {
+  const kernelResult = snapshot ? runKernel(snapshot, {
+    schemaVersion: 'analysis-pivot-query.1',
+    queryKey: 'pareto_conflicts',
+    metrics: ['macrel_amp_probability', 'macrel_hemolysis_probability'],
+    filters: { generators: selectedGenerators(query) },
+  }) : null
+  const records = (kernelResult?.records ?? []) as Array<{ sequence: string; originSet: string[]; admissionStatus: string; paretoFront: number | null; structureEligible: boolean; metrics: Record<string, number | null> }>
+  const points = snapshot
+    ? records.filter((candidate) => candidate.structureEligible).map((candidate) => ({
+      sequence: candidate.sequence,
+      generator: generatorDisplay[candidate.originSet[0]] ?? candidate.originSet[0],
+      activity: candidate.metrics.macrel_amp_probability ?? 0,
+      hemolysis: candidate.metrics.macrel_hemolysis_probability ?? 0,
+      charge: 0,
+      paretoRank: candidate.paretoFront ?? 2,
+    })).filter((item) => generator === 'all' || item.generator === generator)
+    : frameworkFixture.pareto.filter((item) => generator === 'all' || item.generator === generator)
+  const generatorSeries = snapshot
+    ? [...new Set(snapshot.occurrences.map((item) => item.generator))].map((id, index) => ({ id, label: generatorDisplay[id] ?? id, color: chartPalette[index] }))
+    : frameworkFixture.generators
+  const groups = generatorSeries.map((item) => ({
     ...item,
     points: points.filter((point) => point.generator === item.label),
   })).filter((item) => item.points.length)
@@ -352,17 +581,41 @@ function ParetoCard({ generator }: { generator: string }) {
         })),
       }} />
       <aside className="conflict-note">
-        <span>主要约束</span>
-        <strong>溶血风险 · 42%</strong>
-        <p>前沿高活性区间同时抬升溶血风险。</p>
-        <small>需由统计冲突、选择冲突与前沿冲突三层证据确认。</small>
+        <span>非支配审查</span>
+        <strong>{points.length} 条结构资格候选</strong>
+        <p>横轴为抗菌概率，纵轴为溶血概率。</p>
+        <small>约束归因待计算。</small>
       </aside>
     </div>
   )
 }
 
-function CandidateTable({ generator }: { generator: string }) {
-  const rows = frameworkFixture.candidates.filter((item) => generator === 'all' || item.originSet.includes(generator))
+function CandidateTable({ generator, snapshot, query }: { generator: string; snapshot: AnalysisSnapshot | null; query: CardQuerySpec }) {
+  const kernelResult = snapshot ? runKernel(snapshot, {
+    schemaVersion: 'analysis-pivot-query.1',
+    queryKey: 'candidate_table',
+    filters: { generators: selectedGenerators(query) },
+    metrics: ['macrel_amp_probability', 'macrel_hemolysis_probability', 'toxinpred3_hybrid_score', 'net_charge_ph7_4'],
+  }) : null
+  const records = (kernelResult?.records ?? []) as Array<{
+    sequence: string
+    originSet: string[]
+    admission: { paretoFront: number | null; status: string; structureEligible: boolean }
+    metrics: Record<string, { value: number | null }>
+  }>
+  const rows = snapshot
+    ? records.filter((candidate) => candidate.admission.structureEligible && (generator === 'all' || candidate.originSet.some((id) => generatorDisplay[id] === generator))).slice(0, 8).map((candidate, index) => ({
+      id: `候选 ${String(index + 1).padStart(2, '0')}`,
+      sequence: candidate.sequence,
+      originSet: candidate.originSet.map((id) => generatorDisplay[id] ?? id),
+      activity: candidate.metrics.macrel_amp_probability?.value ?? 0,
+      hemolysis: candidate.metrics.macrel_hemolysis_probability?.value ?? 0,
+      toxicity: candidate.metrics.toxinpred3_hybrid_score?.value ?? 0,
+      charge: candidate.metrics.net_charge_ph7_4?.value ?? 0,
+      paretoRank: candidate.admission.paretoFront ?? 2,
+      flags: [candidate.originSet.length > 1 ? 'shared-origin' : '', candidate.admission.status === 'promising_uncertain' ? 'safety-boundary' : ''].filter(Boolean),
+    }))
+    : frameworkFixture.candidates.filter((item) => generator === 'all' || item.originSet.includes(generator))
   return (
     <div className="candidate-table-wrap">
       <table className="candidate-table">
@@ -370,17 +623,17 @@ function CandidateTable({ generator }: { generator: string }) {
         <tbody>{rows.map((item) => (
           <tr key={item.id}>
             <td><b>{item.id}</b><code>{item.sequence}</code></td>
-            <td><div className="origin-pills">{item.originSet.map((origin) => <span key={origin}>{origin.replace('AMP Designer', 'Designer')}</span>)}</div></td>
+            <td><div className="origin-pills">{item.originSet.map((origin) => <span key={origin} title={generatorHelp[origin]}>{origin}</span>)}</div></td>
             <td><strong>{item.activity.toFixed(2)}</strong></td>
             <td>{item.hemolysis.toFixed(2)}</td>
             <td>{item.toxicity.toFixed(2)}</td>
-            <td>+{item.charge.toFixed(1)}</td>
+            <td>{item.charge > 0 ? '+' : ''}{item.charge.toFixed(1)}</td>
             <td><span className={`pareto-rank rank-${item.paretoRank}`}>P{item.paretoRank}</span></td>
             <td>{item.flags.length ? item.flags.map((flag) => <span className="evidence-flag" key={flag}>{flag === 'shared-origin' ? '多来源' : flag === 'safety-boundary' ? '安全边界' : flag}</span>) : <span className="evidence-ok">证据完整</span>}</td>
           </tr>
         ))}</tbody>
       </table>
-      <footer className="table-footer"><span>显示 35 条中的 {rows.length} 条</span><span>保留序列身份 · 多来源不强制归属</span></footer>
+      <footer className="table-footer"><span>显示 {snapshot?.summary.structureEligible ?? 35} 条结构资格候选中的 {rows.length} 条</span><span>序列身份与共享来源均可追溯</span></footer>
     </div>
   )
 }
@@ -396,29 +649,53 @@ function generatorFromQuery(query: CardQuerySpec) {
   return selected.length === 1 ? generatorIdsToLabels[selected[0]] ?? 'all' : 'all'
 }
 
-function CardContent({ id, query }: { id: AnalysisQuestion; query: CardQuerySpec }) {
+function CardContent({ id, query, snapshot }: { id: AnalysisQuestion; query: CardQuerySpec; snapshot: AnalysisSnapshot | null }) {
   const generator = generatorFromQuery(query)
-  if (id === 'run_quality') return <RunQualityCard />
-  if (id === 'lineage_and_yield') return <LineageCard />
-  if (id === 'score_distribution') return <DistributionCard generator={generator} />
-  if (id === 'generator_contribution') return <OriginCard />
-  if (id === 'safety_profile') return <SafetyCard generator={generator} />
-  if (id === 'multi_objective_conflict') return <ParetoCard generator={generator} />
-  if (id === 'candidate_laboratory') return <CandidateTable generator={generator} />
+  if (id === 'run_quality') return <RunQualityCard snapshot={snapshot} />
+  if (id === 'lineage_and_yield') return <LineageCard snapshot={snapshot} chart={query.chart} query={query} />
+  if (id === 'score_distribution') return <DistributionCard generator={generator} snapshot={snapshot} chart={query.chart} query={query} />
+  if (id === 'generator_contribution') return <OriginCard snapshot={snapshot} />
+  if (id === 'safety_profile') return <SafetyCard generator={generator} snapshot={snapshot} />
+  if (id === 'multi_objective_conflict') return <ParetoCard generator={generator} snapshot={snapshot} query={query} />
+  if (id === 'candidate_laboratory') return <CandidateTable generator={generator} snapshot={snapshot} query={query} />
   return <div className="card-placeholder">扩展接口已就绪</div>
 }
 
 export function AnalysisDashboard({ detail, seedNodeIds = [] }: { detail?: RunDetail | null; seedNodeIds?: string[] }) {
   const [editing, setEditing] = useState(false)
   const [layout, setLayout] = useState<Layout[]>(readLayout)
-  const [hiddenCards, setHiddenCards] = useState<Set<AnalysisQuestion>>(new Set())
+  const [hiddenCards, setHiddenCards] = useState<Set<AnalysisQuestion>>(readHiddenCards)
   const [libraryOpen, setLibraryOpen] = useState(false)
-  const [queries, setQueries] = useState<Record<AnalysisQuestion, CardQuerySpec>>(() => Object.fromEntries(cardRegistry.map((card) => [card.id, createDefaultQuery(card.id)])) as Record<AnalysisQuestion, CardQuerySpec>)
+  const [snapshot, setSnapshot] = useState<AnalysisSnapshot | null>(null)
+  const [snapshotError, setSnapshotError] = useState<string | null>(null)
+  const [snapshotRevision, setSnapshotRevision] = useState(0)
+  const [queries, setQueries] = useState<Record<AnalysisQuestion, CardQuerySpec>>(readQueries)
   const seedKey = seedNodeIds.join('|')
 
   useEffect(() => {
     window.localStorage.setItem(layoutStorageKey, JSON.stringify(layout))
   }, [layout])
+
+  useEffect(() => {
+    window.localStorage.setItem(queryStorageKey, JSON.stringify(queries))
+  }, [queries])
+
+  useEffect(() => {
+    window.localStorage.setItem(hiddenStorageKey, JSON.stringify([...hiddenCards]))
+  }, [hiddenCards])
+
+  useEffect(() => {
+    let cancelled = false
+    setSnapshot(null)
+    setSnapshotError(null)
+    const liveAnalyticsEnabled = import.meta.env.VITE_ANALYTICS_API_ENABLED === 'true'
+    void loadAnalysisSnapshot({ runId: liveAnalyticsEnabled ? detail?.run.id : undefined }).then((value) => {
+      if (!cancelled) setSnapshot(value)
+    }).catch(() => {
+      if (!cancelled) setSnapshotError('分析快照校验失败')
+    })
+    return () => { cancelled = true }
+  }, [detail?.run.id, snapshotRevision])
 
   useEffect(() => {
     if (!seedNodeIds.length) return
@@ -430,9 +707,9 @@ export function AnalysisDashboard({ detail, seedNodeIds = [] }: { detail?: RunDe
   }, [seedKey])
 
   const visibleCards = useMemo(() => cardRegistry.filter((card) => !hiddenCards.has(card.id)), [hiddenCards])
-  const runLabel = detail
-    ? `框架示例 · 当前轮次含 ${detail.counts.candidates.toLocaleString()} 条候选，分析数值尚未接入该轮次`
-    : frameworkFixture.runLabel
+  const runLabel = snapshot
+    ? `发布冻结轮次 · ${snapshot.summary.rawOccurrences.toLocaleString()} 次生成 · ${snapshot.summary.uniqueCandidates.toLocaleString()} 条唯一候选 · ${snapshot.summary.observedEvaluations.toLocaleString()} 项评分`
+    : snapshotError ?? '正在校验只读分析快照…'
 
   const toggleCard = (id: AnalysisQuestion) => {
     setHiddenCards((current) => {
@@ -452,12 +729,12 @@ export function AnalysisDashboard({ detail, seedNodeIds = [] }: { detail?: RunDe
     <section className="analysis-page">
       <header className="analysis-page-header">
         <div className="analysis-heading">
-          <div className="analysis-eyebrow"><DatabaseZap /> 确定性科学分析 <span>无智能体</span></div>
+          <div className="analysis-eyebrow"><DatabaseZap /> 确定性科学分析 <span>{snapshot?.source === 'analytics_api' ? '实时只读' : '冻结快照'}</span></div>
           <h1>短肽分析</h1>
           <p>{runLabel}</p>
         </div>
         <div className="analysis-header-actions">
-          <span className="fixture-badge" title="当前数值仅用于验证页面结构，不代表所选运行。"><FlaskConical /> 框架示例数据</span>
+          <span className={`fixture-badge ${snapshot ? 'verified' : ''}`} title="发布快照已校验完整性并保留数据库来源。"><FlaskConical /> {snapshot ? '真实数据已校验' : '正在校验数据'}</span>
           <button className={editing ? 'active' : ''} onClick={() => setEditing((value) => !value)}><LayoutDashboard />{editing ? '完成布局' : '编辑布局'}</button>
           <div className="card-library-wrap">
             <button onClick={() => setLibraryOpen((value) => !value)}><Library />卡片库</button>
@@ -489,9 +766,12 @@ export function AnalysisDashboard({ detail, seedNodeIds = [] }: { detail?: RunDe
         </div>
       </div>
 
-      <div className={`layout-note ${editing ? 'visible' : ''}`}><Move /> 拖动卡片标题调整位置，拖动右下角调整尺寸；布局自动保存在本机。</div>
+      {!snapshot ? (
+        <div className="snapshot-state-panel"><FlaskConical /><b>{snapshotError ?? '正在读取只读数据'}</b><span>{snapshotError ? '未显示任何分析数值。请重新校验发布快照。' : '校验记录数量、覆盖率与传输完整性。'}</span>{snapshotError && <button onClick={() => setSnapshotRevision((value) => value + 1)}>重新校验</button>}</div>
+      ) : <>
+        <div className={`layout-note ${editing ? 'visible' : ''}`}><Move /> 拖动卡片标题调整位置，拖动右下角调整尺寸；布局自动保存在本机。</div>
 
-      <div className="analysis-grid-shell">
+        <div className="analysis-grid-shell">
         <DashboardGrid
           className="analysis-grid"
           layout={layout.filter((item) => !hiddenCards.has(item.i as AnalysisQuestion))}
@@ -516,17 +796,18 @@ export function AnalysisDashboard({ detail, seedNodeIds = [] }: { detail?: RunDe
                 onQueryChange={(query) => setQueries((current) => ({ ...current, [definition.id]: query }))}
                 meta={<b>{queries[definition.id].sourceNodeIds.length ? `${queries[definition.id].sourceNodeIds.length} 个节点` : '独立条件'}</b>}
               >
-                <CardContent id={definition.id} query={queries[definition.id]} />
+                <CardContent id={definition.id} query={queries[definition.id]} snapshot={snapshot} />
               </CardShell>
             </div>
           ))}
         </DashboardGrid>
-      </div>
+        </div>
 
-      <footer className="analysis-provenance-bar">
-        <div><DatabaseZap /><span><b>来源</b> 框架示例</span><span><b>快照</b> 页面结构预览</span><span><b>查询契约</b> 第一版</span></div>
-        <p>{frameworkFixture.provenance.warnings[0]}</p>
-      </footer>
+        <footer className="analysis-provenance-bar">
+          <div><DatabaseZap /><span><b>来源</b> PostgreSQL 只读导出</span><span><b>评分覆盖</b> {`${snapshot.coverage.observed.toLocaleString()} / ${snapshot.coverage.expected.toLocaleString()}`}</span><span><b>轮次状态</b> {snapshot.run.status === 'cancelled' ? '已取消' : '读取中'}</span></div>
+          <p>完成范围：序列生成、模型评分、候选决策</p>
+        </footer>
+      </>}
     </section>
   )
 }
