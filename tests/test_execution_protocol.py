@@ -72,3 +72,7 @@ def test_ampgent_acea_execution_protocol_preserves_nonnegotiable_rules() -> None
 
     assert "sjtu@" not in protocol
     assert "forbids a weighted total" in protocol.lower()
+    assert "pbp2a-gpu2-rosetta-20260828-v1" in protocol
+    assert "MD默认不启动" in protocol
+    assert "GPU2 负责运行 Boltz" in protocol
+    assert "主要使用受限 CPU" in normalized_protocol

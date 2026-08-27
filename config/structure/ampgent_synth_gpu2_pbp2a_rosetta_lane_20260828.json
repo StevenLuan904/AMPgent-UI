@@ -1,0 +1,87 @@
+{
+  "schema_version": "ampgent.synth-gpu2-rosetta-lane.1",
+  "task_id": "pbp2a-gpu2-rosetta-20260828-v1",
+  "host": "192.168.99.2",
+  "gpu_index": 2,
+  "remote_root": "/sdd_data/pepagent/ampgent/structure/pbp2a-gpu2-rosetta-20260828-v1",
+  "target": {
+    "target_key": "pbp2a",
+    "protein_accession": "WP_308061015.1",
+    "sequence_sha256": "9d3e08f08cb97e0f1d1d7fbce900a69e8fe3784153222ace028efda5941f0597",
+    "manifest_path": "config/targets/ampgent_six_target_sequence_manifest_20260824.json"
+  },
+  "source_library": {
+    "snapshot_sha256": "4e79074abe1085067e1aa8700350bcb017be2d3bc1d01f5a3522f04405873d0a",
+    "candidate_count": 87989,
+    "selection_order": [
+      "display_eligible",
+      "formal_metrics_complete",
+      "safety_labels_pass",
+      "guruprasad_instability_index_lt_50",
+      "activity_model_support_count_desc",
+      "pareto_depth_asc"
+    ]
+  },
+  "pepglad_complex_candidate": {
+    "candidate_id": "pbp2a-pepglad-2026082760-0234",
+    "sequence": "ESPPWFRGAKPWPFRYKK",
+    "activity_model_support_count": 3,
+    "pareto_depth": 1,
+    "amp_read_predicted_mic_um": 11.555777502342169,
+    "llamp_predicted_mic_um": 19.44691272234443,
+    "macrel_hemolysis_label": "low",
+    "macrel_hemolysis_probability": 0.446,
+    "toxinpred3_label": "Non-Toxin",
+    "toxinpred3_hybrid_score": 0.0,
+    "guruprasad_instability_index": 44.94444444444445,
+    "input_complex_sha256": "ca66b31940816bcb24055139c2c34805922cc9de3ffa2a7282a76ef18580ed7c",
+    "receptor_chains": ["A", "B"],
+    "peptide_chain": "C",
+    "evidence_role": "independent_target_specific_pepglad_complex"
+  },
+  "factorized_candidate": {
+    "candidate_id": "pbp2a-factorized-4782247c379eafe2654f",
+    "sequence": "GKWVHFSRVRMRKLLKLNQVDDWF",
+    "activity_model_support_count": 3,
+    "pareto_depth": 1,
+    "amp_read_predicted_mic_um": 6.532967577424116,
+    "llamp_predicted_mic_um": 5.363687389805411,
+    "macrel_hemolysis_label": "low",
+    "macrel_hemolysis_probability": 0.475,
+    "toxinpred3_label": "Non-Toxin",
+    "toxinpred3_hybrid_score": 0.0,
+    "guruprasad_instability_index": -20.087500000000002,
+    "evidence_role": "factorized_multi_front_candidate"
+  },
+  "boltz": {
+    "seed": 20260828,
+    "diffusion_samples": 1,
+    "recycling_steps": 3,
+    "sampling_steps": 200,
+    "use_msa_server": false,
+    "use_potentials": true,
+    "no_kernels": true,
+    "affinity_head": "forbidden_for_peptide_chain"
+  },
+  "rosetta": {
+    "adapter_version": "pepagent-pyrosetta-flexpepdock-v3",
+    "score_function": "ref2015",
+    "nstruct": 200,
+    "parallel_decoys": 6,
+    "seed": 2026082800,
+    "primary_aggregation": "median_dG_separated_of_top_10_reweighted_sc",
+    "unit": "REU",
+    "direction": "lower_is_more_favorable_within_same_protocol"
+  },
+  "md_promotion_policy": {
+    "default": "do_not_run_md",
+    "required_before_md": [
+      "display_hard_gates_pass",
+      "all_12_sequence_metrics_complete",
+      "challenger_conflicts_reviewed",
+      "rosetta_dg_complete",
+      "candidate_explicitly_promoted_to_golden"
+    ],
+    "purpose": "rare_golden_candidate_complex_stability_diagnostic_only"
+  }
+}

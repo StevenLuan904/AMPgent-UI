@@ -2859,3 +2859,27 @@ MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot
   AMPgent 子目录，优先使用余量更充足的 `/sdd_data`，不得把共享根当作项目目录。
 - 本机磁盘已先检查：C/D/E 当前约有 77.95/22.63/23.91 GiB 空闲。工作站继续只作有界 cache/中转；
   synth 上首次写入必须选定精确 AMPgent 子目录、核验空间与所有权并登记账本，不能直接把数据堆在根目录。
+
+## 2026-08-28 `.2 GPU2` PBP2a 后置结构 lane 与稀疏 MD 晋级规则
+
+- 用户明确授权使用 synth `192.168.99.2 GPU2` 推进结构复核。提交前已复查该卡无计算进程、无其他
+  `CUDA_VISIBLE_DEVICES=2` 声明且约有 24 GiB 显存可用；任务身份冻结为
+  `pbp2a-gpu2-rosetta-20260828-v1`。GPU2 负责运行 Boltz 生成真实 PBP2a–peptide 复合物；Rosetta
+  InterfaceAnalyzer/FlexPepDock 的 `dG_separated` 主要使用受限 CPU，不能把 CPU Rosetta 误报为 GPU
+  Rosetta。
+- 本 lane 同时复核两个已过展示硬门、完成12项序列评分且位于活性—安全多端前沿的 PBP2a 候选：
+  `pbp2a-pepglad-2026082760-0234`（`ESPPWFRGAKPWPFRYKK`，已有 PepGLAD 复合物，链 `AB_C`）和
+  `pbp2a-factorized-4782247c379eafe2654f`（`GKWVHFSRVRMRKLLKLNQVDDWF`，先由 GPU2 生成独立
+  Boltz 复合物）。两条均获3个活性模型支持；不稳定性指数分别为44.9444和-20.0875，均低于展示阈值50。
+- 冻结配置 SHA-256 为 `278012219a8e2572f18c7ca17cdb498418fd162cb7898c72986793b889fd68ec`；
+  runner SHA-256 为 `e6fb3ba51b8af78b9e653ff04787303839dbdf3cba290fba699abe29e2eada49`。
+  远端根为 `/sdd_data/pepagent/ampgent/structure/pbp2a-gpu2-rosetta-20260828-v1/`，父 PID `904411`，
+  launch receipt SHA-256 为 `d10d3bcd024ceed256519c7dbda291c5aefa9aaf1fa89d52c1ae989afcb4d6cc`。
+  每个候选运行200个独立 decoy，最多并发6个 Rosetta CPU进程；用 `ref2015` 和 top-10 median
+  `dG_separated` 汇总，保留逐 decoy 原始分数、输入/命令/版本/结果 SHA 和完成收据。精确输出根一旦存在
+  即禁止重复提交。启动后复核显示 Boltz PID `904493` 已在 GPU2 占用约7.3 GiB显存，6个首批 Rosetta
+  decoy进程均在独立满核精修；这只证明任务真实运行，首批 decoy 完成并写出结果前不报告 dG 数值。
+- **MD默认不启动。** 结构复核的正常终点是可复算的 Rosetta dG。只有候选已通过展示硬门与12项评分、
+  challenger冲突已经分析、Rosetta dG完成、复合物与链映射可代表目标，并由 Agent 基于多前沿证据明确
+  晋级为极少量黄金候选时，才允许进入 MD。普通优秀候选、单模型极值或仅有复合物坐标均不得自动触发
+  MD；现有候选003双复合物任务是已启动的历史黄金 lane，继续监测但不据此批量新增 MD。
