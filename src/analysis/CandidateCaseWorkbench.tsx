@@ -421,11 +421,16 @@ export function CandidateCaseWorkbench({ apiBase = '' }: { apiBase?: string }) {
             <label><span>视图</span><div><button className={autoRotate ? 'active' : ''} disabled={viewMode === 'static'} onClick={() => setAutoRotate((value) => !value)}><Rotate3D />慢速旋转</button><button className={showResidues ? 'active' : ''} onClick={() => setShowResidues((value) => !value)}><Layers3 />口袋残基</button></div></label>
           </div>
           <div className="case-structure-stage">
-            {viewMode === 'static' ? (
-              <img src="/data/candidate-case-gyrase.png" alt="GyrA 与候选短肽复合物的静态三维渲染" />
-            ) : (
-              <MoleculeViewer artifact={viewerArtifact} autoRotate={autoRotate} representation={representation} colorTheme={colorTheme} />
-            )}
+            <MoleculeViewer
+              artifact={viewerArtifact}
+              autoRotate={viewMode === 'interactive' && autoRotate}
+              representation={representation}
+              colorTheme={colorTheme}
+              pocketResidues={primaryPocket?.residueIndices ?? []}
+              receptorChain="A"
+              peptideChain="B"
+              interactive={viewMode === 'interactive'}
+            />
             {showResidues && primaryPocket && <div className="case-pocket-overlay"><b>{pocketNames[primaryPocket.name] ?? primaryPocket.name}</b><span>{primaryPocket.residueIndices.join(' · ')}</span></div>}
             <div className="case-structure-source"><span>{structureSource === 'boltz' ? '预测构象' : '精修样本'}</span><b>随机种子 {selectedRun?.seed}</b><div>{(structureSource === 'boltz' ? caseData.structure.boltzRuns : caseData.structure.rosettaRuns).map((run, index) => <button key={run.seed} className={seedIndex === index ? 'active' : ''} onClick={() => setSeedIndex(index)}>{index + 1}</button>)}</div></div>
           </div>

@@ -35,7 +35,7 @@
 .case-metric-grid strong { display: block; margin: 7px 0 5px; color: #31415b; font-size: 16px; letter-spacing: -.02em; }
 .case-metric-grid small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.case-main-grid { margin-top: 14px; display: grid; grid-template-columns: minmax(0, 1.95fr) minmax(350px, .85fr); gap: 14px; align-items: stretch; }
+.case-main-grid { margin-top: 14px; display: grid; grid-template-columns: minmax(0, 1.28fr) minmax(450px, 1fr); gap: 14px; align-items: start; }
 .case-panel { min-width: 0; border: 1px solid var(--case-line); border-radius: 12px; background: #fff; box-shadow: 0 7px 20px rgba(48, 65, 100, .035); overflow: hidden; }
 .case-panel > header, .case-target-section > header, .case-review-card > header, .case-matrix-card > header, .case-sequence-chart > header { min-height: 54px; padding: 9px 13px; display: flex; align-items: center; gap: 9px; border-bottom: 1px solid #e9edf3; }
 .case-panel > header > svg, .case-review-card > header > svg, .case-matrix-card > header > svg, .case-sequence-chart > header > svg, .case-target-section > header > div > svg { width: 16px; color: #5678bd; }
@@ -45,7 +45,7 @@
 .case-panel-icon { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 8px; color: #4c74c4; background: #edf3ff; }
 .case-panel-icon svg { width: 16px; }
 
-.case-structure-panel { min-height: 560px; display: flex; flex-direction: column; }
+.case-structure-panel { height: 490px; min-height: 0; display: flex; flex-direction: column; align-self: start; }
 .case-panel-header { flex: 0 0 54px; }
 .case-view-tabs { margin-left: auto; padding: 3px; display: flex; gap: 2px; border-radius: 7px; background: #f0f3f7; }
 .case-view-tabs button { height: 26px; padding: 0 9px; border: 0; border-radius: 5px; color: #758196; background: transparent; font-size: 9px; cursor: pointer; }
@@ -58,9 +58,8 @@
 .case-structure-controls button svg { width: 11px; }
 .case-structure-controls button.active { color: #315da9; border-color: #b9c8e7; background: #eff4fe; }
 .case-structure-controls button:disabled { opacity: .45; cursor: default; }
-.case-structure-stage { position: relative; flex: 1; min-height: 320px; background: #fff; overflow: hidden; }
-.case-structure-stage > img { width: 100%; height: 100%; min-height: 320px; display: block; object-fit: cover; object-position: center; background: #fff; }
-.case-structure-stage .molstar-shell, .case-structure-stage .molstar-host { width: 100%; height: 100%; min-height: 320px; }
+.case-structure-stage { position: relative; flex: 1; min-height: 245px; background: #fff; overflow: hidden; }
+.case-structure-stage .molstar-shell, .case-structure-stage .molstar-host { width: 100%; height: 100%; min-height: 245px; }
 .case-pocket-overlay { position: absolute; left: 13px; bottom: 13px; max-width: min(470px, calc(100% - 190px)); padding: 8px 10px; display: grid; gap: 4px; border: 1px solid rgba(210, 220, 231, .9); border-radius: 8px; background: rgba(255, 255, 255, .91); backdrop-filter: blur(8px); }
 .case-pocket-overlay b { color: #364967; font-size: 10px; }
 .case-pocket-overlay span { color: #697991; font-family: "DM Mono", monospace; font-size: 9px; line-height: 1.5; }

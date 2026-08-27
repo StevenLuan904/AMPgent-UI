@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import {
   Background,
@@ -51,6 +51,7 @@ import type {
   RunListItem,
   RunListResponse,
   ToolAttempt,
+  ViewerArtifact,
 } from './types'
 
 const nodeTypes = { stage: WorkflowNode, lane: LaneLabel }
@@ -145,6 +146,141 @@ function readableDataError(cause: unknown, fallback: string) {
   return fallback
 }
 
+function readableTargetName(value: unknown) {
+  const name = typeof value === 'string' ? value : ''
+  if (name.includes('PBP2a')) return 'PBP2a耐β-内酰胺转肽酶'
+  if (name.includes('DNA gyrase')) return 'DNA旋转酶A亚基'
+  return name || '结构靶点'
+}
+
+function reconcilePersistedStructure(detail: RunDetail, nodeDetails: Partial<Record<'boltz' | 'rosetta', NodeDetail>>) {
+  const createdPayload = detail.events.find((event) => event.type === 'run.created')?.payload ?? {}
+  const target = recordValue(createdPayload.target)
+  const sourceCandidateIds = Array.isArray(createdPayload.source_candidate_ids) ? createdPayload.source_candidate_ids : []
+  const successfulCalls = (node: NodeDetail | undefined) => node?.calls.filter((call) => call.status === 'succeeded') ?? []
+  const boltzCalls = successfulCalls(nodeDetails.boltz)
+  const rosettaCalls = successfulCalls(nodeDetails.rosetta)
+  if (!boltzCalls.length && !rosettaCalls.length) return detail
+  const boltzStructures = boltzCalls.flatMap((call) => call.artifacts)
+    .filter((artifact) => artifact.media_type === 'chemical/x-cif' || artifact.media_type === 'chemical/x-pdb').length
+  const rosettaStructures = rosettaCalls.flatMap((call) => call.artifacts)
+    .filter((artifact) => artifact.media_type === 'chemical/x-pdb').length
+
+  const stageUpdates: Partial<Record<string, { current: number; total: number; verdict: string; reason: string }>> = {
+    boltz: boltzCalls.length ? {
+      current: boltzCalls.length,
+      total: nodeDetails.boltz?.calls.length ?? boltzCalls.length,
+      verdict: '复合物构象已写入',
+      reason: `${boltzCalls.length} 次结构预测均可追溯至节点明细。`,
+    } : undefined,
+    rosetta: rosettaCalls.length ? {
+      current: rosettaStructures || rosettaCalls.length,
+      total: rosettaStructures || rosettaCalls.length,
+      verdict: '界面精修已写入',
+      reason: `${rosettaCalls.length} 次界面评估生成 ${rosettaStructures} 份精修构象。`,
+    } : undefined,
+  }
+  if (target.name) {
+    stageUpdates.targets = {
+      current: 1,
+      total: 1,
+      verdict: '靶点口袋已锁定',
+      reason: `${readableTargetName(target.name)} · ${Array.isArray(target.pocket_residues) ? target.pocket_residues.length : 0} 个口袋残基。`,
+    }
+  }
+  if (sourceCandidateIds.length) {
+    stageUpdates.candidate_pool = {
+      current: sourceCandidateIds.length,
+      total: sourceCandidateIds.length,
+      verdict: '结构候选已载入',
+      reason: `${sourceCandidateIds.length} 条来源候选进入本轮结构复核。`,
+    }
+  }
+
+  const graphNodes = detail.graph.nodes.map((stage) => {
+    const update = stageUpdates[stage.id]
+    if (!update || (stage.current > 0 && stage.status !== 'pending')) return stage
+    return {
+      ...stage,
+      status: 'completed' as const,
+      current: update.current,
+      total: update.total,
+      provenance: 'database' as const,
+      insight: {
+        ...stage.insight,
+        grade: 'good' as const,
+        verdict: update.verdict,
+        reason: update.reason,
+        facts: [
+          { label: '成功', value: String(update.current) },
+          { label: '记录', value: String(update.total) },
+          { label: '来源', value: '节点明细' },
+        ],
+        source: 'observer_summary' as const,
+      },
+    }
+  })
+
+  const viewerFromCall = (call: ToolAttempt | undefined): ViewerArtifact | null => {
+    if (!call) return null
+    const artifact = call.artifacts.find((item) => item.media_type === 'chemical/x-cif' || item.media_type === 'chemical/x-pdb')
+    if (!artifact) return null
+    const inputs = recordValue(call.inputs)
+    const sequence = typeof inputs.peptide_sequence === 'string' ? inputs.peptide_sequence : ''
+    return {
+      candidate_id: `${detail.run.id}:${call.id}`,
+      sequence,
+      target_id: typeof createdPayload.target_id === 'string' ? createdPayload.target_id : '',
+      target_name: readableTargetName(target.name),
+      lane: 'native',
+      seed: call.random_seed ?? 0,
+      artifact_sha256: artifact.sha256,
+      media_type: artifact.media_type,
+      artifact_url: artifact.url,
+    }
+  }
+  const persistedViewer = viewerFromCall(boltzCalls[0])
+  const viewers = { ...detail.viewers }
+  if (persistedViewer && !viewers.boltz) viewers.boltz = persistedViewer
+  if (persistedViewer && !viewers.rosetta) viewers.rosetta = persistedViewer
+
+  const persistedBranch = target.name ? {
+    order: 1,
+    key: typeof createdPayload.target_branch_key === 'string' ? createdPayload.target_branch_key : '结构靶点',
+    role: '原位口袋',
+    status: 'completed',
+    target_id: typeof createdPayload.target_id === 'string' ? createdPayload.target_id : '',
+    target_name: readableTargetName(target.name),
+    organism: typeof target.organism === 'string' ? target.organism : null,
+    accession: typeof target.accession === 'string' ? target.accession : null,
+    sequence: typeof target.sequence === 'string' ? target.sequence : '',
+    sequence_length: typeof target.sequence === 'string' ? target.sequence.length : 0,
+    evidence_namespace: typeof target.source_database === 'string' ? target.source_database : '数据库靶点记录',
+    coordinate_sha256: '',
+  } : null
+
+  return {
+    ...detail,
+    run: {
+      ...detail.run,
+      structure_record_count: Math.max(
+        Number.isFinite(detail.run.structure_record_count) ? detail.run.structure_record_count : 0,
+        boltzStructures + rosettaStructures,
+      ),
+    },
+    counts: {
+      ...detail.counts,
+      admitted: Math.max(detail.counts.admitted ?? 0, sourceCandidateIds.length),
+      boltz_poses: Math.max(detail.counts.boltz_poses ?? 0, boltzStructures),
+      rosetta_decoys: Math.max(detail.counts.rosetta_decoys ?? 0, rosettaStructures),
+    },
+    branches: detail.branches.length || !persistedBranch ? detail.branches : [persistedBranch],
+    graph: { ...detail.graph, nodes: graphNodes },
+    viewer: detail.viewer ?? persistedViewer,
+    viewers,
+  }
+}
+
 function useRunData(enabled: boolean, apiBase: string) {
   const [runs, setRuns] = useState<RunListItem[]>([])
   const [selectedId, setSelectedIdState] = useState<string | null>(() => window.localStorage.getItem(selectedRunStorageKey))
@@ -152,12 +288,16 @@ function useRunData(enabled: boolean, apiBase: string) {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const alignedStructureCounts = useRef<Record<string, number>>({})
 
   const loadRuns = useCallback(async () => {
     const response = await fetch(`${apiBase}/v1/observer/runs?limit=100`)
     if (!response.ok) throw new Error(`轮次列表读取失败：${response.status}`)
     const payload = await response.json() as RunListResponse
-    setRuns(payload.runs)
+    setRuns(payload.runs.map((run) => ({
+      ...run,
+      structure_record_count: Math.max(run.structure_record_count, alignedStructureCounts.current[run.id] ?? 0),
+    })))
     setSelectedIdState((current) => {
       const next = current && payload.runs.some((run) => run.id === current) ? current : payload.runs[0]?.id ?? null
       if (next) window.localStorage.setItem(selectedRunStorageKey, next)
@@ -171,7 +311,24 @@ function useRunData(enabled: boolean, apiBase: string) {
     try {
       const response = await fetch(`${apiBase}/v1/observer/runs/${runId}`)
       if (!response.ok) throw new Error(`轮次详情读取失败：${response.status}`)
-      setDetail(await response.json() as RunDetail)
+      const payload = await response.json() as RunDetail
+      const hasPersistedStructureEvents = payload.events.some((event) => event.actor === 'boltz2' || event.actor.includes('rosetta'))
+      if (!hasPersistedStructureEvents) {
+        setDetail(payload)
+      } else {
+        const entries = await Promise.all((['boltz', 'rosetta'] as const).map(async (nodeId) => {
+          const nodeResponse = await fetch(`${apiBase}/v1/observer/runs/${runId}/nodes/${nodeId}`)
+          return [nodeId, nodeResponse.ok ? await nodeResponse.json() as NodeDetail : undefined] as const
+        }))
+        const reconciled = reconcilePersistedStructure(payload, Object.fromEntries(entries))
+        setDetail(reconciled)
+        if (reconciled.run.structure_record_count !== payload.run.structure_record_count) {
+          alignedStructureCounts.current[runId] = reconciled.run.structure_record_count
+          setRuns((current) => current.map((run) => run.id === runId
+            ? { ...run, structure_record_count: reconciled.run.structure_record_count }
+            : run))
+        }
+      }
       setError(null)
     } catch (cause) {
       setError(readableDataError(cause, '无法连接只读数据库'))
@@ -300,11 +457,12 @@ function CanvasHeader({ detail, refreshing, selectionMode, selectedCount, onRefr
   onRefresh: () => void
   onToggleSelection: () => void
 }) {
+  const isStructureReview = (detail.counts.boltz_poses ?? 0) > 0 || (detail.counts.rosetta_decoys ?? 0) > 0
   return (
     <header className="canvas-header">
       <div className="canvas-title-block">
         <div className="eyebrow"><span>轮次 · 正式科学运行</span></div>
-        <h1>序列优先的短肽设计</h1>
+        <h1>{isStructureReview ? '短肽结构证据复核' : '序列优先的短肽设计'}</h1>
         <div className="round-meta">
           <span>{formatTime(detail.run.created_at)} 创建</span><i />
           <span>{detail.counts.candidates.toLocaleString()} 个候选</span><i />

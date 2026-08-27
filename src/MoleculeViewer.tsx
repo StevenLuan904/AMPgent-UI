@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import 'molstar/lib/mol-plugin-ui/skin/light.scss'
+import { MolScriptBuilder as MS } from 'molstar/lib/mol-script/language/builder'
+import { PluginConfig } from 'molstar/lib/mol-plugin/config'
 import { Color } from 'molstar/lib/mol-util/color/index'
 import type { ViewerArtifact } from './types'
 
@@ -9,6 +11,10 @@ interface Props {
   autoRotate?: boolean
   representation?: 'cartoon' | 'atomic' | 'surface'
   colorTheme?: 'baker-spectrum' | 'chain-id' | 'hydrophobicity' | 'element-symbol'
+  pocketResidues?: number[]
+  receptorChain?: string
+  peptideChain?: string
+  interactive?: boolean
 }
 
 const representationPresets = {
@@ -17,12 +23,27 @@ const representationPresets = {
   surface: 'molecular-surface',
 } as const
 
-const bakerSpectrum = {
+const pocketSpectrum = {
   kind: 'interpolate' as const,
-  colors: [0xb0a3d1, 0x8bd0d5, 0xa8e0ee, 0xc5e1a3, 0xffe38b, 0xf5a37d, 0xe88db2].map(Color),
+  colors: [0xb0a3d1, 0x8bd0d5, 0xa8e0ee].map(Color),
 }
 
-export function MoleculeViewer({ artifact, compact = false, autoRotate = false, representation = 'cartoon', colorTheme = 'baker-spectrum' }: Props) {
+const peptideSpectrum = {
+  kind: 'interpolate' as const,
+  colors: [0xc5e1a3, 0xffe38b].map(Color),
+}
+
+export function MoleculeViewer({
+  artifact,
+  compact = false,
+  autoRotate = false,
+  representation = 'cartoon',
+  colorTheme = 'baker-spectrum',
+  pocketResidues = [],
+  receptorChain = 'A',
+  peptideChain = 'B',
+  interactive = true,
+}: Props) {
   const host = useRef<HTMLDivElement>(null)
   // Mol* is intentionally loaded only when the structure inspector is opened.
   const pluginRef = useRef<any>(null)
@@ -43,11 +64,17 @@ export function MoleculeViewer({ artifact, compact = false, autoRotate = false, 
       import('molstar/lib/mol-plugin-ui/react18'),
       import('molstar/lib/mol-plugin-ui/spec'),
     ]).then(([pluginUi, react18, pluginSpec]) => {
+      const defaultSpec = pluginSpec.DefaultPluginUISpec()
       return pluginUi.createPluginUI({
         target,
         render: react18.renderReact18,
         spec: {
-          ...pluginSpec.DefaultPluginUISpec(),
+          ...defaultSpec,
+          config: [
+            ...(defaultSpec.config ?? []),
+            [PluginConfig.General.PixelScale, compact ? 1.5 : 2],
+            [PluginConfig.General.ResolutionMode, 'scaled'],
+          ],
           layout: {
             initial: {
               isExpanded: false,
@@ -69,11 +96,15 @@ export function MoleculeViewer({ artifact, compact = false, autoRotate = false, 
         renderer: {
           backgroundColor: Color(0xffffff),
           ambientColor: Color(0xffffff),
-          ambientIntensity: 1,
-          light: [],
+          ambientIntensity: 0.72,
+          light: [
+            { inclination: 155, azimuth: 25, color: Color(0xffffff), intensity: 0.52 },
+            { inclination: 35, azimuth: 215, color: Color(0xdde8f6), intensity: 0.2 },
+          ],
           exposure: 1,
           celSteps: 0,
         },
+        multiSample: { mode: 'on', sampleLevel: compact ? 1 : 3, reduceFlicker: true, reuseOcclusion: true },
         postprocessing: {
           enabled: true,
           occlusion: { name: 'off', params: {} },
@@ -112,18 +143,91 @@ export function MoleculeViewer({ artifact, compact = false, autoRotate = false, 
         )
         const format = artifact.media_type.includes('cif') ? 'mmcif' : 'pdb'
         const trajectory = await plugin.builders.structure.parseTrajectory(data, format)
-        const resolvedColorTheme = colorTheme === 'baker-spectrum' ? 'sequence-id' : colorTheme
-        await plugin.builders.structure.hierarchy.applyPreset(trajectory, 'default', {
-          representationPreset: representationPresets[representation],
-          representationPresetParams: {
-            theme: {
-              globalName: resolvedColorTheme,
-              globalColorParams: colorTheme === 'baker-spectrum' ? { list: bakerSpectrum } : undefined,
-            },
-            quality: compact ? 'medium' : 'high',
-            ignoreLight: true,
-          },
+        const model = await plugin.builders.structure.createModel(trajectory)
+        const structure = await plugin.builders.structure.createStructure(model)
+        const peptideExpression = MS.struct.generator.atomGroups({
+          'chain-test': MS.core.rel.eq([
+            MS.struct.atomProperty.macromolecular.auth_asym_id(),
+            peptideChain,
+          ]),
         })
+        const pocketExpression = MS.struct.modifier.exceptBy({
+          0: MS.struct.modifier.includeSurroundings({ 0: peptideExpression, radius: 8, 'as-whole-residues': true }),
+          by: peptideExpression,
+        })
+        const pocket = await plugin.builders.structure.tryCreateComponentFromExpression(structure, pocketExpression, 'pocket', { label: '口袋残基' })
+        const peptide = await plugin.builders.structure.tryCreateComponentFromExpression(structure, peptideExpression, 'peptide', { label: '候选短肽' })
+        const resolvedColorTheme = colorTheme === 'baker-spectrum' ? 'sequence-id' : colorTheme
+        const pocketColorParams = colorTheme === 'baker-spectrum' ? { list: pocketSpectrum } : undefined
+        const peptideColorParams = colorTheme === 'baker-spectrum' ? { list: peptideSpectrum } : undefined
+        const quality = compact ? 'high' : 'higher'
+        if (pocket) {
+          await plugin.builders.structure.representation.addRepresentation(pocket, {
+            type: 'molecular-surface',
+            typeParams: { alpha: 0.2, quality, resolution: compact ? 0.65 : 0.35, probeRadius: 1.4 },
+            color: resolvedColorTheme,
+            colorParams: pocketColorParams,
+          })
+          await plugin.builders.structure.representation.addRepresentation(pocket, {
+            type: 'cartoon',
+            typeParams: { alpha: 0.38, quality },
+            color: resolvedColorTheme,
+            colorParams: pocketColorParams,
+          })
+        }
+        if (peptide) {
+          const peptideRepresentation = representation === 'atomic'
+            ? 'ball-and-stick'
+            : representation === 'surface' ? 'molecular-surface' : 'cartoon'
+          await plugin.builders.structure.representation.addRepresentation(peptide, {
+            type: peptideRepresentation,
+            typeParams: { alpha: 1, quality, sizeFactor: representation === 'atomic' ? 0.34 : undefined },
+            color: resolvedColorTheme,
+            colorParams: peptideColorParams,
+          })
+          if (representation === 'cartoon') {
+            await plugin.builders.structure.representation.addRepresentation(peptide, {
+              type: 'ball-and-stick',
+              typeParams: { alpha: 0.62, quality, sizeFactor: 0.18 },
+              color: resolvedColorTheme,
+              colorParams: peptideColorParams,
+            })
+          }
+        }
+        if (!pocket || !peptide) {
+          await plugin.builders.structure.representation.applyPreset(structure, representationPresets[representation], {
+            theme: { globalName: resolvedColorTheme },
+            quality,
+          })
+        } else {
+          window.setTimeout(() => {
+            plugin.managers.camera.orientAxes([pocket.cell?.obj?.data, peptide.cell?.obj?.data].filter(Boolean), 0)
+            plugin.managers.camera.focusSpheres(
+              [pocket, peptide],
+              (component: any) => component.cell?.obj?.data?.boundary?.sphere,
+              { minRadius: 7, extraRadius: compact ? 2 : 3, durationMs: 0 },
+            )
+            window.setTimeout(() => {
+              const snapshot = plugin.canvas3d?.camera.getSnapshot()
+              if (!snapshot) return
+              const direction = [
+                snapshot.position[0] - snapshot.target[0],
+                snapshot.position[1] - snapshot.target[1],
+                snapshot.position[2] - snapshot.target[2],
+              ]
+              const rolledUp = [
+                direction[1] * snapshot.up[2] - direction[2] * snapshot.up[1],
+                direction[2] * snapshot.up[0] - direction[0] * snapshot.up[2],
+                direction[0] * snapshot.up[1] - direction[1] * snapshot.up[0],
+              ]
+              const length = Math.hypot(...rolledUp) || 1
+              plugin.managers.camera.setSnapshot({
+                up: rolledUp.map((value) => value / length),
+                radius: snapshot.radius * (compact ? 0.72 : 0.42),
+              }, 0)
+            }, 60)
+          }, 80)
+        }
         if (!cancelled) setState('ready')
       } catch (error) {
         if (!cancelled) {
@@ -136,15 +240,18 @@ export function MoleculeViewer({ artifact, compact = false, autoRotate = false, 
     return () => {
       cancelled = true
     }
-  }, [artifact?.artifact_url, artifact?.media_type, colorTheme, pluginReady, representation])
+  }, [artifact?.artifact_url, artifact?.media_type, colorTheme, peptideChain, pluginReady, pocketResidues.join(','), receptorChain, representation])
 
   useEffect(() => {
     const plugin = pluginRef.current
     if (!plugin) return
     plugin.canvas3d?.setProps({
-      trackball: { animate: autoRotate ? { name: 'spin', params: { speed: 0.0012, axis: [0, 1, 0] } } : { name: 'off', params: {} } },
+      trackball: {
+        animate: autoRotate ? { name: 'spin', params: { speed: 0.00055, axis: [0, 1, 0] } } : { name: 'off', params: {} },
+        ...(interactive ? {} : { noScroll: true, rotateSpeed: 0, zoomSpeed: 0, panSpeed: 0 }),
+      },
     })
-  }, [autoRotate, pluginReady])
+  }, [autoRotate, interactive, pluginReady])
 
   return (
     <div className={`molstar-shell${compact ? ' mini-molstar-shell' : ''}`}>
@@ -153,8 +260,8 @@ export function MoleculeViewer({ artifact, compact = false, autoRotate = false, 
       {artifact && state === 'loading' && <div className="viewer-state">正在验证并载入结构…</div>}
       {artifact && state === 'error' && <div className="viewer-state viewer-error">结构载入失败</div>}
       {artifact && state === 'ready' && !compact && (
-        <div className="viewer-tag" title="Baker 风格按残基序号使用七色渐变，并关闭高光、雾化和阴影。">
-          <span className="live-dot" /> Mol* · Baker 序列谱 · {artifact.lane === 'native' ? '原位' : '错误口袋对照'} · 随机种子 {artifact.seed}
+        <div className="viewer-tag" title="口袋使用前三色透明表面，短肽使用第四、第五色，保留轮廓与柔和光照。">
+          <span className="live-dot" /> Mol* · 口袋聚焦 · {artifact.lane === 'native' ? '原位' : '错误口袋对照'} · 随机种子 {artifact.seed}
         </div>
       )}
     </div>
