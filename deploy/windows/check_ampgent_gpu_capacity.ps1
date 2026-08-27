@@ -4,6 +4,8 @@ param(
     [int]$Host19SshPort = 32222,
     [string]$Host32SshTarget = "LabServerNewDirect",
     [int]$Host32SshPort = 32223,
+    [string]$SynthSshTarget = "synth@127.0.0.1",
+    [int]$SynthSshPort = 32224,
     [string]$StatePath = "var/state/ampgent-gpu-capacity.json",
     [int]$ConnectTimeoutSeconds = 10,
     [int]$MaximumUsedMemoryMiB = 256,
@@ -17,7 +19,8 @@ function Invoke-CardProbe {
         [Parameter(Mandatory)] [string]$SshTarget,
         [Parameter(Mandatory)] [string]$HostLabel,
         [Parameter(Mandatory)] [int]$GpuIndex,
-        [int]$SshPort = 0
+        [int]$SshPort = 0,
+        [switch]$UseSynthCredential
     )
 
     # Probe one explicitly allowed device at a time. Never replace this with an
@@ -37,13 +40,42 @@ done
 "@
     $previousErrorActionPreference = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
-    $sshArguments = @('-o', 'BatchMode=yes', '-o', "ConnectTimeout=$ConnectTimeoutSeconds")
+    $batchMode = if ($UseSynthCredential) { 'no' } else { 'yes' }
+    $sshArguments = @(
+        '-o', "BatchMode=$batchMode",
+        '-o', 'StrictHostKeyChecking=accept-new',
+        '-o', "ConnectTimeout=$ConnectTimeoutSeconds"
+    )
     if ($SshPort -gt 0) {
         $sshArguments += @('-p', "$SshPort")
     }
     $sshArguments += @($SshTarget, $remote)
-    $output = & ssh @sshArguments 2>&1
-    $sshExitCode = $LASTEXITCODE
+    $credentialEnvironmentNames = @(
+        'REMOTE_GPU_TARGET_PASSWORD', 'REMOTE_GPU_TARGET_MATCH',
+        'SSH_ASKPASS', 'SSH_ASKPASS_REQUIRE', 'DISPLAY'
+    )
+    try {
+        if ($UseSynthCredential) {
+            $toolRoot = Join-Path $env:LOCALAPPDATA 'Programs\remote-gpu'
+            $targetCredential = Join-Path $toolRoot 'credentials\synth-target.dpapi'
+            $secure = (Get-Content -LiteralPath $targetCredential -Raw).Trim() | ConvertTo-SecureString
+            $pointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
+            try { $env:REMOTE_GPU_TARGET_PASSWORD = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($pointer) }
+            finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($pointer) }
+            $env:REMOTE_GPU_TARGET_MATCH = 'synth@127.0.0.1'
+            $env:SSH_ASKPASS = Join-Path $toolRoot 'ssh-askpass.cmd'
+            $env:SSH_ASKPASS_REQUIRE = 'force'
+            $env:DISPLAY = 'remote-gpu'
+        }
+        $output = & ssh @sshArguments 2>&1
+        $sshExitCode = $LASTEXITCODE
+    } finally {
+        if ($UseSynthCredential) {
+            foreach ($name in $credentialEnvironmentNames) {
+                Remove-Item "Env:$name" -ErrorAction SilentlyContinue
+            }
+        }
+    }
     $ErrorActionPreference = $previousErrorActionPreference
     if ($sshExitCode -ne 0) {
         return [ordered]@{
@@ -105,6 +137,9 @@ foreach ($gpuIndex in 0..7) {
 foreach ($gpuIndex in 0..3) {
     $observations += Invoke-CardProbe -SshTarget $Host32SshTarget -HostLabel "192.168.99.32" -GpuIndex $gpuIndex -SshPort $Host32SshPort
 }
+foreach ($gpuIndex in 0..7) {
+    $observations += Invoke-CardProbe -SshTarget $SynthSshTarget -HostLabel "192.168.99.2" -GpuIndex $gpuIndex -SshPort $SynthSshPort -UseSynthCredential
+}
 
 $idleKeys = @(
     $observations |
@@ -132,7 +167,8 @@ $state = [ordered]@{
     captured_at = [DateTimeOffset]::UtcNow.ToString("o")
     allowed_probe_scope = @(
         [ordered]@{ host = "192.168.99.19"; gpu_indices = @(0, 1, 2, 3, 4, 5, 6, 7) },
-        [ordered]@{ host = "192.168.99.32"; gpu_indices = @(0, 1, 2, 3) }
+        [ordered]@{ host = "192.168.99.32"; gpu_indices = @(0, 1, 2, 3) },
+        [ordered]@{ host = "192.168.99.2"; gpu_indices = @(0, 1, 2, 3, 4, 5, 6, 7) }
     )
     prohibited_use_scope = @(
         [ordered]@{ host = "192.168.99.32"; gpu_indices = @(2, 3) }

@@ -2848,8 +2848,14 @@ MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot
 - synth `192.168.99.2` 现在是获准的 AMPgent 计算与远端大数据主机。非秘密拓扑固定为
   `eh002@58.34.98.79:49200 -> synth@192.168.99.2:22`，数据根为 `/amax/data` 与 `/sdd_data`；每次实际
   使用仍需实时 GPU/PID/owner/容量检查。凭据留在外部 secret 机制，本节不保存用户提供的密码。
-- 本轮 `BatchMode` 只读探针在跳板 banner exchange 超时，故 synth 的实时 GPU 空闲数仍为 unknown，
-  不能用历史“8×RTX 3090”清单宣称当前可用。现有反向隧道不等于可执行 shell；恢复无交互 key/受控
-  登录通道后，先逐卡核查再调度。
+- 随后使用已有 DPAPI 凭据与 SSH_ASKPASS（秘密仅存在于子进程环境且已清除）成功完成实时只读检查。
+  synth 有 8×RTX 3090；GPU1 正在运行外来 OmniEpic 训练，GPU4 有外来/不透明计算进程；GPU0/3/5/6/7
+  虽无显存计算进程但存在 `CUDA_VISIBLE_DEVICES` 声明，暂不视为可调度。GPU2 无计算进程、无声明、
+  约 24.3 GiB 空闲，因此是本次唯一严格可用 synth GPU。任何后续提交前仍需重新核查。
+- 已新增受控本地 probe tunnel `127.0.0.1:32224 -> synth:22` 的监督脚本，并把 synth 0–7 纳入
+  `check_ampgent_gpu_capacity.ps1`。脚本只输出逐卡状态；凭据来自现有 DPAPI 文件，不写入仓库或状态 JSON。
+- synth 存储实况为 `/amax` 约 18 TiB、剩余约 798 GiB（96% 已用），`/sdd_data` 约 7.0 TiB、剩余约
+  1.4 TiB（80% 已用）。`/amax/data` 与 `/sdd_data` 是共享根；新文件必须进入已核验 owner 的精确
+  AMPgent 子目录，优先使用余量更充足的 `/sdd_data`，不得把共享根当作项目目录。
 - 本机磁盘已先检查：C/D/E 当前约有 77.95/22.63/23.91 GiB 空闲。工作站继续只作有界 cache/中转；
   synth 上首次写入必须选定精确 AMPgent 子目录、核验空间与所有权并登记账本，不能直接把数据堆在根目录。
