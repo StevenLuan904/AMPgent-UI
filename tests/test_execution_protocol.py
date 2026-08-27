@@ -78,3 +78,6 @@ def test_ampgent_acea_execution_protocol_preserves_nonnegotiable_rules() -> None
     assert "主要使用受限 CPU" in normalized_protocol
     assert "5cbc5b3c29428f3e2b2e192698d01235c852d261480289e8f5eb94f000f498ea" in protocol
     assert "provisional_only=true" in protocol
+    assert "f9a5a4d1be3fb6b8dc412e80ad799bd52e74aaac1bd82d18d3a42547bb574896" in protocol
+    assert "-67.9363 REU" in protocol
+    assert "low_pose_confidence" in protocol

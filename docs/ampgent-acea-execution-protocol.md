@@ -2899,3 +2899,24 @@ MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot
   `/sdd_data/pepagent/ampgent/structure/pbp2a-gpu2-rosetta-20260828-v1/progress_receipts/checkpoint_20260827T180728Z.json`，
   SHA-256 `5cbc5b3c29428f3e2b2e192698d01235c852d261480289e8f5eb94f000f498ea`；收据明确
   `provisional_only=true`、`md_started=false`。
+
+### 2026-08-28 因子化候选正式 Rosetta dG 收敛
+
+- PBP2a 因子化候选 `pbp2a-factorized-4782247c379eafe2654f`（序列
+  `GKWVHFSRVRMRKLLKLNQVDDWF`）已完成冻结合同要求的 200/200 个独立 decoy。正式结果文件为
+  `/sdd_data/pepagent/ampgent/structure/pbp2a-gpu2-rosetta-20260828-v1/results/factorized_rosetta_result.json`，
+  SHA-256 `f9a5a4d1be3fb6b8dc412e80ad799bd52e74aaac1bd82d18d3a42547bb574896`；输入复合物
+  SHA-256 `136577b1ea062c2d86c63c2804d30ce182cc3b5862cd72bfa8a6540bbfbe59ba`。
+- 正式主值按 `reweighted_sc` 最优的 10 个 decoy 取 `dG_separated` 中位数，为 **-67.9363 REU**。
+  全部 200 个 decoy 的 `dG_separated` min/median/max 为 -74.3569/-53.8480/+1321.1530 REU；
+  肽链 RMSD min/median/max 为 0.7355/1.6640/5.0453 Å。最低 dG 是 decoy 72；按冻结排序选出的
+  best decoy 是 decoy 119，dG -72.8478 REU、肽链 RMSD 3.4288 Å、界面氢键 7、packstat 0.5439。
+  这些是计算结构分数，不是结合常数或实验活性。
+- 该候选因此可标记 `rosetta_dg_complete`，但其上游 Boltz 复合物 pair-ipTM 仅 0.1147、ipTM 仅
+  0.1481，必须同时标记 `low_pose_confidence`。负 dG 只能说明在这一低置信姿势附近 Rosetta 找到了
+  有利界面假设，尚不足以晋级黄金候选或启动 MD；后续需优先用独立姿势/模型冲突证据复核。
+- 同一远端进度收据
+  `/sdd_data/pepagent/ampgent/structure/pbp2a-gpu2-rosetta-20260828-v1/progress_receipts/checkpoint_20260827T200942Z.json`
+  SHA-256 为 `fb5922fae1357cf7111baf6a87cbbd806646977f14879b1d42f28525450ff201`。该收据记录因子化候选
+  200/200、PepGLAD 候选 149/200，且明确 `provisional_only=true`、`md_started=false`。PepGLAD
+  已完成样本的 dG 仍全部为正，必须等待 200/200 和正式完成收据后再作最终判断；不得重复提交。
