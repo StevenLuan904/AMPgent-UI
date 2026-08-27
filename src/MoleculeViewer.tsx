@@ -25,12 +25,12 @@ const representationPresets = {
 
 const pocketSpectrum = {
   kind: 'interpolate' as const,
-  colors: [0xb0a3d1, 0x8bd0d5, 0xa8e0ee].map(Color),
+  colors: [0xa8e0ee, 0xc5e1a3, 0xffe38b].map(Color),
 }
 
 const peptideSpectrum = {
   kind: 'interpolate' as const,
-  colors: [0xc5e1a3, 0xffe38b].map(Color),
+  colors: [0xb0a3d1, 0x8bd0d5].map(Color),
 }
 
 export function MoleculeViewer({
@@ -164,13 +164,13 @@ export function MoleculeViewer({
         if (pocket) {
           await plugin.builders.structure.representation.addRepresentation(pocket, {
             type: 'molecular-surface',
-            typeParams: { alpha: 0.2, quality, resolution: compact ? 0.65 : 0.35, probeRadius: 1.4 },
+            typeParams: { alpha: 0.3, quality, resolution: compact ? 0.65 : 0.35, probeRadius: 1.4 },
             color: resolvedColorTheme,
             colorParams: pocketColorParams,
           })
           await plugin.builders.structure.representation.addRepresentation(pocket, {
             type: 'cartoon',
-            typeParams: { alpha: 0.38, quality },
+            typeParams: { alpha: 0.3, quality },
             color: resolvedColorTheme,
             colorParams: pocketColorParams,
           })
@@ -262,8 +262,8 @@ export function MoleculeViewer({
       {artifact && state === 'loading' && <div className="viewer-state">正在验证并载入结构…</div>}
       {artifact && state === 'error' && <div className="viewer-state viewer-error">结构载入失败</div>}
       {artifact && state === 'ready' && !compact && (
-        <div className="viewer-tag" title="口袋使用前三色透明表面，短肽使用第四、第五色，保留轮廓与柔和光照。">
-          <span className="live-dot" /> Mol* · 口袋聚焦 · {artifact.lane === 'native' ? '原位' : '错误口袋对照'} · 随机种子 {artifact.seed}
+        <div className="viewer-tag" title="口袋采用三色透明表面，短肽采用双色序列着色。">
+          <span className="live-dot" /> Mol* · {artifact.lane === 'native' ? '原位界面' : '对照界面'}
         </div>
       )}
     </div>

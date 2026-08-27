@@ -1,5 +1,5 @@
 import type { AnalysisSnapshot } from './analysis/dataKernel'
-import type { RunDetail } from './types'
+import type { NodeDetail, RunDetail, ToolArtifact } from './types'
 
 export interface ResultDistributionData {
   label: string
@@ -21,6 +21,91 @@ const generatorByStage: Record<string, string> = {
   amp_designer: 'amp_designer',
   ampgan: 'ampgan_v2',
   hydramp: 'hydramp',
+}
+
+const persistedMetricStages = Object.keys(metricByStage)
+const persistedGeneratorStages = Object.keys(generatorByStage)
+
+function record(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}
+}
+
+function artifactUrl(apiBase: string, artifact: ToolArtifact) {
+  if (!artifact.url.startsWith('/')) return artifact.url
+  return `${apiBase}${artifact.url}`
+}
+
+function payloadRecords(payload: unknown) {
+  const result = record(record(payload).result)
+  const records = result.records
+  return Array.isArray(records) ? records.map(record) : []
+}
+
+async function readArtifact(apiBase: string, artifact: ToolArtifact, signal: AbortSignal) {
+  const response = await fetch(artifactUrl(apiBase, artifact), { signal, headers: { Accept: 'application/json' } })
+  if (!response.ok) throw new Error(`结果文件读取失败：${response.status}`)
+  return response.json() as Promise<unknown>
+}
+
+export async function loadPersistedRunDistributions(
+  apiBase: string,
+  detail: RunDetail,
+  signal: AbortSignal,
+): Promise<Record<string, ResultDistributionData>> {
+  const nodeIds = [...persistedGeneratorStages, ...persistedMetricStages, 'admission']
+  const nodeEntries = await Promise.all(nodeIds.map(async (nodeId) => {
+    const response = await fetch(`${apiBase}/v1/observer/runs/${detail.run.id}/nodes/${nodeId}`, { signal })
+    return [nodeId, response.ok ? await response.json() as NodeDetail : null] as const
+  }))
+  const nodes = Object.fromEntries(nodeEntries) as Record<string, NodeDetail | null>
+  const distributions: Record<string, ResultDistributionData> = {}
+  const generatedSequences: string[] = []
+
+  await Promise.all(persistedGeneratorStages.map(async (stageId) => {
+    const node = nodes[stageId]
+    if (!node) return
+    const artifacts = node.calls.flatMap((call) => call.artifacts)
+      .filter((artifact) => artifact.role === 'v38_raw_generator_output' && artifact.media_type === 'application/json')
+    const payloads = await Promise.all(artifacts.map((artifact) => readArtifact(apiBase, artifact, signal)))
+    const sequences = payloads.flatMap(payloadRecords)
+      .map((row) => row.sequence)
+      .filter((value): value is string => typeof value === 'string' && value.length > 0)
+    generatedSequences.push(...sequences)
+    distributions[stageId] = {
+      label: '生成序列长度', unit: '残基', values: sequences.map((sequence) => sequence.length),
+      source: `${sequences.length.toLocaleString()} 条持久化提案`, direction: 'neutral',
+    }
+  }))
+
+  await Promise.all(persistedMetricStages.map(async (stageId) => {
+    const node = nodes[stageId]
+    const metric = metricByStage[stageId]
+    if (!node || !metric) return
+    const artifacts = node.calls.flatMap((call) => call.artifacts)
+      .filter((artifact) => artifact.role === 'v38_metric_result' && artifact.media_type === 'application/json')
+    const payloads = await Promise.all(artifacts.map((artifact) => readArtifact(apiBase, artifact, signal)))
+    const values = finite(payloads.flatMap(payloadRecords).flatMap((row) => {
+      const observations = Array.isArray(row.observations) ? row.observations.map(record) : []
+      return observations.filter((observation) => observation.metric_name === metric.key)
+        .map((observation) => typeof observation.numeric_value === 'number' ? observation.numeric_value : null)
+    })).map((value) => metric.transform ? metric.transform(value) : value)
+    distributions[stageId] = {
+      label: metric.label, unit: metric.unit, values,
+      source: `${values.length.toLocaleString()} 条持久化评分`, direction: metric.direction,
+    }
+  }))
+
+  const uniqueSequences = [...new Set(generatedSequences)]
+  distributions.candidate_pool = {
+    label: '唯一候选长度', unit: '残基', values: uniqueSequences.map((sequence) => sequence.length),
+    source: `${uniqueSequences.length.toLocaleString()} 条去重序列`, direction: 'neutral',
+  }
+  const statusCounts = Object.values(nodes.admission?.reasoning.status_counts ?? {})
+  distributions.admission = {
+    label: '决策分组规模', unit: '候选', values: statusCounts,
+    source: `${statusCounts.length} 个决策分组`, direction: 'neutral',
+  }
+  return distributions
 }
 
 function finite(values: Array<number | null | undefined>) {
@@ -121,7 +206,22 @@ function chartGeometry(values: number[], width: number, height: number, density:
 
 export function ResultDistribution({ data, compact = false }: { data: ResultDistributionData; compact?: boolean }) {
   const values = finite(data.values)
-  if (!values.length) return null
+  if (!values.length) return compact ? (
+    <div className="result-distribution compact empty" title={`${data.label} · 尚无结果`}>
+      <div className="distribution-mini-label"><span>{data.label}</span><b>尚无结果</b></div>
+      <svg viewBox="0 0 238 50" preserveAspectRatio="none" aria-label={`${data.label}暂无结果`}>
+        <line x1="10" y1="36" x2="228" y2="36" className="distribution-axis" />
+      </svg>
+    </div>
+  ) : (
+    <figure className="result-distribution detailed empty">
+      <figcaption><div><span>结果分布</span><h3>{data.label}</h3><p>{data.source}</p></div></figcaption>
+      <svg viewBox="0 0 720 110" role="img" aria-label={`${data.label}暂无结果`}>
+        <line x1="20" y1="72" x2="700" y2="72" className="distribution-axis" />
+        <text x="360" y="56" textAnchor="middle" className="distribution-empty-label">尚无结果</text>
+      </svg>
+    </figure>
+  )
   const density = values.length >= 24
   const width = compact ? 238 : 720
   const height = compact ? 50 : 210

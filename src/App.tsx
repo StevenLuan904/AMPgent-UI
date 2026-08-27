@@ -39,7 +39,12 @@ import { AnalysisDashboard } from './analysis/AnalysisDashboard'
 import { loadAnalysisSnapshot, type AnalysisSnapshot } from './analysis/dataKernel'
 import { EvidenceDashboard } from './analysis/EvidenceDashboard'
 import { MoleculeViewer } from './MoleculeViewer'
-import { distributionForStage, ResultDistribution } from './ResultDistribution'
+import {
+  distributionForStage,
+  loadPersistedRunDistributions,
+  ResultDistribution,
+  type ResultDistributionData,
+} from './ResultDistribution'
 import { LaneLabel, WorkflowNode, type LaneNode, type StageNode } from './WorkflowNode'
 import type {
   CandidatePreview,
@@ -494,6 +499,7 @@ function CanvasHeader({ detail, refreshing, selectionMode, selectedCount, onRefr
 function GraphView({
   detail,
   analysisSnapshot,
+  persistedDistributions,
   selectedStage,
   selectedEdge,
   selectionMode,
@@ -504,6 +510,7 @@ function GraphView({
 }: {
   detail: RunDetail
   analysisSnapshot: AnalysisSnapshot | null
+  persistedDistributions: Record<string, ResultDistributionData>
   selectedStage: string | null
   selectedEdge: GraphEdgeDetail | null
   selectionMode: boolean
@@ -530,12 +537,14 @@ function GraphView({
         stage,
         branches: detail.branches,
         viewer: detail.viewers?.[stage.id] ?? (stage.kind === 'structure' ? detail.viewer : null),
-        distribution: distributionForStage(analysisSnapshot, detail, stage.id),
+        distribution: persistedDistributions[stage.id]
+          ?? distributionForStage(analysisSnapshot, detail, stage.id)
+          ?? { label: '节点结果', unit: '条', values: [], source: '尚无数值结果', direction: 'neutral' },
         selected: selectionMode ? analysisSelection.includes(stage.id) : selectedStage === stage.id,
       },
       draggable: false,
     })),
-  ], [analysisSelection, analysisSnapshot, detail, selectedStage, selectionMode])
+  ], [analysisSelection, analysisSnapshot, detail, persistedDistributions, selectedStage, selectionMode])
   const stageById = useMemo(() => Object.fromEntries(detail.graph.nodes.map((node) => [node.id, node])), [detail])
   const edges = useMemo<Edge[]>(() => detail.graph.edges.map((edge, index) => {
     const source = stageById[edge.source] as GraphStage | undefined
@@ -763,12 +772,14 @@ function ReasoningPanel({ nodeDetail }: { nodeDetail: NodeDetail }) {
   )
 }
 
-function Inspector({ detail, stageId, analysisSnapshot, onClose }: { detail: RunDetail; stageId: string; analysisSnapshot: AnalysisSnapshot | null; onClose: () => void }) {
+function Inspector({ detail, stageId, analysisSnapshot, distributionOverride, onClose }: { detail: RunDetail; stageId: string; analysisSnapshot: AnalysisSnapshot | null; distributionOverride?: ResultDistributionData; onClose: () => void }) {
   const stage = detail.graph.nodes.find((item) => item.id === stageId) ?? detail.graph.nodes[0]
   const groupLabel = { inputs: '输入', design: '设计', evaluation: '评估', decision: '决策', structure: '结构', review: '评审' }[stage.group]
   const [nodeDetail, setNodeDetail] = useState<NodeDetail | null>(null)
   const [detailError, setDetailError] = useState<string | null>(null)
-  const distribution = distributionForStage(analysisSnapshot, detail, stageId)
+  const distribution = distributionOverride
+    ?? distributionForStage(analysisSnapshot, detail, stageId)
+    ?? { label: '节点结果', unit: '条', values: [], source: '尚无数值结果', direction: 'neutral' }
 
   useEffect(() => {
     const controller = new AbortController()
@@ -805,7 +816,7 @@ function Inspector({ detail, stageId, analysisSnapshot, onClose }: { detail: Run
       })()}
       <section className={`scientific-summary grade-${stage.insight.grade}`}>
         <div>
-          <small>{stage.insight.source === 'persisted_decision' ? '持久化智能体决策' : '数据库指标摘要'}</small>
+          <small>{stage.insight.source === 'persisted_decision' ? '持久化智能体决策' : '数据库结果'}</small>
           <strong><i />{stage.insight.verdict}</strong>
         </div>
         <p>{stage.insight.reason}</p>
@@ -938,6 +949,7 @@ export default function App() {
   const [selectionMode, setSelectionMode] = useState(false)
   const [analysisSelection, setAnalysisSelection] = useState<string[]>([])
   const [analysisSnapshot, setAnalysisSnapshot] = useState<AnalysisSnapshot | null>(null)
+  const [persistedDistributions, setPersistedDistributions] = useState<Record<string, ResultDistributionData>>({})
   const structureRun = useMemo(() => data.runs.find((run) => run.structure_record_count > 0) ?? null, [data.runs])
   useEffect(() => {
     let cancelled = false
@@ -948,6 +960,19 @@ export default function App() {
       if (!cancelled) setAnalysisSnapshot(null)
     })
     return () => { cancelled = true }
+  }, [apiBase, data.detail?.run.id])
+  useEffect(() => {
+    const detail = data.detail
+    if (!detail) {
+      setPersistedDistributions({})
+      return
+    }
+    const controller = new AbortController()
+    setPersistedDistributions({})
+    void loadPersistedRunDistributions(apiBase, detail, controller.signal)
+      .then((value) => { if (!controller.signal.aborted) setPersistedDistributions(value) })
+      .catch(() => { if (!controller.signal.aborted) setPersistedDistributions({}) })
+    return () => controller.abort()
   }, [apiBase, data.detail?.run.id])
   const selectedAnalysisNodes = useMemo(() => data.detail?.graph.nodes.filter((node) => analysisSelection.includes(node.id)) ?? [], [analysisSelection, data.detail])
   const toggleAnalysisNode = (id: string) => setAnalysisSelection((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
@@ -994,6 +1019,7 @@ export default function App() {
               <GraphView
                 detail={data.detail}
                 analysisSnapshot={analysisSnapshot}
+                persistedDistributions={persistedDistributions}
                 selectedStage={selectedStage}
                 selectedEdge={selectedEdge}
                 selectionMode={selectionMode}
@@ -1018,7 +1044,7 @@ export default function App() {
               )}
               {!selectionMode && <div className="canvas-footnote"><PanelLeftClose />拖拽画布 · 点击节点 · 5 秒更新</div>}
             </main>
-            {selectedStage && <Inspector detail={data.detail} stageId={selectedStage} analysisSnapshot={analysisSnapshot} onClose={() => setSelectedStage(null)} />}
+            {selectedStage && <Inspector detail={data.detail} stageId={selectedStage} analysisSnapshot={analysisSnapshot} distributionOverride={persistedDistributions[selectedStage]} onClose={() => setSelectedStage(null)} />}
             {selectedEdge && <EdgeInspector detail={data.detail} edge={selectedEdge} onClose={() => setSelectedEdge(null)} />}
           </>
         ) : (

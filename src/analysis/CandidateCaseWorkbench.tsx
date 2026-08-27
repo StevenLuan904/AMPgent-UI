@@ -7,7 +7,6 @@ import {
   Copy,
   Dna,
   FlaskConical,
-  Layers3,
   Rotate3D,
   ShieldCheck,
   Target,
@@ -160,13 +159,6 @@ const targetNames: Record<string, string> = {
 const organismNames: Record<string, string> = {
   'Escherichia coli K-12 MG1655': '大肠杆菌 K-12 MG1655',
   'Staphylococcus epidermidis': '表皮葡萄球菌',
-}
-
-const pocketNames: Record<string, string> = {
-  'LEI-800 GyrA allosteric pocket': 'LEI-800别构口袋',
-  'GyrA fluoroquinolone cleavage-complex site': '氟喹诺酮切割复合位点',
-  'PBP2a transpeptidase active site': 'PBP2a转肽酶活性位点',
-  'PBP2a ceftaroline/muramate allosteric domain': 'PBP2a头孢洛林/胞壁酸别构域',
 }
 
 function Term({ children }: { children: string }) {
@@ -324,12 +316,10 @@ function TargetCard({ target, computed }: { target: CaseTarget; computed: boolea
       <p>{organismNames[target.organism] ?? target.organism} · {target.accession} · {target.sequenceLength} 个残基</p>
       <div className="target-sequence-preview"><code>{target.sequence.slice(0, 54)}</code><span>…</span></div>
       <div className="pocket-evidence-row">
-        <span><b>主口袋</b>{pocketNames[primaryPocket?.name] ?? primaryPocket?.name}</span>
         <span><b>证据</b>{primaryPocket?.evidenceGrade} 级 · {(primaryPocket?.evidenceScore * 100).toFixed(0)}%</span>
         <span><b>残基</b>{primaryPocket?.residueIndices.length} 个</span>
         <span><b>结构</b>{evidence?.sourceAccession ?? '—'}{evidence?.resolutionAngstrom ? ` · ${evidence.resolutionAngstrom.toFixed(2)} 埃` : ''}</span>
       </div>
-      <div className="pocket-residues"><b>口袋残基</b><span>{primaryPocket?.residueIndices.join(' · ')}</span></div>
       <details><summary>完整靶点序列</summary><code>{target.sequence}</code></details>
     </article>
   )
@@ -340,11 +330,9 @@ export function CandidateCaseWorkbench({ apiBase = '' }: { apiBase?: string }) {
   const [error, setError] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<'static' | 'interactive'>('static')
   const [structureSource, setStructureSource] = useState<'boltz' | 'rosetta'>('rosetta')
-  const [seedIndex, setSeedIndex] = useState(0)
   const [representation, setRepresentation] = useState<'cartoon' | 'atomic' | 'surface'>('cartoon')
   const [colorTheme, setColorTheme] = useState<'baker-spectrum' | 'chain-id' | 'hydrophobicity' | 'element-symbol'>('baker-spectrum')
   const [autoRotate, setAutoRotate] = useState(false)
-  const [showResidues, setShowResidues] = useState(true)
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
@@ -364,16 +352,14 @@ export function CandidateCaseWorkbench({ apiBase = '' }: { apiBase?: string }) {
   if (!caseData) return <div className="case-state"><FlaskConical /><b>正在读取候选案例…</b></div>
 
   const selectedRun = structureSource === 'boltz'
-    ? caseData.structure.boltzRuns[Math.min(seedIndex, caseData.structure.boltzRuns.length - 1)]
-    : caseData.structure.rosettaRuns[Math.min(seedIndex, caseData.structure.rosettaRuns.length - 1)]
+    ? caseData.structure.boltzRuns[0]
+    : caseData.structure.rosettaRuns[0]
   const viewerArtifact = withApiBase(selectedRun?.artifact ?? null, apiBase)
   const m = caseData.candidate.metrics
   const primaryPocket = caseData.targets[0]?.pockets.find((pocket) => pocket.conditioningPriority === 'primary')
   const coverage = caseData.structure.coverage
   const coveragePercent = coverage.plannedBoltzPoses ? coverage.observedBoltzPoses / coverage.plannedBoltzPoses * 100 : 0
   const dGValues = scores.map((score) => score.dG_separated)
-  const sasaValues = scores.map((score) => score.dSASA_int)
-  const hbondValues = scores.map((score) => score.interface_hbonds)
   const residuePlddtValues = caseData.structure.boltzRuns.flatMap((run) => run.residuePlddt.map((item) => item.value))
   const contactPairs = caseData.structure.contactMap.distances.flat().filter((distance) => distance <= caseData.structure.contactMap.distanceThresholdAngstrom).length
   const topEnriched = [...caseData.candidate.compositionContext].sort((left, right) => right.log2Enrichment - left.log2Enrichment).slice(0, 3)
@@ -418,7 +404,7 @@ export function CandidateCaseWorkbench({ apiBase = '' }: { apiBase?: string }) {
             <label><span>结构来源</span><div><button className={structureSource === 'boltz' ? 'active' : ''} onClick={() => setStructureSource('boltz')}><Term>Boltz 2</Term></button><button className={structureSource === 'rosetta' ? 'active' : ''} onClick={() => setStructureSource('rosetta')}><Term>Rosetta</Term></button></div></label>
             <label><span>表示方式</span><div><button className={representation === 'cartoon' ? 'active' : ''} onClick={() => setRepresentation('cartoon')}>卡通</button><button className={representation === 'atomic' ? 'active' : ''} onClick={() => setRepresentation('atomic')}>原子</button><button className={representation === 'surface' ? 'active' : ''} onClick={() => setRepresentation('surface')}>表面</button></div></label>
             <label><span>着色</span><div><button title="Baker 风格按残基序号使用七色渐变。" className={colorTheme === 'baker-spectrum' ? 'active' : ''} onClick={() => setColorTheme('baker-spectrum')}>序列谱</button><button className={colorTheme === 'chain-id' ? 'active' : ''} onClick={() => setColorTheme('chain-id')}>分子链</button><button className={colorTheme === 'hydrophobicity' ? 'active' : ''} onClick={() => setColorTheme('hydrophobicity')}>疏水性</button><button className={colorTheme === 'element-symbol' ? 'active' : ''} onClick={() => setColorTheme('element-symbol')}>元素</button></div></label>
-            <label><span>视图</span><div><button className={autoRotate ? 'active' : ''} disabled={viewMode === 'static'} onClick={() => setAutoRotate((value) => !value)}><Rotate3D />慢速旋转</button><button className={showResidues ? 'active' : ''} onClick={() => setShowResidues((value) => !value)}><Layers3 />口袋残基</button></div></label>
+            <label><span>视图</span><div><button className={autoRotate ? 'active' : ''} disabled={viewMode === 'static'} onClick={() => setAutoRotate((value) => !value)}><Rotate3D />慢速旋转</button></div></label>
           </div>
           <div className="case-structure-stage">
             <MoleculeViewer
@@ -431,17 +417,7 @@ export function CandidateCaseWorkbench({ apiBase = '' }: { apiBase?: string }) {
               peptideChain="B"
               interactive={viewMode === 'interactive'}
             />
-            {showResidues && primaryPocket && <div className="case-pocket-overlay"><b>{pocketNames[primaryPocket.name] ?? primaryPocket.name}</b><span>{primaryPocket.residueIndices.join(' · ')}</span></div>}
-            <div className="case-structure-source"><span>{structureSource === 'boltz' ? '预测构象' : '精修样本'}</span><b>随机种子 {selectedRun?.seed}</b><div>{(structureSource === 'boltz' ? caseData.structure.boltzRuns : caseData.structure.rosettaRuns).map((run, index) => <button key={run.seed} className={seedIndex === index ? 'active' : ''} onClick={() => setSeedIndex(index)}>{index + 1}</button>)}</div></div>
           </div>
-          <footer className="case-structure-evidence">
-            <div><span><Term>Boltz 2</Term> 完成</span><strong>{coverage.observedBoltzPoses} / {coverage.plannedBoltzPoses}</strong><small>本候选计划构象</small></div>
-            <div><span>界面置信度</span><strong>{median(caseData.structure.boltzRuns.map((run) => run.pairIptm)).toFixed(3)}</strong><small>两组随机种子中位数</small></div>
-            <div><span><Term>Rosetta</Term> 精修</span><strong>{coverage.observedRosettaDecoys}</strong><small>原位界面样本</small></div>
-            <div><span>界面能中位数</span><strong>{median(dGValues).toFixed(1)}</strong><small>Rosetta 能量单位</small></div>
-            <div><span>界面埋藏面积</span><strong>{median(sasaValues).toFixed(0)} 平方埃</strong><small>32 个精修样本</small></div>
-            <div><span>界面氢键</span><strong>{median(hbondValues).toFixed(1)}</strong><small>中位数</small></div>
-          </footer>
         </article>
 
         <aside className="case-side-stack">

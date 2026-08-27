@@ -79,15 +79,7 @@ export function WorkflowNode({ data }: NodeProps<StageNode>) {
   const stateIcon = stage.status === 'completed' ? <Check /> : stage.status === 'stopped' ? <CircleStop /> : null
   const isStructure = stage.kind === 'structure'
   const showsTargets = stage.id === 'targets' && branches.length > 0
-  const evidenceLabel = distribution
-    ? '结果分布'
-    : stage.insight.source === 'persisted_decision'
-    ? '智能体决策'
-    : stage.provenance === 'database'
-      ? '指标摘要'
-      : stage.provenance === 'derived'
-        ? '证据汇总'
-        : '未记录'
+  const evidenceLabel = distribution?.values.length ? '结果分布' : '暂无结果'
   return (
     <div className={`workflow-node stage-${stage.id} kind-${stage.kind} grade-${stage.insight.grade} node-${stage.status}${selected ? ' is-selected' : ''}`}>
       <Handle type="target" position={Position.Left} className="flow-handle" />
@@ -98,7 +90,7 @@ export function WorkflowNode({ data }: NodeProps<StageNode>) {
       </div>
       <div
         className="node-verdict"
-        title={stage.insight.source === 'persisted_decision' ? '来自数据库中的智能体决策' : '根据数据库指标生成的观察器摘要'}
+        title={stage.insight.source === 'persisted_decision' ? '来自数据库中的智能体决策' : '根据数据库结果生成的节点结论'}
       >
         <span className={`verdict-chip ${stage.insight.grade}`}><i />{stage.insight.verdict}</span>
         <b title={stage.insight.reason}>{stage.insight.reason}</b>
