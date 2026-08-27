@@ -175,6 +175,7 @@
 .card-generator_contribution .card-icon { color: #765aa8; background: #f4effc; }
 .card-safety_profile .card-icon { color: #5d997a; background: #edf8f2; }
 .card-multi_objective_conflict .card-icon { color: #b17543; background: #fff4e9; }
+.card-structure_energy .card-icon { color: #6e5ca6; background: #f2effb; }
 .card-candidate_laboratory .card-icon { color: #4d8996; background: #edf8fa; }
 
 .quality-grid { height: 100%; display: grid; grid-template-columns: repeat(5, minmax(92px, 1fr)) minmax(190px, 1.45fr); gap: 9px; }
@@ -210,6 +211,39 @@
 .pareto-caption { min-width: 0; display: flex; align-items: center; gap: 12px; border-top: 1px solid #edf0f4; color: #8a95a6; font-size: 7px; white-space: nowrap; overflow: hidden; }
 .pareto-caption b { color: #53647d; font-size: 8px; }
 .pareto-caption b { margin-left: auto; }
+.pareto-3d { position: relative; height: 100%; min-height: 0; overflow: visible; border-radius: 8px; background: radial-gradient(circle at 50% 42%, rgba(234,241,254,.72), rgba(255,255,255,0) 62%); }
+.pareto-3d > svg { width: 100%; height: 100%; min-height: 180px; display: block; overflow: visible; cursor: grab; touch-action: none; }
+.pareto-3d > svg:active { cursor: grabbing; }
+.pareto-cube line { stroke: #dce4f0; stroke-width: 1; stroke-dasharray: 3 5; vector-effect: non-scaling-stroke; }
+.pareto-surface { fill: url(#frontier-surface); stroke: #668be1; stroke-width: 1.2; stroke-opacity: .58; vector-effect: non-scaling-stroke; pointer-events: none; }
+.pareto-surface-glow { fill: rgba(92,134,226,.2); filter: url(#frontier-glow); pointer-events: none; }
+.pareto-points circle { vector-effect: non-scaling-stroke; cursor: crosshair; }
+.pareto-axes line { stroke: #75859e; stroke-width: 1.25; vector-effect: non-scaling-stroke; }
+.pareto-axes text, .pareto-legend text { fill: #5d6c82; font-size: 11px; font-weight: 600; pointer-events: none; }
+.pareto-legend text { fill: #68768a; font-size: 10px; font-weight: 500; }
+.pareto-tooltip { position: absolute; z-index: 12; top: 12px; right: 12px; width: min(310px, 46%); padding: 9px 11px; display: grid; gap: 4px; border: 1px solid #ccd7e8; border-radius: 8px; color: #58677d; background: rgba(255,255,255,.97); box-shadow: 0 10px 30px rgba(39,58,92,.14); pointer-events: none; }
+.pareto-tooltip > b { overflow: hidden; color: #33435f; font: 650 11px "DM Mono", monospace; text-overflow: ellipsis; white-space: nowrap; }
+.pareto-tooltip > span { font-size: 10px; }
+.pareto-tooltip > div { display: grid; grid-template-columns: auto 1fr auto 1fr auto 1fr; gap: 5px; align-items: baseline; border-top: 1px solid #edf1f6; padding-top: 5px; }
+.pareto-tooltip i { color: #909bab; font-size: 9px; font-style: normal; }
+.pareto-tooltip strong { color: #466497; font: 650 10px "DM Mono", monospace; }
+
+.energy-violin { height: 100%; min-height: 0; }
+.energy-violin svg { width: 100%; height: 100%; min-height: 180px; display: block; overflow: visible; }
+.energy-grid line { stroke: #edf1f5; stroke-width: 1; vector-effect: non-scaling-stroke; }
+.energy-grid text { fill: #8490a2; font-size: 10px; }
+.energy-threshold { stroke: #df725c; stroke-width: 1.5; stroke-dasharray: 6 5; vector-effect: non-scaling-stroke; }
+.energy-threshold-label { fill: #b45c4b; font-size: 10px; font-weight: 650; paint-order: stroke; stroke: #fff; stroke-width: 4px; stroke-linejoin: round; }
+.energy-outlier-label { fill: #b45c4b; font-size: 10px; font-weight: 650; }
+.energy-group-label { fill: #475773; font-size: 11px; font-weight: 650; }
+.energy-group-meta { fill: #8490a2; font-size: 9px; }
+.energy-axis-label { fill: #68768b; font-size: 10px; font-weight: 600; }
+.energy-empty { height: 100%; display: grid; place-items: center; border: 1px dashed #dfe5ed; border-radius: 8px; color: #94a0b1; font-size: 11px; }
+.card-multi_objective_conflict .analysis-card-body,
+.card-structure_energy .analysis-card-body { padding: 4px 9px 8px; }
+.analysis-card.presentation-compact .pareto-legend,
+.analysis-card.presentation-compact .pareto-cube,
+.analysis-card.presentation-compact .energy-group-meta { display: none; }
 .origin-hierarchy { height: 100%; display: grid; grid-template-rows: minmax(0, 1fr) 25px; }
 .origin-hierarchy-footer { min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; border-top: 1px solid #edf0f4; color: #8a95a6; font-size: 7px; white-space: nowrap; overflow: hidden; }
 .origin-hierarchy-footer b { color: #53647d; font-size: 8px; }

@@ -4,6 +4,7 @@ import ReactECharts from 'echarts-for-react'
 import GridLayout, { WidthProvider, type Layout } from 'react-grid-layout'
 import {
   Activity,
+  Atom,
   ArrowDownRight,
   Boxes,
   ChartNoAxesCombined,
@@ -35,6 +36,7 @@ import { loadAnalysisSnapshot, type AnalysisSnapshot } from './dataKernel'
 import { executeAnalysisQuery, type AnalysisPivotResult, type PivotDimensionKey } from './dataKernel'
 import { frameworkFixture } from './frameworkFixture'
 import { CandidateCaseWorkbench } from './CandidateCaseWorkbench'
+import { ParetoFront3D, RosettaEnergyViolin, type EnergyGroup, type ParetoPoint3D } from './ScientificDashboardCharts'
 import {
   chartLabels,
   createDefaultQuery,
@@ -52,8 +54,8 @@ import {
 import './analysis-dashboard.css'
 
 const DashboardGrid = WidthProvider(GridLayout)
-const layoutStorageKey = 'ampgent.analysis-dashboard.layout.v3'
-const queryStorageKey = 'ampgent.analysis-dashboard.queries.v1'
+const layoutStorageKey = 'ampgent.analysis-dashboard.layout.v4'
+const queryStorageKey = 'ampgent.analysis-dashboard.queries.v2'
 const hiddenStorageKey = 'ampgent.analysis-dashboard.hidden.v1'
 
 const cardIcons: Record<AnalysisQuestion, LucideIcon> = {
@@ -64,6 +66,7 @@ const cardIcons: Record<AnalysisQuestion, LucideIcon> = {
   generator_contribution: Boxes,
   safety_profile: ShieldCheck,
   multi_objective_conflict: Activity,
+  structure_energy: Atom,
   candidate_laboratory: TableProperties,
 }
 
@@ -111,13 +114,6 @@ function runKernel(snapshot: AnalysisSnapshot, input: Parameters<typeof executeA
 
 function metricValue(candidate: AnalysisSnapshot['candidates'][number], key: string) {
   return candidate.metrics[key]?.value ?? null
-}
-
-function fiveNumbers(values: number[]) {
-  if (!values.length) return [0, 0, 0, 0, 0]
-  const sorted = [...values].sort((a, b) => a - b)
-  const at = (fraction: number) => sorted[Math.min(sorted.length - 1, Math.round((sorted.length - 1) * fraction))]
-  return [at(0), at(.25), at(.5), at(.75), at(1)]
 }
 
 const generatorHelp: Record<string, string> = {
@@ -182,6 +178,7 @@ function Chart({ option, height = '100%' }: { option: object; height?: number | 
   const source = option as Record<string, unknown>
   const configuredOption = {
     ...source,
+    animation: false,
     textStyle: { fontFamily: 'Inter, "Noto Sans SC", system-ui, sans-serif', fontSize: 11, ...(source.textStyle as object ?? {}) },
     tooltip: source.tooltip ? {
       renderMode: 'html',
@@ -210,7 +207,7 @@ const slotLabels: Record<PivotSlot, string> = {
   categories: '分类',
 }
 
-const chartChoices: ChartType[] = ['number', 'bar', 'line', 'boxplot', 'scatter', 'heatmap', 'table']
+const chartChoices: ChartType[] = ['number', 'bar', 'line', 'boxplot', 'violin', 'scatter', 'heatmap', 'table']
 
 function toggleQueryFilter(query: CardQuerySpec, key: string, value: string) {
   const current = query.filters[key] ?? []
@@ -295,7 +292,7 @@ function CardShell({ definition, children, meta, query, onQueryChange }: {
   useEffect(() => {
     const element = cardRef.current
     if (!element) return
-    const chartMap: Record<ChartType, PivotChartType> = { number: 'kpi', bar: 'bar', line: 'funnel', boxplot: 'boxplot', scatter: 'scatter', heatmap: 'heatmap', sunburst: 'stacked_bar', table: 'table' }
+    const chartMap: Record<ChartType, PivotChartType> = { number: 'kpi', bar: 'bar', line: 'funnel', boxplot: 'boxplot', violin: 'violin', scatter: 'scatter', heatmap: 'heatmap', sunburst: 'stacked_bar', table: 'table' }
     const observer = new ResizeObserver(([entry]) => {
       const { width, height } = entry.contentRect
       if (width < 180 || height < 120) return
@@ -312,7 +309,7 @@ function CardShell({ definition, children, meta, query, onQueryChange }: {
       <header className="analysis-card-header" title="拖动标题移动卡片；拖动右下角调整大小">
         <span className="card-icon"><Icon /></span>
         <div>
-          <h2>{definition.title}</h2>
+          <h2 title={definition.id === 'structure_energy' ? 'Rosetta：对蛋白质—短肽界面进行构象精修与能量评估。' : undefined}>{definition.title}</h2>
           <p>{definition.description}</p>
         </div>
         {meta && <div className="card-meta">{meta}</div>}
@@ -457,8 +454,6 @@ function DistributionCard({ generator, snapshot, chart, query }: { generator: st
     : frameworkFixture.distributions.filter((item) => generator === 'all' || item.generator === generator).map((item) => ({ ...item, group: '全部候选' }))
   const stageLabels: Record<string, string> = { raw_proposal: '原始', deduplicated: '去重', metric_complete: '评分完整', safety_pass: '安全通过', candidate_pool: '候选池', admitted: '结构资格' }
   const labels = rows.map((item) => `${item.generator}\n${stageLabels[item.stage] ?? '候选池'} · n=${item.count.toLocaleString()}`)
-  const allValues = kernelResult?.distributions?.flatMap((item) => item.summary.values ?? []) ?? []
-  const overall = fiveNumbers(allValues)
   const metricDescriptor = metric === 'llamp_log10_mic_um'
     ? { label: '对数抑菌浓度 ↓', short: '抑菌浓度' }
     : metric === 'macrel_hemolysis_probability'
@@ -477,14 +472,6 @@ function DistributionCard({ generator, snapshot, chart, query }: { generator: st
   const heatmapColumns = [...new Set(rows.map((item) => item.generator))]
   const heatmapGroups = [...new Set(rows.map((item) => item.group))]
   const admissionLabels: Record<string, string> = { mature_core: '成熟核心', promising_uncertain: '潜力待确认', rejected: '未入选', all: '全部候选' }
-  const medianReference = Number.isFinite(overall[2]) ? overall[2] : null
-  const medianLine = medianReference === null ? undefined : {
-    silent: true,
-    symbol: 'none',
-    lineStyle: { color: '#e26f52', width: 1.25, type: 'dashed' },
-    label: { show: true, position: 'insideEndTop', formatter: `总体中位数 ${medianReference.toFixed(3)}`, color: '#9a4f3d', fontSize: 10, backgroundColor: '#fff8f5', padding: [3, 5], borderRadius: 4 },
-    data: [{ yAxis: medianReference }],
-  }
   const chartOption = chart === 'heatmap' ? {
     grid: { left: 68, right: 24, top: 18, bottom: 42 },
     tooltip: { formatter: (params: { data: number[] }) => `${heatmapColumns[params.data[0]]}<br/>${admissionLabels[heatmapGroups[params.data[1]]] ?? heatmapGroups[params.data[1]]}<br/>中位数 ${params.data[2].toFixed(3)}` },
@@ -508,8 +495,8 @@ function DistributionCard({ generator, snapshot, chart, query }: { generator: st
     xAxis: { type: 'category', data: labels, axisTick: { show: false }, axisLine: { lineStyle: { color: '#dfe5ed' } }, axisLabel: { color: '#657186', fontSize: 10, lineHeight: 15 } },
     yAxis: { type: 'value', min: axisMin, max: axisMax, name: metricDescriptor.label, nameTextStyle: { color: '#778397', fontSize: 10 }, splitLine: { lineStyle: { color: '#eef1f5' } }, axisLabel: { color: '#748094', fontSize: 10 } },
     series: chart === 'bar'
-      ? [{ name: '中位数', type: 'bar', barWidth: 28, markLine: medianLine, data: rows.map((item, index) => ({ value: item.fiveNumberSummary[2], itemStyle: { color: chartPalette[index % chartPalette.length], borderRadius: [4, 4, 0, 0] } })) }]
-      : [{ name: '五数概括', type: 'boxplot', markLine: medianLine, data: rows.map((item, index) => ({ value: item.fiveNumberSummary, itemStyle: { color: `${chartPalette[index % chartPalette.length]}24`, borderColor: chartPalette[index % chartPalette.length], borderWidth: 1.5 } })), boxWidth: [14, 34] }],
+      ? [{ name: '中位数', type: 'bar', barWidth: 28, data: rows.map((item, index) => ({ value: item.fiveNumberSummary[2], itemStyle: { color: chartPalette[index % chartPalette.length], borderRadius: [4, 4, 0, 0] } })) }]
+      : [{ name: '五数概括', type: 'boxplot', data: rows.map((item, index) => ({ value: item.fiveNumberSummary, itemStyle: { color: `${chartPalette[index % chartPalette.length]}24`, borderColor: chartPalette[index % chartPalette.length], borderWidth: 1.5 } })), boxWidth: [14, 34] }],
   }
   return (
     <div className="distribution-layout">
@@ -611,58 +598,59 @@ function SafetyCard({ generator, snapshot }: { generator: string; snapshot: Anal
 }
 
 function ParetoCard({ generator, snapshot, query }: { generator: string; snapshot: AnalysisSnapshot | null; query: CardQuerySpec }) {
-  const kernelResult = snapshot ? runKernel(snapshot, {
-    schemaVersion: 'analysis-pivot-query.1',
-    queryKey: 'pareto_conflicts',
-    metrics: ['macrel_amp_probability', 'macrel_hemolysis_probability'],
-    filters: { generators: selectedGenerators(query) },
-  }) : null
-  const records = (kernelResult?.records ?? []) as Array<{ sequence: string; originSet: string[]; admissionStatus: string; paretoFront: number | null; structureEligible: boolean; metrics: Record<string, number | null> }>
-  const points = snapshot
-    ? records.filter((candidate) => candidate.structureEligible).map((candidate) => ({
+  const selected = selectedGenerators(query)
+  const records = snapshot?.candidates.filter((candidate) =>
+    (!selected.length || candidate.originSet.some((origin) => selected.includes(origin)))
+    && ['macrel_amp_probability', 'macrel_hemolysis_probability', 'toxinpred3_hybrid_score'].every((metric) => candidate.metrics[metric]?.value != null)
+  ) ?? []
+  const paletteByGenerator = new Map((snapshot
+    ? [...new Set(snapshot.occurrences.map((item) => item.generator))].map((id, index) => ({ id, label: generatorDisplay[id] ?? id, color: chartPalette[index % chartPalette.length] }))
+    : frameworkFixture.generators).map((item) => [item.label, item.color]))
+  const points: ParetoPoint3D[] = snapshot
+    ? records.map((candidate) => ({
       sequence: candidate.sequence,
       generator: generatorDisplay[candidate.originSet[0]] ?? candidate.originSet[0],
-      activity: candidate.metrics.macrel_amp_probability ?? 0,
-      hemolysis: candidate.metrics.macrel_hemolysis_probability ?? 0,
-      charge: 0,
-      paretoRank: candidate.paretoFront ?? 2,
+      activity: candidate.metrics.macrel_amp_probability?.value ?? 0,
+      hemolysis: candidate.metrics.macrel_hemolysis_probability?.value ?? 0,
+      toxicity: candidate.metrics.toxinpred3_hybrid_score?.value ?? 0,
+      paretoRank: candidate.admission.paretoFront,
+      structureEligible: candidate.admission.structureEligible,
+      color: paletteByGenerator.get(generatorDisplay[candidate.originSet[0]] ?? candidate.originSet[0]) ?? chartPalette[0],
     })).filter((item) => generator === 'all' || item.generator === generator)
-    : frameworkFixture.pareto.filter((item) => generator === 'all' || item.generator === generator)
-  const generatorSeries = snapshot
-    ? [...new Set(snapshot.occurrences.map((item) => item.generator))].map((id, index) => ({ id, label: generatorDisplay[id] ?? id, color: chartPalette[index] }))
-    : frameworkFixture.generators
-  const groups = generatorSeries.map((item) => ({
-    ...item,
-    points: points.filter((point) => point.generator === item.label),
-  })).filter((item) => item.points.length)
-  const axisBounds = (values: number[]) => {
-    if (!values.length) return { min: 0, max: 1 }
-    const low = Math.max(0, Math.floor((Math.min(...values) - .03) * 10) / 10)
-    const high = Math.min(1, Math.ceil((Math.max(...values) + .03) * 10) / 10)
-    return { min: low, max: high - low < .2 ? Math.min(1, low + .2) : high }
-  }
-  const activityBounds = axisBounds(points.map((point) => point.activity))
-  const hemolysisBounds = axisBounds(points.map((point) => point.hemolysis))
+    : frameworkFixture.pareto.filter((item) => generator === 'all' || item.generator === generator).map((item, index) => ({
+      sequence: item.id,
+      generator: item.generator,
+      activity: item.activity,
+      hemolysis: item.hemolysis,
+      toxicity: Math.min(1, .12 + index * .025),
+      paretoRank: item.paretoRank,
+      structureEligible: false,
+      color: paletteByGenerator.get(item.generator) ?? chartPalette[0],
+    }))
   return (
-    <div className="pareto-layout">
-      <Chart option={{
-        color: groups.map((item) => item.color),
-        grid: { left: 52, right: 24, top: 34, bottom: 42 },
-        tooltip: { formatter: (params: { seriesName: string; data: { value: number[]; sequence: string; rank: number } }) => `<b>${params.data.sequence}</b><br/>生成来源：${params.seriesName}<br/>抗菌概率：${params.data.value[0].toFixed(3)}<br/>溶血概率：${params.data.value[1].toFixed(3)}<br/>${params.data.rank === 1 ? '帕累托前沿第一层' : '尚未分配前沿层级'}` },
-        legend: { top: 0, icon: 'circle', itemWidth: 8, textStyle: { fontSize: 10, color: '#657186' } },
-        xAxis: { type: 'value', min: activityBounds.min, max: activityBounds.max, name: '抗菌概率 ↑', nameLocation: 'middle', nameGap: 29, nameTextStyle: { fontSize: 10, color: '#687386' }, axisLabel: { fontSize: 10, color: '#748094', formatter: (value: number) => value.toFixed(1) }, splitLine: { lineStyle: { color: '#eef1f5' } } },
-        yAxis: { type: 'value', min: hemolysisBounds.min, max: hemolysisBounds.max, inverse: true, name: '溶血概率 ↓', nameTextStyle: { fontSize: 10, color: '#687386' }, axisLabel: { fontSize: 10, color: '#748094', formatter: (value: number) => value.toFixed(1) }, splitLine: { lineStyle: { color: '#eef1f5' } } },
-        series: groups.map((group) => ({
-          name: group.label,
-          type: 'scatter',
-          symbolSize: (_value: number[], params: { data: { rank: number } }) => params.data.rank === 1 ? 10 : 7,
-          data: group.points.map((point) => ({ value: [point.activity, point.hemolysis], sequence: point.sequence, rank: point.paretoRank, itemStyle: { opacity: point.paretoRank === 1 ? .92 : .38, borderColor: point.paretoRank === 1 ? '#fff' : group.color, borderWidth: point.paretoRank === 1 ? 1.5 : 1 } })),
-          emphasis: { scale: 1.6, focus: 'series' },
-        })),
-      }} />
-      <div className="pareto-caption"><span>颜色区分生成来源 · 深色为前沿第一层</span><b>越靠右上，抗菌概率越高且溶血概率越低</b></div>
-    </div>
+    <ParetoFront3D points={points} />
   )
+}
+
+interface StructureEnergySnapshot {
+  structure?: { rosettaRuns?: Array<{ target?: string; scores?: Array<{ dG_separated?: number }> }> }
+}
+
+const structureTargetNames: Record<string, string> = {
+  'DNA gyrase subunit A': 'DNA旋转酶A亚基',
+  'PBP2a family beta-lactam-resistant peptidoglycan transpeptidase, partial': 'PBP2a耐药转肽酶',
+}
+
+function StructureEnergyCard({ data }: { data: StructureEnergySnapshot | null }) {
+  const valuesByTarget = new Map<string, number[]>()
+  for (const run of data?.structure?.rosettaRuns ?? []) {
+    const target = structureTargetNames[run.target ?? ''] ?? run.target ?? '未标注靶点'
+    const values = valuesByTarget.get(target) ?? []
+    for (const score of run.scores ?? []) if (Number.isFinite(score.dG_separated)) values.push(Number(score.dG_separated))
+    valuesByTarget.set(target, values)
+  }
+  const groups: EnergyGroup[] = [...valuesByTarget.entries()].map(([target, values], index) => ({ target, values, color: chartPalette[index % chartPalette.length] }))
+  return <RosettaEnergyViolin groups={groups} />
 }
 
 function CandidateTable({ generator, snapshot, query }: { generator: string; snapshot: AnalysisSnapshot | null; query: CardQuerySpec }) {
@@ -736,7 +724,7 @@ function generatorFromQuery(query: CardQuerySpec) {
   return selected.length === 1 ? generatorIdsToLabels[selected[0]] ?? 'all' : 'all'
 }
 
-function CardContent({ id, query, snapshot }: { id: AnalysisQuestion; query: CardQuerySpec; snapshot: AnalysisSnapshot | null }) {
+function CardContent({ id, query, snapshot, structureData }: { id: AnalysisQuestion; query: CardQuerySpec; snapshot: AnalysisSnapshot | null; structureData: StructureEnergySnapshot | null }) {
   const generator = generatorFromQuery(query)
   if (id === 'run_quality') return <RunQualityCard snapshot={snapshot} />
   if (id === 'lineage_and_yield') return <LineageCard snapshot={snapshot} chart={query.chart} query={query} />
@@ -744,6 +732,7 @@ function CardContent({ id, query, snapshot }: { id: AnalysisQuestion; query: Car
   if (id === 'generator_contribution') return <OriginCard snapshot={snapshot} />
   if (id === 'safety_profile') return <SafetyCard generator={generator} snapshot={snapshot} />
   if (id === 'multi_objective_conflict') return <ParetoCard generator={generator} snapshot={snapshot} query={query} />
+  if (id === 'structure_energy') return <StructureEnergyCard data={structureData} />
   if (id === 'candidate_laboratory') return <CandidateTable generator={generator} snapshot={snapshot} query={query} />
   return <div className="card-placeholder">扩展接口已就绪</div>
 }
@@ -757,6 +746,7 @@ export function AnalysisDashboard({ detail, seedNodeIds = [], apiBase = '' }: { 
   const [snapshotError, setSnapshotError] = useState<string | null>(null)
   const [snapshotRevision, setSnapshotRevision] = useState(0)
   const [queries, setQueries] = useState<Record<AnalysisQuestion, CardQuerySpec>>(readQueries)
+  const [structureData, setStructureData] = useState<StructureEnergySnapshot | null>(null)
   const seedKey = seedNodeIds.join('|')
 
   useEffect(() => {
@@ -783,6 +773,15 @@ export function AnalysisDashboard({ detail, seedNodeIds = [], apiBase = '' }: { 
     })
     return () => { cancelled = true }
   }, [detail?.run.id, snapshotRevision])
+
+  useEffect(() => {
+    let cancelled = false
+    fetch('/data/candidate-case.snapshot.json', { headers: { Accept: 'application/json' } })
+      .then((response) => response.ok ? response.json() as Promise<StructureEnergySnapshot> : Promise.reject(new Error(String(response.status))))
+      .then((value) => { if (!cancelled) setStructureData(value) })
+      .catch(() => { if (!cancelled) setStructureData(null) })
+    return () => { cancelled = true }
+  }, [])
 
   useEffect(() => {
     if (!seedNodeIds.length) return
@@ -882,7 +881,7 @@ export function AnalysisDashboard({ detail, seedNodeIds = [], apiBase = '' }: { 
                 onQueryChange={(query) => setQueries((current) => ({ ...current, [definition.id]: query }))}
                 meta={queries[definition.id].sourceNodeIds.length ? <b>{`${queries[definition.id].sourceNodeIds.length} 个节点`}</b> : undefined}
               >
-                <CardContent id={definition.id} query={queries[definition.id]} snapshot={snapshot} />
+                <CardContent id={definition.id} query={queries[definition.id]} snapshot={snapshot} structureData={structureData} />
               </CardShell>
             </div>
           ))}

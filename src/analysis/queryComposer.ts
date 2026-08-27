@@ -1,7 +1,7 @@
 import type { AnalysisQuestion } from './contracts'
 
 export type PivotSlot = 'rows' | 'columns' | 'values' | 'categories'
-export type ChartType = 'number' | 'bar' | 'line' | 'boxplot' | 'scatter' | 'heatmap' | 'sunburst' | 'table'
+export type ChartType = 'number' | 'bar' | 'line' | 'boxplot' | 'violin' | 'scatter' | 'heatmap' | 'sunburst' | 'table'
 
 export interface AnalysisField {
   id: string
@@ -37,6 +37,7 @@ export const fieldCatalog: AnalysisField[] = [
   { id: 'toxicity', label: '毒性风险', kind: 'measure', semantic: 'value' },
   { id: 'charge', label: '净电荷', kind: 'measure', semantic: 'value' },
   { id: 'structure_count', label: '结构证据数', kind: 'measure', semantic: 'value' },
+  { id: 'interface_energy', label: '界面能', kind: 'measure', semantic: 'value' },
 ]
 
 const defaults: Record<AnalysisQuestion, Omit<CardQuerySpec, 'cardId' | 'sourceNodeIds'>> = {
@@ -47,6 +48,7 @@ const defaults: Record<AnalysisQuestion, Omit<CardQuerySpec, 'cardId' | 'sourceN
   generator_contribution: { rows: ['origin_set'], columns: [], values: ['candidate_count'], categories: ['generator'], filters: {}, chart: 'sunburst' },
   safety_profile: { rows: ['generator'], columns: [], values: ['hemolysis', 'toxicity'], categories: ['evidence_status'], filters: {}, chart: 'bar' },
   multi_objective_conflict: { rows: ['candidate'], columns: [], values: ['activity', 'hemolysis'], categories: ['generator'], filters: {}, chart: 'scatter' },
+  structure_energy: { rows: ['target'], columns: [], values: ['interface_energy'], categories: [], filters: {}, chart: 'violin' },
   candidate_laboratory: { rows: ['candidate'], columns: ['metric'], values: ['metric_value'], categories: ['evidence_status'], filters: {}, chart: 'table' },
 }
 
@@ -96,6 +98,7 @@ export function validateQuery(query: CardQuerySpec): string[] {
   if (query.chart === 'number' && query.values.length !== 1) errors.push('指标卡只能显示一个汇总数值。')
   if (query.chart === 'line' && !query.rows.includes('stage')) errors.push('趋势图需要“分析阶段”作为行字段。')
   if (query.chart === 'boxplot' && !query.values.includes('metric_value')) errors.push('箱线图需要“评分数值”字段。')
+  if (query.chart === 'violin' && !query.values.includes('interface_energy')) errors.push('小提琴图需要“界面能”字段。')
   if (query.chart === 'bar' && !query.rows.length && !query.categories.length) errors.push('条形图需要至少一个分组字段。')
   if (query.chart === 'sunburst' && (!query.rows.includes('origin_set') || !query.categories.includes('generator'))) errors.push('层级旭日图需要“来源组合”和“生成来源”字段。')
   return errors
@@ -106,6 +109,7 @@ export function recommendChart(query: CardQuerySpec): { chart: ChartType; reason
   if (query.values.length >= 2 && query.rows.includes('candidate')) return { chart: 'scatter', reason: '候选级双数值最适合比较目标冲突。' }
   if (query.rows.includes('stage') && query.categories.length) return { chart: 'line', reason: '阶段具有顺序，按分类绘制趋势最清晰。' }
   if (query.columns.length && query.rows.length) return { chart: 'heatmap', reason: '行列维度形成矩阵，推荐热力图。' }
+  if (query.values.includes('interface_energy')) return { chart: 'violin', reason: '界面能需要同时显示分布形状、样本点和阈值。' }
   if (query.values.includes('metric_value')) return { chart: 'boxplot', reason: '连续评分需要保留分布形状，推荐箱线图。' }
   if (!query.rows.length && !query.columns.length && !query.categories.length && query.values.length === 1) return { chart: 'number', reason: '单一汇总数值适合指标卡。' }
   if (query.rows.includes('candidate')) return { chart: 'table', reason: '候选身份需要保留完整序列与证据字段。' }
@@ -128,7 +132,7 @@ const nodeCardRules: Record<string, AnalysisQuestion[]> = {
   admission: ['multi_objective_conflict', 'candidate_laboratory'],
   targets: ['candidate_laboratory'],
   boltz: ['candidate_laboratory'],
-  rosetta: ['candidate_laboratory'],
+  rosetta: ['structure_energy', 'candidate_laboratory'],
   portfolio: ['run_quality', 'candidate_laboratory'],
 }
 
@@ -151,6 +155,7 @@ export const chartLabels: Record<ChartType, string> = {
   bar: '条形图',
   line: '趋势图',
   boxplot: '箱线图',
+  violin: '小提琴图',
   scatter: '散点图',
   heatmap: '热力图',
   sunburst: '旭日图',

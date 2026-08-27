@@ -25,6 +25,7 @@ export type AnalysisQuestion =
   | 'generator_contribution'
   | 'safety_profile'
   | 'multi_objective_conflict'
+  | 'structure_energy'
   | 'candidate_laboratory'
 
 export interface AnalysisQuerySpec {
