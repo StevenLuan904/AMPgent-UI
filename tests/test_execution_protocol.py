@@ -81,3 +81,7 @@ def test_ampgent_acea_execution_protocol_preserves_nonnegotiable_rules() -> None
     assert "f9a5a4d1be3fb6b8dc412e80ad799bd52e74aaac1bd82d18d3a42547bb574896" in protocol
     assert "-67.9363 REU" in protocol
     assert "low_pose_confidence" in protocol
+    assert "e47fa0c96f2415c87b0bbd6bd0831b082d367022391957c8e82539f2aa4f8b83" in protocol
+    assert "+66.7342 REU" in protocol
+    assert "e25b3cc348ad9a90c30db789099f1610276652854ceba1c69014250545318dd7" in protocol
+    assert "a355db4ebc284496e3fb7b8929c29e032c5b0f174e9ac085ba4baaead6452124" in protocol

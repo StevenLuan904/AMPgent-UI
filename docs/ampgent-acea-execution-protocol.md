@@ -2920,3 +2920,34 @@ MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot
   SHA-256 为 `fb5922fae1357cf7111baf6a87cbbd806646977f14879b1d42f28525450ff201`。该收据记录因子化候选
   200/200、PepGLAD 候选 149/200，且明确 `provisional_only=true`、`md_started=false`。PepGLAD
   已完成样本的 dG 仍全部为正，必须等待 200/200 和正式完成收据后再作最终判断；不得重复提交。
+
+### 2026-08-28 PBP2a 后置结构 lane 正式完成
+
+- exact-once lane `pbp2a-gpu2-rosetta-20260828-v1` 已于
+  `2026-08-27T21:04:27.199560Z` 正式完成，两条候选均为 200/200 decoy，父进程已退出，GPU2 已释放，
+  且 `md_started=false`。完成收据 SHA-256 为
+  `e47fa0c96f2415c87b0bbd6bd0831b082d367022391957c8e82539f2aa4f8b83`。
+- PepGLAD 候选 `ESPPWFRGAKPWPFRYKK` 的正式主 `dG_separated` 为 **+66.7342 REU**；全部
+  200 个 decoy 的 min/median/max 为 +19.3127/+566.4636/+4226.2254 REU，结果 SHA-256 为
+  `7b299a6d529df411cdbf9b8dab690c530ec195d0b974c909adf093615653b13f`。全部样本均为正值，当前
+  PBP2a 界面假设结构复核不通过；该结论只否定当前起始复合物及其局部精修，不等于证明序列在所有姿势
+  下都不能结合。
+- 因子化候选 `GKWVHFSRVRMRKLLKLNQVDDWF` 保持正式主 dG -67.9363 REU，但仍带
+  `low_pose_confidence`，因为上游 Boltz pair-ipTM 仅 0.1147。两端结果按模型冲突规则同时保留：
+  PepGLAD 端作为不利结构/几何失败证据，因子化端作为低姿势置信度的有利假设；二者均不自动触发 MD。
+- 远端任务根 549 MiB 的 832 个文件已形成有序 SHA 清单，manifest SHA-256 为
+  `e25b3cc348ad9a90c30db789099f1610276652854ceba1c69014250545318dd7`。紧凑内容寻址结果包位于
+  `/sdd_data/pepagent/ampgent/artifacts/structure-results/e25b3cc348ad9a90c30db789099f1610276652854ceba1c69014250545318dd7/`，
+  仅 388 KiB；artifact receipt SHA-256 为
+  `8fea255d69da6ad1548291b9ccba2557532553801a42d0153a3804abb0d435b4`。本机未保存结构大文件。
+
+### 2026-08-28 已有黄金003 MD进度收敛
+
+- 没有新增 MD。历史黄金候选003的 PBP2a 复合物已完成 1 ns NPT + 50 ns NVT，最终温度
+  299.64 K，`production_end_state.xml` 与 manifest 均存在，PID `2799133` 已正常退出；GyrA 同一连续
+  任务 PID `2799132` 仍存活，50 ns NVT 完成 77.3%，温度 300.30 K，checkpoint 存在。
+- 新进度收据为
+  `/data1/huangyueshan/pepagent/md/gold-003-20260827/progress_receipts/checkpoint_20260827T220709Z.json`，
+  SHA-256 `a355db4ebc284496e3fb7b8929c29e032c5b0f174e9ac085ba4baaead6452124`，并明确
+  `new_md_started=false`。继续只监测 GyrA 精确 PID、日志、checkpoint 与非有限值；不得因 PBP2a
+  已完成而提交替代或追加 MD。
