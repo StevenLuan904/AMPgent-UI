@@ -15,9 +15,7 @@ import {
   DatabaseZap,
   FlaskConical,
   GripVertical,
-  LayoutDashboard,
   Library,
-  Move,
   Microscope,
   Network,
   RotateCcw,
@@ -54,7 +52,7 @@ import {
 import './analysis-dashboard.css'
 
 const DashboardGrid = WidthProvider(GridLayout)
-const layoutStorageKey = 'ampgent.analysis-dashboard.layout.v2'
+const layoutStorageKey = 'ampgent.analysis-dashboard.layout.v3'
 const queryStorageKey = 'ampgent.analysis-dashboard.queries.v1'
 const hiddenStorageKey = 'ampgent.analysis-dashboard.hidden.v1'
 
@@ -181,9 +179,26 @@ function Chart({ option, height = '100%' }: { option: object; height?: number | 
     }
   }, [])
 
+  const source = option as Record<string, unknown>
+  const configuredOption = {
+    ...source,
+    textStyle: { fontFamily: 'Inter, "Noto Sans SC", system-ui, sans-serif', fontSize: 11, ...(source.textStyle as object ?? {}) },
+    tooltip: source.tooltip ? {
+      renderMode: 'html',
+      appendToBody: true,
+      confine: false,
+      className: 'ampgent-chart-tooltip',
+      borderWidth: 1,
+      borderColor: '#ccd6e5',
+      backgroundColor: 'rgba(255,255,255,.98)',
+      textStyle: { color: '#344054', fontSize: 12, lineHeight: 19 },
+      extraCssText: 'box-shadow:0 12px 32px rgba(31,48,78,.16);border-radius:8px;max-width:360px;white-space:normal;',
+      ...(source.tooltip as object),
+    } : undefined,
+  }
   return (
-    <div ref={host} style={{ height, width: '100%', minWidth: 0 }}>
-      {ready && <ReactECharts option={option} notMerge lazyUpdate style={{ height: '100%', width: '100%' }} />}
+    <div ref={host} className="analysis-chart-host" style={{ height, width: '100%', minWidth: 0 }}>
+      {ready && <ReactECharts option={configuredOption} notMerge lazyUpdate style={{ height: '100%', width: '100%' }} />}
     </div>
   )
 }
@@ -265,9 +280,8 @@ function PivotEditor({ query, onChange, onClose }: { query: CardQuerySpec; onCha
   )
 }
 
-function CardShell({ definition, editing, children, meta, query, onQueryChange }: {
+function CardShell({ definition, children, meta, query, onQueryChange }: {
   definition: DashboardCardDefinition
-  editing: boolean
   children: ReactNode
   meta?: ReactNode
   query: CardQuerySpec
@@ -294,8 +308,8 @@ function CardShell({ definition, editing, children, meta, query, onQueryChange }
     return () => observer.disconnect()
   }, [query.chart])
   return (
-    <article ref={cardRef} data-presentation={presentation.mode} data-effective-chart={presentation.effectiveChart} className={`analysis-card card-${definition.id} presentation-${presentation.mode} ${editing ? 'is-editing' : ''} ${queryOpen ? 'query-open' : ''}`}>
-      <header className="analysis-card-header">
+    <article ref={cardRef} data-presentation={presentation.mode} data-effective-chart={presentation.effectiveChart} className={`analysis-card card-${definition.id} presentation-${presentation.mode} ${queryOpen ? 'query-open' : ''}`}>
+      <header className="analysis-card-header" title="拖动标题移动卡片；拖动右下角调整大小">
         <span className="card-icon"><Icon /></span>
         <div>
           <h2>{definition.title}</h2>
@@ -305,9 +319,7 @@ function CardShell({ definition, editing, children, meta, query, onQueryChange }
         <button className={`card-query-button ${queryOpen ? 'active' : ''} ${errors.length ? 'invalid' : ''}`} onClick={() => setQueryOpen((value) => !value)} title="配置本卡片的数据透视条件">
           <SlidersHorizontal /><span>{chartLabels[query.chart]}</span>
         </button>
-        <button className="card-drag-handle" aria-label={`拖动 ${definition.title}`} title="拖动卡片">
-          {editing ? <Move /> : <GripVertical />}
-        </button>
+        <span className="card-drag-handle" aria-hidden="true"><GripVertical /></span>
       </header>
       {queryOpen && createPortal(
         <div className="pivot-editor-layer" onClick={() => setQueryOpen(false)}>
@@ -406,9 +418,9 @@ function LineageCard({ snapshot, chart, query }: { snapshot: AnalysisSnapshot | 
         color: generators.map((item) => item.color),
         grid: { left: 42, right: 18, top: 24, bottom: 42 },
         tooltip: { trigger: 'axis', valueFormatter: (value: unknown) => `${value} 条` },
-        legend: { bottom: 0, icon: 'circle', itemWidth: 8, textStyle: { color: '#6f7888', fontSize: 10 } },
-        xAxis: { type: 'category', data: stages, axisLine: { lineStyle: { color: '#dfe5ed' } }, axisTick: { show: false }, axisLabel: { color: '#7f8898', fontSize: 9 } },
-        yAxis: { type: 'value', splitLine: { lineStyle: { color: '#eef1f5' } }, axisLabel: { color: '#8b94a3', fontSize: 9 } },
+        legend: { bottom: 0, icon: 'circle', itemWidth: 8, textStyle: { color: '#596579', fontSize: 11 } },
+        xAxis: { type: 'category', data: stages, axisLine: { lineStyle: { color: '#dfe5ed' } }, axisTick: { show: false }, axisLabel: { color: '#687386', fontSize: 10 } },
+        yAxis: { type: 'value', splitLine: { lineStyle: { color: '#eef1f5' } }, axisLabel: { color: '#748094', fontSize: 10 } },
         series: generators.map((generator) => ({
           name: generator.label,
           type: chart === 'bar' ? 'bar' : 'line',
@@ -444,7 +456,7 @@ function DistributionCard({ generator, snapshot, chart, query }: { generator: st
     }))
     : frameworkFixture.distributions.filter((item) => generator === 'all' || item.generator === generator).map((item) => ({ ...item, group: '全部候选' }))
   const stageLabels: Record<string, string> = { raw_proposal: '原始', deduplicated: '去重', metric_complete: '评分完整', safety_pass: '安全通过', candidate_pool: '候选池', admitted: '结构资格' }
-  const labels = rows.map((item) => `${item.generator}\n${stageLabels[item.stage] ?? '候选池'}`)
+  const labels = rows.map((item) => `${item.generator}\n${stageLabels[item.stage] ?? '候选池'} · n=${item.count.toLocaleString()}`)
   const allValues = kernelResult?.distributions?.flatMap((item) => item.summary.values ?? []) ?? []
   const overall = fiveNumbers(allValues)
   const metricDescriptor = metric === 'llamp_log10_mic_um'
@@ -465,32 +477,43 @@ function DistributionCard({ generator, snapshot, chart, query }: { generator: st
   const heatmapColumns = [...new Set(rows.map((item) => item.generator))]
   const heatmapGroups = [...new Set(rows.map((item) => item.group))]
   const admissionLabels: Record<string, string> = { mature_core: '成熟核心', promising_uncertain: '潜力待确认', rejected: '未入选', all: '全部候选' }
+  const medianReference = Number.isFinite(overall[2]) ? overall[2] : null
+  const medianLine = medianReference === null ? undefined : {
+    silent: true,
+    symbol: 'none',
+    lineStyle: { color: '#e26f52', width: 1.25, type: 'dashed' },
+    label: { show: true, position: 'insideEndTop', formatter: `总体中位数 ${medianReference.toFixed(3)}`, color: '#9a4f3d', fontSize: 10, backgroundColor: '#fff8f5', padding: [3, 5], borderRadius: 4 },
+    data: [{ yAxis: medianReference }],
+  }
   const chartOption = chart === 'heatmap' ? {
     grid: { left: 68, right: 24, top: 18, bottom: 42 },
     tooltip: { formatter: (params: { data: number[] }) => `${heatmapColumns[params.data[0]]}<br/>${admissionLabels[heatmapGroups[params.data[1]]] ?? heatmapGroups[params.data[1]]}<br/>中位数 ${params.data[2].toFixed(3)}` },
-    xAxis: { type: 'category', data: heatmapColumns, axisTick: { show: false }, axisLabel: { color: '#747e90', fontSize: 9 } },
-    yAxis: { type: 'category', data: heatmapGroups.map((item) => admissionLabels[item] ?? item), axisTick: { show: false }, axisLabel: { color: '#747e90', fontSize: 9 } },
+    xAxis: { type: 'category', data: heatmapColumns, axisTick: { show: false }, axisLabel: { color: '#657186', fontSize: 10 } },
+    yAxis: { type: 'category', data: heatmapGroups.map((item) => admissionLabels[item] ?? item), axisTick: { show: false }, axisLabel: { color: '#657186', fontSize: 10 } },
     visualMap: { min: axisMin, max: axisMax, calculable: false, orient: 'horizontal', left: 'center', bottom: 0, itemWidth: 8, itemHeight: 70, textStyle: { fontSize: 7, color: '#8590a1' }, inRange: { color: ['#eef4ff', '#91b2ef', '#3f6fce'] } },
-    series: [{ type: 'heatmap', data: rows.map((item) => [heatmapColumns.indexOf(item.generator), heatmapGroups.indexOf(item.group), item.fiveNumberSummary[2]]), label: { show: true, formatter: (params: { data: number[] }) => params.data[2].toFixed(2), fontSize: 8, color: '#35435a' } }],
+    series: [{ type: 'heatmap', data: rows.map((item) => [heatmapColumns.indexOf(item.generator), heatmapGroups.indexOf(item.group), item.fiveNumberSummary[2]]), label: { show: true, formatter: (params: { data: number[] }) => params.data[2].toFixed(2), fontSize: 10, color: '#35435a' } }],
   } : {
     color: chartPalette,
-    grid: { left: 44, right: 18, top: 20, bottom: 50 },
-    tooltip: { trigger: 'item' },
-    xAxis: { type: 'category', data: labels, axisTick: { show: false }, axisLine: { lineStyle: { color: '#dfe5ed' } }, axisLabel: { color: '#747e90', fontSize: 9, lineHeight: 14 } },
-    yAxis: { type: 'value', min: axisMin, max: axisMax, name: metricDescriptor.label, nameTextStyle: { color: '#9aa2af', fontSize: 9 }, splitLine: { lineStyle: { color: '#eef1f5' } }, axisLabel: { color: '#8b94a3', fontSize: 9 } },
-    series: chart === 'bar' ? [{ name: '中位数', type: 'bar', barWidth: 24, data: rows.map((item, index) => ({ value: item.fiveNumberSummary[2], itemStyle: { color: chartPalette[index % chartPalette.length], borderRadius: [4, 4, 0, 0] } })) }] : [{ name: '五数概括', type: 'boxplot', data: rows.map((item, index) => ({ value: item.fiveNumberSummary, itemStyle: { color: `${chartPalette[index % chartPalette.length]}24`, borderColor: chartPalette[index % chartPalette.length], borderWidth: 1.5 } })), boxWidth: [12, 30] }],
+    grid: { left: 54, right: 22, top: 30, bottom: 54 },
+    tooltip: {
+      trigger: 'item',
+      formatter: (params: { name: string; value: number | number[] }) => {
+        if (!Array.isArray(params.value)) {
+          return `<b>${params.name.replace('\n', ' · ')}</b><br/>中位数 ${Number(params.value).toFixed(3)}<br/>参照线为全体候选中位数`
+        }
+        const values = params.value
+        return `<b>${params.name.replace('\n', ' · ')}</b><br/>最小值 ${Number(values[0]).toFixed(3)}<br/>下四分位 ${Number(values[1] ?? values[0]).toFixed(3)}<br/>中位数 ${Number(values[2] ?? values[0]).toFixed(3)}<br/>上四分位 ${Number(values[3] ?? values[0]).toFixed(3)}<br/>最大值 ${Number(values[4] ?? values[0]).toFixed(3)}`
+      },
+    },
+    xAxis: { type: 'category', data: labels, axisTick: { show: false }, axisLine: { lineStyle: { color: '#dfe5ed' } }, axisLabel: { color: '#657186', fontSize: 10, lineHeight: 15 } },
+    yAxis: { type: 'value', min: axisMin, max: axisMax, name: metricDescriptor.label, nameTextStyle: { color: '#778397', fontSize: 10 }, splitLine: { lineStyle: { color: '#eef1f5' } }, axisLabel: { color: '#748094', fontSize: 10 } },
+    series: chart === 'bar'
+      ? [{ name: '中位数', type: 'bar', barWidth: 28, markLine: medianLine, data: rows.map((item, index) => ({ value: item.fiveNumberSummary[2], itemStyle: { color: chartPalette[index % chartPalette.length], borderRadius: [4, 4, 0, 0] } })) }]
+      : [{ name: '五数概括', type: 'boxplot', markLine: medianLine, data: rows.map((item, index) => ({ value: item.fiveNumberSummary, itemStyle: { color: `${chartPalette[index % chartPalette.length]}24`, borderColor: chartPalette[index % chartPalette.length], borderWidth: 1.5 } })), boxWidth: [14, 34] }],
   }
   return (
     <div className="distribution-layout">
       <Chart option={chartOption} />
-      <aside className="distribution-summary">
-        <span className="summary-eyebrow">当前比较</span>
-        <strong>{metricDescriptor.short} · 当前分组</strong>
-        <div><b>{snapshot ? overall[2].toFixed(3) : '+0.19'}</b><span>总体中位数</span></div>
-        <div><b>{snapshot ? allValues.length.toLocaleString() : '35'} 条</b><span>有效评分</span></div>
-        <div><b>{snapshot ? snapshot.summary.outOfDomainEvaluations : 4} 条</b><span>全轮次分布外</span></div>
-        <small>{snapshot ? '箱体显示四分位区间，须结合模型适用域解释。' : '待补充：累积分布、效应量与自助法置信区间'}</small>
-      </aside>
     </div>
   )
 }
@@ -523,7 +546,7 @@ function OriginCard({ snapshot }: { snapshot: AnalysisSnapshot | null }) {
   return <div className="origin-hierarchy">
     <Chart option={{
       color: ['#527ee3', '#55b8b5', '#9a7bd1', '#d59a68', '#7aa35c'],
-      title: { text: snapshot.candidates.length.toLocaleString(), subtext: '唯一候选', left: 'center', top: '39%', textStyle: { color: '#2f405b', fontSize: 16, fontWeight: 700 }, subtextStyle: { color: '#8b96a7', fontSize: 8 } },
+      title: { text: snapshot.candidates.length.toLocaleString(), subtext: '唯一候选', left: 'center', top: '38%', textStyle: { color: '#2f405b', fontSize: 18, fontWeight: 700 }, subtextStyle: { color: '#7d899b', fontSize: 10 } },
       tooltip: { formatter: (params: { value: number; treePathInfo: Array<{ name: string }> }) => `${params.treePathInfo.slice(1).map((item) => item.name).join(' → ')}<br/><b>${params.value.toLocaleString()} 条唯一候选</b>` },
       series: [{
         type: 'sunburst',
@@ -534,7 +557,7 @@ function OriginCard({ snapshot }: { snapshot: AnalysisSnapshot | null }) {
         minAngle: 4,
         data: hierarchy,
         emphasis: { focus: 'ancestor' },
-        label: { color: '#33445f', fontSize: 8, minAngle: 7, overflow: 'truncate' },
+        label: { color: '#33445f', fontSize: 10, minAngle: 7, overflow: 'truncate' },
         itemStyle: { borderColor: '#fff', borderWidth: 1.5 },
         levels: [
           {},
@@ -570,13 +593,15 @@ function SafetyCard({ generator, snapshot }: { generator: string; snapshot: Anal
   } : generator === 'all'
     ? { hemolysis: [31, 38, 22], toxicity: [12, 17, 9], ood: [6, 7, 10] }
     : { hemolysis: [[31, 38, 22][index]], toxicity: [[12, 17, 9][index]], ood: [[6, 7, 10][index]] }
+  const maximumObserved = Math.max(...values.hemolysis, ...values.toxicity, ...values.ood, 10)
+  const axisMaximum = Math.min(100, Math.ceil((maximumObserved + 5) / 10) * 10)
   return <Chart option={{
     color: ['#ef8c7c', '#f1bc66', '#8d9aac'],
     grid: { left: 38, right: 12, top: 30, bottom: 28 },
-    legend: { top: 0, icon: 'circle', itemWidth: 7, textStyle: { fontSize: 9, color: '#737d8d' } },
+    legend: { top: 0, icon: 'circle', itemWidth: 8, textStyle: { fontSize: 10, color: '#657186' } },
     tooltip: { trigger: 'axis', valueFormatter: (value: unknown) => `${value}%` },
-    xAxis: { type: 'category', data: labels, axisTick: { show: false }, axisLine: { lineStyle: { color: '#dfe5ed' } }, axisLabel: { fontSize: 9, color: '#737d8d' } },
-    yAxis: { type: 'value', max: 50, axisLabel: { formatter: '{value}%', fontSize: 9, color: '#8b94a3' }, splitLine: { lineStyle: { color: '#eef1f5' } } },
+    xAxis: { type: 'category', data: labels, axisTick: { show: false }, axisLine: { lineStyle: { color: '#dfe5ed' } }, axisLabel: { fontSize: 10, color: '#657186' } },
+    yAxis: { type: 'value', max: axisMaximum, axisLabel: { formatter: '{value}%', fontSize: 10, color: '#748094' }, splitLine: { lineStyle: { color: '#eef1f5' } } },
     series: [
       { name: '溶血风险', type: 'bar', barWidth: 11, data: values.hemolysis, itemStyle: { borderRadius: [4, 4, 0, 0] } },
       { name: '毒性风险', type: 'bar', barWidth: 11, data: values.toxicity, itemStyle: { borderRadius: [4, 4, 0, 0] } },
@@ -624,9 +649,9 @@ function ParetoCard({ generator, snapshot, query }: { generator: string; snapsho
         color: groups.map((item) => item.color),
         grid: { left: 52, right: 24, top: 34, bottom: 42 },
         tooltip: { formatter: (params: { seriesName: string; data: { value: number[]; sequence: string; rank: number } }) => `<b>${params.data.sequence}</b><br/>生成来源：${params.seriesName}<br/>抗菌概率：${params.data.value[0].toFixed(3)}<br/>溶血概率：${params.data.value[1].toFixed(3)}<br/>${params.data.rank === 1 ? '帕累托前沿第一层' : '尚未分配前沿层级'}` },
-        legend: { top: 0, icon: 'circle', itemWidth: 7, textStyle: { fontSize: 9, color: '#737d8d' } },
-        xAxis: { type: 'value', min: activityBounds.min, max: activityBounds.max, name: '抗菌概率 ↑', nameLocation: 'middle', nameGap: 27, nameTextStyle: { fontSize: 9, color: '#7b8494' }, axisLabel: { fontSize: 9, color: '#8b94a3', formatter: (value: number) => value.toFixed(1) }, splitLine: { lineStyle: { color: '#eef1f5' } } },
-        yAxis: { type: 'value', min: hemolysisBounds.min, max: hemolysisBounds.max, inverse: true, name: '溶血概率 ↓', nameTextStyle: { fontSize: 9, color: '#7b8494' }, axisLabel: { fontSize: 9, color: '#8b94a3', formatter: (value: number) => value.toFixed(1) }, splitLine: { lineStyle: { color: '#eef1f5' } } },
+        legend: { top: 0, icon: 'circle', itemWidth: 8, textStyle: { fontSize: 10, color: '#657186' } },
+        xAxis: { type: 'value', min: activityBounds.min, max: activityBounds.max, name: '抗菌概率 ↑', nameLocation: 'middle', nameGap: 29, nameTextStyle: { fontSize: 10, color: '#687386' }, axisLabel: { fontSize: 10, color: '#748094', formatter: (value: number) => value.toFixed(1) }, splitLine: { lineStyle: { color: '#eef1f5' } } },
+        yAxis: { type: 'value', min: hemolysisBounds.min, max: hemolysisBounds.max, inverse: true, name: '溶血概率 ↓', nameTextStyle: { fontSize: 10, color: '#687386' }, axisLabel: { fontSize: 10, color: '#748094', formatter: (value: number) => value.toFixed(1) }, splitLine: { lineStyle: { color: '#eef1f5' } } },
         series: groups.map((group) => ({
           name: group.label,
           type: 'scatter',
@@ -724,7 +749,6 @@ function CardContent({ id, query, snapshot }: { id: AnalysisQuestion; query: Car
 }
 
 export function AnalysisDashboard({ detail, seedNodeIds = [], apiBase = '' }: { detail?: RunDetail | null; seedNodeIds?: string[]; apiBase?: string }) {
-  const [editing, setEditing] = useState(false)
   const [caseOpen, setCaseOpen] = useState(false)
   const [layout, setLayout] = useState<Layout[]>(readLayout)
   const [hiddenCards, setHiddenCards] = useState<Set<AnalysisQuestion>>(readHiddenCards)
@@ -799,7 +823,6 @@ export function AnalysisDashboard({ detail, seedNodeIds = [], apiBase = '' }: { 
         <div className="analysis-header-actions">
           <span className={`fixture-badge ${snapshot ? 'verified' : ''}`} title="发布快照已校验完整性并保留数据库来源。"><FlaskConical /> {snapshot ? '真实数据已校验' : '正在校验数据'}</span>
           <button className={caseOpen ? 'active' : ''} onClick={() => setCaseOpen((value) => !value)}><Microscope />{caseOpen ? '返回分析' : '候选案例'}</button>
-          {!caseOpen && <button className={editing ? 'active' : ''} onClick={() => setEditing((value) => !value)}><LayoutDashboard />{editing ? '完成布局' : '编辑布局'}</button>}
           {!caseOpen && <div className="card-library-wrap">
             <button onClick={() => setLibraryOpen((value) => !value)}><Library />卡片库</button>
             {libraryOpen && (
@@ -817,7 +840,7 @@ export function AnalysisDashboard({ detail, seedNodeIds = [], apiBase = '' }: { 
       </header>
 
       {caseOpen ? <CandidateCaseWorkbench apiBase={apiBase} /> : <>
-      <div className="analysis-orchestration">
+      {!!seedNodeIds.length && <div className="analysis-orchestration compact-orchestration">
         <div className="orchestration-label"><SlidersHorizontal /><span><b>卡片独立分析</b><small>每张卡片拥有自己的字段、筛选和图表</small></span></div>
         <div className="orchestration-flow">
           <span className="flow-step active">概览多选</span><i />
@@ -827,26 +850,25 @@ export function AnalysisDashboard({ detail, seedNodeIds = [], apiBase = '' }: { 
         </div>
         <div className={`orchestration-result ${seedNodeIds.length ? 'has-selection' : ''}`}>
           <Sparkles />
-          <span>{seedNodeIds.length ? `已根据 ${seedNodeIds.length} 个流程节点生成 ${queriesFromNodes(seedNodeIds).length} 张分析卡片` : '在概览中选择多个流程节点，即可自动生成分析卡片'}</span>
+          <span>{`已根据 ${seedNodeIds.length} 个流程节点生成 ${queriesFromNodes(seedNodeIds).length} 张分析卡片`}</span>
         </div>
-      </div>
+      </div>}
 
       {!snapshot ? (
         <div className="snapshot-state-panel"><FlaskConical /><b>{snapshotError ?? '正在读取只读数据'}</b><span>{snapshotError ? '未显示任何分析数值。请重新校验发布快照。' : '校验记录数量、覆盖率与传输完整性。'}</span>{snapshotError && <button onClick={() => setSnapshotRevision((value) => value + 1)}>重新校验</button>}</div>
       ) : <>
-        <div className={`layout-note ${editing ? 'visible' : ''}`}><Move /> 拖动卡片标题调整位置，拖动右下角调整尺寸；布局自动保存在本机。</div>
-
         <div className="analysis-grid-shell">
         <DashboardGrid
           className="analysis-grid"
           layout={layout.filter((item) => !hiddenCards.has(item.i as AnalysisQuestion))}
           cols={12}
-          rowHeight={62}
-          margin={[14, 14]}
+          rowHeight={50}
+          margin={[10, 10]}
           containerPadding={[0, 0]}
-          isDraggable={editing}
-          isResizable={editing}
-          draggableHandle=".card-drag-handle"
+          isDraggable
+          isResizable
+          draggableHandle=".analysis-card-header"
+          draggableCancel="button, a, input, select, textarea"
           onLayoutChange={(visibleLayout) => setLayout((current) => [
             ...visibleLayout,
             ...current.filter((item) => hiddenCards.has(item.i as AnalysisQuestion)),
@@ -856,10 +878,9 @@ export function AnalysisDashboard({ detail, seedNodeIds = [], apiBase = '' }: { 
             <div key={definition.id}>
               <CardShell
                 definition={definition}
-                editing={editing}
                 query={queries[definition.id]}
                 onQueryChange={(query) => setQueries((current) => ({ ...current, [definition.id]: query }))}
-                meta={<b>{queries[definition.id].sourceNodeIds.length ? `${queries[definition.id].sourceNodeIds.length} 个节点` : '独立条件'}</b>}
+                meta={queries[definition.id].sourceNodeIds.length ? <b>{`${queries[definition.id].sourceNodeIds.length} 个节点`}</b> : undefined}
               >
                 <CardContent id={definition.id} query={queries[definition.id]} snapshot={snapshot} />
               </CardShell>

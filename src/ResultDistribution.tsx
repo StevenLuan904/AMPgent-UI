@@ -39,6 +39,17 @@ export function distributionForStage(snapshot: AnalysisSnapshot | null, detail: 
     const counts = detail.structure_counts.rosetta_decoy ?? {}
     return { label: '精修通道产量', unit: '样本', values: Object.values(counts), source: `${Object.keys(counts).length} 个结构通道`, direction: 'neutral' }
   }
+  if (stageId === 'knowledge') {
+    const stage = detail.graph.nodes.find((item) => item.id === stageId)
+    if (!stage) return null
+    return {
+      label: '知识证据记录量',
+      unit: '条',
+      values: [stage.current],
+      source: '当前知识检索节点',
+      direction: 'neutral',
+    }
+  }
   const runSnapshot = snapshot?.run.id === detail.run.id ? snapshot : null
   if (!runSnapshot) return null
 
@@ -137,7 +148,7 @@ export function ResultDistribution({ data, compact = false }: { data: ResultDist
 
   return (
     <figure className="result-distribution detailed">
-      <figcaption><div><span>结果分布 · {modeLabel}</span><h3>{data.label}</h3><p>{data.source} · 单位：{data.unit}</p></div><div className="distribution-summary"><span><small>中位数</small><b>{precision(median)}</b></span><span><small>四分位距</small><b>{precision(q1)}–{precision(q3)}</b></span><span><small>范围</small><b>{precision(geometry.rawMin)}–{precision(geometry.rawMax)}</b></span></div></figcaption>
+      <figcaption><div><span>结果分布 · {modeLabel}</span><h3>{data.label}</h3><p>{data.source} · 单位：{data.unit}</p></div><div className="distribution-statline"><span><small>中位数</small><b>{precision(median)}</b></span><span><small>四分位距</small><b>{precision(q1)}–{precision(q3)}</b></span><span><small>范围</small><b>{precision(geometry.rawMin)}–{precision(geometry.rawMax)}</b></span></div></figcaption>
       <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${data.label}${modeLabel}`}>
         {[0, .25, .5, .75, 1].map((fraction) => <line key={fraction} x1={10 + fraction * (width - 20)} y1="16" x2={10 + fraction * (width - 20)} y2={height - 30} className="distribution-grid" />)}
         <line x1="10" y1={height - 30} x2={width - 10} y2={height - 30} className="distribution-axis" />

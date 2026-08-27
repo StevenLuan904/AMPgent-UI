@@ -369,3 +369,71 @@
   .pivot-editor { width: min(560px, calc(100vw - 330px)); }
   .evidence-trace-grid { grid-template-columns: 1fr; }
 }
+
+/* Dense scientific workspace: readable type, compact geometry, direct manipulation. */
+.analysis-page-header { min-height: 88px; padding: 17px 24px 15px; }
+.analysis-heading h1 { margin-top: 4px; font-size: 25px; }
+.analysis-heading > p { font-size: 12px; }
+.analysis-eyebrow { font-size: 10px; }
+.analysis-eyebrow span { font-size: 9px; }
+.analysis-header-actions button, .fixture-badge { height: 36px; font-size: 11px; }
+.analysis-grid-shell { min-width: 820px; padding: 10px 22px 12px; overflow: visible; }
+.analysis-grid, .react-grid-layout, .react-grid-item, .react-grid-item > div { overflow: visible; }
+.analysis-card { overflow: visible; border-radius: 11px; box-shadow: 0 5px 18px rgba(48,65,100,.05); }
+.analysis-card-header { min-height: 51px; flex-basis: 51px; padding: 8px 10px; gap: 8px; cursor: grab; user-select: none; background: rgba(255,255,255,.98); border-radius: 11px 11px 0 0; }
+.analysis-card-header:active { cursor: grabbing; }
+.analysis-card-header h2 { font-size: 13px; }
+.analysis-card-header p { margin-top: 2px; font-size: 10px; }
+.card-icon { width: 30px; height: 30px; flex-basis: 30px; }
+.card-icon svg { width: 16px; }
+.card-meta { font-size: 10px; }
+.card-query-button { height: 29px; font-size: 10px; }
+.card-query-button svg { width: 13px; }
+.card-drag-handle { width: 20px; height: 28px; flex-basis: 20px; margin-left: 0; color: #a2adbd; pointer-events: none; }
+.card-drag-handle svg { width: 15px; }
+.analysis-card-body { padding: 7px 10px 9px; overflow: visible; background: #fff; border-radius: 0 0 11px 11px; }
+.analysis-chart-host, .analysis-chart-host > div { overflow: visible !important; }
+.react-resizable-handle { width: 20px !important; height: 20px !important; opacity: .28; transition: opacity .15s ease; }
+.react-grid-item:hover .react-resizable-handle { opacity: .95; }
+.react-resizable-handle::after { width: 7px !important; height: 7px !important; right: 5px !important; bottom: 5px !important; border-width: 0 2px 2px 0 !important; }
+
+.quality-grid { grid-template-columns: repeat(5, minmax(92px, 1fr)) minmax(180px, 1.25fr); gap: 7px; }
+.quality-stat { padding: 7px 9px; grid-template-columns: 4px 1fr; column-gap: 8px; border-radius: 8px; }
+.quality-stat > span { font-size: 10px; }
+.quality-stat strong { font-size: 22px; }
+.quality-stat small { font-size: 9px; line-height: 1.3; }
+.quality-callout { padding: 8px 10px; }
+.quality-callout b { font-size: 11px; }
+.quality-callout span { font-size: 10px; }
+
+.chart-with-summary { grid-template-rows: minmax(0, 1fr) 27px; }
+.card-insight { font-size: 10px; }
+.card-insight svg { width: 14px; }
+.distribution-layout { display: block; height: 100%; }
+.distribution-summary { display: none; }
+.pareto-caption, .origin-hierarchy-footer { min-height: 27px; font-size: 9px; }
+.pareto-caption b, .origin-hierarchy-footer b { font-size: 10px; }
+.candidate-table th { height: 29px; font-size: 10px; }
+.candidate-table td { height: 37px; font-size: 11px; }
+.candidate-table td:first-child b, .candidate-table code, .origin-pills span, .candidate-cohort, .structure-eligible, .structure-ineligible { font-size: 10px; }
+.table-footer { font-size: 10px; }
+.analysis-provenance-bar { margin: 0 22px 22px; }
+.analysis-provenance-bar > div, .analysis-provenance-bar p { font-size: 9px; }
+.compact-orchestration { min-height: 44px; margin: 7px 22px 0; padding: 6px 10px; }
+.compact-orchestration .orchestration-label small, .compact-orchestration .orchestration-flow { display: none; }
+.compact-orchestration .orchestration-label { min-width: 112px; }
+.compact-orchestration .orchestration-label b, .compact-orchestration .orchestration-result { font-size: 10px; }
+
+.result-distribution.compact { height: 78px; }
+.distribution-mini-label span, .distribution-mini-label b { font-size: 9px; }
+.distribution-mini-axis { font-size: 8px; }
+.result-distribution.detailed { margin: 0 18px 16px; overflow: visible; }
+.result-distribution.detailed figcaption { min-height: 70px; padding: 10px 13px; }
+.result-distribution.detailed figcaption span { font-size: 9px; }
+.result-distribution.detailed figcaption h3 { font-size: 15px; }
+.result-distribution.detailed figcaption p { font-size: 10px; }
+.distribution-statline { display: flex; align-items: center; gap: 20px; }
+.distribution-statline > span { display: grid; gap: 3px; min-width: 62px; }
+.distribution-statline small { color: #8b96a7; font-size: 9px; }
+.distribution-statline b { color: #354661; font: 650 12px "DM Mono", monospace; }
+.result-distribution.detailed footer { font-size: 9px; }

@@ -79,7 +79,9 @@ export function WorkflowNode({ data }: NodeProps<StageNode>) {
   const stateIcon = stage.status === 'completed' ? <Check /> : stage.status === 'stopped' ? <CircleStop /> : null
   const isStructure = stage.kind === 'structure'
   const showsTargets = stage.id === 'targets' && branches.length > 0
-  const evidenceLabel = stage.insight.source === 'persisted_decision'
+  const evidenceLabel = distribution
+    ? '结果分布'
+    : stage.insight.source === 'persisted_decision'
     ? '智能体决策'
     : stage.provenance === 'database'
       ? '指标摘要'
