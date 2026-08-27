@@ -163,8 +163,16 @@ function reconcilePersistedStructure(detail: RunDetail, nodeDetails: Partial<Rec
   if (!boltzCalls.length && !rosettaCalls.length) return detail
   const boltzStructures = boltzCalls.flatMap((call) => call.artifacts)
     .filter((artifact) => artifact.media_type === 'chemical/x-cif' || artifact.media_type === 'chemical/x-pdb').length
-  const rosettaStructures = rosettaCalls.flatMap((call) => call.artifacts)
+  const rosettaPdbArtifacts = rosettaCalls.flatMap((call) => call.artifacts)
     .filter((artifact) => artifact.media_type === 'chemical/x-pdb').length
+  const persistedRosettaResults = nodeDetails.rosetta?.structure_results
+    .reduce((total, result) => total + result.records, 0) ?? 0
+  const rosettaAnalyzerCalls = rosettaCalls.filter((call) => call.tool_name.includes('interface-analyzer'))
+  const plannedRosettaResults = rosettaAnalyzerCalls.reduce((total, call) => {
+    const nstruct = Number(recordValue(call.inputs).nstruct)
+    return total + (Number.isFinite(nstruct) ? nstruct : 0)
+  }, 0)
+  const rosettaStructures = persistedRosettaResults || plannedRosettaResults || rosettaPdbArtifacts
 
   const stageUpdates: Partial<Record<string, { current: number; total: number; verdict: string; reason: string }>> = {
     boltz: boltzCalls.length ? {
@@ -177,7 +185,7 @@ function reconcilePersistedStructure(detail: RunDetail, nodeDetails: Partial<Rec
       current: rosettaStructures || rosettaCalls.length,
       total: rosettaStructures || rosettaCalls.length,
       verdict: '界面精修已写入',
-      reason: `${rosettaCalls.length} 次界面评估生成 ${rosettaStructures} 份精修构象。`,
+      reason: `${rosettaAnalyzerCalls.length || rosettaCalls.length} 次界面评估生成 ${rosettaStructures} 份精修构象。`,
     } : undefined,
   }
   if (target.name) {
@@ -265,14 +273,14 @@ function reconcilePersistedStructure(detail: RunDetail, nodeDetails: Partial<Rec
       ...detail.run,
       structure_record_count: Math.max(
         Number.isFinite(detail.run.structure_record_count) ? detail.run.structure_record_count : 0,
-        boltzStructures + rosettaStructures,
+        boltzStructures + rosettaPdbArtifacts,
       ),
     },
     counts: {
       ...detail.counts,
-      admitted: Math.max(detail.counts.admitted ?? 0, sourceCandidateIds.length),
-      boltz_poses: Math.max(detail.counts.boltz_poses ?? 0, boltzStructures),
-      rosetta_decoys: Math.max(detail.counts.rosetta_decoys ?? 0, rosettaStructures),
+      admitted: (detail.counts.admitted ?? 0) > 0 ? detail.counts.admitted : sourceCandidateIds.length,
+      boltz_poses: (detail.counts.boltz_poses ?? 0) > 0 ? detail.counts.boltz_poses : boltzStructures,
+      rosetta_decoys: (detail.counts.rosetta_decoys ?? 0) > 0 ? detail.counts.rosetta_decoys : rosettaStructures,
     },
     branches: detail.branches.length || !persistedBranch ? detail.branches : [persistedBranch],
     graph: { ...detail.graph, nodes: graphNodes },
@@ -945,7 +953,7 @@ export default function App() {
   const toggleAnalysisNode = (id: string) => setAnalysisSelection((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
   return (
     <div className="app-shell">
-      <div className="topbar"><button><ArrowLeft /></button><div className="brand"><span><FlaskConical /></span>AMPgent <i>科学分析</i></div><button className={`source-state ${activeView === 'overview' && data.error ? 'has-error' : ''}`} onClick={() => setConnectionOpen(true)} title="查看或修改只读数据连接"><Database /><span>{activeView !== 'overview' ? '发布快照 · 只读' : data.detail ? '数据库已连接' : data.error ? '连接异常' : '正在连接'}</span><span className="live-dot" /><Settings2 /></button></div>
+      <div className="topbar"><button><ArrowLeft /></button><div className="brand"><span><FlaskConical /></span>AMPgent <i>科学分析</i></div><button className={`source-state ${activeView === 'overview' && data.error ? 'has-error' : ''}`} onClick={() => setConnectionOpen(true)} title="查看或修改只读数据连接"><Database /><span>{activeView !== 'overview' ? '分析数据 · 只读' : data.detail ? '数据库已连接' : data.error ? '连接异常' : '正在连接'}</span><span className="live-dot" /><Settings2 /></button></div>
       <div className="workspace">
         <Sidebar
           runs={data.runs}
