@@ -85,3 +85,5 @@ def test_ampgent_acea_execution_protocol_preserves_nonnegotiable_rules() -> None
     assert "+66.7342 REU" in protocol
     assert "e25b3cc348ad9a90c30db789099f1610276652854ceba1c69014250545318dd7" in protocol
     assert "a355db4ebc284496e3fb7b8929c29e032c5b0f174e9ac085ba4baaead6452124" in protocol
+    assert "a157027bf2c4193472ab0fe6c2f4fe0d0dc0e8218b3e87e32d823beb04711ec0" in protocol
+    assert "gyra-pepglad-novel-root-r19-short10-13-20260827T2212Z" in protocol

@@ -2951,3 +2951,19 @@ MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot
   SHA-256 `a355db4ebc284496e3fb7b8929c29e032c5b0f174e9ac085ba4baaead6452124`，并明确
   `new_md_started=false`。继续只监测 GyrA 精确 PID、日志、checkpoint 与非有限值；不得因 PBP2a
   已完成而提交替代或追加 MD。
+
+### 2026-08-28 GyrA短长度新家族扩库继续
+
+- PBP2a结构lane结束并释放资源后，`.19 GPU7` 实时核查为无计算进程、无
+  `CUDA_VISIBLE_DEVICES=7` 声明、显存397 MiB以内且利用率0%，因此立即启动新的独立 GyrA
+  target-specific PepGLAD root 批次，不等待下一次定时唤醒。任务名为
+  `gyra-pepglad-novel-root-r19-short10-13-20260827T2212Z`，seed `2026082764`，请求768条10–13 aa
+  raw occurrence；远端 PID `1167776`，只使用 `.19 GPU7`。
+- 冻结请求 SHA-256 为 `08b7d10eb732b8213401305d0e352115b216f00a2877e3cabfba23f2ceb65327`；
+  launch receipt SHA-256 为 `a157027bf2c4193472ab0fe6c2f4fe0d0dc0e8218b3e87e32d823beb04711ec0`，
+  路径为 `/data0/ampgent-pepglad-huangyueshan/v1/results/gyra-pepglad-novel-root-r19-short10-13-20260827T2212Z-launch.receipt.json`。
+  `/data0` 启动前剩余约1.15 TiB；输出只写入既有AMPgent远端根，本机不保存生成大文件。
+- 该批次状态是 `generation_active_scoring_pending`，尚未增加可展示库。完成后必须逐条执行正式12项评分、
+  全局精确去重和80/80家族聚类；仅满足 Non-Toxin、Macrel溶血低风险、instability index <50 的候选
+  才可进入严格库。验收条件为至少100个新严格家族，且严格roots中新家族率至少50%；不达标则保留raw
+  证据并改变下一轮策略，不把近邻数量冒充空间扩展。
