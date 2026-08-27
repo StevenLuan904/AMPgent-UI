@@ -97,14 +97,19 @@ exact-once 新 run 身份、外来进程保护或 GPU 禁区。
 
 ### 4.1 永久操作规则
 
-- `192.168.99.32` 当前被用户明确禁止：不得登录、探测 GPU、提交任务、停止进程或触碰工作负载；
-  该全机禁令明确包含 GPU3 与 GPU4，二者均不得用于 AMPgent，且不得以“仅使用其他卡”为由访问该主机，
-  直到用户明确解除。
-- 用户于 2026-08-12 明确授权使用除 `192.168.99.32` 外的其他 GPU，包括 synth 主机 GPU；使用前仍须
+- 用户于 2026-08-28 更新 `.32` 规则：`192.168.99.32` GPU2/GPU3 可做逐卡只读状态检查，但仍禁止用于
+  AMPgent 计算、worker placement、预约、进程控制或任何间接工作负载。GPU0/GPU1 只有在最新逐卡检查证明
+  空闲、归属明确且不干扰外来任务时才可使用；所有外来进程保持不动。
+- 用户于 2026-08-12 明确授权使用其他 GPU，并于 2026-08-28 再次明确授权 synth 主机
+  `192.168.99.2`；使用前仍须
   精确核实物理主机、GPU、PID、角色、活动 release/source revision 与 AMPgent 归属，且不得停止、争抢
   或干扰 OmniEpic、训练、Moba 及其他用户任务。资源许可不等于 formal run 科学授权。
 - 用户随后明确禁止 `.19` 的 GPU4；即使该卡瞬时空闲也不得调度、启动 worker 或用于 capacity fixture。
 - `.19` 与 synth 上只允许操作可明确归属于 AMPgent/PepAgent 的 worker。
+- synth 的非秘密连接拓扑为跳板 `eh002@58.34.98.79:49200` 后接
+  `synth@192.168.99.2:22`；获准数据根为 `/amax/data` 与 `/sdd_data`。密码、私钥和 token 只由外部
+  secret 机制提供，不进入本协议、Git、命令参数、日志或报告。写入前先核对容量/owner，并在大数据账本
+  登记精确 AMPgent 子目录。
 - 先启动新 worker 并确认 poller 接管，再停止旧的、已精确识别的同角色 PID；有 active workflow 时
   禁止 worker 切换。
 - Temporal 显示 poller 在线，不等于已确认物理主机或代码版本。必须把 poller identity、远端 PID、
@@ -158,7 +163,8 @@ exact-once 新 run 身份、外来进程保护或 GPU 禁区。
 3. 所需实现已 commit/push，完整 ruff/pytest 通过，内容归档 SHA 已记录。
 4. 本地 API、PostgreSQL、MinIO、Temporal 健康；active workflow 数为 0（除非协议明确允许并行）。
 5. control、GPU、CPU worker poller 在线，且物理主机、角色、PID、活动 release/source revision 已核实。
-6. worker 不在 `.32`、`.19` GPU4 或其他禁止资源上；不会争抢、停止或干扰他人任务。
+6. worker 不在 `.32 GPU2/GPU3` 或其他禁止资源上；`.32 GPU0/GPU1`、`.19` 与 synth 只使用最新检查
+   证明可用且归属清楚的卡，不会争抢、停止或干扰他人任务。
 7. task queue、工具版本、权重 SHA、环境 SHA 与预注册协议一致。
 8. 唯一 formal run 尚未提交；数据库和 Temporal 中均无同协议重复 run/workflow。
 9. 提交后立刻记录 run ID、workflow ID、cohort SHA 和提交 commit；之后禁止重复提交。
@@ -227,7 +233,8 @@ Phase A 不能证明任何生成器全面胜出，也不能单独决定替代 Pe
 2. 只读检查 API health、active workflows、目标 run 状态、候选/证据计数。
 3. 查询 control/Boltz2/Rosetta poller 的 identity、last access 和 build ID。
 4. 若涉及部署/提交，核对 poller 的物理主机、角色、PID、PYTHONPATH、活动 release。
-5. 检查 `.32` 与 `.19` GPU4 禁令；其他 GPU 仅在归属、进程和 revision 映射清楚且不干扰他人任务时使用。
+5. 对 `.32 GPU2/GPU3` 只做逐卡只读检查并保持零调度；其他 GPU 仅在归属、进程和 revision 映射清楚且
+   不干扰他人任务时使用。synth 未取得实时观测时不得把历史空闲状态当作当前容量。
 6. 无变化则安静；只在核心结果、严重异常、需要输入、阶段 CSV 或最终验收时通知。
 7. 阶段完成后更新本文件的足迹、run/workflow ID、SHA、测试数和下一步。
 
@@ -2832,3 +2839,17 @@ MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot
 - MD只用于极少黄金候选的复合物稳定性诊断，不替代Rosetta dG、序列评分或湿实验。不得重复提交或
   抢占GPU6/7；按checkpoint持续监控并将紧凑进度收据写入PostgreSQL/内容寻址对象存储。本机只作
   小型校验中转，结构中转文件在远端哈希通过后已清除，大型轨迹只保留获准远端路径。
+
+## 2026-08-28 `.32` 只读范围与 synth 资源授权覆盖
+
+- 用户最新授权把 `.32 GPU2/GPU3` 从“禁止探测”改为“允许逐卡只读检查”，但计算、worker、预约、
+  进程控制和间接使用仍为禁止。2026-08-28 最新检查显示 GPU2/GPU3 均有外来 Prima3D 进程，因此
+  即使没有使用禁令也不属于可用容量；检查没有停止或改变任何外来进程。
+- synth `192.168.99.2` 现在是获准的 AMPgent 计算与远端大数据主机。非秘密拓扑固定为
+  `eh002@58.34.98.79:49200 -> synth@192.168.99.2:22`，数据根为 `/amax/data` 与 `/sdd_data`；每次实际
+  使用仍需实时 GPU/PID/owner/容量检查。凭据留在外部 secret 机制，本节不保存用户提供的密码。
+- 本轮 `BatchMode` 只读探针在跳板 banner exchange 超时，故 synth 的实时 GPU 空闲数仍为 unknown，
+  不能用历史“8×RTX 3090”清单宣称当前可用。现有反向隧道不等于可执行 shell；恢复无交互 key/受控
+  登录通道后，先逐卡核查再调度。
+- 本机磁盘已先检查：C/D/E 当前约有 77.95/22.63/23.91 GiB 空闲。工作站继续只作有界 cache/中转；
+  synth 上首次写入必须选定精确 AMPgent 子目录、核验空间与所有权并登记账本，不能直接把数据堆在根目录。

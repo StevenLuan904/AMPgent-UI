@@ -12,9 +12,11 @@ def test_gpu_capacity_monitor_has_scoped_host32_probe_and_wake_contract() -> Non
     assert "Host19SshPort = 32222" in source
     assert 'Host32SshTarget = "LabServerNewDirect"' in source
     assert "Host32SshPort = 32223" in source
-    assert "foreach ($gpuIndex in 0..1)" in source
-    assert "foreach ($gpuIndex in 2..3)" not in source
+    assert "foreach ($gpuIndex in 0..3)" in source
+    assert "read-only observation lanes" in source
+    assert 'prohibited_use_scope = @(' in source
     assert 'host = "192.168.99.32"; gpu_indices = @(2, 3)' in source
+    assert '$_.gpu_index -in @(2, 3)' in source
     assert "observation_keys = $observationKeys" in source
     assert '"WAKE_REQUIRED=$($wakeRequired.ToString().ToLowerInvariant())"' in source
 

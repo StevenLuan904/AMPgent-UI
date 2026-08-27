@@ -11,7 +11,7 @@ def test_ampgent_acea_execution_protocol_preserves_nonnegotiable_rules() -> None
     assert "docs/ampgent-acea-execution-protocol.md" in agents
     required_footprints = (
         "192.168.99.32",
-        "用户于 2026-08-12 明确授权使用除 `192.168.99.32` 外的其他 GPU",
+        "用户于 2026-08-12 明确授权使用其他 GPU，并于 2026-08-28 再次明确授权 synth 主机",
         "AMPlify 已由用户永久停用",
         "absolute_difference <= 1e-8",
         "relative_difference <= 1e-6",

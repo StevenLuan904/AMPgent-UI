@@ -21,9 +21,10 @@
 1. 本地工作站只长期保存代码、配置、文档、manifest、紧凑报告和内容地址指针；大文件下载只作有界临时缓存。
 2. 正式运行的权威字节进入内容寻址对象存储；PostgreSQL 保存 ToolCall、依赖、候选、Evaluation、AgentDecision、Artifact 和生命周期事件。CSV/JSON/远端目录只是导出或执行副本。
 3. `192.168.99.19` 被授权作为 AMPgent 大文件存储主机，可承载模型、独立运行时、结构中间产物和运行缓存。首次写入任何新目录前，必须确认目录属于 AMPgent、容量充足且不会干扰他人，并在下表登记精确路径。
-4. `.19` GPU4/GPU5 可在精确归属、release 和非干扰门禁通过后用于 AMPgent；存文件仍不授权启动未经批准的 formal run、访问他人目录或停止他人进程。
-5. `192.168.99.32` 的 GPU2/GPU3 为绝对禁区。GPU0/GPU1 与该主机上的任何存储位置，均须先与任务 `019fcd9b-a14e-7741-a3ff-2fd0e1d3d4c7` 协调精确归属；当前未分配给 AMPgent，也不是本账本的允许存储位置。
-6. 迁移必须先记录计划位置，再校验源/目标 SHA-256 或 manifest；只有权威副本和 replay 路径验证通过后，才可删除明确归属于 AMPgent 的临时副本。
+4. `.19` GPU 只在精确归属、release 和非干扰门禁通过后用于 AMPgent；存文件仍不授权启动未经批准的 formal run、访问他人目录或停止他人进程。
+5. `192.168.99.32` 的 GPU2/GPU3 只允许逐卡只读检查，禁止计算、worker、预约或进程控制；GPU0/GPU1 也必须以最新实况与外来进程保护为准。该主机不是本账本的允许存储位置。
+6. `192.168.99.2`（synth）获准作为 AMPgent 计算与大数据主机；数据根为 `/amax/data` 与 `/sdd_data`。首次写入前必须核验空间、owner 和外来任务，选择并登记精确 AMPgent 子目录。连接凭据只保存在外部 secret 机制，不进入本账本。
+7. 迁移必须先记录计划位置，再校验源/目标 SHA-256 或 manifest；只有权威副本和 replay 路径验证通过后，才可删除明确归属于 AMPgent 的临时副本。
 
 ## 3. 当前位置与归属
 
@@ -35,6 +36,7 @@
 | 本地 `var/`、`runtime/`、`output/`、`outputs/` | 临时执行副本/历史缓存 | 本地工作站 | 仓库工作区对应目录 | 非权威；既有用户/历史文件保持原状，新大文件不得继续无登记累积 | 先验证对象存储与数据库 replay，再仅清理精确识别的 AMPgent 临时副本 |
 | `.19` 大文件区 | 允许的模型/运行时/中间产物/缓存主位置 | `192.168.99.19`（`admin.cluster.local`） | 现有项目根 `/data1/huangyueshan/pepagent`；新数据约定为 `/data1/huangyueshan/pepagent/data/{models,runtimes,artifacts,run-cache}/<content-or-run-id>/` | AMPgent 专属目录；新路径首次写入前须核验并补充下方登记 | 内容 SHA/manifest + 来源 run/release；正式证据仍须进入 PostgreSQL + 对象存储 |
 | synth 计算副本 | worker release/计算缓存，不作默认大数据归属 | synth 主机 | `/sdd_data/pepagent` 下精确 release 或任务目录 | 仅已映射的 AMPgent worker 使用；不得占用或移动他人内容 | release SHA、PID/role/host 映射；完成后按权威证据状态处置缓存 |
+| synth 大文件区 | 允许的模型/运行时/生成/结构/轨迹缓存与远端导出 | `192.168.99.2`（`synth`） | 获准根 `/amax/data`、`/sdd_data`；具体写入必须使用下表登记的 AMPgent 子目录 | 已获用户授权；实时容量、目录owner及外来任务尚须逐次核验 | 有序 SHA/manifest + 来源 run/release；正式证据仍须进入 PostgreSQL + 内容寻址对象存储 |
 
 “当前”不表示已经把本地历史大文件迁移到 `.19`。在逐项核验大小、所有权、SHA 和 replay 前，不得声称迁移完成，也不得批量删除现有目录。
 
@@ -51,6 +53,7 @@
 | 2026-08-27 | HemoPI2/APEXGo/PeptiVerse shadow 冲突分析包 | off-workstation content-addressed export/cache；非 formal object-store 证据 | `/data0/ampgent-pepglad-huangyueshan/v1/artifacts/shadow-challenger-bundles/fe190e874eb2ed9dfb5051838571523a736af9d8fc49ae2faffd43103f9a053a/` | AMPgent | code `0a48c429c741891d359baa71999493e94e30d76e`；600 条冻结 cohort | 9,075,312 bytes | `remote_receipt.json` SHA-256 `9dcca9e0030b2bdbf12269b9e264145da431f185eabe08af4c432a0762c19d6d`；`SHA256SUMS` SHA-256 `d31645d41104a566aed790e7221e25ee0c824d60213a7a11a3f1c0218aa165ff` | 已逐文件回读校验；本机模型、结果中转和本机 MinIO 本轮对象均已清除；待非本机正式对象存储可用后迁入并更新状态 | active_export |
 | 2026-08-27 | 黄金候选003 GyrA/PBP2a复合物OpenMM轨迹 | remote execution copy / growing trajectory；紧凑收据进入正式对象存储 | `/data1/huangyueshan/pepagent/md/gold-003-20260827/` | AMPgent；GPU6 PID 2799132 / GPU7 PID 2799133 | 候选003；GyrA输入 `fbc07e...6579`、PBP2a输入 `a57258...c0d3`；runner `9f7516...04e2` | 当前约255 MiB，预计完整轨迹约15 GiB | 启动收据 `08974df52ad7055330c617bafbdc5d12775ed729eec71734b699c3d31bca2bff`；最新进度收据 `c99d6ad01e64cf07a9ed97b52d40993f0c45e784cb61b18f4f25a4c6128ef473` | 运行中保留checkpoint/日志/轨迹；完成后生成有序SHA manifest并把紧凑结果写PostgreSQL/对象存储；确认可恢复前不得删除 | active_running |
 | 2026-08-28 | 黄金候选003双复合物MD NPT→NVT阶段转换 | lifecycle update；remote growing trajectory | `/data1/huangyueshan/pepagent/md/gold-003-20260827/production/{gyra,pbp2a}/` | AMPgent；同一未重启PID 2799132/2799133 | 启动收据 `08974d...2bff` 的连续运行 | 约3.8 GiB且持续增长 | 阶段转换收据 `66ed1efdfe813ab988e940c71826641ff85dc326dc9b7c053966bbe5f1a737ee`；GyrA 17.7%、PBP2a 32.2% production | 两分支1 ns NPT均完成；继续保留并监测50 ns NVT、checkpoint和非有限值；不得重复提交 | active_production |
+| 2026-08-28 | synth AMPgent 分层目录预留 | cache/execution-copy/export | `/amax/data/<ampgent-project>/...` 与 `/sdd_data/<ampgent-project>/...`（精确子目录待首次写入前核验） | AMPgent；不得占用他人目录 | n/a | 待实时核验 | 首次写入前记录实际路径、容量、owner、来源和 SHA/manifest | planned |
 
 ## 5. 写入、迁移与清理清单
 

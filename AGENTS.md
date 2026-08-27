@@ -262,12 +262,17 @@ Apply the following style to AMPgent/AceA research work in this repository:
   submission, foreign-process interference, or use of a prohibited resource.
 - AMPlify is retired from this project by user decision. Do not debug, rerun, shard, replace, or use
   AMPlify in future scoring unless the user explicitly reverses that decision.
-- GPU2 and GPU3 on host `192.168.99.32` are absolutely prohibited by the user's latest decision.
-  Do not run jobs on them, inspect them, stop their processes, or use them indirectly. GPU0/GPU1 on
-  that host are available to AMPgent, but every inspection must target only those explicit indices
-  and every deployment still requires exact process ownership and non-interference checks. Never
-  enumerate or infer GPU2/GPU3 state. Preserve every foreign process. Resource availability does
-  not authorize a new formal run.
+- GPU2 and GPU3 on host `192.168.99.32` may be inspected read-only by the user's latest decision,
+  but they remain prohibited for AMPgent computation, worker placement, reservation, process
+  control, or indirect use. GPU0/GPU1 may be used only after a fresh exact process-ownership and
+  non-interference check. Preserve every foreign process. Resource availability does not authorize
+  a new formal run.
+- Host `192.168.99.2` (`synth`) is an allowed AMPgent compute and large-data host. Reach it through
+  jump host `eh002@58.34.98.79:49200`, then `synth@192.168.99.2:22`; keep all passwords and keys in
+  the external secret mechanism, never in Git, command arguments, logs, or reports. Before using a
+  GPU, verify its live utilization, memory, PID/owner and foreign-workload status. Before writing to
+  `/amax/data` or `/sdd_data`, verify capacity and ownership, register an exact AMPgent subdirectory
+  in the large-data ledger, and keep the workstation limited to bounded cache/transit files.
 - As of 2026-08-13, GPU4 on host `192.168.99.19` is allowed for AMPgent. GPUs on allowed hosts may
   be used only after exact worker ownership, physical host, PID, role, active release/source
   revision, and workload non-interference are verified. Use safely available capacity, but never

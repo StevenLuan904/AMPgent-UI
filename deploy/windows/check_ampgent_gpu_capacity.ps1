@@ -21,7 +21,8 @@ function Invoke-CardProbe {
     )
 
     # Probe one explicitly allowed device at a time. Never replace this with an
-    # unscoped nvidia-smi call: .32 GPU2/GPU3 are absolute no-probe devices.
+    # unscoped nvidia-smi call: .32 GPU2/GPU3 are read-only probes and must
+    # never become dispatchable capacity.
     $remote = @"
 set -eu
 nvidia-smi -i $GpuIndex --query-gpu=index,uuid,memory.used,utilization.gpu --format=csv,noheader,nounits
@@ -99,14 +100,15 @@ $observations = @()
 foreach ($gpuIndex in 0..7) {
     $observations += Invoke-CardProbe -SshTarget $Host19SshTarget -HostLabel "192.168.99.19" -GpuIndex $gpuIndex -SshPort $Host19SshPort
 }
-# Only GPU0/GPU1 are authorized on .32. GPU2/GPU3 must never be probed.
-foreach ($gpuIndex in 0..1) {
+# GPU0/GPU1 may become dispatchable after normal ownership checks. GPU2/GPU3
+# are read-only observation lanes and are excluded from idle capacity below.
+foreach ($gpuIndex in 0..3) {
     $observations += Invoke-CardProbe -SshTarget $Host32SshTarget -HostLabel "192.168.99.32" -GpuIndex $gpuIndex -SshPort $Host32SshPort
 }
 
 $idleKeys = @(
     $observations |
-        Where-Object { $_.idle } |
+        Where-Object { $_.idle -and -not ($_.host -eq "192.168.99.32" -and $_.gpu_index -in @(2, 3)) } |
         ForEach-Object { "$($_.host):$($_.gpu_index)" } |
         Sort-Object
 )
@@ -130,9 +132,9 @@ $state = [ordered]@{
     captured_at = [DateTimeOffset]::UtcNow.ToString("o")
     allowed_probe_scope = @(
         [ordered]@{ host = "192.168.99.19"; gpu_indices = @(0, 1, 2, 3, 4, 5, 6, 7) },
-        [ordered]@{ host = "192.168.99.32"; gpu_indices = @(0, 1) }
+        [ordered]@{ host = "192.168.99.32"; gpu_indices = @(0, 1, 2, 3) }
     )
-    prohibited_probe_scope = @(
+    prohibited_use_scope = @(
         [ordered]@{ host = "192.168.99.32"; gpu_indices = @(2, 3) }
     )
     idle_gpu_keys = $idleKeys
