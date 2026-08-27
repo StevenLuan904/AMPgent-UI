@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Background,
   BackgroundVariant,
@@ -30,6 +31,7 @@ import {
   Route,
   RefreshCw,
   ScanSearch,
+  Settings2,
   ShieldCheck,
   X,
 } from 'lucide-react'
@@ -50,7 +52,21 @@ import type {
 } from './types'
 
 const nodeTypes = { stage: WorkflowNode, lane: LaneLabel }
-const API_BASE = import.meta.env.VITE_API_BASE ?? ''
+const connectionStorageKey = 'ampgent.data-service.base.v1'
+const defaultApiBase = import.meta.env.VITE_API_BASE ?? ''
+
+function normalizeApiBase(value: string) {
+  return value.trim().replace(/\/+$/, '')
+}
+
+function readApiBase() {
+  const stored = window.localStorage.getItem(connectionStorageKey)
+  return stored === null ? defaultApiBase : stored
+}
+
+function getConfiguredApiBase() {
+  return readApiBase()
+}
 const nodePositions: Record<string, { x: number; y: number }> = {
   target_data: { x: 20, y: 350 },
   knowledge: { x: 440, y: 350 },
@@ -126,7 +142,7 @@ function readableDataError(cause: unknown, fallback: string) {
   return fallback
 }
 
-function useRunData(enabled: boolean) {
+function useRunData(enabled: boolean, apiBase: string) {
   const [runs, setRuns] = useState<RunListItem[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [detail, setDetail] = useState<RunDetail | null>(null)
@@ -135,18 +151,18 @@ function useRunData(enabled: boolean) {
   const [refreshing, setRefreshing] = useState(false)
 
   const loadRuns = useCallback(async () => {
-    const response = await fetch(`${API_BASE}/v1/observer/runs?limit=100`)
+    const response = await fetch(`${apiBase}/v1/observer/runs?limit=100`)
     if (!response.ok) throw new Error(`轮次列表读取失败：${response.status}`)
     const payload = await response.json() as RunListResponse
     setRuns(payload.runs)
     setSelectedId((current) => current ?? payload.runs[0]?.id ?? null)
-  }, [])
+  }, [apiBase])
 
   const loadDetail = useCallback(async (runId: string, quiet = false) => {
     if (!quiet) setLoading(true)
     else setRefreshing(true)
     try {
-      const response = await fetch(`${API_BASE}/v1/observer/runs/${runId}`)
+      const response = await fetch(`${apiBase}/v1/observer/runs/${runId}`)
       if (!response.ok) throw new Error(`轮次详情读取失败：${response.status}`)
       setDetail(await response.json() as RunDetail)
       setError(null)
@@ -156,7 +172,7 @@ function useRunData(enabled: boolean) {
       setLoading(false)
       setRefreshing(false)
     }
-  }, [])
+  }, [apiBase])
 
   useEffect(() => {
     if (!enabled) {
@@ -507,7 +523,7 @@ function ToolAttemptDisclosure({ call }: { call: ToolAttempt }) {
             <summary><FileJson2 /><span>证据文件</span><b>{call.artifacts.length}</b><ChevronRight /></summary>
             <div className="artifact-list">
               {call.artifacts.map((artifact) => (
-                <a key={`${artifact.sha256}-${artifact.role}`} href={`${API_BASE}${artifact.url}`} target="_blank" rel="noreferrer">
+                <a key={`${artifact.sha256}-${artifact.role}`} href={`${getConfiguredApiBase()}${artifact.url}`} target="_blank" rel="noreferrer">
                   <FileJson2 />
                   <span><b title={artifact.role}>{artifact.role}</b><small>{artifact.media_type} · {(artifact.size_bytes / 1024).toFixed(1)} KB</small></span>
                 </a>
@@ -564,7 +580,7 @@ function Inspector({ detail, stageId, onClose }: { detail: RunDetail; stageId: s
     const controller = new AbortController()
     const load = async () => {
       try {
-        const response = await fetch(`${API_BASE}/v1/observer/runs/${detail.run.id}/nodes/${stageId}`, { signal: controller.signal })
+        const response = await fetch(`${getConfiguredApiBase()}/v1/observer/runs/${detail.run.id}/nodes/${stageId}`, { signal: controller.signal })
         if (!response.ok) throw new Error(`node evidence: ${response.status}`)
         setNodeDetail(await response.json() as NodeDetail)
         setDetailError(null)
@@ -673,9 +689,55 @@ function LoadingScreen({ error, onRetry, onOpenAnalysis }: { error: string | nul
   return <div className="loading-screen"><div className="loading-mark"><FlaskConical /></div><h2>{error ? '数据库暂时不可用' : '正在读取数据库…'}</h2><p>{error ?? '同步实时运行记录'}</p>{error && <div className="loading-actions"><button onClick={onRetry}>重新读取</button><button className="primary" onClick={onOpenAnalysis}>查看冻结分析</button></div>}</div>
 }
 
+function DataConnectionDialog({ value, onClose, onSave }: { value: string; onClose: () => void; onSave: (value: string) => void }) {
+  const [mode, setMode] = useState<'local' | 'custom'>(value ? 'custom' : 'local')
+  const [customBase, setCustomBase] = useState(value || 'http://127.0.0.1:8081')
+  const [testState, setTestState] = useState<'idle' | 'testing' | 'success' | 'error'>('idle')
+  const [testMessage, setTestMessage] = useState('')
+  const candidateBase = mode === 'local' ? '' : normalizeApiBase(customBase)
+
+  const testConnection = async () => {
+    setTestState('testing')
+    setTestMessage('正在检查数据服务…')
+    try {
+      const response = await fetch(`${candidateBase}/healthz`, { headers: { Accept: 'application/json' } })
+      if (!response.ok) throw new Error(`服务返回 ${response.status}`)
+      const payload = await response.json() as { status?: string }
+      if (payload.status !== 'ok') throw new Error('健康状态异常')
+      setTestState('success')
+      setTestMessage('连接成功，可以读取当前数据库。')
+    } catch (cause) {
+      setTestState('error')
+      setTestMessage(cause instanceof Error && /^服务|^健康/.test(cause.message) ? cause.message : '无法连接此数据服务。')
+    }
+  }
+
+  return createPortal(
+    <div className="connection-dialog-layer" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
+      <section className="connection-dialog" role="dialog" aria-modal="true" aria-labelledby="connection-dialog-title">
+        <header><div><span className="connection-icon"><Database /></span><span><h2 id="connection-dialog-title">数据连接</h2><p>配置只读数据服务，不在浏览器保存数据库口令。</p></span></div><button aria-label="关闭数据连接设置" onClick={onClose}><X /></button></header>
+        <div className="connection-options">
+          <button className={mode === 'local' ? 'selected' : ''} onClick={() => { setMode('local'); setTestState('idle') }}>
+            <i>{mode === 'local' && <span />}</i><span><b>本机默认</b><small>随开发命令自动启动</small><code>127.0.0.1:8081</code></span>
+          </button>
+          <button className={mode === 'custom' ? 'selected' : ''} onClick={() => { setMode('custom'); setTestState('idle') }}>
+            <i>{mode === 'custom' && <span />}</i><span><b>自定义服务</b><small>连接其他只读数据接口</small><code>可配置地址</code></span>
+          </button>
+        </div>
+        <label className="connection-field"><span>数据服务地址</span><input aria-label="数据服务地址" disabled={mode === 'local'} value={mode === 'local' ? 'http://127.0.0.1:8081' : customBase} onChange={(event) => { setCustomBase(event.target.value); setTestState('idle') }} /></label>
+        <div className={`connection-test-state state-${testState}`}><span className="connection-status-dot" /><p>{testState === 'idle' ? '保存前可先检查服务与数据库是否可读。' : testMessage}</p></div>
+        <footer><button onClick={testConnection} disabled={testState === 'testing'}><RefreshCw className={testState === 'testing' ? 'spin' : ''} />检查连接</button><span /><button onClick={onClose}>取消</button><button className="primary" disabled={mode === 'custom' && !normalizeApiBase(customBase)} onClick={() => onSave(candidateBase)}>保存并应用</button></footer>
+      </section>
+    </div>,
+    document.body,
+  )
+}
+
 export default function App() {
   const [activeView, setActiveView] = useState<'overview' | 'analysis' | 'evidence'>('analysis')
-  const data = useRunData(activeView === 'overview')
+  const [apiBase, setApiBase] = useState(readApiBase)
+  const [connectionOpen, setConnectionOpen] = useState(false)
+  const data = useRunData(activeView === 'overview', apiBase)
   const [selectedStage, setSelectedStage] = useState<string | null>(null)
   const [selectedEdge, setSelectedEdge] = useState<GraphEdgeDetail | null>(null)
   const [selectionMode, setSelectionMode] = useState(false)
@@ -684,7 +746,7 @@ export default function App() {
   const toggleAnalysisNode = (id: string) => setAnalysisSelection((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
   return (
     <div className="app-shell">
-      <div className="topbar"><button><ArrowLeft /></button><div className="brand"><span><FlaskConical /></span>AMPgent <i>科学分析</i></div><div className="source-state" title={activeView !== 'overview' ? '已校验的发布快照，仅用于只读科学分析。' : data.detail ? 'PostgreSQL：只读访问科学运行与证据记录。' : '分析数据接口尚未连接。'}><Database />{activeView !== 'overview' ? '发布快照 · 只读' : data.detail ? 'PostgreSQL · 只读' : '分析数据待接入'} <span className="live-dot" /></div></div>
+      <div className="topbar"><button><ArrowLeft /></button><div className="brand"><span><FlaskConical /></span>AMPgent <i>科学分析</i></div><button className={`source-state ${activeView === 'overview' && data.error ? 'has-error' : ''}`} onClick={() => setConnectionOpen(true)} title="查看或修改只读数据连接"><Database /><span>{activeView !== 'overview' ? '发布快照 · 只读' : data.detail ? '数据库已连接' : data.error ? '连接异常' : '正在连接'}</span><span className="live-dot" /><Settings2 /></button></div>
       <div className="workspace">
         <Sidebar
           runs={data.runs}
@@ -745,6 +807,7 @@ export default function App() {
           <main className="main-canvas"><LoadingScreen error={data.error} onRetry={() => { void data.retry() }} onOpenAnalysis={() => setActiveView('analysis')} /></main>
         )}
       </div>
+      {connectionOpen && <DataConnectionDialog value={apiBase} onClose={() => setConnectionOpen(false)} onSave={(value) => { window.localStorage.setItem(connectionStorageKey, value); setApiBase(value); setConnectionOpen(false) }} />}
     </div>
   )
 }

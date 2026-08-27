@@ -1,20 +1,20 @@
 import { useEffect, useState } from 'react'
-import { AlertTriangle, CheckCircle2, DatabaseZap, FlaskConical, RefreshCw, ShieldCheck } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, DatabaseZap, FlaskConical, RefreshCw, ShieldCheck } from 'lucide-react'
 import { loadAnalysisSnapshot, type AnalysisSnapshot } from './dataKernel'
 import './analysis-dashboard.css'
 
-const metricLabels: Record<string, { label: string; help: string }> = {
-  amp_read_log10_mic_um: { label: 'AMP read 抑菌浓度', help: 'AMP read 用于交叉复核候选短肽的抗菌活性预测。' },
-  llamp_log10_mic_um: { label: 'LLAMP 抑菌浓度', help: 'LLAMP 提供按物种条件化的抑菌浓度软估计。' },
-  macrel_amp_probability: { label: 'Macrel 抗菌概率', help: 'Macrel 是短肽抗菌活性与溶血风险分类模型。' },
-  macrel_hemolysis_probability: { label: 'Macrel 溶血概率', help: 'Macrel 是短肽抗菌活性与溶血风险分类模型。' },
-  toxinpred3_hybrid_score: { label: 'ToxinPred3 毒性评分', help: 'ToxinPred3 用于预测短肽毒性风险。' },
-  net_charge_ph7_4: { label: '生理酸碱度净电荷', help: '按生理酸碱度估算的序列净电荷。' },
-  hydrophobic_moment_eisenberg: { label: '疏水矩', help: '衡量短肽两亲性空间分布的序列描述符。' },
-  hydrophobic_ratio_modlamp: { label: '疏水残基比例', help: '序列中疏水残基所占比例。' },
-  maximum_hydrophobic_run: { label: '最长连续疏水片段', help: '序列中连续疏水残基的最大长度。' },
-  macrel_hemolysis_label: { label: 'Macrel 溶血分类', help: 'Macrel 输出的溶血风险分类结果。' },
-  toxinpred3_label: { label: 'ToxinPred3 毒性分类', help: 'ToxinPred3 输出的毒性分类结果。' },
+const metricLabels: Record<string, { label: string; help: string; method: string }> = {
+  amp_read_log10_mic_um: { label: 'AMP read 抑菌浓度', help: 'AMP read 用于交叉复核候选短肽的抗菌活性预测。', method: 'AMP read' },
+  llamp_log10_mic_um: { label: 'LLAMP 抑菌浓度', help: 'LLAMP 提供按物种条件化的抑菌浓度软估计。', method: 'LLAMP' },
+  macrel_amp_probability: { label: 'Macrel 抗菌概率', help: 'Macrel 是短肽抗菌活性与溶血风险分类模型。', method: 'Macrel' },
+  macrel_hemolysis_probability: { label: 'Macrel 溶血概率', help: 'Macrel 是短肽抗菌活性与溶血风险分类模型。', method: 'Macrel' },
+  toxinpred3_hybrid_score: { label: 'ToxinPred3 毒性评分', help: 'ToxinPred3 用于预测短肽毒性风险。', method: 'ToxinPred3' },
+  net_charge_ph7_4: { label: '生理酸碱度净电荷', help: '按生理酸碱度估算的序列净电荷。', method: '序列理化计算' },
+  hydrophobic_moment_eisenberg: { label: '疏水矩', help: '衡量短肽两亲性空间分布的序列描述符。', method: '序列理化计算' },
+  hydrophobic_ratio_modlamp: { label: '疏水残基比例', help: '序列中疏水残基所占比例。', method: '序列理化计算' },
+  maximum_hydrophobic_run: { label: '最长连续疏水片段', help: '序列中连续疏水残基的最大长度。', method: '序列理化计算' },
+  macrel_hemolysis_label: { label: 'Macrel 溶血分类', help: 'Macrel 输出的溶血风险分类结果。', method: 'Macrel' },
+  toxinpred3_label: { label: 'ToxinPred3 毒性分类', help: 'ToxinPred3 输出的毒性分类结果。', method: 'ToxinPred3' },
 }
 
 function methodValue(method: Record<string, unknown> | undefined, key: string) {
@@ -22,8 +22,13 @@ function methodValue(method: Record<string, unknown> | undefined, key: string) {
   return typeof value === 'string' && value.length ? value : '未记录'
 }
 
-function shortIdentity(value: string) {
-  return value === '未记录' ? value : `${value.slice(0, 10)}…${value.slice(-8)}`
+function methodVersion(method: Record<string, unknown> | undefined) {
+  const value = methodValue(method, 'toolVersion')
+  if (value === '未记录') return value
+  const date = value.match(/\d{4}\.\d{2}\.\d{2}/)?.[0]
+  if (date) return `版本 ${date}`
+  const semantic = value.match(/v?\d+\.\d+(?:\.\d+)?/)?.[0]?.replace(/^v/, '')
+  return semantic ? `版本 ${semantic}` : '版本已记录'
 }
 
 function warningLabel(warning: string) {
@@ -37,6 +42,8 @@ export function EvidenceDashboard({ runId }: { runId?: string }) {
   const [snapshot, setSnapshot] = useState<AnalysisSnapshot | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [revision, setRevision] = useState(0)
+  const [page, setPage] = useState(0)
+  const pageSize = 6
 
   useEffect(() => {
     let cancelled = false
@@ -49,6 +56,12 @@ export function EvidenceDashboard({ runId }: { runId?: string }) {
     })
     return () => { cancelled = true }
   }, [revision, runId])
+
+  useEffect(() => { setPage(0) }, [snapshot?.snapshotId])
+  const metricEntries = snapshot ? Object.entries(snapshot.metricMethods) : []
+  const pageCount = Math.max(1, Math.ceil(metricEntries.length / pageSize))
+  const safePage = Math.min(page, pageCount - 1)
+  const visibleMetrics = metricEntries.slice(safePage * pageSize, (safePage + 1) * pageSize)
 
   return (
     <section className="analysis-page evidence-page">
@@ -74,34 +87,26 @@ export function EvidenceDashboard({ runId }: { runId?: string }) {
             <div><span>分布外证据</span><strong>{snapshot.coverage.outOfDomain.toLocaleString()}</strong><small>适用域审查结果</small></div>
           </div>
           <div className="evidence-trace-grid">
-            <section className="evidence-identity-card">
-              <header><DatabaseZap /><span><b>冻结快照身份</b><small>结果、运行与规范三重绑定</small></span></header>
-              <div><span>Run ID</span><code title={snapshot.run.id}>{snapshot.run.id}</code></div>
-              <div><span>Snapshot SHA-256</span><code title={snapshot.snapshotSha256}>{snapshot.snapshotSha256}</code></div>
-              <div><span>Spec SHA-256</span><code title={snapshot.run.specSha256}>{snapshot.run.specSha256}</code></div>
-            </section>
-            <aside className="evidence-warning-card">
-              <header><AlertTriangle /><span><b>可信边界</b><small>发布会上必须同步说明</small></span></header>
+            <aside className="evidence-warning-card wide">
+              <header><AlertTriangle /><span><b>可信边界</b><small>当前数据可支持的结论范围</small></span></header>
               <ul>{snapshot.warnings.map((warning) => <li key={warning}>{warningLabel(warning)}</li>)}</ul>
             </aside>
           </div>
           <div className="evidence-table-card">
-            <header><div><CheckCircle2 /><span><b>模型与指标记录</b><small>工具版本、证据身份、覆盖率与读取状态</small></span></div><span>只读</span></header>
+            <header><div><CheckCircle2 /><span><b>模型与指标记录</b><small>工具版本、覆盖率与读取状态</small></span></div><span>只读</span></header>
             <table><thead><tr><th>指标</th><th>方法身份</th><th>证据数量</th><th>候选覆盖</th><th>状态</th></tr></thead><tbody>
-              {Object.entries(snapshot.metricMethods).map(([key, methods]) => {
-                const descriptor = metricLabels[key] ?? { label: key, help: '数据库中记录的科学评分指标。' }
+              {visibleMetrics.map(([key, methods]) => {
+                const descriptor = metricLabels[key] ?? { label: key, help: '数据库中记录的科学评分指标。', method: '数据库记录' }
                 const count = snapshot.candidates.filter((candidate) => candidate.metrics[key]?.status === 'succeeded').length
                 const method = methods[0]
-                const weights = methodValue(method, 'weightsSha256')
-                const environment = methodValue(method, 'environmentSha256')
-                const output = methodValue(method, 'outputSha256')
                 return <tr key={key}>
                   <td><b title={descriptor.help}>{descriptor.label}</b><small>{methods.length} 个方法记录</small></td>
-                  <td><div className="evidence-method"><b>{methodValue(method, 'toolName')}</b><span>{methodValue(method, 'toolVersion')}</span><code title={`weights ${weights}\nenvironment ${environment}\noutput ${output}`}>W {shortIdentity(weights)} · E {shortIdentity(environment)} · O {shortIdentity(output)}</code></div></td>
+                  <td><div className="evidence-method"><b title={descriptor.help}>{descriptor.method}</b><span>{methodVersion(method)}</span></div></td>
                   <td>{count.toLocaleString()} 项</td><td>{((count / snapshot.summary.uniqueCandidates) * 100).toFixed(1)}%</td><td><span className="evidence-status-ok"><i />已记录</span></td>
                 </tr>
               })}
             </tbody></table>
+            <div className="evidence-table-pagination"><span>第 {safePage + 1} / {pageCount} 页 · 共 {metricEntries.length} 种指标</span><div className="table-pagination"><button aria-label="上一页指标" disabled={safePage === 0} onClick={() => setPage((value) => Math.max(0, value - 1))}><ChevronLeft /></button><button aria-label="下一页指标" disabled={safePage >= pageCount - 1} onClick={() => setPage((value) => Math.min(pageCount - 1, value + 1))}><ChevronRight /></button></div></div>
           </div>
           <footer className="analysis-provenance-bar">
             <div><DatabaseZap /><span><b>来源</b> PostgreSQL 只读导出</span><span><b>轮次状态</b> 已取消</span><span><b>生成时间</b> {new Date(snapshot.generatedAt).toLocaleString('zh-CN')}</span></div>

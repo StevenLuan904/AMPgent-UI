@@ -7,6 +7,10 @@ import {
   ArrowDownRight,
   Boxes,
   ChartNoAxesCombined,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   CircleGauge,
   DatabaseZap,
   FlaskConical,
@@ -563,34 +567,39 @@ function ParetoCard({ generator, snapshot, query }: { generator: string; snapsho
     ...item,
     points: points.filter((point) => point.generator === item.label),
   })).filter((item) => item.points.length)
+  const axisBounds = (values: number[]) => {
+    if (!values.length) return { min: 0, max: 1 }
+    const low = Math.max(0, Math.floor((Math.min(...values) - .03) * 10) / 10)
+    const high = Math.min(1, Math.ceil((Math.max(...values) + .03) * 10) / 10)
+    return { min: low, max: high - low < .2 ? Math.min(1, low + .2) : high }
+  }
+  const activityBounds = axisBounds(points.map((point) => point.activity))
+  const hemolysisBounds = axisBounds(points.map((point) => point.hemolysis))
   return (
     <div className="pareto-layout">
       <Chart option={{
         color: groups.map((item) => item.color),
-        grid: { left: 48, right: 18, top: 28, bottom: 38 },
-        tooltip: { formatter: (params: { data: { value: number[]; sequence: string; rank: number } }) => `${params.data.sequence}<br/>抗菌活性 ${params.data.value[0]} · 溶血风险 ${params.data.value[1]}<br/>前沿层级 ${params.data.rank}` },
+        grid: { left: 52, right: 24, top: 34, bottom: 42 },
+        tooltip: { formatter: (params: { seriesName: string; data: { value: number[]; sequence: string; rank: number } }) => `<b>${params.data.sequence}</b><br/>生成来源：${params.seriesName}<br/>抗菌概率：${params.data.value[0].toFixed(3)}<br/>溶血概率：${params.data.value[1].toFixed(3)}<br/>${params.data.rank === 1 ? '帕累托前沿第一层' : '尚未分配前沿层级'}` },
         legend: { top: 0, icon: 'circle', itemWidth: 7, textStyle: { fontSize: 9, color: '#737d8d' } },
-        xAxis: { type: 'value', min: 0.55, max: 1, name: '抗菌活性 ↑', nameLocation: 'middle', nameGap: 25, nameTextStyle: { fontSize: 9, color: '#7b8494' }, axisLabel: { fontSize: 9, color: '#8b94a3' }, splitLine: { lineStyle: { color: '#eef1f5' } } },
-        yAxis: { type: 'value', min: 0, max: 0.5, inverse: true, name: '溶血风险 ↓', nameTextStyle: { fontSize: 9, color: '#7b8494' }, axisLabel: { fontSize: 9, color: '#8b94a3' }, splitLine: { lineStyle: { color: '#eef1f5' } } },
+        xAxis: { type: 'value', min: activityBounds.min, max: activityBounds.max, name: '抗菌概率 ↑', nameLocation: 'middle', nameGap: 27, nameTextStyle: { fontSize: 9, color: '#7b8494' }, axisLabel: { fontSize: 9, color: '#8b94a3', formatter: (value: number) => value.toFixed(1) }, splitLine: { lineStyle: { color: '#eef1f5' } } },
+        yAxis: { type: 'value', min: hemolysisBounds.min, max: hemolysisBounds.max, inverse: true, name: '溶血概率 ↓', nameTextStyle: { fontSize: 9, color: '#7b8494' }, axisLabel: { fontSize: 9, color: '#8b94a3', formatter: (value: number) => value.toFixed(1) }, splitLine: { lineStyle: { color: '#eef1f5' } } },
         series: groups.map((group) => ({
           name: group.label,
           type: 'scatter',
-          symbolSize: (value: number[], params: { data: { rank: number } }) => params.data.rank === 1 ? 13 : 8,
-          data: group.points.map((point) => ({ value: [point.activity, point.hemolysis, point.charge], sequence: point.sequence, rank: point.paretoRank, itemStyle: { opacity: point.paretoRank === 1 ? 1 : 0.46, borderColor: '#fff', borderWidth: 1.5 } })),
-          markArea: group === groups[0] ? { silent: true, itemStyle: { color: 'rgba(91,191,157,.07)' }, data: [[{ xAxis: 0.75, yAxis: 0 }, { xAxis: 1, yAxis: 0.2 }]] } : undefined,
+          symbolSize: (_value: number[], params: { data: { rank: number } }) => params.data.rank === 1 ? 10 : 7,
+          data: group.points.map((point) => ({ value: [point.activity, point.hemolysis], sequence: point.sequence, rank: point.paretoRank, itemStyle: { opacity: point.paretoRank === 1 ? .92 : .38, borderColor: point.paretoRank === 1 ? '#fff' : group.color, borderWidth: point.paretoRank === 1 ? 1.5 : 1 } })),
+          emphasis: { scale: 1.6, focus: 'series' },
         })),
       }} />
-      <aside className="conflict-note">
-        <span>非支配审查</span>
-        <strong>{points.length} 条结构资格候选</strong>
-        <p>横轴为抗菌概率，纵轴为溶血概率。</p>
-        <small>约束归因待计算。</small>
-      </aside>
+      <div className="pareto-caption"><span>颜色区分生成来源 · 深色为前沿第一层</span><b>越靠右上，抗菌概率越高且溶血概率越低</b></div>
     </div>
   )
 }
 
 function CandidateTable({ generator, snapshot, query }: { generator: string; snapshot: AnalysisSnapshot | null; query: CardQuerySpec }) {
+  const [page, setPage] = useState(0)
+  const pageSize = 6
   const kernelResult = snapshot ? runKernel(snapshot, {
     schemaVersion: 'analysis-pivot-query.1',
     queryKey: 'candidate_table',
@@ -603,23 +612,33 @@ function CandidateTable({ generator, snapshot, query }: { generator: string; sna
     admission: { paretoFront: number | null; status: string; structureEligible: boolean }
     metrics: Record<string, { value: number | null }>
   }>
-  const rows = snapshot
-    ? records.filter((candidate) => candidate.admission.structureEligible && (generator === 'all' || candidate.originSet.some((id) => generatorDisplay[id] === generator))).slice(0, 8).map((candidate, index) => ({
-      id: `候选 ${String(index + 1).padStart(2, '0')}`,
+  const unsortedRows = snapshot
+    ? records.filter((candidate) => generator === 'all' || candidate.originSet.some((id) => generatorDisplay[id] === generator)).map((candidate) => ({
       sequence: candidate.sequence,
       originSet: candidate.originSet.map((id) => generatorDisplay[id] ?? id),
       activity: candidate.metrics.macrel_amp_probability?.value ?? 0,
       hemolysis: candidate.metrics.macrel_hemolysis_probability?.value ?? 0,
       toxicity: candidate.metrics.toxinpred3_hybrid_score?.value ?? 0,
       charge: candidate.metrics.net_charge_ph7_4?.value ?? 0,
-      paretoRank: candidate.admission.paretoFront ?? 2,
-      flags: [candidate.originSet.length > 1 ? 'shared-origin' : '', candidate.admission.status === 'promising_uncertain' ? 'safety-boundary' : ''].filter(Boolean),
+      admissionStatus: candidate.admission.status,
+      structureEligible: candidate.admission.structureEligible,
     }))
-    : frameworkFixture.candidates.filter((item) => generator === 'all' || item.originSet.includes(generator))
+    : frameworkFixture.candidates.filter((item) => generator === 'all' || item.originSet.includes(generator)).map((item) => ({ ...item, admissionStatus: 'mature_core', structureEligible: true }))
+  const cohortOrder: Record<string, number> = { mature_core: 0, promising_uncertain: 1, rejected: 2 }
+  const allRows = unsortedRows
+    .sort((left, right) => Number(right.structureEligible) - Number(left.structureEligible)
+      || (cohortOrder[left.admissionStatus] ?? 3) - (cohortOrder[right.admissionStatus] ?? 3)
+      || right.activity - left.activity
+      || left.hemolysis - right.hemolysis)
+    .map((candidate, index) => ({ ...candidate, id: `候选 ${String(index + 1).padStart(3, '0')}` }))
+  const pageCount = Math.max(1, Math.ceil(allRows.length / pageSize))
+  const safePage = Math.min(page, pageCount - 1)
+  const rows = allRows.slice(safePage * pageSize, (safePage + 1) * pageSize)
+  useEffect(() => { setPage(0) }, [generator, snapshot?.snapshotId])
   return (
     <div className="candidate-table-wrap">
       <table className="candidate-table">
-        <thead><tr><th>候选序列</th><th>生成来源</th><th>抗菌活性 ↑</th><th>溶血风险 ↓</th><th>毒性风险 ↓</th><th>净电荷</th><th>前沿层级</th><th>证据状态</th></tr></thead>
+        <thead><tr><th>候选序列</th><th>生成来源</th><th>抗菌活性 ↑</th><th>溶血风险 ↓</th><th>毒性风险 ↓</th><th>净电荷</th><th>候选分组</th><th>结构资格</th></tr></thead>
         <tbody>{rows.map((item) => (
           <tr key={item.id}>
             <td><b>{item.id}</b><code>{item.sequence}</code></td>
@@ -628,12 +647,12 @@ function CandidateTable({ generator, snapshot, query }: { generator: string; sna
             <td>{item.hemolysis.toFixed(2)}</td>
             <td>{item.toxicity.toFixed(2)}</td>
             <td>{item.charge > 0 ? '+' : ''}{item.charge.toFixed(1)}</td>
-            <td><span className={`pareto-rank rank-${item.paretoRank}`}>P{item.paretoRank}</span></td>
-            <td>{item.flags.length ? item.flags.map((flag) => <span className="evidence-flag" key={flag}>{flag === 'shared-origin' ? '多来源' : flag === 'safety-boundary' ? '安全边界' : flag}</span>) : <span className="evidence-ok">证据完整</span>}</td>
+            <td><span className={`candidate-cohort cohort-${item.admissionStatus}`}>{item.admissionStatus === 'mature_core' ? '成熟核心' : item.admissionStatus === 'promising_uncertain' ? '待核候选' : '未入选'}</span></td>
+            <td>{item.structureEligible ? <span className="structure-eligible">已具备</span> : <span className="structure-ineligible">未进入</span>}</td>
           </tr>
         ))}</tbody>
       </table>
-      <footer className="table-footer"><span>显示 {snapshot?.summary.structureEligible ?? 35} 条结构资格候选中的 {rows.length} 条</span><span>序列身份与共享来源均可追溯</span></footer>
+      <footer className="table-footer"><span>第 {safePage + 1} / {pageCount} 页 · 共 {allRows.length} 条唯一候选</span><div className="table-pagination"><button aria-label="第一页" disabled={safePage === 0} onClick={() => setPage(0)}><ChevronsLeft /></button><button aria-label="上一页" disabled={safePage === 0} onClick={() => setPage((value) => Math.max(0, value - 1))}><ChevronLeft /></button><button aria-label="下一页" disabled={safePage >= pageCount - 1} onClick={() => setPage((value) => Math.min(pageCount - 1, value + 1))}><ChevronRight /></button><button aria-label="最后一页" disabled={safePage >= pageCount - 1} onClick={() => setPage(pageCount - 1)}><ChevronsRight /></button></div></footer>
     </div>
   )
 }
