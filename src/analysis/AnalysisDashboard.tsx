@@ -142,7 +142,13 @@ function readQueries(): Record<AnalysisQuestion, CardQuerySpec> {
   const defaults = Object.fromEntries(cardRegistry.map((card) => [card.id, createDefaultQuery(card.id)])) as Record<AnalysisQuestion, CardQuerySpec>
   try {
     const saved = window.localStorage.getItem(queryStorageKey)
-    return saved ? { ...defaults, ...JSON.parse(saved) as Partial<Record<AnalysisQuestion, CardQuerySpec>> } : defaults
+    if (!saved) return defaults
+    const merged = { ...defaults, ...JSON.parse(saved) as Partial<Record<AnalysisQuestion, CardQuerySpec>> }
+    const sourceQuery = merged.generator_contribution
+    if (sourceQuery.rows.includes('origin_set') && sourceQuery.categories.includes('generator')) {
+      merged.generator_contribution = { ...sourceQuery, chart: 'sunburst' }
+    }
+    return merged
   } catch {
     return defaults
   }
@@ -275,7 +281,7 @@ function CardShell({ definition, editing, children, meta, query, onQueryChange }
   useEffect(() => {
     const element = cardRef.current
     if (!element) return
-    const chartMap: Record<ChartType, PivotChartType> = { number: 'kpi', bar: 'bar', line: 'funnel', boxplot: 'boxplot', scatter: 'scatter', heatmap: 'heatmap', table: 'table' }
+    const chartMap: Record<ChartType, PivotChartType> = { number: 'kpi', bar: 'bar', line: 'funnel', boxplot: 'boxplot', scatter: 'scatter', heatmap: 'heatmap', sunburst: 'stacked_bar', table: 'table' }
     const observer = new ResizeObserver(([entry]) => {
       const { width, height } = entry.contentRect
       if (width < 180 || height < 120) return
@@ -490,21 +496,56 @@ function DistributionCard({ generator, snapshot, chart, query }: { generator: st
 }
 
 function OriginCard({ snapshot }: { snapshot: AnalysisSnapshot | null }) {
-  const patterns = snapshot
-    ? Object.entries(snapshot.candidates.reduce<Record<string, number>>((accumulator, candidate) => {
-      const key = candidate.originSet.slice().sort().map((id) => generatorDisplay[id] ?? id).join(' + ')
-      accumulator[key] = (accumulator[key] ?? 0) + 1
-      return accumulator
-    }, {})).map(([label, count]) => ({ label, count })).sort((left, right) => right.count - left.count)
-    : frameworkFixture.sourcePatterns
-  return <Chart option={{
-    color: chartPalette,
-    grid: { left: 118, right: 20, top: 8, bottom: 18 },
-    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-    xAxis: { type: 'value', splitLine: { lineStyle: { color: '#eff2f6' } }, axisLabel: { color: '#8b94a3', fontSize: 9 } },
-    yAxis: { type: 'category', inverse: true, data: patterns.map((item) => item.label), axisTick: { show: false }, axisLine: { show: false }, axisLabel: { color: '#626d7e', fontSize: 9 } },
-    series: [{ type: 'bar', barWidth: 10, data: patterns.map((item, index) => ({ value: item.count, itemStyle: { color: chartPalette[index % chartPalette.length], borderRadius: [0, 4, 4, 0] } })), label: { show: true, position: 'right', color: '#4e5969', fontSize: 9 } }],
-  }} />
+  if (!snapshot) return null
+  const statusLabels: Record<string, string> = { mature_core: '成熟核心', promising_uncertain: '潜力待核', rejected: '未入选' }
+  const roots = new Map<string, Map<string, { eligible: number; ineligible: number }>>()
+  for (const candidate of snapshot.candidates) {
+    const origin = candidate.originSet.slice().sort().map((id) => generatorDisplay[id] ?? id).join(' + ')
+    const byStatus = roots.get(origin) ?? new Map<string, { eligible: number; ineligible: number }>()
+    const counts = byStatus.get(candidate.admission.status) ?? { eligible: 0, ineligible: 0 }
+    if (candidate.admission.structureEligible) counts.eligible += 1
+    else counts.ineligible += 1
+    byStatus.set(candidate.admission.status, counts)
+    roots.set(origin, byStatus)
+  }
+  const hierarchy = [...roots.entries()].map(([origin, statuses]) => ({
+    name: origin,
+    value: [...statuses.values()].reduce((sum, item) => sum + item.eligible + item.ineligible, 0),
+    children: [...statuses.entries()].map(([status, counts]) => ({
+      name: statusLabels[status] ?? status,
+      value: counts.eligible + counts.ineligible,
+      children: [
+        counts.eligible ? { name: '具备结构资格', value: counts.eligible } : null,
+        counts.ineligible ? { name: '未进入结构计算', value: counts.ineligible } : null,
+      ].filter(Boolean),
+    })).sort((left, right) => right.value - left.value),
+  })).sort((left, right) => right.value - left.value)
+  return <div className="origin-hierarchy">
+    <Chart option={{
+      color: ['#527ee3', '#55b8b5', '#9a7bd1', '#d59a68', '#7aa35c'],
+      title: { text: snapshot.candidates.length.toLocaleString(), subtext: '唯一候选', left: 'center', top: '39%', textStyle: { color: '#2f405b', fontSize: 16, fontWeight: 700 }, subtextStyle: { color: '#8b96a7', fontSize: 8 } },
+      tooltip: { formatter: (params: { value: number; treePathInfo: Array<{ name: string }> }) => `${params.treePathInfo.slice(1).map((item) => item.name).join(' → ')}<br/><b>${params.value.toLocaleString()} 条唯一候选</b>` },
+      series: [{
+        type: 'sunburst',
+        radius: ['27%', '94%'],
+        center: ['50%', '49%'],
+        sort: (left: { value: number }, right: { value: number }) => right.value - left.value,
+        nodeClick: 'rootToNode',
+        minAngle: 4,
+        data: hierarchy,
+        emphasis: { focus: 'ancestor' },
+        label: { color: '#33445f', fontSize: 8, minAngle: 7, overflow: 'truncate' },
+        itemStyle: { borderColor: '#fff', borderWidth: 1.5 },
+        levels: [
+          {},
+          { r0: '27%', r: '51%', label: { rotate: 'tangential', fontWeight: 650 } },
+          { r0: '51%', r: '75%', label: { rotate: 'radial' }, itemStyle: { colorSaturation: [.45, .75] } },
+          { r0: '75%', r: '94%', label: { show: false }, itemStyle: { colorSaturation: [.25, .55] } },
+        ],
+      }],
+    }} />
+    <div className="origin-hierarchy-footer"><span>来源组合 → 候选分组 → 结构资格</span><b>按唯一序列计数 · 无重复归因</b></div>
+  </div>
 }
 
 function SafetyCard({ generator, snapshot }: { generator: string; snapshot: AnalysisSnapshot | null }) {

@@ -210,6 +210,11 @@
 .pareto-caption { min-width: 0; display: flex; align-items: center; gap: 12px; border-top: 1px solid #edf0f4; color: #8a95a6; font-size: 7px; white-space: nowrap; overflow: hidden; }
 .pareto-caption b { color: #53647d; font-size: 8px; }
 .pareto-caption b { margin-left: auto; }
+.origin-hierarchy { height: 100%; display: grid; grid-template-rows: minmax(0, 1fr) 25px; }
+.origin-hierarchy-footer { min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; border-top: 1px solid #edf0f4; color: #8a95a6; font-size: 7px; white-space: nowrap; overflow: hidden; }
+.origin-hierarchy-footer b { color: #53647d; font-size: 8px; }
+.analysis-card.presentation-compact .origin-hierarchy-footer { display: none; }
+.analysis-card.presentation-compact .origin-hierarchy { grid-template-rows: 1fr; }
 .conflict-note { align-self: stretch; margin: 4px 0; padding: 11px; border: 1px solid #f0e4d7; border-radius: 9px; background: #fffbf6; }
 .conflict-note span { color: #b18a64; font-size: 7px; text-transform: uppercase; letter-spacing: .08em; }
 .conflict-note strong { display: block; margin-top: 5px; color: #8d5d37; font-size: 11px; }

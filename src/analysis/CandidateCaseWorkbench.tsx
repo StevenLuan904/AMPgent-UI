@@ -65,7 +65,25 @@ interface BoltzRun {
   iptm: number
   pairIptm: number
   ptm: number
+  residuePlddt: Array<{ position: number; residue: string; value: number }>
   artifact: ViewerArtifact
+}
+
+interface CompositionRow {
+  residue: string
+  candidateCount: number
+  candidateFraction: number
+  structureEligibleFraction: number
+  backgroundFraction: number
+  log2Enrichment: number
+}
+
+interface ContactMap {
+  distanceThresholdAngstrom: number
+  source: string
+  peptideResidues: Array<{ position: number; residue: string }>
+  targetResidues: Array<{ position: number; residue: string; closestDistance: number }>
+  distances: number[][]
 }
 
 interface RosettaScore {
@@ -100,11 +118,13 @@ interface CandidateCaseSnapshot {
     admission: { paretoFront: number | null; reasons: string[]; status: string; structureEligible: boolean }
     metrics: Record<string, MetricRecord>
     metricContext: Record<string, { value: number; favorablePercentile: number; cohortSize: number; direction: string }>
+    compositionContext: CompositionRow[]
   }
   targets: CaseTarget[]
   structure: {
     boltzRuns: BoltzRun[]
     rosettaRuns: RosettaRun[]
+    contactMap: ContactMap
     coverage: {
       plannedBoltzPoses: number
       observedBoltzPoses: number
@@ -129,6 +149,7 @@ const methodHelp: Record<string, string> = {
   ToxinPred3: 'ToxinPred3：提供短肽毒性分类与风险分值。',
   HydrAMP: 'HydrAMP：面向抗菌活性优化的短肽生成模型。',
   PBP2a: 'PBP2a：介导耐β-内酰胺表型的转肽酶。',
+  pLDDT: 'pLDDT：逐残基局部结构可信度，数值越高代表局部构象越稳定。',
 }
 
 const targetNames: Record<string, string> = {
@@ -226,6 +247,70 @@ function RosettaScoreChart({ scores }: { scores: RosettaScore[] }) {
   }} />
 }
 
+function ResidueConfidenceChart({ runs }: { runs: BoltzRun[] }) {
+  const usable = runs.filter((run) => run.residuePlddt.length)
+  return <ReactECharts className="case-chart case-residue-confidence-chart" option={{
+    animationDuration: 350,
+    color: ['#527ee3', '#55aaa7'],
+    grid: { left: 42, right: 12, top: 30, bottom: 32 },
+    legend: { top: 0, icon: 'circle', itemWidth: 7, textStyle: { fontSize: 8, color: '#748095' } },
+    tooltip: { trigger: 'axis', formatter: (params: Array<{ seriesName: string; value: number; dataIndex: number }>) => {
+      const position = params[0].dataIndex
+      const residue = usable[0]?.residuePlddt[position]
+      return `<b>${residue?.residue}${residue?.position}</b><br/>${params.map((item) => `${item.seriesName}：${Number(item.value).toFixed(1)}`).join('<br/>')}`
+    } },
+    xAxis: { type: 'category', data: usable[0]?.residuePlddt.map((item) => `${item.residue}${item.position}`) ?? [], name: '候选短肽残基', nameLocation: 'middle', nameGap: 22, axisTick: { show: false }, axisLabel: { interval: 2, fontSize: 8, color: '#808b9d' } },
+    yAxis: { type: 'value', min: 0, max: 100, name: '局部置信度', nameTextStyle: { fontSize: 8, color: '#748095' }, axisLabel: { fontSize: 8, color: '#8993a3' }, splitLine: { lineStyle: { color: '#edf1f5' } } },
+    series: usable.map((run, index) => ({
+      name: `种子 ${String(run.seed).slice(-2)}`,
+      type: 'line',
+      symbol: 'circle',
+      symbolSize: 4,
+      smooth: .18,
+      data: run.residuePlddt.map((item) => item.value),
+      lineStyle: { width: 1.6 },
+      areaStyle: { opacity: .035 },
+      ...(index === 0 ? { markArea: { silent: true, itemStyle: { color: 'rgba(224, 170, 89, .08)' }, data: [[{ yAxis: 0 }, { yAxis: 50 }]] } } : {}),
+    })),
+  }} />
+}
+
+function ContactMapChart({ contactMap }: { contactMap: ContactMap }) {
+  const values = contactMap.distances.flatMap((row, peptideIndex) => row.map((distance, targetIndex) => ({
+    value: [targetIndex, peptideIndex, Math.min(12, distance)],
+    actualDistance: distance,
+  })))
+  return <ReactECharts className="case-contact-chart" option={{
+    animation: false,
+    grid: { left: 44, right: 18, top: 16, bottom: 48 },
+    tooltip: { formatter: (params: { data: { value: number[]; actualDistance: number } }) => {
+      const [targetIndex, peptideIndex] = params.data.value
+      const peptide = contactMap.peptideResidues[peptideIndex]
+      const target = contactMap.targetResidues[targetIndex]
+      return `<b>候选 ${peptide.residue}${peptide.position} ↔ 靶点 ${target.residue}${target.position}</b><br/>最小重原子距离：${params.data.actualDistance.toFixed(2)} 埃<br/>${params.data.actualDistance <= contactMap.distanceThresholdAngstrom ? '达到接触阈值' : '邻近但未达到接触阈值'}`
+    } },
+    visualMap: { min: 2, max: 12, calculable: false, orient: 'horizontal', left: 'center', bottom: 0, itemWidth: 8, itemHeight: 110, text: ['远', '近'], textStyle: { fontSize: 8, color: '#7f8999' }, inRange: { color: ['#354e9e', '#5f88d5', '#9bc9c3', '#f1eee7'] } },
+    xAxis: { type: 'category', data: contactMap.targetResidues.map((item) => `${item.residue}${item.position}`), name: '靶蛋白接触邻域', nameLocation: 'middle', nameGap: 28, axisTick: { show: false }, axisLine: { show: false }, axisLabel: { interval: 3, rotate: 45, fontSize: 7, color: '#748095' } },
+    yAxis: { type: 'category', inverse: true, data: contactMap.peptideResidues.map((item) => `${item.residue}${item.position}`), axisTick: { show: false }, axisLine: { show: false }, axisLabel: { fontSize: 7, color: '#748095' } },
+    series: [{ type: 'heatmap', data: values, progressive: 0, itemStyle: { borderColor: '#fff', borderWidth: .7 }, emphasis: { itemStyle: { borderColor: '#1f2d45', borderWidth: 1.2 } } }],
+  }} />
+}
+
+function CompositionEnrichmentChart({ rows }: { rows: CompositionRow[] }) {
+  const ordered = [...rows].sort((left, right) => right.log2Enrichment - left.log2Enrichment)
+  return <ReactECharts className="case-chart case-composition-chart" option={{
+    animationDuration: 350,
+    grid: { left: 42, right: 10, top: 16, bottom: 34 },
+    tooltip: { formatter: (params: { dataIndex: number; value: number }) => {
+      const row = ordered[params.dataIndex]
+      return `<b>残基 ${row.residue}</b><br/>结构资格队列：${(row.structureEligibleFraction * 100).toFixed(1)}%<br/>全部候选：${(row.backgroundFraction * 100).toFixed(1)}%<br/>当前候选：${row.candidateCount} 个<br/>二倍对数富集：${Number(params.value).toFixed(2)}`
+    } },
+    xAxis: { type: 'category', data: ordered.map((row) => row.residue), name: '氨基酸残基', nameLocation: 'middle', nameGap: 21, axisTick: { show: false }, axisLabel: { interval: 0, fontFamily: 'DM Mono', fontSize: 8, color: '#748095' } },
+    yAxis: { type: 'value', name: '富集', nameTextStyle: { fontSize: 8, color: '#748095' }, axisLabel: { fontSize: 8, color: '#8993a3' }, splitLine: { lineStyle: { color: '#edf1f5' } } },
+    series: [{ type: 'bar', barMaxWidth: 10, data: ordered.map((row) => ({ value: row.log2Enrichment, itemStyle: { color: row.log2Enrichment >= 0 ? '#557ee8' : '#d59a68', borderRadius: row.log2Enrichment >= 0 ? [3, 3, 0, 0] : [0, 0, 3, 3] } })), markLine: { silent: true, symbol: 'none', lineStyle: { color: '#aeb7c4', width: 1 }, data: [{ yAxis: 0 }] } }],
+  }} />
+}
+
 function TargetCard({ target, computed }: { target: CaseTarget; computed: boolean }) {
   const primaryPocket = target.pockets.find((pocket) => pocket.conditioningPriority === 'primary') ?? target.pockets[0]
   const evidence = primaryPocket?.evidence[0]
@@ -289,6 +374,9 @@ export function CandidateCaseWorkbench({ apiBase = '' }: { apiBase?: string }) {
   const dGValues = scores.map((score) => score.dG_separated)
   const sasaValues = scores.map((score) => score.dSASA_int)
   const hbondValues = scores.map((score) => score.interface_hbonds)
+  const residuePlddtValues = caseData.structure.boltzRuns.flatMap((run) => run.residuePlddt.map((item) => item.value))
+  const contactPairs = caseData.structure.contactMap.distances.flat().filter((distance) => distance <= caseData.structure.contactMap.distanceThresholdAngstrom).length
+  const topEnriched = [...caseData.candidate.compositionContext].sort((left, right) => right.log2Enrichment - left.log2Enrichment).slice(0, 3)
 
   const copySequence = async () => {
     await navigator.clipboard.writeText(caseData.candidate.sequence)
@@ -374,6 +462,24 @@ export function CandidateCaseWorkbench({ apiBase = '' }: { apiBase?: string }) {
         <article className="case-panel"><header><Activity /><span><h2>结构置信度</h2><p>两组原位 <Term>Boltz 2</Term> 构象</p></span></header><StructureConfidenceChart runs={caseData.structure.boltzRuns} /><footer><span>界面置信度 {Math.min(...caseData.structure.boltzRuns.map((run) => run.pairIptm)).toFixed(3)}–{Math.max(...caseData.structure.boltzRuns.map((run) => run.pairIptm)).toFixed(3)}</span><b>探索性结构证据</b></footer></article>
         <article className="case-panel"><header><Activity /><span><h2>界面能排序</h2><p>32 个 <Term>Rosetta</Term> 精修样本</p></span></header><RosettaScoreChart scores={scores} /><footer><span>中位数 {median(dGValues).toFixed(1)} · 最低 {Math.min(...dGValues).toFixed(1)}</span><b>同一靶点与原位通道内比较</b></footer></article>
         <article className="case-panel case-rank-context"><header><Activity /><span><h2>队列相对位置</h2><p>在 773 条唯一候选中的有利百分位</p></span></header><div className="rank-context-list"><div><span>抗菌概率</span><b>{caseData.candidate.metricContext.macrel_amp_probability.favorablePercentile}%</b><small>数值越高越有利</small></div><div><span>预测抑菌浓度</span><b>{caseData.candidate.metricContext.llamp_log10_mic_um.favorablePercentile}%</b><small>数值越低越有利</small></div><div><span>溶血风险</span><b>{caseData.candidate.metricContext.macrel_hemolysis_probability.favorablePercentile}%</b><small>数值越低越有利</small></div><div><span>毒性风险</span><b>{caseData.candidate.metricContext.toxinpred3_hybrid_score.favorablePercentile}%</b><small>数值越低越有利</small></div></div></article>
+      </div>
+
+      <div className="case-deep-chart-grid">
+        <article className="case-panel">
+          <header><Activity /><span><h2>逐残基结构置信度</h2><p>两组原位构象的 <Term>pLDDT</Term></p></span></header>
+          <ResidueConfidenceChart runs={caseData.structure.boltzRuns} />
+          <footer><span>范围 {Math.min(...residuePlddtValues).toFixed(1)}–{Math.max(...residuePlddtValues).toFixed(1)}</span><b>低于 50 的区段需谨慎解释</b></footer>
+        </article>
+        <article className="case-panel case-contact-card">
+          <header><Target /><span><h2>候选—靶点接触图</h2><p>原位构象逐残基最小重原子距离</p></span></header>
+          <ContactMapChart contactMap={caseData.structure.contactMap} />
+          <footer><span>{caseData.structure.contactMap.targetResidues.length} 个靶蛋白邻域残基 · {contactPairs} 对达到 5 埃阈值</span><b>来源：首个原位预测构象</b></footer>
+        </article>
+        <article className="case-panel">
+          <header><Dna /><span><h2>氨基酸组成富集</h2><p>35 条结构资格候选相对 773 条整体队列</p></span></header>
+          <CompositionEnrichmentChart rows={caseData.candidate.compositionContext} />
+          <footer><span>富集较高：{topEnriched.map((item) => item.residue).join(' · ')}</span><b>加 0.5 伪计数</b></footer>
+        </article>
       </div>
 
       <section className="case-target-section">

@@ -2,11 +2,15 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
+from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from urllib.request import Request, urlopen
+
+import gemmi
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -20,6 +24,13 @@ def fetch_json(path: str) -> Any:
     request = Request(url, headers={"Accept": "application/json"})
     with urlopen(request, timeout=90) as response:
         return json.loads(response.read().decode("utf-8"))
+
+
+def fetch_text(path: str) -> str:
+    url = path if path.startswith("http") else f"{API_BASE}{path}"
+    request = Request(url, headers={"Accept": "chemical/x-cif, chemical/x-pdb, text/plain"})
+    with urlopen(request, timeout=90) as response:
+        return response.read().decode("utf-8")
 
 
 def stable_digest(payload: dict[str, Any]) -> str:
@@ -66,6 +77,100 @@ def rosetta_scores(call: dict[str, Any]) -> list[dict[str, float]]:
             if value.get(key) is not None
         })
     return rows
+
+
+def load_cif_structure(text: str) -> gemmi.Structure:
+    return gemmi.make_structure_from_block(gemmi.cif.read_string(text).sole_block())
+
+
+def polymer_sequence(chain: gemmi.Chain) -> str:
+    return chain.get_polymer().make_one_letter_sequence()
+
+
+def residue_plddt_and_contacts(text: str, peptide_sequence: str) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    structure = load_cif_structure(text)
+    model = structure[0]
+    peptide_chain = next((chain for chain in model if polymer_sequence(chain) == peptide_sequence), None)
+    if peptide_chain is None:
+        raise RuntimeError("结构文件中未找到候选短肽链")
+    target_chain = max((chain for chain in model if chain.name != peptide_chain.name), key=lambda chain: len(polymer_sequence(chain)))
+
+    peptide_residues = list(peptide_chain.get_polymer())
+    target_residues = list(target_chain.get_polymer())
+    plddt = []
+    for position, residue in enumerate(peptide_residues, start=1):
+        atom_values = [float(atom.b_iso) for atom in residue if atom.element.name != "H"]
+        plddt.append({
+            "position": position,
+            "residue": peptide_sequence[position - 1],
+            "value": round(sum(atom_values) / len(atom_values), 2) if atom_values else None,
+        })
+
+    peptide_atoms = [[atom for atom in residue if atom.element.name != "H"] for residue in peptide_residues]
+    target_atoms = [[atom for atom in residue if atom.element.name != "H"] for residue in target_residues]
+    distances: list[list[float]] = []
+    for peptide_row in peptide_atoms:
+        row = []
+        for target_row in target_atoms:
+            minimum = min((left.pos.dist(right.pos) for left in peptide_row for right in target_row), default=20.0)
+            row.append(float(minimum))
+        distances.append(row)
+
+    target_minimums = [min((row[index] for row in distances), default=20.0) for index in range(len(target_residues))]
+    selected_indices = [index for index, value in enumerate(target_minimums) if value <= 8.0]
+    if len(selected_indices) > 32:
+        selected_indices = sorted(selected_indices, key=lambda index: target_minimums[index])[:32]
+    selected_indices.sort(key=lambda index: target_residues[index].seqid.num)
+
+    contact_map = {
+        "distanceThresholdAngstrom": 5.0,
+        "source": "boltz_native_pose_heavy_atom_minimum_distance",
+        "peptideResidues": [
+            {"position": index + 1, "residue": peptide_sequence[index]}
+            for index in range(len(peptide_residues))
+        ],
+        "targetResidues": [
+            {
+                "position": int(target_residues[index].seqid.num),
+                "residue": target_residues[index].name,
+                "closestDistance": round(target_minimums[index], 2),
+            }
+            for index in selected_indices
+        ],
+        "distances": [
+            [round(row[index], 2) for index in selected_indices]
+            for row in distances
+        ],
+    }
+    return plddt, contact_map
+
+
+def composition_context(analysis: dict[str, Any], candidate_sequence: str) -> list[dict[str, Any]]:
+    alphabet = "ACDEFGHIKLMNPQRSTVWY"
+    eligible_sequences = [
+        item["sequence"] for item in analysis["candidates"]
+        if item.get("admission", {}).get("structureEligible")
+    ]
+    background_sequences = [item["sequence"] for item in analysis["candidates"]]
+    candidate_counts = Counter(candidate_sequence)
+    eligible_counts = Counter("".join(eligible_sequences))
+    background_counts = Counter("".join(background_sequences))
+    eligible_total = sum(eligible_counts.values())
+    background_total = sum(background_counts.values())
+    return [
+        {
+            "residue": residue,
+            "candidateCount": candidate_counts[residue],
+            "candidateFraction": round(candidate_counts[residue] / len(candidate_sequence), 5),
+            "structureEligibleFraction": round(eligible_counts[residue] / eligible_total, 5),
+            "backgroundFraction": round(background_counts[residue] / background_total, 5),
+            "log2Enrichment": round(math.log2(
+                ((eligible_counts[residue] + 0.5) / (eligible_total + 0.5 * len(alphabet)))
+                / ((background_counts[residue] + 0.5) / (background_total + 0.5 * len(alphabet)))
+            ), 4),
+        }
+        for residue in alphabet
+    ]
 
 
 def main() -> None:
@@ -150,6 +255,7 @@ def main() -> None:
     rosetta_calls = [call for call in rosetta_node.get("calls", []) if context_matches(call, sequence)]
 
     boltz_runs = []
+    contact_map: dict[str, Any] | None = None
     for call in boltz_calls:
         confidence = artifact_json(call, "raw_output") or {}
         context = call["structure_context"][0]
@@ -157,6 +263,12 @@ def main() -> None:
             (artifact for artifact in call.get("artifacts", []) if artifact.get("media_type") == "chemical/x-cif"),
             None,
         )
+        residue_plddt: list[dict[str, Any]] = []
+        if structure_artifact:
+            structure_text = fetch_text(structure_artifact["url"])
+            residue_plddt, run_contact_map = residue_plddt_and_contacts(structure_text, sequence)
+            if contact_map is None and context.get("lane") == "native":
+                contact_map = run_contact_map
         boltz_runs.append({
             "seed": call.get("random_seed"),
             "target": context.get("target"),
@@ -166,6 +278,7 @@ def main() -> None:
             "iptm": confidence.get("iptm"),
             "pairIptm": confidence.get("pair_iptm"),
             "ptm": (confidence.get("raw_confidence") or {}).get("ptm"),
+            "residuePlddt": residue_plddt,
             "artifact": {
                 "candidate_id": candidate["id"],
                 "sequence": sequence,
@@ -231,11 +344,13 @@ def main() -> None:
             "admission": candidate["admission"],
             "metrics": candidate["metrics"],
             "metricContext": metric_context,
+            "compositionContext": composition_context(analysis, sequence),
         },
         "targets": target_rows,
         "structure": {
             "boltzRuns": boltz_runs,
             "rosettaRuns": rosetta_runs,
+            "contactMap": contact_map,
             "coverage": {
                 "plannedBoltzPoses": len(target_rows) * 2 * 3,
                 "observedBoltzPoses": observed_poses,

@@ -1,7 +1,7 @@
 import type { AnalysisQuestion } from './contracts'
 
 export type PivotSlot = 'rows' | 'columns' | 'values' | 'categories'
-export type ChartType = 'number' | 'bar' | 'line' | 'boxplot' | 'scatter' | 'heatmap' | 'table'
+export type ChartType = 'number' | 'bar' | 'line' | 'boxplot' | 'scatter' | 'heatmap' | 'sunburst' | 'table'
 
 export interface AnalysisField {
   id: string
@@ -44,7 +44,7 @@ const defaults: Record<AnalysisQuestion, Omit<CardQuerySpec, 'cardId' | 'sourceN
   lineage_and_yield: { rows: ['stage'], columns: [], values: ['candidate_count'], categories: ['generator'], filters: {}, chart: 'line' },
   score_distribution: { rows: ['generator'], columns: [], values: ['metric_value'], categories: [], filters: {}, chart: 'boxplot' },
   filtering_loss: { rows: ['stage'], columns: ['evidence_status'], values: ['candidate_count'], categories: [], filters: {}, chart: 'heatmap' },
-  generator_contribution: { rows: ['origin_set'], columns: [], values: ['candidate_count'], categories: ['generator'], filters: {}, chart: 'bar' },
+  generator_contribution: { rows: ['origin_set'], columns: [], values: ['candidate_count'], categories: ['generator'], filters: {}, chart: 'sunburst' },
   safety_profile: { rows: ['generator'], columns: [], values: ['hemolysis', 'toxicity'], categories: ['evidence_status'], filters: {}, chart: 'bar' },
   multi_objective_conflict: { rows: ['candidate'], columns: [], values: ['activity', 'hemolysis'], categories: ['generator'], filters: {}, chart: 'scatter' },
   candidate_laboratory: { rows: ['candidate'], columns: ['metric'], values: ['metric_value'], categories: ['evidence_status'], filters: {}, chart: 'table' },
@@ -97,6 +97,7 @@ export function validateQuery(query: CardQuerySpec): string[] {
   if (query.chart === 'line' && !query.rows.includes('stage')) errors.push('趋势图需要“分析阶段”作为行字段。')
   if (query.chart === 'boxplot' && !query.values.includes('metric_value')) errors.push('箱线图需要“评分数值”字段。')
   if (query.chart === 'bar' && !query.rows.length && !query.categories.length) errors.push('条形图需要至少一个分组字段。')
+  if (query.chart === 'sunburst' && (!query.rows.includes('origin_set') || !query.categories.includes('generator'))) errors.push('层级旭日图需要“来源组合”和“生成来源”字段。')
   return errors
 }
 
@@ -108,6 +109,7 @@ export function recommendChart(query: CardQuerySpec): { chart: ChartType; reason
   if (query.values.includes('metric_value')) return { chart: 'boxplot', reason: '连续评分需要保留分布形状，推荐箱线图。' }
   if (!query.rows.length && !query.columns.length && !query.categories.length && query.values.length === 1) return { chart: 'number', reason: '单一汇总数值适合指标卡。' }
   if (query.rows.includes('candidate')) return { chart: 'table', reason: '候选身份需要保留完整序列与证据字段。' }
+  if (query.rows.includes('origin_set') && query.categories.includes('generator')) return { chart: 'sunburst', reason: '来源组合与候选分组构成真实层级，推荐旭日图。' }
   return { chart: 'bar', reason: '分类与单一数值的比较适合条形图。' }
 }
 
@@ -151,5 +153,6 @@ export const chartLabels: Record<ChartType, string> = {
   boxplot: '箱线图',
   scatter: '散点图',
   heatmap: '热力图',
+  sunburst: '旭日图',
   table: '明细表',
 }

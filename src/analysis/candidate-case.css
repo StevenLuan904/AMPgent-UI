@@ -102,6 +102,12 @@
 .case-chart-grid .case-panel { min-height: 305px; }
 .case-chart-grid .case-panel > footer { min-height: 34px; padding: 7px 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; border-top: 1px solid #edf0f4; color: #7b879a; font-size: 8px; }
 .case-chart-grid .case-panel > footer b { color: #926644; font-weight: 650; }
+.case-deep-chart-grid { margin-top: 14px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(520px, 1.42fr) minmax(0, 1fr); gap: 14px; }
+.case-deep-chart-grid .case-panel { min-height: 338px; }
+.case-deep-chart-grid .case-panel > footer { min-height: 38px; padding: 7px 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; border-top: 1px solid #edf0f4; color: #7b879a; font-size: 8px; }
+.case-deep-chart-grid .case-panel > footer b { color: #5d6f87; font-weight: 650; text-align: right; }
+.case-deep-chart-grid .case-chart { height: 240px !important; }
+.case-contact-chart { width: 100%; height: 248px !important; }
 .rank-context-list { height: 220px; padding: 8px 12px 12px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
 .rank-context-list > div { padding: 10px 11px; display: grid; gap: 4px; border: 1px solid #e7ebf1; border-radius: 8px; background: #fbfcfe; }
 .rank-context-list span { color: #7d899b; font-size: 9px; }
@@ -142,11 +148,14 @@
   .case-structure-evidence { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .case-structure-evidence > div:nth-child(-n+3) { border-bottom: 1px solid #e7ebf1; }
   .case-structure-controls { gap: 9px; }
+  .case-deep-chart-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .case-contact-card { grid-column: 1 / 3; grid-row: 1; }
 }
 
 @media (max-width: 1150px) {
   .candidate-case-workbench { padding-inline: 20px; }
-  .case-main-grid, .case-chart-grid { grid-template-columns: 1fr; }
+  .case-main-grid, .case-chart-grid, .case-deep-chart-grid { grid-template-columns: 1fr; }
+  .case-contact-card { grid-column: auto; grid-row: auto; }
   .case-target-section > div { grid-template-columns: 1fr; }
   .case-target-card + .case-target-card { border-left: 0; border-top: 1px solid #e7ebf1; }
 }
