@@ -76,3 +76,5 @@ def test_ampgent_acea_execution_protocol_preserves_nonnegotiable_rules() -> None
     assert "MD默认不启动" in protocol
     assert "GPU2 负责运行 Boltz" in protocol
     assert "主要使用受限 CPU" in normalized_protocol
+    assert "5cbc5b3c29428f3e2b2e192698d01235c852d261480289e8f5eb94f000f498ea" in protocol
+    assert "provisional_only=true" in protocol

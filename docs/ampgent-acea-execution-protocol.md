@@ -2883,3 +2883,19 @@ MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot
   challenger冲突已经分析、Rosetta dG完成、复合物与链映射可代表目标，并由 Agent 基于多前沿证据明确
   晋级为极少量黄金候选时，才允许进入 MD。普通优秀候选、单模型极值或仅有复合物坐标均不得自动触发
   MD；现有候选003双复合物任务是已启动的历史黄金 lane，继续监测但不据此批量新增 MD。
+
+### 2026-08-28 首个部分 dG checkpoint
+
+- GPU2 Boltz 阶段已完成，结果 SHA-256 为
+  `e942bae93363030d47af43735fd165817ae9262874e7ac9e37e585cbe51ca856`；GPU2已正常释放。该复合物的
+  pair-ipTM为0.1147、ipTM为0.1481，属于低结构置信度，因此只能进入“姿势假设+Rosetta复核”，不能仅凭
+  后续负dG晋级。
+- 截止远端 checkpoint，PepGLAD既有复合物完成41/200个decoy：`dG_separated` min/median/mean/max为
+  19.31/591.82/978.01/3696.18 REU，当前top-10 median为232.99；所有已完成样本均为正值，提示该界面
+  目前明显不利或存在严重几何问题。因子化Boltz复合物完成49/200：min/median/mean/max为
+  -70.40/-53.25/-43.83/236.36 REU，当前top-10 median为-66.44；多数样本更有利但存在正值离群点。
+- 以上均为运行中诊断，不是最终dG排名。只有两条各完成200个decoy并生成completion receipt后才按冻结
+  top-10 median规则作结构判断。远端进度收据为
+  `/sdd_data/pepagent/ampgent/structure/pbp2a-gpu2-rosetta-20260828-v1/progress_receipts/checkpoint_20260827T180728Z.json`，
+  SHA-256 `5cbc5b3c29428f3e2b2e192698d01235c852d261480289e8f5eb94f000f498ea`；收据明确
+  `provisional_only=true`、`md_started=false`。
