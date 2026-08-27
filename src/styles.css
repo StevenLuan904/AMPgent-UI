@@ -106,6 +106,11 @@ button:focus-visible { outline: 2px solid #315be8; outline-offset: 2px; }
 .sidebar-sections svg { width: 19px; }
 .sidebar-sections b { align-self: end; font-size: 13px; font-weight: 650; }
 .sidebar-sections small { align-self: start; color: #949cad; font-size: 10px; margin-top: 3px; }
+.sidebar-sections button.structure-evidence-link { border-radius: 10px; cursor: pointer; }
+.sidebar-sections button.structure-evidence-link:hover { background: #f0f3f8; }
+.sidebar-sections button.structure-evidence-link.active { color: #244f9e; background: #eaf0fb; }
+.sidebar-sections button.structure-evidence-link.active > span { color: #315fbd; background: #f7faff; }
+.sidebar-sections button.structure-evidence-link:disabled { opacity: .55; cursor: not-allowed; }
 
 .main-canvas { flex: 1; min-width: 0; position: relative; display: flex; flex-direction: column; background: #fff; }
 .canvas-header { height: 148px; flex: 0 0 148px; padding: 30px 46px 20px; display: flex; justify-content: space-between; align-items: flex-start; position: relative; z-index: 3; }
@@ -198,7 +203,7 @@ button:focus-visible { outline: 2px solid #315be8; outline-offset: 2px; }
 .progress-track i { display: block; height: 100%; background: #202630; border-radius: inherit; }
 .node-running .progress-track i { background: #1ca9c5; }
 .node-stopped .progress-track i { background: #a6adba; }
-.mini-molstar-shell { height: 94px; margin-top: 9px; border-radius: 8px; border-color: #e1e6ee; background: radial-gradient(circle at 50% 45%, #f7faf9, #eef3f4 78%); pointer-events: none; }
+.mini-molstar-shell { height: 94px; margin-top: 9px; border-radius: 8px; border-color: #e1e6ee; background: #fff; pointer-events: none; }
 .mini-molstar-shell .msp-viewport-controls, .mini-molstar-shell .msp-logo, .mini-molstar-shell .msp-toast-container { display: none !important; }
 .mini-molstar-shell .viewer-state, .mini-molstar-shell .viewer-empty { font-size: 8px; color: #8b95a5; }
 .kind-structure .node-facts { min-height: 42px; padding-top: 7px; }
@@ -311,12 +316,12 @@ button:focus-visible { outline: 2px solid #315be8; outline-offset: 2px; }
 .inference-note { margin: 12px 0 0; padding: 10px 11px; display: flex; gap: 8px; color: #786e8e; background: #f6f4f9; border-radius: 7px; font-size: 10px; line-height: 1.55; }
 .inference-note svg { width: 14px; flex: 0 0 auto; }
 .viewer-section { padding: 15px; border-bottom: 1px solid #e8ebf0; }
-.molstar-shell { height: 290px; border-radius: 11px; overflow: hidden; background: radial-gradient(circle at 50% 42%, #15223e, #0b1020 70%); position: relative; border: 1px solid #dce1e9; }
+.molstar-shell { height: 290px; border-radius: 11px; overflow: hidden; background: #fff; position: relative; border: 1px solid #dce1e9; }
 .molstar-host { position: absolute; inset: 0; }
 .molstar-host .msp-plugin { position: absolute !important; inset: 0 !important; }
-.viewer-empty, .viewer-state { position: absolute; inset: 0; display: grid; place-items: center; color: #aab6cc; font-size: 10px; pointer-events: none; }
-.viewer-error { color: #ef9aa5; }
-.viewer-tag { position: absolute; top: 10px; left: 10px; height: 24px; display: flex; align-items: center; gap: 7px; color: #dce7fb; background: rgba(9,15,29,.72); border: 1px solid rgba(186,202,228,.18); border-radius: 6px; padding: 0 8px; font-size: 8px; backdrop-filter: blur(8px); pointer-events: none; }
+.viewer-empty, .viewer-state { position: absolute; inset: 0; display: grid; place-items: center; color: #8f99aa; background: #fff; font-size: 10px; pointer-events: none; }
+.viewer-error { color: #c96975; }
+.viewer-tag { position: absolute; top: 10px; left: 10px; height: 24px; display: flex; align-items: center; gap: 7px; color: #526078; background: rgba(255,255,255,.86); border: 1px solid rgba(197,205,218,.72); border-radius: 6px; padding: 0 8px; font-size: 8px; backdrop-filter: blur(8px); pointer-events: none; }
 .structure-caption { padding: 10px 3px 0; display: grid; gap: 5px; }
 .structure-caption code { font: 500 10px "DM Mono", monospace; color: #314c9f; overflow-wrap: anywhere; }
 .structure-caption span { font-size: 10px; color: #7f899a; }

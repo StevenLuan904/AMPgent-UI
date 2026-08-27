@@ -55,6 +55,7 @@ import type {
 
 const nodeTypes = { stage: WorkflowNode, lane: LaneLabel }
 const connectionStorageKey = 'ampgent.data-service.base.v1'
+const selectedRunStorageKey = 'ampgent.observer.selected-run.v1'
 const defaultApiBase = import.meta.env.VITE_API_BASE ?? ''
 
 function normalizeApiBase(value: string) {
@@ -146,7 +147,7 @@ function readableDataError(cause: unknown, fallback: string) {
 
 function useRunData(enabled: boolean, apiBase: string) {
   const [runs, setRuns] = useState<RunListItem[]>([])
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedId, setSelectedIdState] = useState<string | null>(() => window.localStorage.getItem(selectedRunStorageKey))
   const [detail, setDetail] = useState<RunDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -157,7 +158,11 @@ function useRunData(enabled: boolean, apiBase: string) {
     if (!response.ok) throw new Error(`轮次列表读取失败：${response.status}`)
     const payload = await response.json() as RunListResponse
     setRuns(payload.runs)
-    setSelectedId((current) => current ?? payload.runs[0]?.id ?? null)
+    setSelectedIdState((current) => {
+      const next = current && payload.runs.some((run) => run.id === current) ? current : payload.runs[0]?.id ?? null
+      if (next) window.localStorage.setItem(selectedRunStorageKey, next)
+      return next
+    })
   }, [apiBase])
 
   const loadDetail = useCallback(async (runId: string, quiet = false) => {
@@ -210,6 +215,11 @@ function useRunData(enabled: boolean, apiBase: string) {
     }
   }, [loadDetail, loadRuns, selectedId])
 
+  const setSelectedId = useCallback((runId: string) => {
+    window.localStorage.setItem(selectedRunStorageKey, runId)
+    setSelectedIdState(runId)
+  }, [])
+
   return { runs, selectedId, setSelectedId, detail, error, loading, refreshing, retry, refresh: () => selectedId && loadDetail(selectedId, true) }
 }
 
@@ -236,15 +246,19 @@ function RunList({ runs, selectedId, onSelect }: { runs: RunListItem[]; selected
 function Sidebar({
   runs,
   selectedId,
+  structureRun,
   activeView,
   onView,
   onSelect,
+  onOpenStructureEvidence,
 }: {
   runs: RunListItem[]
   selectedId: string | null
+  structureRun: RunListItem | null
   activeView: 'overview' | 'analysis' | 'evidence'
   onView: (view: 'overview' | 'analysis' | 'evidence') => void
   onSelect: (id: string) => void
+  onOpenStructureEvidence: () => void
 }) {
   return (
     <aside className="sidebar">
@@ -259,7 +273,15 @@ function Sidebar({
       <div className="sidebar-sections">
         <button><span><SparkIcon icon="sequence" /></span><b>序列设计</b><small>生成模型与十一项指标</small></button>
         <button><span><GitBranch /></span><b>多靶点</b><small>原位与错误口袋对照</small></button>
-        <button title="Boltz 2预测复合物构象；Rosetta进行界面精修与评分。"><span><Atom /></span><b>结构证据</b><small>Boltz 2 与 Rosetta</small></button>
+        <button
+          className={`structure-evidence-link${structureRun?.id === selectedId && activeView === 'overview' ? ' active' : ''}`}
+          title="Boltz 2预测复合物构象；Rosetta进行界面精修与评分。"
+          disabled={!structureRun}
+          onClick={onOpenStructureEvidence}
+        >
+          <span><Atom /></span><b>结构证据</b>
+          <small>{structureRun ? `最近轮次 · ${structureRun.structure_record_count.toLocaleString()} 条记录` : '数据库中尚无结构记录'}</small>
+        </button>
         <button><span><ShieldCheck /></span><b>科学评审</b><small>证据来源追踪</small></button>
       </div>
     </aside>
@@ -744,12 +766,13 @@ export default function App() {
   const [activeView, setActiveView] = useState<'overview' | 'analysis' | 'evidence'>('analysis')
   const [apiBase, setApiBase] = useState(readApiBase)
   const [connectionOpen, setConnectionOpen] = useState(false)
-  const data = useRunData(activeView === 'overview', apiBase)
+  const data = useRunData(true, apiBase)
   const [selectedStage, setSelectedStage] = useState<string | null>(null)
   const [selectedEdge, setSelectedEdge] = useState<GraphEdgeDetail | null>(null)
   const [selectionMode, setSelectionMode] = useState(false)
   const [analysisSelection, setAnalysisSelection] = useState<string[]>([])
   const [analysisSnapshot, setAnalysisSnapshot] = useState<AnalysisSnapshot | null>(null)
+  const structureRun = useMemo(() => data.runs.find((run) => run.structure_record_count > 0) ?? null, [data.runs])
   useEffect(() => {
     let cancelled = false
     const liveAnalyticsEnabled = import.meta.env.VITE_ANALYTICS_API_ENABLED === 'true'
@@ -769,9 +792,19 @@ export default function App() {
         <Sidebar
           runs={data.runs}
           selectedId={data.selectedId}
+          structureRun={structureRun}
           activeView={activeView}
           onView={(view) => { setActiveView(view); setSelectedStage(null); setSelectedEdge(null) }}
           onSelect={(id) => { data.setSelectedId(id); setSelectedStage(null); setSelectedEdge(null); setAnalysisSelection([]); setSelectionMode(false) }}
+          onOpenStructureEvidence={() => {
+            if (!structureRun) return
+            data.setSelectedId(structureRun.id)
+            setActiveView('overview')
+            setSelectedStage('boltz')
+            setSelectedEdge(null)
+            setAnalysisSelection([])
+            setSelectionMode(false)
+          }}
         />
         {activeView === 'analysis' ? (
           <AnalysisDashboard detail={data.detail} seedNodeIds={analysisSelection} apiBase={apiBase} />

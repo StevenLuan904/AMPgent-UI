@@ -342,7 +342,7 @@ export function CandidateCaseWorkbench({ apiBase = '' }: { apiBase?: string }) {
   const [structureSource, setStructureSource] = useState<'boltz' | 'rosetta'>('rosetta')
   const [seedIndex, setSeedIndex] = useState(0)
   const [representation, setRepresentation] = useState<'cartoon' | 'atomic' | 'surface'>('cartoon')
-  const [colorTheme, setColorTheme] = useState<'chain-id' | 'hydrophobicity' | 'element-symbol'>('chain-id')
+  const [colorTheme, setColorTheme] = useState<'baker-spectrum' | 'chain-id' | 'hydrophobicity' | 'element-symbol'>('baker-spectrum')
   const [autoRotate, setAutoRotate] = useState(false)
   const [showResidues, setShowResidues] = useState(true)
   const [copied, setCopied] = useState(false)
@@ -417,7 +417,7 @@ export function CandidateCaseWorkbench({ apiBase = '' }: { apiBase?: string }) {
           <div className="case-structure-controls">
             <label><span>结构来源</span><div><button className={structureSource === 'boltz' ? 'active' : ''} onClick={() => setStructureSource('boltz')}><Term>Boltz 2</Term></button><button className={structureSource === 'rosetta' ? 'active' : ''} onClick={() => setStructureSource('rosetta')}><Term>Rosetta</Term></button></div></label>
             <label><span>表示方式</span><div><button className={representation === 'cartoon' ? 'active' : ''} onClick={() => setRepresentation('cartoon')}>卡通</button><button className={representation === 'atomic' ? 'active' : ''} onClick={() => setRepresentation('atomic')}>原子</button><button className={representation === 'surface' ? 'active' : ''} onClick={() => setRepresentation('surface')}>表面</button></div></label>
-            <label><span>着色</span><div><button className={colorTheme === 'chain-id' ? 'active' : ''} onClick={() => setColorTheme('chain-id')}>分子链</button><button className={colorTheme === 'hydrophobicity' ? 'active' : ''} onClick={() => setColorTheme('hydrophobicity')}>疏水性</button><button className={colorTheme === 'element-symbol' ? 'active' : ''} onClick={() => setColorTheme('element-symbol')}>元素</button></div></label>
+            <label><span>着色</span><div><button title="Baker 风格按残基序号使用七色渐变。" className={colorTheme === 'baker-spectrum' ? 'active' : ''} onClick={() => setColorTheme('baker-spectrum')}>序列谱</button><button className={colorTheme === 'chain-id' ? 'active' : ''} onClick={() => setColorTheme('chain-id')}>分子链</button><button className={colorTheme === 'hydrophobicity' ? 'active' : ''} onClick={() => setColorTheme('hydrophobicity')}>疏水性</button><button className={colorTheme === 'element-symbol' ? 'active' : ''} onClick={() => setColorTheme('element-symbol')}>元素</button></div></label>
             <label><span>视图</span><div><button className={autoRotate ? 'active' : ''} disabled={viewMode === 'static'} onClick={() => setAutoRotate((value) => !value)}><Rotate3D />慢速旋转</button><button className={showResidues ? 'active' : ''} onClick={() => setShowResidues((value) => !value)}><Layers3 />口袋残基</button></div></label>
           </div>
           <div className="case-structure-stage">
