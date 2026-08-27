@@ -1096,3 +1096,32 @@ ProsperousPlus cleavage burden，保留训练集很小、测定条件异质和�
 知识卡的论文贡献必须来自可追溯因果链。当前1900条的14个源run均未触发refinement，知识ToolCall为0，
 所以这些候选没有可证明的知识卡收益。后续只有卡片SHA、采用理由、parent、child、全分数变化与反例都
 落库，才能报告某条卡起效；若没有，继续诚实报告“知识包已绑定但未实际影响设计”。
+
+## 2026-08-27 优秀候选的Rosetta dG、历史不稳定性复核与MD停止条件
+
+长期目标新增一个后置而非全库结构阶段：先用12项序列指标、独立challenger/shadow、模型冲突多端前沿、
+受控进化和家族去重把候选库迭代成熟，再对每个分支极少量优秀/黄金候选计算真实target-peptide complex的
+Rosetta InterfaceAnalyzer `dG_separated`。单条候选必须有输入复合物SHA、链定义、Rosetta版本/binary SHA、
+命令、原始score SHA和执行收据，才能称`rosetta_dg_complete`；“环境能运行”只表示`structure_pending`。
+
+展示规则同步为ToxinPred3 Non-Toxin、Macrel hemolysis low、Biopython/Guruprasad instability `<50`。
+历史pool/winner必须按新规则重算。用户列出的6条旧成熟核心复算为001=56.436842、002=32.683333、
+003=-3.431579、004=106.036000、005=52.161111、006=95.775000，因此当前仅002、003可继续进入展示候选；
+004还含连续11个疏水残基。该结果说明旧标签不能替代当前score-all与展示门。
+
+`.19:/data1/yugufeng/tcr/mhc_flow_seq`的只读脚本审计发现Rosetta docking/dG工具，但没有complex MD脚本或
+OpenMM/GROMACS/AMBER/NAMD工作流。MD实现按用户明确停止条件停下。现有Rosetta dG工具也不能原样复用：
+它硬编码`M_P`/`A_B`界面、以90% CPU并行并让多进程共享score文件。进入AMPgent前要参数化每靶点链映射、
+逐PDB隔离输出后确定性合并、显式限制获准CPU、保留逐条失败，并冻结全部输入/命令/二进制/结果哈希。
+
+## 2026-08-27 用户提供MD脚本后的长期目标覆盖
+
+用户随后直接提供 `relax.py` 与 `ubq.py`，明确允许把后者作为可运行OpenMM MD主体，因此上一节的停止
+条件不再适用于这两个已提供脚本。长期目标新增一个极小规模黄金候选MD lane：只有已经通过展示硬门、
+完成12项评分与Rosetta dG、并有代表性复合物SHA和链定义的候选才进入；MD比较复合物在显式水中的姿态、
+界面接触和轨迹稳定性，不扩展为全库门槛，也不把轨迹稳定称为实验结合。
+
+首个lane使用候选003 `FFFMQLLKLAAEYVVAKHH`，分别对GyrA和PBP2a运行1 ns NPT + 50 ns NVT。
+双GPU短smoke已经通过，正式任务在 `.19 GPU6/GPU7` 运行并持续写checkpoint。完整轨迹、状态和日志只存
+获准远端大容量路径；PostgreSQL/内容寻址对象存储保留紧凑收据、输入SHA、runner SHA与阶段结果。本机
+只允许短时校验中转并在远端哈希验证后清理。

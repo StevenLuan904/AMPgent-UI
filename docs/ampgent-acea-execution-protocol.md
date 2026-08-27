@@ -2593,6 +2593,31 @@ MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot
 - 公开信息少、结构缺失或结构可信度不足的目标直接使用序列预测完成该层证据。结构评分是可选排序轴；
   可靠结构已经存在且预计能改变候选排序时再派发，不以缺少结构阻塞150条交付。
 
+### 2026-08-27 优秀/黄金候选的后置 Rosetta dG 门
+
+- 大库仍按“生成 -> 12项序列评分 -> challenger/shadow冲突分析 -> 多前沿进化 -> 家族去重”推进。
+  Rosetta只在这些步骤迭代后用于极少量优秀/黄金候选，避免昂贵结构计算挤占序列空间探索。
+- 单条候选只有在真实目标-短肽复合物上完成Rosetta `InterfaceAnalyzer`，并持久化
+  `dG_separated`、target/peptide chain、输入PDB SHA、Rosetta binary/version/SHA、命令、原始score文件SHA
+  和执行收据后，才可标记`rosetta_dg_complete`或“结构合格”。只有执行能力、坐标存在或结构任务可派发时
+  一律写`structure_pending`，不得写“已具备”。
+- 缺少可信复合物的靶点可继续扩大普通序列库，但不能把序列分数高的候选升级为优秀/黄金结构合格候选。
+- 展示硬门采用当前用户规则：ToxinPred3=`Non-Toxin`、Macrel hemolysis=`low`、Biopython/Guruprasad
+  instability `<50`。历史winner也必须重算，旧的`mature core`标签不豁免。
+- 用户给出的6条历史候选复算结果为：001=56.436842、002=32.683333、003=-3.431579、
+  004=106.036000、005=52.161111、006=95.775000；仅002与003通过`<50`。004另有连续11个疏水残基，
+  必须从优秀展示池撤下。
+
+### `.19` Rosetta/MD脚本审计与改造要求（2026-08-27）
+
+- 已只读审计`/data1/yugufeng/tcr/mhc_flow_seq`。`utils/dg_tools.py`调用Rosetta
+  `InterfaceAnalyzer`，`utils/run_dg.sh`为单示例命令；目录中没有OpenMM、GROMACS、AMBER、NAMD或
+  其他complex MD runner。因此按用户要求停止MD实现，不从别处拼装替代脚本。
+- Rosetta脚本用于AMPgent前必须修改：把硬编码`M_P`/`A_B`变成每个靶点冻结的链对；输入只接受带
+  target/peptide链映射的复合物PDB；每个PDB写独立score文件后再确定性合并，避免多进程并发写同一文件；
+  将当前`90% CPU`改为按获准空闲核数设置的显式上限；失败逐条保留；同时冻结Rosetta binary SHA、命令、
+  输入/输出SHA和`dG_separated`单位/方向。完成这些修改及真实smoke前，不把现有脚本称为可直接部署。
+
 ### 当前run与下一动作
 
 - controller `5557e950-5bd9-551d-ae1d-948f0ca29d0b` 及其四轮6182条候选、74184项评价和已有结构证据
@@ -2788,3 +2813,22 @@ MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot
   评分，当前不能举出一条“知识卡导致候选变好”的真实案例。
 - 后续知识卡只有形成`card_key/version/SHA -> parent -> edit rationale -> child -> 12项与target score delta`
   才计为有效使用；每轮同时报告采用、反驳、无效三类卡片。没有这条lineage时明确写“无可证明影响”。
+
+## 2026-08-27 用户提供MD脚本后的执行覆盖与当前运行
+
+- 用户随后提供了可直接运行的 `relax.py` 与 `ubq.py`，因此此前“精确目录未发现MD脚本即停止实现”的
+  条件已经被更新输入覆盖。`ubq.py` 是 OpenMM 显式水MD主体；`relax.py` 是 Rosetta FastRelax预处理，
+  当前输入已经完成更针对复合物界面的FlexPepDock，故未再做一次会改变姿态的重复FastRelax。
+- 在 `.19:/data1/huangyueshan/pepagent/envs/openmm-md-py311-v1` 冻结 OpenMM 8.3.1、CUDA 12插件和
+  PDBFixer 1.12.0。参数化runner SHA-256为
+  `9f751684bf123bbbf7a7a0199e00037cb473948cd009f4ffa712dc54d0b904e2`；它保持原始
+  Amber14 ff14SB/TIP3P、0.15 M、2 fs、1 ns NPT + 50 ns NVT协议，只增加显式输入/GPU/seed、复合物
+  链核验、禁止按SEQRES自动补整段残基、checkpoint、日志和manifest。
+- 黄金候选003 `FFFMQLLKLAAEYVVAKHH` 的GyrA与PBP2a复合物均完成独立2 ps NPT + 2 ps NVT
+  CUDA smoke，链B的19 aa短肽保持完整且未出现非有限能量。正式MD已在获准的 `.19 GPU6/GPU7`
+  启动，根目录为 `/data1/huangyueshan/pepagent/md/gold-003-20260827/`；启动收据SHA-256为
+  `08974df52ad7055330c617bafbdc5d12775ed729eec71734b699c3d31bca2bff`。截至本checkpoint，
+  GyrA NPT为38%、PBP2a NPT为75%，温度约300 K、密度约1.02 g/mL，两个精确PID均存活。
+- MD只用于极少黄金候选的复合物稳定性诊断，不替代Rosetta dG、序列评分或湿实验。不得重复提交或
+  抢占GPU6/7；按checkpoint持续监控并将紧凑进度收据写入PostgreSQL/内容寻址对象存储。本机只作
+  小型校验中转，结构中转文件在远端哈希通过后已清除，大型轨迹只保留获准远端路径。
