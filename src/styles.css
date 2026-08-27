@@ -202,6 +202,38 @@ button:focus-visible { outline: 2px solid #315be8; outline-offset: 2px; }
 .mini-molstar-shell .msp-viewport-controls, .mini-molstar-shell .msp-logo, .mini-molstar-shell .msp-toast-container { display: none !important; }
 .mini-molstar-shell .viewer-state, .mini-molstar-shell .viewer-empty { font-size: 8px; color: #8b95a5; }
 .kind-structure .node-facts { min-height: 42px; padding-top: 7px; }
+.result-distribution { margin: 0; color: #334155; }
+.result-distribution.compact { height: 73px; padding: 7px 0 0; border-top: 1px solid #edf0f4; }
+.distribution-mini-label, .distribution-mini-axis { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.distribution-mini-label span { color: #7d8798; font-size: 8px; }
+.distribution-mini-label b { color: #334155; font: 600 8px "DM Mono", monospace; }
+.result-distribution.compact svg { display: block; width: 100%; height: 40px; overflow: visible; }
+.distribution-mini-axis { margin-top: -7px; color: #9aa3b1; font: 500 7px "DM Mono", monospace; }
+.distribution-axis { stroke: #cdd5df; stroke-width: 1; }
+.distribution-grid { stroke: #eef2f6; stroke-width: 1; }
+.distribution-area { fill: rgba(74, 123, 232, .13); }
+.distribution-curve { fill: none; stroke: #527ee3; stroke-width: 2; vector-effect: non-scaling-stroke; }
+.distribution-point { fill: #527ee3; stroke: #fff; stroke-width: 1.4; }
+.distribution-median { stroke: #da805b; stroke-width: 1.3; stroke-dasharray: 3 2; vector-effect: non-scaling-stroke; }
+.distribution-rug { stroke: rgba(82,126,227,.34); stroke-width: 1; }
+.distribution-iqr { fill: #8f74c9; }
+.result-distribution.detailed { margin: 0 25px 20px; border: 1px solid #dfe5ed; border-radius: 10px; background: #fff; overflow: hidden; }
+.result-distribution.detailed figcaption { min-height: 78px; padding: 13px 15px; display: flex; justify-content: space-between; gap: 18px; border-bottom: 1px solid #e8edf3; background: linear-gradient(180deg, #fbfcfe, #f8fafc); }
+.result-distribution.detailed figcaption > div:first-child { display: grid; align-content: center; gap: 3px; }
+.result-distribution.detailed figcaption span { color: #5272bd; font-size: 8px; font-weight: 700; letter-spacing: .06em; }
+.result-distribution.detailed figcaption h3 { margin: 0; color: #1d2939; font-size: 14px; }
+.result-distribution.detailed figcaption p { margin: 0; color: #7a8597; font-size: 9px; }
+.distribution-summary { display: flex; align-items: center; gap: 17px; }
+.distribution-summary span { display: grid; gap: 4px; padding-left: 13px; border-left: 1px solid #e0e6ed; }
+.distribution-summary small { color: #8993a3; font-size: 8px; font-weight: 500; }
+.distribution-summary b { color: #27364d; font: 600 11px "DM Mono", monospace; white-space: nowrap; }
+.result-distribution.detailed > svg { display: block; width: 100%; height: 214px; padding: 4px 14px 0; }
+.distribution-tick { fill: #7f8998; font: 8px "DM Mono", monospace; }
+.result-distribution.detailed footer { min-height: 34px; padding: 0 15px; display: flex; align-items: center; gap: 14px; border-top: 1px solid #edf1f5; color: #768194; font-size: 8px; }
+.result-distribution.detailed footer span { display: inline-flex; align-items: center; gap: 5px; }
+.result-distribution.detailed footer i { display: inline-block; width: 12px; height: 3px; border-radius: 3px; }
+.curve-key { background: #527ee3; }.median-key { height: 8px !important; width: 1px !important; border-left: 1px dashed #da805b; }.iqr-key { background: #8f74c9; }
+.result-distribution.detailed footer b { margin-left: auto; color: #44536b; font-weight: 650; }
 .workflow-node.stage-targets { min-height: 224px; }
 .node-targets { min-height: 102px; padding: 8px 0 3px; display: grid; gap: 6px; }
 .node-targets > span { min-width: 0; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 3px 7px; padding: 6px 8px; border: 1px solid #e7ebf1; border-radius: 7px; background: #fafbfd; }

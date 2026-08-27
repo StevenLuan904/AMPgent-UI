@@ -18,6 +18,7 @@ import {
   LayoutDashboard,
   Library,
   Move,
+  Microscope,
   Network,
   RotateCcw,
   ShieldCheck,
@@ -35,6 +36,7 @@ import type { AnalysisCardQueryState, PivotChartType } from './analysisDataContr
 import { loadAnalysisSnapshot, type AnalysisSnapshot } from './dataKernel'
 import { executeAnalysisQuery, type AnalysisPivotResult, type PivotDimensionKey } from './dataKernel'
 import { frameworkFixture } from './frameworkFixture'
+import { CandidateCaseWorkbench } from './CandidateCaseWorkbench'
 import {
   chartLabels,
   createDefaultQuery,
@@ -680,8 +682,9 @@ function CardContent({ id, query, snapshot }: { id: AnalysisQuestion; query: Car
   return <div className="card-placeholder">扩展接口已就绪</div>
 }
 
-export function AnalysisDashboard({ detail, seedNodeIds = [] }: { detail?: RunDetail | null; seedNodeIds?: string[] }) {
+export function AnalysisDashboard({ detail, seedNodeIds = [], apiBase = '' }: { detail?: RunDetail | null; seedNodeIds?: string[]; apiBase?: string }) {
   const [editing, setEditing] = useState(false)
+  const [caseOpen, setCaseOpen] = useState(false)
   const [layout, setLayout] = useState<Layout[]>(readLayout)
   const [hiddenCards, setHiddenCards] = useState<Set<AnalysisQuestion>>(readHiddenCards)
   const [libraryOpen, setLibraryOpen] = useState(false)
@@ -749,13 +752,14 @@ export function AnalysisDashboard({ detail, seedNodeIds = [] }: { detail?: RunDe
       <header className="analysis-page-header">
         <div className="analysis-heading">
           <div className="analysis-eyebrow"><DatabaseZap /> 确定性科学分析 <span>{snapshot?.source === 'analytics_api' ? '实时只读' : '冻结快照'}</span></div>
-          <h1>短肽分析</h1>
-          <p>{runLabel}</p>
+          <h1>{caseOpen ? '候选案例' : '短肽分析'}</h1>
+          <p>{caseOpen ? '单一候选的序列、活性、安全性、双靶点与结构证据' : runLabel}</p>
         </div>
         <div className="analysis-header-actions">
           <span className={`fixture-badge ${snapshot ? 'verified' : ''}`} title="发布快照已校验完整性并保留数据库来源。"><FlaskConical /> {snapshot ? '真实数据已校验' : '正在校验数据'}</span>
-          <button className={editing ? 'active' : ''} onClick={() => setEditing((value) => !value)}><LayoutDashboard />{editing ? '完成布局' : '编辑布局'}</button>
-          <div className="card-library-wrap">
+          <button className={caseOpen ? 'active' : ''} onClick={() => setCaseOpen((value) => !value)}><Microscope />{caseOpen ? '返回分析' : '候选案例'}</button>
+          {!caseOpen && <button className={editing ? 'active' : ''} onClick={() => setEditing((value) => !value)}><LayoutDashboard />{editing ? '完成布局' : '编辑布局'}</button>}
+          {!caseOpen && <div className="card-library-wrap">
             <button onClick={() => setLibraryOpen((value) => !value)}><Library />卡片库</button>
             {libraryOpen && (
               <div className="card-library-popover">
@@ -766,11 +770,12 @@ export function AnalysisDashboard({ detail, seedNodeIds = [] }: { detail?: RunDe
                 })}
               </div>
             )}
-          </div>
-          <button className="icon-only" onClick={resetLayout} title="重置布局"><RotateCcw /></button>
+          </div>}
+          {!caseOpen && <button className="icon-only" onClick={resetLayout} title="重置布局"><RotateCcw /></button>}
         </div>
       </header>
 
+      {caseOpen ? <CandidateCaseWorkbench apiBase={apiBase} /> : <>
       <div className="analysis-orchestration">
         <div className="orchestration-label"><SlidersHorizontal /><span><b>卡片独立分析</b><small>每张卡片拥有自己的字段、筛选和图表</small></span></div>
         <div className="orchestration-flow">
@@ -826,6 +831,7 @@ export function AnalysisDashboard({ detail, seedNodeIds = [] }: { detail?: RunDe
           <div><DatabaseZap /><span><b>来源</b> PostgreSQL 只读导出</span><span><b>评分覆盖</b> {`${snapshot.coverage.observed.toLocaleString()} / ${snapshot.coverage.expected.toLocaleString()}`}</span><span><b>轮次状态</b> {snapshot.run.status === 'cancelled' ? '已取消' : '读取中'}</span></div>
           <p>完成范围：序列生成、模型评分、候选决策</p>
         </footer>
+      </>}
       </>}
     </section>
   )

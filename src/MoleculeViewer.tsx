@@ -6,9 +6,17 @@ interface Props {
   artifact: ViewerArtifact | null
   compact?: boolean
   autoRotate?: boolean
+  representation?: 'cartoon' | 'atomic' | 'surface'
+  colorTheme?: 'chain-id' | 'hydrophobicity' | 'element-symbol'
 }
 
-export function MoleculeViewer({ artifact, compact = false, autoRotate = false }: Props) {
+const representationPresets = {
+  cartoon: 'polymer-cartoon',
+  atomic: 'atomic-detail',
+  surface: 'molecular-surface',
+} as const
+
+export function MoleculeViewer({ artifact, compact = false, autoRotate = false, representation = 'cartoon', colorTheme = 'chain-id' }: Props) {
   const host = useRef<HTMLDivElement>(null)
   // Mol* is intentionally loaded only when the structure inspector is opened.
   const pluginRef = useRef<any>(null)
@@ -17,6 +25,7 @@ export function MoleculeViewer({ artifact, compact = false, autoRotate = false }
 
   useEffect(() => {
     if (!host.current || pluginRef.current) return
+    const target = host.current
     let disposed = false
     Promise.all([
       import('molstar/lib/mol-plugin-ui'),
@@ -24,7 +33,7 @@ export function MoleculeViewer({ artifact, compact = false, autoRotate = false }
       import('molstar/lib/mol-plugin-ui/spec'),
     ]).then(([pluginUi, react18, pluginSpec]) => {
       return pluginUi.createPluginUI({
-        target: host.current!,
+        target,
         render: react18.renderReact18,
         spec: {
           ...pluginSpec.DefaultPluginUISpec(),
@@ -69,23 +78,34 @@ export function MoleculeViewer({ artifact, compact = false, autoRotate = false }
         )
         const format = artifact.media_type.includes('cif') ? 'mmcif' : 'pdb'
         const trajectory = await plugin.builders.structure.parseTrajectory(data, format)
-        await plugin.builders.structure.hierarchy.applyPreset(trajectory, 'default')
-        if (autoRotate) {
-          plugin.canvas3d?.setProps({
-            trackball: { animate: { name: 'spin', params: { speed: 0.0025, axis: [0, 1, 0] } } },
-          })
-        }
+        await plugin.builders.structure.hierarchy.applyPreset(trajectory, 'default', {
+          representationPreset: representationPresets[representation],
+          representationPresetParams: {
+            theme: { globalName: colorTheme },
+            quality: 'auto',
+          },
+        })
         if (!cancelled) setState('ready')
       } catch (error) {
-        console.error('Unable to load structure artifact', error)
-        if (!cancelled) setState('error')
+        if (!cancelled) {
+          console.error('Unable to load structure artifact', error)
+          setState('error')
+        }
       }
     }
     void load()
     return () => {
       cancelled = true
     }
-  }, [artifact, autoRotate, pluginReady])
+  }, [artifact, colorTheme, pluginReady, representation])
+
+  useEffect(() => {
+    const plugin = pluginRef.current
+    if (!plugin) return
+    plugin.canvas3d?.setProps({
+      trackball: { animate: autoRotate ? { name: 'spin', params: { speed: 0.0012, axis: [0, 1, 0] } } : { name: 'off', params: {} } },
+    })
+  }, [autoRotate, pluginReady])
 
   return (
     <div className={`molstar-shell${compact ? ' mini-molstar-shell' : ''}`}>

@@ -36,8 +36,10 @@ import {
   X,
 } from 'lucide-react'
 import { AnalysisDashboard } from './analysis/AnalysisDashboard'
+import { loadAnalysisSnapshot, type AnalysisSnapshot } from './analysis/dataKernel'
 import { EvidenceDashboard } from './analysis/EvidenceDashboard'
 import { MoleculeViewer } from './MoleculeViewer'
+import { distributionForStage, ResultDistribution } from './ResultDistribution'
 import { LaneLabel, WorkflowNode, type LaneNode, type StageNode } from './WorkflowNode'
 import type {
   CandidatePreview,
@@ -71,14 +73,14 @@ const nodePositions: Record<string, { x: number; y: number }> = {
   target_data: { x: 20, y: 350 },
   knowledge: { x: 440, y: 350 },
   amp_designer: { x: 860, y: 40 },
-  ampgan: { x: 860, y: 275 },
-  hydramp: { x: 860, y: 510 },
+  ampgan: { x: 860, y: 290 },
+  hydramp: { x: 860, y: 540 },
   candidate_pool: { x: 1280, y: 350 },
-  mic: { x: 1700, y: -20 },
-  amp_read: { x: 1700, y: 170 },
-  hemolysis: { x: 1700, y: 360 },
-  toxicity: { x: 1700, y: 550 },
-  developability: { x: 1700, y: 740 },
+  mic: { x: 1700, y: -100 },
+  amp_read: { x: 1700, y: 150 },
+  hemolysis: { x: 1700, y: 400 },
+  toxicity: { x: 1700, y: 650 },
+  developability: { x: 1700, y: 900 },
   admission: { x: 2120, y: 350 },
   targets: { x: 2540, y: 350 },
   boltz: { x: 2960, y: 305 },
@@ -303,6 +305,7 @@ function CanvasHeader({ detail, refreshing, selectionMode, selectedCount, onRefr
 
 function GraphView({
   detail,
+  analysisSnapshot,
   selectedStage,
   selectedEdge,
   selectionMode,
@@ -312,6 +315,7 @@ function GraphView({
   onSelectEdge,
 }: {
   detail: RunDetail
+  analysisSnapshot: AnalysisSnapshot | null
   selectedStage: string | null
   selectedEdge: GraphEdgeDetail | null
   selectionMode: boolean
@@ -338,11 +342,12 @@ function GraphView({
         stage,
         branches: detail.branches,
         viewer: detail.viewers?.[stage.id] ?? (stage.kind === 'structure' ? detail.viewer : null),
+        distribution: distributionForStage(analysisSnapshot, detail, stage.id),
         selected: selectionMode ? analysisSelection.includes(stage.id) : selectedStage === stage.id,
       },
       draggable: false,
     })),
-  ], [analysisSelection, detail, selectedStage, selectionMode])
+  ], [analysisSelection, analysisSnapshot, detail, selectedStage, selectionMode])
   const stageById = useMemo(() => Object.fromEntries(detail.graph.nodes.map((node) => [node.id, node])), [detail])
   const edges = useMemo<Edge[]>(() => detail.graph.edges.map((edge, index) => {
     const source = stageById[edge.source] as GraphStage | undefined
@@ -383,7 +388,7 @@ function GraphView({
         nodeTypes={nodeTypes}
         onNodeClick={handleNodeClick}
         onEdgeClick={handleEdgeClick}
-        defaultViewport={{ x: 22, y: 108, zoom: 0.72 }}
+        defaultViewport={{ x: 22, y: 92, zoom: 0.82 }}
         minZoom={0.34}
         maxZoom={1.25}
         proOptions={{ hideAttribution: true }}
@@ -570,11 +575,12 @@ function ReasoningPanel({ nodeDetail }: { nodeDetail: NodeDetail }) {
   )
 }
 
-function Inspector({ detail, stageId, onClose }: { detail: RunDetail; stageId: string; onClose: () => void }) {
+function Inspector({ detail, stageId, analysisSnapshot, onClose }: { detail: RunDetail; stageId: string; analysisSnapshot: AnalysisSnapshot | null; onClose: () => void }) {
   const stage = detail.graph.nodes.find((item) => item.id === stageId) ?? detail.graph.nodes[0]
   const groupLabel = { inputs: '输入', design: '设计', evaluation: '评估', decision: '决策', structure: '结构', review: '评审' }[stage.group]
   const [nodeDetail, setNodeDetail] = useState<NodeDetail | null>(null)
   const [detailError, setDetailError] = useState<string | null>(null)
+  const distribution = distributionForStage(analysisSnapshot, detail, stageId)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -617,6 +623,7 @@ function Inspector({ detail, stageId, onClose }: { detail: RunDetail; stageId: s
         <p>{stage.insight.reason}</p>
         <span>{stage.insight.facts.map((fact) => `${fact.label} ${fact.value}`).join(' · ')}</span>
       </section>
+      {distribution && <section className="inspector-distribution-section"><ResultDistribution data={distribution} /></section>}
       <section className="inspector-section evidence-overview">
         <div className="section-title"><h3>数据概览</h3><span className={`stage-badge ${stage.status}`}>{statusText[stage.status] ?? stage.status}</span></div>
         <div className="fact-grid four-up">
@@ -742,6 +749,17 @@ export default function App() {
   const [selectedEdge, setSelectedEdge] = useState<GraphEdgeDetail | null>(null)
   const [selectionMode, setSelectionMode] = useState(false)
   const [analysisSelection, setAnalysisSelection] = useState<string[]>([])
+  const [analysisSnapshot, setAnalysisSnapshot] = useState<AnalysisSnapshot | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    const liveAnalyticsEnabled = import.meta.env.VITE_ANALYTICS_API_ENABLED === 'true'
+    void loadAnalysisSnapshot({ runId: liveAnalyticsEnabled ? data.detail?.run.id : undefined, apiBase }).then((snapshot) => {
+      if (!cancelled) setAnalysisSnapshot(snapshot)
+    }).catch(() => {
+      if (!cancelled) setAnalysisSnapshot(null)
+    })
+    return () => { cancelled = true }
+  }, [apiBase, data.detail?.run.id])
   const selectedAnalysisNodes = useMemo(() => data.detail?.graph.nodes.filter((node) => analysisSelection.includes(node.id)) ?? [], [analysisSelection, data.detail])
   const toggleAnalysisNode = (id: string) => setAnalysisSelection((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
   return (
@@ -756,7 +774,7 @@ export default function App() {
           onSelect={(id) => { data.setSelectedId(id); setSelectedStage(null); setSelectedEdge(null); setAnalysisSelection([]); setSelectionMode(false) }}
         />
         {activeView === 'analysis' ? (
-          <AnalysisDashboard detail={data.detail} seedNodeIds={analysisSelection} />
+          <AnalysisDashboard detail={data.detail} seedNodeIds={analysisSelection} apiBase={apiBase} />
         ) : activeView === 'evidence' ? (
           <EvidenceDashboard runId={data.detail?.run.id} />
         ) : data.detail && !data.loading ? (
@@ -776,6 +794,7 @@ export default function App() {
               />
               <GraphView
                 detail={data.detail}
+                analysisSnapshot={analysisSnapshot}
                 selectedStage={selectedStage}
                 selectedEdge={selectedEdge}
                 selectionMode={selectionMode}
@@ -800,7 +819,7 @@ export default function App() {
               )}
               {!selectionMode && <div className="canvas-footnote"><PanelLeftClose />拖拽画布 · 点击节点 · 5 秒更新</div>}
             </main>
-            {selectedStage && <Inspector detail={data.detail} stageId={selectedStage} onClose={() => setSelectedStage(null)} />}
+            {selectedStage && <Inspector detail={data.detail} stageId={selectedStage} analysisSnapshot={analysisSnapshot} onClose={() => setSelectedStage(null)} />}
             {selectedEdge && <EdgeInspector detail={data.detail} edge={selectedEdge} onClose={() => setSelectedEdge(null)} />}
           </>
         ) : (

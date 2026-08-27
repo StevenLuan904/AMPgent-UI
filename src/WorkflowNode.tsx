@@ -15,6 +15,7 @@ import {
   Target,
 } from 'lucide-react'
 import { MoleculeViewer } from './MoleculeViewer'
+import { ResultDistribution, type ResultDistributionData } from './ResultDistribution'
 import type { Branch, GraphStage, ViewerArtifact } from './types'
 
 export interface StageNodeData extends Record<string, unknown> {
@@ -22,6 +23,7 @@ export interface StageNodeData extends Record<string, unknown> {
   branches: Branch[]
   viewer: ViewerArtifact | null
   selected: boolean
+  distribution: ResultDistributionData | null
 }
 
 export type StageNode = Node<StageNodeData, 'stage'>
@@ -71,7 +73,7 @@ const termDescriptions: Record<string, string> = {
 }
 
 export function WorkflowNode({ data }: NodeProps<StageNode>) {
-  const { stage, branches, viewer, selected } = data
+  const { stage, branches, viewer, selected, distribution } = data
   const Icon = iconById[stage.id as keyof typeof iconById] ?? Database
   const progress = stage.total > 0 ? Math.min(100, Math.round((stage.current / stage.total) * 100)) : 0
   const stateIcon = stage.status === 'completed' ? <Check /> : stage.status === 'stopped' ? <CircleStop /> : null
@@ -99,7 +101,8 @@ export function WorkflowNode({ data }: NodeProps<StageNode>) {
         <span className={`verdict-chip ${stage.insight.grade}`}><i />{stage.insight.verdict}</span>
         <b title={stage.insight.reason}>{stage.insight.reason}</b>
       </div>
-      {isStructure && <MoleculeViewer artifact={viewer} compact autoRotate />}
+      {isStructure && <MoleculeViewer key={viewer?.artifact_sha256 ?? 'empty'} artifact={viewer} compact autoRotate />}
+      {distribution && <ResultDistribution data={distribution} compact />}
       {showsTargets ? (
         <div className="node-targets">
           {branches.slice(0, 2).map((branch) => (

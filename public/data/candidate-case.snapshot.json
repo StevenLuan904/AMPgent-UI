@@ -1,0 +1,771 @@
+{
+  "schemaVersion": "ampgent-candidate-case.1",
+  "generatedAt": "2026-08-27T10:49:40.817378Z",
+  "source": "postgresql_read_only_with_frozen_metrics",
+  "run": {
+    "id": "57afecc7-22e9-4efb-9051-acb11234013d",
+    "status": "cancelled",
+    "updatedAt": "2026-08-20T02:32:06.177769+00:00"
+  },
+  "candidate": {
+    "id": "90cf4c9a-955b-4674-804f-f124384c9f56",
+    "sequence": "LRWWKLLAEAAAWWWEWWWWWW",
+    "originSet": [
+      "hydramp"
+    ],
+    "proposalRank": 43,
+    "admission": {
+      "paretoFront": 1,
+      "reasons": [
+        "selected_by_deterministic_nonweighted_pareto_front"
+      ],
+      "status": "mature_core",
+      "structureEligible": true
+    },
+    "metrics": {
+      "amp_read_log10_mic_um": {
+        "limitations": [
+          "handoff reliability: R3-generic-mixed-species-no-similarity-isolated-local-test",
+          "configured trust: soft",
+          "Generic mixed-species MIC estimate; it is not E. coli-specific or a wet-lab MIC.",
+          "Component predictions are retained and no cross-family consensus is fabricated.",
+          "The local comparison is not similarity-isolated from the released training data."
+        ],
+        "outOfDomain": false,
+        "status": "succeeded",
+        "text": null,
+        "toolCallId": "1b6dd87f-1aab-4ade-a438-0bf1ef3e1ebf",
+        "unit": "log10(umol/L)",
+        "value": 1.0864980480440998
+      },
+      "hydrophobic_moment_eisenberg": {
+        "limitations": [
+          "handoff reliability: descriptor-R2",
+          "configured trust: descriptor"
+        ],
+        "outOfDomain": false,
+        "status": "succeeded",
+        "text": null,
+        "toolCallId": "4d4a4936-1eec-40d2-89cc-d9cadfa3c521",
+        "unit": "dimensionless",
+        "value": 0.36281016664641824
+      },
+      "hydrophobic_ratio_modlamp": {
+        "limitations": [
+          "handoff reliability: descriptor-R2",
+          "configured trust: descriptor"
+        ],
+        "outOfDomain": false,
+        "status": "succeeded",
+        "text": null,
+        "toolCallId": "4d4a4936-1eec-40d2-89cc-d9cadfa3c521",
+        "unit": "fraction",
+        "value": 0.3181818181818182
+      },
+      "llamp_log10_mic_um": {
+        "limitations": [
+          "handoff reliability: R3-author-test-not-similarity-isolated",
+          "configured trust: soft",
+          "E. coli species-conditioned output is a soft estimate, not a wet-lab MIC.",
+          "The author test is not sequence-similarity isolated from training data.",
+          "The PolyForm Noncommercial license limits this runtime to noncommercial research."
+        ],
+        "outOfDomain": false,
+        "status": "succeeded",
+        "text": null,
+        "toolCallId": "2100ac2e-7a4a-4ef5-8084-bbb6eab1d309",
+        "unit": "log10(umol/L)",
+        "value": 1.1185107231140137
+      },
+      "macrel_amp_probability": {
+        "limitations": [
+          "handoff reliability: R3-not-locked",
+          "configured trust: soft",
+          "Macrel is one soft generic AMP/hemolysis classifier; HemoPI2 is not yet active.",
+          "Model assets match the two hashes locked in the handoff, but this is not assay calibration."
+        ],
+        "outOfDomain": false,
+        "status": "succeeded",
+        "text": null,
+        "toolCallId": "9ad628da-5cf2-4f01-a07a-3f46798c94d1",
+        "unit": "fraction",
+        "value": 0.327
+      },
+      "macrel_hemolysis_label": {
+        "limitations": [
+          "handoff reliability: R3-not-locked",
+          "configured trust: soft",
+          "Macrel is one soft generic AMP/hemolysis classifier; HemoPI2 is not yet active.",
+          "Model assets match the two hashes locked in the handoff, but this is not assay calibration."
+        ],
+        "outOfDomain": false,
+        "status": "succeeded",
+        "text": "low",
+        "toolCallId": "9ad628da-5cf2-4f01-a07a-3f46798c94d1",
+        "unit": null,
+        "value": null
+      },
+      "macrel_hemolysis_probability": {
+        "limitations": [
+          "handoff reliability: R3-not-locked",
+          "configured trust: soft",
+          "Macrel is one soft generic AMP/hemolysis classifier; HemoPI2 is not yet active.",
+          "Model assets match the two hashes locked in the handoff, but this is not assay calibration."
+        ],
+        "outOfDomain": false,
+        "status": "succeeded",
+        "text": null,
+        "toolCallId": "9ad628da-5cf2-4f01-a07a-3f46798c94d1",
+        "unit": "fraction",
+        "value": 0.238
+      },
+      "maximum_hydrophobic_run": {
+        "limitations": [
+          "handoff reliability: descriptor-R2",
+          "configured trust: descriptor"
+        ],
+        "outOfDomain": false,
+        "status": "succeeded",
+        "text": null,
+        "toolCallId": "4d4a4936-1eec-40d2-89cc-d9cadfa3c521",
+        "unit": "residues",
+        "value": 6.0
+      },
+      "net_charge_ph7_4": {
+        "limitations": [
+          "handoff reliability: descriptor-R2",
+          "configured trust: descriptor"
+        ],
+        "outOfDomain": false,
+        "status": "succeeded",
+        "text": null,
+        "toolCallId": "4d4a4936-1eec-40d2-89cc-d9cadfa3c521",
+        "unit": "elementary_charge",
+        "value": -0.01
+      },
+      "toxinpred3_hybrid_score": {
+        "limitations": [
+          "handoff reliability: R3-minus-not-assay-matched",
+          "configured trust: soft",
+          "Corrected batch runner fixes one-row shape and per-sequence literal MERCI scoring.",
+          "The endpoint is not assay-matched to this project and remains soft evidence."
+        ],
+        "outOfDomain": false,
+        "status": "succeeded",
+        "text": null,
+        "toolCallId": "e7915059-4753-42be-a36b-74b365754641",
+        "unit": "dimensionless",
+        "value": 0.095
+      },
+      "toxinpred3_label": {
+        "limitations": [
+          "handoff reliability: R3-minus-not-assay-matched",
+          "configured trust: soft",
+          "Corrected batch runner fixes one-row shape and per-sequence literal MERCI scoring.",
+          "The endpoint is not assay-matched to this project and remains soft evidence."
+        ],
+        "outOfDomain": false,
+        "status": "succeeded",
+        "text": "Non-Toxin",
+        "toolCallId": "e7915059-4753-42be-a36b-74b365754641",
+        "unit": null,
+        "value": null
+      }
+    },
+    "metricContext": {
+      "macrel_amp_probability": {
+        "value": 0.327,
+        "favorablePercentile": 23,
+        "cohortSize": 773,
+        "direction": "higher"
+      },
+      "llamp_log10_mic_um": {
+        "value": 1.1185107231140137,
+        "favorablePercentile": 70,
+        "cohortSize": 773,
+        "direction": "lower"
+      },
+      "macrel_hemolysis_probability": {
+        "value": 0.238,
+        "favorablePercentile": 83,
+        "cohortSize": 773,
+        "direction": "lower"
+      },
+      "toxinpred3_hybrid_score": {
+        "value": 0.095,
+        "favorablePercentile": 68,
+        "cohortSize": 773,
+        "direction": "lower"
+      }
+    }
+  },
+  "targets": [
+    {
+      "order": 1,
+      "name": "DNA gyrase subunit A",
+      "organism": "Escherichia coli K-12 MG1655",
+      "accession": "NP_416734.1",
+      "sequence": "MSDLAREITPVNIEEELKSSYLDYAMSVIVGRALPDVRDGLKPVHRRVLYAMNVLGNDWNKAYKKSARVVGDVIGKYHPHGDSAVYDTIVRMAQPFSLRYMLVDGQGNFGSIDGDSAAAMRYTEIRLAKIAHELMADLEKETVDFVDNYDGTEKIPDVMPTKIPNLLVNGSSGIAVGMATNIPPHNLTEVINGCLAYIDDEDISIEGLMEHIPGPDFPTAAIINGRRGIEEAYRTGRGKVYIRARAEVEVDAKTGRETIIVHEIPYQVNKARLIEKIAELVKEKRVEGISALRDESDKDGMRIVIEVKRDAVGEVVLNNLYSQTQLQVSFGINMVALHHGQPKIMNLKDIIAAFVRHRREVVTRRTIFELRKARDRAHILEALAVALANIDPIIELIRHAPTPAEAKTALVANPWQLGNVAAMLERAGDDAARPEWLEPEFGVRDGLYYLTEQQAQAILDLRLQKLTGLEHEKLLDEYKELLDQIAELLRILGSADRLMEVIREELELVREQFGDKRRTEITANSADINLEDLITQEDVVVTLSHQGYVKYQPLSEYEAQRRGGKGKSAARIKEEDFIDRLLVANTHDHILCFSSRGRVYSMKVYQLPEATRGARGRPIVNLLPLEQDERITAILPVTEFEEGVKVFMATANGTVKKTVLTEFNRLRTAGKVAIKLVDGDELIGVDLTSGEDEVMLFSAEGKVVRFKESSVRAMGCNTTGVRGIRLGEGDKVVSLIVPRGDGAILTATQNGYGKRTAVAEYPTKSRATKGVISIKVTERNGLVVGAVQVDDCDQIMMITDAGTLVRTRVSEISIVGRNTQGVILIRTAEDENVVGLQRVAEPVDEEDLDTIDGSAAEGDDEIAPEVDVDDEPEEE",
+      "sequenceLength": 875,
+      "status": "frozen",
+      "pockets": [
+        {
+          "name": "LEI-800 GyrA allosteric pocket",
+          "type": "allosteric_surface_pocket",
+          "functionalRole": "A horseshoe-like hydrophobic pocket on the DNA-binding surface, distinct from fluoroquinolones.",
+          "evidenceGrade": "A",
+          "evidenceScore": 0.94,
+          "conditioningPriority": "primary",
+          "conditioningEnabled": true,
+          "residueIndices": [
+            40,
+            41,
+            42,
+            45,
+            88,
+            91,
+            92,
+            96,
+            97,
+            98,
+            102,
+            111,
+            112,
+            165,
+            169,
+            170,
+            171,
+            172,
+            266,
+            267,
+            268,
+            269
+          ],
+          "limitations": [
+            "The ligand also contacts DNA; monomer-only peptide prediction changes the pocket geometry.",
+            "Evidence is for a small hydrophobic molecule, not a peptide."
+          ],
+          "evidence": [
+            {
+              "sourceType": "UniProtKB_Swiss-Prot",
+              "sourceAccession": "P0AES4",
+              "confidence": 0.96,
+              "method": null,
+              "resolutionAngstrom": null
+            },
+            {
+              "sourceType": "RCSB_PDB",
+              "sourceAccession": "8QQI",
+              "confidence": 0.94,
+              "method": "ELECTRON MICROSCOPY",
+              "resolutionAngstrom": 2.9
+            }
+          ]
+        },
+        {
+          "name": "GyrA fluoroquinolone cleavage-complex site",
+          "type": "composite_protein_dna_site",
+          "functionalRole": "Stabilizes the cleaved GyrA-DNA intermediate and blocks religation.",
+          "evidenceGrade": "A",
+          "evidenceScore": 0.95,
+          "conditioningPriority": "secondary",
+          "conditioningEnabled": false,
+          "residueIndices": [
+            83,
+            87,
+            121,
+            122
+          ],
+          "limitations": [
+            "This is not a pocket on an isolated GyrA monomer.",
+            "Peptide conditioning requires explicit DNA and both GyrA chains; current MVP input does not encode that complex."
+          ],
+          "evidence": [
+            {
+              "sourceType": "RCSB_PDB",
+              "sourceAccession": "9GGQ",
+              "confidence": 0.95,
+              "method": "ELECTRON MICROSCOPY",
+              "resolutionAngstrom": 2.6
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "order": 2,
+      "name": "PBP2a family beta-lactam-resistant peptidoglycan transpeptidase, partial",
+      "organism": "Staphylococcus epidermidis",
+      "accession": "WP_308061015.1",
+      "sequence": "AIEDKNFKQVYKDSSYISKSDNGEVEMTERPIKIYNSLGVKDINIQDRKIKKVSKNKKRVDAQYKIKTNYGNIDRNVQFNFVKEDGMWKLDWDHSVIIPGMQKDQSIHIENLKSERGKILDRNNVELANTGTAYEIGIVPKNVSKKDYKAIAKELSISEDYIKQQMDQNWVQDDTFVPLKTVKKMDEYLSDFAKKFHLTTNETESRNYPLGKATSHLLGYVGPINSEELKQKEYKGYKDDAVIGKKGLEKLYDKKLQHEDGYRVTIVDDNSNTIAHTLIEKKKKDGKDIQLTIDAKVQKSIYNNMKNDYGSGTAIHPQTGELLALVSTPSYDVYPFMYGMSNEEYNKLTEDKKEPLLNKFQITTSPGSTQKILTAMIGLNNKTLDDKTSYKIDGKGWQKDKSWGGYNVTRYEVVNGNIDLKQAIESSDNIFFARVALELGSKKFEKGMKKLGVGEDIPSDYPFYNAQISNKNLDNEILLADSGYGQGEILINPVQILSIYSALENNGNINAPHLLKDTKNKVWKKNIISKENINLLTDGMQQVVNKTHKEDIYRSYANLIGKSGTAELKMKQGETGRQIGWFISYDKDNPNMMMAINVKDVQDKGMASYNAKISGKVYDELYENGNKKYDIDE",
+      "sequenceLength": 633,
+      "status": "frozen",
+      "pockets": [
+        {
+          "name": "PBP2a transpeptidase active site",
+          "type": "enzyme_active_site",
+          "functionalRole": "Catalytic Ser403 performs DD-transpeptidation and is acylated by beta-lactams.",
+          "evidenceGrade": "B",
+          "evidenceScore": 0.9,
+          "conditioningPriority": "secondary",
+          "conditioningEnabled": true,
+          "residueIndices": [
+            365,
+            367,
+            368,
+            371,
+            411,
+            412,
+            426,
+            427,
+            429,
+            484,
+            485,
+            486,
+            547,
+            548,
+            562,
+            563,
+            564,
+            565,
+            566,
+            567,
+            578,
+            606,
+            607
+          ],
+          "limitations": [
+            "The active site is normally closed/narrow and beta-lactam inhibition is covalent.",
+            "Rosetta scores cannot model the beta-lactam acylation mechanism as peptide affinity."
+          ],
+          "evidence": [
+            {
+              "sourceType": "RCSB_PDB",
+              "sourceAccession": "3ZFZ",
+              "confidence": 0.9,
+              "method": "X-RAY DIFFRACTION",
+              "resolutionAngstrom": 2.25
+            }
+          ]
+        },
+        {
+          "name": "PBP2a ceftaroline/muramate allosteric domain",
+          "type": "allosteric_surface_site",
+          "functionalRole": "Binding propagates a long-range conformational change that opens the transpeptidase active site.",
+          "evidenceGrade": "B",
+          "evidenceScore": 0.88,
+          "conditioningPriority": "primary",
+          "conditioningEnabled": true,
+          "residueIndices": [
+            69,
+            70,
+            109,
+            110,
+            111,
+            112,
+            113,
+            114,
+            115,
+            116,
+            130,
+            131,
+            204,
+            205,
+            206,
+            221,
+            222,
+            223,
+            238,
+            240,
+            242,
+            258,
+            259,
+            262,
+            263,
+            271,
+            272,
+            273,
+            274,
+            337,
+            338
+          ],
+          "limitations": [
+            "Structure is S. aureus PBP2a, transferred to the sequence-identical S. epidermidis partial protein.",
+            "The allosteric region is broad and conformational; use an ensemble, not a single residue centroid."
+          ],
+          "evidence": [
+            {
+              "sourceType": "RCSB_PDB",
+              "sourceAccession": "3ZFZ",
+              "confidence": 0.88,
+              "method": "X-RAY DIFFRACTION",
+              "resolutionAngstrom": 2.25
+            },
+            {
+              "sourceType": "peer_reviewed_article",
+              "sourceAccession": "PMCID:PMC3800995",
+              "confidence": 0.86,
+              "method": null,
+              "resolutionAngstrom": null
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "structure": {
+    "boltzRuns": [
+      {
+        "seed": 20270380,
+        "target": "DNA gyrase subunit A",
+        "lane": "native",
+        "confidenceScore": 0.45441505312919617,
+        "complexPlddt": 0.4649654030799866,
+        "iptm": 0.41221359372138977,
+        "pairIptm": 0.18911269307136536,
+        "ptm": 0.29757723212242126,
+        "artifact": {
+          "candidate_id": "90cf4c9a-955b-4674-804f-f124384c9f56",
+          "sequence": "LRWWKLLAEAAAWWWEWWWWWW",
+          "target_id": "be410449-e780-4f2d-99e3-3929ed69a2ca",
+          "target_name": "DNA gyrase subunit A",
+          "lane": "native",
+          "seed": 20270380,
+          "artifact_sha256": "3778cfe3b8b0bee228de012fa67c2f479a59f219f83a06f45b91e0e3a40301a8",
+          "media_type": "chemical/x-cif",
+          "artifact_url": "/v1/observer/artifacts/3778cfe3b8b0bee228de012fa67c2f479a59f219f83a06f45b91e0e3a40301a8"
+        }
+      },
+      {
+        "seed": 20270381,
+        "target": "DNA gyrase subunit A",
+        "lane": "native",
+        "confidenceScore": 0.4171102046966553,
+        "complexPlddt": 0.43392717838287354,
+        "iptm": 0.3498423397541046,
+        "pairIptm": 0.16117329895496368,
+        "ptm": 0.2956562042236328,
+        "artifact": {
+          "candidate_id": "90cf4c9a-955b-4674-804f-f124384c9f56",
+          "sequence": "LRWWKLLAEAAAWWWEWWWWWW",
+          "target_id": "be410449-e780-4f2d-99e3-3929ed69a2ca",
+          "target_name": "DNA gyrase subunit A",
+          "lane": "native",
+          "seed": 20270381,
+          "artifact_sha256": "20b72ba630a8e6d86209fbdab2a09de6b2c744bcb956cd1673d7b5182dd239f1",
+          "media_type": "chemical/x-cif",
+          "artifact_url": "/v1/observer/artifacts/20b72ba630a8e6d86209fbdab2a09de6b2c744bcb956cd1673d7b5182dd239f1"
+        }
+      }
+    ],
+    "rosettaRuns": [
+      {
+        "seed": 20270380,
+        "target": "DNA gyrase subunit A",
+        "lane": "native",
+        "decoyCount": 16,
+        "scores": [
+          {
+            "dG_separated": -51.1759974456632,
+            "dSASA_int": 1991.7980787659624,
+            "interface_hbonds": 1.0,
+            "packstat": 0.29880359047597477,
+            "peptide_score": -29.255069868809407,
+            "total_score": 469.81133474186663
+          },
+          {
+            "dG_separated": -60.81645443028083,
+            "dSASA_int": 2339.8319741557652,
+            "interface_hbonds": 1.0,
+            "packstat": 0.3183672673443155,
+            "peptide_score": -18.370122257428555,
+            "total_score": 539.9841738204275
+          },
+          {
+            "dG_separated": -60.19569657811297,
+            "dSASA_int": 2225.797280462928,
+            "interface_hbonds": 2.0,
+            "packstat": 0.4067357327117829,
+            "peptide_score": -41.14074419738855,
+            "total_score": 494.5950866391832
+          },
+          {
+            "dG_separated": -56.56664599303457,
+            "dSASA_int": 2329.6461007718062,
+            "interface_hbonds": 2.0,
+            "packstat": 0.31295746283435627,
+            "peptide_score": -28.674804454892655,
+            "total_score": 483.21029296175203
+          },
+          {
+            "dG_separated": -58.33789384730562,
+            "dSASA_int": 2367.3689258216536,
+            "interface_hbonds": 3.0,
+            "packstat": 0.3530007966175736,
+            "peptide_score": -10.683625691226286,
+            "total_score": 513.714881760399
+          },
+          {
+            "dG_separated": -53.67213870025694,
+            "dSASA_int": 2152.756926783048,
+            "interface_hbonds": 0.0,
+            "packstat": 0.31257112546104915,
+            "peptide_score": -25.183875434811014,
+            "total_score": 535.2066834503303
+          },
+          {
+            "dG_separated": -46.50948606129464,
+            "dSASA_int": 2001.9397448992233,
+            "interface_hbonds": 4.0,
+            "packstat": 0.4002377342342688,
+            "peptide_score": -17.351909125806316,
+            "total_score": 551.4658023551681
+          },
+          {
+            "dG_separated": -57.63726345163326,
+            "dSASA_int": 2241.9115641377607,
+            "interface_hbonds": 1.0,
+            "packstat": 0.34931509572426594,
+            "peptide_score": -28.443169497421835,
+            "total_score": 479.2877943374925
+          },
+          {
+            "dG_separated": -53.42435530311167,
+            "dSASA_int": 2073.6966144752637,
+            "interface_hbonds": 1.0,
+            "packstat": 0.3114260317896951,
+            "peptide_score": -44.29510965665627,
+            "total_score": 476.7366042452741
+          },
+          {
+            "dG_separated": -50.66073508095292,
+            "dSASA_int": 2061.580422452635,
+            "interface_hbonds": 2.0,
+            "packstat": 0.4111206921085885,
+            "peptide_score": -28.859542394069848,
+            "total_score": 541.1105457010199
+          },
+          {
+            "dG_separated": -58.46627606384783,
+            "dSASA_int": 2351.735298065802,
+            "interface_hbonds": 2.0,
+            "packstat": 0.37179835241103426,
+            "peptide_score": -1.547399669347306,
+            "total_score": 507.79882448282365
+          },
+          {
+            "dG_separated": -57.23051216198269,
+            "dSASA_int": 2446.806725697078,
+            "interface_hbonds": 1.0,
+            "packstat": 0.42120677403859563,
+            "peptide_score": -2.034585608460769,
+            "total_score": 536.2191344576131
+          },
+          {
+            "dG_separated": -64.22448562620673,
+            "dSASA_int": 2581.3837430033973,
+            "interface_hbonds": 2.0,
+            "packstat": 0.39702784120687734,
+            "peptide_score": -27.515547278476596,
+            "total_score": 480.7228939734783
+          },
+          {
+            "dG_separated": -35.92682339090993,
+            "dSASA_int": 2019.5287542218016,
+            "interface_hbonds": 2.0,
+            "packstat": 0.3248434622430386,
+            "peptide_score": -19.473911983301797,
+            "total_score": 522.6121152035631
+          },
+          {
+            "dG_separated": -56.2725487844051,
+            "dSASA_int": 2410.626647593691,
+            "interface_hbonds": 4.0,
+            "packstat": 0.4178397098236374,
+            "peptide_score": -9.78705705682589,
+            "total_score": 611.8121956220017
+          },
+          {
+            "dG_separated": -25.011836562657095,
+            "dSASA_int": 2328.2643042104537,
+            "interface_hbonds": 0.0,
+            "packstat": 0.4091632580939329,
+            "peptide_score": 30.745442312416962,
+            "total_score": 805.6449282845903
+          }
+        ],
+        "artifact": {
+          "candidate_id": "90cf4c9a-955b-4674-804f-f124384c9f56",
+          "sequence": "LRWWKLLAEAAAWWWEWWWWWW",
+          "target_id": "be410449-e780-4f2d-99e3-3929ed69a2ca",
+          "target_name": "DNA gyrase subunit A",
+          "lane": "native",
+          "seed": 20270380,
+          "artifact_sha256": "46b0ecbba5ecda240cad069392b6f85589d4435e10dbe1579b8438fea725337d",
+          "media_type": "chemical/x-pdb",
+          "artifact_url": "/v1/observer/artifacts/46b0ecbba5ecda240cad069392b6f85589d4435e10dbe1579b8438fea725337d"
+        }
+      },
+      {
+        "seed": 20270381,
+        "target": "DNA gyrase subunit A",
+        "lane": "native",
+        "decoyCount": 16,
+        "scores": [
+          {
+            "dG_separated": -68.06910978045937,
+            "dSASA_int": 4033.706623723708,
+            "interface_hbonds": 5.0,
+            "packstat": 0.5594741547141441,
+            "peptide_score": 42.23037965160004,
+            "total_score": 804.1818289000367
+          },
+          {
+            "dG_separated": -25.94229055247331,
+            "dSASA_int": 3977.6521168479735,
+            "interface_hbonds": 3.0,
+            "packstat": 0.47425065497714247,
+            "peptide_score": 109.81598487256694,
+            "total_score": 989.5624974607617
+          },
+          {
+            "dG_separated": -87.84591053980557,
+            "dSASA_int": 4273.192155447545,
+            "interface_hbonds": 8.0,
+            "packstat": 0.5003799077767708,
+            "peptide_score": 37.42572782815711,
+            "total_score": 878.6968907690281
+          },
+          {
+            "dG_separated": -74.5174394545877,
+            "dSASA_int": 4201.369343453855,
+            "interface_hbonds": 1.0,
+            "packstat": 0.4945417676731542,
+            "peptide_score": 43.85406933590813,
+            "total_score": 851.4805907547367
+          },
+          {
+            "dG_separated": -87.1230198539763,
+            "dSASA_int": 4216.4873078644405,
+            "interface_hbonds": 7.0,
+            "packstat": 0.44985815266173235,
+            "peptide_score": 20.930721686397114,
+            "total_score": 766.9475721619527
+          },
+          {
+            "dG_separated": -102.27148370068267,
+            "dSASA_int": 4389.449366923908,
+            "interface_hbonds": 4.0,
+            "packstat": 0.5088463281086039,
+            "peptide_score": -3.678293157565462,
+            "total_score": 650.5722446173457
+          },
+          {
+            "dG_separated": 164.6574889074243,
+            "dSASA_int": 4401.021923791127,
+            "interface_hbonds": 5.0,
+            "packstat": 0.507103852107216,
+            "peptide_score": 184.67399038265705,
+            "total_score": 1747.4347288442261
+          },
+          {
+            "dG_separated": -66.62089485852857,
+            "dSASA_int": 4124.512156382354,
+            "interface_hbonds": 7.0,
+            "packstat": 0.4950339032310501,
+            "peptide_score": 32.606266924133884,
+            "total_score": 770.5391624663699
+          },
+          {
+            "dG_separated": -56.11125727106378,
+            "dSASA_int": 3978.084066445295,
+            "interface_hbonds": 5.0,
+            "packstat": 0.5199303663062593,
+            "peptide_score": 74.58797494932637,
+            "total_score": 841.7390039276693
+          },
+          {
+            "dG_separated": -75.38015502651069,
+            "dSASA_int": 4198.100365035927,
+            "interface_hbonds": 6.0,
+            "packstat": 0.4940662578249953,
+            "peptide_score": 30.491390579742784,
+            "total_score": 838.7800992251425
+          },
+          {
+            "dG_separated": -84.24820684646988,
+            "dSASA_int": 4448.983594906987,
+            "interface_hbonds": 3.0,
+            "packstat": 0.5386712949204705,
+            "peptide_score": 3.2526874214437105,
+            "total_score": 719.3514630257699
+          },
+          {
+            "dG_separated": -54.777451495963305,
+            "dSASA_int": 4016.8014964582117,
+            "interface_hbonds": 2.0,
+            "packstat": 0.5154413423817115,
+            "peptide_score": 93.75304623262929,
+            "total_score": 833.2267867250087
+          },
+          {
+            "dG_separated": 16.689442991014175,
+            "dSASA_int": 3882.9525374316004,
+            "interface_hbonds": 5.0,
+            "packstat": 0.5024217597070871,
+            "peptide_score": 93.91654731827963,
+            "total_score": 890.3639266583516
+          },
+          {
+            "dG_separated": -58.41295765439429,
+            "dSASA_int": 4355.490177630081,
+            "interface_hbonds": 7.0,
+            "packstat": 0.4492768854287131,
+            "peptide_score": 53.462398929315064,
+            "total_score": 776.782291235711
+          },
+          {
+            "dG_separated": -38.573843516498755,
+            "dSASA_int": 4304.9743296307015,
+            "interface_hbonds": 6.0,
+            "packstat": 0.5079724849032298,
+            "peptide_score": 69.95537899773836,
+            "total_score": 1029.6506222593068
+          },
+          {
+            "dG_separated": -60.284590757470596,
+            "dSASA_int": 4157.554512584583,
+            "interface_hbonds": 8.0,
+            "packstat": 0.4623447835694931,
+            "peptide_score": 50.468823763319236,
+            "total_score": 884.1112967467377
+          }
+        ],
+        "artifact": {
+          "candidate_id": "90cf4c9a-955b-4674-804f-f124384c9f56",
+          "sequence": "LRWWKLLAEAAAWWWEWWWWWW",
+          "target_id": "be410449-e780-4f2d-99e3-3929ed69a2ca",
+          "target_name": "DNA gyrase subunit A",
+          "lane": "native",
+          "seed": 20270381,
+          "artifact_sha256": "02ef2e76ccc00fb8797da580f206336324c32791d9ec4b07db17cd1db45b9299",
+          "media_type": "chemical/x-pdb",
+          "artifact_url": "/v1/observer/artifacts/02ef2e76ccc00fb8797da580f206336324c32791d9ec4b07db17cd1db45b9299"
+        }
+      }
+    ],
+    "coverage": {
+      "plannedBoltzPoses": 12,
+      "observedBoltzPoses": 2,
+      "plannedRosettaDecoys": 192,
+      "observedRosettaDecoys": 32
+    }
+  },
+  "review": {
+    "status": "not_formed",
+    "reason": "run_cancelled_before_final_portfolio",
+    "candidateDecisionAvailable": true,
+    "finalPortfolioAvailable": false
+  },
+  "transportSha256": "ff76782f43688d874ed15255b6d5bd6a36c18a9fa90c9cbfd21e2d4b8304071b"
+}
