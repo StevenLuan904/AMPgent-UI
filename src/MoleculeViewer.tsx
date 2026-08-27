@@ -221,7 +221,8 @@ export function MoleculeViewer({
                 direction[0] * snapshot.up[1] - direction[1] * snapshot.up[0],
               ]
               const length = Math.hypot(...rolledUp) || 1
-              const zoomScale = compact ? 0.76 : 0.44
+              const aspectRatio = (host.current?.clientWidth ?? 1) / Math.max(host.current?.clientHeight ?? 1, 1)
+              const zoomScale = compact ? 0.76 : aspectRatio < 2 ? 0.78 : aspectRatio < 3 ? 0.62 : 0.44
               plugin.managers.camera.setSnapshot({
                 up: rolledUp.map((value) => value / length),
                 position: snapshot.target.map((value: number, index: number) => value + direction[index] * zoomScale),
