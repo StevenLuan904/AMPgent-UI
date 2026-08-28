@@ -5,6 +5,8 @@ param(
     [Parameter(Mandatory = $true)][string]$Python,
     [string]$ReleaseRoot = "var/platform/releases-v38",
     [string]$StateRoot = "var/run/v38-workers",
+    [ValidateSet("v38", "autoresearch-local", "all")]
+    [string]$RoleSet = "v38",
     [switch]$ReplaceOwned
 )
 
@@ -51,19 +53,41 @@ if ($marker -ne $SourceRevision) {
     throw "v38 worker release source marker drifted"
 }
 
-$roles = @(
-    @{ Name = "v38-control"; Maximum = "16" },
-    @{ Name = "v38-generator"; Maximum = "8" },
-    @{ Name = "v38-metrics"; Maximum = "5" }
+$v38Roles = @(
+    @{ Name = "v38-control"; TaskQueue = "pepagent-control-v38"; Maximum = "16" },
+    @{ Name = "v38-generator"; TaskQueue = "pepagent-generator-v38"; Maximum = "8" },
+    @{ Name = "v38-metrics"; TaskQueue = "pepagent-cpu-metrics-v38"; Maximum = "5" }
 )
+$autoresearchLocalRoles = @(
+    @{
+        Name = "autoresearch-control"
+        TaskQueue = "pepagent-autoresearch-control-v1"
+        Maximum = "16"
+    },
+    @{
+        Name = "autoresearch-metrics"
+        TaskQueue = "pepagent-autoresearch-metrics-v1"
+        Maximum = "5"
+    }
+)
+$roles = switch ($RoleSet) {
+    "v38" { $v38Roles }
+    "autoresearch-local" { $autoresearchLocalRoles }
+    "all" { @($v38Roles) + @($autoresearchLocalRoles) }
+}
 $receipts = @()
 foreach ($role in $roles) {
     $roleName = $role.Name
+    $roleQueue = $role.TaskQueue
     $receiptPath = Join-Path $stateBase ("$roleName.json")
     if (Test-Path -LiteralPath $receiptPath -PathType Leaf) {
         $previous = Get-Content -Raw -LiteralPath $receiptPath | ConvertFrom-Json
+        $queueMismatch = (
+            $roleName -like "autoresearch-*" -and
+            $previous.task_queue -ne $roleQueue
+        )
         if ($previous.ampgent_owned -ne $true -or $previous.foreign -eq $true -or
-            $previous.role -ne $roleName) {
+            $previous.role -ne $roleName -or $queueMismatch) {
             throw "v38 worker receipt is not exact AMPgent ownership for this role"
         }
         $poller = Get-CimInstance Win32_Process -Filter "ProcessId=$([int]$previous.pid)" `
@@ -148,6 +172,7 @@ foreach ($role in $roles) {
     $receipt = [ordered]@{
         schema_version = "v38.local-sequence-worker-receipt.1"
         role = $roleName
+        task_queue = $roleQueue
         pid = [int]$children[0].ProcessId
         supervisor_pid = $process.Id
         host = [Environment]::MachineName

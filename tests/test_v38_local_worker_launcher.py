@@ -10,6 +10,15 @@ def test_v38_local_launcher_is_immutable_and_sequence_stage_only() -> None:
     assert 'Name = "v38-control"' in text
     assert 'Name = "v38-generator"' in text
     assert 'Name = "v38-metrics"' in text
+    assert 'Name = "autoresearch-control"' in text
+    assert 'Name = "autoresearch-metrics"' in text
+    assert 'Name = "autoresearch-generator"' not in text
+    assert '[ValidateSet("v38", "autoresearch-local", "all")]' in text
+    assert '[string]$RoleSet = "v38"' in text
+    assert '"autoresearch-local" { $autoresearchLocalRoles }' in text
+    assert 'TaskQueue = "pepagent-autoresearch-control-v1"' in text
+    assert 'TaskQueue = "pepagent-autoresearch-metrics-v1"' in text
+    assert 'pepagent-autoresearch-generator-v1' not in text
     assert "v38-boltz" not in text
     assert "v38-rosetta" not in text
     assert "192.168.99.32" not in text
@@ -20,8 +29,17 @@ def test_v38_local_launcher_refuses_foreign_or_mismatched_live_processes() -> No
     assert "$previous.ampgent_owned -ne $true" in text
     assert "$previous.foreign -eq $true" in text
     assert "$previous.role -ne $roleName" in text
+    assert '$roleName -like "autoresearch-*"' in text
+    assert "$previous.task_queue -ne $roleQueue" in text
+    assert "$previous.role -ne $roleName -or $queueMismatch" in text
     assert "supervisor_pid" in text
     assert "process tree does not match its exact receipt" in text
+
+
+def test_autoresearch_local_receipt_binds_the_isolated_queue() -> None:
+    text = SCRIPT.read_text(encoding="utf-8")
+    assert "$roleQueue = $role.TaskQueue" in text
+    assert "task_queue = $roleQueue" in text
 
 
 def test_v38_local_launcher_replacement_is_opt_in_and_exactly_scoped() -> None:
