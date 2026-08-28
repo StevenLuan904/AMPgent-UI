@@ -29,6 +29,16 @@ from pepagent.workflow_observer_contract import (
     write_transient_snapshot,
 )
 
+# Observer durability is deliberately best effort.  A database pool wait, a
+# tunnel outage, or a slow local filesystem must never consume a scientific
+# activity slot.  These deadlines bound the background writer itself; callers
+# also schedule every lifecycle write off the activity's critical path below.
+OBSERVER_DATABASE_TIMEOUT_SECONDS = 2.0
+OBSERVER_SNAPSHOT_TIMEOUT_SECONDS = 0.5
+OBSERVER_MAX_PENDING_PROGRESS_WRITES = 128
+
+_OBSERVER_BACKGROUND_TASKS: set[asyncio.Task[None]] = set()
+
 
 def _request_from_input(input: ExecuteActivityInput) -> dict[str, Any] | None:
     if not input.args or not isinstance(input.args[0], dict):
@@ -65,42 +75,96 @@ def _tool_call_id(result: Any) -> UUID | None:
         return None
 
 
+async def _persist_durable_event(
+    *,
+    payload: ActivityLifecyclePayload,
+    topology_payload: dict[str, Any] | None,
+) -> None:
+    async with SessionFactory() as session, session.begin():
+        await append_typed_lifecycle_event(session, payload)
+        if topology_payload is None:
+            run = await session.get(ExperimentRun, payload.run_id)
+            candidate = run.spec_json.get("workflow_topology") if run is not None else None
+            if isinstance(candidate, dict):
+                topology_payload = candidate
+        if topology_payload is not None:
+            topology = FormalWorkflowTopology.model_validate(topology_payload)
+            await persist_observer_checkpoints(
+                session, run_id=payload.run_id, topology=topology
+            )
+
+
 async def _persist_event(
     *,
     payload: ActivityLifecyclePayload,
     topology_payload: dict[str, Any] | None,
 ) -> None:
     try:
-        async with SessionFactory() as session, session.begin():
-            await append_typed_lifecycle_event(session, payload)
-            if topology_payload is None:
-                run = await session.get(ExperimentRun, payload.run_id)
-                candidate = run.spec_json.get("workflow_topology") if run is not None else None
-                if isinstance(candidate, dict):
-                    topology_payload = candidate
-            if topology_payload is not None:
-                topology = FormalWorkflowTopology.model_validate(topology_payload)
-                await persist_observer_checkpoints(
-                    session, run_id=payload.run_id, topology=topology
-                )
-    except Exception as error:  # Observer writes must not mutate the scientific result.
-        await asyncio.to_thread(
-            write_transient_snapshot,
-            ObserverTransientSnapshot(
-                run_id=payload.run_id,
-                updated_at=datetime.now(UTC),
-                ttl_seconds=3600,
-                source="v38-observer-interceptor",
-                transient={
-                    "observer_write_status": "failed",
-                    "activity_id": payload.activity_id,
-                    "activity_type": payload.activity_type,
-                    "event_status": payload.status,
-                    "error_type": type(error).__name__,
-                },
-            ),
-            root=Path("var/observer"),
+        await asyncio.wait_for(
+            _persist_durable_event(payload=payload, topology_payload=topology_payload),
+            timeout=OBSERVER_DATABASE_TIMEOUT_SECONDS,
         )
+        return
+    except Exception as error:  # Observer writes must not mutate the scientific result.
+        snapshot = ObserverTransientSnapshot(
+            run_id=payload.run_id,
+            updated_at=datetime.now(UTC),
+            ttl_seconds=3600,
+            source="v38-observer-interceptor",
+            transient={
+                "observer_write_status": "failed",
+                "activity_id": payload.activity_id,
+                "activity_type": payload.activity_type,
+                "event_status": payload.status,
+                "error_type": type(error).__name__,
+            },
+        )
+    try:
+        await asyncio.wait_for(
+            asyncio.to_thread(
+                write_transient_snapshot,
+                snapshot,
+                root=Path("var/observer"),
+            ),
+            timeout=OBSERVER_SNAPSHOT_TIMEOUT_SECONDS,
+        )
+    except Exception:
+        # The transient fallback is observer-only as well.  It is intentionally
+        # fail-open after its own deadline.
+        return
+
+
+def _observer_task_done(task: asyncio.Task[None]) -> None:
+    _OBSERVER_BACKGROUND_TASKS.discard(task)
+    if task.cancelled():
+        return
+    # Retrieve a defensive unexpected exception so the event loop does not
+    # emit an unhandled-task warning.  _persist_event normally absorbs all
+    # observer failures itself.
+    task.exception()
+
+
+def _schedule_event(
+    *,
+    payload: ActivityLifecyclePayload,
+    topology_payload: dict[str, Any] | None,
+) -> None:
+    # Progress is lossy observer telemetry, so cap it under backpressure.  The
+    # boundary events are still admitted and each write has a hard deadline.
+    if (
+        payload.status == "progress"
+        and len(_OBSERVER_BACKGROUND_TASKS) >= OBSERVER_MAX_PENDING_PROGRESS_WRITES
+    ):
+        return
+    task = asyncio.create_task(
+        _persist_event(payload=payload, topology_payload=topology_payload),
+        name=(
+            f"v38-observer:{payload.run_id}:{payload.activity_id}:"
+            f"{payload.status}:{payload.completed}"
+        ),
+    )
+    _OBSERVER_BACKGROUND_TASKS.add(task)
+    task.add_done_callback(_observer_task_done)
 
 
 class _ObserverOutbound(ActivityOutboundInterceptor):
@@ -126,25 +190,21 @@ class _ObserverOutbound(ActivityOutboundInterceptor):
             return
         state["last_completed"] = completed
         stage = ACTIVITY_STAGE_BINDINGS[state["activity_type"]]
-        state["pending"].append(
-            asyncio.create_task(
-                _persist_event(
-                    payload=ActivityLifecyclePayload(
-                        run_id=state["run_id"],
-                        activity_id=state["activity_id"],
-                        activity_type=state["activity_type"],
-                        logical_stage=stage,
-                        display_category=display_category_for_stage(stage),
-                        attempt=state["attempt"],
-                        status="progress",
-                        completed=completed,
-                        expected=expected,
-                        worker_role=state["worker_role"],
-                        task_queue=state["task_queue"],
-                    ),
-                    topology_payload=state["topology_payload"],
-                )
-            )
+        _schedule_event(
+            payload=ActivityLifecyclePayload(
+                run_id=state["run_id"],
+                activity_id=state["activity_id"],
+                activity_type=state["activity_type"],
+                logical_stage=stage,
+                display_category=display_category_for_stage(stage),
+                attempt=state["attempt"],
+                status="progress",
+                completed=completed,
+                expected=expected,
+                worker_role=state["worker_role"],
+                task_queue=state["task_queue"],
+            ),
+            topology_payload=state["topology_payload"],
         )
 
 
@@ -174,7 +234,6 @@ class _ObserverInbound(ActivityInboundInterceptor):
         if not isinstance(topology_payload, dict):
             topology_payload = None
         stage = ACTIVITY_STAGE_BINDINGS[activity_type]
-        pending: list[asyncio.Task[None]] = []
         state_token = self._state.set(
             {
                 "run_id": run_id,
@@ -185,7 +244,6 @@ class _ObserverInbound(ActivityInboundInterceptor):
                 "task_queue": info.task_queue,
                 "expected": expected,
                 "topology_payload": topology_payload,
-                "pending": pending,
                 "last_completed": -1,
             }
         )
@@ -201,7 +259,7 @@ class _ObserverInbound(ActivityInboundInterceptor):
             "task_queue": info.task_queue,
         }
         try:
-            await _persist_event(
+            _schedule_event(
                 payload=ActivityLifecyclePayload(
                     **base, status="started", completed=0
                 ),
@@ -210,9 +268,7 @@ class _ObserverInbound(ActivityInboundInterceptor):
             try:
                 result = await self.next.execute_activity(input)
             except (asyncio.CancelledError, TemporalCancelledError):
-                if pending:
-                    await asyncio.gather(*pending)
-                await _persist_event(
+                _schedule_event(
                     payload=ActivityLifecyclePayload(
                         **base, status="cancelled", completed=0
                     ),
@@ -220,18 +276,14 @@ class _ObserverInbound(ActivityInboundInterceptor):
                 )
                 raise
             except Exception:
-                if pending:
-                    await asyncio.gather(*pending)
-                await _persist_event(
+                _schedule_event(
                     payload=ActivityLifecyclePayload(
                         **base, status="failed", completed=0
                     ),
                     topology_payload=topology_payload,
                 )
                 raise
-            if pending:
-                await asyncio.gather(*pending)
-            await _persist_event(
+            _schedule_event(
                 payload=ActivityLifecyclePayload(
                     **base,
                     status="succeeded",
