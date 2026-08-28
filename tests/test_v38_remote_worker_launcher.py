@@ -120,3 +120,10 @@ def test_gpu_declaration_scan_skips_unreadable_foreign_process_environments() ->
     assert '2>/dev/null' in declaration_scan
     assert 'head -n 1 || true' in declaration_scan
     assert "GPU has a CUDA_VISIBLE_DEVICES declaration; refusing launch" in declaration_scan
+
+
+def test_gpu_idle_threshold_uses_reported_memory_not_driver_reserved_gap() -> None:
+    text = SCRIPT.read_text(encoding="utf-8")
+    assert '--query-gpu=memory.used' in text
+    assert 'GPU_MEMORY_USED_MIB="$((GPU_MEMORY_TOTAL_MIB - GPU_MEMORY_FREE_MIB))"' not in text
+    assert 'GPU_MEMORY_USED_MIB > 256 || GPU_UTILIZATION_PERCENT > 5' in text

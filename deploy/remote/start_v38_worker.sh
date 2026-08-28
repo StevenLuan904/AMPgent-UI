@@ -74,13 +74,13 @@ assert_gpu_idle() {
   done
   GPU_MEMORY_TOTAL_MIB="$(nvidia-smi -i "$RESOURCE" --query-gpu=memory.total --format=csv,noheader,nounits | tr -d '[:space:]')"
   GPU_MEMORY_FREE_MIB="$(nvidia-smi -i "$RESOURCE" --query-gpu=memory.free --format=csv,noheader,nounits | tr -d '[:space:]')"
+  GPU_MEMORY_USED_MIB="$(nvidia-smi -i "$RESOURCE" --query-gpu=memory.used --format=csv,noheader,nounits | tr -d '[:space:]')"
   GPU_UTILIZATION_PERCENT="$(nvidia-smi -i "$RESOURCE" --query-gpu=utilization.gpu --format=csv,noheader,nounits | tr -d '[:space:]')"
-  [[ "$GPU_MEMORY_TOTAL_MIB" =~ ^[0-9]+$ && "$GPU_MEMORY_FREE_MIB" =~ ^[0-9]+$ ]] || {
+  [[ "$GPU_MEMORY_TOTAL_MIB" =~ ^[0-9]+$ && "$GPU_MEMORY_FREE_MIB" =~ ^[0-9]+$ && "$GPU_MEMORY_USED_MIB" =~ ^[0-9]+$ ]] || {
     echo "GPU memory preflight is invalid" >&2
     exit 21
   }
   [[ "$GPU_UTILIZATION_PERCENT" =~ ^[0-9]+$ ]] || { echo "GPU utilization preflight is invalid" >&2; exit 21; }
-  GPU_MEMORY_USED_MIB="$((GPU_MEMORY_TOTAL_MIB - GPU_MEMORY_FREE_MIB))"
   if (( GPU_MEMORY_USED_MIB > 256 || GPU_UTILIZATION_PERCENT > 5 )); then
     echo "GPU exceeds the guarded idle threshold; refusing launch" >&2
     exit 21
