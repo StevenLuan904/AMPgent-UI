@@ -3040,3 +3040,29 @@ MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot
   `recovery-v1` 父PID `2268143` exact-once启动；恢复收据 SHA-256 为
   `95d2369d6e39f247b9703391821af7491e9f104e6f3baa8f25d3be528360c520`。两条当前新批次都仍是
   `generation_active_scoring_pending`，不得计入严格库或重复提交。
+
+### 2026-08-28 AceA r28严格扩库完成与PBP2a LOG碰撞恢复
+
+- `acea-pepglad-novel-root-r28-short10-13-20260828T0215Z` 已完成 768/768 条生成，结果
+  SHA-256 为 `b179c7dbdf73d434b1d67feb73aa128f3d200972e48477bc36e14354777d1c24`；768条均完成
+  正式12项评分。436条 instability index <50、500条通过安全标签，最终289条同时通过全部展示硬门；
+  18条获至少两个活性模型支持，其中1条获三个模型支持。
+- 全局去重与80/80家族聚类后，289条严格候选全部是新序列且全部形成新家族。严格库由
+  88,789条/9,457家族增至 **89,078条/9,746家族**；AceA/GyrA/PBP2a 分别为
+  29,479/31,011/28,588，至少两个活性模型支持的候选增至 **61,941**。新冻结CSV SHA-256为
+  `f7961993e1b7f6e401727780ec0c67f97c54418380f5cb87df7937e59b30899d`，远端内容寻址目录为
+  `/data0/ampgent-pepglad-huangyueshan/v1/artifacts/strict-library/f7961993e1b7f6e401727780ec0c67f97c54418380f5cb87df7937e59b30899d/`；
+  score receipt `56834147b1030c3ad99fd3ea053bce578599109830134f9dd0cece8b6c502b04`、严格子集
+  `96ff33622d90752352ba5f3ebe411aaf9c08d561c3375b7e6109c1a5a22731e5` 和冻结收据
+  `8e671ff4bda5f864028ddd959952aa5b2c4b7aa3f7b43ecb253f4b0489525fa4` 均已远端校验；本机
+  约177.5 MiB中转已删除。
+- PBP2a r20 `recovery-v1` 生成768个PDB后在收尾阶段失败。确定根因是生成失败收据时临时导出的环境变量
+  `LOG` 仍为日志文件路径，与PepGLAD自身期望的日志级别变量同名，导致 logger 抛出 `KeyError`。该失败
+  尝试及其768个未完成正式结果的PDB保持不可变且不晋级；失败收据 SHA-256 为
+  `51daf4d9fd72e6ce0ae8ed62b2a65b750c58abb88010428092470ca67bfabd79`。
+- 已以清洁环境（`LOG` unset、`PYTHONUTF8=1`、`PYTHONIOENCODING=utf-8`）exact-once 启动独立
+  `recovery-v2`，GPU7父PID `2754483`，launch receipt SHA-256 为
+  `78ae1ae5d878cb1b33e5df5af0a89539726054cf8f96c95b7f0cc3acba518f3d`。同时容量脚本确认GPU6
+  空闲后，以新seed `2026082768` 启动PBP2a r21，父PID `2812305`；request/launch receipt SHA-256
+  分别为 `5742360e0fad9d1cb779e5d61960ccae55a81a2d734e71b42d662d7df2baf682` /
+  `ecc18564e9a20a1e2a85fd6e45700f615346d2dfe79f4713680d117db332573b`。两批均尚未进入严格库。
