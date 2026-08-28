@@ -23,10 +23,14 @@ from pepagent.autoresearch_formal_submit_cli import (
     METRICS_QUEUE,
     PEPMLM_REVISION,
     PEPMLM_WEIGHTS_SHA256,
+    PHYSICOCHEMICAL_ADAPTER_NAME,
+    PHYSICOCHEMICAL_METHOD_VERSION,
+    PHYSICOCHEMICAL_RUNTIME_ID,
     PREFLIGHT_SCHEMA,
     WORKFLOW_MEMO_KEY,
     WORKFLOW_TYPE,
     _start_or_recover_autoresearch_workflow,
+    _verify_metric_runtime_registry_live,
     build_autoresearch_formal_plan,
     derive_autoresearch_branch_identity,
     main,
@@ -35,10 +39,12 @@ from pepagent.autoresearch_formal_submit_cli import (
 )
 from pepagent.provenance.hashing import sha256_file, sha256_json, sha256_text
 from pepagent.storage.object_store import StoredObject
+from pepagent.v37_runtime_descriptor_cli import freeze_v37_generic_runtime_descriptor
 from pepagent.v38_science_execution import build_default_v38_sequence_contract
 
 
 def _write_json(path: Path, value: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         json.dumps(
             value,
@@ -50,13 +56,155 @@ def _write_json(path: Path, value: dict[str, Any]) -> None:
     )
 
 
+def _append_bytes(path: Path, payload: bytes) -> None:
+    path.write_bytes(path.read_bytes() + payload)
+
+
+def _build_metric_plugins(
+    tmp_path: Path,
+    *,
+    source_revision: str,
+    plugin_names: list[str],
+) -> tuple[dict[str, Any], Path, str, Path]:
+    archive_path = tmp_path / "platform-release.tar.gz"
+    archive_path.write_bytes(b"formal-test-release-v2")
+    release_sha256 = sha256_file(archive_path)
+    release_root = tmp_path / "releases" / release_sha256
+    release_root.mkdir(parents=True, exist_ok=True)
+    (release_root / ".pepagent-source-revision").write_text(
+        source_revision + "\n", encoding="utf-8"
+    )
+    registry_path = release_root / "config" / "metrics" / "runtime.local.yaml"
+    registry_path.parent.mkdir(parents=True, exist_ok=True)
+    registry_path.write_text("plugins: []\n", encoding="utf-8")
+    registry_sha256 = sha256_file(registry_path)
+
+    plugins: dict[str, Any] = {}
+    for plugin_name in plugin_names:
+        runtime_id = f"{plugin_name}-test-v1"
+        adapter_name = f"{plugin_name}_adapter.py"
+        adapter_index = 1
+        source_root = tmp_path / "provider-runtimes" / plugin_name / "source"
+        model_root = tmp_path / "provider-runtimes" / plugin_name / "model"
+        manifest: dict[str, Any] = {
+            "schema_version": 1,
+            "metric_plugin": plugin_name,
+        }
+        if plugin_name == "physicochemical_developability":
+            runtime_id = PHYSICOCHEMICAL_RUNTIME_ID
+            adapter_name = PHYSICOCHEMICAL_ADAPTER_NAME
+            adapter_index = 2
+            source_root = (
+                release_root
+                / "src"
+                / "pepagent"
+                / "model_workers"
+                / "physicochemical_runtime"
+            )
+            model_root = (
+                release_root
+                / "config"
+                / "environments"
+                / "v39_metric_runtimes"
+                / "physicochemical_model_release"
+            )
+            manifest.update(
+                {
+                    "runtime_id": runtime_id,
+                    "implementation": {
+                        "adapter": (
+                            "src/pepagent/model_workers/physicochemical_runtime/"
+                            f"{PHYSICOCHEMICAL_ADAPTER_NAME}"
+                        ),
+                        "implementation_module": (
+                            "src/pepagent/model_workers/physicochemical_runtime/cli.py"
+                        ),
+                        "method_version": PHYSICOCHEMICAL_METHOD_VERSION,
+                    },
+                }
+            )
+        source_root.mkdir(parents=True, exist_ok=True)
+        model_root.mkdir(parents=True, exist_ok=True)
+        (source_root / "provider.py").write_text(
+            f"PLUGIN = {plugin_name!r}\n", encoding="utf-8"
+        )
+        (model_root / "model.bin").write_bytes(plugin_name.encode("utf-8"))
+        adapter_path = (
+            source_root / adapter_name
+            if plugin_name == "physicochemical_developability"
+            else release_root / "src" / "pepagent" / "model_workers" / adapter_name
+        )
+        adapter_path.parent.mkdir(parents=True, exist_ok=True)
+        adapter_path.write_text(f"PLUGIN = {plugin_name!r}\n", encoding="utf-8")
+        if plugin_name == "physicochemical_developability":
+            (source_root / "cli.py").write_text(
+                (
+                    f"RUNTIME_ID = {PHYSICOCHEMICAL_RUNTIME_ID!r}\n"
+                    f"METHOD_VERSION = {PHYSICOCHEMICAL_METHOD_VERSION!r}\n"
+                ),
+                encoding="utf-8",
+            )
+        executable_path = tmp_path / "provider-runtimes" / plugin_name / "python.exe"
+        executable_path.parent.mkdir(parents=True, exist_ok=True)
+        executable_path.write_bytes(f"python:{plugin_name}".encode())
+        manifest_path = (
+            release_root / "config" / "metrics" / "manifests" / f"{plugin_name}.json"
+        )
+        _write_json(manifest_path, manifest)
+        packages_lock_path = (
+            release_root
+            / "config"
+            / "environments"
+            / "metric_runtimes"
+            / f"{plugin_name}.lock.txt"
+        )
+        packages_lock_path.parent.mkdir(parents=True, exist_ok=True)
+        packages_lock_path.write_text(f"runtime={runtime_id}\n", encoding="utf-8")
+        base_path = release_root / "config" / "metrics" / "runtimes" / f"{plugin_name}.json"
+        _write_json(
+            base_path,
+            {
+                "adapter_path": str(adapter_path),
+                "cwd": str(release_root),
+                "model_root": str(model_root),
+                "name": plugin_name,
+                "packages_lock_path": str(packages_lock_path),
+                "plugin_name": plugin_name,
+                "python_path": str(executable_path),
+                "registry_path": str(registry_path),
+                "registry_sha256": registry_sha256,
+                "runtime_id": runtime_id,
+                "runtime_manifest_path": str(manifest_path),
+                "runtime_manifest_sha256": sha256_file(manifest_path),
+                "source_root": str(source_root),
+            },
+        )
+        plugins[plugin_name] = freeze_v37_generic_runtime_descriptor(
+            base_runtime_path=base_path,
+            runtime_id=runtime_id,
+            executable_path=executable_path,
+            runtime_manifest_path=manifest_path,
+            packages_lock_path=packages_lock_path,
+            source_root=source_root,
+            model_root=model_root,
+            cwd=release_root,
+            adapter_path=adapter_path,
+            executable_index=0,
+            adapter_index=adapter_index,
+        )
+    return plugins, archive_path, release_sha256, release_root
+
+
 def _fixture_bundle(tmp_path: Path) -> tuple[dict[str, Any], dict[str, Any]]:
     source_revision = "a" * 40
-    release_sha256 = "b" * 64
     control_environment = "c" * 64
     generator_environment = "d" * 64
     contract = build_default_v38_sequence_contract().model_dump(mode="json")
-    plugins = {name: {"name": name} for name in contract["metric_plugins"]}
+    plugins, archive_path, release_sha256, release_root = _build_metric_plugins(
+        tmp_path,
+        source_revision=source_revision,
+        plugin_names=list(contract["metric_plugins"]),
+    )
     sequences = {
         "acea": "MKTIIALSYIFCLVFAD",
         "gyra": "MARGKKIGYSAPRQTAA",
@@ -132,7 +280,8 @@ def _fixture_bundle(tmp_path: Path) -> tuple[dict[str, Any], dict[str, Any]]:
         "release": {
             "source_revision": source_revision,
             "archive_sha256": release_sha256,
-            "archive_path_or_uri": "s3://release/sha256/bb/archive.tar.gz",
+            "archive_path_or_uri": str(archive_path),
+            "extracted_root": str(release_root),
         },
         "target_manifest": {
             "path": str(target_manifest_path),
@@ -283,6 +432,19 @@ def _fixture_bundle(tmp_path: Path) -> tuple[dict[str, Any], dict[str, Any]]:
                 },
             },
             {
+                "name": "metric_runtime_live_bytes",
+                "status": "passed",
+                "evidence": {
+                    "schema_version": "ampgent.metric-runtime-live-snapshot.1",
+                    "snapshot_sha256": _verify_metric_runtime_registry_live(
+                        plugin_registry=plugins,
+                        release_root=release_root,
+                    )["snapshot_sha256"],
+                    "plugin_count": len(plugins),
+                    "plugin_names": sorted(plugins),
+                },
+            },
+            {
                 "name": "database_migration_0016",
                 "status": "passed",
                 "evidence": {"migration": "0016_autoresearch_evidence"},
@@ -394,6 +556,115 @@ def test_formal_plan_fails_closed_on_request_or_receipt_drift(tmp_path: Path) ->
             config_base_path=tmp_path,
             preflight_base_path=tmp_path,
         )
+
+
+def test_formal_plan_rejects_pre_runtime_guard_schema(tmp_path: Path) -> None:
+    config, preflight = _fixture_bundle(tmp_path)
+    config["schema_version"] = "ampgent.autoresearch-formal-six-branch-submission.1"
+    preflight["schema_version"] = "ampgent.autoresearch-formal-six-branch-preflight.1"
+
+    with pytest.raises(ValueError, match="config schema is not frozen"):
+        build_autoresearch_formal_plan(
+            config=config,
+            preflight=preflight,
+            config_base_path=tmp_path,
+            preflight_base_path=tmp_path,
+        )
+
+
+@pytest.mark.parametrize(
+    ("byte_kind", "path_key"),
+    [
+        ("adapter", "adapter_path"),
+        ("executable", "executable_path"),
+        ("runtime_manifest", "runtime_manifest_path"),
+        ("package_lock", "packages_lock_path"),
+    ],
+)
+def test_formal_plan_rehashes_metric_runtime_entities_after_preflight(
+    tmp_path: Path,
+    byte_kind: str,
+    path_key: str,
+) -> None:
+    config, preflight = _fixture_bundle(tmp_path)
+    descriptor = config["runtime"]["metric_plugins_by_name"]["hemolysis_risk"]
+    path = Path(descriptor["execution_guard"]["paths"][path_key])
+    path.write_bytes(path.read_bytes() + f"drift:{byte_kind}".encode())
+
+    with pytest.raises(ValueError, match="drifted"):
+        build_autoresearch_formal_plan(
+            config=config,
+            preflight=preflight,
+            config_base_path=tmp_path,
+            preflight_base_path=tmp_path,
+        )
+
+
+@pytest.mark.parametrize("release_kind", ["source_release", "model_release"])
+def test_formal_plan_rehashes_complete_source_and_model_inventories(
+    tmp_path: Path,
+    release_kind: str,
+) -> None:
+    config, preflight = _fixture_bundle(tmp_path)
+    descriptor = config["runtime"]["metric_plugins_by_name"]["hemolysis_risk"]
+    guard = descriptor["execution_guard"]
+    root_key = "source_root" if release_kind == "source_release" else "model_root"
+    item = guard["contract"][release_kind]["files"][0]
+    path = Path(guard["paths"][root_key]) / item["path"]
+    path.write_bytes(path.read_bytes() + b"inventory-drift")
+
+    expected = f"live {release_kind.split('_')[0]} release bytes drifted"
+    with pytest.raises(ValueError, match=expected):
+        build_autoresearch_formal_plan(
+            config=config,
+            preflight=preflight,
+            config_base_path=tmp_path,
+            preflight_base_path=tmp_path,
+        )
+
+
+def test_metric_adapter_must_resolve_inside_immutable_release(tmp_path: Path) -> None:
+    config, _preflight = _fixture_bundle(tmp_path)
+    plugins = copy.deepcopy(config["runtime"]["metric_plugins_by_name"])
+    descriptor = plugins["hemolysis_risk"]
+    original = Path(descriptor["execution_guard"]["paths"]["adapter_path"])
+    mutable_adapter = tmp_path / "mutable-worktree" / original.name
+    mutable_adapter.parent.mkdir(parents=True)
+    mutable_adapter.write_bytes(original.read_bytes())
+    descriptor["adapter_path"] = str(mutable_adapter)
+    descriptor["execution_guard"]["paths"]["adapter_path"] = str(mutable_adapter)
+    descriptor["runtime_identity_sha256"] = sha256_json(
+        {key: value for key, value in descriptor.items() if key != "runtime_identity_sha256"}
+    )
+
+    with pytest.raises(ValueError, match="adapter is not bound to the immutable release root"):
+        _verify_metric_runtime_registry_live(
+            plugin_registry=plugins,
+            release_root=Path(config["release"]["extracted_root"]),
+        )
+
+
+@pytest.mark.asyncio
+async def test_reservation_rehashes_again_before_any_cas_or_database_write(
+    tmp_path: Path,
+) -> None:
+    plan = _build_plan(tmp_path)
+    descriptor = plan.config["runtime"]["metric_plugins_by_name"]["hemolysis_risk"]
+    adapter = Path(descriptor["execution_guard"]["paths"]["adapter_path"])
+    _append_bytes(adapter, b"post-plan-drift")
+    object_store_constructed = False
+
+    def object_store_factory() -> _FakeObjectStore:
+        nonlocal object_store_constructed
+        object_store_constructed = True
+        return _FakeObjectStore()
+
+    with pytest.raises(ValueError, match="drifted"):
+        await reserve_autoresearch_formal_plan(
+            plan,
+            object_store_factory=object_store_factory,
+        )
+    assert object_store_constructed is False
 
 
 class _FakeTransaction:

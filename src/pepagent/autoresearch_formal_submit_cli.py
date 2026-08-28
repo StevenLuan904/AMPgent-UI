@@ -29,10 +29,15 @@ from pepagent.provenance.hashing import (
 )
 from pepagent.settings import get_settings
 from pepagent.storage.object_store import ContentAddressedObjectStore, StoredObject
+from pepagent.v37_runtime_execution import (
+    V37GenericRuntimeExpectation,
+    V37GenericRuntimePaths,
+    build_v37_generic_launch_receipt,
+)
 from pepagent.workflows.autoresearch import _validate_request
 
-CONFIG_SCHEMA = "ampgent.autoresearch-formal-six-branch-submission.1"
-PREFLIGHT_SCHEMA = "ampgent.autoresearch-formal-six-branch-preflight.1"
+CONFIG_SCHEMA = "ampgent.autoresearch-formal-six-branch-submission.2"
+PREFLIGHT_SCHEMA = "ampgent.autoresearch-formal-six-branch-preflight.2"
 WORKFLOW_REQUEST_SCHEMA = "ampgent.autoresearch-workflow-request.1"
 WORKFLOW_TYPE = "AutoResearchClosedLoopWorkflow"
 WORKFLOW_MEMO_KEY = "ampgent_autoresearch_formal_submission_identity"
@@ -41,6 +46,20 @@ CONTROL_QUEUE = "pepagent-autoresearch-control-v1"
 GENERATOR_QUEUE = "pepagent-autoresearch-generator-v1"
 METRICS_QUEUE = "pepagent-autoresearch-metrics-v1"
 BRANCH_KEYS = ("acea", "gyra", "pbp2a", "vegfa", "fgf2", "angpt1")
+METRIC_PLUGIN_NAMES = frozenset(
+    {
+        "hemolysis_risk",
+        "mic_potency",
+        "mic_potency_amp_read",
+        "physicochemical_developability",
+        "toxicity_risk",
+    }
+)
+PHYSICOCHEMICAL_RUNTIME_ID = (
+    "physicochemical-developability-modlamp-4.3.2-biopython-v39"
+)
+PHYSICOCHEMICAL_METHOD_VERSION = "2026.08.22-v2"
+PHYSICOCHEMICAL_ADAPTER_NAME = "no_site_bootstrap.py"
 
 PEPMLM_REVISION = "898fca941a9057aebdd1a6164b5ee09a1a71780e"
 PEPMLM_WEIGHTS_SHA256 = "8a3225bca1f9acd9f701ca2e46597c12bab92320e32b68f380ddf3b6d3b20770"
@@ -79,8 +98,11 @@ class AutoResearchFormalPlan:
     target_manifest_sha256: str
     source_revision: str
     release_sha256: str
+    release_archive_path: Path
+    release_root: Path
     control_environment_sha256: str
     generator_environment_sha256: str
+    metric_runtime_snapshot_sha256: str
     branches: tuple[AutoResearchFormalBranch, ...]
 
 
@@ -190,6 +212,245 @@ def _resolve_existing_path(base_path: Path, value: Any, field_name: str) -> Path
         if candidate.is_file():
             return candidate.resolve()
     raise ValueError(f"{field_name} does not resolve to a file: {value}")
+
+
+def _resolve_existing_directory(base_path: Path, value: Any, field_name: str) -> Path:
+    raw = Path(str(value or ""))
+    candidates = [raw] if raw.is_absolute() else [base_path / raw, Path.cwd() / raw]
+    for candidate in candidates:
+        if candidate.is_dir():
+            return candidate.resolve()
+    raise ValueError(f"{field_name} does not resolve to a directory: {value}")
+
+
+def _require_path_within_release(path: Path, release_root: Path, *, field_name: str) -> Path:
+    resolved = path.resolve(strict=True)
+    try:
+        resolved.relative_to(release_root)
+    except ValueError as error:
+        raise ValueError(f"{field_name} is not bound to the immutable release root") from error
+    return resolved
+
+
+def _same_resolved_path(first: Any, second: Any) -> bool:
+    try:
+        return Path(str(first)).resolve(strict=True) == Path(str(second)).resolve(strict=True)
+    except (FileNotFoundError, OSError, RuntimeError, ValueError):
+        return False
+
+
+def _verify_release_installation(
+    *,
+    release: dict[str, Any],
+    source_revision: str,
+    config_base_path: Path,
+) -> tuple[Path, Path, str]:
+    """Verify the local immutable release bytes used by a formal submission.
+
+    A release archive hash alone does not prove which extracted files the request
+    references.  Formal v2 configs therefore bind both the archive and its
+    content-addressed extraction root.  The exact runtime files under that root
+    are rehashed separately below.
+    """
+
+    release_sha256 = _require_sha256(release.get("archive_sha256"), "formal release archive")
+    archive_path = _resolve_existing_path(
+        config_base_path,
+        release.get("archive_path_or_uri"),
+        "formal release archive path",
+    )
+    if archive_path.is_symlink() or sha256_file(archive_path) != release_sha256:
+        raise ValueError("formal release archive bytes drifted")
+    release_root = _resolve_existing_directory(
+        config_base_path,
+        release.get("extracted_root"),
+        "formal extracted release root",
+    )
+    if release_root.is_symlink() or release_root.name.lower() != release_sha256:
+        raise ValueError("formal extracted release root is not content-addressed by the archive")
+    source_marker = release_root / ".pepagent-source-revision"
+    if not source_marker.is_file() or source_marker.is_symlink():
+        raise ValueError("formal extracted release has no immutable source revision marker")
+    if source_marker.read_text(encoding="utf-8").strip().lower() != source_revision:
+        raise ValueError("formal extracted release source revision drifted")
+    return archive_path, release_root, release_sha256
+
+
+def _verify_metric_runtime_registry_live(
+    *,
+    plugin_registry: dict[str, Any],
+    release_root: Path,
+) -> dict[str, Any]:
+    """Rehash every byte consumed by all five metric providers.
+
+    Repository-owned adapters, manifests, locks, registries, and the working
+    directory must point into the immutable release.  Provider executables,
+    source checkouts, and model roots may be external frozen installations, but
+    their complete declared inventories are rehashed by the generic v37 guard.
+    """
+
+    if set(plugin_registry) != METRIC_PLUGIN_NAMES:
+        raise ValueError("formal metric runtime registry must contain the exact five plugins")
+    release_root = release_root.resolve(strict=True)
+    plugin_snapshots: dict[str, Any] = {}
+    for plugin_name in sorted(plugin_registry):
+        descriptor = plugin_registry[plugin_name]
+        if not isinstance(descriptor, dict):
+            raise ValueError(f"{plugin_name} metric runtime descriptor is not an object")
+        runtime_identity_sha256 = _require_sha256(
+            descriptor.get("runtime_identity_sha256"),
+            f"{plugin_name} runtime identity",
+        )
+        descriptor_identity = {
+            key: value for key, value in descriptor.items() if key != "runtime_identity_sha256"
+        }
+        if sha256_json(descriptor_identity) != runtime_identity_sha256:
+            raise ValueError(f"{plugin_name} metric runtime descriptor self-hash drifted")
+        if descriptor.get("plugin_name") != plugin_name or descriptor.get("name") != plugin_name:
+            raise ValueError(f"{plugin_name} metric runtime plugin identity drifted")
+        guard = descriptor.get("execution_guard")
+        if not isinstance(guard, dict) or set(guard) != {"contract", "expectation", "paths"}:
+            raise ValueError(f"{plugin_name} metric runtime execution guard is incomplete")
+        contract = guard["contract"]
+        expectation_payload = guard["expectation"]
+        paths_payload = guard["paths"]
+        if not isinstance(contract, dict) or not isinstance(expectation_payload, dict):
+            raise ValueError(f"{plugin_name} metric runtime contract is incomplete")
+        if not isinstance(paths_payload, dict) or set(paths_payload) != {
+            "adapter_path",
+            "executable_path",
+            "model_root",
+            "packages_lock_path",
+            "runtime_manifest_path",
+            "source_root",
+        }:
+            raise ValueError(f"{plugin_name} metric runtime path bindings are incomplete")
+        if set(expectation_payload) != {"execution_contract_sha256", "runtime_id"}:
+            raise ValueError(f"{plugin_name} metric runtime expectation is incomplete")
+        expectation = V37GenericRuntimeExpectation(
+            runtime_id=str(expectation_payload["runtime_id"]),
+            execution_contract_sha256=_require_sha256(
+                expectation_payload["execution_contract_sha256"],
+                f"{plugin_name} execution contract",
+            ),
+        )
+        if descriptor.get("runtime_id") != expectation.runtime_id:
+            raise ValueError(f"{plugin_name} metric runtime identity drifted")
+        for descriptor_field, guard_field in {
+            "adapter_path": "adapter_path",
+            "python_path": "executable_path",
+            "runtime_manifest_path": "runtime_manifest_path",
+            "packages_lock_path": "packages_lock_path",
+            "source_root": "source_root",
+            "model_root": "model_root",
+        }.items():
+            if descriptor_field in descriptor and not _same_resolved_path(
+                descriptor[descriptor_field], paths_payload[guard_field]
+            ):
+                raise ValueError(
+                    f"{plugin_name} top-level {descriptor_field} differs from its execution guard"
+                )
+        if not _same_resolved_path(descriptor.get("cwd"), release_root):
+            raise ValueError(f"{plugin_name} working directory is not the immutable release root")
+
+        paths = V37GenericRuntimePaths(
+            executable_path=Path(str(paths_payload["executable_path"])),
+            runtime_manifest_path=Path(str(paths_payload["runtime_manifest_path"])),
+            packages_lock_path=Path(str(paths_payload["packages_lock_path"])),
+            source_root=Path(str(paths_payload["source_root"])),
+            model_root=Path(str(paths_payload["model_root"])),
+            adapter_path=(
+                Path(str(paths_payload["adapter_path"]))
+                if paths_payload["adapter_path"] is not None
+                else None
+            ),
+        )
+        if paths.adapter_path is None:
+            raise ValueError(f"{plugin_name} formal metric runtime has no frozen adapter")
+        for path, field_name in (
+            (paths.adapter_path, f"{plugin_name} adapter"),
+            (paths.runtime_manifest_path, f"{plugin_name} runtime manifest"),
+            (paths.packages_lock_path, f"{plugin_name} package lock"),
+        ):
+            _require_path_within_release(path, release_root, field_name=field_name)
+        registry_path_value = descriptor.get("registry_path")
+        if registry_path_value is not None:
+            registry_path = _require_path_within_release(
+                Path(str(registry_path_value)),
+                release_root,
+                field_name=f"{plugin_name} registry",
+            )
+            if sha256_file(registry_path) != _require_sha256(
+                descriptor.get("registry_sha256"), f"{plugin_name} registry"
+            ):
+                raise ValueError(f"{plugin_name} live registry bytes drifted before submission")
+        if descriptor.get("runtime_manifest_sha256") != contract.get(
+            "runtime_manifest_sha256"
+        ):
+            raise ValueError(f"{plugin_name} runtime manifest identity drifted")
+        entities = contract.get("command_entities") or {}
+        executable_index = int(entities.get("executable_index", -1))
+        adapter_index_value = entities.get("adapter_index")
+        adapter_index = int(adapter_index_value) if adapter_index_value is not None else None
+        if executable_index != 0 or adapter_index not in {1, 2}:
+            raise ValueError(f"{plugin_name} formal metric command mapping is invalid")
+        command = ["formal-runtime-entity"] * (max(executable_index, adapter_index) + 1)
+        command[executable_index] = str(paths.executable_path.resolve(strict=True))
+        command[adapter_index] = str(paths.adapter_path.resolve(strict=True))
+        if adapter_index == 2:
+            command[1] = "-S"
+        receipt = build_v37_generic_launch_receipt(
+            contract=contract,
+            expectation=expectation,
+            paths=paths,
+            command=command,
+            cwd=release_root,
+            env={},
+            input_paths={},
+            stage="pre_snapshot",
+        )
+        runtime_manifest = _load_json(paths.runtime_manifest_path)
+        if runtime_manifest.get("metric_plugin") != plugin_name:
+            raise ValueError(f"{plugin_name} runtime manifest plugin identity drifted")
+        if plugin_name == "physicochemical_developability":
+            implementation = runtime_manifest.get("implementation") or {}
+            adapter = contract.get("adapter") or {}
+            if (
+                expectation.runtime_id != PHYSICOCHEMICAL_RUNTIME_ID
+                or runtime_manifest.get("runtime_id") != PHYSICOCHEMICAL_RUNTIME_ID
+                or implementation.get("method_version") != PHYSICOCHEMICAL_METHOD_VERSION
+                or not str(implementation.get("adapter") or "").endswith(
+                    PHYSICOCHEMICAL_ADAPTER_NAME
+                )
+                or not str(implementation.get("implementation_module") or "").endswith("cli.py")
+                or entities.get("adapter_index") != 2
+                or adapter.get("path") != PHYSICOCHEMICAL_ADAPTER_NAME
+            ):
+                raise ValueError(
+                    "physicochemical runtime is not the versioned v39/Biopython method-v2 binding"
+                )
+            _require_path_within_release(
+                paths.source_root,
+                release_root,
+                field_name="physicochemical source release",
+            )
+            _require_path_within_release(
+                paths.model_root,
+                release_root,
+                field_name="physicochemical model release",
+            )
+        plugin_snapshots[plugin_name] = {
+            "runtime_id": expectation.runtime_id,
+            "runtime_identity_sha256": runtime_identity_sha256,
+            "execution_contract_sha256": expectation.execution_contract_sha256,
+            "byte_identity_sha256": receipt["byte_identity_sha256"],
+        }
+    identity = {
+        "schema_version": "ampgent.metric-runtime-live-snapshot.1",
+        "plugin_count": len(plugin_snapshots),
+        "plugins": plugin_snapshots,
+    }
+    return {**identity, "snapshot_sha256": sha256_json(identity)}
 
 
 def _expected_queues(config: dict[str, Any]) -> dict[str, str]:
@@ -485,6 +746,7 @@ def _validate_preflight(
     preflight: dict[str, Any],
     preflight_base_path: Path,
     branches: tuple[AutoResearchFormalBranch, ...],
+    metric_runtime_snapshot_sha256: str,
 ) -> None:
     if preflight.get("schema_version") != PREFLIGHT_SCHEMA:
         raise ValueError("AutoResearch formal preflight schema is not frozen")
@@ -533,6 +795,19 @@ def _validate_preflight(
     actual = {str(item.get("branch_key")): item for item in actual_rows}
     if actual != expected:
         raise ValueError("AutoResearch preflight branch identity drifted")
+    runtime_checks = [
+        item for item in checks if item.get("name") == "metric_runtime_live_bytes"
+    ]
+    if len(runtime_checks) != 1:
+        raise ValueError("preflight does not prove the five metric runtime byte identities")
+    runtime_evidence = runtime_checks[0].get("evidence") or {}
+    if runtime_evidence != {
+        "schema_version": "ampgent.metric-runtime-live-snapshot.1",
+        "snapshot_sha256": metric_runtime_snapshot_sha256,
+        "plugin_count": len(METRIC_PLUGIN_NAMES),
+        "plugin_names": sorted(METRIC_PLUGIN_NAMES),
+    }:
+        raise ValueError("preflight metric runtime byte identity drifted")
     _validate_control_worker_receipt(
         preflight=preflight,
         preflight_base_path=preflight_base_path,
@@ -558,9 +833,11 @@ def build_autoresearch_formal_plan(
     release = config.get("release") or {}
     if release.get("source_revision") != source_revision:
         raise ValueError("formal release and source revisions differ")
-    release_sha256 = _require_sha256(release.get("archive_sha256"), "formal release archive")
-    if not str(release.get("archive_path_or_uri") or "").strip():
-        raise ValueError("formal release archive path or URI is empty")
+    release_archive_path, release_root, release_sha256 = _verify_release_installation(
+        release=release,
+        source_revision=source_revision,
+        config_base_path=config_base_path,
+    )
     target_manifest_identity = config.get("target_manifest") or {}
     target_manifest_sha256 = _require_sha256(
         target_manifest_identity.get("sha256"), "target manifest"
@@ -591,6 +868,11 @@ def build_autoresearch_formal_plan(
         runtime.get("metric_plugin_registry_sha256"), "metric plugin registry"
     ):
         raise ValueError("formal metric plugin registry SHA differs from its payload")
+    metric_runtime_snapshot = _verify_metric_runtime_registry_live(
+        plugin_registry=plugin_registry,
+        release_root=release_root,
+    )
+    metric_runtime_snapshot_sha256 = str(metric_runtime_snapshot["snapshot_sha256"])
     _expected_queues(config)
     model = config.get("model") or {}
     if model != {
@@ -681,6 +963,7 @@ def build_autoresearch_formal_plan(
         preflight=preflight,
         preflight_base_path=preflight_base_path,
         branches=branches,
+        metric_runtime_snapshot_sha256=metric_runtime_snapshot_sha256,
     )
     return AutoResearchFormalPlan(
         config=copy.deepcopy(config),
@@ -690,8 +973,11 @@ def build_autoresearch_formal_plan(
         target_manifest_sha256=target_manifest_sha256,
         source_revision=source_revision,
         release_sha256=release_sha256,
+        release_archive_path=release_archive_path,
+        release_root=release_root,
         control_environment_sha256=control_environment_sha256,
         generator_environment_sha256=generator_environment_sha256,
+        metric_runtime_snapshot_sha256=metric_runtime_snapshot_sha256,
         branches=branches,
     )
 
@@ -707,6 +993,36 @@ def load_autoresearch_formal_plan(
         config_base_path=config_path.parent,
         preflight_base_path=preflight_path.parent,
     )
+
+
+def _revalidate_plan_runtime_boundary(plan: AutoResearchFormalPlan) -> None:
+    """Fail before a durable mutation if release or provider bytes changed."""
+
+    if (
+        not plan.release_archive_path.is_file()
+        or plan.release_archive_path.is_symlink()
+        or sha256_file(plan.release_archive_path) != plan.release_sha256
+    ):
+        raise ValueError("formal release archive bytes drifted before submission")
+    if (
+        not plan.release_root.is_dir()
+        or plan.release_root.is_symlink()
+        or plan.release_root.name.lower() != plan.release_sha256
+    ):
+        raise ValueError("formal extracted release root drifted before submission")
+    marker = plan.release_root / ".pepagent-source-revision"
+    if (
+        not marker.is_file()
+        or marker.is_symlink()
+        or marker.read_text(encoding="utf-8").strip().lower() != plan.source_revision
+    ):
+        raise ValueError("formal extracted release source revision drifted before submission")
+    snapshot = _verify_metric_runtime_registry_live(
+        plugin_registry=plan.config["runtime"]["metric_plugins_by_name"],
+        release_root=plan.release_root,
+    )
+    if snapshot["snapshot_sha256"] != plan.metric_runtime_snapshot_sha256:
+        raise ValueError("formal metric runtime bytes drifted after plan validation")
 
 
 def _advisory_lock_id(config_sha256: str) -> int:
@@ -728,7 +1044,7 @@ def _build_run_spec(
     stored: StoredObject,
 ) -> dict[str, Any]:
     return {
-        "schema_version": "ampgent.autoresearch-formal-branch-run.1",
+        "schema_version": "ampgent.autoresearch-formal-branch-run.2",
         "run_kind": "autoresearch_closed_loop_formal_branch",
         "run_id": str(branch.run_id),
         "branch_key": branch.branch_key,
@@ -749,6 +1065,7 @@ def _build_run_spec(
         "control_environment_sha256": plan.control_environment_sha256,
         "generator_environment_sha256": plan.generator_environment_sha256,
         "metric_plugin_registry_sha256": plan.config["runtime"]["metric_plugin_registry_sha256"],
+        "metric_runtime_snapshot_sha256": plan.metric_runtime_snapshot_sha256,
         "model": copy.deepcopy(plan.config["model"]),
         "seed": copy.deepcopy(branch.seed),
         "continuation_policy": copy.deepcopy(branch.continuation_policy),
@@ -796,6 +1113,7 @@ async def reserve_autoresearch_formal_plan(
     object_store_factory: Callable[[], ContentAddressedObjectStore] = (ContentAddressedObjectStore),
     repository_factory: Callable[[Any], ExperimentRepository] = ExperimentRepository,
 ) -> AutoResearchFormalReservation:
+    _revalidate_plan_runtime_boundary(plan)
     object_store = await asyncio.to_thread(object_store_factory)
     stored_by_branch: dict[str, StoredObject] = {}
     for branch in plan.branches:
@@ -952,6 +1270,7 @@ def _workflow_memo_identity(
         "release_sha256": plan.release_sha256,
         "control_environment_sha256": plan.control_environment_sha256,
         "generator_environment_sha256": plan.generator_environment_sha256,
+        "metric_runtime_snapshot_sha256": plan.metric_runtime_snapshot_sha256,
         "pepmlm_revision": plan.config["model"]["pepmlm_revision"],
         "pepmlm_weights_sha256": plan.config["model"]["pepmlm_weights_sha256"],
         "seed_receipt_sha256": branch.seed["bundle_receipt_sha256"],
@@ -1011,6 +1330,7 @@ async def submit_autoresearch_formal_plan(
     session_factory: Callable[[], Any] = SessionFactory,
     repository_factory: Callable[[Any], ExperimentRepository] = ExperimentRepository,
 ) -> dict[str, Any]:
+    _revalidate_plan_runtime_boundary(plan)
     if set(reservation.branch_specs) != set(BRANCH_KEYS):
         raise ValueError("submission requires the exact six-branch reservation")
     bindings: dict[str, TemporalWorkflowBinding] = {}
