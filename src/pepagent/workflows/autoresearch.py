@@ -16,6 +16,17 @@ with workflow.unsafe.imports_passed_through():
     from pepagent.v38_science_execution import V38SequenceExecutionContract
 
 
+_TEMPORAL_PAYLOAD_MODE = "reference_v1"
+
+
+def _is_payload_reference(payload: object, *, role: str) -> bool:
+    return (
+        isinstance(payload, dict)
+        and payload.get("schema_version") == "ampgent.autoresearch-payload-reference.1"
+        and payload.get("payload_role") == role
+    )
+
+
 def _validate_request(request: dict[str, Any]) -> None:
     if request.get("schema_version") != "ampgent.autoresearch-workflow-request.1":
         raise ValueError("AutoResearch request schema is not frozen")
@@ -128,7 +139,6 @@ class AutoResearchClosedLoopWorkflow:
         plugin_names = list(contract["metric_plugins"])
         iteration_no = int(request.get("start_iteration_no", 0))
         stagnant_generations = int(request.get("prior_consecutive_stagnant_generations", 0))
-        previous_checkpoint = request.get("previous_checkpoint")
         completed_in_this_execution = 0
         latest_checkpoint: dict[str, Any] | None = None
 
@@ -173,23 +183,8 @@ class AutoResearchClosedLoopWorkflow:
                             "run_id": run_id,
                             "branch_key": str(request["branch_key"]),
                             "iteration_no": iteration_no,
-                            "previous_checkpoint": previous_checkpoint,
-                            "archive_policy": request["archive_policy"],
-                            "continuation_policy": request["continuation_policy"],
-                            "planner_contract": provider.get("planner_contract") or {},
-                            "execution_contract": contract,
-                            "operator_release_sha256": str(
-                                (request.get("action_executor") or {}).get(
-                                    "operator_release_sha256"
-                                )
-                                or (request.get("action_executor") or {})[
-                                    "operator_environment_sha256"
-                                ]
-                            ),
-                            "control_environment_sha256": request["control_environment_sha256"],
-                            "target_sequence_sha256": request["action_executor"][
-                                "target_sequence_sha256"
-                            ],
+                            "hydrate_from_run_spec": True,
+                            "temporal_payload_mode": _TEMPORAL_PAYLOAD_MODE,
                         },
                         task_queue=str(provider["task_queue"]),
                         start_to_close_timeout=timedelta(hours=1),
@@ -197,16 +192,25 @@ class AutoResearchClosedLoopWorkflow:
                         retry_policy=retry,
                     )
 
+                action_plan_request: dict[str, Any] = {
+                    "run_id": run_id,
+                    "branch_key": str(request["branch_key"]),
+                    "iteration_no": iteration_no,
+                    "temporal_payload_mode": _TEMPORAL_PAYLOAD_MODE,
+                }
+                if _is_payload_reference(proposed, role="planner_result"):
+                    action_plan_request["planner_result_reference"] = proposed
+                else:
+                    action_plan_request.update(
+                        {
+                            "agent_decision": proposed["agent_decision"],
+                            "actions": proposed["actions"],
+                            "planner_receipt": proposed.get("planner_receipt"),
+                        }
+                    )
                 action_plan = await workflow.execute_activity(
                     "persist_autoresearch_action_plan",
-                    {
-                        "run_id": run_id,
-                        "branch_key": str(request["branch_key"]),
-                        "iteration_no": iteration_no,
-                        "agent_decision": proposed["agent_decision"],
-                        "actions": proposed["actions"],
-                        "planner_receipt": proposed.get("planner_receipt"),
-                    },
+                    action_plan_request,
                     task_queue=control_queue,
                     start_to_close_timeout=timedelta(minutes=20),
                     retry_policy=retry,
@@ -215,7 +219,9 @@ class AutoResearchClosedLoopWorkflow:
                     "execute_autoresearch_action_batch",
                     {
                         "action_plan": action_plan,
-                        "executor": request.get("action_executor") or {},
+                        "run_id": run_id,
+                        "executor_from_run_spec": True,
+                        "temporal_payload_mode": _TEMPORAL_PAYLOAD_MODE,
                     },
                     task_queue=action_queue,
                     start_to_close_timeout=timedelta(hours=12),
@@ -224,7 +230,11 @@ class AutoResearchClosedLoopWorkflow:
                 )
                 children = await workflow.execute_activity(
                     "persist_autoresearch_children",
-                    {"action_plan": action_plan, "generated": generated},
+                    {
+                        "action_plan": action_plan,
+                        "generated": generated,
+                        "temporal_payload_mode": _TEMPORAL_PAYLOAD_MODE,
+                    },
                     task_queue=control_queue,
                     start_to_close_timeout=timedelta(hours=1),
                     retry_policy=retry,
@@ -272,10 +282,13 @@ class AutoResearchClosedLoopWorkflow:
                     return result
                 if int(children.get("candidate_count", 0)) == 0:
                     raise ValueError("AutoResearch empty child cohort lacks an explicit no-op")
-                cohort = children.get("score_all_candidates")
-                if cohort is None:
-                    cohort = children["candidates"]
-                if not cohort:
+                cohort_ids = children.get("score_all_candidate_ids")
+                if cohort_ids is None:
+                    cohort = children.get("score_all_candidates")
+                    if cohort is None:
+                        cohort = children["candidates"]
+                    cohort_ids = [str(item["id"]) for item in cohort]
+                if not cohort_ids:
                     raise ValueError("AutoResearch unique child score-all cohort is empty")
                 metric_receipts: list[dict[str, Any]] = []
                 for plugin_name in plugin_names:
@@ -285,8 +298,9 @@ class AutoResearchClosedLoopWorkflow:
                             "run_id": run_id,
                             "generation": iteration_no + 1,
                             "stage": "autoresearch_score_all",
-                            "plugin": request["metric_plugins_by_name"][plugin_name],
-                            "candidates": cohort,
+                            "plugin_name": plugin_name,
+                            "candidate_ids": cohort_ids,
+                            "hydrate_from_run_spec": True,
                         },
                         task_queue=metrics_queue,
                         start_to_close_timeout=timedelta(hours=12),
@@ -297,8 +311,8 @@ class AutoResearchClosedLoopWorkflow:
                         "persist_v38_sequence_metric",
                         {
                             "run_id": run_id,
-                            "execution_contract": contract,
-                            "candidates": cohort,
+                            "candidate_ids": cohort_ids,
+                            "hydrate_from_run_spec": True,
                             "metric_result": reference,
                         },
                         task_queue=control_queue,
@@ -307,7 +321,7 @@ class AutoResearchClosedLoopWorkflow:
                     )
                     metric_receipts.append(receipt)
                 evaluation_count = sum(int(item["evaluation_count"]) for item in metric_receipts)
-                expected_count = len(cohort) * 12
+                expected_count = len(cohort_ids) * 12
                 if evaluation_count != expected_count:
                     raise ValueError("AutoResearch score-all evaluation count drifted")
 
@@ -319,19 +333,15 @@ class AutoResearchClosedLoopWorkflow:
                         "iteration_no": iteration_no,
                         "action_plan": action_plan,
                         "children": children,
-                        "execution_contract": contract,
                         "metric_tool_call_ids": [item["tool_call_id"] for item in metric_receipts],
-                        "archive_policy": request["archive_policy"],
-                        "continuation_policy": request["continuation_policy"],
                         "prior_consecutive_stagnant_generations": stagnant_generations,
-                        "control_environment_sha256": request["control_environment_sha256"],
+                        "hydrate_from_run_spec": True,
                     },
                     task_queue=control_queue,
                     start_to_close_timeout=timedelta(hours=2),
                     retry_policy=retry,
                 )
                 completed_in_this_execution += 1
-                previous_checkpoint = latest_checkpoint
                 continuation = latest_checkpoint["continuation"]
                 stagnant_generations = int(continuation["consecutive_stagnant_generations"])
                 if (

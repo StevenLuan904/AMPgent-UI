@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import json
 import uuid
 from types import SimpleNamespace
 from typing import Any
@@ -264,68 +265,55 @@ async def test_autoresearch_workflow_end_to_end_replays_identically(
             }:
                 return None
             if name == "plan_autoresearch_actions":
-                action = _de_novo_action().model_dump(mode="json")
                 return {
-                    "agent_decision": {
-                        "agent_name": "autoresearch-multi-front-rule-planner",
-                        "agent_version": "1",
-                        "model_name": None,
-                        "prompt_text": "retain conflict fronts",
-                        "rationale_by_action_sha256": {
-                            action["action_sha256"]: "open a new sequence family"
-                        },
-                    },
-                    "actions": [action],
-                    "planner_receipt": {
-                        "tool_call_id": "planner-tool-1",
-                        "artifact_sha256": "9" * 64,
-                    },
+                    "schema_version": "ampgent.autoresearch-payload-reference.1",
+                    "payload_role": "planner_result",
+                    "storage_uri": f"s3://cas/{'9' * 64}",
+                    "artifact_sha256": "9" * 64,
+                    "size_bytes": 4096,
+                    "run_id": RUN_ID,
+                    "branch_key": "PBP2a",
+                    "iteration_no": 0,
+                    "action_count": 1,
                 }
             if name == "persist_autoresearch_action_plan":
-                action = payload["actions"][0]
                 return {
+                    "schema_version": "ampgent.autoresearch-payload-reference.1",
+                    "payload_role": "action_plan",
                     "run_id": RUN_ID,
                     "branch_key": "PBP2a",
                     "iteration_no": 0,
                     "agent_decision_id": DECISION_ID,
                     "action_batch_sha256": "1" * 64,
-                    "actions": [
-                        {
-                            "action_id": ACTION_ID,
-                            "repository_action_sha256": "2" * 64,
-                            "runtime_action_sha256": action["action_sha256"],
-                            "runtime_action": action,
-                            "lineage_sources": [],
-                        }
-                    ],
+                    "action_count": 1,
+                    "action_ids": [ACTION_ID],
                 }
             if name == "execute_autoresearch_action_batch":
                 return {
+                    "schema_version": "ampgent.autoresearch-payload-reference.1",
+                    "payload_role": "generated_action_batch",
+                    "storage_uri": f"s3://cas/{'8' * 64}",
+                    "artifact_sha256": "8" * 64,
+                    "size_bytes": 4096,
+                    "run_id": RUN_ID,
+                    "iteration_no": 0,
                     "action_batch_sha256": "1" * 64,
-                    "results": [
-                        {
-                            "action_id": ACTION_ID,
-                            "sequence": "KRWLAKIRKL",
-                            "sequence_sha256": sha256_text("KRWLAKIRKL"),
-                        }
-                    ],
-                    "provenance": {},
+                    "result_count": 1,
                 }
             if name == "persist_autoresearch_children":
                 return {
+                    "schema_version": "ampgent.autoresearch-payload-reference.1",
+                    "payload_role": "children_receipt",
                     "candidate_count": 1,
-                    "candidates": [
-                        {
-                            "id": CHILD_ID,
-                            "sequence": "KRWLAKIRKL",
-                            "sequence_sha256": sha256_text("KRWLAKIRKL"),
-                            "generation": 1,
-                        }
-                    ],
+                    "score_all_candidate_ids": [CHILD_ID],
                 }
             if name == "evaluate_v38_sequence_metric":
-                return {"plugin": payload["plugin"]}
+                assert "plugin" not in payload
+                assert "candidates" not in payload
+                return {"plugin": {"name": payload["plugin_name"]}}
             if name == "persist_v38_sequence_metric":
+                assert "execution_contract" not in payload
+                assert "candidates" not in payload
                 plugin_name = str(payload["metric_result"]["plugin"]["name"])
                 return {
                     "plugin": plugin_name,
@@ -384,6 +372,41 @@ async def test_autoresearch_workflow_end_to_end_replays_identically(
     assert names.count("evaluate_v38_sequence_metric") == 5
     assert names.count("persist_v38_sequence_metric") == 5
     assert names[-2:] == ["finalize_autoresearch_iteration", "mark_run_succeeded"]
+    planner_input = next(
+        item["payload"] for item in first_trace if item["activity"] == "plan_autoresearch_actions"
+    )
+    assert planner_input["hydrate_from_run_spec"] is True
+    assert "previous_checkpoint" not in planner_input
+    assert "execution_contract" not in planner_input
+    assert "archive_policy" not in planner_input
+    metric_inputs = [
+        item["payload"]
+        for item in first_trace
+        if item["activity"] in {"evaluate_v38_sequence_metric", "persist_v38_sequence_metric"}
+    ]
+    assert max(len(json.dumps(item, sort_keys=True)) for item in metric_inputs) < 1_000
+    generator_input = next(
+        item["payload"]
+        for item in first_trace
+        if item["activity"] == "execute_autoresearch_action_batch"
+    )
+    assert "executor" not in generator_input
+    assert generator_input["action_plan"]["payload_role"] == "action_plan"
+    assert generator_input["temporal_payload_mode"] == "reference_v1"
+    loop_payloads = [
+        item["payload"]
+        for item in first_trace
+        if item["activity"]
+        in {
+            "persist_autoresearch_action_plan",
+            "execute_autoresearch_action_batch",
+            "persist_autoresearch_children",
+            "evaluate_v38_sequence_metric",
+            "persist_v38_sequence_metric",
+            "finalize_autoresearch_iteration",
+        }
+    ]
+    assert max(len(json.dumps(item, sort_keys=True)) for item in loop_payloads) < 4_000
 
 
 @pytest.mark.asyncio

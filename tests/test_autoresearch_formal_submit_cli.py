@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import json
 import uuid
+from datetime import timedelta
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -907,6 +908,7 @@ async def test_temporal_submit_uses_reject_duplicate_and_exact_memo_recovery(
     assert binding.recovered is False
     assert call["workflow"] == WORKFLOW_TYPE
     assert call["task_queue"] == CONTROL_QUEUE
+    assert call["task_timeout"] == timedelta(seconds=60)
     assert call["id_reuse_policy"] == WorkflowIDReusePolicy.REJECT_DUPLICATE
     assert call["id_conflict_policy"] == WorkflowIDConflictPolicy.FAIL
     assert call["memo"][WORKFLOW_MEMO_KEY]["request_sha256"] == branch.request_sha256

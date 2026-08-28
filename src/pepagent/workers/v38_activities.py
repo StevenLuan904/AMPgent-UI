@@ -1678,6 +1678,39 @@ async def persist_v38_score_all_generation(request: dict[str, Any]) -> dict[str,
 @activity.defn(name="persist_v38_sequence_metric")
 async def persist_v38_sequence_metric(request: dict[str, Any]) -> dict[str, Any]:
     run_id = uuid.UUID(str(request["run_id"]))
+    if bool(request.get("hydrate_from_run_spec")):
+        candidate_ids = [uuid.UUID(str(item)) for item in request.get("candidate_ids") or []]
+        if not candidate_ids or len(set(candidate_ids)) != len(candidate_ids):
+            raise ValueError("v38 thin metric persistence candidate cohort is incomplete")
+        async with SessionFactory() as hydration_session:
+            run = await hydration_session.get(ExperimentRun, run_id)
+            if run is None:
+                raise ValueError("v38 thin metric persistence run is missing")
+            spec = run.spec_json if isinstance(run.spec_json, dict) else {}
+            workflow_request = spec.get("workflow_request")
+            if not isinstance(workflow_request, dict):
+                raise ValueError("v38 thin metric persistence lacks workflow request")
+            rows = list(
+                await hydration_session.scalars(
+                    select(Candidate).where(Candidate.id.in_(candidate_ids))
+                )
+            )
+        by_id = {item.id: item for item in rows}
+        if set(by_id) != set(candidate_ids) or any(item.run_id != run_id for item in rows):
+            raise ValueError("v38 thin metric persistence cohort differs from database")
+        request = {
+            **request,
+            "execution_contract": workflow_request["execution_contract"],
+            "candidates": [
+                {
+                    "id": str(by_id[candidate_id].id),
+                    "sequence": by_id[candidate_id].sequence,
+                    "sequence_sha256": by_id[candidate_id].sequence_sha256,
+                    "generation": by_id[candidate_id].generation,
+                }
+                for candidate_id in candidate_ids
+            ],
+        }
     contract = V38SequenceExecutionContract.model_validate(request["execution_contract"])
     candidates = request["candidates"]
     if not isinstance(candidates, list) or not candidates:

@@ -8,6 +8,7 @@ import json
 import uuid
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import timedelta
 from pathlib import Path
 from typing import Any
 from uuid import UUID
@@ -1146,6 +1147,7 @@ async def _start_or_recover_autoresearch_workflow(
             branch.request,
             id=branch.workflow_id,
             task_queue=CONTROL_QUEUE,
+            task_timeout=timedelta(seconds=60),
             memo={WORKFLOW_MEMO_KEY: identity},
             id_reuse_policy=WorkflowIDReusePolicy.REJECT_DUPLICATE,
             id_conflict_policy=WorkflowIDConflictPolicy.FAIL,

@@ -195,6 +195,49 @@ def _metric_activity_logical_id(
     return f"{protocol}:metric:{plugin_name}:activity:{temporal_activity_id}"
 
 
+async def _hydrate_autoresearch_metric_request(request: dict[str, Any]) -> dict[str, Any]:
+    """Hydrate thin Temporal inputs from the authoritative run and candidate rows."""
+
+    if not bool(request.get("hydrate_from_run_spec")):
+        return request
+    run_id = uuid.UUID(str(request["run_id"]))
+    plugin_name = str(request.get("plugin_name") or "")
+    candidate_ids = [uuid.UUID(str(item)) for item in request.get("candidate_ids") or []]
+    if not plugin_name or not candidate_ids or len(set(candidate_ids)) != len(candidate_ids):
+        raise ValueError("AutoResearch thin metric request is incomplete")
+    async with SessionFactory() as session:
+        run = await session.get(ExperimentRun, run_id)
+        if run is None:
+            raise ValueError("AutoResearch thin metric request run is missing")
+        spec = run.spec_json if isinstance(run.spec_json, dict) else {}
+        workflow_request = spec.get("workflow_request")
+        if not isinstance(workflow_request, dict):
+            raise ValueError("AutoResearch thin metric request lacks workflow request")
+        plugins = workflow_request.get("metric_plugins_by_name")
+        if not isinstance(plugins, dict) or not isinstance(plugins.get(plugin_name), dict):
+            raise ValueError("AutoResearch thin metric request plugin is not frozen")
+        rows = list(
+            await session.scalars(select(Candidate).where(Candidate.id.in_(candidate_ids)))
+        )
+    by_id = {item.id: item for item in rows}
+    if set(by_id) != set(candidate_ids) or any(item.run_id != run_id for item in rows):
+        raise ValueError("AutoResearch thin metric candidate cohort differs from the run")
+    candidates = [
+        {
+            "id": str(by_id[candidate_id].id),
+            "sequence": by_id[candidate_id].sequence,
+            "sequence_sha256": by_id[candidate_id].sequence_sha256,
+            "generation": by_id[candidate_id].generation,
+        }
+        for candidate_id in candidate_ids
+    ]
+    return {
+        **request,
+        "plugin": plugins[plugin_name],
+        "candidates": candidates,
+    }
+
+
 async def _resolve_v37_structure_summary_reference(
     reference: dict[str, Any],
 ) -> dict[str, Any]:
@@ -323,6 +366,7 @@ async def _evaluate_frozen_sequence_metric(
 ) -> dict[str, Any]:
     if protocol not in {"v37", "v38"}:
         raise ValueError("metric activity protocol must be v37 or v38")
+    request = await _hydrate_autoresearch_metric_request(request)
     plugin_payload = request["plugin"]
     plugin_name = str(plugin_payload.get("name") or plugin_payload["plugin_name"])
     activity_info = activity.info()

@@ -105,6 +105,266 @@ _IMPORTED_METRIC_UNITS = {
 }
 
 _AUTORESEARCH_GENERATOR_SEMAPHORE = asyncio.Semaphore(1)
+_TEMPORAL_PAYLOAD_REFERENCE_SCHEMA = "ampgent.autoresearch-payload-reference.1"
+
+
+def _temporal_payload_reference(
+    stored: Any,
+    *,
+    role: str,
+    summary: dict[str, Any],
+) -> dict[str, Any]:
+    """Return a small Temporal payload while the full science bytes remain in CAS."""
+
+    return {
+        "schema_version": _TEMPORAL_PAYLOAD_REFERENCE_SCHEMA,
+        "payload_role": role,
+        "storage_uri": str(stored.uri),
+        "artifact_sha256": str(stored.sha256),
+        "size_bytes": int(stored.size_bytes),
+        **summary,
+    }
+
+
+async def _load_temporal_payload_reference(
+    reference: dict[str, Any],
+    *,
+    role: str,
+) -> dict[str, Any]:
+    if reference.get("schema_version") != _TEMPORAL_PAYLOAD_REFERENCE_SCHEMA:
+        raise ValueError("AutoResearch Temporal payload reference schema is invalid")
+    if str(reference.get("payload_role") or "") != role:
+        raise ValueError("AutoResearch Temporal payload reference role drifted")
+    expected_sha256 = str(reference.get("artifact_sha256") or "")
+    storage_uri = str(reference.get("storage_uri") or "")
+    if len(expected_sha256) != 64 or not storage_uri:
+        raise ValueError("AutoResearch Temporal payload reference is incomplete")
+    raw = await asyncio.to_thread(ContentAddressedObjectStore().get_bytes, storage_uri)
+    if sha256_bytes(raw) != expected_sha256:
+        raise ValueError("AutoResearch Temporal payload CAS bytes drifted")
+    if int(reference.get("size_bytes", len(raw))) != len(raw):
+        raise ValueError("AutoResearch Temporal payload CAS size drifted")
+    try:
+        payload = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ValueError("AutoResearch Temporal payload CAS JSON is invalid") from error
+    if not isinstance(payload, dict):
+        raise ValueError("AutoResearch Temporal payload CAS root is not an object")
+    return payload
+
+
+def _workflow_request_from_run(run: ExperimentRun) -> dict[str, Any]:
+    spec = run.spec_json if isinstance(run.spec_json, dict) else {}
+    request = spec.get("workflow_request")
+    if not isinstance(request, dict):
+        raise ValueError("AutoResearch run lacks its authoritative workflow request")
+    return request
+
+
+async def _load_run_workflow_request(run_id: uuid.UUID) -> dict[str, Any]:
+    async with SessionFactory() as session:
+        run = await session.get(ExperimentRun, run_id)
+        if run is None:
+            raise ValueError("AutoResearch run is missing")
+        return _workflow_request_from_run(run)
+
+
+async def _hydrate_planner_request(request: dict[str, Any]) -> dict[str, Any]:
+    if not bool(request.get("hydrate_from_run_spec")):
+        return request
+    run_id = uuid.UUID(str(request["run_id"]))
+    workflow_request = await _load_run_workflow_request(run_id)
+    if str(workflow_request.get("run_id") or "") != str(run_id):
+        raise ValueError("AutoResearch planner run identity differs from its run spec")
+    if str(workflow_request.get("branch_key") or "") != str(request.get("branch_key") or ""):
+        raise ValueError("AutoResearch planner branch identity differs from its run spec")
+    provider = workflow_request.get("planner_provider")
+    executor = workflow_request.get("action_executor")
+    if not isinstance(provider, dict) or not isinstance(executor, dict):
+        raise ValueError("AutoResearch planner provider or executor is not frozen")
+    return {
+        **request,
+        "archive_policy": workflow_request["archive_policy"],
+        "continuation_policy": workflow_request["continuation_policy"],
+        "planner_contract": provider.get("planner_contract") or {},
+        "execution_contract": workflow_request["execution_contract"],
+        "operator_release_sha256": str(
+            executor.get("operator_release_sha256")
+            or executor["operator_environment_sha256"]
+        ),
+        "control_environment_sha256": workflow_request["control_environment_sha256"],
+        "target_sequence_sha256": executor["target_sequence_sha256"],
+    }
+
+
+async def _resolve_planner_result_reference(reference: dict[str, Any]) -> dict[str, Any]:
+    payload = await _load_temporal_payload_reference(reference, role="planner_result")
+    plan = payload.get("plan")
+    snapshot = payload.get("snapshot")
+    if not isinstance(plan, dict) or not isinstance(snapshot, dict):
+        raise ValueError("AutoResearch planner CAS payload is incomplete")
+    run_id = str(reference.get("run_id") or "")
+    iteration_no = int(reference.get("iteration_no", -1))
+    branch_key = str(reference.get("branch_key") or "")
+    if (
+        str(payload.get("run_id")) != run_id
+        or int(payload.get("iteration_no", -1)) != iteration_no
+        or str(payload.get("branch_key")) != branch_key
+    ):
+        raise ValueError("AutoResearch planner CAS reference identity drifted")
+    actions = plan.get("actions")
+    if not isinstance(actions, list) or len(actions) != int(reference.get("action_count", -1)):
+        raise ValueError("AutoResearch planner CAS action count drifted")
+    archive_sha256 = str(snapshot.get("archive_sha256") or "")
+    if archive_sha256 != str(reference.get("archive_sha256") or ""):
+        raise ValueError("AutoResearch planner CAS archive identity drifted")
+    prompt = _canonical_json(
+        {
+            "branch_key": branch_key,
+            "iteration_no": iteration_no,
+            "archive_sha256": archive_sha256,
+            "gold_target": plan["gold_target"],
+            "gold_candidate_count": plan["gold_candidate_count"],
+            "strategy_contract": (
+                "retain_conflicting_endpoints_and_family_novelty_without_weighted_score"
+            ),
+        }
+    )
+    result = {
+        "schema_version": "ampgent.autoresearch-planner-result.1",
+        "agent_decision": {
+            "agent_name": "autoresearch-multi-front-rule-planner",
+            "agent_version": "1",
+            "model_name": None,
+            "prompt_text": prompt,
+            "response_text": _canonical_json(plan),
+            "rationale_by_action_sha256": plan["rationale_by_action_sha256"],
+            "planner_tool_call_id": str(reference["planner_tool_call_id"]),
+        },
+        "actions": actions,
+        "planner_receipt": {
+            "tool_call_id": str(reference["planner_tool_call_id"]),
+            "artifact_id": str(reference["artifact_id"]),
+            "artifact_sha256": str(reference["artifact_sha256"]),
+            "archive_sha256": archive_sha256,
+            "strategies": plan["strategies"],
+        },
+    }
+    return result
+
+
+async def _resolve_action_plan_reference(plan: dict[str, Any]) -> dict[str, Any]:
+    if plan.get("schema_version") != _TEMPORAL_PAYLOAD_REFERENCE_SCHEMA:
+        return plan
+    if plan.get("payload_role") != "action_plan":
+        raise ValueError("AutoResearch action plan reference role drifted")
+    run_id = uuid.UUID(str(plan["run_id"]))
+    iteration_no = int(plan["iteration_no"])
+    expected_ids = [uuid.UUID(str(item)) for item in plan.get("action_ids") or []]
+    async with SessionFactory() as session:
+        decision = await session.get(AgentDecision, uuid.UUID(str(plan["agent_decision_id"])))
+        if (
+            decision is None
+            or decision.run_id != run_id
+            or decision.generation != iteration_no
+        ):
+            raise ValueError("AutoResearch action plan decision reference drifted")
+        rows = list(
+            await session.scalars(
+                select(AutoResearchAction)
+                .where(
+                    AutoResearchAction.run_id == run_id,
+                    AutoResearchAction.iteration_no == iteration_no,
+                )
+                .order_by(AutoResearchAction.action_ordinal, AutoResearchAction.id)
+            )
+        )
+        decision_id = decision.id
+        decision_structured = (
+            dict(decision.structured_json)
+            if isinstance(decision.structured_json, dict)
+            else {}
+        )
+    if [item.id for item in rows] != expected_ids:
+        raise ValueError("AutoResearch action plan row identities drifted")
+    persisted: list[dict[str, Any]] = []
+    for item in rows:
+        action_spec = item.action_spec_json
+        operations = action_spec.get("operations") if isinstance(action_spec, dict) else None
+        if not isinstance(operations, list) or len(operations) != 1:
+            raise ValueError("AutoResearch action plan operation is malformed")
+        runtime_action = operations[0].get("payload")
+        if not isinstance(runtime_action, dict):
+            raise ValueError("AutoResearch action plan runtime action is missing")
+        projection = build_typed_action_projection(
+            runtime_action,
+            iteration_no=iteration_no,
+            action_ordinal=int(item.action_ordinal),
+            rationale_text=item.rationale_text,
+        )
+        if (
+            projection["action_spec"] != action_spec
+            or projection["action_kind"] != item.action_kind
+            or projection["random_seed"] != item.random_seed
+        ):
+            raise ValueError("AutoResearch action plan database projection drifted")
+        persisted.append(
+            {
+                **projection,
+                "action_id": str(item.id),
+                "repository_action_sha256": item.action_sha256,
+            }
+        )
+    reconstructed = {
+        "schema_version": "ampgent.autoresearch-action-plan-receipt.1",
+        "run_id": str(run_id),
+        "iteration_no": iteration_no,
+        "branch_key": str(plan["branch_key"]),
+        "agent_decision_id": str(decision_id),
+        "action_batch_sha256": str(plan["action_batch_sha256"]),
+        "planner_receipt": decision_structured.get("planner_receipt"),
+        "actions": persisted,
+    }
+    calculated = sha256_json(
+        {
+            "schema_version": "ampgent.autoresearch-action-batch.1",
+            "run_id": str(run_id),
+            "iteration_no": iteration_no,
+            "decision_id": str(decision_id),
+            "actions": [
+                {
+                    "action_id": item["action_id"],
+                    "repository_action_sha256": item["repository_action_sha256"],
+                    "runtime_action_sha256": item["runtime_action_sha256"],
+                }
+                for item in persisted
+            ],
+        }
+    )
+    if calculated != reconstructed["action_batch_sha256"]:
+        raise ValueError("AutoResearch action plan batch identity drifted")
+    return reconstructed
+
+
+async def _resolve_generated_reference(generated: dict[str, Any]) -> dict[str, Any]:
+    if generated.get("schema_version") != _TEMPORAL_PAYLOAD_REFERENCE_SCHEMA:
+        return generated
+    payload = await _load_temporal_payload_reference(generated, role="generated_action_batch")
+    for key in ("run_id", "iteration_no", "action_batch_sha256", "result_count"):
+        expected = len(payload.get("results") or []) if key == "result_count" else payload.get(key)
+        if str(expected) != str(generated.get(key)):
+            raise ValueError("AutoResearch generated-action CAS summary drifted")
+    return payload
+
+
+async def _resolve_children_reference(children: dict[str, Any]) -> dict[str, Any]:
+    if children.get("schema_version") != _TEMPORAL_PAYLOAD_REFERENCE_SCHEMA:
+        return children
+    payload = await _load_temporal_payload_reference(children, role="children_receipt")
+    for key in ("run_id", "iteration_no", "candidate_count", "generator_tool_call_id"):
+        if str(payload.get(key)) != str(children.get(key)):
+            raise ValueError("AutoResearch children CAS summary drifted")
+    return payload
 
 
 def _acquire_autoresearch_generator_lock(path: Path, owner: dict[str, Any]) -> BinaryIO:
@@ -414,6 +674,17 @@ async def _idempotent_agent_decision(
 async def persist_autoresearch_action_plan(request: dict[str, Any]) -> dict[str, Any]:
     """Freeze the Agent decision and every executable action before execution."""
 
+    planner_reference = request.get("planner_result_reference")
+    if planner_reference is not None:
+        if not isinstance(planner_reference, dict):
+            raise ValueError("AutoResearch planner result reference must be an object")
+        resolved = await _resolve_planner_result_reference(planner_reference)
+        request = {
+            **request,
+            "agent_decision": resolved["agent_decision"],
+            "actions": resolved["actions"],
+            "planner_receipt": resolved["planner_receipt"],
+        }
     run_id = uuid.UUID(str(request["run_id"]))
     iteration_no = int(request["iteration_no"])
     decision_payload = request["agent_decision"]
@@ -514,7 +785,7 @@ async def persist_autoresearch_action_plan(request: dict[str, Any]) -> dict[str,
             ],
         }
     )
-    return {
+    result = {
         "schema_version": "ampgent.autoresearch-action-plan-receipt.1",
         "run_id": str(run_id),
         "iteration_no": iteration_no,
@@ -523,6 +794,19 @@ async def persist_autoresearch_action_plan(request: dict[str, Any]) -> dict[str,
         "action_batch_sha256": action_batch_sha256,
         "planner_receipt": request.get("planner_receipt"),
         "actions": persisted,
+    }
+    if request.get("temporal_payload_mode") != "reference_v1":
+        return result
+    return {
+        "schema_version": _TEMPORAL_PAYLOAD_REFERENCE_SCHEMA,
+        "payload_role": "action_plan",
+        "run_id": str(run_id),
+        "iteration_no": iteration_no,
+        "branch_key": str(request["branch_key"]),
+        "agent_decision_id": str(decision.id),
+        "action_batch_sha256": action_batch_sha256,
+        "action_count": len(persisted),
+        "action_ids": [item["action_id"] for item in persisted],
     }
 
 
@@ -581,8 +865,11 @@ async def _execute_autoresearch_action_batch_unlocked(
 ) -> dict[str, Any]:
     """Materialize a frozen action batch without consulting mutable policy."""
 
-    plan = request["action_plan"]
+    plan = await _resolve_action_plan_reference(request["action_plan"])
     executor = request.get("executor") or {}
+    if bool(request.get("executor_from_run_spec")):
+        workflow_request = await _load_run_workflow_request(uuid.UUID(str(plan["run_id"])))
+        executor = workflow_request.get("action_executor") or {}
     environment_sha256 = str(
         executor.get("operator_environment_sha256")
         or request.get("operator_environment_sha256")
@@ -734,7 +1021,7 @@ async def _execute_autoresearch_action_batch_unlocked(
         "results": results,
         "pepmlm_output": pepmlm_output,
     }
-    return {
+    result = {
         **payload,
         "result_sha256": sha256_json(payload),
         "provenance": {
@@ -756,6 +1043,19 @@ async def _execute_autoresearch_action_batch_unlocked(
             "attempt": activity.info().attempt,
         },
     }
+    if request.get("temporal_payload_mode") != "reference_v1":
+        return result
+    stored = await _store_json(result)
+    return _temporal_payload_reference(
+        stored,
+        role="generated_action_batch",
+        summary={
+            "run_id": str(run_id),
+            "iteration_no": int(plan["iteration_no"]),
+            "action_batch_sha256": str(plan["action_batch_sha256"]),
+            "result_count": len(results),
+        },
+    )
 
 
 @activity.defn(name="execute_autoresearch_action_batch")
@@ -808,8 +1108,8 @@ def _duplicate_rejection_reason(candidate: Candidate, *, requested_generation: i
 async def persist_autoresearch_children(request: dict[str, Any]) -> dict[str, Any]:
     """Persist materialized children and the complete multi-parent lineage."""
 
-    plan = request["action_plan"]
-    generated = request["generated"]
+    plan = await _resolve_action_plan_reference(request["action_plan"])
+    generated = await _resolve_generated_reference(request["generated"])
     run_id = uuid.UUID(str(plan["run_id"]))
     iteration_no = int(plan["iteration_no"])
     if generated["action_batch_sha256"] != plan["action_batch_sha256"]:
@@ -847,6 +1147,7 @@ async def persist_autoresearch_children(request: dict[str, Any]) -> dict[str, An
             logical_stage="autoresearch_action_execution",
             display_category="design",
         )
+        generator_tool_call_id = call.id
         await _register_artifact(
             session,
             call.id,
@@ -1074,11 +1375,11 @@ async def persist_autoresearch_children(request: dict[str, Any]) -> dict[str, An
     ]
     if len({item["id"] for item in score_all_candidates}) != len(score_all_candidates):
         raise ValueError("AutoResearch score-all parent/child cohort is duplicated")
-    return {
+    result = {
         "schema_version": "ampgent.autoresearch-children-receipt.2",
         "run_id": str(run_id),
         "iteration_no": iteration_no,
-        "generator_tool_call_id": str(call.id),
+        "generator_tool_call_id": str(generator_tool_call_id),
         "generator_output_sha256": stored.sha256,
         "proposed_child_count": len(plan["actions"]),
         "candidate_count": len(children),
@@ -1092,6 +1393,44 @@ async def persist_autoresearch_children(request: dict[str, Any]) -> dict[str, An
         "score_all_candidate_count": len(score_all_candidates),
         "score_all_candidates": score_all_candidates,
     }
+    if request.get("temporal_payload_mode") != "reference_v1":
+        return result
+    receipt_stored = await _store_json(result)
+    async with SessionFactory() as session, session.begin():
+        receipt_artifact = await _register_artifact(
+            session,
+            generator_tool_call_id,
+            asdict(receipt_stored),
+            "autoresearch_children_receipt",
+            {
+                "iteration_no": iteration_no,
+                "candidate_count": len(children),
+                "score_all_candidate_count": len(score_all_candidates),
+            },
+        )
+    reference = _temporal_payload_reference(
+        receipt_stored,
+        role="children_receipt",
+        summary={
+            "run_id": str(run_id),
+            "iteration_no": iteration_no,
+            "generator_tool_call_id": str(generator_tool_call_id),
+            "artifact_id": str(receipt_artifact.id),
+            "proposed_child_count": len(plan["actions"]),
+            "candidate_count": len(children),
+            "candidate_ids": [item["id"] for item in children],
+            "rejected_duplicate_count": len(rejected_duplicates),
+            "iteration_noop": not children,
+            "stop_reason": stop_reason,
+            "parent_control_count": len(parent_controls),
+            "parent_control_ids": [item["id"] for item in parent_controls],
+            "score_all_candidate_count": len(score_all_candidates),
+            "score_all_candidate_ids": [item["id"] for item in score_all_candidates],
+        },
+    )
+    if not children:
+        reference["rejected_duplicates"] = rejected_duplicates
+    return reference
 
 
 def _tool_contract(call: ToolCall) -> tuple[Any, ...]:
@@ -1580,6 +1919,7 @@ async def plan_autoresearch_actions(request: dict[str, Any]) -> dict[str, Any]:
 
     if request.get("schema_version") != "ampgent.autoresearch-planner-request.1":
         raise ValueError("AutoResearch planner request schema is not frozen")
+    request = await _hydrate_planner_request(request)
     run_id = uuid.UUID(str(request["run_id"]))
     iteration_no = int(request["iteration_no"])
     branch_key = str(request["branch_key"])
@@ -1735,7 +2075,7 @@ async def plan_autoresearch_actions(request: dict[str, Any]) -> dict[str, Any]:
             ),
         }
     )
-    return {
+    result = {
         "schema_version": "ampgent.autoresearch-planner-result.1",
         "agent_decision": {
             "agent_name": "autoresearch-multi-front-rule-planner",
@@ -1755,6 +2095,21 @@ async def plan_autoresearch_actions(request: dict[str, Any]) -> dict[str, Any]:
             "strategies": plan["strategies"],
         },
     }
+    if request.get("temporal_payload_mode") != "reference_v1":
+        return result
+    return _temporal_payload_reference(
+        stored,
+        role="planner_result",
+        summary={
+            "run_id": str(run_id),
+            "iteration_no": iteration_no,
+            "branch_key": branch_key,
+            "planner_tool_call_id": str(call.id),
+            "artifact_id": str(artifact.id),
+            "archive_sha256": snapshot.archive_sha256,
+            "action_count": len(plan["actions"]),
+        },
+    )
 
 
 def _build_replay_bundle(
@@ -1859,8 +2214,8 @@ async def finalize_autoresearch_iteration(request: dict[str, Any]) -> dict[str, 
 
     run_id = uuid.UUID(str(request["run_id"]))
     iteration_no = int(request["iteration_no"])
-    action_plan = request["action_plan"]
-    children_receipt = request["children"]
+    action_plan = await _resolve_action_plan_reference(request["action_plan"])
+    children_receipt = await _resolve_children_reference(request["children"])
     child_ids = [uuid.UUID(str(item["id"])) for item in children_receipt["candidates"]]
     score_all_ids = [
         uuid.UUID(str(item["id"]))
@@ -1868,6 +2223,15 @@ async def finalize_autoresearch_iteration(request: dict[str, Any]) -> dict[str, 
     ]
     if not set(child_ids) <= set(score_all_ids):
         raise ValueError("AutoResearch score-all cohort omits a child")
+    if bool(request.get("hydrate_from_run_spec")):
+        workflow_request = await _load_run_workflow_request(run_id)
+        request = {
+            **request,
+            "execution_contract": workflow_request["execution_contract"],
+            "archive_policy": workflow_request["archive_policy"],
+            "continuation_policy": workflow_request["continuation_policy"],
+            "control_environment_sha256": workflow_request["control_environment_sha256"],
+        }
     contract = V38SequenceExecutionContract.model_validate(request["execution_contract"])
     if len(contract.required_sequence_metrics) != 12:
         raise ValueError("AutoResearch finalization requires the frozen 12 metrics")
