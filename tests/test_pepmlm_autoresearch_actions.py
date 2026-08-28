@@ -19,6 +19,25 @@ def _action() -> dict[str, object]:
     }
 
 
+def test_canonical_sampler_excludes_unknown_even_when_it_has_highest_logit() -> None:
+    import torch
+
+    residues = sorted(pepmlm_cli.CANONICAL_AA)
+
+    class Tokenizer:
+        unk_token_id = 20
+
+        def convert_tokens_to_ids(self, values: list[str]) -> list[int]:
+            return [residues.index(value) for value in values]
+
+    logits = torch.full((1, 21), -100.0)
+    logits[0, 20] = 100.0
+    logits[0, residues.index("K")] = 50.0
+    sampled = pepmlm_cli.sample_canonical_tokens(logits, Tokenizer(), top_k=1)
+
+    assert sampled.tolist() == [residues.index("K")]
+
+
 def test_action_retry_uses_deterministic_seeds_and_preserves_frozen_hash(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

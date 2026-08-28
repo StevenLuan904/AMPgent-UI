@@ -50,6 +50,25 @@ def seed_everything(seed: int) -> None:
         torch.cuda.manual_seed_all(seed)
 
 
+def sample_canonical_tokens(logits: Any, tokenizer: Any, top_k: int) -> Any:
+    """Sample only from the 20 canonical residue tokens, even when X ranks highly."""
+    if top_k < 1:
+        raise ValueError("top_k must be positive")
+    residues = sorted(CANONICAL_AA)
+    token_ids = [int(item) for item in tokenizer.convert_tokens_to_ids(residues)]
+    if len(set(token_ids)) != len(residues):
+        raise ValueError("tokenizer does not map canonical residues to distinct tokens")
+    unknown_id = getattr(tokenizer, "unk_token_id", None)
+    if unknown_id is not None and int(unknown_id) in token_ids:
+        raise ValueError("tokenizer maps a canonical residue to the unknown token")
+    canonical_ids = torch.tensor(token_ids, device=logits.device, dtype=torch.long)
+    canonical_logits = logits.index_select(-1, canonical_ids)
+    top_logits, top_offsets = canonical_logits.topk(min(top_k, len(token_ids)), dim=-1)
+    sampled = Categorical(logits=top_logits).sample()
+    selected_offsets = top_offsets.gather(-1, sampled.unsqueeze(-1)).squeeze(-1)
+    return canonical_ids[selected_offsets]
+
+
 def pseudo_perplexity(
     model: Any, tokenizer: Any, target: str, peptide: str
 ) -> tuple[float, float, list[float]]:
@@ -85,9 +104,7 @@ def generate_one(
         logits = model(**model_input).logits
     mask_positions = (model_input["input_ids"] == tokenizer.mask_token_id).nonzero(as_tuple=True)[1]
     mask_logits = logits[0, mask_positions] / temperature
-    top_logits, top_indices = mask_logits.topk(top_k, dim=-1)
-    sampled = Categorical(logits=top_logits).sample()
-    token_ids = top_indices.gather(-1, sampled.unsqueeze(-1)).squeeze(-1)
+    token_ids = sample_canonical_tokens(mask_logits, tokenizer, top_k)
     peptide = tokenizer.decode(token_ids, skip_special_tokens=True).replace(" ", "")
     if len(peptide) != length or not set(peptide).issubset(CANONICAL_AA):
         raise ValueError(f"non-canonical or malformed generated peptide: {peptide!r}")
@@ -130,9 +147,7 @@ def mutate_one(
     # the context so the deliberate in-place exclusion works on PyTorch 2.6+.
     logits = inference_logits.clone()
     logits[torch.arange(mutation_count, device=model.device), original_tokens] = -torch.inf
-    top_logits, top_indices = logits.topk(top_k, dim=-1)
-    sampled = Categorical(logits=top_logits).sample()
-    replacement_tokens = top_indices.gather(-1, sampled.unsqueeze(-1)).squeeze(-1)
+    replacement_tokens = sample_canonical_tokens(logits, tokenizer, top_k)
     mutated = encoded.clone()
     mutated[0, selected_positions] = replacement_tokens
     peptide = tokenizer.decode(mutated[0, peptide_positions], skip_special_tokens=True).replace(
@@ -185,9 +200,7 @@ def mutate_one_at_positions(
         inference_logits = model(masked).logits[0, selected_positions] / temperature
     logits = inference_logits.clone()
     logits[torch.arange(len(offsets), device=model.device), original_tokens] = -torch.inf
-    top_logits, top_indices = logits.topk(top_k, dim=-1)
-    sampled = Categorical(logits=top_logits).sample()
-    replacements = top_indices.gather(-1, sampled.unsqueeze(-1)).squeeze(-1)
+    replacements = sample_canonical_tokens(logits, tokenizer, top_k)
     mutated = encoded.clone()
     mutated[0, selected_positions] = replacements
     peptide = tokenizer.decode(
