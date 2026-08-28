@@ -2967,3 +2967,23 @@ MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot
   全局精确去重和80/80家族聚类；仅满足 Non-Toxin、Macrel溶血低风险、instability index <50 的候选
   才可进入严格库。验收条件为至少100个新严格家族，且严格roots中新家族率至少50%；不达标则保留raw
   证据并改变下一轮策略，不把近邻数量冒充空间扩展。
+
+### 2026-08-28 GyrA r19短长度新家族扩库验收完成
+
+- `gyra-pepglad-novel-root-r19-short10-13-20260827T2212Z` 已完成 768/768 条真实
+  target-specific PepGLAD 根生成，生成结果 SHA-256 为
+  `7ae9fbee5e13678c39bd50b06d9e49a3a01f3b2e0f043ee1e63b5408ef089d90`；`.19 GPU7`
+  已释放，没有重复提交。
+- 768 条有效唯一序列全部完成冻结合同的 12 项评分；评分收据 SHA-256 为
+  `0672af9328bacc79d4de60870afeb37262391211ca9eee3f69f649151ac179bc`。其中 554 条
+  instability index <50，575 条同时通过 Non-Toxin 与 Macrel low，最终 432 条同时通过全部展示硬门；
+  4 条获至少两个活性模型支持，1 条获三个活性模型支持。所有数值仍是计算预测。
+- 全局精确去重与 80% identity/80% coverage 家族聚类后，432 条严格候选全部为新序列且全部形成
+  新家族，新家族率 100%，超过“至少100个新严格家族且新家族率至少50%”验收门。严格库由
+  87,989 条/8,657 家族增至 **88,421 条/9,089 家族**；分支计数为 AceA 29,190、GyrA
+  31,011、PBP2a 28,220；至少两个活性模型支持的候选由 61,914 增至 **61,918**。
+- 新冻结 CSV SHA-256 为
+  `ccd09ff8dbc10d682d4fecc70d26535391014c2dac834b2ec5841b9047e03a36`，远端内容寻址目录为
+  `/data0/ampgent-pepglad-huangyueshan/v1/artifacts/strict-library/ccd09ff8dbc10d682d4fecc70d26535391014c2dac834b2ec5841b9047e03a36/`；
+  CSV、评分收据、严格子集和冻结收据均已远端回读校验。本地工作站只作约 176.5 MiB 有界中转，远端
+  校验后已删除精确临时目录 `ampgent-gyra-r19-score-20260828T080641Z`，不存在本地结果副本。
