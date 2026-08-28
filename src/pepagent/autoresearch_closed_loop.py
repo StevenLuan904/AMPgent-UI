@@ -18,7 +18,8 @@ from pepagent.provenance.hashing import sha256_json, sha256_text
 
 CANONICAL_AMINO_ACIDS = frozenset("ACDEFGHIKLMNPQRSTVWY")
 MINIMUM_PEPTIDE_LENGTH = 10
-MAXIMUM_PEPTIDE_LENGTH = 25
+MAXIMUM_PEPTIDE_LENGTH = 30
+OOD_QUALIFIED_MINIMUM_PEPTIDE_LENGTH = 20
 
 ArchiveName = Literal[
     "activity_consensus",
@@ -93,6 +94,25 @@ class CandidateEvidence(FrozenModel):
         if forbidden:
             raise ValueError(f"weighted scalar metrics are forbidden: {sorted(forbidden)}")
         return self
+
+
+def is_ood_qualified_wetlab_candidate(candidate: CandidateEvidence) -> bool:
+    """Return whether a literal hard-gate candidate is usable for wet-lab selection.
+
+    Guruprasad values below 20 aa are explicitly OOD and therefore cannot satisfy
+    the wet-lab quota even when the numeric instability value is below 50.
+    """
+
+    instability = candidate.metrics.get("guruprasad_instability_index")
+    return bool(
+        candidate.archive_eligible
+        and OOD_QUALIFIED_MINIMUM_PEPTIDE_LENGTH
+        <= len(candidate.sequence)
+        <= MAXIMUM_PEPTIDE_LENGTH
+        and instability is not None
+        and instability.status == "succeeded"
+        and not instability.out_of_domain
+    )
 
 
 class ArchiveObjective(FrozenModel):
@@ -974,6 +994,10 @@ class ContinuationDecision(FrozenModel):
     ]
     continue_required: bool
     high_quality_candidate_count: int = Field(ge=0)
+    literal_high_quality_candidate_count: int = Field(default=0, ge=0)
+    quality_gate: Literal["ood-qualified-wetlab-20-to-30-aa"] = (
+        "ood-qualified-wetlab-20-to-30-aa"
+    )
     archive_gain: bool
     consecutive_stagnant_generations: int = Field(ge=0)
     reasons: tuple[str, ...] = Field(min_length=1)
@@ -1044,7 +1068,12 @@ def update_multi_front_archive(
     new_family_count = len(current_novel_families - prior_novel_families)
     archive_gain = any(added[name] for name in ARCHIVE_NAMES)
     stagnant = 0 if archive_gain else prior_consecutive_stagnant_generations + 1
-    high_quality_count = len(_high_quality_candidate_ids(current))
+    literal_high_quality_ids = _high_quality_candidate_ids(current)
+    high_quality_count = sum(
+        is_ood_qualified_wetlab_candidate(by_id[candidate_id])
+        for candidate_id in literal_high_quality_ids
+        if candidate_id in by_id
+    )
 
     if generation >= continuation_policy.maximum_generations_per_run:
         next_action = "freeze_successor_run"
@@ -1055,12 +1084,12 @@ def update_multi_front_archive(
         if stagnant >= continuation_policy.stagnation_patience_generations:
             next_action = "switch_strategy"
             reasons = (
-                "high_quality_quota_underfilled",
+                "ood_qualified_high_quality_quota_underfilled",
                 "archive_stagnation_requires_operator_or_sampling_change",
             )
         else:
             next_action = "continue_evolution"
-            reasons = ("high_quality_quota_underfilled",)
+            reasons = ("ood_qualified_high_quality_quota_underfilled",)
     elif stagnant >= continuation_policy.stagnation_patience_generations:
         next_action = "quality_goal_met"
         continue_required = False
@@ -1081,6 +1110,7 @@ def update_multi_front_archive(
             next_action=next_action,
             continue_required=continue_required,
             high_quality_candidate_count=high_quality_count,
+            literal_high_quality_candidate_count=len(literal_high_quality_ids),
             archive_gain=archive_gain,
             consecutive_stagnant_generations=stagnant,
             reasons=reasons,
@@ -1115,5 +1145,6 @@ __all__ = [
     "parse_persisted_archive_snapshot",
     "parse_evolution_action",
     "update_multi_front_archive",
+    "is_ood_qualified_wetlab_candidate",
     "validate_action_child",
 ]

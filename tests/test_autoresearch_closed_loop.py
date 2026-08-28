@@ -352,6 +352,9 @@ def test_archive_update_continues_switches_and_freezes_successor_without_stoppin
     assert gained.new_family_count == 4
     assert gained.continuation.next_action == "continue_evolution"
     assert gained.continuation.continue_required is True
+    assert gained.continuation.high_quality_candidate_count == 0
+    assert gained.continuation.literal_high_quality_candidate_count > 0
+    assert gained.continuation.quality_gate == "ood-qualified-wetlab-20-to-30-aa"
 
     stalled = update_multi_front_archive(
         gained.current,

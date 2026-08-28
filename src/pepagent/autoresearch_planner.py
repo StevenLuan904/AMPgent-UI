@@ -17,6 +17,7 @@ from pepagent.autoresearch_closed_loop import (
     MultiFrontArchiveSnapshot,
     PepMLMTargetedAction,
     ResidueSubstitution,
+    is_ood_qualified_wetlab_candidate,
 )
 from pepagent.provenance.hashing import sha256_text
 
@@ -53,6 +54,18 @@ def _gold_candidate_ids(snapshot: MultiFrontArchiveSnapshot) -> set[str]:
     )
 
 
+def _ood_qualified_gold_candidate_ids(
+    snapshot: MultiFrontArchiveSnapshot,
+    candidates_by_id: Mapping[str, CandidateEvidence],
+) -> set[str]:
+    return {
+        candidate_id
+        for candidate_id in _gold_candidate_ids(snapshot)
+        if candidate_id in candidates_by_id
+        and is_ood_qualified_wetlab_candidate(candidates_by_id[candidate_id])
+    }
+
+
 def _improvement_index(
     deltas: Sequence[PlannerDeltaEvidence],
 ) -> tuple[dict[str, int], dict[str, tuple[str, ...]]]:
@@ -86,7 +99,7 @@ def _lane_candidates(
         candidates_by_id[candidate_id]
         for candidate_id in ordered_ids
         if candidate_id in candidates_by_id
-        and candidates_by_id[candidate_id].archive_eligible
+        and is_ood_qualified_wetlab_candidate(candidates_by_id[candidate_id])
     ]
     return sorted(
         eligible,
@@ -172,10 +185,19 @@ def _unique_de_novo_sequence(
     *, branch_key: str, seed: int, known_sequences: set[str]
 ) -> str:
     offset = int(sha256_text(f"{branch_key}:{seed}")[:8], 16)
-    for attempt in range(len(_DE_NOVO_MOTIFS) * 3):
-        motif = _DE_NOVO_MOTIFS[(offset + attempt) % len(_DE_NOVO_MOTIFS)]
-        rotation = (seed + attempt) % len(motif)
-        sequence = motif[rotation:] + motif[:rotation]
+    for attempt in range(len(_DE_NOVO_MOTIFS) ** 2 * 3):
+        first = _DE_NOVO_MOTIFS[(offset + attempt) % len(_DE_NOVO_MOTIFS)]
+        second = _DE_NOVO_MOTIFS[
+            (offset + 1 + attempt // len(_DE_NOVO_MOTIFS)) % len(_DE_NOVO_MOTIFS)
+        ]
+        first_rotation = (seed + attempt) % len(first)
+        second_rotation = (seed * 3 + attempt) % len(second)
+        sequence = (
+            first[first_rotation:]
+            + first[:first_rotation]
+            + second[second_rotation:]
+            + second[:second_rotation]
+        )
         if sequence not in known_sequences:
             return sequence
     alphabet = "KRLAIGFWQNST"
@@ -183,7 +205,7 @@ def _unique_de_novo_sequence(
         digest = sha256_text(f"{branch_key}:{seed}:fallback:{attempt}")
         sequence = "".join(
             alphabet[int(digest[index : index + 2], 16) % len(alphabet)]
-            for index in range(0, 20, 2)
+            for index in range(0, 40, 2)
         )
         if sequence not in known_sequences:
             return sequence
@@ -218,13 +240,17 @@ def build_multifront_rule_action_plan(
     by_id = {item.candidate_id: item for item in candidates}
     if len(by_id) != len(candidates):
         raise ValueError("planner candidates must have unique IDs")
-    eligible = [item for item in candidates if item.archive_eligible]
+    eligible = [item for item in candidates if is_ood_qualified_wetlab_candidate(item)]
     if not eligible:
-        raise ValueError("planner has no hard-gate-qualified parent candidates")
+        raise ValueError(
+            "planner has no OOD-qualified 20--30 aa hard-gate parent; "
+            "the successor must use a target-specific strict seed split"
+        )
     improvement_counts, delta_receipts = _improvement_index(prior_deltas)
     known_sequences = {item.sequence for item in candidates}
     archive_sha = snapshot.archive_sha256
-    gold_count = len(_gold_candidate_ids(snapshot))
+    literal_gold_count = len(_gold_candidate_ids(snapshot))
+    gold_count = len(_ood_qualified_gold_candidate_ids(snapshot, by_id))
 
     actions: list[EvolutionAction] = []
     rationales: dict[str, str] = {}
@@ -398,7 +424,7 @@ def build_multifront_rule_action_plan(
             ),
             evidence_sha256s=(archive_sha,),
             proposal_mode="de_novo",
-            peptide_length=12,
+            peptide_length=20,
         )
         actions.append(action)
         strategies.append("pepmlm_targeted")
@@ -460,7 +486,10 @@ def build_multifront_rule_action_plan(
         "generation": generation,
         "gold_target": gold_target,
         "gold_candidate_count": gold_count,
+        "literal_gold_candidate_count": literal_gold_count,
+        "ood_qualified_gold_candidate_count": gold_count,
         "gold_shortfall": max(gold_target - gold_count, 0),
+        "quality_gate": "literal-hard-gates+guruprasad-non-ood+length-20-to-30-aa",
         "archive_sha256": archive_sha,
         "strategies": strategies,
         "rationale_by_action_sha256": rationales,

@@ -55,31 +55,31 @@ def _cohort() -> tuple[CandidateEvidence, ...]:
     return (
         _candidate(
             "00000000-0000-0000-0000-000000000101",
-            "ACDEFGHIKL",
+            "ACDEFGHIKLACDEFGHIKL",
             "fam-a",
             (0.1, 2.0, 0.2),
         ),
         _candidate(
             "00000000-0000-0000-0000-000000000102",
-            "LMNPQRSTVW",
+            "LMNPQRSTVWLMNPQRSTVW",
             "fam-b",
             (2.0, 0.1, 0.3),
         ),
         _candidate(
             "00000000-0000-0000-0000-000000000103",
-            "KKLLKLLKLL",
+            "KKLLKLLKLLKKLLKLLKLL",
             "fam-c",
             (1.0, 1.1, 0.95),
         ),
         _candidate(
             "00000000-0000-0000-0000-000000000104",
-            "VVVVVVKKRR",
+            "VVVVVVKKRRVVVVVVKKRR",
             "fam-d",
             (0.7, 0.8, 0.7),
         ),
         _candidate(
             "00000000-0000-0000-0000-000000000105",
-            "WWWWWWRRRR",
+            "WWWWWWRRRRWWWWWWRRRR",
             "unsafe",
             (0.0, 0.0, 1.0),
             eligible=False,
@@ -127,6 +127,24 @@ def test_multifront_rule_planner_keeps_conflicts_novelty_and_four_strategies() -
     assert plan["no_weighted_total_score"] is True
     actions = [parse_evolution_action(item) for item in plan["actions"]]
     assert len(actions) == 4
+    assert all(
+        20 <= (
+            action.peptide_length
+            if getattr(action, "proposal_mode", None) == "de_novo"
+            else len(action.proposed_sequence)
+            if getattr(action, "action_type", None) == "de_novo"
+            else len(
+                next(
+                    candidate.sequence
+                    for candidate in cohort
+                    if candidate.candidate_id == action.parent_candidate_id
+                )
+            )
+        ) <= 30
+        for action in actions
+    )
+    assert plan["gold_candidate_count"] == plan["ood_qualified_gold_candidate_count"]
+    assert plan["quality_gate"].endswith("length-20-to-30-aa")
     assert any(delta_sha in action.evidence_sha256s for action in actions)
     serialized = "|".join(str(item.model_dump(mode="json")) for item in actions)
     assert cohort[-1].candidate_id not in serialized
@@ -173,8 +191,56 @@ def test_pepmlm_targeted_action_compiles_to_existing_cli_schema_and_validates_ch
     assert validate_action_child(
         action,
         {parent.candidate_id: parent},
-        "ARDEFGHIKL",
-    ) == "ARDEFGHIKL"
+        "ARDEFGHIKLACDEFGHIKL",
+    ) == "ARDEFGHIKLACDEFGHIKL"
+
+
+def test_planner_rejects_short_or_instability_ood_parent_pool() -> None:
+    short = _candidate(
+        "00000000-0000-0000-0000-000000000201",
+        "ACDEFGHIKL",
+        "short-ood",
+        (0.1, 0.2, 0.9),
+    ).model_copy(
+        update={
+            "metrics": {
+                **_candidate(
+                    "00000000-0000-0000-0000-000000000201",
+                    "ACDEFGHIKL",
+                    "short-ood",
+                    (0.1, 0.2, 0.9),
+                ).metrics,
+                "guruprasad_instability_index": MetricObservation(
+                    numeric_value=10.0,
+                    direction="minimize",
+                    unit="dimensionless",
+                    version="test-v1",
+                    out_of_domain=True,
+                ),
+            }
+        }
+    )
+    snapshot = build_multi_front_archive(
+        (short,),
+        MultiFrontArchivePolicy(),
+        generation=0,
+    )
+
+    try:
+        build_multifront_rule_action_plan(
+            candidates=(short,),
+            snapshot=snapshot,
+            branch_key="PBP2a",
+            generation=1,
+            seed=17,
+            operator_release_sha256="a" * 64,
+            target_sequence_sha256="c" * 64,
+            gold_target=50,
+        )
+    except ValueError as error:
+        assert "OOD-qualified 20--30 aa" in str(error)
+    else:
+        raise AssertionError("planner accepted a short OOD-only parent pool")
 
 
 def test_planner_rejects_gold_target_below_branch_contract() -> None:
