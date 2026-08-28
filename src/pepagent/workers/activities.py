@@ -23,6 +23,7 @@ from pepagent.db.models import (
     Candidate,
     Evaluation,
     EvidenceArtifact,
+    EvidenceArtifactLocation,
     ExperimentRun,
     ToolCall,
 )
@@ -242,29 +243,124 @@ async def _register_artifact(
             ]
         )
     )
+    await _register_artifact_location_witness(
+        session,
+        tool_call_id=tool_call_id,
+        artifact=artifact,
+        role=role,
+        stored_payload=stored_payload,
+        metadata=metadata,
+    )
     return artifact
 
 
 def _artifact_identity_mismatches(
-    artifact: Artifact, stored_payload: dict[str, Any]
+    artifact: Artifact,
+    stored_payload: dict[str, Any],
+    metadata: dict[str, Any] | None = None,
 ) -> dict[str, dict[str, Any]]:
+    """Compare only immutable content identity, never a particular locator.
+
+    ``storage_uri`` is deliberately absent: one byte-identical CAS object can
+    be exposed through several immutable bundle paths.  Callers that have
+    additional content semantics can put them under the reserved
+    ``content_identity`` mapping; those fields remain fail-closed.
+    """
+
     expected = {
         "sha256": stored_payload["sha256"],
         "size_bytes": stored_payload["size_bytes"],
         "media_type": stored_payload["media_type"],
-        "storage_uri": stored_payload["uri"],
     }
     actual = {
         "sha256": artifact.sha256,
         "size_bytes": artifact.size_bytes,
         "media_type": artifact.media_type,
-        "storage_uri": artifact.storage_uri,
     }
-    return {
+    mismatches = {
         key: {"expected": expected[key], "actual": actual[key]}
         for key in expected
         if expected[key] != actual[key]
     }
+    expected_content = (metadata or {}).get("content_identity")
+    actual_metadata = artifact.metadata_json if isinstance(artifact.metadata_json, dict) else {}
+    actual_content = actual_metadata.get("content_identity")
+    if expected_content is not None and not isinstance(expected_content, dict):
+        raise ValueError("Artifact content_identity metadata must be an object")
+    if actual_content is not None and not isinstance(actual_content, dict):
+        mismatches["content_identity"] = {
+            "expected": expected_content,
+            "actual": actual_content,
+        }
+    elif expected_content != actual_content and (
+        expected_content is not None or actual_content is not None
+    ):
+        mismatches["content_identity"] = {
+            "expected": expected_content,
+            "actual": actual_content,
+        }
+    return mismatches
+
+
+def _artifact_location_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
+    """Keep per-observation provenance separate from global content identity."""
+
+    return {key: value for key, value in metadata.items() if key != "content_identity"}
+
+
+async def _register_artifact_location_witness(
+    session: AsyncSession,
+    *,
+    tool_call_id: uuid.UUID,
+    artifact: Artifact,
+    role: str,
+    stored_payload: dict[str, Any],
+    metadata: dict[str, Any],
+) -> EvidenceArtifactLocation:
+    location_metadata = _artifact_location_metadata(metadata)
+    witness_payload = {
+        "tool_call_id": str(tool_call_id),
+        "artifact_id": str(artifact.id),
+        "role": role,
+        "requested_storage_uri": stored_payload["uri"],
+        "location_metadata": location_metadata,
+    }
+    witness_sha256 = sha256_json(witness_payload)
+    await session.execute(
+        pg_insert(EvidenceArtifactLocation)
+        .values(
+            tool_call_id=tool_call_id,
+            artifact_id=artifact.id,
+            role=role,
+            location_witness_sha256=witness_sha256,
+            requested_storage_uri=stored_payload["uri"],
+            location_metadata_json=location_metadata,
+        )
+        .on_conflict_do_nothing(
+            index_elements=[
+                EvidenceArtifactLocation.tool_call_id,
+                EvidenceArtifactLocation.artifact_id,
+                EvidenceArtifactLocation.role,
+                EvidenceArtifactLocation.location_witness_sha256,
+            ]
+        )
+    )
+    witness = await session.scalar(
+        select(EvidenceArtifactLocation).where(
+            EvidenceArtifactLocation.tool_call_id == tool_call_id,
+            EvidenceArtifactLocation.artifact_id == artifact.id,
+            EvidenceArtifactLocation.role == role,
+            EvidenceArtifactLocation.location_witness_sha256 == witness_sha256,
+        )
+    )
+    if witness is None:
+        raise RuntimeError("Artifact location witness insert was not durably observable")
+    if (
+        witness.requested_storage_uri != stored_payload["uri"]
+        or witness.location_metadata_json != location_metadata
+    ):
+        raise ValueError("Artifact location witness identity drifted on retry")
+    return witness
 
 
 async def _get_or_create_stored_artifact(
@@ -300,7 +396,7 @@ async def _get_or_create_stored_artifact(
         raise RuntimeError(
             "artifact SHA conflict was observed but the committed Artifact row is unavailable"
         )
-    mismatches = _artifact_identity_mismatches(artifact, stored_payload)
+    mismatches = _artifact_identity_mismatches(artifact, stored_payload, metadata)
     if mismatches:
         raise ValueError(
             "content-addressed Artifact identity drifted for "

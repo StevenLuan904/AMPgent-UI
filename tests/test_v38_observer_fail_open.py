@@ -5,8 +5,10 @@ from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
+from sqlalchemy.pool import NullPool
 from temporalio.worker import ExecuteActivityInput
 
+from pepagent.db import session as db_session
 from pepagent.workers import v38_observer_interceptor as observer
 from pepagent.workflow_observer_contract import ActivityLifecyclePayload
 
@@ -25,6 +27,13 @@ def _payload(*, status: str = "started") -> ActivityLifecyclePayload:
         worker_role="autoresearch-control",
         task_queue="pepagent-autoresearch-control-v1",
     )
+
+
+def test_observer_uses_a_pool_isolated_from_scientific_activities() -> None:
+    assert observer.ObserverSessionFactory is db_session.ObserverSessionFactory
+    assert db_session.ObserverSessionFactory is not db_session.SessionFactory
+    assert isinstance(db_session.observer_engine.sync_engine.pool, NullPool)
+    assert not isinstance(db_session.engine.sync_engine.pool, NullPool)
 
 
 async def _drain_background_tasks() -> None:

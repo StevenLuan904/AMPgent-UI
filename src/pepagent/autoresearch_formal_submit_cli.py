@@ -797,12 +797,16 @@ def _validate_preflight(
         raise ValueError("AutoResearch preflight has no machine checks")
     if any(item.get("status") != "passed" for item in checks):
         raise ValueError("AutoResearch preflight contains a non-passing check")
-    migration_checks = [item for item in checks if item.get("name") == "database_migration_0016"]
+    migration_checks = [
+        item for item in checks if item.get("name") == "database_migration_0017"
+    ]
     if len(migration_checks) != 1 or (
-        (migration_checks[0].get("evidence") or {}).get("migration") != "0016_autoresearch_evidence"
+        (migration_checks[0].get("evidence") or {}).get("migration")
+        != "0017_artifact_location_witnesses"
     ):
         raise ValueError(
-            "preflight does not prove remote database migration 0016_autoresearch_evidence"
+            "preflight does not prove remote database migration "
+            "0017_artifact_location_witnesses"
         )
     expected = {
         item.branch_key: {

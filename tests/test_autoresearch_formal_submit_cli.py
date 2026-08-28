@@ -445,9 +445,9 @@ def _fixture_bundle(tmp_path: Path) -> tuple[dict[str, Any], dict[str, Any]]:
                 },
             },
             {
-                "name": "database_migration_0016",
+                "name": "database_migration_0017",
                 "status": "passed",
-                "evidence": {"migration": "0016_autoresearch_evidence"},
+                "evidence": {"migration": "0017_artifact_location_witnesses"},
             },
         ],
         "blockers": [],
@@ -477,11 +477,11 @@ def test_formal_plan_derives_exact_six_new_branch_identities(tmp_path: Path) -> 
     assert all(item.workflow_id.startswith("pepagent-autoresearch-v1-") for item in plan.branches)
 
 
-def test_formal_plan_requires_real_0016_migration_evidence(tmp_path: Path) -> None:
+def test_formal_plan_requires_real_0017_migration_evidence(tmp_path: Path) -> None:
     config, preflight = _fixture_bundle(tmp_path)
     preflight["checks"][-1]["evidence"]["migration"] = "0016_autoresearch_exact_once_submission"
 
-    with pytest.raises(ValueError, match="0016_autoresearch_evidence"):
+    with pytest.raises(ValueError, match="0017_artifact_location_witnesses"):
         build_autoresearch_formal_plan(
             config=config,
             preflight=preflight,

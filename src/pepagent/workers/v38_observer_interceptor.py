@@ -17,7 +17,7 @@ from temporalio.worker import (
 )
 
 from pepagent.db.models import ExperimentRun
-from pepagent.db.session import SessionFactory
+from pepagent.db.session import ObserverSessionFactory
 from pepagent.workflow_observer_contract import (
     ACTIVITY_STAGE_BINDINGS,
     ActivityLifecyclePayload,
@@ -80,7 +80,10 @@ async def _persist_durable_event(
     payload: ActivityLifecyclePayload,
     topology_payload: dict[str, Any] | None,
 ) -> None:
-    async with SessionFactory() as session, session.begin():
+    # Never share the scientific activity pool.  asyncio.wait_for cancels a
+    # timed-out writer and connection cleanup can itself be slow when a tunnel
+    # is degraded; the dedicated NullPool confines that failure to telemetry.
+    async with ObserverSessionFactory() as session, session.begin():
         await append_typed_lifecycle_event(session, payload)
         if topology_payload is None:
             run = await session.get(ExperimentRun, payload.run_id)

@@ -7,7 +7,7 @@ from typing import Any
 import pytest
 from sqlalchemy.dialects import postgresql
 
-from pepagent.db.models import Artifact
+from pepagent.db.models import Artifact, EvidenceArtifactLocation
 from pepagent.workers.activities import (
     _artifact_identity_mismatches,
     _get_or_create_stored_artifact,
@@ -44,13 +44,20 @@ class _ArtifactSession:
         self.insert_wins = insert_wins
         self.scalar_statements: list[Any] = []
         self.execute_statements: list[Any] = []
+        self.location_witnesses: dict[str, EvidenceArtifactLocation] = {}
 
     async def scalar(self, statement: Any) -> Any:
         self.scalar_statements.append(statement)
-        if len(self.scalar_statements) == 1:
+        compiled = _compiled(statement)
+        if "INSERT INTO artifacts" in compiled:
             await asyncio.sleep(0)
             return self.artifact.id if self.insert_wins else None
-        return self.artifact
+        if "FROM artifacts" in compiled:
+            return self.artifact
+        if "FROM evidence_artifact_locations" in compiled:
+            witness_sha256 = statement.compile().params["location_witness_sha256_1"]
+            return self.location_witnesses.get(witness_sha256)
+        raise AssertionError(f"unexpected scalar statement: {compiled}")
 
     async def get(self, _model: Any, artifact_id: uuid.UUID) -> Artifact | None:
         assert artifact_id == self.artifact.id
@@ -58,6 +65,18 @@ class _ArtifactSession:
 
     async def execute(self, statement: Any) -> None:
         self.execute_statements.append(statement)
+        compiled = _compiled(statement)
+        if "INSERT INTO evidence_artifact_locations" in compiled:
+            params = statement.compile().params
+            witness = EvidenceArtifactLocation(
+                tool_call_id=params["tool_call_id"],
+                artifact_id=params["artifact_id"],
+                role=params["role"],
+                location_witness_sha256=params["location_witness_sha256"],
+                requested_storage_uri=params["requested_storage_uri"],
+                location_metadata_json=params["location_metadata_json"],
+            )
+            self.location_witnesses[witness.location_witness_sha256] = witness
 
 
 def _compiled(statement: Any) -> str:
@@ -96,13 +115,18 @@ async def test_concurrent_cross_run_artifact_registration_reuses_global_sha_and_
     )
 
     assert first.id == second.id == artifact.id
-    assert len(winner.scalar_statements) == 1
-    assert len(conflicting_branch.scalar_statements) == 2
+    assert len(winner.scalar_statements) == 2
+    assert len(conflicting_branch.scalar_statements) == 3
     assert "ON CONFLICT (sha256) DO NOTHING" in _compiled(winner.scalar_statements[0])
-    assert len(winner.execute_statements) == len(conflicting_branch.execute_statements) == 1
+    assert len(winner.execute_statements) == len(conflicting_branch.execute_statements) == 2
     assert "ON CONFLICT (tool_call_id, artifact_id, role) DO NOTHING" in _compiled(
         winner.execute_statements[0]
     )
+    location_insert = _compiled(winner.execute_statements[1])
+    assert (
+        "ON CONFLICT (tool_call_id, artifact_id, role, location_witness_sha256) "
+        "DO NOTHING"
+    ) in location_insert
     winner_params = winner.execute_statements[0].compile().params
     conflict_params = conflicting_branch.execute_statements[0].compile().params
     assert winner_params["tool_call_id"] == first_call_id
@@ -110,13 +134,105 @@ async def test_concurrent_cross_run_artifact_registration_reuses_global_sha_and_
 
 
 @pytest.mark.asyncio
-async def test_reused_artifact_fails_closed_when_same_sha_has_different_physical_identity() -> None:
+async def test_reused_artifact_allows_same_content_at_a_different_location() -> None:
     artifact = _artifact()
     artifact.storage_uri = "s3://wrong-bucket/drifted.json"
     session = _ArtifactSession(artifact, insert_wins=False)
 
-    with pytest.raises(ValueError, match="Artifact identity drifted"):
-        await _get_or_create_stored_artifact(session, _stored_payload(), {"target_key": "acea"})
+    reused = await _get_or_create_stored_artifact(
+        session, _stored_payload(), {"target_key": "acea"}
+    )
+
+    assert reused is artifact
+
+
+@pytest.mark.asyncio
+async def test_real_score_all_sha_preserves_multiple_requested_locations_on_one_edge() -> None:
+    real_sha = "3483ca5d60e91af0a5e097c34e87d26fcef8928c5ee341d0fa03782144e26a38"
+    first_uri = (
+        "ssh://huangyueshan@192.168.99.19/data0/ampgent-pepglad-huangyueshan/"
+        "v1/artifacts/score-all/de455c5fb6c2b3654d25f33b58d3b2649e7429a7fce6dbbf03feabe70400500b/"
+        "score/work/hemolysis_risk/candidates.csv"
+    )
+    second_uri = (
+        "ssh://huangyueshan@192.168.99.19/data0/ampgent-pepglad-huangyueshan/"
+        "v1/artifacts/score-all/de455c5fb6c2b3654d25f33b58d3b2649e7429a7fce6dbbf03feabe70400500b/"
+        "score/work/mic_potency/candidates.csv"
+    )
+    artifact = Artifact(
+        id=uuid.uuid4(),
+        sha256=real_sha,
+        size_bytes=38795,
+        media_type="text/csv; charset=utf-8",
+        storage_uri=first_uri,
+        metadata_json={"target_key": "angpt1"},
+    )
+    session = _ArtifactSession(artifact, insert_wins=False)
+    call_id = uuid.uuid4()
+    first_payload = {
+        "sha256": real_sha,
+        "size_bytes": 38795,
+        "media_type": "text/csv; charset=utf-8",
+        "uri": first_uri,
+    }
+    second_payload = {**first_payload, "uri": second_uri}
+
+    await _register_artifact(
+        session,
+        call_id,
+        first_payload,
+        "autoresearch_score_candidates_csv",
+        {"metric": "hemolysis_risk", "target_key": "angpt1"},
+    )
+    await _register_artifact(
+        session,
+        call_id,
+        second_payload,
+        "autoresearch_score_candidates_csv",
+        {"metric": "mic_potency", "target_key": "angpt1"},
+    )
+
+    witnesses = list(session.location_witnesses.values())
+    assert len(witnesses) == 2
+    assert {item.requested_storage_uri for item in witnesses} == {
+        first_uri,
+        second_uri,
+    }
+    assert {item.location_metadata_json["metric"] for item in witnesses} == {
+        "hemolysis_risk",
+        "mic_potency",
+    }
+
+
+@pytest.mark.parametrize(
+    ("field", "drifted"),
+    [("size_bytes", 1974), ("media_type", "text/plain")],
+)
+def test_artifact_content_identity_fails_closed_on_size_or_media_drift(
+    field: str, drifted: Any
+) -> None:
+    artifact = _artifact()
+    setattr(artifact, field, drifted)
+
+    mismatches = _artifact_identity_mismatches(artifact, _stored_payload())
+
+    assert field in mismatches
+
+
+def test_artifact_reserved_content_metadata_fails_closed_on_drift() -> None:
+    artifact = _artifact()
+    artifact.metadata_json = {"content_identity": {"schema": "score-all.1"}}
+
+    mismatches = _artifact_identity_mismatches(
+        artifact,
+        _stored_payload(),
+        {"content_identity": {"schema": "score-all.2"}},
+    )
+
+    assert mismatches["content_identity"] == {
+        "expected": {"schema": "score-all.2"},
+        "actual": {"schema": "score-all.1"},
+    }
 
 
 def test_artifact_identity_allows_per_run_metadata_to_differ() -> None:

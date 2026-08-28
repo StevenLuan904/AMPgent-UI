@@ -9,6 +9,7 @@ from sqlalchemy import (
     DateTime,
     Float,
     ForeignKey,
+    ForeignKeyConstraint,
     Index,
     Integer,
     String,
@@ -704,6 +705,41 @@ class EvidenceArtifact(Base):
     tool_call_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tool_calls.id"), primary_key=True)
     artifact_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("artifacts.id"), primary_key=True)
     role: Mapped[str] = mapped_column(String(64), primary_key=True)
+
+
+class EvidenceArtifactLocation(Base):
+    """Append-only locator witness for one ToolCall-to-Artifact evidence edge.
+
+    An Artifact is globally content-addressed by SHA-256, so the same bytes may
+    legitimately be observed at multiple immutable CAS paths.  The edge stays
+    deduplicated by ToolCall/Artifact/role while this child table preserves
+    every exact requested location (including multiple aliases in one call).
+    """
+
+    __tablename__ = "evidence_artifact_locations"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["tool_call_id", "artifact_id", "role"],
+            [
+                "evidence_artifacts.tool_call_id",
+                "evidence_artifacts.artifact_id",
+                "evidence_artifacts.role",
+            ],
+            name="fk_evidence_artifact_location_edge",
+        ),
+    )
+
+    tool_call_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    artifact_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    role: Mapped[str] = mapped_column(String(64), primary_key=True)
+    location_witness_sha256: Mapped[str] = mapped_column(String(64), primary_key=True)
+    requested_storage_uri: Mapped[str] = mapped_column(Text, nullable=False)
+    location_metadata_json: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, default=dict, nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
 
 
 class HarnessRelease(Base):
