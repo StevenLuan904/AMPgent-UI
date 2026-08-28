@@ -62,7 +62,6 @@ from pepagent.db.models import (
 from pepagent.db.repository import ExperimentRepository
 from pepagent.db.session import SessionFactory
 from pepagent.domain.enums import EvaluationStatus, RunStatus
-from pepagent.provenance.environment import fingerprint_runtime
 from pepagent.provenance.hashing import sha256_bytes, sha256_json, sha256_text
 from pepagent.sequence_family import cluster_sequence_families
 from pepagent.settings import get_settings
@@ -662,9 +661,6 @@ async def _execute_autoresearch_action_batch_unlocked(
             settings.pepmlm_model_path,
             settings.pepmlm_weights_sha256,
         )
-        actual_environment_sha256, _ = fingerprint_runtime()
-        if actual_environment_sha256 != environment_sha256:
-            raise OSError("PepMLM executor environment differs from the frozen action executor")
         attempt_contracts = {action.max_attempts for _, action in pepmlm_requests}
         if len(attempt_contracts) != 1:
             raise ValueError("one PepMLM action batch requires one retry contract")

@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import asyncio
+import uuid
 from types import SimpleNamespace
 
 import pytest
 
+from pepagent.autoresearch_closed_loop import PepMLMTargetedAction
+from pepagent.provenance.hashing import sha256_text
 from pepagent.workers import autoresearch_activities
 from pepagent.workers.v38_temporal_worker import _max_concurrent_activities_for_role
 
@@ -72,3 +75,102 @@ async def test_autoresearch_generator_batches_are_serialized(monkeypatch, tmp_pa
     assert await second == {"run_id": "second"}
     assert entered == ["first", "second"]
     assert maximum_active == 1
+
+
+@pytest.mark.asyncio
+async def test_pepmlm_executor_environment_is_provenance_not_a_runtime_gate(
+    monkeypatch, tmp_path
+) -> None:
+    """A declared environment identity must not reject a valid model invocation."""
+
+    target_sequence = "MKTIIALSYIFCLVFADYKDDDDK"
+    action = PepMLMTargetedAction(
+        branch_key="FGF2",
+        generation=1,
+        seed=41,
+        operator_id="pepmlm-targeted-action-v1",
+        operator_release_sha256="a" * 64,
+        target_sequence_sha256=sha256_text(target_sequence),
+        expected_improvement_metrics=("macrel_amp_probability",),
+        protected_metrics=("guruprasad_instability_index",),
+        evidence_sha256s=("b" * 64,),
+        proposal_mode="de_novo",
+        peptide_length=10,
+    )
+    action_id = str(uuid.uuid4())
+    request = {
+        "action_plan": {
+            "run_id": str(uuid.uuid4()),
+            "iteration_no": 0,
+            "action_batch_sha256": "c" * 64,
+            "actions": [
+                {
+                    "action_id": action_id,
+                    "repository_action_sha256": "e" * 64,
+                    "runtime_action_sha256": action.action_sha256,
+                    "runtime_action": action.model_dump(mode="json"),
+                    "lineage_sources": [],
+                }
+            ],
+        },
+        "executor": {
+            # This is intentionally unrelated to the test process environment. It is
+            # retained as request provenance, not re-proved from site-packages bytes.
+            "operator_environment_sha256": "d" * 64,
+            "target_sequence": target_sequence,
+        },
+    }
+
+    class EmptySession:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, traceback):
+            return False
+
+    verified_model: list[tuple[str, str]] = []
+
+    async def fake_verify(model_path: str, weights_sha256: str) -> None:
+        verified_model.append((model_path, weights_sha256))
+
+    async def fake_run_json_cli(module, payload, work_dir, *args):
+        assert module == "pepagent.model_workers.pepmlm_cli"
+        assert payload["model"] == "model://pepmlm-test"
+        return {
+            "candidates": [
+                {
+                    "action_id": action_id,
+                    "sequence": "KRWLAKIRKL",
+                    "action_sha256": action.action_sha256,
+                    "sampling_seed": action.seed,
+                    "sampling_attempt": 0,
+                    "proposal_mode": "de_novo",
+                }
+            ]
+        }
+
+    settings = SimpleNamespace(
+        pepmlm_model_path="model://pepmlm-test",
+        pepmlm_model_revision="revision-test",
+        pepmlm_weights_sha256="f" * 64,
+        work_root=str(tmp_path),
+    )
+    monkeypatch.setattr(autoresearch_activities, "SessionFactory", EmptySession)
+    monkeypatch.setattr(autoresearch_activities, "get_settings", lambda: settings)
+    monkeypatch.setattr(autoresearch_activities, "_verify_pepmlm_release", fake_verify)
+    monkeypatch.setattr(autoresearch_activities, "_run_json_cli", fake_run_json_cli)
+    monkeypatch.setattr(
+        autoresearch_activities.activity,
+        "info",
+        lambda: SimpleNamespace(attempt=1),
+    )
+
+    result = await autoresearch_activities._execute_autoresearch_action_batch_unlocked(
+        request
+    )
+
+    assert verified_model == [(settings.pepmlm_model_path, settings.pepmlm_weights_sha256)]
+    assert result["results"][0]["sequence"] == "KRWLAKIRKL"
+    assert result["provenance"]["environment_sha256"] == "d" * 64
+    assert result["provenance"]["model_uri"] == settings.pepmlm_model_path
+    assert result["provenance"]["weights_sha256"] == settings.pepmlm_weights_sha256
