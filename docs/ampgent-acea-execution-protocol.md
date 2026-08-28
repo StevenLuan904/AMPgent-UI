@@ -2987,3 +2987,16 @@ MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot
   `/data0/ampgent-pepglad-huangyueshan/v1/artifacts/strict-library/ccd09ff8dbc10d682d4fecc70d26535391014c2dac834b2ec5841b9047e03a36/`；
   CSV、评分收据、严格子集和冻结收据均已远端回读校验。本地工作站只作约 176.5 MiB 有界中转，远端
   校验后已删除精确临时目录 `ampgent-gyra-r19-score-20260828T080641Z`，不存在本地结果副本。
+
+### 2026-08-28 PBP2a r19短长度新家族扩库启动
+
+- GyrA r19验收和远端冻结完成后，没有等待下一次定时唤醒。容量脚本确认 `.19 GPU7` 无计算进程、
+  无 CUDA 声明、显存 15 MiB 且利用率 0%，随即以新 seed `2026082765` 启动独立 PBP2a
+  target-specific PepGLAD 根批次 `pbp2a-pepglad-novel-root-r19-short10-13-20260828T0022Z`。
+- 本批请求 768 条 10–13 aa raw occurrence，只使用 `.19 GPU7`；父 PID `1754411`，实际 GPU
+  compute PID `1754414`。冻结请求 SHA-256 为
+  `4b79559dc2867112f11aa9d65a2eece0a68bb9d35c6fa97132c71cf186d9f364`，launch receipt
+  SHA-256 为 `1fb6b43c7a6425a6f81fe8187970063f2be84448b36243e1a92bc0df44ffc9c9`。
+- 当前状态是 `generation_active_scoring_pending`，尚未增加严格库。完成后沿用本轮已验证的全量12项评分、
+  展示硬门、全局精确去重和80/80家族验收；验收门仍为至少100个新严格家族且严格roots中新家族率
+  至少50%。不得重复提交，也不得把未评分根计为可用候选。
