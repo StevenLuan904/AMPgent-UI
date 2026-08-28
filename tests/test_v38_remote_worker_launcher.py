@@ -109,3 +109,14 @@ def test_v38_remote_launcher_never_replaces_a_live_process() -> None:
     assert "foreign=false" in text
     assert "runtime-cache-attestation.json" in text
     assert "runtime_cache_attestation_sha256=" in text
+
+
+def test_gpu_declaration_scan_skips_unreadable_foreign_process_environments() -> None:
+    text = SCRIPT.read_text(encoding="utf-8")
+    declaration_scan = text[
+        text.index('for declaration_process in /proc/[0-9]*') :
+        text.index('GPU_MEMORY_TOTAL_MIB=', text.index('for declaration_process in /proc/[0-9]*'))
+    ]
+    assert '2>/dev/null' in declaration_scan
+    assert 'head -n 1 || true' in declaration_scan
+    assert "GPU has a CUDA_VISIBLE_DEVICES declaration; refusing launch" in declaration_scan

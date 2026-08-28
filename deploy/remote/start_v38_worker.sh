@@ -61,7 +61,7 @@ assert_gpu_idle() {
   for declaration_process in /proc/[0-9]*; do
     declaration_value="$(
       { tr '\0' '\n' < "$declaration_process/environ"; } 2>/dev/null | \
-        sed -n 's/^CUDA_VISIBLE_DEVICES=//p' | head -n 1
+        sed -n 's/^CUDA_VISIBLE_DEVICES=//p' | head -n 1 || true
     )"
     [[ -n "$declaration_value" ]] || continue
     IFS=',' read -r -a declared_devices <<< "$declaration_value"
