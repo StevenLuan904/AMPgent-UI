@@ -38,6 +38,7 @@ from pepagent.autoresearch_planner import (
 from pepagent.autoresearch_score_ingest import (
     FORMAL_SCORE_COLUMNS,
     GURUPRASAD_OOD_COLUMN,
+    safe_relative_score_bundle_path,
     validate_score_all_bundle,
     validate_score_source_map_receipt,
 )
@@ -536,9 +537,7 @@ async def execute_autoresearch_action_batch(request: dict[str, Any]) -> dict[str
         or request.get("operator_environment_sha256")
         or ""
     )
-    if len(environment_sha256) != 64 or set(environment_sha256) - set(
-        "0123456789abcdef"
-    ):
+    if len(environment_sha256) != 64 or set(environment_sha256) - set("0123456789abcdef"):
         raise ValueError("AutoResearch action executor environment is not frozen")
     run_id = uuid.UUID(str(plan["run_id"]))
     actions = [parse_evolution_action(item["runtime_action"]) for item in plan["actions"]]
@@ -548,9 +547,11 @@ async def execute_autoresearch_action_batch(request: dict[str, Any]) -> dict[str
         for row in item["lineage_sources"]
     }
     async with SessionFactory() as session:
-        sources = list(
-            await session.scalars(select(Candidate).where(Candidate.id.in_(source_ids)))
-        ) if source_ids else []
+        sources = (
+            list(await session.scalars(select(Candidate).where(Candidate.id.in_(source_ids))))
+            if source_ids
+            else []
+        )
         if {item.id for item in sources} != source_ids:
             raise ValueError("AutoResearch action source cohort is incomplete")
         by_id = {
@@ -601,8 +602,7 @@ async def execute_autoresearch_action_batch(request: dict[str, Any]) -> dict[str
             raise ValueError("PepMLM-targeted actions require the frozen target sequence")
         target_sequence_sha256 = sha256_text(target_sequence)
         if any(
-            action.target_sequence_sha256 != target_sequence_sha256
-            for _, action in pepmlm_requests
+            action.target_sequence_sha256 != target_sequence_sha256 for _, action in pepmlm_requests
         ):
             raise ValueError("PepMLM target sequence differs from the frozen action")
         settings = get_settings()
@@ -613,9 +613,7 @@ async def execute_autoresearch_action_batch(request: dict[str, Any]) -> dict[str
         actual_environment_sha256, _ = fingerprint_runtime()
         if actual_environment_sha256 != environment_sha256:
             raise OSError("PepMLM executor environment differs from the frozen action executor")
-        attempt_contracts = {
-            action.max_attempts for _, action in pepmlm_requests
-        }
+        attempt_contracts = {action.max_attempts for _, action in pepmlm_requests}
         if len(attempt_contracts) != 1:
             raise ValueError("one PepMLM action batch requires one retry contract")
         action_max_attempts = next(iter(attempt_contracts))
@@ -642,9 +640,7 @@ async def execute_autoresearch_action_batch(request: dict[str, Any]) -> dict[str
         )
         raw_candidates = list(pepmlm_output.get("candidates") or [])
         by_action_id = {str(item["action_id"]): item for item in raw_candidates}
-        expected_action_ids = {
-            str(payload["action_id"]) for payload, _ in pepmlm_requests
-        }
+        expected_action_ids = {str(payload["action_id"]) for payload, _ in pepmlm_requests}
         if set(by_action_id) != expected_action_ids:
             raise ValueError("PepMLM output does not cover the targeted action batch")
         for payload, action in pepmlm_requests:
@@ -704,9 +700,7 @@ async def execute_autoresearch_action_batch(request: dict[str, Any]) -> dict[str
             "tool_version": "1",
             "environment_sha256": environment_sha256,
             "model_uri": (
-                get_settings().pepmlm_model_path
-                if pepmlm_requests
-                else executor.get("model_uri")
+                get_settings().pepmlm_model_path if pepmlm_requests else executor.get("model_uri")
             ),
             "weights_sha256": (
                 get_settings().pepmlm_weights_sha256
@@ -956,21 +950,35 @@ def _select_complete_evidence(
     return evidence
 
 
+def _bounded_bundle_path(root: Path, relative_path: str) -> Path:
+    resolved_root = root.resolve(strict=True)
+    normalized = safe_relative_score_bundle_path(relative_path)
+    candidate = (resolved_root / Path(*PurePosixPath(normalized).parts)).resolve(strict=True)
+    try:
+        candidate.relative_to(resolved_root)
+    except ValueError as error:
+        raise ValueError("score bundle cache path escapes its bounded root") from error
+    return candidate
+
+
 def _bounded_bundle_reader(root: Path) -> Any:
     resolved_root = root.resolve(strict=True)
 
     def read_bytes(relative_path: str) -> bytes:
-        normalized = str(relative_path).replace("\\", "/")
-        candidate = (
-            resolved_root / Path(*PurePosixPath(normalized).parts)
-        ).resolve(strict=True)
-        try:
-            candidate.relative_to(resolved_root)
-        except ValueError as error:
-            raise ValueError("score bundle cache path escapes its bounded root") from error
-        return candidate.read_bytes()
+        return _bounded_bundle_path(resolved_root, relative_path).read_bytes()
 
     return read_bytes
+
+
+def _heartbeat_seed_import(stage: str, completed: int = 0, total: int | None = None) -> None:
+    activity.heartbeat(
+        {
+            "schema_version": "ampgent.autoresearch-seed-import-heartbeat.1",
+            "stage": stage,
+            "completed": completed,
+            "total": total,
+        }
+    )
 
 
 @activity.defn(name="persist_autoresearch_score_all_bundle")
@@ -982,10 +990,17 @@ async def persist_autoresearch_score_all_bundle(
     run_id = uuid.UUID(str(request["run_id"]))
     target_key = str(request["target_key"])
     root = Path(str(request["bundle_cache_root"]))
-    receipt_relative_path = str(request["bundle_receipt_path"])
+    receipt_relative_path = safe_relative_score_bundle_path(str(request["bundle_receipt_path"]))
+    source_map_relative_path = safe_relative_score_bundle_path(
+        str(request["source_map_receipt_path"])
+    )
     disk = await asyncio.to_thread(lambda: shutil.disk_usage(root.resolve(strict=True)))
-    read_bytes = _bounded_bundle_reader(root)
-    receipt_bytes = await asyncio.to_thread(read_bytes, receipt_relative_path)
+    cache_read_bytes = _bounded_bundle_reader(root)
+    receipt_file = _bounded_bundle_path(root, receipt_relative_path)
+    bundle_read_bytes = _bounded_bundle_reader(receipt_file.parent)
+    receipt_member_path = receipt_file.name
+    _heartbeat_seed_import("read_receipts")
+    receipt_bytes = await asyncio.to_thread(cache_read_bytes, receipt_relative_path)
     try:
         receipt = json.loads(receipt_bytes.decode("utf-8-sig"))
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
@@ -993,8 +1008,7 @@ async def persist_autoresearch_score_all_bundle(
     receipt_sha256 = str(request["bundle_receipt_sha256"])
     if sha256_bytes(receipt_bytes) != receipt_sha256:
         raise OSError("score bundle receipt SHA-256 mismatch")
-    source_map_relative_path = str(request["source_map_receipt_path"])
-    source_map_bytes = await asyncio.to_thread(read_bytes, source_map_relative_path)
+    source_map_bytes = await asyncio.to_thread(cache_read_bytes, source_map_relative_path)
     try:
         source_map_payload = json.loads(source_map_bytes.decode("utf-8-sig"))
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
@@ -1008,6 +1022,7 @@ async def persist_autoresearch_score_all_bundle(
         source_run_id=str(receipt.get("run_id") or ""),
         bundle_receipt_sha256=receipt_sha256,
     )
+    _heartbeat_seed_import("validate_source_map")
     source_map_storage_uri = str(request["source_map_storage_uri"])
     if not source_map_storage_uri.startswith("ssh://") or (
         f"/{source_map_sha256}/" not in source_map_storage_uri
@@ -1018,15 +1033,18 @@ async def persist_autoresearch_score_all_bundle(
         bundle_receipt=receipt,
         bundle_receipt_sha256=receipt_sha256,
         bundle_receipt_bytes=receipt_bytes,
-        bundle_receipt_relative_path=receipt_relative_path,
+        bundle_receipt_relative_path=receipt_member_path,
         target_key=target_key,
         source_result_mappings=source_map.source_result_mappings,
-        read_bytes=read_bytes,
+        read_bytes=bundle_read_bytes,
+    )
+    _heartbeat_seed_import(
+        "validate_bundle", len(validated.primary_rows), len(validated.primary_rows)
     )
     control_environment_sha256 = str(request["control_environment_sha256"])
-    if len(control_environment_sha256) != 64 or set(
-        control_environment_sha256
-    ) - set("0123456789abcdef"):
+    if len(control_environment_sha256) != 64 or set(control_environment_sha256) - set(
+        "0123456789abcdef"
+    ):
         raise ValueError("score bundle import environment identity is invalid")
     summary = {
         "schema_version": "ampgent.autoresearch-score-all-import.1",
@@ -1042,9 +1060,7 @@ async def persist_autoresearch_score_all_bundle(
         "formal_metric_names": list(FORMAL_SCORE_COLUMNS),
         "cache_disk_free_bytes_observed": disk.free,
         "strict_subset_used_as_raw": False,
-        "source_runtime_attestation_complete": (
-            validated.runtime_attestation_complete
-        ),
+        "source_runtime_attestation_complete": (validated.runtime_attestation_complete),
     }
     async with SessionFactory() as session, session.begin():
         run = await session.get(ExperimentRun, run_id)
@@ -1077,15 +1093,8 @@ async def persist_autoresearch_score_all_bundle(
             display_category="metric",
         )
         artifact_specs = [
-            (
-                receipt_relative_path,
-                validated.receipt_sha256,
-                "autoresearch_score_bundle_receipt",
-            ),
-            *(
-                (path, digest, "autoresearch_score_bundle_member")
-                for path, digest in validated.all_manifest_files
-            ),
+            (path, digest, "autoresearch_score_bundle_member")
+            for path, digest in validated.all_manifest_files
         ]
         manifest_path = str(receipt["manifest"]["path"])
         if manifest_path not in {item[0] for item in artifact_specs}:
@@ -1096,8 +1105,8 @@ async def persist_autoresearch_score_all_bundle(
                     "autoresearch_score_bundle_manifest",
                 )
             )
-        for path, digest, role in artifact_specs:
-            payload = await asyncio.to_thread(read_bytes, path)
+        for artifact_ordinal, (path, digest, role) in enumerate(artifact_specs, start=1):
+            payload = await asyncio.to_thread(bundle_read_bytes, path)
             media_type = (
                 "text/csv; charset=utf-8"
                 if path.lower().endswith(".csv")
@@ -1122,6 +1131,27 @@ async def persist_autoresearch_score_all_bundle(
                     "bundle_receipt_sha256": validated.receipt_sha256,
                 },
             )
+            if artifact_ordinal % 16 == 0:
+                _heartbeat_seed_import(
+                    "register_bundle_artifacts", artifact_ordinal, len(artifact_specs)
+                )
+        await _register_artifact(
+            session,
+            call.id,
+            {
+                "sha256": validated.receipt_sha256,
+                "size_bytes": len(receipt_bytes),
+                "media_type": "application/json",
+                "uri": f"{validated.storage_uri}{receipt_member_path}",
+            },
+            "autoresearch_score_bundle_receipt",
+            {
+                "source_run_id": validated.source_run_id,
+                "target_key": target_key,
+                "relative_cache_path": receipt_relative_path,
+                "bundle_receipt_sha256": validated.receipt_sha256,
+            },
+        )
         await _register_artifact(
             session,
             call.id,
@@ -1146,9 +1176,7 @@ async def persist_autoresearch_score_all_bundle(
         for ordinal, row in enumerate(validated.primary_rows, start=1):
             digest = str(row["sequence_sha256"])
             prior = primary_by_sequence_sha.get(digest)
-            if prior is not None and any(
-                prior[name] != row[name] for name in FORMAL_SCORE_COLUMNS
-            ):
+            if prior is not None and any(prior[name] != row[name] for name in FORMAL_SCORE_COLUMNS):
                 raise ValueError("duplicate sequence has conflicting formal12 scores")
             primary_by_sequence_sha.setdefault(digest, row)
             if digest in candidate_by_sequence_sha:
@@ -1171,13 +1199,9 @@ async def persist_autoresearch_score_all_bundle(
                 },
                 "bundle_receipt_sha256": validated.receipt_sha256,
                 "strict_display_eligible": digest in strict_sha,
-                "guruprasad_instability_ood": str(
-                    row[GURUPRASAD_OOD_COLUMN]
-                ).strip().lower()
+                "guruprasad_instability_ood": str(row[GURUPRASAD_OOD_COLUMN]).strip().lower()
                 in {"1", "true", "yes", "y"},
-                "source_runtime_attestation_complete": (
-                    validated.runtime_attestation_complete
-                ),
+                "source_runtime_attestation_complete": (validated.runtime_attestation_complete),
             }
             candidate = await repository.add_candidate(
                 run_id,
@@ -1193,6 +1217,8 @@ async def persist_autoresearch_score_all_bundle(
             if candidate.metadata_json.get("bundle_receipt_sha256") != validated.receipt_sha256:
                 raise ValueError("CAS seed candidate retry identity drifted")
             candidate_by_sequence_sha[digest] = candidate
+            if ordinal % 64 == 0:
+                _heartbeat_seed_import("persist_candidates", ordinal, len(validated.primary_rows))
 
         for occurrence_rank, row in enumerate(validated.raw_rows, start=1):
             candidate = candidate_by_sequence_sha[str(row["sequence_sha256"])]
@@ -1218,8 +1244,12 @@ async def persist_autoresearch_score_all_bundle(
                     "bundle_receipt_sha256": validated.receipt_sha256,
                 },
             )
+            if occurrence_rank % 64 == 0:
+                _heartbeat_seed_import(
+                    "persist_occurrences", occurrence_rank, len(validated.raw_rows)
+                )
 
-        evaluation_count = 0
+        evaluation_rows: list[dict[str, Any]] = []
         for digest, row in primary_by_sequence_sha.items():
             candidate = candidate_by_sequence_sha[digest]
             for metric_name in FORMAL_SCORE_COLUMNS:
@@ -1230,35 +1260,40 @@ async def persist_autoresearch_score_all_bundle(
                 numeric_value = None if is_label else float(row[metric_name])
                 text_value = row[metric_name] if is_label else None
                 out_of_domain = metric_name == "guruprasad_instability_index" and (
-                    str(row[GURUPRASAD_OOD_COLUMN]).strip().lower()
-                    in {"1", "true", "yes", "y"}
+                    str(row[GURUPRASAD_OOD_COLUMN]).strip().lower() in {"1", "true", "yes", "y"}
                 )
                 limitations = ["imported_from_fully_verified_cas_score_all_bundle"]
                 if not validated.runtime_attestation_complete:
                     limitations.append("source_runtime_attestation_partial")
                 if out_of_domain:
                     limitations.append("source_marks_guruprasad_instability_ood")
-                await repository.record_evaluation(
-                    candidate.id,
-                    call.id,
-                    metric_name,
-                    numeric_value,
-                    _IMPORTED_METRIC_UNITS[metric_name],
+                evaluation_rows.append(
                     {
-                        "schema_version": "ampgent.autoresearch-cas-score.1",
-                        "source_run_id": validated.source_run_id,
-                        "target_key": target_key,
-                        "source_candidate_id": row["candidate_id"],
-                        "source_result_sha256": row["source_result_sha256"],
-                        "bundle_receipt_sha256": validated.receipt_sha256,
-                        "manifest_sha256": validated.manifest_sha256,
-                        "runtime": validated.runtime,
-                    },
-                    text_value=text_value,
-                    out_of_domain=out_of_domain,
-                    limitations=limitations,
+                        "candidate_id": candidate.id,
+                        "metric_name": metric_name,
+                        "numeric_value": numeric_value,
+                        "unit": _IMPORTED_METRIC_UNITS[metric_name],
+                        "raw": {
+                            "schema_version": "ampgent.autoresearch-cas-score.1",
+                            "source_run_id": validated.source_run_id,
+                            "target_key": target_key,
+                            "source_candidate_id": row["candidate_id"],
+                            "source_result_sha256": row["source_result_sha256"],
+                            "bundle_receipt_sha256": validated.receipt_sha256,
+                            "manifest_sha256": validated.manifest_sha256,
+                            "runtime": validated.runtime,
+                        },
+                        "text_value": text_value,
+                        "out_of_domain": out_of_domain,
+                        "limitations": limitations,
+                    }
                 )
-                evaluation_count += 1
+        evaluation_count = 0
+        for offset in range(0, len(evaluation_rows), 512):
+            batch = evaluation_rows[offset : offset + 512]
+            await repository.record_evaluations_bulk(call.id, batch)
+            evaluation_count += len(batch)
+            _heartbeat_seed_import("persist_evaluations", evaluation_count, len(evaluation_rows))
         if evaluation_count != len(candidate_by_sequence_sha) * 12:
             raise ValueError("CAS import did not persist candidate x 12 formal evaluations")
         durable_candidate_count = int(
@@ -1318,9 +1353,7 @@ async def plan_autoresearch_actions(request: dict[str, Any]) -> dict[str, Any]:
     if len(required_metrics) != 12:
         raise ValueError("AutoResearch planner requires complete 12-metric evidence")
     archive_policy = MultiFrontArchivePolicy.model_validate(request["archive_policy"])
-    continuation_policy = ContinuationPolicy.model_validate(
-        request["continuation_policy"]
-    )
+    continuation_policy = ContinuationPolicy.model_validate(request["continuation_policy"])
     if continuation_policy.minimum_high_quality_candidates < GOLD_CANDIDATE_TARGET:
         raise ValueError("AutoResearch target branches require at least 50 gold candidates")
     planner_contract = dict(request.get("planner_contract") or {})
@@ -1355,9 +1388,7 @@ async def plan_autoresearch_actions(request: dict[str, Any]) -> dict[str, Any]:
         calls = {
             item.id: item
             for item in await session.scalars(
-                select(ToolCall).where(
-                    ToolCall.id.in_({row.tool_call_id for row in evaluations})
-                )
+                select(ToolCall).where(ToolCall.id.in_({row.tool_call_id for row in evaluations}))
             )
         }
         evidence = _select_complete_evidence(
@@ -1594,9 +1625,7 @@ async def finalize_autoresearch_iteration(request: dict[str, Any]) -> dict[str, 
     child_ids = [uuid.UUID(str(item["id"])) for item in children_receipt["candidates"]]
     score_all_ids = [
         uuid.UUID(str(item["id"]))
-        for item in children_receipt.get(
-            "score_all_candidates", children_receipt["candidates"]
-        )
+        for item in children_receipt.get("score_all_candidates", children_receipt["candidates"])
     ]
     if not set(child_ids) <= set(score_all_ids):
         raise ValueError("AutoResearch score-all cohort omits a child")
@@ -1717,7 +1746,8 @@ async def finalize_autoresearch_iteration(request: dict[str, Any]) -> dict[str, 
                 for item in evidence
                 if next(
                     candidate for candidate in candidates if str(candidate.id) == item.candidate_id
-                ).generation <= iteration_no
+                ).generation
+                <= iteration_no
             ]
             if not baseline:
                 raise ValueError("initial AutoResearch archive requires scored seed parents")
@@ -1738,9 +1768,7 @@ async def finalize_autoresearch_iteration(request: dict[str, Any]) -> dict[str, 
         )
 
         delta_receipts = []
-        actions_by_id = {
-            uuid.UUID(str(item["action_id"])): item for item in action_plan["actions"]
-        }
+        actions_by_id = {uuid.UUID(str(item["action_id"])): item for item in action_plan["actions"]}
         lineage_rows = list(
             await session.scalars(
                 select(CandidateLineageEdge).where(
@@ -1766,9 +1794,7 @@ async def finalize_autoresearch_iteration(request: dict[str, Any]) -> dict[str, 
                 for row in child_metrics.values()
             }
             if any(not rows for rows in parent_options.values()):
-                raise ValueError(
-                    "parent-child metric delta lacks a matching frozen tool contract"
-                )
+                raise ValueError("parent-child metric delta lacks a matching frozen tool contract")
             for metric_name in sorted(required_metrics):
                 child_evaluation = child_metrics[metric_name]
                 parent_evaluation = sorted(
@@ -1822,10 +1848,7 @@ async def finalize_autoresearch_iteration(request: dict[str, Any]) -> dict[str, 
             "autoresearch_multi_front_archive",
             {"iteration_no": iteration_no, "archive_sha256": update.current.archive_sha256},
         )
-        action_by_child = {
-            edge.child_candidate_id: edge.action_id
-            for edge in lineage_rows
-        }
+        action_by_child = {edge.child_candidate_id: edge.action_id for edge in lineage_rows}
         archive_version_ids: dict[str, str] = {}
         for archive_name in ARCHIVE_NAMES:
             previous_version = previous_versions.get(archive_name)
@@ -1834,15 +1857,13 @@ async def finalize_autoresearch_iteration(request: dict[str, Any]) -> dict[str, 
                 previous_active = set(
                     await session.scalars(
                         select(AutoResearchArchiveMembership.candidate_id).where(
-                            AutoResearchArchiveMembership.archive_version_id
-                            == previous_version.id,
+                            AutoResearchArchiveMembership.archive_version_id == previous_version.id,
                             AutoResearchArchiveMembership.is_active.is_(True),
                         )
                     )
                 )
             current_ids = [
-                uuid.UUID(value)
-                for value in update.current.archive_members[archive_name]
+                uuid.UUID(value) for value in update.current.archive_members[archive_name]
             ]
             current_set = set(current_ids)
             members = []

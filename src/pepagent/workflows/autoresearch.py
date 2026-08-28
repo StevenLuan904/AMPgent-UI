@@ -11,6 +11,7 @@ with workflow.unsafe.imports_passed_through():
         ContinuationPolicy,
         MultiFrontArchivePolicy,
     )
+    from pepagent.autoresearch_score_ingest import safe_relative_score_bundle_path
     from pepagent.provenance.hashing import sha256_text
     from pepagent.v38_science_execution import V38SequenceExecutionContract
 
@@ -18,9 +19,7 @@ with workflow.unsafe.imports_passed_through():
 def _validate_request(request: dict[str, Any]) -> None:
     if request.get("schema_version") != "ampgent.autoresearch-workflow-request.1":
         raise ValueError("AutoResearch request schema is not frozen")
-    contract = V38SequenceExecutionContract.model_validate(
-        request["execution_contract"]
-    )
+    contract = V38SequenceExecutionContract.model_validate(request["execution_contract"])
     if len(contract.required_sequence_metrics) != 12:
         raise ValueError("AutoResearch requires the frozen 12-metric score-all contract")
     plugin_names = tuple(contract.metric_plugins)
@@ -34,20 +33,18 @@ def _validate_request(request: dict[str, Any]) -> None:
     if any(not str(queues[name]).strip() for name in required_queues):
         raise ValueError("AutoResearch task queues must be non-empty")
     provider = request.get("planner_provider") or {}
-    if not str(provider.get("activity_name") or "").strip() or not str(
-        provider.get("task_queue") or ""
-    ).strip():
-        raise ValueError("AutoResearch requires a durable Agent planner provider")
     if (
-        str(provider["activity_name"]) == "plan_autoresearch_actions"
-        and str(provider["task_queue"]) != str(queues["workflow_and_control"])
+        not str(provider.get("activity_name") or "").strip()
+        or not str(provider.get("task_queue") or "").strip()
     ):
+        raise ValueError("AutoResearch requires a durable Agent planner provider")
+    if str(provider["activity_name"]) == "plan_autoresearch_actions" and str(
+        provider["task_queue"]
+    ) != str(queues["workflow_and_control"]):
         raise ValueError("built-in AutoResearch planner must use the control task queue")
     executor = request.get("action_executor") or {}
     executor_environment = str(executor.get("operator_environment_sha256") or "")
-    if len(executor_environment) != 64 or set(executor_environment) - set(
-        "0123456789abcdef"
-    ):
+    if len(executor_environment) != 64 or set(executor_environment) - set("0123456789abcdef"):
         raise ValueError("AutoResearch action executor identity is invalid")
     if str(provider["activity_name"]) == "plan_autoresearch_actions":
         target_sequence = "".join(str(executor.get("target_sequence") or "").split()).upper()
@@ -64,9 +61,7 @@ def _validate_request(request: dict[str, Any]) -> None:
     if continuation.minimum_high_quality_candidates < 50:
         raise ValueError("AutoResearch requires at least 50 gold candidates per target")
     environment_sha256 = str(request["control_environment_sha256"])
-    if len(environment_sha256) != 64 or set(environment_sha256) - set(
-        "0123456789abcdef"
-    ):
+    if len(environment_sha256) != 64 or set(environment_sha256) - set("0123456789abcdef"):
         raise ValueError("AutoResearch control environment identity is invalid")
     if int(request.get("start_iteration_no", 0)) < 0:
         raise ValueError("AutoResearch start iteration must be non-negative")
@@ -94,20 +89,18 @@ def _validate_request(request: dict[str, Any]) -> None:
         ):
             raise ValueError("AutoResearch seed score bundle import paths are empty")
         receipt_sha256 = str(seed_import["bundle_receipt_sha256"])
-        if len(receipt_sha256) != 64 or set(receipt_sha256) - set(
-            "0123456789abcdef"
-        ):
+        if len(receipt_sha256) != 64 or set(receipt_sha256) - set("0123456789abcdef"):
             raise ValueError("AutoResearch seed score bundle receipt identity is invalid")
         source_map_sha256 = str(seed_import["source_map_receipt_sha256"])
-        if len(source_map_sha256) != 64 or set(source_map_sha256) - set(
-            "0123456789abcdef"
-        ):
+        if len(source_map_sha256) != 64 or set(source_map_sha256) - set("0123456789abcdef"):
             raise ValueError("AutoResearch score source-map identity is invalid")
         source_map_uri = str(seed_import["source_map_storage_uri"])
         if not source_map_uri.startswith("ssh://") or (
             f"/{source_map_sha256}/" not in source_map_uri
         ):
             raise ValueError("AutoResearch score source-map URI is not remote CAS")
+        safe_relative_score_bundle_path(str(seed_import["bundle_receipt_path"]))
+        safe_relative_score_bundle_path(str(seed_import["source_map_receipt_path"]))
         if str(seed_import["target_key"]) != str(request["branch_key"]):
             raise ValueError("AutoResearch seed score bundle target differs from its branch")
 
@@ -134,9 +127,7 @@ class AutoResearchClosedLoopWorkflow:
         contract = request["execution_contract"]
         plugin_names = list(contract["metric_plugins"])
         iteration_no = int(request.get("start_iteration_no", 0))
-        stagnant_generations = int(
-            request.get("prior_consecutive_stagnant_generations", 0)
-        )
+        stagnant_generations = int(request.get("prior_consecutive_stagnant_generations", 0))
         previous_checkpoint = request.get("previous_checkpoint")
         completed_in_this_execution = 0
         latest_checkpoint: dict[str, Any] | None = None
@@ -147,7 +138,7 @@ class AutoResearchClosedLoopWorkflow:
                     "mark_run_started",
                     {"run_id": run_id, "workflow_id": workflow.info().workflow_id},
                     task_queue=control_queue,
-                    start_to_close_timeout=timedelta(minutes=2),
+                    start_to_close_timeout=timedelta(minutes=15),
                     retry_policy=retry,
                 )
                 seed_import = request.get("seed_score_bundle_import")
@@ -157,22 +148,21 @@ class AutoResearchClosedLoopWorkflow:
                         {
                             **seed_import,
                             "run_id": run_id,
-                            "control_environment_sha256": request[
-                                "control_environment_sha256"
-                            ],
+                            "control_environment_sha256": request["control_environment_sha256"],
                         },
                         task_queue=control_queue,
                         start_to_close_timeout=timedelta(hours=2),
-                        heartbeat_timeout=timedelta(minutes=5),
+                        heartbeat_timeout=timedelta(minutes=15),
                         retry_policy=retry,
                     )
 
             while completed_in_this_execution < int(
                 request.get("maximum_iterations_per_workflow_execution", 25)
             ):
-                if completed_in_this_execution == 0 and request.get(
-                    "initial_action_plan"
-                ) is not None:
+                if (
+                    completed_in_this_execution == 0
+                    and request.get("initial_action_plan") is not None
+                ):
                     proposed = request["initial_action_plan"]
                 else:
                     provider = request["planner_provider"]
@@ -196,9 +186,7 @@ class AutoResearchClosedLoopWorkflow:
                                     "operator_environment_sha256"
                                 ]
                             ),
-                            "control_environment_sha256": request[
-                                "control_environment_sha256"
-                            ],
+                            "control_environment_sha256": request["control_environment_sha256"],
                             "target_sequence_sha256": request["action_executor"][
                                 "target_sequence_sha256"
                             ],
@@ -271,9 +259,7 @@ class AutoResearchClosedLoopWorkflow:
                         retry_policy=retry,
                     )
                     metric_receipts.append(receipt)
-                evaluation_count = sum(
-                    int(item["evaluation_count"]) for item in metric_receipts
-                )
+                evaluation_count = sum(int(item["evaluation_count"]) for item in metric_receipts)
                 expected_count = len(cohort) * 12
                 if evaluation_count != expected_count:
                     raise ValueError("AutoResearch score-all evaluation count drifted")
@@ -287,15 +273,11 @@ class AutoResearchClosedLoopWorkflow:
                         "action_plan": action_plan,
                         "children": children,
                         "execution_contract": contract,
-                        "metric_tool_call_ids": [
-                            item["tool_call_id"] for item in metric_receipts
-                        ],
+                        "metric_tool_call_ids": [item["tool_call_id"] for item in metric_receipts],
                         "archive_policy": request["archive_policy"],
                         "continuation_policy": request["continuation_policy"],
                         "prior_consecutive_stagnant_generations": stagnant_generations,
-                        "control_environment_sha256": request[
-                            "control_environment_sha256"
-                        ],
+                        "control_environment_sha256": request["control_environment_sha256"],
                     },
                     task_queue=control_queue,
                     start_to_close_timeout=timedelta(hours=2),
@@ -304,12 +286,11 @@ class AutoResearchClosedLoopWorkflow:
                 completed_in_this_execution += 1
                 previous_checkpoint = latest_checkpoint
                 continuation = latest_checkpoint["continuation"]
-                stagnant_generations = int(
-                    continuation["consecutive_stagnant_generations"]
-                )
-                if not bool(continuation["continue_required"]) or continuation[
-                    "next_action"
-                ] == "freeze_successor_run":
+                stagnant_generations = int(continuation["consecutive_stagnant_generations"])
+                if (
+                    not bool(continuation["continue_required"])
+                    or continuation["next_action"] == "freeze_successor_run"
+                ):
                     result = {
                         "schema_version": "ampgent.autoresearch-workflow-result.1",
                         "run_id": run_id,

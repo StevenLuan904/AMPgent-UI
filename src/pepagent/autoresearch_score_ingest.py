@@ -7,7 +7,7 @@ import re
 from collections import Counter
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from pathlib import PurePosixPath
+from pathlib import PurePosixPath, PureWindowsPath
 from typing import Any
 
 from pepagent.provenance.hashing import sha256_bytes, sha256_text
@@ -96,9 +96,7 @@ _OPTIONAL_RAW_OCCURRENCE_COLUMNS = frozenset(
     }
 )
 RAW_OCCURRENCE_REQUIRED_COLUMNS = tuple(
-    name
-    for name in RAW_OCCURRENCE_COLUMNS
-    if name not in _OPTIONAL_RAW_OCCURRENCE_COLUMNS
+    name for name in RAW_OCCURRENCE_COLUMNS if name not in _OPTIONAL_RAW_OCCURRENCE_COLUMNS
 )
 _MANIFEST_LINE = re.compile(r"^([0-9a-f]{64})  ([^\r\n]+)$")
 _CANONICAL = frozenset("ACDEFGHIKLMNPQRSTVWY")
@@ -128,10 +126,21 @@ class ValidatedScoreSourceMap:
     source_result_mappings: dict[str, tuple[str, str]]
 
 
-def _safe_relative_path(value: str) -> str:
-    normalized = str(value).strip().replace("\\", "/")
+def safe_relative_score_bundle_path(value: str) -> str:
+    """Return one portable bundle-relative path and reject both OS absolute forms."""
+
+    raw = str(value).strip()
+    windows_path = PureWindowsPath(raw)
+    normalized = raw.replace("\\", "/")
     path = PurePosixPath(normalized)
-    if not normalized or path.is_absolute() or ".." in path.parts:
+    if (
+        not normalized
+        or normalized == "."
+        or path.is_absolute()
+        or windows_path.drive
+        or windows_path.root
+        or ".." in path.parts
+    ):
         raise ValueError(f"unsafe score bundle path: {value!r}")
     return path.as_posix()
 
@@ -139,7 +148,7 @@ def _safe_relative_path(value: str) -> str:
 def _file_ref(value: Any, name: str) -> tuple[str, str]:
     if not isinstance(value, Mapping):
         raise ValueError(f"score bundle {name} must be a file reference")
-    path = _safe_relative_path(str(value.get("path") or ""))
+    path = safe_relative_score_bundle_path(str(value.get("path") or ""))
     digest = str(value.get("sha256") or "")
     if len(digest) != 64 or set(digest) - set("0123456789abcdef"):
         raise ValueError(f"score bundle {name} SHA-256 is invalid")
@@ -160,7 +169,7 @@ def _parse_manifest(payload: bytes, expected_count: int) -> dict[str, str]:
         if match is None:
             raise ValueError("score bundle manifest is not standard sha256sum format")
         digest, raw_path = match.groups()
-        path = _safe_relative_path(raw_path)
+        path = safe_relative_score_bundle_path(raw_path)
         if path in entries:
             raise ValueError("score bundle manifest contains a duplicate path")
         entries[path] = digest
@@ -200,9 +209,7 @@ def _source_split_for_row(
     splits: list[dict[str, Any]],
     source_result_mappings: Mapping[str, tuple[str, str]],
 ) -> int:
-    source_result_basename = PurePosixPath(
-        str(row["source_result"]).replace("\\", "/")
-    ).name
+    source_result_basename = PurePosixPath(str(row["source_result"]).replace("\\", "/")).name
     source_result_sha256 = str(row["source_result_sha256"])
     target_key = str(row["target_key"]).strip().casefold()
     matches = []
@@ -320,10 +327,7 @@ def validate_score_all_bundle(
     }
     if set(bundle_receipt) != required_receipt_fields:
         raise ValueError("score bundle receipt schema differs from the frozen contract")
-    if (
-        bundle_receipt.get("schema_version")
-        != "ampgent.autoresearch-scoreall-bundle.v1"
-    ):
+    if bundle_receipt.get("schema_version") != "ampgent.autoresearch-scoreall-bundle.v1":
         raise ValueError("score bundle schema version is not frozen")
     if not str(bundle_receipt.get("run_id") or "").strip():
         raise ValueError("score bundle source run identity is empty")
@@ -382,7 +386,7 @@ def validate_score_all_bundle(
     if sha256_bytes(manifest_bytes) != manifest_sha:
         raise OSError("score bundle manifest SHA-256 mismatch")
     entries = _parse_manifest(manifest_bytes, expected_file_count)
-    receipt_path = _safe_relative_path(bundle_receipt_relative_path)
+    receipt_path = safe_relative_score_bundle_path(bundle_receipt_relative_path)
     if receipt_path in entries:
         raise ValueError("score bundle manifest must not contain its bundle receipt")
     payloads: dict[str, bytes] = {}
@@ -433,9 +437,7 @@ def validate_score_all_bundle(
         "three": receipt_counts["activity_support_3"],
     }
     if not (
-        counts["raw"]
-        == receipt_counts["valid_unique"]
-        == counts["formal12"]
+        counts["raw"] == receipt_counts["valid_unique"] == counts["formal12"]
         and counts["three"] <= counts["ge2"] <= counts["strict"] <= counts["formal12"]
         and counts["strict"] <= receipt_counts["safety_labels_pass"] <= counts["formal12"]
         and counts["strict"] <= receipt_counts["instability_lt_50"] <= counts["formal12"]
@@ -511,13 +513,10 @@ def validate_score_all_bundle(
         raw_keys.add(identity)
         primary_row = primary_by_identity.get(identity)
         if primary_row is None or any(
-            str(primary_row[name]) != str(row[name])
-            for name in PRIMARY_IDENTITY_COLUMNS
+            str(primary_row[name]) != str(row[name]) for name in PRIMARY_IDENTITY_COLUMNS
         ):
             raise ValueError("raw occurrence identity differs from primary formal12")
-        observed_split_counts[
-            _source_split_for_row(row, splits, source_result_mappings)
-        ] += 1
+        observed_split_counts[_source_split_for_row(row, splits, source_result_mappings)] += 1
     if primary_keys != raw_keys:
         raise ValueError("primary formal12 cohort does not cover the complete raw audit")
     for index, split in enumerate(splits):
@@ -571,14 +570,10 @@ def validate_score_all_bundle(
     if not normalized_target_key:
         raise ValueError("requested target key is empty")
     selected_primary = tuple(
-        row
-        for row in primary
-        if str(row["target_key"]).strip().casefold() == normalized_target_key
+        row for row in primary if str(row["target_key"]).strip().casefold() == normalized_target_key
     )
     selected_raw = tuple(
-        row
-        for row in raw
-        if str(row["target_key"]).strip().casefold() == normalized_target_key
+        row for row in raw if str(row["target_key"]).strip().casefold() == normalized_target_key
     )
     if not selected_primary or len(selected_primary) != len(selected_raw):
         raise ValueError("requested target has no complete raw/formal12 source split")
@@ -614,4 +609,5 @@ __all__ = [
     "ValidatedScoreSourceMap",
     "validate_score_all_bundle",
     "validate_score_source_map_receipt",
+    "safe_relative_score_bundle_path",
 ]

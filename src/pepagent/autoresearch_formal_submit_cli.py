@@ -17,6 +17,7 @@ from temporalio.client import Client, WorkflowHandle
 from temporalio.common import WorkflowIDConflictPolicy, WorkflowIDReusePolicy
 from temporalio.exceptions import WorkflowAlreadyStartedError
 
+from pepagent.autoresearch_score_ingest import safe_relative_score_bundle_path
 from pepagent.db.models import Artifact, ExperimentRun, Target
 from pepagent.db.repository import ExperimentRepository
 from pepagent.db.session import SessionFactory
@@ -42,9 +43,7 @@ METRICS_QUEUE = "pepagent-autoresearch-metrics-v1"
 BRANCH_KEYS = ("acea", "gyra", "pbp2a", "vegfa", "fgf2", "angpt1")
 
 PEPMLM_REVISION = "898fca941a9057aebdd1a6164b5ee09a1a71780e"
-PEPMLM_WEIGHTS_SHA256 = (
-    "8a3225bca1f9acd9f701ca2e46597c12bab92320e32b68f380ddf3b6d3b20770"
-)
+PEPMLM_WEIGHTS_SHA256 = "8a3225bca1f9acd9f701ca2e46597c12bab92320e32b68f380ddf3b6d3b20770"
 RUN_ID_NAMESPACE = UUID("422d2f23-c894-4b10-a22e-f499893e1981")
 WORKFLOW_ID_NAMESPACE = UUID("8bb6713d-4ef7-4977-b141-194745111dbc")
 TERMINAL_RUN_STATUSES = frozenset({"succeeded", "failed", "cancelled"})
@@ -68,6 +67,7 @@ class AutoResearchFormalBranch:
     workflow_id: str
     seed: dict[str, Any]
     continuation_policy: dict[str, Any]
+    parent_run_id: UUID | None
 
 
 @dataclass(frozen=True)
@@ -101,9 +101,7 @@ class AutoResearchFormalReservation:
                     "run_id": spec["run_id"],
                     "workflow_id": spec["workflow_id"],
                     "formal_submission_key": spec["formal_submission_key"],
-                    "request_artifact_sha256": spec[
-                        "workflow_request_artifact"
-                    ]["sha256"],
+                    "request_artifact_sha256": spec["workflow_request_artifact"]["sha256"],
                 }
                 for key, spec in sorted(self.branch_specs.items())
             ],
@@ -217,14 +215,16 @@ def _identity_seed(seed: dict[str, Any]) -> dict[str, Any]:
     }
     if set(seed) != required:
         raise ValueError("AutoResearch branch seed identity fields differ from the contract")
+    bundle_receipt_path = safe_relative_score_bundle_path(str(seed["bundle_receipt_path"]))
+    source_map_path = safe_relative_score_bundle_path(str(seed["source_map_path"]))
     return {
         "bundle_key": str(seed["bundle_key"]),
+        "bundle_receipt_path": bundle_receipt_path,
         "bundle_receipt_sha256": _require_sha256(
             seed["bundle_receipt_sha256"], "seed bundle receipt"
         ),
-        "source_map_sha256": _require_sha256(
-            seed["source_map_sha256"], "seed source-map receipt"
-        ),
+        "source_map_sha256": _require_sha256(seed["source_map_sha256"], "seed source-map receipt"),
+        "source_map_path": source_map_path,
         "remote_cas_uri": str(seed["remote_cas_uri"]),
     }
 
@@ -254,6 +254,8 @@ def derive_autoresearch_branch_identity(
     target_manifest = config.get("target_manifest") or {}
     queues = _expected_queues(config)
     seed_identity = _identity_seed(branch.get("seed") or {})
+    predecessor_raw = branch.get("predecessor_run_id")
+    predecessor_run_id = UUID(str(predecessor_raw)) if predecessor_raw not in {None, ""} else None
     request_template_sha256 = sha256_json(template)
     run_identity = {
         "schema_version": "ampgent.autoresearch-formal-run-identity.1",
@@ -263,15 +265,9 @@ def derive_autoresearch_branch_identity(
             branch["target_sequence_sha256"], "branch target sequence"
         ),
         "request_template_sha256": request_template_sha256,
-        "source_revision": _require_revision(
-            config["source_revision"], "formal source revision"
-        ),
-        "release_sha256": _require_sha256(
-            release["archive_sha256"], "formal release archive"
-        ),
-        "target_manifest_sha256": _require_sha256(
-            target_manifest["sha256"], "target manifest"
-        ),
+        "source_revision": _require_revision(config["source_revision"], "formal source revision"),
+        "release_sha256": _require_sha256(release["archive_sha256"], "formal release archive"),
+        "target_manifest_sha256": _require_sha256(target_manifest["sha256"], "target manifest"),
         "control_environment_sha256": _require_sha256(
             runtime["control_environment_sha256"], "control environment"
         ),
@@ -282,12 +278,12 @@ def derive_autoresearch_branch_identity(
             runtime["metric_plugin_registry_sha256"], "metric plugin registry"
         ),
         "pepmlm_revision": str(model["pepmlm_revision"]),
-        "pepmlm_weights_sha256": _require_sha256(
-            model["pepmlm_weights_sha256"], "PepMLM weights"
-        ),
+        "pepmlm_weights_sha256": _require_sha256(model["pepmlm_weights_sha256"], "PepMLM weights"),
         "queues": queues,
         "seed": seed_identity,
         "continuation_policy": branch["continuation_policy"],
+        "predecessor_run_id": (str(predecessor_run_id) if predecessor_run_id is not None else None),
+        "historical_outputs_reused": False,
     }
     run_identity_sha256 = sha256_json(run_identity)
     run_id = uuid.uuid5(RUN_ID_NAMESPACE, run_identity_sha256)
@@ -332,6 +328,8 @@ def _validate_seed_request(
         "source_map_storage_uri": str(seed["remote_cas_uri"]),
         "target_key": branch_key,
     }
+    safe_relative_score_bundle_path(str(imported.get("bundle_receipt_path") or ""))
+    safe_relative_score_bundle_path(str(imported.get("source_map_receipt_path") or ""))
     for key, value in expected.items():
         if imported.get(key) != value:
             raise ValueError(f"{branch_key} seed import field drifted: {key}")
@@ -341,6 +339,10 @@ def _validate_request_bindings(
     *, config: dict[str, Any], branch: dict[str, Any], request: dict[str, Any]
 ) -> None:
     branch_key = str(branch["branch_key"])
+    predecessor = branch.get("predecessor_run_id")
+    expected_predecessor = str(UUID(str(predecessor))) if predecessor not in {None, ""} else None
+    if request.get("predecessor_run_id") != expected_predecessor:
+        raise ValueError(f"{branch_key} predecessor run identity drifted")
     runtime = config["runtime"]
     release = config["release"]
     model = config["model"]
@@ -354,9 +356,7 @@ def _validate_request_bindings(
         raise ValueError(f"{branch_key} request uses a non-formal task queue")
     if request.get("branch_key") != branch_key:
         raise ValueError(f"{branch_key} request branch identity drifted")
-    if request.get("control_environment_sha256") != runtime[
-        "control_environment_sha256"
-    ]:
+    if request.get("control_environment_sha256") != runtime["control_environment_sha256"]:
         raise ValueError(f"{branch_key} control environment identity drifted")
     if request.get("metric_plugins_by_name") != runtime["metric_plugins_by_name"]:
         raise ValueError(f"{branch_key} metric plugin registry drifted")
@@ -401,9 +401,7 @@ def _validate_control_worker_receipt(
         evidence.get("receipt_path"),
         "control worker receipt path",
     )
-    receipt_sha256 = _require_sha256(
-        evidence.get("receipt_sha256"), "control worker receipt"
-    )
+    receipt_sha256 = _require_sha256(evidence.get("receipt_sha256"), "control worker receipt")
     if sha256_file(receipt_path) != receipt_sha256:
         raise ValueError("control worker receipt content changed after preflight")
     receipt = _load_worker_receipt(receipt_path)
@@ -447,9 +445,7 @@ def _validate_generator_worker_receipt(
         evidence.get("receipt_path"),
         "generator worker receipt path",
     )
-    receipt_sha256 = _require_sha256(
-        evidence.get("receipt_sha256"), "generator worker receipt"
-    )
+    receipt_sha256 = _require_sha256(evidence.get("receipt_sha256"), "generator worker receipt")
     if sha256_file(receipt_path) != receipt_sha256:
         raise ValueError("generator worker receipt content changed after preflight")
     receipt = _load_worker_receipt(receipt_path)
@@ -507,11 +503,13 @@ def _validate_preflight(
         raise ValueError("AutoResearch preflight has no machine checks")
     if any(item.get("status") != "passed" for item in checks):
         raise ValueError("AutoResearch preflight contains a non-passing check")
-    migration_checks = [
-        item for item in checks if item.get("name") == "database_migration_0016"
-    ]
-    if len(migration_checks) != 1:
-        raise ValueError("preflight does not prove remote database migration 0016")
+    migration_checks = [item for item in checks if item.get("name") == "database_migration_0016"]
+    if len(migration_checks) != 1 or (
+        (migration_checks[0].get("evidence") or {}).get("migration") != "0016_autoresearch_evidence"
+    ):
+        raise ValueError(
+            "preflight does not prove remote database migration 0016_autoresearch_evidence"
+        )
     expected = {
         item.branch_key: {
             "branch_key": item.branch_key,
@@ -522,6 +520,10 @@ def _validate_preflight(
             "seed_receipt_sha256": item.seed["bundle_receipt_sha256"],
             "source_map_sha256": item.seed["source_map_sha256"],
             "status": "ready",
+            "predecessor_run_id": (
+                str(item.parent_run_id) if item.parent_run_id is not None else None
+            ),
+            "historical_outputs_reused": False,
         }
         for item in branches
     }
@@ -552,15 +554,11 @@ def build_autoresearch_formal_plan(
 ) -> AutoResearchFormalPlan:
     if config.get("schema_version") != CONFIG_SCHEMA:
         raise ValueError("AutoResearch formal submission config schema is not frozen")
-    source_revision = _require_revision(
-        config.get("source_revision"), "formal source revision"
-    )
+    source_revision = _require_revision(config.get("source_revision"), "formal source revision")
     release = config.get("release") or {}
     if release.get("source_revision") != source_revision:
         raise ValueError("formal release and source revisions differ")
-    release_sha256 = _require_sha256(
-        release.get("archive_sha256"), "formal release archive"
-    )
+    release_sha256 = _require_sha256(release.get("archive_sha256"), "formal release archive")
     if not str(release.get("archive_path_or_uri") or "").strip():
         raise ValueError("formal release archive path or URI is empty")
     target_manifest_identity = config.get("target_manifest") or {}
@@ -577,9 +575,7 @@ def build_autoresearch_formal_plan(
     target_manifest = _load_json(target_manifest_path)
     manifest_rows = target_manifest.get("targets") or []
     manifest_targets = {str(item["target_key"]): item for item in manifest_rows}
-    if len(manifest_rows) != len(BRANCH_KEYS) or set(manifest_targets) != set(
-        BRANCH_KEYS
-    ):
+    if len(manifest_rows) != len(BRANCH_KEYS) or set(manifest_targets) != set(BRANCH_KEYS):
         raise ValueError("target manifest does not contain the exact six branches")
     runtime = config.get("runtime") or {}
     control_environment_sha256 = _require_sha256(
@@ -662,6 +658,11 @@ def build_autoresearch_formal_plan(
                 workflow_id=derived["workflow_id"],
                 seed=copy.deepcopy(branch["seed"]),
                 continuation_policy=copy.deepcopy(branch["continuation_policy"]),
+                parent_run_id=(
+                    UUID(str(branch["predecessor_run_id"]))
+                    if branch.get("predecessor_run_id") not in {None, ""}
+                    else None
+                ),
             )
         )
     branches = tuple(built)
@@ -669,9 +670,7 @@ def build_autoresearch_formal_plan(
         "target_id": {item.target_id for item in branches},
         "run_id": {item.run_id for item in branches},
         "workflow_id": {item.workflow_id for item in branches},
-        "formal_submission_key": {
-            item.formal_submission_key for item in branches
-        },
+        "formal_submission_key": {item.formal_submission_key for item in branches},
     }.items():
         if len(identities) != len(BRANCH_KEYS):
             raise ValueError(f"formal branch {field_name} identities are not unique")
@@ -711,9 +710,7 @@ def load_autoresearch_formal_plan(
 
 
 def _advisory_lock_id(config_sha256: str) -> int:
-    return int.from_bytes(
-        bytes.fromhex(config_sha256)[:8], byteorder="big", signed=True
-    )
+    return int.from_bytes(bytes.fromhex(config_sha256)[:8], byteorder="big", signed=True)
 
 
 def _artifact_payload(stored: StoredObject) -> dict[str, Any]:
@@ -751,15 +748,13 @@ def _build_run_spec(
         "target_manifest_sha256": plan.target_manifest_sha256,
         "control_environment_sha256": plan.control_environment_sha256,
         "generator_environment_sha256": plan.generator_environment_sha256,
-        "metric_plugin_registry_sha256": plan.config["runtime"][
-            "metric_plugin_registry_sha256"
-        ],
+        "metric_plugin_registry_sha256": plan.config["runtime"]["metric_plugin_registry_sha256"],
         "model": copy.deepcopy(plan.config["model"]),
         "seed": copy.deepcopy(branch.seed),
         "continuation_policy": copy.deepcopy(branch.continuation_policy),
         "task_queues": copy.deepcopy(branch.request["task_queues"]),
         "workflow_request": copy.deepcopy(branch.request),
-        "parent_run_id": None,
+        "parent_run_id": (str(branch.parent_run_id) if branch.parent_run_id is not None else None),
         "historical_outputs_reused": False,
         "old_workflow_reused": False,
     }
@@ -787,7 +782,7 @@ def _validate_existing_runs(
             run.target_id != branch.target_id
             or run.formal_submission_key != branch.formal_submission_key
             or run.temporal_workflow_id != branch.workflow_id
-            or run.parent_run_id is not None
+            or run.parent_run_id != branch.parent_run_id
             or run.spec_json != expected
             or run.spec_sha256 != sha256_json(expected)
         ):
@@ -798,9 +793,7 @@ async def reserve_autoresearch_formal_plan(
     plan: AutoResearchFormalPlan,
     *,
     session_factory: Callable[[], Any] = SessionFactory,
-    object_store_factory: Callable[[], ContentAddressedObjectStore] = (
-        ContentAddressedObjectStore
-    ),
+    object_store_factory: Callable[[], ContentAddressedObjectStore] = (ContentAddressedObjectStore),
     repository_factory: Callable[[Any], ExperimentRepository] = ExperimentRepository,
 ) -> AutoResearchFormalReservation:
     object_store = await asyncio.to_thread(object_store_factory)
@@ -813,9 +806,7 @@ async def reserve_autoresearch_formal_plan(
             raise ValueError("request CAS object identity differs from the frozen request")
         stored_by_branch[branch.branch_key] = stored
     specs = {
-        branch.branch_key: _build_run_spec(
-            plan, branch, stored_by_branch[branch.branch_key]
-        )
+        branch.branch_key: _build_run_spec(plan, branch, stored_by_branch[branch.branch_key])
         for branch in plan.branches
     }
     run_ids = [item.run_id for item in plan.branches]
@@ -844,11 +835,29 @@ async def reserve_autoresearch_formal_plan(
                 branch_specs=specs,
                 request_artifacts=stored_by_branch,
             )
+        predecessor_ids = {
+            item.parent_run_id for item in plan.branches if item.parent_run_id is not None
+        }
+        if predecessor_ids:
+            predecessors = list(
+                await session.scalars(
+                    select(ExperimentRun).where(ExperimentRun.id.in_(predecessor_ids))
+                )
+            )
+            by_predecessor_id = {item.id: item for item in predecessors}
+            if set(by_predecessor_id) != predecessor_ids:
+                raise ValueError("formal AutoResearch predecessor rows are incomplete")
+            for branch in plan.branches:
+                if branch.parent_run_id is None:
+                    continue
+                predecessor = by_predecessor_id[branch.parent_run_id]
+                if predecessor.status != "failed":
+                    raise ValueError("AutoResearch successor predecessor must be failed")
+                if predecessor.target_id != branch.target_id:
+                    raise ValueError("AutoResearch successor predecessor target drifted")
         targets = list(
             await session.scalars(
-                select(Target).where(
-                    Target.id.in_({item.target_id for item in plan.branches})
-                )
+                select(Target).where(Target.id.in_({item.target_id for item in plan.branches}))
             )
         )
         by_target_id = {item.id: item for item in targets}
@@ -874,11 +883,9 @@ async def reserve_autoresearch_formal_plan(
                     formal_submission_key=branch.formal_submission_key,
                     status="created",
                     temporal_workflow_id=branch.workflow_id,
-                    parent_run_id=None,
+                    parent_run_id=branch.parent_run_id,
                 )
-                .on_conflict_do_nothing(
-                    index_elements=[ExperimentRun.formal_submission_key]
-                )
+                .on_conflict_do_nothing(index_elements=[ExperimentRun.formal_submission_key])
                 .returning(ExperimentRun.id)
             )
             inserted_id = (await session.execute(statement)).scalar_one_or_none()
@@ -902,6 +909,10 @@ async def reserve_autoresearch_formal_plan(
                         "immutable": True,
                         "branch_key": branch.branch_key,
                         "run_id": str(branch.run_id),
+                        "predecessor_run_id": (
+                            str(branch.parent_run_id) if branch.parent_run_id is not None else None
+                        ),
+                        "historical_outputs_reused": False,
                     },
                 )
                 .on_conflict_do_nothing(index_elements=[Artifact.sha256])
@@ -909,9 +920,7 @@ async def reserve_autoresearch_formal_plan(
         repository = repository_factory(session)
         for branch in plan.branches:
             spec = specs[branch.branch_key]
-            await repository.append_event(
-                "run", branch.run_id, "run.created", ACTOR, spec
-            )
+            await repository.append_event("run", branch.run_id, "run.created", ACTOR, spec)
             await repository.append_event(
                 "run",
                 branch.run_id,
@@ -921,9 +930,7 @@ async def reserve_autoresearch_formal_plan(
                     "workflow_id": branch.workflow_id,
                     "formal_submission_key": branch.formal_submission_key,
                     "request_sha256": branch.request_sha256,
-                    "request_artifact_sha256": stored_by_branch[
-                        branch.branch_key
-                    ].sha256,
+                    "request_artifact_sha256": stored_by_branch[branch.branch_key].sha256,
                 },
             )
     return AutoResearchFormalReservation(
@@ -949,6 +956,10 @@ def _workflow_memo_identity(
         "pepmlm_weights_sha256": plan.config["model"]["pepmlm_weights_sha256"],
         "seed_receipt_sha256": branch.seed["bundle_receipt_sha256"],
         "source_map_sha256": branch.seed["source_map_sha256"],
+        "predecessor_run_id": (
+            str(branch.parent_run_id) if branch.parent_run_id is not None else None
+        ),
+        "historical_outputs_reused": False,
     }
 
 
@@ -975,9 +986,7 @@ async def _start_or_recover_autoresearch_workflow(
         handle = client.get_workflow_handle(branch.workflow_id)
         description = await handle.describe()
         if getattr(description, "workflow_type", None) != WORKFLOW_TYPE:
-            raise ValueError(
-                f"existing {branch.branch_key} workflow type differs"
-            ) from error
+            raise ValueError(f"existing {branch.branch_key} workflow type differs") from error
         memo = getattr(description, "memo", None)
         if not isinstance(memo, dict) or memo.get(WORKFLOW_MEMO_KEY) != identity:
             raise ValueError(
@@ -1035,9 +1044,7 @@ async def submit_autoresearch_formal_plan(
                 raise ValueError(f"{branch.branch_key} Temporal run identity drifted")
             newly_bound = run.status == "created" and run.temporal_run_id is None
             if run.status in {"running", "waiting"} and run.temporal_run_id is None:
-                raise ValueError(
-                    f"{branch.branch_key} active run has no Temporal identity"
-                )
+                raise ValueError(f"{branch.branch_key} active run has no Temporal identity")
             run.temporal_run_id = binding.temporal_run_id
             if run.status == "created":
                 run.status = "running"
@@ -1086,12 +1093,8 @@ async def execute_autoresearch_formal_plan(
     if reserve_only:
         return result
     settings = get_settings()
-    client = await Client.connect(
-        settings.temporal_address, namespace=settings.temporal_namespace
-    )
-    result["submission"] = await submit_autoresearch_formal_plan(
-        plan, reservation, client=client
-    )
+    client = await Client.connect(settings.temporal_address, namespace=settings.temporal_namespace)
+    result["submission"] = await submit_autoresearch_formal_plan(plan, reservation, client=client)
     return result
 
 
@@ -1116,9 +1119,7 @@ def _parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
-    plan = load_autoresearch_formal_plan(
-        config_path=args.config, preflight_path=args.preflight
-    )
+    plan = load_autoresearch_formal_plan(config_path=args.config, preflight_path=args.preflight)
     if args.reserve_only and not args.execute:
         raise SystemExit("--reserve-only requires explicit --execute")
     if not args.execute:
@@ -1136,9 +1137,7 @@ def main(argv: list[str] | None = None) -> int:
             )
         )
         return 0
-    result = asyncio.run(
-        execute_autoresearch_formal_plan(plan, reserve_only=args.reserve_only)
-    )
+    result = asyncio.run(execute_autoresearch_formal_plan(plan, reserve_only=args.reserve_only))
     print(json.dumps(result, ensure_ascii=False, sort_keys=True))
     return 0
 

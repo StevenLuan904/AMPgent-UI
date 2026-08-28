@@ -16,6 +16,7 @@ from pepagent.autoresearch_score_ingest import (
     PRIMARY_IDENTITY_COLUMNS,
     RAW_OCCURRENCE_COLUMNS,
     RAW_OCCURRENCE_REQUIRED_COLUMNS,
+    safe_relative_score_bundle_path,
     validate_score_all_bundle,
     validate_score_source_map_receipt,
 )
@@ -149,9 +150,7 @@ def _build_bundle(
     ]
     if mix_pbp_source_results:
         primary_rows[0]["source_result"] = primary_rows[1]["source_result"]
-        primary_rows[0]["source_result_sha256"] = primary_rows[1][
-            "source_result_sha256"
-        ]
+        primary_rows[0]["source_result_sha256"] = primary_rows[1]["source_result_sha256"]
     primary_path = "score/all_scored.csv"
     strict_path = "score/strict.csv"
     raw_path = "score/raw_occurrence_audit.csv"
@@ -172,8 +171,7 @@ def _build_bundle(
             raw_rows
             if include_optional_structure_columns
             else [
-                {name: row[name] for name in RAW_OCCURRENCE_REQUIRED_COLUMNS}
-                for row in raw_rows
+                {name: row[name] for name in RAW_OCCURRENCE_REQUIRED_COLUMNS} for row in raw_rows
             ],
             RAW_OCCURRENCE_COLUMNS
             if include_optional_structure_columns
@@ -186,9 +184,7 @@ def _build_bundle(
     filler_index = 0
     while len(payloads) < manifest_file_count:
         path = f"evidence/filler-{filler_index:02d}.json"
-        payloads[path] = json.dumps(
-            {"filler": filler_index}, sort_keys=True
-        ).encode("utf-8")
+        payloads[path] = json.dumps({"filler": filler_index}, sort_keys=True).encode("utf-8")
         filler_index += 1
     if len(payloads) != manifest_file_count:
         raise AssertionError("test manifest size is smaller than required evidence files")
@@ -197,8 +193,7 @@ def _build_bundle(
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(payload)
     manifest = "".join(
-        f"{sha256_bytes(payload)}  {path}\n"
-        for path, payload in sorted(payloads.items())
+        f"{sha256_bytes(payload)}  {path}\n" for path, payload in sorted(payloads.items())
     ).encode("utf-8")
     manifest_path = "MANIFEST.sha256"
     (root / manifest_path).write_bytes(manifest)
@@ -381,9 +376,7 @@ def test_score_bundle_validator_accepts_variable_complete_manifests_and_filters_
 
 
 def test_score_bundle_validator_fails_closed_on_tampered_member(tmp_path: Path) -> None:
-    receipt, receipt_bytes, receipt_sha = _build_bundle(
-        tmp_path, manifest_file_count=32
-    )
+    receipt, receipt_bytes, receipt_sha = _build_bundle(tmp_path, manifest_file_count=32)
     (tmp_path / "score" / "all_scored.csv").write_bytes(b"tampered")
 
     with pytest.raises(OSError, match="file SHA-256 mismatch"):
@@ -550,9 +543,7 @@ class _ActivityRepository:
     async def record_completed_tool_call(self, *_args: Any, **_kwargs: Any) -> Any:
         return SimpleNamespace(id=uuid.uuid4())
 
-    async def add_candidate(
-        self, _run_id: uuid.UUID, sequence: str, **kwargs: Any
-    ) -> Any:
+    async def add_candidate(self, _run_id: uuid.UUID, sequence: str, **kwargs: Any) -> Any:
         digest = sha256_text(sequence)
         candidate = SimpleNamespace(
             id=uuid.uuid4(),
@@ -569,25 +560,37 @@ class _ActivityRepository:
     async def record_evaluation(self, *args: Any, **kwargs: Any) -> None:
         self.evaluations.append({"args": args, "kwargs": kwargs})
 
+    async def record_evaluations_bulk(
+        self, tool_call_id: uuid.UUID, rows: list[dict[str, Any]]
+    ) -> None:
+        for row in rows:
+            self.evaluations.append(
+                {
+                    "args": (row["candidate_id"], tool_call_id, row["metric_name"]),
+                    "kwargs": row,
+                }
+            )
+
 
 @pytest.mark.asyncio
 async def test_score_bundle_activity_persists_all_raw_and_candidate_times_twelve(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    _receipt, _receipt_bytes, receipt_sha = _build_bundle(
-        tmp_path, manifest_file_count=33
-    )
+    bundle_root = tmp_path / "bundles" / "bundle-id"
+    source_map_root = tmp_path / "source-maps" / "map-id"
+    source_map_root.mkdir(parents=True)
+    _receipt, _receipt_bytes, receipt_sha = _build_bundle(bundle_root, manifest_file_count=33)
     _map_receipt, _map_bytes, source_map_sha = _build_source_map(
-        tmp_path, bundle_receipt_sha256=receipt_sha
+        source_map_root, bundle_receipt_sha256=receipt_sha
     )
     run_id = uuid.uuid4()
     session = _ActivitySession(run_id)
     _ActivityRepository.instances.clear()
     monkeypatch.setattr(activity_module, "SessionFactory", lambda: session)
     monkeypatch.setattr(activity_module, "ExperimentRepository", _ActivityRepository)
-    monkeypatch.setattr(
-        activity_module.activity, "info", lambda: SimpleNamespace(attempt=1)
-    )
+    monkeypatch.setattr(activity_module.activity, "info", lambda: SimpleNamespace(attempt=1))
+    heartbeats: list[dict[str, Any]] = []
+    monkeypatch.setattr(activity_module.activity, "heartbeat", heartbeats.append)
 
     async def fake_register_artifact(*_args: Any, **_kwargs: Any) -> None:
         return None
@@ -599,13 +602,12 @@ async def test_score_bundle_activity_persists_all_raw_and_candidate_times_twelve
             "run_id": str(run_id),
             "target_key": "PBP2a",
             "bundle_cache_root": str(tmp_path),
-            "bundle_receipt_path": "bundle.receipt.json",
+            "bundle_receipt_path": "bundles/bundle-id/bundle.receipt.json",
             "bundle_receipt_sha256": receipt_sha,
-            "source_map_receipt_path": "score_source_map.receipt.json",
+            "source_map_receipt_path": "source-maps/map-id/score_source_map.receipt.json",
             "source_map_receipt_sha256": source_map_sha,
             "source_map_storage_uri": (
-                f"ssh://example.invalid/cas/{source_map_sha}/"
-                "score_source_map.receipt.json"
+                f"ssh://example.invalid/cas/{source_map_sha}/score_source_map.receipt.json"
             ),
             "control_environment_sha256": "e" * 64,
         }
@@ -616,16 +618,27 @@ async def test_score_bundle_activity_persists_all_raw_and_candidate_times_twelve
     assert result["occurrence_count"] == 2
     assert result["evaluation_count"] == 24
     assert len(repository.occurrences) == 2
-    assert {
-        row["metadata"]["source_candidate_id"] for row in repository.occurrences
-    } == {"pbp-1", "pbp-2"}
-    assert {item["args"][2] for item in repository.evaluations} == set(
-        FORMAL_SCORE_COLUMNS
-    )
+    assert {row["metadata"]["source_candidate_id"] for row in repository.occurrences} == {
+        "pbp-1",
+        "pbp-2",
+    }
+    assert {item["args"][2] for item in repository.evaluations} == set(FORMAL_SCORE_COLUMNS)
     instability_rows = [
-        item
-        for item in repository.evaluations
-        if item["args"][2] == "guruprasad_instability_index"
+        item for item in repository.evaluations if item["args"][2] == "guruprasad_instability_index"
     ]
     assert all(item["kwargs"]["out_of_domain"] for item in instability_rows)
     assert result["strict_subset_used_as_raw"] is False
+    assert {item["stage"] for item in heartbeats} >= {
+        "read_receipts",
+        "validate_bundle",
+        "persist_evaluations",
+    }
+
+
+@pytest.mark.parametrize(
+    "path",
+    [r"C:\\cache\\bundle.receipt.json", "C:/cache/bundle.receipt.json", "/cache/x", "../x"],
+)
+def test_bundle_paths_reject_absolute_and_parent_traversal(path: str) -> None:
+    with pytest.raises(ValueError, match="unsafe score bundle path"):
+        safe_relative_score_bundle_path(path)

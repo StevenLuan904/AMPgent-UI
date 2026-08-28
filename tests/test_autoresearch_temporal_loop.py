@@ -57,9 +57,7 @@ def _request() -> dict[str, Any]:
         "run_id": RUN_ID,
         "branch_key": "PBP2a",
         "execution_contract": contract,
-        "metric_plugins_by_name": {
-            name: {"name": name} for name in contract["metric_plugins"]
-        },
+        "metric_plugins_by_name": {name: {"name": name} for name in contract["metric_plugins"]},
         "task_queues": {
             "workflow_and_control": "pepagent-autoresearch-control-v1",
             "action_execution": "pepagent-autoresearch-generator-v1",
@@ -81,9 +79,7 @@ def _request() -> dict[str, Any]:
                 "agent_version": "1",
                 "model_name": "deterministic-test",
                 "prompt_text": "improve the PBP2a activity-safety front",
-                "rationale_by_action_sha256": {
-                    action.action_sha256: "open a new sequence family"
-                },
+                "rationale_by_action_sha256": {action.action_sha256: "open a new sequence family"},
             },
             "actions": [action.model_dump(mode="json")],
         },
@@ -140,9 +136,7 @@ def test_typed_crossover_projection_preserves_both_parents_and_spans() -> None:
         parent_id,
         donor_id,
     ]
-    assert projection["lineage_sources"][0]["source_spans"] == [
-        {"child": [1, 5], "source": [1, 5]}
-    ]
+    assert projection["lineage_sources"][0]["source_spans"] == [{"child": [1, 5], "source": [1, 5]}]
     assert projection["lineage_sources"][1]["source_spans"] == [
         {"child": [6, 10], "source": [6, 10]}
     ]
@@ -212,9 +206,7 @@ async def test_autoresearch_workflow_end_to_end_replays_identically(
     async def execute_once() -> tuple[dict[str, Any], list[dict[str, Any]]]:
         trace: list[dict[str, Any]] = []
 
-        async def fake_execute_activity(
-            name: str, payload: dict[str, Any], **_kwargs: Any
-        ) -> Any:
+        async def fake_execute_activity(name: str, payload: dict[str, Any], **_kwargs: Any) -> Any:
             trace.append({"activity": name, "payload": copy.deepcopy(payload)})
             if name in {
                 "mark_run_started",
@@ -346,13 +338,9 @@ async def test_autoresearch_workflow_end_to_end_replays_identically(
 
 
 def test_autoresearch_worker_registration_is_complete() -> None:
-    control_queue, control_activities, workflows = V38_ROLE_CONFIG[
-        "autoresearch-control"
-    ]
+    control_queue, control_activities, workflows = V38_ROLE_CONFIG["autoresearch-control"]
     assert control_queue == "pepagent-autoresearch-control-v1"
-    registered = {
-        item.__temporal_activity_definition.name for item in control_activities
-    }
+    registered = {item.__temporal_activity_definition.name for item in control_activities}
     assert {
         "persist_autoresearch_action_plan",
         "persist_autoresearch_children",
@@ -361,9 +349,7 @@ def test_autoresearch_worker_registration_is_complete() -> None:
         "persist_autoresearch_score_all_bundle",
     } <= registered
     assert AutoResearchClosedLoopWorkflow in workflows
-    generator_queue, generator_activities, _ = V38_ROLE_CONFIG[
-        "autoresearch-generator"
-    ]
+    generator_queue, generator_activities, _ = V38_ROLE_CONFIG["autoresearch-generator"]
     assert generator_queue == "pepagent-autoresearch-generator-v1"
     generator_registered = {
         item.__temporal_activity_definition.name for item in generator_activities
@@ -371,15 +357,13 @@ def test_autoresearch_worker_registration_is_complete() -> None:
     assert "execute_autoresearch_action_batch" in generator_registered
     metric_queue, metric_activities, _ = V38_ROLE_CONFIG["autoresearch-metrics"]
     assert metric_queue == "pepagent-autoresearch-metrics-v1"
-    assert {
-        item.__temporal_activity_definition.name for item in metric_activities
-    } == {"evaluate_v38_sequence_metric"}
+    assert {item.__temporal_activity_definition.name for item in metric_activities} == {
+        "evaluate_v38_sequence_metric"
+    }
 
     _, legacy_control_activities, legacy_workflows = V38_ROLE_CONFIG["v38-control"]
     assert AutoResearchClosedLoopWorkflow not in legacy_workflows
-    assert not {
-        item.__temporal_activity_definition.name for item in legacy_control_activities
-    } & {
+    assert not {item.__temporal_activity_definition.name for item in legacy_control_activities} & {
         "persist_autoresearch_action_plan",
         "persist_autoresearch_score_all_bundle",
         "finalize_autoresearch_iteration",
@@ -407,4 +391,20 @@ def test_autoresearch_request_rejects_cross_branch_seed_bundle() -> None:
     }
 
     with pytest.raises(ValueError, match="target differs"):
+        _validate_request(request)
+
+
+def test_autoresearch_request_rejects_absolute_seed_member_paths() -> None:
+    request = _request()
+    request["seed_score_bundle_import"] = {
+        "bundle_cache_root": r"C:\bounded-cache\score-all",
+        "bundle_receipt_path": r"C:\bounded-cache\score-all\bundle.receipt.json",
+        "bundle_receipt_sha256": "8" * 64,
+        "source_map_receipt_path": "score_source_map.receipt.json",
+        "source_map_receipt_sha256": "7" * 64,
+        "source_map_storage_uri": f"ssh://example.invalid/cas/{'7' * 64}/map.json",
+        "target_key": "PBP2a",
+    }
+
+    with pytest.raises(ValueError, match="unsafe score bundle path"):
         _validate_request(request)

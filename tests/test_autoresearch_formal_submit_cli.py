@@ -170,8 +170,7 @@ def _fixture_bundle(tmp_path: Path) -> tuple[dict[str, Any], dict[str, Any]]:
             "source_map_path": f"source-map-{ordinal}.receipt.json",
             "source_map_sha256": f"{ordinal + 6:x}" * 64,
             "remote_cas_uri": (
-                "ssh://example.invalid/cas/"
-                f"{f'{ordinal + 6:x}' * 64}/source-map.json"
+                f"ssh://example.invalid/cas/{f'{ordinal + 6:x}' * 64}/source-map.json"
             ),
         }
         branch: dict[str, Any] = {
@@ -254,11 +253,11 @@ def _fixture_bundle(tmp_path: Path) -> tuple[dict[str, Any], dict[str, Any]]:
                 "formal_submission_key": branch["formal_submission_key"],
                 "run_id": branch["run_id"],
                 "workflow_id": branch["workflow_id"],
-                "seed_receipt_sha256": branch["seed"][
-                    "bundle_receipt_sha256"
-                ],
+                "seed_receipt_sha256": branch["seed"]["bundle_receipt_sha256"],
                 "source_map_sha256": branch["seed"]["source_map_sha256"],
                 "status": "ready",
+                "predecessor_run_id": None,
+                "historical_outputs_reused": False,
             }
             for branch in config["branches"]
         ],
@@ -283,7 +282,11 @@ def _fixture_bundle(tmp_path: Path) -> tuple[dict[str, Any], dict[str, Any]]:
                     "receipt": generator_receipt,
                 },
             },
-            {"name": "database_migration_0016", "status": "passed", "evidence": {}},
+            {
+                "name": "database_migration_0016",
+                "status": "passed",
+                "evidence": {"migration": "0016_autoresearch_evidence"},
+            },
         ],
         "blockers": [],
     }
@@ -310,6 +313,61 @@ def test_formal_plan_derives_exact_six_new_branch_identities(tmp_path: Path) -> 
     assert all(item.request["run_id"] == str(item.run_id) for item in plan.branches)
     assert all(item.request_sha256 == sha256_json(item.request) for item in plan.branches)
     assert all(item.workflow_id.startswith("pepagent-autoresearch-v1-") for item in plan.branches)
+
+
+def test_formal_plan_requires_real_0016_migration_evidence(tmp_path: Path) -> None:
+    config, preflight = _fixture_bundle(tmp_path)
+    preflight["checks"][-1]["evidence"]["migration"] = "0016_autoresearch_exact_once_submission"
+
+    with pytest.raises(ValueError, match="0016_autoresearch_evidence"):
+        build_autoresearch_formal_plan(
+            config=config,
+            preflight=preflight,
+            config_base_path=tmp_path,
+            preflight_base_path=tmp_path,
+        )
+
+
+def test_successor_identity_binds_failed_predecessor_without_output_reuse(
+    tmp_path: Path,
+) -> None:
+    config, preflight = _fixture_bundle(tmp_path)
+    original_run_ids = {item["branch_key"]: item["run_id"] for item in config["branches"]}
+    for branch in config["branches"]:
+        predecessor_run_id = original_run_ids[branch["branch_key"]]
+        branch["predecessor_run_id"] = predecessor_run_id
+        request_path = Path(branch["request_path"])
+        request = json.loads(request_path.read_text(encoding="utf-8"))
+        request["predecessor_run_id"] = predecessor_run_id
+        identity = derive_autoresearch_branch_identity(
+            config=config,
+            branch=branch,
+            request_template=request,
+        )
+        for key in ("request_sha256", "formal_submission_key", "run_id", "workflow_id"):
+            branch[key] = identity[key]
+        _write_json(request_path, identity["request"])
+    preflight["config_sha256"] = sha256_json(config)
+    for row, branch in zip(preflight["branches"], config["branches"], strict=True):
+        row.update(
+            {
+                "request_sha256": branch["request_sha256"],
+                "formal_submission_key": branch["formal_submission_key"],
+                "run_id": branch["run_id"],
+                "workflow_id": branch["workflow_id"],
+                "predecessor_run_id": branch["predecessor_run_id"],
+            }
+        )
+
+    plan = build_autoresearch_formal_plan(
+        config=config,
+        preflight=preflight,
+        config_base_path=tmp_path,
+        preflight_base_path=tmp_path,
+    )
+
+    assert all(item.parent_run_id is not None for item in plan.branches)
+    assert all(str(item.run_id) != original_run_ids[item.branch_key] for item in plan.branches)
 
 
 def test_formal_plan_fails_closed_on_request_or_receipt_drift(tmp_path: Path) -> None:
@@ -453,8 +511,7 @@ async def test_reservation_uses_one_advisory_transaction_and_six_unique_runs(
     assert "pg_advisory_xact_lock" in str(session.executed[0][0])
     assert all(spec["parent_run_id"] is None for spec in reservation.branch_specs.values())
     assert all(
-        spec["historical_outputs_reused"] is False
-        for spec in reservation.branch_specs.values()
+        spec["historical_outputs_reused"] is False for spec in reservation.branch_specs.values()
     )
 
     existing = []
@@ -531,9 +588,7 @@ async def test_temporal_submit_uses_reject_duplicate_and_exact_memo_recovery(
     branch = plan.branches[0]
     client = _FakeClient()
 
-    binding = await _start_or_recover_autoresearch_workflow(
-        client, plan=plan, branch=branch
-    )
+    binding = await _start_or_recover_autoresearch_workflow(client, plan=plan, branch=branch)
     call = client.calls[0]
     assert binding.recovered is False
     assert call["workflow"] == WORKFLOW_TYPE
@@ -557,9 +612,7 @@ async def test_temporal_submit_uses_reject_duplicate_and_exact_memo_recovery(
         run_id="wrong-run", memo={WORKFLOW_MEMO_KEY: {"request_sha256": "0" * 64}}
     )
     with pytest.raises(ValueError, match="memo identity drifted"):
-        await _start_or_recover_autoresearch_workflow(
-            drift_client, plan=plan, branch=branch
-        )
+        await _start_or_recover_autoresearch_workflow(drift_client, plan=plan, branch=branch)
 
 
 @pytest.mark.asyncio
