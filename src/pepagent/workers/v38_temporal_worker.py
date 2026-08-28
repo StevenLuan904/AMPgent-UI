@@ -16,6 +16,13 @@ from pepagent.workers.activities import (
     persist_seven_branch_target_sequence,
     score_seven_branch_target_sequence,
 )
+from pepagent.workers.autoresearch_activities import (
+    execute_autoresearch_action_batch,
+    finalize_autoresearch_iteration,
+    persist_autoresearch_action_plan,
+    persist_autoresearch_children,
+    plan_autoresearch_actions,
+)
 from pepagent.workers.v37_activities import (
     evaluate_v38_sequence_metric,
     generate_v38_sequence_cell,
@@ -41,6 +48,7 @@ from pepagent.workers.v38_activities import (
     score_v38_multitarget_rosetta,
 )
 from pepagent.workers.v38_observer_interceptor import V38WorkflowObserverInterceptor
+from pepagent.workflows.autoresearch import AutoResearchClosedLoopWorkflow
 from pepagent.workflows.seven_branch_design import SevenBranchPeptideDesignWorkflow
 from pepagent.workflows.seven_branch_top_up import SevenBranchPeptideTopUpWorkflow
 from pepagent.workflows.v38_sequence_first import V38SequenceFirstAgentWorkflow
@@ -71,17 +79,22 @@ V38_ROLE_CONFIG = {
             load_seven_branch_target_score_cohort,
             persist_seven_branch_cumulative_selection,
             persist_seven_branch_round_progress,
+            persist_autoresearch_action_plan,
+            plan_autoresearch_actions,
+            persist_autoresearch_children,
+            finalize_autoresearch_iteration,
         ],
         [
             V38SequenceFirstAgentWorkflow,
             V39SequenceSpaceExplorationWorkflow,
             SevenBranchPeptideDesignWorkflow,
             SevenBranchPeptideTopUpWorkflow,
+            AutoResearchClosedLoopWorkflow,
         ],
     ),
     "v38-generator": (
         "pepagent-generator-v38",
-        [generate_v38_sequence_cell],
+        [generate_v38_sequence_cell, execute_autoresearch_action_batch],
         [],
     ),
     "v38-metrics": (
