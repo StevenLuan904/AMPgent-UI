@@ -56,6 +56,48 @@ def _seeds(sequence: str) -> set[str]:
     return {sequence[index : index + width] for index in range(len(sequence) - width + 1)}
 
 
+def _maximum_mismatches(length: int, minimum_identity: float) -> int:
+    """Return the largest integer mismatch count accepted by the identity threshold."""
+
+    return max(
+        mismatches
+        for mismatches in range(length + 1)
+        if (length - mismatches) / length >= minimum_identity
+    )
+
+
+def _position_blocks(length: int, count: int) -> tuple[tuple[int, int], ...]:
+    """Partition sequence positions into deterministic non-empty contiguous blocks."""
+
+    if not 1 <= count <= length:
+        raise ValueError("block count must be in [1, length]")
+    base_width, remainder = divmod(length, count)
+    blocks: list[tuple[int, int]] = []
+    start = 0
+    for index in range(count):
+        width = base_width + (1 if index < remainder else 0)
+        blocks.append((start, start + width))
+        start += width
+    return tuple(blocks)
+
+
+def _passes_family_edge(
+    shorter: str,
+    longer: str,
+    *,
+    minimum_identity: float,
+    minimum_coverage: float,
+) -> bool:
+    """Apply the historical seed and full-sequence edge predicates exactly."""
+
+    # The shared 2-mer/3-mer condition is part of the historical family contract,
+    # including its behaviour for one-residue sequences (which have no seeds).
+    if not (_seeds(shorter) & _seeds(longer)):
+        return False
+    identity, coverage = ungapped_identity_and_coverage(shorter, longer)
+    return identity >= minimum_identity and coverage >= minimum_coverage
+
+
 def cluster_sequence_families(
     sequences: Iterable[str],
     *,
@@ -64,9 +106,12 @@ def cluster_sequence_families(
 ) -> tuple[SequenceFamilyAssignment, ...]:
     """Cluster complete peptide sequences with deterministic identity/coverage edges.
 
-    Candidate pairs are retrieved by shared contiguous seeds, then verified using the
-    full shorter sequence. Connected components form families. This is intentionally
-    stricter and easier to audit than prefix or motif-only grouping.
+    Candidate pairs are retrieved with exact-match blocks, then verified using the
+    historical shared-seed and full-shorter-sequence predicates. A sequence with at
+    most ``k`` accepted mismatches must match exactly in at least one of ``k + 1``
+    position blocks, so the retriever cannot miss an accepted edge. Candidate memory
+    is bounded to one right-hand sequence at a time instead of retaining every shared-
+    seed pair. Connected components form families.
     """
 
     if not 0 < minimum_identity <= 1 or not 0 < minimum_coverage <= 1:
@@ -77,24 +122,69 @@ def cluster_sequence_families(
     if not unique_sequences:
         return ()
 
-    union_find = _UnionFind(len(unique_sequences))
-    seed_index: dict[str, list[int]] = defaultdict(list)
-    candidate_pairs: set[tuple[int, int]] = set()
+    by_length: dict[int, list[int]] = defaultdict(list)
     for index, sequence in enumerate(unique_sequences):
-        for seed in _seeds(sequence):
-            for other in seed_index[seed]:
-                if min(len(sequence), len(unique_sequences[other])) / max(
-                    len(sequence), len(unique_sequences[other])
-                ) >= minimum_coverage:
-                    candidate_pairs.add((other, index))
-            seed_index[seed].append(index)
+        by_length[len(sequence)].append(index)
 
-    for left_index, right_index in sorted(candidate_pairs):
-        identity, coverage = ungapped_identity_and_coverage(
-            unique_sequences[left_index], unique_sequences[right_index]
-        )
-        if identity >= minimum_identity and coverage >= minimum_coverage:
-            union_find.union(left_index, right_index)
+    union_find = _UnionFind(len(unique_sequences))
+    lengths = sorted(by_length)
+    for shorter_length in lengths:
+        mismatch_limit = _maximum_mismatches(shorter_length, minimum_identity)
+        blocks = _position_blocks(shorter_length, mismatch_limit + 1)
+        shorter_indices = by_length[shorter_length]
+
+        for longer_length in lengths:
+            if longer_length < shorter_length:
+                continue
+            if shorter_length / longer_length < minimum_coverage:
+                continue
+            longer_indices = by_length[longer_length]
+
+            if shorter_length == longer_length:
+                prior_by_signature: dict[tuple[int, str], list[int]] = defaultdict(list)
+                for right_index in longer_indices:
+                    right = unique_sequences[right_index]
+                    candidates: set[int] = set()
+                    for block_index, (start, end) in enumerate(blocks):
+                        candidates.update(
+                            prior_by_signature.get((block_index, right[start:end]), ())
+                        )
+                    for left_index in sorted(candidates):
+                        if _passes_family_edge(
+                            unique_sequences[left_index],
+                            right,
+                            minimum_identity=minimum_identity,
+                            minimum_coverage=minimum_coverage,
+                        ):
+                            union_find.union(left_index, right_index)
+                    for block_index, (start, end) in enumerate(blocks):
+                        prior_by_signature[(block_index, right[start:end])].append(right_index)
+                continue
+
+            shorter_by_signature: dict[tuple[int, str], list[int]] = defaultdict(list)
+            for left_index in shorter_indices:
+                left = unique_sequences[left_index]
+                for block_index, (start, end) in enumerate(blocks):
+                    shorter_by_signature[(block_index, left[start:end])].append(left_index)
+
+            for right_index in longer_indices:
+                right = unique_sequences[right_index]
+                candidates = set()
+                for offset in range(longer_length - shorter_length + 1):
+                    for block_index, (start, end) in enumerate(blocks):
+                        candidates.update(
+                            shorter_by_signature.get(
+                                (block_index, right[offset + start : offset + end]), ()
+                            )
+                        )
+                for left_index in sorted(candidates):
+                    if _passes_family_edge(
+                        unique_sequences[left_index],
+                        right,
+                        minimum_identity=minimum_identity,
+                        minimum_coverage=minimum_coverage,
+                    ):
+                        union_find.union(left_index, right_index)
 
     components: dict[int, list[int]] = defaultdict(list)
     for index in range(len(unique_sequences)):
