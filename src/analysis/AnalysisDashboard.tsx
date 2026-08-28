@@ -36,7 +36,8 @@ import { loadAnalysisSnapshot, type AnalysisSnapshot } from './dataKernel'
 import { executeAnalysisQuery, type AnalysisPivotResult, type PivotDimensionKey } from './dataKernel'
 import { frameworkFixture } from './frameworkFixture'
 import { CandidateCaseWorkbench } from './CandidateCaseWorkbench'
-import { ParetoFront3D, RosettaEnergyViolin, type EnergyGroup, type ParetoPoint3D } from './ScientificDashboardCharts'
+import { ConstraintIntersectionPlot, ParetoFront3D, RosettaEnergyViolin, type EnergyGroup, type ParetoPoint3D } from './ScientificDashboardCharts'
+import { buildConstraintIntersectionAnalysis, buildPeptideFamilyAnalysis, familyPropertyLabels, type PeptideFamilySummary } from './peptideFamilyAnalysis'
 import {
   chartLabels,
   createDefaultQuery,
@@ -54,8 +55,8 @@ import {
 import './analysis-dashboard.css'
 
 const DashboardGrid = WidthProvider(GridLayout)
-const layoutStorageKey = 'ampgent.analysis-dashboard.layout.v4'
-const queryStorageKey = 'ampgent.analysis-dashboard.queries.v2'
+const layoutStorageKey = 'ampgent.analysis-dashboard.layout.v7'
+const queryStorageKey = 'ampgent.analysis-dashboard.queries.v3'
 const hiddenStorageKey = 'ampgent.analysis-dashboard.hidden.v1'
 
 const cardIcons: Record<AnalysisQuestion, LucideIcon> = {
@@ -137,12 +138,7 @@ function readQueries(): Record<AnalysisQuestion, CardQuerySpec> {
   try {
     const saved = window.localStorage.getItem(queryStorageKey)
     if (!saved) return defaults
-    const merged = { ...defaults, ...JSON.parse(saved) as Partial<Record<AnalysisQuestion, CardQuerySpec>> }
-    const sourceQuery = merged.generator_contribution
-    if (sourceQuery.rows.includes('origin_set') && sourceQuery.categories.includes('generator')) {
-      merged.generator_contribution = { ...sourceQuery, chart: 'sunburst' }
-    }
-    return merged
+    return { ...defaults, ...JSON.parse(saved) as Partial<Record<AnalysisQuestion, CardQuerySpec>> }
   } catch {
     return defaults
   }
@@ -154,6 +150,15 @@ function readHiddenCards() {
   } catch {
     return new Set<AnalysisQuestion>()
   }
+}
+
+function normalizeChartTypography(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(normalizeChartTypography)
+  if (!value || typeof value !== 'object') return value
+  return Object.fromEntries(Object.entries(value as Record<string, unknown>).map(([key, item]) => [
+    key,
+    key === 'fontSize' && typeof item === 'number' ? Math.max(11, item) : normalizeChartTypography(item),
+  ]))
 }
 
 function Chart({ option, height = '100%' }: { option: object; height?: number | string }) {
@@ -175,7 +180,7 @@ function Chart({ option, height = '100%' }: { option: object; height?: number | 
     }
   }, [])
 
-  const source = option as Record<string, unknown>
+  const source = normalizeChartTypography(option) as Record<string, unknown>
   const configuredOption = {
     ...source,
     animation: false,
@@ -207,7 +212,7 @@ const slotLabels: Record<PivotSlot, string> = {
   categories: '分类',
 }
 
-const chartChoices: ChartType[] = ['number', 'bar', 'line', 'boxplot', 'violin', 'scatter', 'heatmap', 'table']
+const chartChoices: ChartType[] = ['number', 'bar', 'line', 'boxplot', 'violin', 'scatter', 'heatmap', 'sunburst', 'upset', 'table']
 
 function toggleQueryFilter(query: CardQuerySpec, key: string, value: string) {
   const current = query.filters[key] ?? []
@@ -292,7 +297,7 @@ function CardShell({ definition, children, meta, query, onQueryChange }: {
   useEffect(() => {
     const element = cardRef.current
     if (!element) return
-    const chartMap: Record<ChartType, PivotChartType> = { number: 'kpi', bar: 'bar', line: 'funnel', boxplot: 'boxplot', violin: 'violin', scatter: 'scatter', heatmap: 'heatmap', sunburst: 'stacked_bar', table: 'table' }
+    const chartMap: Record<ChartType, PivotChartType> = { number: 'kpi', bar: 'bar', line: 'funnel', boxplot: 'boxplot', violin: 'violin', scatter: 'scatter', heatmap: 'heatmap', sunburst: 'stacked_bar', upset: 'heatmap', table: 'table' }
     const observer = new ResizeObserver(([entry]) => {
       const { width, height } = entry.contentRect
       if (width < 180 || height < 120) return
@@ -505,96 +510,78 @@ function DistributionCard({ generator, snapshot, chart, query }: { generator: st
   )
 }
 
-function OriginCard({ snapshot }: { snapshot: AnalysisSnapshot | null }) {
-  if (!snapshot) return null
-  const statusLabels: Record<string, string> = { mature_core: '成熟核心', promising_uncertain: '潜力待核', rejected: '未入选' }
-  const roots = new Map<string, Map<string, { eligible: number; ineligible: number }>>()
-  for (const candidate of snapshot.candidates) {
-    const origin = candidate.originSet.slice().sort().map((id) => generatorDisplay[id] ?? id).join(' + ')
-    const byStatus = roots.get(origin) ?? new Map<string, { eligible: number; ineligible: number }>()
-    const counts = byStatus.get(candidate.admission.status) ?? { eligible: 0, ineligible: 0 }
-    if (candidate.admission.structureEligible) counts.eligible += 1
-    else counts.ineligible += 1
-    byStatus.set(candidate.admission.status, counts)
-    roots.set(origin, byStatus)
+function familyTooltip(family: PeptideFamilySummary | undefined, path: string, value: number) {
+  if (!family) return `${path}<br/><b>${value.toLocaleString()} 条候选</b>`
+  return `<b>${family.label}</b><br/>${path}<br/>候选 ${family.count} 条 · 占比 ${(family.share * 100).toFixed(1)}%<br/>代表序列 ${family.representative}<br/>抗菌概率中位数 ${family.medianActivity?.toFixed(3) ?? '缺失'} · 结构资格 ${family.structureEligible}`
+}
+
+const phenotypeColors: Record<string, string> = {
+  '强阳离子两亲型': '#4f7df3',
+  '阳离子两亲型': '#55bfc3',
+  '疏水富集型': '#9b7bd3',
+  '芳香富集型': '#d47c9f',
+  '富半胱氨酸': '#87bd55',
+  '均衡型': '#d9a25f',
+}
+
+function FamilyAtlasCard({ snapshot, query, detail }: { snapshot: AnalysisSnapshot | null; query: CardQuerySpec; detail?: RunDetail | null }) {
+  const selected = selectedGenerators(query)
+  const candidates = useMemo(() => snapshot?.candidates.filter((candidate) => !selected.length || candidate.originSet.some((origin) => selected.includes(origin))) ?? [], [snapshot, selected.join('|')])
+  const scope = detail && snapshot && detail.run.id === snapshot.run.id && detail.branches.length === 1
+    ? detail.branches[0].target_name
+    : '本轮候选库'
+  const analysis = useMemo(() => buildPeptideFamilyAnalysis(candidates, scope, 9), [candidates, scope])
+  if (!snapshot || !analysis.candidateCount) return null
+  const hierarchy: Array<{ name: string; value: number; family?: PeptideFamilySummary; children: Array<{ name: string; value: number; family?: PeptideFamilySummary; itemStyle?: { color: string } }> }> = analysis.displayedFamilies.map((family) => ({
+    name: family.id,
+    value: family.count,
+    family,
+    children: family.phenotypes.map((phenotype) => ({ ...phenotype, family, itemStyle: { color: phenotypeColors[phenotype.name] ?? '#9aa8bb' } })),
+  }))
+  if (analysis.remainderCount) {
+    const tailPhenotypes = new Map<string, number>()
+    for (const family of analysis.families.slice(analysis.displayedFamilies.length)) {
+      for (const phenotype of family.phenotypes) tailPhenotypes.set(phenotype.name, (tailPhenotypes.get(phenotype.name) ?? 0) + phenotype.value)
+    }
+    hierarchy.push({
+      name: '低频家族',
+      value: analysis.remainderCount,
+      family: undefined,
+      children: [...tailPhenotypes.entries()].map(([name, value]) => ({ name, value, itemStyle: { color: phenotypeColors[name] ?? '#9aa8bb' } })),
+    })
   }
-  const hierarchy = [...roots.entries()].map(([origin, statuses]) => ({
-    name: origin,
-    value: [...statuses.values()].reduce((sum, item) => sum + item.eligible + item.ineligible, 0),
-    children: [...statuses.entries()].map(([status, counts]) => ({
-      name: statusLabels[status] ?? status,
-      value: counts.eligible + counts.ineligible,
-      children: [
-        counts.eligible ? { name: '具备结构资格', value: counts.eligible } : null,
-        counts.ineligible ? { name: '未进入结构计算', value: counts.ineligible } : null,
-      ].filter(Boolean),
-    })).sort((left, right) => right.value - left.value),
-  })).sort((left, right) => right.value - left.value)
-  return <div className="origin-hierarchy">
-    <Chart option={{
-      color: ['#527ee3', '#55b8b5', '#9a7bd1', '#d59a68', '#7aa35c'],
-      title: { text: snapshot.candidates.length.toLocaleString(), subtext: '唯一候选', left: 'center', top: '38%', textStyle: { color: '#2f405b', fontSize: 18, fontWeight: 700 }, subtextStyle: { color: '#7d899b', fontSize: 10 } },
-      tooltip: { formatter: (params: { value: number; treePathInfo: Array<{ name: string }> }) => `${params.treePathInfo.slice(1).map((item) => item.name).join(' → ')}<br/><b>${params.value.toLocaleString()} 条唯一候选</b>` },
+  const heatmapFamilies = analysis.displayedFamilies.slice(0, 7)
+  const heatmapData = heatmapFamilies.flatMap((family, familyIndex) => family.properties.map((value, propertyIndex) => [propertyIndex, familyIndex, Math.round(value * 100)]))
+  return <div className="family-atlas">
+    <section className="family-sunburst"><span className="family-panel-label">家族谱系</span><Chart option={{
+      color: ['#527ee3', '#55b8b5', '#9a7bd1', '#e5a369', '#84b968', '#d47c9f', '#7a9aba'],
+      title: { text: analysis.candidateCount.toLocaleString(), subtext: analysis.scopeLabel, left: 'center', top: '39%', textStyle: { color: '#2f405b', fontSize: 20, fontWeight: 700 }, subtextStyle: { color: '#7d899b', fontSize: 11, width: 100, overflow: 'truncate' } },
+      tooltip: { confine: false, appendToBody: true, formatter: (params: { value: number; data: { family?: PeptideFamilySummary }; treePathInfo: Array<{ name: string }> }) => familyTooltip(params.data.family, params.treePathInfo.slice(1).map((item) => item.name).join(' → '), params.value) },
       series: [{
-        type: 'sunburst',
-        radius: ['27%', '94%'],
-        center: ['50%', '49%'],
+        type: 'sunburst', radius: ['26%', '99%'], center: ['50%', '51%'], minAngle: 3, nodeClick: false,
         sort: (left: { value: number }, right: { value: number }) => right.value - left.value,
-        nodeClick: 'rootToNode',
-        minAngle: 4,
-        data: hierarchy,
-        emphasis: { focus: 'ancestor' },
-        label: { color: '#33445f', fontSize: 10, minAngle: 7, overflow: 'truncate' },
-        itemStyle: { borderColor: '#fff', borderWidth: 1.5 },
-        levels: [
-          {},
-          { r0: '27%', r: '51%', label: { rotate: 'tangential', fontWeight: 650 } },
-          { r0: '51%', r: '75%', label: { rotate: 'radial' }, itemStyle: { colorSaturation: [.45, .75] } },
-          { r0: '75%', r: '94%', label: { show: false }, itemStyle: { colorSaturation: [.25, .55] } },
-        ],
+        data: hierarchy, emphasis: { focus: 'ancestor' },
+        label: { color: '#33445f', fontSize: 11, minAngle: 8, overflow: 'truncate' }, itemStyle: { borderColor: '#fff', borderWidth: 1.8 },
+        levels: [{}, { r0: '26%', r: '64%', label: { rotate: 'tangential', fontWeight: 700, formatter: (params: { name: string; value: number }) => params.name === '低频家族' ? '低频群' : params.value >= 25 ? params.name : '' } }, { r0: '64%', r: '99%', label: { show: false } }],
       }],
-    }} />
-    <div className="origin-hierarchy-footer"><span>来源组合 → 候选分组 → 结构资格</span><b>按唯一序列计数 · 无重复归因</b></div>
+    }} /><div className="family-phenotype-key">{Object.entries(phenotypeColors).map(([label, color]) => <span key={label}><i style={{ backgroundColor: color }} />{label}</span>)}</div></section>
+    <section className="family-heatmap"><span className="family-panel-label">残基组成与两亲性</span><Chart option={{
+      grid: { left: 58, right: 17, top: 31, bottom: 42 },
+      tooltip: { confine: false, appendToBody: true, formatter: (params: { data: number[] }) => `${heatmapFamilies[params.data[1]].label}<br/>${familyPropertyLabels[params.data[0]]}<br/><b>${params.data[2]}%</b>` },
+      xAxis: { type: 'category', data: familyPropertyLabels, axisTick: { show: false }, axisLabel: { color: '#66758a', fontSize: 10, interval: 0, rotate: 24 } },
+      yAxis: { type: 'category', data: heatmapFamilies.map((family) => family.id), inverse: true, axisTick: { show: false }, axisLabel: { color: '#4a5b77', fontSize: 10, fontWeight: 650 } },
+      visualMap: { min: 0, max: 65, show: false, inRange: { color: ['#f2f6fb', '#b8dce0', '#4d82d8'] } },
+      series: [{ type: 'heatmap', data: heatmapData, label: { show: true, formatter: (params: { data: number[] }) => params.data[2] >= 5 ? `${params.data[2]}` : '', color: '#30425f', fontSize: 9 }, itemStyle: { borderColor: '#fff', borderWidth: 2, borderRadius: 3 }, emphasis: { itemStyle: { shadowBlur: 8, shadowColor: 'rgba(46,75,125,.22)' } } }],
+    }} /></section>
+    <footer className="family-atlas-footer"><span>{analysis.familyCount} 个序列家族 · 单例家族 {(analysis.singletonRate * 100).toFixed(1)}%</span><b>最大家族占比 {(analysis.dominantShare * 100).toFixed(1)}%</b></footer>
   </div>
 }
 
-function SafetyCard({ generator, snapshot }: { generator: string; snapshot: AnalysisSnapshot | null }) {
-  const generatorIds = snapshot ? [...new Set(snapshot.occurrences.map((item) => item.generator))] : []
-  const selectedIds = generator === 'all' ? generatorIds : generatorIds.filter((id) => generatorDisplay[id] === generator)
-  const labels = snapshot ? selectedIds.map((id) => generatorDisplay[id] ?? id) : generator === 'all' ? ['AMP Designer', 'AMPGAN', 'HydrAMP'] : [generator]
-  const index = generator === 'AMP Designer' ? 0 : generator === 'AMPGAN v2' ? 1 : 2
-  const values = snapshot ? {
-    hemolysis: selectedIds.map((id) => {
-      const rows = snapshot.candidates.filter((candidate) => candidate.originSet.includes(id))
-      return rows.length ? Math.round(rows.filter((candidate) => candidate.metrics.macrel_hemolysis_label?.text === 'high').length / rows.length * 100) : 0
-    }),
-    toxicity: selectedIds.map((id) => {
-      const rows = snapshot.candidates.filter((candidate) => candidate.originSet.includes(id))
-      return rows.length ? Math.round(rows.filter((candidate) => candidate.metrics.toxinpred3_label?.text === 'Toxin').length / rows.length * 100) : 0
-    }),
-    ood: selectedIds.map((id) => {
-      const rows = snapshot.candidates.filter((candidate) => candidate.originSet.includes(id))
-      const total = rows.flatMap((candidate) => Object.values(candidate.metrics))
-      return total.length ? Math.round(total.filter((metric) => metric.outOfDomain).length / total.length * 100) : 0
-    }),
-  } : generator === 'all'
-    ? { hemolysis: [31, 38, 22], toxicity: [12, 17, 9], ood: [6, 7, 10] }
-    : { hemolysis: [[31, 38, 22][index]], toxicity: [[12, 17, 9][index]], ood: [[6, 7, 10][index]] }
-  const maximumObserved = Math.max(...values.hemolysis, ...values.toxicity, ...values.ood, 10)
-  const axisMaximum = Math.min(100, Math.ceil((maximumObserved + 5) / 10) * 10)
-  return <Chart option={{
-    color: ['#ef8c7c', '#f1bc66', '#8d9aac'],
-    grid: { left: 38, right: 12, top: 30, bottom: 28 },
-    legend: { top: 0, icon: 'circle', itemWidth: 8, textStyle: { fontSize: 10, color: '#657186' } },
-    tooltip: { trigger: 'axis', valueFormatter: (value: unknown) => `${value}%` },
-    xAxis: { type: 'category', data: labels, axisTick: { show: false }, axisLine: { lineStyle: { color: '#dfe5ed' } }, axisLabel: { fontSize: 10, color: '#657186' } },
-    yAxis: { type: 'value', max: axisMaximum, axisLabel: { formatter: '{value}%', fontSize: 10, color: '#748094' }, splitLine: { lineStyle: { color: '#eef1f5' } } },
-    series: [
-      { name: '溶血风险', type: 'bar', barWidth: 11, data: values.hemolysis, itemStyle: { borderRadius: [4, 4, 0, 0] } },
-      { name: '毒性风险', type: 'bar', barWidth: 11, data: values.toxicity, itemStyle: { borderRadius: [4, 4, 0, 0] } },
-      { name: '分布外', type: 'bar', barWidth: 11, data: values.ood, itemStyle: { borderRadius: [4, 4, 0, 0] } },
-    ],
-  }} />
+function ConstraintCard({ snapshot, query }: { snapshot: AnalysisSnapshot | null; query: CardQuerySpec }) {
+  const selected = selectedGenerators(query)
+  const candidates = useMemo(() => snapshot?.candidates.filter((candidate) => !selected.length || candidate.originSet.some((origin) => selected.includes(origin))) ?? [], [snapshot, selected.join('|')])
+  const analysis = useMemo(() => buildConstraintIntersectionAnalysis(candidates), [candidates])
+  return <ConstraintIntersectionPlot analysis={analysis} />
 }
 
 function ParetoCard({ generator, snapshot, query }: { generator: string; snapshot: AnalysisSnapshot | null; query: CardQuerySpec }) {
@@ -724,13 +711,13 @@ function generatorFromQuery(query: CardQuerySpec) {
   return selected.length === 1 ? generatorIdsToLabels[selected[0]] ?? 'all' : 'all'
 }
 
-function CardContent({ id, query, snapshot, structureData }: { id: AnalysisQuestion; query: CardQuerySpec; snapshot: AnalysisSnapshot | null; structureData: StructureEnergySnapshot | null }) {
+function CardContent({ id, query, snapshot, structureData, detail }: { id: AnalysisQuestion; query: CardQuerySpec; snapshot: AnalysisSnapshot | null; structureData: StructureEnergySnapshot | null; detail?: RunDetail | null }) {
   const generator = generatorFromQuery(query)
   if (id === 'run_quality') return <RunQualityCard snapshot={snapshot} />
   if (id === 'lineage_and_yield') return <LineageCard snapshot={snapshot} chart={query.chart} query={query} />
   if (id === 'score_distribution') return <DistributionCard generator={generator} snapshot={snapshot} chart={query.chart} query={query} />
-  if (id === 'generator_contribution') return <OriginCard snapshot={snapshot} />
-  if (id === 'safety_profile') return <SafetyCard generator={generator} snapshot={snapshot} />
+  if (id === 'generator_contribution') return <FamilyAtlasCard snapshot={snapshot} query={query} detail={detail} />
+  if (id === 'safety_profile') return <ConstraintCard snapshot={snapshot} query={query} />
   if (id === 'multi_objective_conflict') return <ParetoCard generator={generator} snapshot={snapshot} query={query} />
   if (id === 'structure_energy') return <StructureEnergyCard data={structureData} />
   if (id === 'candidate_laboratory') return <CandidateTable generator={generator} snapshot={snapshot} query={query} />
@@ -881,7 +868,7 @@ export function AnalysisDashboard({ detail, seedNodeIds = [], apiBase = '' }: { 
                 onQueryChange={(query) => setQueries((current) => ({ ...current, [definition.id]: query }))}
                 meta={queries[definition.id].sourceNodeIds.length ? <b>{`${queries[definition.id].sourceNodeIds.length} 个节点`}</b> : undefined}
               >
-                <CardContent id={definition.id} query={queries[definition.id]} snapshot={snapshot} structureData={structureData} />
+                <CardContent id={definition.id} query={queries[definition.id]} snapshot={snapshot} structureData={structureData} detail={detail} />
               </CardShell>
             </div>
           ))}

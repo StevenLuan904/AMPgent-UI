@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState, type PointerEvent } from 'react'
+import type { ConstraintIntersectionAnalysis } from './peptideFamilyAnalysis'
 
 export interface ParetoPoint3D {
   sequence: string
@@ -15,6 +16,9 @@ interface ProjectedPoint extends ParetoPoint3D {
   screenX: number
   screenY: number
   depth: number
+  depthScale: number
+  floorX: number
+  floorY: number
 }
 
 const cubeCorners: Array<[number, number, number]> = [
@@ -26,6 +30,24 @@ const cubeEdges = [
   [0, 1], [0, 2], [1, 3], [2, 3], [4, 5], [4, 6], [5, 7], [6, 7],
   [0, 4], [1, 5], [2, 6], [3, 7],
 ]
+
+function projectedConvexHull(points: ProjectedPoint[]) {
+  if (points.length < 4) return points
+  const sorted = [...points].sort((left, right) => left.screenX - right.screenX || left.screenY - right.screenY)
+  const cross = (origin: ProjectedPoint, left: ProjectedPoint, right: ProjectedPoint) =>
+    (left.screenX - origin.screenX) * (right.screenY - origin.screenY) - (left.screenY - origin.screenY) * (right.screenX - origin.screenX)
+  const lower: ProjectedPoint[] = []
+  for (const point of sorted) {
+    while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], point) <= 0) lower.pop()
+    lower.push(point)
+  }
+  const upper: ProjectedPoint[] = []
+  for (const point of [...sorted].reverse()) {
+    while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], point) <= 0) upper.pop()
+    upper.push(point)
+  }
+  return [...lower.slice(0, -1), ...upper.slice(0, -1)]
+}
 
 export function ParetoFront3D({ points }: { points: ParetoPoint3D[] }) {
   const [yaw, setYaw] = useState(-0.72)
@@ -39,30 +61,34 @@ export function ParetoFront3D({ points }: { points: ParetoPoint3D[] }) {
     const dz = z - 0.5
     const horizontal = dx * Math.cos(yaw) - dy * Math.sin(yaw)
     const receding = dx * Math.sin(yaw) + dy * Math.cos(yaw)
+    const depth = dz * Math.sin(pitch) + receding * Math.cos(pitch)
+    const depthScale = Math.max(.78, Math.min(1.16, .98 + depth * .22))
     return {
-      screenX: 400 + horizontal * 500,
-      screenY: 184 - (dz * Math.cos(pitch) - receding * Math.sin(pitch)) * 278,
-      depth: dz * Math.sin(pitch) + receding * Math.cos(pitch),
+      screenX: 400 + horizontal * 500 * depthScale,
+      screenY: 184 - (dz * Math.cos(pitch) - receding * Math.sin(pitch)) * 278 * depthScale,
+      depth,
+      depthScale,
     }
   }
 
-  const projected = useMemo(() => points.map((point) => ({
-    ...point,
-    ...project(point.activity, 1 - point.hemolysis, 1 - point.toxicity),
-  })).sort((left, right) => left.depth - right.depth), [points, yaw, pitch])
+  const projected = useMemo(() => points.map((point) => {
+    const position = project(point.activity, 1 - point.hemolysis, 1 - point.toxicity)
+    const floor = project(point.activity, 1 - point.hemolysis, 0)
+    return { ...point, ...position, floorX: floor.screenX, floorY: floor.screenY }
+  }).sort((left, right) => left.depth - right.depth), [points, yaw, pitch])
 
   const frontier = projected.filter((point) => point.paretoRank === 1)
   const frontierPolygon = useMemo(() => {
     if (frontier.length < 3) return ''
-    const centerX = frontier.reduce((sum, point) => sum + point.screenX, 0) / frontier.length
-    const centerY = frontier.reduce((sum, point) => sum + point.screenY, 0) / frontier.length
-    return [...frontier]
-      .sort((left, right) => Math.atan2(left.screenY - centerY, left.screenX - centerX) - Math.atan2(right.screenY - centerY, right.screenX - centerX))
+    return projectedConvexHull(frontier)
       .map((point) => `${point.screenX.toFixed(1)},${point.screenY.toFixed(1)}`)
       .join(' ')
   }, [frontier])
 
   const corners = cubeCorners.map(([x, y, z]) => project(x, y, z))
+  const floorFace = [corners[0], corners[1], corners[3], corners[2]].map((point) => `${point.screenX},${point.screenY}`).join(' ')
+  const rearFace = [corners[2], corners[3], corners[7], corners[6]].map((point) => `${point.screenX},${point.screenY}`).join(' ')
+  const gridFractions = [.25, .5, .75]
   const handlePointerDown = (event: PointerEvent<SVGSVGElement>) => {
     event.currentTarget.setPointerCapture(event.pointerId)
     drag.current = { x: event.clientX, y: event.clientY, yaw, pitch }
@@ -91,23 +117,47 @@ export function ParetoFront3D({ points }: { points: ParetoPoint3D[] }) {
             <stop offset="0" stopColor="#678ff0" stopOpacity=".32" />
             <stop offset="1" stopColor="#64c8bd" stopOpacity=".12" />
           </linearGradient>
-          <filter id="frontier-glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3" /></filter>
+          <linearGradient id="pareto-floor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#dce8fb" stopOpacity=".18" /><stop offset="1" stopColor="#b9cceb" stopOpacity=".48" /></linearGradient>
+          <linearGradient id="pareto-rear" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#f5f8fd" stopOpacity=".18" /><stop offset="1" stopColor="#dce7f8" stopOpacity=".42" /></linearGradient>
+          <filter id="frontier-glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="5" /></filter>
+          <filter id="pareto-shadow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.4" /></filter>
         </defs>
+        <polygon className="pareto-rear-face" points={rearFace} fill="url(#pareto-rear)" />
+        <polygon className="pareto-floor-face" points={floorFace} fill="url(#pareto-floor)" />
+        <g className="pareto-floor-grid">
+          {gridFractions.map((fraction) => {
+            const start = project(fraction, 0, 0)
+            const end = project(fraction, 1, 0)
+            return <line key={`x-${fraction}`} x1={start.screenX} y1={start.screenY} x2={end.screenX} y2={end.screenY} />
+          })}
+          {gridFractions.map((fraction) => {
+            const start = project(0, fraction, 0)
+            const end = project(1, fraction, 0)
+            return <line key={`y-${fraction}`} x1={start.screenX} y1={start.screenY} x2={end.screenX} y2={end.screenY} />
+          })}
+        </g>
         <g className="pareto-cube">
           {cubeEdges.map(([start, end], index) => <line key={index} x1={corners[start].screenX} y1={corners[start].screenY} x2={corners[end].screenX} y2={corners[end].screenY} />)}
         </g>
         {frontierPolygon && <>
+          <polygon className="pareto-surface-shadow" points={frontierPolygon} transform="translate(8 10)" />
           <polygon className="pareto-surface-glow" points={frontierPolygon} />
           <polygon className="pareto-surface" points={frontierPolygon} />
         </>}
+        <g className="pareto-depth-guides">
+          {projected.filter((point) => point.paretoRank === 1 || point.structureEligible).map((point, index) => <line key={`${point.sequence}-guide-${index}`} x1={point.screenX} y1={point.screenY} x2={point.floorX} y2={point.floorY} />)}
+        </g>
+        <g className="pareto-floor-shadows">
+          {projected.map((point, index) => <ellipse key={`${point.sequence}-shadow-${index}`} cx={point.floorX + 3} cy={point.floorY + 3} rx={Math.max(1.8, 3.8 * point.depthScale)} ry={Math.max(.8, 1.7 * point.depthScale)} opacity={point.paretoRank === 1 ? .28 : point.structureEligible ? .18 : .07} />)}
+        </g>
         <g className="pareto-points">
           {projected.map((point, index) => <circle
             key={`${point.sequence}-${index}`}
             cx={point.screenX}
             cy={point.screenY}
-            r={point.paretoRank === 1 ? 5.2 : point.structureEligible ? 3.8 : 2.45}
+            r={(point.paretoRank === 1 ? 5.4 : point.structureEligible ? 3.9 : 2.45) * point.depthScale}
             fill={point.color}
-            fillOpacity={point.paretoRank === 1 ? .96 : point.structureEligible ? .7 : .24}
+            fillOpacity={Math.min(1, (point.paretoRank === 1 ? .96 : point.structureEligible ? .72 : .24) * point.depthScale)}
             stroke={point.paretoRank === 1 || point.structureEligible ? '#fff' : 'none'}
             strokeWidth={point.paretoRank === 1 ? 1.8 : 1.1}
             onPointerEnter={() => setHovered(point)}
@@ -125,6 +175,7 @@ export function ParetoFront3D({ points }: { points: ParetoPoint3D[] }) {
         <g className="pareto-legend">
           {legend.map(([label, color], index) => <g key={label} transform={`translate(${18 + index * 128}, 18)`}><circle r="4" fill={color} /><text x="9" y="4">{label}</text></g>)}
           <g transform="translate(18, 40)"><rect width="16" height="9" rx="2" fill="url(#frontier-surface)" stroke="#7195e7" strokeOpacity=".5" /><text x="23" y="9">非支配前沿面</text></g>
+          <g transform="translate(155, 40)"><line x1="0" y1="5" x2="31" y2="5" stroke="#b7c5d9" strokeWidth="5" /><circle cx="5" cy="5" r="2.5" fill="#607ba5" /><circle cx="27" cy="5" r="4.5" fill="#607ba5" /><text x="39" y="9">远 → 近</text></g>
         </g>
       </svg>
       {hovered && <div className="pareto-tooltip">
@@ -133,6 +184,51 @@ export function ParetoFront3D({ points }: { points: ParetoPoint3D[] }) {
       </div>}
     </div>
   )
+}
+
+export function ConstraintIntersectionPlot({ analysis }: { analysis: ConstraintIntersectionAnalysis }) {
+  const [hovered, setHovered] = useState<number | null>(null)
+  if (!analysis.candidateCount || !analysis.intersections.length) return <div className="energy-empty">暂无可计算交集</div>
+  const left = 246
+  const right = 786
+  const topBase = 120
+  const matrixTop = 177
+  const matrixBottom = 326
+  const columnWidth = (right - left) / analysis.intersections.length
+  const rowHeight = (matrixBottom - matrixTop) / analysis.sets.length
+  const maxIntersection = Math.max(...analysis.intersections.map((item) => item.count), 1)
+  const maxSet = Math.max(...analysis.sets.map((item) => item.total), 1)
+  const activeIntersection = hovered == null ? null : analysis.intersections[hovered]
+  return <div className="constraint-upset">
+    <svg viewBox="0 0 800 340" role="img" aria-label={`活性与安全约束交集矩阵，共 ${analysis.candidateCount} 条候选`}>
+      <text className="upset-section-label" x="20" y="20">条件覆盖</text>
+      <text className="upset-section-label" x={left} y="20">独占交集</text>
+      <line className="upset-baseline" x1={left} y1={topBase} x2={right} y2={topBase} />
+      {analysis.intersections.map((intersection, index) => {
+        const x = left + columnWidth * (index + .5)
+        const barHeight = Math.max(3, intersection.count / maxIntersection * 82)
+        return <g key={intersection.key} className={hovered === index ? 'upset-column active' : 'upset-column'} onPointerEnter={() => setHovered(index)} onPointerLeave={() => setHovered(null)}>
+          <rect className="upset-hover-target" x={x - columnWidth * .48} y="26" width={columnWidth * .96} height="303" />
+          <rect className="upset-intersection-bar" x={x - Math.min(14, columnWidth * .28)} y={topBase - barHeight} width={Math.min(28, columnWidth * .56)} height={barHeight} rx="3" />
+          <text className="upset-count" x={x} y={topBase - barHeight - 6} textAnchor="middle">{intersection.count}</text>
+          {intersection.active.some(Boolean) && <line className="upset-connector" x1={x} y1={matrixTop + intersection.active.indexOf(true) * rowHeight + rowHeight / 2} x2={x} y2={matrixTop + intersection.active.lastIndexOf(true) * rowHeight + rowHeight / 2} />}
+          {intersection.active.map((active, rowIndex) => <circle key={rowIndex} className={active ? 'upset-dot active' : 'upset-dot'} cx={x} cy={matrixTop + rowIndex * rowHeight + rowHeight / 2} r={active ? 6 : 4} />)}
+        </g>
+      })}
+      {analysis.sets.map((set, index) => {
+        const y = matrixTop + index * rowHeight + rowHeight / 2
+        const width = set.total / maxSet * 86
+        return <g key={set.id}>
+          <line className="upset-row-rule" x1="18" y1={matrixTop + index * rowHeight} x2={right} y2={matrixTop + index * rowHeight} />
+          <rect className="upset-set-bar" x={105 - width} y={y - 5} width={width} height="10" rx="3" />
+          <text className="upset-set-total" x="99" y={y + 4} textAnchor="end">{set.total}</text>
+          <text className="upset-set-label" x="225" y={y + 4} textAnchor="end"><title>{set.detail}</title>{set.label}</text>
+        </g>
+      })}
+      <line className="upset-row-rule" x1="18" y1={matrixBottom} x2={right} y2={matrixBottom} />
+    </svg>
+    {activeIntersection && <div className="upset-tooltip"><b>{activeIntersection.labels.length ? activeIntersection.labels.join(' + ') : '未通过所列条件'}</b><span>{activeIntersection.count} 条 · {(activeIntersection.share * 100).toFixed(1)}%</span></div>}
+  </div>
 }
 
 export interface EnergyGroup {

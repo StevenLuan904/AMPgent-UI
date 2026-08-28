@@ -1,13 +1,13 @@
 import type { AnalysisQuestion } from './contracts'
 
 export type PivotSlot = 'rows' | 'columns' | 'values' | 'categories'
-export type ChartType = 'number' | 'bar' | 'line' | 'boxplot' | 'violin' | 'scatter' | 'heatmap' | 'sunburst' | 'table'
+export type ChartType = 'number' | 'bar' | 'line' | 'boxplot' | 'violin' | 'scatter' | 'heatmap' | 'sunburst' | 'upset' | 'table'
 
 export interface AnalysisField {
   id: string
   label: string
   kind: 'dimension' | 'measure'
-  semantic: 'identity' | 'stage' | 'source' | 'metric' | 'target' | 'status' | 'value'
+  semantic: 'identity' | 'stage' | 'source' | 'metric' | 'target' | 'status' | 'family' | 'value'
 }
 
 export interface CardQuerySpec {
@@ -30,6 +30,10 @@ export const fieldCatalog: AnalysisField[] = [
   { id: 'target', label: '靶点', kind: 'dimension', semantic: 'target' },
   { id: 'cohort', label: '候选分组', kind: 'dimension', semantic: 'status' },
   { id: 'evidence_status', label: '证据状态', kind: 'dimension', semantic: 'status' },
+  { id: 'sequence_family', label: '序列家族', kind: 'dimension', semantic: 'family' },
+  { id: 'biochemical_class', label: '生化表型', kind: 'dimension', semantic: 'family' },
+  { id: 'intersection', label: '独占交集', kind: 'dimension', semantic: 'status' },
+  { id: 'constraint', label: '筛选条件', kind: 'dimension', semantic: 'status' },
   { id: 'candidate_count', label: '候选数量', kind: 'measure', semantic: 'value' },
   { id: 'metric_value', label: '评分数值', kind: 'measure', semantic: 'value' },
   { id: 'activity', label: '抗菌活性', kind: 'measure', semantic: 'value' },
@@ -45,8 +49,8 @@ const defaults: Record<AnalysisQuestion, Omit<CardQuerySpec, 'cardId' | 'sourceN
   lineage_and_yield: { rows: ['stage'], columns: [], values: ['candidate_count'], categories: ['generator'], filters: {}, chart: 'line' },
   score_distribution: { rows: ['generator'], columns: [], values: ['metric_value'], categories: [], filters: {}, chart: 'boxplot' },
   filtering_loss: { rows: ['stage'], columns: ['evidence_status'], values: ['candidate_count'], categories: [], filters: {}, chart: 'heatmap' },
-  generator_contribution: { rows: ['origin_set'], columns: [], values: ['candidate_count'], categories: ['generator'], filters: {}, chart: 'sunburst' },
-  safety_profile: { rows: ['generator'], columns: [], values: ['hemolysis', 'toxicity'], categories: ['evidence_status'], filters: {}, chart: 'bar' },
+  generator_contribution: { rows: ['sequence_family'], columns: [], values: ['candidate_count'], categories: ['biochemical_class'], filters: {}, chart: 'sunburst' },
+  safety_profile: { rows: ['intersection'], columns: [], values: ['candidate_count'], categories: ['constraint'], filters: {}, chart: 'upset' },
   multi_objective_conflict: { rows: ['candidate'], columns: [], values: ['activity', 'hemolysis'], categories: ['generator'], filters: {}, chart: 'scatter' },
   structure_energy: { rows: ['target'], columns: [], values: ['interface_energy'], categories: [], filters: {}, chart: 'violin' },
   candidate_laboratory: { rows: ['candidate'], columns: ['metric'], values: ['metric_value'], categories: ['evidence_status'], filters: {}, chart: 'table' },
@@ -100,7 +104,8 @@ export function validateQuery(query: CardQuerySpec): string[] {
   if (query.chart === 'boxplot' && !query.values.includes('metric_value')) errors.push('箱线图需要“评分数值”字段。')
   if (query.chart === 'violin' && !query.values.includes('interface_energy')) errors.push('小提琴图需要“界面能”字段。')
   if (query.chart === 'bar' && !query.rows.length && !query.categories.length) errors.push('条形图需要至少一个分组字段。')
-  if (query.chart === 'sunburst' && (!query.rows.includes('origin_set') || !query.categories.includes('generator'))) errors.push('层级旭日图需要“来源组合”和“生成来源”字段。')
+  if (query.chart === 'sunburst' && (!query.rows.includes('sequence_family') || !query.categories.includes('biochemical_class'))) errors.push('序列家族旭日图需要“序列家族”和“生化表型”字段。')
+  if (query.chart === 'upset' && (!query.rows.includes('intersection') || !query.categories.includes('constraint'))) errors.push('交集矩阵需要“独占交集”和“筛选条件”字段。')
   return errors
 }
 
@@ -113,7 +118,8 @@ export function recommendChart(query: CardQuerySpec): { chart: ChartType; reason
   if (query.values.includes('metric_value')) return { chart: 'boxplot', reason: '连续评分需要保留分布形状，推荐箱线图。' }
   if (!query.rows.length && !query.columns.length && !query.categories.length && query.values.length === 1) return { chart: 'number', reason: '单一汇总数值适合指标卡。' }
   if (query.rows.includes('candidate')) return { chart: 'table', reason: '候选身份需要保留完整序列与证据字段。' }
-  if (query.rows.includes('origin_set') && query.categories.includes('generator')) return { chart: 'sunburst', reason: '来源组合与候选分组构成真实层级，推荐旭日图。' }
+  if (query.rows.includes('sequence_family') && query.categories.includes('biochemical_class')) return { chart: 'sunburst', reason: '序列相似性家族与生化表型形成真实层级。' }
+  if (query.rows.includes('intersection') && query.categories.includes('constraint')) return { chart: 'upset', reason: '多个活性与安全条件适合独占交集矩阵。' }
   return { chart: 'bar', reason: '分类与单一数值的比较适合条形图。' }
 }
 
@@ -159,5 +165,6 @@ export const chartLabels: Record<ChartType, string> = {
   scatter: '散点图',
   heatmap: '热力图',
   sunburst: '旭日图',
+  upset: '交集矩阵',
   table: '明细表',
 }
