@@ -395,6 +395,31 @@ class ExperimentRepository:
             RunStatus.RUNNING,
             RunStatus.SUCCEEDED,
         }:
+            if run.status == RunStatus.RUNNING and run.started_at is None:
+                # Formal reservation may bind the workflow and mark it running
+                # before Temporal's mark_run_started activity executes.  Repair
+                # that partial state under the existing row lock, while keeping
+                # the lifecycle event exactly once.
+                run.started_at = datetime.now(UTC)
+                if run.temporal_run_id is None:
+                    run.temporal_run_id = temporal_run_id
+                existing_started_event = await self.session.scalar(
+                    select(LifecycleEvent.id)
+                    .where(
+                        LifecycleEvent.aggregate_type == "run",
+                        LifecycleEvent.aggregate_id == run.id,
+                        LifecycleEvent.event_type == "run.started",
+                    )
+                    .limit(1)
+                )
+                if existing_started_event is None:
+                    await self.append_event(
+                        "run",
+                        run.id,
+                        "run.started",
+                        "temporal",
+                        {"workflow_id": workflow_id},
+                    )
             return
         run.status = RunStatus.RUNNING
         run.temporal_workflow_id = workflow_id
