@@ -34,7 +34,14 @@ class OperationalCallRecord(BaseModel):
     )
     operation_key: str = Field(min_length=1, max_length=512)
     target_key: Literal["acea", "angpt1", "fgf2", "gyra", "pbp2a", "vegfa"]
-    purpose: Literal["generation", "score_all", "challenger", "structure", "rosetta"]
+    purpose: Literal[
+        "generation",
+        "score_all",
+        "challenger",
+        "structure",
+        "rosetta",
+        "audit_reconciliation",
+    ]
     tool_name: str = Field(min_length=1, max_length=128)
     tool_version: str = Field(min_length=1, max_length=128)
     status: Literal["running", "succeeded", "failed"]

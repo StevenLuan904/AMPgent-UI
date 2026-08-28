@@ -46,3 +46,12 @@ def test_operational_terminal_contract_rejects_missing_output() -> None:
 def test_running_call_cannot_claim_terminal_fields() -> None:
     with pytest.raises(ValidationError, match="cannot carry a terminal payload"):
         _record(status="running")
+
+
+def test_activity_reconciliation_is_a_supported_operational_purpose() -> None:
+    record = _record(
+        purpose="audit_reconciliation",
+        tool_name="temporal-activity-pg-reconciler",
+    )
+
+    assert record.purpose == "audit_reconciliation"

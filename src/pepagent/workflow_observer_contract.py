@@ -145,6 +145,13 @@ class ActivityLifecyclePayload(FrozenModel):
     target_key: str | None = Field(default=None, min_length=1)
     error_type: str | None = Field(default=None, min_length=1)
     error_message: str | None = Field(default=None, min_length=1, max_length=4000)
+    event_source: Literal[
+        "worker_interceptor", "temporal_history_reconciler"
+    ] = "worker_interceptor"
+    temporal_event_id: int | None = Field(default=None, ge=1)
+    temporal_event_time: datetime | None = None
+    temporal_timeout_type: str | None = Field(default=None, min_length=1)
+    temporal_retry_state: str | None = Field(default=None, min_length=1)
 
     @model_validator(mode="after")
     def validate_progress(self) -> ActivityLifecyclePayload:
@@ -152,6 +159,12 @@ class ActivityLifecyclePayload(FrozenModel):
             raise ValueError("activity progress exceeds expected work")
         if self.status == "failed" and (not self.error_type or not self.error_message):
             raise ValueError("failed activity lifecycle requires exception details")
+        if self.temporal_event_time is not None and self.temporal_event_time.tzinfo is None:
+            raise ValueError("Temporal activity event time must be timezone-aware")
+        if self.event_source == "temporal_history_reconciler" and (
+            self.temporal_event_id is None or self.temporal_event_time is None
+        ):
+            raise ValueError("reconciled activity lifecycle requires a Temporal event binding")
         return self
 
 
@@ -296,6 +309,8 @@ def display_category_for_stage(stage: ObserverStageName) -> DisplayCategory:
 async def append_typed_lifecycle_event(
     session: AsyncSession,
     payload: ActivityLifecyclePayload | KnowledgeCardReadPayload,
+    *,
+    actor: str = "v38-workflow-observer-writer",
 ) -> LifecycleEvent:
     repository = ExperimentRepository(session)
     event_type = (
@@ -321,7 +336,7 @@ async def append_typed_lifecycle_event(
         "run",
         payload.run_id,
         event_type,
-        "v38-workflow-observer-writer",
+        actor,
         event_payload,
         idempotency_key=idempotency_key,
     )
