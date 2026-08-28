@@ -14,8 +14,11 @@ import {
   ChevronsRight,
   CircleGauge,
   DatabaseZap,
+  Dna,
   FlaskConical,
+  GitMerge,
   GripVertical,
+  Grid3X3,
   Library,
   Microscope,
   Network,
@@ -24,6 +27,7 @@ import {
   SlidersHorizontal,
   Sparkles,
   TableProperties,
+  Triangle,
   X,
   type LucideIcon,
 } from 'lucide-react'
@@ -36,6 +40,8 @@ import { loadAnalysisSnapshot, type AnalysisSnapshot } from './dataKernel'
 import { executeAnalysisQuery, type AnalysisPivotResult, type PivotDimensionKey } from './dataKernel'
 import { frameworkFixture } from './frameworkFixture'
 import { CandidateCaseWorkbench } from './CandidateCaseWorkbench'
+import { ResidueEnrichmentForest, SequenceAlluvialPlot, TernaryCompositionPlot, type AlluvialRecord } from './AdvancedBiologicalCharts'
+import { buildMetricCorrelationAnalysis, buildResidueEnrichmentAnalysis, buildTernaryComposition } from './advancedBiologicalAnalysis'
 import { ConstraintIntersectionPlot, ParetoFront3D, RosettaEnergyViolin, type EnergyGroup, type ParetoPoint3D } from './ScientificDashboardCharts'
 import { buildConstraintIntersectionAnalysis, buildPeptideFamilyAnalysis, familyPropertyLabels, type PeptideFamilySummary } from './peptideFamilyAnalysis'
 import {
@@ -55,8 +61,8 @@ import {
 import './analysis-dashboard.css'
 
 const DashboardGrid = WidthProvider(GridLayout)
-const layoutStorageKey = 'ampgent.analysis-dashboard.layout.v7'
-const queryStorageKey = 'ampgent.analysis-dashboard.queries.v3'
+const layoutStorageKey = 'ampgent.analysis-dashboard.layout.v8'
+const queryStorageKey = 'ampgent.analysis-dashboard.queries.v4'
 const hiddenStorageKey = 'ampgent.analysis-dashboard.hidden.v1'
 
 const cardIcons: Record<AnalysisQuestion, LucideIcon> = {
@@ -68,6 +74,10 @@ const cardIcons: Record<AnalysisQuestion, LucideIcon> = {
   safety_profile: ShieldCheck,
   multi_objective_conflict: Activity,
   structure_energy: Atom,
+  sequence_alluvial: GitMerge,
+  composition_landscape: Triangle,
+  metric_correlation: Grid3X3,
+  residue_enrichment: Dna,
   candidate_laboratory: TableProperties,
 }
 
@@ -157,7 +167,7 @@ function normalizeChartTypography(value: unknown): unknown {
   if (!value || typeof value !== 'object') return value
   return Object.fromEntries(Object.entries(value as Record<string, unknown>).map(([key, item]) => [
     key,
-    key === 'fontSize' && typeof item === 'number' ? Math.max(11, item) : normalizeChartTypography(item),
+    key === 'fontSize' && typeof item === 'number' ? Math.max(12, item) : normalizeChartTypography(item),
   ]))
 }
 
@@ -184,7 +194,7 @@ function Chart({ option, height = '100%' }: { option: object; height?: number | 
   const configuredOption = {
     ...source,
     animation: false,
-    textStyle: { fontFamily: 'Inter, "Noto Sans SC", system-ui, sans-serif', fontSize: 11, ...(source.textStyle as object ?? {}) },
+    textStyle: { fontFamily: 'Inter, "Noto Sans SC", system-ui, sans-serif', fontSize: 12, ...(source.textStyle as object ?? {}) },
     tooltip: source.tooltip ? {
       renderMode: 'html',
       appendToBody: true,
@@ -212,7 +222,7 @@ const slotLabels: Record<PivotSlot, string> = {
   categories: '分类',
 }
 
-const chartChoices: ChartType[] = ['number', 'bar', 'line', 'boxplot', 'violin', 'scatter', 'heatmap', 'sunburst', 'upset', 'table']
+const chartChoices: ChartType[] = ['number', 'bar', 'line', 'boxplot', 'violin', 'scatter', 'heatmap', 'sunburst', 'upset', 'alluvial', 'ternary', 'correlation', 'forest', 'table']
 
 function toggleQueryFilter(query: CardQuerySpec, key: string, value: string) {
   const current = query.filters[key] ?? []
@@ -297,7 +307,7 @@ function CardShell({ definition, children, meta, query, onQueryChange }: {
   useEffect(() => {
     const element = cardRef.current
     if (!element) return
-    const chartMap: Record<ChartType, PivotChartType> = { number: 'kpi', bar: 'bar', line: 'funnel', boxplot: 'boxplot', violin: 'violin', scatter: 'scatter', heatmap: 'heatmap', sunburst: 'stacked_bar', upset: 'heatmap', table: 'table' }
+    const chartMap: Record<ChartType, PivotChartType> = { number: 'kpi', bar: 'bar', line: 'funnel', boxplot: 'boxplot', violin: 'violin', scatter: 'scatter', heatmap: 'heatmap', sunburst: 'stacked_bar', upset: 'heatmap', alluvial: 'sankey', ternary: 'scatter', correlation: 'heatmap', forest: 'bar', table: 'table' }
     const observer = new ResizeObserver(([entry]) => {
       const { width, height } = entry.contentRect
       if (width < 180 || height < 120) return
@@ -640,6 +650,74 @@ function StructureEnergyCard({ data }: { data: StructureEnergySnapshot | null })
   return <RosettaEnergyViolin groups={groups} />
 }
 
+const cohortDisplay: Record<string, string> = {
+  mature_core: '成熟核心',
+  promising_uncertain: '潜力待核',
+  rejected: '未入选',
+}
+
+function SequenceAlluvialCard({ snapshot, query }: { snapshot: AnalysisSnapshot | null; query: CardQuerySpec }) {
+  const selected = selectedGenerators(query)
+  const candidates = useMemo(() => snapshot?.candidates.filter((candidate) => !selected.length || candidate.originSet.some((origin) => selected.includes(origin))) ?? [], [snapshot, selected.join('|')])
+  const analysis = useMemo(() => buildPeptideFamilyAnalysis(candidates, '本轮候选库', 9), [candidates])
+  const records = useMemo(() => {
+    const assignmentBySequence = new Map(analysis.assignments.map((assignment) => [assignment.sequence, assignment]))
+    const displayed = new Set(analysis.displayedFamilies.map((family) => family.id))
+    return candidates.map((candidate): AlluvialRecord => {
+      const assignment = assignmentBySequence.get(candidate.sequence)
+      const sources = candidate.originSet.map((origin) => generatorDisplay[origin] ?? origin).sort((left, right) => left.localeCompare(right))
+      return {
+        sequence: candidate.sequence,
+        source: sources.join(' + ') || '来源未标注',
+        family: assignment && displayed.has(assignment.familyId) ? assignment.familyId : '低频家族',
+        outcome: cohortDisplay[candidate.admission.status] ?? candidate.admission.status,
+        color: phenotypeColors[assignment?.phenotype ?? ''] ?? '#8297b7',
+      }
+    })
+  }, [analysis, candidates])
+  return <SequenceAlluvialPlot records={records} />
+}
+
+function CompositionLandscapeCard({ snapshot, query }: { snapshot: AnalysisSnapshot | null; query: CardQuerySpec }) {
+  const selected = selectedGenerators(query)
+  const candidates = useMemo(() => snapshot?.candidates.filter((candidate) => !selected.length || candidate.originSet.some((origin) => selected.includes(origin))) ?? [], [snapshot, selected.join('|')])
+  const points = useMemo(() => buildTernaryComposition(candidates), [candidates])
+  return <TernaryCompositionPlot points={points} />
+}
+
+function MetricCorrelationCard({ snapshot, query }: { snapshot: AnalysisSnapshot | null; query: CardQuerySpec }) {
+  const selected = selectedGenerators(query)
+  const candidates = useMemo(() => snapshot?.candidates.filter((candidate) => !selected.length || candidate.originSet.some((origin) => selected.includes(origin))) ?? [], [snapshot, selected.join('|')])
+  const analysis = useMemo(() => buildMetricCorrelationAnalysis(candidates), [candidates])
+  const labels = analysis.metrics.map((metric) => metric.label)
+  return <Chart option={{
+    grid: { left: 84, right: 24, top: 18, bottom: 82 },
+    tooltip: {
+      formatter: (params: { data: number[] }) => {
+        const [x, y, value, count] = params.data
+        return `<b>${labels[y]} × ${labels[x]}</b><br/>斯皮尔曼相关系数 ${Number(value).toFixed(3)}<br/>共同有效候选 ${Number(count).toLocaleString()} 条`
+      },
+    },
+    xAxis: { type: 'category', data: labels, axisTick: { show: false }, axisLine: { lineStyle: { color: '#dce4ef' } }, axisLabel: { color: '#5f6e84', fontSize: 11, interval: 0, rotate: 30 } },
+    yAxis: { type: 'category', data: labels, inverse: true, axisTick: { show: false }, axisLine: { lineStyle: { color: '#dce4ef' } }, axisLabel: { color: '#5f6e84', fontSize: 11 } },
+    visualMap: { min: -1, max: 1, orient: 'horizontal', left: 'center', bottom: 5, calculable: false, itemWidth: 10, itemHeight: 110, text: ['正相关', '负相关'], textStyle: { color: '#6d7a8e', fontSize: 11 }, inRange: { color: ['#5077bd', '#edf2f7', '#d77772'] } },
+    series: [{
+      type: 'heatmap',
+      data: analysis.cells.map((cell) => [cell.x, cell.y, cell.value, cell.count]),
+      label: { show: true, formatter: (params: { data: number[] }) => params.data[3] >= 3 ? Number(params.data[2]).toFixed(2) : '—', color: '#33435b', fontSize: 11, fontWeight: 650 },
+      itemStyle: { borderColor: '#fff', borderWidth: 2, borderRadius: 3 },
+      emphasis: { itemStyle: { borderColor: '#6b84b0', shadowBlur: 9, shadowColor: 'rgba(54,76,116,.24)' } },
+    }],
+  }} />
+}
+
+function ResidueEnrichmentCard({ snapshot, query }: { snapshot: AnalysisSnapshot | null; query: CardQuerySpec }) {
+  const selected = selectedGenerators(query)
+  const candidates = useMemo(() => snapshot?.candidates.filter((candidate) => !selected.length || candidate.originSet.some((origin) => selected.includes(origin))) ?? [], [snapshot, selected.join('|')])
+  const analysis = useMemo(() => buildResidueEnrichmentAnalysis(candidates), [candidates])
+  return <ResidueEnrichmentForest analysis={analysis} />
+}
+
 function CandidateTable({ generator, snapshot, query }: { generator: string; snapshot: AnalysisSnapshot | null; query: CardQuerySpec }) {
   const [page, setPage] = useState(0)
   const pageSize = 6
@@ -720,6 +798,10 @@ function CardContent({ id, query, snapshot, structureData, detail }: { id: Analy
   if (id === 'safety_profile') return <ConstraintCard snapshot={snapshot} query={query} />
   if (id === 'multi_objective_conflict') return <ParetoCard generator={generator} snapshot={snapshot} query={query} />
   if (id === 'structure_energy') return <StructureEnergyCard data={structureData} />
+  if (id === 'sequence_alluvial') return <SequenceAlluvialCard snapshot={snapshot} query={query} />
+  if (id === 'composition_landscape') return <CompositionLandscapeCard snapshot={snapshot} query={query} />
+  if (id === 'metric_correlation') return <MetricCorrelationCard snapshot={snapshot} query={query} />
+  if (id === 'residue_enrichment') return <ResidueEnrichmentCard snapshot={snapshot} query={query} />
   if (id === 'candidate_laboratory') return <CandidateTable generator={generator} snapshot={snapshot} query={query} />
   return <div className="card-placeholder">扩展接口已就绪</div>
 }

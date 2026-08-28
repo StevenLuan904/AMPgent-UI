@@ -34,6 +34,7 @@ export interface PeptideFamilyAnalysis {
   families: PeptideFamilySummary[]
   displayedFamilies: PeptideFamilySummary[]
   remainderCount: number
+  assignments: Array<{ sequence: string; familyId: string; phenotype: string }>
 }
 
 export interface ConstraintSetSummary {
@@ -225,6 +226,11 @@ export function buildPeptideFamilyAnalysis(
   })
   const displayedFamilies = families.slice(0, displayLimit)
   const remainderCount = families.slice(displayLimit).reduce((sum, family) => sum + family.count, 0)
+  const assignments = ordered.flatMap((cluster, index) => cluster.members.map((member) => ({
+    sequence: member.candidate.sequence,
+    familyId: families[index].id,
+    phenotype: member.phenotype,
+  })))
   return {
     scopeLabel,
     candidateCount: candidates.length,
@@ -234,6 +240,7 @@ export function buildPeptideFamilyAnalysis(
     families,
     displayedFamilies,
     remainderCount,
+    assignments,
   }
 }
 

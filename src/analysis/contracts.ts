@@ -26,6 +26,10 @@ export type AnalysisQuestion =
   | 'safety_profile'
   | 'multi_objective_conflict'
   | 'structure_energy'
+  | 'sequence_alluvial'
+  | 'composition_landscape'
+  | 'metric_correlation'
+  | 'residue_enrichment'
   | 'candidate_laboratory'
 
 export interface AnalysisQuerySpec {

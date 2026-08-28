@@ -1,7 +1,7 @@
 import type { AnalysisQuestion } from './contracts'
 
 export type PivotSlot = 'rows' | 'columns' | 'values' | 'categories'
-export type ChartType = 'number' | 'bar' | 'line' | 'boxplot' | 'violin' | 'scatter' | 'heatmap' | 'sunburst' | 'upset' | 'table'
+export type ChartType = 'number' | 'bar' | 'line' | 'boxplot' | 'violin' | 'scatter' | 'heatmap' | 'sunburst' | 'upset' | 'alluvial' | 'ternary' | 'correlation' | 'forest' | 'table'
 
 export interface AnalysisField {
   id: string
@@ -34,6 +34,7 @@ export const fieldCatalog: AnalysisField[] = [
   { id: 'biochemical_class', label: '生化表型', kind: 'dimension', semantic: 'family' },
   { id: 'intersection', label: '独占交集', kind: 'dimension', semantic: 'status' },
   { id: 'constraint', label: '筛选条件', kind: 'dimension', semantic: 'status' },
+  { id: 'residue', label: '氨基酸残基', kind: 'dimension', semantic: 'identity' },
   { id: 'candidate_count', label: '候选数量', kind: 'measure', semantic: 'value' },
   { id: 'metric_value', label: '评分数值', kind: 'measure', semantic: 'value' },
   { id: 'activity', label: '抗菌活性', kind: 'measure', semantic: 'value' },
@@ -42,6 +43,10 @@ export const fieldCatalog: AnalysisField[] = [
   { id: 'charge', label: '净电荷', kind: 'measure', semantic: 'value' },
   { id: 'structure_count', label: '结构证据数', kind: 'measure', semantic: 'value' },
   { id: 'interface_energy', label: '界面能', kind: 'measure', semantic: 'value' },
+  { id: 'positive_fraction', label: '正电残基比例', kind: 'measure', semantic: 'value' },
+  { id: 'hydrophobic_fraction', label: '疏水残基比例', kind: 'measure', semantic: 'value' },
+  { id: 'other_fraction', label: '其它残基比例', kind: 'measure', semantic: 'value' },
+  { id: 'enrichment', label: '残基富集效应', kind: 'measure', semantic: 'value' },
 ]
 
 const defaults: Record<AnalysisQuestion, Omit<CardQuerySpec, 'cardId' | 'sourceNodeIds'>> = {
@@ -53,6 +58,10 @@ const defaults: Record<AnalysisQuestion, Omit<CardQuerySpec, 'cardId' | 'sourceN
   safety_profile: { rows: ['intersection'], columns: [], values: ['candidate_count'], categories: ['constraint'], filters: {}, chart: 'upset' },
   multi_objective_conflict: { rows: ['candidate'], columns: [], values: ['activity', 'hemolysis'], categories: ['generator'], filters: {}, chart: 'scatter' },
   structure_energy: { rows: ['target'], columns: [], values: ['interface_energy'], categories: [], filters: {}, chart: 'violin' },
+  sequence_alluvial: { rows: ['generator'], columns: [], values: ['candidate_count'], categories: ['sequence_family', 'cohort'], filters: {}, chart: 'alluvial' },
+  composition_landscape: { rows: ['candidate'], columns: [], values: ['positive_fraction', 'hydrophobic_fraction', 'other_fraction'], categories: ['cohort'], filters: {}, chart: 'ternary' },
+  metric_correlation: { rows: ['metric'], columns: ['metric'], values: ['metric_value'], categories: [], filters: {}, chart: 'correlation' },
+  residue_enrichment: { rows: ['residue'], columns: [], values: ['enrichment'], categories: ['cohort'], filters: {}, chart: 'forest' },
   candidate_laboratory: { rows: ['candidate'], columns: ['metric'], values: ['metric_value'], categories: ['evidence_status'], filters: {}, chart: 'table' },
 }
 
@@ -106,11 +115,19 @@ export function validateQuery(query: CardQuerySpec): string[] {
   if (query.chart === 'bar' && !query.rows.length && !query.categories.length) errors.push('条形图需要至少一个分组字段。')
   if (query.chart === 'sunburst' && (!query.rows.includes('sequence_family') || !query.categories.includes('biochemical_class'))) errors.push('序列家族旭日图需要“序列家族”和“生化表型”字段。')
   if (query.chart === 'upset' && (!query.rows.includes('intersection') || !query.categories.includes('constraint'))) errors.push('交集矩阵需要“独占交集”和“筛选条件”字段。')
+  if (query.chart === 'alluvial' && (!query.rows.includes('generator') || !query.categories.includes('sequence_family') || !query.categories.includes('cohort'))) errors.push('冲积图需要“生成来源”“序列家族”和“候选分组”字段。')
+  if (query.chart === 'ternary' && !['positive_fraction', 'hydrophobic_fraction', 'other_fraction'].every((field) => query.values.includes(field))) errors.push('三元图需要三类残基比例。')
+  if (query.chart === 'correlation' && (!query.rows.includes('metric') || !query.columns.includes('metric'))) errors.push('相关矩阵需要评分指标作为行列字段。')
+  if (query.chart === 'forest' && (!query.rows.includes('residue') || !query.values.includes('enrichment'))) errors.push('森林图需要氨基酸残基与富集效应。')
   return errors
 }
 
 export function recommendChart(query: CardQuerySpec): { chart: ChartType; reason: string } {
   if (!query.values.length) return { chart: 'table', reason: '缺少数值字段，先以表格核对原始记录。' }
+  if (query.rows.includes('generator') && query.categories.includes('sequence_family') && query.categories.includes('cohort')) return { chart: 'alluvial', reason: '来源、家族与候选结局构成多层流向。' }
+  if (['positive_fraction', 'hydrophobic_fraction', 'other_fraction'].every((field) => query.values.includes(field))) return { chart: 'ternary', reason: '三类互斥组成适合三元坐标。' }
+  if (query.rows.includes('metric') && query.columns.includes('metric')) return { chart: 'correlation', reason: '评分器两两关系适合秩相关矩阵。' }
+  if (query.rows.includes('residue') && query.values.includes('enrichment')) return { chart: 'forest', reason: '残基富集效应及区间适合森林图。' }
   if (query.values.length >= 2 && query.rows.includes('candidate')) return { chart: 'scatter', reason: '候选级双数值最适合比较目标冲突。' }
   if (query.rows.includes('stage') && query.categories.length) return { chart: 'line', reason: '阶段具有顺序，按分类绘制趋势最清晰。' }
   if (query.columns.length && query.rows.length) return { chart: 'heatmap', reason: '行列维度形成矩阵，推荐热力图。' }
@@ -129,13 +146,13 @@ const nodeCardRules: Record<string, AnalysisQuestion[]> = {
   amp_designer: ['lineage_and_yield', 'generator_contribution'],
   ampgan: ['lineage_and_yield', 'generator_contribution'],
   hydramp: ['lineage_and_yield', 'generator_contribution'],
-  candidate_pool: ['run_quality', 'candidate_laboratory'],
+  candidate_pool: ['run_quality', 'sequence_alluvial', 'composition_landscape', 'metric_correlation', 'residue_enrichment', 'candidate_laboratory'],
   mic: ['score_distribution'],
   amp_read: ['score_distribution'],
   hemolysis: ['score_distribution', 'safety_profile'],
   toxicity: ['score_distribution', 'safety_profile'],
   developability: ['score_distribution', 'safety_profile'],
-  admission: ['multi_objective_conflict', 'candidate_laboratory'],
+  admission: ['multi_objective_conflict', 'sequence_alluvial', 'residue_enrichment', 'candidate_laboratory'],
   targets: ['candidate_laboratory'],
   boltz: ['candidate_laboratory'],
   rosetta: ['structure_energy', 'candidate_laboratory'],
@@ -166,5 +183,9 @@ export const chartLabels: Record<ChartType, string> = {
   heatmap: '热力图',
   sunburst: '旭日图',
   upset: '交集矩阵',
+  alluvial: '冲积图',
+  ternary: '三元图',
+  correlation: '相关矩阵',
+  forest: '森林图',
   table: '明细表',
 }
