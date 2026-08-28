@@ -17,7 +17,7 @@ from pepagent.autoresearch_formal_submit_cli import (
     AutoResearchFormalPlan,
     _advisory_lock_id,
     _build_run_spec,
-    _revalidate_plan_runtime_boundary,
+    _revalidate_plan_submission_boundary,
     _workflow_description_memo,
     _workflow_memo_identity,
     load_autoresearch_formal_plan,
@@ -129,7 +129,7 @@ async def reconcile_existing_autoresearch_formal_plan(
 ) -> dict[str, Any]:
     """Bind already-started exact workflows without calling ``start_workflow``."""
 
-    _revalidate_plan_runtime_boundary(plan)
+    _revalidate_plan_submission_boundary(plan)
     bindings = await _describe_exact_existing_workflows(client, plan)
     branch_by_run_id = {branch.run_id: branch for branch in plan.branches}
     newly_bound: list[str] = []

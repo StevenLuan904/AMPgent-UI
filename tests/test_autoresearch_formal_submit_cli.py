@@ -29,8 +29,9 @@ from pepagent.autoresearch_formal_submit_cli import (
     PREFLIGHT_SCHEMA,
     WORKFLOW_MEMO_KEY,
     WORKFLOW_TYPE,
+    _revalidate_plan_submission_boundary,
     _start_or_recover_autoresearch_workflow,
-    _verify_metric_runtime_registry_live,
+    _validate_metric_runtime_registry_versions,
     build_autoresearch_formal_plan,
     derive_autoresearch_branch_identity,
     main,
@@ -240,6 +241,7 @@ def _fixture_bundle(tmp_path: Path) -> tuple[dict[str, Any], dict[str, Any]]:
         "source_revision": source_revision,
         "release_sha256": release_sha256,
         "environment_sha256": control_environment,
+        "pid": "54321",
         "task_queue_verified_from_release": True,
         "ampgent_owned": True,
         "foreign": False,
@@ -417,8 +419,6 @@ def _fixture_bundle(tmp_path: Path) -> tuple[dict[str, Any], dict[str, Any]]:
                 "evidence": {
                     "mode": "autoresearch-local",
                     "receipt_path": str(receipt_path),
-                    "receipt_sha256": sha256_file(receipt_path),
-                    "receipt": receipt,
                 },
             },
             {
@@ -427,21 +427,6 @@ def _fixture_bundle(tmp_path: Path) -> tuple[dict[str, Any], dict[str, Any]]:
                 "evidence": {
                     "mode": "autoresearch-generator",
                     "receipt_path": str(generator_receipt_path),
-                    "receipt_sha256": sha256_file(generator_receipt_path),
-                    "receipt": generator_receipt,
-                },
-            },
-            {
-                "name": "metric_runtime_live_bytes",
-                "status": "passed",
-                "evidence": {
-                    "schema_version": "ampgent.metric-runtime-live-snapshot.1",
-                    "snapshot_sha256": _verify_metric_runtime_registry_live(
-                        plugin_registry=plugins,
-                        release_root=release_root,
-                    )["snapshot_sha256"],
-                    "plugin_count": len(plugins),
-                    "plugin_names": sorted(plugins),
                 },
             },
             {
@@ -532,7 +517,7 @@ def test_successor_identity_binds_failed_predecessor_without_output_reuse(
     assert all(str(item.run_id) != original_run_ids[item.branch_key] for item in plan.branches)
 
 
-def test_formal_plan_fails_closed_on_request_or_receipt_drift(tmp_path: Path) -> None:
+def test_formal_plan_fails_closed_on_request_or_worker_role_drift(tmp_path: Path) -> None:
     config, preflight = _fixture_bundle(tmp_path)
     request_path = Path(config["branches"][0]["request_path"])
     request = json.loads(request_path.read_text(encoding="utf-8"))
@@ -548,8 +533,11 @@ def test_formal_plan_fails_closed_on_request_or_receipt_drift(tmp_path: Path) ->
         )
 
     config, preflight = _fixture_bundle(tmp_path)
-    preflight["checks"][0]["evidence"]["receipt"]["environment_sha256"] = "e" * 64
-    with pytest.raises(ValueError, match="embedded and on-disk"):
+    receipt_path = Path(preflight["checks"][0]["evidence"]["receipt_path"])
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    receipt["role"] = "not-autoresearch-control"
+    _write_json(receipt_path, receipt)
+    with pytest.raises(ValueError, match="worker receipt field drifted: role"):
         build_autoresearch_formal_plan(
             config=config,
             preflight=preflight,
@@ -581,7 +569,7 @@ def test_formal_plan_rejects_pre_runtime_guard_schema(tmp_path: Path) -> None:
         ("package_lock", "packages_lock_path"),
     ],
 )
-def test_formal_plan_rehashes_metric_runtime_entities_after_preflight(
+def test_formal_plan_does_not_rehash_metric_runtime_entities(
     tmp_path: Path,
     byte_kind: str,
     path_key: str,
@@ -591,17 +579,17 @@ def test_formal_plan_rehashes_metric_runtime_entities_after_preflight(
     path = Path(descriptor["execution_guard"]["paths"][path_key])
     path.write_bytes(path.read_bytes() + f"drift:{byte_kind}".encode())
 
-    with pytest.raises(ValueError, match="drifted"):
-        build_autoresearch_formal_plan(
-            config=config,
-            preflight=preflight,
-            config_base_path=tmp_path,
-            preflight_base_path=tmp_path,
-        )
+    plan = build_autoresearch_formal_plan(
+        config=config,
+        preflight=preflight,
+        config_base_path=tmp_path,
+        preflight_base_path=tmp_path,
+    )
+    assert len(plan.branches) == 6
 
 
 @pytest.mark.parametrize("release_kind", ["source_release", "model_release"])
-def test_formal_plan_rehashes_complete_source_and_model_inventories(
+def test_formal_plan_does_not_rehash_source_and_model_inventories(
     tmp_path: Path,
     release_kind: str,
 ) -> None:
@@ -613,17 +601,16 @@ def test_formal_plan_rehashes_complete_source_and_model_inventories(
     path = Path(guard["paths"][root_key]) / item["path"]
     path.write_bytes(path.read_bytes() + b"inventory-drift")
 
-    expected = f"live {release_kind.split('_')[0]} release bytes drifted"
-    with pytest.raises(ValueError, match=expected):
-        build_autoresearch_formal_plan(
-            config=config,
-            preflight=preflight,
-            config_base_path=tmp_path,
-            preflight_base_path=tmp_path,
-        )
+    plan = build_autoresearch_formal_plan(
+        config=config,
+        preflight=preflight,
+        config_base_path=tmp_path,
+        preflight_base_path=tmp_path,
+    )
+    assert len(plan.branches) == 6
 
 
-def test_metric_adapter_must_resolve_inside_immutable_release(tmp_path: Path) -> None:
+def test_metric_adapter_may_use_callable_path_outside_release(tmp_path: Path) -> None:
     config, _preflight = _fixture_bundle(tmp_path)
     plugins = copy.deepcopy(config["runtime"]["metric_plugins_by_name"])
     descriptor = plugins["hemolysis_risk"]
@@ -632,122 +619,77 @@ def test_metric_adapter_must_resolve_inside_immutable_release(tmp_path: Path) ->
     mutable_adapter.parent.mkdir(parents=True)
     mutable_adapter.write_bytes(original.read_bytes())
     descriptor["adapter_path"] = str(mutable_adapter)
-    descriptor["execution_guard"]["paths"]["adapter_path"] = str(mutable_adapter)
-    descriptor["runtime_identity_sha256"] = sha256_json(
-        {key: value for key, value in descriptor.items() if key != "runtime_identity_sha256"}
-    )
-
-    with pytest.raises(ValueError, match="adapter is not bound to the immutable release root"):
-        _verify_metric_runtime_registry_live(
-            plugin_registry=plugins,
-            release_root=Path(config["release"]["extracted_root"]),
-        )
-
-
-def test_metric_registry_may_use_exact_content_addressed_cache_path(
-    tmp_path: Path,
-) -> None:
-    config, _preflight = _fixture_bundle(tmp_path)
-    plugins = copy.deepcopy(config["runtime"]["metric_plugins_by_name"])
-    source_registry = Path(plugins["hemolysis_risk"]["registry_path"])
-    registry_sha256 = sha256_file(source_registry)
-    cached_registry = (
-        tmp_path
-        / "bounded-cache"
-        / "runtime-registry"
-        / registry_sha256
-        / "runtime.local.yaml"
-    )
-    cached_registry.parent.mkdir(parents=True)
-    cached_registry.write_bytes(source_registry.read_bytes())
-    for descriptor in plugins.values():
-        descriptor["registry_path"] = str(cached_registry)
-        descriptor["registry_sha256"] = registry_sha256
-        descriptor["runtime_identity_sha256"] = sha256_json(
-            {
-                key: value
-                for key, value in descriptor.items()
-                if key != "runtime_identity_sha256"
-            }
-        )
-
-    snapshot = _verify_metric_runtime_registry_live(
+    _validate_metric_runtime_registry_versions(
         plugin_registry=plugins,
         release_root=Path(config["release"]["extracted_root"]),
     )
 
-    assert snapshot["plugin_count"] == 5
 
-
-@pytest.mark.parametrize(
-    "bad_path_parts",
-    [
-        ("wrong-sha", "runtime.local.yaml"),
-        ("digest-is-not-direct-parent", "nested", "runtime.local.yaml"),
-        ("wrong-sha", "registry.yaml"),
-    ],
-)
-def test_external_metric_registry_requires_exact_sha_named_cache_layout(
+def test_metric_registry_path_is_checked_for_callability_not_rehashed(
     tmp_path: Path,
-    bad_path_parts: tuple[str, ...],
 ) -> None:
     config, _preflight = _fixture_bundle(tmp_path)
     plugins = copy.deepcopy(config["runtime"]["metric_plugins_by_name"])
     source_registry = Path(plugins["hemolysis_risk"]["registry_path"])
-    registry_sha256 = sha256_file(source_registry)
-    normalized_parts = tuple(
-        registry_sha256 if part == "digest-is-not-direct-parent" else part
-        for part in bad_path_parts
-    )
-    cached_registry = tmp_path / "bounded-cache" / "runtime-registry"
-    if len(normalized_parts) == 3:
-        cached_registry = cached_registry / normalized_parts[0] / normalized_parts[1]
-        cached_registry = cached_registry / normalized_parts[2]
-    else:
-        cached_registry = cached_registry.joinpath(*normalized_parts)
+    cached_registry = tmp_path / "runtime-cache" / "runtime-any-name.yaml"
     cached_registry.parent.mkdir(parents=True)
     cached_registry.write_bytes(source_registry.read_bytes())
     for descriptor in plugins.values():
         descriptor["registry_path"] = str(cached_registry)
-        descriptor["registry_sha256"] = registry_sha256
-        descriptor["runtime_identity_sha256"] = sha256_json(
-            {
-                key: value
-                for key, value in descriptor.items()
-                if key != "runtime_identity_sha256"
-            }
-        )
-
-    with pytest.raises(
-        ValueError, match="must be <registry-sha256>/runtime.local.yaml"
-    ):
-        _verify_metric_runtime_registry_live(
-            plugin_registry=plugins,
-            release_root=Path(config["release"]["extracted_root"]),
-        )
+    _validate_metric_runtime_registry_versions(
+        plugin_registry=plugins,
+        release_root=Path(config["release"]["extracted_root"]),
+    )
 
 
-@pytest.mark.asyncio
-async def test_reservation_rehashes_again_before_any_cas_or_database_write(
-    tmp_path: Path,
-) -> None:
+def test_submission_boundary_does_not_rehash_runtime_or_archive(tmp_path: Path) -> None:
     plan = _build_plan(tmp_path)
     descriptor = plan.config["runtime"]["metric_plugins_by_name"]["hemolysis_risk"]
     adapter = Path(descriptor["execution_guard"]["paths"]["adapter_path"])
     _append_bytes(adapter, b"post-plan-drift")
-    object_store_constructed = False
+    _append_bytes(plan.release_archive_path, b"post-plan-archive-drift")
 
-    def object_store_factory() -> _FakeObjectStore:
-        nonlocal object_store_constructed
-        object_store_constructed = True
-        return _FakeObjectStore()
+    _revalidate_plan_submission_boundary(plan)
 
-    with pytest.raises(ValueError, match="drifted"):
-        await reserve_autoresearch_formal_plan(
-            plan,
-            object_store_factory=object_store_factory,
+
+def test_worker_receipt_sha_and_environment_proof_are_not_required(tmp_path: Path) -> None:
+    config, preflight = _fixture_bundle(tmp_path)
+    control_check = next(
+        item for item in preflight["checks"] if item["name"] == "control_worker_receipt_identity"
+    )
+    assert "receipt_sha256" not in control_check["evidence"]
+    receipt_path = Path(control_check["evidence"]["receipt_path"])
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    receipt["environment_sha256"] = "f" * 64
+    _write_json(receipt_path, receipt)
+
+    plan = build_autoresearch_formal_plan(
+        config=config,
+        preflight=preflight,
+        config_base_path=tmp_path,
+        preflight_base_path=tmp_path,
+    )
+
+    assert len(plan.branches) == 6
+
+
+def test_worker_receipt_still_requires_exact_pid(tmp_path: Path) -> None:
+    config, preflight = _fixture_bundle(tmp_path)
+    control_check = next(
+        item for item in preflight["checks"] if item["name"] == "control_worker_receipt_identity"
+    )
+    receipt_path = Path(control_check["evidence"]["receipt_path"])
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    receipt.pop("pid")
+    _write_json(receipt_path, receipt)
+
+    with pytest.raises(ValueError, match="no exact PID"):
+        build_autoresearch_formal_plan(
+            config=config,
+            preflight=preflight,
+            config_base_path=tmp_path,
+            preflight_base_path=tmp_path,
         )
-    assert object_store_constructed is False
 
 
 class _FakeTransaction:
