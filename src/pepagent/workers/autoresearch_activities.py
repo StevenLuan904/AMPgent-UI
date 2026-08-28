@@ -1031,7 +1031,7 @@ async def persist_autoresearch_score_all_bundle(
     summary = {
         "schema_version": "ampgent.autoresearch-score-all-import.1",
         "source_run_id": validated.source_run_id,
-        "target_key": target_key,
+        "target_key": validated.target_key,
         "bundle_receipt_sha256": validated.receipt_sha256,
         "manifest_sha256": validated.manifest_sha256,
         "manifest_file_count": len(validated.all_manifest_files),
@@ -1042,6 +1042,9 @@ async def persist_autoresearch_score_all_bundle(
         "formal_metric_names": list(FORMAL_SCORE_COLUMNS),
         "cache_disk_free_bytes_observed": disk.free,
         "strict_subset_used_as_raw": False,
+        "source_runtime_attestation_complete": (
+            validated.runtime_attestation_complete
+        ),
     }
     async with SessionFactory() as session, session.begin():
         run = await session.get(ExperimentRun, run_id)
@@ -1172,6 +1175,9 @@ async def persist_autoresearch_score_all_bundle(
                     row[GURUPRASAD_OOD_COLUMN]
                 ).strip().lower()
                 in {"1", "true", "yes", "y"},
+                "source_runtime_attestation_complete": (
+                    validated.runtime_attestation_complete
+                ),
             }
             candidate = await repository.add_candidate(
                 run_id,
@@ -1228,6 +1234,8 @@ async def persist_autoresearch_score_all_bundle(
                     in {"1", "true", "yes", "y"}
                 )
                 limitations = ["imported_from_fully_verified_cas_score_all_bundle"]
+                if not validated.runtime_attestation_complete:
+                    limitations.append("source_runtime_attestation_partial")
                 if out_of_domain:
                     limitations.append("source_marks_guruprasad_instability_ood")
                 await repository.record_evaluation(

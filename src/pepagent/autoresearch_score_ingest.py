@@ -86,6 +86,20 @@ RAW_OCCURRENCE_COLUMNS = (
     "target_key",
     "valid_sequence",
 )
+_OPTIONAL_RAW_OCCURRENCE_COLUMNS = frozenset(
+    {
+        "structure_file_name",
+        "structure_relaxation_error",
+        "structure_relaxation_status",
+        "structure_sha256",
+        "structure_size_bytes",
+    }
+)
+RAW_OCCURRENCE_REQUIRED_COLUMNS = tuple(
+    name
+    for name in RAW_OCCURRENCE_COLUMNS
+    if name not in _OPTIONAL_RAW_OCCURRENCE_COLUMNS
+)
 _MANIFEST_LINE = re.compile(r"^([0-9a-f]{64})  ([^\r\n]+)$")
 _CANONICAL = frozenset("ACDEFGHIKLMNPQRSTVWY")
 
@@ -102,6 +116,7 @@ class ValidatedScoreAllBundle:
     raw_rows: tuple[dict[str, str], ...]
     strict_sequence_sha256s: tuple[str, ...]
     runtime: dict[str, Any]
+    runtime_attestation_complete: bool
     counts: dict[str, int]
 
 
@@ -189,11 +204,11 @@ def _source_split_for_row(
         str(row["source_result"]).replace("\\", "/")
     ).name
     source_result_sha256 = str(row["source_result_sha256"])
-    target_key = str(row["target_key"])
+    target_key = str(row["target_key"]).strip().casefold()
     matches = []
     for index, split in enumerate(splits):
         source = str(split["source"])
-        if str(split["target_key"]) != target_key:
+        if str(split["target_key"]).strip().casefold() != target_key:
             continue
         if source_result_mappings[source] == (
             source_result_basename,
@@ -305,8 +320,11 @@ def validate_score_all_bundle(
     }
     if set(bundle_receipt) != required_receipt_fields:
         raise ValueError("score bundle receipt schema differs from the frozen contract")
-    if not str(bundle_receipt.get("schema_version") or "").strip():
-        raise ValueError("score bundle schema version is empty")
+    if (
+        bundle_receipt.get("schema_version")
+        != "ampgent.autoresearch-scoreall-bundle.v1"
+    ):
+        raise ValueError("score bundle schema version is not frozen")
     if not str(bundle_receipt.get("run_id") or "").strip():
         raise ValueError("score bundle source run identity is empty")
     if not str(bundle_receipt.get("created_at") or "") or not isinstance(
@@ -316,17 +334,37 @@ def validate_score_all_bundle(
     if not isinstance(bundle_receipt.get("family_analysis"), Mapping):
         raise ValueError("score bundle family analysis is not an object")
     runtime = bundle_receipt.get("runtime")
-    required_runtime_fields = {
+    full_runtime_fields = {
         "adapter_commit",
-        "adapter_sha",
-        "scorer_sha",
-        "registry_sha",
-        "python_sha",
+        "adapter_sha256",
+        "scorer_sha256",
+        "registry_sha256",
+        "python_executable_sha256",
     }
-    if not isinstance(runtime, Mapping) or set(runtime) != required_runtime_fields:
+    partial_runtime_fields = {"adapter_commit", "registry_sha256"}
+    if not isinstance(runtime, Mapping) or set(runtime) not in {
+        frozenset(full_runtime_fields),
+        frozenset(partial_runtime_fields),
+    }:
         raise ValueError("score bundle runtime schema differs from the frozen contract")
+    if not str(runtime["adapter_commit"]).strip():
+        raise ValueError("score bundle adapter commit is empty")
+    runtime_attestation_complete = set(runtime) == full_runtime_fields
+    for runtime_key in set(runtime) - {"adapter_commit"}:
+        digest = str(runtime[runtime_key])
+        if len(digest) != 64 or set(digest) - set("0123456789abcdef"):
+            raise ValueError(f"score bundle runtime digest is invalid: {runtime_key}")
     counts_payload = bundle_receipt.get("counts")
-    required_count_fields = {"raw", "formal12", "strict", "ge2", "three"}
+    required_count_fields = {
+        "raw_occurrences",
+        "valid_unique",
+        "formal_12_metrics_complete",
+        "safety_labels_pass",
+        "instability_lt_50",
+        "strict_display_eligible",
+        "activity_support_ge_2",
+        "activity_support_3",
+    }
     if not isinstance(counts_payload, Mapping) or set(counts_payload) != required_count_fields:
         raise ValueError("score bundle count schema differs from the frozen contract")
     if sha256_bytes(bundle_receipt_bytes) != bundle_receipt_sha256:
@@ -376,7 +414,7 @@ def validate_score_all_bundle(
     )
     raw = _read_bom_csv(
         payloads[refs["raw_occurrence_audit"][0]],
-        RAW_OCCURRENCE_COLUMNS,
+        RAW_OCCURRENCE_REQUIRED_COLUMNS,
         "raw occurrence audit",
     )
     strict = _read_bom_csv(
@@ -384,12 +422,23 @@ def validate_score_all_bundle(
         (*PRIMARY_IDENTITY_COLUMNS, *FORMAL_SCORE_COLUMNS, GURUPRASAD_OOD_COLUMN),
         "strict subset",
     )
-    counts = {key: int(value) for key, value in dict(counts_payload).items()}
-    if any(value < 0 for value in counts.values()):
+    receipt_counts = {key: int(value) for key, value in dict(counts_payload).items()}
+    if any(value < 0 for value in receipt_counts.values()):
         raise ValueError("score bundle counts must be non-negative")
+    counts = {
+        "raw": receipt_counts["raw_occurrences"],
+        "formal12": receipt_counts["formal_12_metrics_complete"],
+        "strict": receipt_counts["strict_display_eligible"],
+        "ge2": receipt_counts["activity_support_ge_2"],
+        "three": receipt_counts["activity_support_3"],
+    }
     if not (
-        counts["raw"] == counts["formal12"]
+        counts["raw"]
+        == receipt_counts["valid_unique"]
+        == counts["formal12"]
         and counts["three"] <= counts["ge2"] <= counts["strict"] <= counts["formal12"]
+        and counts["strict"] <= receipt_counts["safety_labels_pass"] <= counts["formal12"]
+        and counts["strict"] <= receipt_counts["instability_lt_50"] <= counts["formal12"]
     ):
         raise ValueError("score bundle count hierarchy differs from score-all semantics")
     if len(raw) != counts["raw"] or len(primary) != counts["formal12"]:
@@ -518,8 +567,19 @@ def validate_score_all_bundle(
             raise ValueError("strict subset violates the instability display gate")
         strict_sha_by_target.append((str(row["target_key"]), digest))
 
-    selected_primary = tuple(row for row in primary if row["target_key"] == target_key)
-    selected_raw = tuple(row for row in raw if row["target_key"] == target_key)
+    normalized_target_key = str(target_key).strip().casefold()
+    if not normalized_target_key:
+        raise ValueError("requested target key is empty")
+    selected_primary = tuple(
+        row
+        for row in primary
+        if str(row["target_key"]).strip().casefold() == normalized_target_key
+    )
+    selected_raw = tuple(
+        row
+        for row in raw
+        if str(row["target_key"]).strip().casefold() == normalized_target_key
+    )
     if not selected_primary or len(selected_primary) != len(selected_raw):
         raise ValueError("requested target has no complete raw/formal12 source split")
     return ValidatedScoreAllBundle(
@@ -527,7 +587,7 @@ def validate_score_all_bundle(
         manifest_sha256=manifest_sha,
         storage_uri=storage_uri,
         source_run_id=str(bundle_receipt["run_id"]),
-        target_key=target_key,
+        target_key=normalized_target_key,
         all_manifest_files=tuple(sorted(entries.items())),
         primary_rows=selected_primary,
         raw_rows=selected_raw,
@@ -535,10 +595,11 @@ def validate_score_all_bundle(
             sorted(
                 digest
                 for strict_target, digest in strict_sha_by_target
-                if strict_target == target_key
+                if str(strict_target).strip().casefold() == normalized_target_key
             )
         ),
         runtime=dict(runtime),
+        runtime_attestation_complete=runtime_attestation_complete,
         counts=counts,
     )
 
@@ -548,6 +609,7 @@ __all__ = [
     "GURUPRASAD_OOD_COLUMN",
     "PRIMARY_IDENTITY_COLUMNS",
     "RAW_OCCURRENCE_COLUMNS",
+    "RAW_OCCURRENCE_REQUIRED_COLUMNS",
     "ValidatedScoreAllBundle",
     "ValidatedScoreSourceMap",
     "validate_score_all_bundle",

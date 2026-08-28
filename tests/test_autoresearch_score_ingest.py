@@ -15,6 +15,7 @@ from pepagent.autoresearch_score_ingest import (
     GURUPRASAD_OOD_COLUMN,
     PRIMARY_IDENTITY_COLUMNS,
     RAW_OCCURRENCE_COLUMNS,
+    RAW_OCCURRENCE_REQUIRED_COLUMNS,
     validate_score_all_bundle,
     validate_score_source_map_receipt,
 )
@@ -120,6 +121,8 @@ def _build_bundle(
     include_receipt_in_manifest: bool = False,
     raw_identity_drift: bool = False,
     mix_pbp_source_results: bool = False,
+    include_optional_structure_columns: bool = True,
+    partial_runtime_attestation: bool = False,
 ) -> tuple[dict[str, Any], bytes, str]:
     primary_rows = [
         _primary_row(
@@ -165,7 +168,17 @@ def _build_bundle(
             primary_rows,
             (*PRIMARY_IDENTITY_COLUMNS, *FORMAL_SCORE_COLUMNS, GURUPRASAD_OOD_COLUMN),
         ),
-        raw_path: _bom_csv(raw_rows, RAW_OCCURRENCE_COLUMNS),
+        raw_path: _bom_csv(
+            raw_rows
+            if include_optional_structure_columns
+            else [
+                {name: row[name] for name in RAW_OCCURRENCE_REQUIRED_COLUMNS}
+                for row in raw_rows
+            ],
+            RAW_OCCURRENCE_COLUMNS
+            if include_optional_structure_columns
+            else RAW_OCCURRENCE_REQUIRED_COLUMNS,
+        ),
         score_receipt_path: b'{"status":"succeeded"}\n',
     }
     if include_receipt_in_manifest:
@@ -190,7 +203,7 @@ def _build_bundle(
     manifest_path = "MANIFEST.sha256"
     (root / manifest_path).write_bytes(manifest)
     receipt = {
-        "schema_version": "ampgent.score-all-bundle.1",
+        "schema_version": "ampgent.autoresearch-scoreall-bundle.v1",
         "status": "succeeded",
         "run_id": "external-score-run",
         "created_at": "2026-08-28T00:00:00Z",
@@ -217,7 +230,16 @@ def _build_bundle(
             "sha256": sha256_bytes(manifest),
             "file_count": manifest_file_count,
         },
-        "counts": {"raw": 3, "formal12": 3, "strict": 3, "ge2": 2, "three": 0},
+        "counts": {
+            "raw_occurrences": 3,
+            "valid_unique": 3,
+            "formal_12_metrics_complete": 3,
+            "safety_labels_pass": 3,
+            "instability_lt_50": 3,
+            "strict_display_eligible": 3,
+            "activity_support_ge_2": 2,
+            "activity_support_3": 0,
+        },
         "source_splits": [
             {
                 "source": "PBP2a_r20",
@@ -250,10 +272,16 @@ def _build_bundle(
         "family_analysis": {},
         "runtime": {
             "adapter_commit": "commit",
-            "adapter_sha": "a" * 64,
-            "scorer_sha": "b" * 64,
-            "registry_sha": "c" * 64,
-            "python_sha": "d" * 64,
+            "registry_sha256": "c" * 64,
+            **(
+                {}
+                if partial_runtime_attestation
+                else {
+                    "adapter_sha256": "a" * 64,
+                    "scorer_sha256": "b" * 64,
+                    "python_executable_sha256": "d" * 64,
+                }
+            ),
         },
         "warnings": [],
     }
@@ -370,6 +398,54 @@ def test_score_bundle_validator_fails_closed_on_tampered_member(tmp_path: Path) 
             ),
             read_bytes=_reader(tmp_path),
         )
+
+
+def test_score_bundle_validator_accepts_raw_without_optional_structure_columns(
+    tmp_path: Path,
+) -> None:
+    receipt, receipt_bytes, receipt_sha = _build_bundle(
+        tmp_path,
+        manifest_file_count=33,
+        include_optional_structure_columns=False,
+    )
+
+    validated = validate_score_all_bundle(
+        bundle_receipt=receipt,
+        bundle_receipt_sha256=receipt_sha,
+        bundle_receipt_bytes=receipt_bytes,
+        bundle_receipt_relative_path="bundle.receipt.json",
+        target_key="pbp2a",
+        source_result_mappings=_validated_source_mappings(
+            tmp_path, bundle_receipt_sha256=receipt_sha
+        ),
+        read_bytes=_reader(tmp_path),
+    )
+
+    assert len(validated.raw_rows) == 2
+
+
+def test_score_bundle_validator_marks_frozen_partial_runtime_attestation(
+    tmp_path: Path,
+) -> None:
+    receipt, receipt_bytes, receipt_sha = _build_bundle(
+        tmp_path,
+        manifest_file_count=33,
+        partial_runtime_attestation=True,
+    )
+
+    validated = validate_score_all_bundle(
+        bundle_receipt=receipt,
+        bundle_receipt_sha256=receipt_sha,
+        bundle_receipt_bytes=receipt_bytes,
+        bundle_receipt_relative_path="bundle.receipt.json",
+        target_key="pbp2a",
+        source_result_mappings=_validated_source_mappings(
+            tmp_path, bundle_receipt_sha256=receipt_sha
+        ),
+        read_bytes=_reader(tmp_path),
+    )
+
+    assert validated.runtime_attestation_complete is False
 
 
 def test_score_bundle_validator_rejects_receipt_inside_manifest(tmp_path: Path) -> None:
