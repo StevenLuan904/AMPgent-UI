@@ -3,13 +3,16 @@ from __future__ import annotations
 import argparse
 import concurrent.futures
 import json
+import os
 import statistics
 import subprocess
 import sys
+import time
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
-from pepagent.provenance.hashing import sha256_file
+from pepagent.provenance.hashing import sha256_file, sha256_json
 from pepagent.structures.pdb import (
     peptide_backbone_rmsd_after_receptor_alignment,
     prepare_protein_peptide_pdb,
@@ -17,6 +20,54 @@ from pepagent.structures.pdb import (
 
 ADAPTER_VERSION = "pepagent-pyrosetta-flexpepdock-v3"
 PACK_SEPARATED = False
+RUN_MANIFEST_SCHEMA = "ampgent.rosetta-resumable-run.1"
+RUN_MANIFEST_NAME = "run_manifest.json"
+RUN_LOCK_NAME = ".run.lock"
+
+
+def _atomic_write_json(path: Path, payload: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    temporary.write_text(
+        json.dumps(payload, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    temporary.replace(path)
+
+
+@contextmanager
+def _exclusive_run_lock(path: Path):
+    """Hold one cross-process candidate/seed lock until the result is durable."""
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a+b") as handle:
+        handle.seek(0, os.SEEK_END)
+        if handle.tell() == 0:
+            handle.write(b"0")
+            handle.flush()
+        handle.seek(0)
+        if os.name == "nt":
+            import msvcrt
+
+            while True:
+                try:
+                    msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+                    break
+                except OSError:
+                    time.sleep(0.1)
+            try:
+                yield
+            finally:
+                handle.seek(0)
+                msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+        else:
+            import fcntl
+
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
 
 def _canonicalize_dumped_pdb(path: Path) -> None:
@@ -130,8 +181,128 @@ def _summary(values: list[float]) -> dict[str, float]:
     }
 
 
+def _run_manifest(request: dict[str, Any], input_structure: Path) -> dict[str, Any]:
+    return {
+        "schema_version": RUN_MANIFEST_SCHEMA,
+        "request_sha256": sha256_json(request),
+        "input_structure_sha256": sha256_file(input_structure),
+    }
+
+
+def _bind_run_manifest(work_dir: Path, expected: dict[str, Any]) -> dict[str, Any]:
+    path = work_dir / RUN_MANIFEST_NAME
+    if path.exists():
+        try:
+            observed = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as error:
+            raise ValueError("Rosetta resume manifest is unreadable") from error
+        if not isinstance(observed, dict) or any(
+            observed.get(field) != value for field, value in expected.items()
+        ):
+            raise ValueError("Rosetta deterministic work scope has different input identity")
+        return observed
+    if (work_dir / "decoys").exists():
+        raise ValueError("Rosetta decoys exist without a bound resume manifest")
+    _atomic_write_json(path, expected)
+    return expected
+
+
+def _safe_artifact_path(work_dir: Path, relative: object) -> Path:
+    if not isinstance(relative, str) or not relative:
+        raise ValueError("Rosetta result has an invalid artifact path")
+    resolved_root = work_dir.resolve()
+    resolved = (work_dir / relative).resolve()
+    try:
+        resolved.relative_to(resolved_root)
+    except ValueError as error:
+        raise ValueError("Rosetta result artifact escapes its deterministic work scope") from error
+    return resolved
+
+
+def _load_completed_result(
+    output_path: Path,
+    *,
+    work_dir: Path,
+    seed: int,
+    nstruct: int,
+    prepacked_sha256: str | None,
+) -> dict[str, Any] | None:
+    if not output_path.exists():
+        return None
+    try:
+        result = json.loads(output_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if not isinstance(result, dict):
+        return None
+    decoys = result.get("decoys")
+    if (
+        result.get("schema_version") != "1.0"
+        or int(result.get("seed", -1)) != seed
+        or int(result.get("nstruct", -1)) != nstruct
+        or not isinstance(decoys, list)
+        or len(decoys) != nstruct
+        or not prepacked_sha256
+        or result.get("prepacked_input_sha256") != prepacked_sha256
+    ):
+        return None
+    prepacked = work_dir / "input.prepacked.pdb"
+    if not prepacked.is_file() or sha256_file(prepacked) != prepacked_sha256:
+        return None
+    for index, decoy in enumerate(decoys, start=1):
+        if not isinstance(decoy, dict):
+            return None
+        if int(decoy.get("index", -1)) != index or int(decoy.get("seed", -1)) != seed + index:
+            return None
+        try:
+            structure = _safe_artifact_path(work_dir, decoy.get("structure"))
+        except ValueError:
+            return None
+        if not structure.is_file() or sha256_file(structure) != decoy.get("structure_sha256"):
+            return None
+    return result
+
+
+def _load_decoy_checkpoint(
+    *,
+    index: int,
+    seed: int,
+    work_dir: Path,
+    prepacked_sha256: str,
+) -> dict[str, Any] | None:
+    decoy_path = work_dir / "decoys" / f"decoy_{index + 1:04d}.pdb"
+    metric_path = work_dir / "decoys" / f"decoy_{index + 1:04d}.json"
+    if not decoy_path.is_file() or not metric_path.is_file():
+        return None
+    try:
+        metrics = json.loads(metric_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if not isinstance(metrics, dict):
+        return None
+    checkpoint_prepacked = metrics.pop("_checkpoint_prepacked_sha256", None)
+    expected_seed = seed + index + 1
+    if (
+        checkpoint_prepacked != prepacked_sha256
+        or int(metrics.get("index", -1)) != index + 1
+        or int(metrics.get("seed", -1)) != expected_seed
+        or metrics.get("structure") != str(decoy_path.relative_to(work_dir))
+        or metrics.get("structure_sha256") != sha256_file(decoy_path)
+        or "dG_separated" not in metrics
+        or "peptide_bb_rmsd" not in metrics
+    ):
+        return None
+    return metrics
+
+
 def _run(args: argparse.Namespace) -> None:
     request = json.loads(args.request.read_text(encoding="utf-8"))
+    args.work_dir.mkdir(parents=True, exist_ok=True)
+    with _exclusive_run_lock(args.work_dir / RUN_LOCK_NAME):
+        _run_locked(args, request)
+
+
+def _run_locked(args: argparse.Namespace, request: dict[str, Any]) -> None:
     receptor_chains = [str(chain) for chain in request["receptor_chains"]]
     peptide_chain = str(request["peptide_chain"])
     nstruct = int(request.get("nstruct", 20))
@@ -142,7 +313,19 @@ def _run(args: argparse.Namespace) -> None:
     if parallel_decoys < 1:
         raise ValueError("parallel_decoys must be positive")
 
-    args.work_dir.mkdir(parents=True, exist_ok=True)
+    run_manifest = _bind_run_manifest(
+        args.work_dir,
+        _run_manifest(request, args.input_structure),
+    )
+    completed = _load_completed_result(
+        args.output,
+        work_dir=args.work_dir,
+        seed=seed,
+        nstruct=nstruct,
+        prepacked_sha256=run_manifest.get("prepacked_input_sha256"),
+    )
+    if completed is not None:
+        return
     prepared = args.work_dir / "input.prepared.pdb"
     atom_counts = prepare_protein_peptide_pdb(
         args.input_structure, prepared, receptor_chains, peptide_chain
@@ -161,25 +344,52 @@ def _run(args: argparse.Namespace) -> None:
     ]
     for chain in receptor_chains:
         child_base.extend(["--receptor-chain", chain])
-    _run_child(
-        [
-            *child_base,
-            "--stage",
-            "prepack",
-            "--seed",
-            str(seed),
-            "--input-structure",
-            str(prepared),
-            "--output-structure",
-            str(prepacked),
-        ]
-    )
+    bound_prepacked_sha256 = run_manifest.get("prepacked_input_sha256")
+    if not (
+        isinstance(bound_prepacked_sha256, str)
+        and prepacked.is_file()
+        and sha256_file(prepacked) == bound_prepacked_sha256
+    ):
+        _run_child(
+            [
+                *child_base,
+                "--stage",
+                "prepack",
+                "--seed",
+                str(seed),
+                "--input-structure",
+                str(prepared),
+                "--output-structure",
+                str(prepacked),
+            ]
+        )
+        generated_prepacked_sha256 = sha256_file(prepacked)
+        if (
+            isinstance(bound_prepacked_sha256, str)
+            and generated_prepacked_sha256 != bound_prepacked_sha256
+        ):
+            raise ValueError("Rosetta prepack identity drifted during checkpoint recovery")
+        if bound_prepacked_sha256 is None:
+            run_manifest = {
+                **run_manifest,
+                "prepacked_input_sha256": generated_prepacked_sha256,
+            }
+            _atomic_write_json(args.work_dir / RUN_MANIFEST_NAME, run_manifest)
+    prepacked_sha256 = sha256_file(prepacked)
 
     def refine_one(index: int) -> dict[str, Any]:
         decoy_seed = seed + index + 1
         decoy_path = args.work_dir / "decoys" / f"decoy_{index + 1:04d}.pdb"
         metric_path = args.work_dir / "decoys" / f"decoy_{index + 1:04d}.json"
         decoy_path.parent.mkdir(parents=True, exist_ok=True)
+        checkpoint = _load_decoy_checkpoint(
+            index=index,
+            seed=seed,
+            work_dir=args.work_dir,
+            prepacked_sha256=prepacked_sha256,
+        )
+        if checkpoint is not None:
+            return checkpoint
         _run_child(
             [
                 *child_base,
@@ -206,6 +416,10 @@ def _run(args: argparse.Namespace) -> None:
                     decoy_path, native, receptor_chains, peptide_chain
                 ),
             }
+        )
+        _atomic_write_json(
+            metric_path,
+            {**metrics, "_checkpoint_prepacked_sha256": prepacked_sha256},
         )
         return metrics
 
@@ -268,6 +482,8 @@ def _run(args: argparse.Namespace) -> None:
             str(path.relative_to(args.work_dir))
             for path in sorted(args.work_dir.rglob("*"))
             if path.is_file()
+            and path.name not in {RUN_LOCK_NAME, RUN_MANIFEST_NAME}
+            and not path.name.endswith(".tmp")
         ],
         "limitations": [
             "dG_separated is reported in Rosetta energy units, not experimental kcal/mol",
@@ -276,7 +492,7 @@ def _run(args: argparse.Namespace) -> None:
         ],
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(result, indent=2, sort_keys=True), encoding="utf-8")
+    _atomic_write_json(args.output, result)
 
 
 def main() -> None:

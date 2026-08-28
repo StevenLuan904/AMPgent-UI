@@ -581,19 +581,80 @@ async def load_structure_score_reference(
     expected = {
         "run_id": str(reference.get("run_id")),
         "candidate_id": str(candidate.get("id")),
+        "candidate_sequence_sha256": str(candidate.get("sequence_sha256")),
         "seed": int(input_payload.get("seed")),
         "parent_tool_call_id": str(provenance.get("parent_tool_call_id")),
+        "interface_audit_tool_call_id": (
+            str(provenance.get("interface_audit_tool_call_id"))
+            if provenance.get("interface_audit_tool_call_id") is not None
+            else None
+        ),
+        "tool_name": str(provenance.get("tool_name")),
+        "tool_version": str(provenance.get("tool_version")),
         "tool_output_sha256": sha256_json(rosetta),
     }
     observed = {
         "run_id": str(reference.get("run_id")),
         "candidate_id": str(reference.get("candidate_id")),
+        "candidate_sequence_sha256": str(
+            reference.get("candidate_sequence_sha256")
+        ),
         "seed": int(reference.get("seed")),
         "parent_tool_call_id": str(reference.get("parent_tool_call_id")),
+        "interface_audit_tool_call_id": (
+            str(reference.get("interface_audit_tool_call_id"))
+            if reference.get("interface_audit_tool_call_id") is not None
+            else None
+        ),
+        "tool_name": str(reference.get("tool_name")),
+        "tool_version": str(reference.get("tool_version")),
         "tool_output_sha256": str(reference.get("tool_output_sha256")),
     }
     if expected != observed:
         raise ValueError("structure score reference binding differs from its payload")
+    summary = reference.get("summary")
+    if not isinstance(summary, Mapping):
+        raise ValueError("structure score reference lacks its thin summary")
+    support_label: str | None = None
+    interface_audit = result.get("interface_audit")
+    if isinstance(interface_audit, Mapping):
+        sample_audits = interface_audit.get("sample_audits")
+        if not isinstance(sample_audits, list) or not sample_audits:
+            raise ValueError("structure score payload lacks interface-audit samples")
+        representative = sample_audits[int(interface_audit["representative_index"])]
+        thresholds = result["parameters"]["support_thresholds"]
+        support = classify_structure_support(
+            structure_available=bool(interface_audit.get("structure_available", True)),
+            pair_iptm=representative.get("pair_iptm"),
+            pocket_contact_count=representative.get("pocket_contact_count"),
+            clash_count=representative.get("cross_chain_clash_count"),
+            severe_clash_count=thresholds["severe_structure_clash_count"],
+            minimum_pair_iptm=thresholds["interface_min_pair_iptm_median"],
+            minimum_pocket_contacts=thresholds["interface_min_pocket_contacts"],
+            rosetta_dg=rosetta["primary_dG_separated_reu"],
+        )
+        support_label = str(
+            reconcile_ensemble_structure_support(
+                support,
+                interface_audit.get("gate_checks", {}),
+            )["label"]
+        )
+    expected_summary = {
+        "schema_version": "ampgent.structure-score-summary.2",
+        "candidate_id": expected["candidate_id"],
+        "seed": expected["seed"],
+        "primary_dG_separated_reu": float(rosetta["primary_dG_separated_reu"]),
+        "minimum_dG_separated_reu": float(rosetta["dG_separated_reu"]["minimum"]),
+        "median_peptide_bb_rmsd_angstrom": float(
+            rosetta["peptide_bb_rmsd_angstrom"]["median"]
+        ),
+        "decoy_count": len(rosetta["decoys"]),
+        "artifact_observation_count": 2 + len(provenance["engine_artifacts"]),
+        "structure_support": support_label,
+        "dG_le_minus_50": float(rosetta["primary_dG_separated_reu"]) <= -50.0,
+    }
+    if dict(summary) != expected_summary:
+        raise ValueError("structure score reference summary differs from its payload")
     return {"run_id": observed["run_id"], "rosetta_result": result}
 
 

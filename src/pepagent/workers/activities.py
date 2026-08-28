@@ -111,9 +111,17 @@ def _structure_work_dir(
     return path / candidate_id / f"seed-{seed}"
 
 
-async def _run_json_cli(module: str, request: dict[str, Any], work_dir: Path, *extra: str) -> dict:
+async def _run_json_cli(
+    module: str,
+    request: dict[str, Any],
+    work_dir: Path,
+    *extra: str,
+    request_name: str = "request.json",
+) -> dict:
     await asyncio.to_thread(work_dir.mkdir, parents=True, exist_ok=True)
-    request_path = work_dir / "request.json"
+    if Path(request_name).name != request_name or not request_name.endswith(".json"):
+        raise ValueError("JSON CLI request name must be one local JSON filename")
+    request_path = work_dir / request_name
     output_path = work_dir / "result.json"
     await asyncio.to_thread(
         request_path.write_text,
@@ -2858,6 +2866,23 @@ async def export_bulk_rosetta_csv(request: dict[str, Any]) -> dict[str, Any]:
 @activity.defn(name="finalize_run")
 async def finalize_run(request: dict[str, Any]) -> dict[str, Any]:
     run_id = uuid.UUID(request["run_id"])
+    structure_count = request.get("persisted_structure_count", len(request["structures"]))
+    rosetta_count = request.get(
+        "persisted_rosetta_receipt_count",
+        len(request.get("rosetta_results", [])),
+    )
+    if (
+        isinstance(structure_count, bool)
+        or not isinstance(structure_count, int)
+        or structure_count < 0
+        or isinstance(rosetta_count, bool)
+        or not isinstance(rosetta_count, int)
+        or rosetta_count < 0
+    ):
+        raise ValueError("finalize_run persisted evidence counts must be non-negative integers")
+    receipt_summary = request.get("rosetta_receipt_summary")
+    if receipt_summary is not None and not isinstance(receipt_summary, dict):
+        raise ValueError("finalize_run Rosetta receipt summary must be an object")
     async with SessionFactory() as session, session.begin():
         run = await session.scalar(
             select(ExperimentRun).where(ExperimentRun.id == run_id).with_for_update()
@@ -2874,8 +2899,9 @@ async def finalize_run(request: dict[str, Any]) -> dict[str, Any]:
             "run.succeeded",
             "temporal",
             {
-                "structure_count": len(request["structures"]),
-                "rosetta_count": len(request.get("rosetta_results", [])),
+                "structure_count": structure_count,
+                "rosetta_count": rosetta_count,
+                "rosetta_receipt_summary": receipt_summary,
                 "generation_count": request.get("generation_count", 1),
                 "agent_decision_count": request.get("agent_decision_count", 0),
                 "bulk_rosetta_count": request.get("bulk_rosetta_count", 0),
