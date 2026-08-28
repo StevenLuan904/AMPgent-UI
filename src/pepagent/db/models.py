@@ -161,19 +161,11 @@ class MultiTargetStructureEvidenceRecord(Base):
         ),
     )
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
-    run_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("experiment_runs.id"), nullable=False
-    )
-    candidate_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("candidates.id"), nullable=False
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    run_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("experiment_runs.id"), nullable=False)
+    candidate_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("candidates.id"), nullable=False)
     target_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("targets.id"), nullable=False)
-    tool_call_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("tool_calls.id"), nullable=False
-    )
+    tool_call_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tool_calls.id"), nullable=False)
     evidence_namespace: Mapped[str] = mapped_column(String(255), nullable=False)
     control_lane: Mapped[str] = mapped_column(String(32), nullable=False)
     boltz_seed: Mapped[int] = mapped_column(BigInteger, nullable=False)
@@ -377,6 +369,299 @@ class Artifact(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
     metadata_json: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+
+
+class AutoResearchAction(Base):
+    """Immutable machine-executable action selected for one evolution iteration."""
+
+    __tablename__ = "autoresearch_actions"
+    __table_args__ = (
+        UniqueConstraint(
+            "run_id",
+            "iteration_no",
+            "branch_key",
+            "action_ordinal",
+            name="uq_autoresearch_action_slot",
+        ),
+        CheckConstraint("iteration_no >= 0", name="autoresearch_action_nonnegative_iteration"),
+        CheckConstraint("action_ordinal > 0", name="autoresearch_action_positive_ordinal"),
+        CheckConstraint(
+            "action_kind IN ('point_edit', 'controlled_mix', 'de_novo')",
+            name="autoresearch_action_kind",
+        ),
+        Index("ix_autoresearch_action_iteration", "run_id", "iteration_no", "branch_key"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    run_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("experiment_runs.id"), nullable=False)
+    iteration_no: Mapped[int] = mapped_column(Integer, nullable=False)
+    branch_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    action_ordinal: Mapped[int] = mapped_column(Integer, nullable=False)
+    action_kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    random_seed: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    agent_decision_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("agent_decisions.id"), nullable=False
+    )
+    rationale_text: Mapped[str] = mapped_column(Text, nullable=False)
+    expected_objectives_json: Mapped[list[str]] = mapped_column(JSONB, nullable=False)
+    forbidden_changes_json: Mapped[list[str]] = mapped_column(JSONB, nullable=False)
+    action_spec_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    action_sha256: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class CandidateLineageEdge(Base):
+    """Typed action-to-child edge, including every crossover source candidate."""
+
+    __tablename__ = "candidate_lineage_edges"
+    __table_args__ = (
+        UniqueConstraint(
+            "action_id",
+            "child_candidate_id",
+            "relation_role",
+            "source_ordinal",
+            name="uq_candidate_lineage_action_child_source",
+        ),
+        CheckConstraint("source_ordinal > 0", name="candidate_lineage_positive_ordinal"),
+        CheckConstraint(
+            "relation_role IN ("
+            "'de_novo_origin', 'primary_parent', 'donor', 'backbone', 'target_module'"
+            ")",
+            name="candidate_lineage_role",
+        ),
+        CheckConstraint(
+            "(relation_role = 'de_novo_origin' AND parent_candidate_id IS NULL) OR "
+            "(relation_role <> 'de_novo_origin' AND parent_candidate_id IS NOT NULL)",
+            name="candidate_lineage_parent_semantics",
+        ),
+        CheckConstraint(
+            "parent_candidate_id IS NULL OR child_candidate_id <> parent_candidate_id",
+            name="candidate_lineage_not_self",
+        ),
+        Index("ix_candidate_lineage_child", "child_candidate_id"),
+        Index("ix_candidate_lineage_parent", "parent_candidate_id"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    action_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("autoresearch_actions.id"), nullable=False
+    )
+    child_candidate_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("candidates.id"), nullable=False
+    )
+    parent_candidate_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("candidates.id"))
+    relation_role: Mapped[str] = mapped_column(String(32), nullable=False)
+    source_ordinal: Mapped[int] = mapped_column(Integer, nullable=False)
+    source_spans_json: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSONB, default=list, nullable=False
+    )
+    edge_sha256: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class AutoResearchMetricDelta(Base):
+    """One replayable child-versus-control comparison for one frozen metric."""
+
+    __tablename__ = "autoresearch_metric_deltas"
+    __table_args__ = (
+        UniqueConstraint(
+            "action_id",
+            "child_candidate_id",
+            "comparator_candidate_id",
+            "metric_name",
+            name="uq_autoresearch_metric_delta_identity",
+        ),
+        CheckConstraint(
+            "child_candidate_id <> comparator_candidate_id",
+            name="autoresearch_metric_delta_distinct_candidates",
+        ),
+        CheckConstraint(
+            "parent_evaluation_id <> child_evaluation_id",
+            name="autoresearch_metric_delta_distinct_evaluations",
+        ),
+        CheckConstraint(
+            "comparison_kind IN ('numeric_delta', 'categorical_transition')",
+            name="autoresearch_metric_delta_kind",
+        ),
+        CheckConstraint(
+            "direction IN ('minimize', 'maximize', 'audit', 'categorical')",
+            name="autoresearch_metric_delta_direction",
+        ),
+        CheckConstraint(
+            "(comparison_kind = 'numeric_delta' AND numeric_delta IS NOT NULL) OR "
+            "(comparison_kind = 'categorical_transition' AND numeric_delta IS NULL)",
+            name="autoresearch_metric_delta_value_semantics",
+        ),
+        Index("ix_autoresearch_metric_delta_child", "child_candidate_id", "metric_name"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    action_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("autoresearch_actions.id"), nullable=False
+    )
+    child_candidate_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("candidates.id"), nullable=False
+    )
+    comparator_candidate_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("candidates.id"), nullable=False
+    )
+    metric_name: Mapped[str] = mapped_column(String(128), nullable=False)
+    parent_evaluation_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("evaluations.id"), nullable=False
+    )
+    child_evaluation_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("evaluations.id"), nullable=False
+    )
+    comparison_kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    direction: Mapped[str] = mapped_column(String(16), nullable=False)
+    numeric_delta: Mapped[float | None] = mapped_column(Float)
+    improved: Mapped[bool | None] = mapped_column(Boolean)
+    comparison_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    delta_sha256: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class AutoResearchArchiveVersion(Base):
+    """Append-only version of one named branch-local AutoResearch archive."""
+
+    __tablename__ = "autoresearch_archive_versions"
+    __table_args__ = (
+        UniqueConstraint(
+            "run_id",
+            "iteration_no",
+            "branch_key",
+            "archive_name",
+            name="uq_autoresearch_archive_version_identity",
+        ),
+        CheckConstraint("iteration_no >= 0", name="autoresearch_archive_nonnegative_iteration"),
+        Index(
+            "ix_autoresearch_archive_latest",
+            "run_id",
+            "branch_key",
+            "archive_name",
+            "iteration_no",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    run_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("experiment_runs.id"), nullable=False)
+    iteration_no: Mapped[int] = mapped_column(Integer, nullable=False)
+    branch_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    archive_name: Mapped[str] = mapped_column(String(128), nullable=False)
+    previous_version_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("autoresearch_archive_versions.id")
+    )
+    policy_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    tool_call_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tool_calls.id"), nullable=False)
+    snapshot_artifact_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("artifacts.id"), nullable=False
+    )
+    snapshot_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class AutoResearchArchiveMembership(Base):
+    """Full add/retain/remove transition for one candidate at an archive version."""
+
+    __tablename__ = "autoresearch_archive_memberships"
+    __table_args__ = (
+        UniqueConstraint(
+            "archive_version_id",
+            "member_ordinal",
+            name="uq_autoresearch_archive_member_ordinal",
+        ),
+        CheckConstraint(
+            "change_kind IN ('add', 'retain', 'remove')",
+            name="autoresearch_archive_membership_change",
+        ),
+        CheckConstraint(
+            "(change_kind = 'remove' AND is_active = false AND member_ordinal IS NULL) OR "
+            "(change_kind IN ('add', 'retain') AND is_active = true AND member_ordinal > 0)",
+            name="autoresearch_archive_membership_state",
+        ),
+        Index("ix_autoresearch_archive_membership_candidate", "candidate_id"),
+    )
+
+    archive_version_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("autoresearch_archive_versions.id"), primary_key=True
+    )
+    candidate_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("candidates.id"), primary_key=True)
+    change_kind: Mapped[str] = mapped_column(String(16), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    member_ordinal: Mapped[int | None] = mapped_column(Integer)
+    source_action_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("autoresearch_actions.id")
+    )
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    witness_candidate_ids_json: Mapped[list[str]] = mapped_column(
+        JSONB, default=list, nullable=False
+    )
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class AutoResearchCheckpoint(Base):
+    """Typed extension of a run-stage checkpoint with an exact replay receipt."""
+
+    __tablename__ = "autoresearch_checkpoints"
+    __table_args__ = (
+        UniqueConstraint("run_id", "iteration_no", name="uq_autoresearch_checkpoint_iteration"),
+        CheckConstraint("iteration_no >= 0", name="autoresearch_checkpoint_nonnegative_iteration"),
+        CheckConstraint(
+            "score_all_candidate_count > 0 AND score_all_required_metric_count > 0",
+            name="autoresearch_checkpoint_positive_score_all_counts",
+        ),
+        CheckConstraint(
+            "score_all_expected_evaluation_count = "
+            "score_all_candidate_count * score_all_required_metric_count",
+            name="autoresearch_checkpoint_expected_score_all_count",
+        ),
+        CheckConstraint(
+            "score_all_completed_evaluation_count = score_all_expected_evaluation_count",
+            name="autoresearch_checkpoint_complete_score_all",
+        ),
+        CheckConstraint("replay_verified = true", name="autoresearch_checkpoint_replay_verified"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    run_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("experiment_runs.id"), nullable=False)
+    iteration_no: Mapped[int] = mapped_column(Integer, nullable=False)
+    run_stage_checkpoint_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("run_stage_checkpoints.id"), nullable=False, unique=True
+    )
+    agent_decision_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("agent_decisions.id"), nullable=False
+    )
+    action_batch_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    archive_before_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    archive_after_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    score_all_candidate_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    score_all_required_metric_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    score_all_expected_evaluation_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    score_all_completed_evaluation_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    next_controller_action: Mapped[str] = mapped_column(String(64), nullable=False)
+    replay_artifact_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("artifacts.id"), nullable=False
+    )
+    replay_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    replay_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    receipt_sha256: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
 
 
 class ModelRelease(Base):
