@@ -98,6 +98,34 @@ def _fixture_bundle(tmp_path: Path) -> tuple[dict[str, Any], dict[str, Any]]:
     }
     receipt_path = tmp_path / "autoresearch-control.json"
     _write_json(receipt_path, receipt)
+    generator_receipt = {
+        "schema": "autoresearch.remote-generator-worker-receipt.1",
+        "ampgent_owned": True,
+        "foreign": False,
+        "role": "autoresearch-generator",
+        "task_queue": GENERATOR_QUEUE,
+        "task_queue_verified_from_release": True,
+        "pid": "12345",
+        "physical_host": "192.168.99.32",
+        "resource": "1",
+        "gpu_uuid": "GPU-11111111-2222-3333-4444-555555555555",
+        "gpu_preflight": "idle_no_compute_process_or_cuda_declaration",
+        "release_sha256": release_sha256,
+        "source_revision": source_revision,
+        "environment_sha256": generator_environment,
+        "service_tunnel_preflight": "passed",
+        "model_revision": PEPMLM_REVISION,
+        "weights_sha256": PEPMLM_WEIGHTS_SHA256,
+    }
+    generator_receipt_path = tmp_path / "autoresearch-generator.receipt"
+    generator_receipt_path.write_text(
+        "\n".join(
+            f"{key}={str(value).lower() if isinstance(value, bool) else value}"
+            for key, value in generator_receipt.items()
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     config: dict[str, Any] = {
         "schema_version": CONFIG_SCHEMA,
         "source_revision": source_revision,
@@ -243,6 +271,16 @@ def _fixture_bundle(tmp_path: Path) -> tuple[dict[str, Any], dict[str, Any]]:
                     "receipt_path": str(receipt_path),
                     "receipt_sha256": sha256_file(receipt_path),
                     "receipt": receipt,
+                },
+            },
+            {
+                "name": "generator_worker_receipt_identity",
+                "status": "passed",
+                "evidence": {
+                    "mode": "autoresearch-generator",
+                    "receipt_path": str(generator_receipt_path),
+                    "receipt_sha256": sha256_file(generator_receipt_path),
+                    "receipt": generator_receipt,
                 },
             },
             {"name": "database_migration_0016", "status": "passed", "evidence": {}},

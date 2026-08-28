@@ -124,6 +124,36 @@ def _load_json(path: Path) -> dict[str, Any]:
     return value
 
 
+def _normalize_receipt_mapping(value: dict[str, Any]) -> dict[str, Any]:
+    normalized: dict[str, Any] = {}
+    for key, item in value.items():
+        if isinstance(item, str) and item.lower() in {"true", "false"}:
+            normalized[str(key)] = item.lower() == "true"
+        else:
+            normalized[str(key)] = item
+    return normalized
+
+
+def _load_worker_receipt(path: Path) -> dict[str, Any]:
+    raw = path.read_text(encoding="utf-8").lstrip("\ufeff")
+    if raw.lstrip().startswith("{"):
+        return _normalize_receipt_mapping(_load_json(path))
+    receipt: dict[str, Any] = {}
+    for line in raw.splitlines():
+        if not line.strip():
+            continue
+        if "=" not in line:
+            raise ValueError(f"worker receipt line has no key/value delimiter: {line}")
+        key, value = line.split("=", 1)
+        key = key.strip()
+        if not key or key in receipt:
+            raise ValueError("worker receipt has an empty or duplicate key")
+        receipt[key] = value.strip()
+    if not receipt:
+        raise ValueError("worker receipt is empty")
+    return _normalize_receipt_mapping(receipt)
+
+
 def _canonical_json_bytes(value: Any) -> bytes:
     return json.dumps(
         value,
@@ -376,9 +406,9 @@ def _validate_control_worker_receipt(
     )
     if sha256_file(receipt_path) != receipt_sha256:
         raise ValueError("control worker receipt content changed after preflight")
-    receipt = _load_json(receipt_path)
+    receipt = _load_worker_receipt(receipt_path)
     embedded = evidence.get("receipt")
-    if embedded is not None and embedded != receipt:
+    if embedded is not None and _normalize_receipt_mapping(embedded) != receipt:
         raise ValueError("embedded and on-disk control worker receipts differ")
     expected = {
         "schema_version": "v38.local-sequence-worker-receipt.1",
@@ -394,6 +424,62 @@ def _validate_control_worker_receipt(
     for key, value in expected.items():
         if receipt.get(key) != value:
             raise ValueError(f"control worker receipt field drifted: {key}")
+
+
+def _validate_generator_worker_receipt(
+    *,
+    preflight: dict[str, Any],
+    preflight_base_path: Path,
+    config: dict[str, Any],
+) -> None:
+    matching = [
+        item
+        for item in preflight.get("checks") or []
+        if item.get("name") == "generator_worker_receipt_identity"
+    ]
+    if len(matching) != 1 or matching[0].get("status") != "passed":
+        raise ValueError("preflight does not prove the remote generator receipt")
+    evidence = matching[0].get("evidence") or {}
+    if evidence.get("mode") != "autoresearch-generator":
+        raise ValueError("generator receipt was not launched in autoresearch-generator mode")
+    receipt_path = _resolve_existing_path(
+        preflight_base_path,
+        evidence.get("receipt_path"),
+        "generator worker receipt path",
+    )
+    receipt_sha256 = _require_sha256(
+        evidence.get("receipt_sha256"), "generator worker receipt"
+    )
+    if sha256_file(receipt_path) != receipt_sha256:
+        raise ValueError("generator worker receipt content changed after preflight")
+    receipt = _load_worker_receipt(receipt_path)
+    embedded = evidence.get("receipt")
+    if embedded is not None and _normalize_receipt_mapping(embedded) != receipt:
+        raise ValueError("embedded and on-disk generator worker receipts differ")
+    expected = {
+        "schema": "autoresearch.remote-generator-worker-receipt.1",
+        "role": "autoresearch-generator",
+        "task_queue": GENERATOR_QUEUE,
+        "task_queue_verified_from_release": True,
+        "physical_host": "192.168.99.32",
+        "resource": "1",
+        "gpu_preflight": "idle_no_compute_process_or_cuda_declaration",
+        "release_sha256": config["release"]["archive_sha256"],
+        "source_revision": config["source_revision"],
+        "environment_sha256": config["runtime"]["generator_environment_sha256"],
+        "service_tunnel_preflight": "passed",
+        "model_revision": config["model"]["pepmlm_revision"],
+        "weights_sha256": config["model"]["pepmlm_weights_sha256"],
+        "ampgent_owned": True,
+        "foreign": False,
+    }
+    for key, value in expected.items():
+        if receipt.get(key) != value:
+            raise ValueError(f"generator worker receipt field drifted: {key}")
+    if not str(receipt.get("gpu_uuid") or "").startswith("GPU-"):
+        raise ValueError("generator worker receipt has no frozen GPU UUID")
+    if not str(receipt.get("pid") or "").isdigit():
+        raise ValueError("generator worker receipt has no exact PID")
 
 
 def _validate_preflight(
@@ -421,6 +507,11 @@ def _validate_preflight(
         raise ValueError("AutoResearch preflight has no machine checks")
     if any(item.get("status") != "passed" for item in checks):
         raise ValueError("AutoResearch preflight contains a non-passing check")
+    migration_checks = [
+        item for item in checks if item.get("name") == "database_migration_0016"
+    ]
+    if len(migration_checks) != 1:
+        raise ValueError("preflight does not prove remote database migration 0016")
     expected = {
         item.branch_key: {
             "branch_key": item.branch_key,
@@ -441,6 +532,11 @@ def _validate_preflight(
     if actual != expected:
         raise ValueError("AutoResearch preflight branch identity drifted")
     _validate_control_worker_receipt(
+        preflight=preflight,
+        preflight_base_path=preflight_base_path,
+        config=config,
+    )
+    _validate_generator_worker_receipt(
         preflight=preflight,
         preflight_base_path=preflight_base_path,
         config=config,
