@@ -6,13 +6,17 @@ from uuid import uuid4
 import pytest
 from pydantic import ValidationError
 
+from pepagent.db.repository import ExperimentRepository
+from pepagent.provenance.hashing import sha256_json
 from pepagent.v38_sequence_first_multitarget import MultiTargetStructureTask
 from pepagent.workers.v38_activities import build_v38_structure_artifact_link
 from pepagent.workflow_observer_contract import (
+    ACTIVITY_STAGE_BINDINGS,
     OBSERVER_STAGES,
     ActivityLifecyclePayload,
     KnowledgeCardReadPayload,
     ObserverTransientSnapshot,
+    append_typed_lifecycle_event,
     build_candidate_decision_projection,
     build_formal_workflow_topology,
     write_transient_snapshot,
@@ -94,6 +98,119 @@ def test_activity_lifecycle_is_typed_and_rejects_free_text_fields() -> None:
     with pytest.raises(ValidationError):
         ActivityLifecyclePayload.model_validate(
             {**payload.model_dump(mode="json"), "log": "unstructured output"}
+        )
+    with pytest.raises(ValidationError, match="exception details"):
+        ActivityLifecyclePayload.model_validate(
+            {
+                **payload.model_dump(mode="json"),
+                "status": "failed",
+                "completed": 0,
+            }
+        )
+
+
+def test_all_autoresearch_activities_have_authoritative_lifecycle_bindings() -> None:
+    assert {
+        "mark_run_started",
+        "persist_autoresearch_score_all_bundle",
+        "plan_autoresearch_actions",
+        "persist_autoresearch_action_plan",
+        "execute_autoresearch_action_batch",
+        "persist_autoresearch_children",
+        "evaluate_v38_sequence_metric",
+        "persist_v38_sequence_metric",
+        "finalize_autoresearch_iteration",
+        "mark_run_succeeded",
+        "mark_run_failed",
+        "mark_run_cancelled",
+    } <= set(ACTIVITY_STAGE_BINDINGS)
+
+
+@pytest.mark.asyncio
+async def test_lifecycle_repository_deduplicates_same_semantic_activity_event() -> None:
+    class FakeSession:
+        def __init__(self) -> None:
+            self.scalar_calls = 0
+            self.added = []
+
+        async def execute(self, *args, **kwargs):
+            del args, kwargs
+            return None
+
+        async def scalar(self, *args, **kwargs):
+            del args, kwargs
+            self.scalar_calls += 1
+            if self.scalar_calls == 1:
+                return None
+            if self.scalar_calls == 2:
+                return 0
+            if self.scalar_calls == 3:
+                return self.added[0]
+            if self.scalar_calls == 4:
+                return None
+            if self.scalar_calls == 5:
+                return 1
+            if self.scalar_calls == 6:
+                return self.added[1]
+            return self.added[0]
+
+        def add(self, value) -> None:
+            self.added.append(value)
+
+        async def flush(self) -> None:
+            return None
+
+    session = FakeSession()
+    run_id = uuid4()
+    payload = ActivityLifecyclePayload(
+        run_id=run_id,
+        activity_id="activity-1",
+        activity_type="execute_autoresearch_action_batch",
+        logical_stage="generation",
+        display_category="design",
+        attempt=2,
+        status="failed",
+        completed=0,
+        expected=4,
+        worker_role="autoresearch-generator",
+        task_queue="pepagent-autoresearch-generator-v1",
+        worker_identity="pepagent:autoresearch-generator:7@worker:revision",
+        workflow_id="workflow-1",
+        workflow_run_id="workflow-run-1",
+        target_key="FGF2",
+        error_type="RuntimeError",
+        error_message="model invocation failed",
+    )
+
+    first = await append_typed_lifecycle_event(session, payload)  # type: ignore[arg-type]
+    replay = await append_typed_lifecycle_event(session, payload)  # type: ignore[arg-type]
+
+    assert replay is first
+    assert len(session.added) == 1
+    assert first.payload_sha256 == sha256_json(first.payload_json)
+    event_key = first.payload_json["event_idempotency_key"]
+
+    next_attempt_payload = payload.model_copy(update={"attempt": 3})
+    next_attempt = await append_typed_lifecycle_event(  # type: ignore[arg-type]
+        session,
+        next_attempt_payload,
+    )
+    next_attempt_replay = await append_typed_lifecycle_event(  # type: ignore[arg-type]
+        session,
+        next_attempt_payload,
+    )
+    assert next_attempt_replay is next_attempt
+    assert len(session.added) == 2
+    assert next_attempt.payload_json["event_idempotency_key"] != event_key
+
+    with pytest.raises(ValueError, match="idempotency identity drifted"):
+        await ExperimentRepository(session).append_event(  # type: ignore[arg-type]
+            "run",
+            run_id,
+            "activity.failed",
+            "v38-workflow-observer-writer",
+            {**first.payload_json, "attempt": 3},
+            idempotency_key=event_key,
         )
 
 

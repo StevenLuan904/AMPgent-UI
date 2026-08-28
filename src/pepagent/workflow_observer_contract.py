@@ -55,6 +55,11 @@ OBSERVER_STAGES: tuple[tuple[ObserverStageName, DisplayCategory], ...] = (
 
 ACTIVITY_STAGE_BINDINGS: dict[str, ObserverStageName] = {
     "mark_run_started": "knowledge",
+    "persist_autoresearch_score_all_bundle": "sequence_metrics",
+    "plan_autoresearch_actions": "generation",
+    "persist_autoresearch_action_plan": "generation",
+    "execute_autoresearch_action_batch": "generation",
+    "persist_autoresearch_children": "generation",
     "generate_v38_sequence_cell": "generation",
     "persist_v38_score_all_generation": "generation",
     "evaluate_v38_sequence_metric": "sequence_metrics",
@@ -69,6 +74,10 @@ ACTIVITY_STAGE_BINDINGS: dict[str, ObserverStageName] = {
     "score_v38_multitarget_rosetta": "structure_rosetta",
     "persist_v38_multitarget_rosetta": "structure_rosetta",
     "persist_v38_final_portfolio_replay": "final_portfolio",
+    "finalize_autoresearch_iteration": "replay",
+    "mark_run_succeeded": "final_portfolio",
+    "mark_run_failed": "replay",
+    "mark_run_cancelled": "replay",
 }
 
 
@@ -130,11 +139,19 @@ class ActivityLifecyclePayload(FrozenModel):
     expected: int = Field(ge=0)
     worker_role: str = Field(min_length=1)
     task_queue: str = Field(min_length=1)
+    worker_identity: str | None = Field(default=None, min_length=1)
+    workflow_id: str | None = Field(default=None, min_length=1)
+    workflow_run_id: str | None = Field(default=None, min_length=1)
+    target_key: str | None = Field(default=None, min_length=1)
+    error_type: str | None = Field(default=None, min_length=1)
+    error_message: str | None = Field(default=None, min_length=1, max_length=4000)
 
     @model_validator(mode="after")
     def validate_progress(self) -> ActivityLifecyclePayload:
         if self.expected and self.completed > self.expected:
             raise ValueError("activity progress exceeds expected work")
+        if self.status == "failed" and (not self.error_type or not self.error_message):
+            raise ValueError("failed activity lifecycle requires exception details")
         return self
 
 
@@ -286,12 +303,27 @@ async def append_typed_lifecycle_event(
         if isinstance(payload, ActivityLifecyclePayload)
         else "knowledge_card.read"
     )
+    event_payload = payload.model_dump(mode="json")
+    idempotency_key: str | None = None
+    if isinstance(payload, ActivityLifecyclePayload):
+        idempotency_key = sha256_json(
+            {
+                "schema_version": "v38.activity-lifecycle-idempotency.1",
+                "run_id": str(payload.run_id),
+                "activity_id": payload.activity_id,
+                "attempt": payload.attempt,
+                "status": payload.status,
+                "completed": payload.completed,
+            }
+        )
+        event_payload["event_idempotency_key"] = idempotency_key
     return await repository.append_event(
         "run",
         payload.run_id,
         event_type,
         "v38-workflow-observer-writer",
-        payload.model_dump(mode="json"),
+        event_payload,
+        idempotency_key=idempotency_key,
     )
 
 

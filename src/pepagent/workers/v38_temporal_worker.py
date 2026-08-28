@@ -174,7 +174,12 @@ async def run_worker() -> None:
             settings.worker_role,
             settings.worker_max_concurrent_activities,
         ),
-        interceptors=[V38WorkflowObserverInterceptor(settings.worker_role)],
+        interceptors=[
+            V38WorkflowObserverInterceptor(
+                settings.worker_role,
+                worker_identity=identity,
+            )
+        ],
         identity=identity,
         build_id=settings.worker_source_revision,
     )

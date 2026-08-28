@@ -196,6 +196,8 @@ class V38SequenceFirstAgentWorkflow:
             completed: int,
             expected: int,
             attempt: int = 1,
+            error_type: str | None = None,
+            error_message: str | None = None,
         ) -> None:
             await workflow.execute_activity(
                 "persist_v38_external_activity_lifecycle",
@@ -215,6 +217,8 @@ class V38SequenceFirstAgentWorkflow:
                         "expected": expected,
                         "worker_role": "external-refinement-provider",
                         "task_queue": task_queue,
+                        "error_type": error_type,
+                        "error_message": error_message,
                     },
                 },
                 task_queue=control_queue,
@@ -415,7 +419,7 @@ class V38SequenceFirstAgentWorkflow:
                         )
                     )
                     raise
-                except Exception:
+                except Exception as error:
                     await record_external_lifecycle(
                         activity_id=provider_activity_id,
                         activity_type=provider_activity_type,
@@ -423,6 +427,8 @@ class V38SequenceFirstAgentWorkflow:
                         status="failed",
                         completed=0,
                         expected=expected_children,
+                        error_type=type(error).__name__,
+                        error_message=(str(error) or repr(error))[:4000],
                     )
                     raise
                 provider_attempt = int(

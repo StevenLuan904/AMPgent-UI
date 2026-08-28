@@ -11,11 +11,12 @@ engine = create_async_engine(
 )
 SessionFactory = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
-# Observer telemetry is best-effort and is deliberately isolated from the
-# scientific transaction pool.  A cancelled observer connect/rollback must
-# never retain a checkout or pool mutex needed by a formal activity.  NullPool
-# gives every observer write a short-lived connection and leaves no shared
-# checkout state behind for SessionFactory consumers.
+# Observer progress telemetry is best-effort, while activity boundary events
+# are authoritative and finitely retried by the interceptor.  Both use this
+# engine so a cancelled observer connect/rollback can never retain a checkout
+# or pool mutex needed by a scientific activity.  NullPool gives every audit
+# write a short-lived connection and leaves no shared checkout state behind for
+# SessionFactory consumers.
 observer_engine = create_async_engine(
     settings.database_url,
     pool_pre_ping=True,

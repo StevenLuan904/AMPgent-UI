@@ -29,15 +29,23 @@ from pepagent.workflow_observer_contract import (
     write_transient_snapshot,
 )
 
-# Observer durability is deliberately best effort.  A database pool wait, a
-# tunnel outage, or a slow local filesystem must never consume a scientific
-# activity slot.  These deadlines bound the background writer itself; callers
-# also schedule every lifecycle write off the activity's critical path below.
+# Progress telemetry is best effort. Activity boundary events are authoritative
+# and use a finite retry budget: a database outage cannot hang a worker slot,
+# but an activity cannot silently proceed or finish without a PostgreSQL audit.
+# The independent NullPool below keeps those bounded writes out of the
+# scientific transaction pool.
 OBSERVER_DATABASE_TIMEOUT_SECONDS = 2.0
 OBSERVER_SNAPSHOT_TIMEOUT_SECONDS = 0.5
 OBSERVER_MAX_PENDING_PROGRESS_WRITES = 128
+OBSERVER_BOUNDARY_RETRY_INITIAL_SECONDS = 0.25
+OBSERVER_BOUNDARY_RETRY_MAX_SECONDS = 30.0
+OBSERVER_BOUNDARY_MAX_ATTEMPTS = 3
 
-_OBSERVER_BACKGROUND_TASKS: set[asyncio.Task[None]] = set()
+_OBSERVER_BACKGROUND_TASKS: set[asyncio.Task[Any]] = set()
+
+
+class ActivityAuditPersistenceError(RuntimeError):
+    """A bounded PostgreSQL lifecycle write could not be made authoritative."""
 
 
 def _request_from_input(input: ExecuteActivityInput) -> dict[str, Any] | None:
@@ -50,13 +58,29 @@ def _expected_work(activity_type: str, request: dict[str, Any]) -> int:
     if activity_type == "generate_v38_sequence_cell":
         cell = request.get("cell", request)
         return int(cell.get("requested_proposals", 1)) if isinstance(cell, dict) else 1
-    for key in ("candidates", "candidate_ids", "tasks", "proposals"):
+    for key in ("candidates", "candidate_ids", "tasks", "proposals", "actions"):
         value = request.get(key)
         if isinstance(value, list):
             return len(value)
+    action_plan = request.get("action_plan")
+    if isinstance(action_plan, dict) and isinstance(action_plan.get("actions"), list):
+        return len(action_plan["actions"])
     if activity_type == "score_v38_multitarget_rosetta":
         return int(request.get("nstruct", request.get("decoy_count", 1)))
     return 1
+
+
+def _target_key(request: dict[str, Any]) -> str | None:
+    for candidate in (
+        request.get("branch_key"),
+        request.get("target_key"),
+        (request.get("action_plan") or {}).get("branch_key")
+        if isinstance(request.get("action_plan"), dict)
+        else None,
+    ):
+        if candidate is not None and str(candidate).strip():
+            return str(candidate)
+    return None
 
 
 def _tool_call_id(result: Any) -> UUID | None:
@@ -82,11 +106,24 @@ async def _persist_durable_event(
 ) -> None:
     # Never share the scientific activity pool.  asyncio.wait_for cancels a
     # timed-out writer and connection cleanup can itself be slow when a tunnel
-    # is degraded; the dedicated NullPool confines that failure to telemetry.
+    # is degraded; the dedicated NullPool confines it to the audit path.
     async with ObserverSessionFactory() as session, session.begin():
+        run: ExperimentRun | None = None
+        if payload.target_key is None or topology_payload is None:
+            run = await session.get(ExperimentRun, payload.run_id)
+        if run is not None:
+            run_target = run.spec_json.get("branch_key") or run.spec_json.get(
+                "target_key"
+            )
+            if run_target is not None:
+                if payload.target_key is None:
+                    payload = payload.model_copy(
+                        update={"target_key": str(run_target)}
+                    )
+                elif payload.target_key != str(run_target):
+                    raise ValueError("activity audit target differs from its run")
         await append_typed_lifecycle_event(session, payload)
         if topology_payload is None:
-            run = await session.get(ExperimentRun, payload.run_id)
             candidate = run.spec_json.get("workflow_topology") if run is not None else None
             if isinstance(candidate, dict):
                 topology_payload = candidate
@@ -101,14 +138,14 @@ async def _persist_event(
     *,
     payload: ActivityLifecyclePayload,
     topology_payload: dict[str, Any] | None,
-) -> None:
+) -> bool:
     try:
         await asyncio.wait_for(
             _persist_durable_event(payload=payload, topology_payload=topology_payload),
             timeout=OBSERVER_DATABASE_TIMEOUT_SECONDS,
         )
-        return
-    except Exception as error:  # Observer writes must not mutate the scientific result.
+        return True
+    except Exception as error:  # One audit attempt is bounded; the caller owns policy.
         snapshot = ObserverTransientSnapshot(
             run_id=payload.run_id,
             updated_at=datetime.now(UTC),
@@ -134,10 +171,34 @@ async def _persist_event(
     except Exception:
         # The transient fallback is observer-only as well.  It is intentionally
         # fail-open after its own deadline.
-        return
+        pass
+    return False
 
 
-def _observer_task_done(task: asyncio.Task[None]) -> None:
+async def _persist_boundary_event_until_durable(
+    *,
+    payload: ActivityLifecyclePayload,
+    topology_payload: dict[str, Any] | None,
+) -> None:
+    """Retry a boundary write finitely or make its audit failure explicit."""
+
+    delay = OBSERVER_BOUNDARY_RETRY_INITIAL_SECONDS
+    for attempt in range(1, OBSERVER_BOUNDARY_MAX_ATTEMPTS + 1):
+        if await _persist_event(payload=payload, topology_payload=topology_payload):
+            return
+        if attempt == OBSERVER_BOUNDARY_MAX_ATTEMPTS:
+            break
+        await asyncio.sleep(delay)
+        delay = min(delay * 2.0, OBSERVER_BOUNDARY_RETRY_MAX_SECONDS)
+    raise ActivityAuditPersistenceError(
+        "PostgreSQL activity audit persistence failed after "
+        f"{OBSERVER_BOUNDARY_MAX_ATTEMPTS} bounded attempts: "
+        f"{payload.activity_type}/{payload.activity_id}/attempt-{payload.attempt}/"
+        f"{payload.status}"
+    )
+
+
+def _observer_task_done(task: asyncio.Task[Any]) -> None:
     _OBSERVER_BACKGROUND_TASKS.discard(task)
     if task.cancelled():
         return
@@ -152,12 +213,11 @@ def _schedule_event(
     payload: ActivityLifecyclePayload,
     topology_payload: dict[str, Any] | None,
 ) -> None:
-    # Progress is lossy observer telemetry, so cap it under backpressure.  The
-    # boundary events are still admitted and each write has a hard deadline.
-    if (
-        payload.status == "progress"
-        and len(_OBSERVER_BACKGROUND_TASKS) >= OBSERVER_MAX_PENDING_PROGRESS_WRITES
-    ):
+    # Only progress is lossy observer telemetry. Semantic boundary events are
+    # awaited with a finite retry budget by the inbound interceptor below.
+    if payload.status != "progress":
+        raise ValueError("semantic activity boundary events cannot be fire-and-forget")
+    if len(_OBSERVER_BACKGROUND_TASKS) >= OBSERVER_MAX_PENDING_PROGRESS_WRITES:
         return
     task = asyncio.create_task(
         _persist_event(payload=payload, topology_payload=topology_payload),
@@ -186,7 +246,11 @@ class _ObserverOutbound(ActivityOutboundInterceptor):
             return
         progress = details[0] if details and isinstance(details[0], dict) else {}
         completed = progress.get("completed")
-        expected = progress.get("expected", state["expected"])
+        expected = progress.get("expected")
+        if not isinstance(expected, int):
+            expected = progress.get("total")
+        if not isinstance(expected, int):
+            expected = state["expected"]
         if not isinstance(completed, int) or completed == state["last_completed"]:
             return
         if not isinstance(expected, int) or expected < 0 or completed < 0:
@@ -206,15 +270,25 @@ class _ObserverOutbound(ActivityOutboundInterceptor):
                 expected=expected,
                 worker_role=state["worker_role"],
                 task_queue=state["task_queue"],
+                worker_identity=state["worker_identity"],
+                workflow_id=state["workflow_id"],
+                workflow_run_id=state["workflow_run_id"],
+                target_key=state["target_key"],
             ),
             topology_payload=state["topology_payload"],
         )
 
 
 class _ObserverInbound(ActivityInboundInterceptor):
-    def __init__(self, next: ActivityInboundInterceptor, worker_role: str) -> None:
+    def __init__(
+        self,
+        next: ActivityInboundInterceptor,
+        worker_role: str,
+        worker_identity: str | None = None,
+    ) -> None:
         super().__init__(next)
         self.worker_role = worker_role
+        self.worker_identity = worker_identity
         self._state: ContextVar[dict[str, Any] | None] = ContextVar(
             "v38_observer_activity_state", default=None
         )
@@ -245,6 +319,10 @@ class _ObserverInbound(ActivityInboundInterceptor):
                 "attempt": info.attempt,
                 "worker_role": self.worker_role,
                 "task_queue": info.task_queue,
+                "worker_identity": self.worker_identity,
+                "workflow_id": getattr(info, "workflow_id", None),
+                "workflow_run_id": getattr(info, "workflow_run_id", None),
+                "target_key": _target_key(request),
                 "expected": expected,
                 "topology_payload": topology_payload,
                 "last_completed": -1,
@@ -260,33 +338,45 @@ class _ObserverInbound(ActivityInboundInterceptor):
             "expected": expected,
             "worker_role": self.worker_role,
             "task_queue": info.task_queue,
+            "worker_identity": self.worker_identity,
+            "workflow_id": getattr(info, "workflow_id", None),
+            "workflow_run_id": getattr(info, "workflow_run_id", None),
+            "target_key": _target_key(request),
         }
         try:
-            _schedule_event(
-                payload=ActivityLifecyclePayload(
-                    **base, status="started", completed=0
-                ),
+            await _persist_boundary_event_until_durable(
+                payload=ActivityLifecyclePayload(**base, status="started", completed=0),
                 topology_payload=topology_payload,
             )
             try:
                 result = await self.next.execute_activity(input)
-            except (asyncio.CancelledError, TemporalCancelledError):
-                _schedule_event(
-                    payload=ActivityLifecyclePayload(
-                        **base, status="cancelled", completed=0
-                    ),
-                    topology_payload=topology_payload,
-                )
+            except (asyncio.CancelledError, TemporalCancelledError) as error:
+                try:
+                    await _persist_boundary_event_until_durable(
+                        payload=ActivityLifecyclePayload(
+                            **base, status="cancelled", completed=0
+                        ),
+                        topology_payload=topology_payload,
+                    )
+                except ActivityAuditPersistenceError as audit_error:
+                    raise audit_error from error
                 raise
-            except Exception:
-                _schedule_event(
-                    payload=ActivityLifecyclePayload(
-                        **base, status="failed", completed=0
-                    ),
-                    topology_payload=topology_payload,
-                )
+            except Exception as error:
+                try:
+                    await _persist_boundary_event_until_durable(
+                        payload=ActivityLifecyclePayload(
+                            **base,
+                            status="failed",
+                            completed=0,
+                            error_type=type(error).__name__,
+                            error_message=(str(error) or repr(error))[:4000],
+                        ),
+                        topology_payload=topology_payload,
+                    )
+                except ActivityAuditPersistenceError as audit_error:
+                    raise audit_error from error
                 raise
-            _schedule_event(
+            await _persist_boundary_event_until_durable(
                 payload=ActivityLifecyclePayload(
                     **base,
                     status="succeeded",
@@ -301,10 +391,11 @@ class _ObserverInbound(ActivityInboundInterceptor):
 
 
 class V38WorkflowObserverInterceptor(Interceptor):
-    def __init__(self, worker_role: str) -> None:
+    def __init__(self, worker_role: str, worker_identity: str | None = None) -> None:
         self.worker_role = worker_role
+        self.worker_identity = worker_identity
 
     def intercept_activity(
         self, next: ActivityInboundInterceptor
     ) -> ActivityInboundInterceptor:
-        return _ObserverInbound(next, self.worker_role)
+        return _ObserverInbound(next, self.worker_role, self.worker_identity)

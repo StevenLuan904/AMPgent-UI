@@ -358,6 +358,8 @@ class ExperimentRepository:
         event_type: str,
         actor: str,
         payload: dict[str, Any],
+        *,
+        idempotency_key: str | None = None,
     ) -> LifecycleEvent:
         # Sequence allocation is a read-modify-write operation.  Concurrent
         # workers may append to the same run aggregate, so serialize only this
@@ -366,6 +368,25 @@ class ExperimentRepository:
             text("SELECT pg_advisory_xact_lock(:lock_id)"),
             {"lock_id": _lifecycle_event_lock_id(aggregate_type, aggregate_id)},
         )
+        payload_sha256 = sha256_json(payload)
+        if idempotency_key is not None:
+            if not idempotency_key or payload.get("event_idempotency_key") != idempotency_key:
+                raise ValueError("lifecycle event idempotency key is missing from its payload")
+            existing = await self.session.scalar(
+                select(LifecycleEvent)
+                .where(
+                    LifecycleEvent.aggregate_type == aggregate_type,
+                    LifecycleEvent.aggregate_id == aggregate_id,
+                    LifecycleEvent.event_type == event_type,
+                    LifecycleEvent.payload_json["event_idempotency_key"].as_string()
+                    == idempotency_key,
+                )
+                .limit(1)
+            )
+            if existing is not None:
+                if existing.actor != actor or existing.payload_sha256 != payload_sha256:
+                    raise ValueError("lifecycle event idempotency identity drifted")
+                return existing
         last = await self.session.scalar(
             select(func.max(LifecycleEvent.sequence_no)).where(
                 LifecycleEvent.aggregate_type == aggregate_type,
@@ -379,7 +400,7 @@ class ExperimentRepository:
             event_type=event_type,
             actor=actor,
             payload_json=payload,
-            payload_sha256=sha256_json(payload),
+            payload_sha256=payload_sha256,
         )
         self.session.add(event)
         await self.session.flush()
