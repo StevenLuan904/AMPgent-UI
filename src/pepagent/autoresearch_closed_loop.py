@@ -179,6 +179,18 @@ class MultiFrontArchiveSnapshot(FrozenModel):
         return sha256_json(self.model_dump(mode="json", exclude={"archive_sha256"}))
 
 
+def parse_persisted_archive_snapshot(value: Mapping[str, Any]) -> MultiFrontArchiveSnapshot:
+    """Validate a persisted snapshot and its redundant content-hash witness."""
+
+    payload = dict(value)
+    claimed_sha256 = payload.pop("archive_sha256", None)
+    snapshot = MultiFrontArchiveSnapshot.model_validate(payload)
+    if claimed_sha256 is not None:
+        if not isinstance(claimed_sha256, str) or claimed_sha256 != snapshot.archive_sha256:
+            raise ValueError("persisted AutoResearch archive SHA-256 witness drifted")
+    return snapshot
+
+
 def _metric_value(
     candidate: CandidateEvidence, objective: ArchiveObjective
 ) -> float | None:
@@ -1100,6 +1112,7 @@ __all__ = [
     "apply_evolution_action",
     "build_multi_front_archive",
     "compute_parent_child_delta",
+    "parse_persisted_archive_snapshot",
     "parse_evolution_action",
     "update_multi_front_archive",
     "validate_action_child",

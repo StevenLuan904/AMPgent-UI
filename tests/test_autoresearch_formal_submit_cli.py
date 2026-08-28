@@ -912,6 +912,24 @@ class _FakeHandle:
         )
 
 
+class _FakeSdkMemoHandle:
+    """Mirror the Temporal SDK's async ``WorkflowExecution.memo()`` API."""
+
+    def __init__(self, *, run_id: str, memo: dict[str, Any]):
+        self.run_id = run_id
+        self._memo = memo
+
+    async def memo(self) -> dict[str, Any]:
+        return self._memo
+
+    async def describe(self) -> Any:
+        return SimpleNamespace(
+            workflow_type=WORKFLOW_TYPE,
+            memo=self.memo,
+            run_id=self.run_id,
+        )
+
+
 class _FakeClient:
     def __init__(self, *, already_started: bool = False, memo: Any = None):
         self.already_started = already_started
@@ -961,12 +979,32 @@ async def test_temporal_submit_uses_reject_duplicate_and_exact_memo_recovery(
     assert recovered.recovered is True
     assert recovered.temporal_run_id == "recovered-run"
 
+    sdk_recovery_client = _FakeClient(already_started=True)
+    sdk_recovery_client.handles[branch.workflow_id] = _FakeSdkMemoHandle(
+        run_id="sdk-recovered-run", memo=call["memo"]
+    )
+    sdk_recovered = await _start_or_recover_autoresearch_workflow(
+        sdk_recovery_client, plan=plan, branch=branch
+    )
+    assert sdk_recovered.recovered is True
+    assert sdk_recovered.temporal_run_id == "sdk-recovered-run"
+
     drift_client = _FakeClient(already_started=True)
     drift_client.handles[branch.workflow_id] = _FakeHandle(
         run_id="wrong-run", memo={WORKFLOW_MEMO_KEY: {"request_sha256": "0" * 64}}
     )
     with pytest.raises(ValueError, match="memo identity drifted"):
         await _start_or_recover_autoresearch_workflow(drift_client, plan=plan, branch=branch)
+
+    sdk_drift_client = _FakeClient(already_started=True)
+    sdk_drift_client.handles[branch.workflow_id] = _FakeSdkMemoHandle(
+        run_id="sdk-wrong-run",
+        memo={WORKFLOW_MEMO_KEY: {"request_sha256": "0" * 64}},
+    )
+    with pytest.raises(ValueError, match="memo identity drifted"):
+        await _start_or_recover_autoresearch_workflow(
+            sdk_drift_client, plan=plan, branch=branch
+        )
 
 
 @pytest.mark.asyncio

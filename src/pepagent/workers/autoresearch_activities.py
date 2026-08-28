@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import shutil
 import uuid
 from collections import defaultdict
 from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
-from typing import Any
+from typing import Any, BinaryIO
 
 from sqlalchemy import func, select
 from temporalio import activity
@@ -27,6 +28,7 @@ from pepagent.autoresearch_closed_loop import (
     apply_evolution_action,
     build_multi_front_archive,
     parse_evolution_action,
+    parse_persisted_archive_snapshot,
     update_multi_front_archive,
     validate_action_child,
 )
@@ -102,6 +104,55 @@ _IMPORTED_METRIC_UNITS = {
     "maximum_hydrophobic_run": "residues",
     "guruprasad_instability_index": "index",
 }
+
+_AUTORESEARCH_GENERATOR_SEMAPHORE = asyncio.Semaphore(1)
+
+
+def _acquire_autoresearch_generator_lock(path: Path, owner: dict[str, Any]) -> BinaryIO:
+    """Take a process-lifetime advisory lock shared by generator pollers."""
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.is_symlink():
+        raise OSError("AutoResearch generator GPU lock path is a symlink")
+    handle = path.open("a+b")
+    try:
+        if os.name == "nt":
+            import msvcrt
+
+            handle.seek(0, os.SEEK_END)
+            if handle.tell() == 0:
+                handle.write(b"\0")
+                handle.flush()
+            handle.seek(0)
+            msvcrt.locking(handle.fileno(), msvcrt.LK_LOCK, 1)
+        else:
+            import fcntl
+
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        handle.seek(0)
+        handle.truncate()
+        handle.write((json.dumps(owner, sort_keys=True) + "\n").encode("utf-8"))
+        handle.flush()
+        os.fsync(handle.fileno())
+        return handle
+    except BaseException:
+        handle.close()
+        raise
+
+
+def _release_autoresearch_generator_lock(handle: BinaryIO) -> None:
+    try:
+        handle.seek(0)
+        if os.name == "nt":
+            import msvcrt
+
+            msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+        else:
+            import fcntl
+
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+    finally:
+        handle.close()
 
 
 def _repository_action_kind(action: Any) -> str:
@@ -526,8 +577,9 @@ def _compile_pepmlm_action(
     return payload
 
 
-@activity.defn(name="execute_autoresearch_action_batch")
-async def execute_autoresearch_action_batch(request: dict[str, Any]) -> dict[str, Any]:
+async def _execute_autoresearch_action_batch_unlocked(
+    request: dict[str, Any],
+) -> dict[str, Any]:
     """Materialize a frozen action batch without consulting mutable policy."""
 
     plan = request["action_plan"]
@@ -710,6 +762,31 @@ async def execute_autoresearch_action_batch(request: dict[str, Any]) -> dict[str
             "attempt": activity.info().attempt,
         },
     }
+
+
+@activity.defn(name="execute_autoresearch_action_batch")
+async def execute_autoresearch_action_batch(request: dict[str, Any]) -> dict[str, Any]:
+    """Run one action batch under in-process and cross-process GPU exclusion."""
+
+    plan = request.get("action_plan") or {}
+    owner = {
+        "schema_version": "ampgent.autoresearch-generator-gpu-lock.1",
+        "pid": os.getpid(),
+        "run_id": str(plan.get("run_id") or ""),
+        "iteration_no": int(plan.get("iteration_no", -1)),
+    }
+    work_root = await asyncio.to_thread(Path(get_settings().work_root).resolve)
+    lock_path = work_root / ".locks" / "autoresearch-generator-gpu.lock"
+    async with _AUTORESEARCH_GENERATOR_SEMAPHORE:
+        handle = await asyncio.to_thread(
+            _acquire_autoresearch_generator_lock,
+            lock_path,
+            owner,
+        )
+        try:
+            return await _execute_autoresearch_action_batch_unlocked(request)
+        finally:
+            await asyncio.to_thread(_release_autoresearch_generator_lock, handle)
 
 
 @activity.defn(name="persist_autoresearch_children")
@@ -1611,7 +1688,10 @@ async def _load_previous_snapshot(
     if sha256_bytes(payload) != artifact.sha256:
         raise OSError("previous AutoResearch archive snapshot hash mismatch")
     decoded = json.loads(payload.decode("utf-8"))
-    return MultiFrontArchiveSnapshot.model_validate(decoded["snapshot"]), versions
+    snapshot_payload = decoded.get("snapshot")
+    if not isinstance(snapshot_payload, dict):
+        raise ValueError("previous AutoResearch archive snapshot payload is malformed")
+    return parse_persisted_archive_snapshot(snapshot_payload), versions
 
 
 @activity.defn(name="finalize_autoresearch_iteration")

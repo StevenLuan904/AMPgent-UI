@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import copy
+import inspect
 import json
 import uuid
 from collections.abc import Callable
@@ -1313,6 +1314,19 @@ def _workflow_memo_identity(
     }
 
 
+async def _workflow_description_memo(description: Any) -> dict[str, Any]:
+    """Decode a workflow memo across Temporal SDK property/method APIs."""
+
+    memo: Any = getattr(description, "memo", None)
+    if callable(memo):
+        memo = memo()
+    if inspect.isawaitable(memo):
+        memo = await memo
+    if not isinstance(memo, dict):
+        raise ValueError("existing workflow memo is unavailable or malformed")
+    return memo
+
+
 async def _start_or_recover_autoresearch_workflow(
     client: Client,
     *,
@@ -1337,8 +1351,8 @@ async def _start_or_recover_autoresearch_workflow(
         description = await handle.describe()
         if getattr(description, "workflow_type", None) != WORKFLOW_TYPE:
             raise ValueError(f"existing {branch.branch_key} workflow type differs") from error
-        memo = getattr(description, "memo", None)
-        if not isinstance(memo, dict) or memo.get(WORKFLOW_MEMO_KEY) != identity:
+        memo = await _workflow_description_memo(description)
+        if memo.get(WORKFLOW_MEMO_KEY) != identity:
             raise ValueError(
                 f"existing {branch.branch_key} workflow memo identity drifted"
             ) from error

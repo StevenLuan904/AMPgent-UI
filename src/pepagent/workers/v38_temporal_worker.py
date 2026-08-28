@@ -145,6 +145,14 @@ V38_ROLE_CONFIG = {
 }
 
 
+def _max_concurrent_activities_for_role(role: str, configured: int) -> int:
+    if configured < 1:
+        raise ValueError("worker activity concurrency must be positive")
+    if role == "autoresearch-generator":
+        return 1
+    return configured
+
+
 async def run_worker() -> None:
     settings = get_settings()
     if settings.worker_role not in V38_ROLE_CONFIG:
@@ -162,7 +170,10 @@ async def run_worker() -> None:
         task_queue=task_queue,
         activities=activities,
         workflows=workflows,
-        max_concurrent_activities=settings.worker_max_concurrent_activities,
+        max_concurrent_activities=_max_concurrent_activities_for_role(
+            settings.worker_role,
+            settings.worker_max_concurrent_activities,
+        ),
         interceptors=[V38WorkflowObserverInterceptor(settings.worker_role)],
         identity=identity,
         build_id=settings.worker_source_revision,

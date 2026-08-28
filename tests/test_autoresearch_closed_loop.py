@@ -18,6 +18,7 @@ from pepagent.autoresearch_closed_loop import (
     build_multi_front_archive,
     compute_parent_child_delta,
     parse_evolution_action,
+    parse_persisted_archive_snapshot,
     update_multi_front_archive,
     validate_action_child,
 )
@@ -157,6 +158,20 @@ def test_multi_front_archive_keeps_consensus_endpoints_conflicts_and_overlap() -
     assert snapshot.archive_sha256 == snapshot.model_validate(
         snapshot.model_dump(mode="json", exclude={"archive_sha256"})
     ).archive_sha256
+
+
+def test_persisted_archive_hash_witness_is_verified_before_typed_ingest() -> None:
+    snapshot = build_multi_front_archive(_archive_candidates(), _policy(), generation=0)
+    persisted = snapshot.model_dump(mode="json")
+
+    recovered = parse_persisted_archive_snapshot(persisted)
+    assert recovered == snapshot
+    assert recovered.archive_sha256 == persisted["archive_sha256"]
+
+    drifted = dict(persisted)
+    drifted["archive_sha256"] = "0" * 64
+    with pytest.raises(ValueError, match="archive SHA-256 witness drifted"):
+        parse_persisted_archive_snapshot(drifted)
 
 
 def test_archive_rejects_weighted_total_and_duplicate_sequence_identity() -> None:
