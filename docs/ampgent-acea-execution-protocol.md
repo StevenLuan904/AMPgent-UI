@@ -3000,3 +3000,16 @@ MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot
 - 当前状态是 `generation_active_scoring_pending`，尚未增加严格库。完成后沿用本轮已验证的全量12项评分、
   展示硬门、全局精确去重和80/80家族验收；验收门仍为至少100个新严格家族且严格roots中新家族率
   至少50%。不得重复提交，也不得把未评分根计为可用候选。
+
+### 2026-08-28 黄金候选003双复合物MD完成
+
+- 已有候选003（`FFFMQLLKLAAEYVVAKHH`）GyrA 复合物连续任务于
+  `2026-08-28T00:26:37.018189Z` 正常完成 1 ns NPT + 50 ns NVT，最终日志温度 299.66 K；
+  manifest SHA-256 为 `eae4dfabfccc6c28468db5559fdf60c572dd5fae2fe1a5c5e6753a9a2a8f4779`。
+  PBP2a 分支此前已完成，manifest SHA-256 为
+  `dbf029cb9717850747e90ed212446bbf55d0abff9d7b3aced2c671b0e411d301`，最终温度 299.64 K。
+- 双分支完成收据位于
+  `/data1/huangyueshan/pepagent/md/gold-003-20260827/progress_receipts/completion_20260828T0028Z.json`，
+  SHA-256 为 `8de29f1f23e430a244dc328a8533d9c624d3df839d1a4274d94b6587225c86ff`，明确
+  `new_md_started=false`。轨迹完成只表示模拟执行成功；还需后处理界面接触、RMSD/RMSF和稳定区间，不能直接称
+  实验结合或活性证据，也不因此启动更多常规 MD。
