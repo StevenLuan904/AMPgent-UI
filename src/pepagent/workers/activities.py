@@ -14,6 +14,7 @@ from statistics import median
 from typing import Any
 
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from temporalio import activity
 
@@ -229,45 +230,89 @@ async def _register_artifact(
     role: str,
     metadata: dict[str, Any],
 ) -> Artifact:
-    artifact = await session.scalar(
-        select(Artifact).where(Artifact.sha256 == stored_payload["sha256"])
+    artifact = await _get_or_create_stored_artifact(session, stored_payload, metadata)
+    await session.execute(
+        pg_insert(EvidenceArtifact)
+        .values(tool_call_id=tool_call_id, artifact_id=artifact.id, role=role)
+        .on_conflict_do_nothing(
+            index_elements=[
+                EvidenceArtifact.tool_call_id,
+                EvidenceArtifact.artifact_id,
+                EvidenceArtifact.role,
+            ]
+        )
     )
-    if artifact is None:
-        artifact = Artifact(
+    return artifact
+
+
+def _artifact_identity_mismatches(
+    artifact: Artifact, stored_payload: dict[str, Any]
+) -> dict[str, dict[str, Any]]:
+    expected = {
+        "sha256": stored_payload["sha256"],
+        "size_bytes": stored_payload["size_bytes"],
+        "media_type": stored_payload["media_type"],
+        "storage_uri": stored_payload["uri"],
+    }
+    actual = {
+        "sha256": artifact.sha256,
+        "size_bytes": artifact.size_bytes,
+        "media_type": artifact.media_type,
+        "storage_uri": artifact.storage_uri,
+    }
+    return {
+        key: {"expected": expected[key], "actual": actual[key]}
+        for key in expected
+        if expected[key] != actual[key]
+    }
+
+
+async def _get_or_create_stored_artifact(
+    session: AsyncSession, stored_payload: dict[str, Any], metadata: dict[str, Any]
+) -> Artifact:
+    """Atomically reuse one global CAS artifact and reject identity drift.
+
+    Artifact rows are global across experiment runs.  A select-then-insert races when
+    multiple branches import the same content-addressed receipt concurrently, so the
+    insert itself must arbitrate on ``sha256``.  Per-run provenance remains on the
+    caller's ToolCall/EvidenceArtifact edge rather than by duplicating the Artifact.
+    """
+
+    artifact_id = await session.scalar(
+        pg_insert(Artifact)
+        .values(
             sha256=stored_payload["sha256"],
             size_bytes=stored_payload["size_bytes"],
             media_type=stored_payload["media_type"],
             storage_uri=stored_payload["uri"],
             metadata_json=metadata,
         )
-        session.add(artifact)
-        await session.flush()
-    link = await session.get(
-        EvidenceArtifact,
-        {"tool_call_id": tool_call_id, "artifact_id": artifact.id, "role": role},
+        .on_conflict_do_nothing(index_elements=[Artifact.sha256])
+        .returning(Artifact.id)
     )
-    if link is None:
-        session.add(EvidenceArtifact(tool_call_id=tool_call_id, artifact_id=artifact.id, role=role))
+    if artifact_id is None:
+        artifact = await session.scalar(
+            select(Artifact).where(Artifact.sha256 == stored_payload["sha256"])
+        )
+    else:
+        artifact = await session.get(Artifact, artifact_id)
+    if artifact is None:
+        raise RuntimeError(
+            "artifact SHA conflict was observed but the committed Artifact row is unavailable"
+        )
+    mismatches = _artifact_identity_mismatches(artifact, stored_payload)
+    if mismatches:
+        raise ValueError(
+            "content-addressed Artifact identity drifted for "
+            f"{stored_payload['sha256']}: {json.dumps(mismatches, sort_keys=True)}"
+        )
     return artifact
 
 
 async def _register_stored_artifact(
     session: AsyncSession, stored_payload: dict[str, Any], metadata: dict[str, Any]
 ) -> Artifact:
-    artifact = await session.scalar(
-        select(Artifact).where(Artifact.sha256 == stored_payload["sha256"])
-    )
-    if artifact is None:
-        artifact = Artifact(
-            sha256=stored_payload["sha256"],
-            size_bytes=stored_payload["size_bytes"],
-            media_type=stored_payload["media_type"],
-            storage_uri=stored_payload["uri"],
-            metadata_json=metadata,
-        )
-        session.add(artifact)
-        await session.flush()
-    return artifact
+    return await _get_or_create_stored_artifact(session, stored_payload, metadata)
 
 
 @activity.defn(name="mark_run_started")
