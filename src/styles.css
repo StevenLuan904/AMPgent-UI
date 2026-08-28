@@ -212,6 +212,8 @@ button:focus-visible { outline: 2px solid #315be8; outline-offset: 2px; }
 .distribution-mini-label, .distribution-mini-axis { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .distribution-mini-label span { color: #7d8798; font-size: 8px; }
 .distribution-mini-label b { color: #334155; font: 600 8px "DM Mono", monospace; }
+.distribution-mini-plot { position: relative; height: 40px; overflow: visible; }
+.distribution-mini-plot .distribution-stat-marker { width: 4px; }
 .result-distribution.compact svg { display: block; width: 100%; height: 40px; overflow: visible; }
 .distribution-mini-axis { margin-top: -7px; color: #9aa3b1; font: 500 7px "DM Mono", monospace; }
 .distribution-axis { stroke: #cdd5df; stroke-width: 1; }
@@ -220,6 +222,19 @@ button:focus-visible { outline: 2px solid #315be8; outline-offset: 2px; }
 .distribution-curve { fill: none; stroke: #527ee3; stroke-width: 2; vector-effect: non-scaling-stroke; }
 .distribution-point { fill: #527ee3; stroke: #fff; stroke-width: 1.4; }
 .distribution-median { stroke: #da805b; stroke-width: 1.3; stroke-dasharray: 3 2; vector-effect: non-scaling-stroke; }
+.distribution-stat-marker { position: absolute; top: 4px; bottom: 5px; width: 6px; z-index: 3; transform: translateX(-50%); outline: 0; cursor: help; }
+.distribution-stat-marker::before { content: ""; position: absolute; inset: 0 auto 0 50%; width: 0; transform: translateX(-50%); border-left: 1.4px dashed #da805b; }
+.distribution-stat-marker.mean::before { border-left: 1.4px solid #278b96; opacity: .9; }
+.distribution-stat-tooltip { position: absolute; left: 50%; top: 1px; display: grid; min-width: 76px; gap: 2px; padding: 5px 7px; border: 1px solid rgba(30,41,59,.08); border-radius: 6px; color: #fff; background: rgba(24,34,49,.96); box-shadow: 0 7px 18px rgba(15,23,42,.18); opacity: 0; transform: translate(-50%, -105%); pointer-events: none; white-space: nowrap; transition: opacity .12s ease, transform .12s ease; }
+.distribution-stat-tooltip small { color: #c9d3e0; font-size: 10px; font-weight: 650; }
+.distribution-stat-tooltip b { color: #fff; font: 650 11px "DM Mono", monospace; }
+.distribution-stat-marker:hover, .distribution-stat-marker:focus-visible { z-index: 8; }
+.distribution-stat-marker:hover .distribution-stat-tooltip, .distribution-stat-marker:focus-visible .distribution-stat-tooltip { opacity: 1; transform: translate(-50%, -112%); }
+.distribution-stat-marker.edge-left .distribution-stat-tooltip { left: -1px; transform: translate(0, -105%); }
+.distribution-stat-marker.edge-left:hover .distribution-stat-tooltip, .distribution-stat-marker.edge-left:focus-visible .distribution-stat-tooltip { transform: translate(0, -112%); }
+.distribution-stat-marker.edge-right .distribution-stat-tooltip { left: auto; right: -1px; transform: translate(0, -105%); }
+.distribution-stat-marker.edge-right:hover .distribution-stat-tooltip, .distribution-stat-marker.edge-right:focus-visible .distribution-stat-tooltip { transform: translate(0, -112%); }
+.react-flow__node:has(.distribution-stat-marker:hover), .react-flow__node:focus-within { z-index: 20 !important; }
 .distribution-rug { stroke: rgba(82,126,227,.34); stroke-width: 1; }
 .distribution-iqr { fill: #8f74c9; }
 .result-distribution.detailed { margin: 0 25px 20px; border: 1px solid #dfe5ed; border-radius: 10px; background: #fff; overflow: hidden; }
@@ -232,13 +247,19 @@ button:focus-visible { outline: 2px solid #315be8; outline-offset: 2px; }
 .distribution-summary span { display: grid; gap: 4px; padding-left: 13px; border-left: 1px solid #e0e6ed; }
 .distribution-summary small { color: #8993a3; font-size: 8px; font-weight: 500; }
 .distribution-summary b { color: #27364d; font: 600 11px "DM Mono", monospace; white-space: nowrap; }
-.result-distribution.detailed > svg { display: block; width: 100%; height: 214px; padding: 4px 14px 0; }
-.distribution-tick { fill: #7f8998; font: 8px "DM Mono", monospace; }
+.distribution-detailed-plot { position: relative; height: 220px; margin: 4px 14px 0; overflow: visible; }
+.distribution-detailed-plot > svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.distribution-detailed-plot .distribution-stat-marker { top: 10px; bottom: 35px; }
+.distribution-detailed-plot .distribution-stat-tooltip { top: 7px; min-width: 96px; padding: 7px 9px; }
+.distribution-detailed-plot .distribution-stat-tooltip small { font-size: 10px; }
+.distribution-detailed-plot .distribution-stat-tooltip b { font-size: 11px; }
+.distribution-tick { fill: #536176; font: 650 16px "DM Mono", monospace; }
+.distribution-axis-unit { fill: #46566e; font: 700 15px Inter, sans-serif; }
 .distribution-empty-label { fill: #8a95a6; font: 500 12px Inter, sans-serif; }
 .result-distribution.detailed footer { min-height: 34px; padding: 0 15px; display: flex; align-items: center; gap: 14px; border-top: 1px solid #edf1f5; color: #768194; font-size: 8px; }
 .result-distribution.detailed footer span { display: inline-flex; align-items: center; gap: 5px; }
 .result-distribution.detailed footer i { display: inline-block; width: 12px; height: 3px; border-radius: 3px; }
-.curve-key { background: #527ee3; }.median-key { height: 8px !important; width: 1px !important; border-left: 1px dashed #da805b; }.iqr-key { background: #8f74c9; }
+.curve-key { background: #527ee3; }.median-key { height: 8px !important; width: 1px !important; border-left: 1px dashed #da805b; }.mean-key { height: 8px !important; width: 1px !important; border-left: 1px solid #278b96; }.iqr-key { background: #8f74c9; }
 .result-distribution.detailed footer b { margin-left: auto; color: #44536b; font-weight: 650; }
 .workflow-node.stage-targets { min-height: 224px; }
 .node-targets { min-height: 102px; padding: 8px 0 3px; display: grid; gap: 6px; }

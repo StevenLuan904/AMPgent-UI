@@ -187,10 +187,10 @@ function chartGeometry(values: number[], width: number, height: number, density:
   const rawMin = sorted[0] ?? 0
   const rawMax = sorted[sorted.length - 1] ?? 1
   const span = rawMax - rawMin || Math.max(Math.abs(rawMax), 1)
-  const minimum = rawMin - span * 0.05
+  const minimum = rawMin >= 0 ? Math.max(0, rawMin - span * 0.05) : rawMin - span * 0.05
   const maximum = rawMax + span * 0.05
   const x = (value: number) => 10 + ((value - minimum) / (maximum - minimum)) * (width - 20)
-  if (!density) return { sorted, rawMin, rawMax, x, points: [] as Array<[number, number]> }
+  if (!density) return { sorted, rawMin, rawMax, minimum, maximum, x, points: [] as Array<[number, number]> }
   const bandwidth = Math.max(span * Math.pow(Math.max(values.length, 2), -0.2) * 0.42, span / 120)
   const points = Array.from({ length: 52 }, (_, index) => {
     const value = minimum + (index / 51) * (maximum - minimum)
@@ -201,7 +201,37 @@ function chartGeometry(values: number[], width: number, height: number, density:
     return [x(value), densityValue] as [number, number]
   })
   const maxDensity = Math.max(...points.map((point) => point[1]), 1e-9)
-  return { sorted, rawMin, rawMax, x, points: points.map(([px, py]) => [px, height - 15 - (py / maxDensity) * (height - 28)] as [number, number]) }
+  return { sorted, rawMin, rawMax, minimum, maximum, x, points: points.map(([px, py]) => [px, height - 15 - (py / maxDensity) * (height - 28)] as [number, number]) }
+}
+
+function DistributionStatisticMarker({
+  x,
+  width,
+  label,
+  value,
+  unit,
+  kind,
+}: {
+  x: number
+  width: number
+  label: string
+  value: number
+  unit: string
+  kind: 'median' | 'mean'
+}) {
+  const position = (x / width) * 100
+  const edge = position < 18 ? ' edge-left' : position > 82 ? ' edge-right' : ''
+  const readableValue = `${precision(value)}${unit ? ` ${unit}` : ''}`
+  return (
+    <span
+      className={`distribution-stat-marker ${kind}${edge}`}
+      style={{ left: `${position}%` }}
+      tabIndex={0}
+      aria-label={`${label} ${readableValue}`}
+    >
+      <span className="distribution-stat-tooltip"><small>{label}</small><b>{readableValue}</b></span>
+    </span>
+  )
 }
 
 export function ResultDistribution({ data, compact = false }: { data: ResultDistributionData; compact?: boolean }) {
@@ -233,33 +263,43 @@ export function ResultDistribution({ data, compact = false }: { data: ResultDist
   const curve = geometry.points.map(([x, y], index) => `${index ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ')
   const area = density ? `${curve} L${width - 10},${height - 14} L10,${height - 14} Z` : ''
   const modeLabel = density ? '核密度曲线' : '散点分布'
+  const axisTicks = [0, .25, .5, .75, 1].map((fraction) => ({
+    fraction,
+    x: 10 + fraction * (width - 20),
+    value: geometry.minimum + fraction * (geometry.maximum - geometry.minimum),
+  }))
 
   if (compact) return (
     <div className="result-distribution compact" title={`${data.label} · ${modeLabel} · ${data.source}`}>
-      <div className="distribution-mini-label"><span>{data.label}</span><b>{precision(median)} {data.unit}</b></div>
-      <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" aria-label={`${data.label}${modeLabel}`}>
-        <line x1="10" y1={height - 14} x2={width - 10} y2={height - 14} className="distribution-axis" />
-        {density ? <><path d={area} className="distribution-area" /><path d={curve} className="distribution-curve" /></> : values.map((value, index) => <circle key={`${value}-${index}`} cx={geometry.x(value)} cy={height - 18 - (index % 4) * 5} r="2.6" className="distribution-point" />)}
-        <line x1={geometry.x(median)} y1="7" x2={geometry.x(median)} y2={height - 10} className="distribution-median" />
-      </svg>
-      <div className="distribution-mini-axis"><span>{precision(geometry.rawMin)}</span><span>中位数</span><span>{precision(geometry.rawMax)}</span></div>
+      <div className="distribution-mini-label"><span>{data.label}</span><b>{values.length.toLocaleString()} 个结果</b></div>
+      <div className="distribution-mini-plot">
+        <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" aria-label={`${data.label}${modeLabel}`}>
+          <line x1="10" y1={height - 14} x2={width - 10} y2={height - 14} className="distribution-axis" />
+          {density ? <><path d={area} className="distribution-area" /><path d={curve} className="distribution-curve" /></> : values.map((value, index) => <circle key={`${value}-${index}`} cx={geometry.x(value)} cy={height - 18 - (index % 4) * 5} r="2.6" className="distribution-point" />)}
+        </svg>
+        <DistributionStatisticMarker x={geometry.x(median)} width={width} label="中位数" value={median} unit={data.unit} kind="median" />
+        <DistributionStatisticMarker x={geometry.x(mean)} width={width} label="平均数" value={mean} unit={data.unit} kind="mean" />
+      </div>
+      <div className="distribution-mini-axis"><span>{precision(geometry.rawMin)}</span><span>{modeLabel}</span><span>{precision(geometry.rawMax)}</span></div>
     </div>
   )
 
   return (
     <figure className="result-distribution detailed">
-      <figcaption><div><span>结果分布 · {modeLabel}</span><h3>{data.label}</h3><p>{data.source} · 单位：{data.unit}</p></div><div className="distribution-statline"><span><small>中位数</small><b>{precision(median)}</b></span><span><small>四分位距</small><b>{precision(q1)}–{precision(q3)}</b></span><span><small>范围</small><b>{precision(geometry.rawMin)}–{precision(geometry.rawMax)}</b></span></div></figcaption>
-      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${data.label}${modeLabel}`}>
-        {[0, .25, .5, .75, 1].map((fraction) => <line key={fraction} x1={10 + fraction * (width - 20)} y1="16" x2={10 + fraction * (width - 20)} y2={height - 30} className="distribution-grid" />)}
-        <line x1="10" y1={height - 30} x2={width - 10} y2={height - 30} className="distribution-axis" />
-        {density ? <><path d={area.replaceAll(String(height - 14), String(height - 30))} className="distribution-area" /><path d={curve} className="distribution-curve" />{values.filter((_, index) => index % Math.max(1, Math.floor(values.length / 90)) === 0).map((value, index) => <line key={index} x1={geometry.x(value)} y1={height - 30} x2={geometry.x(value)} y2={height - 24} className="distribution-rug" />)}</> : values.map((value, index) => <circle key={`${value}-${index}`} cx={geometry.x(value)} cy={height - 42 - (index % 5) * 13} r="5" className="distribution-point" />)}
-        <rect x={geometry.x(q1)} y={height - 23} width={Math.max(2, geometry.x(q3) - geometry.x(q1))} height="7" rx="3.5" className="distribution-iqr" />
-        <line x1={geometry.x(median)} y1="12" x2={geometry.x(median)} y2={height - 14} className="distribution-median" />
-        <text x="10" y={height - 2} className="distribution-tick">{precision(geometry.rawMin)}</text>
-        <text x={width / 2} y={height - 2} textAnchor="middle" className="distribution-tick">均值 {precision(mean)}</text>
-        <text x={width - 10} y={height - 2} textAnchor="end" className="distribution-tick">{precision(geometry.rawMax)} {data.unit}</text>
-      </svg>
-      <footer><span><i className="curve-key" />{modeLabel}</span><span><i className="median-key" />中位数</span><span><i className="iqr-key" />四分位距</span><b>{data.direction === 'lower' ? '数值越低越有利' : data.direction === 'higher' ? '数值越高越有利' : '描述性分布'}</b></footer>
+      <figcaption><div><span>结果分布 · {modeLabel}</span><h3>{data.label}</h3><p>{data.source} · 单位：{data.unit}</p></div><div className="distribution-statline"><span><small>中位数</small><b>{precision(median)}</b></span><span><small>平均数</small><b>{precision(mean)}</b></span><span><small>四分位距</small><b>{precision(q1)}–{precision(q3)}</b></span><span><small>范围</small><b>{precision(geometry.rawMin)}–{precision(geometry.rawMax)}</b></span></div></figcaption>
+      <div className="distribution-detailed-plot">
+        <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${data.label}${modeLabel}`}>
+          {axisTicks.map((tick) => <line key={tick.fraction} x1={tick.x} y1="16" x2={tick.x} y2={height - 34} className="distribution-grid" />)}
+          <line x1="10" y1={height - 34} x2={width - 10} y2={height - 34} className="distribution-axis" />
+          {density ? <><path d={area.replaceAll(String(height - 14), String(height - 34))} className="distribution-area" /><path d={curve} className="distribution-curve" />{values.filter((_, index) => index % Math.max(1, Math.floor(values.length / 90)) === 0).map((value, index) => <line key={index} x1={geometry.x(value)} y1={height - 34} x2={geometry.x(value)} y2={height - 27} className="distribution-rug" />)}</> : values.map((value, index) => <circle key={`${value}-${index}`} cx={geometry.x(value)} cy={height - 46 - (index % 5) * 13} r="5" className="distribution-point" />)}
+          <rect x={geometry.x(q1)} y={height - 26} width={Math.max(2, geometry.x(q3) - geometry.x(q1))} height="8" rx="4" className="distribution-iqr" />
+          {axisTicks.map((tick) => <text key={`label-${tick.fraction}`} x={tick.x} y={height - 3} textAnchor={tick.fraction === 0 ? 'start' : tick.fraction === 1 ? 'end' : 'middle'} className="distribution-tick">{precision(tick.value)}</text>)}
+          <text x={width - 10} y="14" textAnchor="end" className="distribution-axis-unit">{data.unit}</text>
+        </svg>
+        <DistributionStatisticMarker x={geometry.x(median)} width={width} label="中位数" value={median} unit={data.unit} kind="median" />
+        <DistributionStatisticMarker x={geometry.x(mean)} width={width} label="平均数" value={mean} unit={data.unit} kind="mean" />
+      </div>
+      <footer><span><i className="curve-key" />{modeLabel}</span><span><i className="median-key" />中位数</span><span><i className="mean-key" />平均数</span><span><i className="iqr-key" />四分位距</span><b>{data.direction === 'lower' ? '数值越低越有利' : data.direction === 'higher' ? '数值越高越有利' : '描述性分布'}</b></footer>
     </figure>
   )
 }
