@@ -1,30 +1,50 @@
-# AMPgent UI
+# AMPgent 科学分析界面
 
-AMPgent 的顶层产品框架。当前分支将 `Overview` 与 `Analysis` 设为并行工作区，并刻意不实现分析 Agent。
+用于查看短肽设计轮次、证据链和确定性分析结果的只读科学工作区。核心数据来自本地数据服务连接的 PostgreSQL 数据库；分析页在实时分析接口启用前读取已校验的发布快照。
 
-本版关注：
-
-- 科学问题驱动的 Query Composer；
-- 可拖动、缩放、隐藏、恢复并本地持久化的 12 列 Dashboard；
-- Run quality、来源与损失、评分分布、安全性、Pareto 冲突、候选实验台等顶层卡片；
-- 与 React 无关的 `AnalysisQuerySpec` / `AnalysisDataset` / provenance 契约；
-- 清晰标注的 framework fixture，确保示例数值不会被误认为实验事实。
-
-详细设计与后续填充顺序见 [docs/analysis-dashboard-framework.zh-CN.md](docs/analysis-dashboard-framework.zh-CN.md)。
-
-## Local development
+## 本地运行
 
 ```powershell
 npm install
 npm run dev
 ```
 
-默认打开 `http://127.0.0.1:5173`。现有 Overview API 通过 Vite 将 `/v1` 代理到 `http://127.0.0.1:8081`；Analysis 在 Analytics API 接入前使用显式标注的 fixture。
+`npm run dev` 会依次完成：
 
-## Validation
+1. 检查 `http://127.0.0.1:8081` 的数据服务。
+2. 如果尚未运行，使用相邻目录 `agent-platform/.venv-local` 自动启动只读接口。
+3. 将界面固定启动在 `http://127.0.0.1:5173`。
+
+数据库默认连接本机 `55432` 端口的现有 PostgreSQL 实例。界面右上角“数据连接”可检查连接状态、恢复本机默认地址或设置其他只读数据服务。
+
+如后端位于其他目录，可在运行前设置：
 
 ```powershell
-npm run build
+$env:AMPGENT_BACKEND_ROOT = 'D:\path\to\agent-platform'
+$env:AMPGENT_PYTHON = 'D:\path\to\python.exe'
+npm run dev
 ```
 
-交互验收需覆盖：进入/退出布局编辑、拖动卡片、缩放卡片、卡片库隐藏/恢复、生成器筛选联动、布局刷新后保留。
+仅调试界面、不自动启动数据服务时使用：
+
+```powershell
+npm run dev:ui
+```
+
+## 安装到 Windows 开始菜单
+
+```powershell
+npm run install:start-menu
+```
+
+开始菜单会出现“AMPgent 科学分析”。点击后会在后台启动数据服务和界面，并在就绪后打开浏览器。卸载入口：
+
+```powershell
+npm run uninstall:start-menu
+```
+
+## 发布检查
+
+```powershell
+.\scripts\release-check.ps1
+```
