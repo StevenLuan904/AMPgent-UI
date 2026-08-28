@@ -232,6 +232,27 @@ def _require_path_within_release(path: Path, release_root: Path, *, field_name: 
     return resolved
 
 
+def _require_content_addressed_file(
+    path: Path,
+    *,
+    expected_sha256: str,
+    field_name: str,
+) -> Path:
+    resolved = path.resolve(strict=True)
+    if not resolved.is_file() or resolved.is_symlink():
+        raise ValueError(f"{field_name} is not a regular immutable file")
+    if (
+        resolved.name.casefold() != "runtime.local.yaml"
+        or resolved.parent.name.casefold() != expected_sha256.casefold()
+    ):
+        raise ValueError(
+            f"{field_name} must be <registry-sha256>/runtime.local.yaml"
+        )
+    if sha256_file(resolved) != expected_sha256:
+        raise ValueError(f"{field_name} bytes drifted before submission")
+    return resolved
+
+
 def _same_resolved_path(first: Any, second: Any) -> bool:
     try:
         return Path(str(first)).resolve(strict=True) == Path(str(second)).resolve(strict=True)
@@ -283,10 +304,11 @@ def _verify_metric_runtime_registry_live(
 ) -> dict[str, Any]:
     """Rehash every byte consumed by all five metric providers.
 
-    Repository-owned adapters, manifests, locks, registries, and the working
-    directory must point into the immutable release.  Provider executables,
-    source checkouts, and model roots may be external frozen installations, but
-    their complete declared inventories are rehashed by the generic v37 guard.
+    Repository-owned adapters, manifests, locks, and the working directory must
+    point into the immutable release.  A machine-specific runtime registry may
+    instead use a SHA-named content-addressed path.  Provider executables, source
+    checkouts, and model roots may be external frozen installations, but their
+    complete declared inventories are rehashed by the generic v37 guard.
     """
 
     if set(plugin_registry) != METRIC_PLUGIN_NAMES:
@@ -375,14 +397,23 @@ def _verify_metric_runtime_registry_live(
             _require_path_within_release(path, release_root, field_name=field_name)
         registry_path_value = descriptor.get("registry_path")
         if registry_path_value is not None:
-            registry_path = _require_path_within_release(
-                Path(str(registry_path_value)),
-                release_root,
-                field_name=f"{plugin_name} registry",
-            )
-            if sha256_file(registry_path) != _require_sha256(
+            registry_sha256 = _require_sha256(
                 descriptor.get("registry_sha256"), f"{plugin_name} registry"
-            ):
+            )
+            registry_path = Path(str(registry_path_value)).resolve(strict=True)
+            try:
+                _require_path_within_release(
+                    registry_path,
+                    release_root,
+                    field_name=f"{plugin_name} registry",
+                )
+            except ValueError:
+                _require_content_addressed_file(
+                    registry_path,
+                    expected_sha256=registry_sha256,
+                    field_name=f"{plugin_name} registry",
+                )
+            if sha256_file(registry_path) != registry_sha256:
                 raise ValueError(f"{plugin_name} live registry bytes drifted before submission")
         if descriptor.get("runtime_manifest_sha256") != contract.get(
             "runtime_manifest_sha256"

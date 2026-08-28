@@ -644,6 +644,89 @@ def test_metric_adapter_must_resolve_inside_immutable_release(tmp_path: Path) ->
         )
 
 
+def test_metric_registry_may_use_exact_content_addressed_cache_path(
+    tmp_path: Path,
+) -> None:
+    config, _preflight = _fixture_bundle(tmp_path)
+    plugins = copy.deepcopy(config["runtime"]["metric_plugins_by_name"])
+    source_registry = Path(plugins["hemolysis_risk"]["registry_path"])
+    registry_sha256 = sha256_file(source_registry)
+    cached_registry = (
+        tmp_path
+        / "bounded-cache"
+        / "runtime-registry"
+        / registry_sha256
+        / "runtime.local.yaml"
+    )
+    cached_registry.parent.mkdir(parents=True)
+    cached_registry.write_bytes(source_registry.read_bytes())
+    for descriptor in plugins.values():
+        descriptor["registry_path"] = str(cached_registry)
+        descriptor["registry_sha256"] = registry_sha256
+        descriptor["runtime_identity_sha256"] = sha256_json(
+            {
+                key: value
+                for key, value in descriptor.items()
+                if key != "runtime_identity_sha256"
+            }
+        )
+
+    snapshot = _verify_metric_runtime_registry_live(
+        plugin_registry=plugins,
+        release_root=Path(config["release"]["extracted_root"]),
+    )
+
+    assert snapshot["plugin_count"] == 5
+
+
+@pytest.mark.parametrize(
+    "bad_path_parts",
+    [
+        ("wrong-sha", "runtime.local.yaml"),
+        ("digest-is-not-direct-parent", "nested", "runtime.local.yaml"),
+        ("wrong-sha", "registry.yaml"),
+    ],
+)
+def test_external_metric_registry_requires_exact_sha_named_cache_layout(
+    tmp_path: Path,
+    bad_path_parts: tuple[str, ...],
+) -> None:
+    config, _preflight = _fixture_bundle(tmp_path)
+    plugins = copy.deepcopy(config["runtime"]["metric_plugins_by_name"])
+    source_registry = Path(plugins["hemolysis_risk"]["registry_path"])
+    registry_sha256 = sha256_file(source_registry)
+    normalized_parts = tuple(
+        registry_sha256 if part == "digest-is-not-direct-parent" else part
+        for part in bad_path_parts
+    )
+    cached_registry = tmp_path / "bounded-cache" / "runtime-registry"
+    if len(normalized_parts) == 3:
+        cached_registry = cached_registry / normalized_parts[0] / normalized_parts[1]
+        cached_registry = cached_registry / normalized_parts[2]
+    else:
+        cached_registry = cached_registry.joinpath(*normalized_parts)
+    cached_registry.parent.mkdir(parents=True)
+    cached_registry.write_bytes(source_registry.read_bytes())
+    for descriptor in plugins.values():
+        descriptor["registry_path"] = str(cached_registry)
+        descriptor["registry_sha256"] = registry_sha256
+        descriptor["runtime_identity_sha256"] = sha256_json(
+            {
+                key: value
+                for key, value in descriptor.items()
+                if key != "runtime_identity_sha256"
+            }
+        )
+
+    with pytest.raises(
+        ValueError, match="must be <registry-sha256>/runtime.local.yaml"
+    ):
+        _verify_metric_runtime_registry_live(
+            plugin_registry=plugins,
+            release_root=Path(config["release"]["extracted_root"]),
+        )
+
+
 @pytest.mark.asyncio
 async def test_reservation_rehashes_again_before_any_cas_or_database_write(
     tmp_path: Path,
