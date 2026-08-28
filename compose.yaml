@@ -2,6 +2,9 @@ name: pepagent
 
 services:
   postgres:
+    # The authoritative database is remote. This service is retained only as
+    # an explicit local-development/rollback fixture and must never auto-start.
+    profiles: ["local-db"]
     image: postgres:16.4
     restart: unless-stopped
     environment:
@@ -40,15 +43,15 @@ services:
   temporal:
     image: temporalio/auto-setup:1.26.2
     restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
     environment:
       DB: postgres12
-      DB_PORT: 5432
+      # The default reaches the authoritative .19 primary through the
+      # host-side SSH forward. Local development must opt in to the local-db
+      # profile and override these values to postgres:5432.
+      DB_PORT: ${PEPAGENT_POSTGRES_PORT:-55432}
       POSTGRES_USER: pepagent
       POSTGRES_PWD: ${POSTGRES_PASSWORD:-change-me}
-      POSTGRES_SEEDS: postgres
+      POSTGRES_SEEDS: ${PEPAGENT_POSTGRES_SEEDS:-host.docker.internal}
       DYNAMIC_CONFIG_FILE_PATH: config/dynamicconfig/docker.yaml
     ports:
       - "127.0.0.1:7233:7233"
@@ -69,8 +72,6 @@ services:
       dockerfile: deploy/mlflow/Dockerfile
     restart: unless-stopped
     depends_on:
-      postgres:
-        condition: service_healthy
       minio:
         condition: service_healthy
     environment:
@@ -81,7 +82,7 @@ services:
       mlflow server
       --host 0.0.0.0
       --port 5000
-      --backend-store-uri postgresql+psycopg2://pepagent:${POSTGRES_PASSWORD:-change-me}@postgres:5432/mlflow
+      --backend-store-uri postgresql+psycopg2://pepagent:${POSTGRES_PASSWORD:-change-me}@${PEPAGENT_POSTGRES_SEEDS:-host.docker.internal}:${PEPAGENT_POSTGRES_PORT:-55432}/mlflow
       --artifacts-destination s3://pepagent-artifacts/mlflow
       --serve-artifacts
     ports:

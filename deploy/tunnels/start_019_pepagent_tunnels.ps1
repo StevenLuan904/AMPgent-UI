@@ -38,7 +38,12 @@ try {
         '-J', 'eh019@58.34.98.79:49200',
         '-R', '127.0.0.1:17233:127.0.0.1:7233',
         '-R', '127.0.0.1:19000:127.0.0.1:9000',
+        # Transitional compatibility for existing .19 clients. New .19
+        # processes should connect directly to 127.0.0.1:55433.
         '-R', '127.0.0.1:55432:127.0.0.1:55432',
+        # PostgreSQL is authoritative on .19:55433; keep the workstation
+        # contract at 127.0.0.1:55432 without storing database files locally.
+        '-L', '127.0.0.1:55432:127.0.0.1:55433',
         'huangyueshan@192.168.99.19'
     )
     while ($true) {
