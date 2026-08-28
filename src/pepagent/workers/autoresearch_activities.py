@@ -717,10 +717,8 @@ async def _execute_autoresearch_action_batch_unlocked(
                 }
             )
     results.sort(key=lambda item: str(item["action_id"]))
-    if len({item["sequence"] for item in results}) != len(results):
-        raise ValueError("AutoResearch executor produced duplicate children")
     payload = {
-        "schema_version": "ampgent.autoresearch-materialized-action-batch.1",
+        "schema_version": "ampgent.autoresearch-materialized-action-batch.2",
         "run_id": str(run_id),
         "iteration_no": int(plan["iteration_no"]),
         "action_batch_sha256": plan["action_batch_sha256"],
@@ -745,7 +743,7 @@ async def _execute_autoresearch_action_batch_unlocked(
                 if pepmlm_requests
                 else "autoresearch-frozen-action-executor"
             ),
-            "tool_version": "1",
+            "tool_version": "2",
             "environment_sha256": environment_sha256,
             "model_uri": (
                 get_settings().pepmlm_model_path if pepmlm_requests else executor.get("model_uri")
@@ -785,6 +783,27 @@ async def execute_autoresearch_action_batch(request: dict[str, Any]) -> dict[str
             await asyncio.to_thread(_release_autoresearch_generator_lock, handle)
 
 
+def _candidate_was_materialized_by_action(
+    candidate: Candidate,
+    *,
+    action_id: uuid.UUID,
+    requested_generation: int,
+) -> bool:
+    """Distinguish an activity retry from a distinct duplicate proposal."""
+
+    metadata = candidate.metadata_json if isinstance(candidate.metadata_json, dict) else {}
+    return (
+        candidate.generation == requested_generation
+        and str(metadata.get("autoresearch_action_id") or "") == str(action_id)
+    )
+
+
+def _duplicate_rejection_reason(candidate: Candidate, *, requested_generation: int) -> str:
+    if candidate.generation != requested_generation:
+        return "sequence_already_materialized_in_another_generation"
+    return "sequence_already_materialized_by_another_action"
+
+
 @activity.defn(name="persist_autoresearch_children")
 async def persist_autoresearch_children(request: dict[str, Any]) -> dict[str, Any]:
     """Persist materialized children and the complete multi-parent lineage."""
@@ -798,13 +817,12 @@ async def persist_autoresearch_children(request: dict[str, Any]) -> dict[str, An
     results_by_action = {str(item["action_id"]): item for item in generated["results"]}
     if set(results_by_action) != {str(item["action_id"]) for item in plan["actions"]}:
         raise ValueError("generated AutoResearch results do not cover the action batch")
-    sequences = [str(item["sequence"]).upper() for item in generated["results"]]
-    if len(sequences) != len(set(sequences)):
-        raise ValueError("AutoResearch action batch produced duplicate children")
     provenance = generated["provenance"]
     stored = await _store_json(generated)
     async with SessionFactory() as session, session.begin():
-        run = await session.get(ExperimentRun, run_id)
+        # Serialize overlapping Temporal attempts for this run so an expired
+        # attempt cannot race its retry on the unique sequence constraint.
+        run = await session.get(ExperimentRun, run_id, with_for_update=True)
         if run is None or run.status != RunStatus.RUNNING:
             raise ValueError("AutoResearch children require a new running run")
         repository = ExperimentRepository(session)
@@ -818,7 +836,10 @@ async def persist_autoresearch_children(request: dict[str, Any]) -> dict[str, An
                 "iteration_no": iteration_no,
                 "action_batch_sha256": plan["action_batch_sha256"],
             },
-            {"action_count": len(plan["actions"]), "score_all_next": True},
+            {
+                "action_count": len(plan["actions"]),
+                "deduplicate_before_score_all": True,
+            },
             generated,
             weights_sha256=provenance.get("weights_sha256"),
             model_uri=provenance.get("model_uri"),
@@ -844,6 +865,9 @@ async def persist_autoresearch_children(request: dict[str, Any]) -> dict[str, An
             "materializes_autoresearch_actions",
         )
         children = []
+        rejected_duplicates = []
+        accepted_source_ids: set[uuid.UUID] = set()
+        requested_generation = iteration_no + 1
         for item in plan["actions"]:
             action_id = uuid.UUID(str(item["action_id"]))
             action = await session.get(AutoResearchAction, action_id)
@@ -860,24 +884,110 @@ async def persist_autoresearch_children(request: dict[str, Any]) -> dict[str, An
                 ),
                 None,
             )
-            child = await repository.add_candidate(
-                run_id,
-                str(result["sequence"]),
-                generation=iteration_no + 1,
-                proposal_rank=(iteration_no + 1) * 1_000_000 + int(action.action_ordinal),
-                generator_call_id=call.id,
-                parent_id=anchor,
-                metadata={
-                    "autoresearch_action_id": str(action.id),
+            sequence = "".join(str(result["sequence"]).split()).upper()
+            sequence_sha256 = sha256_text(sequence)
+            if str(result.get("sequence_sha256") or sequence_sha256) != sequence_sha256:
+                raise ValueError("AutoResearch generated sequence hash drifted")
+            child = await session.scalar(
+                select(Candidate).where(
+                    Candidate.run_id == run_id,
+                    Candidate.sequence_sha256 == sequence_sha256,
+                )
+            )
+            if child is None:
+                child = await repository.add_candidate(
+                    run_id,
+                    sequence,
+                    generation=requested_generation,
+                    proposal_rank=requested_generation * 1_000_000
+                    + int(action.action_ordinal),
+                    generator_call_id=call.id,
+                    parent_id=anchor,
+                    metadata={
+                        "autoresearch_action_id": str(action.id),
+                        "repository_action_sha256": action.action_sha256,
+                        "runtime_action_sha256": item["runtime_action_sha256"],
+                        "executor_action_sha256": result.get("executor_action_sha256"),
+                        "branch_key": action.branch_key,
+                    },
+                    actor="autoresearch-action-executor",
+                )
+            if child.sequence != sequence or child.sequence_sha256 != sequence_sha256:
+                raise ValueError("AutoResearch duplicate candidate sequence identity drifted")
+            if not _candidate_was_materialized_by_action(
+                child,
+                action_id=action.id,
+                requested_generation=requested_generation,
+            ):
+                reason = _duplicate_rejection_reason(
+                    child,
+                    requested_generation=requested_generation,
+                )
+                occurrence_metadata = {
+                    "status": "rejected_duplicate",
+                    "reason": reason,
+                    "materialized_new_candidate": False,
+                    "scientific_output_reused": False,
+                    "excluded_from_unique_child_cohort": True,
+                    "action_id": str(action.id),
+                    "existing_candidate_id": str(child.id),
+                    "existing_generation": int(child.generation),
+                    "requested_generation": requested_generation,
                     "repository_action_sha256": action.action_sha256,
                     "runtime_action_sha256": item["runtime_action_sha256"],
                     "executor_action_sha256": result.get("executor_action_sha256"),
-                    "branch_key": action.branch_key,
-                },
-                actor="autoresearch-action-executor",
+                }
+                occurrence = await repository.record_candidate_occurrence(
+                    run_id=run_id,
+                    tool_call_id=call.id,
+                    parent_candidate_id=anchor,
+                    occurrence_rank=int(action.action_ordinal),
+                    occurrence_kind=action.action_kind,
+                    opaque_arm_label=action.branch_key,
+                    sequence=sequence,
+                    candidate_id=child.id,
+                    metadata=occurrence_metadata,
+                )
+                event_idempotency_key = sha256_json(
+                    {
+                        "event": "autoresearch.action.rejected_duplicate",
+                        "run_id": str(run_id),
+                        "iteration_no": iteration_no,
+                        "action_id": str(action.id),
+                        "tool_call_id": str(call.id),
+                        "occurrence_rank": int(action.action_ordinal),
+                    }
+                )
+                await repository.append_event(
+                    "autoresearch_action",
+                    action.id,
+                    "autoresearch.action.rejected_duplicate",
+                    "autoresearch-action-executor",
+                    {
+                        **occurrence_metadata,
+                        "run_id": str(run_id),
+                        "iteration_no": iteration_no,
+                        "generator_tool_call_id": str(call.id),
+                        "occurrence_id": str(occurrence.id),
+                        "sequence_sha256": sequence_sha256,
+                        "event_idempotency_key": event_idempotency_key,
+                    },
+                    idempotency_key=event_idempotency_key,
+                )
+                rejected_duplicates.append(
+                    {
+                        **occurrence_metadata,
+                        "occurrence_id": str(occurrence.id),
+                        "sequence": sequence,
+                        "sequence_sha256": sequence_sha256,
+                    }
+                )
+                continue
+            accepted_source_ids.update(
+                uuid.UUID(str(row["parent_candidate_id"]))
+                for row in sources
+                if row.get("parent_candidate_id") is not None
             )
-            if child.generation != iteration_no + 1:
-                raise ValueError("AutoResearch child collides with another generation")
             edges = await repository.record_candidate_lineage(
                 action_id=action.id,
                 child_candidate_id=child.id,
@@ -910,7 +1020,54 @@ async def persist_autoresearch_children(request: dict[str, Any]) -> dict[str, An
                     "lineage_edge_sha256s": [edge.edge_sha256 for edge in edges],
                 }
             )
-    parent_controls = list(generated.get("parent_controls") or [])
+        if not children:
+            if len(rejected_duplicates) != len(plan["actions"]):
+                raise ValueError(
+                    "AutoResearch produced no unique children without duplicate evidence"
+                )
+            stop_reason = "no_unique_children_after_duplicate_rejection"
+            event_idempotency_key = sha256_json(
+                {
+                    "event": "autoresearch.iteration.noop",
+                    "run_id": str(run_id),
+                    "iteration_no": iteration_no,
+                    "action_batch_sha256": plan["action_batch_sha256"],
+                }
+            )
+            await repository.append_event(
+                "run",
+                run_id,
+                "autoresearch.iteration.noop",
+                "autoresearch-action-executor",
+                {
+                    "run_id": str(run_id),
+                    "iteration_no": iteration_no,
+                    "action_batch_sha256": plan["action_batch_sha256"],
+                    "status": "iteration_noop",
+                    "stop_reason": stop_reason,
+                    "proposed_child_count": len(plan["actions"]),
+                    "unique_child_count": 0,
+                    "rejected_duplicate_count": len(rejected_duplicates),
+                    "rejected_action_ids": sorted(
+                        item["action_id"] for item in rejected_duplicates
+                    ),
+                    "event_idempotency_key": event_idempotency_key,
+                },
+                idempotency_key=event_idempotency_key,
+            )
+        else:
+            stop_reason = None
+    generated_parent_controls = list(generated.get("parent_controls") or [])
+    parent_control_ids = {
+        uuid.UUID(str(item["id"])) for item in generated_parent_controls
+    }
+    if not accepted_source_ids <= parent_control_ids:
+        raise ValueError("AutoResearch unique child controls are incomplete")
+    parent_controls = [
+        item
+        for item in generated_parent_controls
+        if uuid.UUID(str(item["id"])) in accepted_source_ids
+    ]
     score_all_candidates = [
         *parent_controls,
         *children,
@@ -918,13 +1075,18 @@ async def persist_autoresearch_children(request: dict[str, Any]) -> dict[str, An
     if len({item["id"] for item in score_all_candidates}) != len(score_all_candidates):
         raise ValueError("AutoResearch score-all parent/child cohort is duplicated")
     return {
-        "schema_version": "ampgent.autoresearch-children-receipt.1",
+        "schema_version": "ampgent.autoresearch-children-receipt.2",
         "run_id": str(run_id),
         "iteration_no": iteration_no,
         "generator_tool_call_id": str(call.id),
         "generator_output_sha256": stored.sha256,
+        "proposed_child_count": len(plan["actions"]),
         "candidate_count": len(children),
         "candidates": children,
+        "rejected_duplicate_count": len(rejected_duplicates),
+        "rejected_duplicates": rejected_duplicates,
+        "iteration_noop": not children,
+        "stop_reason": stop_reason,
         "parent_control_count": len(parent_controls),
         "parent_controls": parent_controls,
         "score_all_candidate_count": len(score_all_candidates),
@@ -1628,6 +1790,7 @@ def _build_replay_bundle(
             ],
         },
         "children": children["candidates"],
+        "rejected_duplicates": children.get("rejected_duplicates") or [],
         "parent_controls": children.get("parent_controls") or [],
         "score_all": {
             "required_metric_count": 12,
@@ -2097,6 +2260,9 @@ async def finalize_autoresearch_iteration(request: dict[str, Any]) -> dict[str, 
             metadata={
                 "archive_version_ids": archive_version_ids,
                 "metric_delta_count": len(delta_receipts),
+                "rejected_duplicate_count": int(
+                    children_receipt.get("rejected_duplicate_count", 0)
+                ),
             },
         )
     return {
@@ -2114,6 +2280,9 @@ async def finalize_autoresearch_iteration(request: dict[str, Any]) -> dict[str, 
         "durable_counts": {
             "action_count": len(action_plan["actions"]),
             "candidate_count": len(child_ids),
+            "rejected_duplicate_count": int(
+                children_receipt.get("rejected_duplicate_count", 0)
+            ),
             "evaluation_count": len(score_all_ids) * 12,
             "metric_delta_count": len(delta_receipts),
             "archive_version_count": len(archive_version_ids),

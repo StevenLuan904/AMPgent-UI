@@ -14,10 +14,13 @@ from pepagent.autoresearch_closed_loop import (
     DeNovoAction,
     MultiFrontArchivePolicy,
 )
+from pepagent.db.models import Candidate
 from pepagent.provenance.hashing import sha256_text
 from pepagent.v38_science_execution import build_default_v38_sequence_contract
 from pepagent.workers.autoresearch_activities import (
     _build_replay_bundle,
+    _candidate_was_materialized_by_action,
+    _duplicate_rejection_reason,
     build_typed_action_projection,
 )
 from pepagent.workers.v38_activities import V38_METRIC_OBSERVATIONS
@@ -159,6 +162,13 @@ def test_replay_bundle_is_canonical_across_unordered_inputs() -> None:
     children = {
         "candidate_count": 1,
         "candidates": [{"id": CHILD_ID, "sequence": action.proposed_sequence}],
+        "rejected_duplicates": [
+            {
+                "action_id": ACTION_ID,
+                "status": "rejected_duplicate",
+                "existing_candidate_id": CHILD_ID,
+            }
+        ],
     }
     inputs = {
         "run_id": uuid.UUID(RUN_ID),
@@ -185,6 +195,45 @@ def test_replay_bundle_is_canonical_across_unordered_inputs() -> None:
     assert first == second
     assert first["score_all"]["required_metric_count"] == 12
     assert first["score_all"]["completed_evaluation_count"] == 12
+    assert first["rejected_duplicates"][0]["status"] == "rejected_duplicate"
+
+
+def test_duplicate_disposition_distinguishes_retry_from_existing_generation() -> None:
+    action_id = uuid.UUID(ACTION_ID)
+    candidate = Candidate(
+        id=uuid.UUID(CHILD_ID),
+        run_id=uuid.UUID(RUN_ID),
+        sequence="KRWLAKIRKL",
+        sequence_sha256=sha256_text("KRWLAKIRKL"),
+        generation=2,
+        status="generated",
+        proposal_rank=1,
+        metadata_json={"autoresearch_action_id": str(action_id)},
+    )
+
+    assert _candidate_was_materialized_by_action(
+        candidate,
+        action_id=action_id,
+        requested_generation=2,
+    )
+    assert not _candidate_was_materialized_by_action(
+        candidate,
+        action_id=uuid.uuid4(),
+        requested_generation=2,
+    )
+    assert not _candidate_was_materialized_by_action(
+        candidate,
+        action_id=action_id,
+        requested_generation=3,
+    )
+    assert (
+        _duplicate_rejection_reason(candidate, requested_generation=3)
+        == "sequence_already_materialized_in_another_generation"
+    )
+    assert (
+        _duplicate_rejection_reason(candidate, requested_generation=2)
+        == "sequence_already_materialized_by_another_action"
+    )
 
 
 @pytest.mark.asyncio
@@ -335,6 +384,103 @@ async def test_autoresearch_workflow_end_to_end_replays_identically(
     assert names.count("evaluate_v38_sequence_metric") == 5
     assert names.count("persist_v38_sequence_metric") == 5
     assert names[-2:] == ["finalize_autoresearch_iteration", "mark_run_succeeded"]
+
+
+@pytest.mark.asyncio
+async def test_autoresearch_all_duplicate_iteration_stops_without_rescoring(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    request = _request()
+    trace: list[dict[str, Any]] = []
+
+    async def fake_execute_activity(name: str, payload: dict[str, Any], **_kwargs: Any) -> Any:
+        trace.append({"activity": name, "payload": copy.deepcopy(payload)})
+        if name in {"mark_run_started", "mark_run_succeeded"}:
+            return None
+        if name == "persist_autoresearch_action_plan":
+            action = payload["actions"][0]
+            return {
+                "run_id": RUN_ID,
+                "branch_key": "PBP2a",
+                "iteration_no": 0,
+                "agent_decision_id": DECISION_ID,
+                "action_batch_sha256": "1" * 64,
+                "actions": [
+                    {
+                        "action_id": ACTION_ID,
+                        "repository_action_sha256": "2" * 64,
+                        "runtime_action_sha256": action["action_sha256"],
+                        "runtime_action": action,
+                        "lineage_sources": [],
+                    }
+                ],
+            }
+        if name == "execute_autoresearch_action_batch":
+            return {
+                "action_batch_sha256": "1" * 64,
+                "results": [
+                    {
+                        "action_id": ACTION_ID,
+                        "sequence": "KRWLAKIRKL",
+                        "sequence_sha256": sha256_text("KRWLAKIRKL"),
+                    }
+                ],
+                "provenance": {},
+            }
+        if name == "persist_autoresearch_children":
+            return {
+                "schema_version": "ampgent.autoresearch-children-receipt.2",
+                "proposed_child_count": 1,
+                "candidate_count": 0,
+                "candidates": [],
+                "rejected_duplicate_count": 1,
+                "rejected_duplicates": [
+                    {
+                        "action_id": ACTION_ID,
+                        "status": "rejected_duplicate",
+                        "existing_candidate_id": CHILD_ID,
+                        "existing_generation": 0,
+                        "requested_generation": 1,
+                        "reason": "sequence_already_materialized_in_another_generation",
+                    }
+                ],
+                "iteration_noop": True,
+                "stop_reason": "no_unique_children_after_duplicate_rejection",
+                "score_all_candidate_count": 0,
+                "score_all_candidates": [],
+            }
+        raise AssertionError(f"unexpected activity: {name}")
+
+    monkeypatch.setattr(workflow_module.workflow, "execute_activity", fake_execute_activity)
+    monkeypatch.setattr(
+        workflow_module.workflow,
+        "info",
+        lambda: SimpleNamespace(workflow_id="autoresearch-duplicate-noop"),
+    )
+
+    result = await AutoResearchClosedLoopWorkflow().run(request)
+
+    assert result["status"] == "iteration_noop"
+    assert result["stop_reason"] == "no_unique_children_after_duplicate_rejection"
+    names = [item["activity"] for item in trace]
+    assert names == [
+        "mark_run_started",
+        "persist_autoresearch_action_plan",
+        "execute_autoresearch_action_batch",
+        "persist_autoresearch_children",
+        "mark_run_succeeded",
+    ]
+    succeeded_payload = trace[-1]["payload"]
+    assert succeeded_payload["durable_counts"] == {
+        "action_count": 1,
+        "candidate_count": 0,
+        "rejected_duplicate_count": 1,
+        "evaluation_count": 0,
+        "metric_delta_count": 0,
+        "archive_version_count": 0,
+        "checkpoint_count": 0,
+        "replay_count": 0,
+    }
 
 
 def test_autoresearch_worker_registration_is_complete() -> None:

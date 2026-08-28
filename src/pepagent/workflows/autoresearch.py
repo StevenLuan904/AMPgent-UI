@@ -229,7 +229,54 @@ class AutoResearchClosedLoopWorkflow:
                     start_to_close_timeout=timedelta(hours=1),
                     retry_policy=retry,
                 )
-                cohort = children.get("score_all_candidates") or children["candidates"]
+                if bool(children.get("iteration_noop")):
+                    rejected_duplicate_count = int(
+                        children.get("rejected_duplicate_count", 0)
+                    )
+                    if (
+                        int(children.get("candidate_count", -1)) != 0
+                        or rejected_duplicate_count
+                        != int(children.get("proposed_child_count", -1))
+                        or not str(children.get("stop_reason") or "").strip()
+                    ):
+                        raise ValueError("AutoResearch duplicate no-op receipt is incomplete")
+                    result = {
+                        "schema_version": "ampgent.autoresearch-workflow-result.1",
+                        "run_id": run_id,
+                        "status": "iteration_noop",
+                        "stop_reason": str(children["stop_reason"]),
+                        "completed_iteration_no": iteration_no,
+                        "checkpoint": None,
+                        "duplicate_rejections": children.get("rejected_duplicates") or [],
+                    }
+                    await workflow.execute_activity(
+                        "mark_run_succeeded",
+                        {
+                            "run_id": run_id,
+                            "result_status": result["status"],
+                            "durable_counts": {
+                                "action_count": int(children["proposed_child_count"]),
+                                "candidate_count": 0,
+                                "rejected_duplicate_count": rejected_duplicate_count,
+                                "evaluation_count": 0,
+                                "metric_delta_count": 0,
+                                "archive_version_count": 0,
+                                "checkpoint_count": 0,
+                                "replay_count": 0,
+                            },
+                        },
+                        task_queue=control_queue,
+                        start_to_close_timeout=timedelta(minutes=2),
+                        retry_policy=retry,
+                    )
+                    return result
+                if int(children.get("candidate_count", 0)) == 0:
+                    raise ValueError("AutoResearch empty child cohort lacks an explicit no-op")
+                cohort = children.get("score_all_candidates")
+                if cohort is None:
+                    cohort = children["candidates"]
+                if not cohort:
+                    raise ValueError("AutoResearch unique child score-all cohort is empty")
                 metric_receipts: list[dict[str, Any]] = []
                 for plugin_name in plugin_names:
                     reference = await workflow.execute_activity(

@@ -6,7 +6,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from pepagent.autoresearch_closed_loop import PepMLMTargetedAction
+from pepagent.autoresearch_closed_loop import DeNovoAction, PepMLMTargetedAction
 from pepagent.provenance.hashing import sha256_text
 from pepagent.workers import autoresearch_activities
 from pepagent.workers.v38_temporal_worker import _max_concurrent_activities_for_role
@@ -174,3 +174,68 @@ async def test_pepmlm_executor_environment_is_provenance_not_a_runtime_gate(
     assert result["provenance"]["environment_sha256"] == "d" * 64
     assert result["provenance"]["model_uri"] == settings.pepmlm_model_path
     assert result["provenance"]["weights_sha256"] == settings.pepmlm_weights_sha256
+
+
+@pytest.mark.asyncio
+async def test_executor_preserves_duplicate_proposals_for_persistence_audit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sequence = "KRWLAKIRKL"
+    actions = [
+        DeNovoAction(
+            branch_key="VEGFA",
+            generation=1,
+            seed=seed,
+            operator_id="agent-de-novo-v1",
+            operator_release_sha256="a" * 64,
+            expected_improvement_metrics=("macrel_amp_probability",),
+            protected_metrics=("guruprasad_instability_index",),
+            evidence_sha256s=("b" * 64,),
+            peptide_length=len(sequence),
+            proposed_sequence=sequence,
+        )
+        for seed in (41, 43)
+    ]
+    request = {
+        "action_plan": {
+            "run_id": str(uuid.uuid4()),
+            "iteration_no": 0,
+            "action_batch_sha256": "c" * 64,
+            "actions": [
+                {
+                    "action_id": str(uuid.uuid4()),
+                    "repository_action_sha256": chr(ord("d") + index) * 64,
+                    "runtime_action_sha256": action.action_sha256,
+                    "runtime_action": action.model_dump(mode="json"),
+                    "lineage_sources": [],
+                }
+                for index, action in enumerate(actions)
+            ],
+        },
+        "executor": {
+            "operator_environment_sha256": "f" * 64,
+            "model_uri": "rules://de-novo-test",
+        },
+    }
+
+    class EmptySession:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, traceback):
+            return False
+
+    monkeypatch.setattr(autoresearch_activities, "SessionFactory", EmptySession)
+    monkeypatch.setattr(
+        autoresearch_activities.activity,
+        "info",
+        lambda: SimpleNamespace(attempt=1),
+    )
+
+    result = await autoresearch_activities._execute_autoresearch_action_batch_unlocked(
+        request
+    )
+
+    assert [item["sequence"] for item in result["results"]] == [sequence, sequence]
+    assert result["schema_version"] == "ampgent.autoresearch-materialized-action-batch.2"
+    assert result["provenance"]["tool_version"] == "2"
