@@ -27,6 +27,7 @@ $actualArchiveSha = (Get-FileHash -Algorithm SHA256 -LiteralPath $archivePath).H
 if ($actualArchiveSha -ne $ArchiveSha256) {
     throw "v38 worker archive SHA drifted"
 }
+$pythonSha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $pythonPath).Hash.ToLower()
 
 $workspace = (Resolve-Path -LiteralPath ".").Path
 $releaseBase = [IO.Path]::GetFullPath((Join-Path $workspace $ReleaseRoot))
@@ -86,8 +87,13 @@ foreach ($role in $roles) {
             $roleName -like "autoresearch-*" -and
             $previous.task_queue -ne $roleQueue
         )
+        $environmentIdentityMissing = (
+            $roleName -like "autoresearch-*" -and
+            $previous.environment_sha256 -notmatch $expected64
+        )
         if ($previous.ampgent_owned -ne $true -or $previous.foreign -eq $true -or
-            $previous.role -ne $roleName -or $queueMismatch) {
+            $previous.role -ne $roleName -or $queueMismatch -or
+            $environmentIdentityMissing) {
             throw "v38 worker receipt is not exact AMPgent ownership for this role"
         }
         $poller = Get-CimInstance Win32_Process -Filter "ProcessId=$([int]$previous.pid)" `
@@ -136,6 +142,8 @@ foreach ($role in $roles) {
     $oldMaximum = $env:PEPAGENT_WORKER_MAX_CONCURRENT_ACTIVITIES
     $oldPythonPath = $env:PYTHONPATH
     $oldWorkRoot = $env:PEPAGENT_WORK_ROOT
+    $oldPlatformRelease = $env:PEPAGENT_PLATFORM_RELEASE_SHA256
+    $oldWorkerEnvironment = $env:PEPAGENT_WORKER_ENVIRONMENT_SHA256
     try {
         $env:PEPAGENT_WORKER_ROLE = $roleName
         $env:PEPAGENT_WORKER_SOURCE_REVISION = $SourceRevision
@@ -144,6 +152,23 @@ foreach ($role in $roles) {
         # The same immutable environment packages and release source remain explicit.
         $env:PYTHONPATH = "$sitePackages;$(Join-Path $releasePath 'src')"
         $env:PEPAGENT_WORK_ROOT = $workRoot
+        $env:PEPAGENT_PLATFORM_RELEASE_SHA256 = $ArchiveSha256
+        $releaseQueue = (& $pythonPath -S -c (
+            'import os; from pepagent.workers.v38_temporal_worker import ' +
+            'V38_ROLE_CONFIG; print(V38_ROLE_CONFIG[os.environ[' +
+            '"PEPAGENT_WORKER_ROLE"]][0])'
+        )).Trim()
+        if ($LASTEXITCODE -ne 0 -or $releaseQueue -ne $roleQueue) {
+            throw "worker release task queue differs from the launcher contract"
+        }
+        $environmentSha256 = (& $pythonPath -S -c (
+            'from pepagent.provenance.environment import fingerprint_runtime; ' +
+            'print(fingerprint_runtime()[0])'
+        )).Trim()
+        if ($LASTEXITCODE -ne 0 -or $environmentSha256 -notmatch $expected64) {
+            throw "worker environment fingerprint is invalid"
+        }
+        $env:PEPAGENT_WORKER_ENVIRONMENT_SHA256 = $environmentSha256
         $process = Start-Process -FilePath $pythonPath -ArgumentList @(
             "-S", "-m", "pepagent.workers.v38_temporal_worker"
         ) -WorkingDirectory $releasePath -WindowStyle Hidden -PassThru `
@@ -155,6 +180,8 @@ foreach ($role in $roles) {
         $env:PEPAGENT_WORKER_MAX_CONCURRENT_ACTIVITIES = $oldMaximum
         $env:PYTHONPATH = $oldPythonPath
         $env:PEPAGENT_WORK_ROOT = $oldWorkRoot
+        $env:PEPAGENT_PLATFORM_RELEASE_SHA256 = $oldPlatformRelease
+        $env:PEPAGENT_WORKER_ENVIRONMENT_SHA256 = $oldWorkerEnvironment
     }
     Start-Sleep -Seconds 2
     if ($process.HasExited) {
@@ -182,6 +209,9 @@ foreach ($role in $roles) {
         release_path = $releasePath
         work_root = $workRoot
         python_path = $pythonPath
+        python_sha256 = $pythonSha256
+        environment_sha256 = $environmentSha256
+        task_queue_verified_from_release = $true
         ampgent_owned = $true
         foreign = $false
         started_at = [DateTimeOffset]::UtcNow.ToString("o")

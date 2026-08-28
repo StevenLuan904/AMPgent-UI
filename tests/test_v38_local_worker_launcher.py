@@ -31,6 +31,7 @@ def test_v38_local_launcher_refuses_foreign_or_mismatched_live_processes() -> No
     assert "$previous.role -ne $roleName" in text
     assert '$roleName -like "autoresearch-*"' in text
     assert "$previous.task_queue -ne $roleQueue" in text
+    assert "$previous.environment_sha256 -notmatch $expected64" in text
     assert "$previous.role -ne $roleName -or $queueMismatch" in text
     assert "supervisor_pid" in text
     assert "process tree does not match its exact receipt" in text
@@ -40,6 +41,12 @@ def test_autoresearch_local_receipt_binds_the_isolated_queue() -> None:
     text = SCRIPT.read_text(encoding="utf-8")
     assert "$roleQueue = $role.TaskQueue" in text
     assert "task_queue = $roleQueue" in text
+    assert "environment_sha256 = $environmentSha256" in text
+    assert "python_sha256 = $pythonSha256" in text
+    assert "task_queue_verified_from_release = $true" in text
+    assert "fingerprint_runtime()[0]" in text
+    assert "worker release task queue differs from the launcher contract" in text
+    assert "$env:PEPAGENT_PLATFORM_RELEASE_SHA256 = $ArchiveSha256" in text
 
 
 def test_v38_local_launcher_replacement_is_opt_in_and_exactly_scoped() -> None:
