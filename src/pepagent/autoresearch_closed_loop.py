@@ -531,6 +531,7 @@ class PepMLMTargetedAction(EvolutionActionBase):
     """
 
     action_type: Literal["pepmlm_targeted"] = "pepmlm_targeted"
+    target_sequence_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     proposal_mode: Literal[
         "masked_substitution", "controlled_crossover", "de_novo"
     ]

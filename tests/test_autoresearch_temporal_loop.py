@@ -61,16 +61,20 @@ def _request() -> dict[str, Any]:
             name: {"name": name} for name in contract["metric_plugins"]
         },
         "task_queues": {
-            "workflow_and_control": "pepagent-control-v38",
-            "action_execution": "pepagent-generator-v38",
-            "sequence_metrics": "pepagent-cpu-metrics-v38",
+            "workflow_and_control": "pepagent-autoresearch-control-v1",
+            "action_execution": "pepagent-autoresearch-generator-v1",
+            "sequence_metrics": "pepagent-autoresearch-metrics-v1",
         },
         "planner_provider": {
             "activity_name": "plan_autoresearch_actions",
-            "task_queue": "pepagent-autoresearch-director",
+            "task_queue": "pepagent-autoresearch-control-v1",
             "planner_contract": {"de_novo_quota": 0.2},
         },
-        "action_executor": {"operator_environment_sha256": "d" * 64},
+        "action_executor": {
+            "operator_environment_sha256": "d" * 64,
+            "target_sequence": "MKTIIALSYIFCLVFADYKDDDDK",
+            "target_sequence_sha256": sha256_text("MKTIIALSYIFCLVFADYKDDDDK"),
+        },
         "initial_action_plan": {
             "agent_decision": {
                 "agent_name": "research-director",
@@ -195,6 +199,15 @@ async def test_autoresearch_workflow_end_to_end_replays_identically(
 ) -> None:
     request = _request()
     request["initial_action_plan"] = None
+    request["seed_score_bundle_import"] = {
+        "bundle_cache_root": r"C:\bounded-cache\score-all",
+        "bundle_receipt_path": "bundle.receipt.json",
+        "bundle_receipt_sha256": "8" * 64,
+        "source_map_receipt_path": "score_source_map.receipt.json",
+        "source_map_receipt_sha256": "7" * 64,
+        "source_map_storage_uri": f"ssh://example.invalid/cas/{'7' * 64}/map.json",
+        "target_key": "PBP2a",
+    }
 
     async def execute_once() -> tuple[dict[str, Any], list[dict[str, Any]]]:
         trace: list[dict[str, Any]] = []
@@ -203,7 +216,11 @@ async def test_autoresearch_workflow_end_to_end_replays_identically(
             name: str, payload: dict[str, Any], **_kwargs: Any
         ) -> Any:
             trace.append({"activity": name, "payload": copy.deepcopy(payload)})
-            if name in {"mark_run_started", "mark_run_succeeded"}:
+            if name in {
+                "mark_run_started",
+                "mark_run_succeeded",
+                "persist_autoresearch_score_all_bundle",
+            }:
                 return None
             if name == "plan_autoresearch_actions":
                 action = _de_novo_action().model_dump(mode="json")
@@ -315,8 +332,9 @@ async def test_autoresearch_workflow_end_to_end_replays_identically(
     assert first_trace == second_trace
     assert first_result["status"] == "quality_goal_met"
     names = [item["activity"] for item in first_trace]
-    assert names[0:5] == [
+    assert names[0:6] == [
         "mark_run_started",
+        "persist_autoresearch_score_all_bundle",
         "plan_autoresearch_actions",
         "persist_autoresearch_action_plan",
         "execute_autoresearch_action_batch",
@@ -328,7 +346,10 @@ async def test_autoresearch_workflow_end_to_end_replays_identically(
 
 
 def test_autoresearch_worker_registration_is_complete() -> None:
-    _, control_activities, workflows = V38_ROLE_CONFIG["v38-control"]
+    control_queue, control_activities, workflows = V38_ROLE_CONFIG[
+        "autoresearch-control"
+    ]
+    assert control_queue == "pepagent-autoresearch-control-v1"
     registered = {
         item.__temporal_activity_definition.name for item in control_activities
     }
@@ -337,13 +358,32 @@ def test_autoresearch_worker_registration_is_complete() -> None:
         "persist_autoresearch_children",
         "finalize_autoresearch_iteration",
         "plan_autoresearch_actions",
+        "persist_autoresearch_score_all_bundle",
     } <= registered
     assert AutoResearchClosedLoopWorkflow in workflows
-    _, generator_activities, _ = V38_ROLE_CONFIG["v38-generator"]
+    generator_queue, generator_activities, _ = V38_ROLE_CONFIG[
+        "autoresearch-generator"
+    ]
+    assert generator_queue == "pepagent-autoresearch-generator-v1"
     generator_registered = {
         item.__temporal_activity_definition.name for item in generator_activities
     }
     assert "execute_autoresearch_action_batch" in generator_registered
+    metric_queue, metric_activities, _ = V38_ROLE_CONFIG["autoresearch-metrics"]
+    assert metric_queue == "pepagent-autoresearch-metrics-v1"
+    assert {
+        item.__temporal_activity_definition.name for item in metric_activities
+    } == {"evaluate_v38_sequence_metric"}
+
+    _, legacy_control_activities, legacy_workflows = V38_ROLE_CONFIG["v38-control"]
+    assert AutoResearchClosedLoopWorkflow not in legacy_workflows
+    assert not {
+        item.__temporal_activity_definition.name for item in legacy_control_activities
+    } & {
+        "persist_autoresearch_action_plan",
+        "persist_autoresearch_score_all_bundle",
+        "finalize_autoresearch_iteration",
+    }
 
 
 def test_autoresearch_request_rejects_partial_score_all_registry() -> None:
@@ -351,4 +391,20 @@ def test_autoresearch_request_rejects_partial_score_all_registry() -> None:
     _validate_request(request)
     request["metric_plugins_by_name"].pop(next(iter(request["metric_plugins_by_name"])))
     with pytest.raises(ValueError, match="plugin registry"):
+        _validate_request(request)
+
+
+def test_autoresearch_request_rejects_cross_branch_seed_bundle() -> None:
+    request = _request()
+    request["seed_score_bundle_import"] = {
+        "bundle_cache_root": r"C:\bounded-cache\score-all",
+        "bundle_receipt_path": "bundle.receipt.json",
+        "bundle_receipt_sha256": "8" * 64,
+        "source_map_receipt_path": "score_source_map.receipt.json",
+        "source_map_receipt_sha256": "7" * 64,
+        "source_map_storage_uri": f"ssh://example.invalid/cas/{'7' * 64}/map.json",
+        "target_key": "FGF2",
+    }
+
+    with pytest.raises(ValueError, match="target differs"):
         _validate_request(request)

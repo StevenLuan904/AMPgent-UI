@@ -21,6 +21,7 @@ from pepagent.workers.autoresearch_activities import (
     finalize_autoresearch_iteration,
     persist_autoresearch_action_plan,
     persist_autoresearch_children,
+    persist_autoresearch_score_all_bundle,
     plan_autoresearch_actions,
 )
 from pepagent.workers.v37_activities import (
@@ -79,26 +80,50 @@ V38_ROLE_CONFIG = {
             load_seven_branch_target_score_cohort,
             persist_seven_branch_cumulative_selection,
             persist_seven_branch_round_progress,
-            persist_autoresearch_action_plan,
-            plan_autoresearch_actions,
-            persist_autoresearch_children,
-            finalize_autoresearch_iteration,
         ],
         [
             V38SequenceFirstAgentWorkflow,
             V39SequenceSpaceExplorationWorkflow,
             SevenBranchPeptideDesignWorkflow,
             SevenBranchPeptideTopUpWorkflow,
-            AutoResearchClosedLoopWorkflow,
         ],
     ),
     "v38-generator": (
         "pepagent-generator-v38",
-        [generate_v38_sequence_cell, execute_autoresearch_action_batch],
+        [generate_v38_sequence_cell],
         [],
     ),
     "v38-metrics": (
         "pepagent-cpu-metrics-v38",
+        [evaluate_v38_sequence_metric],
+        [],
+    ),
+    # AutoResearch uses isolated queues so a new release cannot take over the
+    # immutable historical v38/v39 workflow chains still polling their legacy
+    # queues.  Deployment starts these roles independently of the v38 roles.
+    "autoresearch-control": (
+        "pepagent-autoresearch-control-v1",
+        [
+            mark_run_started,
+            mark_run_cancelled,
+            mark_run_failed,
+            mark_run_succeeded,
+            persist_v38_sequence_metric,
+            persist_autoresearch_action_plan,
+            plan_autoresearch_actions,
+            persist_autoresearch_children,
+            persist_autoresearch_score_all_bundle,
+            finalize_autoresearch_iteration,
+        ],
+        [AutoResearchClosedLoopWorkflow],
+    ),
+    "autoresearch-generator": (
+        "pepagent-autoresearch-generator-v1",
+        [execute_autoresearch_action_batch],
+        [],
+    ),
+    "autoresearch-metrics": (
+        "pepagent-autoresearch-metrics-v1",
         [evaluate_v38_sequence_metric],
         [],
     ),

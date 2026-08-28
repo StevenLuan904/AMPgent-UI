@@ -2,14 +2,15 @@ from __future__ import annotations
 
 import asyncio
 import json
+import shutil
 import uuid
 from collections import defaultdict
 from dataclasses import asdict
 from datetime import UTC, datetime
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from temporalio import activity
 
 from pepagent.autoresearch_closed_loop import (
@@ -34,6 +35,12 @@ from pepagent.autoresearch_planner import (
     PlannerDeltaEvidence,
     build_multifront_rule_action_plan,
 )
+from pepagent.autoresearch_score_ingest import (
+    FORMAL_SCORE_COLUMNS,
+    GURUPRASAD_OOD_COLUMN,
+    validate_score_all_bundle,
+    validate_score_source_map_receipt,
+)
 from pepagent.db.models import (
     AgentDecision,
     Artifact,
@@ -43,6 +50,7 @@ from pepagent.db.models import (
     AutoResearchMetricDelta,
     Candidate,
     CandidateLineageEdge,
+    CandidateOccurrence,
     Evaluation,
     ExperimentRun,
     RunStageCheckpoint,
@@ -77,6 +85,21 @@ _METRIC_DIRECTIONS = {
     "amp_read_log10_mic_um": "minimize",
     "toxinpred3_hybrid_score": "minimize",
     "toxinpred3_label": "categorical",
+}
+
+_IMPORTED_METRIC_UNITS = {
+    "amp_read_log10_mic_um": "log10(uM)",
+    "llamp_log10_mic_um": "log10(uM)",
+    "macrel_amp_probability": "probability",
+    "toxinpred3_label": "label",
+    "toxinpred3_hybrid_score": "dimensionless",
+    "macrel_hemolysis_label": "label",
+    "macrel_hemolysis_probability": "probability",
+    "net_charge_ph7_4": "elementary_charge",
+    "hydrophobic_ratio_modlamp": "fraction",
+    "hydrophobic_moment_eisenberg": "dimensionless",
+    "maximum_hydrophobic_run": "residues",
+    "guruprasad_instability_index": "index",
 }
 
 
@@ -576,6 +599,12 @@ async def execute_autoresearch_action_batch(request: dict[str, Any]) -> dict[str
         target_sequence = "".join(str(executor.get("target_sequence") or "").split()).upper()
         if not target_sequence:
             raise ValueError("PepMLM-targeted actions require the frozen target sequence")
+        target_sequence_sha256 = sha256_text(target_sequence)
+        if any(
+            action.target_sequence_sha256 != target_sequence_sha256
+            for _, action in pepmlm_requests
+        ):
+            raise ValueError("PepMLM target sequence differs from the frozen action")
         settings = get_settings()
         await _verify_pepmlm_release(
             settings.pepmlm_model_path,
@@ -584,7 +613,12 @@ async def execute_autoresearch_action_batch(request: dict[str, Any]) -> dict[str
         actual_environment_sha256, _ = fingerprint_runtime()
         if actual_environment_sha256 != environment_sha256:
             raise OSError("PepMLM executor environment differs from the frozen action executor")
-        action_max_attempts = max(action.max_attempts for _, action in pepmlm_requests)
+        attempt_contracts = {
+            action.max_attempts for _, action in pepmlm_requests
+        }
+        if len(attempt_contracts) != 1:
+            raise ValueError("one PepMLM action batch requires one retry contract")
+        action_max_attempts = next(iter(attempt_contracts))
         cli_request = {
             "target_sequence": target_sequence,
             "seed": min(action.seed for _, action in pepmlm_requests),
@@ -922,6 +956,346 @@ def _select_complete_evidence(
     return evidence
 
 
+def _bounded_bundle_reader(root: Path) -> Any:
+    resolved_root = root.resolve(strict=True)
+
+    def read_bytes(relative_path: str) -> bytes:
+        normalized = str(relative_path).replace("\\", "/")
+        candidate = (
+            resolved_root / Path(*PurePosixPath(normalized).parts)
+        ).resolve(strict=True)
+        try:
+            candidate.relative_to(resolved_root)
+        except ValueError as error:
+            raise ValueError("score bundle cache path escapes its bounded root") from error
+        return candidate.read_bytes()
+
+    return read_bytes
+
+
+@activity.defn(name="persist_autoresearch_score_all_bundle")
+async def persist_autoresearch_score_all_bundle(
+    request: dict[str, Any],
+) -> dict[str, Any]:
+    """Import a fully verified CAS raw/formal12 bundle as generation-zero evidence."""
+
+    run_id = uuid.UUID(str(request["run_id"]))
+    target_key = str(request["target_key"])
+    root = Path(str(request["bundle_cache_root"]))
+    receipt_relative_path = str(request["bundle_receipt_path"])
+    disk = await asyncio.to_thread(lambda: shutil.disk_usage(root.resolve(strict=True)))
+    read_bytes = _bounded_bundle_reader(root)
+    receipt_bytes = await asyncio.to_thread(read_bytes, receipt_relative_path)
+    try:
+        receipt = json.loads(receipt_bytes.decode("utf-8-sig"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ValueError("score bundle receipt is not valid UTF-8 JSON") from error
+    receipt_sha256 = str(request["bundle_receipt_sha256"])
+    if sha256_bytes(receipt_bytes) != receipt_sha256:
+        raise OSError("score bundle receipt SHA-256 mismatch")
+    source_map_relative_path = str(request["source_map_receipt_path"])
+    source_map_bytes = await asyncio.to_thread(read_bytes, source_map_relative_path)
+    try:
+        source_map_payload = json.loads(source_map_bytes.decode("utf-8-sig"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ValueError("score source-map receipt is not valid UTF-8 JSON") from error
+    source_map_sha256 = str(request["source_map_receipt_sha256"])
+    source_map = await asyncio.to_thread(
+        validate_score_source_map_receipt,
+        receipt=source_map_payload,
+        receipt_sha256=source_map_sha256,
+        receipt_bytes=source_map_bytes,
+        source_run_id=str(receipt.get("run_id") or ""),
+        bundle_receipt_sha256=receipt_sha256,
+    )
+    source_map_storage_uri = str(request["source_map_storage_uri"])
+    if not source_map_storage_uri.startswith("ssh://") or (
+        f"/{source_map_sha256}/" not in source_map_storage_uri
+    ):
+        raise ValueError("score source-map storage URI must be canonical remote SSH CAS")
+    validated = await asyncio.to_thread(
+        validate_score_all_bundle,
+        bundle_receipt=receipt,
+        bundle_receipt_sha256=receipt_sha256,
+        bundle_receipt_bytes=receipt_bytes,
+        bundle_receipt_relative_path=receipt_relative_path,
+        target_key=target_key,
+        source_result_mappings=source_map.source_result_mappings,
+        read_bytes=read_bytes,
+    )
+    control_environment_sha256 = str(request["control_environment_sha256"])
+    if len(control_environment_sha256) != 64 or set(
+        control_environment_sha256
+    ) - set("0123456789abcdef"):
+        raise ValueError("score bundle import environment identity is invalid")
+    summary = {
+        "schema_version": "ampgent.autoresearch-score-all-import.1",
+        "source_run_id": validated.source_run_id,
+        "target_key": target_key,
+        "bundle_receipt_sha256": validated.receipt_sha256,
+        "manifest_sha256": validated.manifest_sha256,
+        "manifest_file_count": len(validated.all_manifest_files),
+        "source_map_receipt_sha256": source_map.receipt_sha256,
+        "target_raw_count": len(validated.raw_rows),
+        "target_formal12_row_count": len(validated.primary_rows),
+        "target_strict_count": len(validated.strict_sequence_sha256s),
+        "formal_metric_names": list(FORMAL_SCORE_COLUMNS),
+        "cache_disk_free_bytes_observed": disk.free,
+        "strict_subset_used_as_raw": False,
+    }
+    async with SessionFactory() as session, session.begin():
+        run = await session.get(ExperimentRun, run_id)
+        if run is None or run.status != RunStatus.RUNNING:
+            raise ValueError("score bundle import requires a new running run")
+        repository = ExperimentRepository(session)
+        call = await repository.record_completed_tool_call(
+            run_id,
+            "autoresearch-cas-score-all-import",
+            "1",
+            control_environment_sha256,
+            {
+                "source_storage_uri": validated.storage_uri,
+                "bundle_receipt_sha256": validated.receipt_sha256,
+                "manifest_sha256": validated.manifest_sha256,
+                "source_map_receipt_sha256": source_map.receipt_sha256,
+                "target_key": target_key,
+            },
+            {
+                "formal_metric_names": list(FORMAL_SCORE_COLUMNS),
+                "full_manifest_readback": True,
+                "strict_subset_used_as_raw": False,
+                "source_runtime": validated.runtime,
+                "source_result_mappings": source_map.source_result_mappings,
+            },
+            summary,
+            attempt=activity.info().attempt,
+            model_uri=validated.storage_uri,
+            logical_stage="autoresearch_seed_score_all_import",
+            display_category="metric",
+        )
+        artifact_specs = [
+            (
+                receipt_relative_path,
+                validated.receipt_sha256,
+                "autoresearch_score_bundle_receipt",
+            ),
+            *(
+                (path, digest, "autoresearch_score_bundle_member")
+                for path, digest in validated.all_manifest_files
+            ),
+        ]
+        manifest_path = str(receipt["manifest"]["path"])
+        if manifest_path not in {item[0] for item in artifact_specs}:
+            artifact_specs.append(
+                (
+                    manifest_path,
+                    validated.manifest_sha256,
+                    "autoresearch_score_bundle_manifest",
+                )
+            )
+        for path, digest, role in artifact_specs:
+            payload = await asyncio.to_thread(read_bytes, path)
+            media_type = (
+                "text/csv; charset=utf-8"
+                if path.lower().endswith(".csv")
+                else "application/json"
+                if path.lower().endswith(".json")
+                else "text/plain; charset=utf-8"
+            )
+            await _register_artifact(
+                session,
+                call.id,
+                {
+                    "sha256": digest,
+                    "size_bytes": len(payload),
+                    "media_type": media_type,
+                    "uri": f"{validated.storage_uri}{path}",
+                },
+                role,
+                {
+                    "source_run_id": validated.source_run_id,
+                    "target_key": target_key,
+                    "relative_path": path,
+                    "bundle_receipt_sha256": validated.receipt_sha256,
+                },
+            )
+        await _register_artifact(
+            session,
+            call.id,
+            {
+                "sha256": source_map.receipt_sha256,
+                "size_bytes": len(source_map_bytes),
+                "media_type": "application/json",
+                "uri": source_map_storage_uri,
+            },
+            "autoresearch_score_source_map_receipt",
+            {
+                "source_run_id": validated.source_run_id,
+                "target_key": target_key,
+                "bundle_receipt_sha256": validated.receipt_sha256,
+                "relative_cache_path": source_map_relative_path,
+            },
+        )
+
+        strict_sha = set(validated.strict_sequence_sha256s)
+        candidate_by_sequence_sha: dict[str, Candidate] = {}
+        primary_by_sequence_sha: dict[str, dict[str, str]] = {}
+        for ordinal, row in enumerate(validated.primary_rows, start=1):
+            digest = str(row["sequence_sha256"])
+            prior = primary_by_sequence_sha.get(digest)
+            if prior is not None and any(
+                prior[name] != row[name] for name in FORMAL_SCORE_COLUMNS
+            ):
+                raise ValueError("duplicate sequence has conflicting formal12 scores")
+            primary_by_sequence_sha.setdefault(digest, row)
+            if digest in candidate_by_sequence_sha:
+                continue
+            metadata = {
+                "schema_version": "ampgent.autoresearch-cas-seed.1",
+                "target_key": target_key,
+                "source_run_id": validated.source_run_id,
+                "source_candidate_id": row["candidate_id"],
+                "source_result": row["source_result"],
+                "source_result_sha256": row["source_result_sha256"],
+                "source_action": {
+                    "action_id": row["action_id"],
+                    "action_kind": row["action_kind"],
+                    "action_seed": row["action_seed"],
+                    "action_sha256": row["action_sha256"],
+                    "primary_parent_id": row["primary_parent_id"],
+                    "donor_candidate_id": row["donor_candidate_id"],
+                    "lineage": row["lineage"],
+                },
+                "bundle_receipt_sha256": validated.receipt_sha256,
+                "strict_display_eligible": digest in strict_sha,
+                "guruprasad_instability_ood": str(
+                    row[GURUPRASAD_OOD_COLUMN]
+                ).strip().lower()
+                in {"1", "true", "yes", "y"},
+            }
+            candidate = await repository.add_candidate(
+                run_id,
+                row["sequence"],
+                generation=0,
+                proposal_rank=ordinal,
+                generator_call_id=call.id,
+                metadata=metadata,
+                actor="autoresearch-cas-score-all-import",
+            )
+            if candidate.sequence_sha256 != digest or candidate.generation != 0:
+                raise ValueError("CAS seed candidate collides with incompatible run evidence")
+            if candidate.metadata_json.get("bundle_receipt_sha256") != validated.receipt_sha256:
+                raise ValueError("CAS seed candidate retry identity drifted")
+            candidate_by_sequence_sha[digest] = candidate
+
+        for occurrence_rank, row in enumerate(validated.raw_rows, start=1):
+            candidate = candidate_by_sequence_sha[str(row["sequence_sha256"])]
+            await repository.record_candidate_occurrence(
+                run_id=run_id,
+                tool_call_id=call.id,
+                parent_candidate_id=None,
+                occurrence_rank=occurrence_rank,
+                occurrence_kind="de_novo",
+                opaque_arm_label=target_key,
+                sequence=row["sequence"],
+                candidate_id=candidate.id,
+                metadata={
+                    "source_occurrence_kind": row["action_kind"],
+                    "source_candidate_id": row["candidate_id"],
+                    "source_action_id": row["action_id"],
+                    "source_action_sha256": row["action_sha256"],
+                    "source_action_plan_sha256": row["source_action_plan_sha256"],
+                    "source_result": row["source_result"],
+                    "source_result_sha256": row["source_result_sha256"],
+                    "source_raw_rank": row["raw_rank"],
+                    "source_lineage": row["lineage"],
+                    "bundle_receipt_sha256": validated.receipt_sha256,
+                },
+            )
+
+        evaluation_count = 0
+        for digest, row in primary_by_sequence_sha.items():
+            candidate = candidate_by_sequence_sha[digest]
+            for metric_name in FORMAL_SCORE_COLUMNS:
+                is_label = metric_name in {
+                    "toxinpred3_label",
+                    "macrel_hemolysis_label",
+                }
+                numeric_value = None if is_label else float(row[metric_name])
+                text_value = row[metric_name] if is_label else None
+                out_of_domain = metric_name == "guruprasad_instability_index" and (
+                    str(row[GURUPRASAD_OOD_COLUMN]).strip().lower()
+                    in {"1", "true", "yes", "y"}
+                )
+                limitations = ["imported_from_fully_verified_cas_score_all_bundle"]
+                if out_of_domain:
+                    limitations.append("source_marks_guruprasad_instability_ood")
+                await repository.record_evaluation(
+                    candidate.id,
+                    call.id,
+                    metric_name,
+                    numeric_value,
+                    _IMPORTED_METRIC_UNITS[metric_name],
+                    {
+                        "schema_version": "ampgent.autoresearch-cas-score.1",
+                        "source_run_id": validated.source_run_id,
+                        "target_key": target_key,
+                        "source_candidate_id": row["candidate_id"],
+                        "source_result_sha256": row["source_result_sha256"],
+                        "bundle_receipt_sha256": validated.receipt_sha256,
+                        "manifest_sha256": validated.manifest_sha256,
+                        "runtime": validated.runtime,
+                    },
+                    text_value=text_value,
+                    out_of_domain=out_of_domain,
+                    limitations=limitations,
+                )
+                evaluation_count += 1
+        if evaluation_count != len(candidate_by_sequence_sha) * 12:
+            raise ValueError("CAS import did not persist candidate x 12 formal evaluations")
+        durable_candidate_count = int(
+            await session.scalar(
+                select(func.count(Candidate.id)).where(
+                    Candidate.run_id == run_id,
+                    Candidate.generation == 0,
+                )
+            )
+            or 0
+        )
+        durable_occurrence_count = int(
+            await session.scalar(
+                select(func.count(CandidateOccurrence.id)).where(
+                    CandidateOccurrence.run_id == run_id,
+                    CandidateOccurrence.tool_call_id == call.id,
+                )
+            )
+            or 0
+        )
+        durable_evaluation_count = int(
+            await session.scalar(
+                select(func.count(Evaluation.id)).where(
+                    Evaluation.candidate_id.in_(
+                        [item.id for item in candidate_by_sequence_sha.values()]
+                    ),
+                    Evaluation.tool_call_id == call.id,
+                )
+            )
+            or 0
+        )
+    if durable_occurrence_count != len(validated.raw_rows):
+        raise ValueError("CAS import durable occurrence count drifted")
+    if durable_evaluation_count != len(candidate_by_sequence_sha) * 12:
+        raise ValueError("CAS import durable formal evaluation count drifted")
+    return {
+        **summary,
+        "tool_call_id": str(call.id),
+        "candidate_count": len(candidate_by_sequence_sha),
+        "occurrence_count": durable_occurrence_count,
+        "evaluation_count": durable_evaluation_count,
+        "run_generation_zero_candidate_count": durable_candidate_count,
+    }
+
+
 @activity.defn(name="plan_autoresearch_actions")
 async def plan_autoresearch_actions(request: dict[str, Any]) -> dict[str, Any]:
     """Plan one minimum executable batch from independent fronts and prior deltas."""
@@ -1023,6 +1397,7 @@ async def plan_autoresearch_actions(request: dict[str, Any]) -> dict[str, Any]:
             generation=iteration_no + 1,
             seed=int(planner_contract.get("seed", 104729 + iteration_no * 1009)),
             operator_release_sha256=operator_release_sha256,
+            target_sequence_sha256=str(request["target_sequence_sha256"]),
             prior_deltas=delta_evidence,
             gold_target=max(
                 GOLD_CANDIDATE_TARGET,
@@ -1653,4 +2028,5 @@ __all__ = [
     "plan_autoresearch_actions",
     "persist_autoresearch_action_plan",
     "persist_autoresearch_children",
+    "persist_autoresearch_score_all_bundle",
 ]

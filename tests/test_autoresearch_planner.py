@@ -103,6 +103,7 @@ def test_multifront_rule_planner_keeps_conflicts_novelty_and_four_strategies() -
         generation=1,
         seed=17,
         operator_release_sha256="a" * 64,
+        target_sequence_sha256="c" * 64,
         prior_deltas=(
             PlannerDeltaEvidence(
                 candidate_id=preferred.candidate_id,
@@ -139,6 +140,7 @@ def test_pepmlm_targeted_action_compiles_to_existing_cli_schema_and_validates_ch
         seed=23,
         operator_id="pepmlm-targeted-action-v1",
         operator_release_sha256="a" * 64,
+        target_sequence_sha256="c" * 64,
         expected_improvement_metrics=("macrel_amp_probability",),
         protected_metrics=("guruprasad_instability_index",),
         evidence_sha256s=("b" * 64,),
@@ -190,6 +192,7 @@ def test_planner_rejects_gold_target_below_branch_contract() -> None:
             generation=1,
             seed=17,
             operator_release_sha256="a" * 64,
+            target_sequence_sha256="c" * 64,
             gold_target=49,
         )
     except ValueError as error:

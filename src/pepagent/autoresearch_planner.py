@@ -94,7 +94,9 @@ def _lane_candidates(
     )
 
 
-def _mutation(parent: CandidateEvidence) -> ResidueSubstitution:
+def _mutation(
+    parent: CandidateEvidence, *, known_sequences: set[str] | None = None
+) -> ResidueSubstitution:
     """Choose one deterministic edit that breaks a hydrophobic/repetitive patch."""
 
     best_start = 0
@@ -119,15 +121,32 @@ def _mutation(parent: CandidateEvidence) -> ResidueSubstitution:
                 -index,
             ),
         )
-    source = parent.sequence[position]
-    replacement = "S" if source in _HYDROPHOBIC else "Q" if source in {"K", "R"} else "K"
-    if replacement == source:
-        replacement = "N"
-    return ResidueSubstitution(
-        position_zero_based=position,
-        from_residue=source,
-        to_residue=replacement,
-    )
+    positions = [position, *(index for index in range(len(parent.sequence)) if index != position)]
+    known = known_sequences or set()
+    for candidate_position in positions:
+        source = parent.sequence[candidate_position]
+        preferred = (
+            ("S", "N", "Q", "K")
+            if source in _HYDROPHOBIC
+            else ("Q", "N", "S", "K")
+            if source in {"K", "R"}
+            else ("K", "R", "S", "N")
+        )
+        for replacement in preferred:
+            if replacement == source:
+                continue
+            child = (
+                parent.sequence[:candidate_position]
+                + replacement
+                + parent.sequence[candidate_position + 1 :]
+            )
+            if child not in known:
+                return ResidueSubstitution(
+                    position_zero_based=candidate_position,
+                    from_residue=source,
+                    to_residue=replacement,
+                )
+    raise ValueError("planner cannot find a unique one-residue substitution")
 
 
 def _action_evidence(
@@ -159,7 +178,16 @@ def _unique_de_novo_sequence(
         sequence = motif[rotation:] + motif[:rotation]
         if sequence not in known_sequences:
             return sequence
-    raise ValueError("deterministic de-novo planner exhausted its compact motif bank")
+    alphabet = "KRLAIGFWQNST"
+    for attempt in range(10_000):
+        digest = sha256_text(f"{branch_key}:{seed}:fallback:{attempt}")
+        sequence = "".join(
+            alphabet[int(digest[index : index + 2], 16) % len(alphabet)]
+            for index in range(0, 20, 2)
+        )
+        if sequence not in known_sequences:
+            return sequence
+    raise ValueError("deterministic de-novo planner exhausted its sequence space")
 
 
 def build_multifront_rule_action_plan(
@@ -170,6 +198,7 @@ def build_multifront_rule_action_plan(
     generation: int,
     seed: int,
     operator_release_sha256: str,
+    target_sequence_sha256: str,
     prior_deltas: Sequence[PlannerDeltaEvidence] = (),
     gold_target: int = GOLD_CANDIDATE_TARGET,
     de_novo_quota: float = 0.2,
@@ -216,7 +245,7 @@ def build_multifront_rule_action_plan(
     if substitution_pool:
         parent = substitution_pool[0]
         substitution_parent_id = parent.candidate_id
-        edit = _mutation(parent)
+        edit = _mutation(parent, known_sequences=known_sequences)
         action = MaskedSubstitutionAction(
             branch_key=branch_key,
             generation=generation,
@@ -352,7 +381,32 @@ def build_multifront_rule_action_plan(
         candidates_by_id=by_id,
         improvement_counts=improvement_counts,
     ) or substitution_pool
-    if pepmlm_pool:
+    targeted_de_novo = math.ceil((len(actions) + 1) * de_novo_quota) > 1
+    if targeted_de_novo:
+        action = PepMLMTargetedAction(
+            branch_key=branch_key,
+            generation=generation,
+            seed=seed + 3,
+            operator_id="pepmlm-targeted-action-v1",
+            operator_release_sha256=operator_release_sha256,
+            target_sequence_sha256=target_sequence_sha256,
+            expected_improvement_metrics=("macrel_amp_probability",),
+            protected_metrics=(
+                "guruprasad_instability_index",
+                "macrel_hemolysis_probability",
+                "toxinpred3_hybrid_score",
+            ),
+            evidence_sha256s=(archive_sha,),
+            proposal_mode="de_novo",
+            peptide_length=12,
+        )
+        actions.append(action)
+        strategies.append("pepmlm_targeted")
+        rationales[action.action_sha256] = (
+            "Use target-conditioned PepMLM for a new family because the frozen "
+            "de-novo quota requires an additional non-elite proposal."
+        )
+    elif pepmlm_pool:
         parent = next(
             (
                 item
@@ -368,6 +422,7 @@ def build_multifront_rule_action_plan(
             seed=seed + 3,
             operator_id="pepmlm-targeted-action-v1",
             operator_release_sha256=operator_release_sha256,
+            target_sequence_sha256=target_sequence_sha256,
             expected_improvement_metrics=("macrel_amp_probability",),
             protected_metrics=(
                 "guruprasad_instability_index",

@@ -11,6 +11,7 @@ with workflow.unsafe.imports_passed_through():
         ContinuationPolicy,
         MultiFrontArchivePolicy,
     )
+    from pepagent.provenance.hashing import sha256_text
     from pepagent.v38_science_execution import V38SequenceExecutionContract
 
 
@@ -37,12 +38,23 @@ def _validate_request(request: dict[str, Any]) -> None:
         provider.get("task_queue") or ""
     ).strip():
         raise ValueError("AutoResearch requires a durable Agent planner provider")
+    if (
+        str(provider["activity_name"]) == "plan_autoresearch_actions"
+        and str(provider["task_queue"]) != str(queues["workflow_and_control"])
+    ):
+        raise ValueError("built-in AutoResearch planner must use the control task queue")
     executor = request.get("action_executor") or {}
     executor_environment = str(executor.get("operator_environment_sha256") or "")
     if len(executor_environment) != 64 or set(executor_environment) - set(
         "0123456789abcdef"
     ):
         raise ValueError("AutoResearch action executor identity is invalid")
+    if str(provider["activity_name"]) == "plan_autoresearch_actions":
+        target_sequence = "".join(str(executor.get("target_sequence") or "").split()).upper()
+        if not target_sequence or sha256_text(target_sequence) != str(
+            executor.get("target_sequence_sha256") or ""
+        ):
+            raise ValueError("built-in planner requires a frozen target sequence identity")
     if request.get("initial_action_plan") is not None:
         plan = request["initial_action_plan"]
         if not isinstance(plan, dict) or not plan.get("actions"):
@@ -60,6 +72,44 @@ def _validate_request(request: dict[str, Any]) -> None:
         raise ValueError("AutoResearch start iteration must be non-negative")
     if int(request.get("maximum_iterations_per_workflow_execution", 25)) < 1:
         raise ValueError("AutoResearch continue-as-new interval must be positive")
+    seed_import = request.get("seed_score_bundle_import")
+    if seed_import is not None:
+        if not isinstance(seed_import, dict):
+            raise ValueError("AutoResearch seed score bundle import must be an object")
+        required_import_fields = {
+            "bundle_cache_root",
+            "bundle_receipt_path",
+            "bundle_receipt_sha256",
+            "source_map_receipt_path",
+            "source_map_receipt_sha256",
+            "source_map_storage_uri",
+            "target_key",
+        }
+        if not required_import_fields <= set(seed_import):
+            raise ValueError("AutoResearch seed score bundle import is incomplete")
+        if any(
+            not str(seed_import[name]).strip()
+            for name in required_import_fields
+            - {"bundle_receipt_sha256", "source_map_receipt_sha256"}
+        ):
+            raise ValueError("AutoResearch seed score bundle import paths are empty")
+        receipt_sha256 = str(seed_import["bundle_receipt_sha256"])
+        if len(receipt_sha256) != 64 or set(receipt_sha256) - set(
+            "0123456789abcdef"
+        ):
+            raise ValueError("AutoResearch seed score bundle receipt identity is invalid")
+        source_map_sha256 = str(seed_import["source_map_receipt_sha256"])
+        if len(source_map_sha256) != 64 or set(source_map_sha256) - set(
+            "0123456789abcdef"
+        ):
+            raise ValueError("AutoResearch score source-map identity is invalid")
+        source_map_uri = str(seed_import["source_map_storage_uri"])
+        if not source_map_uri.startswith("ssh://") or (
+            f"/{source_map_sha256}/" not in source_map_uri
+        ):
+            raise ValueError("AutoResearch score source-map URI is not remote CAS")
+        if str(seed_import["target_key"]) != str(request["branch_key"]):
+            raise ValueError("AutoResearch seed score bundle target differs from its branch")
 
 
 @workflow.defn(name="AutoResearchClosedLoopWorkflow")
@@ -100,6 +150,22 @@ class AutoResearchClosedLoopWorkflow:
                     start_to_close_timeout=timedelta(minutes=2),
                     retry_policy=retry,
                 )
+                seed_import = request.get("seed_score_bundle_import")
+                if seed_import is not None:
+                    await workflow.execute_activity(
+                        "persist_autoresearch_score_all_bundle",
+                        {
+                            **seed_import,
+                            "run_id": run_id,
+                            "control_environment_sha256": request[
+                                "control_environment_sha256"
+                            ],
+                        },
+                        task_queue=control_queue,
+                        start_to_close_timeout=timedelta(hours=2),
+                        heartbeat_timeout=timedelta(minutes=5),
+                        retry_policy=retry,
+                    )
 
             while completed_in_this_execution < int(
                 request.get("maximum_iterations_per_workflow_execution", 25)
@@ -132,6 +198,9 @@ class AutoResearchClosedLoopWorkflow:
                             ),
                             "control_environment_sha256": request[
                                 "control_environment_sha256"
+                            ],
+                            "target_sequence_sha256": request["action_executor"][
+                                "target_sequence_sha256"
                             ],
                         },
                         task_queue=str(provider["task_queue"]),
