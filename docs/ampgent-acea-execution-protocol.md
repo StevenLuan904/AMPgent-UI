@@ -3013,3 +3013,30 @@ MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot
   SHA-256 为 `8de29f1f23e430a244dc328a8533d9c624d3df839d1a4274d94b6587225c86ff`，明确
   `new_md_started=false`。轨迹完成只表示模拟执行成功；还需后处理界面接触、RMSD/RMSF和稳定区间，不能直接称
   实验结合或活性证据，也不因此启动更多常规 MD。
+
+### 2026-08-28 PBP2a r19严格扩库验收完成并连续启动双分支新根
+
+- `pbp2a-pepglad-novel-root-r19-short10-13-20260828T0022Z` 已完成 768/768 条生成，结果
+  SHA-256 为 `fa67b3c975a0831ed34c94a4fbd428bcdb4bbe7dc4b22d69fbf85f0ec49579d5`；768 条均完成
+  正式12项评分。505 条 instability index <50，548 条通过 Non-Toxin 与 Macrel low，最终 368 条
+  同时通过全部展示硬门，其中5条获至少两个活性模型支持。
+- 全局去重与80/80家族聚类后，368条严格候选全部是新序列且全部形成新家族。严格库由
+  88,421条/9,089家族增至 **88,789条/9,457家族**；AceA/GyrA/PBP2a 分别为
+  29,190/31,011/28,588，至少两个活性模型支持的候选增至 **61,923**。新冻结 CSV SHA-256 为
+  `364b56bf478897633bf890b97d827a364b53542f976214a3fa212ade2419c314`，远端内容寻址目录为
+  `/data0/ampgent-pepglad-huangyueshan/v1/artifacts/strict-library/364b56bf478897633bf890b97d827a364b53542f976214a3fa212ade2419c314/`；
+  score receipt `43e81a08d232fbc3ab1f8b5c091b2fc4d5076208805c53f4cd6b5c5d9d7aace8`、严格子集
+  `089209cdf5762894f4fe69320f1893390686f909b6767b1a8a0cea9bd61de617` 和冻结收据
+  `ab45afefb650b27375915277dc98587e173519b55d6b086d6200242da28b118c` 均已回读校验。本地约
+  177.1 MiB精确中转目录已删除。
+- 验收后 `.19 GPU6/GPU7` 均经容量脚本确认空闲，因此立即以新seed并行启动 AceA r28（GPU6，
+  seed `2026082766`，父PID `2267181`）与PBP2a r20（GPU7，seed `2026082767`）。AceA请求/
+  launch receipt SHA-256 分别为 `97dc85ff3cf79706c3701529038167e4b88946480d9fc4c63f2c759253038873` /
+  `4490f43d98d1bd964304a84ce8dbf0e42c80055657ab6c4d14494bd0236e0433`。
+- PBP2a r20首次父PID `2267269` 在读取已登记的 `3ZFZ.pdb` 时以 `FileNotFoundError` 退出；旧尝试
+  保持不可变，失败收据 SHA-256 为 `437191d6356f5ced4672dd52366f597224e7bf44e0cd5ddcf83f7f274dce64e3`。
+  随后只读复核同一路径存在且受体 SHA-256 为
+  `0e758b105db411faf3631c2f7cd70ef1cc2789a540e5b9937152489a40060425`，并以独立
+  `recovery-v1` 父PID `2268143` exact-once启动；恢复收据 SHA-256 为
+  `95d2369d6e39f247b9703391821af7491e9f104e6f3baa8f25d3be528360c520`。两条当前新批次都仍是
+  `generation_active_scoring_pending`，不得计入严格库或重复提交。
