@@ -315,6 +315,18 @@ Apply the following style to AMPgent/AceA research work in this repository:
 
 # Evidence persistence and replay
 
+- The user's latest evidence-priority rule supersedes routine SHA-review ceremony: do not add work,
+  blockers, or repeated audits merely to re-check receipt hashes or to prove a Python environment by
+  combining executable, site-packages, manifest, and lock-file hashes.  Existing content hashes may
+  remain as automatic object-store/idempotency fields, but they are not an independent research
+  milestone.  The required milestone is that the real execution flow and every invocation outcome
+  (start, success, failure, retry, input/output association, target/batch, and operator/runtime
+  context needed to interpret the call) are durably recorded in authoritative PostgreSQL.
+- A local/remote receipt without its corresponding PostgreSQL call/lifecycle record is not complete
+  evidence.  Prefer writing the database record over producing another review-SHA report.  Do not
+  attach new operational calls to an immutable failed run; use the current scientific run when the
+  call belongs to it, otherwise create an explicitly labelled operational evidence run and preserve
+  dependencies to later consumers.
 - Every Agent-flow observation and action must be persisted in PostgreSQL as a typed evidence graph:
   source/generation ToolCalls, dependencies, candidate identities, evaluations, Agent decisions and
   decision edges, artifacts, and lifecycle events. A report or CSV is an export, never the source

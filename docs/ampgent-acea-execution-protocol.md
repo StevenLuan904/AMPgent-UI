@@ -54,6 +54,14 @@ dashboard、receipt 或审计字段的缺失可能改变实际执行字节、丢
 否则不得让它们阻塞候选生成。routine 工程缺陷先做只读定位，再直接修复、做与风险相称的测试、记录
 变更并继续；无需为每个普通修复反复等待用户确认，也不得在已有安全下一步时停在状态汇报上。
 
+用户最新规则进一步明确：**复核 SHA 本身不是重要工作**。不得为了重复核对 receipt SHA，或为了证明
+`site-packages` 身份而继续叠加 Python 可执行文件、环境 manifest、requirements lock 等哈希门禁；已有
+内容哈希可作为对象寻址或幂等实现细节保留，但不应成为独立里程碑或阻塞项。真正的验收项是把实际
+运行流程和每次调用完整写入权威 PostgreSQL：至少覆盖开始、成功/失败、重试、输入输出关联、目标/批次、
+执行位置与解释该调用所需的版本上下文。只有文件收据而没有对应数据库 call/lifecycle 记录，不算闭合；
+应优先补数据库记录，而不是再生成一份 SHA 复核报告。新的独立运行不得回填到 immutable failed run，
+应使用明确标记的 operational evidence run，并在后续消费者中保留依赖边。
+
 这不是降低科学标准。它把时间从无关仪式转回候选生成、五类序列评价、结构确认和非加权 Pareto
 portfolio。追求速度时可以简化部署和记录形式，但不能简化序列身份、科学预算、证据落库/replay、
 exact-once 新 run 身份、外来进程保护或 GPU 禁区。
@@ -159,15 +167,15 @@ exact-once 新 run 身份、外来进程保护或 GPU 禁区。
 任何正式 run 提交前必须全部满足：
 
 1. 协议、输入队列、选择规则、seed、预算和停止条件已先 commit/push。
-2. 输入文件 SHA、行数、顺序、全局唯一性和逐行 sequence SHA 通过。
-3. 所需实现已 commit/push，完整 ruff/pytest 通过，内容归档 SHA 已记录。
+2. 输入行数、顺序、全局唯一性和逐行序列身份通过；内容哈希只作自动幂等/对象寻址，不另设人工复核里程碑。
+3. 所需实现已 commit/push，完整 ruff/pytest 通过；不得为重复复核归档 SHA 延迟运行。
 4. 本地 API、PostgreSQL、MinIO、Temporal 健康；active workflow 数为 0（除非协议明确允许并行）。
 5. control、GPU、CPU worker poller 在线，且物理主机、角色、PID、活动 release/source revision 已核实。
 6. worker 不在 `.32 GPU2/GPU3` 或其他禁止资源上；`.32 GPU0/GPU1`、`.19` 与 synth 只使用最新检查
    证明可用且归属清楚的卡，不会争抢、停止或干扰他人任务。
-7. task queue、工具版本、权重 SHA、环境 SHA 与预注册协议一致。
+7. task queue、工具/模型版本与预注册协议一致；不要为证明 `site-packages` 身份新增组合 SHA 门。
 8. 唯一 formal run 尚未提交；数据库和 Temporal 中均无同协议重复 run/workflow。
-9. 提交后立刻记录 run ID、workflow ID、cohort SHA 和提交 commit；之后禁止重复提交。
+9. 提交后立刻把 run/workflow ID、cohort 身份、提交 revision 和实际调用流程写入 PostgreSQL；之后禁止重复提交。
 
 任一项不满足时保持未提交。poller 在线但位置/版本未知，属于 worker 身份不明，应 fail-closed。
 
