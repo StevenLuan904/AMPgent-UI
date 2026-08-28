@@ -176,6 +176,25 @@ def _builtin_metric_output_contract(runtime_id: str) -> tuple[str, frozenset[str
     return "2026.08.04-v1", frozenset(metrics)
 
 
+def _metric_activity_logical_id(
+    *, protocol: str, plugin_name: str, temporal_activity_id: str
+) -> str:
+    """Bind one metric-attempt ledger to one Temporal activity invocation.
+
+    One run can schedule the same metric plugin for several score-all cohorts.
+    Temporal retries retain their activity ID, while a later cohort receives a
+    different ID.  Keeping that ID in the logical identity prevents two valid
+    cohorts from sharing an attempt aggregate without weakening receipt drift
+    checks inside an actual retry.
+    """
+
+    if protocol not in {"v37", "v38"}:
+        raise ValueError("metric activity protocol must be v37 or v38")
+    if not plugin_name or not temporal_activity_id:
+        raise ValueError("metric activity identity is incomplete")
+    return f"{protocol}:metric:{plugin_name}:activity:{temporal_activity_id}"
+
+
 async def _resolve_v37_structure_summary_reference(
     reference: dict[str, Any],
 ) -> dict[str, Any]:
@@ -306,11 +325,16 @@ async def _evaluate_frozen_sequence_metric(
         raise ValueError("metric activity protocol must be v37 or v38")
     plugin_payload = request["plugin"]
     plugin_name = str(plugin_payload.get("name") or plugin_payload["plugin_name"])
+    activity_info = activity.info()
     context = V37AttemptContext(
         run_id=uuid.UUID(request["run_id"]),
-        logical_id=f"{protocol}:metric:{plugin_name}",
+        logical_id=_metric_activity_logical_id(
+            protocol=protocol,
+            plugin_name=plugin_name,
+            temporal_activity_id=str(activity_info.activity_id),
+        ),
         activity_name=f"evaluate_{protocol}_sequence_metric",
-        attempt=activity.info().attempt,
+        attempt=activity_info.attempt,
     )
 
     async def operation() -> dict[str, Any]:
