@@ -22,6 +22,7 @@ from pepagent.workers.autoresearch_activities import (
     _build_replay_bundle,
     _candidate_was_materialized_by_action,
     _duplicate_rejection_reason,
+    _effective_planner_seed,
     build_typed_action_projection,
 )
 from pepagent.workers.v38_activities import V38_METRIC_OBSERVATIONS
@@ -36,6 +37,15 @@ RUN_ID = "00000000-0000-0000-0000-000000000001"
 CHILD_ID = "00000000-0000-0000-0000-000000000002"
 ACTION_ID = "00000000-0000-0000-0000-000000000003"
 DECISION_ID = "00000000-0000-0000-0000-000000000004"
+
+
+def test_explicit_planner_seed_is_generation_scoped() -> None:
+    contract = {"seed": 173205}
+
+    assert _effective_planner_seed(contract, 0) == 173205
+    assert _effective_planner_seed(contract, 1) == 174214
+    assert _effective_planner_seed(contract, 2) == 175223
+    assert _effective_planner_seed({}, 2) == 106747
 
 
 def _de_novo_action() -> DeNovoAction:

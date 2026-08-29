@@ -104,6 +104,11 @@ _IMPORTED_METRIC_UNITS = {
     "guruprasad_instability_index": "index",
 }
 
+
+def _effective_planner_seed(planner_contract: dict[str, Any], iteration_no: int) -> int:
+    """Derive a distinct deterministic planner seed for every generation."""
+    return int(planner_contract.get("seed", 104729)) + iteration_no * 1009
+
 _AUTORESEARCH_GENERATOR_SEMAPHORE = asyncio.Semaphore(1)
 _TEMPORAL_PAYLOAD_REFERENCE_SCHEMA = "ampgent.autoresearch-payload-reference.1"
 
@@ -2009,7 +2014,7 @@ async def plan_autoresearch_actions(request: dict[str, Any]) -> dict[str, Any]:
             snapshot=snapshot,
             branch_key=branch_key,
             generation=iteration_no + 1,
-            seed=int(planner_contract.get("seed", 104729 + iteration_no * 1009)),
+            seed=_effective_planner_seed(planner_contract, iteration_no),
             operator_release_sha256=operator_release_sha256,
             target_sequence_sha256=str(request["target_sequence_sha256"]),
             prior_deltas=delta_evidence,
