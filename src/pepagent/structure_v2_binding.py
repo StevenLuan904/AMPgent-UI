@@ -7,9 +7,16 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import Any
 
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 
-from pepagent.db.models import Candidate, ExperimentRun, LifecycleEvent, Target, ToolCall
+from pepagent.db.models import (
+    Candidate,
+    Evaluation,
+    ExperimentRun,
+    LifecycleEvent,
+    Target,
+    ToolCall,
+)
 from pepagent.db.session import SessionFactory
 from pepagent.provenance.hashing import sha256_json, sha256_text
 
@@ -23,6 +30,8 @@ STRUCTURE_V2_WORKFLOW_TYPE = "CandidateStructureValidationWorkflowV2"
 LEGACY_STRUCTURE_WORKFLOW_TYPE = "CandidateStructureValidationWorkflow"
 PG_SOURCE_SNAPSHOT_KEY = "structure_v2_eligibility"
 REQUIRED_CANDIDATE_COUNT = 50
+PREFLIGHT_RECOVERY_SCHEMA = "ampgent.structure-v2-preflight-recovery.1"
+PREFLIGHT_RECOVERY_REASON = "preflight_binding_snapshot_scope_bug"
 _HEX = frozenset("0123456789abcdef")
 _NON_TOXIN_LABELS = frozenset({"non-toxin", "nontoxin"})
 
@@ -99,12 +108,20 @@ async def _load_pg_evidence(
                 )
             )
         )
+        allowed_predecessor_id = await _authorized_preflight_recovery_predecessor_id(
+            session,
+            run=run,
+            candidates=candidates,
+        )
+        excluded_run_ids = [run_id]
+        if allowed_predecessor_id is not None:
+            excluded_run_ids.append(allowed_predecessor_id)
         legacy_candidates = tuple(
             await session.scalars(
                 select(Candidate)
                 .join(ExperimentRun, Candidate.run_id == ExperimentRun.id)
                 .where(
-                    ExperimentRun.id != run_id,
+                    ExperimentRun.id.not_in(excluded_run_ids),
                     or_(
                         Candidate.metadata_json["run_mode"].as_string()
                         == STRUCTURE_ESCALATION_RUN_MODE,
@@ -134,6 +151,162 @@ async def _load_pg_evidence(
         lifecycle_events=lifecycle_events,
         legacy_sequence_sha256s=frozenset(item.sequence_sha256 for item in legacy_candidates),
         legacy_family_keys=frozenset(legacy_families),
+    )
+
+
+def _validate_preflight_recovery_predecessor(
+    *,
+    run: ExperimentRun,
+    predecessor: ExperimentRun,
+    candidates: tuple[Candidate, ...],
+    predecessor_candidates: tuple[Candidate, ...],
+    predecessor_tool_calls: tuple[ToolCall, ...],
+    predecessor_lifecycle_events: tuple[LifecycleEvent, ...],
+    predecessor_evaluation_count: int,
+) -> uuid.UUID:
+    recovery = _mapping(run.spec_json.get("preflight_recovery"), "recovery contract")
+    if recovery.get("schema_version") != PREFLIGHT_RECOVERY_SCHEMA:
+        raise ValueError("structure v2 preflight recovery schema differs")
+    if recovery.get("reason") != PREFLIGHT_RECOVERY_REASON:
+        raise ValueError("structure v2 preflight recovery reason differs")
+    if recovery.get("scientific_output_reused") is not False:
+        raise ValueError("structure v2 preflight recovery cannot reuse scientific output")
+    if run.parent_run_id != predecessor.id or str(predecessor.id) != str(
+        recovery.get("predecessor_run_id", "")
+    ):
+        raise ValueError("structure v2 preflight recovery predecessor binding differs")
+    if run.target_id != predecessor.target_id:
+        raise ValueError("structure v2 preflight recovery crossed target branches")
+    if str(predecessor.status) != "failed" or predecessor.finished_at is None:
+        raise ValueError("structure v2 preflight recovery predecessor is not failed")
+    predecessor_spec = _mapping(predecessor.spec_json, "recovery predecessor spec")
+    if predecessor_spec.get("workflow_type") != STRUCTURE_V2_WORKFLOW_TYPE:
+        raise ValueError("structure v2 preflight recovery predecessor type differs")
+    if predecessor_spec.get("structure_v2_reservation_key") != recovery.get(
+        "predecessor_reservation_key"
+    ):
+        raise ValueError("structure v2 preflight recovery reservation lineage differs")
+    if predecessor.temporal_workflow_id != recovery.get("predecessor_workflow_id"):
+        raise ValueError("structure v2 preflight recovery workflow lineage differs")
+    if predecessor.temporal_run_id != recovery.get("predecessor_temporal_run_id"):
+        raise ValueError("structure v2 preflight recovery Temporal lineage differs")
+    if predecessor_evaluation_count != 0:
+        raise ValueError("structure v2 preflight recovery predecessor has evaluations")
+    if any(call.tool_name != STRUCTURE_COHORT_IMPORT_TOOL for call in predecessor_tool_calls):
+        raise ValueError("structure v2 preflight recovery predecessor has scientific ToolCalls")
+    if len(predecessor_tool_calls) != 1 or not _valid_import_call(
+        predecessor_tool_calls[0],
+        predecessor.id,
+        str(predecessor_spec.get("target_key", "")),
+    ):
+        raise ValueError("structure v2 preflight recovery import provenance differs")
+    failed_events = [
+        event
+        for event in predecessor_lifecycle_events
+        if event.aggregate_type == "run"
+        and event.aggregate_id == predecessor.id
+        and event.event_type == "run.failed"
+    ]
+    if len(failed_events) != 1:
+        raise ValueError("structure v2 preflight recovery lacks one failed-run witness")
+    if len(candidates) != REQUIRED_CANDIDATE_COUNT or len(predecessor_candidates) != (
+        REQUIRED_CANDIDATE_COUNT
+    ):
+        raise ValueError("structure v2 preflight recovery candidate count differs")
+
+    predecessor_by_id = {row.id: row for row in predecessor_candidates}
+    observed_predecessors: set[uuid.UUID] = set()
+    for candidate in candidates:
+        metadata = _mapping(candidate.metadata_json, "recovery candidate metadata")
+        candidate_recovery = _mapping(
+            metadata.get("preflight_recovery"),
+            "candidate recovery contract",
+        )
+        if (
+            candidate_recovery.get("reason") != PREFLIGHT_RECOVERY_REASON
+            or candidate_recovery.get("scientific_output_reused") is not False
+            or candidate_recovery.get("predecessor_run_id") != str(predecessor.id)
+        ):
+            raise ValueError("structure v2 candidate recovery contract differs")
+        try:
+            predecessor_candidate_id = uuid.UUID(
+                str(candidate_recovery.get("predecessor_candidate_id", ""))
+            )
+        except (TypeError, ValueError) as error:
+            raise ValueError(
+                "structure v2 candidate recovery predecessor identity differs"
+            ) from error
+        predecessor_candidate = predecessor_by_id.get(predecessor_candidate_id)
+        if predecessor_candidate is None:
+            raise ValueError("structure v2 candidate recovery predecessor is missing")
+        predecessor_metadata = _mapping(
+            predecessor_candidate.metadata_json,
+            "recovery predecessor candidate metadata",
+        )
+        if (
+            candidate.sequence != predecessor_candidate.sequence
+            or candidate.sequence_sha256 != predecessor_candidate.sequence_sha256
+            or metadata.get("family_key_80_80")
+            != predecessor_metadata.get("family_key_80_80")
+            or metadata.get("source_candidate_id")
+            != predecessor_metadata.get("source_candidate_id")
+            or metadata.get("source_result_sha256")
+            != predecessor_metadata.get("source_result_sha256")
+        ):
+            raise ValueError("structure v2 candidate recovery scientific identity differs")
+        observed_predecessors.add(predecessor_candidate_id)
+    if observed_predecessors != set(predecessor_by_id):
+        raise ValueError("structure v2 candidate recovery mapping is not one-to-one")
+    return predecessor.id
+
+
+async def _authorized_preflight_recovery_predecessor_id(
+    session: Any,
+    *,
+    run: ExperimentRun,
+    candidates: tuple[Candidate, ...],
+) -> uuid.UUID | None:
+    if not isinstance(run.spec_json, Mapping) or "preflight_recovery" not in run.spec_json:
+        return None
+    recovery = _mapping(run.spec_json.get("preflight_recovery"), "recovery contract")
+    try:
+        predecessor_id = uuid.UUID(str(recovery.get("predecessor_run_id", "")))
+    except (TypeError, ValueError) as error:
+        raise ValueError("structure v2 preflight recovery predecessor ID differs") from error
+    predecessor = await session.get(ExperimentRun, predecessor_id)
+    if predecessor is None:
+        raise ValueError("structure v2 preflight recovery predecessor is missing")
+    predecessor_candidates = tuple(
+        await session.scalars(select(Candidate).where(Candidate.run_id == predecessor_id))
+    )
+    predecessor_tool_calls = tuple(
+        await session.scalars(select(ToolCall).where(ToolCall.run_id == predecessor_id))
+    )
+    predecessor_call_ids = [call.id for call in predecessor_tool_calls]
+    predecessor_evaluation_count = int(
+        await session.scalar(
+            select(func.count())
+            .select_from(Evaluation)
+            .where(Evaluation.tool_call_id.in_(predecessor_call_ids))
+        )
+        or 0
+    )
+    predecessor_lifecycle_events = tuple(
+        await session.scalars(
+            select(LifecycleEvent).where(
+                LifecycleEvent.aggregate_type == "run",
+                LifecycleEvent.aggregate_id == predecessor_id,
+            )
+        )
+    )
+    return _validate_preflight_recovery_predecessor(
+        run=run,
+        predecessor=predecessor,
+        candidates=candidates,
+        predecessor_candidates=predecessor_candidates,
+        predecessor_tool_calls=predecessor_tool_calls,
+        predecessor_lifecycle_events=predecessor_lifecycle_events,
+        predecessor_evaluation_count=predecessor_evaluation_count,
     )
 
 
@@ -514,6 +687,8 @@ def _preserve_frozen_runtime_binding(
 
 __all__ = [
     "PG_SOURCE_SNAPSHOT_KEY",
+    "PREFLIGHT_RECOVERY_REASON",
+    "PREFLIGHT_RECOVERY_SCHEMA",
     "STRUCTURE_V2_ELIGIBILITY_SCHEMA",
     "STRUCTURE_V2_PG_BINDING_SCHEMA",
     "STRUCTURE_V2_SOURCE_SNAPSHOT_SCHEMA",

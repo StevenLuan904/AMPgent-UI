@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import uuid
+from datetime import UTC, datetime
 from types import SimpleNamespace
 from typing import Any
 
@@ -9,9 +10,12 @@ import pytest
 
 from pepagent.provenance.hashing import sha256_json, sha256_text
 from pepagent.structure_v2_binding import (
+    PREFLIGHT_RECOVERY_REASON,
+    PREFLIGHT_RECOVERY_SCHEMA,
     STRUCTURE_V2_SOURCE_SNAPSHOT_SCHEMA,
     StructureV2PgEvidence,
     _preserve_frozen_runtime_binding,
+    _validate_preflight_recovery_predecessor,
     bind_structure_v2_request_from_pg_evidence,
 )
 from pepagent.workflows.structure_v2 import (
@@ -278,3 +282,105 @@ def test_runtime_binding_rejects_current_qualification_value_drift() -> None:
 
     with pytest.raises(ValueError, match="current PG eligibility binding differs from frozen"):
         _preserve_frozen_runtime_binding(frozen, current)
+
+
+def _recovery_fixture() -> tuple[
+    SimpleNamespace,
+    SimpleNamespace,
+    tuple[SimpleNamespace, ...],
+    tuple[SimpleNamespace, ...],
+    tuple[SimpleNamespace, ...],
+    tuple[SimpleNamespace, ...],
+]:
+    _, evidence = _fixture(count=50)
+    predecessor = evidence.run
+    predecessor.status = "failed"
+    predecessor.finished_at = datetime.now(UTC)
+    predecessor.temporal_workflow_id = "pepagent-structure-v2-pbp2a-old"
+    predecessor.temporal_run_id = str(uuid.uuid4())
+    predecessor.parent_run_id = None
+    predecessor.spec_json["structure_v2_reservation_key"] = COHORT_SHA256
+    recovery_run_id = uuid.uuid4()
+    recovery_candidates = copy.deepcopy(evidence.candidates)
+    for index, candidate in enumerate(recovery_candidates):
+        predecessor_candidate = evidence.candidates[index]
+        candidate.id = uuid.uuid5(recovery_run_id, f"candidate-{index}")
+        candidate.run_id = recovery_run_id
+        candidate.metadata_json["preflight_recovery"] = {
+            "predecessor_run_id": str(predecessor.id),
+            "predecessor_candidate_id": str(predecessor_candidate.id),
+            "reason": PREFLIGHT_RECOVERY_REASON,
+            "scientific_output_reused": False,
+        }
+    recovery = {
+        "schema_version": PREFLIGHT_RECOVERY_SCHEMA,
+        "predecessor_reservation_key": COHORT_SHA256,
+        "predecessor_run_id": str(predecessor.id),
+        "predecessor_workflow_id": predecessor.temporal_workflow_id,
+        "predecessor_temporal_run_id": predecessor.temporal_run_id,
+        "reason": PREFLIGHT_RECOVERY_REASON,
+        "scientific_output_reused": False,
+    }
+    run = SimpleNamespace(
+        id=recovery_run_id,
+        target_id=predecessor.target_id,
+        parent_run_id=predecessor.id,
+        spec_json={"preflight_recovery": recovery},
+    )
+    failed_event = SimpleNamespace(
+        aggregate_type="run",
+        aggregate_id=predecessor.id,
+        event_type="run.failed",
+    )
+    return (
+        run,
+        predecessor,
+        recovery_candidates,
+        evidence.candidates,
+        evidence.tool_calls,
+        (failed_event,),
+    )
+
+
+def test_preflight_recovery_authorizes_only_exact_failed_predecessor_cohort() -> None:
+    run, predecessor, candidates, old_candidates, calls, events = _recovery_fixture()
+
+    allowed = _validate_preflight_recovery_predecessor(
+        run=run,
+        predecessor=predecessor,
+        candidates=candidates,
+        predecessor_candidates=old_candidates,
+        predecessor_tool_calls=calls,
+        predecessor_lifecycle_events=events,
+        predecessor_evaluation_count=0,
+    )
+
+    assert allowed == predecessor.id
+
+
+def test_preflight_recovery_fails_closed_on_output_or_candidate_drift() -> None:
+    run, predecessor, candidates, old_candidates, calls, events = _recovery_fixture()
+
+    with pytest.raises(ValueError, match="has evaluations"):
+        _validate_preflight_recovery_predecessor(
+            run=run,
+            predecessor=predecessor,
+            candidates=candidates,
+            predecessor_candidates=old_candidates,
+            predecessor_tool_calls=calls,
+            predecessor_lifecycle_events=events,
+            predecessor_evaluation_count=1,
+        )
+
+    drifted = copy.deepcopy(candidates)
+    drifted[0].sequence_sha256 = "f" * 64
+    with pytest.raises(ValueError, match="scientific identity differs"):
+        _validate_preflight_recovery_predecessor(
+            run=run,
+            predecessor=predecessor,
+            candidates=drifted,
+            predecessor_candidates=old_candidates,
+            predecessor_tool_calls=calls,
+            predecessor_lifecycle_events=events,
+            predecessor_evaluation_count=0,
+        )
