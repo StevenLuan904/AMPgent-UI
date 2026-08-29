@@ -72,6 +72,10 @@ def worker_options(role_name: str) -> dict[str, Any]:
         "max_concurrent_workflow_tasks": 1,
         "max_concurrent_activity_task_polls": 1,
         "max_concurrent_workflow_task_polls": 1,
+        # Temporal SDK requires at least two workflow-task pollers when sticky
+        # workflow caching is enabled.  These deliberately serialized v2
+        # roles use one poller, so disable the cache explicitly.
+        "max_cached_workflows": 0,
         "disable_eager_activity_execution": True,
     }
 

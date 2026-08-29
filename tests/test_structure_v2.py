@@ -470,6 +470,7 @@ def test_structure_v2_worker_roles_are_disjoint_and_max_one() -> None:
         options = worker_options(role_name)
         assert options["max_concurrent_activities"] == 1
         assert options["max_concurrent_workflow_tasks"] == 1
+        assert options["max_cached_workflows"] == 0
         assert options["disable_eager_activity_execution"] is True
 
 
