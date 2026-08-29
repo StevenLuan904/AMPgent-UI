@@ -469,7 +469,47 @@ async def bind_structure_v2_target_request(
     session_factory: Callable[[], Any] = SessionFactory,
 ) -> dict[str, Any]:
     evidence = await _load_pg_evidence(request, session_factory=session_factory)
-    return bind_structure_v2_request_from_pg_evidence(request, evidence)
+    current = bind_structure_v2_request_from_pg_evidence(request, evidence)
+    return _preserve_frozen_runtime_binding(request, current)
+
+
+def _preserve_frozen_runtime_binding(
+    request: Mapping[str, Any],
+    current: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Keep the submitted exclusion snapshot after current PG evidence revalidates.
+
+    The exclusion universe is append-only and can grow from unrelated structure runs
+    after submission.  That growth must not rewrite an already frozen workflow input.
+    Candidate/family overlap and every candidate qualification are still recomputed by
+    ``bind_structure_v2_request_from_pg_evidence`` before reaching this function.
+    """
+
+    frozen_binding = request.get("pg_eligibility_binding")
+    if not isinstance(frozen_binding, Mapping):
+        return copy.deepcopy(dict(current))
+    current_binding = current.get("pg_eligibility_binding")
+    if not isinstance(current_binding, Mapping):
+        raise ValueError("structure v2 current PG eligibility binding is missing")
+
+    frozen_unsigned = copy.deepcopy(dict(frozen_binding))
+    frozen_hash = frozen_unsigned.pop("binding_sha256", None)
+    if frozen_hash != sha256_json(frozen_unsigned):
+        raise ValueError("structure v2 frozen PG eligibility binding digest differs")
+
+    frozen_stable = copy.deepcopy(dict(frozen_binding))
+    current_stable = copy.deepcopy(dict(current_binding))
+    for value in (frozen_stable, current_stable):
+        value.pop("legacy_exclusion_snapshot_sha256", None)
+        value.pop("binding_sha256", None)
+    if frozen_stable != current_stable:
+        raise ValueError("structure v2 current PG eligibility binding differs from frozen input")
+
+    reconciled = copy.deepcopy(dict(current))
+    reconciled["pg_eligibility_binding"] = copy.deepcopy(dict(frozen_binding))
+    if reconciled != dict(request):
+        raise ValueError("structure v2 current PG request differs from frozen workflow input")
+    return reconciled
 
 
 __all__ = [
@@ -478,6 +518,7 @@ __all__ = [
     "STRUCTURE_V2_PG_BINDING_SCHEMA",
     "STRUCTURE_V2_SOURCE_SNAPSHOT_SCHEMA",
     "StructureV2PgEvidence",
+    "_preserve_frozen_runtime_binding",
     "bind_structure_v2_request_from_pg_evidence",
     "bind_structure_v2_target_request",
 ]

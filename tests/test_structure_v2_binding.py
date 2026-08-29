@@ -11,6 +11,7 @@ from pepagent.provenance.hashing import sha256_json, sha256_text
 from pepagent.structure_v2_binding import (
     STRUCTURE_V2_SOURCE_SNAPSHOT_SCHEMA,
     StructureV2PgEvidence,
+    _preserve_frozen_runtime_binding,
     bind_structure_v2_request_from_pg_evidence,
 )
 from pepagent.workflows.structure_v2 import (
@@ -225,3 +226,55 @@ def test_workflow_contract_rejects_tampered_request_eligibility() -> None:
 
     with pytest.raises(ValueError, match="support >=2"):
         validate_structure_v2_target_request(tampered)
+
+
+def test_runtime_binding_ignores_unrelated_structure_exclusion_growth() -> None:
+    request, evidence = _fixture()
+    frozen = bind_structure_v2_request_from_pg_evidence(request, evidence)
+    unrelated = StructureV2PgEvidence(
+        run=evidence.run,
+        target=evidence.target,
+        candidates=evidence.candidates,
+        tool_calls=evidence.tool_calls,
+        lifecycle_events=evidence.lifecycle_events,
+        legacy_sequence_sha256s=frozenset({"f" * 64}),
+        legacy_family_keys=frozenset({"unrelated-family"}),
+    )
+    current = bind_structure_v2_request_from_pg_evidence(frozen, unrelated)
+
+    assert current["pg_eligibility_binding"]["legacy_exclusion_snapshot_sha256"] != (
+        frozen["pg_eligibility_binding"]["legacy_exclusion_snapshot_sha256"]
+    )
+    assert _preserve_frozen_runtime_binding(frozen, current) == frozen
+
+
+def test_runtime_binding_still_rejects_real_sequence_or_family_intersection() -> None:
+    request, evidence = _fixture()
+    frozen = bind_structure_v2_request_from_pg_evidence(request, evidence)
+    first = evidence.candidates[0]
+    intersecting = StructureV2PgEvidence(
+        run=evidence.run,
+        target=evidence.target,
+        candidates=evidence.candidates,
+        tool_calls=evidence.tool_calls,
+        lifecycle_events=evidence.lifecycle_events,
+        legacy_sequence_sha256s=frozenset({first.sequence_sha256}),
+        legacy_family_keys=frozenset({first.metadata_json["family_key_80_80"]}),
+    )
+
+    with pytest.raises(ValueError, match="already exists in a legacy"):
+        current = bind_structure_v2_request_from_pg_evidence(frozen, intersecting)
+        _preserve_frozen_runtime_binding(frozen, current)
+
+
+def test_runtime_binding_rejects_current_qualification_value_drift() -> None:
+    request, evidence = _fixture()
+    frozen = bind_structure_v2_request_from_pg_evidence(request, evidence)
+    drifted = copy.deepcopy(evidence)
+    drifted.candidates[0].metadata_json["structure_v2_eligibility"][
+        "guruprasad_instability_index"
+    ] += 1.0
+    current = bind_structure_v2_request_from_pg_evidence(frozen, drifted)
+
+    with pytest.raises(ValueError, match="current PG eligibility binding differs from frozen"):
+        _preserve_frozen_runtime_binding(frozen, current)
