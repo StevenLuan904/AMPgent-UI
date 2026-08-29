@@ -534,3 +534,53 @@ unchanged, but future planning and completion claims follow this target-by-targe
   context-pack SHA into a request is not knowledge use. For the 1,900-candidate seven-branch delivery,
   all 14 source runs had `refinement_required=false` and zero knowledge/refinement ToolCalls, so report
   honestly that the cards had no demonstrated causal effect on those candidates.
+
+## 2026-08-27 excellent-candidate structure and current-instability contract
+
+This section is the latest user direction for what may be shown as an excellent or golden
+candidate. It supersedes older optional-structure language for those small top tiers; the broader
+branch libraries may still remain sequence-only.
+
+- Run generation, all 12 sequence metrics, challenger/shadow analyses, conflict-front evolution and
+  family deduplication first. Rosetta is a late, expensive confirmation stage for the small
+  excellent/golden pool, never a first-pass filter over the full library.
+- An excellent/golden target-specific candidate must have a completed Rosetta
+  `InterfaceAnalyzer` result for its actual target-peptide complex, including `dG_separated`, target
+  and peptide chain IDs, input-complex SHA-256, Rosetta executable/version/SHA-256, full command,
+  raw score-file SHA-256 and an execution receipt. Call the state `structure_pending` before this
+  evidence exists and `rosetta_dg_complete` after it exists. The phrase “structure qualification is
+  available” or a runnable binary never makes an individual peptide `structure qualified`.
+- A branch that lacks a defensible target complex can continue to expand and rank its sequence-only
+  library, but its entries remain outside the excellent/golden structurally qualified tier until a
+  real Rosetta dG receipt exists. Do not fabricate a target interface or reuse a different target's
+  score.
+- The display/export hard rule is now: `ToxinPred3 == Non-Toxin`,
+  `Macrel hemolysis == low`, and the Biopython/Guruprasad instability index is `<50`. Retain failures
+  only in raw audit or explicitly non-displayed evolution-parent archives. Re-evaluate legacy winners
+  under the current rule before showing them; a historical mature-core label does not grandfather a
+  failing sequence.
+- The six legacy examples supplied by the user were independently recomputed with Biopython
+  `ProteinAnalysis.instability_index()`: 001=56.436842, 002=32.683333, 003=-3.431579,
+  004=106.036000, 005=52.161111 and 006=95.775000. Only 002 and 003 satisfy `<50`; 004 also contains
+  an 11-residue continuous hydrophobic run. Do not show 001/004/005/006 as excellent candidates
+  unless a newly generated sequence and complete rescore satisfy the current contract.
+- Complex molecular dynamics is not currently implemented. The mandated read-only audit of
+  `.19:/data1/yugufeng/tcr/mhc_flow_seq` found Rosetta docking/dG utilities but no OpenMM, GROMACS,
+  AMBER, NAMD or other complex-MD runner. Per user direction, stop MD implementation unless an MD
+  script is later found in that exact tree and reviewed before modification.
+
+## 2026-08-29 Guruprasad score-only gate
+
+- The sole Guruprasad eligibility rule is a successful finite
+  `guruprasad_instability_index < 50`. The persisted OOD flag remains descriptive
+  provenance and must never exclude a candidate from display, seed selection,
+  parent selection, an archive/frontier, a checkpoint, the gold quota, structure
+  escalation, or a wet-lab shortlist.
+- Do not use sequence length as an indirect replacement for the removed OOD gate.
+  The ordinary 10--30 residue short-peptide validity contract still applies.
+- New decision fields and receipts must say `instability_score_qualified` or
+  `display_hard_gate_pass`. Old `ood_qualified` fields may remain only as clearly
+  deprecated audit aliases and must not drive a decision.
+- Historical evaluations, checkpoints, archives, and lifecycle events are
+  immutable. Restore candidates previously excluded only by the OOD flag through
+  append-only PostgreSQL events and a successor-consumable eligibility manifest.

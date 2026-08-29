@@ -69,6 +69,7 @@ def _row(
     family: str,
     support: int,
     source_name: str,
+    instability_ood: bool = False,
 ) -> dict[str, str]:
     row = {name: "" for name in SOURCE_COLUMNS}
     source_result = rf"E:\score-source\{source_name}"
@@ -103,7 +104,7 @@ def _row(
             "hydrophobic_moment_eisenberg": "0.50",
             "maximum_hydrophobic_run": "3",
             "guruprasad_instability_index": "22.0",
-            "guruprasad_instability_ood": "False",
+            "guruprasad_instability_ood": str(instability_ood),
             "duplicate_within_expansion": "False",
             "proposal_mode": "de_novo",
             "sampling_attempt": "1",
@@ -134,6 +135,7 @@ def _fixture_files(tmp_path: Path) -> dict[str, Any]:
             family="seqfam80_family_a",
             support=3,
             source_name="acea.json",
+            instability_ood=True,
         ),
         _row(
             candidate_id="acea-2",
@@ -273,6 +275,7 @@ def test_adapter_preserves_rows_and_builds_variable_count_v1_import_bundle(
         )
     )
     source_by_sha = {row["sequence_sha256"]: row for row in fixture["rows"]}
+    assert any(row[GURUPRASAD_OOD_COLUMN] == "True" for row in output_rows)
     for row in output_rows:
         source = source_by_sha[row["sequence_sha256"]]
         assert all(row[name] == source[name] for name in SOURCE_COLUMNS)
@@ -344,7 +347,7 @@ def test_adapter_rejects_structure_overlap(tmp_path: Path) -> None:
 @pytest.mark.parametrize(
     ("field", "value", "message"),
     [
-        ("guruprasad_instability_ood", "True", "is OOD for instability"),
+        ("guruprasad_instability_index", "50", "fails the instability gate"),
         ("llamp_log10_mic_um", "", "lacks formal metric"),
     ],
 )

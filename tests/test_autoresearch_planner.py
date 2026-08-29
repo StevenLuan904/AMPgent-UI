@@ -143,8 +143,13 @@ def test_multifront_rule_planner_keeps_conflicts_novelty_and_four_strategies() -
         ) <= 30
         for action in actions
     )
-    assert plan["gold_candidate_count"] == plan["ood_qualified_gold_candidate_count"]
-    assert plan["quality_gate"].endswith("length-20-to-30-aa")
+    assert plan["gold_candidate_count"] == plan[
+        "instability_score_qualified_gold_candidate_count"
+    ]
+    assert plan["deprecated_ood_qualified_gold_candidate_count"] == plan[
+        "gold_candidate_count"
+    ]
+    assert plan["quality_gate"] == "literal-hard-gates+guruprasad-score-lt-50"
     assert any(delta_sha in action.evidence_sha256s for action in actions)
     serialized = "|".join(str(item.model_dump(mode="json")) for item in actions)
     assert cohort[-1].candidate_id not in serialized
@@ -195,7 +200,7 @@ def test_pepmlm_targeted_action_compiles_to_existing_cli_schema_and_validates_ch
     ) == "ARDEFGHIKLACDEFGHIKL"
 
 
-def test_planner_rejects_short_or_instability_ood_parent_pool() -> None:
+def test_planner_accepts_short_instability_ood_parent_when_score_is_below_50() -> None:
     short = _candidate(
         "00000000-0000-0000-0000-000000000201",
         "ACDEFGHIKL",
@@ -226,9 +231,47 @@ def test_planner_rejects_short_or_instability_ood_parent_pool() -> None:
         generation=0,
     )
 
+    plan = build_multifront_rule_action_plan(
+        candidates=(short,),
+        snapshot=snapshot,
+        branch_key="PBP2a",
+        generation=1,
+        seed=17,
+        operator_release_sha256="a" * 64,
+        target_sequence_sha256="c" * 64,
+        gold_target=50,
+    )
+
+    assert plan["instability_score_qualified_gold_candidate_count"] >= 0
+    assert "substitution" in plan["strategies"]
+
+
+def test_planner_rejects_parent_when_instability_score_is_not_below_50() -> None:
+    candidate = _candidate(
+        "00000000-0000-0000-0000-000000000202",
+        "ACDEFGHIKL",
+        "unstable",
+        (0.1, 0.2, 0.9),
+    )
+    candidate = candidate.model_copy(
+        update={
+            "metrics": {
+                **candidate.metrics,
+                "guruprasad_instability_index": MetricObservation(
+                    numeric_value=50.0,
+                    direction="minimize",
+                    unit="dimensionless",
+                    version="test-v1",
+                    out_of_domain=False,
+                ),
+            }
+        }
+    )
+    snapshot = build_multi_front_archive((candidate,), MultiFrontArchivePolicy(), generation=0)
+
     try:
         build_multifront_rule_action_plan(
-            candidates=(short,),
+            candidates=(candidate,),
             snapshot=snapshot,
             branch_key="PBP2a",
             generation=1,
@@ -238,9 +281,9 @@ def test_planner_rejects_short_or_instability_ood_parent_pool() -> None:
             gold_target=50,
         )
     except ValueError as error:
-        assert "OOD-qualified 20--30 aa" in str(error)
+        assert "Guruprasad instability <50" in str(error)
     else:
-        raise AssertionError("planner accepted a short OOD-only parent pool")
+        raise AssertionError("planner accepted an instability score at the hard boundary")
 
 
 def test_planner_rejects_gold_target_below_branch_contract() -> None:

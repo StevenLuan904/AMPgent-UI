@@ -1140,3 +1140,48 @@ lane 为 `pbp2a-gpu2-rosetta-20260828-v1`，同时覆盖一个已有 PepGLAD 复
 MD不再是优秀候选的常规步骤。只有候选通过展示硬门、完整12项评分、challenger冲突分析和 Rosetta dG，
 且其复合物/链映射可信并被明确晋级为极少量黄金候选，才允许启动 MD；其余候选停在结构 dG 或继续序列
 进化。每次启动 MD 必须单独写晋级理由和资源收据，禁止由“结构合格”自动批量触发。
+
+## 2026-08-28 GPU 自动扩展目标覆盖
+
+每次定时研究轮询把 GPU 容量检查与工作派发视为同一个动作闭环。先对全部获准主机逐卡获取实时进程、
+显存、利用率、owner/声明和禁用状态；随后把所有确认安全且当前空闲的卡用于独立可并行的 AMPgent 生成、
+评分、challenger/shadow 或后置结构工作，跨主机同时最多使用8块。若可用卡多于现有单批并行度，应拆分
+新的不可变 seed/靶点/长度层或评分分片，同时保留各自输出身份和收据，而不是让卡空闲。
+
+该自动扩展按用户最新授权只覆盖 `.32 GPU0/GPU1`；`.32 GPU2/GPU3` 保持只读检查、零调度。外来进程、
+未完成owner核验、未观测或存在未解释CUDA声明的卡不计入可用数。没有合法独立工作时不得为了占卡重复提交；
+一旦已有就绪工作，调度必须在当前轮完成，不能只报告“发现空闲GPU”并等待下次唤醒。
+
+同日用户对 `.32 GPU0` 上授权时已识别的 OmniEpic watcher PID `2001800` 给出一次精确清理授权：仅在
+PID身份、start time、owner、命令、cwd、CUDA声明和子进程树再次吻合后终止该树，随后重新验证卡级空闲并
+立即投入新的 AMPgent exact-once 工作负载。此授权不覆盖其他外来进程，GPU2/GPU3仍保持零使用。
+
+该清理已按授权完成并冻结收据：父 PID 仅接收 TERM、未升级 KILL，唯一子进程自然退出；GPU0 随后验证为
+无 compute process、无 CUDA 声明并进入 AMPgent 可调度池。清理收据 SHA-256 为
+`f99bbf11e1d3ec4718234534607e05ae951e3d32ee7d191aee9d6608919ae895`。这只改变 GPU0 的可用状态；
+GPU2/GPU3 继续只读检查、零调度，任何新 workload 仍须独立完成逐卡实时 preflight 与 exact-once 查重。
+
+## 2026-08-28 完整 AutoResearch 闭环目标覆盖
+
+后续主线从独立de-novo批次扩库升级为持续的多前沿进化闭环：每代先从活性共识、各模型端点、
+活性—安全平衡、稳定性、新家族和模型冲突archive选择可追溯父本；Agent为每个父本持久化机器可执行的
+局部突变、受控杂交或de-novo action及理化/知识证据理由；执行器保留未变父本对照，生成子代并完成全部
+12项评分；随后计算parent-child逐指标差值、更新各archive、保留冲突多端前沿并决定下一代action。
+
+自然语言建议本身不算action。每个action必须明确父本、可选donor、位点/片段、操作、seed、预期改善轴、
+禁止破坏项和action SHA；每个子代必须反向引用action与父本/供体。闭环保留de-novo探索配额，避免elite
+家族垄断；每若干代以新的不可变successor run/continue-as-new保存checkpoint和replay。每轮容量检查后，
+把独立action批次调度到所有确认空闲的获准GPU，跨主机最多8块，持续运行直到用户暂停或质量/新颖性
+长期无增益触发已冻结的策略切换，而不是因单轮workflow结束而停止。
+
+## 2026-08-29 不稳定性资格口径覆盖
+
+Guruprasad/Biopython不稳定性从现在起只按正式分数判定：成功、有限且`<50`即通过；OOD标记保留为
+描述性审计信息，不再从展示、种子、亲本、多前沿archive、checkpoint、gold/wetlab或结构漏斗中排除。
+不能用长度下限间接重建OOD门，项目的一般短肽有效范围仍为10--30 aa。长期质量目标和每靶点50条
+wetlab候选的计数统一使用`instability_score_qualified`/`display_hard_gate_pass`，不再使用
+`ood_qualified`作为决策口径。
+
+历史证据保持不可变：不修改原Evaluation、Archive或Checkpoint。对于此前仅因OOD被少算的序列，
+在PostgreSQL追加幂等恢复事件与全量eligibility manifest，使后续successor能够重新选亲本、重算gold
+短缺与继续进化；同时保留原OOD值，便于方法学局限报告而不影响资格。

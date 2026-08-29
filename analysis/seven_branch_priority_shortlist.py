@@ -60,8 +60,6 @@ def _audit_flags(row: dict[str, str]) -> list[str]:
         flags.append("long_hydrophobic_run_gt7")
     if abs(float(row["net_charge_ph7_4"])) > 8:
         flags.append("extreme_abs_charge_gt8")
-    if row["guruprasad_instability_index__ood"].lower() == "true":
-        flags.append("instability_short_peptide_ood")
     if float(row["guruprasad_instability_index"]) > 40:
         flags.append("instability_index_gt40_non_gating")
     if row.get("conditional_nll__ood", "").lower() == "true":

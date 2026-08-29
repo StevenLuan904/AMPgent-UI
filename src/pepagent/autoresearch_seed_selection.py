@@ -9,7 +9,7 @@ from typing import Any
 from pepagent.provenance.hashing import sha256_text
 
 CANONICAL_AMINO_ACIDS = frozenset("ACDEFGHIKLMNPQRSTVWY")
-MINIMUM_WETLAB_LENGTH = 20
+MINIMUM_WETLAB_LENGTH = 10
 MAXIMUM_WETLAB_LENGTH = 30
 
 _REQUIRED_COLUMNS = frozenset(
@@ -107,7 +107,7 @@ def _normalize_and_validate(row: Mapping[str, Any], *, row_number: int) -> dict[
     return normalized
 
 
-def _is_ood_qualified(row: Mapping[str, str], *, target_key: str) -> bool:
+def _is_score_qualified(row: Mapping[str, str], *, target_key: str) -> bool:
     sequence = row["sequence"]
     return bool(
         row["target_key"].strip().casefold() == target_key
@@ -115,9 +115,6 @@ def _is_ood_qualified(row: Mapping[str, str], *, target_key: str) -> bool:
         and _parse_bool(row["valid_sequence"], field="valid_sequence")
         and _parse_bool(row["display_eligible"], field="display_eligible")
         and _parse_bool(row["safety_labels_pass"], field="safety_labels_pass")
-        and not _parse_bool(
-            row["guruprasad_instability_ood"], field="guruprasad_instability_ood"
-        )
         and _finite_float(row, "guruprasad_instability_index") < 50.0
         and row["toxinpred3_label"].strip().casefold()
         in {"non-toxin", "non-toxic", "nontoxic"}
@@ -141,7 +138,7 @@ def _front_key(row: Mapping[str, str]) -> tuple[Any, ...]:
     )
 
 
-def select_ood_qualified_seed_rows(
+def select_instability_score_qualified_seed_rows(
     rows: Iterable[Mapping[str, Any]],
     *,
     target_key: str,
@@ -149,7 +146,7 @@ def select_ood_qualified_seed_rows(
     excluded_sequence_sha256s: Sequence[str] = (),
     excluded_family_keys: Sequence[str] = (),
 ) -> SeedSelectionResult:
-    """Select family-diverse wetlab seeds and exclude prior structure history.
+    """Select family-diverse score-qualified seeds and exclude structure history.
 
     Consensus-supported families are exhausted before supplemental families. Within
     each lane, existing non-weighted Pareto depth and family rarity are explicit
@@ -185,7 +182,7 @@ def select_ood_qualified_seed_rows(
         if digest in excluded_sequences:
             excluded_structure_history_count += 1
             continue
-        if family in excluded_families or not _is_ood_qualified(
+        if family in excluded_families or not _is_score_qualified(
             row, target_key=normalized_target
         ):
             continue
@@ -230,4 +227,27 @@ def select_ood_qualified_seed_rows(
     )
 
 
-__all__ = ["SeedSelectionResult", "select_ood_qualified_seed_rows"]
+def select_ood_qualified_seed_rows(
+    rows: Iterable[Mapping[str, Any]],
+    *,
+    target_key: str,
+    count: int,
+    excluded_sequence_sha256s: Sequence[str] = (),
+    excluded_family_keys: Sequence[str] = (),
+) -> SeedSelectionResult:
+    """Deprecated alias; OOD is audit-only and does not affect selection."""
+
+    return select_instability_score_qualified_seed_rows(
+        rows,
+        target_key=target_key,
+        count=count,
+        excluded_sequence_sha256s=excluded_sequence_sha256s,
+        excluded_family_keys=excluded_family_keys,
+    )
+
+
+__all__ = [
+    "SeedSelectionResult",
+    "select_instability_score_qualified_seed_rows",
+    "select_ood_qualified_seed_rows",
+]

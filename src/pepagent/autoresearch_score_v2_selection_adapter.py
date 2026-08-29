@@ -28,7 +28,8 @@ STRUCTURE_EXCLUSIONS_SCHEMA_VERSION = "ampgent.autoresearch-structure-exclusions
 EXPECTED_FAMILY_SCOPE = "global_strict_library_80_identity_80_coverage"
 SELECTION_METADATA_COLUMNS = ("v9_dry_rank", "v9_dry_lane")
 CONSENSUS_LANE = "consensus_support_ge_2"
-SUPPLEMENTAL_LANE = "supplemental_safe_ood_qualified"
+SUPPLEMENTAL_LANE = "supplemental_safe_instability_score_qualified"
+LEGACY_SUPPLEMENTAL_LANE = "supplemental_safe_ood_qualified"
 _CANONICAL_AMINO_ACIDS = frozenset("ACDEFGHIKLMNPQRSTVWY")
 _HEX = frozenset("0123456789abcdef")
 _LABEL_SCORE_COLUMNS = frozenset({"toxinpred3_label", "macrel_hemolysis_label"})
@@ -222,7 +223,7 @@ def _validate_selected_row(
     family = str(row["family_key_80_80"]).strip()
     if sequence != sequence.strip().upper() or set(sequence) - _CANONICAL_AMINO_ACIDS:
         raise ValueError(f"selection row {row_number} has a non-canonical sequence")
-    if not 20 <= len(sequence) <= 25:
+    if not 10 <= len(sequence) <= 30:
         raise ValueError(
             f"selection row {row_number} is outside the existing v1 import length range"
         )
@@ -245,8 +246,6 @@ def _validate_selected_row(
         raise ValueError(f"selection row {row_number} fails a strict literal gate")
     if _integer(row["formal_metric_count"], field="formal_metric_count") != 12:
         raise ValueError(f"selection row {row_number} does not declare 12 formal metrics")
-    if _parse_bool(row[GURUPRASAD_OOD_COLUMN], field=GURUPRASAD_OOD_COLUMN):
-        raise ValueError(f"selection row {row_number} is OOD for instability")
     if _finite(
         row["guruprasad_instability_index"], field="guruprasad_instability_index"
     ) >= 50:
@@ -271,7 +270,7 @@ def _validate_selected_row(
     lane = str(row["v9_dry_lane"]).strip()
     if (lane == CONSENSUS_LANE) != (support >= 2):
         raise ValueError(f"selection row {row_number} lane differs from activity support")
-    if lane not in {CONSENSUS_LANE, SUPPLEMENTAL_LANE}:
+    if lane not in {CONSENSUS_LANE, SUPPLEMENTAL_LANE, LEGACY_SUPPLEMENTAL_LANE}:
         raise ValueError(f"selection row {row_number} has an unknown selection lane")
     rank = _integer(row["v9_dry_rank"], field="v9_dry_rank")
     if rank < 1:
@@ -463,7 +462,9 @@ def adapt_v2_selection_to_v1_bundle(
                 row["v9_dry_lane"] == CONSENSUS_LANE for row in target_rows
             ),
             "supplemental": sum(
-                row["v9_dry_lane"] == SUPPLEMENTAL_LANE for row in target_rows
+                row["v9_dry_lane"]
+                in {SUPPLEMENTAL_LANE, LEGACY_SUPPLEMENTAL_LANE}
+                for row in target_rows
             ),
         }
 

@@ -19,7 +19,6 @@ from pepagent.provenance.hashing import sha256_json, sha256_text
 CANONICAL_AMINO_ACIDS = frozenset("ACDEFGHIKLMNPQRSTVWY")
 MINIMUM_PEPTIDE_LENGTH = 10
 MAXIMUM_PEPTIDE_LENGTH = 30
-OOD_QUALIFIED_MINIMUM_PEPTIDE_LENGTH = 20
 
 ArchiveName = Literal[
     "activity_consensus",
@@ -96,23 +95,30 @@ class CandidateEvidence(FrozenModel):
         return self
 
 
-def is_ood_qualified_wetlab_candidate(candidate: CandidateEvidence) -> bool:
+def is_instability_score_qualified_wetlab_candidate(
+    candidate: CandidateEvidence,
+) -> bool:
     """Return whether a literal hard-gate candidate is usable for wet-lab selection.
 
-    Guruprasad values below 20 aa are explicitly OOD and therefore cannot satisfy
-    the wet-lab quota even when the numeric instability value is below 50.
+    Guruprasad eligibility is determined only by a successful finite score below
+    50.  ``out_of_domain`` remains available as descriptive provenance, but it is
+    deliberately non-gating.
     """
 
     instability = candidate.metrics.get("guruprasad_instability_index")
     return bool(
         candidate.archive_eligible
-        and OOD_QUALIFIED_MINIMUM_PEPTIDE_LENGTH
-        <= len(candidate.sequence)
-        <= MAXIMUM_PEPTIDE_LENGTH
         and instability is not None
         and instability.status == "succeeded"
-        and not instability.out_of_domain
+        and instability.numeric_value is not None
+        and instability.numeric_value < 50.0
     )
+
+
+def is_ood_qualified_wetlab_candidate(candidate: CandidateEvidence) -> bool:
+    """Backward-compatible alias for the score-only Guruprasad eligibility rule."""
+
+    return is_instability_score_qualified_wetlab_candidate(candidate)
 
 
 class ArchiveObjective(FrozenModel):
@@ -995,8 +1001,8 @@ class ContinuationDecision(FrozenModel):
     continue_required: bool
     high_quality_candidate_count: int = Field(ge=0)
     literal_high_quality_candidate_count: int = Field(default=0, ge=0)
-    quality_gate: Literal["ood-qualified-wetlab-20-to-30-aa"] = (
-        "ood-qualified-wetlab-20-to-30-aa"
+    quality_gate: Literal["literal-hard-gates+guruprasad-score-lt-50"] = (
+        "literal-hard-gates+guruprasad-score-lt-50"
     )
     archive_gain: bool
     consecutive_stagnant_generations: int = Field(ge=0)
@@ -1070,7 +1076,7 @@ def update_multi_front_archive(
     stagnant = 0 if archive_gain else prior_consecutive_stagnant_generations + 1
     literal_high_quality_ids = _high_quality_candidate_ids(current)
     high_quality_count = sum(
-        is_ood_qualified_wetlab_candidate(by_id[candidate_id])
+        is_instability_score_qualified_wetlab_candidate(by_id[candidate_id])
         for candidate_id in literal_high_quality_ids
         if candidate_id in by_id
     )
@@ -1084,12 +1090,12 @@ def update_multi_front_archive(
         if stagnant >= continuation_policy.stagnation_patience_generations:
             next_action = "switch_strategy"
             reasons = (
-                "ood_qualified_high_quality_quota_underfilled",
+                "instability_score_qualified_high_quality_quota_underfilled",
                 "archive_stagnation_requires_operator_or_sampling_change",
             )
         else:
             next_action = "continue_evolution"
-            reasons = ("ood_qualified_high_quality_quota_underfilled",)
+            reasons = ("instability_score_qualified_high_quality_quota_underfilled",)
     elif stagnant >= continuation_policy.stagnation_patience_generations:
         next_action = "quality_goal_met"
         continue_required = False
@@ -1135,6 +1141,7 @@ __all__ = [
     "MultiFrontArchivePolicy",
     "MultiFrontArchiveSnapshot",
     "MultiFrontArchiveUpdate",
+    "is_instability_score_qualified_wetlab_candidate",
     "ParentChildDelta",
     "PepMLMCrossoverWindow",
     "PepMLMTargetedAction",

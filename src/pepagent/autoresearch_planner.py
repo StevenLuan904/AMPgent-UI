@@ -17,7 +17,7 @@ from pepagent.autoresearch_closed_loop import (
     MultiFrontArchiveSnapshot,
     PepMLMTargetedAction,
     ResidueSubstitution,
-    is_ood_qualified_wetlab_candidate,
+    is_instability_score_qualified_wetlab_candidate,
 )
 from pepagent.provenance.hashing import sha256_text
 
@@ -54,7 +54,7 @@ def _gold_candidate_ids(snapshot: MultiFrontArchiveSnapshot) -> set[str]:
     )
 
 
-def _ood_qualified_gold_candidate_ids(
+def _instability_score_qualified_gold_candidate_ids(
     snapshot: MultiFrontArchiveSnapshot,
     candidates_by_id: Mapping[str, CandidateEvidence],
 ) -> set[str]:
@@ -62,7 +62,7 @@ def _ood_qualified_gold_candidate_ids(
         candidate_id
         for candidate_id in _gold_candidate_ids(snapshot)
         if candidate_id in candidates_by_id
-        and is_ood_qualified_wetlab_candidate(candidates_by_id[candidate_id])
+        and is_instability_score_qualified_wetlab_candidate(candidates_by_id[candidate_id])
     }
 
 
@@ -99,7 +99,7 @@ def _lane_candidates(
         candidates_by_id[candidate_id]
         for candidate_id in ordered_ids
         if candidate_id in candidates_by_id
-        and is_ood_qualified_wetlab_candidate(candidates_by_id[candidate_id])
+        and is_instability_score_qualified_wetlab_candidate(candidates_by_id[candidate_id])
     ]
     return sorted(
         eligible,
@@ -240,17 +240,21 @@ def build_multifront_rule_action_plan(
     by_id = {item.candidate_id: item for item in candidates}
     if len(by_id) != len(candidates):
         raise ValueError("planner candidates must have unique IDs")
-    eligible = [item for item in candidates if is_ood_qualified_wetlab_candidate(item)]
+    eligible = [
+        item
+        for item in candidates
+        if is_instability_score_qualified_wetlab_candidate(item)
+    ]
     if not eligible:
         raise ValueError(
-            "planner has no OOD-qualified 20--30 aa hard-gate parent; "
+            "planner has no literal-hard-gate parent with Guruprasad instability <50; "
             "the successor must use a target-specific strict seed split"
         )
     improvement_counts, delta_receipts = _improvement_index(prior_deltas)
     known_sequences = {item.sequence for item in candidates}
     archive_sha = snapshot.archive_sha256
     literal_gold_count = len(_gold_candidate_ids(snapshot))
-    gold_count = len(_ood_qualified_gold_candidate_ids(snapshot, by_id))
+    gold_count = len(_instability_score_qualified_gold_candidate_ids(snapshot, by_id))
 
     actions: list[EvolutionAction] = []
     rationales: dict[str, str] = {}
@@ -487,9 +491,11 @@ def build_multifront_rule_action_plan(
         "gold_target": gold_target,
         "gold_candidate_count": gold_count,
         "literal_gold_candidate_count": literal_gold_count,
-        "ood_qualified_gold_candidate_count": gold_count,
+        "instability_score_qualified_gold_candidate_count": gold_count,
+        # Deprecated audit alias only; no decision path consumes this field.
+        "deprecated_ood_qualified_gold_candidate_count": gold_count,
         "gold_shortfall": max(gold_target - gold_count, 0),
-        "quality_gate": "literal-hard-gates+guruprasad-non-ood+length-20-to-30-aa",
+        "quality_gate": "literal-hard-gates+guruprasad-score-lt-50",
         "archive_sha256": archive_sha,
         "strategies": strategies,
         "rationale_by_action_sha256": rationales,

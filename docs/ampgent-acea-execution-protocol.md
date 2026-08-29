@@ -3074,3 +3074,16 @@ MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot
   空闲后，以新seed `2026082768` 启动PBP2a r21，父PID `2812305`；request/launch receipt SHA-256
   分别为 `5742360e0fad9d1cb779e5d61960ccae55a81a2d734e71b42d662d7df2baf682` /
   `ecc18564e9a20a1e2a85fd6e45700f615346d2dfe79f4713680d117db332573b`。两批均尚未进入严格库。
+
+### 2026-08-29 Guruprasad OOD改为纯审计字段
+
+- 最新用户规则覆盖此前所有“短于20 aa因OOD不得晋级”的决策：Guruprasad唯一资格门是正式数值成功、
+  有限且`guruprasad_instability_index < 50`。`guruprasad_instability_ood`继续原样落库和报告，但只说明
+  方法适用域，不得过滤display、seed/parent、Pareto/archive、checkpoint、gold/wetlab或结构候选。
+- 不得用`length >= 20`间接恢复已取消的OOD门；普通短肽有效范围仍是10--30 aa。毒性与溶血展示硬门
+  仍分别为ToxinPred3 `Non-Toxin`与Macrel `low`。
+- 新字段、收据和统计统一称`instability_score_qualified`或`display_hard_gate_pass`；历史
+  `ood_qualified`仅可作为明确deprecated的审计别名，不能参与planner或continuation判断。
+- 历史Evaluation、Archive、Checkpoint和LifecycleEvent不改写。对旧OOD逻辑唯一排除、其余硬门均通过
+  的对象，追加候选级与run级恢复事件，并冻结可由successor selector读取的全量eligibility manifest；
+  全流程调用与恢复结果写权威PostgreSQL。
