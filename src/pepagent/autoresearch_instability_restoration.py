@@ -75,6 +75,26 @@ def validate_restoration_manifest(manifest: Mapping[str, Any]) -> None:
         raise ValueError("instability restoration policy differs")
     if manifest.get("archive_membership_rewrite_count") != 0:
         raise ValueError("restoration must not rewrite historical archive membership")
+    scope = manifest.get("restoration_scope", {"mode": "full_snapshot"})
+    if not isinstance(scope, Mapping):
+        raise ValueError("restoration scope is invalid")
+    mode = scope.get("mode")
+    if mode not in {"full_snapshot", "incremental_unrestored_only"}:
+        raise ValueError("restoration scope mode is invalid")
+    if mode == "incremental_unrestored_only":
+        prior_sha = scope.get("prior_manifest_sha256")
+        if (
+            not isinstance(prior_sha, str)
+            or len(prior_sha) != 64
+            or any(char not in "0123456789abcdef" for char in prior_sha)
+        ):
+            raise ValueError("incremental restoration prior manifest SHA is invalid")
+        if not isinstance(scope.get("prior_snapshot_cutoff"), str):
+            raise ValueError("incremental restoration prior cutoff is missing")
+        if scope.get("stable_witness_event_type") != (
+            "candidate.instability_ood_gate_restored"
+        ):
+            raise ValueError("incremental restoration stable witness differs")
     rows = manifest.get("restored_candidates")
     if not isinstance(rows, list):
         raise ValueError("restoration manifest candidates must be a list")
@@ -133,7 +153,10 @@ async def _formal_runs(
 
 
 async def _restored_candidates(
-    session: AsyncSession, cutoff: datetime
+    session: AsyncSession,
+    cutoff: datetime,
+    *,
+    only_without_stable_witness: bool = False,
 ) -> list[dict[str, Any]]:
     required = list(FORMAL_METRIC_NAMES)
     result = await session.execute(
@@ -188,6 +211,17 @@ async def _restored_candidates(
               AND lower(replace(coalesce(toxin_label,''),'_','-'))
                     IN ('non-toxin','nontoxin','non-toxic')
               AND lower(coalesce(hemolysis_label,''))='low'
+              AND (
+                cast(:only_without_stable_witness AS boolean) IS FALSE
+                OR NOT EXISTS (
+                  SELECT 1
+                  FROM lifecycle_events witness
+                  WHERE witness.aggregate_type='candidate'
+                    AND witness.aggregate_id=projected.candidate_id
+                    AND witness.event_type='candidate.instability_ood_gate_restored'
+                    AND witness.occurred_at <= :cutoff
+                )
+              )
             ORDER BY run_id, candidate_id
             """
         ),
@@ -195,6 +229,7 @@ async def _restored_candidates(
             "cutoff": _postgres_timestamp_cutoff(cutoff),
             "required_metrics": required,
             "metric_count": len(FORMAL_METRIC_NAMES),
+            "only_without_stable_witness": only_without_stable_witness,
         },
     )
     return [dict(row) for row in result.mappings()]
@@ -295,14 +330,39 @@ async def build_restoration_manifest(
     session: AsyncSession,
     *,
     snapshot_cutoff: datetime,
+    incremental: bool = False,
+    prior_manifest_sha256: str | None = None,
+    prior_snapshot_cutoff: datetime | None = None,
 ) -> dict[str, Any]:
     cutoff = (
         snapshot_cutoff
         if snapshot_cutoff.tzinfo is not None
         else snapshot_cutoff.replace(tzinfo=UTC)
     ).astimezone(UTC)
+    if incremental:
+        if (
+            prior_manifest_sha256 is None
+            or len(prior_manifest_sha256) != 64
+            or any(char not in "0123456789abcdef" for char in prior_manifest_sha256)
+        ):
+            raise ValueError("incremental restoration requires a lowercase manifest SHA-256")
+        if prior_snapshot_cutoff is None:
+            raise ValueError("incremental restoration requires the prior snapshot cutoff")
+        prior_cutoff = (
+            prior_snapshot_cutoff
+            if prior_snapshot_cutoff.tzinfo is not None
+            else prior_snapshot_cutoff.replace(tzinfo=UTC)
+        ).astimezone(UTC)
+        if prior_cutoff >= cutoff:
+            raise ValueError("incremental restoration cutoff must follow the prior cutoff")
+    else:
+        prior_cutoff = None
     runs = await _formal_runs(session, cutoff)
-    candidates = await _restored_candidates(session, cutoff)
+    candidates = await _restored_candidates(
+        session,
+        cutoff,
+        only_without_stable_witness=incremental,
+    )
     occurrences = await _occurrences(session, cutoff)
     memberships = await _archive_memberships(session, cutoff)
     latest_checkpoint = await _latest_checkpoint_iterations(session, cutoff)
@@ -374,6 +434,11 @@ async def build_restoration_manifest(
     for row in restored:
         run_occurrences[str(row["run_id"])] += len(row["occurrence_ids"])
         run_gold[str(row["run_id"])] += int(row["latest_checkpoint_gold_restored"])
+    summary_runs = (
+        [run for run in runs if run_counts[str(run["id"])]]
+        if incremental
+        else runs
+    )
     run_summaries = [
         {
             "run_id": str(run["id"]),
@@ -384,7 +449,7 @@ async def build_restoration_manifest(
             "restored_occurrence_count": int(run_occurrences[str(run["id"])]),
             "latest_checkpoint_gold_increment": int(run_gold[str(run["id"])]),
         }
-        for run in runs
+        for run in summary_runs
     ]
     manifest = {
         "schema_version": RESTORATION_SCHEMA,
@@ -421,6 +486,14 @@ async def build_restoration_manifest(
         "run_summary": run_summaries,
         "restored_candidates": restored,
     }
+    if incremental:
+        manifest["restoration_scope"] = {
+            "mode": "incremental_unrestored_only",
+            "prior_manifest_sha256": prior_manifest_sha256,
+            "prior_snapshot_cutoff": _iso_utc(prior_cutoff),
+            "stable_witness_event_type": "candidate.instability_ood_gate_restored",
+        }
+        manifest["summary"]["run_summary_event_count"] = len(run_summaries)
     validate_restoration_manifest(manifest)
     return manifest
 

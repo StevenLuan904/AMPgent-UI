@@ -101,3 +101,19 @@ def test_manifest_forbids_historical_archive_rewrite() -> None:
 
     with pytest.raises(ValueError, match="must not rewrite"):
         validate_restoration_manifest(manifest)
+
+
+def test_incremental_manifest_requires_stable_witness_scope() -> None:
+    manifest = _manifest()
+    manifest["restoration_scope"] = {
+        "mode": "incremental_unrestored_only",
+        "prior_manifest_sha256": "b" * 64,
+        "prior_snapshot_cutoff": "2026-08-29T04:56:31.443778Z",
+        "stable_witness_event_type": "candidate.instability_ood_gate_restored",
+    }
+
+    validate_restoration_manifest(manifest)
+
+    manifest["restoration_scope"]["stable_witness_event_type"] = "wrong.event"  # type: ignore[index]
+    with pytest.raises(ValueError, match="stable witness differs"):
+        validate_restoration_manifest(manifest)
