@@ -612,7 +612,10 @@ async def persist_restoration(
                 ),
             )
             artifact = await _get_or_create_artifact(session, stored)
-            edge = await session.get(EvidenceArtifact, (call.id, artifact.id, "eligibility_manifest"))
+            edge = await session.get(
+                EvidenceArtifact,
+                (call.id, artifact.id, "eligibility_manifest"),
+            )
             if edge is None:
                 session.add(
                     EvidenceArtifact(

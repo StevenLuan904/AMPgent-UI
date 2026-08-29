@@ -34,7 +34,7 @@ async def _database_now() -> datetime:
 
 
 async def _dry_run(output: Path, cutoff: datetime | None) -> dict[str, object]:
-    if output.exists():
+    if await asyncio.to_thread(output.exists):
         raise FileExistsError("dry-run manifest output is append-only")
     snapshot_cutoff = cutoff or await _database_now()
     async with SessionFactory() as session:
@@ -43,12 +43,13 @@ async def _dry_run(output: Path, cutoff: datetime | None) -> dict[str, object]:
             snapshot_cutoff=snapshot_cutoff,
         )
     payload = canonical_manifest_bytes(manifest)
-    output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_bytes(payload)
+    await asyncio.to_thread(output.parent.mkdir, parents=True, exist_ok=True)
+    await asyncio.to_thread(output.write_bytes, payload)
+    resolved_output = await asyncio.to_thread(output.resolve)
     return {
         "status": "inert",
         "executed": False,
-        "manifest_path": str(output.resolve()),
+        "manifest_path": str(resolved_output),
         "manifest_sha256": sha256_bytes(payload),
         "manifest_size_bytes": len(payload),
         "snapshot_cutoff": manifest["snapshot_cutoff"],
@@ -58,7 +59,8 @@ async def _dry_run(output: Path, cutoff: datetime | None) -> dict[str, object]:
 
 
 async def _execute(path: Path) -> dict[str, object]:
-    payload = path.resolve(strict=True).read_bytes()
+    resolved_path = await asyncio.to_thread(path.resolve, strict=True)
+    payload = await asyncio.to_thread(resolved_path.read_bytes)
     manifest = json.loads(payload)
     validate_restoration_manifest(manifest)
     if canonical_manifest_bytes(manifest) != payload:
