@@ -1,0 +1,5 @@
+# The authoritative PostgreSQL store is reached through an SSH tunnel. Keep the
+# history persistence deadline above normal tunnel jitter; this value is hot
+# reloaded by Temporal and does not require a service restart.
+history.shardIOTimeout:
+  - value: 30s
