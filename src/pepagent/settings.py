@@ -14,11 +14,15 @@ class Settings(BaseSettings):
     # a silently stale forwarded connection can pin a Temporal activity.
     database_pool_recycle_seconds: int = Field(default=300, gt=0)
     database_pool_timeout_seconds: float = Field(default=30.0, gt=0)
+    database_connect_timeout_seconds: float = Field(default=15.0, gt=0)
     database_command_timeout_seconds: float = Field(default=60.0, gt=0)
     s3_endpoint: str = "http://localhost:9000"
     s3_access_key: str = "pepagent"
     s3_secret_key: str = "change-me-now"
     s3_bucket: str = "pepagent-artifacts"
+    s3_connect_timeout_seconds: float = Field(default=5.0, gt=0)
+    s3_read_timeout_seconds: float = Field(default=30.0, gt=0)
+    s3_max_attempts: int = Field(default=3, gt=0)
     temporal_address: str = "localhost:7233"
     temporal_namespace: str = "default"
     mlflow_tracking_uri: str = "http://localhost:5000"

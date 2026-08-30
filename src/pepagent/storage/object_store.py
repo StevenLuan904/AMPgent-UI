@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import boto3
+from botocore.config import Config
 from botocore.exceptions import ClientError
 
 from pepagent.provenance.hashing import sha256_bytes, sha256_file
@@ -27,8 +28,15 @@ class ContentAddressedObjectStore:
             endpoint_url=settings.s3_endpoint,
             aws_access_key_id=settings.s3_access_key,
             aws_secret_access_key=settings.s3_secret_key,
+            config=Config(
+                connect_timeout=float(settings.s3_connect_timeout_seconds),
+                read_timeout=float(settings.s3_read_timeout_seconds),
+                retries={
+                    "max_attempts": int(settings.s3_max_attempts),
+                    "mode": "standard",
+                },
+            ),
         )
-        self._ensure_bucket()
 
     def _ensure_bucket(self) -> None:
         try:
@@ -40,6 +48,7 @@ class ContentAddressedObjectStore:
             self.client.create_bucket(Bucket=self.bucket)
 
     def put_bytes(self, payload: bytes, media_type: str) -> StoredObject:
+        self._ensure_bucket()
         digest = sha256_bytes(payload)
         key = f"sha256/{digest[:2]}/{digest}"
         self.client.upload_fileobj(
@@ -56,6 +65,7 @@ class ContentAddressedObjectStore:
         )
 
     def put_file(self, path: str | Path, media_type: str | None = None) -> StoredObject:
+        self._ensure_bucket()
         source = Path(path)
         digest = sha256_file(source)
         key = f"sha256/{digest[:2]}/{digest}"

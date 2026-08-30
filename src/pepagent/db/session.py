@@ -9,7 +9,10 @@ settings = get_settings()
 
 
 def _database_connect_args() -> dict[str, float]:
-    return {"command_timeout": float(settings.database_command_timeout_seconds)}
+    return {
+        "timeout": float(settings.database_connect_timeout_seconds),
+        "command_timeout": float(settings.database_command_timeout_seconds),
+    }
 
 
 engine = create_async_engine(
