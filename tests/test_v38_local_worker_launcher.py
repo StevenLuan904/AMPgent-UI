@@ -15,6 +15,9 @@ def test_v38_local_launcher_is_immutable_and_sequence_stage_only() -> None:
     assert 'Name = "autoresearch-generator"' not in text
     assert '[ValidateSet("v38", "autoresearch-local", "all")]' in text
     assert '[string]$RoleSet = "v38"' in text
+    assert "[string]$OnlyRole" in text
+    assert 'Where-Object { $_.Name -eq $OnlyRole }' in text
+    assert "requested worker role is outside the selected role set" in text
     assert '"autoresearch-local" { $autoresearchLocalRoles }' in text
     assert 'TaskQueue = "pepagent-autoresearch-control-v1"' in text
     assert 'TaskQueue = "pepagent-autoresearch-metrics-v1"' in text

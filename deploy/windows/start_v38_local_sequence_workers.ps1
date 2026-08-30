@@ -7,6 +7,14 @@ param(
     [string]$StateRoot = "var/run/v38-workers",
     [ValidateSet("v38", "autoresearch-local", "all")]
     [string]$RoleSet = "v38",
+    [ValidateSet(
+        "v38-control",
+        "v38-generator",
+        "v38-metrics",
+        "autoresearch-control",
+        "autoresearch-metrics"
+    )]
+    [string]$OnlyRole,
     [switch]$ReplaceOwned
 )
 
@@ -75,6 +83,12 @@ $roles = switch ($RoleSet) {
     "v38" { $v38Roles }
     "autoresearch-local" { $autoresearchLocalRoles }
     "all" { @($v38Roles) + @($autoresearchLocalRoles) }
+}
+if ($OnlyRole) {
+    $roles = @($roles | Where-Object { $_.Name -eq $OnlyRole })
+    if ($roles.Count -ne 1) {
+        throw "requested worker role is outside the selected role set"
+    }
 }
 $receipts = @()
 foreach ($role in $roles) {
