@@ -38,6 +38,7 @@ PREFLIGHT_SCHEMA = "ampgent.autoresearch-formal-six-branch-preflight.3"
 WORKFLOW_REQUEST_SCHEMA = "ampgent.autoresearch-workflow-request.1"
 WORKFLOW_TYPE = "AutoResearchClosedLoopWorkflow"
 WORKFLOW_MEMO_KEY = "ampgent_autoresearch_formal_submission_identity"
+AUTORESEARCH_WORKFLOW_TASK_TIMEOUT = timedelta(minutes=5)
 
 CONTROL_QUEUE = "pepagent-autoresearch-control-v1"
 GENERATOR_QUEUE = "pepagent-autoresearch-generator-v1"
@@ -1147,7 +1148,10 @@ async def _start_or_recover_autoresearch_workflow(
             branch.request,
             id=branch.workflow_id,
             task_queue=CONTROL_QUEUE,
-            task_timeout=timedelta(seconds=60),
+            # Remote PostgreSQL history reads can legitimately exceed one minute
+            # during recovery/backlog pressure.  A longer task window prevents
+            # duplicate replay churn without changing activity retry semantics.
+            task_timeout=AUTORESEARCH_WORKFLOW_TASK_TIMEOUT,
             memo={WORKFLOW_MEMO_KEY: identity},
             id_reuse_policy=WorkflowIDReusePolicy.REJECT_DUPLICATE,
             id_conflict_policy=WorkflowIDConflictPolicy.FAIL,
