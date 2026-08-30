@@ -45,6 +45,19 @@ describe('snapshot runtime validation', () => {
     expect(validateAnalysisSnapshot(snapshot).some((issue) => issue.path === 'summary.uniqueCandidates')).toBe(true)
   })
 
+  it('rejects a candidate that is not explicitly display eligible', () => {
+    const snapshot = createTestSnapshot()
+    const candidate = snapshot.candidates[0] as unknown as { displayEligible: boolean }
+    candidate.displayEligible = false
+    expect(validateAnalysisSnapshot(snapshot).some((issue) => issue.path === 'candidates')).toBe(true)
+  })
+
+  it('rejects inconsistent display population denominators', () => {
+    const snapshot = createTestSnapshot()
+    snapshot.displayPopulation.candidateRecordCount = 7
+    expect(validateAnalysisSnapshot(snapshot).some((issue) => issue.path === 'displayPopulation')).toBe(true)
+  })
+
   it('rejects negative coverage', () => {
     const snapshot = createTestSnapshot()
     snapshot.coverage.missing = -1

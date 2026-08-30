@@ -37,6 +37,15 @@ const snapshot = await loadAnalysisSnapshot({ runId })
 
 适配器先尝试 `/v1/analytics/runs/{runId}`，响应缺失、非 2xx、契约不合法或 digest 不匹配时，再读取 `/data/launch-analysis.snapshot.json`。若使用冻结快照，返回值会追加 live API 失败原因。两个来源都失败时抛出 `AnalysisSnapshotLoadError`，不会暗中替换成 fixture。
 
+### 展示集合与历史精确重放
+
+Analytics 快照只把可展示记录放入 `candidates` 与 `occurrences`。每条返回记录明确携带
+`displayEligible: true`、`exclusionReason: null`；历史跨 run 精确重放仅进入
+`candidateExclusions`，并携带 `displayEligible: false`、
+`exclusionReason: "historical_exact_replay"`。`displayPopulation` 同时给出候选与 occurrence
+的原始数、排除数和可展示数。`summary`、覆盖率、入选统计、图表与分布均由可展示数组计算，
+前端不得按序列或自由文本自行推断排除关系。
+
 ## 卡片粒度查询
 
 每张卡片持有独立的 `AnalysisCardQueryState`：
@@ -119,4 +128,3 @@ npm audit
 ```
 
 当前测试包含小型可控 fixture 和真实 773-candidate 集成快照，覆盖查询注册表、非法组合、透视执行、共享来源、缺失/OOD、metric range、空结果、多卡隔离、Overview 生成、字段拖动、图表推荐、尺寸降级、live→frozen 回退、契约和 digest 篡改检测。
-

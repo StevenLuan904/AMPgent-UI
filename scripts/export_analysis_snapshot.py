@@ -25,6 +25,8 @@ from psycopg.rows import dict_row
 
 SCHEMA_VERSION = "ampgent-analysis-snapshot.1"
 DIGEST_PLACEHOLDER = "0" * 64
+HISTORICAL_EXACT_REPLAY = "historical_exact_replay"
+HISTORICAL_PERSISTENCE_REASON = "sequence_already_materialized_in_historical_run"
 
 
 def _json_default(value: Any) -> str:
@@ -49,6 +51,28 @@ def _transport_json(payload: dict[str, Any]) -> str:
         sort_keys=True,
         separators=(",", ":"),
         default=_json_default,
+    )
+
+
+def _display_candidate_rows(
+    candidate_rows: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Partition candidates using the read-only SQL replay classification."""
+
+    visible = [row for row in candidate_rows if row["display_eligible"]]
+    excluded = [row for row in candidate_rows if not row["display_eligible"]]
+    return visible, excluded
+
+
+def _occurrence_is_historical_exact_replay(
+    row: dict[str, Any],
+    visible_candidate_ids: set[str],
+) -> bool:
+    metadata = row.get("metadata_json") or {}
+    candidate_id = row.get("candidate_id")
+    return (
+        (candidate_id is not None and candidate_id not in visible_candidate_ids)
+        or metadata.get("reason") == HISTORICAL_PERSISTENCE_REASON
     )
 
 
@@ -97,11 +121,25 @@ def export_snapshot(database_url: str, run_id: str, generated_at: str) -> dict[s
             candidate_rows = _fetch_all(
                 cursor,
                 """
-                SELECT id::text, sequence, sequence_sha256, generation, parent_id::text,
-                       status, proposal_rank, generator_call_id::text, metadata_json,
-                       created_at
-                FROM candidates WHERE run_id = %(run_id)s::uuid
-                ORDER BY sequence_sha256, id
+                SELECT c.id::text, c.sequence, c.sequence_sha256, c.generation,
+                       c.parent_id::text, c.status, c.proposal_rank,
+                       c.generator_call_id::text, c.metadata_json, c.created_at,
+                       NOT (
+                           c.generation > 0
+                           AND EXISTS (
+                               SELECT 1
+                               FROM candidates prior
+                               WHERE prior.run_id <> c.run_id
+                                 AND prior.sequence_sha256 = c.sequence_sha256
+                                 AND (
+                                     prior.created_at < c.created_at
+                                     OR (prior.created_at = c.created_at AND prior.id < c.id)
+                                 )
+                           )
+                       ) AS display_eligible
+                FROM candidates c
+                WHERE c.run_id = %(run_id)s::uuid
+                ORDER BY c.sequence_sha256, c.id
                 """,
                 run_id,
             )
@@ -139,6 +177,19 @@ def export_snapshot(database_url: str, run_id: str, generated_at: str) -> dict[s
                 run_id,
             )
 
+    candidate_record_count = len(candidate_rows)
+    candidate_rows, excluded_candidate_rows = _display_candidate_rows(candidate_rows)
+    visible_candidate_ids = {row["id"] for row in candidate_rows}
+    occurrence_record_count = len(occurrence_rows)
+    occurrence_rows = [
+        row
+        for row in occurrence_rows
+        if not _occurrence_is_historical_exact_replay(row, visible_candidate_ids)
+    ]
+    evaluation_rows = [
+        row for row in evaluation_rows if row["candidate_id"] in visible_candidate_ids
+    ]
+
     origins_by_candidate: dict[str, set[str]] = defaultdict(set)
     compact_occurrences: list[dict[str, Any]] = []
     for row in occurrence_rows:
@@ -157,6 +208,8 @@ def export_snapshot(database_url: str, run_id: str, generated_at: str) -> dict[s
                 "rank": row["occurrence_rank"],
                 "kind": row["occurrence_kind"],
                 "disposition": metadata.get("disposition", "unknown"),
+                "displayEligible": True,
+                "exclusionReason": None,
             }
         )
 
@@ -212,6 +265,8 @@ def export_snapshot(database_url: str, run_id: str, generated_at: str) -> dict[s
                 "proposalRank": row["proposal_rank"],
                 "originSet": origins,
                 "cohortSha256": metadata.get("cohort_sha256"),
+                "displayEligible": True,
+                "exclusionReason": None,
                 "admission": {
                     "status": decision.get("status", "not_evaluated"),
                     "reasons": decision.get("reasons", []),
@@ -221,6 +276,17 @@ def export_snapshot(database_url: str, run_id: str, generated_at: str) -> dict[s
                 "metrics": evaluations_by_candidate.get(candidate_id, {}),
             }
         )
+
+    candidate_exclusions = [
+        {
+            "id": row["id"],
+            "sequenceSha256": row["sequence_sha256"],
+            "generation": row["generation"],
+            "displayEligible": False,
+            "exclusionReason": HISTORICAL_EXACT_REPLAY,
+        }
+        for row in excluded_candidate_rows
+    ]
 
     tools_by_id = {row["id"]: row for row in tool_rows}
     metric_methods: dict[str, list[dict[str, Any]]] = {}
@@ -288,6 +354,16 @@ def export_snapshot(database_url: str, run_id: str, generated_at: str) -> dict[s
         "generatorCells": generator_cells,
         "occurrences": compact_occurrences,
         "candidates": compact_candidates,
+        "candidateExclusions": candidate_exclusions,
+        "displayPopulation": {
+            "candidateCount": len(compact_candidates),
+            "candidateRecordCount": candidate_record_count,
+            "excludedCandidateCount": len(candidate_exclusions),
+            "occurrenceCount": len(compact_occurrences),
+            "occurrenceRecordCount": occurrence_record_count,
+            "excludedOccurrenceCount": occurrence_record_count - len(compact_occurrences),
+            "exclusionReason": HISTORICAL_EXACT_REPLAY,
+        },
         "metricMethods": metric_methods,
         "admissionPolicy": admission_policy,
         "decisionMethods": decision_methods,

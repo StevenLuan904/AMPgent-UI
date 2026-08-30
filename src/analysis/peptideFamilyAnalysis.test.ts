@@ -25,6 +25,8 @@ function candidate(sequence: string, overrides: Partial<SnapshotCandidate> = {})
       hydrophobic_ratio_modlamp: metric(.45),
     },
     ...overrides,
+    displayEligible: true,
+    exclusionReason: null,
   }
 }
 

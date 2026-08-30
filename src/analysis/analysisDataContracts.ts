@@ -80,6 +80,8 @@ export interface SnapshotCandidate {
   proposalRank: number | null
   originSet: string[]
   cohortSha256: string | null
+  displayEligible: true
+  exclusionReason: null
   admission: {
     status: string
     reasons: string[]
@@ -98,6 +100,26 @@ export interface SnapshotOccurrence {
   rank: number
   kind: string
   disposition: string
+  displayEligible: true
+  exclusionReason: null
+}
+
+export interface SnapshotCandidateExclusion {
+  id: string
+  sequenceSha256: string
+  generation: number
+  displayEligible: false
+  exclusionReason: 'historical_exact_replay'
+}
+
+export interface SnapshotDisplayPopulation {
+  candidateCount: number
+  candidateRecordCount: number
+  excludedCandidateCount: number
+  occurrenceCount: number
+  occurrenceRecordCount: number
+  excludedOccurrenceCount: number
+  exclusionReason: 'historical_exact_replay'
 }
 
 export interface AnalysisSnapshot {
@@ -118,6 +140,8 @@ export interface AnalysisSnapshot {
   generatorCells: Array<Record<string, unknown> & { generator: string; toolCallId: string }>
   occurrences: SnapshotOccurrence[]
   candidates: SnapshotCandidate[]
+  candidateExclusions: SnapshotCandidateExclusion[]
+  displayPopulation: SnapshotDisplayPopulation
   metricMethods: Record<string, Array<Record<string, unknown> & { toolCallId: string }>>
   admissionPolicy: Record<string, unknown> | null
   decisionMethods: Array<Record<string, unknown>>

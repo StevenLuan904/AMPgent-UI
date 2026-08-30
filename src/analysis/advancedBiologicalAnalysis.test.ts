@@ -12,6 +12,8 @@ function candidate(sequence: string, status: 'mature_core' | 'rejected', x: numb
     parentId: null,
     proposalRank: 1,
     cohortSha256: 'cohort',
+    displayEligible: true,
+    exclusionReason: null,
     status: 'generated',
     admission: { status, paretoFront: null, structureEligible: status === 'mature_core', reasons: [] },
     metrics: {
