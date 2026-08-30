@@ -4,15 +4,19 @@ param(
     [Parameter(Mandatory = $true)][string]$ArchiveSha256,
     [Parameter(Mandatory = $true)][string]$SourceRevision,
     [Parameter(Mandatory = $true)][string]$Python,
+    [ValidateSet(3, 4)][int]$QueueGeneration = 3,
     [string]$ReleaseRoot = 'var/platform/releases-v39-quality',
-    [string]$StateRoot = 'var/run/autoresearch-cpu-successor-v3'
+    [string]$StateRoot = ''
 )
 
 $ErrorActionPreference = 'Stop'
 $expected40 = '^[0-9a-f]{40}$'
 $expected64 = '^[0-9a-f]{64}$'
 if ($SourceRevision -notmatch $expected40 -or $ArchiveSha256 -notmatch $expected64) {
-    throw 'v3 worker source or archive identity is invalid'
+    throw 'CPU successor worker source or archive identity is invalid'
+}
+if (-not $StateRoot) {
+    $StateRoot = "var/run/autoresearch-cpu-successor-v$QueueGeneration"
 }
 
 $workspace = (Resolve-Path -LiteralPath '.').Path
@@ -48,23 +52,43 @@ $marker = [IO.File]::ReadAllText(
 ).Trim()
 if ($marker -ne $SourceRevision) { throw 'v3 worker release marker drifted' }
 
-$roles = @(
-    @{
-        Name = 'autoresearch-cpu-successor-v3-control'
-        Queue = 'pepagent-autoresearch-cpu-successor-control-v3'
-        Maximum = '16'
-    },
-    @{
-        Name = 'autoresearch-cpu-successor-v3-persistence'
-        Queue = 'pepagent-autoresearch-cpu-successor-persistence-v3'
-        Maximum = '5'
-    },
-    @{
-        Name = 'autoresearch-cpu-successor-v3-metrics'
-        Queue = 'pepagent-autoresearch-cpu-successor-metrics-v3'
-        Maximum = '5'
-    }
-)
+$roles = if ($QueueGeneration -eq 3) {
+    @(
+        @{
+            Name = 'autoresearch-cpu-successor-v3-control'
+            Queue = 'pepagent-autoresearch-cpu-successor-control-v3'
+            Maximum = '16'
+        },
+        @{
+            Name = 'autoresearch-cpu-successor-v3-persistence'
+            Queue = 'pepagent-autoresearch-cpu-successor-persistence-v3'
+            Maximum = '5'
+        },
+        @{
+            Name = 'autoresearch-cpu-successor-v3-metrics'
+            Queue = 'pepagent-autoresearch-cpu-successor-metrics-v3'
+            Maximum = '5'
+        }
+    )
+} else {
+    @(
+        @{
+            Name = 'autoresearch-cpu-successor-v4-control'
+            Queue = 'pepagent-autoresearch-cpu-successor-control-v4'
+            Maximum = '16'
+        },
+        @{
+            Name = 'autoresearch-cpu-successor-v4-persistence'
+            Queue = 'pepagent-autoresearch-cpu-successor-persistence-v4'
+            Maximum = '5'
+        },
+        @{
+            Name = 'autoresearch-cpu-successor-v4-metrics'
+            Queue = 'pepagent-autoresearch-cpu-successor-metrics-v4'
+            Maximum = '5'
+        }
+    )
+}
 $pythonSha256 = (Get-FileHash -LiteralPath $pythonPath -Algorithm SHA256).Hash.ToLowerInvariant()
 $receipts = @()
 foreach ($role in $roles) {
@@ -148,7 +172,7 @@ foreach ($role in $roles) {
         throw "v3 launcher did not produce exactly one poller for $($role.Name)"
     }
     $receipt = [ordered]@{
-        schema_version = 'ampgent.autoresearch-cpu-successor-v3-worker.1'
+        schema_version = "ampgent.autoresearch-cpu-successor-v$QueueGeneration-worker.1"
         role = $role.Name
         task_queue = $role.Queue
         pid = [int]$children[0].ProcessId

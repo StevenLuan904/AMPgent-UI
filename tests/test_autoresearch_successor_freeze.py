@@ -9,8 +9,8 @@ import yaml
 from pepagent.autoresearch_closed_loop import ContinuationPolicy, MultiFrontArchivePolicy
 from pepagent.autoresearch_successor_freeze import (
     assess_cpu_only_successor_runtime_readiness,
-    freeze_external_metric_registry_migration,
     freeze_cpu_only_successor,
+    freeze_external_metric_registry_migration,
 )
 from pepagent.provenance.hashing import sha256_bytes, sha256_json, sha256_text
 from pepagent.v38_science_execution import build_default_v38_sequence_contract
@@ -243,13 +243,13 @@ def test_freeze_preserves_environments_and_target_but_updates_release_controls()
         predecessor["action_executor"]["target_sequence"]
     )
     assert frozen.request["task_queues"] == {
-        "workflow_and_control": "pepagent-autoresearch-cpu-successor-control-v3",
-        "action_execution": "pepagent-autoresearch-cpu-successor-no-gpu-v3",
-        "sequence_metrics": "pepagent-autoresearch-cpu-successor-metrics-v3",
-        "persistence": "pepagent-autoresearch-cpu-successor-persistence-v3",
+        "workflow_and_control": "pepagent-autoresearch-cpu-successor-control-v4",
+        "action_execution": "pepagent-autoresearch-cpu-successor-no-gpu-v4",
+        "sequence_metrics": "pepagent-autoresearch-cpu-successor-metrics-v4",
+        "persistence": "pepagent-autoresearch-cpu-successor-persistence-v4",
     }
     assert frozen.request["planner_provider"]["task_queue"] == (
-        "pepagent-autoresearch-cpu-successor-control-v3"
+        "pepagent-autoresearch-cpu-successor-control-v4"
     )
     assert (
         frozen.request["planner_provider"]["planner_contract"]["pepmlm_targeted_enabled"]

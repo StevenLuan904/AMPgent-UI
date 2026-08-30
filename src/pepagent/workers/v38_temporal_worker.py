@@ -232,6 +232,37 @@ V38_ROLE_CONFIG = {
         [evaluate_v38_sequence_metric],
         [],
     ),
+    # v4 is a clean queue generation for successors frozen after the external
+    # metric-registry migration.  It prevents older releases from claiming a
+    # new activity while keeping every existing v1-v3 worker untouched.
+    "autoresearch-cpu-successor-v4-control": (
+        "pepagent-autoresearch-cpu-successor-control-v4",
+        [
+            mark_run_started,
+            mark_run_cancelled,
+            mark_run_failed,
+            mark_run_succeeded,
+            plan_autoresearch_actions,
+            execute_autoresearch_rule_action_batch,
+        ],
+        [AutoResearchClosedLoopWorkflow],
+    ),
+    "autoresearch-cpu-successor-v4-persistence": (
+        "pepagent-autoresearch-cpu-successor-persistence-v4",
+        [
+            persist_v38_sequence_metric,
+            persist_autoresearch_action_plan,
+            persist_autoresearch_children,
+            persist_autoresearch_score_all_bundle,
+            finalize_autoresearch_iteration,
+        ],
+        [],
+    ),
+    "autoresearch-cpu-successor-v4-metrics": (
+        "pepagent-autoresearch-cpu-successor-metrics-v4",
+        [evaluate_v38_sequence_metric],
+        [],
+    ),
     "v39-target-sequence": (
         "pepagent-gpu-target-sequence-v39",
         [score_seven_branch_target_sequence],
