@@ -207,6 +207,41 @@ def test_multifront_rule_planner_can_freeze_a_cpu_only_action_batch() -> None:
     )
 
 
+def test_cpu_only_planner_fills_a_fifty_percent_de_novo_quota() -> None:
+    cohort = _cohort()
+    snapshot = build_multi_front_archive(
+        cohort,
+        MultiFrontArchivePolicy(known_family_keys=("old-family",)),
+        generation=0,
+    )
+
+    plan = build_multifront_rule_action_plan(
+        candidates=cohort,
+        snapshot=snapshot,
+        branch_key="VEGFA",
+        generation=2,
+        seed=29,
+        operator_release_sha256="a" * 64,
+        target_sequence_sha256="c" * 64,
+        gold_target=50,
+        de_novo_quota=0.5,
+        pepmlm_targeted_enabled=False,
+    )
+
+    actions = [parse_evolution_action(item) for item in plan["actions"]]
+    de_novo_actions = [
+        action for action in actions if getattr(action, "action_type", None) == "de_novo"
+    ]
+    assert plan["requires_generator_gpu"] is False
+    assert plan["action_execution_mode"] == "cpu_rule_only"
+    assert plan["de_novo_action_count"] == len(de_novo_actions)
+    assert plan["required_de_novo_action_count"] == len(de_novo_actions)
+    assert len(de_novo_actions) * 2 >= len(actions)
+    assert len({action.proposed_sequence for action in de_novo_actions}) == len(
+        de_novo_actions
+    )
+
+
 def test_pepmlm_targeted_action_compiles_to_existing_cli_schema_and_validates_child() -> None:
     parent = _cohort()[0]
     action = PepMLMTargetedAction(

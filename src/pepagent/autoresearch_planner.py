@@ -498,6 +498,7 @@ def build_multifront_rule_action_plan(
     )
     actions.append(action)
     strategies.append("de_novo")
+    known_sequences.add(proposed)
     rationales[action.action_sha256] = (
         "Open a sequence family outside the current archive so elite parents cannot "
         "monopolize exploration."
@@ -580,12 +581,53 @@ def build_multifront_rule_action_plan(
 
     if not actions:
         raise ValueError("multi-front planner produced no executable action")
-    de_novo_count = sum(
-        isinstance(item, DeNovoAction)
-        or (isinstance(item, PepMLMTargetedAction) and item.proposal_mode == "de_novo")
-        for item in actions
-    )
-    if de_novo_count < math.ceil(len(actions) * de_novo_quota):
+    def de_novo_count() -> int:
+        return sum(
+            isinstance(item, DeNovoAction)
+            or (isinstance(item, PepMLMTargetedAction) and item.proposal_mode == "de_novo")
+            for item in actions
+        )
+
+    # A CPU-only successor cannot rely on PepMLM to satisfy a high frozen
+    # exploration quota.  Deterministically add executable rule de-novo actions
+    # until the quota is true for the *final* batch size.  The quota is capped at
+    # 0.5 above, so this converges after at most one addition per non-de-novo action.
+    additional_de_novo_count = 0
+    while de_novo_count() < math.ceil(len(actions) * de_novo_quota):
+        action_seed = seed + 4 + additional_de_novo_count
+        proposed = _unique_de_novo_sequence(
+            branch_key=branch_key,
+            seed=action_seed,
+            known_sequences=known_sequences,
+            excluded_sequence_sha256s=historical_sequence_sha256s,
+        )
+        action = DeNovoAction(
+            branch_key=branch_key,
+            generation=generation,
+            seed=action_seed,
+            operator_id="autoresearch-rule-de-novo-v1",
+            operator_release_sha256=operator_release_sha256,
+            expected_improvement_metrics=("macrel_amp_probability",),
+            protected_metrics=(
+                "guruprasad_instability_index",
+                "macrel_hemolysis_probability",
+                "toxinpred3_hybrid_score",
+            ),
+            evidence_sha256s=(archive_sha,),
+            peptide_length=len(proposed),
+            proposed_sequence=proposed,
+        )
+        actions.append(action)
+        strategies.append("de_novo")
+        known_sequences.add(proposed)
+        rationales[action.action_sha256] = (
+            "Add a deterministic CPU-executable family opener so the frozen de-novo "
+            "quota remains true after mutation and controlled crossover are included."
+        )
+        additional_de_novo_count += 1
+    final_de_novo_count = de_novo_count()
+    required_de_novo_count = math.ceil(len(actions) * de_novo_quota)
+    if final_de_novo_count < required_de_novo_count:
         raise ValueError("planned action batch violates its de-novo exploration quota")
     requires_generator_gpu = any(isinstance(item, PepMLMTargetedAction) for item in actions)
     return {
@@ -606,6 +648,8 @@ def build_multifront_rule_action_plan(
         "actions": [item.model_dump(mode="json") for item in actions],
         "no_weighted_total_score": True,
         "de_novo_quota": de_novo_quota,
+        "de_novo_action_count": final_de_novo_count,
+        "required_de_novo_action_count": required_de_novo_count,
         "pepmlm_targeted_enabled": pepmlm_targeted_enabled,
         "requires_generator_gpu": requires_generator_gpu,
         "action_execution_mode": (
