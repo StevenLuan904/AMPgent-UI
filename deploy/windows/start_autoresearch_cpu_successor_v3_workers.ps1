@@ -5,6 +5,7 @@ param(
     [Parameter(Mandatory = $true)][string]$SourceRevision,
     [Parameter(Mandatory = $true)][string]$Python,
     [ValidateSet(3, 4)][int]$QueueGeneration = 3,
+    [ValidateSet('all', 'control', 'persistence', 'metrics')][string]$RoleFilter = 'all',
     [string]$ReleaseRoot = 'var/platform/releases-v39-quality',
     [string]$StateRoot = ''
 )
@@ -88,6 +89,12 @@ $roles = if ($QueueGeneration -eq 3) {
             Maximum = '5'
         }
     )
+}
+if ($RoleFilter -ne 'all') {
+    $roles = @($roles | Where-Object { $_.Name.EndsWith("-$RoleFilter") })
+    if ($roles.Count -ne 1) {
+        throw "CPU successor role filter did not resolve exactly one role: $RoleFilter"
+    }
 }
 $pythonSha256 = (Get-FileHash -LiteralPath $pythonPath -Algorithm SHA256).Hash.ToLowerInvariant()
 $receipts = @()
