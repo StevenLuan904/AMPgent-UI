@@ -344,7 +344,7 @@ function useRunData(enabled: boolean, apiBase: string) {
       }
       setError(null)
     } catch (cause) {
-      setError(readableDataError(cause, '无法连接只读数据库'))
+      setError(readableDataError(cause, '无法连接观察器接口'))
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -358,7 +358,7 @@ function useRunData(enabled: boolean, apiBase: string) {
     }
     setLoading(true)
     loadRuns().catch((cause) => {
-      setError(readableDataError(cause, '无法连接只读数据库'))
+      setError(readableDataError(cause, '无法连接观察器接口'))
       setLoading(false)
     })
   }, [enabled, loadRuns])
@@ -380,7 +380,7 @@ function useRunData(enabled: boolean, apiBase: string) {
       await loadRuns()
       if (selectedId) await loadDetail(selectedId)
     } catch (cause) {
-      setError(readableDataError(cause, '无法连接只读数据库'))
+      setError(readableDataError(cause, '无法连接观察器接口'))
       setLoading(false)
     }
   }, [loadDetail, loadRuns, selectedId])
@@ -892,7 +892,20 @@ function TargetGlyph() {
 }
 
 function LoadingScreen({ error, onRetry, onOpenAnalysis }: { error: string | null; onRetry: () => void; onOpenAnalysis: () => void }) {
-  return <div className="loading-screen"><div className="loading-mark"><FlaskConical /></div><h2>{error ? '数据库暂时不可用' : '正在读取数据库…'}</h2><p>{error ?? '同步实时运行记录'}</p>{error && <div className="loading-actions"><button onClick={onRetry}>重新读取</button><button className="primary" onClick={onOpenAnalysis}>查看冻结分析</button></div>}</div>
+  return <div className="loading-screen">
+    <div className="loading-mark"><FlaskConical /></div>
+    <h2>{error ? '观察器接口暂时不可用' : '正在读取权威数据库…'}</h2>
+    <p>{error ?? '同步实时运行记录'}</p>
+    {error && <>
+      <div className="service-status-grid" aria-label="实时服务状态">
+        <div className="status-unavailable"><i /><b>观察器接口</b><span>不可达</span></div>
+        <div className="status-unverified"><i /><b title="用于保存运行、候选与评测记录的权威数据库。">PostgreSQL 权威库</b><span>等待接口核验</span></div>
+        <div className="status-unavailable"><i /><b title="用于追踪科学工作流进度的调度系统。">Temporal 可观测性</b><span>当前不可观测</span></div>
+      </div>
+      <small className="service-status-note">运行结论以 PostgreSQL 权威记录为准</small>
+      <div className="loading-actions"><button onClick={onRetry}>重新读取</button><button className="primary" onClick={onOpenAnalysis}>查看冻结分析</button></div>
+    </>}
+  </div>
 }
 
 function DataConnectionDialog({ value, onClose, onSave }: { value: string; onClose: () => void; onSave: (value: string) => void }) {
@@ -911,7 +924,7 @@ function DataConnectionDialog({ value, onClose, onSave }: { value: string; onClo
       const payload = await response.json() as { status?: string }
       if (payload.status !== 'ok') throw new Error('健康状态异常')
       setTestState('success')
-      setTestMessage('连接成功，可以读取当前数据库。')
+      setTestMessage('观察器接口已响应；运行数据将在读取时核验。')
     } catch (cause) {
       setTestState('error')
       setTestMessage(cause instanceof Error && /^服务|^健康/.test(cause.message) ? cause.message : '无法连接此数据服务。')
@@ -978,7 +991,7 @@ export default function App() {
   const toggleAnalysisNode = (id: string) => setAnalysisSelection((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
   return (
     <div className="app-shell">
-      <div className="topbar"><button><ArrowLeft /></button><div className="brand"><span><FlaskConical /></span>AMPgent <i>科学分析</i></div><button className={`source-state ${activeView === 'overview' && data.error ? 'has-error' : ''}`} onClick={() => setConnectionOpen(true)} title="查看或修改只读数据连接"><Database /><span>{activeView !== 'overview' ? '分析数据 · 只读' : data.detail ? '数据库已连接' : data.error ? '连接异常' : '正在连接'}</span><span className="live-dot" /><Settings2 /></button></div>
+      <div className="topbar"><button><ArrowLeft /></button><div className="brand"><span><FlaskConical /></span>AMPgent <i>科学分析</i></div><button className={`source-state ${activeView === 'overview' && data.error ? 'has-error' : ''}`} onClick={() => setConnectionOpen(true)} title="查看或修改只读数据连接"><Database /><span>{activeView !== 'overview' ? '分析数据 · 只读' : data.detail ? '数据库已连接' : data.error ? '观察器不可用' : '正在连接'}</span><span className="live-dot" /><Settings2 /></button></div>
       <div className="workspace">
         <Sidebar
           runs={data.runs}
