@@ -5,7 +5,7 @@ param(
     [Parameter(Mandatory = $true)][string]$Python,
     [string]$ReleaseRoot = "var/platform/releases-v38",
     [string]$StateRoot = "var/run/v38-workers",
-    [ValidateSet("v38", "autoresearch-local", "all")]
+    [ValidateSet("v38", "autoresearch-local", "autoresearch-cpu-successor", "all")]
     [string]$RoleSet = "v38",
     [ValidateSet(
         "v38-control",
@@ -13,7 +13,10 @@ param(
         "v38-metrics",
         "autoresearch-control",
         "autoresearch-persistence",
-        "autoresearch-metrics"
+        "autoresearch-metrics",
+        "autoresearch-cpu-successor-control",
+        "autoresearch-cpu-successor-persistence",
+        "autoresearch-cpu-successor-metrics"
     )]
     [string]$OnlyRole,
     [switch]$ReplaceOwned
@@ -85,10 +88,28 @@ $autoresearchLocalRoles = @(
         Maximum = "5"
     }
 )
+$autoresearchCpuSuccessorRoles = @(
+    @{
+        Name = "autoresearch-cpu-successor-control"
+        TaskQueue = "pepagent-autoresearch-cpu-successor-control-v1"
+        Maximum = "16"
+    },
+    @{
+        Name = "autoresearch-cpu-successor-persistence"
+        TaskQueue = "pepagent-autoresearch-cpu-successor-persistence-v1"
+        Maximum = "5"
+    },
+    @{
+        Name = "autoresearch-cpu-successor-metrics"
+        TaskQueue = "pepagent-autoresearch-cpu-successor-metrics-v1"
+        Maximum = "5"
+    }
+)
 $roles = switch ($RoleSet) {
     "v38" { $v38Roles }
     "autoresearch-local" { $autoresearchLocalRoles }
-    "all" { @($v38Roles) + @($autoresearchLocalRoles) }
+    "autoresearch-cpu-successor" { $autoresearchCpuSuccessorRoles }
+    "all" { @($v38Roles) + @($autoresearchLocalRoles) + @($autoresearchCpuSuccessorRoles) }
 }
 if ($OnlyRole) {
     $roles = @($roles | Where-Object { $_.Name -eq $OnlyRole })

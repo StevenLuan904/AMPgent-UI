@@ -13,16 +13,27 @@ def test_v38_local_launcher_is_immutable_and_sequence_stage_only() -> None:
     assert 'Name = "autoresearch-control"' in text
     assert 'Name = "autoresearch-persistence"' in text
     assert 'Name = "autoresearch-metrics"' in text
+    assert 'Name = "autoresearch-cpu-successor-control"' in text
+    assert 'Name = "autoresearch-cpu-successor-persistence"' in text
+    assert 'Name = "autoresearch-cpu-successor-metrics"' in text
     assert 'Name = "autoresearch-generator"' not in text
-    assert '[ValidateSet("v38", "autoresearch-local", "all")]' in text
+    assert (
+        '[ValidateSet("v38", "autoresearch-local", "autoresearch-cpu-successor", "all")]'
+        in text
+    )
     assert '[string]$RoleSet = "v38"' in text
     assert "[string]$OnlyRole" in text
     assert 'Where-Object { $_.Name -eq $OnlyRole }' in text
     assert "requested worker role is outside the selected role set" in text
     assert '"autoresearch-local" { $autoresearchLocalRoles }' in text
+    assert '"autoresearch-cpu-successor" { $autoresearchCpuSuccessorRoles }' in text
     assert 'TaskQueue = "pepagent-autoresearch-control-v1"' in text
     assert 'TaskQueue = "pepagent-autoresearch-persistence-v1"' in text
     assert 'TaskQueue = "pepagent-autoresearch-metrics-v1"' in text
+    assert 'TaskQueue = "pepagent-autoresearch-cpu-successor-control-v1"' in text
+    assert 'TaskQueue = "pepagent-autoresearch-cpu-successor-persistence-v1"' in text
+    assert 'TaskQueue = "pepagent-autoresearch-cpu-successor-metrics-v1"' in text
+    assert 'pepagent-autoresearch-cpu-successor-no-gpu-v1' not in text
     assert 'pepagent-autoresearch-generator-v1' not in text
     assert "v38-boltz" not in text
     assert "v38-rosetta" not in text

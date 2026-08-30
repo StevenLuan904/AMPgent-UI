@@ -140,6 +140,37 @@ V38_ROLE_CONFIG = {
         [evaluate_v38_sequence_metric],
         [],
     ),
+    # CPU-only successors are isolated from legacy AutoResearch queues so an
+    # older poller cannot execute a new workflow or persistence activity.  No
+    # worker is registered on the frozen no-GPU action queue.
+    "autoresearch-cpu-successor-control": (
+        "pepagent-autoresearch-cpu-successor-control-v1",
+        [
+            mark_run_started,
+            mark_run_cancelled,
+            mark_run_failed,
+            mark_run_succeeded,
+            plan_autoresearch_actions,
+            execute_autoresearch_rule_action_batch,
+        ],
+        [AutoResearchClosedLoopWorkflow],
+    ),
+    "autoresearch-cpu-successor-persistence": (
+        "pepagent-autoresearch-cpu-successor-persistence-v1",
+        [
+            persist_v38_sequence_metric,
+            persist_autoresearch_action_plan,
+            persist_autoresearch_children,
+            persist_autoresearch_score_all_bundle,
+            finalize_autoresearch_iteration,
+        ],
+        [],
+    ),
+    "autoresearch-cpu-successor-metrics": (
+        "pepagent-autoresearch-cpu-successor-metrics-v1",
+        [evaluate_v38_sequence_metric],
+        [],
+    ),
     "v39-target-sequence": (
         "pepagent-gpu-target-sequence-v39",
         [score_seven_branch_target_sequence],

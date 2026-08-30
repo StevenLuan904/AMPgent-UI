@@ -592,6 +592,27 @@ def test_autoresearch_worker_registration_is_complete() -> None:
         "evaluate_v38_sequence_metric"
     }
 
+    cpu_control_queue, cpu_control_activities, cpu_workflows = V38_ROLE_CONFIG[
+        "autoresearch-cpu-successor-control"
+    ]
+    assert cpu_control_queue == "pepagent-autoresearch-cpu-successor-control-v1"
+    assert AutoResearchClosedLoopWorkflow in cpu_workflows
+    assert {
+        "plan_autoresearch_actions",
+        "execute_autoresearch_rule_action_batch",
+    } <= {
+        item.__temporal_activity_definition.name for item in cpu_control_activities
+    }
+    assert "execute_autoresearch_action_batch" not in {
+        item.__temporal_activity_definition.name for item in cpu_control_activities
+    }
+    cpu_persistence_queue, _, _ = V38_ROLE_CONFIG[
+        "autoresearch-cpu-successor-persistence"
+    ]
+    cpu_metrics_queue, _, _ = V38_ROLE_CONFIG["autoresearch-cpu-successor-metrics"]
+    assert cpu_persistence_queue == "pepagent-autoresearch-cpu-successor-persistence-v1"
+    assert cpu_metrics_queue == "pepagent-autoresearch-cpu-successor-metrics-v1"
+
     _, legacy_control_activities, legacy_workflows = V38_ROLE_CONFIG["v38-control"]
     assert AutoResearchClosedLoopWorkflow not in legacy_workflows
     assert not {item.__temporal_activity_definition.name for item in legacy_control_activities} & {

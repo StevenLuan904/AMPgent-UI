@@ -11,7 +11,10 @@ from pepagent.provenance.hashing import sha256_json
 from pepagent.workflows.autoresearch import _validate_request
 
 BRANCH_KEYS = frozenset({"acea", "angpt1", "fgf2", "gyra", "pbp2a", "vegfa"})
-PERSISTENCE_QUEUE = "pepagent-autoresearch-persistence-v1"
+CPU_SUCCESSOR_CONTROL_QUEUE = "pepagent-autoresearch-cpu-successor-control-v1"
+CPU_SUCCESSOR_PERSISTENCE_QUEUE = "pepagent-autoresearch-cpu-successor-persistence-v1"
+CPU_SUCCESSOR_METRICS_QUEUE = "pepagent-autoresearch-cpu-successor-metrics-v1"
+CPU_SUCCESSOR_NO_GPU_QUEUE = "pepagent-autoresearch-cpu-successor-no-gpu-v1"
 RUN_ID_NAMESPACE = UUID("cc724227-dab3-4ddb-b187-2a744d012561")
 WORKFLOW_ID_NAMESPACE = UUID("fb03516f-52e7-4507-aacd-6f09adae2563")
 
@@ -221,9 +224,17 @@ def freeze_cpu_only_successor(
     template["historical_outputs_reused"] = False
     template["successor_eligibility_sha256"] = eligibility
     queues = dict(template.get("task_queues") or {})
-    queues["persistence"] = PERSISTENCE_QUEUE
+    queues.update(
+        {
+            "workflow_and_control": CPU_SUCCESSOR_CONTROL_QUEUE,
+            "action_execution": CPU_SUCCESSOR_NO_GPU_QUEUE,
+            "sequence_metrics": CPU_SUCCESSOR_METRICS_QUEUE,
+            "persistence": CPU_SUCCESSOR_PERSISTENCE_QUEUE,
+        }
+    )
     template["task_queues"] = queues
     provider = copy.deepcopy(template.get("planner_provider") or {})
+    provider["task_queue"] = CPU_SUCCESSOR_CONTROL_QUEUE
     planner_contract = dict(provider.get("planner_contract") or {})
     planner_contract["pepmlm_targeted_enabled"] = False
     provider["planner_contract"] = planner_contract
