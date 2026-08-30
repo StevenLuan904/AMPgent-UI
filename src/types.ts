@@ -10,6 +10,7 @@ export interface RunListItem {
   temporal_workflow_id?: string | null
   temporal_run_id?: string | null
   workflow_id?: string | null
+  generation_population?: GenerationPopulation
   created_at: string
   started_at: string | null
   finished_at: string | null
@@ -35,6 +36,7 @@ export interface GraphStage {
   current: number
   total: number
   provenance: 'database' | 'derived' | 'missing'
+  generation_population?: GenerationPopulation
   insight: {
     grade: 'good' | 'okay' | 'fair' | 'bad' | 'neutral'
     verdict: string
@@ -57,6 +59,7 @@ export interface CandidatePreview {
   id: string
   sequence: string
   length: number
+  generation?: number
   proposal_rank: number | null
   cohort: string
   pareto_front: number | null
@@ -79,6 +82,12 @@ export interface DisplayPopulation {
   candidate_record_count: number
   excluded_candidate_count: number
   exclusion_reason: 'historical_exact_replay'
+}
+
+export interface GenerationPopulation {
+  baseline_candidate_count: number
+  descendant_candidate_count: number
+  max_generation: number
 }
 
 export interface ViewerArtifact {
@@ -178,6 +187,7 @@ export interface NodeDetail {
   read_only: boolean
   node_id: string
   display_population?: DisplayPopulation
+  generation_population?: GenerationPopulation
   narrative: string[]
   calls: ToolAttempt[]
   metrics: Record<string, MetricSummary>
@@ -209,6 +219,7 @@ export interface RunDetail {
   structure_counts: Record<string, Record<string, number>>
   checkpoints: Array<Record<string, unknown>>
   display_population?: DisplayPopulation
+  generation_population?: GenerationPopulation
   graph: { nodes: GraphStage[]; edges: GraphEdgeDetail[] }
   candidates: CandidatePreview[]
   candidate_exclusions?: CandidateExclusion[]

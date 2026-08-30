@@ -39,6 +39,7 @@ import { AnalysisDashboard } from './analysis/AnalysisDashboard'
 import { loadAnalysisSnapshot, type AnalysisSnapshot } from './analysis/dataKernel'
 import { EvidenceDashboard } from './analysis/EvidenceDashboard'
 import { MoleculeViewer } from './MoleculeViewer'
+import { candidateGenerationLabel, formatGenerationPopulation } from './generationPopulation'
 import {
   distributionForStage,
   loadPersistedRunDistributions,
@@ -142,9 +143,14 @@ function formatTime(value: string | null) {
 }
 
 function runTitle(run: RunListItem) {
-  if (run.status === 'running') return `正在运行 · ${run.candidate_count.toLocaleString()} 条候选`
+  const candidateLabel = run.generation_population
+    ? run.generation_population.descendant_candidate_count > 0
+      ? `${run.generation_population.descendant_candidate_count.toLocaleString()} 条新生子代 · 第 ${run.generation_population.max_generation} 代`
+      : `${run.generation_population.baseline_candidate_count.toLocaleString()} 条基线候选`
+    : `${run.candidate_count.toLocaleString()} 条候选`
+  if (run.status === 'running') return `正在运行 · ${candidateLabel}`
   if (run.structure_record_count > 0) return `结构证据轮次 · ${run.structure_record_count.toLocaleString()} 条记录`
-  return `序列设计轮次 · ${run.candidate_count.toLocaleString()} 条候选`
+  return `序列设计轮次 · ${candidateLabel}`
 }
 
 function readableDataError(cause: unknown, fallback: string) {
@@ -481,6 +487,9 @@ function CanvasHeader({ detail, refreshing, selectionMode, selectedCount, onRefr
   const isStructureReview = (detail.counts.boltz_poses ?? 0) > 0 || (detail.counts.rosetta_decoys ?? 0) > 0
   const displayCandidateCount = detail.display_population?.candidate_count ?? detail.counts.candidates
   const excludedCandidateCount = detail.display_population?.excluded_candidate_count ?? detail.counts.excluded_candidates ?? detail.candidate_exclusions?.length ?? 0
+  const generationSummary = detail.generation_population
+    ? formatGenerationPopulation(detail.generation_population)
+    : `${displayCandidateCount.toLocaleString()} 个候选`
   return (
     <header className="canvas-header">
       <div className="canvas-title-block">
@@ -488,7 +497,7 @@ function CanvasHeader({ detail, refreshing, selectionMode, selectedCount, onRefr
         <h1>{isStructureReview ? '短肽结构证据复核' : '序列优先的短肽设计'}</h1>
         <div className="round-meta">
           <span>{formatTime(detail.run.created_at)} 创建</span><i />
-          <span>{displayCandidateCount.toLocaleString()} 个候选</span><i />
+          <span>{generationSummary}</span><i />
           {excludedCandidateCount > 0 && <><span title="历史运行中已存在的生成子代，仅保留审计记录。">{excludedCandidateCount.toLocaleString()} 个历史重放已排除</span><i /></>}
           <span>{detail.counts.admitted.toLocaleString()} 个进入结构阶段</span><i />
           <span>{detail.branches.length} 个靶点</span><i />
@@ -619,7 +628,7 @@ function CandidateCard({ candidate }: { candidate: CandidatePreview }) {
   const cohort = candidate.cohort === 'mature_core' ? '成熟核心' : candidate.cohort === 'exploration' ? '探索组' : '候选组'
   return (
     <div className="candidate-card">
-      <div><span className="cohort-chip">{cohort}</span><small>{candidate.length} 个氨基酸</small></div>
+      <div><span className="cohort-chip">{cohort}</span>{candidate.generation !== undefined && <small>{candidateGenerationLabel(candidate.generation)}</small>}<small>{candidate.length} 个氨基酸</small></div>
       <code>{candidate.sequence}</code>
       <div className="candidate-metrics">
         {visibleMetrics.map((metric) => <span key={metric.name}><b>{metric.value?.toFixed(2)}</b>{metricLabels[metric.name] ?? '计算指标'}</span>)}
