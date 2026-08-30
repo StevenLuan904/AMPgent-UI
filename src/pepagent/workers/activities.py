@@ -171,20 +171,23 @@ async def _store_json(payload: dict[str, Any]) -> StoredObject:
     encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode(
         "utf-8"
     )
+    # ContentAddressedObjectStore construction probes the bucket synchronously;
+    # perform that probe and the upload in the worker thread together.
     return await asyncio.to_thread(
-        ContentAddressedObjectStore().put_bytes, encoded, "application/json"
+        lambda: ContentAddressedObjectStore().put_bytes(encoded, "application/json")
     )
 
 
 async def _store_file(path: Path) -> StoredObject:
-    return await asyncio.to_thread(ContentAddressedObjectStore().put_file, path)
+    return await asyncio.to_thread(lambda: ContentAddressedObjectStore().put_file(path))
 
 
 async def _store_text(payload: str) -> StoredObject:
     return await asyncio.to_thread(
-        ContentAddressedObjectStore().put_bytes,
-        payload.encode("utf-8"),
-        "text/plain; charset=utf-8",
+        lambda: ContentAddressedObjectStore().put_bytes(
+            payload.encode("utf-8"),
+            "text/plain; charset=utf-8",
+        )
     )
 
 

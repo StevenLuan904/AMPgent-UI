@@ -113,6 +113,16 @@ _AUTORESEARCH_GENERATOR_SEMAPHORE = asyncio.Semaphore(1)
 _TEMPORAL_PAYLOAD_REFERENCE_SCHEMA = "ampgent.autoresearch-payload-reference.1"
 
 
+def _heartbeat_persistence(stage: str) -> None:
+    """Heartbeat in production while keeping activity functions unit-testable."""
+
+    try:
+        activity.heartbeat({"stage": stage})
+    except RuntimeError as error:
+        if str(error) != "Not in activity context":
+            raise
+
+
 def _temporal_payload_reference(
     stored: Any,
     *,
@@ -144,7 +154,12 @@ async def _load_temporal_payload_reference(
     storage_uri = str(reference.get("storage_uri") or "")
     if len(expected_sha256) != 64 or not storage_uri:
         raise ValueError("AutoResearch Temporal payload reference is incomplete")
-    raw = await asyncio.to_thread(ContentAddressedObjectStore().get_bytes, storage_uri)
+    # Constructing the S3 client performs a synchronous bucket probe. Keep both
+    # construction and I/O off the Temporal worker event loop so a slow object
+    # store cannot starve unrelated activities and workflow-task polling.
+    raw = await asyncio.to_thread(
+        lambda: ContentAddressedObjectStore().get_bytes(storage_uri)
+    )
     if sha256_bytes(raw) != expected_sha256:
         raise ValueError("AutoResearch Temporal payload CAS bytes drifted")
     if int(reference.get("size_bytes", len(raw))) != len(raw):
@@ -1119,7 +1134,9 @@ def _is_historical_run_duplicate(candidate: Candidate, *, run_id: uuid.UUID) -> 
 async def persist_autoresearch_children(request: dict[str, Any]) -> dict[str, Any]:
     """Persist materialized children and the complete multi-parent lineage."""
 
+    _heartbeat_persistence("resolve_action_plan")
     plan = await _resolve_action_plan_reference(request["action_plan"])
+    _heartbeat_persistence("resolve_generated_batch")
     generated = await _resolve_generated_reference(request["generated"])
     run_id = uuid.UUID(str(plan["run_id"]))
     iteration_no = int(plan["iteration_no"])
@@ -1129,7 +1146,9 @@ async def persist_autoresearch_children(request: dict[str, Any]) -> dict[str, An
     if set(results_by_action) != {str(item["action_id"]) for item in plan["actions"]}:
         raise ValueError("generated AutoResearch results do not cover the action batch")
     provenance = generated["provenance"]
+    _heartbeat_persistence("store_generated_batch")
     stored = await _store_json(generated)
+    _heartbeat_persistence("persist_children")
     async with SessionFactory() as session, session.begin():
         # Serialize overlapping Temporal attempts for this run so an expired
         # attempt cannot race its retry on the unique sequence constraint.

@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import json
 import uuid
+from datetime import timedelta
 from types import SimpleNamespace
 from typing import Any
 
@@ -268,8 +269,14 @@ async def test_autoresearch_workflow_end_to_end_replays_identically(
     async def execute_once() -> tuple[dict[str, Any], list[dict[str, Any]]]:
         trace: list[dict[str, Any]] = []
 
-        async def fake_execute_activity(name: str, payload: dict[str, Any], **_kwargs: Any) -> Any:
-            trace.append({"activity": name, "payload": copy.deepcopy(payload)})
+        async def fake_execute_activity(name: str, payload: dict[str, Any], **kwargs: Any) -> Any:
+            trace.append(
+                {
+                    "activity": name,
+                    "payload": copy.deepcopy(payload),
+                    "heartbeat_timeout": kwargs.get("heartbeat_timeout"),
+                }
+            )
             if name in {
                 "mark_run_started",
                 "mark_run_succeeded",
@@ -384,6 +391,14 @@ async def test_autoresearch_workflow_end_to_end_replays_identically(
     assert names.count("evaluate_v38_sequence_metric") == 5
     assert names.count("persist_v38_sequence_metric") == 5
     assert names[-2:] == ["finalize_autoresearch_iteration", "mark_run_succeeded"]
+    persistence_calls = [
+        item
+        for item in first_trace
+        if item["activity"]
+        in {"persist_autoresearch_children", "persist_v38_sequence_metric"}
+    ]
+    assert persistence_calls
+    assert all(item["heartbeat_timeout"] == timedelta(minutes=5) for item in persistence_calls)
     planner_input = next(
         item["payload"] for item in first_trace if item["activity"] == "plan_autoresearch_actions"
     )

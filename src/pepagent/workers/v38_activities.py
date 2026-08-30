@@ -93,6 +93,16 @@ from pepagent.workflow_observer_contract import (
 )
 
 
+def _heartbeat_metric_persistence(stage: str) -> None:
+    """Heartbeat in production while keeping activity functions unit-testable."""
+
+    try:
+        activity.heartbeat({"stage": stage})
+    except RuntimeError as error:
+        if str(error) != "Not in activity context":
+            raise
+
+
 @activity.defn(name="load_seven_branch_target_score_cohort")
 async def load_seven_branch_target_score_cohort(
     request: dict[str, Any],
@@ -1282,7 +1292,7 @@ async def _resolve_v38_metric_result(reference: dict[str, Any]) -> dict[str, Any
     if artifact["media_type"] != "application/json":
         raise ValueError("v38 metric result artifact media type is invalid")
     raw = await asyncio.to_thread(
-        ContentAddressedObjectStore().get_bytes, str(artifact["uri"])
+        lambda: ContentAddressedObjectStore().get_bytes(str(artifact["uri"]))
     )
     if len(raw) != int(artifact["size_bytes"]) or sha256_bytes(raw) != artifact["sha256"]:
         raise ValueError("v38 metric result artifact identity is invalid")
@@ -1677,6 +1687,7 @@ async def persist_v38_score_all_generation(request: dict[str, Any]) -> dict[str,
 
 @activity.defn(name="persist_v38_sequence_metric")
 async def persist_v38_sequence_metric(request: dict[str, Any]) -> dict[str, Any]:
+    _heartbeat_metric_persistence("hydrate_metric_persistence")
     run_id = uuid.UUID(str(request["run_id"]))
     if bool(request.get("hydrate_from_run_spec")):
         candidate_ids = [uuid.UUID(str(item)) for item in request.get("candidate_ids") or []]
@@ -1716,6 +1727,7 @@ async def persist_v38_sequence_metric(request: dict[str, Any]) -> dict[str, Any]
     if not isinstance(candidates, list) or not candidates:
         raise ValueError("v38 metric persistence requires a non-empty candidate cohort")
     reference = request["metric_result"]
+    _heartbeat_metric_persistence("resolve_metric_result")
     metric_result = await _resolve_v38_metric_result(reference)
     rows = build_v38_metric_evaluation_rows(
         contract=contract,
@@ -1726,6 +1738,7 @@ async def persist_v38_sequence_metric(request: dict[str, Any]) -> dict[str, Any]
     provenance = metric_result["provenance"]
     plugin = result["plugin"]
     plugin_name = str(plugin["name"])
+    _heartbeat_metric_persistence("persist_metric_rows")
     async with SessionFactory() as session, session.begin():
         repository = ExperimentRepository(session)
         run_candidates = {

@@ -266,6 +266,7 @@ class AutoResearchClosedLoopWorkflow:
                     },
                     task_queue=control_queue,
                     start_to_close_timeout=timedelta(hours=1),
+                    heartbeat_timeout=timedelta(minutes=5),
                     retry_policy=retry,
                 )
                 if bool(children.get("iteration_noop")):
@@ -346,6 +347,7 @@ class AutoResearchClosedLoopWorkflow:
                         },
                         task_queue=control_queue,
                         start_to_close_timeout=timedelta(hours=1),
+                        heartbeat_timeout=timedelta(minutes=5),
                         retry_policy=retry,
                     )
                     metric_receipts.append(receipt)
