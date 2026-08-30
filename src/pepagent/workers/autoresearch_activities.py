@@ -2024,6 +2024,13 @@ async def plan_autoresearch_actions(request: dict[str, Any]) -> dict[str, Any]:
             )
             for item in deltas
         )
+        historical_sequence_sha256s = set(
+            await session.scalars(
+                select(Candidate.sequence_sha256)
+                .where(Candidate.run_id != run_id, Candidate.generation > 0)
+                .distinct()
+            )
+        )
         plan = build_multifront_rule_action_plan(
             candidates=evidence,
             snapshot=snapshot,
@@ -2033,6 +2040,7 @@ async def plan_autoresearch_actions(request: dict[str, Any]) -> dict[str, Any]:
             operator_release_sha256=operator_release_sha256,
             target_sequence_sha256=str(request["target_sequence_sha256"]),
             prior_deltas=delta_evidence,
+            historical_sequence_sha256s=historical_sequence_sha256s,
             gold_target=max(
                 GOLD_CANDIDATE_TARGET,
                 int(continuation_policy.minimum_high_quality_candidates),

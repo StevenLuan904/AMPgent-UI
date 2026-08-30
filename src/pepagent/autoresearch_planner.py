@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 from collections import defaultdict
-from collections.abc import Mapping, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -108,7 +108,10 @@ def _lane_candidates(
 
 
 def _mutation(
-    parent: CandidateEvidence, *, known_sequences: set[str] | None = None
+    parent: CandidateEvidence,
+    *,
+    known_sequences: set[str] | None = None,
+    excluded_sequence_sha256s: Collection[str] = (),
 ) -> ResidueSubstitution:
     """Choose one deterministic edit that breaks a hydrophobic/repetitive patch."""
 
@@ -153,7 +156,7 @@ def _mutation(
                 + replacement
                 + parent.sequence[candidate_position + 1 :]
             )
-            if child not in known:
+            if child not in known and sha256_text(child) not in excluded_sequence_sha256s:
                 return ResidueSubstitution(
                     position_zero_based=candidate_position,
                     from_residue=source,
@@ -182,7 +185,11 @@ def _action_evidence(
 
 
 def _unique_de_novo_sequence(
-    *, branch_key: str, seed: int, known_sequences: set[str]
+    *,
+    branch_key: str,
+    seed: int,
+    known_sequences: set[str],
+    excluded_sequence_sha256s: Collection[str] = (),
 ) -> str:
     offset = int(sha256_text(f"{branch_key}:{seed}")[:8], 16)
     for attempt in range(len(_DE_NOVO_MOTIFS) ** 2 * 3):
@@ -198,7 +205,10 @@ def _unique_de_novo_sequence(
             + second[second_rotation:]
             + second[:second_rotation]
         )
-        if sequence not in known_sequences:
+        if (
+            sequence not in known_sequences
+            and sha256_text(sequence) not in excluded_sequence_sha256s
+        ):
             return sequence
     alphabet = "KRLAIGFWQNST"
     for attempt in range(10_000):
@@ -207,7 +217,10 @@ def _unique_de_novo_sequence(
             alphabet[int(digest[index : index + 2], 16) % len(alphabet)]
             for index in range(0, 40, 2)
         )
-        if sequence not in known_sequences:
+        if (
+            sequence not in known_sequences
+            and sha256_text(sequence) not in excluded_sequence_sha256s
+        ):
             return sequence
     raise ValueError("deterministic de-novo planner exhausted its sequence space")
 
@@ -222,6 +235,7 @@ def build_multifront_rule_action_plan(
     operator_release_sha256: str,
     target_sequence_sha256: str,
     prior_deltas: Sequence[PlannerDeltaEvidence] = (),
+    historical_sequence_sha256s: Collection[str] = (),
     gold_target: int = GOLD_CANDIDATE_TARGET,
     de_novo_quota: float = 0.2,
 ) -> dict[str, Any]:
@@ -252,6 +266,12 @@ def build_multifront_rule_action_plan(
         )
     improvement_counts, delta_receipts = _improvement_index(prior_deltas)
     known_sequences = {item.sequence for item in candidates}
+    historical_sequence_sha256s = frozenset(historical_sequence_sha256s)
+    if any(
+        len(item) != 64 or set(item) - set("0123456789abcdef")
+        for item in historical_sequence_sha256s
+    ):
+        raise ValueError("planner historical sequence exclusion contains an invalid SHA-256")
     archive_sha = snapshot.archive_sha256
     literal_gold_count = len(_gold_candidate_ids(snapshot))
     gold_count = len(_instability_score_qualified_gold_candidate_ids(snapshot, by_id))
@@ -275,7 +295,11 @@ def build_multifront_rule_action_plan(
     if substitution_pool:
         parent = substitution_pool[0]
         substitution_parent_id = parent.candidate_id
-        edit = _mutation(parent, known_sequences=known_sequences)
+        edit = _mutation(
+            parent,
+            known_sequences=known_sequences,
+            excluded_sequence_sha256s=historical_sequence_sha256s,
+        )
         action = MaskedSubstitutionAction(
             branch_key=branch_key,
             generation=generation,
@@ -336,7 +360,11 @@ def build_multifront_rule_action_plan(
                 ),
             )
             child = primary.sequence[:first_length] + donor.sequence[-donor_length:]
-            if child not in known_sequences and child not in {primary.sequence, donor.sequence}:
+            if (
+                child not in known_sequences
+                and child not in {primary.sequence, donor.sequence}
+                and sha256_text(child) not in historical_sequence_sha256s
+            ):
                 crossover_pair = (primary, donor)
                 crossover_fragments = fragments
                 break
@@ -381,6 +409,7 @@ def build_multifront_rule_action_plan(
         branch_key=branch_key,
         seed=seed + 2,
         known_sequences=known_sequences,
+        excluded_sequence_sha256s=historical_sequence_sha256s,
     )
     action = DeNovoAction(
         branch_key=branch_key,
@@ -445,7 +474,11 @@ def build_multifront_rule_action_plan(
             ),
             pepmlm_pool[0],
         )
-        edit = _mutation(parent)
+        edit = _mutation(
+            parent,
+            known_sequences=known_sequences,
+            excluded_sequence_sha256s=historical_sequence_sha256s,
+        )
         action = PepMLMTargetedAction(
             branch_key=branch_key,
             generation=generation,
@@ -502,6 +535,10 @@ def build_multifront_rule_action_plan(
         "actions": [item.model_dump(mode="json") for item in actions],
         "no_weighted_total_score": True,
         "de_novo_quota": de_novo_quota,
+        "historical_sequence_exclusion_count": len(historical_sequence_sha256s),
+        "historical_sequence_exclusion_sha256": sha256_text(
+            "\n".join(sorted(historical_sequence_sha256s))
+        ),
     }
 
 

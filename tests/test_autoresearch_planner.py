@@ -11,6 +11,7 @@ from pepagent.autoresearch_closed_loop import (
 )
 from pepagent.autoresearch_planner import (
     PlannerDeltaEvidence,
+    _unique_de_novo_sequence,
     build_multifront_rule_action_plan,
 )
 from pepagent.provenance.hashing import sha256_text
@@ -308,3 +309,20 @@ def test_planner_rejects_gold_target_below_branch_contract() -> None:
         assert "at least 50 gold" in str(error)
     else:
         raise AssertionError("planner accepted a sub-contract gold target")
+
+
+def test_rule_de_novo_skips_historical_sequence_hashes() -> None:
+    first = _unique_de_novo_sequence(
+        branch_key="AceA",
+        seed=515155,
+        known_sequences=set(),
+    )
+    second = _unique_de_novo_sequence(
+        branch_key="AceA",
+        seed=515155,
+        known_sequences=set(),
+        excluded_sequence_sha256s={sha256_text(first)},
+    )
+
+    assert second != first
+    assert sha256_text(second) != sha256_text(first)
