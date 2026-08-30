@@ -116,6 +116,17 @@ def _display_name(run: ExperimentRun) -> str:
     return str(spec.get("name") or spec.get("objective") or _run_kind(run)).replace("_", " ")
 
 
+def _run_identity_payload(run: ExperimentRun) -> dict[str, uuid.UUID | str | None]:
+    """Return one run's durable PostgreSQL and Temporal identity without joins."""
+    return {
+        "id": run.id,
+        # Kept for clients written against the original Observer contract.
+        "workflow_id": run.temporal_workflow_id,
+        "temporal_workflow_id": run.temporal_workflow_id,
+        "temporal_run_id": run.temporal_run_id,
+    }
+
+
 def _admission_payload(decisions: list[AgentDecision]) -> dict[str, Any]:
     for decision in reversed(decisions):
         structured = decision.structured_json or {}
@@ -233,7 +244,7 @@ async def list_observer_runs(
         "read_only": True,
         "runs": [
             {
-                "id": row.id,
+                **_run_identity_payload(row),
                 "name": _display_name(row),
                 "kind": _run_kind(row),
                 "schema_version": (row.spec_json or {}).get("schema_version"),
@@ -1021,13 +1032,12 @@ async def get_observer_run(run_id: uuid.UUID, session: SessionDep) -> dict[str, 
         "read_only": True,
         "updated_at": _iso(max((event.occurred_at for event in events), default=run.created_at)),
         "run": {
-            "id": run.id,
+            **_run_identity_payload(run),
             "name": _display_name(run),
             "kind": _run_kind(run),
             "schema_version": (run.spec_json or {}).get("schema_version"),
             "status": run.status,
             "spec_sha256": run.spec_sha256,
-            "workflow_id": run.temporal_workflow_id,
             "created_at": _iso(run.created_at),
             "started_at": _iso(run.started_at),
             "finished_at": _iso(run.finished_at),

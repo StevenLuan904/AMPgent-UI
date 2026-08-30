@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import inspect
+import uuid
+
 from sqlalchemy import select
 from sqlalchemy.dialects import postgresql
 
@@ -9,8 +12,11 @@ from pepagent.api.observer import (
     _display_eligible,
     _display_population,
     _historical_exact_replay_exists,
+    _run_identity_payload,
+    get_observer_run,
+    list_observer_runs,
 )
-from pepagent.db.models import Candidate
+from pepagent.db.models import Candidate, ExperimentRun
 
 
 def _postgresql_sql(clause: object) -> str:
@@ -75,3 +81,43 @@ def test_observer_display_contract_routes_are_registered() -> None:
     assert ("/v1/observer/runs", ("GET",)) in routes
     assert ("/v1/observer/runs/{run_id}", ("GET",)) in routes
     assert ("/v1/observer/runs/{run_id}/nodes/{node_id}", ("GET",)) in routes
+
+
+def test_observer_run_identity_is_row_local_and_explicit_for_list_and_detail() -> None:
+    target_id = uuid.uuid4()
+    shared_spec = {"name": "same title", "target": "same target"}
+    first = ExperimentRun(
+        id=uuid.uuid4(),
+        target_id=target_id,
+        spec_json=shared_spec,
+        spec_sha256="a" * 64,
+        status="running",
+        temporal_workflow_id="workflow-first",
+        temporal_run_id="temporal-run-first",
+    )
+    second = ExperimentRun(
+        id=uuid.uuid4(),
+        target_id=target_id,
+        spec_json=shared_spec,
+        spec_sha256="b" * 64,
+        status="running",
+        temporal_workflow_id="workflow-second",
+        temporal_run_id=None,
+    )
+
+    assert _run_identity_payload(first) == {
+        "id": first.id,
+        "workflow_id": "workflow-first",
+        "temporal_workflow_id": "workflow-first",
+        "temporal_run_id": "temporal-run-first",
+    }
+    assert _run_identity_payload(second) == {
+        "id": second.id,
+        "workflow_id": "workflow-second",
+        "temporal_workflow_id": "workflow-second",
+        "temporal_run_id": None,
+    }
+
+    # Both public projections must use the same row-local identity contract.
+    assert "_run_identity_payload(row)" in inspect.getsource(list_observer_runs)
+    assert "_run_identity_payload(run)" in inspect.getsource(get_observer_run)
