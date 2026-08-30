@@ -66,6 +66,22 @@ def test_submission_requires_explicit_policy_and_gpu_authorization() -> None:
     assert "new_gpu_tasks_prohibited" not in decision.reason_codes
 
 
+def test_cpu_rule_only_successor_can_submit_while_new_gpu_tasks_are_prohibited() -> None:
+    decision = decide_retry_eligibility(
+        _observation(
+            execution_policy="submit_allowed",
+            generator_gpu_work_required=False,
+            new_gpu_tasks_allowed=False,
+        )
+    )
+
+    assert decision.eligible_to_freeze is True
+    assert decision.eligible_to_submit is True
+    assert "eligible_exact_once_successor_submission" in decision.reason_codes
+    assert "cpu_rule_only_no_new_gpu_task" in decision.reason_codes
+    assert "new_gpu_tasks_prohibited" not in decision.reason_codes
+
+
 def test_temporal_binding_drift_fails_closed() -> None:
     decision = decide_retry_eligibility(
         _observation(observed_temporal_run_id="different-run")

@@ -30,7 +30,7 @@ class RetryEligibilityObservation(BaseModel):
     successor_run_ids: tuple[str, ...] = ()
     source_revision: str = Field(pattern=r"^[0-9a-f]{40}$")
     execution_policy: Literal["freeze_only", "submit_allowed"] = "freeze_only"
-    generator_gpu_work_required: Literal[True] = True
+    generator_gpu_work_required: bool = True
     new_gpu_tasks_allowed: bool = False
 
     @model_validator(mode="after")
@@ -88,6 +88,8 @@ def decide_retry_eligibility(
         reason_codes.append("freeze_only_policy")
     if observation.generator_gpu_work_required and not observation.new_gpu_tasks_allowed:
         reason_codes.append("new_gpu_tasks_prohibited")
+    if not observation.generator_gpu_work_required:
+        reason_codes.append("cpu_rule_only_no_new_gpu_task")
 
     eligible_to_submit = (
         eligible_to_freeze
