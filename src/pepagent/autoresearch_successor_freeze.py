@@ -219,7 +219,9 @@ def freeze_cpu_only_successor(
     template.pop("run_id", None)
     template.pop("initial_action_plan", None)
     template["predecessor_run_id"] = str(predecessor_id)
-    template["start_iteration_no"] = int(latest_generation) + 1
+    predecessor_start_iteration = int(predecessor_request.get("start_iteration_no", 0))
+    start_iteration_no = max(int(latest_generation) + 1, predecessor_start_iteration)
+    template["start_iteration_no"] = start_iteration_no
     template["maximum_iterations_per_workflow_execution"] = 2
     template["historical_outputs_reused"] = False
     template["successor_eligibility_sha256"] = eligibility
@@ -297,7 +299,9 @@ def freeze_cpu_only_successor(
         "source_revision": revision,
         "release_sha256": release,
         "eligibility_sha256": eligibility,
-        "start_iteration_no": int(latest_generation) + 1,
+        "predecessor_start_iteration_no": predecessor_start_iteration,
+        "latest_persisted_generation": int(latest_generation),
+        "start_iteration_no": start_iteration_no,
         "release_path_rewrite_count": rewrite_count,
         "historical_outputs_reused": False,
         "generator_gpu_work_required": False,

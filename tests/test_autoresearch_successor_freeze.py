@@ -115,6 +115,22 @@ def test_freeze_is_deterministic_valid_and_advances_generation() -> None:
     assert first.receipt["submitted"] is False
 
 
+def test_freeze_does_not_regress_when_predecessor_failed_before_first_action() -> None:
+    predecessor = _request()
+    predecessor["start_iteration_no"] = 4
+
+    frozen = _freeze(
+        predecessor,
+        predecessor_request_sha256=sha256_json(predecessor),
+        latest_generation=0,
+    )
+
+    assert frozen.request["start_iteration_no"] == 4
+    assert frozen.receipt["predecessor_start_iteration_no"] == 4
+    assert frozen.receipt["latest_persisted_generation"] == 0
+    assert frozen.receipt["start_iteration_no"] == 4
+
+
 def test_freeze_rewrites_only_release_paths_and_refreshes_runtime_identity() -> None:
     frozen = _freeze()
     descriptors = frozen.request["metric_plugins_by_name"]
