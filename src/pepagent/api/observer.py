@@ -13,7 +13,9 @@ from sqlalchemy.orm import aliased
 from pepagent.db.models import (
     AgentDecision,
     Artifact,
+    AutoResearchAction,
     Candidate,
+    CandidateLineageEdge,
     CandidateOccurrence,
     Evaluation,
     EvidenceArtifact,
@@ -47,6 +49,37 @@ NODE_TOOL_RULES: dict[str, tuple[str, ...]] = {
 }
 
 HISTORICAL_EXACT_REPLAY = "historical_exact_replay"
+AUTORESEARCH_DE_NOVO_V2_OPERATOR_NAME = "autoresearch-rule-de-novo"
+AUTORESEARCH_DE_NOVO_V2_OPERATOR_VERSION = "v2"
+AUTORESEARCH_DE_NOVO_V2_OPERATOR_ID = (
+    f"{AUTORESEARCH_DE_NOVO_V2_OPERATOR_NAME}-{AUTORESEARCH_DE_NOVO_V2_OPERATOR_VERSION}"
+)
+GENERATION_QUALITY_GATE_RULES: tuple[dict[str, Any], ...] = (
+    {
+        "metric_key": "guruprasad_instability_index",
+        "comparison": "<",
+        "threshold": 50.0,
+        "unit": "dimensionless",
+    },
+    {
+        "metric_key": "maximum_hydrophobic_run",
+        "comparison": "<=",
+        "threshold": 2,
+        "unit": "residues",
+    },
+    {
+        "metric_key": "hydrophobic_fraction",
+        "comparison": "<=",
+        "threshold": 0.45,
+        "unit": "fraction",
+    },
+    {
+        "metric_key": "net_charge_ph7_4",
+        "comparison": ">=",
+        "threshold": 3.0,
+        "unit": "elementary_charge",
+    },
+)
 
 
 def _historical_exact_replay_exists(candidate: Any = Candidate) -> Any:
@@ -149,6 +182,126 @@ async def _generation_population_for_run(
     )
 
 
+def _autoresearch_operator_id(action_spec_json: dict[str, Any] | None) -> str | None:
+    """Read the persisted operator identity without guessing from prose or a sequence."""
+
+    operations = (action_spec_json or {}).get("operations")
+    if not isinstance(operations, list):
+        return None
+    for operation in operations:
+        if not isinstance(operation, dict):
+            continue
+        payload = operation.get("payload")
+        if isinstance(payload, dict) and payload.get("operator_id"):
+            return str(payload["operator_id"])
+    return None
+
+
+def _generation_quality_gate_payload(
+    run_id: uuid.UUID,
+    proposal_count: int = 0,
+    materialized_descendant_count: int = 0,
+    evaluated_descendant_count: int = 0,
+) -> dict[str, Any]:
+    """Build the stable, run-scoped UI contract for the de-novo v2 prefilter."""
+
+    applied = proposal_count > 0
+    return {
+        "status": "applied" if applied else "not_applied",
+        "operator_name": AUTORESEARCH_DE_NOVO_V2_OPERATOR_NAME,
+        "operator_version": AUTORESEARCH_DE_NOVO_V2_OPERATOR_VERSION,
+        # A v2 action is persisted only after its proposal passes the pure prefilter.
+        "proposal_count": proposal_count,
+        "prefilter_pass_count": proposal_count,
+        "materialized_descendant_count": materialized_descendant_count,
+        "evaluated_descendant_count": evaluated_descendant_count,
+        "count_scope": {
+            "source": "postgresql",
+            "run_id": run_id,
+            "operator_id": AUTORESEARCH_DE_NOVO_V2_OPERATOR_ID,
+        },
+        "semantics": {
+            "proposal_and_prefilter_pass_are_not_materialized_descendants": True,
+            "materialized_descendant_requires_persisted_lineage_edge": True,
+            "evaluated_descendant_requires_persisted_evaluation": True,
+            "offline_validation_included": False,
+        },
+        "rules": [dict(rule) for rule in GENERATION_QUALITY_GATE_RULES],
+    }
+
+
+async def _generation_quality_gates_for_runs(
+    session: AsyncSession,
+    run_ids: list[uuid.UUID],
+) -> dict[uuid.UUID, dict[str, Any]]:
+    """Aggregate v2 proposal/materialization/evaluation counts by exact run identity."""
+
+    gates = {run_id: _generation_quality_gate_payload(run_id) for run_id in run_ids}
+    if not run_ids:
+        return gates
+
+    action_rows = list(
+        await session.execute(
+            select(
+                AutoResearchAction.id,
+                AutoResearchAction.run_id,
+                AutoResearchAction.action_spec_json,
+            ).where(AutoResearchAction.run_id.in_(run_ids))
+        )
+    )
+    v2_action_ids_by_run: dict[uuid.UUID, list[uuid.UUID]] = defaultdict(list)
+    for action_id, action_run_id, action_spec_json in action_rows:
+        if _autoresearch_operator_id(action_spec_json) == AUTORESEARCH_DE_NOVO_V2_OPERATOR_ID:
+            v2_action_ids_by_run[action_run_id].append(action_id)
+
+    v2_action_ids = [
+        action_id for action_ids in v2_action_ids_by_run.values() for action_id in action_ids
+    ]
+    materialized_by_run: dict[uuid.UUID, int] = {}
+    evaluated_by_run: dict[uuid.UUID, int] = {}
+    if v2_action_ids:
+        materialized_rows = await session.execute(
+            select(AutoResearchAction.run_id, func.count(distinct(Candidate.id)))
+            .join(CandidateLineageEdge, CandidateLineageEdge.action_id == AutoResearchAction.id)
+            .join(Candidate, Candidate.id == CandidateLineageEdge.child_candidate_id)
+            .where(
+                AutoResearchAction.id.in_(v2_action_ids),
+                Candidate.run_id == AutoResearchAction.run_id,
+                Candidate.generation > 0,
+                _display_eligible(Candidate),
+            )
+            .group_by(AutoResearchAction.run_id)
+        )
+        materialized_by_run = {
+            action_run_id: int(count) for action_run_id, count in materialized_rows
+        }
+        evaluated_rows = await session.execute(
+            select(AutoResearchAction.run_id, func.count(distinct(Candidate.id)))
+            .join(CandidateLineageEdge, CandidateLineageEdge.action_id == AutoResearchAction.id)
+            .join(Candidate, Candidate.id == CandidateLineageEdge.child_candidate_id)
+            .join(Evaluation, Evaluation.candidate_id == Candidate.id)
+            .where(
+                AutoResearchAction.id.in_(v2_action_ids),
+                Candidate.run_id == AutoResearchAction.run_id,
+                Candidate.generation > 0,
+                _display_eligible(Candidate),
+            )
+            .group_by(AutoResearchAction.run_id)
+        )
+        evaluated_by_run = {
+            action_run_id: int(count) for action_run_id, count in evaluated_rows
+        }
+
+    for run_id, action_ids in v2_action_ids_by_run.items():
+        gates[run_id] = _generation_quality_gate_payload(
+            run_id,
+            proposal_count=len(action_ids),
+            materialized_descendant_count=materialized_by_run.get(run_id, 0),
+            evaluated_descendant_count=evaluated_by_run.get(run_id, 0),
+        )
+    return gates
+
+
 def _iso(value: Any) -> str | None:
     return value.isoformat() if value is not None else None
 
@@ -173,6 +326,27 @@ def _run_identity_payload(run: ExperimentRun) -> dict[str, uuid.UUID | str | Non
         "workflow_id": run.temporal_workflow_id,
         "temporal_workflow_id": run.temporal_workflow_id,
         "temporal_run_id": run.temporal_run_id,
+    }
+
+
+def _run_status_payload(run: ExperimentRun) -> dict[str, Any]:
+    """Keep scientific state independent from optional Temporal history observability."""
+
+    has_temporal_identity = bool(run.temporal_workflow_id)
+    return {
+        "scientific_run_status": {
+            "status": run.status,
+            "source": "postgresql",
+            "run_id": run.id,
+        },
+        "temporal_observability": {
+            "status": "identity_recorded" if has_temporal_identity else "identity_missing",
+            "temporal_workflow_id": run.temporal_workflow_id,
+            "temporal_run_id": run.temporal_run_id,
+            "history_read_status": "not_queried",
+            "history_read_error": None,
+            "affects_scientific_run_status": False,
+        },
     }
 
 
@@ -311,6 +485,7 @@ async def list_observer_runs(
         }
     else:
         candidate_counts = {}
+    generation_quality_gates = await _generation_quality_gates_for_runs(session, run_ids)
 
     return {
         "source": "postgresql",
@@ -322,6 +497,7 @@ async def list_observer_runs(
                 "kind": _run_kind(row),
                 "schema_version": (row.spec_json or {}).get("schema_version"),
                 "status": row.status,
+                **_run_status_payload(row),
                 "created_at": _iso(row.created_at),
                 "started_at": _iso(row.started_at),
                 "finished_at": _iso(row.finished_at),
@@ -332,6 +508,7 @@ async def list_observer_runs(
                     row.id,
                     (0, 0, 0, _generation_population(0, 0, None)),
                 )[3],
+                "generation_quality_gate": generation_quality_gates[row.id],
                 "tool_call_count": counts["tool_calls"].get(row.id, 0),
                 "structure_record_count": counts["structure_records"].get(row.id, 0),
             }
@@ -360,6 +537,9 @@ async def get_observer_run(run_id: uuid.UUID, session: SessionDep) -> dict[str, 
         excluded_candidate_count,
     )
     generation_population = await _generation_population_for_run(session, run_id)
+    generation_quality_gate = (await _generation_quality_gates_for_runs(session, [run_id]))[
+        run_id
+    ]
     candidate_count = display_population["candidate_count"]
     occurrence_count = int(
         (
@@ -723,6 +903,7 @@ async def get_observer_run(run_id: uuid.UUID, session: SessionDep) -> dict[str, 
             "total": candidate_count,
             "provenance": "database",
             "generation_population": generation_population,
+            "generation_quality_gate": generation_quality_gate,
         },
         {
             "id": "mic",
@@ -1119,6 +1300,7 @@ async def get_observer_run(run_id: uuid.UUID, session: SessionDep) -> dict[str, 
             "kind": _run_kind(run),
             "schema_version": (run.spec_json or {}).get("schema_version"),
             "status": run.status,
+            **_run_status_payload(run),
             "spec_sha256": run.spec_sha256,
             "created_at": _iso(run.created_at),
             "started_at": _iso(run.started_at),
@@ -1126,6 +1308,7 @@ async def get_observer_run(run_id: uuid.UUID, session: SessionDep) -> dict[str, 
         },
         "display_population": display_population,
         "generation_population": generation_population,
+        "generation_quality_gate": generation_quality_gate,
         "counts": {
             "candidates": candidate_count,
             "candidate_records": candidate_record_count,
@@ -1356,6 +1539,11 @@ async def get_observer_node(
     )
     candidate_count = candidate_record_count - len(excluded_candidate_ids)
     generation_population = await _generation_population_for_run(session, run_id)
+    generation_quality_gate = (
+        (await _generation_quality_gates_for_runs(session, [run_id]))[run_id]
+        if node_id == "candidate_pool"
+        else None
+    )
     occurrence_count = int(
         (
             await session.scalar(
@@ -1484,7 +1672,10 @@ async def get_observer_node(
             len(excluded_candidate_ids),
         ),
         **(
-            {"generation_population": generation_population}
+            {
+                "generation_population": generation_population,
+                "generation_quality_gate": generation_quality_gate,
+            }
             if node_id == "candidate_pool"
             else {}
         ),

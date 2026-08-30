@@ -8,14 +8,19 @@ from sqlalchemy.dialects import postgresql
 
 from pepagent.api.main import app
 from pepagent.api.observer import (
+    AUTORESEARCH_DE_NOVO_V2_OPERATOR_ID,
     HISTORICAL_EXACT_REPLAY,
+    _autoresearch_operator_id,
     _candidate_pool_generation_narrative,
     _display_eligible,
     _display_population,
     _generation_population,
     _generation_population_for_run,
+    _generation_quality_gate_payload,
+    _generation_quality_gates_for_runs,
     _historical_exact_replay_exists,
     _run_identity_payload,
+    _run_status_payload,
     get_observer_node,
     get_observer_run,
     list_observer_runs,
@@ -172,3 +177,127 @@ def test_observer_run_identity_is_row_local_and_explicit_for_list_and_detail() -
     # Both public projections must use the same row-local identity contract.
     assert "_run_identity_payload(row)" in inspect.getsource(list_observer_runs)
     assert "_run_identity_payload(run)" in inspect.getsource(get_observer_run)
+
+
+def test_generation_quality_gate_has_stable_rules_and_distinct_count_semantics() -> None:
+    run_id = uuid.uuid4()
+    gate = _generation_quality_gate_payload(run_id)
+
+    assert gate["status"] == "not_applied"
+    assert gate["operator_name"] == "autoresearch-rule-de-novo"
+    assert gate["operator_version"] == "v2"
+    assert gate["proposal_count"] == 0
+    assert gate["prefilter_pass_count"] == 0
+    assert gate["materialized_descendant_count"] == 0
+    assert gate["evaluated_descendant_count"] == 0
+    assert gate["count_scope"] == {
+        "source": "postgresql",
+        "run_id": run_id,
+        "operator_id": AUTORESEARCH_DE_NOVO_V2_OPERATOR_ID,
+    }
+    assert gate["semantics"] == {
+        "proposal_and_prefilter_pass_are_not_materialized_descendants": True,
+        "materialized_descendant_requires_persisted_lineage_edge": True,
+        "evaluated_descendant_requires_persisted_evaluation": True,
+        "offline_validation_included": False,
+    }
+    assert gate["rules"] == [
+        {
+            "metric_key": "guruprasad_instability_index",
+            "comparison": "<",
+            "threshold": 50.0,
+            "unit": "dimensionless",
+        },
+        {
+            "metric_key": "maximum_hydrophobic_run",
+            "comparison": "<=",
+            "threshold": 2,
+            "unit": "residues",
+        },
+        {
+            "metric_key": "hydrophobic_fraction",
+            "comparison": "<=",
+            "threshold": 0.45,
+            "unit": "fraction",
+        },
+        {
+            "metric_key": "net_charge_ph7_4",
+            "comparison": ">=",
+            "threshold": 3.0,
+            "unit": "elementary_charge",
+        },
+    ]
+
+
+def test_generation_quality_gate_is_applied_only_for_exact_persisted_v2_operator() -> None:
+    v2_spec = {
+        "operations": [
+            {"payload": {"operator_id": "autoresearch-rule-de-novo-v2"}}
+        ]
+    }
+    v1_spec = {
+        "operations": [
+            {"payload": {"operator_id": "autoresearch-rule-de-novo-v1"}}
+        ]
+    }
+
+    assert _autoresearch_operator_id(v2_spec) == AUTORESEARCH_DE_NOVO_V2_OPERATOR_ID
+    assert _autoresearch_operator_id(v1_spec) != AUTORESEARCH_DE_NOVO_V2_OPERATOR_ID
+    assert _autoresearch_operator_id(None) is None
+
+    gate = _generation_quality_gate_payload(
+        uuid.uuid4(),
+        proposal_count=9,
+        materialized_descendant_count=7,
+        evaluated_descendant_count=5,
+    )
+    assert gate["status"] == "applied"
+    assert gate["proposal_count"] == gate["prefilter_pass_count"] == 9
+    assert gate["materialized_descendant_count"] == 7
+    assert gate["evaluated_descendant_count"] == 5
+
+
+def test_generation_quality_gate_queries_are_run_scoped_and_exposed_everywhere() -> None:
+    aggregate_source = inspect.getsource(_generation_quality_gates_for_runs)
+    list_source = inspect.getsource(list_observer_runs)
+    detail_source = inspect.getsource(get_observer_run)
+    node_source = inspect.getsource(get_observer_node)
+
+    assert "AutoResearchAction.run_id.in_(run_ids)" in aggregate_source
+    assert "Candidate.run_id == AutoResearchAction.run_id" in aggregate_source
+    assert "CandidateLineageEdge.action_id == AutoResearchAction.id" in aggregate_source
+    assert "Evaluation.candidate_id == Candidate.id" in aggregate_source
+    assert "_display_eligible(Candidate)" in aggregate_source
+    assert '"generation_quality_gate"' in list_source
+    assert '"generation_quality_gate": generation_quality_gate' in detail_source
+    assert 'node_id == "candidate_pool"' in node_source
+    assert '"generation_quality_gate": generation_quality_gate' in node_source
+
+
+def test_scientific_status_is_independent_from_temporal_observability() -> None:
+    run = ExperimentRun(
+        id=uuid.uuid4(),
+        target_id=uuid.uuid4(),
+        spec_json={},
+        spec_sha256="c" * 64,
+        status="running",
+        temporal_workflow_id="workflow-id",
+        temporal_run_id="temporal-run-id",
+    )
+
+    payload = _run_status_payload(run)
+    assert payload["scientific_run_status"] == {
+        "status": "running",
+        "source": "postgresql",
+        "run_id": run.id,
+    }
+    assert payload["temporal_observability"] == {
+        "status": "identity_recorded",
+        "temporal_workflow_id": "workflow-id",
+        "temporal_run_id": "temporal-run-id",
+        "history_read_status": "not_queried",
+        "history_read_error": None,
+        "affects_scientific_run_status": False,
+    }
+    assert "_run_status_payload(row)" in inspect.getsource(list_observer_runs)
+    assert "_run_status_payload(run)" in inspect.getsource(get_observer_run)
