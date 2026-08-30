@@ -16,9 +16,13 @@ def test_v38_local_launcher_is_immutable_and_sequence_stage_only() -> None:
     assert 'Name = "autoresearch-cpu-successor-control"' in text
     assert 'Name = "autoresearch-cpu-successor-persistence"' in text
     assert 'Name = "autoresearch-cpu-successor-metrics"' in text
+    assert 'Name = "autoresearch-cpu-successor-v2-control"' in text
+    assert 'Name = "autoresearch-cpu-successor-v2-persistence"' in text
+    assert 'Name = "autoresearch-cpu-successor-v2-metrics"' in text
     assert 'Name = "autoresearch-generator"' not in text
     assert (
-        '[ValidateSet("v38", "autoresearch-local", "autoresearch-cpu-successor", "all")]'
+        '[ValidateSet("v38", "autoresearch-local", "autoresearch-cpu-successor", '
+        '"autoresearch-cpu-successor-v2", "all")]'
         in text
     )
     assert '[string]$RoleSet = "v38"' in text
@@ -27,13 +31,20 @@ def test_v38_local_launcher_is_immutable_and_sequence_stage_only() -> None:
     assert "requested worker role is outside the selected role set" in text
     assert '"autoresearch-local" { $autoresearchLocalRoles }' in text
     assert '"autoresearch-cpu-successor" { $autoresearchCpuSuccessorRoles }' in text
+    assert (
+        '"autoresearch-cpu-successor-v2" { $autoresearchCpuSuccessorV2Roles }' in text
+    )
     assert 'TaskQueue = "pepagent-autoresearch-control-v1"' in text
     assert 'TaskQueue = "pepagent-autoresearch-persistence-v1"' in text
     assert 'TaskQueue = "pepagent-autoresearch-metrics-v1"' in text
     assert 'TaskQueue = "pepagent-autoresearch-cpu-successor-control-v1"' in text
     assert 'TaskQueue = "pepagent-autoresearch-cpu-successor-persistence-v1"' in text
     assert 'TaskQueue = "pepagent-autoresearch-cpu-successor-metrics-v1"' in text
+    assert 'TaskQueue = "pepagent-autoresearch-cpu-successor-control-v2"' in text
+    assert 'TaskQueue = "pepagent-autoresearch-cpu-successor-persistence-v2"' in text
+    assert 'TaskQueue = "pepagent-autoresearch-cpu-successor-metrics-v2"' in text
     assert 'pepagent-autoresearch-cpu-successor-no-gpu-v1' not in text
+    assert 'pepagent-autoresearch-cpu-successor-no-gpu-v2' not in text
     assert 'pepagent-autoresearch-generator-v1' not in text
     assert "v38-boltz" not in text
     assert "v38-rosetta" not in text

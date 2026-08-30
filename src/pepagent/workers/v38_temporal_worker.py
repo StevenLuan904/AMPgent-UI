@@ -171,6 +171,37 @@ V38_ROLE_CONFIG = {
         [evaluate_v38_sequence_metric],
         [],
     ),
+    # v2 is intentionally a distinct queue family.  It permits a repaired
+    # immutable release to start alongside v1 without replacing or mixing with
+    # the still-owned v1 pollers.
+    "autoresearch-cpu-successor-v2-control": (
+        "pepagent-autoresearch-cpu-successor-control-v2",
+        [
+            mark_run_started,
+            mark_run_cancelled,
+            mark_run_failed,
+            mark_run_succeeded,
+            plan_autoresearch_actions,
+            execute_autoresearch_rule_action_batch,
+        ],
+        [AutoResearchClosedLoopWorkflow],
+    ),
+    "autoresearch-cpu-successor-v2-persistence": (
+        "pepagent-autoresearch-cpu-successor-persistence-v2",
+        [
+            persist_v38_sequence_metric,
+            persist_autoresearch_action_plan,
+            persist_autoresearch_children,
+            persist_autoresearch_score_all_bundle,
+            finalize_autoresearch_iteration,
+        ],
+        [],
+    ),
+    "autoresearch-cpu-successor-v2-metrics": (
+        "pepagent-autoresearch-cpu-successor-metrics-v2",
+        [evaluate_v38_sequence_metric],
+        [],
+    ),
     "v39-target-sequence": (
         "pepagent-gpu-target-sequence-v39",
         [score_seven_branch_target_sequence],

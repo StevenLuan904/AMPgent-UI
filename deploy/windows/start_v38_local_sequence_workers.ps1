@@ -5,7 +5,7 @@ param(
     [Parameter(Mandatory = $true)][string]$Python,
     [string]$ReleaseRoot = "var/platform/releases-v38",
     [string]$StateRoot = "var/run/v38-workers",
-    [ValidateSet("v38", "autoresearch-local", "autoresearch-cpu-successor", "all")]
+    [ValidateSet("v38", "autoresearch-local", "autoresearch-cpu-successor", "autoresearch-cpu-successor-v2", "all")]
     [string]$RoleSet = "v38",
     [ValidateSet(
         "v38-control",
@@ -16,7 +16,10 @@ param(
         "autoresearch-metrics",
         "autoresearch-cpu-successor-control",
         "autoresearch-cpu-successor-persistence",
-        "autoresearch-cpu-successor-metrics"
+        "autoresearch-cpu-successor-metrics",
+        "autoresearch-cpu-successor-v2-control",
+        "autoresearch-cpu-successor-v2-persistence",
+        "autoresearch-cpu-successor-v2-metrics"
     )]
     [string]$OnlyRole,
     [switch]$ReplaceOwned
@@ -105,11 +108,32 @@ $autoresearchCpuSuccessorRoles = @(
         Maximum = "5"
     }
 )
+$autoresearchCpuSuccessorV2Roles = @(
+    @{
+        Name = "autoresearch-cpu-successor-v2-control"
+        TaskQueue = "pepagent-autoresearch-cpu-successor-control-v2"
+        Maximum = "16"
+    },
+    @{
+        Name = "autoresearch-cpu-successor-v2-persistence"
+        TaskQueue = "pepagent-autoresearch-cpu-successor-persistence-v2"
+        Maximum = "5"
+    },
+    @{
+        Name = "autoresearch-cpu-successor-v2-metrics"
+        TaskQueue = "pepagent-autoresearch-cpu-successor-metrics-v2"
+        Maximum = "5"
+    }
+)
 $roles = switch ($RoleSet) {
     "v38" { $v38Roles }
     "autoresearch-local" { $autoresearchLocalRoles }
     "autoresearch-cpu-successor" { $autoresearchCpuSuccessorRoles }
-    "all" { @($v38Roles) + @($autoresearchLocalRoles) + @($autoresearchCpuSuccessorRoles) }
+    "autoresearch-cpu-successor-v2" { $autoresearchCpuSuccessorV2Roles }
+    "all" {
+        @($v38Roles) + @($autoresearchLocalRoles) +
+            @($autoresearchCpuSuccessorRoles) + @($autoresearchCpuSuccessorV2Roles)
+    }
 }
 if ($OnlyRole) {
     $roles = @($roles | Where-Object { $_.Name -eq $OnlyRole })
