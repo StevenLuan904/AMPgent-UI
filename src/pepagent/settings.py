@@ -1,5 +1,6 @@
 from functools import lru_cache
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -8,6 +9,12 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+asyncpg://pepagent:change-me@localhost:55432/pepagent"
     database_url_sync: str = "postgresql+psycopg://pepagent:change-me@localhost:55432/pepagent"
+    # The authoritative PostgreSQL endpoint may be reached through a durable
+    # SSH tunnel.  Bound every checkout/query and recycle pooled sockets before
+    # a silently stale forwarded connection can pin a Temporal activity.
+    database_pool_recycle_seconds: int = Field(default=300, gt=0)
+    database_pool_timeout_seconds: float = Field(default=30.0, gt=0)
+    database_command_timeout_seconds: float = Field(default=60.0, gt=0)
     s3_endpoint: str = "http://localhost:9000"
     s3_access_key: str = "pepagent"
     s3_secret_key: str = "change-me-now"

@@ -6,8 +6,20 @@ from sqlalchemy.pool import NullPool
 from pepagent.settings import get_settings
 
 settings = get_settings()
+
+
+def _database_connect_args() -> dict[str, float]:
+    return {"command_timeout": float(settings.database_command_timeout_seconds)}
+
+
 engine = create_async_engine(
-    settings.database_url, pool_pre_ping=True, pool_size=10, max_overflow=20
+    settings.database_url,
+    pool_pre_ping=True,
+    pool_size=10,
+    max_overflow=20,
+    pool_recycle=int(settings.database_pool_recycle_seconds),
+    pool_timeout=float(settings.database_pool_timeout_seconds),
+    connect_args=_database_connect_args(),
 )
 SessionFactory = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
@@ -21,6 +33,7 @@ observer_engine = create_async_engine(
     settings.database_url,
     pool_pre_ping=True,
     poolclass=NullPool,
+    connect_args=_database_connect_args(),
 )
 ObserverSessionFactory = async_sessionmaker(
     observer_engine,
