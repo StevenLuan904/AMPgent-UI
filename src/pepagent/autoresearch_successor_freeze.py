@@ -4,10 +4,13 @@ import copy
 import re
 import uuid
 from dataclasses import dataclass
+from pathlib import Path, PureWindowsPath
 from typing import Any
 from uuid import UUID
 
-from pepagent.provenance.hashing import sha256_json
+import yaml
+
+from pepagent.provenance.hashing import sha256_bytes, sha256_json
 from pepagent.workflows.autoresearch import _validate_request
 
 BRANCH_KEYS = frozenset({"acea", "angpt1", "fgf2", "gyra", "pbp2a", "vegfa"})
@@ -37,6 +40,97 @@ class CpuOnlySuccessorRuntimeReadiness:
     reason_codes: tuple[str, ...]
     required_live_pollers: dict[str, dict[str, int]]
     generator_poller_required: bool = False
+
+
+@dataclass(frozen=True)
+class FrozenExternalMetricRegistryMigration:
+    source_path: str
+    source_sha256: str
+    destination_path: str
+    destination_sha256: str
+    content: bytes
+    plugin_names: tuple[str, ...]
+
+
+def freeze_external_metric_registry_migration(
+    *,
+    predecessor_request: dict[str, Any],
+    source_registry_bytes: bytes,
+    old_release_root: str,
+    new_release_root: str,
+    registry_cache_root: str | Path,
+) -> FrozenExternalMetricRegistryMigration:
+    """Freeze one content-addressed registry whose commands match execution guards."""
+
+    descriptors = predecessor_request.get("metric_plugins_by_name") or {}
+    external = {
+        str(name): descriptor
+        for name, descriptor in descriptors.items()
+        if isinstance(descriptor, dict) and descriptor.get("registry_path")
+    }
+    if not external:
+        raise ValueError("predecessor request has no external metric registry bindings")
+    source_paths = {str(item.get("registry_path")) for item in external.values()}
+    source_hashes = {str(item.get("registry_sha256")) for item in external.values()}
+    if len(source_paths) != 1 or len(source_hashes) != 1:
+        raise ValueError("external metric plugins do not share one frozen registry identity")
+    source_path = next(iter(source_paths))
+    source_sha256 = _require_sha256(next(iter(source_hashes)), "metric registry")
+    if sha256_bytes(source_registry_bytes) != source_sha256:
+        raise ValueError("external metric registry bytes differ from the frozen identity")
+    registry = yaml.safe_load(source_registry_bytes.decode("utf-8"))
+    if not isinstance(registry, dict) or not isinstance(registry.get("adapters"), dict):
+        raise ValueError("external metric registry is malformed")
+
+    migrated = copy.deepcopy(registry)
+    for plugin_name, descriptor in sorted(external.items()):
+        adapter = migrated["adapters"].get(plugin_name)
+        guard = descriptor.get("execution_guard") or {}
+        contract = guard.get("contract") or {}
+        paths = guard.get("paths") or {}
+        command = adapter.get("command") if isinstance(adapter, dict) else None
+        adapter_index = (contract.get("command_entities") or {}).get("adapter_index")
+        if (
+            not isinstance(command, list)
+            or adapter_index is None
+            or int(adapter_index) < 0
+            or len(command) <= int(adapter_index)
+        ):
+            raise ValueError(f"external metric registry command is incomplete: {plugin_name}")
+        declared = str(paths.get("adapter_path") or "")
+        if not declared:
+            raise ValueError(f"external metric execution guard lacks adapter: {plugin_name}")
+        destination_adapter, replacement_count = _rewrite_release_paths(
+            declared,
+            old_release_root=old_release_root,
+            new_release_root=new_release_root,
+        )
+        if replacement_count != 1:
+            raise ValueError(f"external metric adapter is not release-bound: {plugin_name}")
+        existing_adapter = str(command[int(adapter_index)])
+        if PureWindowsPath(existing_adapter).name.casefold() != PureWindowsPath(
+            destination_adapter
+        ).name.casefold():
+            raise ValueError(f"external metric registry adapter identity differs: {plugin_name}")
+        command[int(adapter_index)] = destination_adapter
+
+    content = yaml.safe_dump(
+        migrated,
+        allow_unicode=True,
+        sort_keys=True,
+    ).encode("utf-8")
+    destination_sha256 = sha256_bytes(content)
+    destination_path = (
+        Path(registry_cache_root) / destination_sha256 / "runtime.local.yaml"
+    )
+    return FrozenExternalMetricRegistryMigration(
+        source_path=source_path,
+        source_sha256=source_sha256,
+        destination_path=str(destination_path),
+        destination_sha256=destination_sha256,
+        content=content,
+        plugin_names=tuple(sorted(external)),
+    )
 
 
 def _require_sha256(value: object, label: str) -> str:
@@ -173,6 +267,7 @@ def freeze_cpu_only_successor(
     old_release_root: str,
     new_release_root: str,
     eligibility_sha256: str,
+    external_metric_registry_migration: FrozenExternalMetricRegistryMigration | None = None,
 ) -> FrozenAutoResearchSuccessor:
     """Freeze a deterministic CPU-only successor without submitting it.
 
@@ -245,6 +340,32 @@ def freeze_cpu_only_successor(
     executor["operator_release_sha256"] = release
     template["action_executor"] = executor
 
+    registry_bound_plugins = {
+        str(name): descriptor
+        for name, descriptor in (template.get("metric_plugins_by_name") or {}).items()
+        if isinstance(descriptor, dict) and descriptor.get("registry_path")
+    }
+    if registry_bound_plugins:
+        migration = external_metric_registry_migration
+        if migration is None:
+            raise ValueError("external metric registry migration is required")
+        if set(registry_bound_plugins) != set(migration.plugin_names):
+            raise ValueError("external metric registry migration plugin set differs")
+        for descriptor in registry_bound_plugins.values():
+            if str(descriptor.get("registry_path")) != migration.source_path:
+                raise ValueError("external metric registry source path differs")
+            if str(descriptor.get("registry_sha256")) != migration.source_sha256:
+                raise ValueError("external metric registry source hash differs")
+            descriptor["registry_path"] = migration.destination_path
+            descriptor["registry_sha256"] = migration.destination_sha256
+            descriptor["runtime_identity_sha256"] = sha256_json(
+                {
+                    key: value
+                    for key, value in descriptor.items()
+                    if key != "runtime_identity_sha256"
+                }
+            )
+
     if _contains_release_root(template, old_root):
         raise ValueError("old release root remains after successor path migration")
     if template.get("control_environment_sha256") != predecessor_control_environment:
@@ -308,6 +429,14 @@ def freeze_cpu_only_successor(
         "new_gpu_tasks_allowed": False,
         "submitted": False,
     }
+    if external_metric_registry_migration is not None:
+        receipt["external_metric_registry_migration"] = {
+            "source_path": external_metric_registry_migration.source_path,
+            "source_sha256": external_metric_registry_migration.source_sha256,
+            "destination_path": external_metric_registry_migration.destination_path,
+            "destination_sha256": external_metric_registry_migration.destination_sha256,
+            "plugin_names": list(external_metric_registry_migration.plugin_names),
+        }
     return FrozenAutoResearchSuccessor(
         request=request,
         request_sha256=request_sha256,

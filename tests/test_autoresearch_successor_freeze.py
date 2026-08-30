@@ -4,13 +4,15 @@ import copy
 from typing import Any
 
 import pytest
+import yaml
 
 from pepagent.autoresearch_closed_loop import ContinuationPolicy, MultiFrontArchivePolicy
 from pepagent.autoresearch_successor_freeze import (
     assess_cpu_only_successor_runtime_readiness,
+    freeze_external_metric_registry_migration,
     freeze_cpu_only_successor,
 )
-from pepagent.provenance.hashing import sha256_json, sha256_text
+from pepagent.provenance.hashing import sha256_bytes, sha256_json, sha256_text
 from pepagent.v38_science_execution import build_default_v38_sequence_contract
 from pepagent.workflows.autoresearch import _validate_request
 
@@ -146,6 +148,88 @@ def test_freeze_rewrites_only_release_paths_and_refreshes_runtime_identity() -> 
         {key: value for key, value in migrated.items() if key != "runtime_identity_sha256"}
     )
     assert frozen.receipt["release_path_rewrite_count"] == 4
+
+
+def test_freeze_migrates_external_registry_commands_to_guarded_release(tmp_path) -> None:
+    request = _request()
+    source_registry = {
+        "adapters": {
+            name: {
+                "enabled": True,
+                "command": [
+                    r"C:\runtime\python.exe",
+                    rf"D:\historical-release\{name}.py",
+                    "--input",
+                    "{input}",
+                ],
+            }
+            for name in request["metric_plugins_by_name"]
+        }
+    }
+    source_bytes = yaml.safe_dump(source_registry, sort_keys=True).encode("utf-8")
+    source_path = r"D:\cache\old-registry\runtime.local.yaml"
+    source_sha256 = sha256_bytes(source_bytes)
+    migrated_names = []
+    for name, descriptor in request["metric_plugins_by_name"].items():
+        if OLD_ROOT not in descriptor["adapter_path"]:
+            continue
+        migrated_names.append(name)
+        descriptor["registry_path"] = source_path
+        descriptor["registry_sha256"] = source_sha256
+        descriptor["execution_guard"] = {
+            "contract": {"command_entities": {"adapter_index": 1}},
+            "paths": {"adapter_path": descriptor["adapter_path"]},
+        }
+        descriptor["runtime_identity_sha256"] = sha256_json(
+            {
+                key: value
+                for key, value in descriptor.items()
+                if key != "runtime_identity_sha256"
+            }
+        )
+
+    migration = freeze_external_metric_registry_migration(
+        predecessor_request=request,
+        source_registry_bytes=source_bytes,
+        old_release_root=OLD_ROOT,
+        new_release_root=NEW_ROOT,
+        registry_cache_root=tmp_path / "registries",
+    )
+    frozen = _freeze(
+        request,
+        predecessor_request_sha256=sha256_json(request),
+        external_metric_registry_migration=migration,
+    )
+    migrated_registry = yaml.safe_load(migration.content)
+
+    assert migration.destination_sha256 == sha256_bytes(migration.content)
+    assert migration.destination_path.endswith(
+        f"{migration.destination_sha256}\\runtime.local.yaml"
+    )
+    for name in migrated_names:
+        descriptor = frozen.request["metric_plugins_by_name"][name]
+        assert descriptor["registry_path"] == migration.destination_path
+        assert descriptor["registry_sha256"] == migration.destination_sha256
+        assert migrated_registry["adapters"][name]["command"][1] == descriptor[
+            "execution_guard"
+        ]["paths"]["adapter_path"]
+        assert descriptor["runtime_identity_sha256"] == sha256_json(
+            {
+                key: value
+                for key, value in descriptor.items()
+                if key != "runtime_identity_sha256"
+            }
+        )
+
+
+def test_freeze_rejects_unmigrated_external_registry() -> None:
+    request = _request()
+    for descriptor in request["metric_plugins_by_name"].values():
+        descriptor["registry_path"] = r"D:\cache\old\runtime.local.yaml"
+        descriptor["registry_sha256"] = "1" * 64
+
+    with pytest.raises(ValueError, match="registry migration is required"):
+        _freeze(request, predecessor_request_sha256=sha256_json(request))
 
 
 def test_freeze_preserves_environments_and_target_but_updates_release_controls() -> None:
