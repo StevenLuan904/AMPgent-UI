@@ -11,6 +11,8 @@ export interface RunListItem {
   started_at: string | null
   finished_at: string | null
   candidate_count: number
+  candidate_record_count?: number
+  excluded_candidate_count?: number
   tool_call_count: number
   structure_record_count: number
 }
@@ -56,7 +58,17 @@ export interface CandidatePreview {
   cohort: string
   pareto_front: number | null
   reasons: string[]
+  display_eligible?: true
+  exclusion_reason?: null
   metrics: CandidateMetric[]
+}
+
+export interface CandidateExclusion {
+  id: string
+  sequence_sha256: string
+  generation: number
+  display_eligible: false
+  exclusion_reason: 'historical_exact_replay'
 }
 
 export interface ViewerArtifact {
@@ -155,6 +167,12 @@ export interface NodeDetail {
   source: string
   read_only: boolean
   node_id: string
+  display_population?: {
+    candidate_count: number
+    candidate_record_count: number
+    excluded_candidate_count: number
+    exclusion_reason: 'historical_exact_replay'
+  }
   narrative: string[]
   calls: ToolAttempt[]
   metrics: Record<string, MetricSummary>
@@ -187,6 +205,7 @@ export interface RunDetail {
   checkpoints: Array<Record<string, unknown>>
   graph: { nodes: GraphStage[]; edges: GraphEdgeDetail[] }
   candidates: CandidatePreview[]
+  candidate_exclusions?: CandidateExclusion[]
   viewer: ViewerArtifact | null
   viewers: Record<string, ViewerArtifact | null>
   events: TimelineEvent[]

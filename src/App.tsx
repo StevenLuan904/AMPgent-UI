@@ -471,6 +471,7 @@ function CanvasHeader({ detail, refreshing, selectionMode, selectedCount, onRefr
   onToggleSelection: () => void
 }) {
   const isStructureReview = (detail.counts.boltz_poses ?? 0) > 0 || (detail.counts.rosetta_decoys ?? 0) > 0
+  const excludedCandidateCount = detail.counts.excluded_candidates ?? detail.candidate_exclusions?.length ?? 0
   return (
     <header className="canvas-header">
       <div className="canvas-title-block">
@@ -479,6 +480,7 @@ function CanvasHeader({ detail, refreshing, selectionMode, selectedCount, onRefr
         <div className="round-meta">
           <span>{formatTime(detail.run.created_at)} 创建</span><i />
           <span>{detail.counts.candidates.toLocaleString()} 个候选</span><i />
+          {excludedCandidateCount > 0 && <><span title="历史运行中已存在的生成子代，仅保留审计记录。">{excludedCandidateCount.toLocaleString()} 个历史重放已排除</span><i /></>}
           <span>{detail.counts.admitted.toLocaleString()} 个进入结构阶段</span><i />
           <span>{detail.branches.length} 个靶点</span><i />
           <span>{detail.counts.boltz_poses.toLocaleString()} 个复合物构象 · {detail.counts.rosetta_decoys.toLocaleString()} 个界面精修样本</span>
