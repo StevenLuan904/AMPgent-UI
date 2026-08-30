@@ -1,0 +1,243 @@
+from __future__ import annotations
+
+import copy
+import re
+import uuid
+from dataclasses import dataclass
+from typing import Any
+from uuid import UUID
+
+from pepagent.provenance.hashing import sha256_json
+from pepagent.workflows.autoresearch import _validate_request
+
+BRANCH_KEYS = frozenset({"acea", "angpt1", "fgf2", "gyra", "pbp2a", "vegfa"})
+PERSISTENCE_QUEUE = "pepagent-autoresearch-persistence-v1"
+RUN_ID_NAMESPACE = UUID("cc724227-dab3-4ddb-b187-2a744d012561")
+WORKFLOW_ID_NAMESPACE = UUID("fb03516f-52e7-4507-aacd-6f09adae2563")
+
+
+@dataclass(frozen=True)
+class FrozenAutoResearchSuccessor:
+    request: dict[str, Any]
+    request_sha256: str
+    request_template_sha256: str
+    run_identity_sha256: str
+    formal_submission_key: str
+    run_id: UUID
+    workflow_id: str
+    receipt: dict[str, Any]
+
+
+def _require_sha256(value: object, label: str) -> str:
+    normalized = str(value).lower()
+    if not re.fullmatch(r"[0-9a-f]{64}", normalized):
+        raise ValueError(f"{label} must be a lowercase SHA-256")
+    return normalized
+
+
+def _require_revision(value: object) -> str:
+    normalized = str(value).lower()
+    if not re.fullmatch(r"[0-9a-f]{40}", normalized):
+        raise ValueError("source revision must be a lowercase 40-character Git revision")
+    return normalized
+
+
+def _rewrite_release_paths(
+    value: Any,
+    *,
+    old_release_root: str,
+    new_release_root: str,
+) -> tuple[Any, int]:
+    count = 0
+    old_variants = {
+        old_release_root.rstrip("\\/"),
+        old_release_root.rstrip("\\/").replace("\\", "/"),
+    }
+
+    def rewrite(item: Any) -> Any:
+        nonlocal count
+        if isinstance(item, str):
+            rewritten = item
+            for old in sorted(old_variants, key=len, reverse=True):
+                pattern = re.compile(re.escape(old), re.IGNORECASE)
+                rewritten, replacements = pattern.subn(lambda _: new_release_root, rewritten)
+                count += replacements
+            return rewritten
+        if isinstance(item, list):
+            return [rewrite(child) for child in item]
+        if isinstance(item, tuple):
+            return tuple(rewrite(child) for child in item)
+        if isinstance(item, dict):
+            rewritten = {key: rewrite(child) for key, child in item.items()}
+            if "runtime_identity_sha256" in rewritten:
+                payload = {
+                    key: child
+                    for key, child in rewritten.items()
+                    if key != "runtime_identity_sha256"
+                }
+                rewritten["runtime_identity_sha256"] = sha256_json(payload)
+            return rewritten
+        return item
+
+    return rewrite(value), count
+
+
+def _contains_release_root(value: Any, release_root: str) -> bool:
+    roots = {
+        release_root.rstrip("\\/").lower(),
+        release_root.rstrip("\\/").replace("\\", "/").lower(),
+    }
+    if isinstance(value, str):
+        lowered = value.lower()
+        return any(root in lowered for root in roots)
+    if isinstance(value, (list, tuple)):
+        return any(_contains_release_root(child, release_root) for child in value)
+    if isinstance(value, dict):
+        return any(_contains_release_root(child, release_root) for child in value.values())
+    return False
+
+
+def freeze_cpu_only_successor(
+    *,
+    predecessor_request: dict[str, Any],
+    predecessor_run_id: UUID | str,
+    predecessor_request_sha256: str,
+    latest_generation: int,
+    source_revision: str,
+    release_sha256: str,
+    old_release_root: str,
+    new_release_root: str,
+    eligibility_sha256: str,
+) -> FrozenAutoResearchSuccessor:
+    """Freeze a deterministic CPU-only successor without submitting it.
+
+    The function is deliberately pure: it performs no database, Temporal, GPU,
+    filesystem, or process operation. Historical outputs are identity evidence
+    only and are never imported into the successor request.
+    """
+
+    predecessor_sha = _require_sha256(predecessor_request_sha256, "predecessor request")
+    if sha256_json(predecessor_request) != predecessor_sha:
+        raise ValueError("predecessor request hash does not match the supplied request")
+    predecessor_id = UUID(str(predecessor_run_id))
+    predecessor_request_id = UUID(str(predecessor_request.get("run_id")))
+    if predecessor_request_id != predecessor_id:
+        raise ValueError("predecessor request run_id differs from predecessor_run_id")
+    if int(latest_generation) < 0:
+        raise ValueError("latest generation must be non-negative")
+    branch_key = str(predecessor_request.get("branch_key") or "").lower()
+    if branch_key not in BRANCH_KEYS:
+        raise ValueError(f"unsupported AutoResearch branch: {branch_key}")
+    revision = _require_revision(source_revision)
+    release = _require_sha256(release_sha256, "release archive")
+    eligibility = _require_sha256(eligibility_sha256, "successor eligibility")
+    old_root = str(old_release_root).strip().rstrip("\\/")
+    new_root = str(new_release_root).strip().rstrip("\\/")
+    if not old_root or not new_root or old_root.lower() == new_root.lower():
+        raise ValueError("old and new release roots must be non-empty and different")
+
+    predecessor_control_environment = predecessor_request.get("control_environment_sha256")
+    predecessor_executor = predecessor_request.get("action_executor") or {}
+    predecessor_operator_environment = predecessor_executor.get("operator_environment_sha256")
+    predecessor_target = {
+        "target_sequence": predecessor_executor.get("target_sequence"),
+        "target_sequence_sha256": predecessor_executor.get("target_sequence_sha256"),
+    }
+
+    template, rewrite_count = _rewrite_release_paths(
+        copy.deepcopy(predecessor_request),
+        old_release_root=old_root,
+        new_release_root=new_root,
+    )
+    if rewrite_count < 1:
+        raise ValueError("predecessor request contains no path under the old release root")
+    template.pop("run_id", None)
+    template.pop("initial_action_plan", None)
+    template["predecessor_run_id"] = str(predecessor_id)
+    template["start_iteration_no"] = int(latest_generation) + 1
+    template["maximum_iterations_per_workflow_execution"] = 2
+    template["historical_outputs_reused"] = False
+    template["successor_eligibility_sha256"] = eligibility
+    queues = dict(template.get("task_queues") or {})
+    queues["persistence"] = PERSISTENCE_QUEUE
+    template["task_queues"] = queues
+    provider = copy.deepcopy(template.get("planner_provider") or {})
+    planner_contract = dict(provider.get("planner_contract") or {})
+    planner_contract["pepmlm_targeted_enabled"] = False
+    provider["planner_contract"] = planner_contract
+    template["planner_provider"] = provider
+    executor = dict(template.get("action_executor") or {})
+    executor["operator_release_sha256"] = release
+    template["action_executor"] = executor
+
+    if _contains_release_root(template, old_root):
+        raise ValueError("old release root remains after successor path migration")
+    if template.get("control_environment_sha256") != predecessor_control_environment:
+        raise ValueError("control environment identity changed during successor freeze")
+    if executor.get("operator_environment_sha256") != predecessor_operator_environment:
+        raise ValueError("generator environment identity changed during successor freeze")
+    if {key: executor.get(key) for key in predecessor_target} != predecessor_target:
+        raise ValueError("target identity changed during successor freeze")
+
+    request_template_sha256 = sha256_json(template)
+    run_identity = {
+        "schema_version": "ampgent.autoresearch-cpu-successor-run-identity.1",
+        "branch_key": branch_key,
+        "predecessor_run_id": str(predecessor_id),
+        "predecessor_request_sha256": predecessor_sha,
+        "request_template_sha256": request_template_sha256,
+        "source_revision": revision,
+        "release_sha256": release,
+        "control_environment_sha256": predecessor_control_environment,
+        "generator_environment_sha256": predecessor_operator_environment,
+        "eligibility_sha256": eligibility,
+        "historical_outputs_reused": False,
+        "generator_gpu_work_required": False,
+        "new_gpu_tasks_allowed": False,
+    }
+    run_identity_sha256 = sha256_json(run_identity)
+    run_id = uuid.uuid5(RUN_ID_NAMESPACE, run_identity_sha256)
+    request = {**template, "run_id": str(run_id)}
+    _validate_request(request)
+    request_sha256 = sha256_json(request)
+    formal_identity = {
+        **run_identity,
+        "schema_version": "ampgent.autoresearch-cpu-successor-submission-identity.1",
+        "run_identity_sha256": run_identity_sha256,
+        "request_sha256": request_sha256,
+        "run_id": str(run_id),
+    }
+    formal_submission_key = sha256_json(formal_identity)
+    workflow_uuid = uuid.uuid5(WORKFLOW_ID_NAMESPACE, formal_submission_key)
+    workflow_id = f"pepagent-autoresearch-cpu-successor-v1-{branch_key}-{workflow_uuid}"
+    receipt = {
+        "schema_version": "ampgent.autoresearch-cpu-successor-freeze-receipt.1",
+        "branch_key": branch_key,
+        "predecessor_run_id": str(predecessor_id),
+        "predecessor_request_sha256": predecessor_sha,
+        "run_id": str(run_id),
+        "workflow_id": workflow_id,
+        "request_sha256": request_sha256,
+        "request_template_sha256": request_template_sha256,
+        "run_identity_sha256": run_identity_sha256,
+        "formal_submission_key": formal_submission_key,
+        "source_revision": revision,
+        "release_sha256": release,
+        "eligibility_sha256": eligibility,
+        "start_iteration_no": int(latest_generation) + 1,
+        "release_path_rewrite_count": rewrite_count,
+        "historical_outputs_reused": False,
+        "generator_gpu_work_required": False,
+        "new_gpu_tasks_allowed": False,
+        "submitted": False,
+    }
+    return FrozenAutoResearchSuccessor(
+        request=request,
+        request_sha256=request_sha256,
+        request_template_sha256=request_template_sha256,
+        run_identity_sha256=run_identity_sha256,
+        formal_submission_key=formal_submission_key,
+        run_id=run_id,
+        workflow_id=workflow_id,
+        receipt=receipt,
+    )
