@@ -15,6 +15,7 @@ from pepagent.autoresearch_closed_loop import (
     CrossoverFragment,
     DeNovoAction,
     MultiFrontArchivePolicy,
+    PepMLMTargetedAction,
 )
 from pepagent.db.models import Candidate
 from pepagent.provenance.hashing import sha256_text
@@ -25,13 +26,14 @@ from pepagent.workers.autoresearch_activities import (
     _duplicate_rejection_reason,
     _effective_planner_seed,
     build_typed_action_projection,
+    execute_autoresearch_rule_action_batch,
 )
 from pepagent.workers.v38_activities import V38_METRIC_OBSERVATIONS
 from pepagent.workers.v38_temporal_worker import V38_ROLE_CONFIG
 from pepagent.workflows import autoresearch as workflow_module
 from pepagent.workflows.autoresearch import (
-    AutoResearchClosedLoopWorkflow,
     REMOTE_PERSISTENCE_MAXIMUM_ITERATIONS_PER_WORKFLOW_EXECUTION,
+    AutoResearchClosedLoopWorkflow,
     _validate_request,
     with_remote_persistence_history_compaction,
 )
@@ -464,8 +466,10 @@ async def test_autoresearch_all_duplicate_iteration_stops_without_rescoring(
                         "lineage_sources": [],
                     }
                 ],
+                "requires_generator_gpu": False,
+                "action_execution_mode": "cpu_rule_only",
             }
-        if name == "execute_autoresearch_action_batch":
+        if name == "execute_autoresearch_rule_action_batch":
             return {
                 "action_batch_sha256": "1" * 64,
                 "results": [
@@ -516,7 +520,7 @@ async def test_autoresearch_all_duplicate_iteration_stops_without_rescoring(
     assert names == [
         "mark_run_started",
         "persist_autoresearch_action_plan",
-        "execute_autoresearch_action_batch",
+        "execute_autoresearch_rule_action_batch",
         "persist_autoresearch_children",
         "mark_run_succeeded",
     ]
@@ -543,6 +547,7 @@ def test_autoresearch_worker_registration_is_complete() -> None:
         "finalize_autoresearch_iteration",
         "plan_autoresearch_actions",
         "persist_autoresearch_score_all_bundle",
+        "execute_autoresearch_rule_action_batch",
     } <= registered
     assert AutoResearchClosedLoopWorkflow in workflows
     generator_queue, generator_activities, _ = V38_ROLE_CONFIG["autoresearch-generator"]
@@ -551,6 +556,7 @@ def test_autoresearch_worker_registration_is_complete() -> None:
         item.__temporal_activity_definition.name for item in generator_activities
     }
     assert "execute_autoresearch_action_batch" in generator_registered
+    assert "execute_autoresearch_rule_action_batch" not in generator_registered
     metric_queue, metric_activities, _ = V38_ROLE_CONFIG["autoresearch-metrics"]
     assert metric_queue == "pepagent-autoresearch-metrics-v1"
     assert {item.__temporal_activity_definition.name for item in metric_activities} == {
@@ -566,11 +572,49 @@ def test_autoresearch_worker_registration_is_complete() -> None:
     }
 
 
+@pytest.mark.asyncio
+async def test_cpu_rule_executor_rejects_a_pepmlm_action() -> None:
+    action = PepMLMTargetedAction(
+        branch_key="PBP2a",
+        generation=1,
+        seed=23,
+        operator_id="pepmlm-targeted-action-v1",
+        operator_release_sha256="a" * 64,
+        target_sequence_sha256="c" * 64,
+        expected_improvement_metrics=("macrel_amp_probability",),
+        protected_metrics=("guruprasad_instability_index",),
+        evidence_sha256s=("b" * 64,),
+        proposal_mode="de_novo",
+        peptide_length=20,
+    )
+    request = {
+        "action_plan": {
+            "schema_version": "ampgent.autoresearch-action-plan-receipt.1",
+            "run_id": RUN_ID,
+            "iteration_no": 0,
+            "action_batch_sha256": "1" * 64,
+            "action_execution_mode": "cpu_rule_only",
+            "actions": [{"runtime_action": action.model_dump(mode="json")}],
+        }
+    }
+
+    with pytest.raises(ValueError, match="cannot contain PepMLM"):
+        await execute_autoresearch_rule_action_batch(request)
+
+
 def test_autoresearch_request_rejects_partial_score_all_registry() -> None:
     request = _request()
     _validate_request(request)
     request["metric_plugins_by_name"].pop(next(iter(request["metric_plugins_by_name"])))
     with pytest.raises(ValueError, match="plugin registry"):
+        _validate_request(request)
+
+
+def test_autoresearch_request_requires_literal_boolean_cpu_only_contract() -> None:
+    request = _request()
+    request["planner_provider"]["planner_contract"]["pepmlm_targeted_enabled"] = "false"
+
+    with pytest.raises(ValueError, match="frozen boolean"):
         _validate_request(request)
 
 

@@ -345,6 +345,14 @@ async def _resolve_action_plan_reference(plan: dict[str, Any]) -> dict[str, Any]
         "planner_receipt": decision_structured.get("planner_receipt"),
         "actions": persisted,
     }
+    requires_generator_gpu = any(
+        isinstance(parse_evolution_action(item["runtime_action"]), PepMLMTargetedAction)
+        for item in persisted
+    )
+    reconstructed["requires_generator_gpu"] = requires_generator_gpu
+    reconstructed["action_execution_mode"] = (
+        "generator_gpu" if requires_generator_gpu else "cpu_rule_only"
+    )
     calculated = sha256_json(
         {
             "schema_version": "ampgent.autoresearch-action-batch.1",
@@ -731,6 +739,11 @@ async def persist_autoresearch_action_plan(request: dict[str, Any]) -> dict[str,
     branch_keys = {item["branch_key"] for item in projections}
     if branch_keys != {str(request["branch_key"])}:
         raise ValueError("AutoResearch action plan mixes branches")
+    requires_generator_gpu = any(
+        isinstance(parse_evolution_action(item["runtime_action"]), PepMLMTargetedAction)
+        for item in projections
+    )
+    action_execution_mode = "generator_gpu" if requires_generator_gpu else "cpu_rule_only"
     structured = {
         "schema_version": "ampgent.autoresearch-agent-action-decision.1",
         "run_id": str(run_id),
@@ -814,6 +827,8 @@ async def persist_autoresearch_action_plan(request: dict[str, Any]) -> dict[str,
         "action_batch_sha256": action_batch_sha256,
         "planner_receipt": request.get("planner_receipt"),
         "actions": persisted,
+        "requires_generator_gpu": requires_generator_gpu,
+        "action_execution_mode": action_execution_mode,
     }
     if request.get("temporal_payload_mode") != "reference_v1":
         return result
@@ -827,6 +842,8 @@ async def persist_autoresearch_action_plan(request: dict[str, Any]) -> dict[str,
         "action_batch_sha256": action_batch_sha256,
         "action_count": len(persisted),
         "action_ids": [item["action_id"] for item in persisted],
+        "requires_generator_gpu": requires_generator_gpu,
+        "action_execution_mode": action_execution_mode,
     }
 
 
@@ -1101,6 +1118,19 @@ async def execute_autoresearch_action_batch(request: dict[str, Any]) -> dict[str
             return await _execute_autoresearch_action_batch_unlocked(request)
         finally:
             await asyncio.to_thread(_release_autoresearch_generator_lock, handle)
+
+
+@activity.defn(name="execute_autoresearch_rule_action_batch")
+async def execute_autoresearch_rule_action_batch(request: dict[str, Any]) -> dict[str, Any]:
+    """Execute an explicitly CPU-only batch without touching generator GPU state."""
+
+    plan = await _resolve_action_plan_reference(request["action_plan"])
+    actions = [parse_evolution_action(item["runtime_action"]) for item in plan["actions"]]
+    if any(isinstance(item, PepMLMTargetedAction) for item in actions):
+        raise ValueError("CPU-only AutoResearch execution cannot contain PepMLM actions")
+    if plan.get("action_execution_mode") != "cpu_rule_only":
+        raise ValueError("CPU-only AutoResearch execution mode is not frozen")
+    return await _execute_autoresearch_action_batch_unlocked(request)
 
 
 def _candidate_was_materialized_by_action(
@@ -1971,6 +2001,9 @@ async def plan_autoresearch_actions(request: dict[str, Any]) -> dict[str, Any]:
     if continuation_policy.minimum_high_quality_candidates < GOLD_CANDIDATE_TARGET:
         raise ValueError("AutoResearch target branches require at least 50 gold candidates")
     planner_contract = dict(request.get("planner_contract") or {})
+    pepmlm_targeted_enabled = planner_contract.get("pepmlm_targeted_enabled", True)
+    if not isinstance(pepmlm_targeted_enabled, bool):
+        raise ValueError("AutoResearch PepMLM enablement must be a frozen boolean")
     operator_release_sha256 = str(request["operator_release_sha256"])
     control_environment_sha256 = str(request["control_environment_sha256"])
     for name, value in (
@@ -2065,6 +2098,7 @@ async def plan_autoresearch_actions(request: dict[str, Any]) -> dict[str, Any]:
                 int(continuation_policy.minimum_high_quality_candidates),
             ),
             de_novo_quota=float(planner_contract.get("de_novo_quota", 0.2)),
+            pepmlm_targeted_enabled=pepmlm_targeted_enabled,
         )
 
     planner_payload = {
@@ -2155,6 +2189,8 @@ async def plan_autoresearch_actions(request: dict[str, Any]) -> dict[str, Any]:
             "artifact_id": str(artifact.id),
             "archive_sha256": snapshot.archive_sha256,
             "action_count": len(plan["actions"]),
+            "requires_generator_gpu": bool(plan["requires_generator_gpu"]),
+            "action_execution_mode": str(plan["action_execution_mode"]),
         },
     )
 
@@ -2709,6 +2745,7 @@ __all__ = [
     "_compile_pepmlm_action",
     "build_typed_action_projection",
     "execute_autoresearch_action_batch",
+    "execute_autoresearch_rule_action_batch",
     "finalize_autoresearch_iteration",
     "plan_autoresearch_actions",
     "persist_autoresearch_action_plan",

@@ -130,6 +130,8 @@ def test_multifront_rule_planner_keeps_conflicts_novelty_and_four_strategies() -
     assert plan["gold_target"] == 50
     assert plan["gold_shortfall"] > 0
     assert plan["no_weighted_total_score"] is True
+    assert plan["requires_generator_gpu"] is True
+    assert plan["action_execution_mode"] == "generator_gpu"
     actions = [parse_evolution_action(item) for item in plan["actions"]]
     assert len(actions) == 4
     assert all(
@@ -172,6 +174,37 @@ def test_multifront_rule_planner_keeps_conflicts_novelty_and_four_strategies() -
             _, donor_run, donor_charge = _sequence_prescreen(donor.sequence)
             assert hydrophobic_run <= max(parent_run, donor_run)
             assert charge >= min(parent_charge, donor_charge) - 1.0
+
+
+def test_multifront_rule_planner_can_freeze_a_cpu_only_action_batch() -> None:
+    cohort = _cohort()
+    snapshot = build_multi_front_archive(
+        cohort,
+        MultiFrontArchivePolicy(known_family_keys=("old-family",)),
+        generation=0,
+    )
+
+    plan = build_multifront_rule_action_plan(
+        candidates=cohort,
+        snapshot=snapshot,
+        branch_key="PBP2a",
+        generation=1,
+        seed=17,
+        operator_release_sha256="a" * 64,
+        target_sequence_sha256="c" * 64,
+        gold_target=50,
+        de_novo_quota=0.2,
+        pepmlm_targeted_enabled=False,
+    )
+
+    assert set(plan["strategies"]) == {"substitution", "crossover", "de_novo"}
+    assert plan["pepmlm_targeted_enabled"] is False
+    assert plan["requires_generator_gpu"] is False
+    assert plan["action_execution_mode"] == "cpu_rule_only"
+    assert not any(
+        isinstance(parse_evolution_action(item), PepMLMTargetedAction)
+        for item in plan["actions"]
+    )
 
 
 def test_pepmlm_targeted_action_compiles_to_existing_cli_schema_and_validates_child() -> None:

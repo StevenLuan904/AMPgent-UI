@@ -18,6 +18,7 @@ from pepagent.workers.activities import (
 )
 from pepagent.workers.autoresearch_activities import (
     execute_autoresearch_action_batch,
+    execute_autoresearch_rule_action_batch,
     finalize_autoresearch_iteration,
     persist_autoresearch_action_plan,
     persist_autoresearch_children,
@@ -113,6 +114,7 @@ V38_ROLE_CONFIG = {
             plan_autoresearch_actions,
             persist_autoresearch_children,
             persist_autoresearch_score_all_bundle,
+            execute_autoresearch_rule_action_batch,
             finalize_autoresearch_iteration,
         ],
         [AutoResearchClosedLoopWorkflow],

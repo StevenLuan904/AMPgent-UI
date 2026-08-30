@@ -74,6 +74,13 @@ def _validate_request(request: dict[str, Any]) -> None:
         provider["task_queue"]
     ) != str(queues["workflow_and_control"]):
         raise ValueError("built-in AutoResearch planner must use the control task queue")
+    planner_contract = provider.get("planner_contract") or {}
+    if not isinstance(planner_contract, dict):
+        raise ValueError("AutoResearch planner contract must be an object")
+    if "pepmlm_targeted_enabled" in planner_contract and not isinstance(
+        planner_contract["pepmlm_targeted_enabled"], bool
+    ):
+        raise ValueError("AutoResearch PepMLM enablement must be a frozen boolean")
     executor = request.get("action_executor") or {}
     executor_environment = str(executor.get("operator_environment_sha256") or "")
     if len(executor_environment) != 64 or set(executor_environment) - set("0123456789abcdef"):
@@ -244,15 +251,24 @@ class AutoResearchClosedLoopWorkflow:
                     start_to_close_timeout=timedelta(minutes=20),
                     retry_policy=retry,
                 )
+                requires_generator_gpu = bool(
+                    action_plan.get("requires_generator_gpu", True)
+                )
+                action_activity = (
+                    "execute_autoresearch_action_batch"
+                    if requires_generator_gpu
+                    else "execute_autoresearch_rule_action_batch"
+                )
+                execution_queue = action_queue if requires_generator_gpu else control_queue
                 generated = await workflow.execute_activity(
-                    "execute_autoresearch_action_batch",
+                    action_activity,
                     {
                         "action_plan": action_plan,
                         "run_id": run_id,
                         "executor_from_run_spec": True,
                         "temporal_payload_mode": _TEMPORAL_PAYLOAD_MODE,
                     },
-                    task_queue=action_queue,
+                    task_queue=execution_queue,
                     start_to_close_timeout=timedelta(hours=12),
                     heartbeat_timeout=timedelta(minutes=5),
                     retry_policy=retry,

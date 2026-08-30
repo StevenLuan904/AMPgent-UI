@@ -284,6 +284,7 @@ def build_multifront_rule_action_plan(
     historical_sequence_sha256s: Collection[str] = (),
     gold_target: int = GOLD_CANDIDATE_TARGET,
     de_novo_quota: float = 0.2,
+    pepmlm_targeted_enabled: bool = True,
 ) -> dict[str, Any]:
     """Choose replayable actions without collapsing conflicting model fronts.
 
@@ -502,79 +503,80 @@ def build_multifront_rule_action_plan(
         "monopolize exploration."
     )
 
-    pepmlm_pool = _lane_candidates(
-        snapshot,
-        ("model_disagreement", "novel_family", "activity_consensus"),
-        candidates_by_id=by_id,
-        improvement_counts=improvement_counts,
-    ) or substitution_pool
-    targeted_de_novo = math.ceil((len(actions) + 1) * de_novo_quota) > 1
-    if targeted_de_novo:
-        action = PepMLMTargetedAction(
-            branch_key=branch_key,
-            generation=generation,
-            seed=seed + 3,
-            operator_id="pepmlm-targeted-action-v1",
-            operator_release_sha256=operator_release_sha256,
-            target_sequence_sha256=target_sequence_sha256,
-            expected_improvement_metrics=("macrel_amp_probability",),
-            protected_metrics=(
-                "guruprasad_instability_index",
-                "macrel_hemolysis_probability",
-                "toxinpred3_hybrid_score",
-            ),
-            evidence_sha256s=(archive_sha,),
-            proposal_mode="de_novo",
-            peptide_length=20,
-        )
-        actions.append(action)
-        strategies.append("pepmlm_targeted")
-        rationales[action.action_sha256] = (
-            "Use target-conditioned PepMLM for a new family because the frozen "
-            "de-novo quota requires an additional non-elite proposal."
-        )
-    elif pepmlm_pool:
-        parent = next(
-            (
-                item
-                for item in pepmlm_pool
-                if item.candidate_id != substitution_parent_id
-            ),
-            pepmlm_pool[0],
-        )
-        edit = _mutation(
-            parent,
-            known_sequences=known_sequences,
-            excluded_sequence_sha256s=historical_sequence_sha256s,
-        )
-        action = PepMLMTargetedAction(
-            branch_key=branch_key,
-            generation=generation,
-            seed=seed + 3,
-            operator_id="pepmlm-targeted-action-v1",
-            operator_release_sha256=operator_release_sha256,
-            target_sequence_sha256=target_sequence_sha256,
-            expected_improvement_metrics=("macrel_amp_probability",),
-            protected_metrics=(
-                "guruprasad_instability_index",
-                "macrel_hemolysis_probability",
-                "toxinpred3_hybrid_score",
-            ),
-            evidence_sha256s=_action_evidence(
-                archive_sha, (parent.candidate_id,), delta_receipts
-            ),
-            proposal_mode="masked_substitution",
-            parent_candidate_id=parent.candidate_id,
-            parent_sequence_sha256=parent.sequence_sha256,
-            parent_length=len(parent.sequence),
-            mutation_positions_one_based=(edit.position_zero_based + 1,),
-        )
-        actions.append(action)
-        strategies.append("pepmlm_targeted")
-        rationales[action.action_sha256] = (
-            "Ask target-conditioned PepMLM to choose the residue at a frozen position "
-            "from a conflict/novelty front, preserving all other parent residues."
-        )
+    if pepmlm_targeted_enabled:
+        pepmlm_pool = _lane_candidates(
+            snapshot,
+            ("model_disagreement", "novel_family", "activity_consensus"),
+            candidates_by_id=by_id,
+            improvement_counts=improvement_counts,
+        ) or substitution_pool
+        targeted_de_novo = math.ceil((len(actions) + 1) * de_novo_quota) > 1
+        if targeted_de_novo:
+            action = PepMLMTargetedAction(
+                branch_key=branch_key,
+                generation=generation,
+                seed=seed + 3,
+                operator_id="pepmlm-targeted-action-v1",
+                operator_release_sha256=operator_release_sha256,
+                target_sequence_sha256=target_sequence_sha256,
+                expected_improvement_metrics=("macrel_amp_probability",),
+                protected_metrics=(
+                    "guruprasad_instability_index",
+                    "macrel_hemolysis_probability",
+                    "toxinpred3_hybrid_score",
+                ),
+                evidence_sha256s=(archive_sha,),
+                proposal_mode="de_novo",
+                peptide_length=20,
+            )
+            actions.append(action)
+            strategies.append("pepmlm_targeted")
+            rationales[action.action_sha256] = (
+                "Use target-conditioned PepMLM for a new family because the frozen "
+                "de-novo quota requires an additional non-elite proposal."
+            )
+        elif pepmlm_pool:
+            parent = next(
+                (
+                    item
+                    for item in pepmlm_pool
+                    if item.candidate_id != substitution_parent_id
+                ),
+                pepmlm_pool[0],
+            )
+            edit = _mutation(
+                parent,
+                known_sequences=known_sequences,
+                excluded_sequence_sha256s=historical_sequence_sha256s,
+            )
+            action = PepMLMTargetedAction(
+                branch_key=branch_key,
+                generation=generation,
+                seed=seed + 3,
+                operator_id="pepmlm-targeted-action-v1",
+                operator_release_sha256=operator_release_sha256,
+                target_sequence_sha256=target_sequence_sha256,
+                expected_improvement_metrics=("macrel_amp_probability",),
+                protected_metrics=(
+                    "guruprasad_instability_index",
+                    "macrel_hemolysis_probability",
+                    "toxinpred3_hybrid_score",
+                ),
+                evidence_sha256s=_action_evidence(
+                    archive_sha, (parent.candidate_id,), delta_receipts
+                ),
+                proposal_mode="masked_substitution",
+                parent_candidate_id=parent.candidate_id,
+                parent_sequence_sha256=parent.sequence_sha256,
+                parent_length=len(parent.sequence),
+                mutation_positions_one_based=(edit.position_zero_based + 1,),
+            )
+            actions.append(action)
+            strategies.append("pepmlm_targeted")
+            rationales[action.action_sha256] = (
+                "Ask target-conditioned PepMLM to choose the residue at a frozen position "
+                "from a conflict/novelty front, preserving all other parent residues."
+            )
 
     if not actions:
         raise ValueError("multi-front planner produced no executable action")
@@ -585,6 +587,7 @@ def build_multifront_rule_action_plan(
     )
     if de_novo_count < math.ceil(len(actions) * de_novo_quota):
         raise ValueError("planned action batch violates its de-novo exploration quota")
+    requires_generator_gpu = any(isinstance(item, PepMLMTargetedAction) for item in actions)
     return {
         "schema_version": "ampgent.autoresearch-rule-plan.1",
         "branch_key": branch_key,
@@ -603,6 +606,11 @@ def build_multifront_rule_action_plan(
         "actions": [item.model_dump(mode="json") for item in actions],
         "no_weighted_total_score": True,
         "de_novo_quota": de_novo_quota,
+        "pepmlm_targeted_enabled": pepmlm_targeted_enabled,
+        "requires_generator_gpu": requires_generator_gpu,
+        "action_execution_mode": (
+            "generator_gpu" if requires_generator_gpu else "cpu_rule_only"
+        ),
         "historical_sequence_exclusion_count": len(historical_sequence_sha256s),
         "historical_sequence_exclusion_sha256": sha256_text(
             "\n".join(sorted(historical_sequence_sha256s))
