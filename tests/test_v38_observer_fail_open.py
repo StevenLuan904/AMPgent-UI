@@ -114,6 +114,33 @@ async def test_durable_and_transient_observer_timeouts_are_bounded(
 
 
 @pytest.mark.asyncio
+async def test_database_timeout_does_not_join_cancellation_resistant_cleanup(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    cleanup = asyncio.Event()
+    cancellation_seen = asyncio.Event()
+
+    async def cancellation_resistant_write(**_: object) -> None:
+        try:
+            await asyncio.Event().wait()
+        except asyncio.CancelledError:
+            cancellation_seen.set()
+            await cleanup.wait()
+
+    monkeypatch.setattr(observer, "_persist_durable_event", cancellation_resistant_write)
+    monkeypatch.setattr(observer, "write_transient_snapshot", lambda *args, **kwargs: None)
+    monkeypatch.setattr(observer, "OBSERVER_DATABASE_TIMEOUT_SECONDS", 0.01)
+
+    assert await asyncio.wait_for(
+        observer._persist_event(payload=_payload(), topology_payload=None),
+        timeout=0.1,
+    ) is False
+    await asyncio.wait_for(cancellation_seen.wait(), timeout=0.1)
+    cleanup.set()
+    await _drain_background_tasks()
+
+
+@pytest.mark.asyncio
 async def test_transient_boundary_audit_failure_recovers_before_science_runs(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

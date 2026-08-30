@@ -140,9 +140,9 @@ async def _persist_event(
     topology_payload: dict[str, Any] | None,
 ) -> bool:
     try:
-        await asyncio.wait_for(
+        await _await_observer_operation(
             _persist_durable_event(payload=payload, topology_payload=topology_payload),
-            timeout=OBSERVER_DATABASE_TIMEOUT_SECONDS,
+            timeout_seconds=OBSERVER_DATABASE_TIMEOUT_SECONDS,
         )
         return True
     except Exception as error:  # One audit attempt is bounded; the caller owns policy.
@@ -160,19 +160,41 @@ async def _persist_event(
             },
         )
     try:
-        await asyncio.wait_for(
+        await _await_observer_operation(
             asyncio.to_thread(
-                write_transient_snapshot,
-                snapshot,
-                root=Path("var/observer"),
+                write_transient_snapshot, snapshot, root=Path("var/observer")
             ),
-            timeout=OBSERVER_SNAPSHOT_TIMEOUT_SECONDS,
+            timeout_seconds=OBSERVER_SNAPSHOT_TIMEOUT_SECONDS,
         )
     except Exception:
         # The transient fallback is observer-only as well.  It is intentionally
         # fail-open after its own deadline.
         pass
     return False
+
+
+async def _await_observer_operation(
+    operation: Any,
+    *,
+    timeout_seconds: float,
+) -> Any:
+    """Bound observer latency without joining a slow cancellation cleanup.
+
+    ``asyncio.wait_for`` cancels a timed-out task and then waits for that task to
+    finish cancelling.  A degraded asyncpg connect/rollback can remain in that
+    cleanup path well past the declared timeout and occupy the scientific
+    worker slot.  Detach the cleanup instead; its result is still observed by
+    the normal background-task callback.
+    """
+
+    task = asyncio.create_task(operation)
+    done, _ = await asyncio.wait({task}, timeout=timeout_seconds)
+    if task in done:
+        return task.result()
+    task.cancel()
+    _OBSERVER_BACKGROUND_TASKS.add(task)
+    task.add_done_callback(_observer_task_done)
+    raise TimeoutError("observer operation exceeded its bounded deadline")
 
 
 async def _persist_boundary_event_until_durable(
