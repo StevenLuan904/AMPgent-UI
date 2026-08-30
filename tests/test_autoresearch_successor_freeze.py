@@ -243,13 +243,13 @@ def test_freeze_preserves_environments_and_target_but_updates_release_controls()
         predecessor["action_executor"]["target_sequence"]
     )
     assert frozen.request["task_queues"] == {
-        "workflow_and_control": "pepagent-autoresearch-cpu-successor-control-v4",
-        "action_execution": "pepagent-autoresearch-cpu-successor-no-gpu-v4",
-        "sequence_metrics": "pepagent-autoresearch-cpu-successor-metrics-v4",
-        "persistence": "pepagent-autoresearch-cpu-successor-persistence-v4",
+        "workflow_and_control": "pepagent-autoresearch-cpu-successor-control-v5",
+        "action_execution": "pepagent-autoresearch-cpu-successor-no-gpu-v5",
+        "sequence_metrics": "pepagent-autoresearch-cpu-successor-metrics-v5",
+        "persistence": "pepagent-autoresearch-cpu-successor-persistence-v5",
     }
     assert frozen.request["planner_provider"]["task_queue"] == (
-        "pepagent-autoresearch-cpu-successor-control-v4"
+        "pepagent-autoresearch-cpu-successor-control-v5"
     )
     assert (
         frozen.request["planner_provider"]["planner_contract"]["pepmlm_targeted_enabled"]

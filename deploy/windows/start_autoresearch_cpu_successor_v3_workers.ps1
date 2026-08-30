@@ -4,7 +4,7 @@ param(
     [Parameter(Mandatory = $true)][string]$ArchiveSha256,
     [Parameter(Mandatory = $true)][string]$SourceRevision,
     [Parameter(Mandatory = $true)][string]$Python,
-    [ValidateSet(3, 4)][int]$QueueGeneration = 3,
+    [ValidateSet(3, 4, 5)][int]$QueueGeneration = 3,
     [ValidateSet('all', 'control', 'persistence', 'metrics')][string]$RoleFilter = 'all',
     [string]$ReleaseRoot = 'var/platform/releases-v39-quality',
     [string]$StateRoot = ''
@@ -71,7 +71,7 @@ $roles = if ($QueueGeneration -eq 3) {
             Maximum = '5'
         }
     )
-} else {
+} elseif ($QueueGeneration -eq 4) {
     @(
         @{
             Name = 'autoresearch-cpu-successor-v4-control'
@@ -86,6 +86,24 @@ $roles = if ($QueueGeneration -eq 3) {
         @{
             Name = 'autoresearch-cpu-successor-v4-metrics'
             Queue = 'pepagent-autoresearch-cpu-successor-metrics-v4'
+            Maximum = '5'
+        }
+    )
+} else {
+    @(
+        @{
+            Name = 'autoresearch-cpu-successor-v5-control'
+            Queue = 'pepagent-autoresearch-cpu-successor-control-v5'
+            Maximum = '16'
+        },
+        @{
+            Name = 'autoresearch-cpu-successor-v5-persistence'
+            Queue = 'pepagent-autoresearch-cpu-successor-persistence-v5'
+            Maximum = '5'
+        },
+        @{
+            Name = 'autoresearch-cpu-successor-v5-metrics'
+            Queue = 'pepagent-autoresearch-cpu-successor-metrics-v5'
             Maximum = '5'
         }
     )

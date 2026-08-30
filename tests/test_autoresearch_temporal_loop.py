@@ -685,6 +685,18 @@ def test_autoresearch_worker_registration_is_complete() -> None:
     )
     assert cpu_v4_metrics_queue == "pepagent-autoresearch-cpu-successor-metrics-v4"
 
+    cpu_v5_control_queue, _, cpu_v5_workflows = V38_ROLE_CONFIG[
+        "autoresearch-cpu-successor-v5-control"
+    ]
+    assert cpu_v5_control_queue == "pepagent-autoresearch-cpu-successor-control-v5"
+    assert AutoResearchClosedLoopWorkflow in cpu_v5_workflows
+    assert V38_ROLE_CONFIG["autoresearch-cpu-successor-v5-persistence"][0] == (
+        "pepagent-autoresearch-cpu-successor-persistence-v5"
+    )
+    assert V38_ROLE_CONFIG["autoresearch-cpu-successor-v5-metrics"][0] == (
+        "pepagent-autoresearch-cpu-successor-metrics-v5"
+    )
+
     _, legacy_control_activities, legacy_workflows = V38_ROLE_CONFIG["v38-control"]
     assert AutoResearchClosedLoopWorkflow not in legacy_workflows
     assert not {item.__temporal_activity_definition.name for item in legacy_control_activities} & {

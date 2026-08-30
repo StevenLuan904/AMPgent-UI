@@ -14,13 +14,13 @@ from pepagent.provenance.hashing import sha256_bytes, sha256_json
 from pepagent.workflows.autoresearch import _validate_request
 
 BRANCH_KEYS = frozenset({"acea", "angpt1", "fgf2", "gyra", "pbp2a", "vegfa"})
-# v4 is intentionally isolated from the mixed v3 poller population.  A successor
+# v5 is intentionally isolated from the mixed v3/v4 poller populations.  A successor
 # frozen against these queues can only be consumed by a worker from the release
 # that understands the migrated runtime registry contract.
-CPU_SUCCESSOR_CONTROL_QUEUE = "pepagent-autoresearch-cpu-successor-control-v4"
-CPU_SUCCESSOR_PERSISTENCE_QUEUE = "pepagent-autoresearch-cpu-successor-persistence-v4"
-CPU_SUCCESSOR_METRICS_QUEUE = "pepagent-autoresearch-cpu-successor-metrics-v4"
-CPU_SUCCESSOR_NO_GPU_QUEUE = "pepagent-autoresearch-cpu-successor-no-gpu-v4"
+CPU_SUCCESSOR_CONTROL_QUEUE = "pepagent-autoresearch-cpu-successor-control-v5"
+CPU_SUCCESSOR_PERSISTENCE_QUEUE = "pepagent-autoresearch-cpu-successor-persistence-v5"
+CPU_SUCCESSOR_METRICS_QUEUE = "pepagent-autoresearch-cpu-successor-metrics-v5"
+CPU_SUCCESSOR_NO_GPU_QUEUE = "pepagent-autoresearch-cpu-successor-no-gpu-v5"
 RUN_ID_NAMESPACE = UUID("cc724227-dab3-4ddb-b187-2a744d012561")
 WORKFLOW_ID_NAMESPACE = UUID("fb03516f-52e7-4507-aacd-6f09adae2563")
 
