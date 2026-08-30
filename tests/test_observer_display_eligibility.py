@@ -9,10 +9,14 @@ from sqlalchemy.dialects import postgresql
 from pepagent.api.main import app
 from pepagent.api.observer import (
     HISTORICAL_EXACT_REPLAY,
+    _candidate_pool_generation_narrative,
     _display_eligible,
     _display_population,
+    _generation_population,
+    _generation_population_for_run,
     _historical_exact_replay_exists,
     _run_identity_payload,
+    get_observer_node,
     get_observer_run,
     list_observer_runs,
 )
@@ -64,6 +68,53 @@ def test_display_population_uses_the_eligible_count_as_its_primary_denominator()
         "excluded_candidate_count": 5,
         "exclusion_reason": "historical_exact_replay",
     }
+
+
+def test_generation_population_has_stable_baseline_descendant_contract() -> None:
+    assert _generation_population(768, 0, 0) == {
+        "baseline_candidate_count": 768,
+        "descendant_candidate_count": 0,
+        "max_generation": 0,
+    }
+    assert _generation_population(768, 41, 3) == {
+        "baseline_candidate_count": 768,
+        "descendant_candidate_count": 41,
+        "max_generation": 3,
+    }
+    assert _generation_population(0, 0, None) == {
+        "baseline_candidate_count": 0,
+        "descendant_candidate_count": 0,
+        "max_generation": 0,
+    }
+
+
+def test_candidate_pool_narrative_does_not_call_generation_zero_new_descendants() -> None:
+    baseline_only = _candidate_pool_generation_narrative(_generation_population(768, 0, 0))
+    mixed = _candidate_pool_generation_narrative(_generation_population(768, 41, 3))
+
+    assert "768 条候选均为基线候选" in baseline_only
+    assert "尚无新生子代" in baseline_only
+    assert "新生优秀肽" not in baseline_only
+    assert "768 条基线候选" in mixed
+    assert "41 条新生子代" in mixed
+    assert "generation=3" in mixed
+
+
+def test_generation_contract_uses_display_eligible_population_everywhere() -> None:
+    population_source = inspect.getsource(_generation_population_for_run)
+    list_source = inspect.getsource(list_observer_runs)
+    detail_source = inspect.getsource(get_observer_run)
+    node_source = inspect.getsource(get_observer_node)
+
+    assert "_display_eligible(Candidate)" in population_source
+    assert "Candidate.generation == 0" in population_source
+    assert "Candidate.generation > 0" in population_source
+    assert '"generation_population"' in list_source
+    assert '"generation_population": generation_population' in detail_source
+    assert '"generation": candidate.generation' in detail_source
+    assert 'node_id == "candidate_pool"' in node_source
+    assert '"generation_population": generation_population' in node_source
+    assert "_candidate_pool_generation_narrative(generation_population)" in node_source
 
 
 def test_observer_display_contract_routes_are_registered() -> None:

@@ -86,6 +86,35 @@ def _display_population(
     }
 
 
+def _generation_population(
+    baseline_candidate_count: int,
+    descendant_candidate_count: int,
+    max_generation: int | None,
+) -> dict[str, int]:
+    """Describe generations within the display-eligible candidate population."""
+
+    return {
+        "baseline_candidate_count": baseline_candidate_count,
+        "descendant_candidate_count": descendant_candidate_count,
+        "max_generation": int(max_generation or 0),
+    }
+
+
+def _candidate_pool_generation_narrative(population: dict[str, int]) -> str:
+    baseline_count = population["baseline_candidate_count"]
+    descendant_count = population["descendant_candidate_count"]
+    max_generation = population["max_generation"]
+    if descendant_count == 0:
+        return (
+            f"当前可展示集合中的 {baseline_count:,} 条候选均为基线候选（generation=0），"
+            "尚无新生子代。"
+        )
+    return (
+        f"当前可展示集合包含 {baseline_count:,} 条基线候选和 "
+        f"{descendant_count:,} 条新生子代，最高 generation={max_generation}。"
+    )
+
+
 async def _excluded_candidate_ids(
     session: AsyncSession,
     run_id: uuid.UUID,
@@ -97,6 +126,26 @@ async def _excluded_candidate_ids(
                 _historical_exact_replay_exists(Candidate),
             )
         )
+    )
+
+
+async def _generation_population_for_run(
+    session: AsyncSession,
+    run_id: uuid.UUID,
+) -> dict[str, int]:
+    baseline_count, descendant_count, max_generation = (
+        await session.execute(
+            select(
+                func.count().filter(Candidate.generation == 0),
+                func.count().filter(Candidate.generation > 0),
+                func.max(Candidate.generation),
+            ).where(Candidate.run_id == run_id, _display_eligible(Candidate))
+        )
+    ).one()
+    return _generation_population(
+        int(baseline_count or 0),
+        int(descendant_count or 0),
+        max_generation,
     )
 
 
@@ -228,13 +277,37 @@ async def list_observer_runs(
                 func.count().filter(_display_eligible(Candidate)),
                 func.count(),
                 func.count().filter(_historical_exact_replay_exists(Candidate)),
+                func.count().filter(
+                    and_(_display_eligible(Candidate), Candidate.generation == 0)
+                ),
+                func.count().filter(
+                    and_(_display_eligible(Candidate), Candidate.generation > 0)
+                ),
+                func.max(Candidate.generation).filter(_display_eligible(Candidate)),
             )
             .where(Candidate.run_id.in_(run_ids))
             .group_by(Candidate.run_id)
         )
         candidate_counts = {
-            run_id: (int(display_count), int(record_count), int(excluded_count))
-            for run_id, display_count, record_count, excluded_count in candidate_groups
+            run_id: (
+                int(display_count),
+                int(record_count),
+                int(excluded_count),
+                _generation_population(
+                    int(baseline_count),
+                    int(descendant_count),
+                    max_generation,
+                ),
+            )
+            for (
+                run_id,
+                display_count,
+                record_count,
+                excluded_count,
+                baseline_count,
+                descendant_count,
+                max_generation,
+            ) in candidate_groups
         }
     else:
         candidate_counts = {}
@@ -252,9 +325,13 @@ async def list_observer_runs(
                 "created_at": _iso(row.created_at),
                 "started_at": _iso(row.started_at),
                 "finished_at": _iso(row.finished_at),
-                "candidate_count": candidate_counts.get(row.id, (0, 0, 0))[0],
-                "candidate_record_count": candidate_counts.get(row.id, (0, 0, 0))[1],
-                "excluded_candidate_count": candidate_counts.get(row.id, (0, 0, 0))[2],
+                "candidate_count": candidate_counts.get(row.id, (0, 0, 0, {}))[0],
+                "candidate_record_count": candidate_counts.get(row.id, (0, 0, 0, {}))[1],
+                "excluded_candidate_count": candidate_counts.get(row.id, (0, 0, 0, {}))[2],
+                "generation_population": candidate_counts.get(
+                    row.id,
+                    (0, 0, 0, _generation_population(0, 0, None)),
+                )[3],
                 "tool_call_count": counts["tool_calls"].get(row.id, 0),
                 "structure_record_count": counts["structure_records"].get(row.id, 0),
             }
@@ -282,6 +359,7 @@ async def get_observer_run(run_id: uuid.UUID, session: SessionDep) -> dict[str, 
         candidate_record_count,
         excluded_candidate_count,
     )
+    generation_population = await _generation_population_for_run(session, run_id)
     candidate_count = display_population["candidate_count"]
     occurrence_count = int(
         (
@@ -521,6 +599,7 @@ async def get_observer_run(run_id: uuid.UUID, session: SessionDep) -> dict[str, 
                 "sequence": candidate.sequence,
                 "length": len(candidate.sequence),
                 "proposal_rank": candidate.proposal_rank,
+                "generation": candidate.generation,
                 "cohort": "mature_core" if candidate.id in mature_ids else "exploration",
                 "pareto_front": candidate_decision.get("pareto_front"),
                 "reasons": candidate_decision.get("reasons", []),
@@ -643,6 +722,7 @@ async def get_observer_run(run_id: uuid.UUID, session: SessionDep) -> dict[str, 
             "current": candidate_count,
             "total": candidate_count,
             "provenance": "database",
+            "generation_population": generation_population,
         },
         {
             "id": "mic",
@@ -828,9 +908,11 @@ async def get_observer_run(run_id: uuid.UUID, session: SessionDep) -> dict[str, 
         ),
         "candidate_pool": insight(
             "good",
-            "去重完成",
-            f"可展示集合保留{candidate_count}条",
+            "候选代际已核对",
+            _candidate_pool_generation_narrative(generation_population),
             ("可展示序列", str(candidate_count)),
+            ("基线候选", str(generation_population["baseline_candidate_count"])),
+            ("新生子代", str(generation_population["descendant_candidate_count"])),
             ("重复提案", str(duplicate_count)),
             ("历史精确重放排除", str(excluded_candidate_count)),
         ),
@@ -1043,6 +1125,7 @@ async def get_observer_run(run_id: uuid.UUID, session: SessionDep) -> dict[str, 
             "finished_at": _iso(run.finished_at),
         },
         "display_population": display_population,
+        "generation_population": generation_population,
         "counts": {
             "candidates": candidate_count,
             "candidate_records": candidate_record_count,
@@ -1272,6 +1355,7 @@ async def get_observer_node(
         or 0
     )
     candidate_count = candidate_record_count - len(excluded_candidate_ids)
+    generation_population = await _generation_population_for_run(session, run_id)
     occurrence_count = int(
         (
             await session.scalar(
@@ -1328,6 +1412,7 @@ async def get_observer_node(
     elif node_id == "candidate_pool":
         duplicate_count = max(0, occurrence_count - candidate_record_count)
         narrative = [
+            _candidate_pool_generation_narrative(generation_population),
             f"三个设计分支共写入 {occurrence_count:,} 条提案，合并为 "
             f"{candidate_count:,} 条可展示候选序列。",
             f"进入模型评估前，按序列一致性去除了 {duplicate_count:,} 条重复记录。",
@@ -1397,6 +1482,11 @@ async def get_observer_node(
         "display_population": _display_population(
             candidate_record_count,
             len(excluded_candidate_ids),
+        ),
+        **(
+            {"generation_population": generation_population}
+            if node_id == "candidate_pool"
+            else {}
         ),
         "narrative": narrative,
         "calls": [
