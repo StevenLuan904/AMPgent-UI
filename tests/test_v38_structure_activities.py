@@ -141,6 +141,9 @@ def test_v38_worker_roles_isolate_generator_metrics_and_structure_queues() -> No
         "autoresearch-cpu-successor-v2-control",
         "autoresearch-cpu-successor-v2-persistence",
         "autoresearch-cpu-successor-v2-metrics",
+        "autoresearch-cpu-successor-v3-control",
+        "autoresearch-cpu-successor-v3-persistence",
+        "autoresearch-cpu-successor-v3-metrics",
     }
     queues = {role: config[0] for role, config in V38_ROLE_CONFIG.items()}
     assert len(set(queues.values())) == len(queues)

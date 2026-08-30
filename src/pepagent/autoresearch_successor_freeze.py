@@ -11,10 +11,10 @@ from pepagent.provenance.hashing import sha256_json
 from pepagent.workflows.autoresearch import _validate_request
 
 BRANCH_KEYS = frozenset({"acea", "angpt1", "fgf2", "gyra", "pbp2a", "vegfa"})
-CPU_SUCCESSOR_CONTROL_QUEUE = "pepagent-autoresearch-cpu-successor-control-v2"
-CPU_SUCCESSOR_PERSISTENCE_QUEUE = "pepagent-autoresearch-cpu-successor-persistence-v2"
-CPU_SUCCESSOR_METRICS_QUEUE = "pepagent-autoresearch-cpu-successor-metrics-v2"
-CPU_SUCCESSOR_NO_GPU_QUEUE = "pepagent-autoresearch-cpu-successor-no-gpu-v2"
+CPU_SUCCESSOR_CONTROL_QUEUE = "pepagent-autoresearch-cpu-successor-control-v3"
+CPU_SUCCESSOR_PERSISTENCE_QUEUE = "pepagent-autoresearch-cpu-successor-persistence-v3"
+CPU_SUCCESSOR_METRICS_QUEUE = "pepagent-autoresearch-cpu-successor-metrics-v3"
+CPU_SUCCESSOR_NO_GPU_QUEUE = "pepagent-autoresearch-cpu-successor-no-gpu-v3"
 RUN_ID_NAMESPACE = UUID("cc724227-dab3-4ddb-b187-2a744d012561")
 WORKFLOW_ID_NAMESPACE = UUID("fb03516f-52e7-4507-aacd-6f09adae2563")
 

@@ -635,6 +635,31 @@ def test_autoresearch_worker_registration_is_complete() -> None:
     )
     assert cpu_v2_metrics_queue == "pepagent-autoresearch-cpu-successor-metrics-v2"
 
+    cpu_v3_control_queue, cpu_v3_control_activities, cpu_v3_workflows = V38_ROLE_CONFIG[
+        "autoresearch-cpu-successor-v3-control"
+    ]
+    assert cpu_v3_control_queue == "pepagent-autoresearch-cpu-successor-control-v3"
+    assert AutoResearchClosedLoopWorkflow in cpu_v3_workflows
+    assert {
+        "plan_autoresearch_actions",
+        "execute_autoresearch_rule_action_batch",
+    } <= {
+        item.__temporal_activity_definition.name for item in cpu_v3_control_activities
+    }
+    assert "execute_autoresearch_action_batch" not in {
+        item.__temporal_activity_definition.name for item in cpu_v3_control_activities
+    }
+    cpu_v3_persistence_queue, _, _ = V38_ROLE_CONFIG[
+        "autoresearch-cpu-successor-v3-persistence"
+    ]
+    cpu_v3_metrics_queue, _, _ = V38_ROLE_CONFIG[
+        "autoresearch-cpu-successor-v3-metrics"
+    ]
+    assert cpu_v3_persistence_queue == (
+        "pepagent-autoresearch-cpu-successor-persistence-v3"
+    )
+    assert cpu_v3_metrics_queue == "pepagent-autoresearch-cpu-successor-metrics-v3"
+
     _, legacy_control_activities, legacy_workflows = V38_ROLE_CONFIG["v38-control"]
     assert AutoResearchClosedLoopWorkflow not in legacy_workflows
     assert not {item.__temporal_activity_definition.name for item in legacy_control_activities} & {
