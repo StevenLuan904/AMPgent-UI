@@ -30,7 +30,9 @@ from pepagent.workers.v38_temporal_worker import V38_ROLE_CONFIG
 from pepagent.workflows import autoresearch as workflow_module
 from pepagent.workflows.autoresearch import (
     AutoResearchClosedLoopWorkflow,
+    REMOTE_PERSISTENCE_MAXIMUM_ITERATIONS_PER_WORKFLOW_EXECUTION,
     _validate_request,
+    with_remote_persistence_history_compaction,
 )
 
 RUN_ID = "00000000-0000-0000-0000-000000000001"
@@ -555,6 +557,26 @@ def test_autoresearch_request_rejects_partial_score_all_registry() -> None:
     request["metric_plugins_by_name"].pop(next(iter(request["metric_plugins_by_name"])))
     with pytest.raises(ValueError, match="plugin registry"):
         _validate_request(request)
+
+
+def test_remote_persistence_history_compaction_is_explicit_and_non_mutating() -> None:
+    request = _request()
+    request.pop("maximum_iterations_per_workflow_execution")
+
+    compacted = with_remote_persistence_history_compaction(request)
+
+    assert "maximum_iterations_per_workflow_execution" not in request
+    assert compacted["maximum_iterations_per_workflow_execution"] == 2
+    assert (
+        compacted["maximum_iterations_per_workflow_execution"]
+        == REMOTE_PERSISTENCE_MAXIMUM_ITERATIONS_PER_WORKFLOW_EXECUTION
+    )
+    _validate_request(compacted)
+
+
+def test_remote_persistence_history_compaction_rejects_invalid_interval() -> None:
+    with pytest.raises(ValueError, match="continue-as-new interval"):
+        with_remote_persistence_history_compaction(_request(), maximum_iterations=0)
 
 
 def test_autoresearch_request_rejects_cross_branch_seed_bundle() -> None:

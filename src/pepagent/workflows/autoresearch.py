@@ -18,6 +18,27 @@ with workflow.unsafe.imports_passed_through():
 
 _TEMPORAL_PAYLOAD_MODE = "reference_v1"
 
+# Keep the legacy default stable for deterministic replay of requests that were
+# submitted before this field became mandatory.  New successors using the
+# remote PostgreSQL persistence path should explicitly freeze the smaller
+# interval below so each Temporal history remains bounded.
+_LEGACY_MAXIMUM_ITERATIONS_PER_WORKFLOW_EXECUTION = 25
+REMOTE_PERSISTENCE_MAXIMUM_ITERATIONS_PER_WORKFLOW_EXECUTION = 2
+
+
+def with_remote_persistence_history_compaction(
+    request: dict[str, Any],
+    *,
+    maximum_iterations: int = REMOTE_PERSISTENCE_MAXIMUM_ITERATIONS_PER_WORKFLOW_EXECUTION,
+) -> dict[str, Any]:
+    """Return a successor request with an explicit, replay-safe history bound."""
+
+    if int(maximum_iterations) < 1:
+        raise ValueError("AutoResearch continue-as-new interval must be positive")
+    compacted = dict(request)
+    compacted["maximum_iterations_per_workflow_execution"] = int(maximum_iterations)
+    return compacted
+
 
 def _is_payload_reference(payload: object, *, role: str) -> bool:
     return (
@@ -76,7 +97,12 @@ def _validate_request(request: dict[str, Any]) -> None:
         raise ValueError("AutoResearch control environment identity is invalid")
     if int(request.get("start_iteration_no", 0)) < 0:
         raise ValueError("AutoResearch start iteration must be non-negative")
-    if int(request.get("maximum_iterations_per_workflow_execution", 25)) < 1:
+    if int(
+        request.get(
+            "maximum_iterations_per_workflow_execution",
+            _LEGACY_MAXIMUM_ITERATIONS_PER_WORKFLOW_EXECUTION,
+        )
+    ) < 1:
         raise ValueError("AutoResearch continue-as-new interval must be positive")
     seed_import = request.get("seed_score_bundle_import")
     if seed_import is not None:
@@ -167,7 +193,10 @@ class AutoResearchClosedLoopWorkflow:
                     )
 
             while completed_in_this_execution < int(
-                request.get("maximum_iterations_per_workflow_execution", 25)
+                request.get(
+                    "maximum_iterations_per_workflow_execution",
+                    _LEGACY_MAXIMUM_ITERATIONS_PER_WORKFLOW_EXECUTION,
+                )
             ):
                 if (
                     completed_in_this_execution == 0
@@ -400,4 +429,9 @@ class AutoResearchClosedLoopWorkflow:
             raise
 
 
-__all__ = ["AutoResearchClosedLoopWorkflow", "_validate_request"]
+__all__ = [
+    "AutoResearchClosedLoopWorkflow",
+    "REMOTE_PERSISTENCE_MAXIMUM_ITERATIONS_PER_WORKFLOW_EXECUTION",
+    "_validate_request",
+    "with_remote_persistence_history_compaction",
+]
