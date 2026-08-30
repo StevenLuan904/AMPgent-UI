@@ -7,6 +7,7 @@ from pepagent.api.main import app
 from pepagent.api.observer import (
     HISTORICAL_EXACT_REPLAY,
     _display_eligible,
+    _display_population,
     _historical_exact_replay_exists,
 )
 from pepagent.db.models import Candidate
@@ -46,6 +47,17 @@ def test_display_eligible_is_the_exact_negation_of_historical_replay() -> None:
         assert fragment in replay_sql
         assert fragment in display_sql
     assert HISTORICAL_EXACT_REPLAY == "historical_exact_replay"
+
+
+def test_display_population_uses_the_eligible_count_as_its_primary_denominator() -> None:
+    population = _display_population(candidate_record_count=772, excluded_candidate_count=5)
+
+    assert population == {
+        "candidate_count": 767,
+        "candidate_record_count": 772,
+        "excluded_candidate_count": 5,
+        "exclusion_reason": "historical_exact_replay",
+    }
 
 
 def test_observer_display_contract_routes_are_registered() -> None:

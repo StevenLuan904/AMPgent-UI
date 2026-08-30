@@ -72,6 +72,20 @@ def _display_eligible(candidate: Any = Candidate) -> Any:
     return not_(_historical_exact_replay_exists(candidate))
 
 
+def _display_population(
+    candidate_record_count: int,
+    excluded_candidate_count: int,
+) -> dict[str, Any]:
+    """Describe the single candidate population used by every display aggregate."""
+
+    return {
+        "candidate_count": candidate_record_count - excluded_candidate_count,
+        "candidate_record_count": candidate_record_count,
+        "excluded_candidate_count": excluded_candidate_count,
+        "exclusion_reason": HISTORICAL_EXACT_REPLAY,
+    }
+
+
 async def _excluded_candidate_ids(
     session: AsyncSession,
     run_id: uuid.UUID,
@@ -253,7 +267,11 @@ async def get_observer_run(run_id: uuid.UUID, session: SessionDep) -> dict[str, 
     )
     excluded_candidate_ids = await _excluded_candidate_ids(session, run_id)
     excluded_candidate_count = len(excluded_candidate_ids)
-    candidate_count = candidate_record_count - excluded_candidate_count
+    display_population = _display_population(
+        candidate_record_count,
+        excluded_candidate_count,
+    )
+    candidate_count = display_population["candidate_count"]
     occurrence_count = int(
         (
             await session.scalar(
@@ -612,7 +630,7 @@ async def get_observer_run(run_id: uuid.UUID, session: SessionDep) -> dict[str, 
             "group": "design",
             "status": "completed" if occurrence_count else "pending",
             "current": candidate_count,
-            "total": occurrence_count,
+            "total": candidate_count,
             "provenance": "database",
         },
         {
@@ -1014,6 +1032,7 @@ async def get_observer_run(run_id: uuid.UUID, session: SessionDep) -> dict[str, 
             "started_at": _iso(run.started_at),
             "finished_at": _iso(run.finished_at),
         },
+        "display_population": display_population,
         "counts": {
             "candidates": candidate_count,
             "candidate_records": candidate_record_count,
@@ -1365,12 +1384,10 @@ async def get_observer_node(
         "source": "postgresql",
         "read_only": True,
         "node_id": node_id,
-        "display_population": {
-            "candidate_count": candidate_count,
-            "candidate_record_count": candidate_record_count,
-            "excluded_candidate_count": len(excluded_candidate_ids),
-            "exclusion_reason": HISTORICAL_EXACT_REPLAY,
-        },
+        "display_population": _display_population(
+            candidate_record_count,
+            len(excluded_candidate_ids),
+        ),
         "narrative": narrative,
         "calls": [
             {

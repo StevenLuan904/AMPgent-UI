@@ -71,6 +71,13 @@ export interface CandidateExclusion {
   exclusion_reason: 'historical_exact_replay'
 }
 
+export interface DisplayPopulation {
+  candidate_count: number
+  candidate_record_count: number
+  excluded_candidate_count: number
+  exclusion_reason: 'historical_exact_replay'
+}
+
 export interface ViewerArtifact {
   candidate_id: string
   sequence: string
@@ -167,12 +174,7 @@ export interface NodeDetail {
   source: string
   read_only: boolean
   node_id: string
-  display_population: {
-    candidate_count: number
-    candidate_record_count: number
-    excluded_candidate_count: number
-    exclusion_reason: 'historical_exact_replay'
-  }
+  display_population: DisplayPopulation
   narrative: string[]
   calls: ToolAttempt[]
   metrics: Record<string, MetricSummary>
@@ -197,6 +199,7 @@ export interface RunDetail {
   read_only: boolean
   updated_at: string
   run: RunListItem & { spec_sha256: string; workflow_id: string | null }
+  display_population: DisplayPopulation
   counts: Record<string, number>
   branches: Branch[]
   admission: Record<string, boolean | number | null>
