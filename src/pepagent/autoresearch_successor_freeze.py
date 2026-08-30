@@ -28,6 +28,14 @@ class FrozenAutoResearchSuccessor:
     receipt: dict[str, Any]
 
 
+@dataclass(frozen=True)
+class CpuOnlySuccessorRuntimeReadiness:
+    ready_to_submit: bool
+    reason_codes: tuple[str, ...]
+    required_live_pollers: dict[str, dict[str, int]]
+    generator_poller_required: bool = False
+
+
 def _require_sha256(value: object, label: str) -> str:
     normalized = str(value).lower()
     if not re.fullmatch(r"[0-9a-f]{64}", normalized):
@@ -95,6 +103,60 @@ def _contains_release_root(value: Any, release_root: str) -> bool:
     if isinstance(value, dict):
         return any(_contains_release_root(child, release_root) for child in value.values())
     return False
+
+
+def assess_cpu_only_successor_runtime_readiness(
+    *,
+    request: dict[str, Any],
+    freeze_receipt: dict[str, Any],
+    predecessor_database_status: str,
+    predecessor_temporal_status: str,
+    existing_successor_count: int,
+    live_pollers: dict[str, dict[str, int]],
+    release_paths_verified: bool,
+) -> CpuOnlySuccessorRuntimeReadiness:
+    """Fail closed unless a frozen successor can progress without GPU work."""
+
+    _validate_request(request)
+    queues = request.get("task_queues") or {}
+    control_queue = str(queues.get("workflow_and_control") or "")
+    persistence_queue = str(queues.get("persistence") or "")
+    metrics_queue = str(queues.get("sequence_metrics") or "")
+    required = {
+        control_queue: {"workflow": 1, "activity": 1},
+        persistence_queue: {"activity": 1},
+        metrics_queue: {"activity": 1},
+    }
+    reasons: list[str] = []
+    if predecessor_database_status.lower() != "failed":
+        reasons.append("predecessor_database_not_failed")
+    if predecessor_temporal_status.upper() != "FAILED":
+        reasons.append("predecessor_temporal_not_failed")
+    if int(existing_successor_count) != 0:
+        reasons.append("successor_already_exists")
+    planner_contract = (request.get("planner_provider") or {}).get("planner_contract") or {}
+    if planner_contract.get("pepmlm_targeted_enabled") is not False:
+        reasons.append("pepmlm_targeted_not_disabled")
+    if request.get("historical_outputs_reused") is not False:
+        reasons.append("historical_outputs_reuse_not_disabled")
+    if freeze_receipt.get("generator_gpu_work_required") is not False:
+        reasons.append("generator_gpu_work_not_explicitly_disabled")
+    if freeze_receipt.get("new_gpu_tasks_allowed") is not False:
+        reasons.append("new_gpu_tasks_not_explicitly_prohibited")
+    if freeze_receipt.get("submitted") is not False:
+        reasons.append("freeze_receipt_already_submitted")
+    if not release_paths_verified:
+        reasons.append("release_paths_not_verified")
+    for queue, kinds in required.items():
+        observed = live_pollers.get(queue) or {}
+        for kind, minimum in kinds.items():
+            if int(observed.get(kind, 0)) < minimum:
+                reasons.append(f"missing_live_{kind}_poller:{queue}")
+    return CpuOnlySuccessorRuntimeReadiness(
+        ready_to_submit=not reasons,
+        reason_codes=tuple(reasons),
+        required_live_pollers=required,
+    )
 
 
 def freeze_cpu_only_successor(

@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import copy
 from typing import Any
 
 import pytest
 
 from pepagent.autoresearch_closed_loop import ContinuationPolicy, MultiFrontArchivePolicy
-from pepagent.autoresearch_successor_freeze import freeze_cpu_only_successor
+from pepagent.autoresearch_successor_freeze import (
+    assess_cpu_only_successor_runtime_readiness,
+    freeze_cpu_only_successor,
+)
 from pepagent.provenance.hashing import sha256_json, sha256_text
 from pepagent.v38_science_execution import build_default_v38_sequence_contract
 from pepagent.workflows.autoresearch import _validate_request
@@ -154,6 +158,76 @@ def test_eligibility_is_part_of_successor_identity() -> None:
     assert first.run_id != second.run_id
     assert first.workflow_id != second.workflow_id
     assert first.request_sha256 != second.request_sha256
+
+
+def _live_pollers(frozen) -> dict[str, dict[str, int]]:
+    queues = frozen.request["task_queues"]
+    return {
+        queues["workflow_and_control"]: {"workflow": 1, "activity": 1},
+        queues["persistence"]: {"activity": 1},
+        queues["sequence_metrics"]: {"activity": 1},
+    }
+
+
+def test_cpu_successor_runtime_readiness_requires_no_generator_poller() -> None:
+    frozen = _freeze()
+    readiness = assess_cpu_only_successor_runtime_readiness(
+        request=frozen.request,
+        freeze_receipt=frozen.receipt,
+        predecessor_database_status="failed",
+        predecessor_temporal_status="FAILED",
+        existing_successor_count=0,
+        live_pollers=_live_pollers(frozen),
+        release_paths_verified=True,
+    )
+
+    assert readiness.ready_to_submit is True
+    assert readiness.reason_codes == ()
+    assert readiness.generator_poller_required is False
+    assert frozen.request["task_queues"]["action_execution"] not in (
+        readiness.required_live_pollers
+    )
+
+
+def test_cpu_successor_runtime_readiness_fails_closed_without_pollers() -> None:
+    frozen = _freeze()
+    readiness = assess_cpu_only_successor_runtime_readiness(
+        request=frozen.request,
+        freeze_receipt=frozen.receipt,
+        predecessor_database_status="failed",
+        predecessor_temporal_status="FAILED",
+        existing_successor_count=0,
+        live_pollers={},
+        release_paths_verified=True,
+    )
+
+    assert readiness.ready_to_submit is False
+    assert len(readiness.reason_codes) == 4
+    assert all(reason.startswith("missing_live_") for reason in readiness.reason_codes)
+
+
+def test_cpu_successor_runtime_readiness_rejects_gpu_or_identity_drift() -> None:
+    frozen = _freeze()
+    receipt = {**frozen.receipt, "generator_gpu_work_required": True}
+    request = copy.deepcopy(frozen.request)
+    request["historical_outputs_reused"] = True
+    readiness = assess_cpu_only_successor_runtime_readiness(
+        request=request,
+        freeze_receipt=receipt,
+        predecessor_database_status="running",
+        predecessor_temporal_status="RUNNING",
+        existing_successor_count=1,
+        live_pollers=_live_pollers(frozen),
+        release_paths_verified=False,
+    )
+
+    assert readiness.ready_to_submit is False
+    assert "predecessor_database_not_failed" in readiness.reason_codes
+    assert "predecessor_temporal_not_failed" in readiness.reason_codes
+    assert "successor_already_exists" in readiness.reason_codes
+    assert "historical_outputs_reuse_not_disabled" in readiness.reason_codes
+    assert "generator_gpu_work_not_explicitly_disabled" in readiness.reason_codes
+    assert "release_paths_not_verified" in readiness.reason_codes
 
 
 @pytest.mark.parametrize(
