@@ -113,14 +113,18 @@ _AUTORESEARCH_GENERATOR_SEMAPHORE = asyncio.Semaphore(1)
 _TEMPORAL_PAYLOAD_REFERENCE_SCHEMA = "ampgent.autoresearch-payload-reference.1"
 
 
-def _heartbeat_persistence(stage: str) -> None:
+def _heartbeat_activity_stage(stage: str, **progress: Any) -> None:
     """Heartbeat in production while keeping activity functions unit-testable."""
 
     try:
-        activity.heartbeat({"stage": stage})
+        activity.heartbeat({"stage": stage, **progress})
     except RuntimeError as error:
         if str(error) != "Not in activity context":
             raise
+
+
+def _heartbeat_persistence(stage: str) -> None:
+    _heartbeat_activity_stage(stage)
 
 
 def _temporal_payload_reference(
@@ -1988,10 +1992,16 @@ async def plan_autoresearch_actions(request: dict[str, Any]) -> dict[str, Any]:
 
     if request.get("schema_version") != "ampgent.autoresearch-planner-request.1":
         raise ValueError("AutoResearch planner request schema is not frozen")
+    _heartbeat_activity_stage("planner_hydrate_request")
     request = await _hydrate_planner_request(request)
     run_id = uuid.UUID(str(request["run_id"]))
     iteration_no = int(request["iteration_no"])
     branch_key = str(request["branch_key"])
+    _heartbeat_activity_stage(
+        "planner_request_hydrated",
+        run_id=str(run_id),
+        iteration_no=iteration_no,
+    )
     contract = V38SequenceExecutionContract.model_validate(request["execution_contract"])
     required_metrics = set(contract.required_sequence_metrics)
     if len(required_metrics) != 12:
@@ -2024,6 +2034,11 @@ async def plan_autoresearch_actions(request: dict[str, Any]) -> dict[str, Any]:
                 .order_by(Candidate.generation, Candidate.proposal_rank, Candidate.id)
             )
         )
+        _heartbeat_activity_stage(
+            "planner_candidates_loaded",
+            candidate_count=len(candidates),
+            iteration_no=iteration_no,
+        )
         if not candidates:
             raise ValueError("AutoResearch planner requires persisted seed parents")
         candidate_ids = [item.id for item in candidates]
@@ -2031,6 +2046,11 @@ async def plan_autoresearch_actions(request: dict[str, Any]) -> dict[str, Any]:
             await session.scalars(
                 select(Evaluation).where(Evaluation.candidate_id.in_(candidate_ids))
             )
+        )
+        _heartbeat_activity_stage(
+            "planner_evaluations_loaded",
+            evaluation_count=len(evaluations),
+            iteration_no=iteration_no,
         )
         calls = {
             item.id: item
@@ -2043,6 +2063,11 @@ async def plan_autoresearch_actions(request: dict[str, Any]) -> dict[str, Any]:
             evaluations=evaluations,
             calls=calls,
             required_metrics=required_metrics,
+        )
+        _heartbeat_activity_stage(
+            "planner_complete_evidence_selected",
+            complete_candidate_count=len(evidence),
+            iteration_no=iteration_no,
         )
         if not evidence:
             raise ValueError("AutoResearch planner has no complete 12-metric parent")
@@ -2083,6 +2108,11 @@ async def plan_autoresearch_actions(request: dict[str, Any]) -> dict[str, Any]:
                 .distinct()
             )
         )
+        _heartbeat_activity_stage(
+            "planner_archive_inputs_loaded",
+            historical_exclusion_count=len(historical_sequence_sha256s),
+            iteration_no=iteration_no,
+        )
         plan = build_multifront_rule_action_plan(
             candidates=evidence,
             snapshot=snapshot,
@@ -2100,6 +2130,11 @@ async def plan_autoresearch_actions(request: dict[str, Any]) -> dict[str, Any]:
             de_novo_quota=float(planner_contract.get("de_novo_quota", 0.2)),
             pepmlm_targeted_enabled=pepmlm_targeted_enabled,
         )
+        _heartbeat_activity_stage(
+            "planner_action_plan_built",
+            action_count=len(plan["actions"]),
+            iteration_no=iteration_no,
+        )
 
     planner_payload = {
         "schema_version": "ampgent.autoresearch-rule-planner-evidence.1",
@@ -2111,6 +2146,10 @@ async def plan_autoresearch_actions(request: dict[str, Any]) -> dict[str, Any]:
         "plan": plan,
     }
     stored = await _store_json(planner_payload)
+    _heartbeat_activity_stage(
+        "planner_evidence_stored",
+        iteration_no=iteration_no,
+    )
     async with SessionFactory() as session, session.begin():
         repository = ExperimentRepository(session)
         call = await repository.record_completed_tool_call(

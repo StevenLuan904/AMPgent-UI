@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import inspect
+
 from pepagent.autoresearch_closed_loop import (
     CandidateEvidence,
     ControlledCrossoverAction,
@@ -19,7 +21,12 @@ from pepagent.autoresearch_planner import (
     build_multifront_rule_action_plan,
 )
 from pepagent.provenance.hashing import sha256_text
-from pepagent.workers.autoresearch_activities import _compile_pepmlm_action
+from pepagent.workers import autoresearch_activities
+from pepagent.workers.autoresearch_activities import (
+    _compile_pepmlm_action,
+    _heartbeat_activity_stage,
+    plan_autoresearch_actions,
+)
 
 
 def _metric(value: float, direction: str) -> MetricObservation:
@@ -240,6 +247,32 @@ def test_cpu_only_planner_fills_a_fifty_percent_de_novo_quota() -> None:
     assert len({action.proposed_sequence for action in de_novo_actions}) == len(
         de_novo_actions
     )
+
+
+def test_planner_emits_progress_heartbeats_between_expensive_stages(monkeypatch) -> None:
+    heartbeats: list[dict[str, object]] = []
+    monkeypatch.setattr(
+        autoresearch_activities.activity,
+        "heartbeat",
+        lambda payload: heartbeats.append(payload),
+    )
+
+    _heartbeat_activity_stage("planner_candidates_loaded", candidate_count=768)
+
+    assert heartbeats == [
+        {"stage": "planner_candidates_loaded", "candidate_count": 768}
+    ]
+    source = inspect.getsource(plan_autoresearch_actions)
+    for stage in (
+        "planner_hydrate_request",
+        "planner_candidates_loaded",
+        "planner_evaluations_loaded",
+        "planner_complete_evidence_selected",
+        "planner_archive_inputs_loaded",
+        "planner_action_plan_built",
+        "planner_evidence_stored",
+    ):
+        assert stage in source
 
 
 def test_pepmlm_targeted_action_compiles_to_existing_cli_schema_and_validates_child() -> None:
