@@ -7,6 +7,9 @@ export interface RunListItem {
   kind: string
   schema_version: string | null
   status: RunStatus
+  temporal_workflow_id?: string | null
+  temporal_run_id?: string | null
+  workflow_id?: string | null
   created_at: string
   started_at: string | null
   finished_at: string | null
@@ -198,7 +201,7 @@ export interface RunDetail {
   source: string
   read_only: boolean
   updated_at: string
-  run: RunListItem & { spec_sha256: string; workflow_id: string | null }
+  run: RunListItem & { spec_sha256: string }
   counts: Record<string, number>
   branches: Branch[]
   admission: Record<string, boolean | number | null>

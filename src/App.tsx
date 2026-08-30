@@ -46,6 +46,7 @@ import {
   type ResultDistributionData,
 } from './ResultDistribution'
 import { LaneLabel, WorkflowNode, type LaneNode, type StageNode } from './WorkflowNode'
+import { assertMatchingRunIdentity, type RunIdentity } from './runIdentity'
 import type {
   CandidatePreview,
   GraphEdgeDetail,
@@ -302,11 +303,17 @@ function useRunData(enabled: boolean, apiBase: string) {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const alignedStructureCounts = useRef<Record<string, number>>({})
+  const runIdentities = useRef<Record<string, RunIdentity>>({})
 
   const loadRuns = useCallback(async () => {
     const response = await fetch(`${apiBase}/v1/observer/runs?limit=100`)
     if (!response.ok) throw new Error(`轮次列表读取失败：${response.status}`)
     const payload = await response.json() as RunListResponse
+    runIdentities.current = Object.fromEntries(payload.runs.map((run) => [run.id, {
+      id: run.id,
+      temporal_workflow_id: run.temporal_workflow_id,
+      temporal_run_id: run.temporal_run_id,
+    }]))
     setRuns(payload.runs.map((run) => ({
       ...run,
       structure_record_count: Math.max(run.structure_record_count, alignedStructureCounts.current[run.id] ?? 0),
@@ -325,6 +332,7 @@ function useRunData(enabled: boolean, apiBase: string) {
       const response = await fetch(`${apiBase}/v1/observer/runs/${runId}`)
       if (!response.ok) throw new Error(`轮次详情读取失败：${response.status}`)
       const payload = await response.json() as RunDetail
+      assertMatchingRunIdentity(runIdentities.current[runId] ?? { id: runId }, payload.run)
       const hasPersistedStructureEvents = payload.events.some((event) => event.actor === 'boltz2' || event.actor.includes('rosetta'))
       if (!hasPersistedStructureEvents) {
         setDetail(payload)
