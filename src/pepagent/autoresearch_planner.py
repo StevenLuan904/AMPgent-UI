@@ -5,6 +5,7 @@ from collections import defaultdict
 from collections.abc import Collection, Mapping, Sequence
 from typing import Any
 
+from Bio.SeqUtils.ProtParam import ProteinAnalysis
 from pydantic import BaseModel, ConfigDict, Field
 
 from pepagent.autoresearch_closed_loop import (
@@ -33,6 +34,25 @@ _DE_NOVO_MOTIFS = (
     "RKWLKLIRKK",
     "KLLRWKIRQL",
 )
+
+
+def _sequence_prescreen(sequence: str) -> tuple[float, int, float]:
+    """Return frozen stability, hydrophobic-run, and charge descriptors for planning."""
+
+    analysis = ProteinAnalysis(sequence)
+    maximum_run = 0
+    current_run = 0
+    for residue in sequence:
+        if residue in _HYDROPHOBIC:
+            current_run += 1
+            maximum_run = max(maximum_run, current_run)
+        else:
+            current_run = 0
+    return (
+        float(analysis.instability_index()),
+        maximum_run,
+        float(analysis.charge_at_pH(7.4)),
+    )
 
 
 class PlannerDeltaEvidence(BaseModel):
@@ -113,7 +133,7 @@ def _mutation(
     known_sequences: set[str] | None = None,
     excluded_sequence_sha256s: Collection[str] = (),
 ) -> ResidueSubstitution:
-    """Choose one deterministic edit that breaks a hydrophobic/repetitive patch."""
+    """Choose a deterministic edit that remains below the literal stability gate."""
 
     best_start = 0
     best_length = 0
@@ -139,7 +159,11 @@ def _mutation(
         )
     positions = [position, *(index for index in range(len(parent.sequence)) if index != position)]
     known = known_sequences or set()
-    for candidate_position in positions:
+    parent_instability, parent_hydrophobic_run, parent_charge = _sequence_prescreen(
+        parent.sequence
+    )
+    proposals: list[tuple[tuple[float | int, ...], ResidueSubstitution]] = []
+    for position_rank, candidate_position in enumerate(positions):
         source = parent.sequence[candidate_position]
         preferred = (
             ("S", "N", "Q", "K")
@@ -148,7 +172,7 @@ def _mutation(
             if source in {"K", "R"}
             else ("K", "R", "S", "N")
         )
-        for replacement in preferred:
+        for replacement_rank, replacement in enumerate(preferred):
             if replacement == source:
                 continue
             child = (
@@ -156,12 +180,34 @@ def _mutation(
                 + replacement
                 + parent.sequence[candidate_position + 1 :]
             )
-            if child not in known and sha256_text(child) not in excluded_sequence_sha256s:
-                return ResidueSubstitution(
-                    position_zero_based=candidate_position,
-                    from_residue=source,
-                    to_residue=replacement,
+            if child in known or sha256_text(child) in excluded_sequence_sha256s:
+                continue
+            instability, hydrophobic_run, charge = _sequence_prescreen(child)
+            if not math.isfinite(instability) or instability >= 50.0:
+                continue
+            proposals.append(
+                (
+                    (
+                        int(
+                            parent_hydrophobic_run >= 2
+                            and hydrophobic_run >= parent_hydrophobic_run
+                        ),
+                        hydrophobic_run,
+                        instability,
+                        max(0.0, parent_charge - charge),
+                        int(instability >= parent_instability),
+                        position_rank,
+                        replacement_rank,
+                    ),
+                    ResidueSubstitution(
+                        position_zero_based=candidate_position,
+                        from_residue=source,
+                        to_residue=replacement,
+                    ),
                 )
+            )
+    if proposals:
+        return min(proposals, key=lambda item: item[0])[1]
     raise ValueError("planner cannot find a unique one-residue substitution")
 
 
@@ -322,7 +368,8 @@ def build_multifront_rule_action_plan(
         actions.append(action)
         strategies.append("substitution")
         rationales[action.action_sha256] = (
-            "Edit one hydrophobic/repetitive position from the stability/safety front; "
+            "Edit one hydrophobic/repetitive position from the stability/safety front "
+            "only after a deterministic Guruprasad<50 and hydrophobic-run prescreen; "
             "prior positive child deltas break ties while activity and safety stay protected."
         )
 
@@ -339,37 +386,57 @@ def build_multifront_rule_action_plan(
     )
     crossover_pair: tuple[CandidateEvidence, CandidateEvidence] | None = None
     crossover_fragments: tuple[CrossoverFragment, CrossoverFragment] | None = None
+    crossover_key: tuple[float | int | str, ...] | None = None
     for primary in endpoint_pool:
         for donor in endpoint_pool:
             if primary.candidate_id == donor.candidate_id:
                 continue
-            first_length = max(5, len(primary.sequence) // 2)
-            donor_length = min(len(donor.sequence), len(primary.sequence) - first_length)
-            if donor_length < 5:
-                continue
-            fragments = (
-                CrossoverFragment(
-                    source_role="primary_parent",
-                    source_start_zero_based=0,
-                    source_end_exclusive=first_length,
-                ),
-                CrossoverFragment(
-                    source_role="donor_parent",
-                    source_start_zero_based=len(donor.sequence) - donor_length,
-                    source_end_exclusive=len(donor.sequence),
-                ),
-            )
-            child = primary.sequence[:first_length] + donor.sequence[-donor_length:]
-            if (
-                child not in known_sequences
-                and child not in {primary.sequence, donor.sequence}
-                and sha256_text(child) not in historical_sequence_sha256s
-            ):
-                crossover_pair = (primary, donor)
-                crossover_fragments = fragments
-                break
-        if crossover_pair is not None:
-            break
+            _, primary_run, primary_charge = _sequence_prescreen(primary.sequence)
+            _, donor_run, donor_charge = _sequence_prescreen(donor.sequence)
+            maximum_parent_run = max(primary_run, donor_run)
+            minimum_parent_charge = min(primary_charge, donor_charge)
+            for first_length in range(5, len(primary.sequence) - 4):
+                donor_length = len(primary.sequence) - first_length
+                if donor_length < 5 or donor_length > len(donor.sequence):
+                    continue
+                child = primary.sequence[:first_length] + donor.sequence[-donor_length:]
+                if (
+                    child in known_sequences
+                    or child in {primary.sequence, donor.sequence}
+                    or sha256_text(child) in historical_sequence_sha256s
+                ):
+                    continue
+                instability, hydrophobic_run, charge = _sequence_prescreen(child)
+                if (
+                    not math.isfinite(instability)
+                    or instability >= 50.0
+                    or hydrophobic_run > maximum_parent_run
+                    or charge < minimum_parent_charge - 1.0
+                ):
+                    continue
+                key = (
+                    hydrophobic_run,
+                    instability,
+                    max(0.0, minimum_parent_charge - charge),
+                    primary.candidate_id,
+                    donor.candidate_id,
+                    first_length,
+                )
+                if crossover_key is None or key < crossover_key:
+                    crossover_key = key
+                    crossover_pair = (primary, donor)
+                    crossover_fragments = (
+                        CrossoverFragment(
+                            source_role="primary_parent",
+                            source_start_zero_based=0,
+                            source_end_exclusive=first_length,
+                        ),
+                        CrossoverFragment(
+                            source_role="donor_parent",
+                            source_start_zero_based=len(donor.sequence) - donor_length,
+                            source_end_exclusive=len(donor.sequence),
+                        ),
+                    )
     if crossover_pair is not None and crossover_fragments is not None:
         primary, donor = crossover_pair
         action = ControlledCrossoverAction(
@@ -401,8 +468,9 @@ def build_multifront_rule_action_plan(
         actions.append(action)
         strategies.append("crossover")
         rationales[action.action_sha256] = (
-            "Combine two distinct activity-model endpoints and retain both parents as "
-            "controls; disagreement is preserved rather than averaged."
+            "Combine two distinct activity-model endpoints after a deterministic "
+            "Guruprasad<50, hydrophobic-run, and charge-loss prescreen; retain both "
+            "parents as controls and preserve disagreement rather than averaging it."
         )
 
     proposed = _unique_de_novo_sequence(
@@ -539,6 +607,14 @@ def build_multifront_rule_action_plan(
         "historical_sequence_exclusion_sha256": sha256_text(
             "\n".join(sorted(historical_sequence_sha256s))
         ),
+        "sequence_prescreen_policy": {
+            "instability_method": "Guruprasad-Reddy-Pandit-1990-via-Biopython-ProtParam",
+            "instability_max_exclusive": 50.0,
+            "mutation_hydrophobic_run_nonincrease_preferred": True,
+            "crossover_hydrophobic_run_parent_maximum": True,
+            "crossover_charge_loss_max": 1.0,
+            "toxin_and_hemolysis_remain_score_all_only": True,
+        },
     }
 
 

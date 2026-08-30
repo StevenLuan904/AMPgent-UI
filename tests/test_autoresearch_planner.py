@@ -2,15 +2,19 @@ from __future__ import annotations
 
 from pepagent.autoresearch_closed_loop import (
     CandidateEvidence,
+    ControlledCrossoverAction,
+    MaskedSubstitutionAction,
     MetricObservation,
     MultiFrontArchivePolicy,
     PepMLMTargetedAction,
+    apply_evolution_action,
     build_multi_front_archive,
     parse_evolution_action,
     validate_action_child,
 )
 from pepagent.autoresearch_planner import (
     PlannerDeltaEvidence,
+    _sequence_prescreen,
     _unique_de_novo_sequence,
     build_multifront_rule_action_plan,
 )
@@ -56,25 +60,25 @@ def _cohort() -> tuple[CandidateEvidence, ...]:
     return (
         _candidate(
             "00000000-0000-0000-0000-000000000101",
-            "ACDEFGHIKLACDEFGHIKL",
+            "KKLLKLLKLLKKLLKLLKLL",
             "fam-a",
             (0.1, 2.0, 0.2),
         ),
         _candidate(
             "00000000-0000-0000-0000-000000000102",
-            "LMNPQRSTVWLMNPQRSTVW",
+            "RKWLKLIRKKRKWLKLIRKK",
             "fam-b",
             (2.0, 0.1, 0.3),
         ),
         _candidate(
             "00000000-0000-0000-0000-000000000103",
-            "KKLLKLLKLLKKLLKLLKLL",
+            "KWKLFKKIGKKWKLFKKIGK",
             "fam-c",
             (1.0, 1.1, 0.95),
         ),
         _candidate(
             "00000000-0000-0000-0000-000000000104",
-            "VVVVVVKKRRVVVVVVKKRR",
+            "RLLRKWLKKLRLLRKWLKKL",
             "fam-d",
             (0.7, 0.8, 0.7),
         ),
@@ -154,6 +158,20 @@ def test_multifront_rule_planner_keeps_conflicts_novelty_and_four_strategies() -
     assert any(delta_sha in action.evidence_sha256s for action in actions)
     serialized = "|".join(str(item.model_dump(mode="json")) for item in actions)
     assert cohort[-1].candidate_id not in serialized
+    candidates_by_id = {item.candidate_id: item for item in cohort}
+    for action in actions:
+        if not isinstance(action, (MaskedSubstitutionAction, ControlledCrossoverAction)):
+            continue
+        child = apply_evolution_action(action, candidates_by_id)
+        instability, hydrophobic_run, charge = _sequence_prescreen(child)
+        assert instability < 50.0
+        if isinstance(action, ControlledCrossoverAction):
+            parent = candidates_by_id[action.parent_candidate_id]
+            donor = candidates_by_id[action.donor_candidate_id]
+            _, parent_run, parent_charge = _sequence_prescreen(parent.sequence)
+            _, donor_run, donor_charge = _sequence_prescreen(donor.sequence)
+            assert hydrophobic_run <= max(parent_run, donor_run)
+            assert charge >= min(parent_charge, donor_charge) - 1.0
 
 
 def test_pepmlm_targeted_action_compiles_to_existing_cli_schema_and_validates_child() -> None:
@@ -197,14 +215,14 @@ def test_pepmlm_targeted_action_compiles_to_existing_cli_schema_and_validates_ch
     assert validate_action_child(
         action,
         {parent.candidate_id: parent},
-        "ARDEFGHIKLACDEFGHIKL",
-    ) == "ARDEFGHIKLACDEFGHIKL"
+        "KRLLKLLKLLKKLLKLLKLL",
+    ) == "KRLLKLLKLLKKLLKLLKLL"
 
 
 def test_planner_accepts_short_instability_ood_parent_when_score_is_below_50() -> None:
     short = _candidate(
         "00000000-0000-0000-0000-000000000201",
-        "ACDEFGHIKL",
+        "KKLLKLLKLL",
         "short-ood",
         (0.1, 0.2, 0.9),
     ).model_copy(
@@ -212,7 +230,7 @@ def test_planner_accepts_short_instability_ood_parent_when_score_is_below_50() -
             "metrics": {
                 **_candidate(
                     "00000000-0000-0000-0000-000000000201",
-                    "ACDEFGHIKL",
+                    "KKLLKLLKLL",
                     "short-ood",
                     (0.1, 0.2, 0.9),
                 ).metrics,
