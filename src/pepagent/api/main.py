@@ -7,11 +7,13 @@ from contextlib import asynccontextmanager
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from temporalio.client import Client
 
+from pepagent.api.observer import router as observer_router
 from pepagent.db.models import (
     AgentDecision,
     AgentDecisionToolCallEdge,
@@ -74,6 +76,13 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="PepAgent control plane", version="0.3.0", lifespan=lifespan)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://127.0.0.1:5173", "http://localhost:5173"],
+    allow_methods=["GET"],
+    allow_headers=["*"],
+)
+app.include_router(observer_router)
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
 
