@@ -124,6 +124,17 @@ V38_ROLE_CONFIG = {
         [execute_autoresearch_action_batch],
         [],
     ),
+    "autoresearch-persistence": (
+        "pepagent-autoresearch-persistence-v1",
+        [
+            persist_v38_sequence_metric,
+            persist_autoresearch_action_plan,
+            persist_autoresearch_children,
+            persist_autoresearch_score_all_bundle,
+            finalize_autoresearch_iteration,
+        ],
+        [],
+    ),
     "autoresearch-metrics": (
         "pepagent-autoresearch-metrics-v1",
         [evaluate_v38_sequence_metric],

@@ -14,6 +14,12 @@ from pepagent.autoresearch_activity_reconcile import (
 )
 
 
+def test_persistence_queue_has_an_explicit_observer_role() -> None:
+    assert reconcile._TASK_QUEUE_ROLES["pepagent-autoresearch-persistence-v1"] == (
+        "autoresearch-persistence"
+    )
+
+
 def _scheduled() -> dict[str, object]:
     return {
         "event_id": "71",

@@ -443,10 +443,18 @@ async def test_autoresearch_all_duplicate_iteration_stops_without_rescoring(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     request = _request()
+    persistence_queue = "pepagent-autoresearch-persistence-v1"
+    request["task_queues"]["persistence"] = persistence_queue
     trace: list[dict[str, Any]] = []
 
-    async def fake_execute_activity(name: str, payload: dict[str, Any], **_kwargs: Any) -> Any:
-        trace.append({"activity": name, "payload": copy.deepcopy(payload)})
+    async def fake_execute_activity(name: str, payload: dict[str, Any], **kwargs: Any) -> Any:
+        trace.append(
+            {
+                "activity": name,
+                "payload": copy.deepcopy(payload),
+                "task_queue": kwargs.get("task_queue"),
+            }
+        )
         if name in {"mark_run_started", "mark_run_succeeded"}:
             return None
         if name == "persist_autoresearch_action_plan":
@@ -524,6 +532,13 @@ async def test_autoresearch_all_duplicate_iteration_stops_without_rescoring(
         "persist_autoresearch_children",
         "mark_run_succeeded",
     ]
+    assert [item["task_queue"] for item in trace] == [
+        "pepagent-autoresearch-control-v1",
+        persistence_queue,
+        "pepagent-autoresearch-control-v1",
+        persistence_queue,
+        "pepagent-autoresearch-control-v1",
+    ]
     succeeded_payload = trace[-1]["payload"]
     assert succeeded_payload["durable_counts"] == {
         "action_count": 1,
@@ -557,6 +572,20 @@ def test_autoresearch_worker_registration_is_complete() -> None:
     }
     assert "execute_autoresearch_action_batch" in generator_registered
     assert "execute_autoresearch_rule_action_batch" not in generator_registered
+    persistence_queue, persistence_activities, persistence_workflows = V38_ROLE_CONFIG[
+        "autoresearch-persistence"
+    ]
+    assert persistence_queue == "pepagent-autoresearch-persistence-v1"
+    assert persistence_workflows == []
+    assert {
+        item.__temporal_activity_definition.name for item in persistence_activities
+    } == {
+        "persist_v38_sequence_metric",
+        "persist_autoresearch_action_plan",
+        "persist_autoresearch_children",
+        "persist_autoresearch_score_all_bundle",
+        "finalize_autoresearch_iteration",
+    }
     metric_queue, metric_activities, _ = V38_ROLE_CONFIG["autoresearch-metrics"]
     assert metric_queue == "pepagent-autoresearch-metrics-v1"
     assert {item.__temporal_activity_definition.name for item in metric_activities} == {
@@ -615,6 +644,14 @@ def test_autoresearch_request_requires_literal_boolean_cpu_only_contract() -> No
     request["planner_provider"]["planner_contract"]["pepmlm_targeted_enabled"] = "false"
 
     with pytest.raises(ValueError, match="frozen boolean"):
+        _validate_request(request)
+
+
+def test_autoresearch_request_rejects_an_empty_persistence_queue() -> None:
+    request = _request()
+    request["task_queues"]["persistence"] = ""
+
+    with pytest.raises(ValueError, match="persistence task queue"):
         _validate_request(request)
 
 

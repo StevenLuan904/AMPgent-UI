@@ -23,6 +23,7 @@ RECONCILER_ACTOR = "temporal-activity-history-reconciler"
 _TASK_QUEUE_ROLES = {
     "pepagent-autoresearch-control-v1": "autoresearch-control",
     "pepagent-autoresearch-generator-v1": "autoresearch-generator",
+    "pepagent-autoresearch-persistence-v1": "autoresearch-persistence",
     "pepagent-autoresearch-metrics-v1": "autoresearch-metrics",
 }
 _TIMEOUT_ERROR_TYPES = {

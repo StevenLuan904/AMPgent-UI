@@ -131,6 +131,10 @@ def test_v38_worker_roles_isolate_generator_metrics_and_structure_queues() -> No
         "v39-target-sequence",
         "v38-boltz",
         "v38-rosetta",
+        "autoresearch-control",
+        "autoresearch-generator",
+        "autoresearch-persistence",
+        "autoresearch-metrics",
     }
     queues = {role: config[0] for role, config in V38_ROLE_CONFIG.items()}
     assert len(set(queues.values())) == len(queues)

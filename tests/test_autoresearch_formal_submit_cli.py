@@ -24,6 +24,7 @@ from pepagent.autoresearch_formal_submit_cli import (
     METRICS_QUEUE,
     PEPMLM_REVISION,
     PEPMLM_WEIGHTS_SHA256,
+    PERSISTENCE_QUEUE,
     PHYSICOCHEMICAL_ADAPTER_NAME,
     PHYSICOCHEMICAL_METHOD_VERSION,
     PHYSICOCHEMICAL_RUNTIME_ID,
@@ -451,6 +452,60 @@ def _build_plan(tmp_path: Path):
     )
 
 
+def _enable_dedicated_persistence_queue(
+    config: dict[str, Any], preflight: dict[str, Any], tmp_path: Path
+) -> None:
+    config["temporal"]["persistence_queue"] = PERSISTENCE_QUEUE
+    receipt_path = tmp_path / "autoresearch-persistence.json"
+    _write_json(
+        receipt_path,
+        {
+            "schema_version": "v38.local-sequence-worker-receipt.1",
+            "role": "autoresearch-persistence",
+            "task_queue": PERSISTENCE_QUEUE,
+            "source_revision": config["source_revision"],
+            "release_sha256": config["release"]["archive_sha256"],
+            "pid": "54322",
+            "task_queue_verified_from_release": True,
+            "ampgent_owned": True,
+            "foreign": False,
+        },
+    )
+    preflight["checks"].append(
+        {
+            "name": "persistence_worker_receipt_identity",
+            "status": "passed",
+            "evidence": {
+                "mode": "autoresearch-local",
+                "receipt_path": str(receipt_path),
+            },
+        }
+    )
+    for branch, preflight_branch in zip(
+        config["branches"], preflight["branches"], strict=True
+    ):
+        request_path = Path(branch["request_path"])
+        request = json.loads(request_path.read_text(encoding="utf-8"))
+        request["task_queues"]["persistence"] = PERSISTENCE_QUEUE
+        identity = derive_autoresearch_branch_identity(
+            config=config,
+            branch=branch,
+            request_template=request,
+        )
+        for key in ("request_sha256", "formal_submission_key", "run_id", "workflow_id"):
+            branch[key] = identity[key]
+        _write_json(request_path, identity["request"])
+        preflight_branch.update(
+            {
+                "request_sha256": branch["request_sha256"],
+                "formal_submission_key": branch["formal_submission_key"],
+                "run_id": branch["run_id"],
+                "workflow_id": branch["workflow_id"],
+            }
+        )
+    preflight["config_sha256"] = sha256_json(config)
+
+
 def test_formal_plan_derives_exact_six_new_branch_identities(tmp_path: Path) -> None:
     plan = _build_plan(tmp_path)
 
@@ -461,6 +516,45 @@ def test_formal_plan_derives_exact_six_new_branch_identities(tmp_path: Path) -> 
     assert all(item.request["run_id"] == str(item.run_id) for item in plan.branches)
     assert all(item.request_sha256 == sha256_json(item.request) for item in plan.branches)
     assert all(item.workflow_id.startswith("pepagent-autoresearch-v1-") for item in plan.branches)
+
+
+def test_formal_plan_accepts_a_receipted_dedicated_persistence_queue(
+    tmp_path: Path,
+) -> None:
+    config, preflight = _fixture_bundle(tmp_path)
+    _enable_dedicated_persistence_queue(config, preflight, tmp_path)
+
+    plan = build_autoresearch_formal_plan(
+        config=config,
+        preflight=preflight,
+        config_base_path=tmp_path,
+        preflight_base_path=tmp_path,
+    )
+
+    assert all(
+        item.request["task_queues"]["persistence"] == PERSISTENCE_QUEUE
+        for item in plan.branches
+    )
+
+
+def test_formal_plan_fails_closed_without_persistence_worker_receipt(
+    tmp_path: Path,
+) -> None:
+    config, preflight = _fixture_bundle(tmp_path)
+    _enable_dedicated_persistence_queue(config, preflight, tmp_path)
+    preflight["checks"] = [
+        item
+        for item in preflight["checks"]
+        if item["name"] != "persistence_worker_receipt_identity"
+    ]
+
+    with pytest.raises(ValueError, match="persistence worker receipt"):
+        build_autoresearch_formal_plan(
+            config=config,
+            preflight=preflight,
+            config_base_path=tmp_path,
+            preflight_base_path=tmp_path,
+        )
 
 
 def test_formal_plan_requires_real_0017_migration_evidence(tmp_path: Path) -> None:

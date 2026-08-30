@@ -64,6 +64,8 @@ def _validate_request(request: dict[str, Any]) -> None:
         raise ValueError("AutoResearch task queues are incomplete")
     if any(not str(queues[name]).strip() for name in required_queues):
         raise ValueError("AutoResearch task queues must be non-empty")
+    if "persistence" in queues and not str(queues["persistence"]).strip():
+        raise ValueError("AutoResearch persistence task queue must be non-empty")
     provider = request.get("planner_provider") or {}
     if (
         not str(provider.get("activity_name") or "").strip()
@@ -168,6 +170,7 @@ class AutoResearchClosedLoopWorkflow:
         control_queue = str(queues["workflow_and_control"])
         action_queue = str(queues["action_execution"])
         metrics_queue = str(queues["sequence_metrics"])
+        persistence_queue = str(queues.get("persistence") or control_queue)
         contract = request["execution_contract"]
         plugin_names = list(contract["metric_plugins"])
         iteration_no = int(request.get("start_iteration_no", 0))
@@ -193,7 +196,7 @@ class AutoResearchClosedLoopWorkflow:
                             "run_id": run_id,
                             "control_environment_sha256": request["control_environment_sha256"],
                         },
-                        task_queue=control_queue,
+                        task_queue=persistence_queue,
                         start_to_close_timeout=timedelta(hours=2),
                         heartbeat_timeout=timedelta(minutes=15),
                         retry_policy=retry,
@@ -247,7 +250,7 @@ class AutoResearchClosedLoopWorkflow:
                 action_plan = await workflow.execute_activity(
                     "persist_autoresearch_action_plan",
                     action_plan_request,
-                    task_queue=control_queue,
+                    task_queue=persistence_queue,
                     start_to_close_timeout=timedelta(minutes=20),
                     retry_policy=retry,
                 )
@@ -280,7 +283,7 @@ class AutoResearchClosedLoopWorkflow:
                         "generated": generated,
                         "temporal_payload_mode": _TEMPORAL_PAYLOAD_MODE,
                     },
-                    task_queue=control_queue,
+                    task_queue=persistence_queue,
                     start_to_close_timeout=timedelta(hours=1),
                     heartbeat_timeout=timedelta(minutes=5),
                     retry_policy=retry,
@@ -361,7 +364,7 @@ class AutoResearchClosedLoopWorkflow:
                             "hydrate_from_run_spec": True,
                             "metric_result": reference,
                         },
-                        task_queue=control_queue,
+                        task_queue=persistence_queue,
                         start_to_close_timeout=timedelta(hours=1),
                         heartbeat_timeout=timedelta(minutes=5),
                         retry_policy=retry,
@@ -384,7 +387,7 @@ class AutoResearchClosedLoopWorkflow:
                         "prior_consecutive_stagnant_generations": stagnant_generations,
                         "hydrate_from_run_spec": True,
                     },
-                    task_queue=control_queue,
+                    task_queue=persistence_queue,
                     start_to_close_timeout=timedelta(hours=2),
                     retry_policy=retry,
                 )

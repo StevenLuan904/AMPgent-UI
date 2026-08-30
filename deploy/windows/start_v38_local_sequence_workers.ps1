@@ -12,6 +12,7 @@ param(
         "v38-generator",
         "v38-metrics",
         "autoresearch-control",
+        "autoresearch-persistence",
         "autoresearch-metrics"
     )]
     [string]$OnlyRole,
@@ -72,6 +73,11 @@ $autoresearchLocalRoles = @(
         Name = "autoresearch-control"
         TaskQueue = "pepagent-autoresearch-control-v1"
         Maximum = "16"
+    },
+    @{
+        Name = "autoresearch-persistence"
+        TaskQueue = "pepagent-autoresearch-persistence-v1"
+        Maximum = "5"
     },
     @{
         Name = "autoresearch-metrics"

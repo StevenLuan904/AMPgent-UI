@@ -43,6 +43,7 @@ AUTORESEARCH_WORKFLOW_TASK_TIMEOUT = timedelta(minutes=5)
 CONTROL_QUEUE = "pepagent-autoresearch-control-v1"
 GENERATOR_QUEUE = "pepagent-autoresearch-generator-v1"
 METRICS_QUEUE = "pepagent-autoresearch-metrics-v1"
+PERSISTENCE_QUEUE = "pepagent-autoresearch-persistence-v1"
 BRANCH_KEYS = ("acea", "gyra", "pbp2a", "vegfa", "fgf2", "angpt1")
 METRIC_PLUGIN_NAMES = frozenset(
     {
@@ -329,6 +330,9 @@ def _expected_queues(config: dict[str, Any]) -> dict[str, str]:
         "generator_queue": GENERATOR_QUEUE,
         "metrics_queue": METRICS_QUEUE,
     }
+    persistence_queue = temporal.get("persistence_queue")
+    if persistence_queue is not None:
+        expected["persistence_queue"] = PERSISTENCE_QUEUE
     if temporal != expected:
         raise ValueError("AutoResearch formal Temporal queues are not the isolated v1 queues")
     return expected
@@ -482,6 +486,8 @@ def _validate_request_bindings(
         "action_execution": GENERATOR_QUEUE,
         "sequence_metrics": METRICS_QUEUE,
     }
+    if (config.get("temporal") or {}).get("persistence_queue") is not None:
+        expected_queues["persistence"] = PERSISTENCE_QUEUE
     if queues != expected_queues:
         raise ValueError(f"{branch_key} request uses a non-formal task queue")
     if request.get("branch_key") != branch_key:
@@ -596,6 +602,45 @@ def _validate_generator_worker_receipt(
         raise ValueError("generator worker receipt has no exact PID")
 
 
+def _validate_persistence_worker_receipt(
+    *,
+    preflight: dict[str, Any],
+    preflight_base_path: Path,
+    config: dict[str, Any],
+) -> None:
+    matching = [
+        item
+        for item in preflight.get("checks") or []
+        if item.get("name") == "persistence_worker_receipt_identity"
+    ]
+    if len(matching) != 1 or matching[0].get("status") != "passed":
+        raise ValueError("preflight does not prove the persistence worker receipt")
+    evidence = matching[0].get("evidence") or {}
+    if evidence.get("mode") != "autoresearch-local":
+        raise ValueError("persistence worker was not launched in autoresearch-local mode")
+    receipt_path = _resolve_existing_path(
+        preflight_base_path,
+        evidence.get("receipt_path"),
+        "persistence worker receipt path",
+    )
+    receipt = _load_worker_receipt(receipt_path)
+    expected = {
+        "schema_version": "v38.local-sequence-worker-receipt.1",
+        "role": "autoresearch-persistence",
+        "task_queue": PERSISTENCE_QUEUE,
+        "source_revision": config["source_revision"],
+        "release_sha256": config["release"]["archive_sha256"],
+        "task_queue_verified_from_release": True,
+        "ampgent_owned": True,
+        "foreign": False,
+    }
+    for key, value in expected.items():
+        if receipt.get(key) != value:
+            raise ValueError(f"persistence worker receipt field drifted: {key}")
+    if not str(receipt.get("pid") or "").isdigit():
+        raise ValueError("persistence worker receipt has no exact PID")
+
+
 def _validate_preflight(
     *,
     config: dict[str, Any],
@@ -665,6 +710,12 @@ def _validate_preflight(
         preflight_base_path=preflight_base_path,
         config=config,
     )
+    if (config.get("temporal") or {}).get("persistence_queue") is not None:
+        _validate_persistence_worker_receipt(
+            preflight=preflight,
+            preflight_base_path=preflight_base_path,
+            config=config,
+        )
 
 
 def build_autoresearch_formal_plan(
