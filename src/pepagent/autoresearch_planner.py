@@ -24,6 +24,9 @@ from pepagent.provenance.hashing import sha256_text
 
 GOLD_CANDIDATE_TARGET = 50
 _HYDROPHOBIC = frozenset("AVILMFWYC")
+_DE_NOVO_MAXIMUM_HYDROPHOBIC_FRACTION = 0.45
+_DE_NOVO_MAXIMUM_HYDROPHOBIC_RUN = 2
+_DE_NOVO_MINIMUM_NET_CHARGE = 3.0
 _DE_NOVO_MOTIFS = (
     "KRWLAKIRKL",
     "KWKLFKKIGK",
@@ -52,6 +55,22 @@ def _sequence_prescreen(sequence: str) -> tuple[float, int, float]:
         float(analysis.instability_index()),
         maximum_run,
         float(analysis.charge_at_pH(7.4)),
+    )
+
+
+def _de_novo_prescreen_passes(sequence: str) -> bool:
+    """Reject rule proposals that cannot satisfy the literal display pre-gates."""
+
+    instability, hydrophobic_run, charge = _sequence_prescreen(sequence)
+    hydrophobic_fraction = sum(
+        residue in _HYDROPHOBIC for residue in sequence
+    ) / len(sequence)
+    return (
+        math.isfinite(instability)
+        and instability < 50.0
+        and hydrophobic_run <= _DE_NOVO_MAXIMUM_HYDROPHOBIC_RUN
+        and hydrophobic_fraction <= _DE_NOVO_MAXIMUM_HYDROPHOBIC_FRACTION
+        and charge >= _DE_NOVO_MINIMUM_NET_CHARGE
     )
 
 
@@ -254,6 +273,7 @@ def _unique_de_novo_sequence(
         if (
             sequence not in known_sequences
             and sha256_text(sequence) not in excluded_sequence_sha256s
+            and _de_novo_prescreen_passes(sequence)
         ):
             return sequence
     alphabet = "KRLAIGFWQNST"
@@ -266,6 +286,7 @@ def _unique_de_novo_sequence(
         if (
             sequence not in known_sequences
             and sha256_text(sequence) not in excluded_sequence_sha256s
+            and _de_novo_prescreen_passes(sequence)
         ):
             return sequence
     raise ValueError("deterministic de-novo planner exhausted its sequence space")
@@ -484,7 +505,7 @@ def build_multifront_rule_action_plan(
         branch_key=branch_key,
         generation=generation,
         seed=seed + 2,
-        operator_id="autoresearch-rule-de-novo-v1",
+        operator_id="autoresearch-rule-de-novo-v2",
         operator_release_sha256=operator_release_sha256,
         expected_improvement_metrics=("macrel_amp_probability",),
         protected_metrics=(
@@ -605,7 +626,7 @@ def build_multifront_rule_action_plan(
             branch_key=branch_key,
             generation=generation,
             seed=action_seed,
-            operator_id="autoresearch-rule-de-novo-v1",
+            operator_id="autoresearch-rule-de-novo-v2",
             operator_release_sha256=operator_release_sha256,
             expected_improvement_metrics=("macrel_amp_probability",),
             protected_metrics=(
@@ -665,6 +686,12 @@ def build_multifront_rule_action_plan(
             "mutation_hydrophobic_run_nonincrease_preferred": True,
             "crossover_hydrophobic_run_parent_maximum": True,
             "crossover_charge_loss_max": 1.0,
+            "de_novo_instability_max_exclusive": 50.0,
+            "de_novo_hydrophobic_run_maximum": _DE_NOVO_MAXIMUM_HYDROPHOBIC_RUN,
+            "de_novo_hydrophobic_fraction_maximum": (
+                _DE_NOVO_MAXIMUM_HYDROPHOBIC_FRACTION
+            ),
+            "de_novo_net_charge_minimum": _DE_NOVO_MINIMUM_NET_CHARGE,
             "toxin_and_hemolysis_remain_score_all_only": True,
         },
     }

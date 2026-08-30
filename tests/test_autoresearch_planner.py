@@ -16,6 +16,7 @@ from pepagent.autoresearch_closed_loop import (
 )
 from pepagent.autoresearch_planner import (
     PlannerDeltaEvidence,
+    _de_novo_prescreen_passes,
     _sequence_prescreen,
     _unique_de_novo_sequence,
     build_multifront_rule_action_plan,
@@ -247,6 +248,41 @@ def test_cpu_only_planner_fills_a_fifty_percent_de_novo_quota() -> None:
     assert len({action.proposed_sequence for action in de_novo_actions}) == len(
         de_novo_actions
     )
+    assert all(action.operator_id == "autoresearch-rule-de-novo-v2" for action in de_novo_actions)
+    assert all(_de_novo_prescreen_passes(action.proposed_sequence) for action in de_novo_actions)
+    assert plan["sequence_prescreen_policy"] == {
+        "instability_method": "Guruprasad-Reddy-Pandit-1990-via-Biopython-ProtParam",
+        "instability_max_exclusive": 50.0,
+        "mutation_hydrophobic_run_nonincrease_preferred": True,
+        "crossover_hydrophobic_run_parent_maximum": True,
+        "crossover_charge_loss_max": 1.0,
+        "de_novo_instability_max_exclusive": 50.0,
+        "de_novo_hydrophobic_run_maximum": 2,
+        "de_novo_hydrophobic_fraction_maximum": 0.45,
+        "de_novo_net_charge_minimum": 3.0,
+        "toxin_and_hemolysis_remain_score_all_only": True,
+    }
+
+
+def test_rule_de_novo_prescreen_is_stable_across_all_six_target_branches() -> None:
+    for branch_key in ("acea", "gyra", "pbp2a", "vegfa", "fgf2", "angpt1"):
+        known_sequences: set[str] = set()
+        for seed in range(64):
+            sequence = _unique_de_novo_sequence(
+                branch_key=branch_key,
+                seed=seed,
+                known_sequences=known_sequences,
+            )
+            known_sequences.add(sequence)
+            instability, hydrophobic_run, charge = _sequence_prescreen(sequence)
+            hydrophobic_fraction = sum(
+                residue in "AVILMFWYC" for residue in sequence
+            ) / len(sequence)
+
+            assert instability < 50.0
+            assert hydrophobic_run <= 2
+            assert hydrophobic_fraction <= 0.45
+            assert charge >= 3.0
 
 
 def test_planner_emits_progress_heartbeats_between_expensive_stages(monkeypatch) -> None:
