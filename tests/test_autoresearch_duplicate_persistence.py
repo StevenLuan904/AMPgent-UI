@@ -301,6 +301,46 @@ async def test_cross_generation_duplicate_is_audited_and_remaining_child_continu
 
 
 @pytest.mark.asyncio
+async def test_cross_run_duplicate_is_audited_without_cross_run_candidate_link(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    run_id = uuid.uuid4()
+    historical_run_id = uuid.uuid4()
+    sequence = "IRKLKRWLAKIRKLKRWLAK"
+    action, plan_item = _action(run_id, ordinal=1, sequence=sequence)
+    historical = Candidate(
+        id=uuid.uuid4(),
+        run_id=historical_run_id,
+        sequence=sequence,
+        sequence_sha256=sha256_text(sequence),
+        generation=2,
+        proposal_rank=2_000_001,
+        status="generated",
+        metadata_json={"source": "historical_autoresearch"},
+    )
+
+    receipt, repository = await _run_persistence(
+        monkeypatch,
+        actions=[action],
+        plan_items=[plan_item],
+        sequences=[sequence],
+        candidate_lookups=[historical],
+    )
+
+    assert receipt["candidate_count"] == 0
+    assert receipt["rejected_duplicate_count"] == 1
+    assert receipt["iteration_noop"] is True
+    rejected = receipt["rejected_duplicates"][0]
+    assert rejected["reason"] == "sequence_already_materialized_in_historical_run"
+    assert rejected["existing_candidate_id"] == str(historical.id)
+    assert rejected["existing_run_id"] == str(historical_run_id)
+    occurrence = repository.occurrences[0]
+    assert occurrence["candidate_id"] is None
+    assert occurrence["metadata"]["excluded_from_unique_child_cohort"] is True
+    assert not repository.added_candidates
+
+
+@pytest.mark.asyncio
 async def test_all_duplicate_iteration_persists_noop_stop_reason(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

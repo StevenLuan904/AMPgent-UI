@@ -1109,6 +1109,12 @@ def _duplicate_rejection_reason(candidate: Candidate, *, requested_generation: i
     return "sequence_already_materialized_by_another_action"
 
 
+def _is_historical_run_duplicate(candidate: Candidate, *, run_id: uuid.UUID) -> bool:
+    """Treat every prior durable run as a non-replay source, regardless of run status."""
+
+    return candidate.run_id != run_id
+
+
 @activity.defn(name="persist_autoresearch_children")
 async def persist_autoresearch_children(request: dict[str, Any]) -> dict[str, Any]:
     """Persist materialized children and the complete multi-parent lineage."""
@@ -1195,9 +1201,12 @@ async def persist_autoresearch_children(request: dict[str, Any]) -> dict[str, An
             if str(result.get("sequence_sha256") or sequence_sha256) != sequence_sha256:
                 raise ValueError("AutoResearch generated sequence hash drifted")
             child = await session.scalar(
-                select(Candidate).where(
-                    Candidate.run_id == run_id,
-                    Candidate.sequence_sha256 == sequence_sha256,
+                select(Candidate)
+                .where(Candidate.sequence_sha256 == sequence_sha256)
+                .order_by(
+                    (Candidate.run_id == run_id).desc(),
+                    Candidate.created_at,
+                    Candidate.id,
                 )
             )
             if child is None:
@@ -1220,14 +1229,19 @@ async def persist_autoresearch_children(request: dict[str, Any]) -> dict[str, An
                 )
             if child.sequence != sequence or child.sequence_sha256 != sequence_sha256:
                 raise ValueError("AutoResearch duplicate candidate sequence identity drifted")
-            if not _candidate_was_materialized_by_action(
+            historical_duplicate = _is_historical_run_duplicate(child, run_id=run_id)
+            if historical_duplicate or not _candidate_was_materialized_by_action(
                 child,
                 action_id=action.id,
                 requested_generation=requested_generation,
             ):
-                reason = _duplicate_rejection_reason(
-                    child,
-                    requested_generation=requested_generation,
+                reason = (
+                    "sequence_already_materialized_in_historical_run"
+                    if historical_duplicate
+                    else _duplicate_rejection_reason(
+                        child,
+                        requested_generation=requested_generation,
+                    )
                 )
                 occurrence_metadata = {
                     "status": "rejected_duplicate",
@@ -1237,6 +1251,7 @@ async def persist_autoresearch_children(request: dict[str, Any]) -> dict[str, An
                     "excluded_from_unique_child_cohort": True,
                     "action_id": str(action.id),
                     "existing_candidate_id": str(child.id),
+                    "existing_run_id": str(child.run_id),
                     "existing_generation": int(child.generation),
                     "requested_generation": requested_generation,
                     "repository_action_sha256": action.action_sha256,
@@ -1251,7 +1266,7 @@ async def persist_autoresearch_children(request: dict[str, Any]) -> dict[str, An
                     occurrence_kind=action.action_kind,
                     opaque_arm_label=action.branch_key,
                     sequence=sequence,
-                    candidate_id=child.id,
+                    candidate_id=None if historical_duplicate else child.id,
                     metadata=occurrence_metadata,
                 )
                 event_idempotency_key = sha256_json(
