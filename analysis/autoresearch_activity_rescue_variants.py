@@ -82,6 +82,17 @@ def _single_branch_key(rows: list[dict[str, str]]) -> str:
     return branch_keys.pop()
 
 
+def _filter_source_branch(
+    rows: list[dict[str, str]], branch_key: str | None
+) -> list[dict[str, str]]:
+    if branch_key is None:
+        return rows
+    filtered = [row for row in rows if row["branch_key"] == branch_key]
+    if not filtered:
+        raise ValueError(f"source cohort has no rows for branch {branch_key}")
+    return filtered
+
+
 def _select_parents(
     rows: list[dict[str, str]],
     maximum_per_family: int,
@@ -272,6 +283,8 @@ def run(args: argparse.Namespace) -> None:
         with path.open(encoding="utf-8-sig", newline="") as stream:
             source_rows.extend(csv.DictReader(stream))
         parent_score_sha256s.append(sha256_file(path))
+    source_row_count_before_branch_filter = len(source_rows)
+    source_rows = _filter_source_branch(source_rows, args.branch)
     branch_key = _single_branch_key(source_rows)
     parents = _select_parents(
         source_rows,
@@ -417,6 +430,9 @@ def run(args: argparse.Namespace) -> None:
         "observed_at_utc": datetime.now(UTC).isoformat(),
         "parent_score_sha256": parent_score_sha256,
         "parent_score_sha256s": parent_score_sha256s,
+        "source_branch_filter": args.branch,
+        "source_row_count_before_branch_filter": source_row_count_before_branch_filter,
+        "source_row_count": len(source_rows),
         "operator_mode": args.operator_mode,
         "rescue_endpoint": args.rescue_endpoint,
         "rescue_metric": endpoint["metric"],
@@ -454,6 +470,10 @@ def run(args: argparse.Namespace) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--parent-scores", type=Path, action="append", required=True)
+    parser.add_argument(
+        "--branch",
+        choices=("acea", "angpt1", "fgf2", "gyra", "pbp2a", "vegfa"),
+    )
     parser.add_argument("--historical-csv", type=Path, action="append", default=[])
     parser.add_argument("--registry", type=Path, required=True)
     parser.add_argument("--repo-root", type=Path, required=True)

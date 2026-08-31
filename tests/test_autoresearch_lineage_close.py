@@ -4,6 +4,8 @@ import importlib.util
 import sys
 from pathlib import Path
 
+import pytest
+
 
 def _load_module():
     analysis_dir = Path(__file__).resolve().parents[1] / "analysis"
@@ -40,3 +42,22 @@ def test_lineage_close_selects_only_full_scored_plan_actions() -> None:
 
     assert selected == [{"action_sha256": "b" * 64}]
     assert skipped == 2
+
+
+def test_lineage_close_accepts_a_branch_subset_from_mixed_archive() -> None:
+    module = _load_module()
+
+    ignored = module._validate_archive_branches(
+        {"gyra", "pbp2a", "vegfa"}, {"gyra"}
+    )
+
+    assert ignored == ("pbp2a", "vegfa")
+
+
+def test_lineage_close_rejects_archive_missing_child_branch() -> None:
+    module = _load_module()
+
+    with pytest.raises(
+        ValueError, match="lineage close archive is missing child branches: gyra"
+    ):
+        module._validate_archive_branches({"pbp2a"}, {"gyra"})

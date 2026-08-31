@@ -50,6 +50,18 @@ def _archive_snapshot_payload(payload: dict[str, Any]) -> dict[str, Any]:
     return current if isinstance(current, dict) else payload
 
 
+def _validate_archive_branches(
+    archive_branches: set[str], child_branches: set[str]
+) -> tuple[str, ...]:
+    missing = child_branches - archive_branches
+    if missing:
+        raise ValueError(
+            "lineage close archive is missing child branches: "
+            + ", ".join(sorted(missing))
+        )
+    return tuple(sorted(archive_branches - child_branches))
+
+
 def _full_scored_action_payloads(
     plan: dict[str, Any], child_action_sha256s: set[str]
 ) -> tuple[list[dict[str, Any]], int]:
@@ -207,8 +219,10 @@ def run(args: argparse.Namespace) -> None:
         raise ValueError("lineage close child branches are invalid")
     if set(plans_payload["plans"]) != set(branches):
         raise ValueError("lineage close plan branches do not match children")
-    if set(archives_payload["branches"]) != set(branches):
-        raise ValueError("lineage close archive branches do not match children")
+    archive_source_branches = set(archives_payload["branches"])
+    ignored_archive_branches = _validate_archive_branches(
+        archive_source_branches, set(branches)
+    )
 
     flat_deltas: list[dict[str, Any]] = []
     parent_child_receipts: list[dict[str, Any]] = []
@@ -361,6 +375,8 @@ def run(args: argparse.Namespace) -> None:
         "observed_at_utc": datetime.now(UTC).isoformat(),
         "branch_count": len(branches),
         "branches": list(branches),
+        "archive_source_branches": sorted(archive_source_branches),
+        "ignored_archive_branches": list(ignored_archive_branches),
         "child_count": len(child_rows),
         "planned_action_count": planned_action_count,
         "unscored_planned_action_count": unscored_planned_action_count,

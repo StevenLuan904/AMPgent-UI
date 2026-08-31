@@ -179,3 +179,23 @@ def test_activity_rescue_plan_uses_the_source_branch() -> None:
         module._single_branch_key(
             [{"branch_key": "acea"}, {"branch_key": "vegfa"}]
         )
+
+
+def test_activity_rescue_can_filter_a_mixed_source_cohort_by_branch() -> None:
+    module = _load_module()
+    rows = [
+        {"branch_key": "gyra", "sequence": "KKKK"},
+        {"branch_key": "vegfa", "sequence": "RRRR"},
+        {"branch_key": "gyra", "sequence": "KRRK"},
+    ]
+
+    filtered = module._filter_source_branch(rows, "gyra")
+
+    assert [row["sequence"] for row in filtered] == ["KKKK", "KRRK"]
+
+
+def test_activity_rescue_branch_filter_rejects_missing_branch() -> None:
+    module = _load_module()
+
+    with pytest.raises(ValueError, match="source cohort has no rows for branch gyra"):
+        module._filter_source_branch([{"branch_key": "acea"}], "gyra")
