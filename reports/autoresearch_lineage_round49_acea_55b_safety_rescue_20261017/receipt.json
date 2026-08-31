@@ -1,0 +1,49 @@
+{
+  "schema_version": "ampgent.autoresearch-safety-rescue-search.1",
+  "observed_at_utc": "2026-08-31T15:02:03.247386+00:00",
+  "parent_score_sha256": "5f9fea44d5a79707c76e513d0ec431375b5b9cefc204c066098f1db94f84f606",
+  "plans_sha256": "5d52532314ee97eee15d418aab27d01a3f58e4a68d79ec31be822ae3fe9593b6",
+  "historical_sequence_exclusion_count": 66834,
+  "historical_source_sha256s": [
+    "3aacb3fc5823d2d41e48e9fd0e22ccf87260c2b1987aa036ddcf2dc1edbe20a3",
+    "19ed0fdc4adf2fa556b5d6c3ab9884693c91a6c4e5ae35c763c6a3dfc3c63f24",
+    "309392dce9d6a49e8f57ffcede4ede7a47a0f6246a9a0c1db67819ef6641f2be",
+    "ea9d92ad30610d257d837fc8b2588ea0f52e7a1ef1da7a4759174f7561c4dbd4"
+  ],
+  "parent_count": 8,
+  "source_family_filter": [
+    "seqfam80_55b8aa179c108062b17e"
+  ],
+  "generated_novel_strict_count": 1095,
+  "safety_hard_gate_pass_count": 60,
+  "full_score_shortlist_count": 0,
+  "plugin_status": [
+    {
+      "plugin": "physicochemical_developability",
+      "status": "complete",
+      "candidate_count": 1095,
+      "adapter_version": "2026.08.04-v1",
+      "result_sha256": "2ee15837d35dad73c8b36475c7ff18ca4e07561a1edae2088d8be52cc92583ad"
+    },
+    {
+      "plugin": "hemolysis_risk",
+      "status": "complete",
+      "candidate_count": 1095,
+      "adapter_version": "macrel-1.6.1-8c1f732",
+      "result_sha256": "0d88b62462778d677ae3df67de45600890c0e30a9558f332195efeac2b3c0131"
+    },
+    {
+      "plugin": "toxicity_risk",
+      "status": "complete",
+      "candidate_count": 1095,
+      "adapter_version": "toxinpred3-corrected-v0.2-dcdba83",
+      "result_sha256": "c2281ba0cea2600a4b4e96d4e8f2d1b6d29790d80593cd7689405ad1798ae750"
+    }
+  ],
+  "workflow_submitted": false,
+  "gpu_task_submitted": false,
+  "historical_run_modified": false,
+  "all_search_scores_sha256": "196b6b5b4e8218cbd4dd0f624ebcbc6144c95849165e6525fc5eeadc130773e6",
+  "safety_pass_candidates_sha256": "c8922e3bf58c035dfc5ed0904a8afcc48fc9018c5a6e01e7a808c725568b026f",
+  "receipt_payload_sha256": "02b572c0c19549f696a949e2f3ff73997b1e46d90171f49938a9d5a3a2b8502d"
+}

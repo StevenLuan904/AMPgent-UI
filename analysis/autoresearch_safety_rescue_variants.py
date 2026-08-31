@@ -89,6 +89,30 @@ def _is_low_hemolysis(value: Any) -> bool:
     return str(value).strip().lower() == "low"
 
 
+def _select_unsafe_parents(
+    rows: list[dict[str, str]],
+    *,
+    family_keys: tuple[str, ...] = (),
+) -> list[dict[str, str]]:
+    selected = []
+    family_filter = set(family_keys)
+    for row in rows:
+        support = int(
+            row.get("activity_model_support_count_calibrated")
+            or row["activity_model_support_count"]
+        )
+        if (
+            support >= 2
+            and row["display_eligible"].lower() == "false"
+            and (
+                not family_filter
+                or row.get("source_family_key_80_80", row.get("family_key_80_80")) in family_filter
+            )
+        ):
+            selected.append(row)
+    return selected
+
+
 def _generate(
     parents: list[dict[str, str]],
     historical_sha256s: set[str],
@@ -189,14 +213,8 @@ def run(args: argparse.Namespace) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     with args.parent_scores.open(encoding="utf-8-sig", newline="") as stream:
         source_rows = list(csv.DictReader(stream))
-    parents = []
-    for row in source_rows:
-        support = int(
-            row.get("activity_model_support_count_calibrated")
-            or row["activity_model_support_count"]
-        )
-        if support >= 2 and row["display_eligible"].lower() == "false":
-            parents.append(row)
+    family_keys = tuple(args.family_key or ())
+    parents = _select_unsafe_parents(source_rows, family_keys=family_keys)
     if not parents:
         raise ValueError("no active unsafe parents found")
     historical_sha256s = asyncio.run(_historical_sequence_sha256s())
@@ -304,6 +322,7 @@ def run(args: argparse.Namespace) -> None:
         "historical_sequence_exclusion_count": len(historical_sha256s),
         "historical_source_sha256s": historical_source_hashes,
         "parent_count": len(parents),
+        "source_family_filter": list(family_keys),
         "generated_novel_strict_count": len(rows),
         "safety_hard_gate_pass_count": len(safety_pass_rows),
         "full_score_shortlist_count": len(shortlist),
@@ -330,6 +349,7 @@ def main() -> None:
     parser.add_argument("--registry", type=Path, required=True)
     parser.add_argument("--repo-root", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--family-key", action="append")
     run(parser.parse_args())
 
 
