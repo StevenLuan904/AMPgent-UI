@@ -144,12 +144,12 @@ def test_multifront_rule_planner_keeps_conflicts_novelty_and_four_strategies() -
     assert len(actions) == 4
     assert any(
         isinstance(action, MaskedSubstitutionAction)
-        and action.operator_id == "autoresearch-rule-substitution-v2"
+        and action.operator_id == "autoresearch-rule-substitution-v3"
         for action in actions
     )
     assert any(
         isinstance(action, ControlledCrossoverAction)
-        and action.operator_id == "autoresearch-rule-crossover-v2"
+        and action.operator_id == "autoresearch-rule-crossover-v3"
         for action in actions
     )
     assert all(
@@ -188,13 +188,14 @@ def test_multifront_rule_planner_keeps_conflicts_novelty_and_four_strategies() -
             residue in "AVILMFWYC" for residue in child
         ) / len(child)
         assert instability < 50.0
+        assert hydrophobic_run <= 2
+        assert hydrophobic_fraction <= 0.45
+        assert charge >= 3.0
         parent = candidates_by_id[action.parent_candidate_id]
-        parent_hydrophobic_fraction = sum(
-            residue in "AVILMFWYC" for residue in parent.sequence
-        ) / len(parent.sequence)
-        assert hydrophobic_fraction <= parent_hydrophobic_fraction
-        assert charge >= min(_sequence_prescreen(parent.sequence)[2], 3.0)
         if isinstance(action, ControlledCrossoverAction):
+            parent_hydrophobic_fraction = sum(
+                residue in "AVILMFWYC" for residue in parent.sequence
+            ) / len(parent.sequence)
             donor = candidates_by_id[action.donor_candidate_id]
             _, parent_run, parent_charge = _sequence_prescreen(parent.sequence)
             _, donor_run, donor_charge = _sequence_prescreen(donor.sequence)
@@ -277,9 +278,10 @@ def test_cpu_only_planner_fills_a_fifty_percent_de_novo_quota() -> None:
     assert plan["sequence_prescreen_policy"] == {
         "instability_method": "Guruprasad-Reddy-Pandit-1990-via-Biopython-ProtParam",
         "instability_max_exclusive": 50.0,
-        "mutation_hydrophobic_run_nonincrease_preferred": True,
-        "mutation_hydrophobic_fraction_nonincrease": True,
-        "mutation_net_charge_floor": "min(parent_charge,3.0)",
+        "all_rule_proposals_share_quality_gate": True,
+        "mutation_hydrophobic_run_maximum": 2,
+        "mutation_hydrophobic_fraction_maximum": 0.45,
+        "mutation_net_charge_minimum": 3.0,
         "crossover_hydrophobic_run_parent_maximum": True,
         "crossover_hydrophobic_fraction_parent_maximum": True,
         "crossover_charge_loss_max": 1.0,
@@ -387,7 +389,7 @@ def test_pepmlm_targeted_action_compiles_to_existing_cli_schema_and_validates_ch
 def test_planner_accepts_short_instability_ood_parent_when_score_is_below_50() -> None:
     short = _candidate(
         "00000000-0000-0000-0000-000000000201",
-        "KKLLKLLKLL",
+        "KKLKKLKKLK",
         "short-ood",
         (0.1, 0.2, 0.9),
     ).model_copy(
@@ -395,7 +397,7 @@ def test_planner_accepts_short_instability_ood_parent_when_score_is_below_50() -
             "metrics": {
                 **_candidate(
                     "00000000-0000-0000-0000-000000000201",
-                    "KKLLKLLKLL",
+                    "KKLKKLKKLK",
                     "short-ood",
                     (0.1, 0.2, 0.9),
                 ).metrics,

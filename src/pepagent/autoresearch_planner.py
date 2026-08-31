@@ -62,8 +62,8 @@ def _hydrophobic_fraction(sequence: str) -> float:
     return sum(residue in _HYDROPHOBIC for residue in sequence) / len(sequence)
 
 
-def _de_novo_prescreen_passes(sequence: str) -> bool:
-    """Reject rule proposals that cannot satisfy the literal display pre-gates."""
+def _proposal_quality_gate_passes(sequence: str) -> bool:
+    """Reject rule proposals that cannot satisfy the frozen proposal quality gate."""
 
     instability, hydrophobic_run, charge = _sequence_prescreen(sequence)
     hydrophobic_fraction = _hydrophobic_fraction(sequence)
@@ -74,6 +74,12 @@ def _de_novo_prescreen_passes(sequence: str) -> bool:
         and hydrophobic_fraction <= _DE_NOVO_MAXIMUM_HYDROPHOBIC_FRACTION
         and charge >= _DE_NOVO_MINIMUM_NET_CHARGE
     )
+
+
+def _de_novo_prescreen_passes(sequence: str) -> bool:
+    """Compatibility alias for the rule de-novo proposal gate."""
+
+    return _proposal_quality_gate_passes(sequence)
 
 
 class PlannerDeltaEvidence(BaseModel):
@@ -183,7 +189,6 @@ def _mutation(
     parent_instability, parent_hydrophobic_run, parent_charge = _sequence_prescreen(
         parent.sequence
     )
-    parent_hydrophobic_fraction = _hydrophobic_fraction(parent.sequence)
     proposals: list[tuple[tuple[float | int, ...], ResidueSubstitution]] = []
     for position_rank, candidate_position in enumerate(positions):
         source = parent.sequence[candidate_position]
@@ -206,13 +211,7 @@ def _mutation(
                 continue
             instability, hydrophobic_run, charge = _sequence_prescreen(child)
             hydrophobic_fraction = _hydrophobic_fraction(child)
-            charge_floor = min(parent_charge, _DE_NOVO_MINIMUM_NET_CHARGE)
-            if (
-                not math.isfinite(instability)
-                or instability >= 50.0
-                or hydrophobic_fraction > parent_hydrophobic_fraction
-                or charge < charge_floor
-            ):
+            if not _proposal_quality_gate_passes(child):
                 continue
             proposals.append(
                 (
@@ -371,19 +370,21 @@ def build_multifront_rule_action_plan(
         candidates_by_id=by_id,
         improvement_counts=improvement_counts,
     )
-    if substitution_pool:
-        parent = substitution_pool[0]
+    for parent in substitution_pool:
+        try:
+            edit = _mutation(
+                parent,
+                known_sequences=known_sequences,
+                excluded_sequence_sha256s=historical_sequence_sha256s,
+            )
+        except ValueError:
+            continue
         substitution_parent_id = parent.candidate_id
-        edit = _mutation(
-            parent,
-            known_sequences=known_sequences,
-            excluded_sequence_sha256s=historical_sequence_sha256s,
-        )
         action = MaskedSubstitutionAction(
             branch_key=branch_key,
             generation=generation,
             seed=seed,
-            operator_id="autoresearch-rule-substitution-v2",
+            operator_id="autoresearch-rule-substitution-v3",
             operator_release_sha256=operator_release_sha256,
             expected_improvement_metrics=("guruprasad_instability_index",),
             protected_metrics=(
@@ -402,9 +403,10 @@ def build_multifront_rule_action_plan(
         strategies.append("substitution")
         rationales[action.action_sha256] = (
             "Edit one hydrophobic/repetitive position from the stability/safety front "
-            "only after a deterministic Guruprasad<50 and hydrophobic-run prescreen; "
+            "only after the frozen four-descriptor proposal quality gate; "
             "prior positive child deltas break ties while activity and safety stay protected."
         )
+        break
 
     endpoint_pool = _lane_candidates(
         snapshot,
@@ -450,8 +452,7 @@ def build_multifront_rule_action_plan(
                 instability, hydrophobic_run, charge = _sequence_prescreen(child)
                 hydrophobic_fraction = _hydrophobic_fraction(child)
                 if (
-                    not math.isfinite(instability)
-                    or instability >= 50.0
+                    not _proposal_quality_gate_passes(child)
                     or hydrophobic_run > maximum_parent_run
                     or hydrophobic_fraction > maximum_parent_hydrophobic_fraction
                     or charge < minimum_child_charge
@@ -487,7 +488,7 @@ def build_multifront_rule_action_plan(
             branch_key=branch_key,
             generation=generation,
             seed=seed + 1,
-            operator_id="autoresearch-rule-crossover-v2",
+            operator_id="autoresearch-rule-crossover-v3",
             operator_release_sha256=operator_release_sha256,
             expected_improvement_metrics=(
                 "amp_read_log10_mic_um",
@@ -513,7 +514,7 @@ def build_multifront_rule_action_plan(
         strategies.append("crossover")
         rationales[action.action_sha256] = (
             "Combine two distinct activity-model endpoints after a deterministic "
-            "Guruprasad<50, hydrophobic-run/fraction, and charge-floor prescreen; retain both "
+            "the frozen four-descriptor proposal quality gate; retain both "
             "parents as controls and preserve disagreement rather than averaging it."
         )
 
@@ -580,47 +581,46 @@ def build_multifront_rule_action_plan(
                 "de-novo quota requires an additional non-elite proposal."
             )
         elif pepmlm_pool:
-            parent = next(
-                (
-                    item
-                    for item in pepmlm_pool
-                    if item.candidate_id != substitution_parent_id
-                ),
-                pepmlm_pool[0],
-            )
-            edit = _mutation(
-                parent,
-                known_sequences=known_sequences,
-                excluded_sequence_sha256s=historical_sequence_sha256s,
-            )
-            action = PepMLMTargetedAction(
-                branch_key=branch_key,
-                generation=generation,
-                seed=seed + 3,
-                operator_id="pepmlm-targeted-action-v1",
-                operator_release_sha256=operator_release_sha256,
-                target_sequence_sha256=target_sequence_sha256,
-                expected_improvement_metrics=("macrel_amp_probability",),
-                protected_metrics=(
-                    "guruprasad_instability_index",
-                    "macrel_hemolysis_probability",
-                    "toxinpred3_hybrid_score",
-                ),
-                evidence_sha256s=_action_evidence(
-                    archive_sha, (parent.candidate_id,), delta_receipts
-                ),
-                proposal_mode="masked_substitution",
-                parent_candidate_id=parent.candidate_id,
-                parent_sequence_sha256=parent.sequence_sha256,
-                parent_length=len(parent.sequence),
-                mutation_positions_one_based=(edit.position_zero_based + 1,),
-            )
-            actions.append(action)
-            strategies.append("pepmlm_targeted")
-            rationales[action.action_sha256] = (
-                "Ask target-conditioned PepMLM to choose the residue at a frozen position "
-                "from a conflict/novelty front, preserving all other parent residues."
-            )
+            for parent in pepmlm_pool:
+                if parent.candidate_id == substitution_parent_id:
+                    continue
+                try:
+                    edit = _mutation(
+                        parent,
+                        known_sequences=known_sequences,
+                        excluded_sequence_sha256s=historical_sequence_sha256s,
+                    )
+                except ValueError:
+                    continue
+                action = PepMLMTargetedAction(
+                    branch_key=branch_key,
+                    generation=generation,
+                    seed=seed + 3,
+                    operator_id="pepmlm-targeted-action-v2",
+                    operator_release_sha256=operator_release_sha256,
+                    target_sequence_sha256=target_sequence_sha256,
+                    expected_improvement_metrics=("macrel_amp_probability",),
+                    protected_metrics=(
+                        "guruprasad_instability_index",
+                        "macrel_hemolysis_probability",
+                        "toxinpred3_hybrid_score",
+                    ),
+                    evidence_sha256s=_action_evidence(
+                        archive_sha, (parent.candidate_id,), delta_receipts
+                    ),
+                    proposal_mode="masked_substitution",
+                    parent_candidate_id=parent.candidate_id,
+                    parent_sequence_sha256=parent.sequence_sha256,
+                    parent_length=len(parent.sequence),
+                    mutation_positions_one_based=(edit.position_zero_based + 1,),
+                )
+                actions.append(action)
+                strategies.append("pepmlm_targeted")
+                rationales[action.action_sha256] = (
+                    "Ask target-conditioned PepMLM to choose the residue at a frozen "
+                    "quality-qualified position, preserving all other parent residues."
+                )
+                break
 
     if not actions:
         raise ValueError("multi-front planner produced no executable action")
@@ -705,9 +705,12 @@ def build_multifront_rule_action_plan(
         "sequence_prescreen_policy": {
             "instability_method": "Guruprasad-Reddy-Pandit-1990-via-Biopython-ProtParam",
             "instability_max_exclusive": 50.0,
-            "mutation_hydrophobic_run_nonincrease_preferred": True,
-            "mutation_hydrophobic_fraction_nonincrease": True,
-            "mutation_net_charge_floor": "min(parent_charge,3.0)",
+            "all_rule_proposals_share_quality_gate": True,
+            "mutation_hydrophobic_run_maximum": _DE_NOVO_MAXIMUM_HYDROPHOBIC_RUN,
+            "mutation_hydrophobic_fraction_maximum": (
+                _DE_NOVO_MAXIMUM_HYDROPHOBIC_FRACTION
+            ),
+            "mutation_net_charge_minimum": _DE_NOVO_MINIMUM_NET_CHARGE,
             "crossover_hydrophobic_run_parent_maximum": True,
             "crossover_hydrophobic_fraction_parent_maximum": True,
             "crossover_charge_loss_max": 1.0,
