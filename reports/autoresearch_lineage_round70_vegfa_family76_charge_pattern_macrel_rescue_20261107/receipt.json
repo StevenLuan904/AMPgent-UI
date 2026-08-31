@@ -1,0 +1,65 @@
+{
+  "schema_version": "ampgent.autoresearch-activity-rescue-search.1",
+  "observed_at_utc": "2026-08-31T18:22:02.075129+00:00",
+  "parent_score_sha256": "bfdf3081305e4225417e70750a53c7e856e6ff65ec423b6ed6e563782f86ad55",
+  "parent_score_sha256s": [
+    "bfdf3081305e4225417e70750a53c7e856e6ff65ec423b6ed6e563782f86ad55"
+  ],
+  "source_branch_filter": "vegfa",
+  "source_row_count_before_branch_filter": 123,
+  "source_row_count_before_family_filter": 123,
+  "source_row_count": 26,
+  "source_family_filters": [
+    "seqfam80_76ccbba180f03569271d"
+  ],
+  "operator_mode": "charge-pattern",
+  "rescue_endpoint": "macrel",
+  "rescue_metric": "macrel_amp_probability",
+  "rescue_direction": "maximize",
+  "generation_floor": 24,
+  "plans_sha256": "d9f187662bbc4952f931f6caf4433c59c546add89981e8988a0a137953b50ba9",
+  "historical_sequence_exclusion_count": 67852,
+  "input_sequence_exclusion_count": 123,
+  "historical_source_sha256s": [
+    "a908f454d8a01a6dccd3746b377e68e1b7a4f8099109c0d8aad6ee14915567c4",
+    "6d938b9befc33897cb1b5e44ec628cab24a655a4735cfc510732d995346066ed",
+    "a8890466753b415e63268363ad6b6f55d72956c965de19257edc40f1e78d3af9"
+  ],
+  "parent_count": 8,
+  "parent_family_count": 1,
+  "generated_novel_strict_count": 1241,
+  "safety_hard_gate_pass_count": 594,
+  "safety_positive_rescue_gain_count": 179,
+  "full_score_shortlist_count": 99,
+  "plugin_status": [
+    {
+      "plugin": "physicochemical_developability",
+      "status": "complete",
+      "candidate_count": 1241,
+      "adapter_version": "2026.08.04-v1",
+      "result_sha256": "2094d79ebc13120bb7c8656a03db69ed6777b8b6cb661fdb0569e4b1b944a070"
+    },
+    {
+      "plugin": "hemolysis_risk",
+      "status": "complete",
+      "candidate_count": 1241,
+      "adapter_version": "macrel-1.6.1-8c1f732",
+      "result_sha256": "408300cdc4a3409b32783b2c283ae07df717e590db3f18d552b01abe4ab008ea"
+    },
+    {
+      "plugin": "toxicity_risk",
+      "status": "complete",
+      "candidate_count": 1241,
+      "adapter_version": "toxinpred3-corrected-v0.2-dcdba83",
+      "result_sha256": "1d31d1462cf3f14ddadb17edb3a22a638256fad074a5bb1de1dbbfc615727ebe"
+    }
+  ],
+  "workflow_submitted": false,
+  "gpu_task_submitted": false,
+  "historical_run_modified": false,
+  "all_search_scores_sha256": "9c627f64defc27dcaa817dff3c7cfda46f60b7d07babfdb0f313961333b4150b",
+  "safety_pass_candidates_sha256": "dda381c28578c62a18f5f09534b3ec422d8a61dbffc278d96b2592ada1f9223f",
+  "safety_gain_candidates_sha256": "3ffe7c62184f2b42b22b4b407e84a2710c836feb3e95ce6a02d7996a4f037994",
+  "full_score_shortlist_sha256": "bed238d9271c54da815ef550cb1119c94a42d3130ff3506db0e6bd8780669c8e",
+  "receipt_payload_sha256": "d68a412e1dee7ca234be445f660b2677fed3fa04c8785a4c51478a5d99ec4489"
+}

@@ -1,0 +1,74 @@
+{
+  "schema_version": "ampgent.autoresearch-activity-rescue-search.1",
+  "observed_at_utc": "2026-08-31T18:33:40.375662+00:00",
+  "parent_score_sha256": "5aac13dc1554b9f82b00e354f83245513415f2eba8d1767bf77ae0585064a231",
+  "parent_score_sha256s": [
+    "5aac13dc1554b9f82b00e354f83245513415f2eba8d1767bf77ae0585064a231"
+  ],
+  "source_branch_filter": "vegfa",
+  "source_row_count_before_branch_filter": 22,
+  "source_row_count_before_family_filter": 22,
+  "source_row_count": 22,
+  "source_family_filters": [
+    "seqfam80_76ccbba180f03569271d"
+  ],
+  "operator_mode": "canonical-scan",
+  "rescue_endpoint": "amp-read",
+  "rescue_metric": "amp_read_log10_mic_um",
+  "rescue_direction": "minimize",
+  "generation_floor": 28,
+  "plans_sha256": "ca8ce50fdbb3718a60555e9ea35a5b858c25b32eda297570cf6cef09879af725",
+  "historical_sequence_exclusion_count": 67132,
+  "input_sequence_exclusion_count": 22,
+  "historical_source_sha256s": [
+    "6d938b9befc33897cb1b5e44ec628cab24a655a4735cfc510732d995346066ed",
+    "b7821eabd190243b3c57f9a19beebe93f6c4e7d63d5f5de2b26ed8b318748834",
+    "fcfb4021dca20680ae68ad87616306b5e2a5910160f52044caf07b0398fe46bd",
+    "7adfec41de822da178a1308b9666ec52340554883020885d60aa329830fd1b5b",
+    "2d91803b9a72d94e2afeefad72bb997ed5a62d8a04abc7c17f8cf5ecf6a18920"
+  ],
+  "parent_count": 1,
+  "parent_family_count": 1,
+  "generated_novel_strict_count": 203,
+  "safety_hard_gate_pass_count": 132,
+  "safety_positive_rescue_gain_count": 23,
+  "full_score_shortlist_count": 13,
+  "plugin_status": [
+    {
+      "plugin": "physicochemical_developability",
+      "status": "complete",
+      "candidate_count": 203,
+      "adapter_version": "2026.08.04-v1",
+      "result_sha256": "c725d74ebe9ac21680faabd2026d3c75f55f67bbfbcea8ec2ab70e44ede26c39"
+    },
+    {
+      "plugin": "hemolysis_risk",
+      "status": "complete",
+      "candidate_count": 203,
+      "adapter_version": "macrel-1.6.1-8c1f732",
+      "result_sha256": "5c625f7054c29c2283d652b1059c9531e5fa125615d0e1f9404a181555e663a1"
+    },
+    {
+      "plugin": "toxicity_risk",
+      "status": "complete",
+      "candidate_count": 203,
+      "adapter_version": "toxinpred3-corrected-v0.2-dcdba83",
+      "result_sha256": "b91c6e335e412614f263354ce7c1bc177ded7e0699fd6850db03fd5d42e37531"
+    },
+    {
+      "plugin": "mic_potency_amp_read",
+      "status": "complete",
+      "candidate_count": 203,
+      "adapter_version": "amp-read-ec9478b-open-weights-cpu-v1",
+      "result_sha256": "d47c924d256ab2f5fe1516454ddcea4bec858e97612b277b592f47e3c7ddb1aa"
+    }
+  ],
+  "workflow_submitted": false,
+  "gpu_task_submitted": false,
+  "historical_run_modified": false,
+  "all_search_scores_sha256": "a84a955cd81422f8bca33097907f22ce428c25b5662f11b7a436cc6b4d387b65",
+  "safety_pass_candidates_sha256": "66d5e5f8b7282b2e1803f48ef8fc2394efbc842f59f467274b4ea941305a4529",
+  "safety_gain_candidates_sha256": "ec4fda87292081741a423906d9d841fa2c211c74b554a09002700217dcd03fa3",
+  "full_score_shortlist_sha256": "a9147d19071f34449f02a4117577d722ec637003cbc49f7c3853137f37d013e3",
+  "receipt_payload_sha256": "89e21331a173464d1ab2af737cb28af0850e5aa210a950a4d47ed77a63413503"
+}

@@ -1,0 +1,73 @@
+{
+  "schema_version": "ampgent.autoresearch-activity-rescue-search.1",
+  "observed_at_utc": "2026-08-31T18:30:23.137712+00:00",
+  "parent_score_sha256": "5aac13dc1554b9f82b00e354f83245513415f2eba8d1767bf77ae0585064a231",
+  "parent_score_sha256s": [
+    "5aac13dc1554b9f82b00e354f83245513415f2eba8d1767bf77ae0585064a231"
+  ],
+  "source_branch_filter": "vegfa",
+  "source_row_count_before_branch_filter": 22,
+  "source_row_count_before_family_filter": 22,
+  "source_row_count": 22,
+  "source_family_filters": [
+    "seqfam80_76ccbba180f03569271d"
+  ],
+  "operator_mode": "hydrophobic",
+  "rescue_endpoint": "amp-read",
+  "rescue_metric": "amp_read_log10_mic_um",
+  "rescue_direction": "minimize",
+  "generation_floor": 27,
+  "plans_sha256": "4169aadac644ba7e1fac1407e9a38e37af6c8941236a402b4e108e4b2eef60ad",
+  "historical_sequence_exclusion_count": 67113,
+  "input_sequence_exclusion_count": 22,
+  "historical_source_sha256s": [
+    "6d938b9befc33897cb1b5e44ec628cab24a655a4735cfc510732d995346066ed",
+    "b7821eabd190243b3c57f9a19beebe93f6c4e7d63d5f5de2b26ed8b318748834",
+    "fcfb4021dca20680ae68ad87616306b5e2a5910160f52044caf07b0398fe46bd",
+    "7adfec41de822da178a1308b9666ec52340554883020885d60aa329830fd1b5b"
+  ],
+  "parent_count": 1,
+  "parent_family_count": 1,
+  "generated_novel_strict_count": 90,
+  "safety_hard_gate_pass_count": 36,
+  "safety_positive_rescue_gain_count": 22,
+  "full_score_shortlist_count": 19,
+  "plugin_status": [
+    {
+      "plugin": "physicochemical_developability",
+      "status": "complete",
+      "candidate_count": 90,
+      "adapter_version": "2026.08.04-v1",
+      "result_sha256": "bf3a97126a22815248874531dc897d70667d644f06dae184fdef158d67c4839e"
+    },
+    {
+      "plugin": "hemolysis_risk",
+      "status": "complete",
+      "candidate_count": 90,
+      "adapter_version": "macrel-1.6.1-8c1f732",
+      "result_sha256": "6bd7bca85fab5e18644fdd07f0c9c81c72da6f4d1bf97ce0604030c9493da8cf"
+    },
+    {
+      "plugin": "toxicity_risk",
+      "status": "complete",
+      "candidate_count": 90,
+      "adapter_version": "toxinpred3-corrected-v0.2-dcdba83",
+      "result_sha256": "9ce3cf33aa3a5ae40b4bb87642cf16bfce96d1452e9c3d4cab4e5de3abbaf452"
+    },
+    {
+      "plugin": "mic_potency_amp_read",
+      "status": "complete",
+      "candidate_count": 90,
+      "adapter_version": "amp-read-ec9478b-open-weights-cpu-v1",
+      "result_sha256": "8a9521ad2ed51494a097a21ea0bc9b9aae15a42ad701ce7f40c635be0a1d6ea3"
+    }
+  ],
+  "workflow_submitted": false,
+  "gpu_task_submitted": false,
+  "historical_run_modified": false,
+  "all_search_scores_sha256": "59deb0085fb544632948560f11daa8442ac51013646ec56f8546ff42e2b6f65a",
+  "safety_pass_candidates_sha256": "deb66c41572c1e30c64321650de1375ed6a13019278fd1a6c2bfbfad36751f45",
+  "safety_gain_candidates_sha256": "3904410139ed42da999a61c4ba0638a63dad811a86b63dfe2158f8b960b38935",
+  "full_score_shortlist_sha256": "a9f6ad695569c195d9c0ef0ce289d99aae530e7f9212b183f23fdeb277d7c857",
+  "receipt_payload_sha256": "8e2f7a5f71f42541dfba7edcf34c781b5b956ab841994d194b3dc4419bb33be8"
+}

@@ -27,6 +27,7 @@ from pepagent.provenance.hashing import sha256_file, sha256_json, sha256_text
 HYDROPHOBIC_REPLACEMENTS = "AILVFWY"
 HYDROPHOBIC_RESIDUES = frozenset("AILMFWVY")
 CHARGE_PATTERN_REPLACEMENTS = "KRHAGSTNQ"
+CANONICAL_REPLACEMENTS = "ACDEFGHIKLMNPQRSTVWY"
 HYBRID_PAIR_OFFSETS = (-3, 3)
 RESCUE_ENDPOINTS = {
     "macrel": {
@@ -66,6 +67,19 @@ CHARGE_PATTERN_OPERATOR_RELEASE_SHA256 = sha256_json(
         "operator_id": "autoresearch-macrel-charge-pattern-rescue-v1",
         "replacement_residues": list(CHARGE_PATTERN_REPLACEMENTS),
         "parent_policy": "balanced_per_family_support2_without_existing_support3",
+        "quality_gate": {
+            "guruprasad_instability_index": "<50",
+            "maximum_hydrophobic_run": "<=2",
+            "hydrophobic_fraction": "<=0.45",
+            "net_charge_ph7_4": ">=3",
+        },
+    }
+)
+CANONICAL_SCAN_OPERATOR_RELEASE_SHA256 = sha256_json(
+    {
+        "operator_id": "autoresearch-canonical-single-scan-rescue-v1",
+        "replacement_residues": list(CANONICAL_REPLACEMENTS),
+        "parent_policy": "support2_endpoint_gap_exhaustive_single_substitution",
         "quality_gate": {
             "guruprasad_instability_index": "<50",
             "maximum_hydrophobic_run": "<=2",
@@ -352,6 +366,8 @@ def _generate(
                 replacements = HYDROPHOBIC_REPLACEMENTS
             elif operator_mode == "charge-pattern":
                 replacements = CHARGE_PATTERN_REPLACEMENTS
+            elif operator_mode == "canonical-scan":
+                replacements = CANONICAL_REPLACEMENTS
             else:
                 raise ValueError(f"unknown activity rescue operator mode: {operator_mode}")
             if rescue_endpoint == "macrel" and operator_mode == "hydrophobic":
@@ -360,6 +376,9 @@ def _generate(
             elif rescue_endpoint == "macrel" and operator_mode == "charge-pattern":
                 operator_id = "autoresearch-macrel-charge-pattern-rescue-v1"
                 operator_release_sha256 = CHARGE_PATTERN_OPERATOR_RELEASE_SHA256
+            elif operator_mode == "canonical-scan":
+                operator_id = f"autoresearch-{rescue_endpoint}-canonical-single-scan-v1"
+                operator_release_sha256 = CANONICAL_SCAN_OPERATOR_RELEASE_SHA256
             else:
                 operator_id = f"autoresearch-{rescue_endpoint}-{operator_mode}-rescue-v1"
                 operator_release_sha256 = sha256_json(
@@ -616,7 +635,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--operator-mode",
-        choices=("hydrophobic", "charge-pattern", "hybrid-pair"),
+        choices=("hydrophobic", "charge-pattern", "hybrid-pair", "canonical-scan"),
         default="hydrophobic",
     )
     run(parser.parse_args())

@@ -176,6 +176,37 @@ def test_charge_pattern_operator_explores_non_hydrophobic_edits() -> None:
     assert any(row["edit"].endswith("K") for row in generated)
 
 
+def test_canonical_scan_explores_residues_missing_from_narrow_operators() -> None:
+    module = _load_module()
+    parent_sequence = "RGRKQSQSKKAKTTGSKKAHVTG"
+    parent = {
+        "branch_key": "vegfa",
+        "generation": "22",
+        "sequence": parent_sequence,
+        "sequence_sha256": hashlib.sha256(parent_sequence.encode()).hexdigest(),
+        "amp_read_log10_mic_um": "1.5",
+        "family_key_80_80": "seqfam80-canonical-gap",
+        "family_representative_sequence": parent_sequence,
+        "new_family_relative_to_all_references": "true",
+        "diversity_qualified": "true",
+    }
+
+    generated, actions = module._generate(
+        [parent],
+        set(),
+        "0" * 64,
+        rescue_endpoint="amp-read",
+        operator_mode="canonical-scan",
+    )
+
+    assert generated
+    assert {action["operator_id"] for action in actions} == {
+        "autoresearch-amp-read-canonical-single-scan-v1"
+    }
+    assert any(row["edit"].endswith(("C", "D", "E", "M", "P")) for row in generated)
+    assert all(len(action["substitutions"]) == 1 for action in actions)
+
+
 def test_hybrid_pair_operator_records_two_local_edits_and_strict_prefilter() -> None:
     module = _load_module()
     parent_sequence = "KRHHKKHKKKVSKKKVSGEVHAYG"
