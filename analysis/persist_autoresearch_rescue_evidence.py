@@ -76,7 +76,10 @@ async def _run(args: argparse.Namespace) -> None:
                             row["activity_model_support_count_calibrated"]
                         ),
                         "family_key_80_80": row.get("family_key_80_80"),
-                        "diversity_qualified": row.get("diversity_qualified", "false"),
+                        "diversity_qualified": row.get(
+                            "diversity_qualified",
+                            row.get("new_family_relative_to_postgresql_history", "false"),
+                        ),
                         "excellent_sequence_stage": row["excellent_sequence_stage_calibrated"],
                         "structure_status": "not_started",
                         "challenger_status": args.challenger_status,
