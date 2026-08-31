@@ -81,6 +81,44 @@ def test_parent_selection_skips_families_that_already_have_full_support() -> Non
     assert [row["family_key_80_80"] for row in selected] == ["needs-rescue"]
 
 
+def test_amp_read_parent_selection_uses_its_own_calibrated_endpoint() -> None:
+    module = _load_module()
+    row = {
+        "display_eligible": "true",
+        "activity_model_support_count_calibrated": "2",
+        "family_key_80_80": "amp-read-gap",
+        "amp_read_log10_mic_um__parent_benefit_percentile": "0.4",
+        "amp_read_log10_mic_um": "1.2",
+        "sequence": "KKKK",
+    }
+
+    selected = module._select_parents([row], 1, rescue_endpoint="amp-read")
+
+    assert selected == [row]
+
+
+def test_mic_endpoint_operator_records_minimize_improvement_target() -> None:
+    module = _load_module()
+    parent_sequence = "RTKKKKTTLRREGNRGKWGK"
+    parent = {
+        "branch_key": "fgf2",
+        "generation": "2",
+        "sequence": parent_sequence,
+        "sequence_sha256": hashlib.sha256(parent_sequence.encode()).hexdigest(),
+        "amp_read_log10_mic_um": "1.2",
+        "family_key_80_80": "seqfam80-amp-read-gap",
+    }
+
+    generated, actions = module._generate(
+        [parent], set(), "0" * 64, rescue_endpoint="amp-read"
+    )
+
+    assert generated[0]["parent_rescue_metric_value"] == 1.2
+    assert {
+        tuple(action["expected_improvement_metrics"]) for action in actions
+    } == {("amp_read_log10_mic_um",)}
+
+
 def test_charge_pattern_operator_explores_non_hydrophobic_edits() -> None:
     module = _load_module()
     parent_sequence = "WRGGGWKKREKKRGKKKNGGKKGSGK"

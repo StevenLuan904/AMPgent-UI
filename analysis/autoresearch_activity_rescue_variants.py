@@ -27,6 +27,26 @@ from pepagent.provenance.hashing import sha256_file, sha256_json, sha256_text
 HYDROPHOBIC_REPLACEMENTS = "AILVFWY"
 HYDROPHOBIC_RESIDUES = frozenset("AILMFWVY")
 CHARGE_PATTERN_REPLACEMENTS = "KRHAGSTNQ"
+RESCUE_ENDPOINTS = {
+    "macrel": {
+        "metric": "macrel_amp_probability",
+        "percentile": "macrel_amp_probability__parent_benefit_percentile",
+        "plugin": "hemolysis_risk",
+        "direction": "maximize",
+    },
+    "llamp": {
+        "metric": "llamp_log10_mic_um",
+        "percentile": "llamp_log10_mic_um__parent_benefit_percentile",
+        "plugin": "mic_potency",
+        "direction": "minimize",
+    },
+    "amp-read": {
+        "metric": "amp_read_log10_mic_um",
+        "percentile": "amp_read_log10_mic_um__parent_benefit_percentile",
+        "plugin": "mic_potency_amp_read",
+        "direction": "minimize",
+    },
+}
 OPERATOR_RELEASE_SHA256 = sha256_json(
     {
         "operator_id": "autoresearch-macrel-endpoint-rescue-v1",
@@ -67,7 +87,9 @@ def _select_parents(
     maximum_per_family: int,
     *,
     exclude_families_with_support3: bool = False,
+    rescue_endpoint: str = "macrel",
 ) -> list[dict[str, str]]:
+    endpoint = RESCUE_ENDPOINTS[rescue_endpoint]
     full_support_families = (
         {
             row["family_key_80_80"]
@@ -82,7 +104,7 @@ def _select_parents(
         for row in rows
         if row["display_eligible"].lower() == "true"
         and int(row["activity_model_support_count_calibrated"]) == 2
-        and float(row["macrel_amp_probability__parent_benefit_percentile"]) < 0.75
+        and float(row[endpoint["percentile"]]) < 0.75
         and row["family_key_80_80"] not in full_support_families
     ]
     by_family: dict[str, list[dict[str, str]]] = {}
@@ -90,18 +112,16 @@ def _select_parents(
         by_family.setdefault(row["family_key_80_80"], []).append(row)
     selected: list[dict[str, str]] = []
     for family_key in sorted(by_family):
+        reverse_sign = -1.0 if endpoint["direction"] == "maximize" else 1.0
         family_rows = sorted(
             by_family[family_key],
-            key=lambda row: (
-                -float(row["macrel_amp_probability"]),
-                float(row["amp_read_log10_mic_um"]),
-                float(row["llamp_log10_mic_um"]),
-                row["sequence"],
-            ),
+            key=lambda row: (reverse_sign * float(row[endpoint["metric"]]), row["sequence"]),
         )
         selected.extend(family_rows[:maximum_per_family])
     if not selected:
-        raise ValueError("no calibrated support-2 Macrel endpoint rescue parents")
+        raise ValueError(
+            f"no calibrated support-2 {rescue_endpoint} endpoint rescue parents"
+        )
     return selected
 
 
@@ -112,26 +132,41 @@ def _generate(
     *,
     operator_mode: str = "hydrophobic",
     generation_floor: int | None = None,
+    rescue_endpoint: str = "macrel",
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    endpoint = RESCUE_ENDPOINTS[rescue_endpoint]
     generated: list[dict[str, Any]] = []
     actions: list[dict[str, Any]] = []
     seen: set[str] = set()
     for parent in parents:
         parent_sequence = parent["sequence"]
-        parent_macrel = float(parent["macrel_amp_probability"])
+        parent_metric_value = float(parent[endpoint["metric"]])
         for position, old_residue in enumerate(parent_sequence):
             if operator_mode == "hydrophobic" and old_residue in HYDROPHOBIC_RESIDUES:
                 continue
             if operator_mode == "hydrophobic":
                 replacements = HYDROPHOBIC_REPLACEMENTS
-                operator_id = "autoresearch-macrel-endpoint-rescue-v1"
-                operator_release_sha256 = OPERATOR_RELEASE_SHA256
             elif operator_mode == "charge-pattern":
                 replacements = CHARGE_PATTERN_REPLACEMENTS
+            else:
+                raise ValueError(f"unknown activity rescue operator mode: {operator_mode}")
+            if rescue_endpoint == "macrel" and operator_mode == "hydrophobic":
+                operator_id = "autoresearch-macrel-endpoint-rescue-v1"
+                operator_release_sha256 = OPERATOR_RELEASE_SHA256
+            elif rescue_endpoint == "macrel" and operator_mode == "charge-pattern":
                 operator_id = "autoresearch-macrel-charge-pattern-rescue-v1"
                 operator_release_sha256 = CHARGE_PATTERN_OPERATOR_RELEASE_SHA256
             else:
-                raise ValueError(f"unknown activity rescue operator mode: {operator_mode}")
+                operator_id = f"autoresearch-{rescue_endpoint}-{operator_mode}-rescue-v1"
+                operator_release_sha256 = sha256_json(
+                    {
+                        "operator_id": operator_id,
+                        "replacement_residues": list(replacements),
+                        "rescue_metric": endpoint["metric"],
+                        "rescue_direction": endpoint["direction"],
+                        "quality_gate": "strict-display-prefilter-v1",
+                    }
+                )
             for new_residue in replacements:
                 if new_residue == old_residue:
                     continue
@@ -161,14 +196,19 @@ def _generate(
                     seed=int(digest[:8], 16),
                     operator_id=operator_id,
                     operator_release_sha256=operator_release_sha256,
-                    expected_improvement_metrics=("macrel_amp_probability",),
-                    protected_metrics=(
-                        "amp_read_log10_mic_um",
-                        "guruprasad_instability_index",
-                        "llamp_log10_mic_um",
-                        "macrel_hemolysis_probability",
-                        "maximum_hydrophobic_run",
-                        "toxinpred3_hybrid_score",
+                    expected_improvement_metrics=(endpoint["metric"],),
+                    protected_metrics=tuple(
+                        metric
+                        for metric in (
+                            "amp_read_log10_mic_um",
+                            "guruprasad_instability_index",
+                            "llamp_log10_mic_um",
+                            "macrel_amp_probability",
+                            "macrel_hemolysis_probability",
+                            "maximum_hydrophobic_run",
+                            "toxinpred3_hybrid_score",
+                        )
+                        if metric != endpoint["metric"]
                     ),
                     evidence_sha256s=(evidence_sha256,),
                     parent_candidate_id=parent["sequence_sha256"],
@@ -192,7 +232,9 @@ def _generate(
                         "parent_candidate_id": parent["sequence_sha256"],
                         "parent_sequence_sha256": parent["sequence_sha256"],
                         "parent_sequence": parent_sequence,
-                        "parent_macrel_amp_probability": parent_macrel,
+                        "rescue_endpoint": rescue_endpoint,
+                        "rescue_metric": endpoint["metric"],
+                        "parent_rescue_metric_value": parent_metric_value,
                         "family_key_80_80": parent["family_key_80_80"],
                         "family_representative_sequence": parent.get(
                             "family_representative_sequence", parent_sequence
@@ -217,7 +259,9 @@ def _generate(
                     }
                 )
     if not generated:
-        raise ValueError("no novel strict Macrel endpoint rescue variants generated")
+        raise ValueError(
+            f"no novel strict {rescue_endpoint} endpoint rescue variants generated"
+        )
     return generated, actions
 
 
@@ -233,6 +277,7 @@ def run(args: argparse.Namespace) -> None:
         source_rows,
         args.maximum_parents_per_family,
         exclude_families_with_support3=args.exclude_families_with_support3,
+        rescue_endpoint=args.rescue_endpoint,
     )
     parent_score_sha256 = (
         parent_score_sha256s[0]
@@ -255,6 +300,7 @@ def run(args: argparse.Namespace) -> None:
         historical_sha256s,
         parent_score_sha256,
         operator_mode=args.operator_mode,
+        rescue_endpoint=args.rescue_endpoint,
         generation_floor=max(int(row["generation"]) for row in source_rows) + 1,
     )
 
@@ -298,7 +344,9 @@ def run(args: argparse.Namespace) -> None:
     statuses = []
     metrics_dir = output_dir / "metrics"
     metrics_dir.mkdir(parents=True, exist_ok=True)
-    for plugin_name in SEARCH_PLUGINS:
+    endpoint = RESCUE_ENDPOINTS[args.rescue_endpoint]
+    search_plugins = tuple(dict.fromkeys((*SEARCH_PLUGINS, endpoint["plugin"])))
+    for plugin_name in search_plugins:
         result = evaluate(
             {
                 "run_id": f"autoresearch-activity-rescue-{plugin_name}",
@@ -331,18 +379,21 @@ def run(args: argparse.Namespace) -> None:
         safety_pass = _is_non_toxin(row.get("toxinpred3_label")) and _is_low_hemolysis(
             row.get("macrel_hemolysis_label")
         )
-        gain = float(row["macrel_amp_probability"]) - float(
-            row["parent_macrel_amp_probability"]
+        child_value = float(row[endpoint["metric"]])
+        parent_value = float(row["parent_rescue_metric_value"])
+        gain = (
+            child_value - parent_value
+            if endpoint["direction"] == "maximize"
+            else parent_value - child_value
         )
-        row["macrel_amp_probability_gain"] = gain
+        row["rescue_metric_improvement"] = gain
         row["safety_hard_gate_pass"] = str(safety_pass).lower()
-        row["macrel_gain_positive"] = str(gain > 0.0).lower()
+        row["rescue_gain_positive"] = str(gain > 0.0).lower()
         row["full_score_shortlist"] = str(safety_pass and gain >= 0.03).lower()
     rows.sort(
         key=lambda row: (
             row["full_score_shortlist"] != "true",
-            -float(row["macrel_amp_probability_gain"]),
-            -float(row["macrel_amp_probability"]),
+            -float(row["rescue_metric_improvement"]),
             row["family_key_80_80"],
             row["sequence"],
         )
@@ -351,7 +402,7 @@ def run(args: argparse.Namespace) -> None:
     gain_rows = [
         row
         for row in safety_rows
-        if row["macrel_gain_positive"] == "true"
+        if row["rescue_gain_positive"] == "true"
     ]
     shortlist = [row for row in rows if row["full_score_shortlist"] == "true"]
     _write_csv(output_dir / "all_search_scores.csv", rows)
@@ -367,6 +418,9 @@ def run(args: argparse.Namespace) -> None:
         "parent_score_sha256": parent_score_sha256,
         "parent_score_sha256s": parent_score_sha256s,
         "operator_mode": args.operator_mode,
+        "rescue_endpoint": args.rescue_endpoint,
+        "rescue_metric": endpoint["metric"],
+        "rescue_direction": endpoint["direction"],
         "generation_floor": max(int(row["generation"]) for row in source_rows) + 1,
         "plans_sha256": sha256_file(plans_path),
         "historical_sequence_exclusion_count": len(historical_sha256s),
@@ -375,7 +429,7 @@ def run(args: argparse.Namespace) -> None:
         "parent_family_count": len({row["family_key_80_80"] for row in parents}),
         "generated_novel_strict_count": len(rows),
         "safety_hard_gate_pass_count": len(safety_rows),
-        "safety_positive_macrel_gain_count": len(gain_rows),
+        "safety_positive_rescue_gain_count": len(gain_rows),
         "full_score_shortlist_count": len(shortlist),
         "plugin_status": statuses,
         "workflow_submitted": False,
@@ -406,6 +460,11 @@ def main() -> None:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--maximum-parents-per-family", type=int, default=8)
     parser.add_argument("--exclude-families-with-support3", action="store_true")
+    parser.add_argument(
+        "--rescue-endpoint",
+        choices=tuple(RESCUE_ENDPOINTS),
+        default="macrel",
+    )
     parser.add_argument(
         "--operator-mode",
         choices=("hydrophobic", "charge-pattern"),
