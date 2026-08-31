@@ -79,7 +79,7 @@ def _metric_values(result: dict[str, Any]) -> dict[str, dict[str, Any]]:
 async def _historical_sequence_sha256s() -> set[str]:
     async with SessionFactory() as session:
         candidate_hashes = set(
-            await session.scalars(select(Candidate.sequence_sha256).distinct())
+            await session.scalars(select(Candidate.sequence_sha256))
         )
         operational_hash_rows = list(
             await session.scalars(
