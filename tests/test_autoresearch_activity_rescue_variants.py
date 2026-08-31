@@ -177,6 +177,28 @@ def test_amp_read_parent_selection_uses_its_own_calibrated_endpoint() -> None:
     assert selected == [row]
 
 
+def test_parent_selection_can_rescue_support_one_new_families() -> None:
+    module = _load_module()
+    row = {
+        "display_eligible": "true",
+        "activity_model_support_count_calibrated": "1",
+        "family_key_80_80": "new-family",
+        "macrel_amp_probability__parent_benefit_percentile": "0.6",
+        "macrel_amp_probability": "0.35",
+        "sequence": "KKGSKKGSKK",
+    }
+
+    assert module._select_parents(
+        [row],
+        1,
+        rescue_endpoint="macrel",
+        minimum_parent_support=1,
+    ) == [row]
+
+    with pytest.raises(ValueError, match="support-2-to-2"):
+        module._select_parents([row], 1, rescue_endpoint="macrel")
+
+
 def test_mic_endpoint_operator_records_minimize_improvement_target() -> None:
     module = _load_module()
     parent_sequence = "RTKKKKTTLRREGNRGKWGK"

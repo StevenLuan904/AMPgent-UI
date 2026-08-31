@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import importlib.util
 import sys
 from pathlib import Path
@@ -44,3 +45,39 @@ def test_unsafe_parent_selection_can_target_source_family() -> None:
     selected = module._select_unsafe_parents(rows, family_keys=("target-gap",))
 
     assert [row["sequence"] for row in selected] == ["KKKK"]
+
+
+def test_postgresql_history_includes_operational_score_sequences(monkeypatch) -> None:
+    module = _load_module()
+    candidate_hash = "a" * 64
+    operational_hash = "b" * 64
+
+    class Session:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        async def scalars(self, _query):
+            self.calls += 1
+            if self.calls == 1:
+                return [candidate_hash]
+            return [
+                {
+                    "purpose": "score_all",
+                    "status": "succeeded",
+                    "output": {"candidates": [{"sequence_sha256": operational_hash}]},
+                }
+            ]
+
+    class SessionContext:
+        async def __aenter__(self):
+            return Session()
+
+        async def __aexit__(self, *_args):
+            return None
+
+    monkeypatch.setattr(module, "SessionFactory", lambda: SessionContext())
+
+    assert asyncio.run(module._historical_sequence_sha256s()) == {
+        candidate_hash,
+        operational_hash,
+    }

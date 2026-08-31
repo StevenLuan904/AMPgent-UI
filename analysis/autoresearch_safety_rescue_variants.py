@@ -13,7 +13,7 @@ from sqlalchemy import select
 
 from pepagent.autoresearch_closed_loop import MaskedSubstitutionAction, ResidueSubstitution
 from pepagent.autoresearch_planner import _hydrophobic_fraction, _sequence_prescreen
-from pepagent.db.models import Candidate
+from pepagent.db.models import Candidate, LifecycleEvent
 from pepagent.db.session import SessionFactory
 from pepagent.model_workers.sequence_metrics_cli import evaluate
 from pepagent.provenance.hashing import sha256_file, sha256_json, sha256_text
@@ -78,7 +78,36 @@ def _metric_values(result: dict[str, Any]) -> dict[str, dict[str, Any]]:
 
 async def _historical_sequence_sha256s() -> set[str]:
     async with SessionFactory() as session:
-        return set(await session.scalars(select(Candidate.sequence_sha256).distinct()))
+        candidate_hashes = set(
+            await session.scalars(select(Candidate.sequence_sha256).distinct())
+        )
+        operational_payloads = list(
+            await session.scalars(
+                select(LifecycleEvent.payload_json).where(
+                    LifecycleEvent.event_type == "operational.call.succeeded"
+                )
+            )
+        )
+    operational_hashes: set[str] = set()
+    for payload in operational_payloads:
+        if payload.get("purpose") != "score_all" or payload.get("status") != "succeeded":
+            continue
+        output = payload.get("output")
+        if not isinstance(output, dict):
+            continue
+        candidates = output.get("candidates")
+        if not isinstance(candidates, list):
+            continue
+        for candidate in candidates:
+            if not isinstance(candidate, dict) or not isinstance(
+                candidate.get("sequence_sha256"), str
+            ):
+                raise ValueError("PostgreSQL operational score history is malformed")
+            operational_hashes.add(candidate["sequence_sha256"])
+    combined = candidate_hashes | operational_hashes
+    if any(len(item) != 64 or set(item) - set("0123456789abcdef") for item in combined):
+        raise ValueError("PostgreSQL rescue history contains an invalid sequence SHA-256")
+    return combined
 
 
 def _is_non_toxin(value: Any) -> bool:

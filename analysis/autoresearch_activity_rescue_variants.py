@@ -153,7 +153,10 @@ def _select_parents(
     *,
     exclude_families_with_support3: bool = False,
     rescue_endpoint: str = "macrel",
+    minimum_parent_support: int = 2,
 ) -> list[dict[str, str]]:
+    if minimum_parent_support not in {0, 1, 2}:
+        raise ValueError("minimum parent support must be 0, 1, or 2")
     endpoint = RESCUE_ENDPOINTS[rescue_endpoint]
     full_support_families = (
         {
@@ -168,7 +171,9 @@ def _select_parents(
         row
         for row in rows
         if row["display_eligible"].lower() == "true"
-        and int(row["activity_model_support_count_calibrated"]) == 2
+        and minimum_parent_support
+        <= int(row["activity_model_support_count_calibrated"])
+        <= 2
         and float(row[endpoint["percentile"]]) < 0.75
         and row["family_key_80_80"] not in full_support_families
     ]
@@ -184,7 +189,10 @@ def _select_parents(
         )
         selected.extend(family_rows[:maximum_per_family])
     if not selected:
-        raise ValueError(f"no calibrated support-2 {rescue_endpoint} endpoint rescue parents")
+        raise ValueError(
+            "no calibrated support-"
+            f"{minimum_parent_support}-to-2 {rescue_endpoint} endpoint rescue parents"
+        )
     return selected
 
 
@@ -433,6 +441,7 @@ def run(args: argparse.Namespace) -> None:
         args.maximum_parents_per_family,
         exclude_families_with_support3=args.exclude_families_with_support3,
         rescue_endpoint=args.rescue_endpoint,
+        minimum_parent_support=args.minimum_parent_support,
     )
     parent_score_sha256 = (
         parent_score_sha256s[0]
@@ -582,6 +591,7 @@ def run(args: argparse.Namespace) -> None:
         "rescue_endpoint": args.rescue_endpoint,
         "rescue_metric": endpoint["metric"],
         "rescue_direction": endpoint["direction"],
+        "minimum_parent_support": args.minimum_parent_support,
         "generation_floor": generation_floor,
         "plans_sha256": sha256_file(plans_path),
         "historical_sequence_exclusion_count": len(historical_sha256s),
@@ -626,6 +636,12 @@ def main() -> None:
     parser.add_argument("--repo-root", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--maximum-parents-per-family", type=int, default=8)
+    parser.add_argument(
+        "--minimum-parent-support",
+        type=int,
+        choices=(0, 1, 2),
+        default=2,
+    )
     parser.add_argument("--generation-floor", type=int)
     parser.add_argument("--exclude-families-with-support3", action="store_true")
     parser.add_argument(
