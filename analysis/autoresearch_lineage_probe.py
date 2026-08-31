@@ -34,6 +34,22 @@ ARCHIVE_METRICS = {
 }
 
 
+def _prefer_full_support_within_families(
+    rows: list[dict[str, str]],
+) -> list[dict[str, str]]:
+    full_support_families = {
+        row["family_key_80_80"]
+        for row in rows
+        if int(row.get("activity_model_support_count_calibrated", 0)) == 3
+    }
+    return [
+        row
+        for row in rows
+        if row["family_key_80_80"] not in full_support_families
+        or int(row.get("activity_model_support_count_calibrated", 0)) == 3
+    ]
+
+
 def _write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
     if not rows:
         raise ValueError(f"refusing to write empty CSV: {path}")
@@ -93,6 +109,8 @@ def run(args: argparse.Namespace) -> None:
         and int(row.get("activity_model_support_count_calibrated", 0))
         >= args.minimum_calibrated_support
     ]
+    if args.prefer_full_support_within_families:
+        rows = _prefer_full_support_within_families(rows)
     if not rows:
         raise ValueError("lineage probe selected source cohort is empty")
     source_branches = {row["branch_key"] for row in rows}
@@ -320,6 +338,9 @@ def run(args: argparse.Namespace) -> None:
         "source_candidate_count": len(rows),
         "source_cohort_sha256": sha256_file(source_cohort_path),
         "generation": args.generation,
+        "prefer_full_support_within_families": (
+            args.prefer_full_support_within_families
+        ),
         "historical_source_sha256s": historical_source_hashes,
         "historical_exclusion_sequence_count": len(historical_sequences),
         "operator_release_sha256": operator_release_sha256,
@@ -369,6 +390,7 @@ def main() -> None:
     parser.add_argument("--replicates", type=int, default=1)
     parser.add_argument("--de-novo-quota", type=float, default=0.25)
     parser.add_argument("--minimum-calibrated-support", type=int, default=0)
+    parser.add_argument("--prefer-full-support-within-families", action="store_true")
     run(parser.parse_args())
 
 
