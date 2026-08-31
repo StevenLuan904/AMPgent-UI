@@ -11,6 +11,9 @@ export interface RunListItem {
   temporal_run_id?: string | null
   workflow_id?: string | null
   generation_population?: GenerationPopulation
+  generation_quality_gate?: GenerationQualityGate
+  scientific_run_status?: ScientificRunStatus
+  temporal_observability?: TemporalObservability
   created_at: string
   started_at: string | null
   finished_at: string | null
@@ -37,6 +40,7 @@ export interface GraphStage {
   total: number
   provenance: 'database' | 'derived' | 'missing'
   generation_population?: GenerationPopulation
+  generation_quality_gate?: GenerationQualityGate
   insight: {
     grade: 'good' | 'okay' | 'fair' | 'bad' | 'neutral'
     verdict: string
@@ -88,6 +92,50 @@ export interface GenerationPopulation {
   baseline_candidate_count: number
   descendant_candidate_count: number
   max_generation: number
+}
+
+export interface GenerationQualityRule {
+  metric_key: 'guruprasad_instability_index' | 'maximum_hydrophobic_run' | 'hydrophobic_fraction' | 'net_charge_ph7_4'
+  comparison: '<' | '<=' | '>='
+  threshold: number
+  unit: 'dimensionless' | 'residues' | 'fraction' | 'elementary_charge'
+}
+
+export interface GenerationQualityGate {
+  status: 'applied' | 'not_applied'
+  operator_name: string
+  operator_version: string
+  proposal_count: number
+  prefilter_pass_count: number
+  materialized_descendant_count: number
+  evaluated_descendant_count: number
+  count_scope: {
+    source: 'postgresql'
+    run_id: string
+    operator_id: string
+  }
+  semantics: {
+    proposal_and_prefilter_pass_are_not_materialized_descendants: true
+    materialized_descendant_requires_persisted_lineage_edge: true
+    evaluated_descendant_requires_persisted_evaluation: true
+    offline_validation_included: false
+  }
+  rules: GenerationQualityRule[]
+}
+
+export interface ScientificRunStatus {
+  status: RunStatus
+  source: 'postgresql'
+  run_id: string
+}
+
+export interface TemporalObservability {
+  status: 'identity_recorded' | 'identity_missing'
+  temporal_workflow_id: string | null
+  temporal_run_id: string | null
+  history_read_status: string
+  history_read_error: string | null
+  affects_scientific_run_status: false
 }
 
 export interface ViewerArtifact {
@@ -188,6 +236,7 @@ export interface NodeDetail {
   node_id: string
   display_population?: DisplayPopulation
   generation_population?: GenerationPopulation
+  generation_quality_gate?: GenerationQualityGate
   narrative: string[]
   calls: ToolAttempt[]
   metrics: Record<string, MetricSummary>
@@ -220,6 +269,7 @@ export interface RunDetail {
   checkpoints: Array<Record<string, unknown>>
   display_population?: DisplayPopulation
   generation_population?: GenerationPopulation
+  generation_quality_gate?: GenerationQualityGate
   graph: { nodes: GraphStage[]; edges: GraphEdgeDetail[] }
   candidates: CandidatePreview[]
   candidate_exclusions?: CandidateExclusion[]

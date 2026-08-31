@@ -12,10 +12,12 @@ import {
   BrainCircuit,
   BookOpenText,
   Gauge,
+  ShieldCheck,
   Target,
 } from 'lucide-react'
 import { MoleculeViewer } from './MoleculeViewer'
 import { ResultDistribution, type ResultDistributionData } from './ResultDistribution'
+import { qualityGateNodeSummary } from './generationQualityGate'
 import type { Branch, GraphStage, ViewerArtifact } from './types'
 
 export interface StageNodeData extends Record<string, unknown> {
@@ -79,6 +81,7 @@ export function WorkflowNode({ data }: NodeProps<StageNode>) {
   const stateIcon = stage.status === 'completed' ? <Check /> : stage.status === 'stopped' ? <CircleStop /> : null
   const isStructure = stage.kind === 'structure'
   const showsTargets = stage.id === 'targets' && branches.length > 0
+  const qualityGate = stage.id === 'candidate_pool' ? stage.generation_quality_gate : undefined
   const evidenceLabel = distribution?.values.length ? '结果分布' : '暂无结果'
   return (
     <div className={`workflow-node stage-${stage.id} kind-${stage.kind} grade-${stage.insight.grade} node-${stage.status}${selected ? ' is-selected' : ''}`}>
@@ -95,6 +98,12 @@ export function WorkflowNode({ data }: NodeProps<StageNode>) {
         <span className={`verdict-chip ${stage.insight.grade}`}><i />{stage.insight.verdict}</span>
         <b title={stage.insight.reason}>{stage.insight.reason}</b>
       </div>
+      {qualityGate && (
+        <div className={`node-quality-gate state-${qualityGate.status}`} title="计数仅来自当前数据库运行；规则提案、谱系入库和完成评估分别统计。">
+          <span><ShieldCheck />新生序列</span>
+          <b>{qualityGateNodeSummary(qualityGate)}</b>
+        </div>
+      )}
       {isStructure && <MoleculeViewer key={viewer?.artifact_sha256 ?? 'empty'} artifact={viewer} compact autoRotate />}
       {distribution && <ResultDistribution data={distribution} compact />}
       {showsTargets ? (

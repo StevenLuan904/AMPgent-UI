@@ -40,6 +40,7 @@ import { loadAnalysisSnapshot, type AnalysisSnapshot } from './analysis/dataKern
 import { EvidenceDashboard } from './analysis/EvidenceDashboard'
 import { MoleculeViewer } from './MoleculeViewer'
 import { candidateGenerationLabel, formatGenerationPopulation } from './generationPopulation'
+import { formatQualityGateRule, qualityGateCountSteps, qualityGateStatusLabel } from './generationQualityGate'
 import {
   distributionForStage,
   loadPersistedRunDistributions,
@@ -50,6 +51,7 @@ import { LaneLabel, WorkflowNode, type LaneNode, type StageNode } from './Workfl
 import { assertMatchingRunIdentity, type RunIdentity } from './runIdentity'
 import type {
   CandidatePreview,
+  GenerationQualityGate,
   GraphEdgeDetail,
   GraphStage,
   MetricSummary,
@@ -490,6 +492,10 @@ function CanvasHeader({ detail, refreshing, selectionMode, selectedCount, onRefr
   const generationSummary = detail.generation_population
     ? formatGenerationPopulation(detail.generation_population)
     : `${displayCandidateCount.toLocaleString()} 个候选`
+  const scientificStatus = detail.run.scientific_run_status?.status ?? detail.run.status
+  const temporalObservability = detail.run.temporal_observability
+  const temporalIssue = temporalObservability
+    && (temporalObservability.status === 'identity_missing' || temporalObservability.history_read_error !== null)
   return (
     <header className="canvas-header">
       <div className="canvas-title-block">
@@ -508,7 +514,8 @@ function CanvasHeader({ detail, refreshing, selectionMode, selectedCount, onRefr
         <button className={`analysis-select-button ${selectionMode ? 'active' : ''}`} onClick={onToggleSelection}>
           <ChartNoAxesCombined /><span>{selectionMode ? `已选 ${selectedCount} 个节点` : '组合分析'}</span>
         </button>
-        <span className={`run-pill status-${detail.run.status}`}><i />{statusText[detail.run.status] ?? detail.run.status}</span>
+        <span className={`run-pill status-${scientificStatus}`} title="科学运行状态来自权威数据库。"><i />{statusText[scientificStatus] ?? scientificStatus}</span>
+        {temporalIssue && <span className="observability-pill" title="调度可观测性与科学运行状态分别记录。">调度观察异常</span>}
         <button className="icon-button" onClick={onRefresh} title="立即刷新"><RefreshCw className={refreshing ? 'spin' : ''} /></button>
         <button className="icon-button"><Ellipsis /></button>
       </div>
@@ -792,11 +799,34 @@ function ReasoningPanel({ nodeDetail }: { nodeDetail: NodeDetail }) {
   )
 }
 
+function QualityGatePanel({ gate }: { gate: GenerationQualityGate }) {
+  const steps = qualityGateCountSteps(gate)
+  return (
+    <section className={`quality-gate-panel state-${gate.status}`}>
+      <header>
+        <span><ShieldCheck /><span><h3>新生序列质量门</h3><small title="规则序列生成器第二版：在生成与评估前执行确定性序列质量预筛。">规则序列生成器 · 第二版</small></span></span>
+        <b>{qualityGateStatusLabel(gate)}</b>
+      </header>
+      <div className="quality-gate-counts" aria-label="新生序列质量门分层计数">
+        {steps.map((step) => <div key={step.label}><span>{step.label}</span><strong>{step.value.toLocaleString()}</strong></div>)}
+      </div>
+      <div className="quality-gate-rules">
+        {gate.rules.map((rule) => {
+          const formatted = formatQualityGateRule(rule)
+          return <div key={rule.metric_key}><span>{formatted.label}</span><strong>{formatted.value}</strong></div>
+        })}
+      </div>
+      <footer><span>{gate.status === 'applied' ? '当前运行的持久化记录' : '当前运行尚无第二版预筛记录'}</span><b>数据库直读</b></footer>
+    </section>
+  )
+}
+
 function Inspector({ detail, stageId, analysisSnapshot, distributionOverride, onClose }: { detail: RunDetail; stageId: string; analysisSnapshot: AnalysisSnapshot | null; distributionOverride?: ResultDistributionData; onClose: () => void }) {
   const stage = detail.graph.nodes.find((item) => item.id === stageId) ?? detail.graph.nodes[0]
   const groupLabel = { inputs: '输入', design: '设计', evaluation: '评估', decision: '决策', structure: '结构', review: '评审' }[stage.group]
   const [nodeDetail, setNodeDetail] = useState<NodeDetail | null>(null)
   const [detailError, setDetailError] = useState<string | null>(null)
+  const qualityGate = nodeDetail?.generation_quality_gate ?? stage.generation_quality_gate ?? detail.generation_quality_gate
   const distribution = distributionOverride
     ?? distributionForStage(analysisSnapshot, detail, stageId)
     ?? { label: '节点结果', unit: '条', values: [], source: '尚无数值结果', direction: 'neutral' }
@@ -842,6 +872,7 @@ function Inspector({ detail, stageId, analysisSnapshot, distributionOverride, on
         <p>{stage.insight.reason}</p>
         <span>{stage.insight.facts.map((fact) => `${fact.label} ${fact.value}`).join(' · ')}</span>
       </section>
+      {stageId === 'candidate_pool' && qualityGate && <QualityGatePanel gate={qualityGate} />}
       {distribution && <section className="inspector-distribution-section"><ResultDistribution data={distribution} /></section>}
       <section className="inspector-section evidence-overview">
         <div className="section-title"><h3>数据概览</h3><span className={`stage-badge ${stage.status}`}>{statusText[stage.status] ?? stage.status}</span></div>
