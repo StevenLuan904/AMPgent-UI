@@ -1,0 +1,35 @@
+{
+  "schema_version": "ampgent.autoresearch-challenger-review.1",
+  "observed_at_utc": "2026-08-31T04:10:40.272742+00:00",
+  "source_csv_sha256": "d857b5696d359821b208dab5ab097f02d64502fbe54ccce5107b5d1b21e882e6",
+  "reviewed_excellent_candidate_count": 116,
+  "challenger_no_conflict_count": 86,
+  "challenger_conflict_count": 30,
+  "branch_summary": [
+    {
+      "branch_key": "angpt1",
+      "excellent_candidate_count": 108,
+      "challenger_no_conflict_count": 79,
+      "challenger_conflict_count": 29
+    },
+    {
+      "branch_key": "vegfa",
+      "excellent_candidate_count": 8,
+      "challenger_no_conflict_count": 7,
+      "challenger_conflict_count": 1
+    }
+  ],
+  "worker_input_sha256": "cd83610729d85aa1eaddb734956b1c0b328d71e847177034767e1db50e2d0ebb",
+  "worker_output_sha256": "97b5ce8465236a9d14833278a1856b8059213af1c114cdef50fff84c675aa7bc",
+  "calibration_sha256": "d9cbe209019de9d625ca0806fafc1b41bec0fdc9f537ab49ca4019a39d4839d9",
+  "challenger_review_csv_sha256": "5df5ee0752fb49f255b96294a656e6be0379e012f1c7702d51bdd521976571ec",
+  "challenger_is_not_a_primary_hard_gate": true,
+  "missing_verified_runtimes": [
+    "apex",
+    "peptiverse"
+  ],
+  "workflow_submitted": false,
+  "gpu_task_submitted": false,
+  "historical_run_modified": false,
+  "receipt_payload_sha256": "0ed328462bdc601300d80307c1d0f2888daca5a1566825674dc4838579a443d7"
+}
