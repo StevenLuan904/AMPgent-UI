@@ -1,0 +1,75 @@
+{
+  "schema_version": "ampgent.autoresearch-quality-gate-six-branch-probe-receipt.1",
+  "observed_at_utc": "2026-08-31T00:54:10.917789+00:00",
+  "source_commit": "25d2a5bf59bf38824f0a3a010d4318dd2ffcf1a5",
+  "operator_release_sha256": "7eda7922065f9b4ff60164b6000f16163cc56562c5e40c76236e5e47369dcf8f",
+  "historical_sequence_exclusion_count": 66187,
+  "branch_count": 6,
+  "proposal_count": 19,
+  "globally_unique_proposal_count": 19,
+  "all_historical_exact_replay_false": true,
+  "all_instability_lt_50": true,
+  "all_maximum_hydrophobic_run_le_2": true,
+  "all_hydrophobic_fraction_le_0_45": true,
+  "all_net_charge_ge_3": true,
+  "all_score_all_pending": true,
+  "workflow_submitted": false,
+  "gpu_task_submitted": false,
+  "historical_run_modified": false,
+  "branches": [
+    {
+      "branch_key": "acea",
+      "parent_run_id": "2e6f38f2-4730-57cc-b149-8c54eda82cd9",
+      "operational_run_id": "548d25c8-830c-5897-8552-cd2fc726cea5",
+      "tool_call_id": "3115fb3d-280f-4909-9f47-a9ff090a10fb",
+      "event_id": "c19ca900-280c-4b0c-9d5d-897bad567455",
+      "plan_sha256": "ce09bfaaaae58ee40dc079298bc6b5cb57ecd14fddf24923f50c0cd4565a2bc8",
+      "proposal_count": 3
+    },
+    {
+      "branch_key": "angpt1",
+      "parent_run_id": "2bcb662d-da67-51e3-adbe-997d3aacad89",
+      "operational_run_id": "1f2bac19-e895-50e3-8e5f-6bf6f382d7a0",
+      "tool_call_id": "7aa14db4-e78f-4a1a-804d-fd2c1bb059ec",
+      "event_id": "48acd4a9-0e52-4637-8500-d44944f30f38",
+      "plan_sha256": "850f710d8ed985ed656b8b68aaca699c6e1a95ea060a7f674be498fa8522a0c4",
+      "proposal_count": 3
+    },
+    {
+      "branch_key": "fgf2",
+      "parent_run_id": "eb85d014-e7b3-5f6c-acab-34ac580b30e1",
+      "operational_run_id": "6bb6fc07-d362-561b-a57a-9bb45893824a",
+      "tool_call_id": "7167b1af-a829-4fdf-9aec-e91c433a9f32",
+      "event_id": "5a617d48-ac5e-4296-afc2-9e48bc3713d8",
+      "plan_sha256": "d9f80e6a55c9423d5f0bfd67d3b5ae5dbfae8efdf0c996eed59288f9bed7c796",
+      "proposal_count": 3
+    },
+    {
+      "branch_key": "gyra",
+      "parent_run_id": "15ea9977-4ea1-52a6-bcf0-f6e620803d19",
+      "operational_run_id": "7a71bb60-3344-5846-991d-6c2f3abad0c5",
+      "tool_call_id": "ebf9af80-28e1-4f08-85dd-a733294e7bd8",
+      "event_id": "69024dc9-7159-4fdc-ad0e-46291f91328b",
+      "plan_sha256": "9673061f7b280fd9d01cf17000ba395ff18228a6373a1cadb8a262b110982ee9",
+      "proposal_count": 3
+    },
+    {
+      "branch_key": "pbp2a",
+      "parent_run_id": "bde9b74d-84a0-50c4-9002-8ae419d937e3",
+      "operational_run_id": "2f2e7c68-120f-5ae8-9ad7-ed3ae36bdfd3",
+      "tool_call_id": "b00d4922-06bd-4eff-a3d1-79d15c3ab31f",
+      "event_id": "7e2d6294-1a94-4c72-9fae-c763b51f6f44",
+      "plan_sha256": "78acad6531956533d31278cec23b73b6aa31997e902cbd96c90491c55f1caa2e",
+      "proposal_count": 4
+    },
+    {
+      "branch_key": "vegfa",
+      "parent_run_id": "7490f36c-8f0a-5908-af1d-de1fa97f09cf",
+      "operational_run_id": "027fd7d2-ff8d-590b-8e61-62d10b564d01",
+      "tool_call_id": "92507eab-4417-448f-ae2d-721777096dd8",
+      "event_id": "3bef1a7e-ddeb-45d9-ba7f-1f22ce72fd1b",
+      "plan_sha256": "7ee49e03664d79aac4e2e6b5f4d85599161a79d46a4407a4e867df5d0a500d67",
+      "proposal_count": 3
+    }
+  ]
+}
