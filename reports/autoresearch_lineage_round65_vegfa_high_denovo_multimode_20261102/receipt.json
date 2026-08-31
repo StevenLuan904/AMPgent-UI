@@ -1,0 +1,54 @@
+{
+  "schema_version": "ampgent.autoresearch-lineage-probe.1",
+  "observed_at_utc": "2026-08-31T17:46:02.170965+00:00",
+  "source_csv_sha256s": [
+    "86f66fc8afe5465a1c2d886633b8ccbae744adacd410d48ae772c842fff4f867",
+    "ab0c8537ac35235a8c5ed313c59019e9563da4f65e847877fd75d34b192d45d4",
+    "3c1b854cd813a3cea80b2ce43f4f2fa91fc7ff721eee00f0080ec80e2a1ef992",
+    "8fa1b6def184cdf299ed4bc9184e34ec5a6e6d281dec597704b169e41b4beb8e",
+    "ee87a8d24895975213dff0e291d9a7bca55e39f5d3bd9efc452d7fd24243b85a",
+    "32e5f15c64c036b3cca4de14f254322a8e2dac176b075734c3339a7d6c5be23b",
+    "3ba8375756f65ade59c191cf0c467415dba93a1700f355f091712dacb683bff2"
+  ],
+  "source_candidate_count": 76,
+  "source_cohort_sha256": "a6fd0b301c86c95207a2280cfdfc499807a37608ee9213f6cc2de12169ebc7ca",
+  "generation": 19,
+  "prefer_full_support_within_families": true,
+  "historical_source_sha256s": [
+    "4f54e6fa69b9bfadd94e3769cae76fa925872c30a30d58f58ab92c7ae2c454a7",
+    "240c232efaf581ee0e65072dedc2c821d8c673f15ed077542f3a1a9429e39cb9"
+  ],
+  "unfiltered_input_sequence_exclusion_count": 76,
+  "historical_exclusion_sequence_count": 5320,
+  "postgresql_history_exclusion_enabled": true,
+  "postgresql_history_sequence_sha256_count": 66495,
+  "operator_release_sha256": "63e9a8c7a67fb550421c360c668717288cfa19e81f232f2feca504a2a05ae88a",
+  "branch_count": 1,
+  "branches": [
+    "vegfa"
+  ],
+  "replicate_count_per_branch": 6,
+  "action_count": 24,
+  "forced_family_coverage_enabled": false,
+  "forced_family_count": 0,
+  "forced_family_keys": [],
+  "forced_family_materialized_child_counts": {},
+  "uncovered_forced_family_keys": [],
+  "action_type_counts": {
+    "masked_substitution": 6,
+    "controlled_crossover": 6,
+    "de_novo": 12
+  },
+  "child_count": 24,
+  "exact_historical_replay_count": 0,
+  "new_family_child_count": 12,
+  "children_csv_sha256": "cccf3c26d394d993bad46d4da38e9abe4b187fe08f4858a0fe847d4cbf4c23b0",
+  "actions_sha256": "68e113678f45fa6b0506b176e5a702794a5593fdf101e46dd35965ba4340084e",
+  "archive_before_sha256": "a442948ce8b50416eb2e5babfd4f32d7d97c6ff569376ae96754864cebea3d1e",
+  "plans_sha256": "0f5f128030e95d64a346743607bd29934846e96ab3c66db2f31868366b4f86c6",
+  "workflow_submitted": false,
+  "gpu_task_submitted": false,
+  "historical_run_modified": false,
+  "target_sequence_identity_consumed": false,
+  "receipt_payload_sha256": "bd2e910dd20d6d570ea82170bf0db85262afa684f489357fa2cb4f2bdbf0cbb7"
+}
