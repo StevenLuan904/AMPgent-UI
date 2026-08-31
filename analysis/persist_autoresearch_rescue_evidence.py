@@ -75,6 +75,8 @@ async def _run(args: argparse.Namespace) -> None:
                         "activity_model_support_count": int(
                             row["activity_model_support_count_calibrated"]
                         ),
+                        "family_key_80_80": row.get("family_key_80_80"),
+                        "diversity_qualified": row.get("diversity_qualified", "false"),
                         "excellent_sequence_stage": row["excellent_sequence_stage_calibrated"],
                         "structure_status": "not_started",
                         "challenger_status": args.challenger_status,

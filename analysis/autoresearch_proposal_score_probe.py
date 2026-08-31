@@ -13,12 +13,14 @@ from pepagent.model_workers.sequence_metrics_cli import evaluate
 from pepagent.provenance.hashing import sha256_file, sha256_json, sha256_text
 from pepagent.seven_branch_design import SEQUENCE_METRICS
 
-PLUGINS = (
+FORMAL_PLUGINS = (
     "physicochemical_developability",
     "hemolysis_risk",
     "toxicity_risk",
     "mic_potency",
     "mic_potency_amp_read",
+)
+AUXILIARY_PLUGINS = (
     "amp_likeness",
 )
 
@@ -113,7 +115,8 @@ def run(args: argparse.Namespace) -> None:
     statuses: list[dict[str, Any]] = []
     metrics_dir = output_dir / "metrics"
     metrics_dir.mkdir(parents=True, exist_ok=True)
-    for plugin_name in PLUGINS:
+    plugins = FORMAL_PLUGINS + (() if args.skip_amplify else AUXILIARY_PLUGINS)
+    for plugin_name in plugins:
         request = {
             "run_id": f"autoresearch-proposal-score-probe-{plugin_name}",
             "plugin": {"name": plugin_name, "parameters": {}},
@@ -239,6 +242,7 @@ def main() -> None:
     parser.add_argument("--repo-root", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--require-safety-hard-gate-pass", action="store_true")
+    parser.add_argument("--skip-amplify", action="store_true")
     run(parser.parse_args())
 
 

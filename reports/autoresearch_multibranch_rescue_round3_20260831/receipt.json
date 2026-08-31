@@ -1,0 +1,91 @@
+{
+  "schema_version": "ampgent.autoresearch-multibranch-rescue-round3.1",
+  "observed_at_utc": "2026-08-31T01:52:30.453060+00:00",
+  "round2_scores_sha256": "81a19cdfe26d8a908ae6439c871b33a9df4f502063fd6ff7082109c2f5fb74a5",
+  "historical_sequence_exclusion_count": 66195,
+  "beam_size_per_branch": 8,
+  "beam_candidate_count": 40,
+  "generated_novel_strict_count": 5345,
+  "primary_safety_pass_count": 942,
+  "challenger_no_conflict_count": 390,
+  "challenger_conflict_count": 552,
+  "branch_summary": [
+    {
+      "branch_key": "angpt1",
+      "beam_count": 8,
+      "generated_novel_strict_count": 950,
+      "primary_safety_pass_count": 132,
+      "challenger_no_conflict_count": 44,
+      "challenger_conflict_count": 88
+    },
+    {
+      "branch_key": "fgf2",
+      "beam_count": 8,
+      "generated_novel_strict_count": 1122,
+      "primary_safety_pass_count": 331,
+      "challenger_no_conflict_count": 182,
+      "challenger_conflict_count": 149
+    },
+    {
+      "branch_key": "gyra",
+      "beam_count": 8,
+      "generated_novel_strict_count": 1177,
+      "primary_safety_pass_count": 160,
+      "challenger_no_conflict_count": 90,
+      "challenger_conflict_count": 70
+    },
+    {
+      "branch_key": "pbp2a",
+      "beam_count": 8,
+      "generated_novel_strict_count": 1187,
+      "primary_safety_pass_count": 233,
+      "challenger_no_conflict_count": 72,
+      "challenger_conflict_count": 161
+    },
+    {
+      "branch_key": "vegfa",
+      "beam_count": 8,
+      "generated_novel_strict_count": 909,
+      "primary_safety_pass_count": 86,
+      "challenger_no_conflict_count": 2,
+      "challenger_conflict_count": 84
+    }
+  ],
+  "plugin_status": [
+    {
+      "plugin": "physicochemical_developability",
+      "status": "complete",
+      "candidate_count": 5345,
+      "adapter_version": "2026.08.04-v1",
+      "result_sha256": "251d5a97c34de1c7f0eb8cb0d5399c6f73493317caa6e7a7fb545a8eec7dae9f"
+    },
+    {
+      "plugin": "hemolysis_risk",
+      "status": "complete",
+      "candidate_count": 5345,
+      "adapter_version": "macrel-1.6.1-8c1f732",
+      "result_sha256": "41d333886303a34c88e2e577a97c4710daf12fc293caad6fff578870b838e2b0"
+    },
+    {
+      "plugin": "toxicity_risk",
+      "status": "complete",
+      "candidate_count": 5345,
+      "adapter_version": "toxinpred3-corrected-v0.2-dcdba83",
+      "result_sha256": "5be9c1c60c85195f6eab4fc60c9f5199b2cd9c146a59732244f27b63d8b5a5e8"
+    }
+  ],
+  "worker_input_sha256": "d035798febb8485120cb48ce18249c3512a21d2e9e49da081c846b06ac2cb9d5",
+  "worker_output_sha256": "2a21c0c6c4e409175f890d0499aa2b095b22e014efb940e9acfcd6e18d2f2d0d",
+  "calibration_sha256": "d9cbe209019de9d625ca0806fafc1b41bec0fdc9f537ab49ca4019a39d4839d9",
+  "primary_safe_csv_sha256": "35735edd96ca144472e081bb6f611e310d8b0866d600bc99f73bcaec6b1b9150",
+  "challenger_review_csv_sha256": "feb52b5e02d5d0108f8a341b37becd70eaf075ee321e4634fef62825ef0b46eb",
+  "challenger_is_not_a_primary_hard_gate": true,
+  "missing_verified_runtimes": [
+    "apex",
+    "peptiverse"
+  ],
+  "workflow_submitted": false,
+  "gpu_task_submitted": false,
+  "historical_run_modified": false,
+  "receipt_payload_sha256": "ba950b28f66ee279b96b823eec5977eebb595441597b667c46ffb782ea530062"
+}
