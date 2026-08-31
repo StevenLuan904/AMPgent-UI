@@ -4,6 +4,7 @@ import argparse
 import asyncio
 import csv
 import json
+from collections.abc import Iterable
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -23,7 +24,7 @@ from pepagent.autoresearch_planner import (
     _sequence_prescreen,
     build_multifront_rule_action_plan,
 )
-from pepagent.db.models import Candidate
+from pepagent.db.models import Candidate, LifecycleEvent
 from pepagent.db.session import SessionFactory
 from pepagent.provenance.hashing import sha256_file, sha256_json, sha256_text
 from pepagent.sequence_family import cluster_sequence_families
@@ -39,9 +40,44 @@ ARCHIVE_METRICS = {
 }
 
 
-async def _postgresql_sequence_hashes() -> set[str]:
+def _operational_score_sequence_hashes(
+    payloads: Iterable[dict[str, Any]],
+) -> set[str]:
+    sequence_hashes: set[str] = set()
+    for payload in payloads:
+        if payload.get("purpose") != "score_all" or payload.get("status") != "succeeded":
+            continue
+        output = payload.get("output")
+        if not isinstance(output, dict):
+            continue
+        candidates = output.get("candidates")
+        if not isinstance(candidates, list):
+            continue
+        for candidate in candidates:
+            if not isinstance(candidate, dict):
+                raise ValueError("PostgreSQL operational score history is malformed")
+            sequence_sha256 = candidate.get("sequence_sha256")
+            if not isinstance(sequence_sha256, str):
+                raise ValueError(
+                    "PostgreSQL operational score history is missing a sequence SHA-256"
+                )
+            sequence_hashes.add(sequence_sha256)
+    return sequence_hashes
+
+
+async def _postgresql_sequence_hash_sources() -> tuple[set[str], set[str]]:
     async with SessionFactory() as session:
-        return set(await session.scalars(select(Candidate.sequence_sha256).distinct()))
+        candidate_hashes = set(
+            await session.scalars(select(Candidate.sequence_sha256).distinct())
+        )
+        operational_payloads = list(
+            await session.scalars(
+                select(LifecycleEvent.payload_json).where(
+                    LifecycleEvent.event_type == "operational.call.succeeded"
+                )
+            )
+        )
+    return candidate_hashes, _operational_score_sequence_hashes(operational_payloads)
 
 
 def _prefer_full_support_within_families(
@@ -169,13 +205,20 @@ def run(args: argparse.Namespace) -> None:
             raise ValueError("historical lineage exclusion has a sequence/hash mismatch")
         historical_sequences.add(sequence)
         sequence_hashes.add(sequence_sha256)
+    postgresql_candidate_history_count = 0
+    postgresql_operational_history_count = 0
     postgresql_history_count = 0
     if args.include_postgresql_history:
-        postgresql_hashes = asyncio.run(_postgresql_sequence_hashes())
+        candidate_hashes, operational_hashes = asyncio.run(
+            _postgresql_sequence_hash_sources()
+        )
+        postgresql_hashes = candidate_hashes | operational_hashes
         if any(
             len(item) != 64 or set(item) - set("0123456789abcdef") for item in postgresql_hashes
         ):
             raise ValueError("PostgreSQL history contains an invalid sequence SHA-256")
+        postgresql_candidate_history_count = len(candidate_hashes)
+        postgresql_operational_history_count = len(operational_hashes)
         postgresql_history_count = len(postgresql_hashes)
         sequence_hashes.update(postgresql_hashes)
     operator_release_sha256 = sha256_file(
@@ -418,6 +461,10 @@ def run(args: argparse.Namespace) -> None:
         "unfiltered_input_sequence_exclusion_count": len(input_sequences),
         "historical_exclusion_sequence_count": len(historical_sequences),
         "postgresql_history_exclusion_enabled": args.include_postgresql_history,
+        "postgresql_candidate_sequence_sha256_count": postgresql_candidate_history_count,
+        "postgresql_operational_sequence_sha256_count": (
+            postgresql_operational_history_count
+        ),
         "postgresql_history_sequence_sha256_count": postgresql_history_count,
         "operator_release_sha256": operator_release_sha256,
         "branch_count": len(active_branches),

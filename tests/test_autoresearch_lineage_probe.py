@@ -25,6 +25,54 @@ def test_targeted_lineage_probe_accepts_selected_branch_only() -> None:
     assert "historical_sequences = set(input_sequences)" in source
     assert "args.include_postgresql_history" in source
     assert "sequence_hashes.update(postgresql_hashes)" in source
+    assert "candidate_hashes | operational_hashes" in source
+
+
+def test_operational_score_history_is_included_in_replay_exclusion() -> None:
+    module = _load_module()
+    score_hash = "a" * 64
+    ignored_hash = "b" * 64
+
+    observed = module._operational_score_sequence_hashes(
+        [
+            {
+                "purpose": "score_all",
+                "status": "succeeded",
+                "output": {"candidates": [{"sequence_sha256": score_hash}]},
+            },
+            {
+                "purpose": "challenger",
+                "status": "succeeded",
+                "output": {"candidates": [{"sequence_sha256": ignored_hash}]},
+            },
+            {
+                "purpose": "score_all",
+                "status": "failed",
+                "output": {"candidates": [{"sequence_sha256": ignored_hash}]},
+            },
+        ]
+    )
+
+    assert observed == {score_hash}
+
+
+def test_malformed_operational_score_history_fails_closed() -> None:
+    module = _load_module()
+
+    try:
+        module._operational_score_sequence_hashes(
+            [
+                {
+                    "purpose": "score_all",
+                    "status": "succeeded",
+                    "output": {"candidates": [{}]},
+                }
+            ]
+        )
+    except ValueError as exc:
+        assert "missing a sequence SHA-256" in str(exc)
+    else:
+        raise AssertionError("malformed operational history must fail closed")
 
 
 def test_prefer_full_support_removes_weaker_rows_only_from_rescued_families() -> None:
