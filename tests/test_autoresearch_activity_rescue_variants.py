@@ -34,6 +34,19 @@ def test_input_sequences_are_validated_for_exact_replay_exclusion() -> None:
         module._validated_sequence_sha256s([{"sequence": "KKRK", "sequence_sha256": "0" * 64}])
 
 
+def test_activity_rescue_can_target_exact_families() -> None:
+    module = _load_module()
+    rows = [
+        {"family_key_80_80": "family-a", "sequence": "KKRK"},
+        {"family_key_80_80": "family-b", "sequence": "RRKR"},
+    ]
+
+    assert module._filter_source_families(rows, ("family-b",)) == [rows[1]]
+
+    with pytest.raises(ValueError, match="no rows for families: family-c"):
+        module._filter_source_families(rows, ("family-c",))
+
+
 def _load_calibration_module():
     analysis_dir = Path(__file__).resolve().parents[1] / "analysis"
     sys.path.insert(0, str(analysis_dir))
