@@ -1,0 +1,4402 @@
+{
+  "schema_version": "ampgent.autoresearch-multibranch-plan.1",
+  "plans": {
+    "fgf2": {
+      "schema_version": "ampgent.autoresearch-rule-plan.1",
+      "branch_key": "fgf2",
+      "generation": 11,
+      "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+      "actions": [
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 1037735110,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 0,
+              "from_residue": "T",
+              "to_residue": "A"
+            }
+          ],
+          "action_sha256": "f7759dc082cbff0233010cc816ae2839abdec2b57ea167da36eae7c2efbc500d"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 4010155934,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 0,
+              "from_residue": "T",
+              "to_residue": "I"
+            }
+          ],
+          "action_sha256": "468a1fee7066820ca52f34e16ea78b12d7f80b326aaaaa0165f225c91804ff22"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 54372699,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 0,
+              "from_residue": "T",
+              "to_residue": "L"
+            }
+          ],
+          "action_sha256": "4885083cf1adb7613e034c0dbd6d61d464f24ec104e77ec0e203cfec5fbda5f0"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 3906157145,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 0,
+              "from_residue": "T",
+              "to_residue": "V"
+            }
+          ],
+          "action_sha256": "30976c1a06f1056fd9cc0b1c3826c14a85d2b5e18e609d1a430c22b06e28bd81"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 2893982615,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 0,
+              "from_residue": "T",
+              "to_residue": "F"
+            }
+          ],
+          "action_sha256": "685c3efe8890f8de2b47362c1bdc2c1d70503aeabfc5e44425adf1120c383123"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 733128255,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 0,
+              "from_residue": "T",
+              "to_residue": "W"
+            }
+          ],
+          "action_sha256": "2568addb2136ccc6f88529a7e824e77377e12b23e8d7c9925d3f9e7c4925f863"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 2054740553,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 0,
+              "from_residue": "T",
+              "to_residue": "Y"
+            }
+          ],
+          "action_sha256": "e0c9576df6a5312aef67122c6e0364df5a55108224ea4f525c353134f6aedc6a"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 87460723,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 2,
+              "from_residue": "R",
+              "to_residue": "A"
+            }
+          ],
+          "action_sha256": "79706452af2edbed5427da98f3428dddfc0c0b8785775ba112e26473e3c1fa04"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 3015599095,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 2,
+              "from_residue": "R",
+              "to_residue": "I"
+            }
+          ],
+          "action_sha256": "5b9abb9b1cb3c6c2be57c70c02cb7602299af03c29db27b5252e0648a9052d52"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 1419739673,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 2,
+              "from_residue": "R",
+              "to_residue": "L"
+            }
+          ],
+          "action_sha256": "10a7a473a8be938623d3816665d254dca668b8a0215a4f3fda5abf4fe2455ddd"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 810452273,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 2,
+              "from_residue": "R",
+              "to_residue": "V"
+            }
+          ],
+          "action_sha256": "da7cbb19e4823d441c2acf5c039c8ca222c42762b8a2d204bb6195050e8c97cd"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 2711317638,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 2,
+              "from_residue": "R",
+              "to_residue": "F"
+            }
+          ],
+          "action_sha256": "b3db88a5a7db2db37262ee8f2ef3045529eaba772fa9ce866014860ae028860f"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 2567518576,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 2,
+              "from_residue": "R",
+              "to_residue": "W"
+            }
+          ],
+          "action_sha256": "9f5787d3bd382d7dc1b87ad1db1b25c254870ff6f335f2189d76b4220b1e3969"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 2308089034,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 2,
+              "from_residue": "R",
+              "to_residue": "Y"
+            }
+          ],
+          "action_sha256": "905f43798a4efda442d4edcfb1cf3ffd043fe0dffb8eee92004c01646a60b63c"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 4027526087,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 3,
+              "from_residue": "G",
+              "to_residue": "A"
+            }
+          ],
+          "action_sha256": "ddc1eedc07976b7b20772b62459c9806bd8dae5536f7319d0362cc4ce74a8ddc"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 3460166563,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 3,
+              "from_residue": "G",
+              "to_residue": "I"
+            }
+          ],
+          "action_sha256": "bc40c6f7709705d24745afe5fbf9fc1a8f3f275a6fe0987206faf34de6bd94df"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 1143237529,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 3,
+              "from_residue": "G",
+              "to_residue": "L"
+            }
+          ],
+          "action_sha256": "17c3022b560609fbb52338cb60e60e0103a7b87fcb709475ad5a00cd03248be7"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 3194233418,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 3,
+              "from_residue": "G",
+              "to_residue": "V"
+            }
+          ],
+          "action_sha256": "89149b280cad70ee75a691e043ae99014430cd32f383475b26899d2bbc28a9bf"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 1655032102,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 3,
+              "from_residue": "G",
+              "to_residue": "F"
+            }
+          ],
+          "action_sha256": "442bf9ee9862a7e9b2e238aeacbe786f7930792eacec4ef70b84e48ef04a9e87"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 1687049563,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 3,
+              "from_residue": "G",
+              "to_residue": "W"
+            }
+          ],
+          "action_sha256": "b6c54d19bb300436510ac40bb6ff55ffba1d1c6b37fc3abe8e2a631a11fb0fc0"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 1647877862,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 3,
+              "from_residue": "G",
+              "to_residue": "Y"
+            }
+          ],
+          "action_sha256": "e1601cc3317b4ad3a0031a340c53cc49d3bea5320c33ce2bfcb408f8e187aa5a"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 268736190,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 4,
+              "from_residue": "K",
+              "to_residue": "A"
+            }
+          ],
+          "action_sha256": "bec598bea2f2633b25ab2d938d0595fc5e606baf3a058a7b358825c748bc1a8c"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 3577549801,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 4,
+              "from_residue": "K",
+              "to_residue": "I"
+            }
+          ],
+          "action_sha256": "ea14d9580deca5be97833f14bfa3fd28a5f51094a0bcb831201518e28e85a7bb"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 3516734968,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 4,
+              "from_residue": "K",
+              "to_residue": "L"
+            }
+          ],
+          "action_sha256": "90fdd17c8fab084bcb3886e0c640bf9432dbe4474dc03f355a7e20785cfc2909"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 1403482629,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 4,
+              "from_residue": "K",
+              "to_residue": "V"
+            }
+          ],
+          "action_sha256": "2a0cc117f134b88154f324837e4cbf1c59fdf1cfaa470626e35c795f1e4f8471"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 3411363107,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 4,
+              "from_residue": "K",
+              "to_residue": "F"
+            }
+          ],
+          "action_sha256": "69001ad9232de24066082aff90218acab3039081f24acbe6d86f92a4b15ef886"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 2613104454,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 4,
+              "from_residue": "K",
+              "to_residue": "W"
+            }
+          ],
+          "action_sha256": "422fc89ca378aece92c36aa855122c32377cbe4310b69d022ac88561cf3e8406"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 392039747,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 4,
+              "from_residue": "K",
+              "to_residue": "Y"
+            }
+          ],
+          "action_sha256": "0aad75f450e8548755c1b1669c6f1dc57304175e804645a3fc110bd0c24c7303"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 2696725436,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 5,
+              "from_residue": "Q",
+              "to_residue": "A"
+            }
+          ],
+          "action_sha256": "2990097d64a9c5043ff71403bbff6c3f931364a44e5e95dd6008fa2de3538572"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 943697761,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 5,
+              "from_residue": "Q",
+              "to_residue": "I"
+            }
+          ],
+          "action_sha256": "69207411a63d8686b7727e3fe21c7bdb8f78cac6420ef86f14753e8681b1baf1"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 2330754945,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 5,
+              "from_residue": "Q",
+              "to_residue": "L"
+            }
+          ],
+          "action_sha256": "2cd43366655de5feda98a7173f35320963fdb70630324446010d5f10527a48a5"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 1035606368,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 5,
+              "from_residue": "Q",
+              "to_residue": "V"
+            }
+          ],
+          "action_sha256": "8d5e308487a9af89f151d646be2a6ead7955e87ee98006e23c7dcca8a0f3f7a6"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 43090403,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 5,
+              "from_residue": "Q",
+              "to_residue": "F"
+            }
+          ],
+          "action_sha256": "3fc740fa9b960a2ab0694eb8efabdd1295a08f5ac77da06b64d7721ab1e87d94"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 1925827061,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 5,
+              "from_residue": "Q",
+              "to_residue": "W"
+            }
+          ],
+          "action_sha256": "fdbcb17adf586378015c4f52cbf14ed48d40c33c5c2e318c4689dcd8437406e4"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 4046618976,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 5,
+              "from_residue": "Q",
+              "to_residue": "Y"
+            }
+          ],
+          "action_sha256": "ea29090b3de7d0ccddf8da8b77adde51efda8487ee0a532c46567eb50455aa16"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 3508367703,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 6,
+              "from_residue": "Q",
+              "to_residue": "A"
+            }
+          ],
+          "action_sha256": "a611e2adc37b21a90f3e179cfce9e381724cff8a8920f77913a13ed8a0effa60"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 749097089,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 6,
+              "from_residue": "Q",
+              "to_residue": "I"
+            }
+          ],
+          "action_sha256": "ff3b31d62428b7f15ef83f67edc8f1abadf1e2a0a3b675a583c8f7cab1e04182"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 3732334131,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 6,
+              "from_residue": "Q",
+              "to_residue": "L"
+            }
+          ],
+          "action_sha256": "1df295f678b898ab0c6808ed574f217fbe923ade1cab400875cf32a03d7b5e77"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 3456897704,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 6,
+              "from_residue": "Q",
+              "to_residue": "V"
+            }
+          ],
+          "action_sha256": "928002c84ef168270f0fd82f1af1e2631bdb872aed616b566fbe7157d5dbf85e"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 548097671,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 6,
+              "from_residue": "Q",
+              "to_residue": "F"
+            }
+          ],
+          "action_sha256": "bce1c8a0222952dd994b4b1d68a48e67256f0fd9af5cf59b166ad4c0dfedd31d"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 434312597,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 6,
+              "from_residue": "Q",
+              "to_residue": "W"
+            }
+          ],
+          "action_sha256": "e306e76444cf919ec281dde0f15fbd659ed43b84c091d1e0ab2d2fd3da760d3e"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 455062212,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 6,
+              "from_residue": "Q",
+              "to_residue": "Y"
+            }
+          ],
+          "action_sha256": "5def6c1f636f41d4a8d9d0f935db21d865537e0d06a70f1aebe99df936f4a872"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 1668782685,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 7,
+              "from_residue": "N",
+              "to_residue": "A"
+            }
+          ],
+          "action_sha256": "fbebc7684512a0ca38cdfb5701c3af5a0ac7343241310cef684e5a5260670dc6"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 1150804374,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 7,
+              "from_residue": "N",
+              "to_residue": "I"
+            }
+          ],
+          "action_sha256": "c2722656b5825e2678f5166dc27cb3061ff1d6046c0ee7e96ce7ed3cbaf84639"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 3675091936,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 7,
+              "from_residue": "N",
+              "to_residue": "L"
+            }
+          ],
+          "action_sha256": "cce68f307169da2d5823a90b39bf5ddab4266ef9b171365584e46219ab652c64"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 3613189634,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 7,
+              "from_residue": "N",
+              "to_residue": "V"
+            }
+          ],
+          "action_sha256": "30c0dffbb58d6131f9b2b24551a382bf75123b2b004de05bdd74a7e1201c3bdf"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 71760530,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 7,
+              "from_residue": "N",
+              "to_residue": "F"
+            }
+          ],
+          "action_sha256": "6afe300c49d48a3ef553952bad80b7474322828ba78f2cd811a1a7f418f5fd9b"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 456817020,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 7,
+              "from_residue": "N",
+              "to_residue": "W"
+            }
+          ],
+          "action_sha256": "85519cc48744ce4e8a8f13e71f095fc7dee6d814a5f157919f7df48b338af58f"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 668490781,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 7,
+              "from_residue": "N",
+              "to_residue": "Y"
+            }
+          ],
+          "action_sha256": "a0ccc20dad93eb780f3bdf61041a521d2820095d055b3a842e61c68fdcc77395"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 3719508071,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 8,
+              "from_residue": "N",
+              "to_residue": "A"
+            }
+          ],
+          "action_sha256": "c82b6d5da7ea249b62befa337164ea570138d2c616f961abba9d55a7e87765fb"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 3186019343,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 8,
+              "from_residue": "N",
+              "to_residue": "I"
+            }
+          ],
+          "action_sha256": "34e6e355255d29b4d576d87aa50a7f1ce08e8c4a062a8097f66d50b8ab810f76"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 2358075049,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 8,
+              "from_residue": "N",
+              "to_residue": "L"
+            }
+          ],
+          "action_sha256": "54878481e47a8b6a8cb070dcd86ae20828dc5612c9f05d3dc3e9954f3dc04cd8"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 198268339,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 8,
+              "from_residue": "N",
+              "to_residue": "V"
+            }
+          ],
+          "action_sha256": "361a1e31f1a8e38edb25bcb3494b9f15b0d7cf3d1f3446a80037d678677fb784"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 2383668398,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 8,
+              "from_residue": "N",
+              "to_residue": "F"
+            }
+          ],
+          "action_sha256": "c74b7f616ee15dd3c2d5cfcae89a9701efa91ec5386842efb9dc0e72b5bbc61d"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 3234944135,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 8,
+              "from_residue": "N",
+              "to_residue": "W"
+            }
+          ],
+          "action_sha256": "1155f37685128dcd3fd6879a479afa8bf8f3cc00301d56182e1f95bfe37d4647"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 1960047471,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 8,
+              "from_residue": "N",
+              "to_residue": "Y"
+            }
+          ],
+          "action_sha256": "ae6c1cc16084dabe00c628b731af67ec9da4a2a8d4aa8126e20b4f9766990d18"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 3120160292,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 9,
+              "from_residue": "R",
+              "to_residue": "A"
+            }
+          ],
+          "action_sha256": "566faa2d6810a856e7a5acbef9a62609c0cb247422df5bd6c7a1c6fbb72342eb"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 3479233973,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 9,
+              "from_residue": "R",
+              "to_residue": "I"
+            }
+          ],
+          "action_sha256": "77e116ecef67b16ecbf8c62ddc5da95f604c2a6649bf1aa667aacd30ecc10f73"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 2545005222,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 9,
+              "from_residue": "R",
+              "to_residue": "L"
+            }
+          ],
+          "action_sha256": "850c71d2d1c955f7144b6cf97924a53c967ec97a7217126f316c9bfffca771b0"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 3946690111,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 9,
+              "from_residue": "R",
+              "to_residue": "V"
+            }
+          ],
+          "action_sha256": "361a2cf44fb661abe8d2c9103836a18e6e23c1c998363e70db9797d3f195148f"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 123856831,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 9,
+              "from_residue": "R",
+              "to_residue": "F"
+            }
+          ],
+          "action_sha256": "fc5677cb26afdae408336e2a00c3c6dc921fd143024ec5f3df361c16cb20f508"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 309508302,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 9,
+              "from_residue": "R",
+              "to_residue": "W"
+            }
+          ],
+          "action_sha256": "c3673294ff96c710a5552e350defed4d8ce7c69f783e2606d26f2a59be64c93f"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 1204117891,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 9,
+              "from_residue": "R",
+              "to_residue": "Y"
+            }
+          ],
+          "action_sha256": "00ce41bc04ec2276c3753750589e32cf9ee9828701950a04e211ca8a1c748af7"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 1466033965,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 10,
+              "from_residue": "K",
+              "to_residue": "A"
+            }
+          ],
+          "action_sha256": "a01ee353aae16610784dc74ed2a3031c0f654d981eb0689a90c1e03d840d4ea7"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 3964179908,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 10,
+              "from_residue": "K",
+              "to_residue": "I"
+            }
+          ],
+          "action_sha256": "41eaf91844f3017c4da6acfd772e9d05ead4e85aca59fe5564b1698c254ceccf"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 4051376461,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 10,
+              "from_residue": "K",
+              "to_residue": "L"
+            }
+          ],
+          "action_sha256": "57a46f3a62c411fe906f9a4928ece9f22efdca9098b1644fe8e00c3fc7e0b7f4"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 3979754151,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 10,
+              "from_residue": "K",
+              "to_residue": "V"
+            }
+          ],
+          "action_sha256": "0ca82248e496a0e6fa8b026c7363b0d3a64c34c19cc6613bcfd87aef3b64a1ff"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 3321563955,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 10,
+              "from_residue": "K",
+              "to_residue": "F"
+            }
+          ],
+          "action_sha256": "32cf4a894820da8c5028c90a8ea8bd236b4a06cc58f32125e3334490f260cb46"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 2744093823,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 10,
+              "from_residue": "K",
+              "to_residue": "W"
+            }
+          ],
+          "action_sha256": "9210efe963e231b609edbe67f35b169a244ef6f872c4d06f3beb03de3aecfc2d"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 2438777164,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 10,
+              "from_residue": "K",
+              "to_residue": "Y"
+            }
+          ],
+          "action_sha256": "ae22e4212db59ec545a7a7172d89083e4909e6ba56f001014d56fe93f20c87ca"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 2731010438,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 11,
+              "from_residue": "K",
+              "to_residue": "A"
+            }
+          ],
+          "action_sha256": "dfdacb21e15ebafd45f54111fada60c9ee80f5962f3630de1c912cf52d8aff15"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 339537273,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 11,
+              "from_residue": "K",
+              "to_residue": "I"
+            }
+          ],
+          "action_sha256": "ec0a209a1d60fa3540c4b0bf995340ace9ce1ef7c6777636436ef4ce0b4de44e"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 577883883,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 11,
+              "from_residue": "K",
+              "to_residue": "L"
+            }
+          ],
+          "action_sha256": "be94bcde569c37d301f0520186509a1d135a0bbafe21f2059f8984df28927456"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 188183793,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 11,
+              "from_residue": "K",
+              "to_residue": "V"
+            }
+          ],
+          "action_sha256": "f5ddab4bf3f4618dba9c0d2c5dde0847214a3a284d86b30c569b44916934f3f5"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 1229325010,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 11,
+              "from_residue": "K",
+              "to_residue": "F"
+            }
+          ],
+          "action_sha256": "31a4ca3d2b7ba78dbdaeb1743e91ddae04a535da0ac716bdf773a43e045190fe"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 2332309637,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 11,
+              "from_residue": "K",
+              "to_residue": "W"
+            }
+          ],
+          "action_sha256": "e440fdf935757062e6ef0cfe0f2ac065c2e36161cd7f60f0bd8095e4db76de82"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 662097773,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 11,
+              "from_residue": "K",
+              "to_residue": "Y"
+            }
+          ],
+          "action_sha256": "65e374fbed1c2344520c9fc0f85ace682adcf1174d4457308ef93658a8025b61"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 3850078051,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 12,
+              "from_residue": "K",
+              "to_residue": "A"
+            }
+          ],
+          "action_sha256": "ffa44ec18835f503405e75cc875e0fc76e7a17f45f14dd8d427b5de3b897a88a"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 3485514652,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 12,
+              "from_residue": "K",
+              "to_residue": "I"
+            }
+          ],
+          "action_sha256": "c2f899e3cd7c4726f2b2cc54e8609a29464caa2969d20a422c074b6fba3158b1"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 2608654618,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 12,
+              "from_residue": "K",
+              "to_residue": "L"
+            }
+          ],
+          "action_sha256": "e9dededf08e0a6577d25266f41f2b6fd78c219c0619e6249c79d12395fe6b3bf"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 2266369343,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 12,
+              "from_residue": "K",
+              "to_residue": "V"
+            }
+          ],
+          "action_sha256": "2bd0f055042cd3896bff681ebc8741a295b25940d9aabef8f65554e623be3dfc"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 1979899983,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 12,
+              "from_residue": "K",
+              "to_residue": "F"
+            }
+          ],
+          "action_sha256": "a4bb91577d445e3208841f8c6e62e73a1c3bb2e09f3dd571994253747151320a"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 2252936755,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 12,
+              "from_residue": "K",
+              "to_residue": "W"
+            }
+          ],
+          "action_sha256": "2d41d8ac5bcbc3ba2e52012a73afa0828f204c28ced5f65c38dc780d5d4ab952"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 1439585305,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 12,
+              "from_residue": "K",
+              "to_residue": "Y"
+            }
+          ],
+          "action_sha256": "f9b4e98a3a97de7ba913dbca98d6e8f675897f65a6c74f914c5803017a837075"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 123639129,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 13,
+              "from_residue": "K",
+              "to_residue": "A"
+            }
+          ],
+          "action_sha256": "703a0c490d7b6a6d684bae662c4c8c89b3134e6d72491eb2fc305fd9b840ef1f"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 817683924,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 13,
+              "from_residue": "K",
+              "to_residue": "I"
+            }
+          ],
+          "action_sha256": "74739cda3ae90bf167f48434d7bae37c5ae57ed104ef0cb0e55fbfb70f1350fc"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 3633734957,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 13,
+              "from_residue": "K",
+              "to_residue": "L"
+            }
+          ],
+          "action_sha256": "e2dd3ac2bcfbd7016a9f981897d7de6d91633f08240c90d189b56599abe932e2"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 2664800982,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 13,
+              "from_residue": "K",
+              "to_residue": "V"
+            }
+          ],
+          "action_sha256": "ae7cb4db0a60d66bc78c43cfedc16f2185c329191ae1597155774fa547566dc7"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 3682128609,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 13,
+              "from_residue": "K",
+              "to_residue": "F"
+            }
+          ],
+          "action_sha256": "e6088156d610fe90abe72fc7adc59de0d1c3d2206cf49224aea9a44551c00637"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 1535637654,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 13,
+              "from_residue": "K",
+              "to_residue": "W"
+            }
+          ],
+          "action_sha256": "5d5b18acbc9b48da24695c9f66616664b0244058c080401eb578604e2bbfa707"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 147968300,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 13,
+              "from_residue": "K",
+              "to_residue": "Y"
+            }
+          ],
+          "action_sha256": "d19016ae7920e1ea2fb2d77597388aaf3393936bb5769406ec0f8ce0f94fa855"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 1682349912,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 15,
+              "from_residue": "T",
+              "to_residue": "A"
+            }
+          ],
+          "action_sha256": "70e0c0b91b4db952d9ec9a786c4d321873682892882b443bccfade01e38db305"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 2997881203,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 15,
+              "from_residue": "T",
+              "to_residue": "I"
+            }
+          ],
+          "action_sha256": "578694619cd2bc067cc1d9454caec517128cbf8827a96a9f2d00375961556ba7"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 1530175239,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 15,
+              "from_residue": "T",
+              "to_residue": "L"
+            }
+          ],
+          "action_sha256": "8149d0797fdc566a8a697748855eb695b4aad69227eb538c0dbab8c5c1c3b5e4"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 1966506988,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 15,
+              "from_residue": "T",
+              "to_residue": "V"
+            }
+          ],
+          "action_sha256": "1054f26f37b4632b782c040b87c352a675702f5d34f05ca748f0caa8abc58dcd"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 1685675133,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 15,
+              "from_residue": "T",
+              "to_residue": "F"
+            }
+          ],
+          "action_sha256": "6516f4a90b8b8eb22769c5633f14901b2af6811087ce1c5272c0619231d30565"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 1259757564,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 15,
+              "from_residue": "T",
+              "to_residue": "W"
+            }
+          ],
+          "action_sha256": "1fdd79416b81d46bdf4bf63457068ba2cbdbe55a5a24089d8e91fc4c3490cf60"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 1087584662,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 15,
+              "from_residue": "T",
+              "to_residue": "Y"
+            }
+          ],
+          "action_sha256": "2f5935c94844da5dc019b892a5635b048383373b8036882e7d6e0bb62ba4b432"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 119890602,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 16,
+              "from_residue": "K",
+              "to_residue": "A"
+            }
+          ],
+          "action_sha256": "e3cbd77b2ba46272362cc5787020ed34a3c44f32f453a3911978c058cf2a4d4e"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 2703759153,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 16,
+              "from_residue": "K",
+              "to_residue": "I"
+            }
+          ],
+          "action_sha256": "c02fd80c79d8e1dcc8c245f05739459085841b9019e40ace6546672911831d58"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 2251528309,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 16,
+              "from_residue": "K",
+              "to_residue": "L"
+            }
+          ],
+          "action_sha256": "bb09426c791d18eddf7cdb07919171eeaac881881ffb64d4808435b690e63b65"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 758925316,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 16,
+              "from_residue": "K",
+              "to_residue": "V"
+            }
+          ],
+          "action_sha256": "f15e977858f92acd902deeaa2868c49978616dc318f6ba27e58e5a92aa1d6fa4"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 671642207,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 16,
+              "from_residue": "K",
+              "to_residue": "F"
+            }
+          ],
+          "action_sha256": "eae15a2aaf1d45a2eee168224d6e3d68561b8cef42ecbeddcd9781905d274172"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 614324732,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 16,
+              "from_residue": "K",
+              "to_residue": "W"
+            }
+          ],
+          "action_sha256": "c210f7ad1ac6ca7f0e90e300d632572f0f2db51d6b5e6224f3fb8dcc16a4f809"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 4246800497,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 16,
+              "from_residue": "K",
+              "to_residue": "Y"
+            }
+          ],
+          "action_sha256": "f6c8019db37a929b6fab6d9ebccbf6f2ec66622eb32d3652142fba3aaad35791"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 1132637394,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 17,
+              "from_residue": "N",
+              "to_residue": "A"
+            }
+          ],
+          "action_sha256": "77bcf614891122a55f24a04c153436ffcc7068f0d9c6f10f2bd567766c2258ff"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 1346974282,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 17,
+              "from_residue": "N",
+              "to_residue": "I"
+            }
+          ],
+          "action_sha256": "6703c0e67c33e0e89d98f8e5f599ed0cc6800221c3d8b579dc33ca20a1641250"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 382540679,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 17,
+              "from_residue": "N",
+              "to_residue": "L"
+            }
+          ],
+          "action_sha256": "5ee519977ff209386ced1060955d39194a99718fba49f09e4d84eb612f4f28f1"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 830151854,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 17,
+              "from_residue": "N",
+              "to_residue": "V"
+            }
+          ],
+          "action_sha256": "2fab3bf7c581e34e71616b5165bcb3c8798795ee398ed8e7a03918eaeacdfad5"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 3685357070,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 17,
+              "from_residue": "N",
+              "to_residue": "F"
+            }
+          ],
+          "action_sha256": "1db6728781cb02dbd6eba198d332317e70f31a1b20f9d7c9caba62237e0cb084"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 1905649939,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 17,
+              "from_residue": "N",
+              "to_residue": "W"
+            }
+          ],
+          "action_sha256": "2938a330797a148cf1087a69428dca4c8fbbb59aa9347e11be966a1a6da6947b"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 1134554533,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 17,
+              "from_residue": "N",
+              "to_residue": "Y"
+            }
+          ],
+          "action_sha256": "fde6f8ad9e35c000f975d2bc219f566e918262156c89077f6cbae46f8fbe881f"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 1406662411,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 18,
+              "from_residue": "K",
+              "to_residue": "A"
+            }
+          ],
+          "action_sha256": "20cc333c4b31c9326af32fbe114852d9ccf376efab52f30dab75dd89b9f3fb81"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 934730414,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 18,
+              "from_residue": "K",
+              "to_residue": "I"
+            }
+          ],
+          "action_sha256": "067ede035780d8437d94d0795503d3a689dbe2935da07de52619f13a0211b792"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 3436071367,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 18,
+              "from_residue": "K",
+              "to_residue": "L"
+            }
+          ],
+          "action_sha256": "40dafbb0090bbb3ba8b09542da58f5a128afac5e63bbe40c064527a8531b49af"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 2286017845,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 18,
+              "from_residue": "K",
+              "to_residue": "V"
+            }
+          ],
+          "action_sha256": "349c5670f31e81d64f6aff4048d7dffefa509a526bed518949d5ae53070a3fe5"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 1241250297,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 18,
+              "from_residue": "K",
+              "to_residue": "F"
+            }
+          ],
+          "action_sha256": "4ca1dde18150f66236d0e04eb37dd92ea9bfd1880a0a40a29c9e6141de2a499a"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 141693373,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 18,
+              "from_residue": "K",
+              "to_residue": "W"
+            }
+          ],
+          "action_sha256": "82494d61d42189136add6c77ce8bc4f4bdcc64d3555e449f22ea3ae056aef77d"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 3341299026,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 18,
+              "from_residue": "K",
+              "to_residue": "Y"
+            }
+          ],
+          "action_sha256": "a8666d8d837d87072fc5dd1c47f67d1039e0736050c6f16e46733b1aa1ded170"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 860883364,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 19,
+              "from_residue": "G",
+              "to_residue": "A"
+            }
+          ],
+          "action_sha256": "b2fd040a5c89dfae0cb82e0eee8f101d6fd6d59810cd93d316c794e19d35a50d"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 790427016,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 19,
+              "from_residue": "G",
+              "to_residue": "I"
+            }
+          ],
+          "action_sha256": "c802bd22b55c24ac9a70a4bf699c135c0a4ac853c1ec0eef12225d6b7ecd264f"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 938568081,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 19,
+              "from_residue": "G",
+              "to_residue": "L"
+            }
+          ],
+          "action_sha256": "cd034a42177acfef13575c92ccfd523689933c263be3b86d85dcec3db39bd661"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 391501041,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 19,
+              "from_residue": "G",
+              "to_residue": "V"
+            }
+          ],
+          "action_sha256": "23c9ff1a0c06df5633de4be297cfda76e66f97bb75e33a81ec7695b5f95cb0cc"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 400123287,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 19,
+              "from_residue": "G",
+              "to_residue": "F"
+            }
+          ],
+          "action_sha256": "b8b8a45b7a0941b3aaf85019534013414191fcee7d6aff30369a854f573ffeef"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 1740539964,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 19,
+              "from_residue": "G",
+              "to_residue": "W"
+            }
+          ],
+          "action_sha256": "8a2be77682947f758571359cd8b81d0617da5c224e88e389d3b2b2fd0a606d14"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 2268264285,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 19,
+              "from_residue": "G",
+              "to_residue": "Y"
+            }
+          ],
+          "action_sha256": "e106ffaca7f610bcc6295d8d85bde2540b7aeccd12f9e8e88150528a7c53cbcf"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 1041332400,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 20,
+              "from_residue": "H",
+              "to_residue": "A"
+            }
+          ],
+          "action_sha256": "879a80ee4188c5188445bbfa34ba224eb8a75de05d36e83a1031bc2e976c1112"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 4160064513,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 20,
+              "from_residue": "H",
+              "to_residue": "I"
+            }
+          ],
+          "action_sha256": "dc67a65478ab48b52dbfb84fe99383abfb1b583ff479ae92b146327a597c8050"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 786388797,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 20,
+              "from_residue": "H",
+              "to_residue": "L"
+            }
+          ],
+          "action_sha256": "344d85246f10fe8456007720dd351fae84461eede66befb4f766da5c440f776c"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 1856395556,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 20,
+              "from_residue": "H",
+              "to_residue": "V"
+            }
+          ],
+          "action_sha256": "bcab70da015f006bb0c756f59059e648225c83d9fa451a45c4d78164546aa867"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 3971281292,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 20,
+              "from_residue": "H",
+              "to_residue": "F"
+            }
+          ],
+          "action_sha256": "060ca46e46bd4c4b311602f7dbd6414a34a82f752a33d4c7eecf14fb4cbe03c0"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 2811229539,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 20,
+              "from_residue": "H",
+              "to_residue": "W"
+            }
+          ],
+          "action_sha256": "576fb01261810eea75e3bfd6f90d90d881393fcdd245d73f1bca1d2971ef5d56"
+        },
+        {
+          "schema_version": "ampgent.autoresearch-action.1",
+          "action_type": "masked_substitution",
+          "branch_key": "fgf2",
+          "generation": 11,
+          "seed": 2216539801,
+          "operator_id": "autoresearch-llamp-hydrophobic-rescue-v1",
+          "operator_release_sha256": "ec646634d2e2ba30b7823b9939083847aa8454fa9f3b283ab959559062d4dde6",
+          "expected_improvement_metrics": [
+            "llamp_log10_mic_um"
+          ],
+          "protected_metrics": [
+            "amp_read_log10_mic_um",
+            "guruprasad_instability_index",
+            "macrel_amp_probability",
+            "macrel_hemolysis_probability",
+            "maximum_hydrophobic_run",
+            "toxinpred3_hybrid_score"
+          ],
+          "evidence_sha256s": [
+            "f83552a5ec6566ac2cf5e59790f1eb7252ff6d2056b2f2a672b944e3b10d9706"
+          ],
+          "parent_candidate_id": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "parent_sequence_sha256": "62dce69b35d28637a0b8907689d5c9e38662ff0f808a6d3839811951370c9fa5",
+          "substitutions": [
+            {
+              "position_zero_based": 20,
+              "from_residue": "H",
+              "to_residue": "Y"
+            }
+          ],
+          "action_sha256": "30982dced4a3dab1332f4597573f8cd53f851c0541c62e43d2c689ae965b488b"
+        }
+      ]
+    }
+  }
+}
