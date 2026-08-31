@@ -40,9 +40,24 @@ def _write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
 
 
 async def _run(args: argparse.Namespace) -> None:
-    selected_branches = tuple(args.branch or BRANCHES)
+    quota_by_branch: dict[str, int] = {}
+    for item in args.branch_quota:
+        branch_key, separator, raw_count = item.partition("=")
+        if separator != "=" or branch_key not in BRANCHES:
+            raise ValueError(f"invalid branch quota: {item}")
+        count = int(raw_count)
+        if count < 1:
+            raise ValueError("branch quota must be positive")
+        if branch_key in quota_by_branch:
+            raise ValueError("de-novo branch quota contains duplicates")
+        quota_by_branch[branch_key] = count
+    selected_branches = tuple(
+        quota_by_branch or dict.fromkeys(args.branch or BRANCHES, args.per_branch)
+    )
     if len(set(selected_branches)) != len(selected_branches):
         raise ValueError("de-novo branch selection contains duplicates")
+    if not quota_by_branch:
+        quota_by_branch = {branch: args.per_branch for branch in selected_branches}
     historical = await _historical_sequences()
     additional_references: set[str] = set()
     for path in args.additional_reference_csv:
@@ -72,7 +87,7 @@ async def _run(args: argparse.Namespace) -> None:
     generated_sequences: set[str] = set()
     rows: list[dict[str, Any]] = []
     for branch_index, branch_key in enumerate(selected_branches):
-        for rank in range(args.per_branch):
+        for rank in range(quota_by_branch[branch_key]):
             seed = args.seed + branch_index * 100_000 + rank
             sequence = _unique_de_novo_sequence(
                 branch_key=branch_key,
@@ -163,6 +178,7 @@ async def _run(args: argparse.Namespace) -> None:
         "observed_at_utc": datetime.now(UTC).isoformat(),
         "operator_id": "autoresearch-rule-de-novo-v4",
         "selected_branches": list(selected_branches),
+        "branch_quotas": quota_by_branch,
         "historical_sequence_count": len(historical),
         "additional_reference_sequence_count": len(additional_references),
         "proposal_count": len(rows),
@@ -215,6 +231,7 @@ def main() -> None:
     )
     parser.add_argument("--profile-csv", type=Path, action="append", default=[])
     parser.add_argument("--branch", action="append", choices=BRANCHES, default=[])
+    parser.add_argument("--branch-quota", action="append", default=[])
     parser.add_argument("--output-csv", type=Path, required=True)
     parser.add_argument("--summary-csv", type=Path, required=True)
     parser.add_argument("--output-json", type=Path, required=True)

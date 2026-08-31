@@ -1,0 +1,61 @@
+{
+  "schema_version": "ampgent.autoresearch-de-novo-family-probe.1",
+  "observed_at_utc": "2026-08-31T03:15:49.013318+00:00",
+  "operator_id": "autoresearch-rule-de-novo-v4",
+  "selected_branches": [
+    "acea",
+    "vegfa"
+  ],
+  "branch_quotas": {
+    "acea": 768,
+    "vegfa": 1536
+  },
+  "historical_sequence_count": 66195,
+  "additional_reference_sequence_count": 2944,
+  "proposal_count": 2304,
+  "distinct_generated_family_count": 2304,
+  "new_family_count_relative_to_postgresql_history": 2304,
+  "new_family_count_relative_to_all_references": 2304,
+  "additional_reference_csv_sha256s": [
+    "086bb5b02ce5fad7318d8cd9694caeee4acf43b3f16e10acff41e65816035271",
+    "2b3a93b14af6891b50799d7a66051e66e70313756fe550a860a41c184e502cea",
+    "65268a8b83f15a23aec3a15ee95cbc80d53edf9eb791df2183bb3f5ed139305e",
+    "9d20f96a55dd3d928d9b5b17a399d9da653175a07c0bca24d8811e8006290cf5"
+  ],
+  "profile_csv_sha256s": [
+    "c52a20cbaa12441b010b61b7a27900c20534d1dd8c42ef37d400ba113c3d1060",
+    "62abe01dd712d975d071dc6732c63273178705850b9ad0dc1aeabab85b36b4e2",
+    "9c824fcc7467b599f6ad377a720285a7b748739f7fd7c14fb62e6702e2e746ea",
+    "758e38fd75a98f5844e81412c76597eb312c3098a3f7fe1eb0c45e38ed99ea82"
+  ],
+  "profile_sequence_counts": {
+    "acea": 22,
+    "angpt1": 50,
+    "fgf2": 96,
+    "gyra": 58,
+    "pbp2a": 100,
+    "vegfa": 15
+  },
+  "branch_summary": [
+    {
+      "branch_key": "acea",
+      "proposal_count": 768,
+      "distinct_family_count": 768,
+      "new_family_count_relative_to_postgresql_history": 768,
+      "new_family_count_relative_to_all_references": 768
+    },
+    {
+      "branch_key": "vegfa",
+      "proposal_count": 1536,
+      "distinct_family_count": 1536,
+      "new_family_count_relative_to_postgresql_history": 1536,
+      "new_family_count_relative_to_all_references": 1536
+    }
+  ],
+  "output_csv_sha256": "a2252846e0b2cf1ea261cc3fc54eaf678ee330b745e96b8299560700945b3e9d",
+  "summary_csv_sha256": "107ffd388b1d94e3321b6518674d3f2d0497d7c04ece004e98d3223621ce05b7",
+  "workflow_submitted": false,
+  "gpu_task_submitted": false,
+  "historical_run_modified": false,
+  "receipt_payload_sha256": "83ed3ef3e01c8eed4c8c8f462fcff61226e59d50c7556fc460be4beda2b0f9e1"
+}
