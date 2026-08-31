@@ -1,0 +1,100 @@
+{
+  "schema_version": "ampgent.autoresearch-temporal-postgres-diagnosis.1",
+  "observed_at_utc": "2026-08-31T00:02:00Z",
+  "read_only_observation": true,
+  "runtime_mutation_performed": false,
+  "restart_performed": false,
+  "new_workflow_submitted": false,
+  "new_gpu_task_submitted": false,
+  "diagnosis": {
+    "primary_blocker": "temporal_persistence_postgresql_deadline_and_connection_loss",
+    "workflow_code_replay_failure": false,
+    "evidence": [
+      "Temporal server logged ReadHistoryBranch context deadline exceeded",
+      "Temporal server logged UpdateWorkflowExecution context deadline exceeded",
+      "Temporal server logged database connection lost: driver: bad connection",
+      "the temporal-system history scanner failed against the same persistence layer",
+      "offline replay of the exact PBP2a history completed in 0.502 seconds",
+      "offline replay of the exact FGF2 history completed in 0.026 seconds"
+    ]
+  },
+  "authoritative_postgresql_probe": {
+    "transport": "local_forward_to_remote_authoritative_postgresql",
+    "credential_material_recorded": false,
+    "select_1_samples": 12,
+    "successful_samples": 12,
+    "minimum_seconds": 0.628,
+    "median_seconds": 1.092,
+    "maximum_seconds": 5.280
+  },
+  "workflow_observations": [
+    {
+      "branch_key": "fgf2",
+      "postgresql_run_id": "13808374-a6bd-58c9-98ed-ae4e494ce43e",
+      "postgresql_scientific_status": "running",
+      "temporal_run_id": "0edf80e4-627f-4a40-ad02-ebcd11a1d3d9",
+      "temporal_observability_status": "RUNNING",
+      "candidate_count": 768,
+      "descendant_candidate_count": 0,
+      "evaluation_count": 9216,
+      "autoresearch_action_count": 0,
+      "recent_temporal_condition": "workflow_task_start_to_close_timeouts"
+    },
+    {
+      "branch_key": "vegfa",
+      "postgresql_run_id": "c15910a6-a553-51c1-8ee6-d658d60857ac",
+      "postgresql_scientific_status": "running",
+      "temporal_run_id": "25f16b3d-e0c8-4a15-8639-3f4b9ffdbccd",
+      "temporal_observability_status": "RUNNING",
+      "candidate_count": 0,
+      "descendant_candidate_count": 0,
+      "evaluation_count": 0,
+      "autoresearch_action_count": 0,
+      "recent_temporal_condition": "workflow_task_start_to_close_timeouts"
+    },
+    {
+      "branch_key": "pbp2a",
+      "postgresql_run_id": "595e8160-527e-5182-9ac6-429011ff74cd",
+      "postgresql_scientific_status": "created",
+      "temporal_run_id": "75897105-734b-4055-b4e7-a36f01dbea4b",
+      "temporal_observability_status": "RUNNING",
+      "candidate_count": 0,
+      "descendant_candidate_count": 0,
+      "evaluation_count": 0,
+      "autoresearch_action_count": 0,
+      "recent_temporal_condition": "initial_workflow_task_start_to_close_timeouts"
+    },
+    {
+      "branch_key": "angpt1",
+      "postgresql_run_id": "00d351ca-c43b-5938-9fd8-193d60772d53",
+      "postgresql_scientific_status": "failed",
+      "temporal_run_id": "169b01a4-a92e-40eb-89ea-f86da3b275e1",
+      "temporal_observability_status": "RUNNING",
+      "candidate_count": 0,
+      "descendant_candidate_count": 0,
+      "evaluation_count": 0,
+      "autoresearch_action_count": 0,
+      "recent_temporal_condition": "workflow_task_start_to_close_timeouts"
+    }
+  ],
+  "gpu_capacity_snapshot": {
+    "captured_at": "2026-08-30T23:57:22.3898794Z",
+    "idle_authorized_gpu_keys": [
+      "192.168.99.2:1",
+      "192.168.99.2:2",
+      "192.168.99.2:3"
+    ],
+    "prohibited_gpu_keys": [
+      "192.168.99.32:2",
+      "192.168.99.32:3"
+    ],
+    "dispatch_decision": "no_dispatch_while_temporal_persistence_is_unhealthy_and_no_duplicate_work_is_ready"
+  },
+  "implemented_guard": {
+    "cross_state_root_duplicate_poller_detection": true,
+    "duplicate_queue_behavior": "fail_closed",
+    "new_worker_database_pool_size": 2,
+    "new_worker_database_max_overflow": 2,
+    "existing_processes_affected": false
+  }
+}

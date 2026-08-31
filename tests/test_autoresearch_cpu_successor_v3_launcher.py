@@ -13,6 +13,10 @@ def test_v3_launcher_is_additive_and_has_no_gpu_role() -> None:
         assert f"pepagent-autoresearch-cpu-successor-{role}-v3" in text
     assert "-WindowStyle Hidden" in text
     assert "replacement is forbidden" in text
+    assert "multiple live workers already poll" in text
+    assert "additive launch is forbidden" in text
+    assert "PEPAGENT_DATABASE_POOL_SIZE = '2'" in text
+    assert "PEPAGENT_DATABASE_MAX_OVERFLOW = '2'" in text
     assert "Stop-Process" not in text
     assert "gpu" not in text.lower().replace("gpu_task_started", "")
 

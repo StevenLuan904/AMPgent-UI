@@ -18,8 +18,8 @@ def _database_connect_args() -> dict[str, float]:
 engine = create_async_engine(
     settings.database_url,
     pool_pre_ping=True,
-    pool_size=10,
-    max_overflow=20,
+    pool_size=int(settings.database_pool_size),
+    max_overflow=int(settings.database_max_overflow),
     pool_recycle=int(settings.database_pool_recycle_seconds),
     pool_timeout=float(settings.database_pool_timeout_seconds),
     connect_args=_database_connect_args(),

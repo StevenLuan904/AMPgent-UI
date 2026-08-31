@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     # a silently stale forwarded connection can pin a Temporal activity.
     database_pool_recycle_seconds: int = Field(default=300, gt=0)
     database_pool_timeout_seconds: float = Field(default=30.0, gt=0)
+    database_pool_size: int = Field(default=10, gt=0)
+    database_max_overflow: int = Field(default=20, ge=0)
     database_connect_timeout_seconds: float = Field(default=15.0, gt=0)
     database_command_timeout_seconds: float = Field(default=60.0, gt=0)
     s3_endpoint: str = "http://localhost:9000"

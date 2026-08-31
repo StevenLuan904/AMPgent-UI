@@ -118,6 +118,51 @@ $pythonSha256 = (Get-FileHash -LiteralPath $pythonPath -Algorithm SHA256).Hash.T
 $receipts = @()
 foreach ($role in $roles) {
     $receiptPath = Join-Path $stateBase "$($role.Name).json"
+    $globalRunRoot = [IO.Path]::GetFullPath((Join-Path $workspace 'var/run'))
+    $matchingLiveReceipts = @()
+    if (Test-Path -LiteralPath $globalRunRoot -PathType Container) {
+        $matchingLiveReceipts = @(Get-ChildItem -LiteralPath $globalRunRoot -Recurse -File `
+            -Filter "$($role.Name).json" | ForEach-Object {
+                try {
+                    $candidateReceipt = Get-Content -LiteralPath $_.FullName -Raw -Encoding UTF8 |
+                        ConvertFrom-Json
+                    $candidatePid = 0
+                    if (-not [int]::TryParse([string]$candidateReceipt.pid, [ref]$candidatePid)) {
+                        return
+                    }
+                    $candidateProcess = Get-CimInstance Win32_Process `
+                        -Filter "ProcessId=$candidatePid" -ErrorAction SilentlyContinue
+                    if ($null -eq $candidateProcess) { return }
+                    if ($candidateProcess.Name -ne 'python.exe' -or
+                        $candidateProcess.CommandLine -notlike '*pepagent.workers.v38_temporal_worker*') {
+                        throw "live receipt PID identity differs for $($role.Name): $candidatePid"
+                    }
+                    if ($candidateReceipt.role -eq $role.Name -and
+                        $candidateReceipt.task_queue -eq $role.Queue) {
+                        [pscustomobject]@{
+                            Receipt = $candidateReceipt
+                            Path = $_.FullName
+                        }
+                    }
+                }
+                catch {
+                    if ($_.Exception.Message -like 'live receipt PID identity differs*') { throw }
+                }
+            })
+    }
+    if ($matchingLiveReceipts.Count -gt 1) {
+        throw "multiple live workers already poll $($role.Queue); additive launch is forbidden"
+    }
+    if ($matchingLiveReceipts.Count -eq 1) {
+        $existing = $matchingLiveReceipts[0].Receipt
+        if ($existing.ampgent_owned -ne $true -or $existing.foreign -eq $true -or
+            $existing.source_revision -ne $SourceRevision -or
+            $existing.release_sha256 -ne $ArchiveSha256) {
+            throw "live worker identity differs for $($role.Name); replacement is forbidden"
+        }
+        $receipts += $existing
+        continue
+    }
     if (Test-Path -LiteralPath $receiptPath -PathType Leaf) {
         $previous = Get-Content -LiteralPath $receiptPath -Raw -Encoding UTF8 | ConvertFrom-Json
         $live = Get-CimInstance Win32_Process -Filter "ProcessId=$([int]$previous.pid)" -ErrorAction SilentlyContinue
@@ -143,6 +188,8 @@ foreach ($role in $roles) {
         WorkRoot = $env:PEPAGENT_WORK_ROOT
         Release = $env:PEPAGENT_PLATFORM_RELEASE_SHA256
         Environment = $env:PEPAGENT_WORKER_ENVIRONMENT_SHA256
+        DatabasePoolSize = $env:PEPAGENT_DATABASE_POOL_SIZE
+        DatabaseMaxOverflow = $env:PEPAGENT_DATABASE_MAX_OVERFLOW
     }
     try {
         $env:PEPAGENT_WORKER_ROLE = $role.Name
@@ -151,6 +198,11 @@ foreach ($role in $roles) {
         $env:PYTHONPATH = "$sitePackages;$(Join-Path $releasePath 'src')"
         $env:PEPAGENT_WORK_ROOT = $workRoot
         $env:PEPAGENT_PLATFORM_RELEASE_SHA256 = $ArchiveSha256
+        # CPU successor workers share one tunneled authoritative PostgreSQL.
+        # Keep each process bounded so additive lanes cannot exhaust or starve
+        # Temporal's persistence connection budget.
+        $env:PEPAGENT_DATABASE_POOL_SIZE = '2'
+        $env:PEPAGENT_DATABASE_MAX_OVERFLOW = '2'
         $releaseQueue = (& $pythonPath -S -c (
             'import os; from pepagent.workers.v38_temporal_worker import ' +
             'V38_ROLE_CONFIG; print(V38_ROLE_CONFIG[os.environ[' +
@@ -180,6 +232,8 @@ foreach ($role in $roles) {
         $env:PEPAGENT_WORK_ROOT = $saved.WorkRoot
         $env:PEPAGENT_PLATFORM_RELEASE_SHA256 = $saved.Release
         $env:PEPAGENT_WORKER_ENVIRONMENT_SHA256 = $saved.Environment
+        $env:PEPAGENT_DATABASE_POOL_SIZE = $saved.DatabasePoolSize
+        $env:PEPAGENT_DATABASE_MAX_OVERFLOW = $saved.DatabaseMaxOverflow
     }
     Start-Sleep -Seconds 2
     if ($process.HasExited) {
@@ -211,6 +265,8 @@ foreach ($role in $roles) {
         python_path = $pythonPath
         python_sha256 = $pythonSha256
         environment_sha256 = $environmentSha256
+        database_pool_size = 2
+        database_max_overflow = 2
         task_queue_verified_from_release = $true
         ampgent_owned = $true
         foreign = $false
