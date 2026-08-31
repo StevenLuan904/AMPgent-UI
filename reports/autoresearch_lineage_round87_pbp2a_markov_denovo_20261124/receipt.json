@@ -1,0 +1,59 @@
+{
+  "schema_version": "ampgent.autoresearch-lineage-probe.1",
+  "observed_at_utc": "2026-08-31T20:33:36.923327+00:00",
+  "source_csv_sha256s": [
+    "8f6bbabb9eee9b1bd4fdfa500871b7b89c86102372e57fd592210a9ee1bd1a87",
+    "0475cd53ba23653b1e02bd43fca00109e14bbb468d4a666d819a7f00df1487f4",
+    "6c9dc99290bfdb0b87e4e4009282bfcd7110ce307ce07b26b9aa718265c1cb71",
+    "aa9a2a05977a3529852fbd486e15635cec64bc9c8b3856453e32f2919e1ad38b",
+    "cb03381015b674cce0ba1585df35d54196c5e6fa2c258a6ca880879ee041d45c",
+    "b62278a94613fc5cead3bd0483e557bb7955874bca4976713a01fac025cacfc2"
+  ],
+  "source_candidate_count": 193,
+  "source_cohort_sha256": "3c2ba72eb82d5023ca54e5285e287ea0ff8a97adc6fcd9bae6d2259e5550f0ec",
+  "generation": 34,
+  "prefer_full_support_within_families": true,
+  "historical_source_sha256s": [
+    "35563e1ca1de223d02cdb6819ad168670a33ba998ef8ee3d020776ceddd7509d",
+    "bc3ca771353c3e21dacdf0f2dfaf557895a60787072bd2c187486b375f0bcb44",
+    "f21b56367a6d6ed5a057e43a3eeb39ab23b06fc33429cec7566e758e63d63513",
+    "a0c2f45ebbc5de01bf1f2fbb6be72f7e373f80743aa9a3561746ec7f39fe9876",
+    "ecad958aa3390c66fcf943ffdbdf18c77ff4b716b844659b12f118af38a2d1a6",
+    "8f70b882d92087eebcd26a67aca42c63a28b565c382115bb44f39c873f089168"
+  ],
+  "unfiltered_input_sequence_exclusion_count": 428,
+  "historical_exclusion_sequence_count": 515,
+  "postgresql_history_exclusion_enabled": true,
+  "postgresql_candidate_sequence_sha256_count": 66495,
+  "postgresql_operational_sequence_sha256_count": 7214,
+  "postgresql_history_sequence_sha256_count": 73409,
+  "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+  "branch_count": 1,
+  "branches": [
+    "pbp2a"
+  ],
+  "replicate_count_per_branch": 12,
+  "action_count": 48,
+  "forced_family_coverage_enabled": false,
+  "forced_family_count": 0,
+  "forced_family_keys": [],
+  "forced_family_materialized_child_counts": {},
+  "uncovered_forced_family_keys": [],
+  "action_type_counts": {
+    "masked_substitution": 12,
+    "controlled_crossover": 12,
+    "de_novo": 24
+  },
+  "child_count": 48,
+  "exact_historical_replay_count": 0,
+  "new_family_child_count": 27,
+  "children_csv_sha256": "f79f9304fb4887aa5932d13351f3e2c4a9057bb94c10f72eb3aca79e3b70a9b7",
+  "actions_sha256": "e5b8e6cfda8d193b28192f44414647231d048f23e62434ed0b6cabdbc47af9f0",
+  "archive_before_sha256": "bdc3365949d2bcb879fbb8dfed0367a1fe9d163ede6d6e03b8a70e908207a00c",
+  "plans_sha256": "34d8f911c3185014317b7ae8f2b99eea8d524d40cdb74fe83df99c4d1364bc05",
+  "workflow_submitted": false,
+  "gpu_task_submitted": false,
+  "historical_run_modified": false,
+  "target_sequence_identity_consumed": false,
+  "receipt_payload_sha256": "1c3d77173a7df429fa39a6b3c1acf06c2c7cc35c1ae404addccdbef3c1afc7ca"
+}
