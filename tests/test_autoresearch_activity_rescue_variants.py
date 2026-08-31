@@ -22,6 +22,18 @@ def _load_module():
     return module
 
 
+def test_input_sequences_are_validated_for_exact_replay_exclusion() -> None:
+    module = _load_module()
+    digest = module.sha256_text("KKRK")
+
+    assert module._validated_sequence_sha256s(
+        [{"sequence": "KKRK", "sequence_sha256": digest}]
+    ) == {digest}
+
+    with pytest.raises(ValueError, match="input sequence/hash drifted"):
+        module._validated_sequence_sha256s([{"sequence": "KKRK", "sequence_sha256": "0" * 64}])
+
+
 def _load_calibration_module():
     analysis_dir = Path(__file__).resolve().parents[1] / "analysis"
     sys.path.insert(0, str(analysis_dir))

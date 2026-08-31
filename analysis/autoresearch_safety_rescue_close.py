@@ -19,39 +19,45 @@ from pepagent.autoresearch_closed_loop import (
 )
 from pepagent.provenance.hashing import sha256_file, sha256_json
 
+BRANCH_CHOICES = ("acea", "angpt1", "fgf2", "gyra", "pbp2a", "vegfa")
+
 
 def _read_csv(path: Path) -> list[dict[str, str]]:
     with path.open(encoding="utf-8-sig", newline="") as stream:
         return list(csv.DictReader(stream))
 
 
+def _archive_branch(payload: dict[str, Any], branch: str) -> dict[str, Any]:
+    branches = payload.get("branches", {})
+    if branch not in branches:
+        raise ValueError(f"archive update has no branch {branch}")
+    return branches[branch]
+
+
 def run(args: argparse.Namespace) -> None:
     baseline_rows = _read_csv(args.baseline_parent_csv)
     qualified_rows = _read_csv(args.qualified_archive_csv)
-    prior_child_rows = [
-        row for path in args.prior_child_csv for row in _read_csv(path)
-    ]
+    prior_child_rows = [row for path in args.prior_child_csv for row in _read_csv(path)]
     prior_no_conflict = {
-        row["sequence_sha256"]
-        for path in args.prior_challenger_csv
-        for row in _read_csv(path)
+        row["sequence_sha256"] for path in args.prior_challenger_csv for row in _read_csv(path)
     }
     child_rows = _read_csv(args.child_csv)
     no_conflict = {row["sequence_sha256"] for row in _read_csv(args.challenger_csv)}
     plans = json.loads(args.plans_json.read_text(encoding="utf-8"))["plans"]
-    previous_payload = json.loads(args.archive_updates_json.read_text(encoding="utf-8"))[
-        "branches"
-    ]["acea"]["current"]
+    previous_payload = _archive_branch(
+        json.loads(args.archive_updates_json.read_text(encoding="utf-8")),
+        args.branch,
+    )["current"]
     previous = parse_persisted_archive_snapshot(previous_payload)
     previous_ids = set(previous.source_candidate_ids)
 
     old_candidates: dict[str, Any] = {}
     for row in qualified_rows:
-        if row["branch_key"] == "acea" and row["sequence_sha256"] in previous_ids:
+        if row["branch_key"] == args.branch and row["sequence_sha256"] in previous_ids:
             old_candidates[row["sequence_sha256"]] = _evidence(row, archive_eligible=True)
     for row in prior_child_rows:
         digest = row["sequence_sha256"]
-        if row["branch_key"] != "acea" or digest not in previous_ids:
+        if row["branch_key"] != args.branch or digest not in previous_ids:
             continue
         allowed = (
             row["display_eligible"].lower() == "true"
@@ -66,15 +72,14 @@ def run(args: argparse.Namespace) -> None:
 
     baseline_by_id = {row["sequence_sha256"]: row for row in baseline_rows}
     baseline_evidence = {
-        digest: _evidence(row, archive_eligible=False)
-        for digest, row in baseline_by_id.items()
+        digest: _evidence(row, archive_eligible=False) for digest, row in baseline_by_id.items()
     }
     child_by_action = {row["action_sha256"]: row for row in child_rows}
     if len(child_by_action) != len(child_rows):
         raise ValueError("safety rescue child action identities are not unique")
     action_payloads = [
         payload
-        for payload in plans["acea"]["actions"]
+        for payload in plans[args.branch]["actions"]
         if payload["action_sha256"] in child_by_action
     ]
     if {payload["action_sha256"] for payload in action_payloads} != set(child_by_action):
@@ -148,7 +153,7 @@ def run(args: argparse.Namespace) -> None:
         json.dumps(
             {
                 "schema_version": "ampgent.autoresearch-multibranch-archive-update.1",
-                "branches": {"acea": update_payload},
+                "branches": {args.branch: update_payload},
             },
             ensure_ascii=False,
             indent=2,
@@ -161,9 +166,7 @@ def run(args: argparse.Namespace) -> None:
         "source_hashes": {
             "baseline_parent_csv_sha256": sha256_file(args.baseline_parent_csv),
             "qualified_archive_csv_sha256": sha256_file(args.qualified_archive_csv),
-            "prior_child_csv_sha256s": [
-                sha256_file(path) for path in args.prior_child_csv
-            ],
+            "prior_child_csv_sha256s": [sha256_file(path) for path in args.prior_child_csv],
             "prior_challenger_csv_sha256s": [
                 sha256_file(path) for path in args.prior_challenger_csv
             ],
@@ -208,14 +211,11 @@ def run(args: argparse.Namespace) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--branch", choices=BRANCH_CHOICES, default="acea")
     parser.add_argument("--baseline-parent-csv", type=Path, required=True)
     parser.add_argument("--qualified-archive-csv", type=Path, required=True)
-    parser.add_argument(
-        "--prior-child-csv", type=Path, action="append", required=True
-    )
-    parser.add_argument(
-        "--prior-challenger-csv", type=Path, action="append", required=True
-    )
+    parser.add_argument("--prior-child-csv", type=Path, action="append", required=True)
+    parser.add_argument("--prior-challenger-csv", type=Path, action="append", required=True)
     parser.add_argument("--child-csv", type=Path, required=True)
     parser.add_argument("--challenger-csv", type=Path, required=True)
     parser.add_argument("--plans-json", type=Path, required=True)

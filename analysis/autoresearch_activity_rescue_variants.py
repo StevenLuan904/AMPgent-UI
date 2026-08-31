@@ -82,6 +82,17 @@ def _single_branch_key(rows: list[dict[str, str]]) -> str:
     return branch_keys.pop()
 
 
+def _validated_sequence_sha256s(rows: list[dict[str, str]]) -> set[str]:
+    hashes: set[str] = set()
+    for row in rows:
+        sequence = row["sequence"]
+        digest = row.get("sequence_sha256") or sha256_text(sequence)
+        if digest != sha256_text(sequence):
+            raise ValueError("activity rescue input sequence/hash drifted")
+        hashes.add(digest)
+    return hashes
+
+
 def _filter_source_branch(
     rows: list[dict[str, str]], branch_key: str | None
 ) -> list[dict[str, str]]:
@@ -130,9 +141,7 @@ def _select_parents(
         )
         selected.extend(family_rows[:maximum_per_family])
     if not selected:
-        raise ValueError(
-            f"no calibrated support-2 {rescue_endpoint} endpoint rescue parents"
-        )
+        raise ValueError(f"no calibrated support-2 {rescue_endpoint} endpoint rescue parents")
     return selected
 
 
@@ -253,9 +262,7 @@ def _generate(
                         "new_family_relative_to_all_references": parent.get(
                             "new_family_relative_to_all_references", "false"
                         ),
-                        "diversity_qualified": parent.get(
-                            "diversity_qualified", "false"
-                        ),
+                        "diversity_qualified": parent.get("diversity_qualified", "false"),
                         "edit_position_1based": position + 1,
                         "edit": f"{old_residue}{position + 1}{new_residue}",
                         "sequence": sequence,
@@ -270,9 +277,7 @@ def _generate(
                     }
                 )
     if not generated:
-        raise ValueError(
-            f"no novel strict {rescue_endpoint} endpoint rescue variants generated"
-        )
+        raise ValueError(f"no novel strict {rescue_endpoint} endpoint rescue variants generated")
     return generated, actions
 
 
@@ -284,6 +289,7 @@ def run(args: argparse.Namespace) -> None:
             source_rows.extend(csv.DictReader(stream))
         parent_score_sha256s.append(sha256_file(path))
     source_row_count_before_branch_filter = len(source_rows)
+    input_sequence_sha256s = _validated_sequence_sha256s(source_rows)
     source_rows = _filter_source_branch(source_rows, args.branch)
     branch_key = _single_branch_key(source_rows)
     parents = _select_parents(
@@ -298,6 +304,7 @@ def run(args: argparse.Namespace) -> None:
         else sha256_json({"parent_score_sha256s": parent_score_sha256s})
     )
     historical_sha256s = asyncio.run(_historical_sequence_sha256s())
+    historical_sha256s.update(input_sequence_sha256s)
     historical_source_hashes: list[str] = []
     for path in args.historical_csv:
         historical_source_hashes.append(sha256_file(path))
@@ -412,11 +419,7 @@ def run(args: argparse.Namespace) -> None:
         )
     )
     safety_rows = [row for row in rows if row["safety_hard_gate_pass"] == "true"]
-    gain_rows = [
-        row
-        for row in safety_rows
-        if row["rescue_gain_positive"] == "true"
-    ]
+    gain_rows = [row for row in safety_rows if row["rescue_gain_positive"] == "true"]
     shortlist = [row for row in rows if row["full_score_shortlist"] == "true"]
     _write_csv(output_dir / "all_search_scores.csv", rows)
     if safety_rows:
@@ -440,6 +443,7 @@ def run(args: argparse.Namespace) -> None:
         "generation_floor": max(int(row["generation"]) for row in source_rows) + 1,
         "plans_sha256": sha256_file(plans_path),
         "historical_sequence_exclusion_count": len(historical_sha256s),
+        "input_sequence_exclusion_count": len(input_sequence_sha256s),
         "historical_source_sha256s": historical_source_hashes,
         "parent_count": len(parents),
         "parent_family_count": len({row["family_key_80_80"] for row in parents}),
