@@ -39,7 +39,7 @@ import { AnalysisDashboard } from './analysis/AnalysisDashboard'
 import { loadAnalysisSnapshot, type AnalysisSnapshot } from './analysis/dataKernel'
 import { EvidenceDashboard } from './analysis/EvidenceDashboard'
 import { MoleculeViewer } from './MoleculeViewer'
-import { candidateGenerationLabel, formatGenerationPopulation, formatRunGenerationPopulation } from './generationPopulation'
+import { candidateGenerationLabel, formatGenerationPopulation } from './generationPopulation'
 import { formatQualityGateRule, qualityGateCountSteps, qualityGateStatusLabel } from './generationQualityGate'
 import {
   distributionForStage,
@@ -49,6 +49,7 @@ import {
 } from './ResultDistribution'
 import { LaneLabel, WorkflowNode, type LaneNode, type StageNode } from './WorkflowNode'
 import { assertMatchingRunIdentity, type RunIdentity } from './runIdentity'
+import { formatRunTitle } from './runPresentation'
 import { schedulerHealthDescription, schedulerHealthPresentation } from './schedulerHealth'
 import type {
   CandidatePreview,
@@ -113,7 +114,7 @@ const laneLabels: Array<{ id: string; label: string; x: number }> = [
 ]
 
 const statusText: Record<string, string> = {
-  created: '已创建', submitted: '已提交', running: '运行中', succeeded: '已完成', failed: '失败', cancelled: '已取消',
+  created: '已创建', submitted: '已提交', running: '运行中', succeeded: '已完成', failed: '运行异常终止', cancelled: '已取消',
   completed: '已完成', stopped: '已停止', pending: '待写入',
 }
 
@@ -143,15 +144,6 @@ const professionalTermHelp: Record<string, string> = {
 function formatTime(value: string | null) {
   if (!value) return '—'
   return new Intl.DateTimeFormat('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(value))
-}
-
-function runTitle(run: RunListItem) {
-  const candidateLabel = run.generation_population
-    ? formatRunGenerationPopulation(run.generation_population)
-    : `${run.candidate_count.toLocaleString()} 条候选`
-  if (run.status === 'running') return `正在运行 · ${candidateLabel}`
-  if (run.structure_record_count > 0) return `结构证据轮次 · ${run.structure_record_count.toLocaleString()} 条记录`
-  return `序列设计轮次 · ${candidateLabel}`
 }
 
 function readableDataError(cause: unknown, fallback: string) {
@@ -418,7 +410,7 @@ function RunList({ runs, selectedId, onSelect }: { runs: RunListItem[]; selected
         <button key={run.id} className={`run-row ${run.id === selectedId ? 'active' : ''}`} onClick={() => onSelect(run.id)}>
           <span className={`run-status-dot status-${run.status}`} />
           <span className="run-row-copy">
-            <strong>{runTitle(run)}</strong>
+                <strong>{formatRunTitle(run)}</strong>
             <small>{formatTime(run.created_at)} · {run.tool_call_count} 次工具运行</small>
           </span>
           <ChevronRight />
