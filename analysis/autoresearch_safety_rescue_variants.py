@@ -9,11 +9,11 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from pepagent.autoresearch_closed_loop import MaskedSubstitutionAction, ResidueSubstitution
 from pepagent.autoresearch_planner import _hydrophobic_fraction, _sequence_prescreen
-from pepagent.db.models import Candidate, LifecycleEvent
+from pepagent.db.models import Candidate
 from pepagent.db.session import SessionFactory
 from pepagent.model_workers.sequence_metrics_cli import evaluate
 from pepagent.provenance.hashing import sha256_file, sha256_json, sha256_text
@@ -81,29 +81,31 @@ async def _historical_sequence_sha256s() -> set[str]:
         candidate_hashes = set(
             await session.scalars(select(Candidate.sequence_sha256).distinct())
         )
-        operational_payloads = list(
+        operational_hash_rows = list(
             await session.scalars(
-                select(LifecycleEvent.payload_json).where(
-                    LifecycleEvent.event_type == "operational.call.succeeded"
+                text(
+                    """
+                    SELECT DISTINCT candidate ->> 'sequence_sha256'
+                    FROM lifecycle_events AS event
+                    CROSS JOIN LATERAL jsonb_array_elements(
+                        CASE
+                            WHEN jsonb_typeof(
+                                event.payload_json -> 'output' -> 'candidates'
+                            ) = 'array'
+                            THEN event.payload_json -> 'output' -> 'candidates'
+                            ELSE '[]'::jsonb
+                        END
+                    ) AS candidate
+                    WHERE event.event_type = 'operational.call.succeeded'
+                      AND event.payload_json ->> 'purpose' = 'score_all'
+                      AND event.payload_json ->> 'status' = 'succeeded'
+                    """
                 )
             )
         )
-    operational_hashes: set[str] = set()
-    for payload in operational_payloads:
-        if payload.get("purpose") != "score_all" or payload.get("status") != "succeeded":
-            continue
-        output = payload.get("output")
-        if not isinstance(output, dict):
-            continue
-        candidates = output.get("candidates")
-        if not isinstance(candidates, list):
-            continue
-        for candidate in candidates:
-            if not isinstance(candidate, dict) or not isinstance(
-                candidate.get("sequence_sha256"), str
-            ):
-                raise ValueError("PostgreSQL operational score history is malformed")
-            operational_hashes.add(candidate["sequence_sha256"])
+    if any(not isinstance(item, str) for item in operational_hash_rows):
+        raise ValueError("PostgreSQL operational score history is malformed")
+    operational_hashes = set(operational_hash_rows)
     combined = candidate_hashes | operational_hashes
     if any(len(item) != 64 or set(item) - set("0123456789abcdef") for item in combined):
         raise ValueError("PostgreSQL rescue history contains an invalid sequence SHA-256")

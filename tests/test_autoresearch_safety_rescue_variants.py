@@ -60,13 +60,7 @@ def test_postgresql_history_includes_operational_score_sequences(monkeypatch) ->
             self.calls += 1
             if self.calls == 1:
                 return [candidate_hash]
-            return [
-                {
-                    "purpose": "score_all",
-                    "status": "succeeded",
-                    "output": {"candidates": [{"sequence_sha256": operational_hash}]},
-                }
-            ]
+            return [operational_hash]
 
     class SessionContext:
         async def __aenter__(self):
