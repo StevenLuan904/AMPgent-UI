@@ -143,8 +143,12 @@ def _generate(
                         "family_representative_sequence": parent.get(
                             "family_representative_sequence", parent_sequence
                         ),
-                        "new_family_relative_to_all_references": "false",
-                        "diversity_qualified": "false",
+                        "new_family_relative_to_all_references": parent.get(
+                            "new_family_relative_to_all_references", "false"
+                        ),
+                        "diversity_qualified": parent.get(
+                            "diversity_qualified", "false"
+                        ),
                         "edit_position_1based": position + 1,
                         "edit": f"{old_residue}{position + 1}{new_residue}",
                         "sequence": sequence,

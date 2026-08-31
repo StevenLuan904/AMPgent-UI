@@ -44,6 +44,26 @@ FORMAL_METRICS = tuple(
 )
 
 
+def _archive_snapshot_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    """Accept either a snapshot or the prior close step's archive-update payload."""
+    current = payload.get("current")
+    return current if isinstance(current, dict) else payload
+
+
+def _full_scored_action_payloads(
+    plan: dict[str, Any], child_action_sha256s: set[str]
+) -> tuple[list[dict[str, Any]], int]:
+    actions = list(plan["actions"])
+    planned_sha256s = {str(action["action_sha256"]) for action in actions}
+    missing = child_action_sha256s - planned_sha256s
+    if missing:
+        raise ValueError("lineage close children are missing from the generation plan")
+    selected = [
+        action for action in actions if str(action["action_sha256"]) in child_action_sha256s
+    ]
+    return selected, len(actions) - len(selected)
+
+
 def _write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
     if not rows:
         raise ValueError(f"refusing to write empty CSV: {path}")
@@ -161,6 +181,11 @@ def run(args: argparse.Namespace) -> None:
     for path in args.parent_csv:
         with path.open(encoding="utf-8-sig", newline="") as stream:
             parent_rows.extend(csv.DictReader(stream))
+    policy_parent_rows: list[dict[str, str]] = []
+    policy_parent_paths = args.policy_parent_csv or args.parent_csv
+    for path in policy_parent_paths:
+        with path.open(encoding="utf-8-sig", newline="") as stream:
+            policy_parent_rows.extend(csv.DictReader(stream))
     with args.child_csv.open(encoding="utf-8-sig", newline="") as stream:
         child_rows = list(csv.DictReader(stream))
     with args.challenger_csv.open(encoding="utf-8-sig", newline="") as stream:
@@ -190,22 +215,35 @@ def run(args: argparse.Namespace) -> None:
     archive_updates: dict[str, Any] = {}
     replay_branches: dict[str, Any] = {}
     eligible_children: set[str] = set()
+    planned_action_count = 0
+    unscored_planned_action_count = 0
     for branch_key in branches:
         branch_parents = [row for row in parent_rows if row["branch_key"] == branch_key]
+        branch_policy_parents = [
+            row for row in policy_parent_rows if row["branch_key"] == branch_key
+        ]
         branch_children = [row for row in child_rows if row["branch_key"] == branch_key]
         policy = MultiFrontArchivePolicy(
             known_family_keys=tuple(
-                sorted({row["family_key_80_80"] for row in branch_parents})
+                sorted({row["family_key_80_80"] for row in branch_policy_parents})
             )
         )
         previous = parse_persisted_archive_snapshot(
-            archives_payload["branches"][branch_key]
+            _archive_snapshot_payload(archives_payload["branches"][branch_key])
         )
         parent_evidence = [_evidence(row, archive_eligible=True) for row in branch_parents]
         evidence_by_id = {item.candidate_id: item for item in parent_evidence}
         action_receipts: list[dict[str, Any]] = []
         plan = plans_payload["plans"][branch_key]
-        for action_payload in plan["actions"]:
+        branch_child_action_sha256s = {
+            row["action_sha256"] for row in branch_children
+        }
+        selected_actions, skipped_action_count = _full_scored_action_payloads(
+            plan, branch_child_action_sha256s
+        )
+        planned_action_count += len(plan["actions"])
+        unscored_planned_action_count += skipped_action_count
+        for action_payload in selected_actions:
             action = parse_evolution_action(action_payload)
             child_row = children_by_action[action.action_sha256]
             child_allowed = (
@@ -303,6 +341,9 @@ def run(args: argparse.Namespace) -> None:
         "schema_version": "ampgent.autoresearch-multibranch-replay.1",
         "source_hashes": {
             "parent_csv_sha256s": [sha256_file(path) for path in args.parent_csv],
+            "policy_parent_csv_sha256s": [
+                sha256_file(path) for path in policy_parent_paths
+            ],
             "child_csv_sha256": sha256_file(args.child_csv),
             "challenger_csv_sha256": sha256_file(args.challenger_csv),
             "plans_sha256": sha256_file(args.plans_json),
@@ -321,6 +362,8 @@ def run(args: argparse.Namespace) -> None:
         "branch_count": len(branches),
         "branches": list(branches),
         "child_count": len(child_rows),
+        "planned_action_count": planned_action_count,
+        "unscored_planned_action_count": unscored_planned_action_count,
         "formal_metric_count": len(FORMAL_METRICS),
         "parent_child_delta_receipt_count": len(parent_child_receipts),
         "flat_metric_delta_count": len(flat_deltas),
@@ -347,6 +390,7 @@ def run(args: argparse.Namespace) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--parent-csv", type=Path, action="append", required=True)
+    parser.add_argument("--policy-parent-csv", type=Path, action="append", default=[])
     parser.add_argument("--child-csv", type=Path, required=True)
     parser.add_argument("--challenger-csv", type=Path, required=True)
     parser.add_argument("--plans-json", type=Path, required=True)
