@@ -142,6 +142,16 @@ def test_multifront_rule_planner_keeps_conflicts_novelty_and_four_strategies() -
     assert plan["action_execution_mode"] == "generator_gpu"
     actions = [parse_evolution_action(item) for item in plan["actions"]]
     assert len(actions) == 4
+    assert any(
+        isinstance(action, MaskedSubstitutionAction)
+        and action.operator_id == "autoresearch-rule-substitution-v2"
+        for action in actions
+    )
+    assert any(
+        isinstance(action, ControlledCrossoverAction)
+        and action.operator_id == "autoresearch-rule-crossover-v2"
+        for action in actions
+    )
     assert all(
         20 <= (
             action.peptide_length
@@ -174,14 +184,28 @@ def test_multifront_rule_planner_keeps_conflicts_novelty_and_four_strategies() -
             continue
         child = apply_evolution_action(action, candidates_by_id)
         instability, hydrophobic_run, charge = _sequence_prescreen(child)
+        hydrophobic_fraction = sum(
+            residue in "AVILMFWYC" for residue in child
+        ) / len(child)
         assert instability < 50.0
+        parent = candidates_by_id[action.parent_candidate_id]
+        parent_hydrophobic_fraction = sum(
+            residue in "AVILMFWYC" for residue in parent.sequence
+        ) / len(parent.sequence)
+        assert hydrophobic_fraction <= parent_hydrophobic_fraction
+        assert charge >= min(_sequence_prescreen(parent.sequence)[2], 3.0)
         if isinstance(action, ControlledCrossoverAction):
-            parent = candidates_by_id[action.parent_candidate_id]
             donor = candidates_by_id[action.donor_candidate_id]
             _, parent_run, parent_charge = _sequence_prescreen(parent.sequence)
             _, donor_run, donor_charge = _sequence_prescreen(donor.sequence)
+            donor_hydrophobic_fraction = sum(
+                residue in "AVILMFWYC" for residue in donor.sequence
+            ) / len(donor.sequence)
             assert hydrophobic_run <= max(parent_run, donor_run)
-            assert charge >= min(parent_charge, donor_charge) - 1.0
+            assert hydrophobic_fraction <= max(
+                parent_hydrophobic_fraction, donor_hydrophobic_fraction
+            )
+            assert charge >= max(3.0, min(parent_charge, donor_charge) - 1.0)
 
 
 def test_multifront_rule_planner_can_freeze_a_cpu_only_action_batch() -> None:
@@ -254,8 +278,12 @@ def test_cpu_only_planner_fills_a_fifty_percent_de_novo_quota() -> None:
         "instability_method": "Guruprasad-Reddy-Pandit-1990-via-Biopython-ProtParam",
         "instability_max_exclusive": 50.0,
         "mutation_hydrophobic_run_nonincrease_preferred": True,
+        "mutation_hydrophobic_fraction_nonincrease": True,
+        "mutation_net_charge_floor": "min(parent_charge,3.0)",
         "crossover_hydrophobic_run_parent_maximum": True,
+        "crossover_hydrophobic_fraction_parent_maximum": True,
         "crossover_charge_loss_max": 1.0,
+        "crossover_net_charge_minimum": 3.0,
         "de_novo_instability_max_exclusive": 50.0,
         "de_novo_hydrophobic_run_maximum": 2,
         "de_novo_hydrophobic_fraction_maximum": 0.45,

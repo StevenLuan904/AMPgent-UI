@@ -58,13 +58,15 @@ def _sequence_prescreen(sequence: str) -> tuple[float, int, float]:
     )
 
 
+def _hydrophobic_fraction(sequence: str) -> float:
+    return sum(residue in _HYDROPHOBIC for residue in sequence) / len(sequence)
+
+
 def _de_novo_prescreen_passes(sequence: str) -> bool:
     """Reject rule proposals that cannot satisfy the literal display pre-gates."""
 
     instability, hydrophobic_run, charge = _sequence_prescreen(sequence)
-    hydrophobic_fraction = sum(
-        residue in _HYDROPHOBIC for residue in sequence
-    ) / len(sequence)
+    hydrophobic_fraction = _hydrophobic_fraction(sequence)
     return (
         math.isfinite(instability)
         and instability < 50.0
@@ -181,6 +183,7 @@ def _mutation(
     parent_instability, parent_hydrophobic_run, parent_charge = _sequence_prescreen(
         parent.sequence
     )
+    parent_hydrophobic_fraction = _hydrophobic_fraction(parent.sequence)
     proposals: list[tuple[tuple[float | int, ...], ResidueSubstitution]] = []
     for position_rank, candidate_position in enumerate(positions):
         source = parent.sequence[candidate_position]
@@ -202,7 +205,14 @@ def _mutation(
             if child in known or sha256_text(child) in excluded_sequence_sha256s:
                 continue
             instability, hydrophobic_run, charge = _sequence_prescreen(child)
-            if not math.isfinite(instability) or instability >= 50.0:
+            hydrophobic_fraction = _hydrophobic_fraction(child)
+            charge_floor = min(parent_charge, _DE_NOVO_MINIMUM_NET_CHARGE)
+            if (
+                not math.isfinite(instability)
+                or instability >= 50.0
+                or hydrophobic_fraction > parent_hydrophobic_fraction
+                or charge < charge_floor
+            ):
                 continue
             proposals.append(
                 (
@@ -212,6 +222,7 @@ def _mutation(
                             and hydrophobic_run >= parent_hydrophobic_run
                         ),
                         hydrophobic_run,
+                        hydrophobic_fraction,
                         instability,
                         max(0.0, parent_charge - charge),
                         int(instability >= parent_instability),
@@ -372,7 +383,7 @@ def build_multifront_rule_action_plan(
             branch_key=branch_key,
             generation=generation,
             seed=seed,
-            operator_id="autoresearch-rule-substitution-v1",
+            operator_id="autoresearch-rule-substitution-v2",
             operator_release_sha256=operator_release_sha256,
             expected_improvement_metrics=("guruprasad_instability_index",),
             protected_metrics=(
@@ -416,7 +427,15 @@ def build_multifront_rule_action_plan(
             _, primary_run, primary_charge = _sequence_prescreen(primary.sequence)
             _, donor_run, donor_charge = _sequence_prescreen(donor.sequence)
             maximum_parent_run = max(primary_run, donor_run)
+            maximum_parent_hydrophobic_fraction = max(
+                _hydrophobic_fraction(primary.sequence),
+                _hydrophobic_fraction(donor.sequence),
+            )
             minimum_parent_charge = min(primary_charge, donor_charge)
+            minimum_child_charge = max(
+                _DE_NOVO_MINIMUM_NET_CHARGE,
+                minimum_parent_charge - 1.0,
+            )
             for first_length in range(5, len(primary.sequence) - 4):
                 donor_length = len(primary.sequence) - first_length
                 if donor_length < 5 or donor_length > len(donor.sequence):
@@ -429,15 +448,18 @@ def build_multifront_rule_action_plan(
                 ):
                     continue
                 instability, hydrophobic_run, charge = _sequence_prescreen(child)
+                hydrophobic_fraction = _hydrophobic_fraction(child)
                 if (
                     not math.isfinite(instability)
                     or instability >= 50.0
                     or hydrophobic_run > maximum_parent_run
-                    or charge < minimum_parent_charge - 1.0
+                    or hydrophobic_fraction > maximum_parent_hydrophobic_fraction
+                    or charge < minimum_child_charge
                 ):
                     continue
                 key = (
                     hydrophobic_run,
+                    hydrophobic_fraction,
                     instability,
                     max(0.0, minimum_parent_charge - charge),
                     primary.candidate_id,
@@ -465,7 +487,7 @@ def build_multifront_rule_action_plan(
             branch_key=branch_key,
             generation=generation,
             seed=seed + 1,
-            operator_id="autoresearch-rule-crossover-v1",
+            operator_id="autoresearch-rule-crossover-v2",
             operator_release_sha256=operator_release_sha256,
             expected_improvement_metrics=(
                 "amp_read_log10_mic_um",
@@ -491,7 +513,7 @@ def build_multifront_rule_action_plan(
         strategies.append("crossover")
         rationales[action.action_sha256] = (
             "Combine two distinct activity-model endpoints after a deterministic "
-            "Guruprasad<50, hydrophobic-run, and charge-loss prescreen; retain both "
+            "Guruprasad<50, hydrophobic-run/fraction, and charge-floor prescreen; retain both "
             "parents as controls and preserve disagreement rather than averaging it."
         )
 
@@ -684,8 +706,12 @@ def build_multifront_rule_action_plan(
             "instability_method": "Guruprasad-Reddy-Pandit-1990-via-Biopython-ProtParam",
             "instability_max_exclusive": 50.0,
             "mutation_hydrophobic_run_nonincrease_preferred": True,
+            "mutation_hydrophobic_fraction_nonincrease": True,
+            "mutation_net_charge_floor": "min(parent_charge,3.0)",
             "crossover_hydrophobic_run_parent_maximum": True,
+            "crossover_hydrophobic_fraction_parent_maximum": True,
             "crossover_charge_loss_max": 1.0,
+            "crossover_net_charge_minimum": _DE_NOVO_MINIMUM_NET_CHARGE,
             "de_novo_instability_max_exclusive": 50.0,
             "de_novo_hydrophobic_run_maximum": _DE_NOVO_MAXIMUM_HYDROPHOBIC_RUN,
             "de_novo_hydrophobic_fraction_maximum": (
