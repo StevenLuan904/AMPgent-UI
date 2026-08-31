@@ -1,0 +1,85 @@
+{
+  "schema_version": "ampgent.autoresearch-temporal-pool-mitigation.1",
+  "observed_at_utc": "2026-08-31T00:19:41.5324877Z",
+  "read_only_runtime_observation": true,
+  "runtime_restart_performed": false,
+  "deployment_performed": false,
+  "new_workflow_submitted": false,
+  "new_gpu_task_submitted": false,
+  "scientific_run_status_affected": false,
+  "future_configuration": {
+    "commit": "ec878b2",
+    "temporal_primary_max_connections": 12,
+    "temporal_primary_max_idle_connections": 4,
+    "temporal_primary_max_connection_time": "10m",
+    "temporal_visibility_max_connections": 4,
+    "temporal_visibility_max_idle_connections": 2,
+    "temporal_visibility_max_connection_time": "10m",
+    "activation_policy": "future_container_recreation_only"
+  },
+  "verification": {
+    "ruff": "passed",
+    "pytest": "1_passed",
+    "docker_compose_config": "passed",
+    "git_diff_check": "passed"
+  },
+  "runtime_observation": {
+    "temporal_cluster_health_query": "failed",
+    "temporal_cluster_health_error_category": "deadline_exceeded",
+    "recent_temporal_log_categories": {
+      "database_bad_connection": 5,
+      "scanner_failure": 8
+    },
+    "authorized_idle_gpu_keys": [
+      "192.168.99.2:1",
+      "192.168.99.2:2",
+      "192.168.99.2:3"
+    ],
+    "prohibited_gpu_keys": [
+      "192.168.99.32:2",
+      "192.168.99.32:3"
+    ]
+  },
+  "exact_run_observations": [
+    {
+      "branch_key": "fgf2",
+      "postgresql_run_id": "13808374-a6bd-58c9-98ed-ae4e494ce43e",
+      "postgresql_scientific_status": "running",
+      "temporal_workflow_id": "pepagent-autoresearch-cpu-successor-v1-fgf2-4e544ac2-acc7-525a-a2db-986200bd4e58",
+      "temporal_run_id": "0edf80e4-627f-4a40-ad02-ebcd11a1d3d9",
+      "temporal_history_read_status": "failed",
+      "temporal_history_read_error_category": "service_unavailable",
+      "candidate_count": 768,
+      "descendant_candidate_count": 0,
+      "evaluation_count": 9216,
+      "autoresearch_action_count": 0
+    },
+    {
+      "branch_key": "vegfa",
+      "postgresql_run_id": "c15910a6-a553-51c1-8ee6-d658d60857ac",
+      "postgresql_scientific_status": "running",
+      "temporal_workflow_id": "pepagent-autoresearch-cpu-successor-v1-vegfa-f53cf666-2310-5533-98a3-d803ca701a00",
+      "temporal_run_id": "25f16b3d-e0c8-4a15-8639-3f4b9ffdbccd",
+      "temporal_history_read_status": "failed",
+      "temporal_history_read_error_category": "service_unavailable",
+      "candidate_count": 0,
+      "descendant_candidate_count": 0,
+      "evaluation_count": 0,
+      "autoresearch_action_count": 0
+    },
+    {
+      "branch_key": "pbp2a",
+      "postgresql_run_id": "595e8160-527e-5182-9ac6-429011ff74cd",
+      "postgresql_scientific_status": "created",
+      "temporal_workflow_id": "pepagent-autoresearch-cpu-successor-v1-pbp2a-a2e01fc8-1a57-5576-a4ab-0aac750d2287",
+      "temporal_run_id": "75897105-734b-4055-b4e7-a36f01dbea4b",
+      "temporal_history_read_status": "failed",
+      "temporal_history_read_error_category": "service_unavailable",
+      "candidate_count": 0,
+      "descendant_candidate_count": 0,
+      "evaluation_count": 0,
+      "autoresearch_action_count": 0
+    }
+  ],
+  "dispatch_decision": "no_duplicate_or_unledgered_dispatch_while_temporal_persistence_is_unhealthy"
+}
