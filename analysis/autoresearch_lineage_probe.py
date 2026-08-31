@@ -50,6 +50,25 @@ def _prefer_full_support_within_families(
     ]
 
 
+def _unresolved_family_parent_ids(
+    rows: list[dict[str, str]],
+) -> dict[str, tuple[str, ...]]:
+    full_support_families = {
+        row["family_key_80_80"]
+        for row in rows
+        if int(row.get("activity_model_support_count_calibrated", 0)) == 3
+    }
+    parent_ids: dict[str, list[str]] = {}
+    for row in sorted(
+        rows,
+        key=lambda item: (item["family_key_80_80"], item["sequence_sha256"]),
+    ):
+        family_key = row["family_key_80_80"]
+        if family_key not in full_support_families:
+            parent_ids.setdefault(family_key, []).append(row["sequence_sha256"])
+    return {key: tuple(values) for key, values in parent_ids.items()}
+
+
 def _write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
     if not rows:
         raise ValueError(f"refusing to write empty CSV: {path}")
@@ -68,8 +87,7 @@ def _evidence(row: dict[str, str]) -> CandidateEvidence:
             unit=unit,
             version="frozen-score-all-source",
             out_of_domain=(
-                metric_name == "guruprasad_instability_index"
-                and len(row["sequence"]) < 20
+                metric_name == "guruprasad_instability_index" and len(row["sequence"]) < 20
             ),
         )
         for metric_name, (direction, unit) in ARCHIVE_METRICS.items()
@@ -97,6 +115,10 @@ def run(args: argparse.Namespace) -> None:
             rows.extend(csv.DictReader(stream))
     if not rows:
         raise ValueError("lineage probe input is empty")
+    input_sequences = {row["sequence"] for row in rows}
+    input_sequence_hashes = {sha256_text(sequence) for sequence in input_sequences}
+    if any(row.get("sequence_sha256") != sha256_text(row["sequence"]) for row in rows):
+        raise ValueError("lineage probe input has a sequence/hash mismatch")
     active_branches = tuple(args.branch or BRANCHES)
     if len(set(active_branches)) != len(active_branches):
         raise ValueError("lineage probe branch selection contains duplicates")
@@ -115,20 +137,21 @@ def run(args: argparse.Namespace) -> None:
         raise ValueError("lineage probe selected source cohort is empty")
     source_branches = {row["branch_key"] for row in rows}
     if source_branches != set(active_branches):
-        raise ValueError(
-            "lineage probe source branches must exactly match the selected branches"
-        )
+        raise ValueError("lineage probe source branches must exactly match the selected branches")
     sequences = {row["sequence"] for row in rows}
-    sequence_hashes = {row["sequence_sha256"] for row in rows}
-    if len(sequences) != len(rows) or len(sequence_hashes) != len(rows):
+    selected_sequence_hashes = {row["sequence_sha256"] for row in rows}
+    if len(sequences) != len(rows) or len(selected_sequence_hashes) != len(rows):
         raise ValueError("lineage probe source is not globally sequence-unique")
+    sequence_hashes = set(input_sequence_hashes)
     historical_rows: list[dict[str, str]] = []
     historical_source_hashes: list[str] = []
     for path in args.historical_csv:
         historical_source_hashes.append(sha256_file(path))
         with path.open(encoding="utf-8-sig", newline="") as stream:
             historical_rows.extend(csv.DictReader(stream))
-    historical_sequences = set(sequences)
+    # Selection may discard weaker rows from a family, but those sequences remain
+    # historical observations and must never become "novel" children later.
+    historical_sequences = set(input_sequences)
     for row in historical_rows:
         sequence = row["sequence"]
         sequence_sha256 = row.get("sequence_sha256") or sha256_text(sequence)
@@ -149,10 +172,15 @@ def run(args: argparse.Namespace) -> None:
         branch_rows = [row for row in rows if row["branch_key"] == branch_key]
         evidence = [_evidence(row) for row in branch_rows]
         evidence_by_id = {item.candidate_id: item for item in evidence}
+        source_row_by_id = {row["sequence_sha256"]: row for row in branch_rows}
+        unresolved_family_parents = (
+            _unresolved_family_parent_ids(branch_rows)
+            if args.force_unresolved_family_coverage
+            else {}
+        )
+        unresolved_family_keys = tuple(sorted(unresolved_family_parents))
         policy = MultiFrontArchivePolicy(
-            known_family_keys=tuple(
-                sorted({item.family_key for item in evidence})
-            )
+            known_family_keys=tuple(sorted({item.family_key for item in evidence}))
         )
         archive = build_multi_front_archive(
             evidence,
@@ -166,6 +194,13 @@ def run(args: argparse.Namespace) -> None:
         branch_plans: list[dict[str, Any]] = []
         branch_rank = 0
         for replicate in range(args.replicates):
+            required_parent_ids: tuple[str, ...] = ()
+            if unresolved_family_keys:
+                family_index = replicate % len(unresolved_family_keys)
+                family_key = unresolved_family_keys[family_index]
+                family_parents = unresolved_family_parents[family_key]
+                parent_index = replicate // len(unresolved_family_keys)
+                required_parent_ids = (family_parents[parent_index % len(family_parents)],)
             generated_hashes = {sha256_text(sequence) for sequence in child_sequences}
             plan = build_multifront_rule_action_plan(
                 candidates=evidence,
@@ -181,10 +216,12 @@ def run(args: argparse.Namespace) -> None:
                 ),
                 de_novo_quota=args.de_novo_quota,
                 pepmlm_targeted_enabled=False,
+                required_parent_candidate_ids=required_parent_ids,
             )
             if plan["requires_generator_gpu"]:
                 raise ValueError("CPU lineage probe unexpectedly requires a generator GPU")
             branch_plans.append(plan)
+            forced_action_sha256s = set(plan["forced_parent_action_sha256s"].values())
             for payload in plan["actions"]:
                 branch_rank += 1
                 action = parse_evolution_action(payload)
@@ -209,11 +246,15 @@ def run(args: argparse.Namespace) -> None:
                     "child_candidate_id": f"lineage-{child_sha256[:20]}",
                     "sequence": child,
                     "sequence_sha256": child_sha256,
-                    "expected_improvement_metrics": list(
-                        action.expected_improvement_metrics
-                    ),
+                    "expected_improvement_metrics": list(action.expected_improvement_metrics),
                     "protected_metrics": list(action.protected_metrics),
                     "evidence_sha256s": list(action.evidence_sha256s),
+                    "forced_family_coverage": action.action_sha256 in forced_action_sha256s,
+                    "source_family_key_80_80": (
+                        source_row_by_id[action.parent_candidate_id]["family_key_80_80"]
+                        if getattr(action, "parent_candidate_id", None) in source_row_by_id
+                        else ""
+                    ),
                 }
                 action_records.append(action_record)
                 child_records.append(
@@ -226,6 +267,10 @@ def run(args: argparse.Namespace) -> None:
                         "operator_id": action.operator_id,
                         "action_type": action.action_type,
                         "action_sha256": action.action_sha256,
+                        "forced_family_coverage": str(
+                            action_record["forced_family_coverage"]
+                        ).lower(),
+                        "source_family_key_80_80": action_record["source_family_key_80_80"],
                         "parent_candidate_id": action_record["parent_candidate_id"] or "",
                         "donor_candidate_id": action_record["donor_candidate_id"] or "",
                         "candidate_id": action_record["child_candidate_id"],
@@ -243,23 +288,27 @@ def run(args: argparse.Namespace) -> None:
             **branch_plans[0],
             "replicate_count": args.replicates,
             "replicate_plan_sha256s": [sha256_json(plan) for plan in branch_plans],
-            "strategies": [
-                strategy for plan in branch_plans for strategy in plan["strategies"]
-            ],
+            "strategies": [strategy for plan in branch_plans for strategy in plan["strategies"]],
             "rationale_by_action_sha256": {
                 key: value
                 for plan in branch_plans
                 for key, value in plan["rationale_by_action_sha256"].items()
             },
-            "actions": [
-                action for plan in branch_plans for action in plan["actions"]
-            ],
-            "de_novo_action_count": sum(
-                plan["de_novo_action_count"] for plan in branch_plans
-            ),
+            "actions": [action for plan in branch_plans for action in plan["actions"]],
+            "de_novo_action_count": sum(plan["de_novo_action_count"] for plan in branch_plans),
             "required_de_novo_action_count": sum(
                 plan["required_de_novo_action_count"] for plan in branch_plans
             ),
+            "forced_family_coverage_enabled": args.force_unresolved_family_coverage,
+            "unresolved_family_keys": list(unresolved_family_keys),
+            "forced_parent_action_count": sum(
+                plan["forced_parent_action_count"] for plan in branch_plans
+            ),
+            "unmaterialized_forced_parent_candidate_ids": [
+                candidate_id
+                for plan in branch_plans
+                for candidate_id in plan["unmaterialized_forced_parent_candidate_ids"]
+            ],
         }
         plans[branch_key] = combined_plan
 
@@ -267,9 +316,7 @@ def run(args: argparse.Namespace) -> None:
         item.sequence: item
         for item in cluster_sequence_families(historical_sequences | child_sequences)
     }
-    reference_family_keys = {
-        assignments[sequence].family_key for sequence in historical_sequences
-    }
+    reference_family_keys = {assignments[sequence].family_key for sequence in historical_sequences}
     for row in child_records:
         assignment = assignments[row["sequence"]]
         row.update(
@@ -331,6 +378,15 @@ def run(args: argparse.Namespace) -> None:
         encoding="utf-8",
     )
     children_path = args.output_dir / "children.csv"
+    forced_family_counts = {
+        family_key: sum(
+            row["forced_family_coverage"] == "true" and row["source_family_key_80_80"] == family_key
+            for row in child_records
+        )
+        for family_key in sorted(
+            {family_key for plan in plans.values() for family_key in plan["unresolved_family_keys"]}
+        )
+    }
     receipt = {
         "schema_version": "ampgent.autoresearch-lineage-probe.1",
         "observed_at_utc": datetime.now(UTC).isoformat(),
@@ -338,20 +394,24 @@ def run(args: argparse.Namespace) -> None:
         "source_candidate_count": len(rows),
         "source_cohort_sha256": sha256_file(source_cohort_path),
         "generation": args.generation,
-        "prefer_full_support_within_families": (
-            args.prefer_full_support_within_families
-        ),
+        "prefer_full_support_within_families": (args.prefer_full_support_within_families),
         "historical_source_sha256s": historical_source_hashes,
+        "unfiltered_input_sequence_exclusion_count": len(input_sequences),
         "historical_exclusion_sequence_count": len(historical_sequences),
         "operator_release_sha256": operator_release_sha256,
         "branch_count": len(active_branches),
         "branches": list(active_branches),
         "replicate_count_per_branch": args.replicates,
         "action_count": len(action_records),
+        "forced_family_coverage_enabled": args.force_unresolved_family_coverage,
+        "forced_family_count": len(forced_family_counts),
+        "forced_family_keys": list(forced_family_counts),
+        "forced_family_materialized_child_counts": forced_family_counts,
+        "uncovered_forced_family_keys": [
+            family_key for family_key, count in forced_family_counts.items() if count == 0
+        ],
         "action_type_counts": {
-            action_type: sum(
-                row["action_type"] == action_type for row in action_records
-            )
+            action_type: sum(row["action_type"] == action_type for row in action_records)
             for action_type in (
                 "masked_substitution",
                 "controlled_crossover",
@@ -391,6 +451,7 @@ def main() -> None:
     parser.add_argument("--de-novo-quota", type=float, default=0.25)
     parser.add_argument("--minimum-calibrated-support", type=int, default=0)
     parser.add_argument("--prefer-full-support-within-families", action="store_true")
+    parser.add_argument("--force-unresolved-family-coverage", action="store_true")
     run(parser.parse_args())
 
 

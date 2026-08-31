@@ -1,0 +1,57 @@
+{
+  "schema_version": "ampgent.autoresearch-lineage-probe.1",
+  "observed_at_utc": "2026-08-31T14:50:04.678686+00:00",
+  "source_csv_sha256s": [
+    "3aacb3fc5823d2d41e48e9fd0e22ccf87260c2b1987aa036ddcf2dc1edbe20a3",
+    "19ed0fdc4adf2fa556b5d6c3ab9884693c91a6c4e5ae35c763c6a3dfc3c63f24",
+    "309392dce9d6a49e8f57ffcede4ede7a47a0f6246a9a0c1db67819ef6641f2be"
+  ],
+  "source_candidate_count": 71,
+  "source_cohort_sha256": "c2b4c2ca3ad9da91f176f1167e4ed6105ee2f5cc8f2e0665d54ca4826233ba17",
+  "generation": 16,
+  "prefer_full_support_within_families": true,
+  "historical_source_sha256s": [
+    "8cbf024e66370b1f289fd13e35d8cf084330d52ccb49f0ebee1b1b49f25e85b8"
+  ],
+  "unfiltered_input_sequence_exclusion_count": 139,
+  "historical_exclusion_sequence_count": 241,
+  "operator_release_sha256": "63e9a8c7a67fb550421c360c668717288cfa19e81f232f2feca504a2a05ae88a",
+  "branch_count": 1,
+  "branches": [
+    "acea"
+  ],
+  "replicate_count_per_branch": 40,
+  "action_count": 200,
+  "forced_family_coverage_enabled": true,
+  "forced_family_count": 4,
+  "forced_family_keys": [
+    "seqfam80_00141c7e2ebf971b2a79",
+    "seqfam80_42df49c3b51bc4a8f050",
+    "seqfam80_4dd2e0b461e8f14a42da",
+    "seqfam80_55b8aa179c108062b17e"
+  ],
+  "forced_family_materialized_child_counts": {
+    "seqfam80_00141c7e2ebf971b2a79": 10,
+    "seqfam80_42df49c3b51bc4a8f050": 10,
+    "seqfam80_4dd2e0b461e8f14a42da": 10,
+    "seqfam80_55b8aa179c108062b17e": 10
+  },
+  "uncovered_forced_family_keys": [],
+  "action_type_counts": {
+    "masked_substitution": 80,
+    "controlled_crossover": 40,
+    "de_novo": 80
+  },
+  "child_count": 200,
+  "exact_historical_replay_count": 0,
+  "new_family_child_count": 95,
+  "children_csv_sha256": "ea9d92ad30610d257d837fc8b2588ea0f52e7a1ef1da7a4759174f7561c4dbd4",
+  "actions_sha256": "c096fcb27d3159da60ace3565b7f4835a8c550360303d95e23952ddba6bcb22b",
+  "archive_before_sha256": "aa6842aebf73a76f01a1ccbb52761035b661924fecf460b57b62a96f56bba041",
+  "plans_sha256": "2fdb86b9788b09b977a862b5259c7e4608c7d5ef2547ae2ab46ae0110870b1cd",
+  "workflow_submitted": false,
+  "gpu_task_submitted": false,
+  "historical_run_modified": false,
+  "target_sequence_identity_consumed": false,
+  "receipt_payload_sha256": "9aa4827642766452300a7393250bed14f499ad7878def5b86116c788d97f5055"
+}

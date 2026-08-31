@@ -54,9 +54,7 @@ def test_activity_rescue_preserves_new_family_lineage_metadata() -> None:
 
     assert generated
     assert {row["family_key_80_80"] for row in generated} == {"seqfam80-new"}
-    assert {row["new_family_relative_to_all_references"] for row in generated} == {
-        "true"
-    }
+    assert {row["new_family_relative_to_all_references"] for row in generated} == {"true"}
     assert {row["diversity_qualified"] for row in generated} == {"true"}
 
 
@@ -88,9 +86,7 @@ def test_parent_selection_skips_families_that_already_have_full_support() -> Non
         },
     ]
 
-    selected = module._select_parents(
-        rows, 1, exclude_families_with_support3=True
-    )
+    selected = module._select_parents(rows, 1, exclude_families_with_support3=True)
 
     assert [row["family_key_80_80"] for row in selected] == ["needs-rescue"]
 
@@ -123,14 +119,12 @@ def test_mic_endpoint_operator_records_minimize_improvement_target() -> None:
         "family_key_80_80": "seqfam80-amp-read-gap",
     }
 
-    generated, actions = module._generate(
-        [parent], set(), "0" * 64, rescue_endpoint="amp-read"
-    )
+    generated, actions = module._generate([parent], set(), "0" * 64, rescue_endpoint="amp-read")
 
     assert generated[0]["parent_rescue_metric_value"] == 1.2
-    assert {
-        tuple(action["expected_improvement_metrics"]) for action in actions
-    } == {("amp_read_log10_mic_um",)}
+    assert {tuple(action["expected_improvement_metrics"]) for action in actions} == {
+        ("amp_read_log10_mic_um",)
+    }
 
 
 def test_charge_pattern_operator_explores_non_hydrophobic_edits() -> None:
@@ -148,9 +142,7 @@ def test_charge_pattern_operator_explores_non_hydrophobic_edits() -> None:
         "diversity_qualified": "true",
     }
 
-    generated, actions = module._generate(
-        [parent], set(), "0" * 64, operator_mode="charge-pattern"
-    )
+    generated, actions = module._generate([parent], set(), "0" * 64, operator_mode="charge-pattern")
 
     assert generated
     assert {action["operator_id"] for action in actions} == {
@@ -174,9 +166,7 @@ def test_activity_rescue_advances_to_global_generation_floor() -> None:
         "diversity_qualified": "true",
     }
 
-    generated, actions = module._generate(
-        [parent], set(), "0" * 64, generation_floor=11
-    )
+    generated, actions = module._generate([parent], set(), "0" * 64, generation_floor=11)
 
     assert {row["generation"] for row in generated} == {11}
     assert {action["generation"] for action in actions} == {11}
@@ -187,12 +177,8 @@ def test_activity_rescue_plan_uses_the_source_branch() -> None:
 
     assert module._single_branch_key([{"branch_key": "vegfa"}]) == "vegfa"
 
-    with pytest.raises(
-        ValueError, match="activity rescue requires exactly one source branch"
-    ):
-        module._single_branch_key(
-            [{"branch_key": "acea"}, {"branch_key": "vegfa"}]
-        )
+    with pytest.raises(ValueError, match="activity rescue requires exactly one source branch"):
+        module._single_branch_key([{"branch_key": "acea"}, {"branch_key": "vegfa"}])
 
 
 def test_activity_rescue_can_filter_a_mixed_source_cohort_by_branch() -> None:
@@ -225,13 +211,37 @@ def test_activity_calibration_falls_back_to_sync_postgresql_on_timeout(
         raise TimeoutError
 
     monkeypatch.setattr(module, "_parent_metric_values", timeout)
-    monkeypatch.setattr(
-        module, "_parent_metric_values_sync", lambda _branch_key: expected
-    )
+    monkeypatch.setattr(module, "_parent_metric_values_sync", lambda _branch_key: expected)
 
-    values, source = asyncio.run(
-        module._parent_metric_values_with_fallback("acea")
-    )
+    values, source = asyncio.run(module._parent_metric_values_with_fallback("acea"))
 
     assert values == expected
     assert source == "postgresql_psycopg_timeout_fallback"
+
+
+def test_activity_calibration_falls_back_to_sync_postgresql_on_connection_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_calibration_module()
+    expected = {"macrel_amp_probability": [0.4]}
+
+    async def unavailable(_branch_key: str):
+        raise OSError("connection refused")
+
+    monkeypatch.setattr(module, "_parent_metric_values", unavailable)
+    monkeypatch.setattr(module, "_parent_metric_values_sync", lambda _branch_key: expected)
+
+    values, source = asyncio.run(module._parent_metric_values_with_fallback("acea"))
+
+    assert values == expected
+    assert source == "postgresql_psycopg_connection_fallback"
+
+
+def test_monotonic_percentile_witness_is_a_conservative_lower_bound() -> None:
+    module = _load_calibration_module()
+    minimize = [(1.0, 0.9), (1.5, 0.8), (2.0, 0.6)]
+    maximize = [(0.2, 0.5), (0.4, 0.8), (0.6, 0.95)]
+
+    assert module._benefit_percentile_lower_bound(1.4, minimize, "minimize") == 0.8
+    assert module._benefit_percentile_lower_bound(0.5, maximize, "maximize") == 0.8
+    assert module._benefit_percentile_lower_bound(2.1, minimize, "minimize") == 0.0

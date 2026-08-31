@@ -155,7 +155,8 @@ def test_multifront_rule_planner_keeps_conflicts_novelty_and_four_strategies() -
         for action in actions
     )
     assert all(
-        20 <= (
+        20
+        <= (
             action.peptide_length
             if getattr(action, "proposal_mode", None) == "de_novo"
             else len(action.proposed_sequence)
@@ -167,15 +168,12 @@ def test_multifront_rule_planner_keeps_conflicts_novelty_and_four_strategies() -
                     if candidate.candidate_id == action.parent_candidate_id
                 )
             )
-        ) <= 30
+        )
+        <= 30
         for action in actions
     )
-    assert plan["gold_candidate_count"] == plan[
-        "instability_score_qualified_gold_candidate_count"
-    ]
-    assert plan["deprecated_ood_qualified_gold_candidate_count"] == plan[
-        "gold_candidate_count"
-    ]
+    assert plan["gold_candidate_count"] == plan["instability_score_qualified_gold_candidate_count"]
+    assert plan["deprecated_ood_qualified_gold_candidate_count"] == plan["gold_candidate_count"]
     assert plan["quality_gate"] == "literal-hard-gates+guruprasad-score-lt-50"
     assert any(delta_sha in action.evidence_sha256s for action in actions)
     serialized = "|".join(str(item.model_dump(mode="json")) for item in actions)
@@ -186,9 +184,7 @@ def test_multifront_rule_planner_keeps_conflicts_novelty_and_four_strategies() -
             continue
         child = apply_evolution_action(action, candidates_by_id)
         instability, hydrophobic_run, charge = _sequence_prescreen(child)
-        hydrophobic_fraction = sum(
-            residue in "AVILMFWYC" for residue in child
-        ) / len(child)
+        hydrophobic_fraction = sum(residue in "AVILMFWYC" for residue in child) / len(child)
         assert instability < 50.0
         assert hydrophobic_run <= 2
         assert hydrophobic_fraction <= 0.45
@@ -237,9 +233,44 @@ def test_multifront_rule_planner_can_freeze_a_cpu_only_action_batch() -> None:
     assert plan["requires_generator_gpu"] is False
     assert plan["action_execution_mode"] == "cpu_rule_only"
     assert not any(
-        isinstance(parse_evolution_action(item), PepMLMTargetedAction)
-        for item in plan["actions"]
+        isinstance(parse_evolution_action(item), PepMLMTargetedAction) for item in plan["actions"]
     )
+
+
+def test_planner_materializes_an_explicit_family_coverage_parent() -> None:
+    cohort = _cohort()
+    snapshot = build_multi_front_archive(
+        cohort,
+        MultiFrontArchivePolicy(known_family_keys=("old-family",)),
+        generation=0,
+    )
+    required_parent_id = cohort[2].candidate_id
+
+    plan = build_multifront_rule_action_plan(
+        candidates=cohort,
+        snapshot=snapshot,
+        branch_key="AceA",
+        generation=2,
+        seed=31,
+        operator_release_sha256="a" * 64,
+        target_sequence_sha256="c" * 64,
+        de_novo_quota=0.2,
+        pepmlm_targeted_enabled=False,
+        required_parent_candidate_ids=(required_parent_id,),
+    )
+
+    assert plan["required_parent_candidate_ids"] == [required_parent_id]
+    assert plan["forced_parent_action_count"] == 1
+    assert plan["unmaterialized_forced_parent_candidate_ids"] == []
+    action_sha = plan["forced_parent_action_sha256s"][required_parent_id]
+    action = next(
+        parse_evolution_action(payload)
+        for payload in plan["actions"]
+        if payload["action_sha256"] == action_sha
+    )
+    assert isinstance(action, MaskedSubstitutionAction)
+    assert action.parent_candidate_id == required_parent_id
+    assert action.operator_id == "autoresearch-rule-family-coverage-substitution-v1"
 
 
 def test_cpu_only_planner_fills_a_fifty_percent_de_novo_quota() -> None:
@@ -272,17 +303,9 @@ def test_cpu_only_planner_fills_a_fifty_percent_de_novo_quota() -> None:
     assert plan["de_novo_action_count"] == len(de_novo_actions)
     assert plan["required_de_novo_action_count"] == len(de_novo_actions)
     assert len(de_novo_actions) * 2 >= len(actions)
-    assert len({action.proposed_sequence for action in de_novo_actions}) == len(
-        de_novo_actions
-    )
-    assert all(
-        action.operator_id == "autoresearch-rule-de-novo-v4"
-        for action in de_novo_actions
-    )
-    assert all(
-        _de_novo_prescreen_passes(action.proposed_sequence)
-        for action in de_novo_actions
-    )
+    assert len({action.proposed_sequence for action in de_novo_actions}) == len(de_novo_actions)
+    assert all(action.operator_id == "autoresearch-rule-de-novo-v4" for action in de_novo_actions)
+    assert all(_de_novo_prescreen_passes(action.proposed_sequence) for action in de_novo_actions)
     assert plan["sequence_prescreen_policy"] == {
         "instability_method": "Guruprasad-Reddy-Pandit-1990-via-Biopython-ProtParam",
         "instability_max_exclusive": 50.0,
@@ -313,9 +336,9 @@ def test_rule_de_novo_prescreen_is_stable_across_all_six_target_branches() -> No
             )
             known_sequences.add(sequence)
             instability, hydrophobic_run, charge = _sequence_prescreen(sequence)
-            hydrophobic_fraction = sum(
-                residue in "AVILMFWYC" for residue in sequence
-            ) / len(sequence)
+            hydrophobic_fraction = sum(residue in "AVILMFWYC" for residue in sequence) / len(
+                sequence
+            )
 
             assert instability < 50.0
             assert hydrophobic_run <= 2
@@ -365,9 +388,7 @@ def test_planner_emits_progress_heartbeats_between_expensive_stages(monkeypatch)
 
     _heartbeat_activity_stage("planner_candidates_loaded", candidate_count=768)
 
-    assert heartbeats == [
-        {"stage": "planner_candidates_loaded", "candidate_count": 768}
-    ]
+    assert heartbeats == [{"stage": "planner_candidates_loaded", "candidate_count": 768}]
     source = inspect.getsource(plan_autoresearch_actions)
     for stage in (
         "planner_hydrate_request",
@@ -419,11 +440,14 @@ def test_pepmlm_targeted_action_compiles_to_existing_cli_schema_and_validates_ch
         "primary_parent_sequence": parent.sequence,
         "mutation_positions": [2],
     }
-    assert validate_action_child(
-        action,
-        {parent.candidate_id: parent},
-        "KRLLKLLKLLKKLLKLLKLL",
-    ) == "KRLLKLLKLLKKLLKLLKLL"
+    assert (
+        validate_action_child(
+            action,
+            {parent.candidate_id: parent},
+            "KRLLKLLKLLKKLLKLLKLL",
+        )
+        == "KRLLKLLKLLKKLLKLLKLL"
+    )
 
 
 def test_planner_accepts_short_instability_ood_parent_when_score_is_below_50() -> None:

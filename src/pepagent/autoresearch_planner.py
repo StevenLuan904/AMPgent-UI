@@ -104,8 +104,7 @@ def _adaptive_de_novo_alphabet(sequences: Collection[str]) -> str:
     total_observed = sum(len(sequence) for sequence in sequences)
     scale = max(1, total_observed // 160)
     return "".join(
-        residue * max(1, round(counts[residue] / scale))
-        for residue in _DE_NOVO_ALPHABET
+        residue * max(1, round(counts[residue] / scale)) for residue in _DE_NOVO_ALPHABET
     )
 
 
@@ -150,8 +149,7 @@ def _improvement_index(
             counts[item.candidate_id] += 1
             receipts[item.candidate_id].add(item.delta_sha256)
     return counts, {
-        candidate_id: tuple(sorted(values))
-        for candidate_id, values in receipts.items()
+        candidate_id: tuple(sorted(values)) for candidate_id, values in receipts.items()
     }
 
 
@@ -213,9 +211,7 @@ def _mutation(
         )
     positions = [position, *(index for index in range(len(parent.sequence)) if index != position)]
     known = known_sequences or set()
-    parent_instability, parent_hydrophobic_run, parent_charge = _sequence_prescreen(
-        parent.sequence
-    )
+    parent_instability, parent_hydrophobic_run, parent_charge = _sequence_prescreen(parent.sequence)
     proposals: list[tuple[tuple[float | int, ...], ResidueSubstitution]] = []
     for position_rank, candidate_position in enumerate(positions):
         source = parent.sequence[candidate_position]
@@ -300,18 +296,14 @@ def _unique_de_novo_sequence(
     family_references = tuple(set(known_sequences) | set(family_reference_sequences))
     for attempt in range(10_000):
         digest = sha256_text(f"{branch_key}:{seed}:family-opener-v3:{attempt}")
-        length = _DE_NOVO_LENGTHS[
-            int(digest[:2], 16) % len(_DE_NOVO_LENGTHS)
-        ]
+        length = _DE_NOVO_LENGTHS[int(digest[:2], 16) % len(_DE_NOVO_LENGTHS)]
         material = digest
         nonce = 0
         while len(material) < length * 2:
             nonce += 1
             material += sha256_text(f"{digest}:{nonce}")
         sequence = "".join(
-            residue_alphabet[
-                int(material[index : index + 2], 16) % len(residue_alphabet)
-            ]
+            residue_alphabet[int(material[index : index + 2], 16) % len(residue_alphabet)]
             for index in range(0, length * 2, 2)
         )
         if (
@@ -339,6 +331,7 @@ def build_multifront_rule_action_plan(
     gold_target: int = GOLD_CANDIDATE_TARGET,
     de_novo_quota: float = 0.2,
     pepmlm_targeted_enabled: bool = True,
+    required_parent_candidate_ids: Sequence[str] = (),
 ) -> dict[str, Any]:
     """Choose replayable actions without collapsing conflicting model fronts.
 
@@ -356,15 +349,25 @@ def build_multifront_rule_action_plan(
     if len(by_id) != len(candidates):
         raise ValueError("planner candidates must have unique IDs")
     eligible = [
-        item
-        for item in candidates
-        if is_instability_score_qualified_wetlab_candidate(item)
+        item for item in candidates if is_instability_score_qualified_wetlab_candidate(item)
     ]
     if not eligible:
         raise ValueError(
             "planner has no literal-hard-gate parent with Guruprasad instability <50; "
             "the successor must use a target-specific strict seed split"
         )
+    if len(set(required_parent_candidate_ids)) != len(required_parent_candidate_ids):
+        raise ValueError("required planner parent IDs must be unique")
+    missing_required_parent_ids = sorted(set(required_parent_candidate_ids) - set(by_id))
+    if missing_required_parent_ids:
+        raise ValueError("required planner parent is absent from the candidate cohort")
+    ineligible_required_parent_ids = sorted(
+        candidate_id
+        for candidate_id in required_parent_candidate_ids
+        if not is_instability_score_qualified_wetlab_candidate(by_id[candidate_id])
+    )
+    if ineligible_required_parent_ids:
+        raise ValueError("required planner parent fails the literal stability hard gate")
     improvement_counts, delta_receipts = _improvement_index(prior_deltas)
     known_sequences = {item.sequence for item in candidates}
     historical_sequence_sha256s = frozenset(historical_sequence_sha256s)
@@ -381,14 +384,62 @@ def build_multifront_rule_action_plan(
     archive_sha = snapshot.archive_sha256
     literal_gold_count = len(_gold_candidate_ids(snapshot))
     gold_count = len(_instability_score_qualified_gold_candidate_ids(snapshot, by_id))
-    de_novo_alphabet = _adaptive_de_novo_alphabet(
-        tuple(item.sequence for item in eligible)
-    )
+    de_novo_alphabet = _adaptive_de_novo_alphabet(tuple(item.sequence for item in eligible))
 
     actions: list[EvolutionAction] = []
     rationales: dict[str, str] = {}
     strategies: list[str] = []
     substitution_parent_id: str | None = None
+    forced_parent_action_sha256s: dict[str, str] = {}
+    unmaterialized_forced_parent_candidate_ids: list[str] = []
+
+    for forced_index, parent_id in enumerate(required_parent_candidate_ids):
+        parent = by_id[parent_id]
+        try:
+            edit = _mutation(
+                parent,
+                known_sequences=known_sequences,
+                excluded_sequence_sha256s=historical_sequence_sha256s,
+            )
+        except ValueError:
+            unmaterialized_forced_parent_candidate_ids.append(parent_id)
+            continue
+        child = (
+            parent.sequence[: edit.position_zero_based]
+            + edit.to_residue
+            + parent.sequence[edit.position_zero_based + 1 :]
+        )
+        known_sequences.add(child)
+        action = MaskedSubstitutionAction(
+            branch_key=branch_key,
+            generation=generation,
+            seed=seed + forced_index,
+            operator_id="autoresearch-rule-family-coverage-substitution-v1",
+            operator_release_sha256=operator_release_sha256,
+            expected_improvement_metrics=(
+                "amp_read_log10_mic_um",
+                "llamp_log10_mic_um",
+                "macrel_amp_probability",
+            ),
+            protected_metrics=(
+                "guruprasad_instability_index",
+                "macrel_hemolysis_probability",
+                "toxinpred3_hybrid_score",
+            ),
+            evidence_sha256s=_action_evidence(archive_sha, (parent.candidate_id,), delta_receipts),
+            parent_candidate_id=parent.candidate_id,
+            parent_sequence_sha256=parent.sequence_sha256,
+            substitutions=(edit,),
+        )
+        actions.append(action)
+        strategies.append("forced_family_substitution")
+        forced_parent_action_sha256s[parent_id] = action.action_sha256
+        rationales[action.action_sha256] = (
+            "Guarantee an executable quality-gated proposal from a specifically "
+            "requested unresolved family before global multi-front allocation."
+        )
+
+    regular_seed_offset = len(required_parent_candidate_ids)
 
     substitution_pool = _lane_candidates(
         snapshot,
@@ -402,6 +453,8 @@ def build_multifront_rule_action_plan(
         improvement_counts=improvement_counts,
     )
     for parent in substitution_pool:
+        if parent.candidate_id in required_parent_candidate_ids:
+            continue
         try:
             edit = _mutation(
                 parent,
@@ -414,7 +467,7 @@ def build_multifront_rule_action_plan(
         action = MaskedSubstitutionAction(
             branch_key=branch_key,
             generation=generation,
-            seed=seed,
+            seed=seed + regular_seed_offset,
             operator_id="autoresearch-rule-substitution-v3",
             operator_release_sha256=operator_release_sha256,
             expected_improvement_metrics=("guruprasad_instability_index",),
@@ -423,9 +476,7 @@ def build_multifront_rule_action_plan(
                 "macrel_hemolysis_probability",
                 "toxinpred3_hybrid_score",
             ),
-            evidence_sha256s=_action_evidence(
-                archive_sha, (parent.candidate_id,), delta_receipts
-            ),
+            evidence_sha256s=_action_evidence(archive_sha, (parent.candidate_id,), delta_receipts),
             parent_candidate_id=parent.candidate_id,
             parent_sequence_sha256=parent.sequence_sha256,
             substitutions=(edit,),
@@ -518,7 +569,7 @@ def build_multifront_rule_action_plan(
         action = ControlledCrossoverAction(
             branch_key=branch_key,
             generation=generation,
-            seed=seed + 1,
+            seed=seed + regular_seed_offset + 1,
             operator_id="autoresearch-rule-crossover-v3",
             operator_release_sha256=operator_release_sha256,
             expected_improvement_metrics=(
@@ -551,7 +602,7 @@ def build_multifront_rule_action_plan(
 
     proposed = _unique_de_novo_sequence(
         branch_key=branch_key,
-        seed=seed + 2,
+        seed=seed + regular_seed_offset + 2,
         known_sequences=known_sequences,
         excluded_sequence_sha256s=historical_sequence_sha256s,
         family_reference_sequences=historical_family_representatives,
@@ -582,18 +633,21 @@ def build_multifront_rule_action_plan(
     )
 
     if pepmlm_targeted_enabled:
-        pepmlm_pool = _lane_candidates(
-            snapshot,
-            ("model_disagreement", "novel_family", "activity_consensus"),
-            candidates_by_id=by_id,
-            improvement_counts=improvement_counts,
-        ) or substitution_pool
+        pepmlm_pool = (
+            _lane_candidates(
+                snapshot,
+                ("model_disagreement", "novel_family", "activity_consensus"),
+                candidates_by_id=by_id,
+                improvement_counts=improvement_counts,
+            )
+            or substitution_pool
+        )
         targeted_de_novo = math.ceil((len(actions) + 1) * de_novo_quota) > 1
         if targeted_de_novo:
             action = PepMLMTargetedAction(
                 branch_key=branch_key,
                 generation=generation,
-                seed=seed + 3,
+                seed=seed + regular_seed_offset + 3,
                 operator_id="pepmlm-targeted-action-v1",
                 operator_release_sha256=operator_release_sha256,
                 target_sequence_sha256=target_sequence_sha256,
@@ -628,7 +682,7 @@ def build_multifront_rule_action_plan(
                 action = PepMLMTargetedAction(
                     branch_key=branch_key,
                     generation=generation,
-                    seed=seed + 3,
+                    seed=seed + regular_seed_offset + 3,
                     operator_id="pepmlm-targeted-action-v2",
                     operator_release_sha256=operator_release_sha256,
                     target_sequence_sha256=target_sequence_sha256,
@@ -657,6 +711,7 @@ def build_multifront_rule_action_plan(
 
     if not actions:
         raise ValueError("multi-front planner produced no executable action")
+
     def de_novo_count() -> int:
         return sum(
             isinstance(item, DeNovoAction)
@@ -670,7 +725,7 @@ def build_multifront_rule_action_plan(
     # 0.5 above, so this converges after at most one addition per non-de-novo action.
     additional_de_novo_count = 0
     while de_novo_count() < math.ceil(len(actions) * de_novo_quota):
-        action_seed = seed + 4 + additional_de_novo_count
+        action_seed = seed + regular_seed_offset + 4 + additional_de_novo_count
         proposed = _unique_de_novo_sequence(
             branch_key=branch_key,
             seed=action_seed,
@@ -724,15 +779,17 @@ def build_multifront_rule_action_plan(
         "strategies": strategies,
         "rationale_by_action_sha256": rationales,
         "actions": [item.model_dump(mode="json") for item in actions],
+        "required_parent_candidate_ids": list(required_parent_candidate_ids),
+        "forced_parent_action_sha256s": forced_parent_action_sha256s,
+        "forced_parent_action_count": len(forced_parent_action_sha256s),
+        "unmaterialized_forced_parent_candidate_ids": (unmaterialized_forced_parent_candidate_ids),
         "no_weighted_total_score": True,
         "de_novo_quota": de_novo_quota,
         "de_novo_action_count": final_de_novo_count,
         "required_de_novo_action_count": required_de_novo_count,
         "pepmlm_targeted_enabled": pepmlm_targeted_enabled,
         "requires_generator_gpu": requires_generator_gpu,
-        "action_execution_mode": (
-            "generator_gpu" if requires_generator_gpu else "cpu_rule_only"
-        ),
+        "action_execution_mode": ("generator_gpu" if requires_generator_gpu else "cpu_rule_only"),
         "historical_sequence_exclusion_count": len(historical_sequence_sha256s),
         "historical_sequence_exclusion_sha256": sha256_text(
             "\n".join(sorted(historical_sequence_sha256s))
@@ -742,9 +799,7 @@ def build_multifront_rule_action_plan(
             "instability_max_exclusive": 50.0,
             "all_rule_proposals_share_quality_gate": True,
             "mutation_hydrophobic_run_maximum": _DE_NOVO_MAXIMUM_HYDROPHOBIC_RUN,
-            "mutation_hydrophobic_fraction_maximum": (
-                _DE_NOVO_MAXIMUM_HYDROPHOBIC_FRACTION
-            ),
+            "mutation_hydrophobic_fraction_maximum": (_DE_NOVO_MAXIMUM_HYDROPHOBIC_FRACTION),
             "mutation_net_charge_minimum": _DE_NOVO_MINIMUM_NET_CHARGE,
             "crossover_hydrophobic_run_parent_maximum": True,
             "crossover_hydrophobic_fraction_parent_maximum": True,
@@ -752,9 +807,7 @@ def build_multifront_rule_action_plan(
             "crossover_net_charge_minimum": _DE_NOVO_MINIMUM_NET_CHARGE,
             "de_novo_instability_max_exclusive": 50.0,
             "de_novo_hydrophobic_run_maximum": _DE_NOVO_MAXIMUM_HYDROPHOBIC_RUN,
-            "de_novo_hydrophobic_fraction_maximum": (
-                _DE_NOVO_MAXIMUM_HYDROPHOBIC_FRACTION
-            ),
+            "de_novo_hydrophobic_fraction_maximum": (_DE_NOVO_MAXIMUM_HYDROPHOBIC_FRACTION),
             "de_novo_net_charge_minimum": _DE_NOVO_MINIMUM_NET_CHARGE,
             "toxin_and_hemolysis_remain_score_all_only": True,
         },
