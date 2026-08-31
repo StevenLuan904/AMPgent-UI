@@ -1,0 +1,73 @@
+{
+  "schema_version": "ampgent.autoresearch-structure-v2-pg-reservation.1",
+  "observed_at_utc": "2026-08-31T03:52:00Z",
+  "status": "ready_inert",
+  "idempotent_readback_created": false,
+  "reservation_key": "cbaf2c002c3ed053e84c49e46d2f388b7bc36bc024579f21dad5a0ab2a81d4a7",
+  "source_content_address_key": "eba8e102177ea55b8a1475529a570ea51d6c6d70dfb8dd16cee920c20ee055e3",
+  "strict_library_sha256": "e8814b594ff90fb6716b2096451138ee615d5ed43868b9bf52c963abb6611541",
+  "run_count": 6,
+  "candidate_count": 300,
+  "distinct_sequence_count": 300,
+  "distinct_family_count": 300,
+  "cohort_import_tool_call_count": 6,
+  "candidate_generated_event_count": 300,
+  "candidate_structure_queued_event_count": 300,
+  "source_artifact_edge_count": 18,
+  "source_artifact_location_count": 18,
+  "existing_structure_sequence_intersection_count": 0,
+  "existing_structure_family_intersection_count": 0,
+  "temporal_submission_performed": false,
+  "gpu_task_submitted": false,
+  "historical_run_modified": false,
+  "branches": [
+    {
+      "target_key": "acea",
+      "run_id": "962cfdca-df94-55fe-8949-cf2f9dc936e1",
+      "temporal_workflow_id": "pepagent-structure-v2-acea-d6ecbea3-bbfa-5cbd-81c7-d033e7c8ea9a",
+      "temporal_run_id": null,
+      "candidate_count": 50,
+      "distinct_family_count": 50
+    },
+    {
+      "target_key": "angpt1",
+      "run_id": "81eb8a31-c6c6-5370-b38f-4c6988c15a9a",
+      "temporal_workflow_id": "pepagent-structure-v2-angpt1-cbcd7a92-83e6-54b7-8d5f-d82116aecc97",
+      "temporal_run_id": null,
+      "candidate_count": 50,
+      "distinct_family_count": 50
+    },
+    {
+      "target_key": "fgf2",
+      "run_id": "fa1e1bad-bb39-530d-bb3c-57459f0c3343",
+      "temporal_workflow_id": "pepagent-structure-v2-fgf2-71216b43-7919-5418-a698-00f6c0c8f02e",
+      "temporal_run_id": null,
+      "candidate_count": 50,
+      "distinct_family_count": 50
+    },
+    {
+      "target_key": "gyra",
+      "run_id": "08953164-d34f-5d02-aad8-54a5fbda51ce",
+      "temporal_workflow_id": "pepagent-structure-v2-gyra-61244ba2-9f5a-5d72-b523-89c12c65aceb",
+      "temporal_run_id": null,
+      "candidate_count": 50,
+      "distinct_family_count": 50
+    },
+    {
+      "target_key": "pbp2a",
+      "run_id": "90f8dec7-987b-5658-968f-9a3862db1b27",
+      "temporal_workflow_id": "pepagent-structure-v2-pbp2a-dbbbe37a-a4f8-52f7-9e87-faf429832580",
+      "temporal_run_id": null,
+      "candidate_count": 50,
+      "distinct_family_count": 50
+    },
+    {
+      "target_key": "vegfa",
+      "run_id": "6bdf7a0e-9eef-54a0-af13-8cf0a27a7c5b",
+      "temporal_workflow_id": "pepagent-structure-v2-vegfa-81ad098f-8380-5bef-9597-9b9ffef3283c",
+      "temporal_run_id": null,
+      "candidate_count": 50,
+      "distinct_family_count": 50
+    }
+  ]
+}
