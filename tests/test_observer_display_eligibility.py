@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import inspect
 import uuid
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.dialects import postgresql
@@ -21,6 +22,9 @@ from pepagent.api.observer import (
     _historical_exact_replay_exists,
     _run_identity_payload,
     _run_status_payload,
+    _temporal_identity_matches,
+    _temporal_observability_for_runs,
+    _temporal_observability_from_evidence,
     get_observer_node,
     get_observer_run,
     list_observer_runs,
@@ -292,12 +296,135 @@ def test_scientific_status_is_independent_from_temporal_observability() -> None:
         "run_id": run.id,
     }
     assert payload["temporal_observability"] == {
-        "status": "identity_recorded",
+        "status": "unknown",
+        "source": "postgresql_operational_evidence",
+        "observed_at": None,
+        "history_read_status": "not_queried",
+        "history_read_error_category": None,
+        "scheduler_error_category": None,
+        "stale_after_seconds": 300,
+        "is_stale": None,
+        "postgresql_run_id": run.id,
         "temporal_workflow_id": "workflow-id",
         "temporal_run_id": "temporal-run-id",
-        "history_read_status": "not_queried",
-        "history_read_error": None,
+        "evidence_type": None,
         "affects_scientific_run_status": False,
     }
-    assert "_run_status_payload(row)" in inspect.getsource(list_observer_runs)
-    assert "_run_status_payload(run)" in inspect.getsource(get_observer_run)
+    assert "_run_status_payload(row, temporal_observability[row.id])" in inspect.getsource(
+        list_observer_runs
+    )
+    assert "_run_status_payload(run, temporal_observability)" in inspect.getsource(
+        get_observer_run
+    )
+
+
+def test_temporal_operational_evidence_requires_exact_three_part_identity() -> None:
+    run = ExperimentRun(
+        id=uuid.uuid4(),
+        target_id=uuid.uuid4(),
+        spec_json={},
+        spec_sha256="d" * 64,
+        status="running",
+        temporal_workflow_id="workflow-exact",
+        temporal_run_id="run-exact",
+    )
+    exact = {
+        "run_id": str(run.id),
+        "workflow_id": "workflow-exact",
+        "workflow_run_id": "run-exact",
+    }
+
+    assert _temporal_identity_matches(exact, run) is True
+    assert _temporal_identity_matches({**exact, "workflow_run_id": "other"}, run) is False
+    assert _temporal_identity_matches({**exact, "run_id": str(uuid.uuid4())}, run) is False
+    assert _temporal_identity_matches({"run_id": str(run.id)}, run) is False
+
+
+def test_temporal_history_failure_is_categorized_without_raw_error_text() -> None:
+    run = ExperimentRun(
+        id=uuid.uuid4(),
+        target_id=uuid.uuid4(),
+        spec_json={},
+        spec_sha256="e" * 64,
+        status="running",
+        temporal_workflow_id="workflow-exact",
+        temporal_run_id="run-exact",
+    )
+    now = datetime(2026, 8, 31, 0, 10, tzinfo=UTC)
+    observed_at = now - timedelta(seconds=301)
+    raw_error = "context deadline exceeded at secret-internal-host"
+    result = _temporal_observability_from_evidence(
+        run,
+        evidence_type="temporal.history_read.failed",
+        payload={
+            "run_id": str(run.id),
+            "temporal_workflow_id": run.temporal_workflow_id,
+            "temporal_run_id": run.temporal_run_id,
+            "error_message": raw_error,
+        },
+        observed_at=observed_at,
+        now=now,
+    )
+
+    assert result == {
+        "status": "degraded",
+        "source": "postgresql_operational_evidence",
+        "observed_at": observed_at.isoformat(),
+        "history_read_status": "failed",
+        "history_read_error_category": "timeout",
+        "scheduler_error_category": None,
+        "stale_after_seconds": 300,
+        "is_stale": True,
+        "postgresql_run_id": run.id,
+        "temporal_workflow_id": "workflow-exact",
+        "temporal_run_id": "run-exact",
+        "evidence_type": "temporal.history_read.failed",
+        "affects_scientific_run_status": False,
+    }
+    assert raw_error not in str(result)
+
+
+def test_activity_timeout_is_scheduler_degradation_not_a_history_read_claim() -> None:
+    run = ExperimentRun(
+        id=uuid.uuid4(),
+        target_id=uuid.uuid4(),
+        spec_json={},
+        spec_sha256="f" * 64,
+        status="failed",
+        temporal_workflow_id="workflow-exact",
+        temporal_run_id="run-exact",
+    )
+    now = datetime(2026, 8, 31, 0, 10, tzinfo=UTC)
+    result = _temporal_observability_from_evidence(
+        run,
+        evidence_type="activity.failed",
+        payload={
+            "run_id": str(run.id),
+            "workflow_id": run.temporal_workflow_id,
+            "workflow_run_id": run.temporal_run_id,
+            "error_type": "Activity task timed out",
+        },
+        observed_at=now,
+        now=now,
+    )
+
+    assert result is not None
+    assert result["status"] == "degraded"
+    assert result["history_read_status"] == "not_queried"
+    assert result["history_read_error_category"] is None
+    assert result["scheduler_error_category"] == "timeout"
+    assert result["affects_scientific_run_status"] is False
+
+
+def test_temporal_observability_aggregation_is_postgresql_only_and_row_scoped() -> None:
+    source = inspect.getsource(_temporal_observability_for_runs)
+    list_source = inspect.getsource(list_observer_runs)
+    detail_source = inspect.getsource(get_observer_run)
+
+    assert "LifecycleEvent.aggregate_id.in_(runs_by_id)" in source
+    assert "ToolCall.run_id.in_(runs_by_id)" in source
+    assert "TEMPORAL_OPERATIONAL_TOOL_NAMES" in source
+    assert "Client.connect" not in source
+    assert "fetch_history" not in source
+    assert "_temporal_observability_for_runs(session, rows)" in list_source
+    assert "_temporal_observability_for_runs(session, [run])" in detail_source

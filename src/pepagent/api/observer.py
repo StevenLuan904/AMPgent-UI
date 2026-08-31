@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import uuid
 from collections import defaultdict
+from datetime import UTC, datetime
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
@@ -49,6 +50,12 @@ NODE_TOOL_RULES: dict[str, tuple[str, ...]] = {
 }
 
 HISTORICAL_EXACT_REPLAY = "historical_exact_replay"
+TEMPORAL_OBSERVABILITY_STALE_AFTER_SECONDS = 300
+TEMPORAL_OPERATIONAL_TOOL_NAMES = {
+    "temporal_history_read",
+    "temporal_observability_probe",
+    "temporal_scheduler_health",
+}
 AUTORESEARCH_DE_NOVO_V2_OPERATOR_NAME = "autoresearch-rule-de-novo"
 AUTORESEARCH_DE_NOVO_V2_OPERATOR_VERSION = "v2"
 AUTORESEARCH_DE_NOVO_V2_OPERATOR_ID = (
@@ -329,24 +336,255 @@ def _run_identity_payload(run: ExperimentRun) -> dict[str, uuid.UUID | str | Non
     }
 
 
-def _run_status_payload(run: ExperimentRun) -> dict[str, Any]:
+def _temporal_identity_matches(payload: dict[str, Any], run: ExperimentRun) -> bool:
+    payload_run_id = payload.get("run_id")
+    workflow_id = payload.get("temporal_workflow_id") or payload.get("workflow_id")
+    temporal_run_id = payload.get("temporal_run_id") or payload.get("workflow_run_id")
+    return (
+        payload_run_id is not None
+        and str(payload_run_id) == str(run.id)
+        and workflow_id is not None
+        and str(workflow_id) == str(run.temporal_workflow_id)
+        and temporal_run_id is not None
+        and str(temporal_run_id) == str(run.temporal_run_id)
+    )
+
+
+def _operational_error_category(payload: dict[str, Any]) -> str | None:
+    explicit = payload.get("history_read_error_category") or payload.get("error_category")
+    allowed = {
+        "timeout",
+        "connectivity",
+        "unavailable",
+        "permission",
+        "not_found",
+        "cancelled",
+        "application_error",
+        "unknown",
+    }
+    if explicit in allowed:
+        return str(explicit)
+    diagnostic = " ".join(
+        str(payload.get(key) or "")
+        for key in ("error_type", "temporal_timeout_type", "error_message")
+    ).lower()
+    if not diagnostic.strip():
+        return None
+    if "timeout" in diagnostic or "timed out" in diagnostic or "deadline" in diagnostic:
+        return "timeout"
+    if any(token in diagnostic for token in ("connection", "connectivity", "network", "rpc")):
+        return "connectivity"
+    if "unavailable" in diagnostic:
+        return "unavailable"
+    if any(token in diagnostic for token in ("permission", "unauthorized", "forbidden")):
+        return "permission"
+    if any(token in diagnostic for token in ("not found", "notfound")):
+        return "not_found"
+    if "cancel" in diagnostic:
+        return "cancelled"
+    return "application_error"
+
+
+def _empty_temporal_observability(run: ExperimentRun) -> dict[str, Any]:
+    return {
+        "status": "unknown",
+        "source": "postgresql_operational_evidence",
+        "observed_at": None,
+        "history_read_status": "not_queried",
+        "history_read_error_category": None,
+        "scheduler_error_category": None,
+        "stale_after_seconds": TEMPORAL_OBSERVABILITY_STALE_AFTER_SECONDS,
+        "is_stale": None,
+        "postgresql_run_id": run.id,
+        "temporal_workflow_id": run.temporal_workflow_id,
+        "temporal_run_id": run.temporal_run_id,
+        "evidence_type": None,
+        "affects_scientific_run_status": False,
+    }
+
+
+def _temporal_observability_from_evidence(
+    run: ExperimentRun,
+    *,
+    evidence_type: str,
+    payload: dict[str, Any],
+    observed_at: datetime,
+    now: datetime,
+) -> dict[str, Any] | None:
+    """Normalize exact-identity PostgreSQL evidence without exposing raw errors."""
+
+    if not _temporal_identity_matches(payload, run):
+        return None
+    history_read_status = str(payload.get("history_read_status") or "not_queried")
+    if evidence_type == "temporal.history_read.succeeded":
+        history_read_status = "succeeded"
+    elif evidence_type == "temporal.history_read.failed":
+        history_read_status = "failed"
+    elif evidence_type == "temporal.history_read.unavailable":
+        history_read_status = "unavailable"
+    if history_read_status not in {"succeeded", "failed", "unavailable", "not_queried"}:
+        history_read_status = "not_queried"
+
+    if evidence_type in {
+        "activity.failed",
+        "activity.cancelled",
+        "tool_call.failed",
+        "tool_call.cancelled",
+    }:
+        status = "degraded"
+    elif evidence_type == "temporal.history_read.failed":
+        status = "degraded"
+    elif evidence_type == "temporal.history_read.unavailable":
+        status = "unavailable"
+    elif evidence_type in {
+        "activity.started",
+        "activity.progress",
+        "activity.succeeded",
+        "autoresearch.cpu_successor_submitted",
+        "temporal.history_read.succeeded",
+        "tool_call.succeeded",
+        "tool_call.running",
+    }:
+        status = "healthy"
+    else:
+        status = str(payload.get("status") or "unknown")
+        if status not in {"healthy", "degraded", "unavailable", "unknown"}:
+            status = "unknown"
+
+    error_category = _operational_error_category(payload)
+    history_error_category = (
+        error_category if history_read_status in {"failed", "unavailable"} else None
+    )
+    scheduler_error_category = (
+        error_category
+        if evidence_type
+        in {
+            "activity.failed",
+            "activity.cancelled",
+            "tool_call.failed",
+            "tool_call.cancelled",
+        }
+        else None
+    )
+    age_seconds = max(0.0, (now - observed_at).total_seconds())
+    return {
+        "status": status,
+        "source": "postgresql_operational_evidence",
+        "observed_at": _iso(observed_at),
+        "history_read_status": history_read_status,
+        "history_read_error_category": history_error_category,
+        "scheduler_error_category": scheduler_error_category,
+        "stale_after_seconds": TEMPORAL_OBSERVABILITY_STALE_AFTER_SECONDS,
+        "is_stale": age_seconds > TEMPORAL_OBSERVABILITY_STALE_AFTER_SECONDS,
+        "postgresql_run_id": run.id,
+        "temporal_workflow_id": run.temporal_workflow_id,
+        "temporal_run_id": run.temporal_run_id,
+        "evidence_type": evidence_type,
+        "affects_scientific_run_status": False,
+    }
+
+
+async def _temporal_observability_for_runs(
+    session: AsyncSession,
+    runs: list[ExperimentRun],
+    *,
+    now: datetime | None = None,
+) -> dict[uuid.UUID, dict[str, Any]]:
+    now = now or datetime.now(UTC)
+    results = {run.id: _empty_temporal_observability(run) for run in runs}
+    runs_by_id = {run.id: run for run in runs}
+    if not runs:
+        return results
+    event_rows = list(
+        await session.scalars(
+            select(LifecycleEvent)
+            .where(
+                LifecycleEvent.aggregate_type == "run",
+                LifecycleEvent.aggregate_id.in_(runs_by_id),
+                LifecycleEvent.event_type.in_(
+                    {
+                        "activity.started",
+                        "activity.progress",
+                        "activity.succeeded",
+                        "activity.failed",
+                        "activity.cancelled",
+                        "autoresearch.cpu_successor_submitted",
+                        "temporal.history_read.succeeded",
+                        "temporal.history_read.failed",
+                        "temporal.history_read.unavailable",
+                        "temporal.observability.checked",
+                    }
+                ),
+            )
+            .order_by(LifecycleEvent.occurred_at.desc(), LifecycleEvent.sequence_no.desc())
+        )
+    )
+    selected_at: dict[uuid.UUID, datetime] = {}
+    for event in event_rows:
+        run = runs_by_id[event.aggregate_id]
+        normalized = _temporal_observability_from_evidence(
+            run,
+            evidence_type=event.event_type,
+            payload=event.payload_json or {},
+            observed_at=event.occurred_at,
+            now=now,
+        )
+        if normalized is not None and event.occurred_at > selected_at.get(
+            run.id, datetime.min.replace(tzinfo=UTC)
+        ):
+            results[run.id] = normalized
+            selected_at[run.id] = event.occurred_at
+
+    tool_rows = list(
+        await session.scalars(
+            select(ToolCall)
+            .where(
+                ToolCall.run_id.in_(runs_by_id),
+                ToolCall.tool_name.in_(TEMPORAL_OPERATIONAL_TOOL_NAMES),
+            )
+            .order_by(ToolCall.queued_at.desc())
+        )
+    )
+    for tool_call in tool_rows:
+        run = runs_by_id[tool_call.run_id]
+        payload: dict[str, Any] = {}
+        for value in (
+            tool_call.input_json,
+            tool_call.parameters_json,
+            tool_call.error_json,
+        ):
+            if isinstance(value, dict):
+                payload.update(value)
+        observed_at = tool_call.finished_at or tool_call.started_at or tool_call.queued_at
+        normalized = _temporal_observability_from_evidence(
+            run,
+            evidence_type=f"tool_call.{tool_call.status}",
+            payload=payload,
+            observed_at=observed_at,
+            now=now,
+        )
+        if normalized is not None and observed_at > selected_at.get(
+            run.id, datetime.min.replace(tzinfo=UTC)
+        ):
+            results[run.id] = normalized
+            selected_at[run.id] = observed_at
+    return results
+
+
+def _run_status_payload(
+    run: ExperimentRun,
+    temporal_observability: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """Keep scientific state independent from optional Temporal history observability."""
 
-    has_temporal_identity = bool(run.temporal_workflow_id)
     return {
         "scientific_run_status": {
             "status": run.status,
             "source": "postgresql",
             "run_id": run.id,
         },
-        "temporal_observability": {
-            "status": "identity_recorded" if has_temporal_identity else "identity_missing",
-            "temporal_workflow_id": run.temporal_workflow_id,
-            "temporal_run_id": run.temporal_run_id,
-            "history_read_status": "not_queried",
-            "history_read_error": None,
-            "affects_scientific_run_status": False,
-        },
+        "temporal_observability": temporal_observability
+        or _empty_temporal_observability(run),
     }
 
 
@@ -486,6 +724,7 @@ async def list_observer_runs(
     else:
         candidate_counts = {}
     generation_quality_gates = await _generation_quality_gates_for_runs(session, run_ids)
+    temporal_observability = await _temporal_observability_for_runs(session, rows)
 
     return {
         "source": "postgresql",
@@ -497,7 +736,7 @@ async def list_observer_runs(
                 "kind": _run_kind(row),
                 "schema_version": (row.spec_json or {}).get("schema_version"),
                 "status": row.status,
-                **_run_status_payload(row),
+                **_run_status_payload(row, temporal_observability[row.id]),
                 "created_at": _iso(row.created_at),
                 "started_at": _iso(row.started_at),
                 "finished_at": _iso(row.finished_at),
@@ -538,6 +777,9 @@ async def get_observer_run(run_id: uuid.UUID, session: SessionDep) -> dict[str, 
     )
     generation_population = await _generation_population_for_run(session, run_id)
     generation_quality_gate = (await _generation_quality_gates_for_runs(session, [run_id]))[
+        run_id
+    ]
+    temporal_observability = (await _temporal_observability_for_runs(session, [run]))[
         run_id
     ]
     candidate_count = display_population["candidate_count"]
@@ -1300,7 +1542,7 @@ async def get_observer_run(run_id: uuid.UUID, session: SessionDep) -> dict[str, 
             "kind": _run_kind(run),
             "schema_version": (run.spec_json or {}).get("schema_version"),
             "status": run.status,
-            **_run_status_payload(run),
+            **_run_status_payload(run, temporal_observability),
             "spec_sha256": run.spec_sha256,
             "created_at": _iso(run.created_at),
             "started_at": _iso(run.started_at),
