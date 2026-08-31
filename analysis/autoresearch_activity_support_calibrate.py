@@ -9,11 +9,13 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import create_engine, select
+from sqlalchemy.orm import Session
 
 from pepagent.db.models import Candidate, Evaluation, ExperimentRun, ToolCall
 from pepagent.db.session import SessionFactory
 from pepagent.provenance.hashing import sha256_file, sha256_json
+from pepagent.settings import get_settings
 from pepagent.workers.autoresearch_activities import _select_complete_evidence
 
 PARENT_RUNS = {
@@ -89,6 +91,85 @@ async def _parent_metric_values(branch_key: str) -> dict[str, list[float]]:
     return result
 
 
+def _parent_metric_values_sync(branch_key: str) -> dict[str, list[float]]:
+    run_id = PARENT_RUNS[branch_key]
+    settings = get_settings()
+    engine = create_engine(
+        settings.database_url_sync,
+        pool_pre_ping=True,
+        connect_args={
+            "connect_timeout": max(1, int(settings.database_connect_timeout_seconds))
+        },
+    )
+    try:
+        with Session(engine) as session:
+            run = session.get(ExperimentRun, run_id)
+            if run is None:
+                raise ValueError(f"missing parent run: {run_id}")
+            request = dict((run.spec_json or {}).get("workflow_request") or {})
+            required_metrics = set(
+                (request.get("execution_contract") or {}).get(
+                    "required_sequence_metrics"
+                )
+                or ()
+            )
+            candidates = list(
+                session.scalars(
+                    select(Candidate)
+                    .where(Candidate.run_id == run_id)
+                    .order_by(
+                        Candidate.generation, Candidate.proposal_rank, Candidate.id
+                    )
+                )
+            )
+            candidate_ids = [candidate.id for candidate in candidates]
+            evaluations = list(
+                session.scalars(
+                    select(Evaluation).where(Evaluation.candidate_id.in_(candidate_ids))
+                )
+            )
+            calls = {
+                call.id: call
+                for call in session.scalars(
+                    select(ToolCall).where(
+                        ToolCall.id.in_(
+                            {evaluation.tool_call_id for evaluation in evaluations}
+                        )
+                    )
+                )
+            }
+            evidence = _select_complete_evidence(
+                candidates=candidates,
+                evaluations=evaluations,
+                calls=calls,
+                required_metrics=required_metrics,
+            )
+        result: dict[str, list[float]] = {}
+        for metric_name, _ in ACTIVITY_METRICS:
+            result[metric_name] = [
+                float(candidate.metrics[metric_name].numeric_value)
+                for candidate in evidence
+                if candidate.metrics[metric_name].numeric_value is not None
+            ]
+            if not result[metric_name]:
+                raise ValueError(f"parent {branch_key} lacks {metric_name}")
+        return result
+    finally:
+        engine.dispose()
+
+
+async def _parent_metric_values_with_fallback(
+    branch_key: str,
+) -> tuple[dict[str, list[float]], str]:
+    try:
+        return await _parent_metric_values(branch_key), "postgresql_asyncpg"
+    except TimeoutError:
+        return (
+            await asyncio.to_thread(_parent_metric_values_sync, branch_key),
+            "postgresql_psycopg_timeout_fallback",
+        )
+
+
 def _benefit_percentile(value: float, parents: list[float], direction: str) -> float:
     if direction == "minimize":
         return sum(parent >= value for parent in parents) / len(parents)
@@ -102,7 +183,12 @@ async def _run(args: argparse.Namespace) -> None:
     unknown = set(branches) - set(PARENT_RUNS)
     if unknown:
         raise ValueError(f"unknown branches: {sorted(unknown)}")
-    reference = {branch: await _parent_metric_values(branch) for branch in branches}
+    reference: dict[str, dict[str, list[float]]] = {}
+    reference_sources: dict[str, str] = {}
+    for branch in branches:
+        reference[branch], reference_sources[branch] = (
+            await _parent_metric_values_with_fallback(branch)
+        )
     calibrated: list[dict[str, Any]] = []
     for row in rows:
         branch = row["branch_key"]
@@ -145,6 +231,7 @@ async def _run(args: argparse.Namespace) -> None:
         "observed_at_utc": datetime.now(UTC).isoformat(),
         "source_csv_sha256": sha256_file(args.input_csv),
         "parent_run_ids": {branch: str(PARENT_RUNS[branch]) for branch in branches},
+        "reference_sources": reference_sources,
         "candidate_count": len(calibrated),
         "support_ge_2_count": sum(
             int(row["activity_model_support_count_calibrated"]) >= 2 for row in calibrated

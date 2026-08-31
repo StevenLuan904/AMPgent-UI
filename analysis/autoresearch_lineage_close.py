@@ -86,6 +86,56 @@ def _write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
         writer.writerows(rows)
 
 
+def _deduplicate_rows_by_sequence(
+    rows: list[dict[str, str]], *, label: str
+) -> list[dict[str, str]]:
+    grouped: dict[str, list[dict[str, str]]] = {}
+    for row in rows:
+        grouped.setdefault(row["sequence_sha256"], []).append(row)
+    selected: list[dict[str, str]] = []
+    for sequence_sha256 in sorted(grouped):
+        group = grouped[sequence_sha256]
+        baseline = group[0]
+        identity = (
+            baseline["branch_key"],
+            baseline["sequence"],
+            baseline.get("family_key_80_80", ""),
+            tuple(
+                float(baseline[metric_name])
+                for metric_name in FORMAL_METRICS
+                if metric_name not in CATEGORICAL_METRICS
+            ),
+            tuple(baseline[metric_name] for metric_name in CATEGORICAL_METRICS),
+        )
+        for duplicate in group[1:]:
+            duplicate_identity = (
+                duplicate["branch_key"],
+                duplicate["sequence"],
+                duplicate.get("family_key_80_80", ""),
+                tuple(
+                    float(duplicate[metric_name])
+                    for metric_name in FORMAL_METRICS
+                    if metric_name not in CATEGORICAL_METRICS
+                ),
+                tuple(duplicate[metric_name] for metric_name in CATEGORICAL_METRICS),
+            )
+            if duplicate_identity != identity:
+                raise ValueError(
+                    f"{label} duplicate sequence evidence drifted: {sequence_sha256}"
+                )
+        selected.append(
+            max(
+                group,
+                key=lambda row: (
+                    int(row.get("activity_model_support_count_calibrated") or 0),
+                    int(row.get("generation") or 0),
+                    row.get("action_sha256", ""),
+                ),
+            )
+        )
+    return selected
+
+
 def _evidence(row: dict[str, str], *, archive_eligible: bool) -> CandidateEvidence:
     metrics = {
         metric_name: MetricObservation(
@@ -193,11 +243,17 @@ def run(args: argparse.Namespace) -> None:
     for path in args.parent_csv:
         with path.open(encoding="utf-8-sig", newline="") as stream:
             parent_rows.extend(csv.DictReader(stream))
+    parent_row_count_before_deduplication = len(parent_rows)
+    parent_rows = _deduplicate_rows_by_sequence(parent_rows, label="parent")
     policy_parent_rows: list[dict[str, str]] = []
     policy_parent_paths = args.policy_parent_csv or args.parent_csv
     for path in policy_parent_paths:
         with path.open(encoding="utf-8-sig", newline="") as stream:
             policy_parent_rows.extend(csv.DictReader(stream))
+    policy_parent_row_count_before_deduplication = len(policy_parent_rows)
+    policy_parent_rows = _deduplicate_rows_by_sequence(
+        policy_parent_rows, label="policy parent"
+    )
     with args.child_csv.open(encoding="utf-8-sig", newline="") as stream:
         child_rows = list(csv.DictReader(stream))
     with args.challenger_csv.open(encoding="utf-8-sig", newline="") as stream:
@@ -378,6 +434,12 @@ def run(args: argparse.Namespace) -> None:
         "archive_source_branches": sorted(archive_source_branches),
         "ignored_archive_branches": list(ignored_archive_branches),
         "child_count": len(child_rows),
+        "parent_row_count_before_deduplication": parent_row_count_before_deduplication,
+        "parent_row_count": len(parent_rows),
+        "policy_parent_row_count_before_deduplication": (
+            policy_parent_row_count_before_deduplication
+        ),
+        "policy_parent_row_count": len(policy_parent_rows),
         "planned_action_count": planned_action_count,
         "unscored_planned_action_count": unscored_planned_action_count,
         "formal_metric_count": len(FORMAL_METRICS),

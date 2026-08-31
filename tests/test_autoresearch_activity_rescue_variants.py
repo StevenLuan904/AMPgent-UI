@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import importlib.util
 import sys
@@ -14,6 +15,19 @@ def _load_module():
     spec = importlib.util.spec_from_file_location(
         "_autoresearch_activity_rescue_variants",
         analysis_dir / "autoresearch_activity_rescue_variants.py",
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _load_calibration_module():
+    analysis_dir = Path(__file__).resolve().parents[1] / "analysis"
+    sys.path.insert(0, str(analysis_dir))
+    spec = importlib.util.spec_from_file_location(
+        "_autoresearch_activity_support_calibrate",
+        analysis_dir / "autoresearch_activity_support_calibrate.py",
     )
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
@@ -199,3 +213,25 @@ def test_activity_rescue_branch_filter_rejects_missing_branch() -> None:
 
     with pytest.raises(ValueError, match="source cohort has no rows for branch gyra"):
         module._filter_source_branch([{"branch_key": "acea"}], "gyra")
+
+
+def test_activity_calibration_falls_back_to_sync_postgresql_on_timeout(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_calibration_module()
+    expected = {"macrel_amp_probability": [0.4]}
+
+    async def timeout(_branch_key: str):
+        raise TimeoutError
+
+    monkeypatch.setattr(module, "_parent_metric_values", timeout)
+    monkeypatch.setattr(
+        module, "_parent_metric_values_sync", lambda _branch_key: expected
+    )
+
+    values, source = asyncio.run(
+        module._parent_metric_values_with_fallback("acea")
+    )
+
+    assert values == expected
+    assert source == "postgresql_psycopg_timeout_fallback"

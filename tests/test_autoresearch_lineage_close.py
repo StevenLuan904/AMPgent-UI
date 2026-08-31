@@ -61,3 +61,44 @@ def test_lineage_close_rejects_archive_missing_child_branch() -> None:
         ValueError, match="lineage close archive is missing child branches: gyra"
     ):
         module._validate_archive_branches({"pbp2a"}, {"gyra"})
+
+
+def test_lineage_close_deduplicates_identical_sequence_evidence() -> None:
+    module = _load_module()
+    base = {
+        "sequence_sha256": "a" * 64,
+        "branch_key": "acea",
+        "sequence": "KKKK",
+        "family_key_80_80": "family-a",
+        "activity_model_support_count_calibrated": "2",
+        "generation": "1",
+        **{metric_name: "1.0" for metric_name in module.FORMAL_METRICS},
+    }
+    newer = {
+        **base,
+        "activity_model_support_count_calibrated": "3",
+        "generation": "2",
+    }
+
+    selected = module._deduplicate_rows_by_sequence(
+        [base, newer], label="parent"
+    )
+
+    assert selected == [newer]
+
+
+def test_lineage_close_rejects_drifted_duplicate_sequence_evidence() -> None:
+    module = _load_module()
+    base = {
+        "sequence_sha256": "a" * 64,
+        "branch_key": "acea",
+        "sequence": "KKKK",
+        "family_key_80_80": "family-a",
+        **{metric_name: "1.0" for metric_name in module.FORMAL_METRICS},
+    }
+    drifted = {**base, module.FORMAL_METRICS[0]: "2.0"}
+
+    with pytest.raises(ValueError, match="duplicate sequence evidence drifted"):
+        module._deduplicate_rows_by_sequence(
+            [base, drifted], label="parent"
+        )
