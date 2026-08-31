@@ -1,0 +1,55 @@
+{
+  "schema_version": "ampgent.autoresearch-lineage-probe.1",
+  "observed_at_utc": "2026-08-31T19:30:59.279544+00:00",
+  "source_csv_sha256s": [
+    "a9cf1efce5ae812b8a4f5dcabe32fd317285c6acddd90ff38439ea2b00258a8a",
+    "78be54ddc764431913fa33924c91ffd08ca9a147e277af1b6cd994d41e21414e",
+    "8717501b104bcd1c6602522bc57fc68d68035c746c92f2551cc65fa1e001d224",
+    "af12034e6de73bf9977f0750a3a8902456426a1f9b2818276fc9f7f9380f342a",
+    "cd029339e2283791662c917d1b4ff68357e31930195aaa999b8bd0d746665f61"
+  ],
+  "source_candidate_count": 151,
+  "source_cohort_sha256": "d04ead4b1acda019593f4cf114b6365584ee16775f9355c36fe77d344198f3b4",
+  "generation": 12,
+  "prefer_full_support_within_families": true,
+  "historical_source_sha256s": [
+    "df9b93d8ab7d2da86b08a71728f6e69ec11749a3ac5ad49b074e4ded4548313a",
+    "557072eac559502ea76694dcf934f212c2d44e936bde5d644d740886768724a8",
+    "257664143b38577f88784b7a20b26a10a8eae061507a5891ea4a6e56586c0c0b",
+    "bc279d05953b3ca7c311c00881124d958b615533af1074853c50448d58eed556",
+    "d4b6f281b2d8ed2ddf2db22203dac944ac50b9e1f34b7db470e41edb533bec74"
+  ],
+  "unfiltered_input_sequence_exclusion_count": 665,
+  "historical_exclusion_sequence_count": 927,
+  "postgresql_history_exclusion_enabled": true,
+  "postgresql_history_sequence_sha256_count": 66495,
+  "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+  "branch_count": 1,
+  "branches": [
+    "fgf2"
+  ],
+  "replicate_count_per_branch": 12,
+  "action_count": 48,
+  "forced_family_coverage_enabled": false,
+  "forced_family_count": 0,
+  "forced_family_keys": [],
+  "forced_family_materialized_child_counts": {},
+  "uncovered_forced_family_keys": [],
+  "action_type_counts": {
+    "masked_substitution": 12,
+    "controlled_crossover": 12,
+    "de_novo": 24
+  },
+  "child_count": 48,
+  "exact_historical_replay_count": 0,
+  "new_family_child_count": 36,
+  "children_csv_sha256": "b0c1e1ad874a396f397bfcf88c86c0ac63a17702dc31ec45660c0eb7b9bc0268",
+  "actions_sha256": "0d28e1d2acedb2571711e59c60541ba83da028502537c78fbe3230150b9972d7",
+  "archive_before_sha256": "3e387dd75560de04bff6f297f1a53023962e5030416e9c2325142c635865ddb6",
+  "plans_sha256": "3f2ebd6a159a114c99a9ae0f52060d213182f9b9adfee16b3b114e3438907cba",
+  "workflow_submitted": false,
+  "gpu_task_submitted": false,
+  "historical_run_modified": false,
+  "target_sequence_identity_consumed": false,
+  "receipt_payload_sha256": "6f6381fd65ef998f8c868e721fdc5b7fcf3bcd04298d5e2f80b1cff445a1bb4d"
+}
