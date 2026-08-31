@@ -1,0 +1,45 @@
+{
+  "schema_version": "ampgent.autoresearch-legacy-structure-reconciliation.1",
+  "observed_at_utc": "2026-08-31T03:38:50.3952057Z",
+  "task_id": "pbp2a-gpu2-rosetta-20260828-v1",
+  "host": "192.168.99.2",
+  "remote_root": "/sdd_data/pepagent/ampgent/structure/pbp2a-gpu2-rosetta-20260828-v1",
+  "parent_pid": 904411,
+  "parent_pid_status": "exited_after_success",
+  "completion_status": "succeeded",
+  "completion_receipt_sha256": "e47fa0c96f2415c87b0bbd6bd0831b082d367022391957c8e82539f2aa4f8b83",
+  "remote_available_bytes_human": "1.3T",
+  "observed_structure_file_count": 408,
+  "results": [
+    {
+      "candidate_id": "pbp2a-pepglad-2026082760-0234",
+      "sequence": "ESPPWFRGAKPWPFRYKK",
+      "sequence_sha256": "4ea55175adc3fb46b3e6fbc12c24b69995bc45c5e6ac9a83e02bca75a5751cb6",
+      "protocol": "pepglad_complex_rosetta",
+      "interface": "AB_C",
+      "nstruct": 200,
+      "primary_dG_separated_reu": 66.73420270981683,
+      "minimum_dG_separated_reu": 19.312670913273905,
+      "result_sha256": "7b299a6d529df411cdbf9b8dab690c530ec195d0b974c909adf093615653b13f",
+      "exact_frozen_queue_match": false
+    },
+    {
+      "candidate_id": "pbp2a-factorized-4782247c379eafe2654f",
+      "sequence": "GKWVHFSRVRMRKLLKLNQVDDWF",
+      "sequence_sha256": "6c26e4ce36acc7e63ad4b27c9ca6af674c4baee854556343a39fdec0670da403",
+      "protocol": "factorized_boltz_rosetta",
+      "interface": "A_B",
+      "nstruct": 200,
+      "primary_dG_separated_reu": -67.93627398795013,
+      "minimum_dG_separated_reu": -74.3568787250149,
+      "result_sha256": "f9a5a4d1be3fb6b8dc412e80ad799bd52e74aaac1bd82d18d3a42547bb574896",
+      "exact_frozen_queue_match": false
+    }
+  ],
+  "exact_frozen_queue_match_count": 0,
+  "cross_protocol_dg_comparison_forbidden": true,
+  "duplicate_submission_performed": false,
+  "new_gpu_task_submitted": false,
+  "md_started": false,
+  "historical_run_modified": false
+}
