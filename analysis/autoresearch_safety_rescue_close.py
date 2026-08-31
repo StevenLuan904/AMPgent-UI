@@ -28,9 +28,13 @@ def _read_csv(path: Path) -> list[dict[str, str]]:
 def run(args: argparse.Namespace) -> None:
     baseline_rows = _read_csv(args.baseline_parent_csv)
     qualified_rows = _read_csv(args.qualified_archive_csv)
-    prior_child_rows = _read_csv(args.prior_child_csv)
+    prior_child_rows = [
+        row for path in args.prior_child_csv for row in _read_csv(path)
+    ]
     prior_no_conflict = {
-        row["sequence_sha256"] for row in _read_csv(args.prior_challenger_csv)
+        row["sequence_sha256"]
+        for path in args.prior_challenger_csv
+        for row in _read_csv(path)
     }
     child_rows = _read_csv(args.child_csv)
     no_conflict = {row["sequence_sha256"] for row in _read_csv(args.challenger_csv)}
@@ -157,8 +161,12 @@ def run(args: argparse.Namespace) -> None:
         "source_hashes": {
             "baseline_parent_csv_sha256": sha256_file(args.baseline_parent_csv),
             "qualified_archive_csv_sha256": sha256_file(args.qualified_archive_csv),
-            "prior_child_csv_sha256": sha256_file(args.prior_child_csv),
-            "prior_challenger_csv_sha256": sha256_file(args.prior_challenger_csv),
+            "prior_child_csv_sha256s": [
+                sha256_file(path) for path in args.prior_child_csv
+            ],
+            "prior_challenger_csv_sha256s": [
+                sha256_file(path) for path in args.prior_challenger_csv
+            ],
             "child_csv_sha256": sha256_file(args.child_csv),
             "challenger_csv_sha256": sha256_file(args.challenger_csv),
             "plans_sha256": sha256_file(args.plans_json),
@@ -202,8 +210,12 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--baseline-parent-csv", type=Path, required=True)
     parser.add_argument("--qualified-archive-csv", type=Path, required=True)
-    parser.add_argument("--prior-child-csv", type=Path, required=True)
-    parser.add_argument("--prior-challenger-csv", type=Path, required=True)
+    parser.add_argument(
+        "--prior-child-csv", type=Path, action="append", required=True
+    )
+    parser.add_argument(
+        "--prior-challenger-csv", type=Path, action="append", required=True
+    )
     parser.add_argument("--child-csv", type=Path, required=True)
     parser.add_argument("--challenger-csv", type=Path, required=True)
     parser.add_argument("--plans-json", type=Path, required=True)

@@ -56,6 +56,16 @@ def run(args: argparse.Namespace) -> None:
     no_conflict = [row for row in review if row["challenger_conflict_status"] == "no_conflict"]
     if no_conflict:
         _write_csv(output_dir / "challenger_no_conflict.csv", no_conflict)
+    full_support_no_conflict = [
+        row
+        for row in no_conflict
+        if int(row["activity_model_support_count_calibrated"]) == 3
+    ]
+    if full_support_no_conflict:
+        _write_csv(
+            output_dir / "challenger_full_support_no_conflict.csv",
+            full_support_no_conflict,
+        )
     summary = []
     for branch_key in sorted({str(row["branch_key"]) for row in review}):
         branch_rows = [row for row in review if row["branch_key"] == branch_key]
@@ -81,6 +91,7 @@ def run(args: argparse.Namespace) -> None:
         "reviewed_excellent_candidate_count": len(review),
         "challenger_no_conflict_count": len(no_conflict),
         "challenger_conflict_count": len(review) - len(no_conflict),
+        "challenger_full_support_no_conflict_count": len(full_support_no_conflict),
         "branch_summary": summary,
         **challenger_hashes,
         "challenger_review_csv_sha256": sha256_file(
@@ -92,6 +103,10 @@ def run(args: argparse.Namespace) -> None:
         "gpu_task_submitted": False,
         "historical_run_modified": False,
     }
+    if full_support_no_conflict:
+        receipt["challenger_full_support_no_conflict_sha256"] = sha256_file(
+            output_dir / "challenger_full_support_no_conflict.csv"
+        )
     receipt["receipt_payload_sha256"] = sha256_json(receipt)
     (output_dir / "receipt.json").write_text(
         json.dumps(receipt, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
