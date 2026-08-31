@@ -55,6 +55,13 @@ CHARGE_PATTERN_OPERATOR_RELEASE_SHA256 = sha256_json(
 )
 
 
+def _single_branch_key(rows: list[dict[str, str]]) -> str:
+    branch_keys = {row["branch_key"] for row in rows}
+    if len(branch_keys) != 1:
+        raise ValueError("activity rescue requires exactly one source branch")
+    return branch_keys.pop()
+
+
 def _select_parents(
     rows: list[dict[str, str]],
     maximum_per_family: int,
@@ -221,6 +228,7 @@ def run(args: argparse.Namespace) -> None:
         with path.open(encoding="utf-8-sig", newline="") as stream:
             source_rows.extend(csv.DictReader(stream))
         parent_score_sha256s.append(sha256_file(path))
+    branch_key = _single_branch_key(source_rows)
     parents = _select_parents(
         source_rows,
         args.maximum_parents_per_family,
@@ -258,9 +266,9 @@ def run(args: argparse.Namespace) -> None:
             {
                 "schema_version": "ampgent.autoresearch-multibranch-plan.1",
                 "plans": {
-                    "acea": {
+                    branch_key: {
                         "schema_version": "ampgent.autoresearch-rule-plan.1",
-                        "branch_key": "acea",
+                        "branch_key": branch_key,
                         "generation": max(int(row["generation"]) for row in generated),
                         "operator_id": actions[0]["operator_id"],
                         "actions": actions,

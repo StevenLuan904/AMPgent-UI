@@ -5,6 +5,8 @@ import importlib.util
 import sys
 from pathlib import Path
 
+import pytest
+
 
 def _load_module():
     analysis_dir = Path(__file__).resolve().parents[1] / "analysis"
@@ -126,3 +128,16 @@ def test_activity_rescue_advances_to_global_generation_floor() -> None:
 
     assert {row["generation"] for row in generated} == {11}
     assert {action["generation"] for action in actions} == {11}
+
+
+def test_activity_rescue_plan_uses_the_source_branch() -> None:
+    module = _load_module()
+
+    assert module._single_branch_key([{"branch_key": "vegfa"}]) == "vegfa"
+
+    with pytest.raises(
+        ValueError, match="activity rescue requires exactly one source branch"
+    ):
+        module._single_branch_key(
+            [{"branch_key": "acea"}, {"branch_key": "vegfa"}]
+        )
