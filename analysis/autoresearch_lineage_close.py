@@ -157,8 +157,10 @@ def _flat_metric_delta(
 
 
 def run(args: argparse.Namespace) -> None:
-    with args.parent_csv.open(encoding="utf-8-sig", newline="") as stream:
-        parent_rows = list(csv.DictReader(stream))
+    parent_rows: list[dict[str, str]] = []
+    for path in args.parent_csv:
+        with path.open(encoding="utf-8-sig", newline="") as stream:
+            parent_rows.extend(csv.DictReader(stream))
     with args.child_csv.open(encoding="utf-8-sig", newline="") as stream:
         child_rows = list(csv.DictReader(stream))
     with args.challenger_csv.open(encoding="utf-8-sig", newline="") as stream:
@@ -300,7 +302,7 @@ def run(args: argparse.Namespace) -> None:
     replay_payload = {
         "schema_version": "ampgent.autoresearch-multibranch-replay.1",
         "source_hashes": {
-            "parent_csv_sha256": sha256_file(args.parent_csv),
+            "parent_csv_sha256s": [sha256_file(path) for path in args.parent_csv],
             "child_csv_sha256": sha256_file(args.child_csv),
             "challenger_csv_sha256": sha256_file(args.challenger_csv),
             "plans_sha256": sha256_file(args.plans_json),
@@ -344,7 +346,7 @@ def run(args: argparse.Namespace) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--parent-csv", type=Path, required=True)
+    parser.add_argument("--parent-csv", type=Path, action="append", required=True)
     parser.add_argument("--child-csv", type=Path, required=True)
     parser.add_argument("--challenger-csv", type=Path, required=True)
     parser.add_argument("--plans-json", type=Path, required=True)

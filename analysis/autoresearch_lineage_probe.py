@@ -73,8 +73,12 @@ def run(args: argparse.Namespace) -> None:
         raise ValueError("lineage probe generation must be at least 2")
     if args.replicates < 1:
         raise ValueError("lineage probe replicates must be positive")
-    with args.input_csv.open(encoding="utf-8-sig", newline="") as stream:
-        rows = list(csv.DictReader(stream))
+    rows: list[dict[str, str]] = []
+    source_csv_sha256s: list[str] = []
+    for path in args.input_csv:
+        source_csv_sha256s.append(sha256_file(path))
+        with path.open(encoding="utf-8-sig", newline="") as stream:
+            rows.extend(csv.DictReader(stream))
     if not rows:
         raise ValueError("lineage probe input is empty")
     if {row["branch_key"] for row in rows} != set(BRANCHES):
@@ -298,7 +302,7 @@ def run(args: argparse.Namespace) -> None:
     receipt = {
         "schema_version": "ampgent.autoresearch-lineage-probe.1",
         "observed_at_utc": datetime.now(UTC).isoformat(),
-        "source_csv_sha256": sha256_file(args.input_csv),
+        "source_csv_sha256s": source_csv_sha256s,
         "source_candidate_count": len(rows),
         "generation": args.generation,
         "historical_source_sha256s": historical_source_hashes,
@@ -341,7 +345,7 @@ def run(args: argparse.Namespace) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input-csv", type=Path, required=True)
+    parser.add_argument("--input-csv", type=Path, action="append", required=True)
     parser.add_argument("--historical-csv", type=Path, action="append", default=[])
     parser.add_argument("--branch", action="append", choices=BRANCHES)
     parser.add_argument("--output-dir", type=Path, required=True)

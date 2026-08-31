@@ -66,6 +66,17 @@ def run(args: argparse.Namespace) -> None:
             output_dir / "challenger_full_support_no_conflict.csv",
             full_support_no_conflict,
         )
+    new_family_no_conflict = [
+        row
+        for row in no_conflict
+        if row.get("new_family_relative_to_all_references", "false").lower()
+        == "true"
+    ]
+    if new_family_no_conflict:
+        _write_csv(
+            output_dir / "challenger_new_family_no_conflict.csv",
+            new_family_no_conflict,
+        )
     summary = []
     for branch_key in sorted({str(row["branch_key"]) for row in review}):
         branch_rows = [row for row in review if row["branch_key"] == branch_key]
@@ -92,6 +103,7 @@ def run(args: argparse.Namespace) -> None:
         "challenger_no_conflict_count": len(no_conflict),
         "challenger_conflict_count": len(review) - len(no_conflict),
         "challenger_full_support_no_conflict_count": len(full_support_no_conflict),
+        "challenger_new_family_no_conflict_count": len(new_family_no_conflict),
         "branch_summary": summary,
         **challenger_hashes,
         "challenger_review_csv_sha256": sha256_file(
@@ -106,6 +118,10 @@ def run(args: argparse.Namespace) -> None:
     if full_support_no_conflict:
         receipt["challenger_full_support_no_conflict_sha256"] = sha256_file(
             output_dir / "challenger_full_support_no_conflict.csv"
+        )
+    if new_family_no_conflict:
+        receipt["challenger_new_family_no_conflict_sha256"] = sha256_file(
+            output_dir / "challenger_new_family_no_conflict.csv"
         )
     receipt["receipt_payload_sha256"] = sha256_json(receipt)
     (output_dir / "receipt.json").write_text(
