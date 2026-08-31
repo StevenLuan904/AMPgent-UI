@@ -26,10 +26,9 @@ async def _run(args: argparse.Namespace) -> None:
     )
     with args.candidate_scores.open(encoding="utf-8-sig", newline="") as stream:
         rows = list(csv.DictReader(stream))
-    if not rows or any(
-        row["excellent_sequence_stage_calibrated"].lower() != "true" for row in rows
-    ):
-        raise ValueError("operational persistence requires only calibrated excellent rows")
+    rows = [row for row in rows if row["excellent_sequence_stage_calibrated"].lower() == "true"]
+    if not rows:
+        raise ValueError("operational persistence requires calibrated excellent rows")
     score_sha256 = sha256_file(args.candidate_scores)
     source_receipt_sha256 = sha256_file(args.source_receipt)
     persisted: list[dict[str, str]] = []
@@ -50,6 +49,7 @@ async def _run(args: argparse.Namespace) -> None:
                 "source_receipt_sha256": source_receipt_sha256,
                 "candidate_count": len(branch_rows),
                 "supersedes_operational_run_id": superseded_run_id,
+                "challenger_receipt_sha256": args.challenger_receipt_sha256,
             },
             parameters={
                 "formal_metric_count": 12,
@@ -77,13 +77,14 @@ async def _run(args: argparse.Namespace) -> None:
                         ),
                         "excellent_sequence_stage": row["excellent_sequence_stage_calibrated"],
                         "structure_status": "not_started",
-                        "challenger_status": "not_started",
+                        "challenger_status": args.challenger_status,
                         "md_status": "not_started",
                     }
                     for row in branch_rows
                 ],
                 "candidate_scores_sha256": score_sha256,
                 "source_receipt_sha256": source_receipt_sha256,
+                "challenger_receipt_sha256": args.challenger_receipt_sha256,
             },
             queued_at=now,
             started_at=now,
@@ -125,6 +126,12 @@ def main() -> None:
     parser.add_argument("--source-receipt", type=Path, required=True)
     parser.add_argument("--source-commit", required=True)
     parser.add_argument("--supersedes-operational-run-id")
+    parser.add_argument(
+        "--challenger-status",
+        choices=("not_started", "reviewed_no_conflict", "reviewed_conflict"),
+        default="not_started",
+    )
+    parser.add_argument("--challenger-receipt-sha256")
     parser.add_argument("--output", type=Path, required=True)
     asyncio.run(_run(parser.parse_args()))
 
