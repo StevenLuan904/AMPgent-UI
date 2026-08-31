@@ -16,6 +16,7 @@ from pepagent.autoresearch_closed_loop import (
 )
 from pepagent.autoresearch_planner import (
     PlannerDeltaEvidence,
+    _adaptive_de_novo_alphabet,
     _de_novo_prescreen_passes,
     _sequence_prescreen,
     _unique_de_novo_sequence,
@@ -275,7 +276,7 @@ def test_cpu_only_planner_fills_a_fifty_percent_de_novo_quota() -> None:
         de_novo_actions
     )
     assert all(
-        action.operator_id == "autoresearch-rule-de-novo-v3"
+        action.operator_id == "autoresearch-rule-de-novo-v4"
         for action in de_novo_actions
     )
     assert all(
@@ -336,6 +337,22 @@ def test_rule_de_novo_avoids_historical_family_representatives() -> None:
 
     assignments = cluster_sequence_families((historical_representative, sequence))
     assert len({item.family_key for item in assignments}) == 2
+
+
+def test_adaptive_de_novo_alphabet_is_deterministic_and_profile_weighted() -> None:
+    profile = ("KKKKRRHNQSTAG", "KKKRRHNQSTAG")
+    alphabet = _adaptive_de_novo_alphabet(profile)
+
+    assert alphabet == _adaptive_de_novo_alphabet(tuple(reversed(profile)))
+    assert alphabet.count("K") > alphabet.count("A")
+    assert alphabet.count("R") > alphabet.count("A")
+    sequence = _unique_de_novo_sequence(
+        branch_key="VEGFA",
+        seed=41,
+        known_sequences=set(),
+        residue_alphabet=alphabet,
+    )
+    assert _de_novo_prescreen_passes(sequence)
 
 
 def test_planner_emits_progress_heartbeats_between_expensive_stages(monkeypatch) -> None:

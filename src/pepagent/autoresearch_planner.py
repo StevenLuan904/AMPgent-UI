@@ -30,6 +30,7 @@ _DE_NOVO_MAXIMUM_HYDROPHOBIC_RUN = 2
 _DE_NOVO_MINIMUM_NET_CHARGE = 3.0
 _DE_NOVO_ALPHABET = "KRHNQSTEDAILVFWYG"
 _DE_NOVO_LENGTHS = (20, 21, 22, 23, 24, 25, 26)
+_CANONICAL_AMINO_ACIDS = "ACDEFGHIKLMNPQRSTVWY"
 
 
 def _sequence_prescreen(sequence: str) -> tuple[float, int, float]:
@@ -86,6 +87,26 @@ def _shares_sequence_family(
         if identity >= 0.8 and coverage >= 0.8:
             return True
     return False
+
+
+def _adaptive_de_novo_alphabet(sequences: Collection[str]) -> str:
+    """Build a deterministic, shrinkage-weighted alphabet from a target archive."""
+
+    if not sequences:
+        return _DE_NOVO_ALPHABET
+    if any(not sequence or set(sequence) - set(_CANONICAL_AMINO_ACIDS) for sequence in sequences):
+        raise ValueError("de-novo profile contains a non-canonical peptide")
+    counts = {residue: 3 for residue in _DE_NOVO_ALPHABET}
+    for sequence in sequences:
+        for residue in sequence:
+            if residue in counts:
+                counts[residue] += 1
+    total_observed = sum(len(sequence) for sequence in sequences)
+    scale = max(1, total_observed // 160)
+    return "".join(
+        residue * max(1, round(counts[residue] / scale))
+        for residue in _DE_NOVO_ALPHABET
+    )
 
 
 class PlannerDeltaEvidence(BaseModel):
@@ -272,7 +293,10 @@ def _unique_de_novo_sequence(
     known_sequences: set[str],
     excluded_sequence_sha256s: Collection[str] = (),
     family_reference_sequences: Collection[str] = (),
+    residue_alphabet: str = _DE_NOVO_ALPHABET,
 ) -> str:
+    if not residue_alphabet or set(residue_alphabet) - set(_CANONICAL_AMINO_ACIDS):
+        raise ValueError("de-novo residue alphabet must contain canonical amino acids")
     family_references = tuple(set(known_sequences) | set(family_reference_sequences))
     for attempt in range(10_000):
         digest = sha256_text(f"{branch_key}:{seed}:family-opener-v3:{attempt}")
@@ -285,8 +309,8 @@ def _unique_de_novo_sequence(
             nonce += 1
             material += sha256_text(f"{digest}:{nonce}")
         sequence = "".join(
-            _DE_NOVO_ALPHABET[
-                int(material[index : index + 2], 16) % len(_DE_NOVO_ALPHABET)
+            residue_alphabet[
+                int(material[index : index + 2], 16) % len(residue_alphabet)
             ]
             for index in range(0, length * 2, 2)
         )
@@ -357,6 +381,9 @@ def build_multifront_rule_action_plan(
     archive_sha = snapshot.archive_sha256
     literal_gold_count = len(_gold_candidate_ids(snapshot))
     gold_count = len(_instability_score_qualified_gold_candidate_ids(snapshot, by_id))
+    de_novo_alphabet = _adaptive_de_novo_alphabet(
+        tuple(item.sequence for item in eligible)
+    )
 
     actions: list[EvolutionAction] = []
     rationales: dict[str, str] = {}
@@ -528,12 +555,13 @@ def build_multifront_rule_action_plan(
         known_sequences=known_sequences,
         excluded_sequence_sha256s=historical_sequence_sha256s,
         family_reference_sequences=historical_family_representatives,
+        residue_alphabet=de_novo_alphabet,
     )
     action = DeNovoAction(
         branch_key=branch_key,
         generation=generation,
         seed=seed + 2,
-        operator_id="autoresearch-rule-de-novo-v3",
+        operator_id="autoresearch-rule-de-novo-v4",
         operator_release_sha256=operator_release_sha256,
         expected_improvement_metrics=("macrel_amp_probability",),
         protected_metrics=(
@@ -649,12 +677,13 @@ def build_multifront_rule_action_plan(
             known_sequences=known_sequences,
             excluded_sequence_sha256s=historical_sequence_sha256s,
             family_reference_sequences=historical_family_representatives,
+            residue_alphabet=de_novo_alphabet,
         )
         action = DeNovoAction(
             branch_key=branch_key,
             generation=generation,
             seed=action_seed,
-            operator_id="autoresearch-rule-de-novo-v3",
+            operator_id="autoresearch-rule-de-novo-v4",
             operator_release_sha256=operator_release_sha256,
             expected_improvement_metrics=("macrel_amp_probability",),
             protected_metrics=(

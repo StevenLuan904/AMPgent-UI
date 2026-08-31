@@ -11,6 +11,7 @@ from typing import Any
 from sqlalchemy import select
 
 from pepagent.autoresearch_planner import (
+    _adaptive_de_novo_alphabet,
     _hydrophobic_fraction,
     _sequence_prescreen,
     _unique_de_novo_sequence,
@@ -52,6 +53,17 @@ async def _run(args: argparse.Namespace) -> None:
     ):
         raise ValueError("additional family reference contains a non-canonical peptide")
     all_references = historical | additional_references
+    profiles: dict[str, list[str]] = {branch: [] for branch in BRANCHES}
+    for path in args.profile_csv:
+        with path.open(encoding="utf-8-sig", newline="") as stream:
+            for row in csv.DictReader(stream):
+                branch_key = str(row["branch_key"]).lower()
+                if branch_key in profiles:
+                    profiles[branch_key].append(str(row["sequence"]).strip().upper())
+    profile_alphabets = {
+        branch: _adaptive_de_novo_alphabet(sequences)
+        for branch, sequences in profiles.items()
+    }
     historical_hashes = {sha256_text(sequence) for sequence in all_references}
     known_sequences = set(additional_references)
     generated_sequences: set[str] = set()
@@ -64,6 +76,7 @@ async def _run(args: argparse.Namespace) -> None:
                 seed=seed,
                 known_sequences=known_sequences,
                 excluded_sequence_sha256s=historical_hashes,
+                residue_alphabet=profile_alphabets[branch_key],
             )
             generated_sequences.add(sequence)
             known_sequences.add(sequence)
@@ -74,7 +87,7 @@ async def _run(args: argparse.Namespace) -> None:
                     "generation": 1,
                     "proposal_rank": rank,
                     "seed": seed,
-                    "operator_id": "autoresearch-rule-de-novo-v3",
+                    "operator_id": "autoresearch-rule-de-novo-v4",
                     "sequence": sequence,
                     "sequence_sha256": sha256_text(sequence),
                     "guruprasad_instability_index": f"{instability:.6f}",
@@ -145,7 +158,7 @@ async def _run(args: argparse.Namespace) -> None:
     receipt = {
         "schema_version": "ampgent.autoresearch-de-novo-family-probe.1",
         "observed_at_utc": datetime.now(UTC).isoformat(),
-        "operator_id": "autoresearch-rule-de-novo-v3",
+        "operator_id": "autoresearch-rule-de-novo-v4",
         "historical_sequence_count": len(historical),
         "additional_reference_sequence_count": len(additional_references),
         "proposal_count": len(rows),
@@ -169,6 +182,10 @@ async def _run(args: argparse.Namespace) -> None:
         "additional_reference_csv_sha256s": [
             sha256_file(path) for path in args.additional_reference_csv
         ],
+        "profile_csv_sha256s": [sha256_file(path) for path in args.profile_csv],
+        "profile_sequence_counts": {
+            branch: len(sequences) for branch, sequences in profiles.items()
+        },
         "branch_summary": summary_rows,
         "output_csv_sha256": sha256_file(args.output_csv),
         "summary_csv_sha256": sha256_file(args.summary_csv),
@@ -192,6 +209,7 @@ def main() -> None:
         action="append",
         default=[],
     )
+    parser.add_argument("--profile-csv", type=Path, action="append", default=[])
     parser.add_argument("--output-csv", type=Path, required=True)
     parser.add_argument("--summary-csv", type=Path, required=True)
     parser.add_argument("--output-json", type=Path, required=True)
