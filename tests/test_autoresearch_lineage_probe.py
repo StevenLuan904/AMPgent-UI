@@ -12,3 +12,5 @@ def test_targeted_lineage_probe_accepts_selected_branch_only() -> None:
 
     assert "source_branches != set(active_branches)" in source
     assert "requires all six target branches" not in source
+    assert "args.minimum_calibrated_support" in source
+    assert 'args.output_dir / "source_cohort.csv"' in source

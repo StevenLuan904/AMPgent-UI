@@ -86,6 +86,15 @@ def run(args: argparse.Namespace) -> None:
         raise ValueError("lineage probe branch selection contains duplicates")
     if set(active_branches) - set(BRANCHES):
         raise ValueError("lineage probe branch selection is invalid")
+    rows = [
+        row
+        for row in rows
+        if row["branch_key"] in active_branches
+        and int(row.get("activity_model_support_count_calibrated", 0))
+        >= args.minimum_calibrated_support
+    ]
+    if not rows:
+        raise ValueError("lineage probe selected source cohort is empty")
     source_branches = {row["branch_key"] for row in rows}
     if source_branches != set(active_branches):
         raise ValueError(
@@ -261,6 +270,8 @@ def run(args: argparse.Namespace) -> None:
     child_records.sort(key=lambda row: (row["branch_key"], row["proposal_rank"]))
     action_records.sort(key=lambda row: (row["branch_key"], row["proposal_rank"]))
     args.output_dir.mkdir(parents=True, exist_ok=True)
+    source_cohort_path = args.output_dir / "source_cohort.csv"
+    _write_csv(source_cohort_path, rows)
     _write_csv(args.output_dir / "children.csv", child_records)
     actions_path = args.output_dir / "actions.json"
     actions_path.write_text(
@@ -307,6 +318,7 @@ def run(args: argparse.Namespace) -> None:
         "observed_at_utc": datetime.now(UTC).isoformat(),
         "source_csv_sha256s": source_csv_sha256s,
         "source_candidate_count": len(rows),
+        "source_cohort_sha256": sha256_file(source_cohort_path),
         "generation": args.generation,
         "historical_source_sha256s": historical_source_hashes,
         "historical_exclusion_sequence_count": len(historical_sequences),
@@ -356,6 +368,7 @@ def main() -> None:
     parser.add_argument("--generation", type=int, default=2)
     parser.add_argument("--replicates", type=int, default=1)
     parser.add_argument("--de-novo-quota", type=float, default=0.25)
+    parser.add_argument("--minimum-calibrated-support", type=int, default=0)
     run(parser.parse_args())
 
 
