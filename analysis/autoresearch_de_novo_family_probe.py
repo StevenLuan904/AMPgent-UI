@@ -40,7 +40,20 @@ def _write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
 
 async def _run(args: argparse.Namespace) -> None:
     historical = await _historical_sequences()
-    historical_hashes = {sha256_text(sequence) for sequence in historical}
+    additional_references: set[str] = set()
+    for path in args.additional_reference_csv:
+        with path.open(encoding="utf-8-sig", newline="") as stream:
+            additional_references.update(
+                str(row["sequence"]).strip().upper() for row in csv.DictReader(stream)
+            )
+    if any(
+        not sequence or set(sequence) - set("ACDEFGHIKLMNPQRSTVWY")
+        for sequence in additional_references
+    ):
+        raise ValueError("additional family reference contains a non-canonical peptide")
+    all_references = historical | additional_references
+    historical_hashes = {sha256_text(sequence) for sequence in all_references}
+    known_sequences = set(additional_references)
     generated_sequences: set[str] = set()
     rows: list[dict[str, Any]] = []
     for branch_index, branch_key in enumerate(BRANCHES):
@@ -49,10 +62,11 @@ async def _run(args: argparse.Namespace) -> None:
             sequence = _unique_de_novo_sequence(
                 branch_key=branch_key,
                 seed=seed,
-                known_sequences=generated_sequences,
+                known_sequences=known_sequences,
                 excluded_sequence_sha256s=historical_hashes,
             )
             generated_sequences.add(sequence)
+            known_sequences.add(sequence)
             instability, maximum_hydrophobic_run, net_charge = _sequence_prescreen(sequence)
             rows.append(
                 {
@@ -74,9 +88,12 @@ async def _run(args: argparse.Namespace) -> None:
 
     assignments = {
         item.sequence: item
-        for item in cluster_sequence_families(historical | generated_sequences)
+        for item in cluster_sequence_families(all_references | generated_sequences)
     }
     historical_family_keys = {assignments[sequence].family_key for sequence in historical}
+    all_reference_family_keys = {
+        assignments[sequence].family_key for sequence in all_references
+    }
     for row in rows:
         assignment = assignments[str(row["sequence"])]
         row.update(
@@ -86,6 +103,12 @@ async def _run(args: argparse.Namespace) -> None:
                 "combined_family_size": assignment.family_size,
                 "new_family_relative_to_postgresql_history": str(
                     assignment.family_key not in historical_family_keys
+                ).lower(),
+                "new_family_relative_to_all_references": str(
+                    assignment.family_key not in all_reference_family_keys
+                ).lower(),
+                "diversity_qualified": str(
+                    assignment.family_key not in all_reference_family_keys
                 ).lower(),
             }
         )
@@ -109,6 +132,13 @@ async def _run(args: argparse.Namespace) -> None:
                         if row["new_family_relative_to_postgresql_history"] == "true"
                     }
                 ),
+                "new_family_count_relative_to_all_references": len(
+                    {
+                        row["family_key_80_80"]
+                        for row in branch_rows
+                        if row["new_family_relative_to_all_references"] == "true"
+                    }
+                ),
             }
         )
     _write_csv(args.summary_csv, summary_rows)
@@ -117,6 +147,7 @@ async def _run(args: argparse.Namespace) -> None:
         "observed_at_utc": datetime.now(UTC).isoformat(),
         "operator_id": "autoresearch-rule-de-novo-v3",
         "historical_sequence_count": len(historical),
+        "additional_reference_sequence_count": len(additional_references),
         "proposal_count": len(rows),
         "distinct_generated_family_count": len(
             {row["family_key_80_80"] for row in rows}
@@ -128,6 +159,16 @@ async def _run(args: argparse.Namespace) -> None:
                 if row["new_family_relative_to_postgresql_history"] == "true"
             }
         ),
+        "new_family_count_relative_to_all_references": len(
+            {
+                row["family_key_80_80"]
+                for row in rows
+                if row["new_family_relative_to_all_references"] == "true"
+            }
+        ),
+        "additional_reference_csv_sha256s": [
+            sha256_file(path) for path in args.additional_reference_csv
+        ],
         "branch_summary": summary_rows,
         "output_csv_sha256": sha256_file(args.output_csv),
         "summary_csv_sha256": sha256_file(args.summary_csv),
@@ -145,6 +186,12 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--per-branch", type=int, default=64)
     parser.add_argument("--seed", type=int, default=20260831)
+    parser.add_argument(
+        "--additional-reference-csv",
+        type=Path,
+        action="append",
+        default=[],
+    )
     parser.add_argument("--output-csv", type=Path, required=True)
     parser.add_argument("--summary-csv", type=Path, required=True)
     parser.add_argument("--output-json", type=Path, required=True)
