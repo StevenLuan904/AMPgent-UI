@@ -1,0 +1,60 @@
+{
+  "schema_version": "ampgent.autoresearch-activity-rescue-search.1",
+  "observed_at_utc": "2026-08-31T21:16:48.320507+00:00",
+  "parent_score_sha256": "5f962048d859c72b9489c9b95f32cb09d99de91546670700f19066bd4f5b71de",
+  "parent_score_sha256s": [
+    "5f962048d859c72b9489c9b95f32cb09d99de91546670700f19066bd4f5b71de"
+  ],
+  "source_branch_filter": "acea",
+  "source_row_count_before_branch_filter": 48,
+  "source_row_count_before_family_filter": 48,
+  "source_row_count": 48,
+  "source_family_filters": [],
+  "operator_mode": "hybrid-pair",
+  "rescue_endpoint": "macrel",
+  "rescue_metric": "macrel_amp_probability",
+  "rescue_direction": "maximize",
+  "minimum_parent_support": 1,
+  "generation_floor": 19,
+  "plans_sha256": "3ec0268967cd7a3259d1a5720fbfe122db9fc0ac7b6c82fb5a07949580c886e1",
+  "historical_sequence_exclusion_count": 78302,
+  "input_sequence_exclusion_count": 48,
+  "historical_source_sha256s": [],
+  "parent_count": 7,
+  "parent_family_count": 7,
+  "generated_novel_strict_count": 9844,
+  "safety_hard_gate_pass_count": 8156,
+  "safety_positive_rescue_gain_count": 4627,
+  "full_score_shortlist_count": 3126,
+  "plugin_status": [
+    {
+      "plugin": "physicochemical_developability",
+      "status": "complete",
+      "candidate_count": 9844,
+      "adapter_version": "2026.08.04-v1",
+      "result_sha256": "a92a84f0e3c9313315849eaea816f6c316ae05b3b4ae53944a135cb79b505608"
+    },
+    {
+      "plugin": "hemolysis_risk",
+      "status": "complete",
+      "candidate_count": 9844,
+      "adapter_version": "macrel-1.6.1-8c1f732",
+      "result_sha256": "b4f6c98a3cfa5b57a5bcd9644d03a69eb73037577cc812d34095c65641dcad3d"
+    },
+    {
+      "plugin": "toxicity_risk",
+      "status": "complete",
+      "candidate_count": 9844,
+      "adapter_version": "toxinpred3-corrected-v0.2-dcdba83",
+      "result_sha256": "eb69988f0723f4557fd00600d945233d91371a369bb8f959d0d3336348e0b778"
+    }
+  ],
+  "workflow_submitted": false,
+  "gpu_task_submitted": false,
+  "historical_run_modified": false,
+  "all_search_scores_sha256": "6fd77eeb1d780897ad6a5925512c8aad2d37a1fe8616a5f7ef03f8d89e4b9efb",
+  "safety_pass_candidates_sha256": "f9407f639a4db76d58e1c5fad74dbcc7d0aeb89c29d268945b725e543e17def0",
+  "safety_gain_candidates_sha256": "23b4a0994cf78b60602290c99424a57000fe348aab2f557bc8327dd88b5582f5",
+  "full_score_shortlist_sha256": "dc599a794fe4eafb5d64cb0016d5f35d6cf556f350473457466e6cccb135f2ec",
+  "receipt_payload_sha256": "5e33e64f094346ca1cf4be54fa6354bb8bb9daf8ff9197944ff38f33768757c2"
+}
