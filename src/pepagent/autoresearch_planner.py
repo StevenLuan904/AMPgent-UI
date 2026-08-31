@@ -28,9 +28,31 @@ _HYDROPHOBIC = frozenset("AVILMFWYC")
 _DE_NOVO_MAXIMUM_HYDROPHOBIC_FRACTION = 0.45
 _DE_NOVO_MAXIMUM_HYDROPHOBIC_RUN = 2
 _DE_NOVO_MINIMUM_NET_CHARGE = 3.0
+_DE_NOVO_MAXIMUM_NET_CHARGE = 10.0
+_DE_NOVO_MAXIMUM_HISTIDINE_FRACTION = 0.12
 _DE_NOVO_ALPHABET = "KRHNQSTEDAILVFWYG"
 _DE_NOVO_LENGTHS = (20, 21, 22, 23, 24, 25, 26)
 _CANONICAL_AMINO_ACIDS = "ACDEFGHIKLMNPQRSTVWY"
+_DE_NOVO_PROFILE_PRIOR_COUNTS = {
+    "K": 22,
+    "R": 10,
+    "H": 4,
+    "N": 5,
+    "Q": 5,
+    "S": 10,
+    "T": 10,
+    "E": 4,
+    "D": 2,
+    "A": 6,
+    "G": 12,
+    "V": 3,
+    "L": 2,
+    "I": 1,
+    "F": 1,
+    "W": 1,
+    "Y": 2,
+}
+_DE_NOVO_EMPIRICAL_PROFILE_WEIGHT = 0.5
 
 
 def _sequence_prescreen(sequence: str) -> tuple[float, int, float]:
@@ -71,9 +93,15 @@ def _proposal_quality_gate_passes(sequence: str) -> bool:
 
 
 def _de_novo_prescreen_passes(sequence: str) -> bool:
-    """Compatibility alias for the rule de-novo proposal gate."""
+    """Apply de-novo-specific composition guards after the shared quality gate."""
 
-    return _proposal_quality_gate_passes(sequence)
+    _, _, charge = _sequence_prescreen(sequence)
+    histidine_fraction = sequence.count("H") / len(sequence)
+    return bool(
+        _proposal_quality_gate_passes(sequence)
+        and charge <= _DE_NOVO_MAXIMUM_NET_CHARGE
+        and histidine_fraction <= _DE_NOVO_MAXIMUM_HISTIDINE_FRACTION
+    )
 
 
 def _shares_sequence_family(
@@ -90,22 +118,48 @@ def _shares_sequence_family(
 
 
 def _adaptive_de_novo_alphabet(sequences: Collection[str]) -> str:
-    """Build a deterministic, shrinkage-weighted alphabet from a target archive."""
+    """Build a deterministic activity/safety-shrunk target alphabet.
+
+    The archive contributes target-specific evidence, but a fixed prior prevents a
+    repeatedly expanded Lys/His-rich family from monopolising the de-novo proposal
+    distribution. Callers provide one sequence per family so family population
+    size cannot silently act as a weight.
+    """
 
     if not sequences:
         return _DE_NOVO_ALPHABET
     if any(not sequence or set(sequence) - set(_CANONICAL_AMINO_ACIDS) for sequence in sequences):
         raise ValueError("de-novo profile contains a non-canonical peptide")
-    counts = {residue: 3 for residue in _DE_NOVO_ALPHABET}
+    counts = {residue: 0 for residue in _DE_NOVO_ALPHABET}
     for sequence in sequences:
         for residue in sequence:
             if residue in counts:
                 counts[residue] += 1
-    total_observed = sum(len(sequence) for sequence in sequences)
-    scale = max(1, total_observed // 160)
+    total_observed = sum(counts.values())
+    prior_weight = 1.0 - _DE_NOVO_EMPIRICAL_PROFILE_WEIGHT
     return "".join(
-        residue * max(1, round(counts[residue] / scale)) for residue in _DE_NOVO_ALPHABET
+        residue
+        * max(
+            1,
+            round(
+                100
+                * _DE_NOVO_EMPIRICAL_PROFILE_WEIGHT
+                * counts[residue]
+                / total_observed
+                + prior_weight * _DE_NOVO_PROFILE_PRIOR_COUNTS[residue]
+            ),
+        )
+        for residue in _DE_NOVO_ALPHABET
     )
+
+
+def _family_balanced_de_novo_profile(candidates: Collection[CandidateEvidence]) -> tuple[str, ...]:
+    """Return one deterministic profile sequence per 80/80 family."""
+
+    by_family: dict[str, list[str]] = defaultdict(list)
+    for candidate in candidates:
+        by_family[candidate.family_key].append(candidate.sequence)
+    return tuple(min(by_family[family_key]) for family_key in sorted(by_family))
 
 
 class PlannerDeltaEvidence(BaseModel):
@@ -295,7 +349,7 @@ def _unique_de_novo_sequence(
         raise ValueError("de-novo residue alphabet must contain canonical amino acids")
     family_references = tuple(set(known_sequences) | set(family_reference_sequences))
     for attempt in range(10_000):
-        digest = sha256_text(f"{branch_key}:{seed}:family-opener-v3:{attempt}")
+        digest = sha256_text(f"{branch_key}:{seed}:family-opener-v5:{attempt}")
         length = _DE_NOVO_LENGTHS[int(digest[:2], 16) % len(_DE_NOVO_LENGTHS)]
         material = digest
         nonce = 0
@@ -384,7 +438,8 @@ def build_multifront_rule_action_plan(
     archive_sha = snapshot.archive_sha256
     literal_gold_count = len(_gold_candidate_ids(snapshot))
     gold_count = len(_instability_score_qualified_gold_candidate_ids(snapshot, by_id))
-    de_novo_alphabet = _adaptive_de_novo_alphabet(tuple(item.sequence for item in eligible))
+    de_novo_profile = _family_balanced_de_novo_profile(eligible)
+    de_novo_alphabet = _adaptive_de_novo_alphabet(de_novo_profile)
 
     actions: list[EvolutionAction] = []
     rationales: dict[str, str] = {}
@@ -612,7 +667,7 @@ def build_multifront_rule_action_plan(
         branch_key=branch_key,
         generation=generation,
         seed=seed + 2,
-        operator_id="autoresearch-rule-de-novo-v4",
+        operator_id="autoresearch-rule-de-novo-v6",
         operator_release_sha256=operator_release_sha256,
         expected_improvement_metrics=("macrel_amp_probability",),
         protected_metrics=(
@@ -738,7 +793,7 @@ def build_multifront_rule_action_plan(
             branch_key=branch_key,
             generation=generation,
             seed=action_seed,
-            operator_id="autoresearch-rule-de-novo-v4",
+            operator_id="autoresearch-rule-de-novo-v6",
             operator_release_sha256=operator_release_sha256,
             expected_improvement_metrics=("macrel_amp_probability",),
             protected_metrics=(
@@ -794,6 +849,14 @@ def build_multifront_rule_action_plan(
         "historical_sequence_exclusion_sha256": sha256_text(
             "\n".join(sorted(historical_sequence_sha256s))
         ),
+        "de_novo_profile_policy": {
+            "operator_version": "autoresearch-rule-de-novo-v6",
+            "family_balanced": True,
+            "family_profile_count": len(de_novo_profile),
+            "empirical_profile_weight": _DE_NOVO_EMPIRICAL_PROFILE_WEIGHT,
+            "activity_safety_prior_weight": 1.0 - _DE_NOVO_EMPIRICAL_PROFILE_WEIGHT,
+            "activity_safety_prior_counts": _DE_NOVO_PROFILE_PRIOR_COUNTS,
+        },
         "sequence_prescreen_policy": {
             "instability_method": "Guruprasad-Reddy-Pandit-1990-via-Biopython-ProtParam",
             "instability_max_exclusive": 50.0,
@@ -809,6 +872,10 @@ def build_multifront_rule_action_plan(
             "de_novo_hydrophobic_run_maximum": _DE_NOVO_MAXIMUM_HYDROPHOBIC_RUN,
             "de_novo_hydrophobic_fraction_maximum": (_DE_NOVO_MAXIMUM_HYDROPHOBIC_FRACTION),
             "de_novo_net_charge_minimum": _DE_NOVO_MINIMUM_NET_CHARGE,
+            "de_novo_net_charge_maximum": _DE_NOVO_MAXIMUM_NET_CHARGE,
+            "de_novo_histidine_fraction_maximum": (
+                _DE_NOVO_MAXIMUM_HISTIDINE_FRACTION
+            ),
             "toxin_and_hemolysis_remain_score_all_only": True,
         },
     }

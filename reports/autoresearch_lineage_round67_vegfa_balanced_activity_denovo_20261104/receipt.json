@@ -1,0 +1,51 @@
+{
+  "schema_version": "ampgent.autoresearch-lineage-probe.1",
+  "observed_at_utc": "2026-08-31T18:05:04.447403+00:00",
+  "source_csv_sha256s": [
+    "a6fd0b301c86c95207a2280cfdfc499807a37608ee9213f6cc2de12169ebc7ca"
+  ],
+  "source_candidate_count": 76,
+  "source_cohort_sha256": "a6fd0b301c86c95207a2280cfdfc499807a37608ee9213f6cc2de12169ebc7ca",
+  "generation": 21,
+  "prefer_full_support_within_families": true,
+  "historical_source_sha256s": [
+    "6a99323efa35eab7dd0b3e52524c1eeb9b210eeec876357f9b06a2a5cf46bbb2",
+    "6fa358a7b4a21e0282bf3aed2c860f6ec517caac262951504d94daa3654ff38d",
+    "2b25060a531ea81c8e4fc319eca4b587974757c0311192f8c0706a560d76b21a",
+    "1de94d178d029ff04ae7ec26b8895993e3f87aff76c81c797319778183b02c75",
+    "14a73477537a8231404c1b71c55a617355e0317d2237d1ac95b1a4bcb536bbe3"
+  ],
+  "unfiltered_input_sequence_exclusion_count": 76,
+  "historical_exclusion_sequence_count": 1071,
+  "postgresql_history_exclusion_enabled": true,
+  "postgresql_history_sequence_sha256_count": 66495,
+  "operator_release_sha256": "a278befda490d1a5ca9cdbda60a6b1ac5f063f6a5ef3328fa40ba4d6756e4e25",
+  "branch_count": 1,
+  "branches": [
+    "vegfa"
+  ],
+  "replicate_count_per_branch": 8,
+  "action_count": 32,
+  "forced_family_coverage_enabled": false,
+  "forced_family_count": 0,
+  "forced_family_keys": [],
+  "forced_family_materialized_child_counts": {},
+  "uncovered_forced_family_keys": [],
+  "action_type_counts": {
+    "masked_substitution": 8,
+    "controlled_crossover": 8,
+    "de_novo": 16
+  },
+  "child_count": 32,
+  "exact_historical_replay_count": 0,
+  "new_family_child_count": 16,
+  "children_csv_sha256": "7dc76aa0bc3067bc0ec09014f05ed8f9ba2f54f6023ba27c2ff2f11e8c55f3ca",
+  "actions_sha256": "ea2200713fa698d708e000adb8e6ea3a1da621796fb3b09b812b0471cb3a0525",
+  "archive_before_sha256": "053ea2a058813ac13324c5069041a924adcfca1360b9974aca682dbb6319798c",
+  "plans_sha256": "05d0b3d6032b690c9f2af01635702c6c94550fbd4e6cd2dab584f79176862a40",
+  "workflow_submitted": false,
+  "gpu_task_submitted": false,
+  "historical_run_modified": false,
+  "target_sequence_identity_consumed": false,
+  "receipt_payload_sha256": "0ed3221b13320d83d3d11d9f2806996e955fff99c024e4f87bc7a3fd743c30ce"
+}

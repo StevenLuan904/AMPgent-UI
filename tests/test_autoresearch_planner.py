@@ -18,6 +18,7 @@ from pepagent.autoresearch_planner import (
     PlannerDeltaEvidence,
     _adaptive_de_novo_alphabet,
     _de_novo_prescreen_passes,
+    _family_balanced_de_novo_profile,
     _sequence_prescreen,
     _unique_de_novo_sequence,
     build_multifront_rule_action_plan,
@@ -304,7 +305,9 @@ def test_cpu_only_planner_fills_a_fifty_percent_de_novo_quota() -> None:
     assert plan["required_de_novo_action_count"] == len(de_novo_actions)
     assert len(de_novo_actions) * 2 >= len(actions)
     assert len({action.proposed_sequence for action in de_novo_actions}) == len(de_novo_actions)
-    assert all(action.operator_id == "autoresearch-rule-de-novo-v4" for action in de_novo_actions)
+    assert all(action.operator_id == "autoresearch-rule-de-novo-v6" for action in de_novo_actions)
+    assert plan["de_novo_profile_policy"]["family_balanced"] is True
+    assert plan["de_novo_profile_policy"]["empirical_profile_weight"] == 0.5
     assert all(_de_novo_prescreen_passes(action.proposed_sequence) for action in de_novo_actions)
     assert plan["sequence_prescreen_policy"] == {
         "instability_method": "Guruprasad-Reddy-Pandit-1990-via-Biopython-ProtParam",
@@ -321,6 +324,8 @@ def test_cpu_only_planner_fills_a_fifty_percent_de_novo_quota() -> None:
         "de_novo_hydrophobic_run_maximum": 2,
         "de_novo_hydrophobic_fraction_maximum": 0.45,
         "de_novo_net_charge_minimum": 3.0,
+        "de_novo_net_charge_maximum": 10.0,
+        "de_novo_histidine_fraction_maximum": 0.12,
         "toxin_and_hemolysis_remain_score_all_only": True,
     }
 
@@ -344,6 +349,8 @@ def test_rule_de_novo_prescreen_is_stable_across_all_six_target_branches() -> No
             assert hydrophobic_run <= 2
             assert hydrophobic_fraction <= 0.45
             assert charge >= 3.0
+            assert charge <= 10.0
+            assert sequence.count("H") / len(sequence) <= 0.12
 
         assignments = cluster_sequence_families(known_sequences)
         assert len({item.family_key for item in assignments}) == 64
@@ -376,6 +383,21 @@ def test_adaptive_de_novo_alphabet_is_deterministic_and_profile_weighted() -> No
         residue_alphabet=alphabet,
     )
     assert _de_novo_prescreen_passes(sequence)
+
+
+def test_de_novo_profile_weights_families_instead_of_family_population() -> None:
+    candidates = (
+        _candidate("a", "KKKKGGGGSSSSTTTTAAAA", "fam-a", (0.1, 0.2, 0.3)),
+        _candidate("b", "KKKKGGGGSSSSTTTTAAAR", "fam-a", (0.1, 0.2, 0.3)),
+        _candidate("c", "RRRRGGGGNNNNQQQQVVVV", "fam-b", (0.1, 0.2, 0.3)),
+    )
+
+    profile = _family_balanced_de_novo_profile(candidates)
+
+    assert profile == (
+        "KKKKGGGGSSSSTTTTAAAA",
+        "RRRRGGGGNNNNQQQQVVVV",
+    )
 
 
 def test_planner_emits_progress_heartbeats_between_expensive_stages(monkeypatch) -> None:

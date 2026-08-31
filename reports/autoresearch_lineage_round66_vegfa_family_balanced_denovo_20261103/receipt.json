@@ -1,0 +1,50 @@
+{
+  "schema_version": "ampgent.autoresearch-lineage-probe.1",
+  "observed_at_utc": "2026-08-31T18:01:06.602035+00:00",
+  "source_csv_sha256s": [
+    "a6fd0b301c86c95207a2280cfdfc499807a37608ee9213f6cc2de12169ebc7ca"
+  ],
+  "source_candidate_count": 76,
+  "source_cohort_sha256": "a6fd0b301c86c95207a2280cfdfc499807a37608ee9213f6cc2de12169ebc7ca",
+  "generation": 20,
+  "prefer_full_support_within_families": true,
+  "historical_source_sha256s": [
+    "6a99323efa35eab7dd0b3e52524c1eeb9b210eeec876357f9b06a2a5cf46bbb2",
+    "6fa358a7b4a21e0282bf3aed2c860f6ec517caac262951504d94daa3654ff38d",
+    "2b25060a531ea81c8e4fc319eca4b587974757c0311192f8c0706a560d76b21a",
+    "1de94d178d029ff04ae7ec26b8895993e3f87aff76c81c797319778183b02c75"
+  ],
+  "unfiltered_input_sequence_exclusion_count": 76,
+  "historical_exclusion_sequence_count": 1039,
+  "postgresql_history_exclusion_enabled": true,
+  "postgresql_history_sequence_sha256_count": 66495,
+  "operator_release_sha256": "d17a76a99535e5b1723c884a26c50b88133909b6ed09c30e4868db69dee3ea5d",
+  "branch_count": 1,
+  "branches": [
+    "vegfa"
+  ],
+  "replicate_count_per_branch": 8,
+  "action_count": 32,
+  "forced_family_coverage_enabled": false,
+  "forced_family_count": 0,
+  "forced_family_keys": [],
+  "forced_family_materialized_child_counts": {},
+  "uncovered_forced_family_keys": [],
+  "action_type_counts": {
+    "masked_substitution": 8,
+    "controlled_crossover": 8,
+    "de_novo": 16
+  },
+  "child_count": 32,
+  "exact_historical_replay_count": 0,
+  "new_family_child_count": 16,
+  "children_csv_sha256": "52473ad39ba3abfdc0ab97a978959e424f909baea589c7f8258fb3fe831db77f",
+  "actions_sha256": "381fd91807beef8901e2967f1cd0474a7e1b29fc7c6ea1fef4d9b01aba05709c",
+  "archive_before_sha256": "8f9f69889ae268b33030a89fe527f07924ba3d9c54d1b51fee475f0e489822e0",
+  "plans_sha256": "0dc0bf3329c724fb6264764eecf80be382545af4517dd156a411c14a4b0b8ab9",
+  "workflow_submitted": false,
+  "gpu_task_submitted": false,
+  "historical_run_modified": false,
+  "target_sequence_identity_consumed": false,
+  "receipt_payload_sha256": "a59de5c37d184058f2043489b37d6a7ff4f64c4dbf3b973a2a4febb5c52027de"
+}
