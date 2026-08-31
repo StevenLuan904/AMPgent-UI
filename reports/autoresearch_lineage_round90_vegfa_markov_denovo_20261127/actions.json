@@ -1,0 +1,1409 @@
+{
+  "schema_version": "ampgent.autoresearch-lineage-actions.1",
+  "actions": [
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 1,
+      "replicate": 1,
+      "action_type": "masked_substitution",
+      "action_sha256": "0663fd49c1a18b8a4d40cb9a3417796db1b377cc3be96e4e0ff1891c64bcf08a",
+      "operator_id": "autoresearch-rule-substitution-v3",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20261127,
+      "parent_candidate_id": "02e6e8a9041d1f5e02ded66ace7f1bf8353933cb460554f7d6d4f7827ee851e3",
+      "donor_candidate_id": null,
+      "child_candidate_id": "lineage-1b2af42239a4b6e5e86b",
+      "sequence": "NKKGGAEHVHVKKGTVAHVKKSG",
+      "sequence_sha256": "1b2af42239a4b6e5e86b98c3c1f55b7950761e2f91f219d08d5221ef56eca1e3",
+      "expected_improvement_metrics": [
+        "guruprasad_instability_index"
+      ],
+      "protected_metrics": [
+        "macrel_amp_probability",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": "seqfam80_76753f41dee1ea8717f6"
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 2,
+      "replicate": 1,
+      "action_type": "controlled_crossover",
+      "action_sha256": "f450531c3f10a9da6895210b88f7c2a6db0aac80c6512406f6c0cb1f343346a8",
+      "operator_id": "autoresearch-rule-crossover-v3",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20261128,
+      "parent_candidate_id": "1852d0385396cacd5f7d48624e6014bea585ff5066195d0ac9d14496615dbe74",
+      "donor_candidate_id": "605d802de98b6cb02bc02db7c693d72d5b8af749fbbabe337457a1ecaf70ec04",
+      "child_candidate_id": "lineage-72c8e585dbf33f391d9f",
+      "sequence": "KKKGGKEHSGTGNKTGNKTKRKK",
+      "sequence_sha256": "72c8e585dbf33f391d9f3677991a57f2df28f5ee7ef555876bef82929f455bc9",
+      "expected_improvement_metrics": [
+        "amp_read_log10_mic_um",
+        "llamp_log10_mic_um"
+      ],
+      "protected_metrics": [
+        "guruprasad_instability_index",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": "seqfam80_76753f41dee1ea8717f6"
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 3,
+      "replicate": 1,
+      "action_type": "de_novo",
+      "action_sha256": "8d10dd21f04ff4e31f5a60c0b30c2f48807844ae803f959ef75ca4fd7b70dff5",
+      "operator_id": "autoresearch-rule-de-novo-v8",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20261129,
+      "parent_candidate_id": null,
+      "donor_candidate_id": null,
+      "child_candidate_id": "lineage-5fdc36a907a528123b13",
+      "sequence": "GLGFHKKNTSYKKRDKKKTAH",
+      "sequence_sha256": "5fdc36a907a528123b13e9fdcd5f388df9a9472788c3a15aa37f81510d229f1d",
+      "expected_improvement_metrics": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics": [
+        "guruprasad_instability_index",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": ""
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 4,
+      "replicate": 1,
+      "action_type": "de_novo",
+      "action_sha256": "1ce459954cf4197e68a059ed9223f67da98f69d496680d0fe80719f093a2685b",
+      "operator_id": "autoresearch-rule-de-novo-v8",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20261131,
+      "parent_candidate_id": null,
+      "donor_candidate_id": null,
+      "child_candidate_id": "lineage-b8cb1bd5f1a13445555f",
+      "sequence": "KGEHKKKGEVKGHGVSGSGKYKTARE",
+      "sequence_sha256": "b8cb1bd5f1a13445555fc4fe99b698b86bf45a5d5e038abe1df01c76d28dd3d1",
+      "expected_improvement_metrics": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics": [
+        "guruprasad_instability_index",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": ""
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 5,
+      "replicate": 2,
+      "action_type": "masked_substitution",
+      "action_sha256": "006dfc6607787554edc2280f9c5e71d50fbccd56714f6c34461ba90d87509539",
+      "operator_id": "autoresearch-rule-substitution-v3",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20262127,
+      "parent_candidate_id": "02e6e8a9041d1f5e02ded66ace7f1bf8353933cb460554f7d6d4f7827ee851e3",
+      "donor_candidate_id": null,
+      "child_candidate_id": "lineage-40d1e596e538c56cf3c4",
+      "sequence": "KNKGGAEHVHVKKGTVAHVKKSG",
+      "sequence_sha256": "40d1e596e538c56cf3c44348c696b7e85e6b4f6af8a1457f89cc8c92c501738c",
+      "expected_improvement_metrics": [
+        "guruprasad_instability_index"
+      ],
+      "protected_metrics": [
+        "macrel_amp_probability",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": "seqfam80_76753f41dee1ea8717f6"
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 6,
+      "replicate": 2,
+      "action_type": "controlled_crossover",
+      "action_sha256": "0ae1e0fc6f819581f694a31552f156de1c61f3572cc7f686b84061a806c6333d",
+      "operator_id": "autoresearch-rule-crossover-v3",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20262128,
+      "parent_candidate_id": "4fdf4a7cb230cf073e06540b29d2e664ef1c70b4014911561ea80ccb809bb373",
+      "donor_candidate_id": "605d802de98b6cb02bc02db7c693d72d5b8af749fbbabe337457a1ecaf70ec04",
+      "child_candidate_id": "lineage-a4a14234a505919bd2a6",
+      "sequence": "KHKGTREHHGTGNKTGNKTKRKK",
+      "sequence_sha256": "a4a14234a505919bd2a6e1256f6a96ccd618b9494a475d92fdaf346cf9c83fe8",
+      "expected_improvement_metrics": [
+        "amp_read_log10_mic_um",
+        "llamp_log10_mic_um"
+      ],
+      "protected_metrics": [
+        "guruprasad_instability_index",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": "seqfam80_04b0574cf070ef8fa337"
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 7,
+      "replicate": 2,
+      "action_type": "de_novo",
+      "action_sha256": "db992737d61935717e7a95ac64f74b432e51d0bc3797e1c937e7c34fd049345c",
+      "operator_id": "autoresearch-rule-de-novo-v8",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20262129,
+      "parent_candidate_id": null,
+      "donor_candidate_id": null,
+      "child_candidate_id": "lineage-1fe20a5e70cb4424db76",
+      "sequence": "KKKSKKSSEKGHKGGTVKSGYKSGT",
+      "sequence_sha256": "1fe20a5e70cb4424db76f5dc5cd1f5eb9f656dbcd4380a9b31bbdc2c9140d734",
+      "expected_improvement_metrics": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics": [
+        "guruprasad_instability_index",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": ""
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 8,
+      "replicate": 2,
+      "action_type": "de_novo",
+      "action_sha256": "71d4f54d402a8865928cc71c6dce6bbc8164bd70b350cd1da8ac2b0a35e84b36",
+      "operator_id": "autoresearch-rule-de-novo-v8",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20262131,
+      "parent_candidate_id": null,
+      "donor_candidate_id": null,
+      "child_candidate_id": "lineage-61a633f168df1a3bb378",
+      "sequence": "KSKQVKTDHRHGEKGAGVKKG",
+      "sequence_sha256": "61a633f168df1a3bb3785363e3735787abee422d56316f0df3e6db5f235df2d4",
+      "expected_improvement_metrics": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics": [
+        "guruprasad_instability_index",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": ""
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 9,
+      "replicate": 3,
+      "action_type": "masked_substitution",
+      "action_sha256": "d2641e2462aab0d840dd46f5ff38d7c7d04cbb9c4d39e745027ed695d24f71fd",
+      "operator_id": "autoresearch-rule-substitution-v3",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20263127,
+      "parent_candidate_id": "02e6e8a9041d1f5e02ded66ace7f1bf8353933cb460554f7d6d4f7827ee851e3",
+      "donor_candidate_id": null,
+      "child_candidate_id": "lineage-742cb69f47d3a19fde8e",
+      "sequence": "KKKGGAEHVHVKKGTVAHVKKRG",
+      "sequence_sha256": "742cb69f47d3a19fde8e3c2ed3b1f29a7ee12c1c68d0ca2f15b324edab231c33",
+      "expected_improvement_metrics": [
+        "guruprasad_instability_index"
+      ],
+      "protected_metrics": [
+        "macrel_amp_probability",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": "seqfam80_76753f41dee1ea8717f6"
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 10,
+      "replicate": 3,
+      "action_type": "controlled_crossover",
+      "action_sha256": "dee4691358ba7ba476a71c7d35d26f76ca941723d3d2f9128c2b68d768d98325",
+      "operator_id": "autoresearch-rule-crossover-v3",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20263128,
+      "parent_candidate_id": "abb6c0dd6808b64e566e54ef2fc3d2622b4f4472fe472ed1a0305a919f720eb2",
+      "donor_candidate_id": "605d802de98b6cb02bc02db7c693d72d5b8af749fbbabe337457a1ecaf70ec04",
+      "child_candidate_id": "lineage-c8e77941abc9aea26539",
+      "sequence": "KKNGGREHSGTGNKTGNKTKRKK",
+      "sequence_sha256": "c8e77941abc9aea265390c8d0c6eb1a488b73640401fec42e1ad25bcb5475a32",
+      "expected_improvement_metrics": [
+        "amp_read_log10_mic_um",
+        "llamp_log10_mic_um"
+      ],
+      "protected_metrics": [
+        "guruprasad_instability_index",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": "seqfam80_76753f41dee1ea8717f6"
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 11,
+      "replicate": 3,
+      "action_type": "de_novo",
+      "action_sha256": "a3b12ed6ddc3337d521f0896d03ddedc66421f403e788ed935bee862c35813f6",
+      "operator_id": "autoresearch-rule-de-novo-v8",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20263129,
+      "parent_candidate_id": null,
+      "donor_candidate_id": null,
+      "child_candidate_id": "lineage-beb5b1de693229026e18",
+      "sequence": "AKHQKGSGGKGTVKHVKGRSVTSGA",
+      "sequence_sha256": "beb5b1de693229026e182c8137806df2a62a6f62dc05526aedc68b5304004e9b",
+      "expected_improvement_metrics": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics": [
+        "guruprasad_instability_index",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": ""
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 12,
+      "replicate": 3,
+      "action_type": "de_novo",
+      "action_sha256": "fe587f886873f40c72952e271ab65782c4a1dd6bc865132c94575444ac938fd4",
+      "operator_id": "autoresearch-rule-de-novo-v8",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20263131,
+      "parent_candidate_id": null,
+      "donor_candidate_id": null,
+      "child_candidate_id": "lineage-cf397c975f351b332987",
+      "sequence": "VNTGVFKKTGKKKSWVSHFHKEKKKK",
+      "sequence_sha256": "cf397c975f351b332987b593708ae873fb073a8156ef4df363aa43c906e94cfc",
+      "expected_improvement_metrics": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics": [
+        "guruprasad_instability_index",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": ""
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 13,
+      "replicate": 4,
+      "action_type": "masked_substitution",
+      "action_sha256": "9116e09a68b09ff4d0256eea1e3220840715bb8fa49643f5070f4b8ab9b17395",
+      "operator_id": "autoresearch-rule-substitution-v3",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20264127,
+      "parent_candidate_id": "02e6e8a9041d1f5e02ded66ace7f1bf8353933cb460554f7d6d4f7827ee851e3",
+      "donor_candidate_id": null,
+      "child_candidate_id": "lineage-1b41688ea443468f5721",
+      "sequence": "KKKGGAEHVHVNKGTVAHVKKSG",
+      "sequence_sha256": "1b41688ea443468f57216733b6b5b1e12895b60782b763d1382baa9f695915cc",
+      "expected_improvement_metrics": [
+        "guruprasad_instability_index"
+      ],
+      "protected_metrics": [
+        "macrel_amp_probability",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": "seqfam80_76753f41dee1ea8717f6"
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 14,
+      "replicate": 4,
+      "action_type": "controlled_crossover",
+      "action_sha256": "b874554e6786ac24bf74f1eede06e24a42eabd15cfc57cbdd44925c4be09773d",
+      "operator_id": "autoresearch-rule-crossover-v3",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20264128,
+      "parent_candidate_id": "089615c18ff5e7154002281ce8551355e55752ccffeaf8b8dce9ed39ad295f5e",
+      "donor_candidate_id": "605d802de98b6cb02bc02db7c693d72d5b8af749fbbabe337457a1ecaf70ec04",
+      "child_candidate_id": "lineage-d28dd01bcdbfca6efd7f",
+      "sequence": "KKKGGREHSGTGNKTGNKTKRKK",
+      "sequence_sha256": "d28dd01bcdbfca6efd7f5012ebea88aed5100132b61c96835f8913f58dfe526e",
+      "expected_improvement_metrics": [
+        "amp_read_log10_mic_um",
+        "llamp_log10_mic_um"
+      ],
+      "protected_metrics": [
+        "guruprasad_instability_index",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": "seqfam80_76753f41dee1ea8717f6"
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 15,
+      "replicate": 4,
+      "action_type": "de_novo",
+      "action_sha256": "e7847b769a40b772a17a244ee07334a0da4ae0cbe2350a843fc33a67204680da",
+      "operator_id": "autoresearch-rule-de-novo-v8",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20264129,
+      "parent_candidate_id": null,
+      "donor_candidate_id": null,
+      "child_candidate_id": "lineage-82d9f2f616cafe6ee5b9",
+      "sequence": "KTVSGHKSGFHKTKKGGSGTSKKKKH",
+      "sequence_sha256": "82d9f2f616cafe6ee5b93654a82b4f62b9fc41b4726fdc5e6f671dc2fd5a44ee",
+      "expected_improvement_metrics": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics": [
+        "guruprasad_instability_index",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": ""
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 16,
+      "replicate": 4,
+      "action_type": "de_novo",
+      "action_sha256": "c4b95b4651b7961ac3b7c908e761c17924e897e133422a448d94f2d2c8c5b2d8",
+      "operator_id": "autoresearch-rule-de-novo-v8",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20264131,
+      "parent_candidate_id": null,
+      "donor_candidate_id": null,
+      "child_candidate_id": "lineage-9f0d2095a1c4884ae896",
+      "sequence": "KKGAQGTSKHKKAIGETQHTREVAKK",
+      "sequence_sha256": "9f0d2095a1c4884ae896c3b8c0a8386d1992652594c24630d1ecfd4edf46e025",
+      "expected_improvement_metrics": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics": [
+        "guruprasad_instability_index",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": ""
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 17,
+      "replicate": 5,
+      "action_type": "masked_substitution",
+      "action_sha256": "1c0bfa2802ed2228d5b36def65ccd6cffcb48b941972f3e3d903262aeffef339",
+      "operator_id": "autoresearch-rule-substitution-v3",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20265127,
+      "parent_candidate_id": "02e6e8a9041d1f5e02ded66ace7f1bf8353933cb460554f7d6d4f7827ee851e3",
+      "donor_candidate_id": null,
+      "child_candidate_id": "lineage-4fa7ae1af2d1d9b50643",
+      "sequence": "KKKGGAEHVHVKKGTVAHVNKSG",
+      "sequence_sha256": "4fa7ae1af2d1d9b50643c48979d5c2d551d6e5a49b183fd3a0230e826f2a211d",
+      "expected_improvement_metrics": [
+        "guruprasad_instability_index"
+      ],
+      "protected_metrics": [
+        "macrel_amp_probability",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": "seqfam80_76753f41dee1ea8717f6"
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 18,
+      "replicate": 5,
+      "action_type": "controlled_crossover",
+      "action_sha256": "df30374a9f42d6c57afed0fd945460022e6b7f0afc7315ebcae135a093815119",
+      "operator_id": "autoresearch-rule-crossover-v3",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20265128,
+      "parent_candidate_id": "5bb1620e8df9873d69294786b12a4a564aac84f6200820fd0e4b0dc2f39982d4",
+      "donor_candidate_id": "605d802de98b6cb02bc02db7c693d72d5b8af749fbbabe337457a1ecaf70ec04",
+      "child_candidate_id": "lineage-a4f00d7df446c0023ba4",
+      "sequence": "KKKGGHEHSGTGNKTGNKTKRKK",
+      "sequence_sha256": "a4f00d7df446c0023ba440a035766d2315ee738526f769c7f06326fe42574c42",
+      "expected_improvement_metrics": [
+        "amp_read_log10_mic_um",
+        "llamp_log10_mic_um"
+      ],
+      "protected_metrics": [
+        "guruprasad_instability_index",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": "seqfam80_76753f41dee1ea8717f6"
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 19,
+      "replicate": 5,
+      "action_type": "de_novo",
+      "action_sha256": "fb8c573da78adcefaabebe229059797f41f2a162b3480c671cef0382f17e02fb",
+      "operator_id": "autoresearch-rule-de-novo-v8",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20265129,
+      "parent_candidate_id": null,
+      "donor_candidate_id": null,
+      "child_candidate_id": "lineage-0a888554767de3fd9234",
+      "sequence": "ARHSTKSSAKKTFNKKKGHTGHKGTA",
+      "sequence_sha256": "0a888554767de3fd9234457e5e4859c0d6c95837d58cbb2e31487bfbe5097c8d",
+      "expected_improvement_metrics": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics": [
+        "guruprasad_instability_index",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": ""
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 20,
+      "replicate": 5,
+      "action_type": "de_novo",
+      "action_sha256": "97dbd737f3248b705c4f6a5ed28ec133bf29cda8057b7c913ecf130e4eb5ffcd",
+      "operator_id": "autoresearch-rule-de-novo-v8",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20265131,
+      "parent_candidate_id": null,
+      "donor_candidate_id": null,
+      "child_candidate_id": "lineage-4a1da83989f9488708fa",
+      "sequence": "KREKNKKAKSGTDHRGTAKKKT",
+      "sequence_sha256": "4a1da83989f9488708fa2145e59a60da9175c18c2fd86f870efe3717fdd56332",
+      "expected_improvement_metrics": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics": [
+        "guruprasad_instability_index",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": ""
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 21,
+      "replicate": 6,
+      "action_type": "masked_substitution",
+      "action_sha256": "e832decffaee8757851651b270c91a2a751dcaca64bf0cde926e4f2c3550e49a",
+      "operator_id": "autoresearch-rule-substitution-v3",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20266127,
+      "parent_candidate_id": "02e6e8a9041d1f5e02ded66ace7f1bf8353933cb460554f7d6d4f7827ee851e3",
+      "donor_candidate_id": null,
+      "child_candidate_id": "lineage-73716934ba0f3bbc7650",
+      "sequence": "KKKGGARHVHVKKGTVAHVKKSG",
+      "sequence_sha256": "73716934ba0f3bbc765090e6e13419d180c7f08cd5861a1c2620dbaf65e440e8",
+      "expected_improvement_metrics": [
+        "guruprasad_instability_index"
+      ],
+      "protected_metrics": [
+        "macrel_amp_probability",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": "seqfam80_76753f41dee1ea8717f6"
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 22,
+      "replicate": 6,
+      "action_type": "controlled_crossover",
+      "action_sha256": "92833c92de034c25d84ae96d7f3a04707f0f5c6af7d0cd413a31df24a99d5dfe",
+      "operator_id": "autoresearch-rule-crossover-v3",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20266128,
+      "parent_candidate_id": "4fdf4a7cb230cf073e06540b29d2e664ef1c70b4014911561ea80ccb809bb373",
+      "donor_candidate_id": "605d802de98b6cb02bc02db7c693d72d5b8af749fbbabe337457a1ecaf70ec04",
+      "child_candidate_id": "lineage-4c5be7029d51a6d84d9b",
+      "sequence": "KHKGTREHSGTGNKTGNKTKRKK",
+      "sequence_sha256": "4c5be7029d51a6d84d9b05dc162f57e4abff5f03a0b4886bca6eb8105e0048fb",
+      "expected_improvement_metrics": [
+        "amp_read_log10_mic_um",
+        "llamp_log10_mic_um"
+      ],
+      "protected_metrics": [
+        "guruprasad_instability_index",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": "seqfam80_04b0574cf070ef8fa337"
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 23,
+      "replicate": 6,
+      "action_type": "de_novo",
+      "action_sha256": "a7c1891d7bc6d1fbb5091cacfa90afef332636d442bbfb467c576fe7277cde17",
+      "operator_id": "autoresearch-rule-de-novo-v8",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20266129,
+      "parent_candidate_id": null,
+      "donor_candidate_id": null,
+      "child_candidate_id": "lineage-d9fb206926c0551fa72a",
+      "sequence": "RHKQGERTTREGTKRVSKKKKHV",
+      "sequence_sha256": "d9fb206926c0551fa72acc001066b618e4ccf38558c5eeb83942b5cc14bdc001",
+      "expected_improvement_metrics": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics": [
+        "guruprasad_instability_index",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": ""
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 24,
+      "replicate": 6,
+      "action_type": "de_novo",
+      "action_sha256": "add629c5ca13c4c81464e08facd5595c8ab1d7c2da8aa619cadf2a6e7f24276d",
+      "operator_id": "autoresearch-rule-de-novo-v8",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20266131,
+      "parent_candidate_id": null,
+      "donor_candidate_id": null,
+      "child_candidate_id": "lineage-8d43414213baac44775d",
+      "sequence": "SGERHKVTSGTVKKWVHVKVGK",
+      "sequence_sha256": "8d43414213baac44775d7e1bd20d0ba346e66259b31e2022912c43df798d2c02",
+      "expected_improvement_metrics": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics": [
+        "guruprasad_instability_index",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": ""
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 25,
+      "replicate": 7,
+      "action_type": "masked_substitution",
+      "action_sha256": "3161b673376582ffe59b6156ca199ecd300d65245337baf76aee931227bd9e57",
+      "operator_id": "autoresearch-rule-substitution-v3",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20267127,
+      "parent_candidate_id": "02e6e8a9041d1f5e02ded66ace7f1bf8353933cb460554f7d6d4f7827ee851e3",
+      "donor_candidate_id": null,
+      "child_candidate_id": "lineage-ffbef1de78d97ec11f64",
+      "sequence": "KKKGGAESVHVKKGTVAHVKKSG",
+      "sequence_sha256": "ffbef1de78d97ec11f64a0451570f0c1e1bd7e4b15f504f74623a728562b692c",
+      "expected_improvement_metrics": [
+        "guruprasad_instability_index"
+      ],
+      "protected_metrics": [
+        "macrel_amp_probability",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": "seqfam80_76753f41dee1ea8717f6"
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 26,
+      "replicate": 7,
+      "action_type": "controlled_crossover",
+      "action_sha256": "47338b584aada73348ff5c5283495b35828ce052ee702571a530120bea3116e8",
+      "operator_id": "autoresearch-rule-crossover-v3",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20267128,
+      "parent_candidate_id": "4fdf4a7cb230cf073e06540b29d2e664ef1c70b4014911561ea80ccb809bb373",
+      "donor_candidate_id": "605d802de98b6cb02bc02db7c693d72d5b8af749fbbabe337457a1ecaf70ec04",
+      "child_candidate_id": "lineage-d763d8070cefec10cfb6",
+      "sequence": "KHKGTREHHHTGNKTGNKTKRKK",
+      "sequence_sha256": "d763d8070cefec10cfb676ca1ee69f1603109ab5648fb504ccd82fb714b6fc85",
+      "expected_improvement_metrics": [
+        "amp_read_log10_mic_um",
+        "llamp_log10_mic_um"
+      ],
+      "protected_metrics": [
+        "guruprasad_instability_index",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": "seqfam80_04b0574cf070ef8fa337"
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 27,
+      "replicate": 7,
+      "action_type": "de_novo",
+      "action_sha256": "2414df442d3cf4a26bd624ef4f94eafca60ab4c6c34ccad42f1e6119d9099cd1",
+      "operator_id": "autoresearch-rule-de-novo-v8",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20267129,
+      "parent_candidate_id": null,
+      "donor_candidate_id": null,
+      "child_candidate_id": "lineage-d2f6303b56a46ca90c7f",
+      "sequence": "GEGTVKKKRRKRGEFHTDHSGVGKK",
+      "sequence_sha256": "d2f6303b56a46ca90c7f6ffe31d03ca686c40c5f354431964af00a0e104de86f",
+      "expected_improvement_metrics": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics": [
+        "guruprasad_instability_index",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": ""
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 28,
+      "replicate": 7,
+      "action_type": "de_novo",
+      "action_sha256": "caa8e6a54a0fa1e82792a5e6ee5409aeae5cb0f5328f9e2dc3692b1484245f3a",
+      "operator_id": "autoresearch-rule-de-novo-v8",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20267131,
+      "parent_candidate_id": null,
+      "donor_candidate_id": null,
+      "child_candidate_id": "lineage-7a089f023172b8bb29f5",
+      "sequence": "KSGEWVRFTQYGEKAKKGTSVHK",
+      "sequence_sha256": "7a089f023172b8bb29f5fcda263f90e784f4d708a49121fdbca5d70bce023e54",
+      "expected_improvement_metrics": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics": [
+        "guruprasad_instability_index",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": ""
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 29,
+      "replicate": 8,
+      "action_type": "masked_substitution",
+      "action_sha256": "d7cf2a5e352b3d5be6320b7aae6e435f57bab5e1ff93a5180491606c8537f9f3",
+      "operator_id": "autoresearch-rule-substitution-v3",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20268127,
+      "parent_candidate_id": "02e6e8a9041d1f5e02ded66ace7f1bf8353933cb460554f7d6d4f7827ee851e3",
+      "donor_candidate_id": null,
+      "child_candidate_id": "lineage-fc1e74d037badd645f4e",
+      "sequence": "KKKGGAEHVHVKQGTVAHVKKSG",
+      "sequence_sha256": "fc1e74d037badd645f4eb4eca15d2ad4e9e980e2aff3d69d0749935c3f29b077",
+      "expected_improvement_metrics": [
+        "guruprasad_instability_index"
+      ],
+      "protected_metrics": [
+        "macrel_amp_probability",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": "seqfam80_76753f41dee1ea8717f6"
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 30,
+      "replicate": 8,
+      "action_type": "controlled_crossover",
+      "action_sha256": "59977d4087e5a26ff6b65e8f20d343b8dcc950c51b2ce8fa64a6b5c3159f7e40",
+      "operator_id": "autoresearch-rule-crossover-v3",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20268128,
+      "parent_candidate_id": "1852d0385396cacd5f7d48624e6014bea585ff5066195d0ac9d14496615dbe74",
+      "donor_candidate_id": "605d802de98b6cb02bc02db7c693d72d5b8af749fbbabe337457a1ecaf70ec04",
+      "child_candidate_id": "lineage-0195a4307fb10005fd3e",
+      "sequence": "KKKGGKKSSGTGNKTGNKTKRKK",
+      "sequence_sha256": "0195a4307fb10005fd3ec2b42ba2c2824879c98aad24ed29f8cc1dcefc69ee0d",
+      "expected_improvement_metrics": [
+        "amp_read_log10_mic_um",
+        "llamp_log10_mic_um"
+      ],
+      "protected_metrics": [
+        "guruprasad_instability_index",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": "seqfam80_76753f41dee1ea8717f6"
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 31,
+      "replicate": 8,
+      "action_type": "de_novo",
+      "action_sha256": "bb478df0ee17fc76910e8cad01a47251a9e8182d2ec618a51c18b83ced9b11d3",
+      "operator_id": "autoresearch-rule-de-novo-v8",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20268129,
+      "parent_candidate_id": null,
+      "donor_candidate_id": null,
+      "child_candidate_id": "lineage-e90ef133717662ec1b18",
+      "sequence": "SGTGVKKKTRGKIKSGEHSGGT",
+      "sequence_sha256": "e90ef133717662ec1b1839cf293e9fcf53f0c1acdc607542a908c4a5d8b9987f",
+      "expected_improvement_metrics": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics": [
+        "guruprasad_instability_index",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": ""
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 32,
+      "replicate": 8,
+      "action_type": "de_novo",
+      "action_sha256": "7957d805b894364c9efbcd0ac303b65be34e34a47e9eafb26c6d0116aa3c09a4",
+      "operator_id": "autoresearch-rule-de-novo-v8",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20268131,
+      "parent_candidate_id": null,
+      "donor_candidate_id": null,
+      "child_candidate_id": "lineage-159047358734c194cb65",
+      "sequence": "KGAKKTAEHKKIKTRHFKTWA",
+      "sequence_sha256": "159047358734c194cb65849c6d7c39b8cda1c81e4f5218175cd0a657f4dfeac3",
+      "expected_improvement_metrics": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics": [
+        "guruprasad_instability_index",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": ""
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 33,
+      "replicate": 9,
+      "action_type": "masked_substitution",
+      "action_sha256": "f1351ed3c1cd93f1c807c33b4530bb925d2e41e686b0ee85bf566be195e3c1e8",
+      "operator_id": "autoresearch-rule-substitution-v3",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20269127,
+      "parent_candidate_id": "02e6e8a9041d1f5e02ded66ace7f1bf8353933cb460554f7d6d4f7827ee851e3",
+      "donor_candidate_id": null,
+      "child_candidate_id": "lineage-1fbd1fc9a8ce40db924c",
+      "sequence": "KKQGGAEHVHVKKGTVAHVKKSG",
+      "sequence_sha256": "1fbd1fc9a8ce40db924cf02424bfb1872ddae1a1533bbf13645ebc821fae00a4",
+      "expected_improvement_metrics": [
+        "guruprasad_instability_index"
+      ],
+      "protected_metrics": [
+        "macrel_amp_probability",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": "seqfam80_76753f41dee1ea8717f6"
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 34,
+      "replicate": 9,
+      "action_type": "controlled_crossover",
+      "action_sha256": "065fd32020e1ce41e4805d27d7bc21a7facb6790ced12e81e1f8591a0ca36d1c",
+      "operator_id": "autoresearch-rule-crossover-v3",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20269128,
+      "parent_candidate_id": "abb6c0dd6808b64e566e54ef2fc3d2622b4f4472fe472ed1a0305a919f720eb2",
+      "donor_candidate_id": "605d802de98b6cb02bc02db7c693d72d5b8af749fbbabe337457a1ecaf70ec04",
+      "child_candidate_id": "lineage-77760d138c3d55135d0f",
+      "sequence": "KKNGGRKSSGTGNKTGNKTKRKK",
+      "sequence_sha256": "77760d138c3d55135d0fe2a0fd39926f67c67024b4aa7f2c9bdd49b5375b02e1",
+      "expected_improvement_metrics": [
+        "amp_read_log10_mic_um",
+        "llamp_log10_mic_um"
+      ],
+      "protected_metrics": [
+        "guruprasad_instability_index",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": "seqfam80_76753f41dee1ea8717f6"
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 35,
+      "replicate": 9,
+      "action_type": "de_novo",
+      "action_sha256": "e5fca239bf4e732a245027630ece5af5406e580f31dc27b4700fe07e455e8489",
+      "operator_id": "autoresearch-rule-de-novo-v8",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20269129,
+      "parent_candidate_id": null,
+      "donor_candidate_id": null,
+      "child_candidate_id": "lineage-418d5a26e21729a61df8",
+      "sequence": "KREGSGTAFREHVAKKKRHVKY",
+      "sequence_sha256": "418d5a26e21729a61df85a03a4639e8b46f88f1f293d489df7a294e633850cbf",
+      "expected_improvement_metrics": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics": [
+        "guruprasad_instability_index",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": ""
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 36,
+      "replicate": 9,
+      "action_type": "de_novo",
+      "action_sha256": "c24c286b7e28617439bb3ba70fe3e091238570c6c43e883c66b0bde9ae894312",
+      "operator_id": "autoresearch-rule-de-novo-v8",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20269131,
+      "parent_candidate_id": null,
+      "donor_candidate_id": null,
+      "child_candidate_id": "lineage-68d3a600cbd5c770996f",
+      "sequence": "KKRNKKGTAHTRHAEKKGTRSGLHVS",
+      "sequence_sha256": "68d3a600cbd5c770996f5392733c38163abf8013b3e9f903d1eec927d56d0b6f",
+      "expected_improvement_metrics": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics": [
+        "guruprasad_instability_index",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": ""
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 37,
+      "replicate": 10,
+      "action_type": "masked_substitution",
+      "action_sha256": "5a68eea109c45785e963c933f65a67b0467627d8c9577c47eb81168456cdbd3d",
+      "operator_id": "autoresearch-rule-substitution-v3",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20270127,
+      "parent_candidate_id": "02e6e8a9041d1f5e02ded66ace7f1bf8353933cb460554f7d6d4f7827ee851e3",
+      "donor_candidate_id": null,
+      "child_candidate_id": "lineage-d633f3d5e64186ab3b2f",
+      "sequence": "KKKGGAEHVHVKKRTVAHVKKSG",
+      "sequence_sha256": "d633f3d5e64186ab3b2fc456911e3c4af5290d2990c7193902fe1c39b943a1e7",
+      "expected_improvement_metrics": [
+        "guruprasad_instability_index"
+      ],
+      "protected_metrics": [
+        "macrel_amp_probability",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": "seqfam80_76753f41dee1ea8717f6"
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 38,
+      "replicate": 10,
+      "action_type": "controlled_crossover",
+      "action_sha256": "d16f1ed607adffded7b5d1ecf826d103ef2ce5d71be09ed5701245b83dfd84c9",
+      "operator_id": "autoresearch-rule-crossover-v3",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20270128,
+      "parent_candidate_id": "f2e1e308912a377c8c7aca6123a1a556c098497f97c20bd99bfe9ccd4c975377",
+      "donor_candidate_id": "605d802de98b6cb02bc02db7c693d72d5b8af749fbbabe337457a1ecaf70ec04",
+      "child_candidate_id": "lineage-2c3135dff057ae53a524",
+      "sequence": "KKKKHRGKHKSSGTGNKTGNKTKRKK",
+      "sequence_sha256": "2c3135dff057ae53a524db002dc3635ad8e2f6a654419c4a2513ae085058b4c4",
+      "expected_improvement_metrics": [
+        "amp_read_log10_mic_um",
+        "llamp_log10_mic_um"
+      ],
+      "protected_metrics": [
+        "guruprasad_instability_index",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": "seqfam80_067b5768ae1f19d29268"
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 39,
+      "replicate": 10,
+      "action_type": "de_novo",
+      "action_sha256": "39253cad126bb9968ba732d7b7addbb1c1488ddee836e44249fd3bfa5e8c21cd",
+      "operator_id": "autoresearch-rule-de-novo-v8",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20270129,
+      "parent_candidate_id": null,
+      "donor_candidate_id": null,
+      "child_candidate_id": "lineage-f246f5ba3e47019627d9",
+      "sequence": "KRHDHKSKGKKKKKKGGTYSGG",
+      "sequence_sha256": "f246f5ba3e47019627d93ddc72b8f2cdec92322fc197dcf4d7bd59e0927ecb7a",
+      "expected_improvement_metrics": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics": [
+        "guruprasad_instability_index",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": ""
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 40,
+      "replicate": 10,
+      "action_type": "de_novo",
+      "action_sha256": "6523b5b54d7580625ad7b6fd615d689cd1dfeca9a7eb87af03ccc5d00c1f4bab",
+      "operator_id": "autoresearch-rule-de-novo-v8",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20270131,
+      "parent_candidate_id": null,
+      "donor_candidate_id": null,
+      "child_candidate_id": "lineage-f4105225f33306e5fce1",
+      "sequence": "KKTTAHRHKVSANSGGASTI",
+      "sequence_sha256": "f4105225f33306e5fce1b83d004d39670727ab85e0a0a2e0cdb7b59bdd125796",
+      "expected_improvement_metrics": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics": [
+        "guruprasad_instability_index",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": ""
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 41,
+      "replicate": 11,
+      "action_type": "masked_substitution",
+      "action_sha256": "678d8171713c21bcbb7dc466e1d285e98ccb66d6f376b56ef1ecc4a103c4703a",
+      "operator_id": "autoresearch-rule-substitution-v3",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20271127,
+      "parent_candidate_id": "02e6e8a9041d1f5e02ded66ace7f1bf8353933cb460554f7d6d4f7827ee851e3",
+      "donor_candidate_id": null,
+      "child_candidate_id": "lineage-c9f3bdbb4af329e4d487",
+      "sequence": "KKKGGAEHVHVKKGTVAHVKQSG",
+      "sequence_sha256": "c9f3bdbb4af329e4d487954a12ddffe94b2ee68487b532316beb02dc33dd0b96",
+      "expected_improvement_metrics": [
+        "guruprasad_instability_index"
+      ],
+      "protected_metrics": [
+        "macrel_amp_probability",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": "seqfam80_76753f41dee1ea8717f6"
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 42,
+      "replicate": 11,
+      "action_type": "controlled_crossover",
+      "action_sha256": "935e3171ef7dc139adda2d9aa8ef00be1ef082e6369ee9c525a65315f4caf735",
+      "operator_id": "autoresearch-rule-crossover-v3",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20271128,
+      "parent_candidate_id": "089615c18ff5e7154002281ce8551355e55752ccffeaf8b8dce9ed39ad295f5e",
+      "donor_candidate_id": "605d802de98b6cb02bc02db7c693d72d5b8af749fbbabe337457a1ecaf70ec04",
+      "child_candidate_id": "lineage-5f55208275a1d1987554",
+      "sequence": "KKKGGRKSSGTGNKTGNKTKRKK",
+      "sequence_sha256": "5f55208275a1d1987554b25af5824da54517780ff69326902f34257c028b8211",
+      "expected_improvement_metrics": [
+        "amp_read_log10_mic_um",
+        "llamp_log10_mic_um"
+      ],
+      "protected_metrics": [
+        "guruprasad_instability_index",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": "seqfam80_76753f41dee1ea8717f6"
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 43,
+      "replicate": 11,
+      "action_type": "de_novo",
+      "action_sha256": "8bddc073fe2fbf0a4369059077f500d5f3b7aa302af813353b4f338b7193b741",
+      "operator_id": "autoresearch-rule-de-novo-v8",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20271129,
+      "parent_candidate_id": null,
+      "donor_candidate_id": null,
+      "child_candidate_id": "lineage-99027c9af2afe6e9c61d",
+      "sequence": "GHVRIKKKRTDSWITSNTTWVHNVK",
+      "sequence_sha256": "99027c9af2afe6e9c61de325272cfa219c666d89589930c74cbe4635e25c5b4d",
+      "expected_improvement_metrics": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics": [
+        "guruprasad_instability_index",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": ""
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 44,
+      "replicate": 11,
+      "action_type": "de_novo",
+      "action_sha256": "170e00ef34440f4ed3c2274f67e2ed87b68da6cb6b102dd351d1205a57ac563c",
+      "operator_id": "autoresearch-rule-de-novo-v8",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20271131,
+      "parent_candidate_id": null,
+      "donor_candidate_id": null,
+      "child_candidate_id": "lineage-0dc33b91e51478de4ab3",
+      "sequence": "KKTAHSGVKGKVREVHTYNKEWV",
+      "sequence_sha256": "0dc33b91e51478de4ab3fcd7ce1f3601d7c4d298953a86a55bfc8f7593330f75",
+      "expected_improvement_metrics": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics": [
+        "guruprasad_instability_index",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": ""
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 45,
+      "replicate": 12,
+      "action_type": "masked_substitution",
+      "action_sha256": "558dbcdd2b0dcc119f7cb5ca34c4d285e4c25348e0a9cb0ffa4b69c9c5bf894c",
+      "operator_id": "autoresearch-rule-substitution-v3",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20272127,
+      "parent_candidate_id": "059c0a85ba866e337866ac17c834abcef1719cbab969e774e29abb524df8bde0",
+      "donor_candidate_id": null,
+      "child_candidate_id": "lineage-135dccc2befce4ee7fbb",
+      "sequence": "KKGNGARHKKGNTTVENGGGKHNR",
+      "sequence_sha256": "135dccc2befce4ee7fbb7d23e3c4f8d201623d58806520322b730c612e89d82d",
+      "expected_improvement_metrics": [
+        "guruprasad_instability_index"
+      ],
+      "protected_metrics": [
+        "macrel_amp_probability",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": "seqfam80_09303959ccb7e0471d9e"
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 46,
+      "replicate": 12,
+      "action_type": "controlled_crossover",
+      "action_sha256": "76c58c69611a3a40eea63bf9e9bcbee73c6cc2ea2eaaaddbb3fd1549c74d9cc4",
+      "operator_id": "autoresearch-rule-crossover-v3",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20272128,
+      "parent_candidate_id": "08acf6f4718d359e714a9353445eff3aeca4221bab7e03dc564b6788af0a8f7b",
+      "donor_candidate_id": "605d802de98b6cb02bc02db7c693d72d5b8af749fbbabe337457a1ecaf70ec04",
+      "child_candidate_id": "lineage-17560481124c0542e3ef",
+      "sequence": "KKKGTHKSSGTGNKTGNKTKRKK",
+      "sequence_sha256": "17560481124c0542e3ef4a2a35896885053235d1867ea5a39637e0240fbbcfd3",
+      "expected_improvement_metrics": [
+        "amp_read_log10_mic_um",
+        "llamp_log10_mic_um"
+      ],
+      "protected_metrics": [
+        "guruprasad_instability_index",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": "seqfam80_013e367fe0f1f7b22b64"
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 47,
+      "replicate": 12,
+      "action_type": "de_novo",
+      "action_sha256": "69f051ed7b05a3b15dd2494b6ef8c56f4cbeaf5a644e9e186682e25a4991b3e1",
+      "operator_id": "autoresearch-rule-de-novo-v8",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20272129,
+      "parent_candidate_id": null,
+      "donor_candidate_id": null,
+      "child_candidate_id": "lineage-e870a485c5a6eb0a4538",
+      "sequence": "KTKKKTVTAKKGTAQKKKHYKT",
+      "sequence_sha256": "e870a485c5a6eb0a453890e8dc97c8f59db1dc179383225a112433ae6e60169f",
+      "expected_improvement_metrics": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics": [
+        "guruprasad_instability_index",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": ""
+    },
+    {
+      "branch_key": "vegfa",
+      "generation": 35,
+      "proposal_rank": 48,
+      "replicate": 12,
+      "action_type": "de_novo",
+      "action_sha256": "b2149a2a7074e2f704a570492aeadc09c275c225f42fbb61a122e1538d79b9f4",
+      "operator_id": "autoresearch-rule-de-novo-v8",
+      "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+      "seed": 20272131,
+      "parent_candidate_id": null,
+      "donor_candidate_id": null,
+      "child_candidate_id": "lineage-00e838b7b93be1d483a0",
+      "sequence": "KKRKKREYTYGTDKKTYKSGEHFGK",
+      "sequence_sha256": "00e838b7b93be1d483a04db4907cd3d5f02aa82d56330249295f8b920fa649de",
+      "expected_improvement_metrics": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics": [
+        "guruprasad_instability_index",
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "evidence_sha256s": [
+        "ff1135293da5c392accc257b9b72c4b9fd55a70a803543eb5516a964d1aee6c2"
+      ],
+      "forced_family_coverage": false,
+      "source_family_key_80_80": ""
+    }
+  ]
+}
