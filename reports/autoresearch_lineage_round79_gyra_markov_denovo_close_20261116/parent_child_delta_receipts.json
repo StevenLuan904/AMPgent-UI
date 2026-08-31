@@ -1,0 +1,4239 @@
+{
+  "schema_version": "ampgent.autoresearch-parent-child-delta-bundle.1",
+  "receipts": [
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "dba479cbd72748dcfdc025c832b74a8545f923e075322f5aaca9b5d799dd8a36",
+      "action_type": "masked_substitution",
+      "child_candidate_id": "a7e6f1d2c0101fb2cd76d2adb2d218f081c8f49b86964105d780661f4f053974",
+      "baselines": [
+        {
+          "baseline_role": "primary_parent",
+          "baseline_candidate_id": "00342e80d29ba0fd35eca1710ddddd3b8e721dbfd009f38c57253e3dc34b21c1",
+          "metrics": [
+            {
+              "metric_name": "amp_read_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.5127903449868494,
+              "child_value": 1.5518412479808557,
+              "raw_delta_child_minus_parent": 0.039050902994006265,
+              "improvement_delta": -0.039050902994006265,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "guruprasad_instability_index",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "index",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 22.347619047619045,
+              "child_value": 15.190476,
+              "raw_delta_child_minus_parent": -7.157143047619044,
+              "improvement_delta": 7.157143047619044,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "llamp_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.306688904762268,
+              "child_value": 1.5968931913375854,
+              "raw_delta_child_minus_parent": 0.2902042865753174,
+              "improvement_delta": -0.2902042865753174,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_amp_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "maximize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.317,
+              "child_value": 0.327,
+              "raw_delta_child_minus_parent": 0.010000000000000009,
+              "improvement_delta": 0.010000000000000009,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_hemolysis_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.426,
+              "child_value": 0.327,
+              "raw_delta_child_minus_parent": -0.09899999999999998,
+              "improvement_delta": 0.09899999999999998,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "maximum_hydrophobic_run",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "residues",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.0,
+              "child_value": 1.0,
+              "raw_delta_child_minus_parent": 0.0,
+              "improvement_delta": -0.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "toxinpred3_hybrid_score",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "dimensionless",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.32,
+              "child_value": 0.27,
+              "raw_delta_child_minus_parent": -0.04999999999999999,
+              "improvement_delta": 0.04999999999999999,
+              "out_of_domain": false
+            }
+          ]
+        }
+      ],
+      "expected_metrics_improved": [
+        "guruprasad_instability_index"
+      ],
+      "expected_metrics_regressed": [],
+      "expected_metrics_incomparable": [],
+      "protected_metrics_regressed": [],
+      "delta_sha256": "f823e9567be87146055ee66afc07c1531bbe74ac652018b368a021e1dc916977"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "b81f7282e3a49b1af38ebfdbfef9002dd2094892af9db770a98eba3df3f429fe",
+      "action_type": "controlled_crossover",
+      "child_candidate_id": "bd240d0c820239c36d1f16f31073a478187d9cd91cfa0090734443308ed4fe94",
+      "baselines": [
+        {
+          "baseline_role": "primary_parent",
+          "baseline_candidate_id": "ad64602f93274126eda202614a771dd0f8c223b80fa39a1a8b1ff27253f03024",
+          "metrics": [
+            {
+              "metric_name": "amp_read_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 2.235381256060225,
+              "child_value": 2.2960141504353238,
+              "raw_delta_child_minus_parent": 0.06063289437509889,
+              "improvement_delta": -0.06063289437509889,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "guruprasad_instability_index",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "index",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 8.47619,
+              "child_value": -14.985714,
+              "raw_delta_child_minus_parent": -23.461904,
+              "improvement_delta": 23.461904,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "llamp_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.5039812326431274,
+              "child_value": 1.9013440608978271,
+              "raw_delta_child_minus_parent": 0.3973628282546997,
+              "improvement_delta": -0.3973628282546997,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_amp_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "maximize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.347,
+              "child_value": 0.376,
+              "raw_delta_child_minus_parent": 0.029000000000000026,
+              "improvement_delta": 0.029000000000000026,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_hemolysis_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.376,
+              "child_value": 0.337,
+              "raw_delta_child_minus_parent": -0.03899999999999998,
+              "improvement_delta": 0.03899999999999998,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "maximum_hydrophobic_run",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "residues",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.0,
+              "child_value": 0.0,
+              "raw_delta_child_minus_parent": -1.0,
+              "improvement_delta": 1.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "toxinpred3_hybrid_score",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "dimensionless",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.295,
+              "child_value": 0.265,
+              "raw_delta_child_minus_parent": -0.02999999999999997,
+              "improvement_delta": 0.02999999999999997,
+              "out_of_domain": false
+            }
+          ]
+        },
+        {
+          "baseline_role": "donor_parent",
+          "baseline_candidate_id": "c298bc115339943e7b5932aa96323ba928efc566178f4f2273a2d0b85f9ed098",
+          "metrics": [
+            {
+              "metric_name": "amp_read_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 2.297405682324742,
+              "child_value": 2.2960141504353238,
+              "raw_delta_child_minus_parent": -0.0013915318894182072,
+              "improvement_delta": 0.0013915318894182072,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "guruprasad_instability_index",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "index",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 16.866667,
+              "child_value": -14.985714,
+              "raw_delta_child_minus_parent": -31.852381,
+              "improvement_delta": 31.852381,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "llamp_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.0648202896118164,
+              "child_value": 1.9013440608978271,
+              "raw_delta_child_minus_parent": 0.8365237712860107,
+              "improvement_delta": -0.8365237712860107,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_amp_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "maximize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.337,
+              "child_value": 0.376,
+              "raw_delta_child_minus_parent": 0.03899999999999998,
+              "improvement_delta": 0.03899999999999998,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_hemolysis_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.307,
+              "child_value": 0.337,
+              "raw_delta_child_minus_parent": 0.030000000000000027,
+              "improvement_delta": -0.030000000000000027,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "maximum_hydrophobic_run",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "residues",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.0,
+              "child_value": 0.0,
+              "raw_delta_child_minus_parent": -1.0,
+              "improvement_delta": 1.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "toxinpred3_hybrid_score",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "dimensionless",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.0,
+              "child_value": 0.265,
+              "raw_delta_child_minus_parent": 0.265,
+              "improvement_delta": -0.265,
+              "out_of_domain": false
+            }
+          ]
+        }
+      ],
+      "expected_metrics_improved": [],
+      "expected_metrics_regressed": [
+        "amp_read_log10_mic_um",
+        "llamp_log10_mic_um"
+      ],
+      "expected_metrics_incomparable": [],
+      "protected_metrics_regressed": [],
+      "delta_sha256": "cafeefab2ad0ca39a64d1e612a7895228eaf6e0ef30985fd5e32d683e7cacd43"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "8991e05620ddf125b9b27fd1bd45d01cd096c6c5933d46df1e16f467d5584e3b",
+      "action_type": "de_novo",
+      "child_candidate_id": "c02827b415d354d37f947526571422992f7ecccd7f89f3114812d1ececea39e5",
+      "baselines": [],
+      "expected_metrics_improved": [],
+      "expected_metrics_regressed": [],
+      "expected_metrics_incomparable": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics_regressed": [],
+      "delta_sha256": "258f08d5b6a5688334322c53a5cf6d6a36c68145ad78f948a83cfde2c32ded17"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "5d7ff3be5750bac7c2d2d925205b483bc9054d1f7d382919f662be548bac4a92",
+      "action_type": "de_novo",
+      "child_candidate_id": "c6b82345f0dba75f59240711832c34d9fcb03ef45f0082de313b5eb51281d344",
+      "baselines": [],
+      "expected_metrics_improved": [],
+      "expected_metrics_regressed": [],
+      "expected_metrics_incomparable": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics_regressed": [],
+      "delta_sha256": "7fc62c7274b84c0d4fd724054b27e4cb72bc04b3090c57fc304bca4193a1bc2e"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "a1f967c2afff832b83165e7171cb6aee3295185dcbf804133bf896b3a20a2d71",
+      "action_type": "masked_substitution",
+      "child_candidate_id": "af46f62ef0383edeb09f1f2ce2ec607c0134d0b95fbe724c21ba2773e5f98547",
+      "baselines": [
+        {
+          "baseline_role": "primary_parent",
+          "baseline_candidate_id": "00342e80d29ba0fd35eca1710ddddd3b8e721dbfd009f38c57253e3dc34b21c1",
+          "metrics": [
+            {
+              "metric_name": "amp_read_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.5127903449868494,
+              "child_value": 1.5086874709498639,
+              "raw_delta_child_minus_parent": -0.004102874036985504,
+              "improvement_delta": 0.004102874036985504,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "guruprasad_instability_index",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "index",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 22.347619047619045,
+              "child_value": 18.304762,
+              "raw_delta_child_minus_parent": -4.042857047619044,
+              "improvement_delta": 4.042857047619044,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "llamp_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.306688904762268,
+              "child_value": 1.7044275999069214,
+              "raw_delta_child_minus_parent": 0.3977386951446533,
+              "improvement_delta": -0.3977386951446533,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_amp_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "maximize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.317,
+              "child_value": 0.327,
+              "raw_delta_child_minus_parent": 0.010000000000000009,
+              "improvement_delta": 0.010000000000000009,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_hemolysis_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.426,
+              "child_value": 0.347,
+              "raw_delta_child_minus_parent": -0.07900000000000001,
+              "improvement_delta": 0.07900000000000001,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "maximum_hydrophobic_run",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "residues",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.0,
+              "child_value": 1.0,
+              "raw_delta_child_minus_parent": 0.0,
+              "improvement_delta": -0.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "toxinpred3_hybrid_score",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "dimensionless",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.32,
+              "child_value": 0.295,
+              "raw_delta_child_minus_parent": -0.025000000000000022,
+              "improvement_delta": 0.025000000000000022,
+              "out_of_domain": false
+            }
+          ]
+        }
+      ],
+      "expected_metrics_improved": [
+        "guruprasad_instability_index"
+      ],
+      "expected_metrics_regressed": [],
+      "expected_metrics_incomparable": [],
+      "protected_metrics_regressed": [],
+      "delta_sha256": "1df19bcce8c17c7459925bbb649dcebf61c76627de7ca4a20551c9e59828fafa"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "dd6ef9c945d25a34dd1c976c4aca1a7fafb2b4d89d54206aa01a8d75e2e461ec",
+      "action_type": "controlled_crossover",
+      "child_candidate_id": "71de5ec575c0b4912ca00405a6101dded069473476b9210d5b328107b1ae20d2",
+      "baselines": [
+        {
+          "baseline_role": "primary_parent",
+          "baseline_candidate_id": "ad64602f93274126eda202614a771dd0f8c223b80fa39a1a8b1ff27253f03024",
+          "metrics": [
+            {
+              "metric_name": "amp_read_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 2.235381256060225,
+              "child_value": 2.3851182242748044,
+              "raw_delta_child_minus_parent": 0.1497369682145795,
+              "improvement_delta": -0.1497369682145795,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "guruprasad_instability_index",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "index",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 8.47619,
+              "child_value": -12.67619,
+              "raw_delta_child_minus_parent": -21.15238,
+              "improvement_delta": 21.15238,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "llamp_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.5039812326431274,
+              "child_value": 1.8461453914642334,
+              "raw_delta_child_minus_parent": 0.34216415882110596,
+              "improvement_delta": -0.34216415882110596,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_amp_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "maximize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.347,
+              "child_value": 0.376,
+              "raw_delta_child_minus_parent": 0.029000000000000026,
+              "improvement_delta": 0.029000000000000026,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_hemolysis_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.376,
+              "child_value": 0.248,
+              "raw_delta_child_minus_parent": -0.128,
+              "improvement_delta": 0.128,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "maximum_hydrophobic_run",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "residues",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.0,
+              "child_value": 0.0,
+              "raw_delta_child_minus_parent": -1.0,
+              "improvement_delta": 1.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "toxinpred3_hybrid_score",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "dimensionless",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.295,
+              "child_value": 0.175,
+              "raw_delta_child_minus_parent": -0.12,
+              "improvement_delta": 0.12,
+              "out_of_domain": false
+            }
+          ]
+        },
+        {
+          "baseline_role": "donor_parent",
+          "baseline_candidate_id": "c298bc115339943e7b5932aa96323ba928efc566178f4f2273a2d0b85f9ed098",
+          "metrics": [
+            {
+              "metric_name": "amp_read_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 2.297405682324742,
+              "child_value": 2.3851182242748044,
+              "raw_delta_child_minus_parent": 0.0877125419500624,
+              "improvement_delta": -0.0877125419500624,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "guruprasad_instability_index",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "index",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 16.866667,
+              "child_value": -12.67619,
+              "raw_delta_child_minus_parent": -29.542856999999998,
+              "improvement_delta": 29.542856999999998,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "llamp_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.0648202896118164,
+              "child_value": 1.8461453914642334,
+              "raw_delta_child_minus_parent": 0.781325101852417,
+              "improvement_delta": -0.781325101852417,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_amp_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "maximize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.337,
+              "child_value": 0.376,
+              "raw_delta_child_minus_parent": 0.03899999999999998,
+              "improvement_delta": 0.03899999999999998,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_hemolysis_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.307,
+              "child_value": 0.248,
+              "raw_delta_child_minus_parent": -0.059,
+              "improvement_delta": 0.059,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "maximum_hydrophobic_run",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "residues",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.0,
+              "child_value": 0.0,
+              "raw_delta_child_minus_parent": -1.0,
+              "improvement_delta": 1.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "toxinpred3_hybrid_score",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "dimensionless",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.0,
+              "child_value": 0.175,
+              "raw_delta_child_minus_parent": 0.175,
+              "improvement_delta": -0.175,
+              "out_of_domain": false
+            }
+          ]
+        }
+      ],
+      "expected_metrics_improved": [],
+      "expected_metrics_regressed": [
+        "amp_read_log10_mic_um",
+        "llamp_log10_mic_um"
+      ],
+      "expected_metrics_incomparable": [],
+      "protected_metrics_regressed": [],
+      "delta_sha256": "95f20d2649075b953998bbaaf7cf9a43079a9c7591de8e98f32e6b613412c0e2"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "d3d790e346c80ef0e209de2ef31b102381ce92c4c959ac73b1ba6d2c530781e9",
+      "action_type": "de_novo",
+      "child_candidate_id": "96b46b32e0f7c79024cd63f85ee10053787cf1294be88cc82fd24fc331610bbb",
+      "baselines": [],
+      "expected_metrics_improved": [],
+      "expected_metrics_regressed": [],
+      "expected_metrics_incomparable": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics_regressed": [],
+      "delta_sha256": "0bd0b33a15af70043a7e0166362d4b4727080a44a9ad6e4efe5d2dd5ddb0e827"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "7db529af8bf0a158167685a6fb51480acdce4dfb39130aa4f1d1f5427159f763",
+      "action_type": "de_novo",
+      "child_candidate_id": "758309c2de451b41f077675ad43dac659b70abc96317bde27bad96c1faf52110",
+      "baselines": [],
+      "expected_metrics_improved": [],
+      "expected_metrics_regressed": [],
+      "expected_metrics_incomparable": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics_regressed": [],
+      "delta_sha256": "17268ca3e490f1d013167726ad128939c36720c50131e5b7be01b898dfe7b947"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "1366210c7f77d343b387144540cb0c108dc8f6202a3be9d1182229974987c936",
+      "action_type": "masked_substitution",
+      "child_candidate_id": "317ad6881149c6eb713d7d11e04ec3f573a261d2e26e644f69cdbe1ef4e014ac",
+      "baselines": [
+        {
+          "baseline_role": "primary_parent",
+          "baseline_candidate_id": "00342e80d29ba0fd35eca1710ddddd3b8e721dbfd009f38c57253e3dc34b21c1",
+          "metrics": [
+            {
+              "metric_name": "amp_read_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.5127903449868494,
+              "child_value": 1.5463587018942868,
+              "raw_delta_child_minus_parent": 0.033568356907437424,
+              "improvement_delta": -0.033568356907437424,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "guruprasad_instability_index",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "index",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 22.347619047619045,
+              "child_value": 20.038095,
+              "raw_delta_child_minus_parent": -2.309524047619046,
+              "improvement_delta": 2.309524047619046,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "llamp_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.306688904762268,
+              "child_value": 1.7710927724838257,
+              "raw_delta_child_minus_parent": 0.4644038677215576,
+              "improvement_delta": -0.4644038677215576,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_amp_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "maximize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.317,
+              "child_value": 0.317,
+              "raw_delta_child_minus_parent": 0.0,
+              "improvement_delta": 0.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_hemolysis_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.426,
+              "child_value": 0.356,
+              "raw_delta_child_minus_parent": -0.07,
+              "improvement_delta": 0.07,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "maximum_hydrophobic_run",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "residues",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.0,
+              "child_value": 1.0,
+              "raw_delta_child_minus_parent": 0.0,
+              "improvement_delta": -0.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "toxinpred3_hybrid_score",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "dimensionless",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.32,
+              "child_value": 0.315,
+              "raw_delta_child_minus_parent": -0.0050000000000000044,
+              "improvement_delta": 0.0050000000000000044,
+              "out_of_domain": false
+            }
+          ]
+        }
+      ],
+      "expected_metrics_improved": [
+        "guruprasad_instability_index"
+      ],
+      "expected_metrics_regressed": [],
+      "expected_metrics_incomparable": [],
+      "protected_metrics_regressed": [],
+      "delta_sha256": "01368002addace7711033d43d23a62e9062a18f04737068ed8878e21840baaaf"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "edbb2b5ecf2e7396511bd0016946c63752adc54c87356a990fdfbe81536bca40",
+      "action_type": "controlled_crossover",
+      "child_candidate_id": "f81e7f2c63376e39137a8d1d1875618d5cdfceab0fc8ff91bdb21dff2f7a7a7e",
+      "baselines": [
+        {
+          "baseline_role": "primary_parent",
+          "baseline_candidate_id": "ad64602f93274126eda202614a771dd0f8c223b80fa39a1a8b1ff27253f03024",
+          "metrics": [
+            {
+              "metric_name": "amp_read_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 2.235381256060225,
+              "child_value": 2.2062019097356584,
+              "raw_delta_child_minus_parent": -0.029179346324566424,
+              "improvement_delta": 0.029179346324566424,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "guruprasad_instability_index",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "index",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 8.47619,
+              "child_value": -10.942857,
+              "raw_delta_child_minus_parent": -19.419047,
+              "improvement_delta": 19.419047,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "llamp_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.5039812326431274,
+              "child_value": 1.541735291481018,
+              "raw_delta_child_minus_parent": 0.037754058837890625,
+              "improvement_delta": -0.037754058837890625,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_amp_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "maximize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.347,
+              "child_value": 0.426,
+              "raw_delta_child_minus_parent": 0.07900000000000001,
+              "improvement_delta": 0.07900000000000001,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_hemolysis_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.376,
+              "child_value": 0.465,
+              "raw_delta_child_minus_parent": 0.08900000000000002,
+              "improvement_delta": -0.08900000000000002,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "maximum_hydrophobic_run",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "residues",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.0,
+              "child_value": 0.0,
+              "raw_delta_child_minus_parent": -1.0,
+              "improvement_delta": 1.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "toxinpred3_hybrid_score",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "dimensionless",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.295,
+              "child_value": 0.33,
+              "raw_delta_child_minus_parent": 0.03500000000000003,
+              "improvement_delta": -0.03500000000000003,
+              "out_of_domain": false
+            }
+          ]
+        },
+        {
+          "baseline_role": "donor_parent",
+          "baseline_candidate_id": "8764f17c2a1557efafdff92ff6d9beb9f8b2e146c129e2fa267a02a732891868",
+          "metrics": [
+            {
+              "metric_name": "amp_read_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.8805391081477594,
+              "child_value": 2.2062019097356584,
+              "raw_delta_child_minus_parent": 0.32566280158789906,
+              "improvement_delta": -0.32566280158789906,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "guruprasad_instability_index",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "index",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 20.404167,
+              "child_value": -10.942857,
+              "raw_delta_child_minus_parent": -31.347024,
+              "improvement_delta": 31.347024,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "llamp_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.1898541450500488,
+              "child_value": 1.541735291481018,
+              "raw_delta_child_minus_parent": 0.35188114643096924,
+              "improvement_delta": -0.35188114643096924,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_amp_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "maximize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.436,
+              "child_value": 0.426,
+              "raw_delta_child_minus_parent": -0.010000000000000009,
+              "improvement_delta": -0.010000000000000009,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_hemolysis_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.426,
+              "child_value": 0.465,
+              "raw_delta_child_minus_parent": 0.039000000000000035,
+              "improvement_delta": -0.039000000000000035,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "maximum_hydrophobic_run",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "residues",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.0,
+              "child_value": 0.0,
+              "raw_delta_child_minus_parent": -1.0,
+              "improvement_delta": 1.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "toxinpred3_hybrid_score",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "dimensionless",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.0,
+              "child_value": 0.33,
+              "raw_delta_child_minus_parent": 0.33,
+              "improvement_delta": -0.33,
+              "out_of_domain": false
+            }
+          ]
+        }
+      ],
+      "expected_metrics_improved": [
+        "amp_read_log10_mic_um"
+      ],
+      "expected_metrics_regressed": [
+        "llamp_log10_mic_um"
+      ],
+      "expected_metrics_incomparable": [],
+      "protected_metrics_regressed": [
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "delta_sha256": "84c897ae1c6f71a78686185faa588cdf05cc31a8cb990803696b83c4b7d0e7b7"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "6e4152a04ba169bba31149b4414d68e856b1b717753d443827aaffc813c091e4",
+      "action_type": "de_novo",
+      "child_candidate_id": "e040464d7095022aee451acc3e915b10b84983ca28c7fc6558af13c66c51da17",
+      "baselines": [],
+      "expected_metrics_improved": [],
+      "expected_metrics_regressed": [],
+      "expected_metrics_incomparable": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics_regressed": [],
+      "delta_sha256": "e69e7675079a3655db44ab92e535c9f944897b5e6e06801c94525e5007c116a2"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "26f11bbd10febed4f53091262e5dc0a9ad58c8aeba67f16404d3ccff23db2150",
+      "action_type": "de_novo",
+      "child_candidate_id": "d35b9bc5afe69ea6e3e74efbc7cbd204051eabd97a71de8bee2ce122b85930fe",
+      "baselines": [],
+      "expected_metrics_improved": [],
+      "expected_metrics_regressed": [],
+      "expected_metrics_incomparable": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics_regressed": [],
+      "delta_sha256": "fdd23f1f1b44ece82ffe20a2b692d4ccd697ab36336f6162efceddd5dbf372e3"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "bd9a32115d01445906b01fe70e770985886a8096a0e448a13a8ebbbdc08ae192",
+      "action_type": "masked_substitution",
+      "child_candidate_id": "3b18684a639ce2ae1979b1716a57acd0327f94cb6c06cafdcbb5adda68277e18",
+      "baselines": [
+        {
+          "baseline_role": "primary_parent",
+          "baseline_candidate_id": "00342e80d29ba0fd35eca1710ddddd3b8e721dbfd009f38c57253e3dc34b21c1",
+          "metrics": [
+            {
+              "metric_name": "amp_read_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.5127903449868494,
+              "child_value": 1.6671822457370116,
+              "raw_delta_child_minus_parent": 0.15439190075016218,
+              "improvement_delta": -0.15439190075016218,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "guruprasad_instability_index",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "index",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 22.347619047619045,
+              "child_value": 22.347619,
+              "raw_delta_child_minus_parent": -4.761904293104635e-08,
+              "improvement_delta": 4.761904293104635e-08,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "llamp_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.306688904762268,
+              "child_value": 1.7684308290481567,
+              "raw_delta_child_minus_parent": 0.46174192428588867,
+              "improvement_delta": -0.46174192428588867,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_amp_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "maximize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.317,
+              "child_value": 0.297,
+              "raw_delta_child_minus_parent": -0.020000000000000018,
+              "improvement_delta": -0.020000000000000018,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_hemolysis_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.426,
+              "child_value": 0.317,
+              "raw_delta_child_minus_parent": -0.10899999999999999,
+              "improvement_delta": 0.10899999999999999,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "maximum_hydrophobic_run",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "residues",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.0,
+              "child_value": 1.0,
+              "raw_delta_child_minus_parent": 0.0,
+              "improvement_delta": -0.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "toxinpred3_hybrid_score",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "dimensionless",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.32,
+              "child_value": 0.275,
+              "raw_delta_child_minus_parent": -0.044999999999999984,
+              "improvement_delta": 0.044999999999999984,
+              "out_of_domain": false
+            }
+          ]
+        }
+      ],
+      "expected_metrics_improved": [
+        "guruprasad_instability_index"
+      ],
+      "expected_metrics_regressed": [],
+      "expected_metrics_incomparable": [],
+      "protected_metrics_regressed": [
+        "macrel_amp_probability"
+      ],
+      "delta_sha256": "a824fe75df0f7de7972ebe9ca1ad78f5fee1ba80fdafde07cf283b3ccf3ba70e"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "f096d8e55d8bc8f7781238e475272a0acccb0e5490c7963d1038a6f94ec632a2",
+      "action_type": "controlled_crossover",
+      "child_candidate_id": "b4db125d8c61e7ba0332356b107047cb51137df2e51c5dc5f56c8d2348e79ddb",
+      "baselines": [
+        {
+          "baseline_role": "primary_parent",
+          "baseline_candidate_id": "ad64602f93274126eda202614a771dd0f8c223b80fa39a1a8b1ff27253f03024",
+          "metrics": [
+            {
+              "metric_name": "amp_read_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 2.235381256060225,
+              "child_value": 1.7024310116888512,
+              "raw_delta_child_minus_parent": -0.5329502443713736,
+              "improvement_delta": 0.5329502443713736,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "guruprasad_instability_index",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "index",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 8.47619,
+              "child_value": -10.047619,
+              "raw_delta_child_minus_parent": -18.523809,
+              "improvement_delta": 18.523809,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "llamp_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.5039812326431274,
+              "child_value": 1.3745845556259155,
+              "raw_delta_child_minus_parent": -0.12939667701721191,
+              "improvement_delta": 0.12939667701721191,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_amp_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "maximize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.347,
+              "child_value": 0.446,
+              "raw_delta_child_minus_parent": 0.09900000000000003,
+              "improvement_delta": 0.09900000000000003,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_hemolysis_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.376,
+              "child_value": 0.356,
+              "raw_delta_child_minus_parent": -0.020000000000000018,
+              "improvement_delta": 0.020000000000000018,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "maximum_hydrophobic_run",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "residues",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.0,
+              "child_value": 0.0,
+              "raw_delta_child_minus_parent": -1.0,
+              "improvement_delta": 1.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "toxinpred3_hybrid_score",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "dimensionless",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.295,
+              "child_value": 0.335,
+              "raw_delta_child_minus_parent": 0.040000000000000036,
+              "improvement_delta": -0.040000000000000036,
+              "out_of_domain": false
+            }
+          ]
+        },
+        {
+          "baseline_role": "donor_parent",
+          "baseline_candidate_id": "a7bdf27eb7ad2ea8927c694d5a691176f0fc71047d0b1a9b5c9b7713363a8b05",
+          "metrics": [
+            {
+              "metric_name": "amp_read_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.5680713199732808,
+              "child_value": 1.7024310116888512,
+              "raw_delta_child_minus_parent": 0.1343596917155705,
+              "improvement_delta": -0.1343596917155705,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "guruprasad_instability_index",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "index",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 24.329167,
+              "child_value": -10.047619,
+              "raw_delta_child_minus_parent": -34.376786,
+              "improvement_delta": 34.376786,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "llamp_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.9258444309234619,
+              "child_value": 1.3745845556259155,
+              "raw_delta_child_minus_parent": 0.4487401247024536,
+              "improvement_delta": -0.4487401247024536,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_amp_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "maximize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.379,
+              "child_value": 0.446,
+              "raw_delta_child_minus_parent": 0.067,
+              "improvement_delta": 0.067,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_hemolysis_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.376,
+              "child_value": 0.356,
+              "raw_delta_child_minus_parent": -0.020000000000000018,
+              "improvement_delta": 0.020000000000000018,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "maximum_hydrophobic_run",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "residues",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.0,
+              "child_value": 0.0,
+              "raw_delta_child_minus_parent": -1.0,
+              "improvement_delta": 1.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "toxinpred3_hybrid_score",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "dimensionless",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.0,
+              "child_value": 0.335,
+              "raw_delta_child_minus_parent": 0.335,
+              "improvement_delta": -0.335,
+              "out_of_domain": false
+            }
+          ]
+        }
+      ],
+      "expected_metrics_improved": [
+        "amp_read_log10_mic_um",
+        "llamp_log10_mic_um"
+      ],
+      "expected_metrics_regressed": [],
+      "expected_metrics_incomparable": [],
+      "protected_metrics_regressed": [
+        "toxinpred3_hybrid_score"
+      ],
+      "delta_sha256": "cb9fb2e5c80f200a6cca6ac95853647dcd7dbdce111ba6f90292d200a3a9f1f3"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "f3737b66412b565860af546a5b650f995fe391200a2db0d13687a0d784959cb4",
+      "action_type": "de_novo",
+      "child_candidate_id": "e8f408bc2ffcf1c3674b57782eca211b7df1e3bd151defb2a795260b3ae4dd68",
+      "baselines": [],
+      "expected_metrics_improved": [],
+      "expected_metrics_regressed": [],
+      "expected_metrics_incomparable": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics_regressed": [],
+      "delta_sha256": "c69ba346df85f979c69e98c30b04214dd6cebc33d9d28a9d9cbc17778d1b6802"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "d7cc3a3642b5aca21e7af6624a952b827dafef2a91293e1021c19b27c52f98cc",
+      "action_type": "de_novo",
+      "child_candidate_id": "816ba00169b23681cb9ac3fbb86553adaec96a05e0f0ea7dd818f57ed72157e5",
+      "baselines": [],
+      "expected_metrics_improved": [],
+      "expected_metrics_regressed": [],
+      "expected_metrics_incomparable": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics_regressed": [],
+      "delta_sha256": "f169a5c50eddf7054dcf47b5484a8d6fe218fdcd084a47e9df6196c170408598"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "29cdcf92418726909fc62c85b138a969b6565018e4d5ef54bcae58cf5355e011",
+      "action_type": "masked_substitution",
+      "child_candidate_id": "77a877a63029aff80e989dd8575ad820179746a4d3dce5cedd47ffdcd831d418",
+      "baselines": [
+        {
+          "baseline_role": "primary_parent",
+          "baseline_candidate_id": "00342e80d29ba0fd35eca1710ddddd3b8e721dbfd009f38c57253e3dc34b21c1",
+          "metrics": [
+            {
+              "metric_name": "amp_read_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.5127903449868494,
+              "child_value": 1.5219925492663948,
+              "raw_delta_child_minus_parent": 0.009202204279545434,
+              "improvement_delta": -0.009202204279545434,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "guruprasad_instability_index",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "index",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 22.347619047619045,
+              "child_value": 22.347619,
+              "raw_delta_child_minus_parent": -4.761904293104635e-08,
+              "improvement_delta": 4.761904293104635e-08,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "llamp_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.306688904762268,
+              "child_value": 1.347692847251892,
+              "raw_delta_child_minus_parent": 0.04100394248962402,
+              "improvement_delta": -0.04100394248962402,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_amp_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "maximize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.317,
+              "child_value": 0.307,
+              "raw_delta_child_minus_parent": -0.010000000000000009,
+              "improvement_delta": -0.010000000000000009,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_hemolysis_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.426,
+              "child_value": 0.376,
+              "raw_delta_child_minus_parent": -0.04999999999999999,
+              "improvement_delta": 0.04999999999999999,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "maximum_hydrophobic_run",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "residues",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.0,
+              "child_value": 1.0,
+              "raw_delta_child_minus_parent": 0.0,
+              "improvement_delta": -0.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "toxinpred3_hybrid_score",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "dimensionless",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.32,
+              "child_value": 0.295,
+              "raw_delta_child_minus_parent": -0.025000000000000022,
+              "improvement_delta": 0.025000000000000022,
+              "out_of_domain": false
+            }
+          ]
+        }
+      ],
+      "expected_metrics_improved": [
+        "guruprasad_instability_index"
+      ],
+      "expected_metrics_regressed": [],
+      "expected_metrics_incomparable": [],
+      "protected_metrics_regressed": [
+        "macrel_amp_probability"
+      ],
+      "delta_sha256": "d7b5fbf398e432344b339a114ad95c88d20646b1de6ec56b69641739afa7858e"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "cb86044caeb552d9aa02b0125658f6b536833cd99f37759da60d54c75502379f",
+      "action_type": "controlled_crossover",
+      "child_candidate_id": "ab84598eee1380d34417c80a0344c180822f29875b1f2845cad2780e3afb9849",
+      "baselines": [
+        {
+          "baseline_role": "primary_parent",
+          "baseline_candidate_id": "1135e6573234f7cd2c8257a10c55e095e497485958035cdb687cb255bbdb6fdc",
+          "metrics": [
+            {
+              "metric_name": "amp_read_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.8589004984398771,
+              "child_value": 1.86539029910714,
+              "raw_delta_child_minus_parent": 0.006489800667262902,
+              "improvement_delta": -0.006489800667262902,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "guruprasad_instability_index",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "index",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 33.155,
+              "child_value": -9.8,
+              "raw_delta_child_minus_parent": -42.955,
+              "improvement_delta": 42.955,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "llamp_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.5829256772994995,
+              "child_value": 1.509844183921814,
+              "raw_delta_child_minus_parent": -0.07308149337768555,
+              "improvement_delta": 0.07308149337768555,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_amp_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "maximize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.366,
+              "child_value": 0.386,
+              "raw_delta_child_minus_parent": 0.020000000000000018,
+              "improvement_delta": 0.020000000000000018,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_hemolysis_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.426,
+              "child_value": 0.386,
+              "raw_delta_child_minus_parent": -0.03999999999999998,
+              "improvement_delta": 0.03999999999999998,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "maximum_hydrophobic_run",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "residues",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.0,
+              "child_value": 0.0,
+              "raw_delta_child_minus_parent": -1.0,
+              "improvement_delta": 1.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "toxinpred3_hybrid_score",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "dimensionless",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.265,
+              "child_value": 0.295,
+              "raw_delta_child_minus_parent": 0.02999999999999997,
+              "improvement_delta": -0.02999999999999997,
+              "out_of_domain": false
+            }
+          ]
+        },
+        {
+          "baseline_role": "donor_parent",
+          "baseline_candidate_id": "c298bc115339943e7b5932aa96323ba928efc566178f4f2273a2d0b85f9ed098",
+          "metrics": [
+            {
+              "metric_name": "amp_read_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 2.297405682324742,
+              "child_value": 1.86539029910714,
+              "raw_delta_child_minus_parent": -0.4320153832176019,
+              "improvement_delta": 0.4320153832176019,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "guruprasad_instability_index",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "index",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 16.866667,
+              "child_value": -9.8,
+              "raw_delta_child_minus_parent": -26.666667,
+              "improvement_delta": 26.666667,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "llamp_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.0648202896118164,
+              "child_value": 1.509844183921814,
+              "raw_delta_child_minus_parent": 0.44502389430999756,
+              "improvement_delta": -0.44502389430999756,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_amp_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "maximize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.337,
+              "child_value": 0.386,
+              "raw_delta_child_minus_parent": 0.04899999999999999,
+              "improvement_delta": 0.04899999999999999,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_hemolysis_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.307,
+              "child_value": 0.386,
+              "raw_delta_child_minus_parent": 0.07900000000000001,
+              "improvement_delta": -0.07900000000000001,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "maximum_hydrophobic_run",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "residues",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.0,
+              "child_value": 0.0,
+              "raw_delta_child_minus_parent": -1.0,
+              "improvement_delta": 1.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "toxinpred3_hybrid_score",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "dimensionless",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.0,
+              "child_value": 0.295,
+              "raw_delta_child_minus_parent": 0.295,
+              "improvement_delta": -0.295,
+              "out_of_domain": false
+            }
+          ]
+        }
+      ],
+      "expected_metrics_improved": [
+        "llamp_log10_mic_um"
+      ],
+      "expected_metrics_regressed": [
+        "amp_read_log10_mic_um"
+      ],
+      "expected_metrics_incomparable": [],
+      "protected_metrics_regressed": [
+        "toxinpred3_hybrid_score"
+      ],
+      "delta_sha256": "feb3e706698ac96d20cb1feabfb78b8082b717810e9db0862e6bc9cbf89ee414"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "183eaa643ea6b95c4b1984caa26c2770348c950af3eafd4e2367338e4d095065",
+      "action_type": "de_novo",
+      "child_candidate_id": "16d4963691e82229f8edaf470ed9ec7cbb0c9b69acbe1b74cd5ac84ea8616772",
+      "baselines": [],
+      "expected_metrics_improved": [],
+      "expected_metrics_regressed": [],
+      "expected_metrics_incomparable": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics_regressed": [],
+      "delta_sha256": "d0efda3d39497acd6b1b8a8a4230323a0339f891356e188bf7011dfc2227ab0d"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "2d851ccf25b43a8e8c49f37140871709037fd1b1e1d814800264627508100e85",
+      "action_type": "de_novo",
+      "child_candidate_id": "e475a1bfd45df7a6d2a947522afdac62881ec6353e03da76dadc80685f1405d0",
+      "baselines": [],
+      "expected_metrics_improved": [],
+      "expected_metrics_regressed": [],
+      "expected_metrics_incomparable": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics_regressed": [],
+      "delta_sha256": "dea3f7fe80745151e9e682ddf2aa9f4ec5be198da36c40b38a62d640050b8946"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "39ceff6c40f493d863768ac2ca7d38ecfdc9046f026341886852bd0bb3db29ad",
+      "action_type": "masked_substitution",
+      "child_candidate_id": "9f1f5901876bf505e989510edd41483942bf15da0cff71054df5c5ec88dc19d4",
+      "baselines": [
+        {
+          "baseline_role": "primary_parent",
+          "baseline_candidate_id": "00342e80d29ba0fd35eca1710ddddd3b8e721dbfd009f38c57253e3dc34b21c1",
+          "metrics": [
+            {
+              "metric_name": "amp_read_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.5127903449868494,
+              "child_value": 1.4191805480435629,
+              "raw_delta_child_minus_parent": -0.09360979694328653,
+              "improvement_delta": 0.09360979694328653,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "guruprasad_instability_index",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "index",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 22.347619047619045,
+              "child_value": 22.347619,
+              "raw_delta_child_minus_parent": -4.761904293104635e-08,
+              "improvement_delta": 4.761904293104635e-08,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "llamp_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.306688904762268,
+              "child_value": 1.1889698505401611,
+              "raw_delta_child_minus_parent": -0.11771905422210693,
+              "improvement_delta": 0.11771905422210693,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_amp_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "maximize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.317,
+              "child_value": 0.356,
+              "raw_delta_child_minus_parent": 0.03899999999999998,
+              "improvement_delta": 0.03899999999999998,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_hemolysis_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.426,
+              "child_value": 0.426,
+              "raw_delta_child_minus_parent": 0.0,
+              "improvement_delta": -0.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "maximum_hydrophobic_run",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "residues",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.0,
+              "child_value": 1.0,
+              "raw_delta_child_minus_parent": 0.0,
+              "improvement_delta": -0.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "toxinpred3_hybrid_score",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "dimensionless",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.32,
+              "child_value": 0.37,
+              "raw_delta_child_minus_parent": 0.04999999999999999,
+              "improvement_delta": -0.04999999999999999,
+              "out_of_domain": false
+            }
+          ]
+        }
+      ],
+      "expected_metrics_improved": [
+        "guruprasad_instability_index"
+      ],
+      "expected_metrics_regressed": [],
+      "expected_metrics_incomparable": [],
+      "protected_metrics_regressed": [
+        "toxinpred3_hybrid_score"
+      ],
+      "delta_sha256": "90601fcc4658b0ebd52fd18e67e09c7610bc744bf333b120555e4ff18be294f2"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "00c4e8a9b8d188e4b3f335d347c518559fbb76400b21da8f77face09990c12d0",
+      "action_type": "controlled_crossover",
+      "child_candidate_id": "675fecfab0aa6b3978da842ccf73620180783f81d6cff6440c827bb1e570382a",
+      "baselines": [
+        {
+          "baseline_role": "primary_parent",
+          "baseline_candidate_id": "ad64602f93274126eda202614a771dd0f8c223b80fa39a1a8b1ff27253f03024",
+          "metrics": [
+            {
+              "metric_name": "amp_read_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 2.235381256060225,
+              "child_value": 2.2458436461292943,
+              "raw_delta_child_minus_parent": 0.01046239006906946,
+              "improvement_delta": -0.01046239006906946,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "guruprasad_instability_index",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "index",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 8.47619,
+              "child_value": -8.633333,
+              "raw_delta_child_minus_parent": -17.109523000000003,
+              "improvement_delta": 17.109523000000003,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "llamp_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.5039812326431274,
+              "child_value": 1.7256242036819458,
+              "raw_delta_child_minus_parent": 0.22164297103881836,
+              "improvement_delta": -0.22164297103881836,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_amp_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "maximize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.347,
+              "child_value": 0.426,
+              "raw_delta_child_minus_parent": 0.07900000000000001,
+              "improvement_delta": 0.07900000000000001,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_hemolysis_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.376,
+              "child_value": 0.386,
+              "raw_delta_child_minus_parent": 0.010000000000000009,
+              "improvement_delta": -0.010000000000000009,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "maximum_hydrophobic_run",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "residues",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.0,
+              "child_value": 0.0,
+              "raw_delta_child_minus_parent": -1.0,
+              "improvement_delta": 1.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "toxinpred3_hybrid_score",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "dimensionless",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.295,
+              "child_value": 0.24,
+              "raw_delta_child_minus_parent": -0.05499999999999999,
+              "improvement_delta": 0.05499999999999999,
+              "out_of_domain": false
+            }
+          ]
+        },
+        {
+          "baseline_role": "donor_parent",
+          "baseline_candidate_id": "8764f17c2a1557efafdff92ff6d9beb9f8b2e146c129e2fa267a02a732891868",
+          "metrics": [
+            {
+              "metric_name": "amp_read_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.8805391081477594,
+              "child_value": 2.2458436461292943,
+              "raw_delta_child_minus_parent": 0.36530453798153495,
+              "improvement_delta": -0.36530453798153495,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "guruprasad_instability_index",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "index",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 20.404167,
+              "child_value": -8.633333,
+              "raw_delta_child_minus_parent": -29.0375,
+              "improvement_delta": 29.0375,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "llamp_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.1898541450500488,
+              "child_value": 1.7256242036819458,
+              "raw_delta_child_minus_parent": 0.535770058631897,
+              "improvement_delta": -0.535770058631897,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_amp_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "maximize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.436,
+              "child_value": 0.426,
+              "raw_delta_child_minus_parent": -0.010000000000000009,
+              "improvement_delta": -0.010000000000000009,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_hemolysis_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.426,
+              "child_value": 0.386,
+              "raw_delta_child_minus_parent": -0.03999999999999998,
+              "improvement_delta": 0.03999999999999998,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "maximum_hydrophobic_run",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "residues",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.0,
+              "child_value": 0.0,
+              "raw_delta_child_minus_parent": -1.0,
+              "improvement_delta": 1.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "toxinpred3_hybrid_score",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "dimensionless",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.0,
+              "child_value": 0.24,
+              "raw_delta_child_minus_parent": 0.24,
+              "improvement_delta": -0.24,
+              "out_of_domain": false
+            }
+          ]
+        }
+      ],
+      "expected_metrics_improved": [],
+      "expected_metrics_regressed": [
+        "amp_read_log10_mic_um",
+        "llamp_log10_mic_um"
+      ],
+      "expected_metrics_incomparable": [],
+      "protected_metrics_regressed": [
+        "macrel_hemolysis_probability"
+      ],
+      "delta_sha256": "689eef8edd04078291ed82bdab6bb999cfe31351dd06bbf3f9c1a49c25f1e190"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "262411495f4dfe7cac127f7f11e7a33b23ab7b2d37156dda45300ec674e5813b",
+      "action_type": "de_novo",
+      "child_candidate_id": "d146d9b977bc74b8819988c85c1eb65a74ca770d5fd62d02c6cf0eb7a3686aad",
+      "baselines": [],
+      "expected_metrics_improved": [],
+      "expected_metrics_regressed": [],
+      "expected_metrics_incomparable": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics_regressed": [],
+      "delta_sha256": "e72b14ee962d5488d0ba8f1c5cd2d4f2adc414efad0bb58ac1a8f1ef9ec1edd7"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "1ea648599cd922343d5bff75ead46ee4dfd4698caee243b57c87dc3908b6a92f",
+      "action_type": "de_novo",
+      "child_candidate_id": "9ecb2d39564f36ff6da4316cf5e8964b702cad165ea62a6da248cc582a032bcd",
+      "baselines": [],
+      "expected_metrics_improved": [],
+      "expected_metrics_regressed": [],
+      "expected_metrics_incomparable": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics_regressed": [],
+      "delta_sha256": "c318d087277ddb26a0ccbb39c7c89951f96a4750a1f2c87e91d1fdf92b03ef16"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "6786940d1cd427cc71053eea5932dcdab9d3020819b2238160224b70b606d68e",
+      "action_type": "masked_substitution",
+      "child_candidate_id": "ee51c17a3c0c76a623f68155a24d125bf0b6e41635df9dcc0da48b1752a373c4",
+      "baselines": [
+        {
+          "baseline_role": "primary_parent",
+          "baseline_candidate_id": "00342e80d29ba0fd35eca1710ddddd3b8e721dbfd009f38c57253e3dc34b21c1",
+          "metrics": [
+            {
+              "metric_name": "amp_read_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.5127903449868494,
+              "child_value": 1.5931931998202575,
+              "raw_delta_child_minus_parent": 0.08040285483340814,
+              "improvement_delta": -0.08040285483340814,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "guruprasad_instability_index",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "index",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 22.347619047619045,
+              "child_value": 23.628571,
+              "raw_delta_child_minus_parent": 1.2809519523809563,
+              "improvement_delta": -1.2809519523809563,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "llamp_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.306688904762268,
+              "child_value": 1.6510807275772095,
+              "raw_delta_child_minus_parent": 0.3443918228149414,
+              "improvement_delta": -0.3443918228149414,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_amp_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "maximize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.317,
+              "child_value": 0.287,
+              "raw_delta_child_minus_parent": -0.030000000000000027,
+              "improvement_delta": -0.030000000000000027,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_hemolysis_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.426,
+              "child_value": 0.327,
+              "raw_delta_child_minus_parent": -0.09899999999999998,
+              "improvement_delta": 0.09899999999999998,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "maximum_hydrophobic_run",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "residues",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.0,
+              "child_value": 1.0,
+              "raw_delta_child_minus_parent": 0.0,
+              "improvement_delta": -0.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "toxinpred3_hybrid_score",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "dimensionless",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.32,
+              "child_value": 0.315,
+              "raw_delta_child_minus_parent": -0.0050000000000000044,
+              "improvement_delta": 0.0050000000000000044,
+              "out_of_domain": false
+            }
+          ]
+        }
+      ],
+      "expected_metrics_improved": [],
+      "expected_metrics_regressed": [
+        "guruprasad_instability_index"
+      ],
+      "expected_metrics_incomparable": [],
+      "protected_metrics_regressed": [
+        "macrel_amp_probability"
+      ],
+      "delta_sha256": "c29253520daa2ab3dc70a0653e7d983697fc685cc0e770279ce15e7b82e9dd8e"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "e23e79274f9d82d867c1c2a73cebfe815eb3e6a16bf045ad77ba05c2b8f5c6a1",
+      "action_type": "controlled_crossover",
+      "child_candidate_id": "438883634833286de76a707ffdc889bd509631f4af0f3c3558bca27906bf4ca4",
+      "baselines": [
+        {
+          "baseline_role": "primary_parent",
+          "baseline_candidate_id": "ad64602f93274126eda202614a771dd0f8c223b80fa39a1a8b1ff27253f03024",
+          "metrics": [
+            {
+              "metric_name": "amp_read_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 2.235381256060225,
+              "child_value": 2.7482872970029715,
+              "raw_delta_child_minus_parent": 0.5129060409427466,
+              "improvement_delta": -0.5129060409427466,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "guruprasad_instability_index",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "index",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 8.47619,
+              "child_value": -7.285714,
+              "raw_delta_child_minus_parent": -15.761904000000001,
+              "improvement_delta": 15.761904000000001,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "llamp_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.5039812326431274,
+              "child_value": 1.7823092937469482,
+              "raw_delta_child_minus_parent": 0.2783280611038208,
+              "improvement_delta": -0.2783280611038208,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_amp_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "maximize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.347,
+              "child_value": 0.307,
+              "raw_delta_child_minus_parent": -0.03999999999999998,
+              "improvement_delta": -0.03999999999999998,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_hemolysis_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.376,
+              "child_value": 0.297,
+              "raw_delta_child_minus_parent": -0.07900000000000001,
+              "improvement_delta": 0.07900000000000001,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "maximum_hydrophobic_run",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "residues",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.0,
+              "child_value": 0.0,
+              "raw_delta_child_minus_parent": -1.0,
+              "improvement_delta": 1.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "toxinpred3_hybrid_score",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "dimensionless",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.295,
+              "child_value": 0.155,
+              "raw_delta_child_minus_parent": -0.13999999999999999,
+              "improvement_delta": 0.13999999999999999,
+              "out_of_domain": false
+            }
+          ]
+        },
+        {
+          "baseline_role": "donor_parent",
+          "baseline_candidate_id": "c298bc115339943e7b5932aa96323ba928efc566178f4f2273a2d0b85f9ed098",
+          "metrics": [
+            {
+              "metric_name": "amp_read_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 2.297405682324742,
+              "child_value": 2.7482872970029715,
+              "raw_delta_child_minus_parent": 0.4508816146782295,
+              "improvement_delta": -0.4508816146782295,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "guruprasad_instability_index",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "index",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 16.866667,
+              "child_value": -7.285714,
+              "raw_delta_child_minus_parent": -24.152381,
+              "improvement_delta": 24.152381,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "llamp_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.0648202896118164,
+              "child_value": 1.7823092937469482,
+              "raw_delta_child_minus_parent": 0.7174890041351318,
+              "improvement_delta": -0.7174890041351318,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_amp_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "maximize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.337,
+              "child_value": 0.307,
+              "raw_delta_child_minus_parent": -0.030000000000000027,
+              "improvement_delta": -0.030000000000000027,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_hemolysis_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.307,
+              "child_value": 0.297,
+              "raw_delta_child_minus_parent": -0.010000000000000009,
+              "improvement_delta": 0.010000000000000009,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "maximum_hydrophobic_run",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "residues",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.0,
+              "child_value": 0.0,
+              "raw_delta_child_minus_parent": -1.0,
+              "improvement_delta": 1.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "toxinpred3_hybrid_score",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "dimensionless",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.0,
+              "child_value": 0.155,
+              "raw_delta_child_minus_parent": 0.155,
+              "improvement_delta": -0.155,
+              "out_of_domain": false
+            }
+          ]
+        }
+      ],
+      "expected_metrics_improved": [],
+      "expected_metrics_regressed": [
+        "amp_read_log10_mic_um",
+        "llamp_log10_mic_um"
+      ],
+      "expected_metrics_incomparable": [],
+      "protected_metrics_regressed": [],
+      "delta_sha256": "f89261eae82f8544c14ae45db13578a1d00ca4cbf979755cfdfc8b76880c5266"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "51f397b5acfc81898d4a055357591be826600e95b69c3bc580e855acf20e5a33",
+      "action_type": "de_novo",
+      "child_candidate_id": "c4656fd4aeddac2765a5efa68ed42b9f75ca93062083b2d802b3db3755b455d3",
+      "baselines": [],
+      "expected_metrics_improved": [],
+      "expected_metrics_regressed": [],
+      "expected_metrics_incomparable": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics_regressed": [],
+      "delta_sha256": "1dd92b443ec8b1b7c2f476e3177288c5b139abc1d5393320be675c1697ce1180"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "dd48a174adc8be8d30b73ef0a17b0692af8093aa13b7de8af73af9eb629ae9b0",
+      "action_type": "de_novo",
+      "child_candidate_id": "7eee728faa0f023ec0abaf7dd497c8fa16d3bf599563981b7a7ddc10f320ea86",
+      "baselines": [],
+      "expected_metrics_improved": [],
+      "expected_metrics_regressed": [],
+      "expected_metrics_incomparable": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics_regressed": [],
+      "delta_sha256": "37018c4fbf6cb50bbb33dce7a6dcd017741dbebb80ba951264ddece5b65a1dc1"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "fca86a5ab3ce44760b12359e443845f59812ec7198d76175ef0e22e6fbee34c0",
+      "action_type": "masked_substitution",
+      "child_candidate_id": "1dbc389f7eb262764efcf5b99574f2f2ccf3cffb064f35fe14aefb30e25c643c",
+      "baselines": [
+        {
+          "baseline_role": "primary_parent",
+          "baseline_candidate_id": "00342e80d29ba0fd35eca1710ddddd3b8e721dbfd009f38c57253e3dc34b21c1",
+          "metrics": [
+            {
+              "metric_name": "amp_read_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.5127903449868494,
+              "child_value": 1.5780474129164124,
+              "raw_delta_child_minus_parent": 0.06525706792956298,
+              "improvement_delta": -0.06525706792956298,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "guruprasad_instability_index",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "index",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 22.347619047619045,
+              "child_value": 23.628571,
+              "raw_delta_child_minus_parent": 1.2809519523809563,
+              "improvement_delta": -1.2809519523809563,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "llamp_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.306688904762268,
+              "child_value": 1.6914615631103516,
+              "raw_delta_child_minus_parent": 0.3847726583480835,
+              "improvement_delta": -0.3847726583480835,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_amp_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "maximize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.317,
+              "child_value": 0.327,
+              "raw_delta_child_minus_parent": 0.010000000000000009,
+              "improvement_delta": 0.010000000000000009,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_hemolysis_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.426,
+              "child_value": 0.327,
+              "raw_delta_child_minus_parent": -0.09899999999999998,
+              "improvement_delta": 0.09899999999999998,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "maximum_hydrophobic_run",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "residues",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.0,
+              "child_value": 1.0,
+              "raw_delta_child_minus_parent": 0.0,
+              "improvement_delta": -0.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "toxinpred3_hybrid_score",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "dimensionless",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.32,
+              "child_value": 0.355,
+              "raw_delta_child_minus_parent": 0.034999999999999976,
+              "improvement_delta": -0.034999999999999976,
+              "out_of_domain": false
+            }
+          ]
+        }
+      ],
+      "expected_metrics_improved": [],
+      "expected_metrics_regressed": [
+        "guruprasad_instability_index"
+      ],
+      "expected_metrics_incomparable": [],
+      "protected_metrics_regressed": [
+        "toxinpred3_hybrid_score"
+      ],
+      "delta_sha256": "eff9311e2f62e610f6a4d98553ad975494cf5669622774a3ace4c3fb45d51e92"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "f23901af46a04da6d01194a7eb88c1d1eaaf298b54bbb50192a46ca60f9b7662",
+      "action_type": "controlled_crossover",
+      "child_candidate_id": "12def1620ac3f2465ae9bf35b2b9d16b83e4ea604002dfcbcb7788cd6f380655",
+      "baselines": [
+        {
+          "baseline_role": "primary_parent",
+          "baseline_candidate_id": "ad64602f93274126eda202614a771dd0f8c223b80fa39a1a8b1ff27253f03024",
+          "metrics": [
+            {
+              "metric_name": "amp_read_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 2.235381256060225,
+              "child_value": 1.7293317261725725,
+              "raw_delta_child_minus_parent": -0.5060495298876524,
+              "improvement_delta": 0.5060495298876524,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "guruprasad_instability_index",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "index",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 8.47619,
+              "child_value": -6.457143,
+              "raw_delta_child_minus_parent": -14.933333000000001,
+              "improvement_delta": 14.933333000000001,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "llamp_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.5039812326431274,
+              "child_value": 1.04509699344635,
+              "raw_delta_child_minus_parent": -0.45888423919677734,
+              "improvement_delta": 0.45888423919677734,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_amp_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "maximize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.347,
+              "child_value": 0.436,
+              "raw_delta_child_minus_parent": 0.08900000000000002,
+              "improvement_delta": 0.08900000000000002,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_hemolysis_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.376,
+              "child_value": 0.386,
+              "raw_delta_child_minus_parent": 0.010000000000000009,
+              "improvement_delta": -0.010000000000000009,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "maximum_hydrophobic_run",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "residues",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.0,
+              "child_value": 0.0,
+              "raw_delta_child_minus_parent": -1.0,
+              "improvement_delta": 1.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "toxinpred3_hybrid_score",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "dimensionless",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.295,
+              "child_value": 0.35,
+              "raw_delta_child_minus_parent": 0.05499999999999999,
+              "improvement_delta": -0.05499999999999999,
+              "out_of_domain": false
+            }
+          ]
+        },
+        {
+          "baseline_role": "donor_parent",
+          "baseline_candidate_id": "a7bdf27eb7ad2ea8927c694d5a691176f0fc71047d0b1a9b5c9b7713363a8b05",
+          "metrics": [
+            {
+              "metric_name": "amp_read_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.5680713199732808,
+              "child_value": 1.7293317261725725,
+              "raw_delta_child_minus_parent": 0.16126040619929172,
+              "improvement_delta": -0.16126040619929172,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "guruprasad_instability_index",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "index",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 24.329167,
+              "child_value": -6.457143,
+              "raw_delta_child_minus_parent": -30.78631,
+              "improvement_delta": 30.78631,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "llamp_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.9258444309234619,
+              "child_value": 1.04509699344635,
+              "raw_delta_child_minus_parent": 0.11925256252288818,
+              "improvement_delta": -0.11925256252288818,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_amp_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "maximize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.379,
+              "child_value": 0.436,
+              "raw_delta_child_minus_parent": 0.056999999999999995,
+              "improvement_delta": 0.056999999999999995,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_hemolysis_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.376,
+              "child_value": 0.386,
+              "raw_delta_child_minus_parent": 0.010000000000000009,
+              "improvement_delta": -0.010000000000000009,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "maximum_hydrophobic_run",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "residues",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.0,
+              "child_value": 0.0,
+              "raw_delta_child_minus_parent": -1.0,
+              "improvement_delta": 1.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "toxinpred3_hybrid_score",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "dimensionless",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.0,
+              "child_value": 0.35,
+              "raw_delta_child_minus_parent": 0.35,
+              "improvement_delta": -0.35,
+              "out_of_domain": false
+            }
+          ]
+        }
+      ],
+      "expected_metrics_improved": [
+        "amp_read_log10_mic_um",
+        "llamp_log10_mic_um"
+      ],
+      "expected_metrics_regressed": [],
+      "expected_metrics_incomparable": [],
+      "protected_metrics_regressed": [
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "delta_sha256": "9bf5fa41cac7bb763123ac94dac619ffadf44aa0517136e47e9a68072e8ec95d"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "ebc2a967777744daffe3ab91050b9bf80af3300f48f6149d9fc0d9a2a61c4668",
+      "action_type": "de_novo",
+      "child_candidate_id": "6de282db85f4c620678a6715f7a63d5d4733e800d959ec4d45bbb948973d48e5",
+      "baselines": [],
+      "expected_metrics_improved": [],
+      "expected_metrics_regressed": [],
+      "expected_metrics_incomparable": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics_regressed": [],
+      "delta_sha256": "c38431c01291b89a8f58c06bc71aa18692f04c0da68999029b570dc8dc60bc89"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "fff66884dec8c342c928d9582610b2ab7b251b9c12e0c99efdf06c841fc8ccf4",
+      "action_type": "de_novo",
+      "child_candidate_id": "328a7e1398233cca9b74e0ecb5c181a71dd737997cf7ebc4710da20823786408",
+      "baselines": [],
+      "expected_metrics_improved": [],
+      "expected_metrics_regressed": [],
+      "expected_metrics_incomparable": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics_regressed": [],
+      "delta_sha256": "69268ea8f2f7d0e02cdffa207d29a67eadb977970b33fb88deefbaf5af5ac1e7"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "472313ac60b1bceb2d881d5fdcfd6e44b1dc5a5a7bc2c1a50251a4a44e321e93",
+      "action_type": "masked_substitution",
+      "child_candidate_id": "bb980fee19f26ec69476fef01251d40a0547a4efdd690c7aee09032d6bf3954b",
+      "baselines": [
+        {
+          "baseline_role": "primary_parent",
+          "baseline_candidate_id": "00342e80d29ba0fd35eca1710ddddd3b8e721dbfd009f38c57253e3dc34b21c1",
+          "metrics": [
+            {
+              "metric_name": "amp_read_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.5127903449868494,
+              "child_value": 1.6963528353884256,
+              "raw_delta_child_minus_parent": 0.18356249040157624,
+              "improvement_delta": -0.18356249040157624,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "guruprasad_instability_index",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "index",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 22.347619047619045,
+              "child_value": 26.390476,
+              "raw_delta_child_minus_parent": 4.042856952380955,
+              "improvement_delta": -4.042856952380955,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "llamp_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.306688904762268,
+              "child_value": 1.2780698537826538,
+              "raw_delta_child_minus_parent": -0.028619050979614258,
+              "improvement_delta": 0.028619050979614258,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_amp_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "maximize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.317,
+              "child_value": 0.356,
+              "raw_delta_child_minus_parent": 0.03899999999999998,
+              "improvement_delta": 0.03899999999999998,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_hemolysis_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.426,
+              "child_value": 0.386,
+              "raw_delta_child_minus_parent": -0.03999999999999998,
+              "improvement_delta": 0.03999999999999998,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "maximum_hydrophobic_run",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "residues",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.0,
+              "child_value": 1.0,
+              "raw_delta_child_minus_parent": 0.0,
+              "improvement_delta": -0.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "toxinpred3_hybrid_score",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "dimensionless",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.32,
+              "child_value": 0.33,
+              "raw_delta_child_minus_parent": 0.010000000000000009,
+              "improvement_delta": -0.010000000000000009,
+              "out_of_domain": false
+            }
+          ]
+        }
+      ],
+      "expected_metrics_improved": [],
+      "expected_metrics_regressed": [
+        "guruprasad_instability_index"
+      ],
+      "expected_metrics_incomparable": [],
+      "protected_metrics_regressed": [
+        "toxinpred3_hybrid_score"
+      ],
+      "delta_sha256": "e424d7d974b79822967eff97b2d345b4cedd9755eb03f531e6f509d77ce2118c"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "5d01a7ec08c02ce4f649a30f981f969a05bdcdc97a4a3793bc2580e8f277af29",
+      "action_type": "controlled_crossover",
+      "child_candidate_id": "959d16b6e482f9fd06856c8a02d4a3ee37e358b29d6979fc9f0c4489215a2203",
+      "baselines": [
+        {
+          "baseline_role": "primary_parent",
+          "baseline_candidate_id": "1135e6573234f7cd2c8257a10c55e095e497485958035cdb687cb255bbdb6fdc",
+          "metrics": [
+            {
+              "metric_name": "amp_read_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.8589004984398771,
+              "child_value": 1.9088718232811308,
+              "raw_delta_child_minus_parent": 0.04997132484125366,
+              "improvement_delta": -0.04997132484125366,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "guruprasad_instability_index",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "index",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 33.155,
+              "child_value": -5.555,
+              "raw_delta_child_minus_parent": -38.71,
+              "improvement_delta": 38.71,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "llamp_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.5829256772994995,
+              "child_value": 1.4637961387634277,
+              "raw_delta_child_minus_parent": -0.11912953853607178,
+              "improvement_delta": 0.11912953853607178,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_amp_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "maximize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.366,
+              "child_value": 0.446,
+              "raw_delta_child_minus_parent": 0.08000000000000002,
+              "improvement_delta": 0.08000000000000002,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_hemolysis_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.426,
+              "child_value": 0.455,
+              "raw_delta_child_minus_parent": 0.029000000000000026,
+              "improvement_delta": -0.029000000000000026,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "maximum_hydrophobic_run",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "residues",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.0,
+              "child_value": 0.0,
+              "raw_delta_child_minus_parent": -1.0,
+              "improvement_delta": 1.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "toxinpred3_hybrid_score",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "dimensionless",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.265,
+              "child_value": 0.315,
+              "raw_delta_child_minus_parent": 0.04999999999999999,
+              "improvement_delta": -0.04999999999999999,
+              "out_of_domain": false
+            }
+          ]
+        },
+        {
+          "baseline_role": "donor_parent",
+          "baseline_candidate_id": "8764f17c2a1557efafdff92ff6d9beb9f8b2e146c129e2fa267a02a732891868",
+          "metrics": [
+            {
+              "metric_name": "amp_read_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.8805391081477594,
+              "child_value": 1.9088718232811308,
+              "raw_delta_child_minus_parent": 0.028332715133371433,
+              "improvement_delta": -0.028332715133371433,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "guruprasad_instability_index",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "index",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 20.404167,
+              "child_value": -5.555,
+              "raw_delta_child_minus_parent": -25.959167,
+              "improvement_delta": 25.959167,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "llamp_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.1898541450500488,
+              "child_value": 1.4637961387634277,
+              "raw_delta_child_minus_parent": 0.2739419937133789,
+              "improvement_delta": -0.2739419937133789,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_amp_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "maximize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.436,
+              "child_value": 0.446,
+              "raw_delta_child_minus_parent": 0.010000000000000009,
+              "improvement_delta": 0.010000000000000009,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_hemolysis_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.426,
+              "child_value": 0.455,
+              "raw_delta_child_minus_parent": 0.029000000000000026,
+              "improvement_delta": -0.029000000000000026,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "maximum_hydrophobic_run",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "residues",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.0,
+              "child_value": 0.0,
+              "raw_delta_child_minus_parent": -1.0,
+              "improvement_delta": 1.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "toxinpred3_hybrid_score",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "dimensionless",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.0,
+              "child_value": 0.315,
+              "raw_delta_child_minus_parent": 0.315,
+              "improvement_delta": -0.315,
+              "out_of_domain": false
+            }
+          ]
+        }
+      ],
+      "expected_metrics_improved": [
+        "llamp_log10_mic_um"
+      ],
+      "expected_metrics_regressed": [
+        "amp_read_log10_mic_um"
+      ],
+      "expected_metrics_incomparable": [],
+      "protected_metrics_regressed": [
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "delta_sha256": "412d701fe3c0afce06fcef8943fc916390b090e84e1a1a9b3385724fe9944390"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "1db86dc94eef7c385e0264562dc49e2302b62855fb5100550d29a59f7a1b35b8",
+      "action_type": "de_novo",
+      "child_candidate_id": "62f0547206a0eacb5d2400c526a8c5dd991acecb48fe4b350c6d8f6a5fdde43f",
+      "baselines": [],
+      "expected_metrics_improved": [],
+      "expected_metrics_regressed": [],
+      "expected_metrics_incomparable": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics_regressed": [],
+      "delta_sha256": "16bfea8e50ca9ee8882e44c5372f1aeba2be5ed5ba3dae542996bb625c968ea0"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "43d5a28bbdd6ffa22804bc5f59057df3be676c5fa1d357ade81e85c0767e01a5",
+      "action_type": "de_novo",
+      "child_candidate_id": "95b559653879d64909676c84bb94c069633d2fca8702db64d19a567be1bda169",
+      "baselines": [],
+      "expected_metrics_improved": [],
+      "expected_metrics_regressed": [],
+      "expected_metrics_incomparable": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics_regressed": [],
+      "delta_sha256": "6fae0a35dd93df3e7d6ad4f9706107136e16a1c413d675a4b52688d32cddf5c9"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "94baf587b6246b4cda963d98808a96405ead7d1f798ecc4c9094d2d7e6980db4",
+      "action_type": "masked_substitution",
+      "child_candidate_id": "7c718ef8df3f32389b6d020965895bc9168424983490e4202ee020bae5317e75",
+      "baselines": [
+        {
+          "baseline_role": "primary_parent",
+          "baseline_candidate_id": "00342e80d29ba0fd35eca1710ddddd3b8e721dbfd009f38c57253e3dc34b21c1",
+          "metrics": [
+            {
+              "metric_name": "amp_read_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.5127903449868494,
+              "child_value": 1.6235897848432146,
+              "raw_delta_child_minus_parent": 0.1107994398563652,
+              "improvement_delta": -0.1107994398563652,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "guruprasad_instability_index",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "index",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 22.347619047619045,
+              "child_value": 26.390476,
+              "raw_delta_child_minus_parent": 4.042856952380955,
+              "improvement_delta": -4.042856952380955,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "llamp_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.306688904762268,
+              "child_value": 1.3897168636322021,
+              "raw_delta_child_minus_parent": 0.08302795886993408,
+              "improvement_delta": -0.08302795886993408,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_amp_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "maximize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.317,
+              "child_value": 0.327,
+              "raw_delta_child_minus_parent": 0.010000000000000009,
+              "improvement_delta": 0.010000000000000009,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_hemolysis_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.426,
+              "child_value": 0.416,
+              "raw_delta_child_minus_parent": -0.010000000000000009,
+              "improvement_delta": 0.010000000000000009,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "maximum_hydrophobic_run",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "residues",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.0,
+              "child_value": 1.0,
+              "raw_delta_child_minus_parent": 0.0,
+              "improvement_delta": -0.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "toxinpred3_hybrid_score",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "dimensionless",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.32,
+              "child_value": 0.315,
+              "raw_delta_child_minus_parent": -0.0050000000000000044,
+              "improvement_delta": 0.0050000000000000044,
+              "out_of_domain": false
+            }
+          ]
+        }
+      ],
+      "expected_metrics_improved": [],
+      "expected_metrics_regressed": [
+        "guruprasad_instability_index"
+      ],
+      "expected_metrics_incomparable": [],
+      "protected_metrics_regressed": [],
+      "delta_sha256": "5398551ab545647190e66707ed93b5c5d559fe330742d4d6a627a3dca6ebbac9"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "5967150596950d708717e68abb08165586b48e24b23b5b88dbc0ef484267c81e",
+      "action_type": "controlled_crossover",
+      "child_candidate_id": "79e310cea4c1d524dc5062fd0bfdeceb9223d386a86b1ade9a88440a823130bd",
+      "baselines": [
+        {
+          "baseline_role": "primary_parent",
+          "baseline_candidate_id": "ad64602f93274126eda202614a771dd0f8c223b80fa39a1a8b1ff27253f03024",
+          "metrics": [
+            {
+              "metric_name": "amp_read_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 2.235381256060225,
+              "child_value": 1.6931887672593702,
+              "raw_delta_child_minus_parent": -0.5421924888008547,
+              "improvement_delta": 0.5421924888008547,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "guruprasad_instability_index",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "index",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 8.47619,
+              "child_value": -4.147619,
+              "raw_delta_child_minus_parent": -12.623809000000001,
+              "improvement_delta": 12.623809000000001,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "llamp_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.5039812326431274,
+              "child_value": 1.5862218141555786,
+              "raw_delta_child_minus_parent": 0.08224058151245117,
+              "improvement_delta": -0.08224058151245117,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_amp_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "maximize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.347,
+              "child_value": 0.426,
+              "raw_delta_child_minus_parent": 0.07900000000000001,
+              "improvement_delta": 0.07900000000000001,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_hemolysis_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.376,
+              "child_value": 0.317,
+              "raw_delta_child_minus_parent": -0.059,
+              "improvement_delta": 0.059,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "maximum_hydrophobic_run",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "residues",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.0,
+              "child_value": 0.0,
+              "raw_delta_child_minus_parent": -1.0,
+              "improvement_delta": 1.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "toxinpred3_hybrid_score",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "dimensionless",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.295,
+              "child_value": 0.255,
+              "raw_delta_child_minus_parent": -0.03999999999999998,
+              "improvement_delta": 0.03999999999999998,
+              "out_of_domain": false
+            }
+          ]
+        },
+        {
+          "baseline_role": "donor_parent",
+          "baseline_candidate_id": "a7bdf27eb7ad2ea8927c694d5a691176f0fc71047d0b1a9b5c9b7713363a8b05",
+          "metrics": [
+            {
+              "metric_name": "amp_read_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.5680713199732808,
+              "child_value": 1.6931887672593702,
+              "raw_delta_child_minus_parent": 0.12511744728608942,
+              "improvement_delta": -0.12511744728608942,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "guruprasad_instability_index",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "index",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 24.329167,
+              "child_value": -4.147619,
+              "raw_delta_child_minus_parent": -28.476786,
+              "improvement_delta": 28.476786,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "llamp_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.9258444309234619,
+              "child_value": 1.5862218141555786,
+              "raw_delta_child_minus_parent": 0.6603773832321167,
+              "improvement_delta": -0.6603773832321167,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_amp_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "maximize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.379,
+              "child_value": 0.426,
+              "raw_delta_child_minus_parent": 0.046999999999999986,
+              "improvement_delta": 0.046999999999999986,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_hemolysis_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.376,
+              "child_value": 0.317,
+              "raw_delta_child_minus_parent": -0.059,
+              "improvement_delta": 0.059,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "maximum_hydrophobic_run",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "residues",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.0,
+              "child_value": 0.0,
+              "raw_delta_child_minus_parent": -1.0,
+              "improvement_delta": 1.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "toxinpred3_hybrid_score",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "dimensionless",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.0,
+              "child_value": 0.255,
+              "raw_delta_child_minus_parent": 0.255,
+              "improvement_delta": -0.255,
+              "out_of_domain": false
+            }
+          ]
+        }
+      ],
+      "expected_metrics_improved": [
+        "amp_read_log10_mic_um"
+      ],
+      "expected_metrics_regressed": [
+        "llamp_log10_mic_um"
+      ],
+      "expected_metrics_incomparable": [],
+      "protected_metrics_regressed": [],
+      "delta_sha256": "baca710a4173da7a3960865fa369933065abd156b0e7c276eb31ef862d5e8653"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "b1922f733d4e758e89f7a425abd87e1b7c6527f9bb17e8e4f06b8ffca6a1d080",
+      "action_type": "de_novo",
+      "child_candidate_id": "a273308f61213dd30357ec22a954bbce1f06a7c499427047057655200e806a01",
+      "baselines": [],
+      "expected_metrics_improved": [],
+      "expected_metrics_regressed": [],
+      "expected_metrics_incomparable": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics_regressed": [],
+      "delta_sha256": "0a1be72f962d06ab77c0696b6a872cc6b7ab81829e053b6f104b5139424f7a07"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "7840882d4caeca314d99f2ac56a593296a3d2fcd6c759dc5bcd3e9734947b3ce",
+      "action_type": "de_novo",
+      "child_candidate_id": "ba733b890f63d7ed103b974d930daf31e19d719d662e6c230eabe87c91c46c75",
+      "baselines": [],
+      "expected_metrics_improved": [],
+      "expected_metrics_regressed": [],
+      "expected_metrics_incomparable": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics_regressed": [],
+      "delta_sha256": "70e757a640da856b10be86f41f17ec964eefff83a9547617b84e5ba361202459"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "77a65ece676a69d12991c634ce64e2b99f2e43916ce47fda024b39c347a9cc72",
+      "action_type": "masked_substitution",
+      "child_candidate_id": "2584242cdf9fac50c3f50b296b3ce3d78551c749020c312705949247c32630f4",
+      "baselines": [
+        {
+          "baseline_role": "primary_parent",
+          "baseline_candidate_id": "00342e80d29ba0fd35eca1710ddddd3b8e721dbfd009f38c57253e3dc34b21c1",
+          "metrics": [
+            {
+              "metric_name": "amp_read_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.5127903449868494,
+              "child_value": 1.5606673212590836,
+              "raw_delta_child_minus_parent": 0.047876976272234195,
+              "improvement_delta": -0.047876976272234195,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "guruprasad_instability_index",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "index",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 22.347619047619045,
+              "child_value": 27.747619,
+              "raw_delta_child_minus_parent": 5.399999952380956,
+              "improvement_delta": -5.399999952380956,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "llamp_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.306688904762268,
+              "child_value": 1.491700291633606,
+              "raw_delta_child_minus_parent": 0.1850113868713379,
+              "improvement_delta": -0.1850113868713379,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_amp_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "maximize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.317,
+              "child_value": 0.317,
+              "raw_delta_child_minus_parent": 0.0,
+              "improvement_delta": 0.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_hemolysis_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.426,
+              "child_value": 0.287,
+              "raw_delta_child_minus_parent": -0.139,
+              "improvement_delta": 0.139,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "maximum_hydrophobic_run",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "residues",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.0,
+              "child_value": 1.0,
+              "raw_delta_child_minus_parent": 0.0,
+              "improvement_delta": -0.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "toxinpred3_hybrid_score",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "dimensionless",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.32,
+              "child_value": 0.315,
+              "raw_delta_child_minus_parent": -0.0050000000000000044,
+              "improvement_delta": 0.0050000000000000044,
+              "out_of_domain": false
+            }
+          ]
+        }
+      ],
+      "expected_metrics_improved": [],
+      "expected_metrics_regressed": [
+        "guruprasad_instability_index"
+      ],
+      "expected_metrics_incomparable": [],
+      "protected_metrics_regressed": [],
+      "delta_sha256": "d3d0b0281fb9bc74244c4b984e396e55252af3e9f54f32acdf755c43fe1803c1"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "0bdc847c1bb77ce7395bc815531ba33f9c6f28b7b54e4780bca7dc4b27f98cbb",
+      "action_type": "controlled_crossover",
+      "child_candidate_id": "77191af6cb3f4ec1580086007a56cfcb9a516053d02187de97f47c85b7195932",
+      "baselines": [
+        {
+          "baseline_role": "primary_parent",
+          "baseline_candidate_id": "ad64602f93274126eda202614a771dd0f8c223b80fa39a1a8b1ff27253f03024",
+          "metrics": [
+            {
+              "metric_name": "amp_read_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 2.235381256060225,
+              "child_value": 2.565389755349555,
+              "raw_delta_child_minus_parent": 0.3300084992893302,
+              "improvement_delta": -0.3300084992893302,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "guruprasad_instability_index",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "index",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 8.47619,
+              "child_value": -3.242857,
+              "raw_delta_child_minus_parent": -11.719047,
+              "improvement_delta": 11.719047,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "llamp_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.5039812326431274,
+              "child_value": 1.8464723825454712,
+              "raw_delta_child_minus_parent": 0.34249114990234375,
+              "improvement_delta": -0.34249114990234375,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_amp_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "maximize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.347,
+              "child_value": 0.347,
+              "raw_delta_child_minus_parent": 0.0,
+              "improvement_delta": 0.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_hemolysis_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.376,
+              "child_value": 0.366,
+              "raw_delta_child_minus_parent": -0.010000000000000009,
+              "improvement_delta": 0.010000000000000009,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "maximum_hydrophobic_run",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "residues",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.0,
+              "child_value": 0.0,
+              "raw_delta_child_minus_parent": -1.0,
+              "improvement_delta": 1.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "toxinpred3_hybrid_score",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "dimensionless",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.295,
+              "child_value": 0.235,
+              "raw_delta_child_minus_parent": -0.06,
+              "improvement_delta": 0.06,
+              "out_of_domain": false
+            }
+          ]
+        },
+        {
+          "baseline_role": "donor_parent",
+          "baseline_candidate_id": "8764f17c2a1557efafdff92ff6d9beb9f8b2e146c129e2fa267a02a732891868",
+          "metrics": [
+            {
+              "metric_name": "amp_read_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.8805391081477594,
+              "child_value": 2.565389755349555,
+              "raw_delta_child_minus_parent": 0.6848506472017957,
+              "improvement_delta": -0.6848506472017957,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "guruprasad_instability_index",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "index",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 20.404167,
+              "child_value": -3.242857,
+              "raw_delta_child_minus_parent": -23.647024000000002,
+              "improvement_delta": 23.647024000000002,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "llamp_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.1898541450500488,
+              "child_value": 1.8464723825454712,
+              "raw_delta_child_minus_parent": 0.6566182374954224,
+              "improvement_delta": -0.6566182374954224,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_amp_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "maximize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.436,
+              "child_value": 0.347,
+              "raw_delta_child_minus_parent": -0.08900000000000002,
+              "improvement_delta": -0.08900000000000002,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_hemolysis_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.426,
+              "child_value": 0.366,
+              "raw_delta_child_minus_parent": -0.06,
+              "improvement_delta": 0.06,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "maximum_hydrophobic_run",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "residues",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.0,
+              "child_value": 0.0,
+              "raw_delta_child_minus_parent": -1.0,
+              "improvement_delta": 1.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "toxinpred3_hybrid_score",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "dimensionless",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.0,
+              "child_value": 0.235,
+              "raw_delta_child_minus_parent": 0.235,
+              "improvement_delta": -0.235,
+              "out_of_domain": false
+            }
+          ]
+        }
+      ],
+      "expected_metrics_improved": [],
+      "expected_metrics_regressed": [
+        "amp_read_log10_mic_um",
+        "llamp_log10_mic_um"
+      ],
+      "expected_metrics_incomparable": [],
+      "protected_metrics_regressed": [],
+      "delta_sha256": "c8f1391a27c0bd879b293eeb1eb3f42d0dfc65bbc29d4cdcf8fdd1708f665884"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "0d113c8a4a778afc833c969d26b0ad901eaa0cd63bacefe81951ca41c80eb895",
+      "action_type": "de_novo",
+      "child_candidate_id": "5daa5d4f5933a3269c242304389ef40b957030177928f9023df159c3c25274d8",
+      "baselines": [],
+      "expected_metrics_improved": [],
+      "expected_metrics_regressed": [],
+      "expected_metrics_incomparable": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics_regressed": [],
+      "delta_sha256": "d629b11491efe7013e4979c9f29255aafcac794a71c3890a4250a078ce924ec6"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "eefbb1a39aacafd89dad8926b5393f3879c3230bea1952e1367627cc8adcb9a0",
+      "action_type": "de_novo",
+      "child_candidate_id": "df29885c3ac476e7a9a6efa1fe48d94e8bf6230ab8d2b0ddd2fe35ea9a91500b",
+      "baselines": [],
+      "expected_metrics_improved": [],
+      "expected_metrics_regressed": [],
+      "expected_metrics_incomparable": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics_regressed": [],
+      "delta_sha256": "c784faafcef7a2bbe6059a1c81adc3707412042ee61d71d7d24f53cb502da6e4"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "6a153d84a603988591370730a1c41849a47295e8ac6fa4a4895420f1a0d0c88d",
+      "action_type": "masked_substitution",
+      "child_candidate_id": "7dbe540d62ce14f8a6ba14a73101453665af5bb894a380a7f315d9f123b06d6b",
+      "baselines": [
+        {
+          "baseline_role": "primary_parent",
+          "baseline_candidate_id": "00342e80d29ba0fd35eca1710ddddd3b8e721dbfd009f38c57253e3dc34b21c1",
+          "metrics": [
+            {
+              "metric_name": "amp_read_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.5127903449868494,
+              "child_value": 1.6772403580346102,
+              "raw_delta_child_minus_parent": 0.16445001304776086,
+              "improvement_delta": -0.16445001304776086,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "guruprasad_instability_index",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "index",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 22.347619047619045,
+              "child_value": 33.604762,
+              "raw_delta_child_minus_parent": 11.257142952380956,
+              "improvement_delta": -11.257142952380956,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "llamp_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.306688904762268,
+              "child_value": 1.6695934534072876,
+              "raw_delta_child_minus_parent": 0.36290454864501953,
+              "improvement_delta": -0.36290454864501953,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_amp_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "maximize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.317,
+              "child_value": 0.337,
+              "raw_delta_child_minus_parent": 0.020000000000000018,
+              "improvement_delta": 0.020000000000000018,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_hemolysis_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.426,
+              "child_value": 0.317,
+              "raw_delta_child_minus_parent": -0.10899999999999999,
+              "improvement_delta": 0.10899999999999999,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "maximum_hydrophobic_run",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "residues",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.0,
+              "child_value": 1.0,
+              "raw_delta_child_minus_parent": 0.0,
+              "improvement_delta": -0.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "toxinpred3_hybrid_score",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "dimensionless",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.32,
+              "child_value": 0.275,
+              "raw_delta_child_minus_parent": -0.044999999999999984,
+              "improvement_delta": 0.044999999999999984,
+              "out_of_domain": false
+            }
+          ]
+        }
+      ],
+      "expected_metrics_improved": [],
+      "expected_metrics_regressed": [
+        "guruprasad_instability_index"
+      ],
+      "expected_metrics_incomparable": [],
+      "protected_metrics_regressed": [],
+      "delta_sha256": "d97e294e049d91b4b72f34ebbd08f47a68cc3d870d3de3492d7d92917fb9b052"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "ea77bc5598c47cb4aded81f62b83fd62044496a99aa5a553d814ed091a8902ed",
+      "action_type": "controlled_crossover",
+      "child_candidate_id": "f130d651ef39f0d2ce3bb956279aa455169a9a2587545c40b637485efd6c91b6",
+      "baselines": [
+        {
+          "baseline_role": "primary_parent",
+          "baseline_candidate_id": "1135e6573234f7cd2c8257a10c55e095e497485958035cdb687cb255bbdb6fdc",
+          "metrics": [
+            {
+              "metric_name": "amp_read_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.8589004984398771,
+              "child_value": 1.589186353229493,
+              "raw_delta_child_minus_parent": -0.26971414521038417,
+              "improvement_delta": 0.26971414521038417,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "guruprasad_instability_index",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "index",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 33.155,
+              "child_value": -0.845,
+              "raw_delta_child_minus_parent": -34.0,
+              "improvement_delta": 34.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "llamp_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.5829256772994995,
+              "child_value": 0.709182858467102,
+              "raw_delta_child_minus_parent": -0.8737428188323975,
+              "improvement_delta": 0.8737428188323975,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_amp_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "maximize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.366,
+              "child_value": 0.495,
+              "raw_delta_child_minus_parent": 0.129,
+              "improvement_delta": 0.129,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_hemolysis_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.426,
+              "child_value": 0.564,
+              "raw_delta_child_minus_parent": 0.13799999999999996,
+              "improvement_delta": -0.13799999999999996,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "maximum_hydrophobic_run",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "residues",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.0,
+              "child_value": 0.0,
+              "raw_delta_child_minus_parent": -1.0,
+              "improvement_delta": 1.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "toxinpred3_hybrid_score",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "dimensionless",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.265,
+              "child_value": 0.31,
+              "raw_delta_child_minus_parent": 0.044999999999999984,
+              "improvement_delta": -0.044999999999999984,
+              "out_of_domain": false
+            }
+          ]
+        },
+        {
+          "baseline_role": "donor_parent",
+          "baseline_candidate_id": "a7bdf27eb7ad2ea8927c694d5a691176f0fc71047d0b1a9b5c9b7713363a8b05",
+          "metrics": [
+            {
+              "metric_name": "amp_read_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.5680713199732808,
+              "child_value": 1.589186353229493,
+              "raw_delta_child_minus_parent": 0.021115033256212223,
+              "improvement_delta": -0.021115033256212223,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "guruprasad_instability_index",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "index",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 24.329167,
+              "child_value": -0.845,
+              "raw_delta_child_minus_parent": -25.174167,
+              "improvement_delta": 25.174167,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "llamp_log10_mic_um",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "log10(uM)",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.9258444309234619,
+              "child_value": 0.709182858467102,
+              "raw_delta_child_minus_parent": -0.21666157245635986,
+              "improvement_delta": 0.21666157245635986,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_amp_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "maximize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.379,
+              "child_value": 0.495,
+              "raw_delta_child_minus_parent": 0.11599999999999999,
+              "improvement_delta": 0.11599999999999999,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "macrel_hemolysis_probability",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "probability",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.376,
+              "child_value": 0.564,
+              "raw_delta_child_minus_parent": 0.18799999999999994,
+              "improvement_delta": -0.18799999999999994,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "maximum_hydrophobic_run",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "residues",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 1.0,
+              "child_value": 0.0,
+              "raw_delta_child_minus_parent": -1.0,
+              "improvement_delta": 1.0,
+              "out_of_domain": false
+            },
+            {
+              "metric_name": "toxinpred3_hybrid_score",
+              "comparable": true,
+              "reason": "same_metric_contract",
+              "direction": "minimize",
+              "unit": "dimensionless",
+              "version": "frozen-score-all-registry-v1",
+              "parent_value": 0.0,
+              "child_value": 0.31,
+              "raw_delta_child_minus_parent": 0.31,
+              "improvement_delta": -0.31,
+              "out_of_domain": false
+            }
+          ]
+        }
+      ],
+      "expected_metrics_improved": [
+        "amp_read_log10_mic_um",
+        "llamp_log10_mic_um"
+      ],
+      "expected_metrics_regressed": [],
+      "expected_metrics_incomparable": [],
+      "protected_metrics_regressed": [
+        "macrel_hemolysis_probability",
+        "toxinpred3_hybrid_score"
+      ],
+      "delta_sha256": "4877b4e3d7caa38996da9d722b3ec722831bdbcd99ceb52e0bd3e7c98a0495eb"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "514074c54b04a58aba747be50d2a1c1316828b60f9d62bb55936ecaae7a0f314",
+      "action_type": "de_novo",
+      "child_candidate_id": "7b1926c4c1e9e92f5c9473ddeb61a13eed0901c4c542c95f5ca43c5d5875b6a6",
+      "baselines": [],
+      "expected_metrics_improved": [],
+      "expected_metrics_regressed": [],
+      "expected_metrics_incomparable": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics_regressed": [],
+      "delta_sha256": "b970c630d5193233533b17f4b4c014a5b426c941e60914e9006f1997fa77664d"
+    },
+    {
+      "schema_version": "ampgent.autoresearch-parent-child-delta.1",
+      "action_sha256": "6fbe268688ba64c9fabf157e28fbcb6c4a649d716094f9ac51484a5879fc98a0",
+      "action_type": "de_novo",
+      "child_candidate_id": "3a7fe6c1abe581558e08bdbc744c6eacafe473d93ce2aafa3e4b066ec0aa6f92",
+      "baselines": [],
+      "expected_metrics_improved": [],
+      "expected_metrics_regressed": [],
+      "expected_metrics_incomparable": [
+        "macrel_amp_probability"
+      ],
+      "protected_metrics_regressed": [],
+      "delta_sha256": "7419547c26867896756a0313569f0ba74acf8b37ce81e7d87d94ff419ed4aa41"
+    }
+  ]
+}
