@@ -1,0 +1,71 @@
+{
+  "schema_version": "ampgent.autoresearch-temporal-live-pool-drain.1",
+  "observed_at_utc": "2026-08-31T00:31:06.7731391Z",
+  "restart_performed": false,
+  "deployment_performed": false,
+  "workflow_submission_performed": false,
+  "gpu_submission_performed": false,
+  "scientific_history_modified": false,
+  "action": {
+    "kind": "postgresql_idle_connection_pool_drain",
+    "scope": [
+      "temporal",
+      "temporal_visibility"
+    ],
+    "selection_rule": "state=idle only",
+    "active_or_transactional_sessions_terminated": 0,
+    "primary_idle_sessions_targeted": 38,
+    "primary_idle_sessions_terminated": 38,
+    "visibility_idle_sessions_targeted": 2,
+    "visibility_idle_sessions_terminated": 2,
+    "pepagent_scientific_database_sessions_targeted": 0
+  },
+  "verification": {
+    "temporal_cluster_health": "failed",
+    "temporal_cluster_health_error_category": "deadline_exceeded",
+    "bad_connection_log_count_after_2026_08_31T00_26_00Z": 0,
+    "persistence_deadline_log_count_after_2026_08_31T00_26_00Z": 0,
+    "recovery_conclusion": "persistence_error_churn_stopped_but_frontend_health_not_restored"
+  },
+  "postgresql_operational_evidence": [
+    {
+      "postgresql_run_id": "13808374-a6bd-58c9-98ed-ae4e494ce43e",
+      "event_id": "357b8df5-a441-4515-b2c8-1ca7ff91d10e",
+      "sequence_no": 12,
+      "payload_sha256": "8e502fb1ad2b2af46de3150dde95d4b92582f19a8e038d46aa874a00680a1779"
+    },
+    {
+      "postgresql_run_id": "c15910a6-a553-51c1-8ee6-d658d60857ac",
+      "event_id": "f9b5f6b2-8fc2-413b-b7ab-2dcbc86cd54f",
+      "sequence_no": 14,
+      "payload_sha256": "64ac43c42fbe0ab8e5f8cb3d8578a96c0f86eefdd2aa930f3c04af5061239b42"
+    },
+    {
+      "postgresql_run_id": "595e8160-527e-5182-9ac6-429011ff74cd",
+      "event_id": "83182c82-492f-4ece-a370-fde70e3b11c6",
+      "sequence_no": 4,
+      "payload_sha256": "55de389046421e3bdfc03b4672e08b696c133c8d77f402dbb859944232e0f86d"
+    }
+  ],
+  "observer_readback": {
+    "status": "unavailable",
+    "source": "postgresql_operational_evidence",
+    "history_read_status": "unavailable",
+    "history_read_error_category": "timeout",
+    "affects_scientific_run_status": false,
+    "exact_identity_binding_verified_for_all_three_runs": true
+  },
+  "independent_algorithm_progress": {
+    "commit": "ddaa940",
+    "mutation_operator": "autoresearch-rule-substitution-v2",
+    "crossover_operator": "autoresearch-rule-crossover-v2",
+    "new_prescreens": [
+      "mutation_hydrophobic_fraction_nonincrease",
+      "mutation_net_charge_floor",
+      "crossover_hydrophobic_fraction_parent_maximum",
+      "crossover_net_charge_minimum_3"
+    ],
+    "focused_tests": "30 passed",
+    "ruff": "passed"
+  }
+}
