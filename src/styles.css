@@ -137,6 +137,9 @@ button:focus-visible { outline: 2px solid #315be8; outline-offset: 2px; }
 .run-pill.status-succeeded i { background: #18a777; }
 .run-pill.status-failed i { background: #df4b5b; }
 .observability-pill { height: 28px; display: inline-flex; align-items: center; padding: 0 9px; border: 1px solid #f0d7a4; border-radius: 999px; color: #8f651b; background: #fffaf0; font-size: 9px; font-weight: 650; }
+.observability-pill.tone-healthy { border-color: #cde8dc; color: #177954; background: #f2faf6; }
+.observability-pill.tone-error { border-color: #f1c9cf; color: #ad3f4d; background: #fff6f7; }
+.observability-pill.tone-neutral { border-color: #dfe4eb; color: #6f7989; background: #f7f8fa; }
 .spin { animation: spin 1s linear infinite; }
 
 .graph-area { flex: 1; position: relative; min-height: 0; border-top: 1px solid #f0f2f5; }

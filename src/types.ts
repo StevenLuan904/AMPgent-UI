@@ -130,13 +130,22 @@ export interface ScientificRunStatus {
 }
 
 export interface TemporalObservability {
-  status: 'identity_recorded' | 'identity_missing'
+  status: 'healthy' | 'degraded' | 'unavailable' | 'unknown'
+  source: 'postgresql_operational_evidence'
+  observed_at: string | null
+  history_read_status: 'succeeded' | 'failed' | 'unavailable' | 'not_queried'
+  history_read_error_category: SchedulerErrorCategory | null
+  scheduler_error_category: SchedulerErrorCategory | null
+  stale_after_seconds: 300
+  is_stale: boolean
+  postgresql_run_id: string
   temporal_workflow_id: string | null
   temporal_run_id: string | null
-  history_read_status: string
-  history_read_error: string | null
+  evidence_type: string | null
   affects_scientific_run_status: false
 }
+
+export type SchedulerErrorCategory = 'timeout' | 'connectivity' | 'unavailable' | 'permission' | 'not_found' | 'cancelled' | 'application_error' | 'unknown'
 
 export interface ViewerArtifact {
   candidate_id: string

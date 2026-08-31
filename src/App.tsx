@@ -49,6 +49,7 @@ import {
 } from './ResultDistribution'
 import { LaneLabel, WorkflowNode, type LaneNode, type StageNode } from './WorkflowNode'
 import { assertMatchingRunIdentity, type RunIdentity } from './runIdentity'
+import { schedulerHealthDescription, schedulerHealthPresentation } from './schedulerHealth'
 import type {
   CandidatePreview,
   GenerationQualityGate,
@@ -494,8 +495,10 @@ function CanvasHeader({ detail, refreshing, selectionMode, selectedCount, onRefr
     : `${displayCandidateCount.toLocaleString()} 个候选`
   const scientificStatus = detail.run.scientific_run_status?.status ?? detail.run.status
   const temporalObservability = detail.run.temporal_observability
-  const temporalIssue = temporalObservability
-    && (temporalObservability.status === 'identity_missing' || temporalObservability.history_read_error !== null)
+  const schedulerHealth = temporalObservability ? schedulerHealthPresentation(temporalObservability) : null
+  const schedulerHealthTitle = temporalObservability
+    ? `${schedulerHealthDescription(temporalObservability)}${temporalObservability.observed_at ? ` · ${formatTime(temporalObservability.observed_at)} 观测` : ''}`
+    : ''
   return (
     <header className="canvas-header">
       <div className="canvas-title-block">
@@ -515,7 +518,7 @@ function CanvasHeader({ detail, refreshing, selectionMode, selectedCount, onRefr
           <ChartNoAxesCombined /><span>{selectionMode ? `已选 ${selectedCount} 个节点` : '组合分析'}</span>
         </button>
         <span className={`run-pill status-${scientificStatus}`} title="科学运行状态来自权威数据库。"><i />{statusText[scientificStatus] ?? scientificStatus}</span>
-        {temporalIssue && <span className="observability-pill" title="调度可观测性与科学运行状态分别记录。">调度观察异常</span>}
+        {schedulerHealth && <span className={`observability-pill tone-${schedulerHealth.tone}`} title={schedulerHealthTitle}>{schedulerHealth.label}</span>}
         <button className="icon-button" onClick={onRefresh} title="立即刷新"><RefreshCw className={refreshing ? 'spin' : ''} /></button>
         <button className="icon-button"><Ellipsis /></button>
       </div>
