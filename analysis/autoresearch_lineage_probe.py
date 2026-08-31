@@ -9,7 +9,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from pepagent.autoresearch_closed_loop import (
     CandidateEvidence,
@@ -24,7 +24,7 @@ from pepagent.autoresearch_planner import (
     _sequence_prescreen,
     build_multifront_rule_action_plan,
 )
-from pepagent.db.models import Candidate, LifecycleEvent
+from pepagent.db.models import Candidate
 from pepagent.db.session import SessionFactory
 from pepagent.provenance.hashing import sha256_file, sha256_json, sha256_text
 from pepagent.sequence_family import cluster_sequence_families
@@ -68,16 +68,33 @@ def _operational_score_sequence_hashes(
 async def _postgresql_sequence_hash_sources() -> tuple[set[str], set[str]]:
     async with SessionFactory() as session:
         candidate_hashes = set(
-            await session.scalars(select(Candidate.sequence_sha256).distinct())
+            await session.scalars(select(Candidate.sequence_sha256))
         )
-        operational_payloads = list(
+        operational_hash_rows = list(
             await session.scalars(
-                select(LifecycleEvent.payload_json).where(
-                    LifecycleEvent.event_type == "operational.call.succeeded"
+                text(
+                    """
+                    SELECT DISTINCT candidate ->> 'sequence_sha256'
+                    FROM lifecycle_events AS event
+                    CROSS JOIN LATERAL jsonb_array_elements(
+                        CASE
+                            WHEN jsonb_typeof(
+                                event.payload_json -> 'output' -> 'candidates'
+                            ) = 'array'
+                            THEN event.payload_json -> 'output' -> 'candidates'
+                            ELSE '[]'::jsonb
+                        END
+                    ) AS candidate
+                    WHERE event.event_type = 'operational.call.succeeded'
+                      AND event.payload_json ->> 'purpose' = 'score_all'
+                      AND event.payload_json ->> 'status' = 'succeeded'
+                    """
                 )
             )
         )
-    return candidate_hashes, _operational_score_sequence_hashes(operational_payloads)
+    if any(not isinstance(item, str) for item in operational_hash_rows):
+        raise ValueError("PostgreSQL operational score history is malformed")
+    return candidate_hashes, set(operational_hash_rows)
 
 
 def _prefer_full_support_within_families(
