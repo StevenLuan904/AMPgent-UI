@@ -1,0 +1,67 @@
+{
+  "schema_version": "ampgent.autoresearch-activity-rescue-search.1",
+  "observed_at_utc": "2026-08-31T22:05:52.710526+00:00",
+  "parent_score_sha256": "9c987f89f283a8757a0430f34eedecd9adf736a3fc2459b7dd4fc895c6a46969",
+  "parent_score_sha256s": [
+    "9c987f89f283a8757a0430f34eedecd9adf736a3fc2459b7dd4fc895c6a46969"
+  ],
+  "source_branch_filter": "pbp2a",
+  "source_row_count_before_branch_filter": 48,
+  "source_row_count_before_family_filter": 48,
+  "source_row_count": 48,
+  "source_family_filters": [],
+  "operator_mode": "hybrid-pair",
+  "rescue_endpoint": "amp-read",
+  "rescue_metric": "amp_read_log10_mic_um",
+  "rescue_direction": "minimize",
+  "minimum_parent_support": 1,
+  "generation_floor": 35,
+  "plans_sha256": "56cf03d9b8be2a45bc379f7076b438fa58f097b8b169052e3e46218660541162",
+  "historical_sequence_exclusion_count": 99520,
+  "input_sequence_exclusion_count": 48,
+  "historical_source_sha256s": [],
+  "parent_count": 19,
+  "parent_family_count": 15,
+  "generated_novel_strict_count": 30713,
+  "safety_hard_gate_pass_count": 25097,
+  "safety_positive_rescue_gain_count": 15555,
+  "full_score_shortlist_count": 14502,
+  "plugin_status": [
+    {
+      "plugin": "physicochemical_developability",
+      "status": "complete",
+      "candidate_count": 30713,
+      "adapter_version": "2026.08.04-v1",
+      "result_sha256": "ff4083b27a3f01e9c98f06a7bd87b1c7cd41b548d67f480f46ba8083e3431423"
+    },
+    {
+      "plugin": "hemolysis_risk",
+      "status": "complete",
+      "candidate_count": 30713,
+      "adapter_version": "macrel-1.6.1-8c1f732",
+      "result_sha256": "c695ee0ec9cbbe22f96b4e8cd6cf185d925ea67a8b627b7c73fd92ed1f60a1c4"
+    },
+    {
+      "plugin": "toxicity_risk",
+      "status": "complete",
+      "candidate_count": 30713,
+      "adapter_version": "toxinpred3-corrected-v0.2-dcdba83",
+      "result_sha256": "06b9820856145eef08bbf0b3a46f5550655e6802bba9e832af9b2ecba403f888"
+    },
+    {
+      "plugin": "mic_potency_amp_read",
+      "status": "complete",
+      "candidate_count": 30713,
+      "adapter_version": "amp-read-ec9478b-open-weights-cpu-v1",
+      "result_sha256": "07bf566b93fb07c68d63a58940162c6c6ebcba48972bd445e87786d0a87e2370"
+    }
+  ],
+  "workflow_submitted": false,
+  "gpu_task_submitted": false,
+  "historical_run_modified": false,
+  "all_search_scores_sha256": "0bd78607b0a2a0366bafebcadda274bc6297bc1bbcf325f2ca5d118addd05a5d",
+  "safety_pass_candidates_sha256": "925d56afabca838edd989022a8c9564c4a1b44719197e30d32667edff6873768",
+  "safety_gain_candidates_sha256": "497c368cbfe4c37f1793940dbcfe2f9e52ce140f35733436de6376bc3924edc2",
+  "full_score_shortlist_sha256": "97ac0d9384d16f511492c2b27db2f50c02d8642952a3ad76bd6f0cb0cb6f1506",
+  "receipt_payload_sha256": "1d05a4a3130c581e406bfc9782618cb7f0a39be69b3857d125ee817e86f651b6"
+}
