@@ -21,22 +21,15 @@ from pepagent.autoresearch_closed_loop import (
     is_instability_score_qualified_wetlab_candidate,
 )
 from pepagent.provenance.hashing import sha256_text
+from pepagent.sequence_family import ungapped_identity_and_coverage
 
 GOLD_CANDIDATE_TARGET = 50
 _HYDROPHOBIC = frozenset("AVILMFWYC")
 _DE_NOVO_MAXIMUM_HYDROPHOBIC_FRACTION = 0.45
 _DE_NOVO_MAXIMUM_HYDROPHOBIC_RUN = 2
 _DE_NOVO_MINIMUM_NET_CHARGE = 3.0
-_DE_NOVO_MOTIFS = (
-    "KRWLAKIRKL",
-    "KWKLFKKIGK",
-    "RLLRKWLKKL",
-    "KRLVKWIKQL",
-    "WRKLLKIRKA",
-    "KIRWLRKLLK",
-    "RKWLKLIRKK",
-    "KLLRWKIRQL",
-)
+_DE_NOVO_ALPHABET = "KRHNQSTEDAILVFWYG"
+_DE_NOVO_LENGTHS = (20, 21, 22, 23, 24, 25, 26)
 
 
 def _sequence_prescreen(sequence: str) -> tuple[float, int, float]:
@@ -80,6 +73,19 @@ def _de_novo_prescreen_passes(sequence: str) -> bool:
     """Compatibility alias for the rule de-novo proposal gate."""
 
     return _proposal_quality_gate_passes(sequence)
+
+
+def _shares_sequence_family(
+    sequence: str,
+    references: Collection[str],
+) -> bool:
+    """Return whether sequence has a direct edge under the frozen 80/80 contract."""
+
+    for reference in references:
+        identity, coverage = ungapped_identity_and_coverage(sequence, reference)
+        if identity >= 0.8 and coverage >= 0.8:
+            return True
+    return False
 
 
 class PlannerDeltaEvidence(BaseModel):
@@ -265,38 +271,30 @@ def _unique_de_novo_sequence(
     seed: int,
     known_sequences: set[str],
     excluded_sequence_sha256s: Collection[str] = (),
+    family_reference_sequences: Collection[str] = (),
 ) -> str:
-    offset = int(sha256_text(f"{branch_key}:{seed}")[:8], 16)
-    for attempt in range(len(_DE_NOVO_MOTIFS) ** 2 * 3):
-        first = _DE_NOVO_MOTIFS[(offset + attempt) % len(_DE_NOVO_MOTIFS)]
-        second = _DE_NOVO_MOTIFS[
-            (offset + 1 + attempt // len(_DE_NOVO_MOTIFS)) % len(_DE_NOVO_MOTIFS)
-        ]
-        first_rotation = (seed + attempt) % len(first)
-        second_rotation = (seed * 3 + attempt) % len(second)
-        sequence = (
-            first[first_rotation:]
-            + first[:first_rotation]
-            + second[second_rotation:]
-            + second[:second_rotation]
-        )
-        if (
-            sequence not in known_sequences
-            and sha256_text(sequence) not in excluded_sequence_sha256s
-            and _de_novo_prescreen_passes(sequence)
-        ):
-            return sequence
-    alphabet = "KRLAIGFWQNST"
+    family_references = tuple(set(known_sequences) | set(family_reference_sequences))
     for attempt in range(10_000):
-        digest = sha256_text(f"{branch_key}:{seed}:fallback:{attempt}")
+        digest = sha256_text(f"{branch_key}:{seed}:family-opener-v3:{attempt}")
+        length = _DE_NOVO_LENGTHS[
+            int(digest[:2], 16) % len(_DE_NOVO_LENGTHS)
+        ]
+        material = digest
+        nonce = 0
+        while len(material) < length * 2:
+            nonce += 1
+            material += sha256_text(f"{digest}:{nonce}")
         sequence = "".join(
-            alphabet[int(digest[index : index + 2], 16) % len(alphabet)]
-            for index in range(0, 40, 2)
+            _DE_NOVO_ALPHABET[
+                int(material[index : index + 2], 16) % len(_DE_NOVO_ALPHABET)
+            ]
+            for index in range(0, length * 2, 2)
         )
         if (
             sequence not in known_sequences
             and sha256_text(sequence) not in excluded_sequence_sha256s
             and _de_novo_prescreen_passes(sequence)
+            and not _shares_sequence_family(sequence, family_references)
         ):
             return sequence
     raise ValueError("deterministic de-novo planner exhausted its sequence space")
@@ -313,6 +311,7 @@ def build_multifront_rule_action_plan(
     target_sequence_sha256: str,
     prior_deltas: Sequence[PlannerDeltaEvidence] = (),
     historical_sequence_sha256s: Collection[str] = (),
+    historical_family_representatives: Collection[str] = (),
     gold_target: int = GOLD_CANDIDATE_TARGET,
     de_novo_quota: float = 0.2,
     pepmlm_targeted_enabled: bool = True,
@@ -350,6 +349,11 @@ def build_multifront_rule_action_plan(
         for item in historical_sequence_sha256s
     ):
         raise ValueError("planner historical sequence exclusion contains an invalid SHA-256")
+    if any(
+        not item or set(item) - set("ACDEFGHIKLMNPQRSTVWY")
+        for item in historical_family_representatives
+    ):
+        raise ValueError("planner historical family representative is not a canonical peptide")
     archive_sha = snapshot.archive_sha256
     literal_gold_count = len(_gold_candidate_ids(snapshot))
     gold_count = len(_instability_score_qualified_gold_candidate_ids(snapshot, by_id))
@@ -523,12 +527,13 @@ def build_multifront_rule_action_plan(
         seed=seed + 2,
         known_sequences=known_sequences,
         excluded_sequence_sha256s=historical_sequence_sha256s,
+        family_reference_sequences=historical_family_representatives,
     )
     action = DeNovoAction(
         branch_key=branch_key,
         generation=generation,
         seed=seed + 2,
-        operator_id="autoresearch-rule-de-novo-v2",
+        operator_id="autoresearch-rule-de-novo-v3",
         operator_release_sha256=operator_release_sha256,
         expected_improvement_metrics=("macrel_amp_probability",),
         protected_metrics=(
@@ -643,12 +648,13 @@ def build_multifront_rule_action_plan(
             seed=action_seed,
             known_sequences=known_sequences,
             excluded_sequence_sha256s=historical_sequence_sha256s,
+            family_reference_sequences=historical_family_representatives,
         )
         action = DeNovoAction(
             branch_key=branch_key,
             generation=generation,
             seed=action_seed,
-            operator_id="autoresearch-rule-de-novo-v2",
+            operator_id="autoresearch-rule-de-novo-v3",
             operator_release_sha256=operator_release_sha256,
             expected_improvement_metrics=("macrel_amp_probability",),
             protected_metrics=(

@@ -22,6 +22,7 @@ from pepagent.autoresearch_planner import (
     build_multifront_rule_action_plan,
 )
 from pepagent.provenance.hashing import sha256_text
+from pepagent.sequence_family import cluster_sequence_families
 from pepagent.workers import autoresearch_activities
 from pepagent.workers.autoresearch_activities import (
     _compile_pepmlm_action,
@@ -273,8 +274,14 @@ def test_cpu_only_planner_fills_a_fifty_percent_de_novo_quota() -> None:
     assert len({action.proposed_sequence for action in de_novo_actions}) == len(
         de_novo_actions
     )
-    assert all(action.operator_id == "autoresearch-rule-de-novo-v2" for action in de_novo_actions)
-    assert all(_de_novo_prescreen_passes(action.proposed_sequence) for action in de_novo_actions)
+    assert all(
+        action.operator_id == "autoresearch-rule-de-novo-v3"
+        for action in de_novo_actions
+    )
+    assert all(
+        _de_novo_prescreen_passes(action.proposed_sequence)
+        for action in de_novo_actions
+    )
     assert plan["sequence_prescreen_policy"] == {
         "instability_method": "Guruprasad-Reddy-Pandit-1990-via-Biopython-ProtParam",
         "instability_max_exclusive": 50.0,
@@ -313,6 +320,22 @@ def test_rule_de_novo_prescreen_is_stable_across_all_six_target_branches() -> No
             assert hydrophobic_run <= 2
             assert hydrophobic_fraction <= 0.45
             assert charge >= 3.0
+
+        assignments = cluster_sequence_families(known_sequences)
+        assert len({item.family_key for item in assignments}) == 64
+
+
+def test_rule_de_novo_avoids_historical_family_representatives() -> None:
+    historical_representative = "KRHNETAILVKRHNETAILV"
+    sequence = _unique_de_novo_sequence(
+        branch_key="VEGFA",
+        seed=31,
+        known_sequences=set(),
+        family_reference_sequences=(historical_representative,),
+    )
+
+    assignments = cluster_sequence_families((historical_representative, sequence))
+    assert len({item.family_key for item in assignments}) == 2
 
 
 def test_planner_emits_progress_heartbeats_between_expensive_stages(monkeypatch) -> None:
