@@ -1,0 +1,60 @@
+{
+  "schema_version": "ampgent.autoresearch-activity-rescue-search.1",
+  "observed_at_utc": "2026-08-31T15:42:52.049988+00:00",
+  "parent_score_sha256": "19933b494c6dc72a827d432b3c3181115fb760d60420a3945bae512e642e78d7",
+  "parent_score_sha256s": [
+    "19933b494c6dc72a827d432b3c3181115fb760d60420a3945bae512e642e78d7"
+  ],
+  "source_branch_filter": "vegfa",
+  "source_row_count_before_branch_filter": 210,
+  "source_row_count": 210,
+  "operator_mode": "hydrophobic",
+  "rescue_endpoint": "macrel",
+  "rescue_metric": "macrel_amp_probability",
+  "rescue_direction": "maximize",
+  "generation_floor": 7,
+  "plans_sha256": "43b005132f81a9be2086a5e220f83463daaf1306a4e299285f1b0ca6ad30eb2a",
+  "historical_sequence_exclusion_count": 66978,
+  "input_sequence_exclusion_count": 210,
+  "historical_source_sha256s": [
+    "8d430b591d4a9917ca96d94a9079be214e46df7a2a2742c676dadbcc7e3b8599",
+    "bb582763117bfa788d1ac8ede88e53cf72525f4a8fe6f6bd60443f8b26a62bb9"
+  ],
+  "parent_count": 18,
+  "parent_family_count": 5,
+  "generated_novel_strict_count": 2058,
+  "safety_hard_gate_pass_count": 949,
+  "safety_positive_rescue_gain_count": 230,
+  "full_score_shortlist_count": 102,
+  "plugin_status": [
+    {
+      "plugin": "physicochemical_developability",
+      "status": "complete",
+      "candidate_count": 2058,
+      "adapter_version": "2026.08.04-v1",
+      "result_sha256": "ae4175a3aaf75812645618134de8ef7338b89d323ba0cc94bb4f0c9396997944"
+    },
+    {
+      "plugin": "hemolysis_risk",
+      "status": "complete",
+      "candidate_count": 2058,
+      "adapter_version": "macrel-1.6.1-8c1f732",
+      "result_sha256": "1206bce5cb58d03a3dab4f28dc519bafb2db1797ec8a21cddfdfe58f4afaff3c"
+    },
+    {
+      "plugin": "toxicity_risk",
+      "status": "complete",
+      "candidate_count": 2058,
+      "adapter_version": "toxinpred3-corrected-v0.2-dcdba83",
+      "result_sha256": "25ac95e478044701e5ca28c8207063dd5aca3246a5ff95da692ea3a6a2d00063"
+    }
+  ],
+  "workflow_submitted": false,
+  "gpu_task_submitted": false,
+  "historical_run_modified": false,
+  "all_search_scores_sha256": "7b89b0731e5f64e929f385808fea9dd41e5c6c45f5cf67aa44e2fd0f01adc35e",
+  "safety_pass_candidates_sha256": "7b1596e711981b4dabfa7ad22c959fd45e81e7da6bb660235e64986d9fb77d25",
+  "safety_gain_candidates_sha256": "62b7c92560b0a53c4c1c48bea3b27eeac7d618a03c44ba468fda7ed1e87e0f11",
+  "full_score_shortlist_sha256": "96f6c28e7fac33f6d216bf99952153785940efcadb4011eb18003e21265d6c69",
+  "receipt_payload_sha256": "fa1f9106dbdd611291572fe2bbe57809d684e5c7a33baba4fde12c66192d192a"
+}
