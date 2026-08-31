@@ -176,6 +176,44 @@ def test_charge_pattern_operator_explores_non_hydrophobic_edits() -> None:
     assert any(row["edit"].endswith("K") for row in generated)
 
 
+def test_hybrid_pair_operator_records_two_local_edits_and_strict_prefilter() -> None:
+    module = _load_module()
+    parent_sequence = "KRHHKKHKKKVSKKKVSGEVHAYG"
+    parent = {
+        "branch_key": "vegfa",
+        "generation": "11",
+        "sequence": parent_sequence,
+        "sequence_sha256": hashlib.sha256(parent_sequence.encode()).hexdigest(),
+        "macrel_amp_probability": "0.37",
+        "family_key_80_80": "seqfam80-hybrid-gap",
+        "family_representative_sequence": parent_sequence,
+        "new_family_relative_to_all_references": "true",
+        "diversity_qualified": "true",
+    }
+
+    generated, actions = module._generate(
+        [parent], set(), "0" * 64, operator_mode="hybrid-pair"
+    )
+
+    assert generated
+    assert {action["operator_id"] for action in actions} == {
+        "autoresearch-macrel-hybrid-pair-rescue-v1"
+    }
+    assert all(len(action["substitutions"]) == 2 for action in actions)
+    assert all(
+        abs(
+            action["substitutions"][0]["position_zero_based"]
+            - action["substitutions"][1]["position_zero_based"]
+        )
+        == 3
+        for action in actions
+    )
+    assert all(float(row["guruprasad_instability_index"]) < 50 for row in generated)
+    assert all(int(row["maximum_hydrophobic_run"]) <= 2 for row in generated)
+    assert all(float(row["hydrophobic_fraction"]) <= 0.45 for row in generated)
+    assert all(float(row["net_charge_ph7_4"]) >= 3 for row in generated)
+
+
 def test_activity_rescue_advances_to_global_generation_floor() -> None:
     module = _load_module()
     parent_sequence = "RTKKKKTTLRREGNRGKWGK"

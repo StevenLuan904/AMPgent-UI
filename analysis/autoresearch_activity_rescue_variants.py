@@ -27,6 +27,7 @@ from pepagent.provenance.hashing import sha256_file, sha256_json, sha256_text
 HYDROPHOBIC_REPLACEMENTS = "AILVFWY"
 HYDROPHOBIC_RESIDUES = frozenset("AILMFWVY")
 CHARGE_PATTERN_REPLACEMENTS = "KRHAGSTNQ"
+HYBRID_PAIR_OFFSETS = (-3, 3)
 RESCUE_ENDPOINTS = {
     "macrel": {
         "metric": "macrel_amp_probability",
@@ -65,6 +66,21 @@ CHARGE_PATTERN_OPERATOR_RELEASE_SHA256 = sha256_json(
         "operator_id": "autoresearch-macrel-charge-pattern-rescue-v1",
         "replacement_residues": list(CHARGE_PATTERN_REPLACEMENTS),
         "parent_policy": "balanced_per_family_support2_without_existing_support3",
+        "quality_gate": {
+            "guruprasad_instability_index": "<50",
+            "maximum_hydrophobic_run": "<=2",
+            "hydrophobic_fraction": "<=0.45",
+            "net_charge_ph7_4": ">=3",
+        },
+    }
+)
+HYBRID_PAIR_OPERATOR_RELEASE_SHA256 = sha256_json(
+    {
+        "operator_id": "autoresearch-macrel-hybrid-pair-rescue-v1",
+        "primary_replacement_residues": list(HYDROPHOBIC_REPLACEMENTS),
+        "secondary_replacement_residues": list(CHARGE_PATTERN_REPLACEMENTS),
+        "secondary_position_offsets": list(HYBRID_PAIR_OFFSETS),
+        "parent_policy": "support2_macrel_gap_local_hydrophobic_charge_pair",
         "quality_gate": {
             "guruprasad_instability_index": "<50",
             "maximum_hydrophobic_run": "<=2",
@@ -171,9 +187,164 @@ def _generate(
     generated: list[dict[str, Any]] = []
     actions: list[dict[str, Any]] = []
     seen: set[str] = set()
+
+    def append_variant(
+        *,
+        parent: dict[str, str],
+        parent_metric_value: float,
+        sequence: str,
+        substitutions: tuple[ResidueSubstitution, ...],
+        operator_id: str,
+        operator_release_sha256: str,
+    ) -> None:
+        substitutions = tuple(
+            sorted(substitutions, key=lambda item: item.position_zero_based)
+        )
+        digest = sha256_text(sequence)
+        if digest in historical_sha256s or digest in seen:
+            return
+        instability, maximum_hydrophobic_run, net_charge = _sequence_prescreen(sequence)
+        hydrophobic_fraction = _hydrophobic_fraction(sequence)
+        if not (
+            instability < 50.0
+            and maximum_hydrophobic_run <= 2
+            and hydrophobic_fraction <= 0.45
+            and net_charge >= 3.0
+        ):
+            return
+        seen.add(digest)
+        generation = max(
+            int(parent["generation"]) + 1,
+            generation_floor or 0,
+        )
+        action = MaskedSubstitutionAction(
+            branch_key=parent["branch_key"],
+            generation=generation,
+            seed=int(digest[:8], 16),
+            operator_id=operator_id,
+            operator_release_sha256=operator_release_sha256,
+            expected_improvement_metrics=(endpoint["metric"],),
+            protected_metrics=tuple(
+                metric
+                for metric in (
+                    "amp_read_log10_mic_um",
+                    "guruprasad_instability_index",
+                    "llamp_log10_mic_um",
+                    "macrel_amp_probability",
+                    "macrel_hemolysis_probability",
+                    "maximum_hydrophobic_run",
+                    "toxinpred3_hybrid_score",
+                )
+                if metric != endpoint["metric"]
+            ),
+            evidence_sha256s=(evidence_sha256,),
+            parent_candidate_id=parent["sequence_sha256"],
+            parent_sequence_sha256=parent["sequence_sha256"],
+            substitutions=substitutions,
+        )
+        actions.append(action.model_dump(mode="json"))
+        edit_positions = ",".join(
+            str(substitution.position_zero_based + 1) for substitution in substitutions
+        )
+        edits = ";".join(
+            f"{substitution.from_residue}{substitution.position_zero_based + 1}"
+            f"{substitution.to_residue}"
+            for substitution in substitutions
+        )
+        generated.append(
+            {
+                "branch_key": parent["branch_key"],
+                "generation": generation,
+                "action_type": action.action_type,
+                "operator_id": action.operator_id,
+                "action_sha256": action.action_sha256,
+                "parent_candidate_id": parent["sequence_sha256"],
+                "parent_sequence_sha256": parent["sequence_sha256"],
+                "parent_sequence": parent["sequence"],
+                "rescue_endpoint": rescue_endpoint,
+                "rescue_metric": endpoint["metric"],
+                "parent_rescue_metric_value": parent_metric_value,
+                "family_key_80_80": parent["family_key_80_80"],
+                "family_representative_sequence": parent.get(
+                    "family_representative_sequence", parent["sequence"]
+                ),
+                "new_family_relative_to_all_references": parent.get(
+                    "new_family_relative_to_all_references", "false"
+                ),
+                "diversity_qualified": parent.get("diversity_qualified", "false"),
+                "edit_position_1based": edit_positions,
+                "edit": edits,
+                "sequence": sequence,
+                "sequence_sha256": digest,
+                "candidate_id": f"activity-rescue-{digest[:20]}",
+                "guruprasad_instability_index": instability,
+                "maximum_hydrophobic_run": maximum_hydrophobic_run,
+                "hydrophobic_fraction": hydrophobic_fraction,
+                "net_charge_ph7_4": net_charge,
+                "historical_exact_replay": "false",
+                "score_all_status": "search_prefilter",
+            }
+        )
+
     for parent in parents:
         parent_sequence = parent["sequence"]
         parent_metric_value = float(parent[endpoint["metric"]])
+        if operator_mode == "hybrid-pair":
+            operator_id = f"autoresearch-{rescue_endpoint}-hybrid-pair-rescue-v1"
+            operator_release_sha256 = (
+                HYBRID_PAIR_OPERATOR_RELEASE_SHA256
+                if rescue_endpoint == "macrel"
+                else sha256_json(
+                    {
+                        "operator_id": operator_id,
+                        "primary_replacement_residues": list(HYDROPHOBIC_REPLACEMENTS),
+                        "secondary_replacement_residues": list(
+                            CHARGE_PATTERN_REPLACEMENTS
+                        ),
+                        "secondary_position_offsets": list(HYBRID_PAIR_OFFSETS),
+                        "rescue_metric": endpoint["metric"],
+                        "rescue_direction": endpoint["direction"],
+                        "quality_gate": "strict-display-prefilter-v1",
+                    }
+                )
+            )
+            for primary_position, primary_old in enumerate(parent_sequence):
+                if primary_old in HYDROPHOBIC_RESIDUES:
+                    continue
+                for primary_new in HYDROPHOBIC_REPLACEMENTS:
+                    for offset in HYBRID_PAIR_OFFSETS:
+                        secondary_position = primary_position + offset
+                        if not 0 <= secondary_position < len(parent_sequence):
+                            continue
+                        secondary_old = parent_sequence[secondary_position]
+                        if secondary_old in HYDROPHOBIC_RESIDUES:
+                            continue
+                        for secondary_new in CHARGE_PATTERN_REPLACEMENTS:
+                            if secondary_new == secondary_old:
+                                continue
+                            sequence_chars = list(parent_sequence)
+                            sequence_chars[primary_position] = primary_new
+                            sequence_chars[secondary_position] = secondary_new
+                            append_variant(
+                                parent=parent,
+                                parent_metric_value=parent_metric_value,
+                                sequence="".join(sequence_chars),
+                                substitutions=(
+                                    ResidueSubstitution(
+                                        position_zero_based=primary_position,
+                                        from_residue=primary_old,
+                                        to_residue=primary_new,
+                                    ),
+                                    ResidueSubstitution(
+                                        position_zero_based=secondary_position,
+                                        from_residue=secondary_old,
+                                        to_residue=secondary_new,
+                                    ),
+                                ),
+                                operator_id=operator_id,
+                                operator_release_sha256=operator_release_sha256,
+                            )
+            continue
         for position, old_residue in enumerate(parent_sequence):
             if operator_mode == "hydrophobic" and old_residue in HYDROPHOBIC_RESIDUES:
                 continue
@@ -206,46 +377,10 @@ def _generate(
                 sequence = (
                     parent_sequence[:position] + new_residue + parent_sequence[position + 1 :]
                 )
-                digest = sha256_text(sequence)
-                if digest in historical_sha256s or digest in seen:
-                    continue
-                instability, maximum_hydrophobic_run, net_charge = _sequence_prescreen(sequence)
-                hydrophobic_fraction = _hydrophobic_fraction(sequence)
-                if not (
-                    instability < 50.0
-                    and maximum_hydrophobic_run <= 2
-                    and hydrophobic_fraction <= 0.45
-                    and net_charge >= 3.0
-                ):
-                    continue
-                seen.add(digest)
-                generation = max(
-                    int(parent["generation"]) + 1,
-                    generation_floor or 0,
-                )
-                action = MaskedSubstitutionAction(
-                    branch_key=parent["branch_key"],
-                    generation=generation,
-                    seed=int(digest[:8], 16),
-                    operator_id=operator_id,
-                    operator_release_sha256=operator_release_sha256,
-                    expected_improvement_metrics=(endpoint["metric"],),
-                    protected_metrics=tuple(
-                        metric
-                        for metric in (
-                            "amp_read_log10_mic_um",
-                            "guruprasad_instability_index",
-                            "llamp_log10_mic_um",
-                            "macrel_amp_probability",
-                            "macrel_hemolysis_probability",
-                            "maximum_hydrophobic_run",
-                            "toxinpred3_hybrid_score",
-                        )
-                        if metric != endpoint["metric"]
-                    ),
-                    evidence_sha256s=(evidence_sha256,),
-                    parent_candidate_id=parent["sequence_sha256"],
-                    parent_sequence_sha256=parent["sequence_sha256"],
+                append_variant(
+                    parent=parent,
+                    parent_metric_value=parent_metric_value,
+                    sequence=sequence,
                     substitutions=(
                         ResidueSubstitution(
                             position_zero_based=position,
@@ -253,41 +388,8 @@ def _generate(
                             to_residue=new_residue,
                         ),
                     ),
-                )
-                actions.append(action.model_dump(mode="json"))
-                generated.append(
-                    {
-                        "branch_key": parent["branch_key"],
-                        "generation": generation,
-                        "action_type": action.action_type,
-                        "operator_id": action.operator_id,
-                        "action_sha256": action.action_sha256,
-                        "parent_candidate_id": parent["sequence_sha256"],
-                        "parent_sequence_sha256": parent["sequence_sha256"],
-                        "parent_sequence": parent_sequence,
-                        "rescue_endpoint": rescue_endpoint,
-                        "rescue_metric": endpoint["metric"],
-                        "parent_rescue_metric_value": parent_metric_value,
-                        "family_key_80_80": parent["family_key_80_80"],
-                        "family_representative_sequence": parent.get(
-                            "family_representative_sequence", parent_sequence
-                        ),
-                        "new_family_relative_to_all_references": parent.get(
-                            "new_family_relative_to_all_references", "false"
-                        ),
-                        "diversity_qualified": parent.get("diversity_qualified", "false"),
-                        "edit_position_1based": position + 1,
-                        "edit": f"{old_residue}{position + 1}{new_residue}",
-                        "sequence": sequence,
-                        "sequence_sha256": digest,
-                        "candidate_id": f"activity-rescue-{digest[:20]}",
-                        "guruprasad_instability_index": instability,
-                        "maximum_hydrophobic_run": maximum_hydrophobic_run,
-                        "hydrophobic_fraction": hydrophobic_fraction,
-                        "net_charge_ph7_4": net_charge,
-                        "historical_exact_replay": "false",
-                        "score_all_status": "search_prefilter",
-                    }
+                    operator_id=operator_id,
+                    operator_release_sha256=operator_release_sha256,
                 )
     if not generated:
         raise ValueError(f"no novel strict {rescue_endpoint} endpoint rescue variants generated")
@@ -318,6 +420,10 @@ def run(args: argparse.Namespace) -> None:
         if len(parent_score_sha256s) == 1
         else sha256_json({"parent_score_sha256s": parent_score_sha256s})
     )
+    generation_floor = max(
+        max(int(row["generation"]) for row in source_rows) + 1,
+        args.generation_floor or 0,
+    )
     historical_sha256s = asyncio.run(_historical_sequence_sha256s())
     historical_sha256s.update(input_sequence_sha256s)
     historical_source_hashes: list[str] = []
@@ -336,7 +442,7 @@ def run(args: argparse.Namespace) -> None:
         parent_score_sha256,
         operator_mode=args.operator_mode,
         rescue_endpoint=args.rescue_endpoint,
-        generation_floor=max(int(row["generation"]) for row in source_rows) + 1,
+        generation_floor=generation_floor,
     )
 
     output_dir = args.output_dir.resolve()
@@ -457,7 +563,7 @@ def run(args: argparse.Namespace) -> None:
         "rescue_endpoint": args.rescue_endpoint,
         "rescue_metric": endpoint["metric"],
         "rescue_direction": endpoint["direction"],
-        "generation_floor": max(int(row["generation"]) for row in source_rows) + 1,
+        "generation_floor": generation_floor,
         "plans_sha256": sha256_file(plans_path),
         "historical_sequence_exclusion_count": len(historical_sha256s),
         "input_sequence_exclusion_count": len(input_sequence_sha256s),
@@ -501,6 +607,7 @@ def main() -> None:
     parser.add_argument("--repo-root", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--maximum-parents-per-family", type=int, default=8)
+    parser.add_argument("--generation-floor", type=int)
     parser.add_argument("--exclude-families-with-support3", action="store_true")
     parser.add_argument(
         "--rescue-endpoint",
@@ -509,7 +616,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--operator-mode",
-        choices=("hydrophobic", "charge-pattern"),
+        choices=("hydrophobic", "charge-pattern", "hybrid-pair"),
         default="hydrophobic",
     )
     run(parser.parse_args())
