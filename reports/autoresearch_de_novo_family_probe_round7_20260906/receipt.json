@@ -1,0 +1,55 @@
+{
+  "schema_version": "ampgent.autoresearch-de-novo-family-probe.1",
+  "observed_at_utc": "2026-08-31T04:00:28.727844+00:00",
+  "operator_id": "autoresearch-rule-de-novo-v4",
+  "selected_branches": [
+    "angpt1",
+    "vegfa"
+  ],
+  "branch_quotas": {
+    "angpt1": 384,
+    "vegfa": 384
+  },
+  "historical_sequence_count": 66495,
+  "additional_reference_sequence_count": 409,
+  "proposal_count": 768,
+  "distinct_generated_family_count": 768,
+  "new_family_count_relative_to_postgresql_history": 768,
+  "new_family_count_relative_to_all_references": 768,
+  "additional_reference_csv_sha256s": [
+    "03b48f4eca808816a696d35310dd4f8c52122043d030bfbbb5bda51c673df8fe"
+  ],
+  "profile_csv_sha256s": [
+    "03b48f4eca808816a696d35310dd4f8c52122043d030bfbbb5bda51c673df8fe"
+  ],
+  "profile_sequence_counts": {
+    "acea": 53,
+    "angpt1": 50,
+    "fgf2": 96,
+    "gyra": 58,
+    "pbp2a": 100,
+    "vegfa": 52
+  },
+  "branch_summary": [
+    {
+      "branch_key": "angpt1",
+      "proposal_count": 384,
+      "distinct_family_count": 384,
+      "new_family_count_relative_to_postgresql_history": 384,
+      "new_family_count_relative_to_all_references": 384
+    },
+    {
+      "branch_key": "vegfa",
+      "proposal_count": 384,
+      "distinct_family_count": 384,
+      "new_family_count_relative_to_postgresql_history": 384,
+      "new_family_count_relative_to_all_references": 384
+    }
+  ],
+  "output_csv_sha256": "1de9b1841315ee7adf9a2a57e4a0bfa123eb294d7df42bfbf6ac349c3578cd1c",
+  "summary_csv_sha256": "5af9755e6aca7169b2f4f94ddae42def94c2d7887bf6ed8d70d2cf9cdb2a693c",
+  "workflow_submitted": false,
+  "gpu_task_submitted": false,
+  "historical_run_modified": false,
+  "receipt_payload_sha256": "4da0edcb8536155b9e252f4f9d0181de479cca66cd89958169b15c596088098d"
+}
