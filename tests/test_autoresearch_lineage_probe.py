@@ -23,6 +23,8 @@ def test_targeted_lineage_probe_accepts_selected_branch_only() -> None:
     assert "args.minimum_calibrated_support" in source
     assert 'args.output_dir / "source_cohort.csv"' in source
     assert "historical_sequences = set(input_sequences)" in source
+    assert "args.include_postgresql_history" in source
+    assert "sequence_hashes.update(postgresql_hashes)" in source
 
 
 def test_prefer_full_support_removes_weaker_rows_only_from_rescued_families() -> None:

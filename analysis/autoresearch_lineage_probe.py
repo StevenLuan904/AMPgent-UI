@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
 import csv
 import json
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+
+from sqlalchemy import select
 
 from pepagent.autoresearch_closed_loop import (
     CandidateEvidence,
@@ -20,6 +23,8 @@ from pepagent.autoresearch_planner import (
     _sequence_prescreen,
     build_multifront_rule_action_plan,
 )
+from pepagent.db.models import Candidate
+from pepagent.db.session import SessionFactory
 from pepagent.provenance.hashing import sha256_file, sha256_json, sha256_text
 from pepagent.sequence_family import cluster_sequence_families
 
@@ -32,6 +37,11 @@ ARCHIVE_METRICS = {
     "toxinpred3_hybrid_score": ("minimize", "dimensionless"),
     "guruprasad_instability_index": ("minimize", "index"),
 }
+
+
+async def _postgresql_sequence_hashes() -> set[str]:
+    async with SessionFactory() as session:
+        return set(await session.scalars(select(Candidate.sequence_sha256).distinct()))
 
 
 def _prefer_full_support_within_families(
@@ -159,6 +169,15 @@ def run(args: argparse.Namespace) -> None:
             raise ValueError("historical lineage exclusion has a sequence/hash mismatch")
         historical_sequences.add(sequence)
         sequence_hashes.add(sequence_sha256)
+    postgresql_history_count = 0
+    if args.include_postgresql_history:
+        postgresql_hashes = asyncio.run(_postgresql_sequence_hashes())
+        if any(
+            len(item) != 64 or set(item) - set("0123456789abcdef") for item in postgresql_hashes
+        ):
+            raise ValueError("PostgreSQL history contains an invalid sequence SHA-256")
+        postgresql_history_count = len(postgresql_hashes)
+        sequence_hashes.update(postgresql_hashes)
     operator_release_sha256 = sha256_file(
         Path(__file__).resolve().parents[1] / "src" / "pepagent" / "autoresearch_planner.py"
     )
@@ -398,6 +417,8 @@ def run(args: argparse.Namespace) -> None:
         "historical_source_sha256s": historical_source_hashes,
         "unfiltered_input_sequence_exclusion_count": len(input_sequences),
         "historical_exclusion_sequence_count": len(historical_sequences),
+        "postgresql_history_exclusion_enabled": args.include_postgresql_history,
+        "postgresql_history_sequence_sha256_count": postgresql_history_count,
         "operator_release_sha256": operator_release_sha256,
         "branch_count": len(active_branches),
         "branches": list(active_branches),
@@ -452,6 +473,7 @@ def main() -> None:
     parser.add_argument("--minimum-calibrated-support", type=int, default=0)
     parser.add_argument("--prefer-full-support-within-families", action="store_true")
     parser.add_argument("--force-unresolved-family-coverage", action="store_true")
+    parser.add_argument("--include-postgresql-history", action="store_true")
     run(parser.parse_args())
 
 
