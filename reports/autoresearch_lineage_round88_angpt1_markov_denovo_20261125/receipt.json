@@ -1,0 +1,57 @@
+{
+  "schema_version": "ampgent.autoresearch-lineage-probe.1",
+  "observed_at_utc": "2026-08-31T20:39:59.108597+00:00",
+  "source_csv_sha256s": [
+    "b28f65e6877c9f2a3a545faaf67338e81b3f35a96218a671bb83bfee51e6affa",
+    "9b9e28dce669df7920f4370eacd7e4f7e3af052f7a61e6f2d2a490193c4d788e",
+    "de02eae0bb036ac56cf9397763dabf1a3c837b78b69367a715a7f6a1c5683b6a",
+    "c5cac77100281e2b683af8b218e22db0728b26f34e42a996107bc7cfa0a6b798",
+    "11aec1869c83885fa9389804fbdc27afcb73233c25aa2edb5c618d61047ce573"
+  ],
+  "source_candidate_count": 133,
+  "source_cohort_sha256": "5f8f40cf1a74b919dc49b3a8412b4ea36d58b7167138e87ead580955d2d3835b",
+  "generation": 7,
+  "prefer_full_support_within_families": true,
+  "historical_source_sha256s": [
+    "4b936a157eada8f63f5dcb5f8086d3e61b152aad837bf604f22e2ff6cfa15f7c",
+    "1d74b7819c3614a6e021589d0cd89a9105a0eeed19326bd0d1c868c4678fe9ff",
+    "98eaa2bf209f555ced821d933615119d42b5ea6bdae2036c8247326236f060ca",
+    "3b83eb7ea2ca4f521621b6d00d170f9d55647ef50ba5b718eab3f26fbe34a304",
+    "fcdff3f853b05277e4c9b233089e65b874872233e552b2b11afd7f1e85471584"
+  ],
+  "unfiltered_input_sequence_exclusion_count": 276,
+  "historical_exclusion_sequence_count": 442,
+  "postgresql_history_exclusion_enabled": true,
+  "postgresql_candidate_sequence_sha256_count": 66495,
+  "postgresql_operational_sequence_sha256_count": 7262,
+  "postgresql_history_sequence_sha256_count": 73457,
+  "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+  "branch_count": 1,
+  "branches": [
+    "angpt1"
+  ],
+  "replicate_count_per_branch": 12,
+  "action_count": 48,
+  "forced_family_coverage_enabled": false,
+  "forced_family_count": 0,
+  "forced_family_keys": [],
+  "forced_family_materialized_child_counts": {},
+  "uncovered_forced_family_keys": [],
+  "action_type_counts": {
+    "masked_substitution": 12,
+    "controlled_crossover": 12,
+    "de_novo": 24
+  },
+  "child_count": 48,
+  "exact_historical_replay_count": 0,
+  "new_family_child_count": 24,
+  "children_csv_sha256": "ef2b81f0b4a856369a2ee6e6a3134aa790ec243545e255f98cf1eb225afd1ea4",
+  "actions_sha256": "8f27fa4454a5a31056115c0df5359171488abb5935f34fb403e06407e66b9e14",
+  "archive_before_sha256": "6fe17456f2542e92e5bd833110b1faf470e1ec08f58d1ea4305b1dafd54b6e72",
+  "plans_sha256": "4ba0f860572068989c0118a45b60ba489dc88675cecd7908bcb945a0668831d5",
+  "workflow_submitted": false,
+  "gpu_task_submitted": false,
+  "historical_run_modified": false,
+  "target_sequence_identity_consumed": false,
+  "receipt_payload_sha256": "50f1753e02bce34e98db60c08e759938fba16795efb77d5ff6182a34d3ba4f91"
+}
