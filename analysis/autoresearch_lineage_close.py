@@ -170,6 +170,10 @@ def run(args: argparse.Namespace) -> None:
     children_by_action = {row["action_sha256"]: row for row in child_rows}
     if len(children_by_action) != len(child_rows):
         raise ValueError("lineage close child action identities are not unique")
+    child_generations = {int(row["generation"]) for row in child_rows}
+    if len(child_generations) != 1:
+        raise ValueError("lineage close requires exactly one child generation")
+    generation = child_generations.pop()
 
     flat_deltas: list[dict[str, Any]] = []
     parent_child_receipts: list[dict[str, Any]] = []
@@ -243,7 +247,7 @@ def run(args: argparse.Namespace) -> None:
                 minimum_high_quality_candidates=50,
                 stagnation_patience_generations=2,
             ),
-            generation=2,
+            generation=generation,
         )
         update_payload = update.model_dump(mode="json")
         archive_updates[branch_key] = update_payload

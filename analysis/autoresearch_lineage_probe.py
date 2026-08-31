@@ -69,6 +69,8 @@ def _evidence(row: dict[str, str]) -> CandidateEvidence:
 
 
 def run(args: argparse.Namespace) -> None:
+    if args.generation < 2:
+        raise ValueError("lineage probe generation must be at least 2")
     with args.input_csv.open(encoding="utf-8-sig", newline="") as stream:
         rows = list(csv.DictReader(stream))
     if not rows:
@@ -79,7 +81,21 @@ def run(args: argparse.Namespace) -> None:
     sequence_hashes = {row["sequence_sha256"] for row in rows}
     if len(sequences) != len(rows) or len(sequence_hashes) != len(rows):
         raise ValueError("lineage probe source is not globally sequence-unique")
-    family_references = tuple(sorted(sequences))
+    historical_rows: list[dict[str, str]] = []
+    historical_source_hashes: list[str] = []
+    for path in args.historical_csv:
+        historical_source_hashes.append(sha256_file(path))
+        with path.open(encoding="utf-8-sig", newline="") as stream:
+            historical_rows.extend(csv.DictReader(stream))
+    historical_sequences = set(sequences)
+    for row in historical_rows:
+        sequence = row["sequence"]
+        sequence_sha256 = row.get("sequence_sha256") or sha256_text(sequence)
+        if sequence_sha256 != sha256_text(sequence):
+            raise ValueError("historical lineage exclusion has a sequence/hash mismatch")
+        historical_sequences.add(sequence)
+        sequence_hashes.add(sequence_sha256)
+    family_references = tuple(sorted(historical_sequences))
     operator_release_sha256 = sha256_file(
         Path(__file__).resolve().parents[1] / "src" / "pepagent" / "autoresearch_planner.py"
     )
@@ -98,12 +114,16 @@ def run(args: argparse.Namespace) -> None:
                 sorted({item.family_key for item in evidence})
             )
         )
-        archive = build_multi_front_archive(evidence, policy, generation=1)
+        archive = build_multi_front_archive(
+            evidence,
+            policy,
+            generation=args.generation - 1,
+        )
         plan = build_multifront_rule_action_plan(
             candidates=evidence,
             snapshot=archive,
             branch_key=branch_key,
-            generation=2,
+            generation=args.generation,
             seed=args.seed + branch_index * 10_000,
             operator_release_sha256=operator_release_sha256,
             target_sequence_sha256=sha256_text(f"unused-cpu-target:{branch_key}"),
@@ -122,14 +142,14 @@ def run(args: argparse.Namespace) -> None:
         for rank, payload in enumerate(plan["actions"], start=1):
             action = parse_evolution_action(payload)
             child = apply_evolution_action(action, evidence_by_id)
-            if child in sequences or child in child_sequences:
+            if child in historical_sequences or child in child_sequences:
                 raise ValueError("lineage action produced an exact replay")
             child_sequences.add(child)
             instability, maximum_hydrophobic_run, net_charge = _sequence_prescreen(child)
             child_sha256 = sha256_text(child)
             action_record = {
                 "branch_key": branch_key,
-                "generation": 2,
+                "generation": args.generation,
                 "proposal_rank": rank,
                 "action_type": action.action_type,
                 "action_sha256": action.action_sha256,
@@ -151,7 +171,7 @@ def run(args: argparse.Namespace) -> None:
             child_records.append(
                 {
                     "branch_key": branch_key,
-                    "generation": 2,
+                    "generation": args.generation,
                     "proposal_rank": rank,
                     "seed": action.seed,
                     "operator_id": action.operator_id,
@@ -173,9 +193,11 @@ def run(args: argparse.Namespace) -> None:
 
     assignments = {
         item.sequence: item
-        for item in cluster_sequence_families(sequences | child_sequences)
+        for item in cluster_sequence_families(historical_sequences | child_sequences)
     }
-    reference_family_keys = {assignments[sequence].family_key for sequence in sequences}
+    reference_family_keys = {
+        assignments[sequence].family_key for sequence in historical_sequences
+    }
     for row in child_records:
         assignment = assignments[row["sequence"]]
         row.update(
@@ -240,6 +262,9 @@ def run(args: argparse.Namespace) -> None:
         "observed_at_utc": datetime.now(UTC).isoformat(),
         "source_csv_sha256": sha256_file(args.input_csv),
         "source_candidate_count": len(rows),
+        "generation": args.generation,
+        "historical_source_sha256s": historical_source_hashes,
+        "historical_exclusion_sequence_count": len(historical_sequences),
         "operator_release_sha256": operator_release_sha256,
         "branch_count": len(BRANCHES),
         "action_count": len(action_records),
@@ -277,8 +302,10 @@ def run(args: argparse.Namespace) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--input-csv", type=Path, required=True)
+    parser.add_argument("--historical-csv", type=Path, action="append", default=[])
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--seed", type=int, default=20260907)
+    parser.add_argument("--generation", type=int, default=2)
     parser.add_argument("--de-novo-quota", type=float, default=0.25)
     run(parser.parse_args())
 
