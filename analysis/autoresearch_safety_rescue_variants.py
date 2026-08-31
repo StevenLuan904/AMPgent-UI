@@ -11,6 +11,7 @@ from typing import Any
 import yaml
 from sqlalchemy import select
 
+from pepagent.autoresearch_closed_loop import MaskedSubstitutionAction, ResidueSubstitution
 from pepagent.autoresearch_planner import _hydrophobic_fraction, _sequence_prescreen
 from pepagent.db.models import Candidate
 from pepagent.db.session import SessionFactory
@@ -24,6 +25,19 @@ SEARCH_PLUGINS = (
 )
 EDITABLE = frozenset("AVILMFWYKR")
 REPLACEMENTS = "AGSTNQDEH"
+OPERATOR_RELEASE_SHA256 = sha256_json(
+    {
+        "operator_id": "autoresearch-safety-rescue-substitution-v2",
+        "editable_residues": sorted(EDITABLE),
+        "replacement_residues": list(REPLACEMENTS),
+        "quality_gate": {
+            "guruprasad_instability_index": "<50",
+            "maximum_hydrophobic_run": "<=2",
+            "hydrophobic_fraction": "<=0.45",
+            "net_charge_ph7_4": ">=3",
+        },
+    }
+)
 
 
 def _normalize_registry_paths(value: Any, repo_root: Path) -> Any:
@@ -75,8 +89,13 @@ def _is_low_hemolysis(value: Any) -> bool:
     return str(value).strip().lower() == "low"
 
 
-def _generate(parents: list[dict[str, str]], historical_sha256s: set[str]) -> list[dict[str, Any]]:
+def _generate(
+    parents: list[dict[str, str]],
+    historical_sha256s: set[str],
+    evidence_sha256: str,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     generated: list[dict[str, Any]] = []
+    actions: list[dict[str, Any]] = []
     seen: set[str] = set()
     for parent in parents:
         parent_sequence = parent["sequence"]
@@ -102,12 +121,52 @@ def _generate(parents: list[dict[str, str]], historical_sha256s: set[str]) -> li
                 ):
                     continue
                 seen.add(digest)
+                generation = int(parent.get("generation") or 0) + 1
+                action = MaskedSubstitutionAction(
+                    action_type="masked_substitution",
+                    branch_key=parent["branch_key"],
+                    generation=generation,
+                    seed=int(digest[:8], 16),
+                    operator_id="autoresearch-safety-rescue-substitution-v2",
+                    operator_release_sha256=OPERATOR_RELEASE_SHA256,
+                    expected_improvement_metrics=(
+                        "macrel_hemolysis_probability",
+                        "toxinpred3_hybrid_score",
+                    ),
+                    protected_metrics=(
+                        "amp_read_log10_mic_um",
+                        "llamp_log10_mic_um",
+                        "macrel_amp_probability",
+                    ),
+                    evidence_sha256s=(evidence_sha256,),
+                    parent_candidate_id=parent["sequence_sha256"],
+                    parent_sequence_sha256=parent["sequence_sha256"],
+                    substitutions=(
+                        ResidueSubstitution(
+                            position_zero_based=position,
+                            from_residue=old_residue,
+                            to_residue=new_residue,
+                        ),
+                    ),
+                )
+                action_payload = action.model_dump(mode="json")
+                actions.append(action_payload)
                 generated.append(
                     {
                         "branch_key": parent["branch_key"],
-                        "action_type": "safety_rescue_substitution",
-                        "operator_id": "autoresearch-safety-rescue-substitution-v1",
+                        "generation": generation,
+                        "action_type": action.action_type,
+                        "operator_id": "autoresearch-safety-rescue-substitution-v2",
+                        "action_sha256": action.action_sha256,
+                        "parent_candidate_id": parent["sequence_sha256"],
+                        "parent_sequence_sha256": parent["sequence_sha256"],
                         "parent_sequence": parent_sequence,
+                        "family_key_80_80": parent["family_key_80_80"],
+                        "family_representative_sequence": parent.get(
+                            "family_representative_sequence", parent_sequence
+                        ),
+                        "new_family_relative_to_all_references": "false",
+                        "diversity_qualified": "false",
                         "edit_position_1based": position + 1,
                         "edit": f"{old_residue}{position + 1}{new_residue}",
                         "sequence": sequence,
@@ -121,7 +180,7 @@ def _generate(parents: list[dict[str, str]], historical_sha256s: set[str]) -> li
                         "score_all_status": "search_prefilter",
                     }
                 )
-    return generated
+    return generated, actions
 
 
 def run(args: argparse.Namespace) -> None:
@@ -130,18 +189,47 @@ def run(args: argparse.Namespace) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     with args.parent_scores.open(encoding="utf-8-sig", newline="") as stream:
         source_rows = list(csv.DictReader(stream))
-    parents = [
-        row
-        for row in source_rows
-        if int(row["activity_model_support_count"]) >= 2
-        and row["display_eligible"].lower() == "false"
-    ]
+    parents = []
+    for row in source_rows:
+        support = int(
+            row.get("activity_model_support_count_calibrated")
+            or row["activity_model_support_count"]
+        )
+        if support >= 2 and row["display_eligible"].lower() == "false":
+            parents.append(row)
     if not parents:
         raise ValueError("no active unsafe parents found")
     historical_sha256s = asyncio.run(_historical_sequence_sha256s())
-    generated = _generate(parents, historical_sha256s)
+    historical_source_hashes: list[str] = []
+    for path in args.historical_csv:
+        historical_source_hashes.append(sha256_file(path))
+        with path.open(encoding="utf-8-sig", newline="") as stream:
+            for row in csv.DictReader(stream):
+                sequence = row["sequence"]
+                digest = row.get("sequence_sha256") or sha256_text(sequence)
+                if digest != sha256_text(sequence):
+                    raise ValueError("historical rescue exclusion sequence/hash drifted")
+                historical_sha256s.add(digest)
+    parent_score_sha256 = sha256_file(args.parent_scores)
+    generated, actions = _generate(parents, historical_sha256s, parent_score_sha256)
     if not generated:
         raise ValueError("no novel strict rescue variants generated")
+    plans_path = output_dir / "plans.json"
+    plans_payload = {
+        "schema_version": "ampgent.autoresearch-multibranch-plan.1",
+        "plans": {
+            "acea": {
+                "schema_version": "ampgent.autoresearch-rule-plan.1",
+                "branch_key": "acea",
+                "generation": max(int(row["generation"]) for row in generated),
+                "operator_id": "autoresearch-safety-rescue-substitution-v2",
+                "actions": actions,
+            }
+        },
+    }
+    plans_path.write_text(
+        json.dumps(plans_payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
 
     registry_payload = yaml.safe_load(args.registry.read_text(encoding="utf-8"))
     normalized_registry = _normalize_registry_paths(registry_payload, repo_root)
@@ -202,17 +290,22 @@ def run(args: argparse.Namespace) -> None:
         )
     )
     shortlist = [row for row in rows if row["full_score_shortlist"] == "true"]
+    safety_pass_rows = [row for row in rows if row["safety_hard_gate_pass"] == "true"]
     _write_csv(output_dir / "all_search_scores.csv", rows)
+    if safety_pass_rows:
+        _write_csv(output_dir / "safety_pass_candidates.csv", safety_pass_rows)
     if shortlist:
         _write_csv(output_dir / "full_score_shortlist.csv", shortlist)
     receipt = {
         "schema_version": "ampgent.autoresearch-safety-rescue-search.1",
         "observed_at_utc": datetime.now(UTC).isoformat(),
-        "parent_score_sha256": sha256_file(args.parent_scores),
+        "parent_score_sha256": parent_score_sha256,
+        "plans_sha256": sha256_file(plans_path),
         "historical_sequence_exclusion_count": len(historical_sha256s),
+        "historical_source_sha256s": historical_source_hashes,
         "parent_count": len(parents),
         "generated_novel_strict_count": len(rows),
-        "safety_hard_gate_pass_count": sum(row["safety_hard_gate_pass"] == "true" for row in rows),
+        "safety_hard_gate_pass_count": len(safety_pass_rows),
         "full_score_shortlist_count": len(shortlist),
         "plugin_status": statuses,
         "workflow_submitted": False,
@@ -220,6 +313,10 @@ def run(args: argparse.Namespace) -> None:
         "historical_run_modified": False,
         "all_search_scores_sha256": sha256_file(output_dir / "all_search_scores.csv"),
     }
+    if safety_pass_rows:
+        receipt["safety_pass_candidates_sha256"] = sha256_file(
+            output_dir / "safety_pass_candidates.csv"
+        )
     receipt["receipt_payload_sha256"] = sha256_json(receipt)
     (output_dir / "receipt.json").write_text(
         json.dumps(receipt, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
@@ -229,6 +326,7 @@ def run(args: argparse.Namespace) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--parent-scores", type=Path, required=True)
+    parser.add_argument("--historical-csv", type=Path, action="append", default=[])
     parser.add_argument("--registry", type=Path, required=True)
     parser.add_argument("--repo-root", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)

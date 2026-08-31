@@ -175,12 +175,20 @@ def run(args: argparse.Namespace) -> None:
         raise ValueError("lineage close requires exactly one child generation")
     generation = child_generations.pop()
 
+    branches = tuple(sorted({row["branch_key"] for row in child_rows}))
+    if not branches or set(branches) - set(BRANCHES):
+        raise ValueError("lineage close child branches are invalid")
+    if set(plans_payload["plans"]) != set(branches):
+        raise ValueError("lineage close plan branches do not match children")
+    if set(archives_payload["branches"]) != set(branches):
+        raise ValueError("lineage close archive branches do not match children")
+
     flat_deltas: list[dict[str, Any]] = []
     parent_child_receipts: list[dict[str, Any]] = []
     archive_updates: dict[str, Any] = {}
     replay_branches: dict[str, Any] = {}
     eligible_children: set[str] = set()
-    for branch_key in BRANCHES:
+    for branch_key in branches:
         branch_parents = [row for row in parent_rows if row["branch_key"] == branch_key]
         branch_children = [row for row in child_rows if row["branch_key"] == branch_key]
         policy = MultiFrontArchivePolicy(
@@ -308,7 +316,8 @@ def run(args: argparse.Namespace) -> None:
     receipt = {
         "schema_version": "ampgent.autoresearch-lineage-close.1",
         "observed_at_utc": datetime.now(UTC).isoformat(),
-        "branch_count": len(BRANCHES),
+        "branch_count": len(branches),
+        "branches": list(branches),
         "child_count": len(child_rows),
         "formal_metric_count": len(FORMAL_METRICS),
         "parent_child_delta_receipt_count": len(parent_child_receipts),
