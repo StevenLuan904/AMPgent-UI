@@ -1,0 +1,80 @@
+{
+  "schema_version": "ampgent.autoresearch-proposal-score-probe.1",
+  "observed_at_utc": "2026-08-31T18:49:21.432008+00:00",
+  "source_csv_sha256": "649c638c53817353c063ad23986b24cbc6e9c98b1367155d0eeccadb581e4c87",
+  "registry_sha256": "7a5152541864e7cec1b94bb5eb9c74d313408b5f4d4781f1565525b577164e55",
+  "proposal_count": 48,
+  "formal_metric_names": [
+    "amp_read_log10_mic_um",
+    "guruprasad_instability_index",
+    "hydrophobic_moment_eisenberg",
+    "hydrophobic_ratio_modlamp",
+    "llamp_log10_mic_um",
+    "macrel_amp_probability",
+    "macrel_hemolysis_label",
+    "macrel_hemolysis_probability",
+    "maximum_hydrophobic_run",
+    "net_charge_ph7_4",
+    "toxinpred3_hybrid_score",
+    "toxinpred3_label"
+  ],
+  "plugin_status": [
+    {
+      "plugin": "physicochemical_developability",
+      "status": "complete",
+      "candidate_count": 48,
+      "adapter_version": "2026.08.04-v1",
+      "result_sha256": "0313e3fd98afa6fba5312813bc051e13aef18166d2873202ca412ab8bab1c8ae",
+      "reason_category": null
+    },
+    {
+      "plugin": "hemolysis_risk",
+      "status": "complete",
+      "candidate_count": 48,
+      "adapter_version": "macrel-1.6.1-8c1f732",
+      "result_sha256": "82e282e0f5e75147323a4fef2615c06b75b348fb5a19a1c2dd9795d52f8b7f9a",
+      "reason_category": null
+    },
+    {
+      "plugin": "toxicity_risk",
+      "status": "complete",
+      "candidate_count": 48,
+      "adapter_version": "toxinpred3-corrected-v0.2-dcdba83",
+      "result_sha256": "ef9718276f9db6fa1584e2097d7a75cf7eb519ef0a3d5dd63d52bf6734157019",
+      "reason_category": null
+    },
+    {
+      "plugin": "mic_potency",
+      "status": "complete",
+      "candidate_count": 48,
+      "adapter_version": "llamp-bb48daa-esm2-16b0dddc",
+      "result_sha256": "ae51162bd3489c17872c734e29ae7f163571184e7d3f97bca99e32d8b60eea4b",
+      "reason_category": null
+    },
+    {
+      "plugin": "mic_potency_amp_read",
+      "status": "complete",
+      "candidate_count": 48,
+      "adapter_version": "amp-read-ec9478b-open-weights-cpu-v1",
+      "result_sha256": "b3343f11de7554a847a9c09ced54b802d459ea15d09b64ef3c8b9ddd1dc57f0d",
+      "reason_category": null
+    }
+  ],
+  "formal_12_complete_count": 48,
+  "display_eligible_count": 40,
+  "excellent_sequence_stage_count": 3,
+  "branch_summary": [
+    {
+      "branch_key": "vegfa",
+      "proposal_count": 48,
+      "formal_12_complete_count": 48,
+      "display_eligible_count": 40,
+      "excellent_sequence_stage_count": 3
+    }
+  ],
+  "workflow_submitted": false,
+  "gpu_task_submitted": false,
+  "historical_run_modified": false,
+  "candidate_scores_sha256": "b4f431de3c035ee7d083129286d037607d6169c34a16ae5631959dc059881d08",
+  "receipt_payload_sha256": "ed36fb141960a434ce9aeb184e57d952d3a784325eeec3b0df8262a901d29a5c"
+}

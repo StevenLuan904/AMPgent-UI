@@ -17,6 +17,7 @@ from pepagent.autoresearch_closed_loop import (
 from pepagent.autoresearch_planner import (
     PlannerDeltaEvidence,
     _adaptive_de_novo_alphabet,
+    _adaptive_de_novo_transition_alphabets,
     _de_novo_prescreen_passes,
     _family_balanced_de_novo_profile,
     _sequence_prescreen,
@@ -305,9 +306,11 @@ def test_cpu_only_planner_fills_a_fifty_percent_de_novo_quota() -> None:
     assert plan["required_de_novo_action_count"] == len(de_novo_actions)
     assert len(de_novo_actions) * 2 >= len(actions)
     assert len({action.proposed_sequence for action in de_novo_actions}) == len(de_novo_actions)
-    assert all(action.operator_id == "autoresearch-rule-de-novo-v6" for action in de_novo_actions)
+    assert all(action.operator_id == "autoresearch-rule-de-novo-v8" for action in de_novo_actions)
     assert plan["de_novo_profile_policy"]["family_balanced"] is True
     assert plan["de_novo_profile_policy"]["empirical_profile_weight"] == 0.5
+    assert plan["de_novo_profile_policy"]["minimum_gold_profile_count"] == 3
+    assert plan["de_novo_profile_policy"]["first_order_transition_profile"] is True
     assert all(_de_novo_prescreen_passes(action.proposed_sequence) for action in de_novo_actions)
     assert plan["sequence_prescreen_policy"] == {
         "instability_method": "Guruprasad-Reddy-Pandit-1990-via-Biopython-ProtParam",
@@ -382,6 +385,24 @@ def test_adaptive_de_novo_alphabet_is_deterministic_and_profile_weighted() -> No
         known_sequences=set(),
         residue_alphabet=alphabet,
     )
+    assert _de_novo_prescreen_passes(sequence)
+
+
+def test_de_novo_transition_profile_preserves_elite_local_context() -> None:
+    profile = ("KKGSKKGSKKGS", "RRGSRRGSRRGS")
+
+    transitions = _adaptive_de_novo_transition_alphabets(profile)
+    sequence = _unique_de_novo_sequence(
+        branch_key="VEGFA",
+        seed=43,
+        known_sequences=set(),
+        residue_alphabet=_adaptive_de_novo_alphabet(profile),
+        transition_alphabets=transitions,
+    )
+
+    assert transitions == _adaptive_de_novo_transition_alphabets(tuple(reversed(profile)))
+    assert transitions["K"].count("G") > transitions["K"].count("D")
+    assert transitions["G"].count("S") > transitions["G"].count("D")
     assert _de_novo_prescreen_passes(sequence)
 
 

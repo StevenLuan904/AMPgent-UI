@@ -106,11 +106,19 @@ def _select_unsafe_parents(
             and row["display_eligible"].lower() == "false"
             and (
                 not family_filter
-                or row.get("source_family_key_80_80", row.get("family_key_80_80")) in family_filter
+                or (row.get("source_family_key_80_80") or row.get("family_key_80_80"))
+                in family_filter
             )
         ):
             selected.append(row)
     return selected
+
+
+def _single_branch_key(rows: list[dict[str, str]]) -> str:
+    branch_keys = {row["branch_key"] for row in rows}
+    if len(branch_keys) != 1:
+        raise ValueError("safety rescue requires exactly one source branch")
+    return branch_keys.pop()
 
 
 def _generate(
@@ -232,13 +240,14 @@ def run(args: argparse.Namespace) -> None:
     generated, actions = _generate(parents, historical_sha256s, parent_score_sha256)
     if not generated:
         raise ValueError("no novel strict rescue variants generated")
+    branch_key = _single_branch_key(parents)
     plans_path = output_dir / "plans.json"
     plans_payload = {
         "schema_version": "ampgent.autoresearch-multibranch-plan.1",
         "plans": {
-            "acea": {
+            branch_key: {
                 "schema_version": "ampgent.autoresearch-rule-plan.1",
-                "branch_key": "acea",
+                "branch_key": branch_key,
                 "generation": max(int(row["generation"]) for row in generated),
                 "operator_id": "autoresearch-safety-rescue-substitution-v2",
                 "actions": actions,

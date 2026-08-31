@@ -47,6 +47,51 @@ def test_activity_rescue_can_target_exact_families() -> None:
         module._filter_source_families(rows, ("family-c",))
 
 
+def test_safety_rescue_family_filter_falls_back_from_empty_source_family() -> None:
+    analysis_dir = Path(__file__).resolve().parents[1] / "analysis"
+    spec = importlib.util.spec_from_file_location(
+        "_autoresearch_safety_rescue_variants",
+        analysis_dir / "autoresearch_safety_rescue_variants.py",
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    row = {
+        "activity_model_support_count_calibrated": "2",
+        "display_eligible": "false",
+        "source_family_key_80_80": "",
+        "family_key_80_80": "new-family",
+    }
+
+    assert module._select_unsafe_parents([row], family_keys=("new-family",)) == [row]
+
+
+def test_safety_rescue_actions_preserve_the_source_branch() -> None:
+    analysis_dir = Path(__file__).resolve().parents[1] / "analysis"
+    spec = importlib.util.spec_from_file_location(
+        "_autoresearch_safety_rescue_branch",
+        analysis_dir / "autoresearch_safety_rescue_variants.py",
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    parent_sequence = "KSKKGGHFHFREHKGKRKSGTYKGKK"
+    parent = {
+        "branch_key": "vegfa",
+        "generation": "31",
+        "sequence": parent_sequence,
+        "sequence_sha256": hashlib.sha256(parent_sequence.encode()).hexdigest(),
+        "family_key_80_80": "new-family",
+        "family_representative_sequence": parent_sequence,
+    }
+
+    _, actions = module._generate([parent], set(), "0" * 64)
+
+    assert actions
+    assert {action["branch_key"] for action in actions} == {"vegfa"}
+    assert module._single_branch_key([parent]) == "vegfa"
+
+
 def _load_calibration_module():
     analysis_dir = Path(__file__).resolve().parents[1] / "analysis"
     sys.path.insert(0, str(analysis_dir))

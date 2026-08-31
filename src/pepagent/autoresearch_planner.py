@@ -53,6 +53,7 @@ _DE_NOVO_PROFILE_PRIOR_COUNTS = {
     "Y": 2,
 }
 _DE_NOVO_EMPIRICAL_PROFILE_WEIGHT = 0.5
+_DE_NOVO_MINIMUM_GOLD_PROFILE_COUNT = 3
 
 
 def _sequence_prescreen(sequence: str) -> tuple[float, int, float]:
@@ -151,6 +152,48 @@ def _adaptive_de_novo_alphabet(sequences: Collection[str]) -> str:
         )
         for residue in _DE_NOVO_ALPHABET
     )
+
+
+def _adaptive_de_novo_transition_alphabets(
+    sequences: Collection[str],
+) -> dict[str, str]:
+    """Build smoothed first-order transition alphabets from elite sequences."""
+
+    if not sequences:
+        return {}
+    if any(not sequence or set(sequence) - set(_CANONICAL_AMINO_ACIDS) for sequence in sequences):
+        raise ValueError("de-novo transition profile contains a non-canonical peptide")
+    transition_counts: dict[str, dict[str, int]] = defaultdict(
+        lambda: {residue: 0 for residue in _DE_NOVO_ALPHABET}
+    )
+    for sequence in sequences:
+        previous = "^"
+        for residue in sequence:
+            if residue in transition_counts[previous]:
+                transition_counts[previous][residue] += 1
+            previous = residue
+    prior_weight = 1.0 - _DE_NOVO_EMPIRICAL_PROFILE_WEIGHT
+    alphabets: dict[str, str] = {}
+    for previous in sorted(transition_counts):
+        counts = transition_counts[previous]
+        total_observed = sum(counts.values())
+        if total_observed == 0:
+            continue
+        alphabets[previous] = "".join(
+            residue
+            * max(
+                1,
+                round(
+                    100
+                    * _DE_NOVO_EMPIRICAL_PROFILE_WEIGHT
+                    * counts[residue]
+                    / total_observed
+                    + prior_weight * _DE_NOVO_PROFILE_PRIOR_COUNTS[residue]
+                ),
+            )
+            for residue in _DE_NOVO_ALPHABET
+        )
+    return alphabets
 
 
 def _family_balanced_de_novo_profile(candidates: Collection[CandidateEvidence]) -> tuple[str, ...]:
@@ -344,22 +387,35 @@ def _unique_de_novo_sequence(
     excluded_sequence_sha256s: Collection[str] = (),
     family_reference_sequences: Collection[str] = (),
     residue_alphabet: str = _DE_NOVO_ALPHABET,
+    transition_alphabets: Mapping[str, str] | None = None,
 ) -> str:
     if not residue_alphabet or set(residue_alphabet) - set(_CANONICAL_AMINO_ACIDS):
         raise ValueError("de-novo residue alphabet must contain canonical amino acids")
+    transition_alphabets = transition_alphabets or {}
+    if any(
+        (previous != "^" and previous not in _CANONICAL_AMINO_ACIDS)
+        or not alphabet
+        or set(alphabet) - set(_CANONICAL_AMINO_ACIDS)
+        for previous, alphabet in transition_alphabets.items()
+    ):
+        raise ValueError("de-novo transition alphabets must contain canonical amino acids")
     family_references = tuple(set(known_sequences) | set(family_reference_sequences))
     for attempt in range(10_000):
-        digest = sha256_text(f"{branch_key}:{seed}:family-opener-v5:{attempt}")
+        digest = sha256_text(f"{branch_key}:{seed}:family-opener-v7:{attempt}")
         length = _DE_NOVO_LENGTHS[int(digest[:2], 16) % len(_DE_NOVO_LENGTHS)]
         material = digest
         nonce = 0
         while len(material) < length * 2:
             nonce += 1
             material += sha256_text(f"{digest}:{nonce}")
-        sequence = "".join(
-            residue_alphabet[int(material[index : index + 2], 16) % len(residue_alphabet)]
-            for index in range(0, length * 2, 2)
-        )
+        sequence_residues: list[str] = []
+        previous = "^"
+        for index in range(0, length * 2, 2):
+            alphabet = transition_alphabets.get(previous, residue_alphabet)
+            residue = alphabet[int(material[index : index + 2], 16) % len(alphabet)]
+            sequence_residues.append(residue)
+            previous = residue
+        sequence = "".join(sequence_residues)
         if (
             sequence not in known_sequences
             and sha256_text(sequence) not in excluded_sequence_sha256s
@@ -437,9 +493,18 @@ def build_multifront_rule_action_plan(
         raise ValueError("planner historical family representative is not a canonical peptide")
     archive_sha = snapshot.archive_sha256
     literal_gold_count = len(_gold_candidate_ids(snapshot))
-    gold_count = len(_instability_score_qualified_gold_candidate_ids(snapshot, by_id))
-    de_novo_profile = _family_balanced_de_novo_profile(eligible)
+    qualified_gold_ids = _instability_score_qualified_gold_candidate_ids(snapshot, by_id)
+    gold_count = len(qualified_gold_ids)
+    qualified_gold = [by_id[candidate_id] for candidate_id in sorted(qualified_gold_ids)]
+    if len(qualified_gold) >= _DE_NOVO_MINIMUM_GOLD_PROFILE_COUNT:
+        de_novo_profile_candidates = qualified_gold
+        de_novo_profile_source = "qualified_gold_archive"
+    else:
+        de_novo_profile_candidates = eligible
+        de_novo_profile_source = "all_instability_qualified_families_fallback"
+    de_novo_profile = _family_balanced_de_novo_profile(de_novo_profile_candidates)
     de_novo_alphabet = _adaptive_de_novo_alphabet(de_novo_profile)
+    de_novo_transition_alphabets = _adaptive_de_novo_transition_alphabets(de_novo_profile)
 
     actions: list[EvolutionAction] = []
     rationales: dict[str, str] = {}
@@ -662,12 +727,13 @@ def build_multifront_rule_action_plan(
         excluded_sequence_sha256s=historical_sequence_sha256s,
         family_reference_sequences=historical_family_representatives,
         residue_alphabet=de_novo_alphabet,
+        transition_alphabets=de_novo_transition_alphabets,
     )
     action = DeNovoAction(
         branch_key=branch_key,
         generation=generation,
         seed=seed + 2,
-        operator_id="autoresearch-rule-de-novo-v6",
+        operator_id="autoresearch-rule-de-novo-v8",
         operator_release_sha256=operator_release_sha256,
         expected_improvement_metrics=("macrel_amp_probability",),
         protected_metrics=(
@@ -788,12 +854,13 @@ def build_multifront_rule_action_plan(
             excluded_sequence_sha256s=historical_sequence_sha256s,
             family_reference_sequences=historical_family_representatives,
             residue_alphabet=de_novo_alphabet,
+            transition_alphabets=de_novo_transition_alphabets,
         )
         action = DeNovoAction(
             branch_key=branch_key,
             generation=generation,
             seed=action_seed,
-            operator_id="autoresearch-rule-de-novo-v6",
+            operator_id="autoresearch-rule-de-novo-v8",
             operator_release_sha256=operator_release_sha256,
             expected_improvement_metrics=("macrel_amp_probability",),
             protected_metrics=(
@@ -850,12 +917,16 @@ def build_multifront_rule_action_plan(
             "\n".join(sorted(historical_sequence_sha256s))
         ),
         "de_novo_profile_policy": {
-            "operator_version": "autoresearch-rule-de-novo-v6",
+            "operator_version": "autoresearch-rule-de-novo-v8",
+            "profile_source": de_novo_profile_source,
+            "minimum_gold_profile_count": _DE_NOVO_MINIMUM_GOLD_PROFILE_COUNT,
             "family_balanced": True,
             "family_profile_count": len(de_novo_profile),
             "empirical_profile_weight": _DE_NOVO_EMPIRICAL_PROFILE_WEIGHT,
             "activity_safety_prior_weight": 1.0 - _DE_NOVO_EMPIRICAL_PROFILE_WEIGHT,
             "activity_safety_prior_counts": _DE_NOVO_PROFILE_PRIOR_COUNTS,
+            "first_order_transition_profile": True,
+            "transition_context_count": len(de_novo_transition_alphabets),
         },
         "sequence_prescreen_policy": {
             "instability_method": "Guruprasad-Reddy-Pandit-1990-via-Biopython-ProtParam",
