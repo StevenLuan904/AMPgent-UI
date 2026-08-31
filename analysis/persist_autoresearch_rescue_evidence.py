@@ -16,6 +16,36 @@ from pepagent.db.session import SessionFactory
 from pepagent.provenance.hashing import sha256_file, sha256_json
 
 
+def _candidate_payload(
+    row: dict[str, str],
+    *,
+    excellent_challenger_status: str,
+) -> dict[str, object]:
+    excellent = row["excellent_sequence_stage_calibrated"].lower() == "true"
+    return {
+        "sequence": row["sequence"],
+        "sequence_sha256": row["sequence_sha256"],
+        "formal_12_complete": row["formal_12_complete"],
+        "display_eligible": row["display_eligible"],
+        "activity_model_support_count": int(
+            row["activity_model_support_count_calibrated"]
+        ),
+        "family_key_80_80": row.get("family_key_80_80"),
+        "diversity_qualified": row.get(
+            "diversity_qualified",
+            row.get("new_family_relative_to_postgresql_history", "false"),
+        ),
+        "excellent_sequence_stage": row["excellent_sequence_stage_calibrated"],
+        "structure_status": "not_started",
+        "challenger_status": (
+            excellent_challenger_status
+            if excellent
+            else "not_reviewed_not_excellent_sequence_stage"
+        ),
+        "md_status": "not_started",
+    }
+
+
 async def _run(args: argparse.Namespace) -> None:
     if len(args.source_commit) != 40 or set(args.source_commit) - set("0123456789abcdef"):
         raise ValueError("source commit must be a lowercase SHA-1")
@@ -26,14 +56,19 @@ async def _run(args: argparse.Namespace) -> None:
     )
     with args.candidate_scores.open(encoding="utf-8-sig", newline="") as stream:
         rows = list(csv.DictReader(stream))
-    rows = [row for row in rows if row["excellent_sequence_stage_calibrated"].lower() == "true"]
     if not rows:
-        raise ValueError("operational persistence requires calibrated excellent rows")
+        raise ValueError("operational score-all persistence requires scored rows")
+    if any(row["formal_12_complete"].lower() != "true" for row in rows):
+        raise ValueError("operational score-all persistence requires complete formal-12 rows")
     score_sha256 = sha256_file(args.candidate_scores)
     source_receipt_sha256 = sha256_file(args.source_receipt)
     persisted: list[dict[str, str]] = []
     for branch_key in sorted({row["branch_key"] for row in rows}):
         branch_rows = [row for row in rows if row["branch_key"] == branch_key]
+        excellent_count = sum(
+            row["excellent_sequence_stage_calibrated"].lower() == "true"
+            for row in branch_rows
+        )
         now = datetime.now(UTC)
         record = OperationalCallRecord(
             operation_key=(
@@ -42,12 +77,13 @@ async def _run(args: argparse.Namespace) -> None:
             target_key=branch_key,  # type: ignore[arg-type]
             purpose="score_all",
             tool_name="autoresearch_safety_rescue_fullscore",
-            tool_version="v1",
+            tool_version="v2",
             status="succeeded",
             input_payload={
                 "candidate_scores_sha256": score_sha256,
                 "source_receipt_sha256": source_receipt_sha256,
                 "candidate_count": len(branch_rows),
+                "excellent_candidate_count": excellent_count,
                 "supersedes_operational_run_id": superseded_run_id,
                 "challenger_receipt_sha256": args.challenger_receipt_sha256,
             },
@@ -66,25 +102,12 @@ async def _run(args: argparse.Namespace) -> None:
             },
             output_payload={
                 "candidate_count": len(branch_rows),
+                "excellent_candidate_count": excellent_count,
                 "candidates": [
-                    {
-                        "sequence": row["sequence"],
-                        "sequence_sha256": row["sequence_sha256"],
-                        "formal_12_complete": row["formal_12_complete"],
-                        "display_eligible": row["display_eligible"],
-                        "activity_model_support_count": int(
-                            row["activity_model_support_count_calibrated"]
-                        ),
-                        "family_key_80_80": row.get("family_key_80_80"),
-                        "diversity_qualified": row.get(
-                            "diversity_qualified",
-                            row.get("new_family_relative_to_postgresql_history", "false"),
-                        ),
-                        "excellent_sequence_stage": row["excellent_sequence_stage_calibrated"],
-                        "structure_status": "not_started",
-                        "challenger_status": args.challenger_status,
-                        "md_status": "not_started",
-                    }
+                    _candidate_payload(
+                        row,
+                        excellent_challenger_status=args.challenger_status,
+                    )
                     for row in branch_rows
                 ],
                 "candidate_scores_sha256": score_sha256,
@@ -112,6 +135,10 @@ async def _run(args: argparse.Namespace) -> None:
         "candidate_scores_sha256": score_sha256,
         "source_receipt_sha256": source_receipt_sha256,
         "candidate_count": len(rows),
+        "excellent_candidate_count": sum(
+            row["excellent_sequence_stage_calibrated"].lower() == "true" for row in rows
+        ),
+        "persistence_scope": "all_formal_12_scored_candidates",
         "supersedes_operational_run_id": superseded_run_id,
         "persisted": persisted,
         "historical_run_modified": False,
