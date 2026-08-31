@@ -1,0 +1,53 @@
+{
+  "schema_version": "ampgent.autoresearch-lineage-probe.1",
+  "observed_at_utc": "2026-08-31T19:38:03.599177+00:00",
+  "source_csv_sha256s": [
+    "b28f65e6877c9f2a3a545faaf67338e81b3f35a96218a671bb83bfee51e6affa",
+    "9b9e28dce669df7920f4370eacd7e4f7e3af052f7a61e6f2d2a490193c4d788e",
+    "de02eae0bb036ac56cf9397763dabf1a3c837b78b69367a715a7f6a1c5683b6a",
+    "c5cac77100281e2b683af8b218e22db0728b26f34e42a996107bc7cfa0a6b798"
+  ],
+  "source_candidate_count": 114,
+  "source_cohort_sha256": "c0719de30d1427c5b4baaca3c239d7175164b307547582735a2ca1bcab588a53",
+  "generation": 6,
+  "prefer_full_support_within_families": true,
+  "historical_source_sha256s": [
+    "4b936a157eada8f63f5dcb5f8086d3e61b152aad837bf604f22e2ff6cfa15f7c",
+    "1d74b7819c3614a6e021589d0cd89a9105a0eeed19326bd0d1c868c4678fe9ff",
+    "98eaa2bf209f555ced821d933615119d42b5ea6bdae2036c8247326236f060ca",
+    "3b83eb7ea2ca4f521621b6d00d170f9d55647ef50ba5b718eab3f26fbe34a304"
+  ],
+  "unfiltered_input_sequence_exclusion_count": 245,
+  "historical_exclusion_sequence_count": 394,
+  "postgresql_history_exclusion_enabled": true,
+  "postgresql_history_sequence_sha256_count": 66495,
+  "operator_release_sha256": "1343d938a9841fb19f29ee4b18771dffb1abc2c2795e2a0baa3a2dcdb5532465",
+  "branch_count": 1,
+  "branches": [
+    "angpt1"
+  ],
+  "replicate_count_per_branch": 12,
+  "action_count": 48,
+  "forced_family_coverage_enabled": false,
+  "forced_family_count": 0,
+  "forced_family_keys": [],
+  "forced_family_materialized_child_counts": {},
+  "uncovered_forced_family_keys": [],
+  "action_type_counts": {
+    "masked_substitution": 12,
+    "controlled_crossover": 12,
+    "de_novo": 24
+  },
+  "child_count": 48,
+  "exact_historical_replay_count": 0,
+  "new_family_child_count": 24,
+  "children_csv_sha256": "6a81e03e03c9cd5f377375ef8a7cfd803f0548b0d54a9f7fa6e86de70cbb38bc",
+  "actions_sha256": "d741a4b07e2d887597def9a82fa268f60a9f75fdf69b9573bfbb3252bc2a55a0",
+  "archive_before_sha256": "3b0b96fa26464aa0d6af186d4f82701cc3d53b587444c26bd6b201c1d7425fdf",
+  "plans_sha256": "df969859764b3b9573c3b879547ec68bdbf6a4440b5188d3ccb55e9074fdb934",
+  "workflow_submitted": false,
+  "gpu_task_submitted": false,
+  "historical_run_modified": false,
+  "target_sequence_identity_consumed": false,
+  "receipt_payload_sha256": "cb3348f4fdd295512f968172dfd4e3af9b3f25cb356a9b8031674561e08f57cd"
+}
