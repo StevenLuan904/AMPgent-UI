@@ -12,9 +12,12 @@ import {
   BrainCircuit,
   BookOpenText,
   Gauge,
+  ShieldCheck,
   Target,
 } from 'lucide-react'
 import { MoleculeViewer } from './MoleculeViewer'
+import { ResultDistribution, type ResultDistributionData } from './ResultDistribution'
+import { qualityGateNodeSummary } from './generationQualityGate'
 import type { Branch, GraphStage, ViewerArtifact } from './types'
 
 export interface StageNodeData extends Record<string, unknown> {
@@ -22,6 +25,7 @@ export interface StageNodeData extends Record<string, unknown> {
   branches: Branch[]
   viewer: ViewerArtifact | null
   selected: boolean
+  distribution: ResultDistributionData | null
 }
 
 export type StageNode = Node<StageNodeData, 'stage'>
@@ -71,19 +75,14 @@ const termDescriptions: Record<string, string> = {
 }
 
 export function WorkflowNode({ data }: NodeProps<StageNode>) {
-  const { stage, branches, viewer, selected } = data
+  const { stage, branches, viewer, selected, distribution } = data
   const Icon = iconById[stage.id as keyof typeof iconById] ?? Database
   const progress = stage.total > 0 ? Math.min(100, Math.round((stage.current / stage.total) * 100)) : 0
   const stateIcon = stage.status === 'completed' ? <Check /> : stage.status === 'stopped' ? <CircleStop /> : null
   const isStructure = stage.kind === 'structure'
   const showsTargets = stage.id === 'targets' && branches.length > 0
-  const evidenceLabel = stage.insight.source === 'persisted_decision'
-    ? '智能体决策'
-    : stage.provenance === 'database'
-      ? '指标摘要'
-      : stage.provenance === 'derived'
-        ? '证据汇总'
-        : '未记录'
+  const qualityGate = stage.id === 'candidate_pool' ? stage.generation_quality_gate : undefined
+  const evidenceLabel = distribution?.values.length ? '结果分布' : '暂无结果'
   return (
     <div className={`workflow-node stage-${stage.id} kind-${stage.kind} grade-${stage.insight.grade} node-${stage.status}${selected ? ' is-selected' : ''}`}>
       <Handle type="target" position={Position.Left} className="flow-handle" />
@@ -94,12 +93,19 @@ export function WorkflowNode({ data }: NodeProps<StageNode>) {
       </div>
       <div
         className="node-verdict"
-        title={stage.insight.source === 'persisted_decision' ? '来自数据库中的智能体决策' : '根据数据库指标生成的观察器摘要'}
+        title={stage.insight.source === 'persisted_decision' ? '来自数据库中的智能体决策' : '根据数据库结果生成的节点结论'}
       >
         <span className={`verdict-chip ${stage.insight.grade}`}><i />{stage.insight.verdict}</span>
         <b title={stage.insight.reason}>{stage.insight.reason}</b>
       </div>
-      {isStructure && <MoleculeViewer artifact={viewer} compact autoRotate />}
+      {qualityGate && (
+        <div className={`node-quality-gate state-${qualityGate.status}`} title="计数仅来自当前数据库运行；规则提案、谱系入库和完成评估分别统计。">
+          <span><ShieldCheck />新生序列</span>
+          <b>{qualityGateNodeSummary(qualityGate)}</b>
+        </div>
+      )}
+      {isStructure && <MoleculeViewer key={viewer?.artifact_sha256 ?? 'empty'} artifact={viewer} compact autoRotate />}
+      {distribution && <ResultDistribution data={distribution} compact />}
       {showsTargets ? (
         <div className="node-targets">
           {branches.slice(0, 2).map((branch) => (
