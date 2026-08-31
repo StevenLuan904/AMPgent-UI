@@ -1,0 +1,47 @@
+{
+  "schema_version": "ampgent.autoresearch-challenger-review.1",
+  "observed_at_utc": "2026-08-31T03:05:13.361326+00:00",
+  "source_csv_sha256": "282e9c811a41c52653cf80e5c2647dd72ce2844881035362c59d73744dfa8259",
+  "reviewed_excellent_candidate_count": 176,
+  "challenger_no_conflict_count": 132,
+  "challenger_conflict_count": 44,
+  "branch_summary": [
+    {
+      "branch_key": "acea",
+      "excellent_candidate_count": 19,
+      "challenger_no_conflict_count": 13,
+      "challenger_conflict_count": 6
+    },
+    {
+      "branch_key": "fgf2",
+      "excellent_candidate_count": 71,
+      "challenger_no_conflict_count": 51,
+      "challenger_conflict_count": 20
+    },
+    {
+      "branch_key": "pbp2a",
+      "excellent_candidate_count": 75,
+      "challenger_no_conflict_count": 62,
+      "challenger_conflict_count": 13
+    },
+    {
+      "branch_key": "vegfa",
+      "excellent_candidate_count": 11,
+      "challenger_no_conflict_count": 6,
+      "challenger_conflict_count": 5
+    }
+  ],
+  "worker_input_sha256": "fb02a6d884bf93e705f8d7c4742eeba874942f76121945dc05e2858fe7d353c2",
+  "worker_output_sha256": "9ff72439bb8a1d7e0ff578938ba4790eba6b62c384755fef9dc61db5303a23e9",
+  "calibration_sha256": "d9cbe209019de9d625ca0806fafc1b41bec0fdc9f537ab49ca4019a39d4839d9",
+  "challenger_review_csv_sha256": "e48540772246d5feade43f3d6df5cad8c5c74b2d1e4146a0a1dd2610db7605fa",
+  "challenger_is_not_a_primary_hard_gate": true,
+  "missing_verified_runtimes": [
+    "apex",
+    "peptiverse"
+  ],
+  "workflow_submitted": false,
+  "gpu_task_submitted": false,
+  "historical_run_modified": false,
+  "receipt_payload_sha256": "410129d42d51a3ea5212cb38000bdc96b319c15d1feba490b63ea74fcdcb4c2d"
+}

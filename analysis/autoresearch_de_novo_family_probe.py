@@ -40,6 +40,9 @@ def _write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
 
 
 async def _run(args: argparse.Namespace) -> None:
+    selected_branches = tuple(args.branch or BRANCHES)
+    if len(set(selected_branches)) != len(selected_branches):
+        raise ValueError("de-novo branch selection contains duplicates")
     historical = await _historical_sequences()
     additional_references: set[str] = set()
     for path in args.additional_reference_csv:
@@ -68,7 +71,7 @@ async def _run(args: argparse.Namespace) -> None:
     known_sequences = set(additional_references)
     generated_sequences: set[str] = set()
     rows: list[dict[str, Any]] = []
-    for branch_index, branch_key in enumerate(BRANCHES):
+    for branch_index, branch_key in enumerate(selected_branches):
         for rank in range(args.per_branch):
             seed = args.seed + branch_index * 100_000 + rank
             sequence = _unique_de_novo_sequence(
@@ -129,7 +132,7 @@ async def _run(args: argparse.Namespace) -> None:
     _write_csv(args.output_csv, rows)
 
     summary_rows: list[dict[str, Any]] = []
-    for branch_key in BRANCHES:
+    for branch_key in selected_branches:
         branch_rows = [row for row in rows if row["branch_key"] == branch_key]
         summary_rows.append(
             {
@@ -159,6 +162,7 @@ async def _run(args: argparse.Namespace) -> None:
         "schema_version": "ampgent.autoresearch-de-novo-family-probe.1",
         "observed_at_utc": datetime.now(UTC).isoformat(),
         "operator_id": "autoresearch-rule-de-novo-v4",
+        "selected_branches": list(selected_branches),
         "historical_sequence_count": len(historical),
         "additional_reference_sequence_count": len(additional_references),
         "proposal_count": len(rows),
@@ -210,6 +214,7 @@ def main() -> None:
         default=[],
     )
     parser.add_argument("--profile-csv", type=Path, action="append", default=[])
+    parser.add_argument("--branch", action="append", choices=BRANCHES, default=[])
     parser.add_argument("--output-csv", type=Path, required=True)
     parser.add_argument("--summary-csv", type=Path, required=True)
     parser.add_argument("--output-json", type=Path, required=True)

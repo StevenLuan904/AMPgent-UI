@@ -1,0 +1,71 @@
+{
+  "schema_version": "ampgent.autoresearch-de-novo-family-probe.1",
+  "observed_at_utc": "2026-08-31T03:00:44.692933+00:00",
+  "operator_id": "autoresearch-rule-de-novo-v4",
+  "selected_branches": [
+    "acea",
+    "fgf2",
+    "pbp2a",
+    "vegfa"
+  ],
+  "historical_sequence_count": 66195,
+  "additional_reference_sequence_count": 1920,
+  "proposal_count": 1024,
+  "distinct_generated_family_count": 1024,
+  "new_family_count_relative_to_postgresql_history": 1024,
+  "new_family_count_relative_to_all_references": 1024,
+  "additional_reference_csv_sha256s": [
+    "086bb5b02ce5fad7318d8cd9694caeee4acf43b3f16e10acff41e65816035271",
+    "2b3a93b14af6891b50799d7a66051e66e70313756fe550a860a41c184e502cea",
+    "65268a8b83f15a23aec3a15ee95cbc80d53edf9eb791df2183bb3f5ed139305e"
+  ],
+  "profile_csv_sha256s": [
+    "c52a20cbaa12441b010b61b7a27900c20534d1dd8c42ef37d400ba113c3d1060",
+    "62abe01dd712d975d071dc6732c63273178705850b9ad0dc1aeabab85b36b4e2",
+    "9c824fcc7467b599f6ad377a720285a7b748739f7fd7c14fb62e6702e2e746ea"
+  ],
+  "profile_sequence_counts": {
+    "acea": 9,
+    "angpt1": 50,
+    "fgf2": 45,
+    "gyra": 58,
+    "pbp2a": 38,
+    "vegfa": 9
+  },
+  "branch_summary": [
+    {
+      "branch_key": "acea",
+      "proposal_count": 256,
+      "distinct_family_count": 256,
+      "new_family_count_relative_to_postgresql_history": 256,
+      "new_family_count_relative_to_all_references": 256
+    },
+    {
+      "branch_key": "fgf2",
+      "proposal_count": 256,
+      "distinct_family_count": 256,
+      "new_family_count_relative_to_postgresql_history": 256,
+      "new_family_count_relative_to_all_references": 256
+    },
+    {
+      "branch_key": "pbp2a",
+      "proposal_count": 256,
+      "distinct_family_count": 256,
+      "new_family_count_relative_to_postgresql_history": 256,
+      "new_family_count_relative_to_all_references": 256
+    },
+    {
+      "branch_key": "vegfa",
+      "proposal_count": 256,
+      "distinct_family_count": 256,
+      "new_family_count_relative_to_postgresql_history": 256,
+      "new_family_count_relative_to_all_references": 256
+    }
+  ],
+  "output_csv_sha256": "9d20f96a55dd3d928d9b5b17a399d9da653175a07c0bca24d8811e8006290cf5",
+  "summary_csv_sha256": "870ac7ac79d5af989c5d3266b86194920e6a2dea8f012ff64e99bfbbb9a850e3",
+  "workflow_submitted": false,
+  "gpu_task_submitted": false,
+  "historical_run_modified": false,
+  "receipt_payload_sha256": "ac085c11605535d7f79df4859293352a4053a3fa2f714e0484351dd516ddc7e1"
+}
