@@ -26,6 +26,7 @@ from pepagent.provenance.hashing import sha256_file, sha256_json, sha256_text
 
 HYDROPHOBIC_REPLACEMENTS = "AILVFWY"
 HYDROPHOBIC_RESIDUES = frozenset("AILMFWVY")
+CHARGE_PATTERN_REPLACEMENTS = "KRHAGSTNQ"
 OPERATOR_RELEASE_SHA256 = sha256_json(
     {
         "operator_id": "autoresearch-macrel-endpoint-rescue-v1",
@@ -39,15 +40,43 @@ OPERATOR_RELEASE_SHA256 = sha256_json(
         },
     }
 )
+CHARGE_PATTERN_OPERATOR_RELEASE_SHA256 = sha256_json(
+    {
+        "operator_id": "autoresearch-macrel-charge-pattern-rescue-v1",
+        "replacement_residues": list(CHARGE_PATTERN_REPLACEMENTS),
+        "parent_policy": "balanced_per_family_support2_without_existing_support3",
+        "quality_gate": {
+            "guruprasad_instability_index": "<50",
+            "maximum_hydrophobic_run": "<=2",
+            "hydrophobic_fraction": "<=0.45",
+            "net_charge_ph7_4": ">=3",
+        },
+    }
+)
 
 
-def _select_parents(rows: list[dict[str, str]], maximum_per_family: int) -> list[dict[str, str]]:
+def _select_parents(
+    rows: list[dict[str, str]],
+    maximum_per_family: int,
+    *,
+    exclude_families_with_support3: bool = False,
+) -> list[dict[str, str]]:
+    full_support_families = (
+        {
+            row["family_key_80_80"]
+            for row in rows
+            if int(row["activity_model_support_count_calibrated"]) == 3
+        }
+        if exclude_families_with_support3
+        else set()
+    )
     eligible = [
         row
         for row in rows
         if row["display_eligible"].lower() == "true"
         and int(row["activity_model_support_count_calibrated"]) == 2
         and float(row["macrel_amp_probability__parent_benefit_percentile"]) < 0.75
+        and row["family_key_80_80"] not in full_support_families
     ]
     by_family: dict[str, list[dict[str, str]]] = {}
     for row in eligible:
@@ -73,6 +102,9 @@ def _generate(
     parents: list[dict[str, str]],
     historical_sha256s: set[str],
     evidence_sha256: str,
+    *,
+    operator_mode: str = "hydrophobic",
+    generation_floor: int | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     generated: list[dict[str, Any]] = []
     actions: list[dict[str, Any]] = []
@@ -81,9 +113,21 @@ def _generate(
         parent_sequence = parent["sequence"]
         parent_macrel = float(parent["macrel_amp_probability"])
         for position, old_residue in enumerate(parent_sequence):
-            if old_residue in HYDROPHOBIC_RESIDUES:
+            if operator_mode == "hydrophobic" and old_residue in HYDROPHOBIC_RESIDUES:
                 continue
-            for new_residue in HYDROPHOBIC_REPLACEMENTS:
+            if operator_mode == "hydrophobic":
+                replacements = HYDROPHOBIC_REPLACEMENTS
+                operator_id = "autoresearch-macrel-endpoint-rescue-v1"
+                operator_release_sha256 = OPERATOR_RELEASE_SHA256
+            elif operator_mode == "charge-pattern":
+                replacements = CHARGE_PATTERN_REPLACEMENTS
+                operator_id = "autoresearch-macrel-charge-pattern-rescue-v1"
+                operator_release_sha256 = CHARGE_PATTERN_OPERATOR_RELEASE_SHA256
+            else:
+                raise ValueError(f"unknown activity rescue operator mode: {operator_mode}")
+            for new_residue in replacements:
+                if new_residue == old_residue:
+                    continue
                 sequence = (
                     parent_sequence[:position] + new_residue + parent_sequence[position + 1 :]
                 )
@@ -100,13 +144,16 @@ def _generate(
                 ):
                     continue
                 seen.add(digest)
-                generation = int(parent["generation"]) + 1
+                generation = max(
+                    int(parent["generation"]) + 1,
+                    generation_floor or 0,
+                )
                 action = MaskedSubstitutionAction(
                     branch_key=parent["branch_key"],
                     generation=generation,
                     seed=int(digest[:8], 16),
-                    operator_id="autoresearch-macrel-endpoint-rescue-v1",
-                    operator_release_sha256=OPERATOR_RELEASE_SHA256,
+                    operator_id=operator_id,
+                    operator_release_sha256=operator_release_sha256,
                     expected_improvement_metrics=("macrel_amp_probability",),
                     protected_metrics=(
                         "amp_read_log10_mic_um",
@@ -168,10 +215,22 @@ def _generate(
 
 
 def run(args: argparse.Namespace) -> None:
-    with args.parent_scores.open(encoding="utf-8-sig", newline="") as stream:
-        source_rows = list(csv.DictReader(stream))
-    parents = _select_parents(source_rows, args.maximum_parents_per_family)
-    parent_score_sha256 = sha256_file(args.parent_scores)
+    source_rows: list[dict[str, str]] = []
+    parent_score_sha256s: list[str] = []
+    for path in args.parent_scores:
+        with path.open(encoding="utf-8-sig", newline="") as stream:
+            source_rows.extend(csv.DictReader(stream))
+        parent_score_sha256s.append(sha256_file(path))
+    parents = _select_parents(
+        source_rows,
+        args.maximum_parents_per_family,
+        exclude_families_with_support3=args.exclude_families_with_support3,
+    )
+    parent_score_sha256 = (
+        parent_score_sha256s[0]
+        if len(parent_score_sha256s) == 1
+        else sha256_json({"parent_score_sha256s": parent_score_sha256s})
+    )
     historical_sha256s = asyncio.run(_historical_sequence_sha256s())
     historical_source_hashes: list[str] = []
     for path in args.historical_csv:
@@ -183,7 +242,13 @@ def run(args: argparse.Namespace) -> None:
                 if digest != sha256_text(sequence):
                     raise ValueError("historical activity rescue sequence/hash drifted")
                 historical_sha256s.add(digest)
-    generated, actions = _generate(parents, historical_sha256s, parent_score_sha256)
+    generated, actions = _generate(
+        parents,
+        historical_sha256s,
+        parent_score_sha256,
+        operator_mode=args.operator_mode,
+        generation_floor=max(int(row["generation"]) for row in source_rows) + 1,
+    )
 
     output_dir = args.output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -197,7 +262,7 @@ def run(args: argparse.Namespace) -> None:
                         "schema_version": "ampgent.autoresearch-rule-plan.1",
                         "branch_key": "acea",
                         "generation": max(int(row["generation"]) for row in generated),
-                        "operator_id": "autoresearch-macrel-endpoint-rescue-v1",
+                        "operator_id": actions[0]["operator_id"],
                         "actions": actions,
                     }
                 },
@@ -292,6 +357,9 @@ def run(args: argparse.Namespace) -> None:
         "schema_version": "ampgent.autoresearch-activity-rescue-search.1",
         "observed_at_utc": datetime.now(UTC).isoformat(),
         "parent_score_sha256": parent_score_sha256,
+        "parent_score_sha256s": parent_score_sha256s,
+        "operator_mode": args.operator_mode,
+        "generation_floor": max(int(row["generation"]) for row in source_rows) + 1,
         "plans_sha256": sha256_file(plans_path),
         "historical_sequence_exclusion_count": len(historical_sha256s),
         "historical_source_sha256s": historical_source_hashes,
@@ -323,12 +391,18 @@ def run(args: argparse.Namespace) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--parent-scores", type=Path, required=True)
+    parser.add_argument("--parent-scores", type=Path, action="append", required=True)
     parser.add_argument("--historical-csv", type=Path, action="append", default=[])
     parser.add_argument("--registry", type=Path, required=True)
     parser.add_argument("--repo-root", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--maximum-parents-per-family", type=int, default=8)
+    parser.add_argument("--exclude-families-with-support3", action="store_true")
+    parser.add_argument(
+        "--operator-mode",
+        choices=("hydrophobic", "charge-pattern"),
+        default="hydrophobic",
+    )
     run(parser.parse_args())
 
 

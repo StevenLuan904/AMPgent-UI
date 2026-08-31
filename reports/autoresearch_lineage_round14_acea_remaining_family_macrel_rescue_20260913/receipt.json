@@ -1,0 +1,65 @@
+{
+  "schema_version": "ampgent.autoresearch-activity-rescue-search.1",
+  "observed_at_utc": "2026-08-31T06:18:28.301631+00:00",
+  "parent_score_sha256": "c7cc01e3404c9ffef36c815eb5ac62e8cb4265d89f7e84e888695bd8956915f0",
+  "plans_sha256": "b2b2e57bb966f9dded863d9f8b45180b9ae88e2197a796438f3c54dafaee8b75",
+  "historical_sequence_exclusion_count": 73522,
+  "historical_source_sha256s": [
+    "822e0d4a595e21274aa4a3a44c9018424e2fc7f0670f80e681ff1ef786c3c6ae",
+    "95ef4f10868c66e959b3d38cc63273ccb62b4379b605c8a8d69587e269ab0bd5",
+    "747a519818be57e52531346e782238fece64fdbc5c5cf58eef1d0fbe090dbc07",
+    "4dd50ef8d70f956f3f943b609c365bf43aaa247b2f72c757ac9d18c5dac74fae",
+    "d47c0d1b19cb6b69d596931cf0c03eccabaff6334db55456431abb0c7d3b2418",
+    "4d5b8232a8f3ad88b8e62a6afe7c6056dc6ebde9b099d5272c020399638621dc",
+    "1b7fe5582c6adec492ad6ed1a6eb5e6923fceef748eee9f4495e667052eea9a7",
+    "5a8062019216a606b6d062133ba85885ebba82a4c2b31f78cc6ec6e24ebf9409",
+    "ad5f843f32a9b2176f6388cd2c4aebc38e7f95f0aaee2563a673aa8f6b44a774",
+    "9882a429713c4c486e1d1a97fae0aae8c03c8c92a22b0bc493ff63dfc7b00e89",
+    "8c9142ae272146380d732427c4343a6cdd8aa0a674bcf1c3e8553232b10413a2",
+    "01aa1c7e07a72c13962a22a568eb3ffb7966ae56bcb6402bdd89296035bced2a",
+    "9848c1765e9c564e114c14a2398c95d7790f5bb40ddc21795e78df380259083a",
+    "714c9d6597b304e7b7f7050c5c538e72a074d68f1c1832afa28d997c2f6afb0a",
+    "e6e553f929c58f468cb35e218635a6f7072a150b24d2e5388320ba59a8ec629a",
+    "2789f18d36df0bea5060811d010fddaa6dcacbf7420224b37df64d91b8f951c4",
+    "674b7f741810d811e81d90924bb17d311a7467ed7d332aaef362556898329b3a",
+    "ed03013f2f6968b35822662c66774d8f0f6c10e11801bc1b118feac684af9551",
+    "3f801a61887832c81c26fe363dfc4fdf315ecc80cda216d7f41f856735d71bd8"
+  ],
+  "parent_count": 3,
+  "parent_family_count": 3,
+  "generated_novel_strict_count": 410,
+  "safety_hard_gate_pass_count": 180,
+  "safety_positive_macrel_gain_count": 15,
+  "full_score_shortlist_count": 8,
+  "plugin_status": [
+    {
+      "plugin": "physicochemical_developability",
+      "status": "complete",
+      "candidate_count": 410,
+      "adapter_version": "2026.08.04-v1",
+      "result_sha256": "2e76c9417a1b1ae5d2bbab0c69da46bbc6562ff8e7b67352ff5575f93bc9e046"
+    },
+    {
+      "plugin": "hemolysis_risk",
+      "status": "complete",
+      "candidate_count": 410,
+      "adapter_version": "macrel-1.6.1-8c1f732",
+      "result_sha256": "f9d9a7b33130544ffd68fb76eb073138540d2a4cc2ba51bd83b305d68e4c9215"
+    },
+    {
+      "plugin": "toxicity_risk",
+      "status": "complete",
+      "candidate_count": 410,
+      "adapter_version": "toxinpred3-corrected-v0.2-dcdba83",
+      "result_sha256": "ec6824b64e3a6a22ed2ffe14c4ff99fd31f2d5230b72c62e4d48fbeb3c06d9a1"
+    }
+  ],
+  "workflow_submitted": false,
+  "gpu_task_submitted": false,
+  "historical_run_modified": false,
+  "all_search_scores_sha256": "334cd552320bb80617a2cae6c4b5bc4e63cb1a4f39cac7e3d97eb7ba8d88a679",
+  "safety_pass_candidates_sha256": "f5b03036ca58f8639231adf7f5f84a51df39bc1bc6e872c6b73bae5ee2e0728a",
+  "safety_gain_candidates_sha256": "886373012a3e4a17d217383c4679c972569d0f70879aed0cbfcd7da0c251a7d3",
+  "full_score_shortlist_sha256": "0bba9dc6d04852a980fbc5a5a6f3ac2f550f90b452d289315e768d4cc28adf18",
+  "receipt_payload_sha256": "a44409419fbb0b85a443535ce2c074bfe37fc64a219171dfa918157f3c77d5e8"
+}
