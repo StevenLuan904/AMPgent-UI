@@ -52,6 +52,15 @@ services:
       POSTGRES_USER: pepagent
       POSTGRES_PWD: ${POSTGRES_PASSWORD:-change-me}
       POSTGRES_SEEDS: ${PEPAGENT_POSTGRES_SEEDS:-host.docker.internal}
+      # The authoritative store is reached through an SSH forward.  Keep the
+      # all-in-one Temporal server below the tunnel connection budget and
+      # recycle idle sockets before a stale forward can pin history writes.
+      SQL_MAX_CONNS: ${PEPAGENT_TEMPORAL_SQL_MAX_CONNS:-12}
+      SQL_MAX_IDLE_CONNS: ${PEPAGENT_TEMPORAL_SQL_MAX_IDLE_CONNS:-4}
+      SQL_MAX_CONN_TIME: ${PEPAGENT_TEMPORAL_SQL_MAX_CONN_TIME:-10m}
+      SQL_VIS_MAX_CONNS: ${PEPAGENT_TEMPORAL_SQL_VIS_MAX_CONNS:-4}
+      SQL_VIS_MAX_IDLE_CONNS: ${PEPAGENT_TEMPORAL_SQL_VIS_MAX_IDLE_CONNS:-2}
+      SQL_VIS_MAX_CONN_TIME: ${PEPAGENT_TEMPORAL_SQL_VIS_MAX_CONN_TIME:-10m}
       DYNAMIC_CONFIG_FILE_PATH: config/dynamicconfig/docker.yaml
     volumes:
       - ./deploy/temporal/dynamicconfig/docker.yaml:/etc/temporal/config/dynamicconfig/docker.yaml:ro
