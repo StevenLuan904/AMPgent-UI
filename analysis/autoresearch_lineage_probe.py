@@ -81,13 +81,16 @@ def run(args: argparse.Namespace) -> None:
             rows.extend(csv.DictReader(stream))
     if not rows:
         raise ValueError("lineage probe input is empty")
-    if {row["branch_key"] for row in rows} != set(BRANCHES):
-        raise ValueError("lineage probe requires all six target branches")
     active_branches = tuple(args.branch or BRANCHES)
     if len(set(active_branches)) != len(active_branches):
         raise ValueError("lineage probe branch selection contains duplicates")
     if set(active_branches) - set(BRANCHES):
         raise ValueError("lineage probe branch selection is invalid")
+    source_branches = {row["branch_key"] for row in rows}
+    if source_branches != set(active_branches):
+        raise ValueError(
+            "lineage probe source branches must exactly match the selected branches"
+        )
     sequences = {row["sequence"] for row in rows}
     sequence_hashes = {row["sequence_sha256"] for row in rows}
     if len(sequences) != len(rows) or len(sequence_hashes) != len(rows):
