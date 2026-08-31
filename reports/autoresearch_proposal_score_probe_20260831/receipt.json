@@ -1,0 +1,123 @@
+{
+  "schema_version": "ampgent.autoresearch-proposal-score-probe.1",
+  "observed_at_utc": "2026-08-31T01:08:20.755354+00:00",
+  "source_csv_sha256": "580b403319b952379106a8be99ae301801ecfa0d53b7b5d57b2541a4b62097d8",
+  "registry_sha256": "7a5152541864e7cec1b94bb5eb9c74d313408b5f4d4781f1565525b577164e55",
+  "proposal_count": 19,
+  "formal_metric_names": [
+    "amp_read_log10_mic_um",
+    "guruprasad_instability_index",
+    "hydrophobic_moment_eisenberg",
+    "hydrophobic_ratio_modlamp",
+    "llamp_log10_mic_um",
+    "macrel_amp_probability",
+    "macrel_hemolysis_label",
+    "macrel_hemolysis_probability",
+    "maximum_hydrophobic_run",
+    "net_charge_ph7_4",
+    "toxinpred3_hybrid_score",
+    "toxinpred3_label"
+  ],
+  "plugin_status": [
+    {
+      "plugin": "physicochemical_developability",
+      "status": "complete",
+      "candidate_count": 19,
+      "adapter_version": "2026.08.04-v1",
+      "result_sha256": "7d653c6b32d9876d9a76b7d88b53c4b0e730001fe0c6cfea9eb31e5ace1d1d5a",
+      "reason_category": null
+    },
+    {
+      "plugin": "hemolysis_risk",
+      "status": "complete",
+      "candidate_count": 19,
+      "adapter_version": "macrel-1.6.1-8c1f732",
+      "result_sha256": "ac216f674b35e1e464d8b4fa00ca2c66bf426f2548ba22080f7dd4699b98be66",
+      "reason_category": null
+    },
+    {
+      "plugin": "toxicity_risk",
+      "status": "complete",
+      "candidate_count": 19,
+      "adapter_version": "toxinpred3-corrected-v0.2-dcdba83",
+      "result_sha256": "93324fc6f5c62fccb77712c25f468d02415b791243fa5d3e84a556fc1af0573e",
+      "reason_category": null
+    },
+    {
+      "plugin": "mic_potency",
+      "status": "complete",
+      "candidate_count": 19,
+      "adapter_version": "llamp-bb48daa-esm2-16b0dddc",
+      "result_sha256": "b644f8a50a78190875458f3b7be032eaeaae06e42c7db76bfd9f30c8fe43836a",
+      "reason_category": null
+    },
+    {
+      "plugin": "mic_potency_amp_read",
+      "status": "complete",
+      "candidate_count": 19,
+      "adapter_version": "amp-read-ec9478b-open-weights-cpu-v1",
+      "result_sha256": "3466342b1e583350635985662b75ca7dbedd5751da256325750dd0478df5e2ca",
+      "reason_category": null
+    },
+    {
+      "plugin": "amp_likeness",
+      "status": "complete",
+      "candidate_count": 19,
+      "adapter_version": "amplify-2.0.1-py36hdfd78af_2",
+      "result_sha256": "a4c6fac0971feb9d0588323e5667022348efde7a75af7ae6984b6a32293abefe",
+      "reason_category": null
+    }
+  ],
+  "formal_12_complete_count": 19,
+  "display_eligible_count": 9,
+  "excellent_sequence_stage_count": 0,
+  "branch_summary": [
+    {
+      "branch_key": "acea",
+      "proposal_count": 3,
+      "formal_12_complete_count": 3,
+      "display_eligible_count": 2,
+      "excellent_sequence_stage_count": 0
+    },
+    {
+      "branch_key": "angpt1",
+      "proposal_count": 3,
+      "formal_12_complete_count": 3,
+      "display_eligible_count": 1,
+      "excellent_sequence_stage_count": 0
+    },
+    {
+      "branch_key": "fgf2",
+      "proposal_count": 3,
+      "formal_12_complete_count": 3,
+      "display_eligible_count": 2,
+      "excellent_sequence_stage_count": 0
+    },
+    {
+      "branch_key": "gyra",
+      "proposal_count": 3,
+      "formal_12_complete_count": 3,
+      "display_eligible_count": 2,
+      "excellent_sequence_stage_count": 0
+    },
+    {
+      "branch_key": "pbp2a",
+      "proposal_count": 4,
+      "formal_12_complete_count": 4,
+      "display_eligible_count": 2,
+      "excellent_sequence_stage_count": 0
+    },
+    {
+      "branch_key": "vegfa",
+      "proposal_count": 3,
+      "formal_12_complete_count": 3,
+      "display_eligible_count": 0,
+      "excellent_sequence_stage_count": 0
+    }
+  ],
+  "workflow_submitted": false,
+  "gpu_task_submitted": false,
+  "historical_run_modified": false,
+  "candidate_scores_sha256": "ed03013f2f6968b35822662c66774d8f0f6c10e11801bc1b118feac684af9551",
+  "receipt_payload_sha256": "5d277504bba260f6e255c6c4a748e7626fa670135411f38103f164bf4052b40f"
+}

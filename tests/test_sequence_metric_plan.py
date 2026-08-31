@@ -138,6 +138,8 @@ def test_materialize_removes_stale_output_and_execution_receipt_is_separate(
     assert observed["cwd"] == "locked-release"
     assert observed["timeout"] == 37
     assert observed["env"]["CUDA_VISIBLE_DEVICES"] == ""
+    assert observed["encoding"] == "utf-8"
+    assert observed["errors"] == "replace"
     assert observed["env"]["PYTHONDONTWRITEBYTECODE"] == "1"
     assert observed["env"]["PYTHONNOUSERSITE"] == "1"
     assert "PYTHONPATH" not in observed["env"]

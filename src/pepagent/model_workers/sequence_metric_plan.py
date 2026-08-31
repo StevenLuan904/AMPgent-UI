@@ -264,6 +264,8 @@ def execute_external_metric_plan(
             env=environment,
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=int(plan["timeout_seconds"]),
             check=False,
         )
