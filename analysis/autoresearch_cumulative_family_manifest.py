@@ -37,6 +37,19 @@ def _priority(row: dict[str, str]) -> tuple[float | int | str, ...]:
     )
 
 
+def _diversity_qualified(row: dict[str, str]) -> bool:
+    explicit = row.get("diversity_qualified", "").strip()
+    if explicit:
+        return explicit.lower() == "true"
+    relative_to_all = row.get("new_family_relative_to_all_references", "").strip()
+    if relative_to_all:
+        return relative_to_all.lower() == "true"
+    return (
+        row.get("new_family_relative_to_postgresql_history", "").strip().lower()
+        == "true"
+    )
+
+
 def run(args: argparse.Namespace) -> None:
     rows: list[dict[str, str]] = []
     source_hashes: list[str] = []
@@ -54,14 +67,7 @@ def run(args: argparse.Namespace) -> None:
     for row in rows:
         if any(row.get(field, "").lower() != "true" for field in required_truths):
             raise ValueError("cumulative candidate violates a required sequence-stage gate")
-        diversity_qualified = row.get(
-            "diversity_qualified",
-            row.get(
-                "new_family_relative_to_all_references",
-                row.get("new_family_relative_to_postgresql_history", "false"),
-            ),
-        )
-        if diversity_qualified.lower() != "true":
+        if not _diversity_qualified(row):
             raise ValueError("cumulative candidate violates the diversity gate")
         if row.get("challenger_conflict_status") != "no_conflict":
             raise ValueError("cumulative candidate has an unresolved challenger conflict")
