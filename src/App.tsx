@@ -39,7 +39,7 @@ import { AnalysisDashboard } from './analysis/AnalysisDashboard'
 import { loadAnalysisSnapshot, type AnalysisSnapshot } from './analysis/dataKernel'
 import { EvidenceDashboard } from './analysis/EvidenceDashboard'
 import { MoleculeViewer } from './MoleculeViewer'
-import { candidateGenerationLabel, formatGenerationPopulation } from './generationPopulation'
+import { candidateGenerationLabel, formatGenerationPopulation, formatRunGenerationPopulation } from './generationPopulation'
 import { formatQualityGateRule, qualityGateCountSteps, qualityGateStatusLabel } from './generationQualityGate'
 import {
   distributionForStage,
@@ -147,9 +147,7 @@ function formatTime(value: string | null) {
 
 function runTitle(run: RunListItem) {
   const candidateLabel = run.generation_population
-    ? run.generation_population.descendant_candidate_count > 0
-      ? `${run.generation_population.descendant_candidate_count.toLocaleString()} 条新生子代 · 第 ${run.generation_population.max_generation} 代`
-      : `${run.generation_population.baseline_candidate_count.toLocaleString()} 条基线候选`
+    ? formatRunGenerationPopulation(run.generation_population)
     : `${run.candidate_count.toLocaleString()} 条候选`
   if (run.status === 'running') return `正在运行 · ${candidateLabel}`
   if (run.structure_record_count > 0) return `结构证据轮次 · ${run.structure_record_count.toLocaleString()} 条记录`
