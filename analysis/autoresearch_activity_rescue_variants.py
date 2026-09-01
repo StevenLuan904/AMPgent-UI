@@ -452,7 +452,14 @@ def run(args: argparse.Namespace) -> None:
         max(int(row["generation"]) for row in source_rows) + 1,
         args.generation_floor or 0,
     )
-    historical_sha256s = asyncio.run(_historical_sequence_sha256s())
+    if args.history_mode == "postgresql":
+        historical_sha256s = asyncio.run(_historical_sequence_sha256s())
+        history_check_status = "postgresql_complete"
+    else:
+        if not args.historical_csv:
+            raise ValueError("provided_csv_only history mode requires --historical-csv")
+        historical_sha256s = set()
+        history_check_status = "deferred_to_postgresql_materialization_gate"
     historical_sha256s.update(input_sequence_sha256s)
     historical_source_hashes: list[str] = []
     for path in args.historical_csv:
@@ -472,6 +479,9 @@ def run(args: argparse.Namespace) -> None:
         rescue_endpoint=args.rescue_endpoint,
         generation_floor=generation_floor,
     )
+    if args.history_mode == "provided_csv_only":
+        for row in generated:
+            row["historical_exact_replay"] = "unchecked"
 
     output_dir = args.output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -595,6 +605,9 @@ def run(args: argparse.Namespace) -> None:
         "generation_floor": generation_floor,
         "plans_sha256": sha256_file(plans_path),
         "historical_sequence_exclusion_count": len(historical_sha256s),
+        "history_mode": args.history_mode,
+        "history_check_status": history_check_status,
+        "display_or_promotion_allowed": args.history_mode == "postgresql",
         "input_sequence_exclusion_count": len(input_sequence_sha256s),
         "historical_source_sha256s": historical_source_hashes,
         "parent_count": len(parents),
@@ -632,6 +645,11 @@ def main() -> None:
     )
     parser.add_argument("--family-key", action="append", default=[])
     parser.add_argument("--historical-csv", type=Path, action="append", default=[])
+    parser.add_argument(
+        "--history-mode",
+        choices=("postgresql", "provided_csv_only"),
+        default="postgresql",
+    )
     parser.add_argument("--registry", type=Path, required=True)
     parser.add_argument("--repo-root", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)

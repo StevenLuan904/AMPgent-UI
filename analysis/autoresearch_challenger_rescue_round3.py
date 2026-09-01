@@ -50,8 +50,16 @@ def _calibrated_probability(raw_score: float, coefficient: float, intercept: flo
     return exp_value / (1.0 + exp_value)
 
 
-def _generate(parents: list[dict[str, str]], historical_sha256s: set[str]) -> list[dict[str, Any]]:
+def _generate(
+    parents: list[dict[str, str]],
+    historical_sha256s: set[str],
+    *,
+    generation: int,
+    evidence_sha256: str,
+    operator_release_sha256: str,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     generated: list[dict[str, Any]] = []
+    actions: list[dict[str, Any]] = []
     seen: set[str] = set()
     for parent in parents:
         parent_sequence = parent["sequence"]
@@ -76,12 +84,63 @@ def _generate(parents: list[dict[str, str]], historical_sha256s: set[str]) -> li
                     and net_charge >= 3.0
                 ):
                     continue
+                parent_sha256 = parent["sequence_sha256"]
+                action_seed = int(
+                    sha256_json(
+                        {
+                            "generation": generation,
+                            "parent_sequence_sha256": parent_sha256,
+                            "position_zero_based": position,
+                            "from_residue": old_residue,
+                            "to_residue": new_residue,
+                        }
+                    )[:8],
+                    16,
+                )
+                action = {
+                    "schema_version": "ampgent.autoresearch-action.1",
+                    "action_type": "masked_substitution",
+                    "branch_key": parent["branch_key"],
+                    "generation": generation,
+                    "seed": action_seed,
+                    "operator_id": "autoresearch-hemopi2-rescue-substitution-v2",
+                    "operator_release_sha256": operator_release_sha256,
+                    "expected_improvement_metrics": [
+                        "challenger_hemopi2_hemolysis_risk"
+                    ],
+                    "protected_metrics": [
+                        "amp_read_log10_mic_um",
+                        "guruprasad_instability_index",
+                        "llamp_log10_mic_um",
+                        "macrel_amp_probability",
+                        "macrel_hemolysis_probability",
+                        "maximum_hydrophobic_run",
+                        "toxinpred3_hybrid_score",
+                    ],
+                    "evidence_sha256s": [evidence_sha256],
+                    "parent_candidate_id": parent_sha256,
+                    "parent_sequence_sha256": parent_sha256,
+                    "substitutions": [
+                        {
+                            "position_zero_based": position,
+                            "from_residue": old_residue,
+                            "to_residue": new_residue,
+                        }
+                    ],
+                }
+                action["action_sha256"] = sha256_json(action)
                 seen.add(digest)
+                actions.append(action)
                 generated.append(
                     {
                         "branch_key": parent["branch_key"],
-                        "action_type": "challenger_rescue_substitution",
-                        "operator_id": "autoresearch-hemopi2-rescue-substitution-v1",
+                        "generation": generation,
+                        "action_type": "masked_substitution",
+                        "operator_id": action["operator_id"],
+                        "action_seed": action_seed,
+                        "action_sha256": action["action_sha256"],
+                        "parent_candidate_id": parent_sha256,
+                        "parent_sequence_sha256": parent_sha256,
                         "parent_sequence": parent_sequence,
                         "edit_position_1based": position + 1,
                         "edit": f"{old_residue}{position + 1}{new_residue}",
@@ -96,7 +155,7 @@ def _generate(parents: list[dict[str, str]], historical_sha256s: set[str]) -> li
                         "score_all_status": "search_prefilter",
                     }
                 )
-    return generated
+    return generated, actions
 
 
 def _run_hemopi2(
@@ -214,12 +273,68 @@ def run(args: argparse.Namespace) -> None:
     parents = [
         row for row in source_rows if row["excellent_sequence_stage_calibrated"].lower() == "true"
     ]
+    if args.conflict_only:
+        parents = [
+            row
+            for row in parents
+            if row.get("challenger_conflict_status")
+            == "cross_model_disagreement_retained"
+        ]
     if not parents:
         raise ValueError("no calibrated excellent parents found")
-    historical_sha256s = asyncio.run(_historical_sequence_sha256s())
-    generated = _generate(parents, historical_sha256s)
+    historical_source_sha256s: list[str] = []
+    if args.history_mode == "postgresql":
+        historical_sha256s = asyncio.run(_historical_sequence_sha256s())
+        history_check_status = "postgresql_complete"
+    else:
+        if not args.historical_csv:
+            raise ValueError("provided_csv_only history mode requires --historical-csv")
+        historical_sha256s: set[str] = set()
+        for path in args.historical_csv:
+            with path.open(encoding="utf-8-sig", newline="") as stream:
+                for row in csv.DictReader(stream):
+                    digest = row.get("sequence_sha256")
+                    if not digest and row.get("sequence"):
+                        digest = sha256_text(row["sequence"])
+                    if digest:
+                        historical_sha256s.add(digest)
+            historical_source_sha256s.append(sha256_file(path))
+        history_check_status = "deferred_to_postgresql_materialization_gate"
+    generation = max(int(row.get("generation") or 0) for row in parents) + 1
+    parent_scores_sha256 = sha256_file(args.parent_scores)
+    operator_release_sha256 = sha256_file(Path(__file__).resolve())
+    generated, actions = _generate(
+        parents,
+        historical_sha256s,
+        generation=generation,
+        evidence_sha256=parent_scores_sha256,
+        operator_release_sha256=operator_release_sha256,
+    )
+    if args.history_mode == "provided_csv_only":
+        for row in generated:
+            row["historical_exact_replay"] = "unchecked"
     if not generated:
         raise ValueError("no novel strict round-3 variants generated")
+    plan_payload = {
+        "schema_version": "ampgent.autoresearch-multibranch-plan.1",
+        "plans": {
+            branch_key: {
+                "schema_version": "ampgent.autoresearch-rule-plan.1",
+                "branch_key": branch_key,
+                "generation": generation,
+                "operator_id": "autoresearch-hemopi2-rescue-substitution-v2",
+                "actions": [
+                    action for action in actions if action["branch_key"] == branch_key
+                ],
+            }
+            for branch_key in sorted({row["branch_key"] for row in generated})
+        },
+    }
+    plans_path = output_dir / "plans.json"
+    plans_path.write_text(
+        json.dumps(plan_payload, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
 
     registry_payload = yaml.safe_load(args.registry.read_text(encoding="utf-8"))
     normalized_registry = _normalize_registry_paths(registry_payload, repo_root)
@@ -305,7 +420,15 @@ def run(args: argparse.Namespace) -> None:
     receipt = {
         "schema_version": "ampgent.autoresearch-challenger-rescue-round3.1",
         "observed_at_utc": datetime.now(UTC).isoformat(),
-        "parent_scores_sha256": sha256_file(args.parent_scores),
+        "parent_scores_sha256": parent_scores_sha256,
+        "generation": generation,
+        "operator_release_sha256": operator_release_sha256,
+        "plans_sha256": sha256_file(plans_path),
+        "history_mode": args.history_mode,
+        "history_check_status": history_check_status,
+        "historical_source_sha256s": historical_source_sha256s,
+        "display_or_promotion_allowed": args.history_mode == "postgresql",
+        "conflict_only": args.conflict_only,
         "historical_sequence_exclusion_count": len(historical_sha256s),
         "parent_count": len(parents),
         "generated_novel_strict_count": len(rows),
@@ -338,6 +461,13 @@ def main() -> None:
     parser.add_argument("--hemopi2-worker", type=Path, required=True)
     parser.add_argument("--hemopi2-model-root", type=Path, required=True)
     parser.add_argument("--hemopi2-calibration", type=Path, required=True)
+    parser.add_argument(
+        "--history-mode",
+        choices=("postgresql", "provided_csv_only"),
+        default="postgresql",
+    )
+    parser.add_argument("--historical-csv", type=Path, action="append", default=[])
+    parser.add_argument("--conflict-only", action="store_true")
     run(parser.parse_args())
 
 

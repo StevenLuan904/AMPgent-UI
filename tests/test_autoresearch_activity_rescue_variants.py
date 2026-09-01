@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import argparse
 import asyncio
+import csv
 import hashlib
 import importlib.util
+import json
 import sys
 from pathlib import Path
 
@@ -98,6 +101,31 @@ def _load_calibration_module():
     spec = importlib.util.spec_from_file_location(
         "_autoresearch_activity_support_calibrate",
         analysis_dir / "autoresearch_activity_support_calibrate.py",
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _load_challenger_rescue_module():
+    analysis_dir = Path(__file__).resolve().parents[1] / "analysis"
+    sys.path.insert(0, str(analysis_dir))
+    spec = importlib.util.spec_from_file_location(
+        "_autoresearch_challenger_rescue_round3",
+        analysis_dir / "autoresearch_challenger_rescue_round3.py",
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _load_deferred_family_audit_module():
+    analysis_dir = Path(__file__).resolve().parents[1] / "analysis"
+    spec = importlib.util.spec_from_file_location(
+        "_autoresearch_deferred_family_audit",
+        analysis_dir / "autoresearch_deferred_family_audit.py",
     )
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
@@ -406,3 +434,105 @@ def test_monotonic_percentile_witness_is_a_conservative_lower_bound() -> None:
     assert module._benefit_percentile_lower_bound(1.4, minimize, "minimize") == 0.8
     assert module._benefit_percentile_lower_bound(0.5, maximize, "maximize") == 0.8
     assert module._benefit_percentile_lower_bound(2.1, minimize, "minimize") == 0.0
+
+
+def test_challenger_rescue_emits_replayable_masked_substitution_actions() -> None:
+    module = _load_challenger_rescue_module()
+    parent_sequence = "GRWAGVIRADDYGKCRGIRKL"
+    parent_sha256 = hashlib.sha256(parent_sequence.encode()).hexdigest()
+    parent = {
+        "branch_key": "vegfa",
+        "sequence": parent_sequence,
+        "sequence_sha256": parent_sha256,
+    }
+
+    generated, actions = module._generate(
+        [parent],
+        set(),
+        generation=106,
+        evidence_sha256="0" * 64,
+        operator_release_sha256="1" * 64,
+    )
+
+    assert generated
+    assert len(generated) == len(actions)
+    assert {row["generation"] for row in generated} == {106}
+    assert {row["action_type"] for row in generated} == {"masked_substitution"}
+    assert {row["parent_sequence_sha256"] for row in generated} == {parent_sha256}
+    assert {action["operator_id"] for action in actions} == {
+        "autoresearch-hemopi2-rescue-substitution-v2"
+    }
+    assert all(len(action["substitutions"]) == 1 for action in actions)
+    assert {row["action_sha256"] for row in generated} == {
+        action["action_sha256"] for action in actions
+    }
+
+
+def test_challenger_rescue_action_identity_is_deterministic_and_history_excluding() -> None:
+    module = _load_challenger_rescue_module()
+    parent_sequence = "GRWAGVIRADDYGKCRGIRKL"
+    parent = {
+        "branch_key": "vegfa",
+        "sequence": parent_sequence,
+        "sequence_sha256": hashlib.sha256(parent_sequence.encode()).hexdigest(),
+    }
+    kwargs = {
+        "generation": 106,
+        "evidence_sha256": "0" * 64,
+        "operator_release_sha256": "1" * 64,
+    }
+
+    first_rows, first_actions = module._generate([parent], set(), **kwargs)
+    second_rows, second_actions = module._generate([parent], set(), **kwargs)
+    excluded_sha256 = first_rows[0]["sequence_sha256"]
+    filtered_rows, _ = module._generate([parent], {excluded_sha256}, **kwargs)
+
+    assert [row["action_sha256"] for row in first_rows] == [
+        row["action_sha256"] for row in second_rows
+    ]
+    assert [action["action_sha256"] for action in first_actions] == [
+        action["action_sha256"] for action in second_actions
+    ]
+    assert excluded_sha256 not in {row["sequence_sha256"] for row in filtered_rows}
+
+
+def test_deferred_family_audit_is_fail_closed_for_postgresql_history(
+    tmp_path: Path,
+) -> None:
+    module = _load_deferred_family_audit_module()
+    input_csv = tmp_path / "input.csv"
+    reference_csv = tmp_path / "reference.csv"
+    output_csv = tmp_path / "annotated.csv"
+    output_json = tmp_path / "receipt.json"
+    with input_csv.open("w", encoding="utf-8", newline="") as stream:
+        writer = csv.DictWriter(stream, fieldnames=["branch_key", "sequence"])
+        writer.writeheader()
+        writer.writerows(
+            [
+                {"branch_key": "vegfa", "sequence": "KKKKKKKKKR"},
+                {"branch_key": "vegfa", "sequence": "RRRRRRRRRR"},
+            ]
+        )
+    with reference_csv.open("w", encoding="utf-8", newline="") as stream:
+        writer = csv.DictWriter(stream, fieldnames=["branch_key", "sequence"])
+        writer.writeheader()
+        writer.writerow({"branch_key": "vegfa", "sequence": "KKKKKKKKKK"})
+
+    module.run(
+        argparse.Namespace(
+            input_csv=[input_csv],
+            reference_csv=[reference_csv],
+            output_csv=output_csv,
+            output_json=output_json,
+        )
+    )
+
+    with output_csv.open(encoding="utf-8-sig", newline="") as stream:
+        rows = list(csv.DictReader(stream))
+    receipt = json.loads(output_json.read_text(encoding="utf-8"))
+    assert {row["historical_exact_replay"] for row in rows} == {"unchecked"}
+    assert {row["new_family_relative_to_postgresql_history"] for row in rows} == {
+        "unchecked"
+    }
+    assert receipt["postgresql_history_status"] == "deferred_unavailable"
+    assert receipt["display_or_promotion_allowed"] is False
