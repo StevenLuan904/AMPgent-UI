@@ -150,6 +150,8 @@ def cluster_sequence_families(
                             prior_by_signature.get((block_index, right[start:end]), ())
                         )
                     for left_index in sorted(candidates):
+                        if union_find.find(left_index) == union_find.find(right_index):
+                            continue
                         if _passes_family_edge(
                             unique_sequences[left_index],
                             right,
@@ -178,6 +180,8 @@ def cluster_sequence_families(
                             )
                         )
                 for left_index in sorted(candidates):
+                    if union_find.find(left_index) == union_find.find(right_index):
+                        continue
                     if _passes_family_edge(
                         unique_sequences[left_index],
                         right,

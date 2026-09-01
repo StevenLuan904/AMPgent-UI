@@ -9,6 +9,7 @@ from itertools import product
 
 import pytest
 
+from pepagent import sequence_family as sequence_family_module
 from pepagent.sequence_family import (
     SequenceFamilyAssignment,
     cluster_sequence_families,
@@ -220,3 +221,30 @@ def test_streaming_candidate_memory_stays_bounded_for_shared_seed_stress() -> No
 
     assert len(assignments) == 5_000
     assert peak_bytes < 64 * 1024 * 1024
+
+
+def test_dense_connected_family_skips_redundant_edge_verification(monkeypatch) -> None:
+    parent = "ACDEFGHIKLMNPQRSTVWY"
+    sequences = {parent}
+    for position, current in enumerate(parent):
+        for replacement in AMINO_ACIDS:
+            if replacement != current:
+                sequences.add(parent[:position] + replacement + parent[position + 1 :])
+            if len(sequences) == 200:
+                break
+        if len(sequences) == 200:
+            break
+
+    call_count = 0
+    original = sequence_family_module._passes_family_edge
+
+    def counted(*args, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(sequence_family_module, "_passes_family_edge", counted)
+    assignments = sequence_family_module.cluster_sequence_families(sequences)
+
+    assert len({item.family_key for item in assignments}) == 1
+    assert call_count < len(sequences) * 2
