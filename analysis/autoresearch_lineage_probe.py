@@ -247,6 +247,8 @@ def run(args: argparse.Namespace) -> None:
     action_records: list[dict[str, Any]] = []
     child_records: list[dict[str, Any]] = []
     child_sequences: set[str] = set()
+    excluded_sequence_hashes = set(sequence_hashes)
+    family_reference_sequences = set(historical_sequences)
     for branch_index, branch_key in enumerate(active_branches):
         branch_rows = [row for row in rows if row["branch_key"] == branch_key]
         evidence = [_evidence(row) for row in branch_rows]
@@ -280,7 +282,6 @@ def run(args: argparse.Namespace) -> None:
                 family_parents = unresolved_family_parents[family_key]
                 parent_index = replicate // len(unresolved_family_keys)
                 required_parent_ids = (family_parents[parent_index % len(family_parents)],)
-            generated_hashes = {sha256_text(sequence) for sequence in child_sequences}
             plan = build_multifront_rule_action_plan(
                 candidates=evidence,
                 snapshot=archive,
@@ -289,10 +290,8 @@ def run(args: argparse.Namespace) -> None:
                 seed=args.seed + branch_index * 10_000 + replicate * 1_000,
                 operator_release_sha256=operator_release_sha256,
                 target_sequence_sha256=sha256_text(f"unused-cpu-target:{branch_key}"),
-                historical_sequence_sha256s=sequence_hashes | generated_hashes,
-                historical_family_representatives=tuple(
-                    sorted(historical_sequences | child_sequences)
-                ),
+                historical_sequence_sha256s=excluded_sequence_hashes,
+                historical_family_representatives=family_reference_sequences,
                 de_novo_quota=args.de_novo_quota,
                 pepmlm_targeted_enabled=False,
                 required_parent_candidate_ids=required_parent_ids,
@@ -310,6 +309,8 @@ def run(args: argparse.Namespace) -> None:
                 child_sequences.add(child)
                 instability, maximum_hydrophobic_run, net_charge = _sequence_prescreen(child)
                 child_sha256 = sha256_text(child)
+                excluded_sequence_hashes.add(child_sha256)
+                family_reference_sequences.add(child)
                 action_record = {
                     "branch_key": branch_key,
                     "generation": args.generation,

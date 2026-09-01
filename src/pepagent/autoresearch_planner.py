@@ -399,7 +399,16 @@ def _unique_de_novo_sequence(
         for previous, alphabet in transition_alphabets.items()
     ):
         raise ValueError("de-novo transition alphabets must contain canonical amino acids")
-    family_references = tuple(set(known_sequences) | set(family_reference_sequences))
+    reference_sequences = (
+        family_reference_sequences
+        if isinstance(family_reference_sequences, (set, frozenset))
+        else frozenset(family_reference_sequences)
+    )
+    family_references = (
+        reference_sequences
+        if known_sequences.issubset(reference_sequences)
+        else reference_sequences | known_sequences
+    )
     for attempt in range(10_000):
         digest = sha256_text(f"{branch_key}:{seed}:family-opener-v7:{attempt}")
         length = _DE_NOVO_LENGTHS[int(digest[:2], 16) % len(_DE_NOVO_LENGTHS)]
@@ -480,7 +489,11 @@ def build_multifront_rule_action_plan(
         raise ValueError("required planner parent fails the literal stability hard gate")
     improvement_counts, delta_receipts = _improvement_index(prior_deltas)
     known_sequences = {item.sequence for item in candidates}
-    historical_sequence_sha256s = frozenset(historical_sequence_sha256s)
+    historical_sequence_sha256s = (
+        historical_sequence_sha256s
+        if isinstance(historical_sequence_sha256s, (set, frozenset))
+        else frozenset(historical_sequence_sha256s)
+    )
     if any(
         len(item) != 64 or set(item) - set("0123456789abcdef")
         for item in historical_sequence_sha256s
