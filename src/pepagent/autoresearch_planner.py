@@ -112,6 +112,27 @@ def _shares_sequence_family(
     """Return whether sequence has a direct edge under the frozen 80/80 contract."""
 
     for reference in references:
+        shorter, longer = (
+            (sequence, reference)
+            if len(sequence) <= len(reference)
+            else (reference, sequence)
+        )
+        if len(shorter) / len(longer) < 0.8:
+            continue
+        required_matches = math.ceil(0.8 * len(shorter) - 1e-12)
+        block_count = len(shorter) - required_matches + 1
+        base_width, remainder = divmod(len(shorter), block_count)
+        start = 0
+        possible = False
+        for block_index in range(block_count):
+            width = base_width + (1 if block_index < remainder else 0)
+            end = start + width
+            if shorter[start:end] in longer:
+                possible = True
+                break
+            start = end
+        if not possible:
+            continue
         identity, coverage = ungapped_identity_and_coverage(sequence, reference)
         if identity >= 0.8 and coverage >= 0.8:
             return True

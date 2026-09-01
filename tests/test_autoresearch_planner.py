@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import inspect
+from itertools import product
 
 from pepagent.autoresearch_closed_loop import (
     CandidateEvidence,
@@ -21,11 +22,12 @@ from pepagent.autoresearch_planner import (
     _de_novo_prescreen_passes,
     _family_balanced_de_novo_profile,
     _sequence_prescreen,
+    _shares_sequence_family,
     _unique_de_novo_sequence,
     build_multifront_rule_action_plan,
 )
 from pepagent.provenance.hashing import sha256_text
-from pepagent.sequence_family import cluster_sequence_families
+from pepagent.sequence_family import cluster_sequence_families, ungapped_identity_and_coverage
 from pepagent.workers import autoresearch_activities
 from pepagent.workers.autoresearch_activities import (
     _compile_pepmlm_action,
@@ -41,6 +43,20 @@ def _metric(value: float, direction: str) -> MetricObservation:
         unit="dimensionless",
         version="test-v1",
     )
+
+
+def test_family_edge_prefilter_is_exact_on_exhaustive_short_sequences() -> None:
+    sequences = [
+        "".join(chars)
+        for length in range(1, 8)
+        for chars in product("AC", repeat=length)
+    ]
+    for left in sequences:
+        for right in sequences:
+            identity, coverage = ungapped_identity_and_coverage(left, right)
+            assert _shares_sequence_family(left, (right,)) is (
+                identity >= 0.8 and coverage >= 0.8
+            )
 
 
 def _candidate(
