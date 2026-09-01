@@ -51,18 +51,16 @@ def write_json(path: Path, payload: dict[str, Any]) -> None:
 def load_rows(path: Path) -> list[dict[str, str]]:
     with path.open(encoding="utf-8-sig", newline="") as stream:
         rows = list(csv.DictReader(stream))
-    if len(rows) != 300:
-        raise ValueError(f"expected 300 frozen candidates, found {len(rows)}")
-    if len({row["sequence_sha256"] for row in rows}) != 300:
+    if not rows:
+        raise ValueError("frozen candidate batch is empty")
+    if len({row["sequence_sha256"] for row in rows}) != len(rows):
         raise ValueError("candidate sequences are not globally unique")
-    if len({row["family_key_80_80"] for row in rows}) != 300:
-        raise ValueError("candidate families are not globally unique")
+    if len({row["candidate_id"] for row in rows}) != len(rows):
+        raise ValueError("candidate ids are not globally unique")
     branches = sorted({row["branch_key"] for row in rows})
-    if branches != ["acea", "angpt1", "fgf2", "gyra", "pbp2a", "vegfa"]:
-        raise ValueError(f"six-branch identity drifted: {branches!r}")
-    for branch in branches:
-        if sum(row["branch_key"] == branch for row in rows) != 50:
-            raise ValueError(f"{branch} does not contain exactly 50 candidates")
+    allowed_branches = {"acea", "angpt1", "fgf2", "gyra", "pbp2a", "vegfa"}
+    if not branches or not set(branches).issubset(allowed_branches):
+        raise ValueError(f"candidate branch identity drifted: {branches!r}")
     for row in rows:
         if any(row.get(field, "").strip().lower() != "true" for field in REQUIRED_TRUE):
             raise ValueError(f"candidate {row.get('candidate_id')} failed a frozen hard gate")
@@ -172,7 +170,12 @@ class Batch:
         self.rows = load_rows(args.candidates.resolve())
         self.targets = load_targets(args.target_manifest.resolve())
         self.lock = threading.Lock()
-        self.counts = {"pending": 300, "boltz_succeeded": 0, "rosetta_succeeded": 0, "failed": 0}
+        self.counts = {
+            "pending": len(self.rows),
+            "boltz_succeeded": 0,
+            "rosetta_succeeded": 0,
+            "failed": 0,
+        }
 
     def progress(self) -> None:
         with self.lock:
@@ -375,8 +378,11 @@ class Batch:
                 "pid": os.getpid(),
                 "host": "192.168.99.2",
                 "gpu_preflight": gpu_observations,
-                "candidate_count": 300,
-                "per_target_count": 50,
+                "candidate_count": len(self.rows),
+                "branch_counts": {
+                    branch: sum(row["branch_key"] == branch for row in self.rows)
+                    for branch in sorted({row["branch_key"] for row in self.rows})
+                },
                 "candidates_sha256": sha256_file(frozen_candidates),
                 "target_manifest_sha256": sha256_file(frozen_manifest),
                 "cpu_workers": self.args.cpu_workers,
@@ -405,7 +411,11 @@ class Batch:
                     all_futures.extend(producer.result())
             for future in concurrent.futures.as_completed(all_futures):
                 future.result()
-        status = "succeeded" if self.counts["rosetta_succeeded"] == 300 else "partial"
+        status = (
+            "succeeded"
+            if self.counts["rosetta_succeeded"] == len(self.rows)
+            else "partial"
+        )
         write_json(
             self.root / "completion_receipt.json",
             {

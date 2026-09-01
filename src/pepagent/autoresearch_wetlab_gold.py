@@ -10,7 +10,9 @@ from pepagent.provenance.hashing import sha256_json, sha256_text
 
 GOLD_CANDIDATE_TARGET = 50
 MINIMUM_DECISION_BEARING_ROSETTA_DECOYS = 200
+CANDIDATE_POOL_A_DG_THRESHOLD_REU = -30.0
 CANONICAL_AMINO_ACIDS = frozenset("ACDEFGHIKLMNPQRSTVWY")
+TARGET_AGNOSTIC_KEYS = frozenset({"target-agnostic", "target_agnostic", "agnostic"})
 
 
 class FrozenEvidence(BaseModel):
@@ -223,6 +225,13 @@ class RosettaDGReceiptEvidence(FrozenEvidence):
         # This is only a same-protocol directional gate.  It is not kcal/mol or Kd.
         return self.primary_dg_separated_reu < 0.0
 
+    @computed_field(return_type=bool)
+    @property
+    def qualifies_for_candidate_pool_a(self) -> bool:
+        # Pool A uses the frozen, strict same-protocol threshold requested by the user.
+        # REU must never be re-labelled as kcal/mol, affinity, or an experimental result.
+        return self.primary_dg_separated_reu < CANDIDATE_POOL_A_DG_THRESHOLD_REU
+
 
 class WetlabGoldCandidate(FrozenEvidence):
     schema_version: Literal["ampgent.wetlab-gold-candidate.1"] = "ampgent.wetlab-gold-candidate.1"
@@ -244,6 +253,9 @@ class WetlabGoldCandidate(FrozenEvidence):
     ]
     target_binding_claim_forbidden: Literal[True] = True
     selection_front: Literal["activity_consensus", "rosetta_interface", "stability"]
+    candidate_pool: Literal["A"] = "A"
+    hidden_pool_s_eligible: Literal[False] = False
+    md_status: Literal["not_started"] = "not_started"
 
 
 class WetlabGoldSelection(FrozenEvidence):
@@ -257,6 +269,11 @@ class WetlabGoldSelection(FrozenEvidence):
     shortfall: int = Field(ge=0)
     no_weighted_total_score: Literal[True] = True
     absolute_affinity_claim_forbidden: Literal[True] = True
+    candidate_pool: Literal["A"] = "A"
+    targeted_rosetta_dg_threshold_reu: Literal[-30.0] = CANDIDATE_POOL_A_DG_THRESHOLD_REU
+    target_agnostic_rosetta_exempt: Literal[True] = True
+    hidden_pool_s_requires_completed_passing_md: Literal[True] = True
+    md_started_by_selection: Literal[False] = False
 
     @computed_field(return_type=str)
     @property
@@ -275,6 +292,39 @@ def _index_unique_by_sequence(
             raise ValueError(f"duplicate {label} evidence for one sequence")
         result[row.sequence_sha256] = row
     return result
+
+
+def candidate_pool_a_rosetta_gate(
+    *,
+    target_key: str | None,
+    rosetta_receipt: RosettaDGReceiptEvidence | None,
+) -> bool:
+    """Return the frozen Pool-A structure verdict without starting computation.
+
+    Target-agnostic candidates are exempt because no target complex exists.  Every
+    targeted candidate requires a complete, identity-matched receipt with strict
+    ``dG_separated < -30 REU`` under the admitted aggregation protocol.
+    """
+
+    normalized_target = (target_key or "").strip().lower()
+    if not normalized_target or normalized_target in TARGET_AGNOSTIC_KEYS:
+        return True
+    return bool(
+        rosetta_receipt is not None
+        and rosetta_receipt.target_key.strip().lower() == normalized_target
+        and rosetta_receipt.qualifies_for_candidate_pool_a
+    )
+
+
+def hidden_pool_s_gate(
+    *,
+    pool_a_eligible: bool,
+    md_status: Literal["not_started", "running", "succeeded", "failed"],
+    md_prespecified_gate_pass: bool | None,
+) -> bool:
+    """Keep hidden Pool S closed until a Pool-A candidate passes completed MD."""
+
+    return pool_a_eligible and md_status == "succeeded" and md_prespecified_gate_pass is True
 
 
 def select_wetlab_gold_candidates(
@@ -323,7 +373,10 @@ def select_wetlab_gold_candidates(
         if (
             quality.sequence_quality_eligible
             and not review.unresolved_severe_conflict
-            and receipt.favorable_same_protocol_dg
+            and candidate_pool_a_rosetta_gate(
+                target_key=target_key,
+                rosetta_receipt=receipt,
+            )
         ):
             eligible.append((quality, review, receipt))
 
@@ -412,6 +465,7 @@ def select_wetlab_gold_candidates(
 
 
 __all__ = [
+    "CANDIDATE_POOL_A_DG_THRESHOLD_REU",
     "ChallengerReviewEvidence",
     "GOLD_CANDIDATE_TARGET",
     "MINIMUM_DECISION_BEARING_ROSETTA_DECOYS",
@@ -420,5 +474,7 @@ __all__ = [
     "TargetStructureQualificationEvidence",
     "WetlabGoldCandidate",
     "WetlabGoldSelection",
+    "candidate_pool_a_rosetta_gate",
+    "hidden_pool_s_gate",
     "select_wetlab_gold_candidates",
 ]

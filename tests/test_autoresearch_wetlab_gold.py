@@ -8,6 +8,8 @@ from pepagent.autoresearch_wetlab_gold import (
     RosettaDGReceiptEvidence,
     SequenceQualityEvidence,
     TargetStructureQualificationEvidence,
+    candidate_pool_a_rosetta_gate,
+    hidden_pool_s_gate,
     select_wetlab_gold_candidates,
 )
 from pepagent.provenance.hashing import sha256_text
@@ -130,7 +132,7 @@ def test_selects_fifty_family_diverse_candidates_without_weighted_total() -> Non
         sequence_evidence=quality,
         challenger_reviews=[_challenger(item) for item in quality],
         rosetta_receipts=[
-            _rosetta(item, primary_dg=-1.0 - index) for index, item in enumerate(quality)
+            _rosetta(item, primary_dg=-31.0 - index) for index, item in enumerate(quality)
         ],
     )
 
@@ -153,7 +155,8 @@ def test_reports_shortfall_after_family_and_evidence_gates() -> None:
     quality = [_quality(index, family_key=f"family-{index // 2}") for index in range(12)]
     reviews = [_challenger(item, severe_conflict=index == 0) for index, item in enumerate(quality)]
     receipts = [
-        _rosetta(item, primary_dg=1.0 if index == 1 else -5.0) for index, item in enumerate(quality)
+        _rosetta(item, primary_dg=-30.0 if index == 1 else -35.0)
+        for index, item in enumerate(quality)
     ]
 
     selection = select_wetlab_gold_candidates(
@@ -168,6 +171,42 @@ def test_reports_shortfall_after_family_and_evidence_gates() -> None:
     assert selection.eligible_family_count == 5
     assert len(selection.selected) == 5
     assert selection.shortfall == 45
+
+
+def test_pool_a_uses_strict_minus_thirty_threshold_and_targetless_exemption() -> None:
+    quality = _quality(1)
+
+    assert candidate_pool_a_rosetta_gate(
+        target_key="gyra",
+        rosetta_receipt=_rosetta(quality, primary_dg=-30.0001),
+    )
+    assert not candidate_pool_a_rosetta_gate(
+        target_key="gyra",
+        rosetta_receipt=_rosetta(quality, primary_dg=-30.0),
+    )
+    assert not candidate_pool_a_rosetta_gate(target_key="gyra", rosetta_receipt=None)
+    assert candidate_pool_a_rosetta_gate(
+        target_key="target-agnostic",
+        rosetta_receipt=None,
+    )
+
+
+def test_hidden_pool_s_requires_completed_passing_md_but_does_not_start_it() -> None:
+    assert not hidden_pool_s_gate(
+        pool_a_eligible=True,
+        md_status="not_started",
+        md_prespecified_gate_pass=None,
+    )
+    assert not hidden_pool_s_gate(
+        pool_a_eligible=True,
+        md_status="succeeded",
+        md_prespecified_gate_pass=False,
+    )
+    assert hidden_pool_s_gate(
+        pool_a_eligible=True,
+        md_status="succeeded",
+        md_prespecified_gate_pass=True,
+    )
 
 
 def test_rejects_incomplete_decision_bearing_rosetta_receipt() -> None:

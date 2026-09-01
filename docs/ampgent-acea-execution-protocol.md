@@ -3087,3 +3087,15 @@ MTA/CRO 使用、原始数据/图像/衍生模型权利与盲法 reference pilot
 - 历史Evaluation、Archive、Checkpoint和LifecycleEvent不改写。对旧OOD逻辑唯一排除、其余硬门均通过
   的对象，追加候选级与run级恢复事件，并冻结可由successor selector读取的全量eligibility manifest；
   全流程调用与恢复结果写权威PostgreSQL。
+
+### 2026-09-01 A池与隐藏S池晋级门
+
+- “最好候选池A”是结构后置池。凡有明确靶点的候选，必须具备完整、身份匹配且可复算的Rosetta
+  `InterfaceAnalyzer`收据，并以冻结主聚合值
+  `median_dG_separated_of_top_10_reweighted_sc < -30 REU`通过；`-30`本身不通过。无靶点/
+  target-agnostic候选因不存在目标复合物而豁免Rosetta门，但其余序列、安全、活性、家族与审计门不豁免。
+- Rosetta REU仍只是在同一协议内的相对计算证据，不得换算为kcal/mol、Kd、实验亲和力或疗效。
+- 另设不对常规展示开放的更高等级候选池S。S池候选必须先满足A池规则，再完成预注册MD并通过其稳定性门；
+  `not_started`、`running`、失败或只有轨迹而无完整收据均不得进入S池。
+- 当前只登记S池规则，不因此启动任何MD。结构批任务的启动与完成收据必须持续写`md_started=false`，除非
+  用户另行明确授权极少量A池候选进入MD。

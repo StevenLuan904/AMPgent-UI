@@ -1185,3 +1185,13 @@ wetlab候选的计数统一使用`instability_score_qualified`/`display_hard_gat
 历史证据保持不可变：不修改原Evaluation、Archive或Checkpoint。对于此前仅因OOD被少算的序列，
 在PostgreSQL追加幂等恢复事件与全量eligibility manifest，使后续successor能够重新选亲本、重算gold
 短缺与继续进化；同时保留原OOD值，便于方法学局限报告而不影响资格。
+
+## 2026-09-01 最好候选池A与隐藏候选池S
+
+长期交付中的最好候选池A采用严格结构门：有明确靶点的候选必须完成身份匹配、至少200 decoy且收据完整的
+Rosetta InterfaceAnalyzer评估，冻结主值必须严格满足`dG_separated < -30 REU`；等于`-30`不通过。
+target-agnostic候选豁免该结构门，但不豁免展示硬门、12项评分、活性支持、冲突分析、家族和历史重放审计。
+
+候选池S是隐藏的更高等级池：仅A池候选在完成预注册MD并通过稳定性判定后才能进入。当前阶段不启动MD，
+因此所有尚未完成MD的候选统一保持`hidden_pool_s_eligible=false`与`md_status=not_started`。MD不得由Rosetta
+通过自动触发，必须等待用户对极少量A池候选的独立明确授权。
