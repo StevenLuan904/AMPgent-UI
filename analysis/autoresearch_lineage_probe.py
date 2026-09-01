@@ -225,6 +225,8 @@ def run(args: argparse.Namespace) -> None:
     postgresql_candidate_history_count = 0
     postgresql_operational_history_count = 0
     postgresql_history_count = 0
+    history_check_status = "deferred_to_postgresql_materialization_gate"
+    display_or_promotion_allowed = False
     if args.include_postgresql_history:
         candidate_hashes, operational_hashes = asyncio.run(
             _postgresql_sequence_hash_sources()
@@ -238,6 +240,8 @@ def run(args: argparse.Namespace) -> None:
         postgresql_operational_history_count = len(operational_hashes)
         postgresql_history_count = len(postgresql_hashes)
         sequence_hashes.update(postgresql_hashes)
+        history_check_status = "checked_against_postgresql_candidate_and_operational_history"
+        display_or_promotion_allowed = True
     operator_release_sha256 = sha256_file(
         Path(__file__).resolve().parents[1] / "src" / "pepagent" / "autoresearch_planner.py"
     )
@@ -360,7 +364,13 @@ def run(args: argparse.Namespace) -> None:
                         "maximum_hydrophobic_run": maximum_hydrophobic_run,
                         "hydrophobic_fraction": f"{_hydrophobic_fraction(child):.6f}",
                         "net_charge_ph7_4": f"{net_charge:.6f}",
-                        "historical_exact_replay": "false",
+                        "historical_exact_replay": (
+                            "false" if display_or_promotion_allowed else "unchecked"
+                        ),
+                        "history_check_status": history_check_status,
+                        "display_or_promotion_allowed": str(
+                            display_or_promotion_allowed
+                        ).lower(),
                         "score_all_status": "pending",
                     }
                 )
@@ -479,6 +489,8 @@ def run(args: argparse.Namespace) -> None:
         "unfiltered_input_sequence_exclusion_count": len(input_sequences),
         "historical_exclusion_sequence_count": len(historical_sequences),
         "postgresql_history_exclusion_enabled": args.include_postgresql_history,
+        "history_check_status": history_check_status,
+        "display_or_promotion_allowed": display_or_promotion_allowed,
         "postgresql_candidate_sequence_sha256_count": postgresql_candidate_history_count,
         "postgresql_operational_sequence_sha256_count": (
             postgresql_operational_history_count

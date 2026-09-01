@@ -26,6 +26,19 @@ def test_targeted_lineage_probe_accepts_selected_branch_only() -> None:
     assert "args.include_postgresql_history" in source
     assert "sequence_hashes.update(postgresql_hashes)" in source
     assert "candidate_hashes | operational_hashes" in source
+    assert '"unchecked"' in source
+    assert '"display_or_promotion_allowed"' in source
+
+
+def test_offline_lineage_generation_is_fail_closed_for_display_and_promotion() -> None:
+    source = (
+        Path(__file__).resolve().parents[1] / "analysis" / "autoresearch_lineage_probe.py"
+    ).read_text(encoding="utf-8")
+
+    assert 'history_check_status = "deferred_to_postgresql_materialization_gate"' in source
+    assert "display_or_promotion_allowed = False" in source
+    assert '"false" if display_or_promotion_allowed else "unchecked"' in source
+    assert '"display_or_promotion_allowed": display_or_promotion_allowed' in source
 
 
 def test_operational_score_history_is_included_in_replay_exclusion() -> None:

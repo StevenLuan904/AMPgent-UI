@@ -136,6 +136,26 @@ def _deduplicate_rows_by_sequence(
     return selected
 
 
+def _challenger_status_hashes(
+    rows: list[dict[str, str]],
+) -> tuple[set[str], set[str], set[str]]:
+    allowed_statuses = {"no_conflict", "cross_model_disagreement_retained"}
+    observed_statuses = {row.get("challenger_conflict_status", "") for row in rows}
+    unknown_statuses = observed_statuses - allowed_statuses
+    if unknown_statuses:
+        raise ValueError(
+            f"lineage close challenger status is invalid: {sorted(unknown_statuses)}"
+        )
+    reviewed = {row["sequence_sha256"] for row in rows}
+    no_conflict = {
+        row["sequence_sha256"]
+        for row in rows
+        if row["challenger_conflict_status"] == "no_conflict"
+    }
+    retained_conflict = reviewed - no_conflict
+    return reviewed, no_conflict, retained_conflict
+
+
 def _evidence(row: dict[str, str], *, archive_eligible: bool) -> CandidateEvidence:
     metrics = {
         metric_name: MetricObservation(
@@ -260,7 +280,11 @@ def run(args: argparse.Namespace) -> None:
         challenger_rows = list(csv.DictReader(stream))
     plans_payload = json.loads(args.plans_json.read_text(encoding="utf-8"))
     archives_payload = json.loads(args.archive_before_json.read_text(encoding="utf-8"))
-    no_conflict_hashes = {row["sequence_sha256"] for row in challenger_rows}
+    (
+        challenger_reviewed_hashes,
+        no_conflict_hashes,
+        retained_conflict_hashes,
+    ) = _challenger_status_hashes(challenger_rows)
     parents_by_id = {row["sequence_sha256"]: row for row in parent_rows}
     children_by_action = {row["action_sha256"]: row for row in child_rows}
     if len(children_by_action) != len(child_rows):
@@ -319,7 +343,7 @@ def run(args: argparse.Namespace) -> None:
             child_allowed = (
                 child_row["display_eligible"].lower() == "true"
                 and int(child_row["activity_model_support_count_calibrated"]) >= 2
-                and child_row["sequence_sha256"] in no_conflict_hashes
+                and child_row["sequence_sha256"] in challenger_reviewed_hashes
             )
             if child_allowed:
                 eligible_children.add(child_row["sequence_sha256"])
@@ -445,7 +469,14 @@ def run(args: argparse.Namespace) -> None:
         "formal_metric_count": len(FORMAL_METRICS),
         "parent_child_delta_receipt_count": len(parent_child_receipts),
         "flat_metric_delta_count": len(flat_deltas),
-        "challenger_no_conflict_child_count": len(eligible_children),
+        "challenger_reviewed_child_count": len(
+            eligible_children & challenger_reviewed_hashes
+        ),
+        "challenger_no_conflict_child_count": len(eligible_children & no_conflict_hashes),
+        "challenger_retained_conflict_child_count": len(
+            eligible_children & retained_conflict_hashes
+        ),
+        "archive_eligible_child_count": len(eligible_children),
         "archive_gain_branch_count": sum(
             payload["continuation"]["archive_gain"]
             for payload in archive_updates.values()

@@ -102,3 +102,32 @@ def test_lineage_close_rejects_drifted_duplicate_sequence_evidence() -> None:
         module._deduplicate_rows_by_sequence(
             [base, drifted], label="parent"
         )
+
+
+def test_challenger_status_counts_keep_conflicts_as_reviewed_front() -> None:
+    module = _load_module()
+    rows = [
+        {
+            "sequence_sha256": "a" * 64,
+            "challenger_conflict_status": "no_conflict",
+        },
+        {
+            "sequence_sha256": "b" * 64,
+            "challenger_conflict_status": "cross_model_disagreement_retained",
+        },
+    ]
+
+    reviewed, no_conflict, retained_conflict = module._challenger_status_hashes(rows)
+
+    assert reviewed == {"a" * 64, "b" * 64}
+    assert no_conflict == {"a" * 64}
+    assert retained_conflict == {"b" * 64}
+
+
+def test_challenger_status_counts_fail_closed_on_unknown_status() -> None:
+    module = _load_module()
+
+    with pytest.raises(ValueError, match="challenger status is invalid"):
+        module._challenger_status_hashes(
+            [{"sequence_sha256": "a" * 64, "challenger_conflict_status": ""}]
+        )
