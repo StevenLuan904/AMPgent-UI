@@ -9,6 +9,10 @@ from typing import Any
 
 import yaml
 
+from pepagent.model_workers.physicochemical_runtime.cli import (
+    METHOD_VERSION as PHYSICOCHEMICAL_METHOD_VERSION,
+)
+from pepagent.model_workers.physicochemical_runtime.cli import describe
 from pepagent.model_workers.sequence_metrics_cli import evaluate
 from pepagent.provenance.hashing import sha256_file, sha256_json, sha256_text
 from pepagent.seven_branch_design import SEQUENCE_METRICS
@@ -70,6 +74,24 @@ def _is_low_hemolysis(value: Any) -> bool:
     return str(value).strip().lower() == "low"
 
 
+def _load_reusable_result(
+    path: Path,
+    *,
+    candidates: list[dict[str, str]],
+) -> dict[str, Any] | None:
+    if not path.exists():
+        return None
+    result = json.loads(path.read_text(encoding="utf-8"))
+    if result.get("candidate_count") != len(candidates):
+        raise ValueError(f"reusable metric candidate count drifted: {path}")
+    if result.get("status") == "complete":
+        expected = [item["id"] for item in candidates]
+        observed = [str(item.get("candidate_id", "")) for item in result.get("records", [])]
+        if observed != expected:
+            raise ValueError(f"reusable metric candidate identity/order drifted: {path}")
+    return result
+
+
 def run(args: argparse.Namespace) -> None:
     repo_root = args.repo_root.resolve()
     output_dir = args.output_dir.resolve()
@@ -97,6 +119,17 @@ def run(args: argparse.Namespace) -> None:
                 **row,
                 "candidate_id": f"proposal-{sha256_text(sequence)[:20]}",
                 "sequence": sequence,
+                **{
+                    metric_name: metric_value
+                    for metric_name, metric_value in describe(
+                        sequence,
+                        ph=7.4,
+                        c_terminal_amidated=False,
+                        hydrophobic_moment_angle=100,
+                    ).items()
+                    if metric_name
+                    in {"maximum_hydrophobic_run", "guruprasad_instability_index"}
+                },
             }
         )
 
@@ -122,12 +155,19 @@ def run(args: argparse.Namespace) -> None:
             "plugin": {"name": plugin_name, "parameters": {}},
             "candidates": candidates,
         }
-        result = evaluate(
-            request,
-            output_dir / "work" / plugin_name,
-            normalized_registry_path,
-        )
         result_path = metrics_dir / f"{plugin_name}.json"
+        result = (
+            _load_reusable_result(result_path, candidates=candidates)
+            if args.reuse_existing_metrics
+            else None
+        )
+        reused = result is not None
+        if result is None:
+            result = evaluate(
+                request,
+                output_dir / "work" / plugin_name,
+                normalized_registry_path,
+            )
         result_path.write_text(
             json.dumps(result, ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8",
@@ -139,6 +179,7 @@ def run(args: argparse.Namespace) -> None:
                 "candidate_count": result["candidate_count"],
                 "adapter_version": result.get("adapter_version"),
                 "result_sha256": sha256_file(result_path),
+                "reused_verified_result": reused,
                 "reason_category": None
                 if result["status"] == "complete"
                 else "runtime_unavailable",
@@ -216,6 +257,18 @@ def run(args: argparse.Namespace) -> None:
         "registry_sha256": sha256_file(normalized_registry_path),
         "proposal_count": len(scored_rows),
         "formal_metric_names": sorted(formal_names),
+        "deterministic_metric_supplement": {
+            "method_version": PHYSICOCHEMICAL_METHOD_VERSION,
+            "metric_names": [
+                "guruprasad_instability_index",
+                "maximum_hydrophobic_run",
+            ],
+            "parameters": {
+                "ph": 7.4,
+                "c_terminal_amidated": False,
+                "hydrophobic_moment_angle": 100,
+            },
+        },
         "plugin_status": statuses,
         "formal_12_complete_count": sum(row["formal_12_complete"] == "true" for row in scored_rows),
         "display_eligible_count": sum(row["display_eligible"] == "true" for row in scored_rows),
@@ -243,6 +296,7 @@ def main() -> None:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--require-safety-hard-gate-pass", action="store_true")
     parser.add_argument("--skip-amplify", action="store_true")
+    parser.add_argument("--reuse-existing-metrics", action="store_true")
     run(parser.parse_args())
 
 
