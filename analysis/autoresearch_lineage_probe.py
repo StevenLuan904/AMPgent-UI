@@ -4,6 +4,7 @@ import argparse
 import asyncio
 import csv
 import json
+import math
 from collections.abc import Iterable
 from datetime import UTC, datetime
 from pathlib import Path
@@ -146,9 +147,13 @@ def _de_novo_profile_parent_ids(
         if int(source_row_by_id[candidate_id]["activity_model_support_count_calibrated"])
         == 3
     )
-    if len(full_support) >= 3:
-        return full_support, "three_model_support_qd_elites"
-    return quality_diversity_parent_ids, "all_quality_gated_qd_elites_fallback"
+    representative_minimum = max(3, math.ceil(len(quality_diversity_parent_ids) / 2))
+    if len(full_support) >= representative_minimum:
+        return full_support, "three_model_support_representative_qd_elites"
+    return (
+        quality_diversity_parent_ids,
+        "all_quality_gated_qd_elites_representativeness_fallback",
+    )
 
 
 def _write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
