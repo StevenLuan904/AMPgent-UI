@@ -7,6 +7,7 @@ import json
 import os
 import subprocess
 import time
+from collections import defaultdict, deque
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -107,6 +108,23 @@ def record_failure(item, *, returncode: int, attempt: int, runner: Path) -> None
     (out / "failure_receipt.json").write_text(json.dumps(payload, indent=2))
 
 
+def target_round_robin(tasks: list[dict]) -> list[dict]:
+    """Interleave per-target rank order so early evidence covers every target."""
+    groups = defaultdict(deque)
+    order = []
+    for task in tasks:
+        target = task["target_key"]
+        if target not in groups:
+            order.append(target)
+        groups[target].append(task)
+    result = []
+    while any(groups.values()):
+        for target in order:
+            if groups[target]:
+                result.append(groups[target].popleft())
+    return result
+
+
 def source_for(task, index, external):
     key = (task["target_key"], task["sequence_sha256"])
     if key in external:
@@ -125,7 +143,7 @@ def main():
     a = cli()
     a.root.mkdir(parents=True, exist_ok=True)
     snapshot = json.loads(a.snapshot.read_text())
-    tasks = snapshot["pool_a_all"]
+    tasks = target_round_robin(snapshot["pool_a_all"])
     index = build_index(a.scan_root)
     external = external_sources(a.source_manifest)
     pending = []
@@ -152,6 +170,7 @@ def main():
         "snapshot_candidate_count": len(tasks),
         "resolvable_count": len(pending),
         "pid": os.getpid(),
+        "scheduling_policy": "target_round_robin_then_pool_a_rank",
     }
     state["unresolved_count"] = len(unresolved)
     state["unresolved"] = unresolved

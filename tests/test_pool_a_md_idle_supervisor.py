@@ -75,3 +75,25 @@ def test_supervisor_recognizes_exact_live_output_dir(tmp_path):
     )
     assert module.output_is_running(out, proc_root)
     assert not module.output_is_running(out.parent / "candidate-b", proc_root)
+
+
+def test_supervisor_round_robins_targets_without_changing_within_target_order():
+    source = Path(__file__).parents[1] / "deploy/remote/supervise_pool_a_md_idle.py"
+    spec = importlib.util.spec_from_file_location("pool_a_md_supervisor_round_robin", source)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    tasks = [
+        {"target_key": "acea", "pool_a_rank": 1},
+        {"target_key": "acea", "pool_a_rank": 2},
+        {"target_key": "gyra", "pool_a_rank": 1},
+        {"target_key": "gyra", "pool_a_rank": 2},
+        {"target_key": "pbp2a", "pool_a_rank": 1},
+    ]
+    result = module.target_round_robin(tasks)
+    assert [(x["target_key"], x["pool_a_rank"]) for x in result] == [
+        ("acea", 1),
+        ("gyra", 1),
+        ("pbp2a", 1),
+        ("acea", 2),
+        ("gyra", 2),
+    ]
