@@ -254,13 +254,26 @@ def _adaptive_de_novo_transition_alphabets(
     return alphabets
 
 
-def _family_balanced_de_novo_profile(candidates: Collection[CandidateEvidence]) -> tuple[str, ...]:
-    """Return one deterministic profile sequence per 80/80 family."""
+def _family_balanced_de_novo_profile(
+    candidates: Collection[CandidateEvidence],
+    *,
+    preferred_candidate_ids: Collection[str] = (),
+) -> tuple[str, ...]:
+    """Return one sequence per family, preferring stronger evidence within-family."""
 
-    by_family: dict[str, list[str]] = defaultdict(list)
+    preferred_candidate_ids = set(preferred_candidate_ids)
+    by_family: dict[str, list[CandidateEvidence]] = defaultdict(list)
     for candidate in candidates:
-        by_family[candidate.family_key].append(candidate.sequence)
-    return tuple(min(by_family[family_key]) for family_key in sorted(by_family))
+        by_family[candidate.family_key].append(candidate)
+    profile: list[str] = []
+    for family_key in sorted(by_family):
+        family = by_family[family_key]
+        preferred = [
+            candidate for candidate in family if candidate.candidate_id in preferred_candidate_ids
+        ]
+        selected = min(preferred or family, key=lambda candidate: candidate.sequence)
+        profile.append(selected.sequence)
+    return tuple(profile)
 
 
 class PlannerDeltaEvidence(BaseModel):
@@ -540,6 +553,7 @@ def build_multifront_rule_action_plan(
     pepmlm_targeted_enabled: bool = True,
     required_parent_candidate_ids: Sequence[str] = (),
     quality_diversity_elite_candidate_ids: Sequence[str] = (),
+    quality_diversity_preferred_candidate_ids: Sequence[str] = (),
 ) -> dict[str, Any]:
     """Choose replayable actions without collapsing conflicting model fronts.
 
@@ -570,6 +584,14 @@ def build_multifront_rule_action_plan(
         quality_diversity_elite_candidate_ids
     ):
         raise ValueError("quality-diversity elite candidate IDs must be unique")
+    if len(set(quality_diversity_preferred_candidate_ids)) != len(
+        quality_diversity_preferred_candidate_ids
+    ):
+        raise ValueError("quality-diversity preferred candidate IDs must be unique")
+    if not set(quality_diversity_preferred_candidate_ids).issubset(
+        quality_diversity_elite_candidate_ids
+    ):
+        raise ValueError("quality-diversity preferred candidates must be archive elites")
     missing_required_parent_ids = sorted(set(required_parent_candidate_ids) - set(by_id))
     if missing_required_parent_ids:
         raise ValueError("required planner parent is absent from the candidate cohort")
@@ -620,14 +642,21 @@ def build_multifront_rule_action_plan(
             by_id[candidate_id]
             for candidate_id in sorted(quality_diversity_elite_candidate_ids)
         ]
-        de_novo_profile_source = "quality_diversity_archive_elites"
+        de_novo_profile_source = (
+            "quality_diversity_archive_elites_full_support_family_priority"
+            if quality_diversity_preferred_candidate_ids
+            else "quality_diversity_archive_elites"
+        )
     elif len(qualified_gold) >= _DE_NOVO_MINIMUM_GOLD_PROFILE_COUNT:
         de_novo_profile_candidates = qualified_gold
         de_novo_profile_source = "qualified_gold_archive"
     else:
         de_novo_profile_candidates = eligible
         de_novo_profile_source = "all_instability_qualified_families_fallback"
-    de_novo_profile = _family_balanced_de_novo_profile(de_novo_profile_candidates)
+    de_novo_profile = _family_balanced_de_novo_profile(
+        de_novo_profile_candidates,
+        preferred_candidate_ids=quality_diversity_preferred_candidate_ids,
+    )
     de_novo_alphabet = _adaptive_de_novo_alphabet(de_novo_profile)
     de_novo_transition_alphabets = _adaptive_de_novo_transition_alphabets(de_novo_profile)
 
@@ -1045,11 +1074,15 @@ def build_multifront_rule_action_plan(
             "fronts_are_not_weighted_together": True,
         },
         "de_novo_profile_policy": {
-            "operator_version": "autoresearch-rule-de-novo-v9",
+            "operator_version": "autoresearch-rule-de-novo-v10",
             "profile_source": de_novo_profile_source,
             "quality_diversity_elite_candidate_count": len(
                 quality_diversity_elite_candidate_ids
             ),
+            "quality_diversity_preferred_candidate_count": len(
+                quality_diversity_preferred_candidate_ids
+            ),
+            "full_support_priority_is_within_family_only": True,
             "minimum_gold_profile_count": _DE_NOVO_MINIMUM_GOLD_PROFILE_COUNT,
             "family_balanced": True,
             "family_profile_count": len(de_novo_profile),

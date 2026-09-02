@@ -4,7 +4,6 @@ import argparse
 import asyncio
 import csv
 import json
-import math
 from collections.abc import Iterable
 from datetime import UTC, datetime
 from pathlib import Path
@@ -140,19 +139,21 @@ def _unresolved_family_parent_ids(
 def _de_novo_profile_parent_ids(
     quality_diversity_parent_ids: tuple[str, ...],
     source_row_by_id: dict[str, dict[str, str]],
-) -> tuple[tuple[str, ...], str]:
+) -> tuple[tuple[str, ...], tuple[str, ...], str]:
     full_support = tuple(
         candidate_id
         for candidate_id in quality_diversity_parent_ids
         if int(source_row_by_id[candidate_id]["activity_model_support_count_calibrated"])
         == 3
     )
-    representative_minimum = max(3, math.ceil(len(quality_diversity_parent_ids) / 2))
-    if len(full_support) >= representative_minimum:
-        return full_support, "three_model_support_representative_qd_elites"
     return (
         quality_diversity_parent_ids,
-        "all_quality_gated_qd_elites_representativeness_fallback",
+        full_support,
+        (
+            "all_quality_gated_qd_elites_with_three_model_family_priority"
+            if full_support
+            else "all_quality_gated_qd_elites"
+        ),
     )
 
 
@@ -311,7 +312,11 @@ def run(args: argparse.Namespace) -> None:
         quality_diversity_parent_ids = tuple(
             elite.candidate_id for elite in quality_diversity.elites
         )
-        de_novo_profile_parent_ids, de_novo_profile_parent_source = (
+        (
+            de_novo_profile_parent_ids,
+            de_novo_preferred_parent_ids,
+            de_novo_profile_parent_source,
+        ) = (
             _de_novo_profile_parent_ids(
                 quality_diversity_parent_ids,
                 source_row_by_id,
@@ -350,6 +355,9 @@ def run(args: argparse.Namespace) -> None:
                 pepmlm_targeted_enabled=False,
                 required_parent_candidate_ids=required_parent_ids,
                 quality_diversity_elite_candidate_ids=de_novo_profile_parent_ids,
+                quality_diversity_preferred_candidate_ids=(
+                    de_novo_preferred_parent_ids
+                ),
             )
             if plan["requires_generator_gpu"]:
                 raise ValueError("CPU lineage probe unexpectedly requires a generator GPU")
@@ -459,6 +467,7 @@ def run(args: argparse.Namespace) -> None:
                 "elite_parent_count": len(quality_diversity_parent_ids),
                 "de_novo_profile_parent_source": de_novo_profile_parent_source,
                 "de_novo_profile_parent_count": len(de_novo_profile_parent_ids),
+                "de_novo_preferred_parent_count": len(de_novo_preferred_parent_ids),
                 "quality_and_diversity_are_not_weighted": True,
             },
         }

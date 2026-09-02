@@ -154,10 +154,11 @@ def test_de_novo_profile_prefers_three_model_qd_elites() -> None:
         for index, candidate_id in enumerate(candidate_ids)
     }
 
-    selected, source = module._de_novo_profile_parent_ids(candidate_ids, rows)
+    selected, preferred, source = module._de_novo_profile_parent_ids(candidate_ids, rows)
 
-    assert selected == ("0", "1", "2")
-    assert source == "three_model_support_representative_qd_elites"
+    assert selected == candidate_ids
+    assert preferred == ("0", "1", "2")
+    assert source == "all_quality_gated_qd_elites_with_three_model_family_priority"
 
 
 def test_de_novo_profile_falls_back_when_full_support_is_sparse() -> None:
@@ -173,7 +174,8 @@ def test_de_novo_profile_falls_back_when_full_support_is_sparse() -> None:
         "g": {"activity_model_support_count_calibrated": "2"},
     }
 
-    selected, source = module._de_novo_profile_parent_ids(candidate_ids, rows)
+    selected, preferred, source = module._de_novo_profile_parent_ids(candidate_ids, rows)
 
     assert selected == candidate_ids
-    assert source == "all_quality_gated_qd_elites_representativeness_fallback"
+    assert preferred == ("a", "b", "c")
+    assert source == "all_quality_gated_qd_elites_with_three_model_family_priority"

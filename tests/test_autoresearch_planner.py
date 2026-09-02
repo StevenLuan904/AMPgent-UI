@@ -513,6 +513,36 @@ def test_de_novo_profile_weights_families_instead_of_family_population() -> None
     )
 
 
+def test_de_novo_profile_prefers_full_support_representative_within_family() -> None:
+    candidates = (
+        _candidate(
+            "00000000-0000-0000-0000-000000000301",
+            "AAAKKKAAAKKK",
+            "shared-family",
+            (0.1, 0.2, 0.9),
+        ),
+        _candidate(
+            "00000000-0000-0000-0000-000000000302",
+            "RRRKKKRRRKKK",
+            "shared-family",
+            (0.1, 0.2, 0.9),
+        ),
+        _candidate(
+            "00000000-0000-0000-0000-000000000303",
+            "GGGKKKGGGKKK",
+            "other-family",
+            (0.1, 0.2, 0.9),
+        ),
+    )
+
+    profile = _family_balanced_de_novo_profile(
+        candidates,
+        preferred_candidate_ids=(candidates[1].candidate_id,),
+    )
+
+    assert profile == ("GGGKKKGGGKKK", "RRRKKKRRRKKK")
+
+
 def test_planner_emits_progress_heartbeats_between_expensive_stages(monkeypatch) -> None:
     heartbeats: list[dict[str, object]] = []
     monkeypatch.setattr(
