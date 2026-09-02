@@ -25,8 +25,6 @@ from pepagent.sequence_family import ungapped_identity_and_coverage
 
 GOLD_CANDIDATE_TARGET = 50
 _HYDROPHOBIC = frozenset("AVILMFWYC")
-_DE_NOVO_MAXIMUM_HYDROPHOBIC_FRACTION = 0.45
-_DE_NOVO_MAXIMUM_HYDROPHOBIC_RUN = 2
 _DE_NOVO_MINIMUM_NET_CHARGE = 3.0
 _DE_NOVO_MAXIMUM_NET_CHARGE = 10.0
 _DE_NOVO_MAXIMUM_HISTIDINE_FRACTION = 0.12
@@ -83,13 +81,10 @@ def _hydrophobic_fraction(sequence: str) -> float:
 def _proposal_quality_gate_passes(sequence: str) -> bool:
     """Reject rule proposals that cannot satisfy the frozen proposal quality gate."""
 
-    instability, hydrophobic_run, charge = _sequence_prescreen(sequence)
-    hydrophobic_fraction = _hydrophobic_fraction(sequence)
+    instability, _, charge = _sequence_prescreen(sequence)
     return (
         math.isfinite(instability)
         and instability <= 50.0
-        and hydrophobic_run <= _DE_NOVO_MAXIMUM_HYDROPHOBIC_RUN
-        and hydrophobic_fraction <= _DE_NOVO_MAXIMUM_HYDROPHOBIC_FRACTION
         and charge >= _DE_NOVO_MINIMUM_NET_CHARGE
     )
 
@@ -428,15 +423,11 @@ def _mutation(
             proposals.append(
                 (
                     (
-                        int(
-                            parent_hydrophobic_run >= 2
-                            and hydrophobic_run >= parent_hydrophobic_run
-                        ),
-                        hydrophobic_run,
-                        hydrophobic_fraction,
                         instability,
                         max(0.0, parent_charge - charge),
                         int(instability >= parent_instability),
+                        abs(hydrophobic_run - parent_hydrophobic_run),
+                        hydrophobic_fraction,
                         position_rank,
                         replacement_rank,
                     ),
@@ -719,7 +710,7 @@ def build_multifront_rule_action_plan(
         strategies.append("substitution")
         rationales[action.action_sha256] = (
             "Edit one hydrophobic/repetitive position from the stability/safety front "
-            "only after the frozen four-descriptor proposal quality gate; "
+            "only after the stability/charge proposal quality gate; "
             "prior positive child deltas break ties while activity and safety stay protected."
         )
         break
@@ -743,13 +734,8 @@ def build_multifront_rule_action_plan(
         for donor in endpoint_pool:
             if primary.candidate_id == donor.candidate_id:
                 continue
-            _, primary_run, primary_charge = _sequence_prescreen(primary.sequence)
-            _, donor_run, donor_charge = _sequence_prescreen(donor.sequence)
-            maximum_parent_run = max(primary_run, donor_run)
-            maximum_parent_hydrophobic_fraction = max(
-                _hydrophobic_fraction(primary.sequence),
-                _hydrophobic_fraction(donor.sequence),
-            )
+            _, _, primary_charge = _sequence_prescreen(primary.sequence)
+            _, _, donor_charge = _sequence_prescreen(donor.sequence)
             minimum_parent_charge = min(primary_charge, donor_charge)
             minimum_child_charge = max(
                 _DE_NOVO_MINIMUM_NET_CHARGE,
@@ -770,8 +756,6 @@ def build_multifront_rule_action_plan(
                 hydrophobic_fraction = _hydrophobic_fraction(child)
                 if (
                     not _proposal_quality_gate_passes(child)
-                    or hydrophobic_run > maximum_parent_run
-                    or hydrophobic_fraction > maximum_parent_hydrophobic_fraction
                     or charge < minimum_child_charge
                 ):
                     continue
@@ -830,8 +814,8 @@ def build_multifront_rule_action_plan(
         actions.append(action)
         strategies.append("crossover")
         rationales[action.action_sha256] = (
-            "Combine two distinct activity-model endpoints after a deterministic "
-            "the frozen four-descriptor proposal quality gate; retain both "
+            "Combine two distinct activity-model endpoints after the deterministic "
+            "stability/charge proposal quality gate; retain both "
             "parents as controls and preserve disagreement rather than averaging it."
         )
 
@@ -1055,16 +1039,12 @@ def build_multifront_rule_action_plan(
             "instability_method": "Guruprasad-Reddy-Pandit-1990-via-Biopython-ProtParam",
             "instability_max_inclusive": 50.0,
             "all_rule_proposals_share_quality_gate": True,
-            "mutation_hydrophobic_run_maximum": _DE_NOVO_MAXIMUM_HYDROPHOBIC_RUN,
-            "mutation_hydrophobic_fraction_maximum": (_DE_NOVO_MAXIMUM_HYDROPHOBIC_FRACTION),
+            "hydrophobic_run_is_descriptor_not_gate": True,
+            "hydrophobic_fraction_is_descriptor_not_gate": True,
             "mutation_net_charge_minimum": _DE_NOVO_MINIMUM_NET_CHARGE,
-            "crossover_hydrophobic_run_parent_maximum": True,
-            "crossover_hydrophobic_fraction_parent_maximum": True,
             "crossover_charge_loss_max": 1.0,
             "crossover_net_charge_minimum": _DE_NOVO_MINIMUM_NET_CHARGE,
             "de_novo_instability_max_inclusive": 50.0,
-            "de_novo_hydrophobic_run_maximum": _DE_NOVO_MAXIMUM_HYDROPHOBIC_RUN,
-            "de_novo_hydrophobic_fraction_maximum": (_DE_NOVO_MAXIMUM_HYDROPHOBIC_FRACTION),
             "de_novo_net_charge_minimum": _DE_NOVO_MINIMUM_NET_CHARGE,
             "de_novo_net_charge_maximum": _DE_NOVO_MAXIMUM_NET_CHARGE,
             "de_novo_histidine_fraction_maximum": (

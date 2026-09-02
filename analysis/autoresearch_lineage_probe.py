@@ -24,6 +24,10 @@ from pepagent.autoresearch_planner import (
     _sequence_prescreen,
     build_multifront_rule_action_plan,
 )
+from pepagent.autoresearch_quality_diversity import (
+    build_quality_diversity_archive,
+    candidate_from_score_row,
+)
 from pepagent.db.models import Candidate
 from pepagent.db.session import SessionFactory
 from pepagent.provenance.hashing import sha256_file, sha256_json, sha256_text
@@ -247,6 +251,7 @@ def run(args: argparse.Namespace) -> None:
     )
 
     branch_archives: dict[str, dict[str, Any]] = {}
+    quality_diversity_archives: dict[str, dict[str, Any]] = {}
     plans: dict[str, dict[str, Any]] = {}
     action_records: list[dict[str, Any]] = []
     child_records: list[dict[str, Any]] = []
@@ -276,16 +281,35 @@ def run(args: argparse.Namespace) -> None:
             **archive.model_dump(mode="json"),
             "archive_sha256": archive.archive_sha256,
         }
+        quality_diversity = build_quality_diversity_archive(
+            [candidate_from_score_row(row) for row in branch_rows],
+            (),
+        )
+        quality_diversity_archives[branch_key] = quality_diversity.model_dump(
+            mode="json"
+        )
+        quality_diversity_parent_ids = tuple(
+            elite.candidate_id for elite in quality_diversity.elites
+        )
         branch_plans: list[dict[str, Any]] = []
         branch_rank = 0
         for replicate in range(args.replicates):
-            required_parent_ids: tuple[str, ...] = ()
+            required_parent_ids_list: list[str] = []
+            if quality_diversity_parent_ids:
+                required_parent_ids_list.append(
+                    quality_diversity_parent_ids[
+                        replicate % len(quality_diversity_parent_ids)
+                    ]
+                )
             if unresolved_family_keys:
                 family_index = replicate % len(unresolved_family_keys)
                 family_key = unresolved_family_keys[family_index]
                 family_parents = unresolved_family_parents[family_key]
                 parent_index = replicate // len(unresolved_family_keys)
-                required_parent_ids = (family_parents[parent_index % len(family_parents)],)
+                required_parent_ids_list.append(
+                    family_parents[parent_index % len(family_parents)]
+                )
+            required_parent_ids = tuple(dict.fromkeys(required_parent_ids_list))
             plan = build_multifront_rule_action_plan(
                 candidates=evidence,
                 snapshot=archive,
@@ -399,6 +423,15 @@ def run(args: argparse.Namespace) -> None:
                 for plan in branch_plans
                 for candidate_id in plan["unmaterialized_forced_parent_candidate_ids"]
             ],
+            "quality_diversity_context": {
+                "policy_id": quality_diversity.policy.policy_id,
+                "covered_cell_count": len(quality_diversity.covered_cell_ids),
+                "empty_cell_count": len(quality_diversity.empty_cell_ids),
+                "valid_cell_coverage": quality_diversity.valid_cell_coverage,
+                "archive_qd_score": quality_diversity.archive_qd_score,
+                "elite_parent_count": len(quality_diversity_parent_ids),
+                "quality_and_diversity_are_not_weighted": True,
+            },
         }
         plans[branch_key] = combined_plan
 
@@ -447,6 +480,19 @@ def run(args: argparse.Namespace) -> None:
             {
                 "schema_version": "ampgent.autoresearch-multibranch-archive.1",
                 "branches": branch_archives,
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    quality_diversity_path = args.output_dir / "quality_diversity_before.json"
+    quality_diversity_path.write_text(
+        json.dumps(
+            {
+                "schema_version": "ampgent.multibranch-quality-diversity-archive.1",
+                "branches": quality_diversity_archives,
             },
             ensure_ascii=False,
             indent=2,
@@ -524,6 +570,8 @@ def run(args: argparse.Namespace) -> None:
         "children_csv_sha256": sha256_file(children_path),
         "actions_sha256": sha256_file(actions_path),
         "archive_before_sha256": sha256_file(archives_path),
+        "quality_diversity_before_sha256": sha256_file(quality_diversity_path),
+        "quality_diversity_parent_selection": True,
         "plans_sha256": sha256_file(plans_path),
         "workflow_submitted": False,
         "gpu_task_submitted": False,

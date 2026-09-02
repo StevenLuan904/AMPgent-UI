@@ -21,6 +21,8 @@ from pepagent.autoresearch_planner import (
     _adaptive_de_novo_transition_alphabets,
     _de_novo_prescreen_passes,
     _family_balanced_de_novo_profile,
+    _hydrophobic_fraction,
+    _proposal_quality_gate_passes,
     _sequence_prescreen,
     _SequenceFamilyReferenceIndex,
     _shares_sequence_family,
@@ -35,6 +37,16 @@ from pepagent.workers.autoresearch_activities import (
     _heartbeat_activity_stage,
     plan_autoresearch_actions,
 )
+
+
+def test_proposal_gate_keeps_hydrophobic_descriptors_without_rejecting_them() -> None:
+    sequence = "KKKLLLLAAAAKKK"
+
+    _, maximum_run, _ = _sequence_prescreen(sequence)
+
+    assert maximum_run == 8
+    assert _hydrophobic_fraction(sequence) > 0.45
+    assert _proposal_quality_gate_passes(sequence) is True
 
 
 def _metric(value: float, direction: str) -> MetricObservation:
@@ -229,24 +241,14 @@ def test_multifront_rule_planner_keeps_conflicts_novelty_and_four_strategies() -
         instability, hydrophobic_run, charge = _sequence_prescreen(child)
         hydrophobic_fraction = sum(residue in "AVILMFWYC" for residue in child) / len(child)
         assert instability <= 50.0
-        assert hydrophobic_run <= 2
-        assert hydrophobic_fraction <= 0.45
+        assert hydrophobic_run >= 0
+        assert 0.0 <= hydrophobic_fraction <= 1.0
         assert charge >= 3.0
-        parent = candidates_by_id[action.parent_candidate_id]
         if isinstance(action, ControlledCrossoverAction):
-            parent_hydrophobic_fraction = sum(
-                residue in "AVILMFWYC" for residue in parent.sequence
-            ) / len(parent.sequence)
+            parent = candidates_by_id[action.parent_candidate_id]
             donor = candidates_by_id[action.donor_candidate_id]
-            _, parent_run, parent_charge = _sequence_prescreen(parent.sequence)
-            _, donor_run, donor_charge = _sequence_prescreen(donor.sequence)
-            donor_hydrophobic_fraction = sum(
-                residue in "AVILMFWYC" for residue in donor.sequence
-            ) / len(donor.sequence)
-            assert hydrophobic_run <= max(parent_run, donor_run)
-            assert hydrophobic_fraction <= max(
-                parent_hydrophobic_fraction, donor_hydrophobic_fraction
-            )
+            _, _, parent_charge = _sequence_prescreen(parent.sequence)
+            _, _, donor_charge = _sequence_prescreen(donor.sequence)
             assert charge >= max(3.0, min(parent_charge, donor_charge) - 1.0)
 
 
@@ -357,16 +359,12 @@ def test_cpu_only_planner_fills_a_fifty_percent_de_novo_quota() -> None:
         "instability_method": "Guruprasad-Reddy-Pandit-1990-via-Biopython-ProtParam",
         "instability_max_inclusive": 50.0,
         "all_rule_proposals_share_quality_gate": True,
-        "mutation_hydrophobic_run_maximum": 2,
-        "mutation_hydrophobic_fraction_maximum": 0.45,
+        "hydrophobic_run_is_descriptor_not_gate": True,
+        "hydrophobic_fraction_is_descriptor_not_gate": True,
         "mutation_net_charge_minimum": 3.0,
-        "crossover_hydrophobic_run_parent_maximum": True,
-        "crossover_hydrophobic_fraction_parent_maximum": True,
         "crossover_charge_loss_max": 1.0,
         "crossover_net_charge_minimum": 3.0,
         "de_novo_instability_max_inclusive": 50.0,
-        "de_novo_hydrophobic_run_maximum": 2,
-        "de_novo_hydrophobic_fraction_maximum": 0.45,
         "de_novo_net_charge_minimum": 3.0,
         "de_novo_net_charge_maximum": 10.0,
         "de_novo_histidine_fraction_maximum": 0.12,
@@ -390,8 +388,8 @@ def test_rule_de_novo_prescreen_is_stable_across_all_six_target_branches() -> No
             )
 
             assert instability <= 50.0
-            assert hydrophobic_run <= 2
-            assert hydrophobic_fraction <= 0.45
+            assert hydrophobic_run >= 0
+            assert 0.0 <= hydrophobic_fraction <= 1.0
             assert charge >= 3.0
             assert charge <= 10.0
             assert sequence.count("H") / len(sequence) <= 0.12

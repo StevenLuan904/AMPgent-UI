@@ -64,21 +64,9 @@ AUTORESEARCH_DE_NOVO_V2_OPERATOR_ID = (
 GENERATION_QUALITY_GATE_RULES: tuple[dict[str, Any], ...] = (
     {
         "metric_key": "guruprasad_instability_index",
-        "comparison": "<",
+        "comparison": "<=",
         "threshold": 50.0,
         "unit": "dimensionless",
-    },
-    {
-        "metric_key": "maximum_hydrophobic_run",
-        "comparison": "<=",
-        "threshold": 2,
-        "unit": "residues",
-    },
-    {
-        "metric_key": "hydrophobic_fraction",
-        "comparison": "<=",
-        "threshold": 0.45,
-        "unit": "fraction",
     },
     {
         "metric_key": "net_charge_ph7_4",

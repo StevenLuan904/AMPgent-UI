@@ -17,6 +17,10 @@ from pepagent.autoresearch_closed_loop import (
     parse_persisted_archive_snapshot,
     update_multi_front_archive,
 )
+from pepagent.autoresearch_quality_diversity import (
+    build_quality_diversity_archive,
+    candidate_from_score_row,
+)
 from pepagent.provenance.hashing import sha256_file, sha256_json
 
 BRANCHES = ("acea", "angpt1", "fgf2", "gyra", "pbp2a", "vegfa")
@@ -307,6 +311,7 @@ def run(args: argparse.Namespace) -> None:
     flat_deltas: list[dict[str, Any]] = []
     parent_child_receipts: list[dict[str, Any]] = []
     archive_updates: dict[str, Any] = {}
+    quality_diversity_archives: dict[str, Any] = {}
     replay_branches: dict[str, Any] = {}
     eligible_children: set[str] = set()
     planned_action_count = 0
@@ -335,6 +340,9 @@ def run(args: argparse.Namespace) -> None:
         selected_actions, skipped_action_count = _full_scored_action_payloads(
             plan, branch_child_action_sha256s
         )
+        selected_actions_by_sha256 = {
+            str(action["action_sha256"]): action for action in selected_actions
+        }
         planned_action_count += len(plan["actions"])
         unscored_planned_action_count += skipped_action_count
         for action_payload in selected_actions:
@@ -393,12 +401,27 @@ def run(args: argparse.Namespace) -> None:
         )
         update_payload = update.model_dump(mode="json")
         archive_updates[branch_key] = update_payload
+        prior_qd_candidates = [candidate_from_score_row(row) for row in branch_parents]
+        batch_qd_candidates = []
+        for row in branch_children:
+            action_payload = selected_actions_by_sha256[row["action_sha256"]]
+            parent_id = action_payload.get("parent_candidate_id")
+            parent_row = None if parent_id is None else parents_by_id[str(parent_id)]
+            batch_qd_candidates.append(
+                candidate_from_score_row(row, parent_row=parent_row)
+            )
+        quality_diversity = build_quality_diversity_archive(
+            prior_qd_candidates,
+            batch_qd_candidates,
+        )
+        quality_diversity_archives[branch_key] = quality_diversity.model_dump(mode="json")
         replay_branches[branch_key] = {
             "archive_before_sha256": previous.archive_sha256,
             "archive_after_sha256": update.current.archive_sha256,
             "plan": plan,
             "parent_child_deltas": action_receipts,
             "archive_update": update_payload,
+            "quality_diversity_archive": quality_diversity.model_dump(mode="json"),
         }
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
@@ -423,6 +446,19 @@ def run(args: argparse.Namespace) -> None:
             {
                 "schema_version": "ampgent.autoresearch-multibranch-archive-update.1",
                 "branches": archive_updates,
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    quality_diversity_path = args.output_dir / "quality_diversity_archive.json"
+    quality_diversity_path.write_text(
+        json.dumps(
+            {
+                "schema_version": "ampgent.multibranch-quality-diversity-archive.1",
+                "branches": quality_diversity_archives,
             },
             ensure_ascii=False,
             indent=2,
@@ -484,6 +520,10 @@ def run(args: argparse.Namespace) -> None:
         "formal_12_parent_child_deltas_sha256": sha256_file(deltas_csv),
         "parent_child_delta_receipts_sha256": sha256_file(delta_receipts_path),
         "archive_updates_sha256": sha256_file(archive_updates_path),
+        "quality_diversity_archive_sha256": sha256_file(quality_diversity_path),
+        "quality_diversity_gain": sum(
+            payload["diversity_gain"] for payload in quality_diversity_archives.values()
+        ),
         "replay_bundle_sha256": sha256_file(replay_path),
         "workflow_submitted": False,
         "gpu_task_submitted": False,

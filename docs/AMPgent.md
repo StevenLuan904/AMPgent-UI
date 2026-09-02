@@ -8,7 +8,7 @@ AceA、GyrA、PBP2a、VEGFA、FGF2、ANGPT1 各获得 ≥50 条 Pool A 短肽；
 
 ## 架构
 
-`AutoResearch -> 生成/突变/杂交 -> 12项score-all -> challenger -> lineage/archive -> Boltz复合物 -> Rosetta粗筛 -> Pool A -> MD -> Pool S`
+`AutoResearch -> QD选亲/生成/突变/杂交 -> 12项score-all -> challenger -> lineage/QD archive -> Boltz复合物 -> Rosetta粗筛 -> Pool A -> MD -> Pool S`
 
 - PostgreSQL：候选、评价、谱系、决策、运行状态的权威源。
 - Temporal：调度；不改变科学状态。
@@ -19,6 +19,7 @@ AceA、GyrA、PBP2a、VEGFA、FGF2、ANGPT1 各获得 ≥50 条 Pool A 短肽；
 ## 硬门
 
 - 展示：ToxinPred3 `Non-Toxin`；Macrel hemolysis `low`；Guruprasad instability `<=50`。
+- 疏水比例、最大连续疏水长度仅作描述符，不设淘汰上限。
 - 12 项评价必须成功、有限；challenger 冲突保留独立前沿，不冒充主门。
 - 新轮次在 lineage close 前必须逐候选覆盖声明的 HemoPI2/APEX/PeptiVerse；缺 runtime 记 `runtime_unavailable`，不记通过。
 - Pool A：有靶点候选须完整 Rosetta 粗筛且 `dG_separated < -30 REU`；无靶点候选豁免。
@@ -28,12 +29,13 @@ AceA、GyrA、PBP2a、VEGFA、FGF2、ANGPT1 各获得 ≥50 条 Pool A 短肽；
 
 ## 闭环
 
-1. 多前沿 archive 选亲，执行点突变、受控杂交、de-novo。
-2. 全局序列去重；保留 occurrence；不改写历史 run。
-3. 运行 12 项 score-all、活动模型校准、challenger shadow。
-4. 写入父子逐指标差值、archive、replay、PostgreSQL。
-5. 缺失且未运行的有靶点候选进入 Rosetta 20-decoy 队列。
-6. 按硬门、dG、Pareto、家族多样性填充各靶点 Pool A 50。
+1. 固定 QD behavior space：`[net_charge/L, hydrophobic_ratio_modlamp, alpha-helix hydrophobic_moment, L]`；v1 固定 2,160 cells，实验中边界不变。
+2. 仅展示门通过、Macrel low/概率 `<=0.5`、校准活动模型支持 `>=2` 的候选参与 coverage；每 cell 仅留活动 percentile 均值最高者。
+3. QD elites 与多前沿 archive 选亲，执行点突变、受控杂交、de-novo。
+4. 分开报告 best/mean quality、valid-cell coverage、QD-score、最大 cell concentration、archive-relative novelty；新占格、格内替换、同格冲突与 operator `Δϕ` 独立记账，禁止 `q+λD`。
+5. 全局序列去重；保留 occurrence；不改写历史 run。
+6. 运行 12 项 score-all、活动模型校准、challenger shadow，写父子差值/QD archive/replay/PostgreSQL。
+7. 缺失且未运行的有靶点候选进入 Rosetta 20-decoy 队列；按硬门、dG、Pareto、QD 填 Pool A 50。
 
 Challenger 证据键为 `run_id + candidate_id + model_release_key`；字段为 `evidence_role`、`evidence_family`、`model_release_key`、`applicability_status`、`conflict_status`、value/unit/OOD/limitations/`tool_call_id`。三模型独立保存，不跨 run 按序列合并，不计加权总分。
 
@@ -56,6 +58,7 @@ Challenger 证据键为 `run_id + candidate_id + model_release_key`；字段为 
 - 七分支冻结交付：1900 条全局唯一，正式 run 不变。
 - 三分支严格库：87,989 条；AceA 29,190、GyrA 30,579、PBP2a 28,220。
 - VEGFA round128：run `f7cec85a-5a5d-5a55-a00f-d22de243457e`；1,024 条已物化、17,408 条结构化评价、65 条校准优秀、531 条新家族子代；HemoPI2 无冲突 698、分歧保留 326；1,024 个父子差值收据与 archive/replay 已关闭。
+- QD v1 对 round128 只读回放：34/2,160 cells；本轮新占 10、替换 4；QD-score 28.1875；最大 cell concentration 0.1538。
 - AceA round122：run `a981d696-caa8-5f8d-af07-d5344e653aaf`；1,024 条已物化、17,408 条结构化评价、269 条校准优秀、583 条新家族子代；HemoPI2 无冲突 877、分歧保留 147；覆盖漂移 0。
 - GyrA round123：run `1bf92615-ef5d-5411-90cc-ef9d362c187c`；1,024 条已物化、17,408 条结构化评价、557 条校准优秀、518 条新家族子代；HemoPI2 无冲突 723、分歧保留 301；覆盖漂移 0。
 - PBP2a round124：run `561a54a3-8a59-5f3d-af9d-f2ec71d3fca7`；1,024 条已物化、17,408 条结构化评价、447 条校准优秀、549 条新家族子代；HemoPI2 无冲突 758、分歧保留 266；覆盖漂移 0。
