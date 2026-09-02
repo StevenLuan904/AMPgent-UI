@@ -29,6 +29,17 @@ if ($Close) {
     exit 0
 }
 
+$singleton = [Threading.Mutex]::new($false, 'Local\AMPgentRosettaProgressFloat')
+try {
+    $singletonAcquired = $singleton.WaitOne(0)
+} catch [Threading.AbandonedMutexException] {
+    $singletonAcquired = $true
+}
+if (-not $singletonAcquired) {
+    $singleton.Dispose()
+    exit 0
+}
+
 $stateDirectory = Split-Path -Parent $stateAbsolute
 New-Item -ItemType Directory -Force -Path $stateDirectory | Out-Null
 Set-Content -LiteralPath $pidPath -Value $PID -Encoding ascii
