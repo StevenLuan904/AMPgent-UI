@@ -332,6 +332,13 @@ class Evaluation(Base):
     __table_args__ = (
         Index("ix_evaluation_candidate_metric", "candidate_id", "metric_name"),
         Index(
+            "ix_evaluation_shadow_challenger_lookup",
+            "subject_run_id",
+            "candidate_id",
+            "evidence_role",
+            "model_release_key",
+        ),
+        Index(
             "ix_evaluation_unique_evidence",
             "candidate_id",
             "metric_name",
@@ -343,6 +350,18 @@ class Evaluation(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     candidate_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("candidates.id"), nullable=False)
     tool_call_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tool_calls.id"), nullable=False)
+    # Candidate-level shadow/challenger observations may be produced by an
+    # operational evidence run rather than by the candidate's scientific run.
+    # Keep the subject run explicit so consumers never infer it from titles,
+    # targets, sequences, or the ToolCall's operational run.
+    subject_run_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("experiment_runs.id"), nullable=True
+    )
+    evidence_role: Mapped[str | None] = mapped_column(String(32))
+    evidence_family: Mapped[str | None] = mapped_column(String(64))
+    model_release_key: Mapped[str | None] = mapped_column(String(128))
+    applicability_status: Mapped[str | None] = mapped_column(String(32))
+    conflict_status: Mapped[str | None] = mapped_column(String(64))
     metric_name: Mapped[str] = mapped_column(String(128), nullable=False)
     numeric_value: Mapped[float | None] = mapped_column(Float)
     text_value: Mapped[str | None] = mapped_column(Text)
