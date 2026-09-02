@@ -31,7 +31,7 @@ AceA、GyrA、PBP2a、VEGFA、FGF2、ANGPT1 各获得 ≥50 条 Pool A 短肽；
 
 1. 固定 QD behavior space：`[net_charge/L, hydrophobic_ratio_modlamp, alpha-helix hydrophobic_moment, L]`；v1 固定 2,160 cells，实验中边界不变。
 2. 仅展示门通过、Macrel low/概率 `<=0.5`、校准活动模型支持 `>=2` 的候选参与 coverage；每 cell 仅留活动 percentile 均值最高者。
-3. QD elites 与多前沿 archive 选亲；de-novo v9 仅从质量合格 QD elites 学习 family-balanced 残基/一阶转移先验；执行点突变、受控杂交、de-novo。
+3. QD elites 与多前沿 archive 选亲；de-novo 优先从三模型全支持且占 QD elites 至少一半的代表集学习 family-balanced 残基/一阶转移先验，否则回退全部质量合格 QD elites；执行点突变、受控杂交、de-novo。
 4. 分开报告 best/mean quality、valid-cell coverage、QD-score、最大 cell concentration、archive-relative novelty；新占格、格内替换、同格冲突与 operator `Δϕ` 独立记账，禁止 `q+λD`。
 5. 全局序列去重；保留 occurrence；不改写历史 run。
 6. 运行 12 项 score-all、活动模型校准、challenger shadow，写父子差值/QD archive/replay/PostgreSQL。
@@ -57,14 +57,12 @@ Challenger 证据键为 `run_id + candidate_id + model_release_key`；字段为 
 
 - 七分支冻结交付：1900 条全局唯一，正式 run 不变。
 - 三分支严格库：87,989 条；AceA 29,190、GyrA 30,579、PBP2a 28,220。
-- VEGFA round128：run `f7cec85a-5a5d-5a55-a00f-d22de243457e`；1,024 条已物化、17,408 条结构化评价、65 条校准优秀、531 条新家族子代；HemoPI2 无冲突 698、分歧保留 326；1,024 个父子差值收据与 archive/replay 已关闭。
-- QD v1 对 round128 只读回放：34/2,160 cells；本轮新占 10、替换 4；QD-score 28.1875；最大 cell concentration 0.1538。
-- VEGFA round129 QD-v1：run `2ae024a7-575e-50ce-bc33-6da061440edc`；768 条、12项全覆盖、83 条校准优秀、386 条新家族；HemoPI2 无冲突 554、分歧保留 214；QD 43/2,160 cells，本轮新占 12、替换 9，QD-score 36.4928；lineage/replay 已关闭。
-- AceA round122：run `a981d696-caa8-5f8d-af07-d5344e653aaf`；1,024 条已物化、17,408 条结构化评价、269 条校准优秀、583 条新家族子代；HemoPI2 无冲突 877、分歧保留 147；覆盖漂移 0。
+- VEGFA round136：run `4c4fe6e9-aee1-598b-a2dd-dfc6ab4459ff`；768 条、13,056 条评价、147 条校准优秀、384 条新家族；HemoPI2 无冲突 634、分歧保留 134；QD 46/2,160 cells，本轮新占 8，QD-score 40.0268；16/38 全支持 elites 导致活动先验坍缩，已加入 50% 代表性回退；close run `38b7635e-24dc-5545-ba34-44f428ee4344`。
+- AceA round133：run `7698ad2d-c53c-5f77-876c-1460a76fe25c`；512 条、8,704 条评价、144 条校准优秀、139 条新家族；HemoPI2 无冲突 396、分歧保留 116；QD 51/2,160 cells，本轮新占 2，QD-score 44.1218；降低 de-novo 配额仅降成本、未提高质量率；close run `0bcadc82-ad10-502e-ab4a-54b15b6d7202`。
 - GyrA round130 QD-v1：run `05b186ab-5558-57e7-a0fe-39c9bedc7dda`；768 条、13,056 条评价、350 条校准优秀、409 条新家族；HemoPI2 无冲突 584、分歧保留 184；QD 80/2,160 cells，本轮新占 9，QD-score 74.4253；de-novo 展示/质量通过率由 round123 的 50.0%/42.6% 升至 65.6%/50.8%；lineage close run `a9f9943f-fcb3-534a-92c4-0a07bf5e4f63`。
 - PBP2a round131 QD-v1：run `9640722a-0f63-53e4-892d-ae42b0085445`；768 条、13,056 条评价、369 条校准优秀、401 条新家族；HemoPI2 无冲突 631、分歧保留 137；QD 78/2,160 cells，本轮新占 8，QD-score 69.0185；de-novo 展示/质量通过率由 round124 的 63.1%/30.3% 升至 64.3%/32.6%；lineage close run `ca985001-6c3f-583a-b6c7-c4a10903a55a`。
-- ANGPT1 round127：run `3bdabede-3cf4-5e33-9705-0a8174c77d85`；1,024 条已物化、17,408 条结构化评价、511 条校准优秀、516 条新家族子代；HemoPI2 无冲突 812、分歧保留 212；覆盖漂移 0。
-- FGF2 round126：run `92a30242-abd7-54d2-b242-b9aca1dcbbff`；1,024 条已物化、17,408 条结构化评价、520 条校准优秀；HemoPI2 无冲突 825、分歧保留 199；覆盖漂移 0。
+- ANGPT1 round135：run `9bcbda95-56a0-52b0-80ba-296fc22a0e4e`；768 条、13,056 条评价、373 条校准优秀、397 条新家族；HemoPI2 无冲突 596、分歧保留 172；QD 79/2,160 cells，本轮新占 16，QD-score 69.9886；活动支持提高但展示率下降；close run `501edd83-0521-5b2d-8b10-2af95d98ee5b`。
+- FGF2 round134：run `577f08b8-b582-5142-bd8d-1990bad63f06`；768 条、13,056 条评价、440 条校准优秀、403 条新家族；HemoPI2 无冲突 552、分歧保留 216；QD 76/2,160 cells，本轮新占 8，QD-score 63.8617；de-novo 活动支持/质量率由 64.6%/38.7% 升至 70.8%/40.9%；close run `ca7f8611-64f1-5317-9f37-cdf897e37ad1`。
 - 历史 challenger 回填：147,161 个候选、735,805 条证据；HemoPI2/APEX/PeptiVerse 缺失均为 0；不重复回填。
 - `.19`/synth 旧 Rosetta 200-decoy 链已停止且文件保留；13 条已有 ≥20 decoy，7 条已入库。
 - Pool A Rosetta coarse5：`.19` PID `1839703`、synth PID `1603495`；44/900 已完成（`.19` 24、synth 20），当前失败 0；迁移时两端共 582 个完成 checkpoint 全部保留，后续每 complex 仅补到 5；GPU 跑 Boltz，两台各 16 个 CPU Rosetta worker。
