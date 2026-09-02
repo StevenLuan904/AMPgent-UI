@@ -67,9 +67,10 @@ Challenger 证据键为 `run_id + candidate_id + model_release_key`；字段为 
 - FGF2 round126：run `92a30242-abd7-54d2-b242-b9aca1dcbbff`；1,024 条已物化、17,408 条结构化评价、520 条校准优秀；HemoPI2 无冲突 825、分歧保留 199；覆盖漂移 0。
 - 历史 challenger 回填：147,161 个候选、735,805 条证据；HemoPI2/APEX/PeptiVerse 缺失均为 0；不重复回填。
 - `.19`/synth 旧 Rosetta 200-decoy 链已停止且文件保留；13 条已有 ≥20 decoy，7 条已入库。
-- Pool A 优先 Rosetta 20-decoy 批次运行中：六靶点各 150 条；`.19` GPU0/1 PID `1600869` 共 360，synth GPU1/2/3 PID `502155` 共 540；当前完成 11、失败 0、全部入库；输出仅留远端。
+- Pool A Rosetta 20-decoy 批次运行中：`.19` PID `1600869` 6/360，synth PID `502155` 6/540；另有旧 200-decoy 截断复用 7 条；当前 19 条 coarse20 全部入库、失败 0；GPU 跑 Boltz，Rosetta 为两台各 6 个 CPU worker。
 - PostgreSQL 历史+当前 Rosetta `完成/dG<-30`：AceA 392/265、GyrA 12/12、PBP2a 17/16、VEGFA 17/17、FGF2 30/29、ANGPT1 16/16；仍需结合展示/模型/QD门形成最终 Pool A。
 - synth 仅流式回传 completion receipt 与分数 JSON 到 `.19` 做身份、哈希、聚合、冲突检查及 exact-once 入库；结构不传输。
+- 本地悬浮进度每 30 秒读取两端 `progress.json`；状态为 `var/state/ampgent-rosetta-progress-float.json`。
 - 瓶颈：六靶点 Pool A 完整 Rosetta 粗筛收据不足 50/靶点。
 
 ## 维护
