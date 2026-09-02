@@ -13,7 +13,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import MetaData, Table, select
 from sqlalchemy.dialects.postgresql import insert
 
 from pepagent.db.models import Candidate, Evaluation, ExperimentRun, Target
@@ -244,6 +244,31 @@ async def persist(evidence: dict[str, Any], source_commit: str) -> dict[str, Any
         {"source_commit": source_commit, "model_release_key": evidence["release"]}
     )
     async with SessionFactory() as session, session.begin():
+        # The long-running GPU worker environment can carry an older installed
+        # ORM package while PostgreSQL has already received an additive schema
+        # migration. Reflect the authoritative table so evidence persistence
+        # follows the live database schema without upgrading a shared runtime.
+        evaluation_table = await session.run_sync(
+            lambda sync_session: Table(
+                Evaluation.__tablename__,
+                MetaData(),
+                autoload_with=sync_session.get_bind(),
+            )
+        )
+        required_columns = {
+            "subject_run_id",
+            "evidence_role",
+            "evidence_family",
+            "model_release_key",
+            "applicability_status",
+            "conflict_status",
+        }
+        missing_columns = required_columns.difference(evaluation_table.c.keys())
+        if missing_columns:
+            raise RuntimeError(
+                "PostgreSQL evaluations schema is missing required evidence columns: "
+                + ", ".join(sorted(missing_columns))
+            )
         candidate_row = (
             await session.execute(
                 select(Candidate, Target.accession)
@@ -263,11 +288,14 @@ async def persist(evidence: dict[str, Any], source_commit: str) -> dict[str, Any
             raise ValueError("candidate PostgreSQL identity drifted")
         existing_rows = (
             await session.execute(
-                select(Evaluation.metric_name, Evaluation.tool_call_id).where(
-                    Evaluation.candidate_id == candidate_id,
-                    Evaluation.subject_run_id == run_id,
-                    Evaluation.model_release_key == evidence["release"],
-                    Evaluation.status == "succeeded",
+                select(
+                    evaluation_table.c.metric_name,
+                    evaluation_table.c.tool_call_id,
+                ).where(
+                    evaluation_table.c.candidate_id == candidate_id,
+                    evaluation_table.c.subject_run_id == run_id,
+                    evaluation_table.c.model_release_key == evidence["release"],
+                    evaluation_table.c.status == "succeeded",
                 )
             )
         ).all()
@@ -328,7 +356,7 @@ async def persist(evidence: dict[str, Any], source_commit: str) -> dict[str, Any
                 }
             )
         result = await session.execute(
-            insert(Evaluation)
+            insert(evaluation_table)
             .values(rows)
             .on_conflict_do_nothing(index_elements=["candidate_id", "metric_name", "tool_call_id"])
         )
