@@ -3,7 +3,7 @@ param(
     [ValidateSet('progress-float')] [string]$Mode = 'progress-float',
     [switch]$Close,
     [switch]$UseInstalledProgressFloat,
-    [int]$RefreshSeconds = 30,
+    [int]$RefreshSeconds = 10,
     [string]$StatePath = 'var/state/ampgent-rosetta-progress-float.json'
 )
 
