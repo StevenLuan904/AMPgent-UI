@@ -7,6 +7,7 @@ import json
 import math
 import os
 import statistics
+import sys
 import time
 import uuid
 from collections import defaultdict
@@ -46,6 +47,10 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def sha256_bytes(payload: bytes) -> str:
+    return hashlib.sha256(payload).hexdigest()
+
+
 def write_json(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
@@ -56,20 +61,21 @@ def write_json(path: Path, payload: dict[str, Any]) -> None:
     temporary.replace(path)
 
 
-def validate_receipt(path: Path) -> dict[str, Any]:
-    receipt = json.loads(path.read_text(encoding="utf-8"))
+def validate_receipt_payload(
+    *, receipt_text: str, result_text: str, receipt_path: str
+) -> dict[str, Any]:
+    receipt_bytes = receipt_text.encode("utf-8")
+    result_bytes = result_text.encode("utf-8")
+    receipt = json.loads(receipt_text)
     if receipt.get("schema_version") != "ampgent.autoresearch-rosetta-candidate-completion.1":
         raise ValueError("not an AutoResearch candidate receipt")
     nstruct = int(receipt.get("nstruct", 0))
     if receipt.get("status") != "succeeded" or nstruct not in {20, 200}:
         raise ValueError("receipt is not a successful 20/200-decoy result")
-    result_path = path.parent / "results" / "rosetta_result.json"
-    if not result_path.is_file():
-        raise ValueError("result file is missing")
-    result_sha = sha256_file(result_path)
+    result_sha = sha256_bytes(result_bytes)
     if result_sha != receipt.get("result_sha256"):
         raise ValueError("result hash does not match receipt")
-    result = json.loads(result_path.read_text(encoding="utf-8"))
+    result = json.loads(result_text)
     decoys = result.get("decoys")
     if not isinstance(decoys, list) or len(decoys) != nstruct:
         raise ValueError("result decoy count differs from receipt")
@@ -93,10 +99,34 @@ def validate_receipt(path: Path) -> dict[str, Any]:
         "primary": primary,
         "minimum": minimum,
         "nstruct": nstruct,
-        "receipt_path": str(path.resolve()),
-        "receipt_sha256": sha256_file(path),
+        "receipt_path": receipt_path,
+        "receipt_sha256": sha256_bytes(receipt_bytes),
         "result_sha256": result_sha,
     }
+
+
+def validate_receipt(path: Path) -> dict[str, Any]:
+    result_path = path.parent / "results" / "rosetta_result.json"
+    if not result_path.is_file():
+        raise ValueError("result file is missing")
+    return validate_receipt_payload(
+        receipt_text=path.read_text(encoding="utf-8"),
+        result_text=result_path.read_text(encoding="utf-8"),
+        receipt_path=str(path.resolve()),
+    )
+
+
+def validate_bundle_item(item: dict[str, Any]) -> dict[str, Any]:
+    if item.get("schema_version") != "ampgent.rosetta-receipt-bundle-item.1":
+        raise ValueError("not a Rosetta receipt bundle item")
+    receipt_path = str(item.get("receipt_path", ""))
+    if not receipt_path.startswith("/"):
+        raise ValueError("bundle receipt_path must be an absolute remote path")
+    return validate_receipt_payload(
+        receipt_text=str(item["receipt_json"]),
+        result_text=str(item["result_json"]),
+        receipt_path=receipt_path,
+    )
 
 
 CANDIDATE_SQL = text(
@@ -303,15 +333,53 @@ async def scan_once(roots: list[Path], source_sha: str) -> dict[str, Any]:
     }
 
 
+async def ingest_bundle_jsonl(lines: list[str], source_sha: str) -> dict[str, Any]:
+    validated: list[dict[str, Any]] = []
+    invalid: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for line_number, line in enumerate(lines, start=1):
+        if not line.strip():
+            continue
+        try:
+            item = validate_bundle_item(json.loads(line))
+            identity = item["receipt_sha256"]
+            if identity not in seen:
+                seen.add(identity)
+                validated.append(item)
+        except Exception as error:
+            invalid.append({"line": str(line_number), "error": str(error)})
+    result = await ingest(validated, source_sha)
+    return {
+        "schema_version": "ampgent.rosetta-receipt-ingester-state.1",
+        "observed_at": utc_now(),
+        "source": "compact_jsonl_stream",
+        **result,
+        "marker_skipped": 0,
+        "invalid_success_receipt_count": len(invalid),
+        "invalid_success_receipts": invalid[:100],
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--root", action="append", type=Path, required=True)
+    parser.add_argument("--root", action="append", type=Path)
+    parser.add_argument("--bundle-jsonl-stdin", action="store_true")
     parser.add_argument("--state", type=Path, required=True)
     parser.add_argument("--watch-seconds", type=int, default=0)
     args = parser.parse_args()
+    if args.bundle_jsonl_stdin and args.root:
+        parser.error("--bundle-jsonl-stdin and --root are mutually exclusive")
+    if not args.bundle_jsonl_stdin and not args.root:
+        parser.error("one or more --root values are required")
+    if args.bundle_jsonl_stdin and args.watch_seconds:
+        parser.error("JSONL stdin mode is one-shot")
     source_sha = sha256_file(Path(__file__).resolve())
+    if args.bundle_jsonl_stdin:
+        state = asyncio.run(ingest_bundle_jsonl(sys.stdin.readlines(), source_sha))
+        write_json(args.state, state)
+        return
     while True:
-        state = asyncio.run(scan_once(args.root, source_sha))
+        state = asyncio.run(scan_once(args.root or [], source_sha))
         write_json(args.state, state)
         if args.watch_seconds <= 0:
             break

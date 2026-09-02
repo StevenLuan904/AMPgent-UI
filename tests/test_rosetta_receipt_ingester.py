@@ -62,3 +62,37 @@ def test_validate_receipt_recomputes_top10_median_and_minimum(tmp_path: Path) ->
 def test_validate_receipt_rejects_primary_aggregation_drift(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="primary dG aggregation mismatch"):
         INGESTER.validate_receipt(_receipt(tmp_path, primary=-5.0))
+
+
+def test_validate_bundle_item_preserves_remote_identity(tmp_path: Path) -> None:
+    receipt_path = _receipt(tmp_path)
+    result_path = receipt_path.parent / "results" / "rosetta_result.json"
+    remote_path = "/sdd_data/pepagent/run/candidates/acea/id/completion_receipt.json"
+
+    validated = INGESTER.validate_bundle_item(
+        {
+            "schema_version": "ampgent.rosetta-receipt-bundle-item.1",
+            "receipt_path": remote_path,
+            "receipt_json": receipt_path.read_text(encoding="utf-8"),
+            "result_json": result_path.read_text(encoding="utf-8"),
+        }
+    )
+
+    assert validated["receipt_path"] == remote_path
+    assert validated["receipt_sha256"] == hashlib.sha256(
+        receipt_path.read_bytes()
+    ).hexdigest()
+
+
+def test_validate_bundle_item_rejects_result_hash_drift(tmp_path: Path) -> None:
+    receipt_path = _receipt(tmp_path)
+
+    with pytest.raises(ValueError, match="result hash does not match receipt"):
+        INGESTER.validate_bundle_item(
+            {
+                "schema_version": "ampgent.rosetta-receipt-bundle-item.1",
+                "receipt_path": "/sdd_data/pepagent/completion_receipt.json",
+                "receipt_json": receipt_path.read_text(encoding="utf-8"),
+                "result_json": "{}",
+            }
+        )
