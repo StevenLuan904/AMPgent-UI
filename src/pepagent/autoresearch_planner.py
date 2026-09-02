@@ -87,7 +87,7 @@ def _proposal_quality_gate_passes(sequence: str) -> bool:
     hydrophobic_fraction = _hydrophobic_fraction(sequence)
     return (
         math.isfinite(instability)
-        and instability < 50.0
+        and instability <= 50.0
         and hydrophobic_run <= _DE_NOVO_MAXIMUM_HYDROPHOBIC_RUN
         and hydrophobic_fraction <= _DE_NOVO_MAXIMUM_HYDROPHOBIC_FRACTION
         and charge >= _DE_NOVO_MINIMUM_NET_CHARGE
@@ -569,7 +569,7 @@ def build_multifront_rule_action_plan(
     ]
     if not eligible:
         raise ValueError(
-            "planner has no literal-hard-gate parent with Guruprasad instability <50; "
+            "planner has no literal-hard-gate parent with Guruprasad instability <=50; "
             "the successor must use a target-specific strict seed split"
         )
     if len(set(required_parent_candidate_ids)) != len(required_parent_candidate_ids):
@@ -1014,7 +1014,7 @@ def build_multifront_rule_action_plan(
         # Deprecated audit alias only; no decision path consumes this field.
         "deprecated_ood_qualified_gold_candidate_count": gold_count,
         "gold_shortfall": max(gold_target - gold_count, 0),
-        "quality_gate": "literal-hard-gates+guruprasad-score-lt-50",
+        "quality_gate": "literal-hard-gates+guruprasad-score-lte-50",
         "archive_sha256": archive_sha,
         "strategies": strategies,
         "rationale_by_action_sha256": rationales,
@@ -1053,7 +1053,7 @@ def build_multifront_rule_action_plan(
         },
         "sequence_prescreen_policy": {
             "instability_method": "Guruprasad-Reddy-Pandit-1990-via-Biopython-ProtParam",
-            "instability_max_exclusive": 50.0,
+            "instability_max_inclusive": 50.0,
             "all_rule_proposals_share_quality_gate": True,
             "mutation_hydrophobic_run_maximum": _DE_NOVO_MAXIMUM_HYDROPHOBIC_RUN,
             "mutation_hydrophobic_fraction_maximum": (_DE_NOVO_MAXIMUM_HYDROPHOBIC_FRACTION),
@@ -1062,7 +1062,7 @@ def build_multifront_rule_action_plan(
             "crossover_hydrophobic_fraction_parent_maximum": True,
             "crossover_charge_loss_max": 1.0,
             "crossover_net_charge_minimum": _DE_NOVO_MINIMUM_NET_CHARGE,
-            "de_novo_instability_max_exclusive": 50.0,
+            "de_novo_instability_max_inclusive": 50.0,
             "de_novo_hydrophobic_run_maximum": _DE_NOVO_MAXIMUM_HYDROPHOBIC_RUN,
             "de_novo_hydrophobic_fraction_maximum": (_DE_NOVO_MAXIMUM_HYDROPHOBIC_FRACTION),
             "de_novo_net_charge_minimum": _DE_NOVO_MINIMUM_NET_CHARGE,

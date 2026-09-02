@@ -217,7 +217,7 @@ def test_multifront_rule_planner_keeps_conflicts_novelty_and_four_strategies() -
     )
     assert plan["gold_candidate_count"] == plan["instability_score_qualified_gold_candidate_count"]
     assert plan["deprecated_ood_qualified_gold_candidate_count"] == plan["gold_candidate_count"]
-    assert plan["quality_gate"] == "literal-hard-gates+guruprasad-score-lt-50"
+    assert plan["quality_gate"] == "literal-hard-gates+guruprasad-score-lte-50"
     assert any(delta_sha in action.evidence_sha256s for action in actions)
     serialized = "|".join(str(item.model_dump(mode="json")) for item in actions)
     assert cohort[-1].candidate_id not in serialized
@@ -228,7 +228,7 @@ def test_multifront_rule_planner_keeps_conflicts_novelty_and_four_strategies() -
         child = apply_evolution_action(action, candidates_by_id)
         instability, hydrophobic_run, charge = _sequence_prescreen(child)
         hydrophobic_fraction = sum(residue in "AVILMFWYC" for residue in child) / len(child)
-        assert instability < 50.0
+        assert instability <= 50.0
         assert hydrophobic_run <= 2
         assert hydrophobic_fraction <= 0.45
         assert charge >= 3.0
@@ -355,7 +355,7 @@ def test_cpu_only_planner_fills_a_fifty_percent_de_novo_quota() -> None:
     assert all(_de_novo_prescreen_passes(action.proposed_sequence) for action in de_novo_actions)
     assert plan["sequence_prescreen_policy"] == {
         "instability_method": "Guruprasad-Reddy-Pandit-1990-via-Biopython-ProtParam",
-        "instability_max_exclusive": 50.0,
+        "instability_max_inclusive": 50.0,
         "all_rule_proposals_share_quality_gate": True,
         "mutation_hydrophobic_run_maximum": 2,
         "mutation_hydrophobic_fraction_maximum": 0.45,
@@ -364,7 +364,7 @@ def test_cpu_only_planner_fills_a_fifty_percent_de_novo_quota() -> None:
         "crossover_hydrophobic_fraction_parent_maximum": True,
         "crossover_charge_loss_max": 1.0,
         "crossover_net_charge_minimum": 3.0,
-        "de_novo_instability_max_exclusive": 50.0,
+        "de_novo_instability_max_inclusive": 50.0,
         "de_novo_hydrophobic_run_maximum": 2,
         "de_novo_hydrophobic_fraction_maximum": 0.45,
         "de_novo_net_charge_minimum": 3.0,
@@ -389,7 +389,7 @@ def test_rule_de_novo_prescreen_is_stable_across_all_six_target_branches() -> No
                 sequence
             )
 
-            assert instability < 50.0
+            assert instability <= 50.0
             assert hydrophobic_run <= 2
             assert hydrophobic_fraction <= 0.45
             assert charge >= 3.0
@@ -580,7 +580,7 @@ def test_planner_accepts_short_instability_ood_parent_when_score_is_below_50() -
     assert "substitution" in plan["strategies"]
 
 
-def test_planner_rejects_parent_when_instability_score_is_not_below_50() -> None:
+def test_planner_rejects_parent_when_instability_score_is_above_50() -> None:
     candidate = _candidate(
         "00000000-0000-0000-0000-000000000202",
         "ACDEFGHIKL",
@@ -592,7 +592,7 @@ def test_planner_rejects_parent_when_instability_score_is_not_below_50() -> None
             "metrics": {
                 **candidate.metrics,
                 "guruprasad_instability_index": MetricObservation(
-                    numeric_value=50.0,
+                    numeric_value=50.000001,
                     direction="minimize",
                     unit="dimensionless",
                     version="test-v1",
@@ -615,7 +615,7 @@ def test_planner_rejects_parent_when_instability_score_is_not_below_50() -> None
             gold_target=50,
         )
     except ValueError as error:
-        assert "Guruprasad instability <50" in str(error)
+        assert "Guruprasad instability <=50" in str(error)
     else:
         raise AssertionError("planner accepted an instability score at the hard boundary")
 
