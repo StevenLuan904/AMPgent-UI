@@ -38,7 +38,9 @@ function Invoke-Host19Progress {
 for f in \
  /data1/huangyueshan/pepagent/data/run-cache/rosetta-poola-priority276-coarse5-host019-gpu2-7-20260902-v1/coarse5_progress.json \
  /data1/huangyueshan/pepagent/data/run-cache/rosetta-poola-priority-v3-append16-host019-gpu0-1-20260902-v1/coarse5_progress.json \
- /data1/huangyueshan/pepagent/data/run-cache/rosetta-poola-v6-reserve100-diff53-host019-gpu0-1-20260902-v1/coarse5_progress.json; do
+ /data1/huangyueshan/pepagent/data/run-cache/rosetta-poola-v6-reserve100-diff53-host019-gpu0-1-20260902-v1/coarse5_progress.json \
+ /data1/huangyueshan/pepagent/data/run-cache/rosetta-poola-v7-pbp2a-extension59-host019-gpu0-1-20260902-v1/coarse5_progress.json \
+ /data1/huangyueshan/pepagent/data/run-cache/rosetta-poola-v8-gap-targets-extension177-host019-gpu0-1-20260902-v1/coarse5_progress.json; do
   printf 'POOL_A_PROGRESS '; jq -c . "$f"
 done
 '@
@@ -93,24 +95,43 @@ function Get-RosettaSnapshot {
     $host19 = @(Parse-ProgressLines (Invoke-Host19Progress))
     $synth = @(Parse-ProgressLines (Invoke-SynthProgress))
     [int]$host19Pending = 0; [int]$synthPending = 0; [int]$boltz = 0; [int]$failed = 0
-    foreach ($item in $host19) { $host19Pending = [int]$host19Pending + [int](@($item.pending)[0]); $boltz = [int]$boltz + [int](@($item.boltz_succeeded)[0]); $failed = [int]$failed + [int](@($item.failed)[0]) }
-    foreach ($item in $synth) { $synthPending = [int]$synthPending + [int](@($item.pending)[0]); $boltz = [int]$boltz + [int](@($item.boltz_succeeded)[0]); $failed = [int]$failed + [int](@($item.failed)[0]) }
-    [int]$host19Completed = 345 - [int]$host19Pending
-    [int]$synthCompleted = 303 - [int]$synthPending
+    [int]$host19Completed = 0; [int]$synthCompleted = 0
+    [int]$host19Total = 0; [int]$synthTotal = 0
+    foreach ($item in $host19) {
+        [int]$pending = [int](@($item.pending)[0])
+        [int]$completedItem = [int](@($item.rosetta_succeeded)[0])
+        [int]$failedItem = [int](@($item.failed)[0])
+        $host19Pending += $pending
+        $host19Completed += $completedItem
+        $host19Total += $pending + $completedItem + $failedItem
+        $boltz += [int](@($item.boltz_succeeded)[0])
+        $failed += $failedItem
+    }
+    foreach ($item in $synth) {
+        [int]$pending = [int](@($item.pending)[0])
+        [int]$completedItem = [int](@($item.rosetta_succeeded)[0])
+        [int]$failedItem = [int](@($item.failed)[0])
+        $synthPending += $pending
+        $synthCompleted += $completedItem
+        $synthTotal += $pending + $completedItem + $failedItem
+        $boltz += [int](@($item.boltz_succeeded)[0])
+        $failed += $failedItem
+    }
     [int]$completed = [int]$host19Completed + [int]$synthCompleted
+    [int]$total = [int]$host19Total + [int]$synthTotal
     return [pscustomobject]@{
         schema_version = 'ampgent.rosetta-progress-float.1'
         observed_at = [DateTimeOffset]::UtcNow.ToString('o')
         completed = [int]$completed
-        total = 648
+        total = [int]$total
         boltz_succeeded = [int]$boltz
         failed = [int]$failed
         host19_completed = [int]$host19Completed
-        host19_total = 345
+        host19_total = [int]$host19Total
         host19_boltz_succeeded = [int]($host19 | ForEach-Object {[int]$_.boltz_succeeded} | Measure-Object -Sum).Sum
         host19_pending = [int]$host19Pending
         synth_completed = [int]$synthCompleted
-        synth_total = 303
+        synth_total = [int]$synthTotal
         synth_boltz_succeeded = [int]($synth | ForEach-Object {[int]$_.boltz_succeeded} | Measure-Object -Sum).Sum
         synth_pending = [int]$synthPending
     }
@@ -138,7 +159,7 @@ if ($UseInstalledProgressFloat) {
                 schema_version = 'ampgent.rosetta-progress-float.1'
                 observed_at = [DateTimeOffset]::UtcNow.ToString('o')
                 completed = 0
-                total = 648
+                total = 0
                 failed = 0
                 error = $_.Exception.Message
                 stack = $_.ScriptStackTrace
@@ -146,7 +167,7 @@ if ($UseInstalledProgressFloat) {
             $errorSnapshot | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $stateAbsolute -Encoding utf8
             $errorPayload = [ordered]@{
                 current = 0
-                total = 648
+                total = 0
                 label = "AMPgent Pool A Rosetta progress refresh failed"
             } | ConvertTo-Json -Compress
             & $installedBridge $errorPayload | Out-Null
