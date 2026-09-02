@@ -60,7 +60,7 @@ Challenger 证据键为 `run_id + candidate_id + model_release_key`；字段为 
 
 - 冻结交付1900；三分支严格库87,989；历史 challenger 147,161候选/735,805证据，不改写。
 - Pool A快照475个靶点内80/80家族elite：AceA79、GyrA95、PBP2a53、VEGFA71、FGF2 79、ANGPT1 98；过门候选487，12条同家族非elite不属于archive；全部结构与decoy远端保留。
-- `.19` Pool A MD v1：475/475复合物已解析；GPU0–7 exact-once常驻调度，单候选单best-decoy、1 ns NPT+50 ns NVT、checkpoint续算；PBC-corrected interface v2与MM/GBSA自动触发；仅同步紧凑JSON/CSV入库，PDB/DCD/checkpoint留远端；根`/data1/huangyueshan/pepagent/md/pool-a-full-md-v1/`。
+- `.19` Pool A MD v1：475/475复合物已解析；GPU0–7 exact-once常驻调度，单候选单best-decoy、1 ns NPT+50 ns NVT、checkpoint续算；PBC-corrected interface v2、MM/GBSA与PostgreSQL幂等入库常驻自动触发；仅同步紧凑JSON/CSV，PDB/DCD/checkpoint留远端；根`/data1/huangyueshan/pepagent/md/pool-a-full-md-v1/`。
 - `.32 GPU0/GPU1`有外来Prima3D任务不抢占；GPU2/3禁止。
 - 生成来源：PepGLAD三靶点严格库87,989条/8,657家族已评分；target-conditioned PepMLM已纳入；PepFlow已接入精确口袋预处理，AceA model2真机8/8完成12项与challenger并落库至run `de80b78e-ae0d-5190-93cc-11ee5dee62a2`，5条过展示门、0条过活动/QD门，当前分布不扩量。
 
