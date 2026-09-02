@@ -38,6 +38,9 @@ def candidate_row(expected: dict, root: Path) -> dict:
     interface_path = candidate / "analysis/interface/interface_analysis.json"
     mmgbsa_path = candidate / "analysis/mmgbsa/mmgbsa_analysis.json"
     decomposition = candidate / "analysis/mmgbsa/residue_decomposition_mean.csv"
+    failure_path = candidate / "failure_receipt.json"
+    interface_ingest = candidate / "analysis/interface/postgresql_ingest_receipt.json"
+    mmgbsa_ingest = candidate / "analysis/mmgbsa/postgresql_ingest_receipt.json"
     launch = load(launch_path) if launch_path.is_file() else None
     if launch is not None:
         for key in ("candidate_id", "run_id", "target_key", "sequence_sha256"):
@@ -46,6 +49,7 @@ def candidate_row(expected: dict, root: Path) -> dict:
     manifest = load(manifest_path) if manifest_path.is_file() else None
     interface = load(interface_path) if interface_path.is_file() else None
     mmgbsa = load(mmgbsa_path) if mmgbsa_path.is_file() else None
+    failure = load(failure_path) if failure_path.is_file() else None
     md_complete = bool(
         manifest
         and manifest.get("status") == "succeeded"
@@ -75,6 +79,12 @@ def candidate_row(expected: dict, root: Path) -> dict:
         "interface_complete": interface_complete,
         "mmgbsa_complete": mmgbsa_complete,
         "pool_s_evidence_complete": md_complete and interface_complete and mmgbsa_complete,
+        "retry_failure_recorded": failure is not None,
+        "last_attempt_returncode": nested(failure, "returncode"),
+        "last_attempt_will_retry": nested(failure, "will_retry"),
+        "interface_postgresql_ingested": interface_ingest.is_file(),
+        "mmgbsa_postgresql_ingested": mmgbsa_ingest.is_file(),
+        "postgresql_evidence_complete": interface_ingest.is_file() and mmgbsa_ingest.is_file(),
         "interface_rmsd_mean_nm": nested(interface, "interface_rmsd_nm", "mean"),
         "interface_rmsd_max_nm": nested(interface, "interface_rmsd_nm", "maximum"),
         "native_contact_fraction_mean": nested(interface, "native_contact_fraction", "mean"),
@@ -113,6 +123,20 @@ def aggregate(rows):
         "interface_complete_count": sum(row["interface_complete"] for row in rows),
         "mmgbsa_complete_count": sum(row["mmgbsa_complete"] for row in rows),
         "pool_s_evidence_complete_count": sum(row["pool_s_evidence_complete"] for row in rows),
+        "pending_md_count": sum(not row["md_complete"] for row in rows),
+        "pending_pool_s_evidence_count": sum(
+            not row["pool_s_evidence_complete"] for row in rows
+        ),
+        "retry_failure_recorded_count": sum(row["retry_failure_recorded"] for row in rows),
+        "interface_postgresql_ingested_count": sum(
+            row["interface_postgresql_ingested"] for row in rows
+        ),
+        "mmgbsa_postgresql_ingested_count": sum(
+            row["mmgbsa_postgresql_ingested"] for row in rows
+        ),
+        "postgresql_evidence_complete_count": sum(
+            row["postgresql_evidence_complete"] for row in rows
+        ),
         "peptide_departed_count": sum(row["peptide_departed"] is True for row in rows),
         "interface_rmsd_mean_nm": mean(rows, "interface_rmsd_mean_nm"),
         "native_contact_fraction_mean": mean(rows, "native_contact_fraction_mean"),

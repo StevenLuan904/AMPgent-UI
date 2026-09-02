@@ -54,10 +54,19 @@ def test_summary_requires_exact_identity_and_reports_all_requested_outputs(tmp_p
         },
     )
     (candidate / "analysis/mmgbsa/residue_decomposition_mean.csv").write_text("x\n")
+    write(candidate / "analysis/interface/postgresql_ingest_receipt.json", {"ok": True})
+    write(candidate / "analysis/mmgbsa/postgresql_ingest_receipt.json", {"ok": True})
+    write(
+        candidate / "failure_receipt.json",
+        {"returncode": 1, "will_retry": True},
+    )
     result = summarize(snapshot, tmp_path / "evidence", tmp_path / "report")
     assert result["overall"]["expected_candidate_count"] == 1
     assert result["overall"]["pool_s_evidence_complete_count"] == 1
     assert result["overall"]["mmgbsa_mean_kcal_mol"] == -35
+    assert result["overall"]["pending_md_count"] == 0
+    assert result["overall"]["retry_failure_recorded_count"] == 1
+    assert result["overall"]["postgresql_evidence_complete_count"] == 1
     report = (tmp_path / "report/candidates.csv").read_text()
     for field in (
         "interface_rmsd_mean_nm",
