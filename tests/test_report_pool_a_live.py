@@ -48,6 +48,7 @@ def test_summary_requires_all_gates_and_deduplicates_families() -> None:
     assert summary["pool_a_balance_reached"] is False
     assert summary["pool_a_balance_gap_to_50"] == 49
     assert summary["pool_a_balance_surplus_over_50"] == 0
+    assert summary["resource_priority_tier"] == "balance_deficit"
     assert summary["pool_a_family_gap_to_50"] == 49
     assert payload["pool_a_all"][0]["primary_dg"] == -40.0
     assert payload["pool_a_top50"][0]["primary_dg"] == -40.0
@@ -80,6 +81,13 @@ def test_pool_a_is_uncapped_while_fifty_remains_balance_target() -> None:
     assert summary["pool_a_balance_reached"] is True
     assert summary["pool_a_balance_gap_to_50"] == 0
     assert summary["pool_a_balance_surplus_over_50"] == 3
+    assert summary["resource_priority_tier"] == "uncapped_growth"
+    assert payload["pool_a_admission_policy"] == {
+        "capacity_limit": None,
+        "admit_all_qualified": True,
+        "balance_target_per_target": 50,
+        "resource_priority": "targets_below_balance_first_then_best_available",
+    }
     assert len(payload["pool_a_all"]) == 53
     assert len(payload["pool_a_top50"]) == 50
     assert payload["pool_a_all"][-1]["pool_a_rank"] == 53

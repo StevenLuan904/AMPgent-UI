@@ -170,6 +170,11 @@ def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "pool_a_balance_surplus_over_50": max(
                 0, family_count - POOL_A_BALANCE_TARGET
             ),
+            "resource_priority_tier": (
+                "balance_deficit"
+                if family_count < POOL_A_BALANCE_TARGET
+                else "uncapped_growth"
+            ),
             # Compatibility aliases: 50 is a resource-balancing target, not a cap.
             "pool_a_top50_filled": min(POOL_A_BALANCE_TARGET, family_count),
             "pool_a_family_gap_to_50": max(0, POOL_A_BALANCE_TARGET - family_count),
@@ -215,6 +220,12 @@ def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "rosetta_primary_dg_reu_lt": -30,
             "accepted_nstruct": [5, 20, 200],
             "protocol_preference": "highest_nstruct_then_latest",
+        },
+        "pool_a_admission_policy": {
+            "capacity_limit": None,
+            "admit_all_qualified": True,
+            "balance_target_per_target": POOL_A_BALANCE_TARGET,
+            "resource_priority": "targets_below_balance_first_then_best_available",
         },
         "targets": summaries,
         "pool_a_all": pool_a_all,

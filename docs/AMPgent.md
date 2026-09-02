@@ -4,7 +4,7 @@
 
 ## 目标
 
-AceA、GyrA、PBP2a、VEGFA、FGF2、ANGPT1 各优先达到 50 条 Pool A 短肽的均衡目标；Pool A 无容量上限，全部合格新增候选持续收录；保留多端 Pareto、家族多样性、冲突证据；无湿实验结论。
+AceA、GyrA、PBP2a、VEGFA、FGF2、ANGPT1 各以 50 条 Pool A 短肽作为资源均衡线；50 不是名额或容量上限，全部合格新增候选持续收录；保留多端 Pareto、家族多样性、冲突证据；无湿实验结论。
 
 ## 架构
 
@@ -35,7 +35,7 @@ AceA、GyrA、PBP2a、VEGFA、FGF2、ANGPT1 各优先达到 50 条 Pool A 短肽
 4. 分开报告 best/mean quality、valid-cell coverage、QD-score、最大 cell concentration、archive-relative novelty；新占格、格内替换、同格冲突与 operator `Δϕ` 独立记账，禁止 `q+λD`。
 5. 全局序列去重；保留 occurrence；不改写历史 run。
 6. 运行 12 项 score-all、活动模型校准、challenger shadow，写父子差值/QD archive/replay/PostgreSQL。
-7. 缺失且未运行的有靶点候选进入 Rosetta 5-decoy 队列；计算资源先补未达 50 的靶点，全部过门结果进入无上限 Pool A。
+7. 缺失且未运行的有靶点候选进入 Rosetta 5-decoy 队列；计算资源优先给未达 50 的靶点，再按候选质量分配；无论靶点是否已达 50，全部过门结果均进入无上限 Pool A。
 
 Challenger 证据键为 `run_id + candidate_id + model_release_key`；字段为 `evidence_role`、`evidence_family`、`model_release_key`、`applicability_status`、`conflict_status`、value/unit/OOD/limitations/`tool_call_id`。三模型独立保存，不跨 run 按序列合并，不计加权总分。
 
@@ -44,7 +44,7 @@ Challenger 证据键为 `run_id + candidate_id + model_release_key`；字段为 
 - `.19 GPU0-7`：获准；每次检查 PID/owner/显存/利用率/声明。
 - synth `.2`：获准；仅实时空闲卡。
 - `.32 GPU2/GPU3`：只读、零调度；GPU0/GPU1 仅实时证明可用后调度。
-- Pool A 为最高优先级；资源按距 50 缺口优先，达到 50 后仍收录优质新增结果；资源竞争时可暂停未完成的 Rosetta 后续计算，已完成结构、decoy、收据与 checkpoint 必须保留并续算。
+- Pool A 为最高优先级；50 仅控制资源均衡：未达 50 的靶点优先，均达标后按候选质量与信息增益调度；达到 50 后的优质新增结果仍进入 A 池。资源竞争时可暂停未完成的 Rosetta 后续计算，已完成结构、decoy、收据与 checkpoint 必须保留并续算。
 - 不停止外来任务；只控制精确 AMPgent PID；任务 exact-once、可恢复。
 - 密码仅外部凭据存储；不进入文档、Git、命令参数、日志。
 
@@ -74,11 +74,12 @@ Challenger 证据键为 `run_id + candidate_id + model_release_key`；字段为 
 - v5 reserve100：582个独立家族；差集75在synth GPU1/6 PID `2748958`，已完成34、待续41；根 `/sdd_data/pepagent/ampgent/structure/rosetta-poola-v5-reserve100-diff75-synth-gpu1-6-20260902-v1/`。
 - v6 reserve100：53条仅属已满的AceA/VEGFA；完成39、待续14。`.19` 精确进程组 `2157395` 已 `SIGSTOP`，结果/checkpoint/内存保留，ingester继续；根 `/data1/huangyueshan/pepagent/data/run-cache/rosetta-poola-v6-reserve100-diff53-host019-gpu0-1-20260902-v1/`。
 - PBP2a v7：第101–159名59个独立家族，经87,670条远端队列身份扫描重叠0；Boltz 59/59、Rosetta 38/59、失败0；PBP2a达到50后父PID `2426846`以`SIGSTOP`可恢复暂停，已启动子进程保留并降优先级，ingester `2428077`继续；根 `/data1/huangyueshan/pepagent/data/run-cache/rosetta-poola-v7-pbp2a-extension59-host019-gpu0-1-20260902-v1/`。
-- gap-target v8：GyrA/FGF2/ANGPT1各第101–159名59个独立家族，远端87,729行三层身份扫描重叠0；`.19` GPU0/1 PID `3054748`、ingester `3054827`、12个CPU worker，Boltz 56/177、Rosetta 25/177、失败0；当前仅FGF2未达50，其PyRosetta保持nice 0，已达标靶点子进程降优先级；根 `/data1/huangyueshan/pepagent/data/run-cache/rosetta-poola-v8-gap-targets-extension177-host019-gpu0-1-20260902-v1/`。
-- PostgreSQL 无上限严格 Pool A（2026-09-03 00:10）：364 个独立家族；AceA 79、GyrA 56、PBP2a 53、VEGFA 71、FGF2 49、ANGPT1 56；仅FGF2距50缺1，其余过门新增继续收录。
+- gap-target v8：GyrA/FGF2/ANGPT1各第101–159名59个独立家族，远端87,729行三层身份扫描重叠0；`.19` GPU0/1 PID `3054748`、ingester `3054827`，Boltz 69/177、Rosetta 34/177、待续143、失败0；为补 FGF2 的临时优先级调整已解除，任务继续无上限扩池；根 `/data1/huangyueshan/pepagent/data/run-cache/rosetta-poola-v8-gap-targets-extension177-host019-gpu0-1-20260902-v1/`。
+- PostgreSQL 无上限严格 Pool A（2026-09-03）：371 个独立家族；AceA 79、GyrA 59、PBP2a 53、VEGFA 71、FGF2 50、ANGPT1 59；六靶点均达资源均衡线，后续过门新增继续收录。
 - synth 仅流式回传 completion receipt 与分数 JSON 到 `.19` 做身份、哈希、聚合、冲突检查及 exact-once 入库；结构不传输。
-- 本地单实例悬浮进度每 10 秒读取两端全部登记批次的 `coarse5_progress.json`，动态推导总量；当前 508/884 成功、既有失败1，状态为 `var/state/ampgent-rosetta-progress-float.json`。
-- 瓶颈：FGF2完整Rosetta粗筛收据尚差1个独立过门家族达到50；Pool A本身无上限。
+- 本地单实例悬浮进度每 10 秒读取两端全部登记批次的 `coarse5_progress.json`，动态推导总量；最近 521/884 成功、既有失败1，状态为 `var/state/ampgent-rosetta-progress-float.json`。
+- 完成审计：371 个 A 池家族全局候选/序列唯一；六靶点均具多前沿 archive、三类生成算子、close/delta/replay 与远端 PostgreSQL 访问证据；验证错误 0。
+- 当前重点：在无上限 A 池中继续提高候选质量和有效 QD 覆盖，不以已达 50 停止收录。
 
 ## 维护
 
