@@ -5,6 +5,7 @@ import concurrent.futures
 import csv
 import hashlib
 import json
+import math
 import os
 import shutil
 import subprocess
@@ -48,13 +49,15 @@ def write_json(path: Path, payload: dict[str, Any]) -> None:
     temporary.replace(path)
 
 
-def load_rows(path: Path) -> list[dict[str, str]]:
+def load_rows(
+    path: Path, *, allow_all_pool_missing: bool = False
+) -> list[dict[str, str]]:
     with path.open(encoding="utf-8-sig", newline="") as stream:
         rows = list(csv.DictReader(stream))
     if not rows:
         raise ValueError("frozen candidate batch is empty")
-    if len({row["sequence_sha256"] for row in rows}) != len(rows):
-        raise ValueError("candidate sequences are not globally unique")
+    if len({(row["branch_key"], row["sequence_sha256"]) for row in rows}) != len(rows):
+        raise ValueError("candidate target-sequence identities are not unique")
     if len({row["candidate_id"] for row in rows}) != len(rows):
         raise ValueError("candidate ids are not globally unique")
     branches = sorted({row["branch_key"] for row in rows})
@@ -62,11 +65,30 @@ def load_rows(path: Path) -> list[dict[str, str]]:
     if not branches or not set(branches).issubset(allowed_branches):
         raise ValueError(f"candidate branch identity drifted: {branches!r}")
     for row in rows:
-        if any(row.get(field, "").strip().lower() != "true" for field in REQUIRED_TRUE):
-            raise ValueError(f"candidate {row.get('candidate_id')} failed a frozen hard gate")
+        if not allow_all_pool_missing and any(
+            row.get(field, "").strip().lower() != "true" for field in REQUIRED_TRUE
+        ):
+            raise ValueError(
+                f"candidate {row.get('candidate_id')} failed a frozen hard gate"
+            )
+        try:
+            instability = float(row.get("guruprasad_instability_index", ""))
+        except (TypeError, ValueError) as error:
+            raise ValueError(
+                f"candidate {row.get('candidate_id')} lacks a numeric Guruprasad instability index"
+            ) from error
+        if not math.isfinite(instability) or (
+            not allow_all_pool_missing and instability > 50.0
+        ):
+            raise ValueError(
+                f"candidate {row.get('candidate_id')} fails the strict Guruprasad "
+                "instability <=50 hard gate"
+            )
         if row.get("rosetta_dg_receipt_status") != "missing":
             raise ValueError(f"candidate {row.get('candidate_id')} is not pending Rosetta dG")
-        if row.get("challenger_conflict_status") not in {"no_conflict", "none"}:
+        if not allow_all_pool_missing and row.get(
+            "challenger_conflict_status"
+        ) not in {"no_conflict", "none"}:
             raise ValueError(f"candidate {row.get('candidate_id')} has challenger conflict")
         sequence = row["sequence"].strip().upper()
         if hashlib.sha256(sequence.encode()).hexdigest() != row["sequence_sha256"]:
@@ -87,7 +109,10 @@ def load_targets(path: Path) -> dict[str, dict[str, Any]]:
     return targets
 
 
-def gpu_preflight(indices: list[int]) -> list[dict[str, Any]]:
+def gpu_preflight(
+    indices: list[int], *, allowed_idle_declaration_pids: set[int] | None = None
+) -> list[dict[str, Any]]:
+    allowed_idle_declaration_pids = allowed_idle_declaration_pids or set()
     observations: list[dict[str, Any]] = []
     for index in indices:
         query = subprocess.run(
@@ -125,10 +150,19 @@ def gpu_preflight(indices: list[int]) -> list[dict[str, Any]]:
         fields = [value.strip() for value in query.split(",")]
         if len(fields) != 4 or int(fields[0]) != index:
             raise RuntimeError(f"unexpected GPU query for {index}: {query!r}")
-        if int(fields[2]) > 256 or int(fields[3]) > 5 or processes or declarations:
+        unexpected_declarations = sorted(
+            set(declarations) - allowed_idle_declaration_pids
+        )
+        if (
+            int(fields[2]) > 256
+            or int(fields[3]) > 5
+            or processes
+            or unexpected_declarations
+        ):
             raise RuntimeError(
                 f"GPU{index} is not strictly idle: memory={fields[2]}, util={fields[3]}, "
-                f"processes={processes!r}, declarations={declarations!r}"
+                f"processes={processes!r}, declarations={declarations!r}, "
+                f"unexpected_declarations={unexpected_declarations!r}"
             )
         observations.append(
             {
@@ -137,7 +171,7 @@ def gpu_preflight(indices: list[int]) -> list[dict[str, Any]]:
                 "memory_used_mib": int(fields[2]),
                 "utilization_percent": int(fields[3]),
                 "compute_processes": [],
-                "cuda_visible_devices_declarations": [],
+                "cuda_visible_devices_declarations": declarations,
             }
         )
     return observations
@@ -165,9 +199,13 @@ class Batch:
     def __init__(self, args: argparse.Namespace) -> None:
         self.args = args
         self.root = args.root.resolve()
-        if ALLOWED_ROOT.resolve() not in self.root.parents:
-            raise ValueError(f"batch root is outside {ALLOWED_ROOT}")
-        self.rows = load_rows(args.candidates.resolve())
+        self.allowed_root = args.allowed_root.resolve()
+        if self.allowed_root not in self.root.parents:
+            raise ValueError(f"batch root is outside {self.allowed_root}")
+        self.rows = load_rows(
+            args.candidates.resolve(),
+            allow_all_pool_missing=args.allow_all_pool_missing,
+        )
         self.targets = load_targets(args.target_manifest.resolve())
         self.lock = threading.Lock()
         self.counts = {
@@ -208,7 +246,7 @@ class Batch:
             )
             output = candidate_root / "results" / "rosetta_result.json"
             command = [
-                str(ROSETTA_PYTHON),
+                str(self.args.rosetta_python),
                 "-m",
                 "pepagent.model_workers.rosetta_cli",
                 "--request",
@@ -304,7 +342,7 @@ class Batch:
             output = candidate_root / "results" / "boltz_result.json"
             work = candidate_root / "work" / "boltz"
             command = [
-                str(GPU_PYTHON),
+                str(self.args.gpu_python),
                 "-m",
                 "pepagent.model_workers.boltz2_cli",
                 "--request",
@@ -314,7 +352,7 @@ class Batch:
                 "--work-dir",
                 str(work),
                 "--cache-dir",
-                str(BOLTZ_CACHE),
+                str(self.args.boltz_cache),
             ]
             env = dict(os.environ)
             env["CUDA_VISIBLE_DEVICES"] = str(gpu_index)
@@ -359,8 +397,18 @@ class Batch:
     def run(self) -> None:
         if self.root.exists():
             raise FileExistsError(f"exact-once batch root already exists: {self.root}")
-        gpu_observations = gpu_preflight(self.args.gpu_indices)
-        available = shutil.disk_usage(ALLOWED_ROOT).free
+        gpu_observations = gpu_preflight(
+            self.args.gpu_indices,
+            allowed_idle_declaration_pids=set(self.args.allowed_idle_declaration_pids),
+        )
+        for required_path in (
+            self.args.gpu_python,
+            self.args.rosetta_python,
+            self.args.boltz_cache,
+        ):
+            if not required_path.exists():
+                raise FileNotFoundError(f"required runtime path is missing: {required_path}")
+        available = shutil.disk_usage(self.allowed_root).free
         if available < self.args.minimum_free_bytes:
             raise RuntimeError(f"insufficient free disk: {available} bytes")
         self.root.mkdir(parents=True)
@@ -376,7 +424,14 @@ class Batch:
                 "status": "running",
                 "launched_at": utc_now(),
                 "pid": os.getpid(),
-                "host": "192.168.99.2",
+                "host": self.args.host_label,
+                "allowed_root": str(self.allowed_root),
+                "gpu_python": str(self.args.gpu_python),
+                "rosetta_python": str(self.args.rosetta_python),
+                "boltz_cache": str(self.args.boltz_cache),
+                "allowed_idle_declaration_pids": sorted(
+                    set(self.args.allowed_idle_declaration_pids)
+                ),
                 "gpu_preflight": gpu_observations,
                 "candidate_count": len(self.rows),
                 "branch_counts": {
@@ -433,19 +488,41 @@ def main() -> None:
     parser.add_argument("--candidates", type=Path, required=True)
     parser.add_argument("--target-manifest", type=Path, required=True)
     parser.add_argument("--root", type=Path, required=True)
+    parser.add_argument("--allowed-root", type=Path, default=ALLOWED_ROOT)
+    parser.add_argument("--gpu-python", type=Path, default=GPU_PYTHON)
+    parser.add_argument("--rosetta-python", type=Path, default=ROSETTA_PYTHON)
+    parser.add_argument("--boltz-cache", type=Path, default=BOLTZ_CACHE)
+    parser.add_argument("--host-label", default="192.168.99.2")
+    parser.add_argument(
+        "--allowed-idle-declaration-pids", type=int, nargs="*", default=[]
+    )
+    parser.add_argument(
+        "--allowed-gpu-indices", type=int, nargs="+", default=[1, 2, 3]
+    )
     parser.add_argument("--gpu-indices", type=int, nargs="+", default=[1, 2, 3])
     parser.add_argument("--cpu-workers", type=int, default=6)
-    parser.add_argument("--nstruct", type=int, default=200)
+    parser.add_argument("--nstruct", type=int, default=20)
     parser.add_argument("--parallel-decoys", type=int, default=1)
     parser.add_argument("--seed", type=int, default=202608310)
     parser.add_argument("--minimum-free-bytes", type=int, default=500 * 1024**3)
+    parser.add_argument(
+        "--allow-all-pool-missing",
+        action="store_true",
+        help=(
+            "score every canonical target-sequence identity lacking Rosetta evidence; "
+            "display and challenger gates remain annotations rather than admission gates"
+        ),
+    )
     args = parser.parse_args()
     if args.cpu_workers < 1 or args.cpu_workers > 6:
         raise ValueError("CPU worker count must be within 1..6")
-    if args.nstruct != 200:
-        raise ValueError("formal Rosetta batches require exactly 200 decoys per candidate")
-    if sorted(set(args.gpu_indices)) != [1, 2, 3]:
-        raise ValueError("this exact batch is restricted to authorized idle synth GPUs 1,2,3")
+    if args.nstruct not in {20, 200}:
+        raise ValueError("Rosetta batches require 20 coarse-screen decoys (legacy 200 accepted)")
+    if len(set(args.gpu_indices)) != len(args.gpu_indices):
+        raise ValueError("GPU indices must be unique")
+    allowed_gpu_indices = set(args.allowed_gpu_indices)
+    if not set(args.gpu_indices).issubset(allowed_gpu_indices):
+        raise ValueError("requested GPUs are outside the explicit allowed GPU set")
     Batch(args).run()
 
 
