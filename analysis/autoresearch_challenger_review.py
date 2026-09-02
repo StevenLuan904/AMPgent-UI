@@ -22,16 +22,30 @@ def _write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
         writer.writerows(rows)
 
 
+def _select_review_rows(
+    rows: list[dict[str, str]], *, scope: str
+) -> list[dict[str, str]]:
+    if scope == "formal12":
+        return [
+            row
+            for row in rows
+            if row.get("formal_12_complete", "").lower() == "true"
+        ]
+    if scope == "excellent":
+        return [
+            row
+            for row in rows
+            if row.get("excellent_sequence_stage_calibrated", "").lower() == "true"
+        ]
+    raise ValueError(f"unknown challenger review scope: {scope}")
+
+
 def run(args: argparse.Namespace) -> None:
     with args.input_csv.open(encoding="utf-8-sig", newline="") as stream:
         source_rows = list(csv.DictReader(stream))
-    rows = [
-        row
-        for row in source_rows
-        if row.get("excellent_sequence_stage_calibrated", "").lower() == "true"
-    ]
+    rows = _select_review_rows(source_rows, scope=args.scope)
     if not rows:
-        raise ValueError("challenger review has no calibrated excellent candidates")
+        raise ValueError(f"challenger review has no candidates in scope {args.scope}")
     output_dir = args.output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
     review, challenger_hashes = _run_hemopi2(
@@ -99,7 +113,12 @@ def run(args: argparse.Namespace) -> None:
         "schema_version": "ampgent.autoresearch-challenger-review.1",
         "observed_at_utc": datetime.now(UTC).isoformat(),
         "source_csv_sha256": sha256_file(args.input_csv),
-        "reviewed_excellent_candidate_count": len(review),
+        "review_scope": args.scope,
+        "reviewed_candidate_count": len(review),
+        "reviewed_excellent_candidate_count": sum(
+            row.get("excellent_sequence_stage_calibrated", "").lower() == "true"
+            for row in review
+        ),
         "challenger_no_conflict_count": len(no_conflict),
         "challenger_conflict_count": len(review) - len(no_conflict),
         "challenger_full_support_no_conflict_count": len(full_support_no_conflict),
@@ -138,6 +157,7 @@ def main() -> None:
     parser.add_argument("--hemopi2-worker", type=Path, required=True)
     parser.add_argument("--hemopi2-model-root", type=Path, required=True)
     parser.add_argument("--hemopi2-calibration", type=Path, required=True)
+    parser.add_argument("--scope", choices=("formal12", "excellent"), default="formal12")
     run(parser.parse_args())
 
 
