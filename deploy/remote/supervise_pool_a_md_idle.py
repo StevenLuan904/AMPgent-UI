@@ -7,6 +7,7 @@ import json
 import os
 import subprocess
 import time
+from datetime import UTC, datetime
 from pathlib import Path
 
 
@@ -19,6 +20,7 @@ def cli():
     p.add_argument("--gpu-indices", default="0,1,2,3,4,5,6,7")
     p.add_argument("--scan-root", action="append", required=True)
     p.add_argument("--poll-seconds", type=int, default=120)
+    p.add_argument("--retry-cooldown-seconds", type=int, default=3600)
     p.add_argument("--source-manifest", type=Path, action="append", default=[])
     return p.parse_args()
 
@@ -87,6 +89,24 @@ def output_is_running(out: Path, proc_root: Path = Path("/proc")) -> bool:
     return False
 
 
+def record_failure(item, *, returncode: int, attempt: int, runner: Path) -> None:
+    _, task, source, out = item
+    payload = {
+        "schema_version": "ampgent.pool-a-md-attempt-failure.1",
+        "observed_at_utc": datetime.now(UTC).isoformat(),
+        "candidate_id": task["candidate_id"],
+        "run_id": task["run_id"],
+        "target_key": task["target_key"],
+        "sequence_sha256": task["sequence_sha256"],
+        "input_pdb": str(source),
+        "runner": str(runner),
+        "attempt_in_cycle": attempt,
+        "returncode": returncode,
+        "will_retry": True,
+    }
+    (out / "failure_receipt.json").write_text(json.dumps(payload, indent=2))
+
+
 def source_for(task, index, external):
     key = (task["target_key"], task["sequence_sha256"])
     if key in external:
@@ -139,8 +159,14 @@ def main():
     (a.root / "supervisor.json").write_text(json.dumps(state, indent=2))
     active = {}
     attempts = {}
+    deferred = []
     gpus = [int(x) for x in a.gpu_indices.split(",")]
-    while pending or active or externally_active:
+    while pending or active or externally_active or deferred:
+        now = time.time()
+        for ready_at, item in list(deferred):
+            if now >= ready_at:
+                deferred.remove((ready_at, item))
+                pending.append(item)
         for item in list(externally_active):
             _, _, _, out = item
             if (out / "manifest.json").exists():
@@ -152,12 +178,14 @@ def main():
             if p.poll() is not None:
                 del active[gpu]
                 _, task, _, out = item
-                if (
-                    p.returncode
-                    and attempts.get(task["candidate_id"], 0) < 3
-                    and not (out / "manifest.json").exists()
-                ):
-                    pending.append(item)
+                if p.returncode and not (out / "manifest.json").exists():
+                    attempt = attempts.get(task["candidate_id"], 0)
+                    record_failure(item, returncode=p.returncode, attempt=attempt, runner=a.runner)
+                    if attempt < 3:
+                        pending.append(item)
+                    else:
+                        attempts[task["candidate_id"]] = 0
+                        deferred.append((time.time() + a.retry_cooldown_seconds, item))
         for gpu in gpus:
             if not pending or gpu in active or not idle(gpu):
                 continue

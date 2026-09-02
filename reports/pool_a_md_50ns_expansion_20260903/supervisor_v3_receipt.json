@@ -1,0 +1,19 @@
+{
+  "schema_version": "ampgent.pool-a-md-supervisor-launch.1",
+  "observed_at_utc": "2026-09-02T19:55:52Z",
+  "host": "192.168.99.19",
+  "remote_root": "/data1/huangyueshan/pepagent/md/pool-a-full-md-v1",
+  "supervisor_pid": 3975427,
+  "snapshot_candidate_count": 402,
+  "resolvable_pending_count": 394,
+  "externally_active_count": 8,
+  "unresolved_count": 0,
+  "gpu_indices": [0, 1, 2, 3, 4, 5, 6, 7],
+  "retry_cooldown_seconds": 3600,
+  "supervisor_script_sha256": "9ea23937926e45ba7a3e804cca602222a461e06ace17d184184d9059c153fdf9",
+  "remote_launch_receipt_sha256": "0ee9f1687425c3d1acf2e2f2ee04042d1b20ed1056664b0d1faba497b9d69005",
+  "protocol": "1_ns_NPT_plus_50_ns_NVT_single_best_decoy_single_replicate",
+  "failure_policy": "three_immediate_attempts_then_hourly_retry_with_structured_receipt",
+  "existing_md_processes_restarted": false,
+  "existing_outputs_deleted": false
+}

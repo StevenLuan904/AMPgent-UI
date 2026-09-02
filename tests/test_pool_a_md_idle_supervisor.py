@@ -12,6 +12,8 @@ def test_pool_a_md_remote_scripts_are_resumable_and_strictly_idle():
     assert "mem>256orutil>5" in compact
     assert "manifest.json" in supervisor
     assert "attempts" in supervisor and "<3" in compact
+    assert "retry-cooldown-seconds" in supervisor
+    assert "failure_receipt.json" in supervisor
     assert "source-manifest" in supervisor and "staged_relative_path" in supervisor
 
 
