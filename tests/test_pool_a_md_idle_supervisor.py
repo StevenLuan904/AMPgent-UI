@@ -33,6 +33,17 @@ def test_md_runner_validates_and_atomically_writes_completion_manifest():
     assert "temporary.replace(manifest_path)" in runner
 
 
+def test_md_runner_supports_explicit_cuda_or_opencl_without_changing_default():
+    runner = (
+        Path(__file__).parents[1] / "deploy/remote/run_pool_a_md_openmm.py"
+    ).read_text()
+    assert 'choices=("CUDA", "OpenCL"), default="CUDA"' in runner
+    assert 'mm.Platform.getPlatformByName(platform_name)' in runner
+    assert 'mm.Platform.getPlatformByName(a.platform)' in runner
+    assert '"compute_platform": a.platform' in runner
+    assert '"precision": "mixed"' in runner
+
+
 def test_analysis_supervisor_requires_completed_md_manifest():
     source = (
         Path(__file__).parents[1] / "deploy/remote/supervise_pool_a_md_analysis.py"

@@ -28,6 +28,7 @@ def args() -> argparse.Namespace:
     p.add_argument("--input-pdb", required=True, type=Path)
     p.add_argument("--output-dir", required=True, type=Path)
     p.add_argument("--gpu-index", required=True)
+    p.add_argument("--platform", choices=("CUDA", "OpenCL"), default="CUDA")
     p.add_argument("--seed", required=True, type=int)
     p.add_argument("--npt-ns", type=float, default=1.0)
     p.add_argument("--production-ns", type=float, default=50.0)
@@ -99,6 +100,7 @@ def run_stage(
     total: int,
     interval: int,
     gpu: str,
+    platform_name: str,
     seed: int,
 ) -> mm.State:
     integrator = mm.LangevinMiddleIntegrator(
@@ -109,7 +111,7 @@ def run_stage(
         topology,
         system,
         integrator,
-        mm.Platform.getPlatformByName("CUDA"),
+        mm.Platform.getPlatformByName(platform_name),
         {"DeviceIndex": gpu, "Precision": "mixed"},
     )
     checkpoint = root / f"{stem}.chk"
@@ -183,7 +185,7 @@ def main() -> None:
         modeller.topology,
         base,
         mm.LangevinMiddleIntegrator(0 * unit.kelvin, 1 / unit.picosecond, 2 * unit.femtoseconds),
-        mm.Platform.getPlatformByName("CUDA"),
+        mm.Platform.getPlatformByName(a.platform),
         {"DeviceIndex": a.gpu_index, "Precision": "mixed"},
     )
     mini.context.setPositions(modeller.positions)
@@ -207,6 +209,7 @@ def main() -> None:
         total=steps(a.npt_ns),
         interval=a.report_interval_steps,
         gpu=a.gpu_index,
+        platform_name=a.platform,
         seed=a.seed,
     )
     save_state(root / "npt_end_state.xml", npt)
@@ -227,6 +230,7 @@ def main() -> None:
         total=steps(a.production_ns),
         interval=a.report_interval_steps,
         gpu=a.gpu_index,
+        platform_name=a.platform,
         seed=a.seed + 10,
     )
     save_state(root / "production_end_state.xml", final)
@@ -237,6 +241,8 @@ def main() -> None:
         "input_pdb": str(source),
         "input_sha256": digest(source),
         "gpu_index": a.gpu_index,
+        "compute_platform": a.platform,
+        "precision": "mixed",
         "seed": a.seed,
         "npt_ns": a.npt_ns,
         "production_ns": a.production_ns,
