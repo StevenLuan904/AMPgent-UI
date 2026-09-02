@@ -39,12 +39,21 @@ def run_logged(command: list[str], log_path: Path, env: dict[str, str] | None = 
         raise RuntimeError(f"command exited {completed.returncode}: {command[:3]!r}")
 
 
-def load_rows(path: Path) -> list[dict[str, str]]:
+def load_rows(path: Path, priority_manifest: Path | None = None) -> list[dict[str, str]]:
     with path.open(encoding="utf-8-sig", newline="") as stream:
         rows = list(csv.DictReader(stream))
     if not rows or len({row["candidate_id"] for row in rows}) != len(rows):
         raise ValueError("frozen candidate identity is empty or duplicated")
-    return sorted(rows, key=lambda row: (row["branch_key"], int(row["proposal_rank"])))
+    if priority_manifest is None:
+        return sorted(rows, key=lambda row: (row["branch_key"], int(row["proposal_rank"])))
+    payload = json.loads(priority_manifest.read_text(encoding="utf-8"))
+    if payload.get("schema_version") != "ampgent.rosetta-pool-a-priority.1":
+        raise ValueError("priority manifest schema differs")
+    active = [str(value) for value in payload["active_candidate_ids"]]
+    by_id = {row["candidate_id"]: row for row in rows}
+    if len(active) != len(set(active)) or set(active) - set(by_id):
+        raise ValueError("priority manifest candidate identity differs")
+    return [by_id[candidate_id] for candidate_id in active]
 
 
 def load_targets(path: Path) -> dict[str, str]:
@@ -90,7 +99,9 @@ class ResumeBatch:
     def __init__(self, args: argparse.Namespace) -> None:
         self.args = args
         self.root = args.root.resolve()
-        self.rows = load_rows(self.root / "inputs" / "candidates.csv")
+        self.rows = load_rows(
+            self.root / "inputs" / "candidates.csv", args.priority_manifest
+        )
         self.targets = load_targets(self.root / "inputs" / "target_manifest.json")
         self.lock = threading.Lock()
         self.counts = {"pending": len(self.rows), "boltz_succeeded": 0, "rosetta_succeeded": 0, "failed": 0, "reused_decoys": 0, "new_decoys_required": 0}
@@ -247,6 +258,7 @@ def main() -> None:
     parser.add_argument("--gpu-indices", type=int, nargs="+", required=True)
     parser.add_argument("--cpu-workers", type=int, default=16)
     parser.add_argument("--seed", type=int, required=True)
+    parser.add_argument("--priority-manifest", type=Path)
     args = parser.parse_args()
     if args.cpu_workers not in range(1, 33):
         raise ValueError("cpu-workers must be 1..32")
