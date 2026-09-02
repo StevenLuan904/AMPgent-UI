@@ -21,7 +21,7 @@ from pepagent.db.repository import ExperimentRepository
 from pepagent.db.session import SessionFactory
 from pepagent.provenance.hashing import sha256_json
 
-MD_RELEASE = "openmm_ff14sb_tip3p_1ns-npt_50ns-nvt_v1"
+MD_RELEASE = "openmm_ff14sb_tip3p_1ns-npt_50ns-nvt_interface-pbc_v2"
 MMGBSA_RELEASE = "ambertools26_mmgbsa_igb5_sparse_v1"
 TARGET_BY_ACCESSION = {
     "P0A9G6": "acea",
@@ -116,7 +116,7 @@ def md_evidence(candidate: Path) -> dict[str, Any] | None:
         raise ValueError("MD NPT duration is not 1 ns")
     if finite(manifest.get("production_ns"), "production_ns") != 50.0:
         raise ValueError("MD production duration is not 50 ns")
-    if analysis.get("schema_version") != "ampgent.pool-a-md-interface-analysis.1":
+    if analysis.get("schema_version") != "ampgent.pool-a-md-interface-analysis.2":
         raise ValueError("unexpected interface-analysis schema")
     values = {
         "md_interface_rmsd_mean_nm": finite(
@@ -167,7 +167,7 @@ def md_evidence(candidate: Path) -> dict[str, Any] | None:
         "release": MD_RELEASE,
         "family": "molecular_dynamics_interface",
         "tool_name": "pool-a-md-interface-ingest",
-        "tool_version": "2026.09.03-v1",
+        "tool_version": "2026.09.03-v2",
         "files": {
             "manifest": {"uri": str(manifest_path), "sha256": sha256_file(manifest_path)},
             "interface_analysis": {

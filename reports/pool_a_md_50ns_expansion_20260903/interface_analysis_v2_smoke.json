@@ -1,0 +1,32 @@
+{
+  "schema_version": "ampgent.pool-a-md-interface-analysis-smoke.1",
+  "observed_at_utc": "2026-09-02T20:17:00Z",
+  "host": "192.168.99.19",
+  "candidate_id": "d67a2139-ebac-434e-a885-0b0a80d59f72",
+  "trajectory_stage": "1_ns_npt",
+  "frame_count": 100,
+  "interaction_sample_count": 10,
+  "analysis_schema": "ampgent.pool-a-md-interface-analysis.2",
+  "analysis_release": "openmm_ff14sb_tip3p_1ns-npt_50ns-nvt_interface-pbc_v2",
+  "analysis_script_sha256": "ad1a422554e2acc909d8fed12d392abe5a8ffc97ec7b0e9e575f4a2c51a47bf8",
+  "elapsed_seconds": 29.17,
+  "maximum_resident_memory_kib": 626208,
+  "before_pbc_fix": {
+    "interface_rmsd_mean_nm": 1.4593865871429443,
+    "interface_rmsd_max_nm": 5.941164970397949,
+    "maximum_peptide_com_shift_nm": 9.016511917114258
+  },
+  "after_pbc_fix": {
+    "interface_rmsd_mean_nm": 0.22125877439975739,
+    "interface_rmsd_max_nm": 0.28196531534194946,
+    "native_contact_fraction_mean": 0.7773134328358208,
+    "maximum_peptide_com_shift_nm": 0.1657828390598297,
+    "hydrogen_bond_occupancy": 1.0,
+    "salt_bridge_occupancy": 1.0,
+    "water_bridge_occupancy": 1.0,
+    "peptide_departed": false
+  },
+  "water_bridge_definition": "same water has Wernet-Nilsson hydrogen bonds to receptor and peptide in one frame",
+  "structure_or_trajectory_downloaded": false,
+  "remote_smoke_outputs_deleted": false
+}

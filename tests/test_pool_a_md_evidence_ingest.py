@@ -45,7 +45,7 @@ def test_md_evidence_requires_exact_1_plus_50_ns_and_emits_requested_metrics(tmp
     write(
         root / "analysis/interface/interface_analysis.json",
         {
-            "schema_version": "ampgent.pool-a-md-interface-analysis.1",
+            "schema_version": "ampgent.pool-a-md-interface-analysis.2",
             "frame_count": 5000,
             "interaction_sample_count": 500,
             "interface_rmsd_nm": {"mean": 0.2, "maximum": 0.4},

@@ -54,7 +54,7 @@ def candidate_row(expected: dict, root: Path) -> dict:
     )
     interface_complete = bool(
         interface
-        and interface.get("schema_version") == "ampgent.pool-a-md-interface-analysis.1"
+        and interface.get("schema_version") == "ampgent.pool-a-md-interface-analysis.2"
     )
     mmgbsa_complete = bool(
         mmgbsa

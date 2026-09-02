@@ -31,7 +31,7 @@ def test_summary_requires_exact_identity_and_reports_all_requested_outputs(tmp_p
     write(
         candidate / "analysis/interface/interface_analysis.json",
         {
-            "schema_version": "ampgent.pool-a-md-interface-analysis.1",
+            "schema_version": "ampgent.pool-a-md-interface-analysis.2",
             "interface_rmsd_nm": {"mean": 0.2, "maximum": 0.5},
             "native_contact_fraction": {"mean": 0.8, "minimum": 0.4},
             "key_contacts": [{"occupancy": 0.75}],
