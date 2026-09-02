@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -48,6 +49,21 @@ def steps(ns: float) -> int:
 
 def save_state(path: Path, state: mm.State) -> None:
     path.write_text(XmlSerializer.serialize(state), encoding="utf-8")
+
+
+def completed_manifest(path: Path, npt_ns: float, production_ns: float) -> bool:
+    if not path.is_file():
+        return False
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        return (
+            payload.get("schema_version") == "ampgent.pool-a-md.1"
+            and payload.get("status") == "succeeded"
+            and float(payload.get("npt_ns")) == npt_ns
+            and float(payload.get("production_ns")) == production_ns
+        )
+    except (OSError, TypeError, ValueError):
+        return False
 
 
 def reporters(
@@ -122,7 +138,8 @@ def main() -> None:
     source = a.input_pdb.resolve(strict=True)
     root = a.output_dir.resolve()
     root.mkdir(parents=True, exist_ok=True)
-    if (root / "manifest.json").exists():
+    manifest_path = root / "manifest.json"
+    if completed_manifest(manifest_path, a.npt_ns, a.production_ns):
         return
     fixer = PDBFixer(filename=str(source))
     fixer.findMissingResidues()
@@ -225,7 +242,9 @@ def main() -> None:
         "production_ns": a.production_ns,
         "openmm_version": mm.version.full_version,
     }
-    (root / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    temporary = manifest_path.with_name(f".{manifest_path.name}.{os.getpid()}.tmp")
+    temporary.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    temporary.replace(manifest_path)
 
 
 if __name__ == "__main__":

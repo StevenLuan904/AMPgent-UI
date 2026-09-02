@@ -24,6 +24,15 @@ def test_md_runner_resolves_heavy_atoms_before_stripping_explicit_cysteine_hydro
     assert runner.index("fixer.addMissingAtoms()") < runner.index("stripped.delete")
 
 
+def test_md_runner_validates_and_atomically_writes_completion_manifest():
+    runner = (
+        Path(__file__).parents[1] / "deploy/remote/run_pool_a_md_openmm.py"
+    ).read_text()
+    assert "def completed_manifest" in runner
+    assert 'payload.get("status") == "succeeded"' in runner
+    assert "temporary.replace(manifest_path)" in runner
+
+
 def test_analysis_supervisor_requires_completed_md_manifest():
     source = (
         Path(__file__).parents[1] / "deploy/remote/supervise_pool_a_md_analysis.py"
