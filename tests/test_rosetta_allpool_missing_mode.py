@@ -76,3 +76,23 @@ def test_same_sequence_is_distinct_across_targets(tmp_path: Path) -> None:
         ("acea", sequence),
         ("gyra", sequence),
     ]
+
+
+def test_strict_mode_keeps_challenger_disagreement_at_inclusive_instability_gate(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "queue.csv"
+    row = _row(branch_key="fgf2", sequence="ACDEFGHIKL", rank=1)
+    row.update(
+        {
+            "guruprasad_instability_index": "50.0",
+            "display_eligible": "true",
+            "formal_12_complete": "true",
+            "challenger_conflict_status": "cross_model_disagreement_retained",
+        }
+    )
+    _write(path, [row])
+
+    rows = RUNNER.load_rows(path)
+
+    assert len(rows) == 1

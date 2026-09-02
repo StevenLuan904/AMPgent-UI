@@ -86,10 +86,6 @@ def load_rows(
             )
         if row.get("rosetta_dg_receipt_status") != "missing":
             raise ValueError(f"candidate {row.get('candidate_id')} is not pending Rosetta dG")
-        if not allow_all_pool_missing and row.get(
-            "challenger_conflict_status"
-        ) not in {"no_conflict", "none"}:
-            raise ValueError(f"candidate {row.get('candidate_id')} has challenger conflict")
         sequence = row["sequence"].strip().upper()
         if hashlib.sha256(sequence.encode()).hexdigest() != row["sequence_sha256"]:
             raise ValueError(f"candidate {row.get('candidate_id')} sequence hash drifted")
