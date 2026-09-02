@@ -73,12 +73,12 @@ Challenger 证据键为 `run_id + candidate_id + model_release_key`；字段为 
 - v4 reserve100：515个独立家族；差集206在synth GPU2/3 PID `2537984`，已完成34、待续172；根 `/sdd_data/pepagent/ampgent/structure/rosetta-poola-v4-reserve100-diff206-synth-gpu2-3-20260902-v1/`。
 - v5 reserve100：582个独立家族；差集75在synth GPU1/6 PID `2748958`，已完成34、待续41；根 `/sdd_data/pepagent/ampgent/structure/rosetta-poola-v5-reserve100-diff75-synth-gpu1-6-20260902-v1/`。
 - v6 reserve100：53条仅属已满的AceA/VEGFA；完成39、待续14。`.19` 精确进程组 `2157395` 已 `SIGSTOP`，结果/checkpoint/内存保留，ingester继续；根 `/data1/huangyueshan/pepagent/data/run-cache/rosetta-poola-v6-reserve100-diff53-host019-gpu0-1-20260902-v1/`。
-- PBP2a v7：第101–159名59个独立家族，经87,670条远端队列身份扫描重叠0；Boltz 59/59、Rosetta 38/59、失败0；PBP2a达到50后父PID `2426846`以`SIGSTOP`可恢复暂停，已启动子进程保留并降优先级，ingester `2428077`继续；根 `/data1/huangyueshan/pepagent/data/run-cache/rosetta-poola-v7-pbp2a-extension59-host019-gpu0-1-20260902-v1/`。
+- PBP2a v7：第101–159名59个独立家族，经87,670条远端队列身份扫描重叠0；Boltz 59/59、Rosetta 38/59、失败0；父PID `2426846`可恢复暂停，ingester `2428077`继续；watcher PID `3621600`在 v8 及其计算子进程终止且 GPU0/1 严格空闲后自动 `SIGCONT` 续算，不新建 root；根 `/data1/huangyueshan/pepagent/data/run-cache/rosetta-poola-v7-pbp2a-extension59-host019-gpu0-1-20260902-v1/`。
 - gap-target v8：GyrA/FGF2/ANGPT1各第101–159名59个独立家族，远端87,729行三层身份扫描重叠0；`.19` GPU0/1 PID `3054748`、ingester `3054827`，Boltz 69/177、Rosetta 34/177、待续143、失败0；为补 FGF2 的临时优先级调整已解除，任务继续无上限扩池；根 `/data1/huangyueshan/pepagent/data/run-cache/rosetta-poola-v8-gap-targets-extension177-host019-gpu0-1-20260902-v1/`。
-- PostgreSQL 无上限严格 Pool A（2026-09-03）：371 个独立家族；AceA 79、GyrA 59、PBP2a 53、VEGFA 71、FGF2 50、ANGPT1 59；六靶点均达资源均衡线，后续过门新增继续收录。
+- PostgreSQL 无上限严格 Pool A（2026-09-03）：377 个独立家族；AceA 79、GyrA 61、PBP2a 53、VEGFA 71、FGF2 51、ANGPT1 62；六靶点均达资源均衡线，后续过门新增继续收录。
 - synth 仅流式回传 completion receipt 与分数 JSON 到 `.19` 做身份、哈希、聚合、冲突检查及 exact-once 入库；结构不传输。
-- 本地单实例悬浮进度每 10 秒读取两端全部登记批次的 `coarse5_progress.json`，动态推导总量；最近 521/884 成功、既有失败1，状态为 `var/state/ampgent-rosetta-progress-float.json`。
-- 完成审计：371 个 A 池家族全局候选/序列唯一；六靶点均具多前沿 archive、三类生成算子、close/delta/replay 与远端 PostgreSQL 访问证据；验证错误 0。
+- 本地单实例悬浮进度每 10 秒读取两端全部登记批次的 `coarse5_progress.json`，动态推导总量；最近 528/884 成功、既有失败1，状态为 `var/state/ampgent-rosetta-progress-float.json`。
+- 完成审计：377 个 A 池家族全局候选/序列唯一；六靶点均具多前沿 archive、三类生成算子、close/delta/replay 与远端 PostgreSQL 访问证据；验证错误 0。
 - 当前重点：在无上限 A 池中继续提高候选质量和有效 QD 覆盖，不以已达 50 停止收录。
 
 ## 维护
