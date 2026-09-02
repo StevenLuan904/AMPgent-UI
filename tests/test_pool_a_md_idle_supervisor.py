@@ -47,6 +47,31 @@ def test_md_runner_supports_explicit_cuda_or_opencl_without_changing_default():
     assert '"precision": "mixed"' in runner
 
 
+def test_md_runner_preserves_md_std_physical_protocol():
+    runner = (
+        Path(__file__).parents[1] / "deploy/remote/run_pool_a_md_openmm.py"
+    ).read_text()
+    compact = "".join(runner.split())
+    for token in (
+        'default=1.0',
+        'default=50.0',
+        'default=5000',
+        'round(ns*500_000)',
+        '300*unit.kelvin',
+        '1/unit.picosecond',
+        '2*unit.femtoseconds',
+        '1*unit.bar',
+        'padding=1.0*unit.nanometer',
+        'ionicStrength=0.15*unit.molar',
+        '"amber14/protein.ff14SB.xml"',
+        '"amber14/tip3p.xml"',
+        'nonbondedMethod=app.PME',
+        'nonbondedCutoff=1.0*unit.nanometer',
+        'constraints=app.HBonds',
+    ):
+        assert token in compact
+
+
 def test_analysis_supervisor_requires_completed_md_manifest():
     source = (
         Path(__file__).parents[1] / "deploy/remote/supervise_pool_a_md_analysis.py"
