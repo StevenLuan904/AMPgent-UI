@@ -31,7 +31,7 @@ AceA、GyrA、PBP2a、VEGFA、FGF2、ANGPT1 各获得 ≥50 条 Pool A 短肽；
 
 1. 固定 QD behavior space：`[net_charge/L, hydrophobic_ratio_modlamp, alpha-helix hydrophobic_moment, L]`；v1 固定 2,160 cells，实验中边界不变。
 2. 仅展示门通过、Macrel low/概率 `<=0.5`、校准活动模型支持 `>=2` 的候选参与 coverage；每 cell 仅留活动 percentile 均值最高者。
-3. QD elites 与多前沿 archive 选亲，执行点突变、受控杂交、de-novo。
+3. QD elites 与多前沿 archive 选亲；de-novo v9 仅从质量合格 QD elites 学习 family-balanced 残基/一阶转移先验；执行点突变、受控杂交、de-novo。
 4. 分开报告 best/mean quality、valid-cell coverage、QD-score、最大 cell concentration、archive-relative novelty；新占格、格内替换、同格冲突与 operator `Δϕ` 独立记账，禁止 `q+λD`。
 5. 全局序列去重；保留 occurrence；不改写历史 run。
 6. 运行 12 项 score-all、活动模型校准、challenger shadow，写父子差值/QD archive/replay/PostgreSQL。
@@ -61,13 +61,13 @@ Challenger 证据键为 `run_id + candidate_id + model_release_key`；字段为 
 - QD v1 对 round128 只读回放：34/2,160 cells；本轮新占 10、替换 4；QD-score 28.1875；最大 cell concentration 0.1538。
 - VEGFA round129 QD-v1：run `2ae024a7-575e-50ce-bc33-6da061440edc`；768 条、12项全覆盖、83 条校准优秀、386 条新家族；HemoPI2 无冲突 554、分歧保留 214；QD 43/2,160 cells，本轮新占 12、替换 9，QD-score 36.4928；lineage/replay 已关闭。
 - AceA round122：run `a981d696-caa8-5f8d-af07-d5344e653aaf`；1,024 条已物化、17,408 条结构化评价、269 条校准优秀、583 条新家族子代；HemoPI2 无冲突 877、分歧保留 147；覆盖漂移 0。
-- GyrA round123：run `1bf92615-ef5d-5411-90cc-ef9d362c187c`；1,024 条已物化、17,408 条结构化评价、557 条校准优秀、518 条新家族子代；HemoPI2 无冲突 723、分歧保留 301；覆盖漂移 0。
+- GyrA round130 QD-v1：run `05b186ab-5558-57e7-a0fe-39c9bedc7dda`；768 条、13,056 条评价、350 条校准优秀、409 条新家族；HemoPI2 无冲突 584、分歧保留 184；QD 80/2,160 cells，本轮新占 9，QD-score 74.4253；de-novo 展示/质量通过率由 round123 的 50.0%/42.6% 升至 65.6%/50.8%；lineage close run `a9f9943f-fcb3-534a-92c4-0a07bf5e4f63`。
 - PBP2a round124：run `561a54a3-8a59-5f3d-af9d-f2ec71d3fca7`；1,024 条已物化、17,408 条结构化评价、447 条校准优秀、549 条新家族子代；HemoPI2 无冲突 758、分歧保留 266；覆盖漂移 0。
 - ANGPT1 round127：run `3bdabede-3cf4-5e33-9705-0a8174c77d85`；1,024 条已物化、17,408 条结构化评价、511 条校准优秀、516 条新家族子代；HemoPI2 无冲突 812、分歧保留 212；覆盖漂移 0。
 - FGF2 round126：run `92a30242-abd7-54d2-b242-b9aca1dcbbff`；1,024 条已物化、17,408 条结构化评价、520 条校准优秀；HemoPI2 无冲突 825、分歧保留 199；覆盖漂移 0。
 - 历史 challenger 回填：147,161 个候选、735,805 条证据；HemoPI2/APEX/PeptiVerse 缺失均为 0；不重复回填。
 - `.19`/synth 旧 Rosetta 200-decoy 链已停止且文件保留；13 条已有 ≥20 decoy，7 条已入库。
-- Pool A Rosetta 20-decoy 批次运行中：`.19` PID `1600869` 6/360，synth PID `502155` 6/540；另有旧 200-decoy 截断复用 7 条；当前 19 条 coarse20 全部入库、失败 0；GPU 跑 Boltz，Rosetta 为两台各 6 个 CPU worker。
+- Pool A Rosetta 20-decoy 批次：`.19` PID `1600869`、synth PID `502155`；最后收据失败 0；GPU 跑 Boltz，Rosetta 为两台各 6 个 CPU worker；本轮 SSH 不可达，未重启、未重复提交。
 - PostgreSQL 历史+当前 Rosetta `完成/dG<-30`：AceA 392/265、GyrA 12/12、PBP2a 17/16、VEGFA 17/17、FGF2 30/29、ANGPT1 16/16；仍需结合展示/模型/QD门形成最终 Pool A。
 - synth 仅流式回传 completion receipt 与分数 JSON 到 `.19` 做身份、哈希、聚合、冲突检查及 exact-once 入库；结构不传输。
 - 本地悬浮进度每 30 秒读取两端 `progress.json`；状态为 `var/state/ampgent-rosetta-progress-float.json`。
