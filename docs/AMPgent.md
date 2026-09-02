@@ -70,6 +70,7 @@ Challenger 证据键为 `run_id + candidate_id + model_release_key`；字段为 
 - 严格 Pool A priority276：与旧900重叠0；AceA/GyrA/PBP2a/FGF2/ANGPT1各50、VEGFA 26，按 exact run+Candidate UUID、独立80/80家族绑定；`.19` GPU2-7 PID `1933418`，24个CPU Rosetta worker；根 `/data1/huangyueshan/pepagent/data/run-cache/rosetta-poola-priority276-coarse5-host019-gpu2-7-20260902-v1/`；旧结果和checkpoint不变。
 - priority v3：300条、六靶点各50、每80/80家族一个，CSV SHA `32c45c00a8ee9fc64fc775b07cbee7ec2535b43958dfe63c7afa76367f7f57d7`；v2→v3新增16、移除9。新增16在`.19` GPU0/1 PID `1982978`、12个CPU worker，根 `/data1/huangyueshan/pepagent/data/run-cache/rosetta-poola-priority-v3-append16-host019-gpu0-1-20260902-v1/`；v2新增22仍在synth GPU5/7 PID `2335217`。最终Pool A以v3为准；旧display-only两端批次已暂停且零删除。
 - v4 reserve100：515个独立家族；v3仍为成员基线。扣除三个严格根后新增206（GyrA/PBP2a/FGF2/ANGPT1各50、VEGFA 6），在synth GPU2/3 PID `2537984`、16个CPU worker，根 `/sdd_data/pepagent/ampgent/structure/rosetta-poola-v4-reserve100-diff206-synth-gpu2-3-20260902-v1/`。
+- v5 reserve100：582个独立家族（AceA 92、VEGFA 90、其余各100）；扣除v1-v4严格根后新增75（AceA 46、VEGFA 29），在synth GPU1/6 PID `2748958`、12个CPU worker，根 `/sdd_data/pepagent/ampgent/structure/rosetta-poola-v5-reserve100-diff75-synth-gpu1-6-20260902-v1/`；v3仍为最终成员基线。
 - PostgreSQL 历史+当前 Rosetta `完成/dG<-30`：AceA 392/265、GyrA 12/12、PBP2a 17/16、VEGFA 17/17、FGF2 30/29、ANGPT1 16/16；仍需结合展示/模型/QD门形成最终 Pool A。
 - synth 仅流式回传 completion receipt 与分数 JSON 到 `.19` 做身份、哈希、聚合、冲突检查及 exact-once 入库；结构不传输。
 - 本地悬浮进度每 30 秒读取两端 `coarse5_progress.json`；状态为 `var/state/ampgent-rosetta-progress-float.json`。
