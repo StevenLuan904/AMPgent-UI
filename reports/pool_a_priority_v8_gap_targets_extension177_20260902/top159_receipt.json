@@ -1,0 +1,54 @@
+{
+  "candidate_count": 477,
+  "historical_runs_modified": false,
+  "observed_at": "2026-09-02T14:42:48.020913+00:00",
+  "output_csv_sha256": "086ab9290ed920cfceec57a3fc300283dc03a2a868f2db98579571e2cf11db6f",
+  "receipt_payload_sha256": "ee79f787867362a87728608cf2105846e8d00a87df5567b16828db5edd2779ae",
+  "schema_version": "ampgent.pool-a-pre-rosetta-priority.1",
+  "selection": "strict_gate_then_one_per_80_80_family_then_lexicographic_activity_quality",
+  "targets": {
+    "angpt1": {
+      "family_gap_to_50_before_rosetta": 0,
+      "priority_candidate_count": 159,
+      "source_candidate_count": 768,
+      "sources": [
+        {
+          "source_candidate_count": 768,
+          "source_csv_sha256": "c4feafb4004d00476aba721e5ebe34c6fb55233b786c2dc083d13bef7d042e07",
+          "subject_run_id": "9bcbda95-56a0-52b0-80ba-296fc22a0e4e"
+        }
+      ],
+      "strict_pre_rosetta_candidate_count": 373,
+      "strict_pre_rosetta_family_count": 208
+    },
+    "fgf2": {
+      "family_gap_to_50_before_rosetta": 0,
+      "priority_candidate_count": 159,
+      "source_candidate_count": 768,
+      "sources": [
+        {
+          "source_candidate_count": 768,
+          "source_csv_sha256": "5012befa1369f89db0766a662227781acbfde7959ba47a663a29471649df81ab",
+          "subject_run_id": "577f08b8-b582-5142-bd8d-1990bad63f06"
+        }
+      ],
+      "strict_pre_rosetta_candidate_count": 440,
+      "strict_pre_rosetta_family_count": 194
+    },
+    "gyra": {
+      "family_gap_to_50_before_rosetta": 0,
+      "priority_candidate_count": 159,
+      "source_candidate_count": 768,
+      "sources": [
+        {
+          "source_candidate_count": 768,
+          "source_csv_sha256": "e47a376d9defc03b8984460e3aa5a2e7c00b1cfda38dfe52988e2c6465396177",
+          "subject_run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700"
+        }
+      ],
+      "strict_pre_rosetta_candidate_count": 474,
+      "strict_pre_rosetta_family_count": 235
+    }
+  },
+  "weighted_quality_diversity_total_used": false
+}
