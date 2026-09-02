@@ -5,6 +5,7 @@ import pytest
 
 from analysis.ingest_pool_a_md_evidence import (
     MD_RELEASE,
+    export_evidence,
     md_evidence,
     mmgbsa_evidence,
     relocate_file_uris,
@@ -132,3 +133,40 @@ def test_evidence_uris_can_point_to_authoritative_remote_tree(tmp_path):
     evidence = {"files": {"manifest": {"uri": str(local), "sha256": "a" * 64}}}
     relocate_file_uris(evidence, tmp_path, "/remote/pool-a")
     assert evidence["files"]["manifest"]["uri"].startswith("/remote/pool-a/acea/")
+
+
+def test_export_bundle_contains_only_json_serializable_remote_metadata(tmp_path):
+    root = candidate(tmp_path)
+    write(
+        root / "manifest.json",
+        {
+            "schema_version": "ampgent.pool-a-md.1",
+            "status": "succeeded",
+            "npt_ns": 1,
+            "production_ns": 50,
+        },
+    )
+    write(
+        root / "analysis/interface/interface_analysis.json",
+        {
+            "schema_version": "ampgent.pool-a-md-interface-analysis.2",
+            "frame_count": 5000,
+            "interaction_sample_count": 500,
+            "interface_rmsd_nm": {"mean": 0.2, "maximum": 0.4},
+            "native_contact_fraction": {"mean": 0.8, "minimum": 0.5},
+            "hydrogen_bond_occupancy": 0.7,
+            "salt_bridge_occupancy": 0.4,
+            "water_bridge_occupancy": 0.6,
+            "peptide_departed": False,
+            "maximum_departure_duration_ps": 0,
+            "maximum_peptide_com_shift_nm": 0.3,
+            "definitions": {},
+            "key_contacts": [],
+        },
+    )
+    (root / "analysis/interface/timeseries.csv").write_text("time_ps\n0\n")
+    bundles = export_evidence(tmp_path, "/remote/pool-a")
+    assert len(bundles) == 1
+    assert "marker" not in bundles[0]
+    assert bundles[0]["files"]["manifest"]["uri"].startswith("/remote/pool-a/")
+    json.dumps(bundles[0])

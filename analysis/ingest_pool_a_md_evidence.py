@@ -8,18 +8,11 @@ import hashlib
 import json
 import math
 import os
+import sys
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
-
-from sqlalchemy import MetaData, Table, select
-from sqlalchemy.dialects.postgresql import insert
-
-from pepagent.db.models import Candidate, Evaluation, ExperimentRun, Target
-from pepagent.db.repository import ExperimentRepository
-from pepagent.db.session import SessionFactory
-from pepagent.provenance.hashing import sha256_json
 
 MD_RELEASE = "openmm_ff14sb_tip3p_1ns-npt_50ns-nvt_interface-pbc_v2"
 MMGBSA_RELEASE = "ambertools26_mmgbsa_igb5_sparse_v1"
@@ -35,9 +28,13 @@ TARGET_BY_ACCESSION = {
 
 def cli() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--root", type=Path, required=True)
+    parser.add_argument("--root", type=Path)
     parser.add_argument("--uri-root")
     parser.add_argument("--source-commit", required=True)
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--export-jsonl-stdout", action="store_true")
+    mode.add_argument("--bundle-jsonl-stdin", action="store_true")
+    parser.add_argument("--state", type=Path)
     parser.add_argument("--once", action="store_true")
     parser.add_argument("--poll-seconds", type=int, default=120)
     return parser.parse_args()
@@ -239,6 +236,14 @@ def mmgbsa_evidence(candidate: Path) -> dict[str, Any] | None:
 
 
 async def persist(evidence: dict[str, Any], source_commit: str) -> dict[str, Any]:
+    from sqlalchemy import MetaData, Table, select
+    from sqlalchemy.dialects.postgresql import insert
+
+    from pepagent.db.models import Candidate, Evaluation, ExperimentRun, Target
+    from pepagent.db.repository import ExperimentRepository
+    from pepagent.db.session import SessionFactory
+    from pepagent.provenance.hashing import sha256_json
+
     item_identity = evidence["identity"]
     candidate_id = uuid.UUID(item_identity["candidate_id"])
     run_id = uuid.UUID(item_identity["run_id"])
@@ -371,6 +376,42 @@ async def persist(evidence: dict[str, Any], source_commit: str) -> dict[str, Any
     }
 
 
+def export_evidence(root: Path, uri_root: str | None = None) -> list[dict[str, Any]]:
+    """Build portable evidence bundles while keeping every large artifact remote."""
+    bundles = []
+    for manifest in sorted(root.glob("*/*/manifest.json")):
+        candidate = manifest.parent
+        for loader in (md_evidence, mmgbsa_evidence):
+            evidence = loader(candidate)
+            if evidence is None:
+                continue
+            evidence = relocate_file_uris(evidence, root, uri_root)
+            evidence.pop("marker", None)
+            bundles.append(evidence)
+    return bundles
+
+
+async def import_bundles(
+    bundles: list[dict[str, Any]], source_commit: str
+) -> dict[str, Any]:
+    result = {"observed_at": datetime.now(UTC).isoformat(), "ingested": [], "failures": []}
+    for evidence in bundles:
+        try:
+            receipt = await persist(evidence, source_commit)
+            receipt["ingested_at"] = datetime.now(UTC).isoformat()
+            receipt["files"] = evidence["files"]
+            result["ingested"].append(receipt)
+        except Exception as error:
+            result["failures"].append(
+                {
+                    "candidate_id": evidence.get("identity", {}).get("candidate_id"),
+                    "model_release_key": evidence.get("release"),
+                    "error": str(error),
+                }
+            )
+    return result
+
+
 async def scan_once(
     root: Path, source_commit: str, uri_root: str | None = None
 ) -> dict[str, Any]:
@@ -403,6 +444,23 @@ async def main() -> None:
     args = cli()
     if len(args.source_commit) != 40:
         raise ValueError("source commit must be a full Git SHA-1")
+    if args.export_jsonl_stdout:
+        if args.root is None:
+            raise ValueError("--root is required for evidence export")
+        for evidence in await asyncio.to_thread(export_evidence, args.root, args.uri_root):
+            print(json.dumps(evidence, separators=(",", ":")))
+        return
+    if args.bundle_jsonl_stdin:
+        bundles = [json.loads(line) for line in sys.stdin if line.strip()]
+        result = await import_bundles(bundles, args.source_commit)
+        if args.state:
+            await asyncio.to_thread(write_json, args.state, result)
+        print(json.dumps(result, separators=(",", ":")))
+        if result["failures"]:
+            raise RuntimeError("one or more evidence bundles failed PostgreSQL ingestion")
+        return
+    if args.root is None:
+        raise ValueError("--root is required for filesystem ingestion")
     while True:
         state = await scan_once(args.root, args.source_commit, args.uri_root)
         await asyncio.to_thread(write_json, args.root / "postgresql_ingester_state.json", state)
