@@ -12,9 +12,13 @@ export MAMBA_ROOT_PREFIX="$root/runtime/mamba-root"
 "$binary" create -y -p "$root/mmgbsa-env" -c conda-forge \
   python=3.11 ambertools=26 openmm=8.3.1 mdtraj scipy
 "$binary" list -p "$root/mmgbsa-env" --explicit > "$root/state/mmgbsa-env-explicit.txt"
-"$root/mmgbsa-env/bin/python" - <<'PY' > "$root/state/mmgbsa-env-versions.json"
-import json, shutil
+ENV_DIR="$root/mmgbsa-env" "$root/mmgbsa-env/bin/python" - <<'PY' > "$root/state/mmgbsa-env-versions.json"
+import json, os
+from pathlib import Path
 import mdtraj, scipy
+env = Path(os.environ["ENV_DIR"])
 print(json.dumps({"mdtraj":mdtraj.__version__,"scipy":scipy.__version__,
- "MMPBSA.py":shutil.which("MMPBSA.py"),"cpptraj":shutil.which("cpptraj"),"sander":shutil.which("sander")},indent=2))
+ "MMPBSA.py":str(env / "bin/MMPBSA.py"),"MMPBSA.py_executable":(env / "bin/MMPBSA.py").exists(),
+ "cpptraj":str(env / "bin/cpptraj"),"cpptraj_executable":(env / "bin/cpptraj").exists(),
+ "sander":str(env / "bin/sander"),"sander_executable":(env / "bin/sander").exists()},indent=2))
 PY

@@ -60,7 +60,7 @@ Challenger 证据键为 `run_id + candidate_id + model_release_key`；字段为 
 
 - 冻结交付1900；三分支严格库87,989；历史 challenger 147,161候选/735,805证据，不改写。
 - Pool A archive 486个靶点内80/80家族elite：AceA79、GyrA100、PBP2a53、VEGFA71、FGF2 81、ANGPT1 102；严格过门候选498，同家族非elite不属于archive；全部结构与decoy远端保留。
-- `.19` GPU0–7运行首批475条，已接通PBC界面、MM/GBSA、PostgreSQL入库；synth `.2` GPU1以OpenCL运行新增11条并接通PBC界面，MM/GBSA与入库待远端转交；两队列身份无交集。均为单best-decoy、1 ns NPT+50 ns NVT、checkpoint续算；仅同步紧凑JSON/CSV，PDB/DCD/checkpoint留远端。
+- `.19` GPU0–7运行首批475条；synth `.2` GPU1以OpenCL运行新增11条；两队列身份无交集。两端均接通PBC界面与AmberTools 26 MM/GBSA；`.2` 以紧凑JSONL转交`.19`幂等入PostgreSQL。均为单best-decoy、1 ns NPT+50 ns NVT、checkpoint续算；PDB/DCD/checkpoint只留远端。
 - `.32 GPU0/GPU1`有外来Prima3D任务不抢占；GPU2/3禁止。
 - 生成来源：PepGLAD三靶点严格库87,989条/8,657家族；target-conditioned PepMLM六靶点24,576/24,576完成12项、12,151过展示门、890条优选子集完成challenger；PepFlow AceA model2真机8/8完成12项与challenger并落库至run `de80b78e-ae0d-5190-93cc-11ee5dee62a2`，5条过展示门、0条过活动/QD门；首批A池475/475按PostgreSQL精确审计均无唯一显式来源，不按序列归因。
 
