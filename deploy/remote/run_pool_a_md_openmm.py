@@ -130,6 +130,11 @@ def main() -> None:
     fixer.findNonstandardResidues()
     fixer.replaceNonstandardResidues()
     fixer.removeHeterogens(False)
+    # Preserve explicit SG-H evidence while PDBFixer resolves missing heavy atoms.
+    # Removing hydrogens first can make nearby reduced cysteines look like a
+    # disulfide and produce a CYS/CYX topology mismatch during solvation.
+    fixer.findMissingAtoms()
+    fixer.addMissingAtoms()
     # Rosetta writes explicit hydrogens.  Remove and regenerate them after its
     # inferred disulfide topology is known; retaining an SG hydrogen on an
     # inferred CYX bond makes ff14SB template matching fail.
@@ -141,8 +146,6 @@ def main() -> None:
         stripped.delete(existing_hydrogens)
         fixer.topology = stripped.topology
         fixer.positions = stripped.positions
-    fixer.findMissingAtoms()
-    fixer.addMissingAtoms()
     fixer.addMissingHydrogens(7.0)
     if len(list(fixer.topology.chains())) < 2:
         raise ValueError("input is not a protein-peptide complex")

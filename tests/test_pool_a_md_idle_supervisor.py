@@ -15,6 +15,13 @@ def test_pool_a_md_remote_scripts_are_resumable_and_strictly_idle():
     assert "source-manifest" in supervisor and "staged_relative_path" in supervisor
 
 
+def test_md_runner_resolves_heavy_atoms_before_stripping_explicit_cysteine_hydrogen():
+    runner = (
+        Path(__file__).parents[1] / "deploy/remote/run_pool_a_md_openmm.py"
+    ).read_text()
+    assert runner.index("fixer.addMissingAtoms()") < runner.index("stripped.delete")
+
+
 def test_analysis_supervisor_requires_completed_md_manifest():
     source = (
         Path(__file__).parents[1] / "deploy/remote/supervise_pool_a_md_analysis.py"
