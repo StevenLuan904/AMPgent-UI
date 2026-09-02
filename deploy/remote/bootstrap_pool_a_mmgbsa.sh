@@ -9,7 +9,8 @@ if [[ ! -x "$binary" ]]; then
   tar -xjf "$archive" -C "$root/runtime" bin/micromamba
 fi
 export MAMBA_ROOT_PREFIX="$root/runtime/mamba-root"
-"$binary" create -y -p "$root/mmgbsa-env" -c conda-forge ambertools mdtraj scipy
+"$binary" create -y -p "$root/mmgbsa-env" -c conda-forge \
+  python=3.11 ambertools=26 openmm=8.3.1 mdtraj scipy
 "$binary" list -p "$root/mmgbsa-env" --explicit > "$root/state/mmgbsa-env-explicit.txt"
 "$root/mmgbsa-env/bin/python" - <<'PY' > "$root/state/mmgbsa-env-versions.json"
 import json, shutil

@@ -14,3 +14,12 @@ def test_mmgbsa_runner_has_energy_ci_and_decomposition_contract():
         "write_amber_topology",
     ):
         assert token in source
+
+
+def test_mmgbsa_bootstrap_pins_compatible_analysis_runtime():
+    source = (
+        Path(__file__).parents[1] / "deploy/remote/bootstrap_pool_a_mmgbsa.sh"
+    ).read_text()
+    assert "python=3.11" in source
+    assert "ambertools=26" in source
+    assert "openmm=8.3.1" in source
