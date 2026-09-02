@@ -41,3 +41,11 @@ def test_cross_host_stager_copies_without_source_deletion():
     source = (Path(__file__).parents[1] / "deploy/remote/stage_pool_a_md_sources.py").read_text()
     assert "shutil.copy2" in source
     assert "unlink" not in source and "remove(" not in source
+
+
+def test_successor_waits_for_current_supervisor_before_exact_once_rescan():
+    source = (
+        Path(__file__).parents[1] / "deploy/remote/launch_pool_a_md_successor_when_ready.sh"
+    ).read_text()
+    assert 'while kill -0 "$wait_pid"' in source
+    assert 'exec "$@"' in source

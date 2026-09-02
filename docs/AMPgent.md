@@ -60,7 +60,7 @@ Challenger 证据键为 `run_id + candidate_id + model_release_key`；字段为 
 
 - 冻结交付1900；三分支严格库87,989；历史 challenger 147,161候选/735,805证据，不改写。
 - Pool A快照402：AceA82、GyrA70、PBP2a53、VEGFA80、FGF2 60、ANGPT1 69；全部结构与decoy远端保留。
-- `.19` Pool A MD v1：401/402复合物已解析；GPU2–7常驻调度，单候选单best-decoy、1 ns NPT+50 ns NVT、checkpoint续算；几何分析与MM/GBSA在完成后自动触发；根`/data1/huangyueshan/pepagent/md/pool-a-full-md-v1/`。
+- `.19` Pool A MD v1：402/402复合物已解析；GPU2–7常驻调度，单候选单best-decoy、1 ns NPT+50 ns NVT、checkpoint续算；几何分析与MM/GBSA在完成后自动触发；根`/data1/huangyueshan/pepagent/md/pool-a-full-md-v1/`。
 - `.32 GPU0`有外来Prima3D任务不抢占；GPU1已释放，待验证OpenMM运行时及远端输入后加入同一exact-once队列；GPU2/3禁止。
 - 生成来源：target-conditioned PepMLM已纳入；PepGLAD/PepFlow按独立来源接入评估。
 
