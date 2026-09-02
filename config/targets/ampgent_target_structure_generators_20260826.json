@@ -20,7 +20,15 @@
       "checkpoint_archive_sha256": "a610e079492a1b1ceab213aea3a0ab875846415e16470897bb54850557f462a0",
       "checkpoint_sha256": "5f05dc0f678ed7a75c2ce8fc19f63cc145bd4568f75cbfc7f15aeacdddbd3cfe",
       "checkpoint_size_bytes": 18961125,
-      "runtime_status": "adapter_tested_runtime_smoke_pending"
+      "runtime_status": "real_target_smoke_passed_acea_gyra_pbp2a_and_strict_library_scored",
+      "evaluated_library": {
+        "global_unique_count": 87989,
+        "target_counts": {"acea": 29190, "gyra": 30579, "pbp2a": 28220},
+        "family_count_80_80": 8657,
+        "activity_model_support_ge_2": 61914,
+        "csv_sha256": "4e79074abe1085067e1aa8700350bcb017be2d3bc1d01f5a3522f04405873d0a",
+        "remote_uri": "/data0/ampgent-pepglad-huangyueshan/v1/artifacts/strict-library/4e79074abe1085067e1aa8700350bcb017be2d3bc1d01f5a3522f04405873d0a/"
+      }
     },
     "pepflow": {
       "repository": "https://github.com/Ced3-han/PepFlowww",
@@ -44,7 +52,7 @@
       "structure_id": "1IGW",
       "pocket_key": "catalytic_mg_isocitrate_site",
       "pocket_evidence_grade": "A",
-      "status": "pepglad_smoke_ready"
+      "status": "pepglad_real_smoke_scored"
     },
     {
       "target_key": "gyra",
@@ -54,7 +62,7 @@
       "structure_id": "8QQI",
       "pocket_key": "lei800_allosteric_dna_surface",
       "pocket_evidence_grade": "A",
-      "status": "coordinate_preflight_required"
+      "status": "pepglad_real_smoke_scored"
     },
     {
       "target_key": "pbp2a",
@@ -64,7 +72,7 @@
       "structure_id": "3ZFZ",
       "pocket_key": "ceftaroline_muramate_allosteric_site",
       "pocket_evidence_grade": "B",
-      "status": "coordinate_preflight_required"
+      "status": "pepglad_real_smoke_scored"
     },
     {
       "target_key": "vegfa",
