@@ -71,7 +71,7 @@ Challenger 证据键为 `run_id + candidate_id + model_release_key`；字段为 
 - priority v3：300条、六靶点各50、每80/80家族一个；结果/checkpoint保留，成员优先级已由 v6 取代。
 - v4 reserve100：515个独立家族；差集206在synth GPU2/3 PID `2537984`，根 `/sdd_data/pepagent/ampgent/structure/rosetta-poola-v4-reserve100-diff206-synth-gpu2-3-20260902-v1/`。
 - v5 reserve100：582个独立家族；差集75在synth GPU1/6 PID `2748958`，根 `/sdd_data/pepagent/ampgent/structure/rosetta-poola-v5-reserve100-diff75-synth-gpu1-6-20260902-v1/`。
-- v6 reserve100：600条、六靶点各100个严格独立家族，CSV SHA `6cb3eca96493ee6ae09c1b59d0ee7bcb1a3f8fee83ca9faa5c651ede2c5d3455`；它是当前唯一最高优先级结构清单，按所有完成/在途/排队根做 exact 差集；允许暂停低优先级未完成 Rosetta，禁止删除结果/checkpoint。
+- v6 reserve100：六靶点各100家族；扣除v1-v5共595个完成/在途/排队身份后新增53（AceA 33、VEGFA 20），在`.19` GPU0/1 PID `2157401`、12个CPU worker，根 `/data1/huangyueshan/pepagent/data/run-cache/rosetta-poola-v6-reserve100-diff53-host019-gpu0-1-20260902-v1/`；当前唯一最高优先级结构清单。
 - PostgreSQL 历史+当前 Rosetta `完成/dG<-30`：AceA 392/265、GyrA 12/12、PBP2a 17/16、VEGFA 17/17、FGF2 30/29、ANGPT1 16/16；仍需结合展示/模型/QD门形成最终 Pool A。
 - synth 仅流式回传 completion receipt 与分数 JSON 到 `.19` 做身份、哈希、聚合、冲突检查及 exact-once 入库；结构不传输。
 - 本地悬浮进度每 30 秒读取两端 `coarse5_progress.json`；状态为 `var/state/ampgent-rosetta-progress-float.json`。
