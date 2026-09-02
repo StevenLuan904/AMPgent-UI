@@ -1,0 +1,32 @@
+{
+  "schema_version": "ampgent.pool-a-mmgbsa-smoke.1",
+  "observed_at_utc": "2026-09-02T20:24:00Z",
+  "host": "192.168.99.19",
+  "candidate_id": "d67a2139-ebac-434e-a885-0b0a80d59f72",
+  "trajectory_stage": "1_ns_npt",
+  "sampled_frame_count": 5,
+  "method": "single-trajectory MM/GBSA",
+  "igb": 5,
+  "saltcon_molar": 0.15,
+  "mean_binding_energy_kcal_mol": -106.57791524800268,
+  "confidence_interval_95_kcal_mol": [
+    -108.45818734400328,
+    -104.00962569600179
+  ],
+  "moving_block_length_frames": 2,
+  "bootstrap_replicates": 200,
+  "receptor_residue_count": 434,
+  "peptide_residue_range": [435, 460],
+  "decomposition_residue_count": 460,
+  "elapsed_seconds": 162.42,
+  "maximum_resident_memory_kib": 633548,
+  "exit_status": 0,
+  "scientific_use": "pipeline_validation_only",
+  "limitations": [
+    "NPT smoke trajectory only; not the formal 50 ns result",
+    "within-trajectory block-bootstrap CI; not independent replicate uncertainty",
+    "computed binding estimate; not experimental affinity"
+  ],
+  "structure_or_trajectory_downloaded": false,
+  "remote_smoke_outputs_deleted": false
+}
