@@ -111,6 +111,12 @@ def test_compact_sync_allowlist_excludes_structures_and_trajectories():
     assert allowed_relative_path(
         PurePosixPath("acea/candidate/analysis/interface/interface_analysis.json")
     )
+    assert allowed_relative_path(
+        PurePosixPath("acea/candidate/analysis/interface/postgresql_ingest_receipt.json")
+    )
+    assert allowed_relative_path(
+        PurePosixPath("acea/candidate/analysis/mmgbsa/postgresql_ingest_receipt.json")
+    )
     assert allowed_relative_path(PurePosixPath("acea/candidate/failure_receipt.json"))
     assert allowed_relative_path(PurePosixPath("acea/candidate/manifest.json"))
     assert not allowed_relative_path(PurePosixPath("acea/candidate/production.dcd"))

@@ -15,8 +15,10 @@ ALLOWED = {
     ("failure_receipt.json",),
     ("manifest.json",),
     ("analysis", "interface", "interface_analysis.json"),
+    ("analysis", "interface", "postgresql_ingest_receipt.json"),
     ("analysis", "interface", "timeseries.csv"),
     ("analysis", "mmgbsa", "mmgbsa_analysis.json"),
+    ("analysis", "mmgbsa", "postgresql_ingest_receipt.json"),
     ("analysis", "mmgbsa", "residue_decomposition_mean.csv"),
 }
 
