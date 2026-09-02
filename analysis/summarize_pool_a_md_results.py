@@ -161,17 +161,52 @@ def summarize(snapshot: Path, evidence_root: Path, output: Path) -> dict:
     targets = defaultdict(list)
     for row in rows:
         targets[row["target_key"]].append(row)
+    overall = aggregate(rows)
+    expected_count = overall["expected_candidate_count"]
+    complete = expected_count > 0 and all(
+        overall[key] == expected_count
+        for key in (
+            "md_complete_count",
+            "interface_complete_count",
+            "mmgbsa_complete_count",
+            "postgresql_evidence_complete_count",
+        )
+    )
+    completion_report = output / "completion_receipt.json"
     payload = {
         "schema_version": "ampgent.pool-a-md-summary.1",
         "observed_at_utc": datetime.now(UTC).isoformat(),
-        "overall": aggregate(rows),
+        "overall": overall,
         "targets": {key: aggregate(value) for key, value in sorted(targets.items())},
         "candidate_report": str(candidate_report.resolve()),
+        "completion_receipt": str(completion_report.resolve()) if complete else None,
     }
     summary_report = output / "summary.json"
     summary_temporary = output / ".summary.json.tmp"
     summary_temporary.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     summary_temporary.replace(summary_report)
+    if complete and not completion_report.exists():
+        completion = {
+            "schema_version": "ampgent.pool-a-md-completion.1",
+            "status": "succeeded",
+            "completed_at_utc": datetime.now(UTC).isoformat(),
+            "snapshot": str(snapshot.resolve()),
+            "evidence_root": str(evidence_root.resolve()),
+            "expected_candidate_count": expected_count,
+            "md_complete_count": overall["md_complete_count"],
+            "interface_complete_count": overall["interface_complete_count"],
+            "mmgbsa_complete_count": overall["mmgbsa_complete_count"],
+            "postgresql_evidence_complete_count": overall[
+                "postgresql_evidence_complete_count"
+            ],
+            "structure_or_trajectory_downloaded": False,
+            "remote_files_deleted": False,
+        }
+        completion_temporary = output / ".completion_receipt.json.tmp"
+        completion_temporary.write_text(
+            json.dumps(completion, indent=2) + "\n", encoding="utf-8"
+        )
+        completion_temporary.replace(completion_report)
     return payload
 
 
