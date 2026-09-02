@@ -151,10 +151,13 @@ def summarize(snapshot: Path, evidence_root: Path, output: Path) -> dict:
     expected = load(snapshot)["pool_a_all"]
     rows = [candidate_row(item, evidence_root) for item in expected]
     output.mkdir(parents=True, exist_ok=True)
-    with (output / "candidates.csv").open("w", newline="", encoding="utf-8") as stream:
+    candidate_report = output / "candidates.csv"
+    candidate_temporary = output / ".candidates.csv.tmp"
+    with candidate_temporary.open("w", newline="", encoding="utf-8") as stream:
         writer = csv.DictWriter(stream, fieldnames=list(rows[0]))
         writer.writeheader()
         writer.writerows(rows)
+    candidate_temporary.replace(candidate_report)
     targets = defaultdict(list)
     for row in rows:
         targets[row["target_key"]].append(row)
@@ -163,9 +166,12 @@ def summarize(snapshot: Path, evidence_root: Path, output: Path) -> dict:
         "observed_at_utc": datetime.now(UTC).isoformat(),
         "overall": aggregate(rows),
         "targets": {key: aggregate(value) for key, value in sorted(targets.items())},
-        "candidate_report": str((output / "candidates.csv").resolve()),
+        "candidate_report": str(candidate_report.resolve()),
     }
-    (output / "summary.json").write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    summary_report = output / "summary.json"
+    summary_temporary = output / ".summary.json.tmp"
+    summary_temporary.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    summary_temporary.replace(summary_report)
     return payload
 
 

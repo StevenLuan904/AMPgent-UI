@@ -50,6 +50,15 @@ def test_mmgbsa_supervisor_is_sparse_and_manifest_gated():
     assert "mmgbsa_analysis.json" in source
 
 
+def test_summary_supervisor_refreshes_compact_reports_without_gpu_work():
+    source = (
+        Path(__file__).parents[1] / "deploy/remote/supervise_pool_a_md_summary.py"
+    ).read_text()
+    assert "summarize_pool_a_md_results.py" not in source
+    assert '"--snapshot"' in source and '"--evidence-root"' in source
+    assert "nvidia" not in source.casefold() and "cuda" not in source.casefold()
+
+
 def test_cross_host_source_locator_uses_exact_target_and_sequence_hash():
     source = (Path(__file__).parents[1] / "deploy/remote/locate_pool_a_md_sources.py").read_text()
     compact = "".join(source.split())

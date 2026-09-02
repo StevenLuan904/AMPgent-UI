@@ -67,6 +67,8 @@ def test_summary_requires_exact_identity_and_reports_all_requested_outputs(tmp_p
     assert result["overall"]["pending_md_count"] == 0
     assert result["overall"]["retry_failure_recorded_count"] == 1
     assert result["overall"]["postgresql_evidence_complete_count"] == 1
+    assert not (tmp_path / "report/.candidates.csv.tmp").exists()
+    assert not (tmp_path / "report/.summary.json.tmp").exists()
     report = (tmp_path / "report/candidates.csv").read_text()
     for field in (
         "interface_rmsd_mean_nm",
