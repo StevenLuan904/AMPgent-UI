@@ -54,6 +54,7 @@ _DE_NOVO_PROFILE_PRIOR_COUNTS = {
 }
 _DE_NOVO_EMPIRICAL_PROFILE_WEIGHT = 0.5
 _DE_NOVO_MINIMUM_GOLD_PROFILE_COUNT = 3
+_PARENT_LIMIT_PER_ARCHIVE_LANE = 16
 
 
 def _sequence_prescreen(sequence: str) -> tuple[float, int, float]:
@@ -318,11 +319,40 @@ def _lane_candidates(
     *,
     candidates_by_id: Mapping[str, CandidateEvidence],
     improvement_counts: Mapping[str, int],
+    maximum_per_lane: int | None = None,
 ) -> list[CandidateEvidence]:
     ordered_ids: list[str] = []
     seen: set[str] = set()
     for lane_name in lane_names:
-        for candidate_id in snapshot.archive_members[lane_name]:
+        lane_candidates = sorted(
+            (
+                candidates_by_id[candidate_id]
+                for candidate_id in snapshot.archive_members[lane_name]
+                if candidate_id in candidates_by_id
+                and is_instability_score_qualified_wetlab_candidate(
+                    candidates_by_id[candidate_id]
+                )
+            ),
+            key=lambda item: (
+                -int(improvement_counts.get(item.candidate_id, 0)),
+                item.candidate_id,
+            ),
+        )
+        if maximum_per_lane is not None:
+            if maximum_per_lane < 1:
+                raise ValueError("archive lane parent limit must be positive")
+            family_first: list[CandidateEvidence] = []
+            repeated_family: list[CandidateEvidence] = []
+            lane_families: set[str] = set()
+            for candidate in lane_candidates:
+                if candidate.family_key in lane_families:
+                    repeated_family.append(candidate)
+                else:
+                    lane_families.add(candidate.family_key)
+                    family_first.append(candidate)
+            lane_candidates = (family_first + repeated_family)[:maximum_per_lane]
+        for candidate in lane_candidates:
+            candidate_id = candidate.candidate_id
             if candidate_id not in seen:
                 ordered_ids.append(candidate_id)
                 seen.add(candidate_id)
@@ -654,6 +684,7 @@ def build_multifront_rule_action_plan(
         ),
         candidates_by_id=by_id,
         improvement_counts=improvement_counts,
+        maximum_per_lane=_PARENT_LIMIT_PER_ARCHIVE_LANE,
     )
     for parent in substitution_pool:
         if parent.candidate_id in required_parent_candidate_ids:
@@ -703,6 +734,7 @@ def build_multifront_rule_action_plan(
         ),
         candidates_by_id=by_id,
         improvement_counts=improvement_counts,
+        maximum_per_lane=_PARENT_LIMIT_PER_ARCHIVE_LANE,
     )
     crossover_pair: tuple[CandidateEvidence, CandidateEvidence] | None = None
     crossover_fragments: tuple[CrossoverFragment, CrossoverFragment] | None = None
@@ -844,6 +876,7 @@ def build_multifront_rule_action_plan(
                 ("model_disagreement", "novel_family", "activity_consensus"),
                 candidates_by_id=by_id,
                 improvement_counts=improvement_counts,
+                maximum_per_lane=_PARENT_LIMIT_PER_ARCHIVE_LANE,
             )
             or substitution_pool
         )
@@ -1001,6 +1034,11 @@ def build_multifront_rule_action_plan(
         "historical_sequence_exclusion_sha256": sha256_text(
             "\n".join(sorted(historical_sequence_sha256s))
         ),
+        "parent_selection_policy": {
+            "archive_lane_limit": _PARENT_LIMIT_PER_ARCHIVE_LANE,
+            "family_first_within_lane": True,
+            "fronts_are_not_weighted_together": True,
+        },
         "de_novo_profile_policy": {
             "operator_version": "autoresearch-rule-de-novo-v8",
             "profile_source": de_novo_profile_source,
