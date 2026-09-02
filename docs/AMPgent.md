@@ -8,7 +8,7 @@ AceA、GyrA、PBP2a、VEGFA、FGF2、ANGPT1 各以 50 条 Pool A 短肽作为资
 
 ## 架构
 
-`AutoResearch -> QD选亲/生成/突变/杂交 -> 12项score-all -> challenger -> lineage/QD archive -> Boltz复合物 -> Rosetta粗筛 -> Pool A -> MD -> Pool S`
+`PepMLM(target-conditioned)/PepGLAD/PepFlow/既有archive -> AutoResearch生成/突变/杂交 -> 12项score-all -> challenger -> QD archive/lineage -> Boltz -> Rosetta 5-decoy -> Pool A -> 50 ns MD -> Pool S`
 
 - PostgreSQL：候选、评价、谱系、决策、运行状态的权威源。
 - Temporal：调度；不改变科学状态。
@@ -24,7 +24,7 @@ AceA、GyrA、PBP2a、VEGFA、FGF2、ANGPT1 各以 50 条 Pool A 短肽作为资
 - 新轮次在 lineage close 前必须逐候选覆盖声明的 HemoPI2/APEX/PeptiVerse；缺 runtime 记 `runtime_unavailable`，不记通过。
 - Pool A：无上限；有靶点候选须完整 Rosetta 粗筛且 `dG_separated < -30 REU`；无靶点候选豁免。
 - Rosetta：每 complex `5 decoy`；以全部 5 个 `dG_separated` 中位数判定；已有 20/200-decoy 结果保留，未完成任务从现有 checkpoint 补到 5，不重算、不删除。
-- Pool S：Pool A 后再经 MD；当前不启动新 MD。
+- Pool S：Pool A 后经完整 MD 与界面/能量分析；仅 S 候选追加独立重复。
 - 计算预测不等于活性、安全、亲和力或药效。
 
 ## 闭环
@@ -36,6 +36,8 @@ AceA、GyrA、PBP2a、VEGFA、FGF2、ANGPT1 各以 50 条 Pool A 短肽作为资
 5. 全局序列去重；保留 occurrence；不改写历史 run。
 6. 运行 12 项 score-all、活动模型校准、challenger shadow，写父子差值/QD archive/replay/PostgreSQL。
 7. 缺失且未运行的有靶点候选进入 Rosetta 5-decoy 队列；计算资源优先给未达 50 的靶点，再按候选质量分配；无论靶点是否已达 50，全部过门结果均进入无上限 Pool A。
+8. PepMLM 必须携带 target_key/靶点上下文并记录模型版本、生成参数与父本；与 PepGLAD/PepFlow 分来源记账，不绕过任何下游门。
+9. Pool A 每候选只取 5 个 Rosetta decoy 中的 best-decoy，运行一次 `1 ns NPT + 50 ns NVT`；不做常规多 seed/多 decoy MD。输出界面 RMSD、接触/氢键/盐桥/水桥占有率、离位判据、MM/GBSA均值/分块置信区间及残基分解。
 
 Challenger 证据键为 `run_id + candidate_id + model_release_key`；字段为 `evidence_role`、`evidence_family`、`model_release_key`、`applicability_status`、`conflict_status`、value/unit/OOD/limitations/`tool_call_id`。三模型独立保存，不跨 run 按序列合并，不计加权总分。
 
@@ -56,30 +58,11 @@ Challenger 证据键为 `run_id + candidate_id + model_release_key`；字段为 
 
 ## 当前状态
 
-- 七分支冻结交付：1900 条全局唯一，正式 run 不变。
-- 三分支严格库：87,989 条；AceA 29,190、GyrA 30,579、PBP2a 28,220。
-- VEGFA round139/141/142/144/146 均保留；round146 run `d3ab0200-5818-517e-aa17-2b7036200c7e`：768 条、13,056 评价、198 条校准优秀、HemoPI2 619/149，QD gain 2，close `7c24eb5e-1b81-5d40-93ab-351d6897b246`；累计严格独立家族 ≥100，精确重放 0。
-- AceA round140/143/145 均保留；round145 run `4288f009-d188-5d32-bf2f-1bf62c1a2855`：768 条、13,056 评价、156 条校准优秀、HemoPI2 623/145，QD gain 3，close `d9be25dd-8aaa-58bd-b32e-73559edd66d5`；累计严格独立家族 ≥100，精确重放 0。
-- GyrA round137：run `2998677d-7061-5f76-bb6e-1a6d4a009700`；768 条、13,056 条评价、474 条校准优秀、419 条新家族；HemoPI2 无冲突 561、分歧保留 207；QD 87/2,160 cells，本轮新占 8，QD-score 80.9835；全支持子集提高活动支持但降低展示率，促成 family 内优先 v10；close run `9fb34332-85b3-5990-ac23-d063ce9dbd3c`。
-- PBP2a round138：run `26cb1ff7-144e-5e33-892d-0ac012954716`；768 条、13,056 条评价、349 条校准优秀、398 条新家族，历史精确重放 0；HemoPI2 无冲突 657、分歧保留 111；QD 82/2,160 cells，本轮新占 5、格内替换 25，QD-score 73.3105；family 内全支持优先 v10 保持覆盖但 PBP2a de-novo 展示/活动支持/质量率 65.1%/60.7%/31.8%，相对 round131 基本中性；close run `62e3e289-a6ed-50c7-ba6a-697f7332e0bc`。
-- ANGPT1 round135：run `9bcbda95-56a0-52b0-80ba-296fc22a0e4e`；768 条、13,056 条评价、373 条校准优秀、397 条新家族；HemoPI2 无冲突 596、分歧保留 172；QD 79/2,160 cells，本轮新占 16，QD-score 69.9886；活动支持提高但展示率下降；close run `501edd83-0521-5b2d-8b10-2af95d98ee5b`。
-- FGF2 round134：run `577f08b8-b582-5142-bd8d-1990bad63f06`；768 条、13,056 条评价、440 条校准优秀、403 条新家族；HemoPI2 无冲突 552、分歧保留 216；QD 76/2,160 cells，本轮新占 8，QD-score 63.8617；de-novo 活动支持/质量率由 64.6%/38.7% 升至 70.8%/40.9%；close run `ca7f8611-64f1-5317-9f37-cdf897e37ad1`。
-- 历史 challenger 回填：147,161 个候选、735,805 条证据；HemoPI2/APEX/PeptiVerse 缺失均为 0；不重复回填。
-- `.19`/synth 旧 Rosetta 200-decoy 链已停止且文件保留；13 条已有 ≥20 decoy，7 条已入库。
-- 旧display-only Rosetta coarse5已在283/900暂停（`.19` 165、synth 118），零删除；结果/checkpoint保留，每 complex 仅补到5。
-- 严格 Pool A priority276：与旧900重叠0；AceA/GyrA/PBP2a/FGF2/ANGPT1各50、VEGFA 26，按 exact run+Candidate UUID、独立80/80家族绑定；`.19` GPU2-7 PID `1933418`，24个CPU Rosetta worker，已完成230/276；根 `/data1/huangyueshan/pepagent/data/run-cache/rosetta-poola-priority276-coarse5-host019-gpu2-7-20260902-v1/`。
-- v2 append22：21完成并入库、1次Boltz OOM；父PID `2335217`已结束，失败与批次收据已冻结；VEGFA已满50，暂不抢占未满靶点资源重试。
-- priority v3：300条、六靶点各50、每80/80家族一个；结果/checkpoint保留，成员优先级已由 v6 取代。
-- v4 reserve100：515个独立家族；差集206在synth GPU2/3 PID `2537984`，已完成34、待续172；根 `/sdd_data/pepagent/ampgent/structure/rosetta-poola-v4-reserve100-diff206-synth-gpu2-3-20260902-v1/`。
-- v5 reserve100：582个独立家族；差集75在synth GPU1/6 PID `2748958`，已完成34、待续41；根 `/sdd_data/pepagent/ampgent/structure/rosetta-poola-v5-reserve100-diff75-synth-gpu1-6-20260902-v1/`。
-- v6 reserve100：53条仅属已满的AceA/VEGFA；完成39、待续14。`.19` 精确进程组 `2157395` 已 `SIGSTOP`，结果/checkpoint/内存保留，ingester继续；根 `/data1/huangyueshan/pepagent/data/run-cache/rosetta-poola-v6-reserve100-diff53-host019-gpu0-1-20260902-v1/`。
-- PBP2a v7：第101–159名59个独立家族，经87,670条远端队列身份扫描重叠0；Boltz 59/59、Rosetta 38/59、失败0；父PID `2426846`可恢复暂停，ingester `2428077`继续；watcher PID `3621600`在 v8 及其计算子进程终止且 GPU0/1 严格空闲后自动 `SIGCONT` 续算，不新建 root；根 `/data1/huangyueshan/pepagent/data/run-cache/rosetta-poola-v7-pbp2a-extension59-host019-gpu0-1-20260902-v1/`。
-- gap-target v8：GyrA/FGF2/ANGPT1各第101–159名59个独立家族，远端87,729行三层身份扫描重叠0；`.19` GPU0/1 PID `3054748`、ingester `3054827`，Boltz 69/177、Rosetta 34/177、待续143、失败0；为补 FGF2 的临时优先级调整已解除，任务继续无上限扩池；根 `/data1/huangyueshan/pepagent/data/run-cache/rosetta-poola-v8-gap-targets-extension177-host019-gpu0-1-20260902-v1/`。
-- PostgreSQL 无上限严格 Pool A（2026-09-03）：377 个独立家族；AceA 79、GyrA 61、PBP2a 53、VEGFA 71、FGF2 51、ANGPT1 62；六靶点均达资源均衡线，后续过门新增继续收录。
-- synth 仅流式回传 completion receipt 与分数 JSON 到 `.19` 做身份、哈希、聚合、冲突检查及 exact-once 入库；结构不传输。
-- 本地单实例悬浮进度每 10 秒读取两端全部登记批次的 `coarse5_progress.json`，动态推导总量；最近 528/884 成功、既有失败1，状态为 `var/state/ampgent-rosetta-progress-float.json`。
-- 完成审计：377 个 A 池家族全局候选/序列唯一；六靶点均具多前沿 archive、三类生成算子、close/delta/replay 与远端 PostgreSQL 访问证据；验证错误 0。
-- 当前重点：在无上限 A 池中继续提高候选质量和有效 QD 覆盖，不以已达 50 停止收录。
+- 冻结交付1900；三分支严格库87,989；历史 challenger 147,161候选/735,805证据，不改写。
+- Pool A快照402：AceA82、GyrA70、PBP2a53、VEGFA80、FGF2 60、ANGPT1 69；全部结构与decoy远端保留。
+- `.19` Pool A MD v1：333/402复合物可直接解析；GPU2–7常驻调度，单候选单best-decoy、1 ns NPT+50 ns NVT、checkpoint续算；根`/data1/huangyueshan/pepagent/md/pool-a-full-md-v1/`。
+- `.32 GPU0`有外来Prima3D任务不抢占；GPU1已释放，待验证OpenMM运行时及远端输入后加入同一exact-once队列；GPU2/3禁止。
+- 生成来源：target-conditioned PepMLM已纳入；PepGLAD/PepFlow按独立来源接入评估。
 
 ## 维护
 
