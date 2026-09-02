@@ -62,12 +62,12 @@ Challenger 证据键为 `run_id + candidate_id + model_release_key`；字段为 
 - VEGFA round129 QD-v1：run `2ae024a7-575e-50ce-bc33-6da061440edc`；768 条、12项全覆盖、83 条校准优秀、386 条新家族；HemoPI2 无冲突 554、分歧保留 214；QD 43/2,160 cells，本轮新占 12、替换 9，QD-score 36.4928；lineage/replay 已关闭。
 - AceA round122：run `a981d696-caa8-5f8d-af07-d5344e653aaf`；1,024 条已物化、17,408 条结构化评价、269 条校准优秀、583 条新家族子代；HemoPI2 无冲突 877、分歧保留 147；覆盖漂移 0。
 - GyrA round130 QD-v1：run `05b186ab-5558-57e7-a0fe-39c9bedc7dda`；768 条、13,056 条评价、350 条校准优秀、409 条新家族；HemoPI2 无冲突 584、分歧保留 184；QD 80/2,160 cells，本轮新占 9，QD-score 74.4253；de-novo 展示/质量通过率由 round123 的 50.0%/42.6% 升至 65.6%/50.8%；lineage close run `a9f9943f-fcb3-534a-92c4-0a07bf5e4f63`。
-- PBP2a round124：run `561a54a3-8a59-5f3d-af9d-f2ec71d3fca7`；1,024 条已物化、17,408 条结构化评价、447 条校准优秀、549 条新家族子代；HemoPI2 无冲突 758、分歧保留 266；覆盖漂移 0。
+- PBP2a round131 QD-v1：run `9640722a-0f63-53e4-892d-ae42b0085445`；768 条、13,056 条评价、369 条校准优秀、401 条新家族；HemoPI2 无冲突 631、分歧保留 137；QD 78/2,160 cells，本轮新占 8，QD-score 69.0185；de-novo 展示/质量通过率由 round124 的 63.1%/30.3% 升至 64.3%/32.6%；lineage close run `ca985001-6c3f-583a-b6c7-c4a10903a55a`。
 - ANGPT1 round127：run `3bdabede-3cf4-5e33-9705-0a8174c77d85`；1,024 条已物化、17,408 条结构化评价、511 条校准优秀、516 条新家族子代；HemoPI2 无冲突 812、分歧保留 212；覆盖漂移 0。
 - FGF2 round126：run `92a30242-abd7-54d2-b242-b9aca1dcbbff`；1,024 条已物化、17,408 条结构化评价、520 条校准优秀；HemoPI2 无冲突 825、分歧保留 199；覆盖漂移 0。
 - 历史 challenger 回填：147,161 个候选、735,805 条证据；HemoPI2/APEX/PeptiVerse 缺失均为 0；不重复回填。
 - `.19`/synth 旧 Rosetta 200-decoy 链已停止且文件保留；13 条已有 ≥20 decoy，7 条已入库。
-- Pool A Rosetta 20-decoy 批次：`.19` PID `1600869`、synth PID `502155`；最后收据失败 0；GPU 跑 Boltz，Rosetta 为两台各 6 个 CPU worker；本轮 SSH 不可达，未重启、未重复提交。
+- Pool A Rosetta 20-decoy 批次：`.19` PID `1600869`、synth PID `502155`；最新本地聚合 18/900 完成、Boltz 241/900、失败 0；GPU 跑 Boltz，Rosetta 为两台各 6 个 CPU worker；SSH 不可达，未重启、未重复提交。
 - PostgreSQL 历史+当前 Rosetta `完成/dG<-30`：AceA 392/265、GyrA 12/12、PBP2a 17/16、VEGFA 17/17、FGF2 30/29、ANGPT1 16/16；仍需结合展示/模型/QD门形成最终 Pool A。
 - synth 仅流式回传 completion receipt 与分数 JSON 到 `.19` 做身份、哈希、聚合、冲突检查及 exact-once 入库；结构不传输。
 - 本地悬浮进度每 30 秒读取两端 `progress.json`；状态为 `var/state/ampgent-rosetta-progress-float.json`。
