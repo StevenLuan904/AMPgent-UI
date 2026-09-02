@@ -12,6 +12,7 @@ from pathlib import Path, PurePosixPath
 
 ALLOWED = {
     ("launch_receipt.json",),
+    ("failure_receipt.json",),
     ("manifest.json",),
     ("analysis", "interface", "interface_analysis.json"),
     ("analysis", "interface", "timeseries.csv"),
