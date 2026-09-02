@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import importlib.util
 import json
@@ -96,3 +97,34 @@ def test_validate_bundle_item_rejects_result_hash_drift(tmp_path: Path) -> None:
                 "result_json": "{}",
             }
         )
+
+
+def test_watcher_reuses_one_event_loop_across_scans(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    loop_ids: list[int] = []
+
+    class WatchComplete(Exception):
+        pass
+
+    async def fake_scan_once(roots: list[Path], source_sha: str) -> dict[str, object]:
+        del roots, source_sha
+        loop_ids.append(id(asyncio.get_running_loop()))
+        if len(loop_ids) == 3:
+            raise WatchComplete
+        return {"scan": len(loop_ids)}
+
+    async def no_wait(seconds: float) -> None:
+        del seconds
+
+    monkeypatch.setattr(INGESTER, "scan_once", fake_scan_once)
+    monkeypatch.setattr(INGESTER.asyncio, "sleep", no_wait)
+
+    with pytest.raises(WatchComplete):
+        asyncio.run(
+            INGESTER.watch_roots(
+                [tmp_path], "a" * 64, tmp_path / "state.json", watch_seconds=1
+            )
+        )
+
+    assert len(set(loop_ids)) == 1

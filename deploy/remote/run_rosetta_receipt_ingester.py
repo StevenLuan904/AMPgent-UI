@@ -8,7 +8,6 @@ import math
 import os
 import statistics
 import sys
-import time
 import uuid
 from collections import defaultdict
 from datetime import UTC, datetime
@@ -360,6 +359,19 @@ async def ingest_bundle_jsonl(lines: list[str], source_sha: str) -> dict[str, An
     }
 
 
+async def watch_roots(
+    roots: list[Path], source_sha: str, state_path: Path, watch_seconds: int
+) -> None:
+    """Keep one event loop for the lifetime of asyncpg's shared connection pool."""
+
+    while True:
+        state = await scan_once(roots, source_sha)
+        write_json(state_path, state)
+        if watch_seconds <= 0:
+            return
+        await asyncio.sleep(watch_seconds)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", action="append", type=Path)
@@ -378,12 +390,9 @@ def main() -> None:
         state = asyncio.run(ingest_bundle_jsonl(sys.stdin.readlines(), source_sha))
         write_json(args.state, state)
         return
-    while True:
-        state = asyncio.run(scan_once(args.root or [], source_sha))
-        write_json(args.state, state)
-        if args.watch_seconds <= 0:
-            break
-        time.sleep(args.watch_seconds)
+    asyncio.run(
+        watch_roots(args.root or [], source_sha, args.state, args.watch_seconds)
+    )
 
 
 if __name__ == "__main__":
