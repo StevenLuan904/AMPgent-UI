@@ -19,6 +19,7 @@ def cli():
     p.add_argument("--runner", type=Path, required=True)
     p.add_argument("--python", required=True)
     p.add_argument("--gpu-indices", default="0,1,2,3,4,5,6,7")
+    p.add_argument("--platform", choices=("CUDA", "OpenCL"), default="CUDA")
     p.add_argument("--scan-root", action="append", required=True)
     p.add_argument("--poll-seconds", type=int, default=120)
     p.add_argument("--retry-cooldown-seconds", type=int, default=3600)
@@ -220,12 +221,16 @@ def main():
                 "sequence_sha256": t["sequence_sha256"],
                 "input_pdb": str(src),
                 "gpu": gpu,
+                "compute_platform": a.platform,
                 "snapshot_rank": rank,
             }
             (out / "launch_receipt.json").write_text(json.dumps(receipt, indent=2))
             log = (out / "run.log").open("a")
             env = os.environ.copy()
-            env["CUDA_VISIBLE_DEVICES"] = str(gpu)
+            runner_gpu = str(gpu)
+            if a.platform == "CUDA":
+                env["CUDA_VISIBLE_DEVICES"] = str(gpu)
+                runner_gpu = "0"
             cmd = [
                 a.python,
                 str(a.runner),
@@ -234,7 +239,9 @@ def main():
                 "--output-dir",
                 str(out),
                 "--gpu-index",
-                "0",
+                runner_gpu,
+                "--platform",
+                a.platform,
                 "--seed",
                 str(20260903 + rank),
             ]

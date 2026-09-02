@@ -15,6 +15,9 @@ def test_pool_a_md_remote_scripts_are_resumable_and_strictly_idle():
     assert "retry-cooldown-seconds" in supervisor
     assert "failure_receipt.json" in supervisor
     assert "source-manifest" in supervisor and "staged_relative_path" in supervisor
+    assert 'choices=("CUDA", "OpenCL"), default="CUDA"' in supervisor
+    assert 'if a.platform == "CUDA"' in supervisor
+    assert '"--platform"' in supervisor
 
 
 def test_md_runner_resolves_heavy_atoms_before_stripping_explicit_cysteine_hydrogen():
