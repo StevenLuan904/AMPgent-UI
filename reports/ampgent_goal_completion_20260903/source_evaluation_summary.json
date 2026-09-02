@@ -1,0 +1,66 @@
+{
+  "schema_version": "ampgent.candidate-source-evaluation.1",
+  "observed_at_utc": "2026-09-02T20:37:00Z",
+  "sources": {
+    "pepglad": {
+      "targets": {
+        "acea": 29190,
+        "gyra": 30579,
+        "pbp2a": 28220
+      },
+      "strict_unique_candidate_count": 87989,
+      "family_count_80_80": 8657,
+      "activity_support_at_least_two_count": 61914,
+      "strict_display_contract": {
+        "toxinpred3": "Non-Toxin",
+        "macrel_hemolysis": "low",
+        "guruprasad_instability": "<50"
+      },
+      "structured_challenger_status": "complete_for_materialized_six_target_candidates; strict-library-wide source-specific denominator not asserted",
+      "qd_status": "family archive available",
+      "receipt": "/data0/ampgent-pepglad-huangyueshan/v1/artifacts/strict-library/4e79074abe1085067e1aa8700350bcb017be2d3bc1d01f5a3522f04405873d0a/pepglad_strict_library_final_short10_13_20260827T1205Z.receipt.json"
+    },
+    "target_conditioned_pepmlm": {
+      "target_count": 6,
+      "generated_unique_candidate_count": 24576,
+      "formal_12_complete_count": 24576,
+      "display_eligible_count": 12151,
+      "challenger_review_scope": "selected excellent cohort declared by each challenger receipt",
+      "challenger_reviewed_count": 890,
+      "challenger_conflict_count": 515,
+      "challenger_no_conflict_count": 375,
+      "challenger_full_support_no_conflict_count": 52,
+      "per_target": {
+        "fgf2": {"generated": 4096, "formal_12": 4096, "display_eligible": 2132, "challenger_reviewed": 109, "challenger_conflict": 60, "challenger_no_conflict": 49, "challenger_full_support_no_conflict": 2},
+        "angpt1": {"generated": 4096, "formal_12": 4096, "display_eligible": 696, "challenger_reviewed": 223, "challenger_conflict": 93, "challenger_no_conflict": 130, "challenger_full_support_no_conflict": 33},
+        "vegfa": {"generated": 4096, "formal_12": 4096, "display_eligible": 1429, "challenger_reviewed": 66, "challenger_conflict": 53, "challenger_no_conflict": 13, "challenger_full_support_no_conflict": 1},
+        "acea": {"generated": 4096, "formal_12": 4096, "display_eligible": 2623, "challenger_reviewed": 23, "challenger_conflict": 11, "challenger_no_conflict": 12, "challenger_full_support_no_conflict": 1},
+        "gyra": {"generated": 4096, "formal_12": 4096, "display_eligible": 2104, "challenger_reviewed": 341, "challenger_conflict": 246, "challenger_no_conflict": 95, "challenger_full_support_no_conflict": 4},
+        "pbp2a": {"generated": 4096, "formal_12": 4096, "display_eligible": 3167, "challenger_reviewed": 128, "challenger_conflict": 52, "challenger_no_conflict": 76, "challenger_full_support_no_conflict": 11}
+      },
+      "qd_status": "mandatory in current pipeline; direct source-round QD receipt not asserted here",
+      "historical_runs_modified": false
+    },
+    "pepflow": {
+      "target": "acea",
+      "model": "official model2",
+      "generated_valid_count": 8,
+      "formal_12_complete_count": 8,
+      "display_eligible_count": 5,
+      "challenger_reviewed_count": 8,
+      "challenger_conflict_count": 3,
+      "challenger_no_conflict_count": 5,
+      "qd_quality_gate_pass_count": 0,
+      "pool_a_addition_count": 0,
+      "operational_run_id": "de80b78e-ae0d-5190-93cc-11ee5dee62a2",
+      "structures_retained_remote": true,
+      "historical_runs_modified": false
+    }
+  },
+  "current_pool_a": {
+    "candidate_count": 475,
+    "source_attribution_status": "not_assessed",
+    "reason": "current frozen Pool A snapshot has exact run/candidate identity but no source_provider field; no sequence-based inference performed"
+  },
+  "scientific_claim_limit": "in-silico generation and screening evidence only"
+}
