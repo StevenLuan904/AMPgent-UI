@@ -198,7 +198,7 @@ def run(args: argparse.Namespace) -> None:
             formal_complete
             and _is_non_toxin(row.get("toxinpred3_label"))
             and _is_low_hemolysis(row.get("macrel_hemolysis_label"))
-            and float(row["guruprasad_instability_index"]) < 50.0
+            and float(row["guruprasad_instability_index"]) <= 50.0
         )
         activity_support_count = sum(
             (
