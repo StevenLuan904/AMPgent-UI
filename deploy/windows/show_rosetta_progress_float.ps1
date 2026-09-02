@@ -2,6 +2,7 @@
 param(
     [ValidateSet('progress-float')] [string]$Mode = 'progress-float',
     [switch]$Close,
+    [switch]$UseInstalledProgressFloat,
     [int]$RefreshSeconds = 30,
     [string]$StatePath = 'var/state/ampgent-rosetta-progress-float.json'
 )
@@ -20,6 +21,10 @@ if ($Close) {
         $floatPid = [int](Get-Content -LiteralPath $pidPath -Raw).Trim()
         Stop-Process -Id $floatPid -ErrorAction SilentlyContinue
         Remove-Item -LiteralPath $pidPath -Force -ErrorAction SilentlyContinue
+    }
+    $installedBridge = Join-Path $env:LOCALAPPDATA 'Programs\ProgressFloat\progress-float.exe'
+    if (Test-Path -LiteralPath $installedBridge) {
+        & $installedBridge --close | Out-Null
     }
     exit 0
 }
@@ -85,6 +90,35 @@ function Get-RosettaSnapshot {
             boltz_succeeded = [int]$synth.boltz_succeeded
             pending = [int]$synth.pending
         }
+    }
+}
+
+if ($UseInstalledProgressFloat) {
+    $installedBridge = Join-Path $env:LOCALAPPDATA 'Programs\ProgressFloat\progress-float.exe'
+    if (-not (Test-Path -LiteralPath $installedBridge)) {
+        throw "ProgressFloat bridge is not installed: $installedBridge"
+    }
+    while ($true) {
+        try {
+            $snapshot = Get-RosettaSnapshot
+            $temporary = "$stateAbsolute.$PID.tmp"
+            $snapshot | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $temporary -Encoding utf8
+            Move-Item -LiteralPath $temporary -Destination $stateAbsolute -Force
+            $payload = [ordered]@{
+                current = [int]$snapshot.completed
+                total = [int]$snapshot.total
+                label = "AMPgent Rosetta dG · .19 $($snapshot.host19.completed)/$($snapshot.host19.total) · synth $($snapshot.synth.completed)/$($snapshot.synth.total) · Boltz $($snapshot.boltz_succeeded)"
+            } | ConvertTo-Json -Compress
+            & $installedBridge $payload | Out-Null
+        } catch {
+            $errorPayload = [ordered]@{
+                current = 0
+                total = 900
+                label = "AMPgent Rosetta progress refresh failed"
+            } | ConvertTo-Json -Compress
+            & $installedBridge $errorPayload | Out-Null
+        }
+        Start-Sleep -Seconds ([Math]::Max(10, $RefreshSeconds))
     }
 }
 
