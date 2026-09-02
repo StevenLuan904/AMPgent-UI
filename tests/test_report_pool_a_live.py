@@ -87,6 +87,9 @@ def test_pool_a_is_uncapped_while_fifty_remains_balance_target() -> None:
         "admit_all_qualified": True,
         "balance_target_per_target": 50,
         "resource_priority": "targets_below_balance_first_then_best_available",
+        "archive_unit": "best_candidate_per_target_per_80_80_family",
+        "gate_pass_candidate_count_semantics": "all_candidates_before_family_elite_selection",
+        "pool_a_all_semantics": "family_elites_only",
     }
     assert len(payload["pool_a_all"]) == 53
     assert len(payload["pool_a_top50"]) == 50
