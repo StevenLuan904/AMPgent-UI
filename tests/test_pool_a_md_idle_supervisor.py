@@ -29,7 +29,8 @@ def test_analysis_supervisor_requires_completed_md_manifest():
         Path(__file__).parents[1] / "deploy/remote/supervise_pool_a_md_analysis.py"
     ).read_text()
     assert 'glob("*/*/manifest.json")' in source
-    assert "interface_analysis.json" in source
+    assert 'candidate / "analysis/interface"' in source
+    assert 'analysis/interface/interface_analysis.json' in source
 
 
 def test_mmgbsa_supervisor_is_sparse_and_manifest_gated():

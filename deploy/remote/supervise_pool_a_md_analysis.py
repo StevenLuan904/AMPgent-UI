@@ -20,8 +20,8 @@ def cli():
 
 
 def analyze(a, candidate: Path):
-    out = candidate / "analysis"
-    out.mkdir(exist_ok=True)
+    out = candidate / "analysis/interface"
+    out.mkdir(parents=True, exist_ok=True)
     if (out / "interface_analysis.json").exists():
         return
     cmd = [
@@ -52,7 +52,7 @@ def main():
                 candidates = []
                 for manifest in a.results_root.glob("*/*/manifest.json"):
                     c = manifest.parent
-                    if not (c / "analysis/interface_analysis.json").exists() and not any(
+                    if not (c / "analysis/interface/interface_analysis.json").exists() and not any(
                         getattr(f, "candidate", None) == c for f in active
                     ):
                         candidates.append(c)
