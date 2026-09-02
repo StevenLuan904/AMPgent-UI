@@ -66,9 +66,10 @@ Challenger 证据键为 `run_id + candidate_id + model_release_key`；字段为 
 - FGF2 round134：run `577f08b8-b582-5142-bd8d-1990bad63f06`；768 条、13,056 条评价、440 条校准优秀、403 条新家族；HemoPI2 无冲突 552、分歧保留 216；QD 76/2,160 cells，本轮新占 8，QD-score 63.8617；de-novo 活动支持/质量率由 64.6%/38.7% 升至 70.8%/40.9%；close run `ca7f8611-64f1-5317-9f37-cdf897e37ad1`。
 - 历史 challenger 回填：147,161 个候选、735,805 条证据；HemoPI2/APEX/PeptiVerse 缺失均为 0；不重复回填。
 - `.19`/synth 旧 Rosetta 200-decoy 链已停止且文件保留；13 条已有 ≥20 decoy，7 条已入库。
-- Pool A Rosetta coarse5：`.19` PID `1839703`、synth PID `1603495`；2026-09-02 18:39 共享状态为 283/900 已完成（`.19` 165、synth 118）、163 条 Boltz 成功、失败 0；全部结果/checkpoint保留，每 complex 仅补到5。
+- 旧display-only Rosetta coarse5已在283/900暂停（`.19` 165、synth 118），零删除；结果/checkpoint保留，每 complex 仅补到5。
 - 严格 Pool A priority276：与旧900重叠0；AceA/GyrA/PBP2a/FGF2/ANGPT1各50、VEGFA 26，按 exact run+Candidate UUID、独立80/80家族绑定；`.19` GPU2-7 PID `1933418`，24个CPU Rosetta worker；根 `/data1/huangyueshan/pepagent/data/run-cache/rosetta-poola-priority276-coarse5-host019-gpu2-7-20260902-v1/`；旧结果和checkpoint不变。
 - priority v3：300条、六靶点各50、每80/80家族一个，CSV SHA `32c45c00a8ee9fc64fc775b07cbee7ec2535b43958dfe63c7afa76367f7f57d7`；v2→v3新增16、移除9。新增16在`.19` GPU0/1 PID `1982978`、12个CPU worker，根 `/data1/huangyueshan/pepagent/data/run-cache/rosetta-poola-priority-v3-append16-host019-gpu0-1-20260902-v1/`；v2新增22仍在synth GPU5/7 PID `2335217`。最终Pool A以v3为准；旧display-only两端批次已暂停且零删除。
+- v4 reserve100：515个独立家族；v3仍为成员基线。扣除三个严格根后新增206（GyrA/PBP2a/FGF2/ANGPT1各50、VEGFA 6），在synth GPU2/3 PID `2537984`、16个CPU worker，根 `/sdd_data/pepagent/ampgent/structure/rosetta-poola-v4-reserve100-diff206-synth-gpu2-3-20260902-v1/`。
 - PostgreSQL 历史+当前 Rosetta `完成/dG<-30`：AceA 392/265、GyrA 12/12、PBP2a 17/16、VEGFA 17/17、FGF2 30/29、ANGPT1 16/16；仍需结合展示/模型/QD门形成最终 Pool A。
 - synth 仅流式回传 completion receipt 与分数 JSON 到 `.19` 做身份、哈希、聚合、冲突检查及 exact-once 入库；结构不传输。
 - 本地悬浮进度每 30 秒读取两端 `coarse5_progress.json`；状态为 `var/state/ampgent-rosetta-progress-float.json`。
