@@ -67,15 +67,15 @@ Challenger 证据键为 `run_id + candidate_id + model_release_key`；字段为 
 - 历史 challenger 回填：147,161 个候选、735,805 条证据；HemoPI2/APEX/PeptiVerse 缺失均为 0；不重复回填。
 - `.19`/synth 旧 Rosetta 200-decoy 链已停止且文件保留；13 条已有 ≥20 decoy，7 条已入库。
 - 旧display-only Rosetta coarse5已在283/900暂停（`.19` 165、synth 118），零删除；结果/checkpoint保留，每 complex 仅补到5。
-- 严格 Pool A priority276：与旧900重叠0；AceA/GyrA/PBP2a/FGF2/ANGPT1各50、VEGFA 26，按 exact run+Candidate UUID、独立80/80家族绑定；`.19` GPU2-7 PID `1933418`，24个CPU Rosetta worker，已完成223/276；根 `/data1/huangyueshan/pepagent/data/run-cache/rosetta-poola-priority276-coarse5-host019-gpu2-7-20260902-v1/`。
+- 严格 Pool A priority276：与旧900重叠0；AceA/GyrA/PBP2a/FGF2/ANGPT1各50、VEGFA 26，按 exact run+Candidate UUID、独立80/80家族绑定；`.19` GPU2-7 PID `1933418`，24个CPU Rosetta worker，已完成227/276；根 `/data1/huangyueshan/pepagent/data/run-cache/rosetta-poola-priority276-coarse5-host019-gpu2-7-20260902-v1/`。
 - v2 append22：21完成并入库、1次Boltz OOM；父PID `2335217`已结束，失败与批次收据已冻结；VEGFA已满50，暂不抢占未满靶点资源重试。
 - priority v3：300条、六靶点各50、每80/80家族一个；结果/checkpoint保留，成员优先级已由 v6 取代。
 - v4 reserve100：515个独立家族；差集206在synth GPU2/3 PID `2537984`，已完成34、待续172；根 `/sdd_data/pepagent/ampgent/structure/rosetta-poola-v4-reserve100-diff206-synth-gpu2-3-20260902-v1/`。
 - v5 reserve100：582个独立家族；差集75在synth GPU1/6 PID `2748958`，已完成34、待续41；根 `/sdd_data/pepagent/ampgent/structure/rosetta-poola-v5-reserve100-diff75-synth-gpu1-6-20260902-v1/`。
 - v6 reserve100：53条仅属已满的AceA/VEGFA；完成39、待续14。`.19` 精确进程组 `2157395` 已 `SIGSTOP`，结果/checkpoint/内存保留，ingester继续；根 `/data1/huangyueshan/pepagent/data/run-cache/rosetta-poola-v6-reserve100-diff53-host019-gpu0-1-20260902-v1/`。
 - PBP2a v7：第101–159名59个独立家族，经87,670条远端队列身份扫描重叠0；`.19` PID `2426846`、ingester `2428077`、12个CPU worker；Boltz 59/59，Rosetta 24/59，失败0；根 `/data1/huangyueshan/pepagent/data/run-cache/rosetta-poola-v7-pbp2a-extension59-host019-gpu0-1-20260902-v1/`。
-- gap-target v8：GyrA/FGF2/ANGPT1各第101–159名59个独立家族，远端87,729行三层身份扫描重叠0；`.19` GPU0/1 PID `3054748`、ingester `3054827`、12个CPU worker，Boltz 3/177、失败0；launch SHA `5d65682c63744a0430eeeb6011e135c64d98bc8223533035e6a4d7cfc1f7b3f5`；根 `/data1/huangyueshan/pepagent/data/run-cache/rosetta-poola-v8-gap-targets-extension177-host019-gpu0-1-20260902-v1/`。
-- PostgreSQL 严格 Pool A（2026-09-02 22:55）：AceA50、GyrA35、PBP2a39、VEGFA50、FGF2 35、ANGPT1 42；其余 reserve 正在补齐 5-decoy Rosetta 与收据入库。
+- gap-target v8：GyrA/FGF2/ANGPT1各第101–159名59个独立家族，远端87,729行三层身份扫描重叠0；`.19` GPU0/1 PID `3054748`、ingester `3054827`、12个CPU worker，Boltz 6/177、失败0；launch SHA `5d65682c63744a0430eeeb6011e135c64d98bc8223533035e6a4d7cfc1f7b3f5`；根 `/data1/huangyueshan/pepagent/data/run-cache/rosetta-poola-v8-gap-targets-extension177-host019-gpu0-1-20260902-v1/`。
+- PostgreSQL 严格 Pool A（2026-09-02 22:59）：AceA50、GyrA35、PBP2a39、VEGFA50、FGF2 37、ANGPT1 42；其余 reserve 正在补齐 5-decoy Rosetta 与收据入库。
 - synth 仅流式回传 completion receipt 与分数 JSON 到 `.19` 做身份、哈希、聚合、冲突检查及 exact-once 入库；结构不传输。
 - 本地悬浮进度每 30 秒读取两端 `coarse5_progress.json`；状态为 `var/state/ampgent-rosetta-progress-float.json`。
 - 瓶颈：六靶点 Pool A 完整 Rosetta 粗筛收据不足 50/靶点。
