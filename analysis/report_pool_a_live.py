@@ -13,6 +13,7 @@ from sqlalchemy import text
 from pepagent.db.session import SessionFactory
 
 TARGETS = ("acea", "gyra", "pbp2a", "vegfa", "fgf2", "angpt1")
+POOL_A_BALANCE_TARGET = 50
 ACCESSION_TO_TARGET = {
     "P0A9G6": "acea",
     "NP_416734.1": "gyra",
@@ -137,7 +138,7 @@ def _eligible(row: dict[str, Any]) -> bool:
 
 def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:
     summaries: dict[str, dict[str, Any]] = {}
-    selected: list[dict[str, Any]] = []
+    pool_a_all: list[dict[str, Any]] = []
     for target in TARGETS:
         cohort = [row for row in rows if row["target_key"] == target]
         dg_pass = [row for row in cohort if float(row["primary_dg"]) < -30.0]
@@ -150,15 +151,28 @@ def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:
         for row in ordered:
             by_family.setdefault(str(row["family_key"]), row)
         representatives = list(by_family.values())
-        for rank, row in enumerate(representatives[:50], start=1):
-            selected.append({"target_key": target, "pool_a_rank": rank, **row})
+        ranked = [
+            {"target_key": target, "pool_a_rank": rank, **row}
+            for rank, row in enumerate(representatives, start=1)
+        ]
+        pool_a_all.extend(ranked)
+        family_count = len(representatives)
         summaries[target] = {
             "rosetta_completed_candidate_count": len(cohort),
             "rosetta_dg_lt_minus_30_candidate_count": len(dg_pass),
             "strict_pool_a_candidate_count": len(eligible),
-            "strict_pool_a_family_count": len(representatives),
-            "pool_a_top50_filled": min(50, len(representatives)),
-            "pool_a_family_gap_to_50": max(0, 50 - len(representatives)),
+            "strict_pool_a_family_count": family_count,
+            "pool_a_total_candidate_count": len(eligible),
+            "pool_a_total_family_count": family_count,
+            "pool_a_balance_target": POOL_A_BALANCE_TARGET,
+            "pool_a_balance_reached": family_count >= POOL_A_BALANCE_TARGET,
+            "pool_a_balance_gap_to_50": max(0, POOL_A_BALANCE_TARGET - family_count),
+            "pool_a_balance_surplus_over_50": max(
+                0, family_count - POOL_A_BALANCE_TARGET
+            ),
+            # Compatibility aliases: 50 is a resource-balancing target, not a cap.
+            "pool_a_top50_filled": min(POOL_A_BALANCE_TARGET, family_count),
+            "pool_a_family_gap_to_50": max(0, POOL_A_BALANCE_TARGET - family_count),
             "retained_conflict_family_count": len(
                 {row["family_key"] for row in representatives if row["retained_conflict"]}
             ),
@@ -188,7 +202,7 @@ def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:
             },
         }
     return {
-        "schema_version": "ampgent.pool-a-live-postgresql.1",
+        "schema_version": "ampgent.pool-a-live-postgresql.2",
         "observed_at": datetime.now(UTC).isoformat(),
         "hard_gates": {
             "formal_metric_count": 12,
@@ -203,7 +217,10 @@ def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "protocol_preference": "highest_nstruct_then_latest",
         },
         "targets": summaries,
-        "pool_a_top50": selected,
+        "pool_a_all": pool_a_all,
+        "pool_a_top50": [
+            row for row in pool_a_all if int(row["pool_a_rank"]) <= POOL_A_BALANCE_TARGET
+        ],
     }
 
 
