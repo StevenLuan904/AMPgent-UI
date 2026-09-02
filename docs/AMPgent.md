@@ -75,9 +75,9 @@ Challenger 证据键为 `run_id + candidate_id + model_release_key`；字段为 
 - v6 reserve100：53条仅属已满的AceA/VEGFA；完成39、待续14。`.19` 精确进程组 `2157395` 已 `SIGSTOP`，结果/checkpoint/内存保留，ingester继续；根 `/data1/huangyueshan/pepagent/data/run-cache/rosetta-poola-v6-reserve100-diff53-host019-gpu0-1-20260902-v1/`。
 - PBP2a v7：第101–159名59个独立家族，经87,670条远端队列身份扫描重叠0；`.19` PID `2426846`、ingester `2428077`、12个CPU worker；Boltz 59/59，Rosetta 26/59，失败0；根 `/data1/huangyueshan/pepagent/data/run-cache/rosetta-poola-v7-pbp2a-extension59-host019-gpu0-1-20260902-v1/`。
 - gap-target v8：GyrA/FGF2/ANGPT1各第101–159名59个独立家族，远端87,729行三层身份扫描重叠0；`.19` GPU0/1 PID `3054748`、ingester `3054827`、12个CPU worker，Boltz 14/177、Rosetta 1/177、失败0；launch SHA `5d65682c63744a0430eeeb6011e135c64d98bc8223533035e6a4d7cfc1f7b3f5`；根 `/data1/huangyueshan/pepagent/data/run-cache/rosetta-poola-v8-gap-targets-extension177-host019-gpu0-1-20260902-v1/`。
-- PostgreSQL 无上限严格 Pool A（2026-09-02 23:22）：314 个独立家族；AceA 74、GyrA 39、PBP2a 45、VEGFA 71、FGF2 39、ANGPT1 46；距 50 缺口分别为 0/11/5/0/11/4，其余 reserve 正在补齐 5-decoy Rosetta 与收据入库。
+- PostgreSQL 无上限严格 Pool A（2026-09-02 23:27）：321 个独立家族；AceA 74、GyrA 41、PBP2a 46、VEGFA 71、FGF2 43、ANGPT1 46；距 50 缺口分别为 0/9/4/0/7/4，其余 reserve 正在补齐 5-decoy Rosetta 与收据入库。
 - synth 仅流式回传 completion receipt 与分数 JSON 到 `.19` 做身份、哈希、聚合、冲突检查及 exact-once 入库；结构不传输。
-- 本地单实例悬浮进度每 10 秒读取两端全部登记批次的 `coarse5_progress.json`，动态推导总量；当前 426/884 成功、既有失败1，状态为 `var/state/ampgent-rosetta-progress-float.json`。
+- 本地单实例悬浮进度每 10 秒读取两端全部登记批次的 `coarse5_progress.json`，动态推导总量；当前 441/884 成功、既有失败1，状态为 `var/state/ampgent-rosetta-progress-float.json`。
 - 瓶颈：GyrA、PBP2a、FGF2、ANGPT1 的完整 Rosetta 粗筛收据尚未达到 50 的均衡目标；Pool A 本身无上限。
 
 ## 维护
