@@ -59,6 +59,7 @@ Challenger 证据键为 `run_id + candidate_id + model_release_key`；字段为 
 - 三分支严格库：87,989 条；AceA 29,190、GyrA 30,579、PBP2a 28,220。
 - VEGFA round128：run `f7cec85a-5a5d-5a55-a00f-d22de243457e`；1,024 条已物化、17,408 条结构化评价、65 条校准优秀、531 条新家族子代；HemoPI2 无冲突 698、分歧保留 326；1,024 个父子差值收据与 archive/replay 已关闭。
 - QD v1 对 round128 只读回放：34/2,160 cells；本轮新占 10、替换 4；QD-score 28.1875；最大 cell concentration 0.1538。
+- VEGFA round129 QD-v1：run `2ae024a7-575e-50ce-bc33-6da061440edc`；768 条、12项全覆盖、83 条校准优秀、386 条新家族；HemoPI2 无冲突 554、分歧保留 214；QD 43/2,160 cells，本轮新占 12、替换 9，QD-score 36.4928；lineage/replay 已关闭。
 - AceA round122：run `a981d696-caa8-5f8d-af07-d5344e653aaf`；1,024 条已物化、17,408 条结构化评价、269 条校准优秀、583 条新家族子代；HemoPI2 无冲突 877、分歧保留 147；覆盖漂移 0。
 - GyrA round123：run `1bf92615-ef5d-5411-90cc-ef9d362c187c`；1,024 条已物化、17,408 条结构化评价、557 条校准优秀、518 条新家族子代；HemoPI2 无冲突 723、分歧保留 301；覆盖漂移 0。
 - PBP2a round124：run `561a54a3-8a59-5f3d-af9d-f2ec71d3fca7`；1,024 条已物化、17,408 条结构化评价、447 条校准优秀、549 条新家族子代；HemoPI2 无冲突 758、分歧保留 266；覆盖漂移 0。
@@ -66,7 +67,8 @@ Challenger 证据键为 `run_id + candidate_id + model_release_key`；字段为 
 - FGF2 round126：run `92a30242-abd7-54d2-b242-b9aca1dcbbff`；1,024 条已物化、17,408 条结构化评价、520 条校准优秀；HemoPI2 无冲突 825、分歧保留 199；覆盖漂移 0。
 - 历史 challenger 回填：147,161 个候选、735,805 条证据；HemoPI2/APEX/PeptiVerse 缺失均为 0；不重复回填。
 - `.19`/synth 旧 Rosetta 200-decoy 链已停止且文件保留；13 条已有 ≥20 decoy，7 条已入库。
-- Pool A 优先 Rosetta 20-decoy 批次运行中：六靶点各 150 条；`.19` GPU0/1 PID `1600869` 共 360，synth GPU1/2/3 PID `502155` 共 540；首条 AceA 收据已 exact-once 入库，主 dG `-32.797 REU`；失败 0；输出仅留远端。
+- Pool A 优先 Rosetta 20-decoy 批次运行中：六靶点各 150 条；`.19` GPU0/1 PID `1600869` 共 360，synth GPU1/2/3 PID `502155` 共 540；当前完成 11、失败 0、全部入库；输出仅留远端。
+- PostgreSQL 历史+当前 Rosetta `完成/dG<-30`：AceA 392/265、GyrA 12/12、PBP2a 17/16、VEGFA 17/17、FGF2 30/29、ANGPT1 16/16；仍需结合展示/模型/QD门形成最终 Pool A。
 - synth 仅流式回传 completion receipt 与分数 JSON 到 `.19` 做身份、哈希、聚合、冲突检查及 exact-once 入库；结构不传输。
 - 瓶颈：六靶点 Pool A 完整 Rosetta 粗筛收据不足 50/靶点。
 
