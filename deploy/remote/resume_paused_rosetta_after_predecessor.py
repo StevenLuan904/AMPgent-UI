@@ -27,7 +27,8 @@ def validate_root(path: Path) -> Path:
 def process_identity(pid: int) -> tuple[str, str] | None:
     process_root = Path("/proc") / str(pid)
     try:
-        state = (process_root / "stat").read_text(encoding="utf-8").split()[2]
+        stat = (process_root / "stat").read_text(encoding="utf-8")
+        state = stat[stat.rfind(") ") + 2]
         command = (process_root / "cmdline").read_bytes().replace(b"\0", b" ").decode()
     except (FileNotFoundError, ProcessLookupError):
         return None
@@ -111,7 +112,9 @@ def run(args: argparse.Namespace) -> None:
         "predecessor_root": str(predecessor_root),
         "successor_pid": args.successor_pid,
         "successor_root": str(successor_root),
+        "predecessor_observer_pid": args.predecessor_observer_pid,
         "gpu_indices": args.gpu_indices,
+        "source_revision": args.source_revision,
         "action": "resume_existing_checkpoint_only",
         "md_started": False,
     }
@@ -128,9 +131,20 @@ def run(args: argparse.Namespace) -> None:
         if predecessor is not None and not process_uses_root(predecessor[1], predecessor_root):
             write_receipt(receipt, {**base, "status": "failed_closed_predecessor_identity"})
             raise RuntimeError("predecessor PID identity changed")
+        observer = process_identity(args.predecessor_observer_pid)
+        if observer is not None and (
+            not process_uses_root(observer[1], predecessor_root)
+            or "run_rosetta_receipt_ingester.py" not in observer[1]
+        ):
+            write_receipt(receipt, {**base, "status": "failed_closed_observer_identity"})
+            raise RuntimeError("predecessor observer PID identity changed")
         remaining = processes_using_root(
             predecessor_root,
-            ignored_pids={os.getpid(), args.predecessor_pid},
+            ignored_pids={
+                os.getpid(),
+                args.predecessor_pid,
+                args.predecessor_observer_pid,
+            },
         )
         predecessor_terminal = predecessor is None and not remaining
         gpu_idle = predecessor_terminal and all(
@@ -178,10 +192,12 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--predecessor-pid", type=int, required=True)
     parser.add_argument("--predecessor-root", type=Path, required=True)
+    parser.add_argument("--predecessor-observer-pid", type=int, required=True)
     parser.add_argument("--successor-pid", type=int, required=True)
     parser.add_argument("--successor-root", type=Path, required=True)
     parser.add_argument("--gpu-indices", type=int, nargs="+", required=True)
     parser.add_argument("--receipt", type=Path, required=True)
+    parser.add_argument("--source-revision", required=True)
     parser.add_argument("--poll-seconds", type=int, default=60)
     args = parser.parse_args()
     if sorted(set(args.gpu_indices)) != [0, 1]:
