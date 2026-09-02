@@ -245,11 +245,11 @@ def main() -> None:
     parser.add_argument("--rosetta-python", type=Path, required=True)
     parser.add_argument("--boltz-cache", type=Path, required=True)
     parser.add_argument("--gpu-indices", type=int, nargs="+", required=True)
-    parser.add_argument("--cpu-workers", type=int, default=6)
+    parser.add_argument("--cpu-workers", type=int, default=16)
     parser.add_argument("--seed", type=int, required=True)
     args = parser.parse_args()
-    if args.cpu_workers not in range(1, 7):
-        raise ValueError("cpu-workers must be 1..6")
+    if args.cpu_workers not in range(1, 33):
+        raise ValueError("cpu-workers must be 1..32")
     ResumeBatch(args).run()
 
 
