@@ -21,7 +21,7 @@ from pepagent.db.repository import ExperimentRepository
 from pepagent.db.session import SessionFactory
 
 TOOL_NAME = "autoresearch-rosetta-receipt-ingest"
-TOOL_VERSION = "2026.09.02-v2"
+TOOL_VERSION = "2026.09.02-v3-coarse5"
 PRIMARY_METRIC = "rosetta_dg_separated_reu"
 MINIMUM_METRIC = "rosetta_dg_minimum_reu"
 TARGET_BY_ACCESSION = {
@@ -69,8 +69,8 @@ def validate_receipt_payload(
     if receipt.get("schema_version") != "ampgent.autoresearch-rosetta-candidate-completion.1":
         raise ValueError("not an AutoResearch candidate receipt")
     nstruct = int(receipt.get("nstruct", 0))
-    if receipt.get("status") != "succeeded" or nstruct not in {20, 200}:
-        raise ValueError("receipt is not a successful 20/200-decoy result")
+    if receipt.get("status") != "succeeded" or nstruct not in {5, 20, 200}:
+        raise ValueError("receipt is not a successful 5/20/200-decoy result")
     result_sha = sha256_bytes(result_bytes)
     if result_sha != receipt.get("result_sha256"):
         raise ValueError("result hash does not match receipt")
@@ -78,7 +78,8 @@ def validate_receipt_payload(
     decoys = result.get("decoys")
     if not isinstance(decoys, list) or len(decoys) != nstruct:
         raise ValueError("result decoy count differs from receipt")
-    top = sorted(decoys, key=lambda item: float(item["reweighted_sc"]))[:10]
+    top_count = 5 if nstruct == 5 else 10
+    top = sorted(decoys, key=lambda item: float(item["reweighted_sc"]))[:top_count]
     primary = statistics.median(float(item["dG_separated"]) for item in top)
     receipt_primary = float(receipt["primary_dG_separated_reu"])
     if not math.isfinite(primary) or not math.isclose(
@@ -98,6 +99,11 @@ def validate_receipt_payload(
         "primary": primary,
         "minimum": minimum,
         "nstruct": nstruct,
+        "primary_aggregation": (
+            "median_dG_separated_of_all_5_decoys"
+            if nstruct == 5
+            else "median_dG_separated_of_top_10_reweighted_sc"
+        ),
         "receipt_path": receipt_path,
         "receipt_sha256": sha256_bytes(receipt_bytes),
         "result_sha256": result_sha,
@@ -105,7 +111,10 @@ def validate_receipt_payload(
 
 
 def validate_receipt(path: Path) -> dict[str, Any]:
-    result_path = path.parent / "results" / "rosetta_result.json"
+    receipt = json.loads(path.read_text(encoding="utf-8"))
+    result_path = path.parent / receipt.get(
+        "result_relative_path", "results/rosetta_result.json"
+    )
     if not result_path.is_file():
         raise ValueError("result file is missing")
     return validate_receipt_payload(
@@ -140,7 +149,7 @@ CANDIDATE_SQL = text(
 
 EXISTING_SQL = text(
     """
-    SELECT e.candidate_id, e.metric_name, e.numeric_value
+    SELECT e.candidate_id, e.metric_name, e.numeric_value, e.raw_json
     FROM evaluations e
     WHERE e.candidate_id IN :candidate_ids
       AND e.metric_name IN :metric_names
@@ -175,14 +184,18 @@ async def ingest(validated: list[dict[str, Any]], source_sha: str) -> dict[str, 
                 },
             )
         ).mappings().all()
-        existing: dict[tuple[str, str], float] = {}
+        existing: dict[tuple[str, str, int], float] = {}
         for row in existing_rows:
+            raw = row["raw_json"] if isinstance(row["raw_json"], dict) else {}
+            prior_nstruct = int(raw.get("nstruct", 0))
             existing.setdefault(
-                (str(row["candidate_id"]), str(row["metric_name"])),
+                (str(row["candidate_id"]), str(row["metric_name"]), prior_nstruct),
                 float(row["numeric_value"]),
             )
 
-        pending_by_run: dict[str, list[tuple[dict[str, Any], list[tuple[str, float]]]]] = (
+        pending_by_run_protocol: dict[
+            tuple[str, int], list[tuple[dict[str, Any], list[tuple[str, float]]]]
+        ] = (
             defaultdict(list)
         )
         for item in validated:
@@ -198,7 +211,7 @@ async def ingest(validated: list[dict[str, Any]], source_sha: str) -> dict[str, 
                 (PRIMARY_METRIC, item["primary"]),
                 (MINIMUM_METRIC, item["minimum"]),
             ):
-                prior = existing.get((item["candidate_id"], metric))
+                prior = existing.get((item["candidate_id"], metric, item["nstruct"]))
                 if prior is None:
                     missing.append((metric, value))
                 elif not math.isclose(prior, value, rel_tol=0.0, abs_tol=1e-9):
@@ -208,10 +221,12 @@ async def ingest(validated: list[dict[str, Any]], source_sha: str) -> dict[str, 
                 else:
                     already_present += 1
             if missing:
-                pending_by_run[str(candidate["run_id"])].append((item, missing))
+                pending_by_run_protocol[
+                    (str(candidate["run_id"]), int(item["nstruct"]))
+                ].append((item, missing))
 
         repository = ExperimentRepository(session)
-        for run_id, rows in pending_by_run.items():
+        for (run_id, _nstruct), rows in pending_by_run_protocol.items():
             for offset in range(0, len(rows), 512):
                 batch = rows[offset : offset + 512]
                 identities = [
@@ -232,9 +247,7 @@ async def ingest(validated: list[dict[str, Any]], source_sha: str) -> dict[str, 
                     },
                     {
                         "nstruct": batch[0][0]["nstruct"],
-                        "primary_aggregation": (
-                            "median_dG_separated_of_top_10_reweighted_sc"
-                        ),
+                        "primary_aggregation": batch[0][0]["primary_aggregation"],
                     },
                     {"validated_candidate_count": len(batch)},
                     model_uri="rosetta://InterfaceAnalyzer/ref2015",
@@ -246,9 +259,7 @@ async def ingest(validated: list[dict[str, Any]], source_sha: str) -> dict[str, 
                         "receipt_sha256": item["receipt_sha256"],
                         "result_sha256": item["result_sha256"],
                         "nstruct": item["nstruct"],
-                        "primary_aggregation": (
-                            "median_dG_separated_of_top_10_reweighted_sc"
-                        ),
+                        "primary_aggregation": item["primary_aggregation"],
                         "pool_a_strict_dg_lt_minus_30": item["primary"] < -30.0,
                     }
                     for metric, value in missing:
@@ -286,7 +297,11 @@ async def scan_once(roots: list[Path], source_sha: str) -> dict[str, Any]:
     for root in roots:
         if not root.exists():
             continue
-        for path in root.glob("candidates/*/*/completion_receipt.json"):
+        paths = list(root.glob("candidates/*/*/completion_receipt.json"))
+        paths.extend(
+            root.glob("candidates/*/*/protocols/coarse5/completion_receipt.json")
+        )
+        for path in paths:
             resolved = str(path.resolve())
             if resolved in seen:
                 continue

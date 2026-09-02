@@ -9,7 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validat
 from pepagent.provenance.hashing import sha256_json, sha256_text
 
 GOLD_CANDIDATE_TARGET = 50
-MINIMUM_DECISION_BEARING_ROSETTA_DECOYS = 200
+MINIMUM_DECISION_BEARING_ROSETTA_DECOYS = 5
 CANDIDATE_POOL_A_DG_THRESHOLD_REU = -30.0
 CANONICAL_AMINO_ACIDS = frozenset("ACDEFGHIKLMNPQRSTVWY")
 TARGET_AGNOSTIC_KEYS = frozenset({"target-agnostic", "target_agnostic", "agnostic"})
@@ -122,7 +122,7 @@ class SequenceQualityEvidence(FrozenEvidence):
         return (
             self.toxinpred3_label.strip().lower().replace("_", "-") in {"non-toxin", "nontoxin"}
             and self.macrel_hemolysis_label.strip().lower() == "low"
-            and self.guruprasad_instability_index < 50.0
+            and self.guruprasad_instability_index <= 50.0
         )
 
     @computed_field(return_type=bool)
@@ -186,7 +186,10 @@ class RosettaDGReceiptEvidence(FrozenEvidence):
     engine: Literal["PyRosetta/FlexPepDock+InterfaceAnalyzer"]
     score_function: Literal["ref2015"]
     unit: Literal["REU"]
-    primary_aggregation: Literal["median_dG_separated_of_top_10_reweighted_sc"]
+    primary_aggregation: Literal[
+        "median_dG_separated_of_all_5_decoys",
+        "median_dG_separated_of_top_10_reweighted_sc",
+    ]
     nstruct: int = Field(ge=MINIMUM_DECISION_BEARING_ROSETTA_DECOYS)
     decoy_count: int = Field(ge=MINIMUM_DECISION_BEARING_ROSETTA_DECOYS)
     decoy_structure_sha256s: tuple[str, ...]
@@ -198,6 +201,10 @@ class RosettaDGReceiptEvidence(FrozenEvidence):
 
     @model_validator(mode="after")
     def validate_complete_rosetta_receipt(self) -> RosettaDGReceiptEvidence:
+        if self.nstruct == 5 and self.primary_aggregation != "median_dG_separated_of_all_5_decoys":
+            raise ValueError("five-decoy Pool A receipts must aggregate all five decoys")
+        if self.nstruct > 5 and self.primary_aggregation != "median_dG_separated_of_top_10_reweighted_sc":
+            raise ValueError("legacy receipts must use the frozen top-ten aggregation")
         if self.decoy_count != self.nstruct:
             raise ValueError("Rosetta receipt must cover every preregistered decoy")
         if len(self.decoy_structure_sha256s) != self.nstruct:

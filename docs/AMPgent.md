@@ -23,7 +23,7 @@ AceA、GyrA、PBP2a、VEGFA、FGF2、ANGPT1 各获得 ≥50 条 Pool A 短肽；
 - 12 项评价必须成功、有限；challenger 冲突保留独立前沿，不冒充主门。
 - 新轮次在 lineage close 前必须逐候选覆盖声明的 HemoPI2/APEX/PeptiVerse；缺 runtime 记 `runtime_unavailable`，不记通过。
 - Pool A：有靶点候选须完整 Rosetta 粗筛且 `dG_separated < -30 REU`；无靶点候选豁免。
-- Rosetta：每 complex `20 decoy`；按 `reweighted_sc` 最优 10 个的 `dG_separated` 中位数；旧 200-decoy 结果兼容但不再补算。
+- Rosetta：每 complex `5 decoy`；以全部 5 个 `dG_separated` 中位数判定；已有 20/200-decoy 结果保留，未完成任务从现有 checkpoint 补到 5，不重算、不删除。
 - Pool S：Pool A 后再经 MD；当前不启动新 MD。
 - 计算预测不等于活性、安全、亲和力或药效。
 
@@ -35,7 +35,7 @@ AceA、GyrA、PBP2a、VEGFA、FGF2、ANGPT1 各获得 ≥50 条 Pool A 短肽；
 4. 分开报告 best/mean quality、valid-cell coverage、QD-score、最大 cell concentration、archive-relative novelty；新占格、格内替换、同格冲突与 operator `Δϕ` 独立记账，禁止 `q+λD`。
 5. 全局序列去重；保留 occurrence；不改写历史 run。
 6. 运行 12 项 score-all、活动模型校准、challenger shadow，写父子差值/QD archive/replay/PostgreSQL。
-7. 缺失且未运行的有靶点候选进入 Rosetta 20-decoy 队列；按硬门、dG、Pareto、QD 填 Pool A 50。
+7. 缺失且未运行的有靶点候选进入 Rosetta 5-decoy 队列；按硬门、dG、Pareto、QD 填 Pool A 50。
 
 Challenger 证据键为 `run_id + candidate_id + model_release_key`；字段为 `evidence_role`、`evidence_family`、`model_release_key`、`applicability_status`、`conflict_status`、value/unit/OOD/limitations/`tool_call_id`。三模型独立保存，不跨 run 按序列合并，不计加权总分。
 
@@ -67,10 +67,10 @@ Challenger 证据键为 `run_id + candidate_id + model_release_key`；字段为 
 - FGF2 round126：run `92a30242-abd7-54d2-b242-b9aca1dcbbff`；1,024 条已物化、17,408 条结构化评价、520 条校准优秀；HemoPI2 无冲突 825、分歧保留 199；覆盖漂移 0。
 - 历史 challenger 回填：147,161 个候选、735,805 条证据；HemoPI2/APEX/PeptiVerse 缺失均为 0；不重复回填。
 - `.19`/synth 旧 Rosetta 200-decoy 链已停止且文件保留；13 条已有 ≥20 decoy，7 条已入库。
-- Pool A Rosetta 20-decoy 批次：`.19` PID `1600869`、synth PID `502155`；最新本地聚合 18/900 完成、Boltz 241/900、失败 0；GPU 跑 Boltz，Rosetta 为两台各 6 个 CPU worker；SSH 不可达，未重启、未重复提交。
+- Pool A Rosetta coarse5：`.19` PID `1828548`、synth PID `1496500`；34/900 已形成 5-decoy 收据（`.19` 18、synth 16），当前失败 0；迁移时两端共 582 个完成 checkpoint 全部保留，后续每 complex 仅补到 5；GPU 跑 Boltz，两台各 6 个 CPU Rosetta worker。
 - PostgreSQL 历史+当前 Rosetta `完成/dG<-30`：AceA 392/265、GyrA 12/12、PBP2a 17/16、VEGFA 17/17、FGF2 30/29、ANGPT1 16/16；仍需结合展示/模型/QD门形成最终 Pool A。
 - synth 仅流式回传 completion receipt 与分数 JSON 到 `.19` 做身份、哈希、聚合、冲突检查及 exact-once 入库；结构不传输。
-- 本地悬浮进度每 30 秒读取两端 `progress.json`；状态为 `var/state/ampgent-rosetta-progress-float.json`。
+- 本地悬浮进度每 30 秒读取两端 `coarse5_progress.json`；状态为 `var/state/ampgent-rosetta-progress-float.json`。
 - 瓶颈：六靶点 Pool A 完整 Rosetta 粗筛收据不足 50/靶点。
 
 ## 维护

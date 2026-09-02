@@ -7,9 +7,11 @@ from pathlib import Path
 
 
 def iter_bundle_items(root: Path):
-    for receipt_path in sorted(
-        root.glob("candidates/*/*/completion_receipt.json"), key=lambda path: str(path)
-    ):
+    receipt_paths = list(root.glob("candidates/*/*/completion_receipt.json"))
+    receipt_paths.extend(
+        root.glob("candidates/*/*/protocols/coarse5/completion_receipt.json")
+    )
+    for receipt_path in sorted(receipt_paths, key=lambda path: str(path)):
         receipt_text = receipt_path.read_text(encoding="utf-8")
         receipt = json.loads(receipt_text)
         if (
@@ -18,7 +20,9 @@ def iter_bundle_items(root: Path):
             or receipt.get("status") != "succeeded"
         ):
             continue
-        result_path = receipt_path.parent / "results" / "rosetta_result.json"
+        result_path = receipt_path.parent / receipt.get(
+            "result_relative_path", "results/rosetta_result.json"
+        )
         if not result_path.is_file():
             continue
         yield {

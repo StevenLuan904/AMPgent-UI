@@ -18,15 +18,15 @@ INGESTER = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(INGESTER)
 
 
-def _receipt(tmp_path: Path, *, primary: float = -4.5) -> Path:
+def _receipt(tmp_path: Path, *, primary: float = -4.5, nstruct: int = 20) -> Path:
     candidate = tmp_path / "candidates" / "acea" / "sequence"
     result_path = candidate / "results" / "rosetta_result.json"
     result_path.parent.mkdir(parents=True)
     result = {
-        "nstruct": 20,
+        "nstruct": nstruct,
         "decoys": [
             {"reweighted_sc": float(index), "dG_separated": -float(index)}
-            for index in range(20)
+            for index in range(nstruct)
         ],
     }
     result_path.write_text(json.dumps(result), encoding="utf-8")
@@ -41,9 +41,9 @@ def _receipt(tmp_path: Path, *, primary: float = -4.5) -> Path:
                 "candidate_id": str(uuid.uuid4()),
                 "sequence_sha256": "a" * 64,
                 "target_key": "acea",
-                "nstruct": 20,
+                "nstruct": nstruct,
                 "primary_dG_separated_reu": primary,
-                "minimum_dG_separated_reu": -19.0,
+                "minimum_dG_separated_reu": -float(nstruct - 1),
                 "result_sha256": hashlib.sha256(result_path.read_bytes()).hexdigest(),
             }
         ),
@@ -63,6 +63,16 @@ def test_validate_receipt_recomputes_top10_median_and_minimum(tmp_path: Path) ->
 def test_validate_receipt_rejects_primary_aggregation_drift(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="primary dG aggregation mismatch"):
         INGESTER.validate_receipt(_receipt(tmp_path, primary=-5.0))
+
+
+def test_validate_receipt_accepts_all_five_decoy_median(tmp_path: Path) -> None:
+    validated = INGESTER.validate_receipt(
+        _receipt(tmp_path, primary=-2.0, nstruct=5)
+    )
+
+    assert validated["nstruct"] == 5
+    assert validated["primary"] == -2.0
+    assert validated["primary_aggregation"] == "median_dG_separated_of_all_5_decoys"
 
 
 def test_validate_bundle_item_preserves_remote_identity(tmp_path: Path) -> None:

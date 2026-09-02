@@ -137,9 +137,11 @@ def audit(roots: list[Path]) -> dict[str, Any]:
                 if target not in TARGETS:
                     raise ValueError("unknown target")
                 nstruct = int(receipt.get("nstruct", 0))
-                if receipt.get("status") != "succeeded" or nstruct not in {20, 200}:
-                    raise ValueError("receipt is not a succeeded 20/200-decoy result")
-                result_path = receipt_path.parent / "results" / "rosetta_result.json"
+                if receipt.get("status") != "succeeded" or nstruct not in {5, 20, 200}:
+                    raise ValueError("receipt is not a succeeded 5/20/200-decoy result")
+                result_path = receipt_path.parent / receipt.get(
+                    "result_relative_path", "results/rosetta_result.json"
+                )
                 if not result_path.is_file() or _sha256(result_path) != receipt.get(
                     "result_sha256"
                 ):
@@ -148,7 +150,8 @@ def audit(roots: list[Path]) -> dict[str, Any]:
                 decoys = result.get("decoys")
                 if not isinstance(decoys, list) or len(decoys) != nstruct:
                     raise ValueError("result decoy count differs from receipt")
-                top = sorted(decoys, key=lambda item: float(item["reweighted_sc"]))[:10]
+                top_count = 5 if nstruct == 5 else 10
+                top = sorted(decoys, key=lambda item: float(item["reweighted_sc"]))[:top_count]
                 recomputed = statistics.median(float(item["dG_separated"]) for item in top)
                 primary = float(receipt["primary_dG_separated_reu"])
                 if not math.isclose(recomputed, primary, rel_tol=0.0, abs_tol=1e-9):

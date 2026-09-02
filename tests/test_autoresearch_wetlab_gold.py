@@ -87,6 +87,14 @@ def _challenger(
     )
 
 
+def test_instability_hard_gate_accepts_exactly_fifty() -> None:
+    boundary = _quality(0).model_copy(update={"guruprasad_instability_index": 50.0})
+    above = _quality(0).model_copy(update={"guruprasad_instability_index": 50.000001})
+
+    assert boundary.strict_display_eligible is True
+    assert above.strict_display_eligible is False
+
+
 def _rosetta(
     quality: SequenceQualityEvidence,
     *,
@@ -107,7 +115,11 @@ def _rosetta(
         engine="PyRosetta/FlexPepDock+InterfaceAnalyzer",
         score_function="ref2015",
         unit="REU",
-        primary_aggregation="median_dG_separated_of_top_10_reweighted_sc",
+        primary_aggregation=(
+            "median_dG_separated_of_all_5_decoys"
+            if nstruct == 5
+            else "median_dG_separated_of_top_10_reweighted_sc"
+        ),
         nstruct=nstruct,
         decoy_count=nstruct,
         decoy_structure_sha256s=tuple(
@@ -211,8 +223,16 @@ def test_hidden_pool_s_requires_completed_passing_md_but_does_not_start_it() -> 
 
 def test_rejects_incomplete_decision_bearing_rosetta_receipt() -> None:
     quality = _quality(1)
-    with pytest.raises(ValidationError, match="greater than or equal to 200"):
-        _rosetta(quality, nstruct=16)
+    with pytest.raises(ValidationError, match="greater than or equal to 5"):
+        _rosetta(quality, nstruct=4)
+
+
+def test_accepts_five_decoy_pool_a_receipt() -> None:
+    quality = _quality(1)
+    receipt = _rosetta(quality, nstruct=5, primary_dg=-31.0)
+
+    assert receipt.primary_aggregation == "median_dG_separated_of_all_5_decoys"
+    assert receipt.qualifies_for_candidate_pool_a
 
 
 def test_rejects_cross_target_evidence() -> None:

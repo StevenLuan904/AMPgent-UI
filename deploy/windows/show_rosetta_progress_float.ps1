@@ -34,7 +34,7 @@ New-Item -ItemType Directory -Force -Path $stateDirectory | Out-Null
 Set-Content -LiteralPath $pidPath -Value $PID -Encoding ascii
 
 function Invoke-Host19Progress {
-    $remote = 'cat /data1/huangyueshan/pepagent/data/run-cache/rosetta-poola-top150-coarse20-host019-gpu0-1-20260902-v1/progress.json'
+    $remote = 'cat /data1/huangyueshan/pepagent/data/run-cache/rosetta-poola-top150-coarse20-host019-gpu0-1-20260902-v1/coarse5_progress.json'
     $output = & ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=8 -p 32222 TargetServerDirect $remote 2>&1
     if ($LASTEXITCODE -ne 0) { throw "host .19 unavailable: $($output -join ' ')" }
     return ($output -join "`n") | ConvertFrom-Json
@@ -55,7 +55,7 @@ function Invoke-SynthProgress {
     $env:SSH_ASKPASS_REQUIRE = 'force'
     $env:DISPLAY = 'remote-gpu'
     try {
-        $remote = 'cat /sdd_data/pepagent/ampgent/structure/rosetta-poola-top150-coarse20-synth-gpu1-3-20260902-v1/progress.json'
+        $remote = 'cat /sdd_data/pepagent/ampgent/structure/rosetta-poola-top150-coarse20-synth-gpu1-3-20260902-v1/coarse5_progress.json'
         $output = & ssh -o BatchMode=no -o StrictHostKeyChecking=accept-new -o ConnectTimeout=8 -p 32224 synth@127.0.0.1 $remote 2>&1
         if ($LASTEXITCODE -ne 0) { throw "synth unavailable: $($output -join ' ')" }
         return ($output -join "`n") | ConvertFrom-Json
@@ -68,7 +68,9 @@ function Invoke-SynthProgress {
 function Get-RosettaSnapshot {
     $host19 = Invoke-Host19Progress
     $synth = Invoke-SynthProgress
-    $completed = [int]$host19.rosetta_succeeded + [int]$synth.rosetta_succeeded
+    $host19Completed = 360 - [int]$host19.pending - [int]$host19.failed
+    $synthCompleted = 540 - [int]$synth.pending - [int]$synth.failed
+    $completed = $host19Completed + $synthCompleted
     $boltz = [int]$host19.boltz_succeeded + [int]$synth.boltz_succeeded
     $failed = [int]$host19.failed + [int]$synth.failed
     return [ordered]@{
@@ -79,13 +81,13 @@ function Get-RosettaSnapshot {
         boltz_succeeded = $boltz
         failed = $failed
         host19 = [ordered]@{
-            completed = [int]$host19.rosetta_succeeded
+            completed = $host19Completed
             total = 360
             boltz_succeeded = [int]$host19.boltz_succeeded
             pending = [int]$host19.pending
         }
         synth = [ordered]@{
-            completed = [int]$synth.rosetta_succeeded
+            completed = $synthCompleted
             total = 540
             boltz_succeeded = [int]$synth.boltz_succeeded
             pending = [int]$synth.pending
@@ -107,7 +109,7 @@ if ($UseInstalledProgressFloat) {
             $payload = [ordered]@{
                 current = [int]$snapshot.completed
                 total = [int]$snapshot.total
-                label = "AMPgent Rosetta dG · .19 $($snapshot.host19.completed)/$($snapshot.host19.total) · synth $($snapshot.synth.completed)/$($snapshot.synth.total) · Boltz $($snapshot.boltz_succeeded)"
+                label = "AMPgent Rosetta coarse5 · .19 $($snapshot.host19.completed)/$($snapshot.host19.total) · synth $($snapshot.synth.completed)/$($snapshot.synth.total)"
             } | ConvertTo-Json -Compress
             & $installedBridge $payload | Out-Null
         } catch {

@@ -58,8 +58,10 @@ def _write_fixture(root: Path, *, nstruct: int) -> None:
     ]
     result_text = json.dumps({"decoys": decoys})
     (results / "rosetta_result.json").write_text(result_text, encoding="utf-8")
-    top = decoys[:10]
-    primary = (top[4]["dG_separated"] + top[5]["dG_separated"]) / 2
+    top = decoys[: (5 if nstruct == 5 else 10)]
+    primary = sorted(item["dG_separated"] for item in top)[len(top) // 2]
+    if len(top) % 2 == 0:
+        primary = (top[len(top) // 2 - 1]["dG_separated"] + top[len(top) // 2]["dG_separated"]) / 2
     receipt = {
         "schema_version": "ampgent.autoresearch-rosetta-candidate-completion.1",
         "status": "succeeded",
@@ -84,6 +86,15 @@ def test_pool_a_audit_accepts_frozen_20_decoy_protocol(tmp_path: Path) -> None:
     assert result["invalid_receipt_count"] == 0
     assert result["rows"][0]["nstruct"] == 20
     assert result["summary"]["pbp2a"]["pool_a_top50_filled"] == 1
+
+
+def test_pool_a_audit_accepts_five_decoy_protocol(tmp_path: Path) -> None:
+    _write_fixture(tmp_path, nstruct=5)
+
+    result = audit([tmp_path])
+
+    assert result["valid_receipt_count"] == 1
+    assert result["rows"][0]["nstruct"] == 5
 
 
 def test_pool_a_audit_rejects_unfrozen_decoy_count(tmp_path: Path) -> None:
