@@ -59,8 +59,12 @@
   },
   "current_pool_a": {
     "candidate_count": 475,
-    "source_attribution_status": "not_assessed",
-    "reason": "current frozen Pool A snapshot has exact run/candidate identity but no source_provider field; no sequence-based inference performed"
+    "database_candidate_count": 475,
+    "missing_candidate_count": 0,
+    "source_attribution_status": "unattributed_or_ambiguous",
+    "source_counts": {"unattributed_or_ambiguous": 475},
+    "reason": "exact PostgreSQL candidate_id+run_id audit found no unique explicit provider evidence; no sequence-based inference performed",
+    "remote_audit": "/data1/huangyueshan/pepagent/md/pool-a-full-md-v1/results/source_attribution_audit.json"
   },
   "scientific_claim_limit": "in-silico generation and screening evidence only"
 }
