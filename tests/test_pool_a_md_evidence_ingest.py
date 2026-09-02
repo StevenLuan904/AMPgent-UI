@@ -1,9 +1,15 @@
 import json
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 import pytest
 
-from analysis.ingest_pool_a_md_evidence import MD_RELEASE, md_evidence, mmgbsa_evidence
+from analysis.ingest_pool_a_md_evidence import (
+    MD_RELEASE,
+    md_evidence,
+    mmgbsa_evidence,
+    relocate_file_uris,
+)
+from analysis.sync_pool_a_md_compact_evidence import allowed_relative_path
 
 
 def write(path: Path, payload: dict) -> None:
@@ -99,3 +105,21 @@ def test_mmgbsa_evidence_keeps_ci_and_residue_decomposition_remote(tmp_path):
     assert evidence["values"]["mmgbsa_binding_energy_ci95_lower_kcal_mol"] == -45.0
     assert evidence["files"]["residue_decomposition"]["uri"] == str(decomposition)
     assert decomposition.exists()
+
+
+def test_compact_sync_allowlist_excludes_structures_and_trajectories():
+    assert allowed_relative_path(
+        PurePosixPath("acea/candidate/analysis/interface/interface_analysis.json")
+    )
+    assert allowed_relative_path(PurePosixPath("acea/candidate/manifest.json"))
+    assert not allowed_relative_path(PurePosixPath("acea/candidate/production.dcd"))
+    assert not allowed_relative_path(PurePosixPath("acea/candidate/prepared_solvated.pdb"))
+
+
+def test_evidence_uris_can_point_to_authoritative_remote_tree(tmp_path):
+    root = candidate(tmp_path)
+    local = root / "manifest.json"
+    local.write_text("{}")
+    evidence = {"files": {"manifest": {"uri": str(local), "sha256": "a" * 64}}}
+    relocate_file_uris(evidence, tmp_path, "/remote/pool-a")
+    assert evidence["files"]["manifest"]["uri"].startswith("/remote/pool-a/acea/")

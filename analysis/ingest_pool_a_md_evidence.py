@@ -36,6 +36,7 @@ TARGET_BY_ACCESSION = {
 def cli() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, required=True)
+    parser.add_argument("--uri-root")
     parser.add_argument("--source-commit", required=True)
     parser.add_argument("--once", action="store_true")
     parser.add_argument("--poll-seconds", type=int, default=120)
@@ -68,6 +69,19 @@ def marker_matches(path: Path, evidence: dict[str, Any]) -> bool:
         marker.get("model_release_key") == evidence["release"]
         and marker.get("files") == evidence["files"]
     )
+
+
+def relocate_file_uris(
+    evidence: dict[str, Any], local_root: Path, remote_root: str | None
+) -> dict[str, Any]:
+    if remote_root is None:
+        return evidence
+    base = local_root.resolve()
+    prefix = remote_root.rstrip("/")
+    for item in evidence["files"].values():
+        relative = Path(item["uri"]).resolve().relative_to(base)
+        item["uri"] = f"{prefix}/{relative.as_posix()}"
+    return evidence
 
 
 def finite(value: Any, name: str) -> float:
@@ -247,6 +261,31 @@ async def persist(evidence: dict[str, Any], source_commit: str) -> dict[str, Any
             or TARGET_BY_ACCESSION.get(accession) != item_identity["target_key"]
         ):
             raise ValueError("candidate PostgreSQL identity drifted")
+        existing_rows = (
+            await session.execute(
+                select(Evaluation.metric_name, Evaluation.tool_call_id).where(
+                    Evaluation.candidate_id == candidate_id,
+                    Evaluation.subject_run_id == run_id,
+                    Evaluation.model_release_key == evidence["release"],
+                    Evaluation.status == "succeeded",
+                )
+            )
+        ).all()
+        existing_metrics = {row.metric_name for row in existing_rows}
+        missing_metrics = {
+            name: value
+            for name, value in evidence["values"].items()
+            if name not in existing_metrics
+        }
+        if not missing_metrics:
+            return {
+                "candidate_id": str(candidate_id),
+                "subject_run_id": str(run_id),
+                "model_release_key": evidence["release"],
+                "tool_call_id": str(existing_rows[0].tool_call_id),
+                "inserted_evaluation_count": 0,
+                "already_complete": True,
+            }
         repository = ExperimentRepository(session)
         call = await repository.record_completed_tool_call(
             run_id,
@@ -258,10 +297,10 @@ async def persist(evidence: dict[str, Any], source_commit: str) -> dict[str, Any
                 "model_release_key": evidence["release"],
                 "database_binding": "subject_run_id+candidate_id+model_release_key",
             },
-            {"metric_count": len(evidence["values"]), "files": evidence["files"]},
+            {"metric_count": len(missing_metrics), "files": evidence["files"]},
         )
         rows = []
-        for metric, value in evidence["values"].items():
+        for metric, value in missing_metrics.items():
             details = dict(evidence["raw"])
             if metric != "md_key_contact_count":
                 details.pop("key_contacts", None)
@@ -302,7 +341,9 @@ async def persist(evidence: dict[str, Any], source_commit: str) -> dict[str, Any
     }
 
 
-async def scan_once(root: Path, source_commit: str) -> dict[str, Any]:
+async def scan_once(
+    root: Path, source_commit: str, uri_root: str | None = None
+) -> dict[str, Any]:
     result = {"observed_at": datetime.now(UTC).isoformat(), "ingested": [], "failures": []}
     candidates = await asyncio.to_thread(
         lambda: sorted(path.parent for path in root.glob("*/*/manifest.json"))
@@ -311,9 +352,10 @@ async def scan_once(root: Path, source_commit: str) -> dict[str, Any]:
         for loader in (md_evidence, mmgbsa_evidence):
             try:
                 evidence = await asyncio.to_thread(loader, candidate)
-                if evidence is None or await asyncio.to_thread(
-                    marker_matches, evidence["marker"], evidence
-                ):
+                if evidence is None:
+                    continue
+                evidence = relocate_file_uris(evidence, root, uri_root)
+                if await asyncio.to_thread(marker_matches, evidence["marker"], evidence):
                     continue
                 receipt = await persist(evidence, source_commit)
                 receipt["ingested_at"] = datetime.now(UTC).isoformat()
@@ -332,7 +374,7 @@ async def main() -> None:
     if len(args.source_commit) != 40:
         raise ValueError("source commit must be a full Git SHA-1")
     while True:
-        state = await scan_once(args.root, args.source_commit)
+        state = await scan_once(args.root, args.source_commit, args.uri_root)
         await asyncio.to_thread(write_json, args.root / "postgresql_ingester_state.json", state)
         if args.once:
             return
