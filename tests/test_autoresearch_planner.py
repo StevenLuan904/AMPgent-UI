@@ -282,6 +282,59 @@ def test_multifront_rule_planner_can_freeze_a_cpu_only_action_batch() -> None:
     )
 
 
+def test_de_novo_profile_uses_explicit_quality_diversity_elites() -> None:
+    cohort = _cohort()
+    snapshot = build_multi_front_archive(
+        cohort,
+        MultiFrontArchivePolicy(known_family_keys=("old-family",)),
+        generation=0,
+    )
+    elite_id = cohort[0].candidate_id
+
+    plan = build_multifront_rule_action_plan(
+        candidates=cohort,
+        snapshot=snapshot,
+        branch_key="PBP2a",
+        generation=1,
+        seed=17,
+        operator_release_sha256="a" * 64,
+        target_sequence_sha256="c" * 64,
+        gold_target=50,
+        de_novo_quota=0.2,
+        pepmlm_targeted_enabled=False,
+        quality_diversity_elite_candidate_ids=(elite_id,),
+    )
+
+    profile = plan["de_novo_profile_policy"]
+    assert profile["profile_source"] == "quality_diversity_archive_elites"
+    assert profile["quality_diversity_elite_candidate_count"] == 1
+    assert profile["family_profile_count"] == 1
+
+
+def test_de_novo_profile_rejects_missing_quality_diversity_elite() -> None:
+    cohort = _cohort()
+    snapshot = build_multi_front_archive(cohort, MultiFrontArchivePolicy(), generation=0)
+
+    try:
+        build_multifront_rule_action_plan(
+            candidates=cohort,
+            snapshot=snapshot,
+            branch_key="PBP2a",
+            generation=1,
+            seed=17,
+            operator_release_sha256="a" * 64,
+            target_sequence_sha256="c" * 64,
+            gold_target=50,
+            quality_diversity_elite_candidate_ids=(
+                "00000000-0000-0000-0000-000000000999",
+            ),
+        )
+    except ValueError as error:
+        assert "quality-diversity elite is absent" in str(error)
+    else:
+        raise AssertionError("planner accepted an absent quality-diversity elite")
+
+
 def test_planner_materializes_an_explicit_family_coverage_parent() -> None:
     cohort = _cohort()
     snapshot = build_multi_front_archive(

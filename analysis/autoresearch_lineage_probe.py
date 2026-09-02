@@ -323,6 +323,7 @@ def run(args: argparse.Namespace) -> None:
                 de_novo_quota=args.de_novo_quota,
                 pepmlm_targeted_enabled=False,
                 required_parent_candidate_ids=required_parent_ids,
+                quality_diversity_elite_candidate_ids=quality_diversity_parent_ids,
             )
             if plan["requires_generator_gpu"]:
                 raise ValueError("CPU lineage probe unexpectedly requires a generator GPU")

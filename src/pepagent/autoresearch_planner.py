@@ -539,6 +539,7 @@ def build_multifront_rule_action_plan(
     de_novo_quota: float = 0.2,
     pepmlm_targeted_enabled: bool = True,
     required_parent_candidate_ids: Sequence[str] = (),
+    quality_diversity_elite_candidate_ids: Sequence[str] = (),
 ) -> dict[str, Any]:
     """Choose replayable actions without collapsing conflicting model fronts.
 
@@ -565,6 +566,10 @@ def build_multifront_rule_action_plan(
         )
     if len(set(required_parent_candidate_ids)) != len(required_parent_candidate_ids):
         raise ValueError("required planner parent IDs must be unique")
+    if len(set(quality_diversity_elite_candidate_ids)) != len(
+        quality_diversity_elite_candidate_ids
+    ):
+        raise ValueError("quality-diversity elite candidate IDs must be unique")
     missing_required_parent_ids = sorted(set(required_parent_candidate_ids) - set(by_id))
     if missing_required_parent_ids:
         raise ValueError("required planner parent is absent from the candidate cohort")
@@ -575,6 +580,16 @@ def build_multifront_rule_action_plan(
     )
     if ineligible_required_parent_ids:
         raise ValueError("required planner parent fails the literal stability hard gate")
+    missing_qd_elite_ids = sorted(set(quality_diversity_elite_candidate_ids) - set(by_id))
+    if missing_qd_elite_ids:
+        raise ValueError("quality-diversity elite is absent from the candidate cohort")
+    ineligible_qd_elite_ids = sorted(
+        candidate_id
+        for candidate_id in quality_diversity_elite_candidate_ids
+        if not is_instability_score_qualified_wetlab_candidate(by_id[candidate_id])
+    )
+    if ineligible_qd_elite_ids:
+        raise ValueError("quality-diversity elite fails the literal stability hard gate")
     improvement_counts, delta_receipts = _improvement_index(prior_deltas)
     known_sequences = {item.sequence for item in candidates}
     family_reference_index = _SequenceFamilyReferenceIndex(
@@ -600,7 +615,13 @@ def build_multifront_rule_action_plan(
     qualified_gold_ids = _instability_score_qualified_gold_candidate_ids(snapshot, by_id)
     gold_count = len(qualified_gold_ids)
     qualified_gold = [by_id[candidate_id] for candidate_id in sorted(qualified_gold_ids)]
-    if len(qualified_gold) >= _DE_NOVO_MINIMUM_GOLD_PROFILE_COUNT:
+    if quality_diversity_elite_candidate_ids:
+        de_novo_profile_candidates = [
+            by_id[candidate_id]
+            for candidate_id in sorted(quality_diversity_elite_candidate_ids)
+        ]
+        de_novo_profile_source = "quality_diversity_archive_elites"
+    elif len(qualified_gold) >= _DE_NOVO_MINIMUM_GOLD_PROFILE_COUNT:
         de_novo_profile_candidates = qualified_gold
         de_novo_profile_source = "qualified_gold_archive"
     else:
@@ -1024,8 +1045,11 @@ def build_multifront_rule_action_plan(
             "fronts_are_not_weighted_together": True,
         },
         "de_novo_profile_policy": {
-            "operator_version": "autoresearch-rule-de-novo-v8",
+            "operator_version": "autoresearch-rule-de-novo-v9",
             "profile_source": de_novo_profile_source,
+            "quality_diversity_elite_candidate_count": len(
+                quality_diversity_elite_candidate_ids
+            ),
             "minimum_gold_profile_count": _DE_NOVO_MINIMUM_GOLD_PROFILE_COUNT,
             "family_balanced": True,
             "family_profile_count": len(de_novo_profile),
