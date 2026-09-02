@@ -1,0 +1,43 @@
+{
+  "schema_version": "ampgent.pool-a-v3-exact-coverage-audit.1",
+  "observed_at": "2026-09-02T10:48:40Z",
+  "identity": "candidate_uuid+sequence_sha256",
+  "v3_candidate_count": 300,
+  "scheduled_unique_candidate_count": 314,
+  "v3_scheduled_count": 300,
+  "v3_unscheduled_count": 0,
+  "v3_scheduled_by_target": {
+    "acea": 50,
+    "angpt1": 50,
+    "fgf2": 50,
+    "gyra": 50,
+    "pbp2a": 50,
+    "vegfa": 50
+  },
+  "roots": [
+    {
+      "candidate_count": 276,
+      "checkpoint_candidate_count": 36,
+      "complete_receipt_count": 18,
+      "active_candidate_count": 30,
+      "root": "/data1/huangyueshan/pepagent/data/run-cache/rosetta-poola-priority276-coarse5-host019-gpu2-7-20260902-v1"
+    },
+    {
+      "candidate_count": 22,
+      "checkpoint_candidate_count": 4,
+      "complete_receipt_count": 0,
+      "active_candidate_count": 7,
+      "root": "/sdd_data/pepagent/ampgent/structure/rosetta-poola-priority-v2-append22-synth-gpu5-7-20260902-v1"
+    },
+    {
+      "candidate_count": 16,
+      "checkpoint_candidate_count": 1,
+      "complete_receipt_count": 0,
+      "active_candidate_count": 8,
+      "root": "/data1/huangyueshan/pepagent/data/run-cache/rosetta-poola-priority-v3-append16-host019-gpu0-1-20260902-v1"
+    }
+  ],
+  "synth_gpu2_gpu3_observed_idle": true,
+  "supplement_batch_started": false,
+  "decision": "no exact-once candidate difference"
+}
