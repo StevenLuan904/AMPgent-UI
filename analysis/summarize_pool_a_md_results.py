@@ -10,6 +10,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 from statistics import fmean
 
+MD_RELEASE = "openmm_ff14sb_tip3p_1ns-npt_50ns-nvt_interface-pbc_v2"
+MMGBSA_RELEASE = "ambertools26_mmgbsa_igb5_sparse_v1"
+
 
 def cli():
     parser = argparse.ArgumentParser()
@@ -31,6 +34,27 @@ def nested(data, *keys):
     return data
 
 
+def validated_ingest_receipt(path: Path, expected: dict, release: str) -> bool:
+    if not path.is_file():
+        return False
+    receipt = load(path)
+    identity = {
+        "candidate_id": expected["candidate_id"],
+        "subject_run_id": expected["run_id"],
+        "model_release_key": release,
+    }
+    for key, value in identity.items():
+        if str(receipt.get(key)) != str(value):
+            raise ValueError(
+                f"PostgreSQL ingest receipt identity drift for {expected['candidate_id']}: {key}"
+            )
+    if not receipt.get("tool_call_id"):
+        raise ValueError(
+            f"PostgreSQL ingest receipt lacks tool_call_id for {expected['candidate_id']}"
+        )
+    return True
+
+
 def candidate_row(expected: dict, root: Path) -> dict:
     candidate = root / expected["target_key"] / expected["candidate_id"]
     launch_path = candidate / "launch_receipt.json"
@@ -50,6 +74,8 @@ def candidate_row(expected: dict, root: Path) -> dict:
     interface = load(interface_path) if interface_path.is_file() else None
     mmgbsa = load(mmgbsa_path) if mmgbsa_path.is_file() else None
     failure = load(failure_path) if failure_path.is_file() else None
+    interface_ingested = validated_ingest_receipt(interface_ingest, expected, MD_RELEASE)
+    mmgbsa_ingested = validated_ingest_receipt(mmgbsa_ingest, expected, MMGBSA_RELEASE)
     md_complete = bool(
         manifest
         and manifest.get("status") == "succeeded"
@@ -82,9 +108,9 @@ def candidate_row(expected: dict, root: Path) -> dict:
         "retry_failure_recorded": failure is not None,
         "last_attempt_returncode": nested(failure, "returncode"),
         "last_attempt_will_retry": nested(failure, "will_retry"),
-        "interface_postgresql_ingested": interface_ingest.is_file(),
-        "mmgbsa_postgresql_ingested": mmgbsa_ingest.is_file(),
-        "postgresql_evidence_complete": interface_ingest.is_file() and mmgbsa_ingest.is_file(),
+        "interface_postgresql_ingested": interface_ingested,
+        "mmgbsa_postgresql_ingested": mmgbsa_ingested,
+        "postgresql_evidence_complete": interface_ingested and mmgbsa_ingested,
         "interface_rmsd_mean_nm": nested(interface, "interface_rmsd_nm", "mean"),
         "interface_rmsd_max_nm": nested(interface, "interface_rmsd_nm", "maximum"),
         "native_contact_fraction_mean": nested(interface, "native_contact_fraction", "mean"),

@@ -1,6 +1,13 @@
 import json
 
-from analysis.summarize_pool_a_md_results import summarize
+import pytest
+
+from analysis.summarize_pool_a_md_results import (
+    MD_RELEASE,
+    MMGBSA_RELEASE,
+    summarize,
+    validated_ingest_receipt,
+)
 
 
 def write(path, payload):
@@ -54,8 +61,19 @@ def test_summary_requires_exact_identity_and_reports_all_requested_outputs(tmp_p
         },
     )
     (candidate / "analysis/mmgbsa/residue_decomposition_mean.csv").write_text("x\n")
-    write(candidate / "analysis/interface/postgresql_ingest_receipt.json", {"ok": True})
-    write(candidate / "analysis/mmgbsa/postgresql_ingest_receipt.json", {"ok": True})
+    ingest_identity = {
+        "candidate_id": candidate_id,
+        "subject_run_id": run_id,
+        "tool_call_id": "33333333-3333-3333-3333-333333333333",
+    }
+    write(
+        candidate / "analysis/interface/postgresql_ingest_receipt.json",
+        {**ingest_identity, "model_release_key": MD_RELEASE},
+    )
+    write(
+        candidate / "analysis/mmgbsa/postgresql_ingest_receipt.json",
+        {**ingest_identity, "model_release_key": MMGBSA_RELEASE},
+    )
     write(
         candidate / "failure_receipt.json",
         {"returncode": 1, "will_retry": True},
@@ -88,3 +106,25 @@ def test_summary_requires_exact_identity_and_reports_all_requested_outputs(tmp_p
         "decomposition_residue_count",
     ):
         assert field in report
+
+
+def test_postgresql_receipt_identity_drift_is_rejected(tmp_path):
+    receipt = tmp_path / "postgresql_ingest_receipt.json"
+    write(
+        receipt,
+        {
+            "candidate_id": "11111111-1111-1111-1111-111111111111",
+            "subject_run_id": "wrong-run",
+            "model_release_key": MD_RELEASE,
+            "tool_call_id": "33333333-3333-3333-3333-333333333333",
+        },
+    )
+    with pytest.raises(ValueError, match="subject_run_id"):
+        validated_ingest_receipt(
+            receipt,
+            {
+                "candidate_id": "11111111-1111-1111-1111-111111111111",
+                "run_id": "22222222-2222-2222-2222-222222222222",
+            },
+            MD_RELEASE,
+        )
