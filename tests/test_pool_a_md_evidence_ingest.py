@@ -63,6 +63,7 @@ def test_md_evidence_requires_exact_1_plus_50_ns_and_emits_requested_metrics(tmp
     (root / "analysis/interface/timeseries.csv").write_text("time_ps\n0\n")
     evidence = md_evidence(root)
     assert evidence is not None and evidence["release"] == MD_RELEASE
+    assert evidence["role"] == "md"
     assert evidence["identity"]["run_id"] == "22222222-2222-2222-2222-222222222222"
     assert {
         "md_interface_rmsd_mean_nm",
@@ -102,6 +103,7 @@ def test_mmgbsa_evidence_keeps_ci_and_residue_decomposition_remote(tmp_path):
     decomposition.write_text("residue,mean_TOTAL\nALA1,-1\n")
     evidence = mmgbsa_evidence(root)
     assert evidence is not None
+    assert evidence["role"] == "md"
     assert evidence["values"]["mmgbsa_binding_energy_ci95_lower_kcal_mol"] == -45.0
     assert evidence["files"]["residue_decomposition"]["uri"] == str(decomposition)
     assert decomposition.exists()

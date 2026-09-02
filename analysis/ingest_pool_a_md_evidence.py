@@ -165,6 +165,7 @@ def md_evidence(candidate: Path) -> dict[str, Any] | None:
     return {
         "identity": identity(candidate),
         "release": MD_RELEASE,
+        "role": "md",
         "family": "molecular_dynamics_interface",
         "tool_name": "pool-a-md-interface-ingest",
         "tool_version": "2026.09.03-v2",
@@ -214,6 +215,7 @@ def mmgbsa_evidence(candidate: Path) -> dict[str, Any] | None:
     return {
         "identity": identity(candidate),
         "release": MMGBSA_RELEASE,
+        "role": "md",
         "family": "binding_energy_postprocessing",
         "tool_name": "pool-a-mmgbsa-ingest",
         "tool_version": "2026.09.03-v1",
@@ -338,7 +340,7 @@ async def persist(evidence: dict[str, Any], source_commit: str) -> dict[str, Any
                     "candidate_id": candidate_id,
                     "tool_call_id": call.id,
                     "subject_run_id": run_id,
-                    "evidence_role": "structure_validation",
+                    "evidence_role": evidence["role"],
                     "evidence_family": evidence["family"],
                     "model_release_key": evidence["release"],
                     "applicability_status": "applicable",
