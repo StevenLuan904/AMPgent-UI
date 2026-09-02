@@ -1,0 +1,432 @@
+{
+  "plugin": {
+    "name": "hemolysis_risk",
+    "parameters": {}
+  },
+  "contract": {
+    "default_trust": "soft",
+    "maximum_trust": "soft",
+    "reliability": "R3-not-locked",
+    "provider": "external",
+    "outputs": {
+      "hemopi2_hemolysis_score": [
+        "hemopi2_score",
+        "dimensionless",
+        "numeric"
+      ],
+      "hemopi2_hemolysis_label": [
+        "hemopi2_label",
+        null,
+        "text"
+      ],
+      "macrel_amp_probability": [
+        "macrel_amp_probability",
+        "fraction",
+        "numeric"
+      ],
+      "macrel_hemolysis_probability": [
+        "macrel_hemolysis_probability",
+        "fraction",
+        "numeric"
+      ],
+      "macrel_hemolysis_label": [
+        "macrel_risk",
+        null,
+        "text"
+      ],
+      "hemolysis_consensus_decision": [
+        "decision",
+        null,
+        "text"
+      ]
+    }
+  },
+  "candidate_count": 8,
+  "status": "complete",
+  "records": [
+    {
+      "candidate_id": "proposal-74605331c5a96923be03",
+      "sequence": "AGGPPGSE",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "macrel_amp_probability",
+          "numeric_value": 0.228,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "macrel_hemolysis_probability",
+          "numeric_value": 0.287,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "macrel_hemolysis_label",
+          "numeric_value": null,
+          "text_value": "low",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-74605331c5a96923be03",
+        "sequence": "AGGPPGSE",
+        "status": "success",
+        "macrel_amp_probability": "0.228",
+        "macrel_hemolysis_probability": "0.287",
+        "macrel_risk": "low",
+        "macrel_evaluated_sequence": "AGGPPGSE",
+        "macrel_normalization_note": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-6c623f3d79f71b73c07d",
+      "sequence": "AAGGPGSGE",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "macrel_amp_probability",
+          "numeric_value": 0.327,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "macrel_hemolysis_probability",
+          "numeric_value": 0.307,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "macrel_hemolysis_label",
+          "numeric_value": null,
+          "text_value": "low",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-6c623f3d79f71b73c07d",
+        "sequence": "AAGGPGSGE",
+        "status": "success",
+        "macrel_amp_probability": "0.327",
+        "macrel_hemolysis_probability": "0.307",
+        "macrel_risk": "low",
+        "macrel_evaluated_sequence": "AAGGPGSGE",
+        "macrel_normalization_note": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-dcd55e4ba83c52513d92",
+      "sequence": "VAGGPPCGSE",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "macrel_amp_probability",
+          "numeric_value": 0.356,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "macrel_hemolysis_probability",
+          "numeric_value": 0.356,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "macrel_hemolysis_label",
+          "numeric_value": null,
+          "text_value": "low",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-dcd55e4ba83c52513d92",
+        "sequence": "VAGGPPCGSE",
+        "status": "success",
+        "macrel_amp_probability": "0.356",
+        "macrel_hemolysis_probability": "0.356",
+        "macrel_risk": "low",
+        "macrel_evaluated_sequence": "VAGGPPCGSE",
+        "macrel_normalization_note": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-e049daea19c620fb6beb",
+      "sequence": "TVGGGPGSGSA",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "macrel_amp_probability",
+          "numeric_value": 0.475,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "macrel_hemolysis_probability",
+          "numeric_value": 0.307,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "macrel_hemolysis_label",
+          "numeric_value": null,
+          "text_value": "low",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-e049daea19c620fb6beb",
+        "sequence": "TVGGGPGSGSA",
+        "status": "success",
+        "macrel_amp_probability": "0.475",
+        "macrel_hemolysis_probability": "0.307",
+        "macrel_risk": "low",
+        "macrel_evaluated_sequence": "TVGGGPGSGSA",
+        "macrel_normalization_note": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-8337d614c6e766c8888e",
+      "sequence": "TVGGGGGCSPEE",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "macrel_amp_probability",
+          "numeric_value": 0.327,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "macrel_hemolysis_probability",
+          "numeric_value": 0.337,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "macrel_hemolysis_label",
+          "numeric_value": null,
+          "text_value": "low",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-8337d614c6e766c8888e",
+        "sequence": "TVGGGGGCSPEE",
+        "status": "success",
+        "macrel_amp_probability": "0.327",
+        "macrel_hemolysis_probability": "0.337",
+        "macrel_risk": "low",
+        "macrel_evaluated_sequence": "TVGGGGGCSPEE",
+        "macrel_normalization_note": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-7933631fdf73671252de",
+      "sequence": "VVVGGGPPNSAGA",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "macrel_amp_probability",
+          "numeric_value": 0.426,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "macrel_hemolysis_probability",
+          "numeric_value": 0.307,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "macrel_hemolysis_label",
+          "numeric_value": null,
+          "text_value": "low",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-7933631fdf73671252de",
+        "sequence": "VVVGGGPPNSAGA",
+        "status": "success",
+        "macrel_amp_probability": "0.426",
+        "macrel_hemolysis_probability": "0.307",
+        "macrel_risk": "low",
+        "macrel_evaluated_sequence": "VVVGGGPPNSAGA",
+        "macrel_normalization_note": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-9142534e5fcb4eb125c4",
+      "sequence": "VVVVAVSGPGSTEY",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "macrel_amp_probability",
+          "numeric_value": 0.267,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "macrel_hemolysis_probability",
+          "numeric_value": 0.168,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "macrel_hemolysis_label",
+          "numeric_value": null,
+          "text_value": "low",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-9142534e5fcb4eb125c4",
+        "sequence": "VVVVAVSGPGSTEY",
+        "status": "success",
+        "macrel_amp_probability": "0.267",
+        "macrel_hemolysis_probability": "0.168",
+        "macrel_risk": "low",
+        "macrel_evaluated_sequence": "VVVVAVSGPGSTEY",
+        "macrel_normalization_note": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-b9c7918fe8a93da376bb",
+      "sequence": "PKVVGVVVCAGANDV",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "macrel_amp_probability",
+          "numeric_value": 0.287,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "macrel_hemolysis_probability",
+          "numeric_value": 0.198,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "macrel_hemolysis_label",
+          "numeric_value": null,
+          "text_value": "low",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-b9c7918fe8a93da376bb",
+        "sequence": "PKVVGVVVCAGANDV",
+        "status": "success",
+        "macrel_amp_probability": "0.287",
+        "macrel_hemolysis_probability": "0.198",
+        "macrel_risk": "low",
+        "macrel_evaluated_sequence": "PKVVGVVVCAGANDV",
+        "macrel_normalization_note": ""
+      }
+    }
+  ],
+  "raw_rows": [
+    {
+      "candidate_id": "proposal-74605331c5a96923be03",
+      "sequence": "AGGPPGSE",
+      "status": "success",
+      "macrel_amp_probability": "0.228",
+      "macrel_hemolysis_probability": "0.287",
+      "macrel_risk": "low",
+      "macrel_evaluated_sequence": "AGGPPGSE",
+      "macrel_normalization_note": ""
+    },
+    {
+      "candidate_id": "proposal-6c623f3d79f71b73c07d",
+      "sequence": "AAGGPGSGE",
+      "status": "success",
+      "macrel_amp_probability": "0.327",
+      "macrel_hemolysis_probability": "0.307",
+      "macrel_risk": "low",
+      "macrel_evaluated_sequence": "AAGGPGSGE",
+      "macrel_normalization_note": ""
+    },
+    {
+      "candidate_id": "proposal-dcd55e4ba83c52513d92",
+      "sequence": "VAGGPPCGSE",
+      "status": "success",
+      "macrel_amp_probability": "0.356",
+      "macrel_hemolysis_probability": "0.356",
+      "macrel_risk": "low",
+      "macrel_evaluated_sequence": "VAGGPPCGSE",
+      "macrel_normalization_note": ""
+    },
+    {
+      "candidate_id": "proposal-e049daea19c620fb6beb",
+      "sequence": "TVGGGPGSGSA",
+      "status": "success",
+      "macrel_amp_probability": "0.475",
+      "macrel_hemolysis_probability": "0.307",
+      "macrel_risk": "low",
+      "macrel_evaluated_sequence": "TVGGGPGSGSA",
+      "macrel_normalization_note": ""
+    },
+    {
+      "candidate_id": "proposal-8337d614c6e766c8888e",
+      "sequence": "TVGGGGGCSPEE",
+      "status": "success",
+      "macrel_amp_probability": "0.327",
+      "macrel_hemolysis_probability": "0.337",
+      "macrel_risk": "low",
+      "macrel_evaluated_sequence": "TVGGGGGCSPEE",
+      "macrel_normalization_note": ""
+    },
+    {
+      "candidate_id": "proposal-7933631fdf73671252de",
+      "sequence": "VVVGGGPPNSAGA",
+      "status": "success",
+      "macrel_amp_probability": "0.426",
+      "macrel_hemolysis_probability": "0.307",
+      "macrel_risk": "low",
+      "macrel_evaluated_sequence": "VVVGGGPPNSAGA",
+      "macrel_normalization_note": ""
+    },
+    {
+      "candidate_id": "proposal-9142534e5fcb4eb125c4",
+      "sequence": "VVVVAVSGPGSTEY",
+      "status": "success",
+      "macrel_amp_probability": "0.267",
+      "macrel_hemolysis_probability": "0.168",
+      "macrel_risk": "low",
+      "macrel_evaluated_sequence": "VVVVAVSGPGSTEY",
+      "macrel_normalization_note": ""
+    },
+    {
+      "candidate_id": "proposal-b9c7918fe8a93da376bb",
+      "sequence": "PKVVGVVVCAGANDV",
+      "status": "success",
+      "macrel_amp_probability": "0.287",
+      "macrel_hemolysis_probability": "0.198",
+      "macrel_risk": "low",
+      "macrel_evaluated_sequence": "PKVVGVVVCAGANDV",
+      "macrel_normalization_note": ""
+    }
+  ],
+  "stdout_tail": "",
+  "stderr_tail": "",
+  "model_uri": "git+https://github.com/BigDataBiology/Macrel.git@8c1f7321618ccde2a28b960d32525620d2c737e3",
+  "weights_sha256": "0d19dcbfa1f8254e482d889b7e2e1be398bb77f692bd27ab43278da29545cf83",
+  "limitations": [
+    "Macrel is one soft generic AMP/hemolysis classifier; HemoPI2 is not yet active.",
+    "Model assets match the two hashes locked in the handoff, but this is not assay calibration."
+  ],
+  "adapter_version": "macrel-1.6.1-8c1f732",
+  "registry_sha256": "7a5152541864e7cec1b94bb5eb9c74d313408b5f4d4781f1565525b577164e55",
+  "command_argv": [
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\.venv\\Scripts\\python.exe",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\src\\pepagent\\model_workers\\macrel_metric_cli.py",
+    "--input",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\reports\\pepflow_acea_real_target_smoke_v1\\score_all_v4\\work\\hemolysis_risk\\candidates.csv",
+    "--output",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\reports\\pepflow_acea_real_target_smoke_v1\\score_all_v4\\work\\hemolysis_risk\\predictions.csv",
+    "--raw-output-dir",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\reports\\pepflow_acea_real_target_smoke_v1\\score_all_v4\\work\\hemolysis_risk\\raw",
+    "--macrel-executable",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\var\\metric-runtimes\\macrel-py311\\Scripts\\macrel.exe"
+  ]
+}

@@ -39,20 +39,31 @@
       "checkpoint_uri": "https://drive.google.com/file/d/1f_AcDUY0IBKrRdWVDjyCNbgtgWeKRk7d",
       "checkpoint_sha256": "80ef4d7a07eddd877067859b5df95c50833cb72c40ef10d6ff5aa1263f0dba21",
       "checkpoint_size_bytes": 83063321,
-      "runtime_status": "checkpoint_frozen_custom_target_preprocessor_required",
-      "reason": "The official inference entry point consumes a preprocessed peptide-pocket case rather than an arbitrary receptor pocket and length request."
+      "runtime_status": "acea_real_target_smoke_scored_no_qd_eligible",
+      "adapter": "exact pocket residues plus masked deterministic length template; upstream model2 sampling API",
+      "evaluated_smoke": {
+        "target_key": "acea",
+        "raw_occurrence_count": 8,
+        "formal_12_complete_count": 8,
+        "display_eligible_count": 5,
+        "activity_support_ge_2_count": 0,
+        "qd_quality_gate_pass_count": 0,
+        "hemopi2_reviewed_count": 8,
+        "hemopi2_conflict_count": 3,
+        "decision": "do_not_expand_this_sampling_distribution"
+      }
     }
   },
   "routing": [
     {
       "target_key": "acea",
       "initial_generator": "pepglad",
-      "candidate_generators": ["pepglad", "pepmlm_650m"],
+      "candidate_generators": ["pepglad", "pepmlm_650m", "pepflow"],
       "challenger_generator": "pepflow",
       "structure_id": "1IGW",
       "pocket_key": "catalytic_mg_isocitrate_site",
       "pocket_evidence_grade": "A",
-      "status": "pepglad_real_smoke_scored"
+      "status": "pepflow_real_smoke_scored_no_qd_eligible"
     },
     {
       "target_key": "gyra",

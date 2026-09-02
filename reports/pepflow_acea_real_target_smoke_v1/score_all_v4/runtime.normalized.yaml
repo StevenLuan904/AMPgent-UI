@@ -1,0 +1,154 @@
+adapters:
+  amp_likeness:
+    enabled: true
+    version: amplify-2.0.1-py36hdfd78af_2
+    model_uri: https://conda.anaconda.org/bioconda/noarch/amplify-2.0.1-py36hdfd78af_2.conda
+    weights_sha256: 2ea5787986fca6f6f25091ecd1689a303964480ee86c5bf3fb274318338e7f6e
+    command:
+    - D:\DWorkspace\yangyang\皮肤抗菌短肽\agent-platform\.venv\Scripts\python.exe
+    - -m
+    - pepagent.model_workers.amplify_metric_cli
+    - --input
+    - '{input}'
+    - --output
+    - '{output}'
+    - --raw-output-dir
+    - '{raw_output_dir}'
+    - --amplify-python
+    - C:\Users\31948\AppData\Local\ampgent-amplify-py36-cf\python.exe
+    - --amplify-script
+    - C:\Users\31948\AppData\Local\ampgent-amplify-py36-cf\share\amplify\src\AMPlify.py
+    - --weights-directory
+    - C:\Users\31948\AppData\Local\ampgent-amplify-py36-cf\share\amplify\models\balanced
+    timeout_seconds: 1200
+    limitations:
+    - Generic AMP-likeness is soft supporting evidence, not AceA binding or potency.
+    - The local public-control replay does not establish calibration or leakage isolation.
+  mic_potency:
+    enabled: true
+    version: llamp-bb48daa-esm2-16b0dddc
+    model_uri: git+https://github.com/GIST-CSBL/LLAMP.git@bb48daaa94b947edac46e498dec741911cf98edc
+    weights_sha256: be331f32d8df620a955dfd86647cedd81f91fd315e5a8cefbc1cdd66c43f7f6e
+    command:
+    - D:\DWorkspace\yangyang\皮肤抗菌短肽\agent-platform\var\metric-runtimes\llamp-py39\Scripts\python.exe
+    - D:\DWorkspace\yangyang\皮肤抗菌短肽\agent-platform\src\pepagent\model_workers\llamp_metric_cli.py
+    - --input
+    - '{input}'
+    - --output
+    - '{output}'
+    - --raw-output-dir
+    - '{raw_output_dir}'
+    - --upstream-repository
+    - D:\DWorkspace\yangyang\皮肤抗菌短肽\agent-platform\var\metric-runtimes\llamp-src
+    - --base-model
+    - D:\DWorkspace\yangyang\皮肤抗菌短肽\agent-platform\var\metric-runtimes\llamp-models\peptide_tuned_ESM-2
+    - --checkpoint
+    - D:\DWorkspace\yangyang\皮肤抗菌短肽\agent-platform\var\metric-runtimes\llamp-models\LLAMP.pth
+    - --genome-features
+    - D:\DWorkspace\yangyang\皮肤抗菌短肽\agent-platform\var\metric-runtimes\llamp-src\data\Genomic_featrues\genome_features.pt
+    - --model-sha256
+    - f23fc9291d8df70ef00fafb8c7fe4ed91d1eac0ffc8653898c87024e86365d02
+    - --config-sha256
+    - 20e97e4c6a228e6b4f59002710cbff704be3551b9f26a1b4599238cf80d7e804
+    - --checkpoint-sha256
+    - be331f32d8df620a955dfd86647cedd81f91fd315e5a8cefbc1cdd66c43f7f6e
+    - --genome-features-sha256
+    - 2d71635dbc8769f92177ca20e3e60ad4b79544d51f0570e7c2f89fcdb0b02df7
+    - --batch-size
+    - '32'
+    - --device
+    - cpu
+    timeout_seconds: 3600
+    limitations:
+    - E. coli species-conditioned output is a soft estimate, not a wet-lab MIC.
+    - The author test is not sequence-similarity isolated from training data.
+    - The PolyForm Noncommercial license limits this runtime to noncommercial research.
+  mic_potency_amp_read:
+    enabled: true
+    version: amp-read-ec9478b-open-weights-cpu-v1
+    model_uri: git+https://github.com/MicroResearchLab/AMP-potency-prediction-EvoGradient.git@ec9478b5e0d0aff4f92d6381c5027855390104c4
+    weights_sha256: 06a577e36a833d36fad8b2af03f79cef8b3e795269918dcdee263967d197565f
+    command:
+    - D:\DWorkspace\yangyang\皮肤抗菌短肽\agent-platform\var\metric-runtimes\llamp-py39\Scripts\python.exe
+    - D:\DWorkspace\yangyang\皮肤抗菌短肽\agent-platform\src\pepagent\model_workers\amp_read_metric_cli.py
+    - --input
+    - '{input}'
+    - --output
+    - '{output}'
+    - --raw-output-dir
+    - '{raw_output_dir}'
+    - --upstream-repository
+    - D:\DWorkspace\yangyang\皮肤抗菌短肽\agent-platform\var\metric-runtimes\amp-read-src
+    - --cnn
+    - D:\DWorkspace\yangyang\皮肤抗菌短肽\agent-platform\var\metric-runtimes\amp-read-src\model\regression\CNN.pth
+    - --cnn-sha256
+    - da071c6624666e128aae79643dcbe6084fce339711b902a3ba89e4eb3aeee07e
+    - --transformer
+    - D:\DWorkspace\yangyang\皮肤抗菌短肽\agent-platform\var\metric-runtimes\amp-read-src\model\regression\Transformer.pth
+    - --transformer-sha256
+    - 658a354dd0c76c1851516af361ea0899568642c02cc0fab0f6a55a87579fcc44
+    - --attention
+    - D:\DWorkspace\yangyang\皮肤抗菌短肽\agent-platform\var\metric-runtimes\amp-read-src\model\regression\Attention.pth
+    - --attention-sha256
+    - 5dbea063bb56ffe7e903538aab4f4a90688d0f87f89c4ed26851fb649062283a
+    - --lstm
+    - D:\DWorkspace\yangyang\皮肤抗菌短肽\agent-platform\var\metric-runtimes\amp-read-src\model\regression\LSTM.pth
+    - --lstm-sha256
+    - 6f6d2784149a77fe430125aad612efe20cd3ef4e9b6680b5ec29b10ac99f9594
+    - --source-sha256
+    - 1bed5830995e9d2f47bcbf64249d7e53ddb90eca83cc5f80b5ab9d6901220ba1
+    - --device
+    - cpu
+    timeout_seconds: 1800
+    limitations:
+    - Generic mixed-species MIC estimate; it is not E. coli-specific or a wet-lab
+      MIC.
+    - Component predictions are retained and no cross-family consensus is fabricated.
+    - The local comparison is not similarity-isolated from the released training data.
+  toxicity_risk:
+    enabled: true
+    version: toxinpred3-corrected-v0.2-dcdba83
+    model_uri: git+https://github.com/raghavagps/toxinpred3.git@dcdba833cd48cc8a2090ac90f3319fd9bcb87a1c
+    weights_sha256: bacaef2ff40136babe98edcde861ea79d62ea3420a6b1b5d36019fa0ddc2db3b
+    command:
+    - D:\DWorkspace\yangyang\皮肤抗菌短肽\agent-platform\var\metric-runtimes\toxinpred3-py39\Scripts\python.exe
+    - D:\DWorkspace\yangyang\皮肤抗菌短肽\agent-platform\src\pepagent\model_workers\toxinpred3_metric_cli.py
+    - --input
+    - '{input}'
+    - --output
+    - '{output}'
+    - --raw-output-dir
+    - '{raw_output_dir}'
+    - --model
+    - D:\DWorkspace\yangyang\皮肤抗菌短肽\agent-platform\var\metric-runtimes\toxinpred3-src\model\unpacked\toxinpred3.0_model.pkl
+    - --positive-motifs
+    - D:\DWorkspace\yangyang\皮肤抗菌短肽\agent-platform\var\metric-runtimes\toxinpred3-src\motifs\pos_motif.txt
+    - --negative-motifs
+    - D:\DWorkspace\yangyang\皮肤抗菌短肽\agent-platform\var\metric-runtimes\toxinpred3-src\motifs\neg_motif.txt
+    - --threshold
+    - '0.38'
+    timeout_seconds: 1800
+    limitations:
+    - Corrected batch runner fixes one-row shape and per-sequence literal MERCI scoring.
+    - The endpoint is not assay-matched to this project and remains soft evidence.
+  hemolysis_risk:
+    enabled: true
+    version: macrel-1.6.1-8c1f732
+    model_uri: git+https://github.com/BigDataBiology/Macrel.git@8c1f7321618ccde2a28b960d32525620d2c737e3
+    weights_sha256: 0d19dcbfa1f8254e482d889b7e2e1be398bb77f692bd27ab43278da29545cf83
+    command:
+    - D:\DWorkspace\yangyang\皮肤抗菌短肽\agent-platform\.venv\Scripts\python.exe
+    - D:\DWorkspace\yangyang\皮肤抗菌短肽\agent-platform\src\pepagent\model_workers\macrel_metric_cli.py
+    - --input
+    - '{input}'
+    - --output
+    - '{output}'
+    - --raw-output-dir
+    - '{raw_output_dir}'
+    - --macrel-executable
+    - D:\DWorkspace\yangyang\皮肤抗菌短肽\agent-platform\var\metric-runtimes\macrel-py311\Scripts\macrel.exe
+    timeout_seconds: 1800
+    limitations:
+    - Macrel is one soft generic AMP/hemolysis classifier; HemoPI2 is not yet active.
+    - Model assets match the two hashes locked in the handoff, but this is not assay
+      calibration.

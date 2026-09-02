@@ -1,0 +1,629 @@
+{
+  "plugin": {
+    "name": "mic_potency_amp_read",
+    "parameters": {}
+  },
+  "contract": {
+    "default_trust": "soft",
+    "maximum_trust": "soft",
+    "reliability": "R3-generic-mixed-species-no-similarity-isolated-local-test",
+    "provider": "external",
+    "outputs": {
+      "amp_read_log10_mic_um": [
+        "amp_read_log10_mic_um",
+        "log10(umol/L)",
+        "numeric"
+      ],
+      "amp_read_predicted_mic_um": [
+        "amp_read_predicted_mic_um",
+        "umol/L",
+        "numeric"
+      ],
+      "amp_read_cnn_log10_mic_um": [
+        "amp_read_cnn_log10_mic_um",
+        "log10(umol/L)",
+        "numeric"
+      ],
+      "amp_read_transformer_log10_mic_um": [
+        "amp_read_transformer_log10_mic_um",
+        "log10(umol/L)",
+        "numeric"
+      ],
+      "amp_read_attention_log10_mic_um": [
+        "amp_read_attention_log10_mic_um",
+        "log10(umol/L)",
+        "numeric"
+      ],
+      "amp_read_lstm_log10_mic_um": [
+        "amp_read_lstm_log10_mic_um",
+        "log10(umol/L)",
+        "numeric"
+      ]
+    }
+  },
+  "candidate_count": 8,
+  "status": "complete",
+  "records": [
+    {
+      "candidate_id": "proposal-74605331c5a96923be03",
+      "sequence": "AGGPPGSE",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 3.7606285021768118,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 5762.733052290436,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 3.9720003604888916,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 4.000465393066406,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 3.4460058212280273,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 3.624018907546997,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-74605331c5a96923be03",
+        "sequence": "AGGPPGSE",
+        "status": "success",
+        "amp_read_log10_mic_um": "3.7606285021768118",
+        "amp_read_predicted_mic_um": "5762.733052290436",
+        "amp_read_cnn_log10_mic_um": "3.9720003604888916",
+        "amp_read_transformer_log10_mic_um": "4.000465393066406",
+        "amp_read_attention_log10_mic_um": "3.4460058212280273",
+        "amp_read_lstm_log10_mic_um": "3.624018907546997",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-6c623f3d79f71b73c07d",
+      "sequence": "AAGGPGSGE",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 3.3954583143452237,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 2485.754958165962,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 3.794567823410034,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 3.8003716468811035,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 3.3690168857574463,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 2.6177921295166016,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-6c623f3d79f71b73c07d",
+        "sequence": "AAGGPGSGE",
+        "status": "success",
+        "amp_read_log10_mic_um": "3.3954583143452237",
+        "amp_read_predicted_mic_um": "2485.754958165962",
+        "amp_read_cnn_log10_mic_um": "3.794567823410034",
+        "amp_read_transformer_log10_mic_um": "3.8003716468811035",
+        "amp_read_attention_log10_mic_um": "3.3690168857574463",
+        "amp_read_lstm_log10_mic_um": "2.6177921295166016",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-dcd55e4ba83c52513d92",
+      "sequence": "VAGGPPCGSE",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 3.3592776334493544,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 2287.0603958614865,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 2.8782129287719727,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 3.940737247467041,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 3.2959063053131104,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 3.3222410678863525,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-dcd55e4ba83c52513d92",
+        "sequence": "VAGGPPCGSE",
+        "status": "success",
+        "amp_read_log10_mic_um": "3.3592776334493544",
+        "amp_read_predicted_mic_um": "2287.0603958614865",
+        "amp_read_cnn_log10_mic_um": "2.8782129287719727",
+        "amp_read_transformer_log10_mic_um": "3.940737247467041",
+        "amp_read_attention_log10_mic_um": "3.2959063053131104",
+        "amp_read_lstm_log10_mic_um": "3.3222410678863525",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-e049daea19c620fb6beb",
+      "sequence": "TVGGGPGSGSA",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 3.8103073169569415,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 6461.11270791419,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 4.056325912475586,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 4.226875305175781,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 3.509707450866699,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 3.4482762813568115,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-e049daea19c620fb6beb",
+        "sequence": "TVGGGPGSGSA",
+        "status": "success",
+        "amp_read_log10_mic_um": "3.8103073169569415",
+        "amp_read_predicted_mic_um": "6461.11270791419",
+        "amp_read_cnn_log10_mic_um": "4.056325912475586",
+        "amp_read_transformer_log10_mic_um": "4.226875305175781",
+        "amp_read_attention_log10_mic_um": "3.509707450866699",
+        "amp_read_lstm_log10_mic_um": "3.4482762813568115",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-8337d614c6e766c8888e",
+      "sequence": "TVGGGGGCSPEE",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 3.3200453618327854,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 2089.5143681455825,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 2.7949557304382324,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 3.799490451812744,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 3.248100519180298,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 3.437636137008667,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-8337d614c6e766c8888e",
+        "sequence": "TVGGGGGCSPEE",
+        "status": "success",
+        "amp_read_log10_mic_um": "3.3200453618327854",
+        "amp_read_predicted_mic_um": "2089.5143681455825",
+        "amp_read_cnn_log10_mic_um": "2.7949557304382324",
+        "amp_read_transformer_log10_mic_um": "3.799490451812744",
+        "amp_read_attention_log10_mic_um": "3.248100519180298",
+        "amp_read_lstm_log10_mic_um": "3.437636137008667",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-7933631fdf73671252de",
+      "sequence": "VVVGGGPPNSAGA",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 2.914066466816959,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 820.4771050516682,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 3.4234941005706787,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 3.0963401794433594,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 3.216186285018921,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 1.920137643814087,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-7933631fdf73671252de",
+        "sequence": "VVVGGGPPNSAGA",
+        "status": "success",
+        "amp_read_log10_mic_um": "2.914066466816959",
+        "amp_read_predicted_mic_um": "820.4771050516682",
+        "amp_read_cnn_log10_mic_um": "3.4234941005706787",
+        "amp_read_transformer_log10_mic_um": "3.0963401794433594",
+        "amp_read_attention_log10_mic_um": "3.216186285018921",
+        "amp_read_lstm_log10_mic_um": "1.920137643814087",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-9142534e5fcb4eb125c4",
+      "sequence": "VVVVAVSGPGSTEY",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 2.436305391981621,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 273.0897450358092,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 1.775788426399231,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 3.0264339447021484,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 2.21574330329895,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 2.7272791862487793,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-9142534e5fcb4eb125c4",
+        "sequence": "VVVVAVSGPGSTEY",
+        "status": "success",
+        "amp_read_log10_mic_um": "2.436305391981621",
+        "amp_read_predicted_mic_um": "273.0897450358092",
+        "amp_read_cnn_log10_mic_um": "1.775788426399231",
+        "amp_read_transformer_log10_mic_um": "3.0264339447021484",
+        "amp_read_attention_log10_mic_um": "2.21574330329895",
+        "amp_read_lstm_log10_mic_um": "2.7272791862487793",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-b9c7918fe8a93da376bb",
+      "sequence": "PKVVGVVVCAGANDV",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 2.995406449705727,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 989.4786997654314,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 2.829908847808838,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 2.9300098419189453,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 3.3002686500549316,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 2.9214165210723877,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-b9c7918fe8a93da376bb",
+        "sequence": "PKVVGVVVCAGANDV",
+        "status": "success",
+        "amp_read_log10_mic_um": "2.995406449705727",
+        "amp_read_predicted_mic_um": "989.4786997654314",
+        "amp_read_cnn_log10_mic_um": "2.829908847808838",
+        "amp_read_transformer_log10_mic_um": "2.9300098419189453",
+        "amp_read_attention_log10_mic_um": "3.3002686500549316",
+        "amp_read_lstm_log10_mic_um": "2.9214165210723877",
+        "error": ""
+      }
+    }
+  ],
+  "raw_rows": [
+    {
+      "candidate_id": "proposal-74605331c5a96923be03",
+      "sequence": "AGGPPGSE",
+      "status": "success",
+      "amp_read_log10_mic_um": "3.7606285021768118",
+      "amp_read_predicted_mic_um": "5762.733052290436",
+      "amp_read_cnn_log10_mic_um": "3.9720003604888916",
+      "amp_read_transformer_log10_mic_um": "4.000465393066406",
+      "amp_read_attention_log10_mic_um": "3.4460058212280273",
+      "amp_read_lstm_log10_mic_um": "3.624018907546997",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-6c623f3d79f71b73c07d",
+      "sequence": "AAGGPGSGE",
+      "status": "success",
+      "amp_read_log10_mic_um": "3.3954583143452237",
+      "amp_read_predicted_mic_um": "2485.754958165962",
+      "amp_read_cnn_log10_mic_um": "3.794567823410034",
+      "amp_read_transformer_log10_mic_um": "3.8003716468811035",
+      "amp_read_attention_log10_mic_um": "3.3690168857574463",
+      "amp_read_lstm_log10_mic_um": "2.6177921295166016",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-dcd55e4ba83c52513d92",
+      "sequence": "VAGGPPCGSE",
+      "status": "success",
+      "amp_read_log10_mic_um": "3.3592776334493544",
+      "amp_read_predicted_mic_um": "2287.0603958614865",
+      "amp_read_cnn_log10_mic_um": "2.8782129287719727",
+      "amp_read_transformer_log10_mic_um": "3.940737247467041",
+      "amp_read_attention_log10_mic_um": "3.2959063053131104",
+      "amp_read_lstm_log10_mic_um": "3.3222410678863525",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-e049daea19c620fb6beb",
+      "sequence": "TVGGGPGSGSA",
+      "status": "success",
+      "amp_read_log10_mic_um": "3.8103073169569415",
+      "amp_read_predicted_mic_um": "6461.11270791419",
+      "amp_read_cnn_log10_mic_um": "4.056325912475586",
+      "amp_read_transformer_log10_mic_um": "4.226875305175781",
+      "amp_read_attention_log10_mic_um": "3.509707450866699",
+      "amp_read_lstm_log10_mic_um": "3.4482762813568115",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-8337d614c6e766c8888e",
+      "sequence": "TVGGGGGCSPEE",
+      "status": "success",
+      "amp_read_log10_mic_um": "3.3200453618327854",
+      "amp_read_predicted_mic_um": "2089.5143681455825",
+      "amp_read_cnn_log10_mic_um": "2.7949557304382324",
+      "amp_read_transformer_log10_mic_um": "3.799490451812744",
+      "amp_read_attention_log10_mic_um": "3.248100519180298",
+      "amp_read_lstm_log10_mic_um": "3.437636137008667",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-7933631fdf73671252de",
+      "sequence": "VVVGGGPPNSAGA",
+      "status": "success",
+      "amp_read_log10_mic_um": "2.914066466816959",
+      "amp_read_predicted_mic_um": "820.4771050516682",
+      "amp_read_cnn_log10_mic_um": "3.4234941005706787",
+      "amp_read_transformer_log10_mic_um": "3.0963401794433594",
+      "amp_read_attention_log10_mic_um": "3.216186285018921",
+      "amp_read_lstm_log10_mic_um": "1.920137643814087",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-9142534e5fcb4eb125c4",
+      "sequence": "VVVVAVSGPGSTEY",
+      "status": "success",
+      "amp_read_log10_mic_um": "2.436305391981621",
+      "amp_read_predicted_mic_um": "273.0897450358092",
+      "amp_read_cnn_log10_mic_um": "1.775788426399231",
+      "amp_read_transformer_log10_mic_um": "3.0264339447021484",
+      "amp_read_attention_log10_mic_um": "2.21574330329895",
+      "amp_read_lstm_log10_mic_um": "2.7272791862487793",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-b9c7918fe8a93da376bb",
+      "sequence": "PKVVGVVVCAGANDV",
+      "status": "success",
+      "amp_read_log10_mic_um": "2.995406449705727",
+      "amp_read_predicted_mic_um": "989.4786997654314",
+      "amp_read_cnn_log10_mic_um": "2.829908847808838",
+      "amp_read_transformer_log10_mic_um": "2.9300098419189453",
+      "amp_read_attention_log10_mic_um": "3.3002686500549316",
+      "amp_read_lstm_log10_mic_um": "2.9214165210723877",
+      "error": ""
+    }
+  ],
+  "stdout_tail": "",
+  "stderr_tail": "",
+  "model_uri": "git+https://github.com/MicroResearchLab/AMP-potency-prediction-EvoGradient.git@ec9478b5e0d0aff4f92d6381c5027855390104c4",
+  "weights_sha256": "06a577e36a833d36fad8b2af03f79cef8b3e795269918dcdee263967d197565f",
+  "limitations": [
+    "Generic mixed-species MIC estimate; it is not E. coli-specific or a wet-lab MIC.",
+    "Component predictions are retained and no cross-family consensus is fabricated.",
+    "The local comparison is not similarity-isolated from the released training data."
+  ],
+  "adapter_version": "amp-read-ec9478b-open-weights-cpu-v1",
+  "registry_sha256": "7a5152541864e7cec1b94bb5eb9c74d313408b5f4d4781f1565525b577164e55",
+  "command_argv": [
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\var\\metric-runtimes\\llamp-py39\\Scripts\\python.exe",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\src\\pepagent\\model_workers\\amp_read_metric_cli.py",
+    "--input",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\reports\\pepflow_acea_real_target_smoke_v1\\score_all_v4\\work\\mic_potency_amp_read\\candidates.csv",
+    "--output",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\reports\\pepflow_acea_real_target_smoke_v1\\score_all_v4\\work\\mic_potency_amp_read\\predictions.csv",
+    "--raw-output-dir",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\reports\\pepflow_acea_real_target_smoke_v1\\score_all_v4\\work\\mic_potency_amp_read\\raw",
+    "--upstream-repository",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\var\\metric-runtimes\\amp-read-src",
+    "--cnn",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\var\\metric-runtimes\\amp-read-src\\model\\regression\\CNN.pth",
+    "--cnn-sha256",
+    "da071c6624666e128aae79643dcbe6084fce339711b902a3ba89e4eb3aeee07e",
+    "--transformer",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\var\\metric-runtimes\\amp-read-src\\model\\regression\\Transformer.pth",
+    "--transformer-sha256",
+    "658a354dd0c76c1851516af361ea0899568642c02cc0fab0f6a55a87579fcc44",
+    "--attention",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\var\\metric-runtimes\\amp-read-src\\model\\regression\\Attention.pth",
+    "--attention-sha256",
+    "5dbea063bb56ffe7e903538aab4f4a90688d0f87f89c4ed26851fb649062283a",
+    "--lstm",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\var\\metric-runtimes\\amp-read-src\\model\\regression\\LSTM.pth",
+    "--lstm-sha256",
+    "6f6d2784149a77fe430125aad612efe20cd3ef4e9b6680b5ec29b10ac99f9594",
+    "--source-sha256",
+    "1bed5830995e9d2f47bcbf64249d7e53ddb90eca83cc5f80b5ab9d6901220ba1",
+    "--device",
+    "cpu"
+  ]
+}

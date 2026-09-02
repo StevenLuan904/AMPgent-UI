@@ -221,6 +221,9 @@ def _candidate_metadata(
     return {
         "schema_version": SCHEMA_VERSION,
         "source_candidate_scores_sha256": score_sha256,
+        "candidate_source": row.get("source"),
+        "source_raw_rank": int(row["raw_rank"]) if row.get("raw_rank") else None,
+        "source_structure_file": row.get("remote_structure_file"),
         "branch_key": row["branch_key"],
         "operator_id": row.get("operator_id"),
         "action_sha256": row.get("action_sha256"),

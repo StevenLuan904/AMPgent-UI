@@ -1,0 +1,383 @@
+{
+  "schema_version": "ampgent.target-structure-generator-result.1",
+  "generator_id": "pepflow",
+  "target": {
+    "target_key": "acea",
+    "accession": "P0A9G6",
+    "target_sequence_sha256": "3a113be0188b92e4e130d3165f4fdb2a3f0df846284e539a8af01c8f038ade10",
+    "structure_id": "1IGW",
+    "structure_uri": "https://files.rcsb.org/download/1IGW.pdb",
+    "structure_sha256": "bfc01075a0fe83113b6dacdf6260e6208ba851385e8e17d7d676076b304a9776",
+    "receptor_chain_ids": [
+      "C"
+    ],
+    "pocket_key": "catalytic_mg_isocitrate_site",
+    "pocket_evidence_grade": "A",
+    "pocket_residues": [
+      {
+        "chain_id": "C",
+        "auth_residue_number": 89,
+        "insertion_code": ""
+      },
+      {
+        "chain_id": "C",
+        "auth_residue_number": 91,
+        "insertion_code": ""
+      },
+      {
+        "chain_id": "C",
+        "auth_residue_number": 92,
+        "insertion_code": ""
+      },
+      {
+        "chain_id": "C",
+        "auth_residue_number": 93,
+        "insertion_code": ""
+      },
+      {
+        "chain_id": "C",
+        "auth_residue_number": 108,
+        "insertion_code": ""
+      },
+      {
+        "chain_id": "C",
+        "auth_residue_number": 157,
+        "insertion_code": ""
+      },
+      {
+        "chain_id": "C",
+        "auth_residue_number": 159,
+        "insertion_code": ""
+      },
+      {
+        "chain_id": "C",
+        "auth_residue_number": 184,
+        "insertion_code": ""
+      },
+      {
+        "chain_id": "C",
+        "auth_residue_number": 186,
+        "insertion_code": ""
+      },
+      {
+        "chain_id": "C",
+        "auth_residue_number": 193,
+        "insertion_code": ""
+      },
+      {
+        "chain_id": "C",
+        "auth_residue_number": 194,
+        "insertion_code": ""
+      },
+      {
+        "chain_id": "C",
+        "auth_residue_number": 195,
+        "insertion_code": ""
+      },
+      {
+        "chain_id": "C",
+        "auth_residue_number": 196,
+        "insertion_code": ""
+      },
+      {
+        "chain_id": "C",
+        "auth_residue_number": 197,
+        "insertion_code": ""
+      },
+      {
+        "chain_id": "C",
+        "auth_residue_number": 232,
+        "insertion_code": ""
+      },
+      {
+        "chain_id": "C",
+        "auth_residue_number": 287,
+        "insertion_code": ""
+      },
+      {
+        "chain_id": "C",
+        "auth_residue_number": 289,
+        "insertion_code": ""
+      },
+      {
+        "chain_id": "C",
+        "auth_residue_number": 317,
+        "insertion_code": ""
+      },
+      {
+        "chain_id": "C",
+        "auth_residue_number": 318,
+        "insertion_code": ""
+      },
+      {
+        "chain_id": "C",
+        "auth_residue_number": 319,
+        "insertion_code": ""
+      },
+      {
+        "chain_id": "C",
+        "auth_residue_number": 320,
+        "insertion_code": ""
+      },
+      {
+        "chain_id": "C",
+        "auth_residue_number": 321,
+        "insertion_code": ""
+      },
+      {
+        "chain_id": "C",
+        "auth_residue_number": 351,
+        "insertion_code": ""
+      },
+      {
+        "chain_id": "C",
+        "auth_residue_number": 352,
+        "insertion_code": ""
+      },
+      {
+        "chain_id": "C",
+        "auth_residue_number": 356,
+        "insertion_code": ""
+      }
+    ]
+  },
+  "runtime": {
+    "generator_id": "pepflow",
+    "source_repository": "https://github.com/Ced3-han/PepFlowww",
+    "source_revision": "16e0d267c2dbd96cdacbe5ac07c4dada0d61169b",
+    "license": "MIT",
+    "model_variant": "model2-real-world-design",
+    "checkpoint_uri": "https://drive.google.com/file/d/1f_AcDUY0IBKrRdWVDjyCNbgtgWeKRk7d",
+    "checkpoint_sha256": "80ef4d7a07eddd877067859b5df95c50833cb72c40ef10d6ff5aa1263f0dba21",
+    "checkpoint_size_bytes": 83063321
+  },
+  "seed": 2026090301,
+  "requested_proposals": 8,
+  "raw_occurrence_count": 8,
+  "valid_sequence_count": 8,
+  "records": [
+    {
+      "raw_rank": 1,
+      "candidate_id": "acea-pepflow-2026090301-0001",
+      "sequence": "AGGPPGSE",
+      "sequence_sha256": "74605331c5a96923be0346ccac163cce5cb4ed2be67032ba31c14cfb1199884f",
+      "valid_sequence": true,
+      "invalid_reason": null,
+      "structure_file_name": "sample_0001.pdb",
+      "structure_sha256": "ea926af4514539da77f53bce870646872a72f24eefcb0e38ecf96eec4b1a29a4",
+      "structure_size_bytes": 20907
+    },
+    {
+      "raw_rank": 2,
+      "candidate_id": "acea-pepflow-2026090301-0002",
+      "sequence": "AAGGPGSGE",
+      "sequence_sha256": "6c623f3d79f71b73c07ddd5f620def6b274f778da15c3518fe993884874fa53c",
+      "valid_sequence": true,
+      "invalid_reason": null,
+      "structure_file_name": "sample_0002.pdb",
+      "structure_sha256": "c0fb50b356dccbf1eb8e1804bc2624a4d330b0d7c332db5030f21e718c92d7e2",
+      "structure_size_bytes": 21069
+    },
+    {
+      "raw_rank": 3,
+      "candidate_id": "acea-pepflow-2026090301-0003",
+      "sequence": "VAGGPPCGSE",
+      "sequence_sha256": "dcd55e4ba83c52513d92ac98b163e6b7751199ed99d120ae37d3f9f3304ffd01",
+      "valid_sequence": true,
+      "invalid_reason": null,
+      "structure_file_name": "sample_0003.pdb",
+      "structure_sha256": "730a6d23dd069905168ced7aeba55c06dda0754423ca9755cf9e1774ecf6f5dc",
+      "structure_size_bytes": 21960
+    },
+    {
+      "raw_rank": 4,
+      "candidate_id": "acea-pepflow-2026090301-0004",
+      "sequence": "TVGGGPGSGSA",
+      "sequence_sha256": "e049daea19c620fb6bebf6a97354f9380fad04757a22889826206508f51cb5ca",
+      "valid_sequence": true,
+      "invalid_reason": null,
+      "structure_file_name": "sample_0004.pdb",
+      "structure_sha256": "39aa0c387e39105d349b8b8e5e13fc7905156ec9b41fd2e17379c2a05780d365",
+      "structure_size_bytes": 21879
+    },
+    {
+      "raw_rank": 5,
+      "candidate_id": "acea-pepflow-2026090301-0005",
+      "sequence": "TVGGGGGCSPEE",
+      "sequence_sha256": "8337d614c6e766c8888e213a77d20b9a055cb82efa4b24acc28fdc1dfd6647c0",
+      "valid_sequence": true,
+      "invalid_reason": null,
+      "structure_file_name": "sample_0005.pdb",
+      "structure_sha256": "5efb4d7e8676f4c14a17434051e12960cadbc66b78f4aad5347fcdbc8aaae1d7",
+      "structure_size_bytes": 22932
+    },
+    {
+      "raw_rank": 6,
+      "candidate_id": "acea-pepflow-2026090301-0006",
+      "sequence": "VVVGGGPPNSAGA",
+      "sequence_sha256": "7933631fdf73671252de3030a0fabf9d9b2ca16a7e5da53d09404a515c26510a",
+      "valid_sequence": true,
+      "invalid_reason": null,
+      "structure_file_name": "sample_0006.pdb",
+      "structure_sha256": "22d548e3e2cf6d2998d98efa6934258a6d6a4406f7fa845edfeb77cd07b27fb5",
+      "structure_size_bytes": 23256
+    },
+    {
+      "raw_rank": 7,
+      "candidate_id": "acea-pepflow-2026090301-0007",
+      "sequence": "VVVVAVSGPGSTEY",
+      "sequence_sha256": "9142534e5fcb4eb125c4fb1afe010620a74e4ccff368c8396a011a5436fb0d97",
+      "valid_sequence": true,
+      "invalid_reason": null,
+      "structure_file_name": "sample_0007.pdb",
+      "structure_sha256": "1baab1e4a9967f29b291af863b0ac1ce6e9305bc4f2873c583cd002c4b817a18",
+      "structure_size_bytes": 24876
+    },
+    {
+      "raw_rank": 8,
+      "candidate_id": "acea-pepflow-2026090301-0008",
+      "sequence": "PKVVGVVVCAGANDV",
+      "sequence_sha256": "b9c7918fe8a93da376bbcd144921eb72bf104a684ccaabbfd8386b1400f63c4e",
+      "valid_sequence": true,
+      "invalid_reason": null,
+      "structure_file_name": "sample_0008.pdb",
+      "structure_sha256": "361b8414bd43c2b7eadb6b6cb7e6ce7375ffc3ab12c890517e363bfb57b118c6",
+      "structure_size_bytes": 25119
+    }
+  ],
+  "case_manifest_sha256": "2348ca021f006c68a3db796d6d997ab19bceaa650882f1e5b0a933acdb975f73",
+  "case_preprocessing": [
+    {
+      "case_dir": "/data1/huangyueshan/pepagent/data/run-cache/pepflow-acea-real-target-smoke-v1/work-attempt2/cases/acea-pepflow-L08",
+      "peptide_length": 8,
+      "peptide_chain_id": "Z",
+      "pocket_residue_count": 25,
+      "pocket_ca_centroid_angstrom": [
+        28.288799819946288,
+        22.901720085144042,
+        22.25364009857178
+      ],
+      "pocket_sha256": "dab42c2e2e8948390fc62c637f565a6b611355e7c3fa00fc4bf7f95a5d32767f",
+      "peptide_template_sha256": "a617199fda0cb05bfad0408544e8d97c017fa501514f71f18da5b5a680faa5ba",
+      "peptide_template_semantics": "masked_polyalanine_length_and_pocket_center_only",
+      "case_id": "acea-pepflow-L08",
+      "proposal_count": 1
+    },
+    {
+      "case_dir": "/data1/huangyueshan/pepagent/data/run-cache/pepflow-acea-real-target-smoke-v1/work-attempt2/cases/acea-pepflow-L09",
+      "peptide_length": 9,
+      "peptide_chain_id": "Z",
+      "pocket_residue_count": 25,
+      "pocket_ca_centroid_angstrom": [
+        28.288799819946288,
+        22.901720085144042,
+        22.25364009857178
+      ],
+      "pocket_sha256": "dab42c2e2e8948390fc62c637f565a6b611355e7c3fa00fc4bf7f95a5d32767f",
+      "peptide_template_sha256": "7a41db78187adf3c763b70351ce80e6ce5720aecfdf64c888f1899cca23dae4c",
+      "peptide_template_semantics": "masked_polyalanine_length_and_pocket_center_only",
+      "case_id": "acea-pepflow-L09",
+      "proposal_count": 1
+    },
+    {
+      "case_dir": "/data1/huangyueshan/pepagent/data/run-cache/pepflow-acea-real-target-smoke-v1/work-attempt2/cases/acea-pepflow-L10",
+      "peptide_length": 10,
+      "peptide_chain_id": "Z",
+      "pocket_residue_count": 25,
+      "pocket_ca_centroid_angstrom": [
+        28.288799819946288,
+        22.901720085144042,
+        22.25364009857178
+      ],
+      "pocket_sha256": "dab42c2e2e8948390fc62c637f565a6b611355e7c3fa00fc4bf7f95a5d32767f",
+      "peptide_template_sha256": "0555a2b6019c121bd94b3658d587bd74e7a30aea0a5f8e9c15755bbea1eef788",
+      "peptide_template_semantics": "masked_polyalanine_length_and_pocket_center_only",
+      "case_id": "acea-pepflow-L10",
+      "proposal_count": 1
+    },
+    {
+      "case_dir": "/data1/huangyueshan/pepagent/data/run-cache/pepflow-acea-real-target-smoke-v1/work-attempt2/cases/acea-pepflow-L11",
+      "peptide_length": 11,
+      "peptide_chain_id": "Z",
+      "pocket_residue_count": 25,
+      "pocket_ca_centroid_angstrom": [
+        28.288799819946288,
+        22.901720085144042,
+        22.25364009857178
+      ],
+      "pocket_sha256": "dab42c2e2e8948390fc62c637f565a6b611355e7c3fa00fc4bf7f95a5d32767f",
+      "peptide_template_sha256": "10734624fca5f728a8405c4672b205b285833ad2e2f4c79a988d3c7cb83a3503",
+      "peptide_template_semantics": "masked_polyalanine_length_and_pocket_center_only",
+      "case_id": "acea-pepflow-L11",
+      "proposal_count": 1
+    },
+    {
+      "case_dir": "/data1/huangyueshan/pepagent/data/run-cache/pepflow-acea-real-target-smoke-v1/work-attempt2/cases/acea-pepflow-L12",
+      "peptide_length": 12,
+      "peptide_chain_id": "Z",
+      "pocket_residue_count": 25,
+      "pocket_ca_centroid_angstrom": [
+        28.288799819946288,
+        22.901720085144042,
+        22.25364009857178
+      ],
+      "pocket_sha256": "dab42c2e2e8948390fc62c637f565a6b611355e7c3fa00fc4bf7f95a5d32767f",
+      "peptide_template_sha256": "1e242c40319ffc2cf146371358c0f7d1041492fd9ccc41c3107b609157f292ef",
+      "peptide_template_semantics": "masked_polyalanine_length_and_pocket_center_only",
+      "case_id": "acea-pepflow-L12",
+      "proposal_count": 1
+    },
+    {
+      "case_dir": "/data1/huangyueshan/pepagent/data/run-cache/pepflow-acea-real-target-smoke-v1/work-attempt2/cases/acea-pepflow-L13",
+      "peptide_length": 13,
+      "peptide_chain_id": "Z",
+      "pocket_residue_count": 25,
+      "pocket_ca_centroid_angstrom": [
+        28.288799819946288,
+        22.901720085144042,
+        22.25364009857178
+      ],
+      "pocket_sha256": "dab42c2e2e8948390fc62c637f565a6b611355e7c3fa00fc4bf7f95a5d32767f",
+      "peptide_template_sha256": "3842e484dc6046a6642174d87c069bd247d552d95d9ba4bb79c951837a24f2f3",
+      "peptide_template_semantics": "masked_polyalanine_length_and_pocket_center_only",
+      "case_id": "acea-pepflow-L13",
+      "proposal_count": 1
+    },
+    {
+      "case_dir": "/data1/huangyueshan/pepagent/data/run-cache/pepflow-acea-real-target-smoke-v1/work-attempt2/cases/acea-pepflow-L14",
+      "peptide_length": 14,
+      "peptide_chain_id": "Z",
+      "pocket_residue_count": 25,
+      "pocket_ca_centroid_angstrom": [
+        28.288799819946288,
+        22.901720085144042,
+        22.25364009857178
+      ],
+      "pocket_sha256": "dab42c2e2e8948390fc62c637f565a6b611355e7c3fa00fc4bf7f95a5d32767f",
+      "peptide_template_sha256": "5dc0e88e40efb48f7ea8f41a499aa957ed41a8507a1fff0d54136c57f48baeae",
+      "peptide_template_semantics": "masked_polyalanine_length_and_pocket_center_only",
+      "case_id": "acea-pepflow-L14",
+      "proposal_count": 1
+    },
+    {
+      "case_dir": "/data1/huangyueshan/pepagent/data/run-cache/pepflow-acea-real-target-smoke-v1/work-attempt2/cases/acea-pepflow-L15",
+      "peptide_length": 15,
+      "peptide_chain_id": "Z",
+      "pocket_residue_count": 25,
+      "pocket_ca_centroid_angstrom": [
+        28.288799819946288,
+        22.901720085144042,
+        22.25364009857178
+      ],
+      "pocket_sha256": "dab42c2e2e8948390fc62c637f565a6b611355e7c3fa00fc4bf7f95a5d32767f",
+      "peptide_template_sha256": "6890c72cfd5fc7b7e25a569a89214ef9aacb44a83bdfbff2c894fadf7ec6fab2",
+      "peptide_template_semantics": "masked_polyalanine_length_and_pocket_center_only",
+      "case_id": "acea-pepflow-L15",
+      "proposal_count": 1
+    }
+  ],
+  "num_steps": 100,
+  "batch_size": 8,
+  "internal_score_filtering_enabled": false,
+  "all_raw_occurrences_retained": true
+}
