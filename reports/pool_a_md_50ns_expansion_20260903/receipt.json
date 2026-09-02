@@ -1,0 +1,25 @@
+{
+  "schema_version": "ampgent.pool-a-md-supervisor-expansion.1",
+  "observed_at_utc": "2026-09-02T19:49:31Z",
+  "host": "192.168.99.19",
+  "remote_root": "/data1/huangyueshan/pepagent/md/pool-a-full-md-v1",
+  "protocol": {
+    "npt_ns": 1.0,
+    "nvt_ns": 50.0,
+    "replicates_per_candidate": 1,
+    "input": "single_best_rosetta_decoy"
+  },
+  "snapshot_candidate_count": 402,
+  "new_supervisor_pid": 3969163,
+  "gpu_indices": [0, 1, 2, 3, 4, 5, 6, 7],
+  "preserved_running_md_pids": [3771928, 3771994, 3772060, 3772195, 3772337, 3774566],
+  "new_md_pids": [3969240, 3969306],
+  "externally_active_count_at_start": 6,
+  "supervisor_script_sha256": "24948dcc7bb4ba6822b1aefc60d0c6dacd16c68f25ba3bc4c62e3977f7408fa7",
+  "remote_launch_receipt_sha256": "f7d5af8e85e8c2907eea8cc959f3386e35c714962bc2da978189968949bb50e4",
+  "remote_launch_receipt": "/data1/huangyueshan/pepagent/md/pool-a-full-md-v1/supervisor-v2-launch.json",
+  "analysis_supervisor_pid": 3787608,
+  "mmgbsa_supervisor_pid": 3816034,
+  "historical_outputs_deleted": false,
+  "existing_md_processes_restarted": false
+}

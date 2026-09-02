@@ -74,6 +74,19 @@ def external_sources(manifests):
     return out
 
 
+def output_is_running(out: Path, proc_root: Path = Path("/proc")) -> bool:
+    """Return true only for a live Pool-A runner bound to this exact output dir."""
+    marker = str(out).encode()
+    for proc in proc_root.glob("[0-9]*"):
+        try:
+            cmdline = (proc / "cmdline").read_bytes()
+        except OSError:
+            continue
+        if b"run_pool_a_md_openmm.py" in cmdline and marker in cmdline:
+            return True
+    return False
+
+
 def source_for(task, index, external):
     key = (task["target_key"], task["sequence_sha256"])
     if key in external:
@@ -96,6 +109,7 @@ def main():
     index = build_index(a.scan_root)
     external = external_sources(a.source_manifest)
     pending = []
+    externally_active = []
     unresolved = []
     for rank, t in enumerate(tasks, 1):
         out = a.root / t["target_key"] / t["candidate_id"]
@@ -103,7 +117,11 @@ def main():
             continue
         src = source_for(t, index, external)
         if src:
-            pending.append((rank, t, src, out))
+            item = (rank, t, src, out)
+            if output_is_running(out):
+                externally_active.append(item)
+            else:
+                pending.append(item)
         else:
             unresolved.append(
                 {k: t[k] for k in ("candidate_id", "run_id", "target_key", "sequence_sha256")}
@@ -117,11 +135,19 @@ def main():
     }
     state["unresolved_count"] = len(unresolved)
     state["unresolved"] = unresolved
+    state["externally_active_count"] = len(externally_active)
     (a.root / "supervisor.json").write_text(json.dumps(state, indent=2))
     active = {}
     attempts = {}
     gpus = [int(x) for x in a.gpu_indices.split(",")]
-    while pending or active:
+    while pending or active or externally_active:
+        for item in list(externally_active):
+            _, _, _, out = item
+            if (out / "manifest.json").exists():
+                externally_active.remove(item)
+            elif not output_is_running(out):
+                externally_active.remove(item)
+                pending.append(item)
         for gpu, (p, item) in list(active.items()):
             if p.poll() is not None:
                 del active[gpu]
