@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import math
 from collections import defaultdict
 from datetime import UTC, datetime
 from pathlib import Path
@@ -32,6 +33,72 @@ def nested(data, *keys):
             return None
         data = data.get(key)
     return data
+
+
+def finite(value: object, label: str) -> float:
+    result = float(value)
+    if not math.isfinite(result):
+        raise ValueError(f"{label} is not finite")
+    return result
+
+
+def validated_interface_evidence(interface: dict | None) -> bool:
+    if interface is None:
+        return False
+    if interface.get("schema_version") != "ampgent.pool-a-md-interface-analysis.2":
+        raise ValueError("unexpected interface-analysis schema")
+    for path in (
+        ("interface_rmsd_nm", "mean"),
+        ("interface_rmsd_nm", "maximum"),
+        ("maximum_peptide_com_shift_nm",),
+        ("maximum_departure_duration_ps",),
+    ):
+        if finite(nested(interface, *path), ".".join(path)) < 0:
+            raise ValueError(f"{'.'.join(path)} is negative")
+    for path in (
+        ("native_contact_fraction", "mean"),
+        ("native_contact_fraction", "minimum"),
+        ("hydrogen_bond_occupancy",),
+        ("salt_bridge_occupancy",),
+        ("water_bridge_occupancy",),
+    ):
+        value = finite(nested(interface, *path), ".".join(path))
+        if not 0 <= value <= 1:
+            raise ValueError(f"{'.'.join(path)} is outside [0, 1]")
+    for index, contact in enumerate(interface.get("key_contacts", [])):
+        value = finite(contact.get("occupancy"), f"key_contacts[{index}].occupancy")
+        if not 0 <= value <= 1:
+            raise ValueError(f"key_contacts[{index}].occupancy is outside [0, 1]")
+    if not isinstance(interface.get("peptide_departed"), bool):
+        raise ValueError("peptide_departed is not boolean")
+    return True
+
+
+def validated_mmgbsa_evidence(mmgbsa: dict | None, decomposition: Path) -> bool:
+    if mmgbsa is None:
+        return False
+    if mmgbsa.get("schema_version") != "ampgent.pool-a-mmgbsa.1":
+        raise ValueError("unexpected MM/GBSA schema")
+    if not decomposition.is_file():
+        return False
+    finite(mmgbsa.get("mean_binding_energy_kcal_mol"), "MM/GBSA mean")
+    interval = mmgbsa.get("confidence_interval_95_kcal_mol")
+    if not isinstance(interval, list) or len(interval) != 2:
+        raise ValueError("MM/GBSA confidence interval is malformed")
+    lower = finite(interval[0], "MM/GBSA confidence lower")
+    upper = finite(interval[1], "MM/GBSA confidence upper")
+    if lower > upper:
+        raise ValueError("MM/GBSA confidence interval is reversed")
+    if int(mmgbsa.get("frame_count", 0)) <= 0:
+        raise ValueError("MM/GBSA frame count is not positive")
+    declared = int(mmgbsa.get("decomposition_residue_count", 0))
+    with decomposition.open(newline="", encoding="utf-8") as stream:
+        observed = sum(1 for _ in csv.DictReader(stream))
+    if declared <= 0 or observed != declared:
+        raise ValueError(
+            f"MM/GBSA decomposition row count mismatch: declared={declared}, observed={observed}"
+        )
+    return True
 
 
 def validated_ingest_receipt(path: Path, expected: dict, release: str) -> bool:
@@ -82,15 +149,8 @@ def candidate_row(expected: dict, root: Path) -> dict:
         and float(manifest.get("npt_ns", 0)) == 1.0
         and float(manifest.get("production_ns", 0)) == 50.0
     )
-    interface_complete = bool(
-        interface
-        and interface.get("schema_version") == "ampgent.pool-a-md-interface-analysis.2"
-    )
-    mmgbsa_complete = bool(
-        mmgbsa
-        and mmgbsa.get("schema_version") == "ampgent.pool-a-mmgbsa.1"
-        and decomposition.is_file()
-    )
+    interface_complete = validated_interface_evidence(interface)
+    mmgbsa_complete = validated_mmgbsa_evidence(mmgbsa, decomposition)
     contacts = interface.get("key_contacts", []) if interface else []
     occupancies = [float(item["occupancy"]) for item in contacts]
     return {

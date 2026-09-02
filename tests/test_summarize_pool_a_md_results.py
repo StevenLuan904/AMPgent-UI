@@ -57,10 +57,12 @@ def test_summary_requires_exact_identity_and_reports_all_requested_outputs(tmp_p
             "mean_binding_energy_kcal_mol": -35,
             "confidence_interval_95_kcal_mol": [-38, -32],
             "frame_count": 36,
-            "decomposition_residue_count": 400,
+            "decomposition_residue_count": 1,
         },
     )
-    (candidate / "analysis/mmgbsa/residue_decomposition_mean.csv").write_text("x\n")
+    (candidate / "analysis/mmgbsa/residue_decomposition_mean.csv").write_text(
+        "residue,mean_TOTAL\nALA1,-1\n"
+    )
     ingest_identity = {
         "candidate_id": candidate_id,
         "subject_run_id": run_id,
@@ -127,4 +129,22 @@ def test_postgresql_receipt_identity_drift_is_rejected(tmp_path):
                 "run_id": "22222222-2222-2222-2222-222222222222",
             },
             MD_RELEASE,
+        )
+
+
+def test_summary_rejects_decomposition_row_count_drift(tmp_path):
+    from analysis.summarize_pool_a_md_results import validated_mmgbsa_evidence
+
+    decomposition = tmp_path / "decomposition.csv"
+    decomposition.write_text("residue,mean_TOTAL\nALA1,-1\n")
+    with pytest.raises(ValueError, match="row count mismatch"):
+        validated_mmgbsa_evidence(
+            {
+                "schema_version": "ampgent.pool-a-mmgbsa.1",
+                "mean_binding_energy_kcal_mol": -10,
+                "confidence_interval_95_kcal_mol": [-12, -8],
+                "frame_count": 5,
+                "decomposition_residue_count": 2,
+            },
+            decomposition,
         )
