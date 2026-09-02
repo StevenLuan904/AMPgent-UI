@@ -136,6 +136,21 @@ def _unresolved_family_parent_ids(
     return {key: tuple(values) for key, values in parent_ids.items()}
 
 
+def _de_novo_profile_parent_ids(
+    quality_diversity_parent_ids: tuple[str, ...],
+    source_row_by_id: dict[str, dict[str, str]],
+) -> tuple[tuple[str, ...], str]:
+    full_support = tuple(
+        candidate_id
+        for candidate_id in quality_diversity_parent_ids
+        if int(source_row_by_id[candidate_id]["activity_model_support_count_calibrated"])
+        == 3
+    )
+    if len(full_support) >= 3:
+        return full_support, "three_model_support_qd_elites"
+    return quality_diversity_parent_ids, "all_quality_gated_qd_elites_fallback"
+
+
 def _write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
     if not rows:
         raise ValueError(f"refusing to write empty CSV: {path}")
@@ -291,6 +306,12 @@ def run(args: argparse.Namespace) -> None:
         quality_diversity_parent_ids = tuple(
             elite.candidate_id for elite in quality_diversity.elites
         )
+        de_novo_profile_parent_ids, de_novo_profile_parent_source = (
+            _de_novo_profile_parent_ids(
+                quality_diversity_parent_ids,
+                source_row_by_id,
+            )
+        )
         branch_plans: list[dict[str, Any]] = []
         branch_rank = 0
         for replicate in range(args.replicates):
@@ -323,7 +344,7 @@ def run(args: argparse.Namespace) -> None:
                 de_novo_quota=args.de_novo_quota,
                 pepmlm_targeted_enabled=False,
                 required_parent_candidate_ids=required_parent_ids,
-                quality_diversity_elite_candidate_ids=quality_diversity_parent_ids,
+                quality_diversity_elite_candidate_ids=de_novo_profile_parent_ids,
             )
             if plan["requires_generator_gpu"]:
                 raise ValueError("CPU lineage probe unexpectedly requires a generator GPU")
@@ -431,6 +452,8 @@ def run(args: argparse.Namespace) -> None:
                 "valid_cell_coverage": quality_diversity.valid_cell_coverage,
                 "archive_qd_score": quality_diversity.archive_qd_score,
                 "elite_parent_count": len(quality_diversity_parent_ids),
+                "de_novo_profile_parent_source": de_novo_profile_parent_source,
+                "de_novo_profile_parent_count": len(de_novo_profile_parent_ids),
                 "quality_and_diversity_are_not_weighted": True,
             },
         }

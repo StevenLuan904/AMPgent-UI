@@ -142,3 +142,34 @@ def test_unresolved_family_parent_ids_are_complete_and_deterministic() -> None:
         "gap-a": ("a" * 64,),
         "gap-b": ("b" * 64,),
     }
+
+
+def test_de_novo_profile_prefers_three_model_qd_elites() -> None:
+    module = _load_module()
+    candidate_ids = tuple(str(index) for index in range(5))
+    rows = {
+        candidate_id: {
+            "activity_model_support_count_calibrated": "3" if index < 3 else "2"
+        }
+        for index, candidate_id in enumerate(candidate_ids)
+    }
+
+    selected, source = module._de_novo_profile_parent_ids(candidate_ids, rows)
+
+    assert selected == ("0", "1", "2")
+    assert source == "three_model_support_qd_elites"
+
+
+def test_de_novo_profile_falls_back_when_full_support_is_sparse() -> None:
+    module = _load_module()
+    candidate_ids = ("a", "b", "c")
+    rows = {
+        "a": {"activity_model_support_count_calibrated": "3"},
+        "b": {"activity_model_support_count_calibrated": "3"},
+        "c": {"activity_model_support_count_calibrated": "2"},
+    }
+
+    selected, source = module._de_novo_profile_parent_ids(candidate_ids, rows)
+
+    assert selected == candidate_ids
+    assert source == "all_quality_gated_qd_elites_fallback"
