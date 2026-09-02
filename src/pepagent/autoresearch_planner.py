@@ -139,6 +139,47 @@ def _shares_sequence_family(
     return False
 
 
+class _SequenceFamilyReferenceIndex:
+    """Reusable exact prefilter for repeated 80/80 family queries.
+
+    Peptides in the planner are at least ten residues long.  Any 80%-identity
+    ungapped alignment at that length contains a shared contiguous 3-mer, so a
+    length-aware 3-mer inverted index can discard impossible references without
+    changing the frozen family decision.
+    """
+
+    def __init__(self, references: Collection[str] = ()) -> None:
+        self._references: set[str] = set()
+        self._by_length_and_trimer: dict[tuple[int, str], set[str]] = defaultdict(set)
+        self.update(references)
+
+    def update(self, references: Collection[str]) -> None:
+        for reference in references:
+            if reference in self._references:
+                continue
+            self._references.add(reference)
+            if len(reference) < 3:
+                continue
+            for index in range(len(reference) - 2):
+                self._by_length_and_trimer[(len(reference), reference[index : index + 3])].add(
+                    reference
+                )
+
+    def shares_family(self, sequence: str) -> bool:
+        if len(sequence) < 10:
+            return _shares_sequence_family(sequence, self._references)
+        minimum_length = math.ceil(0.8 * len(sequence) - 1e-12)
+        maximum_length = math.floor(len(sequence) / 0.8 + 1e-12)
+        candidates: set[str] = set()
+        trimers = {sequence[index : index + 3] for index in range(len(sequence) - 2)}
+        for reference_length in range(minimum_length, maximum_length + 1):
+            for trimer in trimers:
+                candidates.update(
+                    self._by_length_and_trimer.get((reference_length, trimer), ())
+                )
+        return _shares_sequence_family(sequence, candidates)
+
+
 def _adaptive_de_novo_alphabet(sequences: Collection[str]) -> str:
     """Build a deterministic activity/safety-shrunk target alphabet.
 
@@ -407,6 +448,7 @@ def _unique_de_novo_sequence(
     known_sequences: set[str],
     excluded_sequence_sha256s: Collection[str] = (),
     family_reference_sequences: Collection[str] = (),
+    family_reference_index: _SequenceFamilyReferenceIndex | None = None,
     residue_alphabet: str = _DE_NOVO_ALPHABET,
     transition_alphabets: Mapping[str, str] | None = None,
 ) -> str:
@@ -430,6 +472,10 @@ def _unique_de_novo_sequence(
         if known_sequences.issubset(reference_sequences)
         else reference_sequences | known_sequences
     )
+    family_reference_index = family_reference_index or _SequenceFamilyReferenceIndex(
+        family_references
+    )
+    family_reference_index.update(family_references)
     for attempt in range(10_000):
         digest = sha256_text(f"{branch_key}:{seed}:family-opener-v7:{attempt}")
         length = _DE_NOVO_LENGTHS[int(digest[:2], 16) % len(_DE_NOVO_LENGTHS)]
@@ -450,7 +496,7 @@ def _unique_de_novo_sequence(
             sequence not in known_sequences
             and sha256_text(sequence) not in excluded_sequence_sha256s
             and _de_novo_prescreen_passes(sequence)
-            and not _shares_sequence_family(sequence, family_references)
+            and not family_reference_index.shares_family(sequence)
         ):
             return sequence
     raise ValueError("deterministic de-novo planner exhausted its sequence space")
@@ -510,6 +556,9 @@ def build_multifront_rule_action_plan(
         raise ValueError("required planner parent fails the literal stability hard gate")
     improvement_counts, delta_receipts = _improvement_index(prior_deltas)
     known_sequences = {item.sequence for item in candidates}
+    family_reference_index = _SequenceFamilyReferenceIndex(
+        historical_family_representatives
+    )
     historical_sequence_sha256s = (
         historical_sequence_sha256s
         if isinstance(historical_sequence_sha256s, (set, frozenset))
@@ -760,6 +809,7 @@ def build_multifront_rule_action_plan(
         known_sequences=known_sequences,
         excluded_sequence_sha256s=historical_sequence_sha256s,
         family_reference_sequences=historical_family_representatives,
+        family_reference_index=family_reference_index,
         residue_alphabet=de_novo_alphabet,
         transition_alphabets=de_novo_transition_alphabets,
     )
@@ -887,6 +937,7 @@ def build_multifront_rule_action_plan(
             known_sequences=known_sequences,
             excluded_sequence_sha256s=historical_sequence_sha256s,
             family_reference_sequences=historical_family_representatives,
+            family_reference_index=family_reference_index,
             residue_alphabet=de_novo_alphabet,
             transition_alphabets=de_novo_transition_alphabets,
         )

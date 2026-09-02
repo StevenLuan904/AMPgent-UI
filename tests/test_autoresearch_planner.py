@@ -22,6 +22,7 @@ from pepagent.autoresearch_planner import (
     _de_novo_prescreen_passes,
     _family_balanced_de_novo_profile,
     _sequence_prescreen,
+    _SequenceFamilyReferenceIndex,
     _shares_sequence_family,
     _unique_de_novo_sequence,
     build_multifront_rule_action_plan,
@@ -57,6 +58,30 @@ def test_family_edge_prefilter_is_exact_on_exhaustive_short_sequences() -> None:
             assert _shares_sequence_family(left, (right,)) is (
                 identity >= 0.8 and coverage >= 0.8
             )
+
+
+def test_family_reference_index_matches_exact_scan_and_supports_updates() -> None:
+    references = {
+        "ACDEFGHIKL",
+        "KKKAAASSSGGG",
+        "RSTNQKRSTNQK",
+        "VVVAAAKKKRRR",
+    }
+    queries = {
+        *references,
+        "ACDEFGHIKM",
+        "KKKAAATTTGGG",
+        "RSTNQKRATNQK",
+        "DEDEDEKKKKKK",
+        "GGGSSSAAAKKK",
+    }
+    index = _SequenceFamilyReferenceIndex(references)
+    for query in queries:
+        assert index.shares_family(query) is _shares_sequence_family(query, references)
+
+    added = "DEDEDEKKKKKK"
+    index.update((added,))
+    assert index.shares_family(added)
 
 
 def _candidate(
