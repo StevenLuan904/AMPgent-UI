@@ -1,0 +1,95 @@
+{
+  "schema_version": "ampgent.target-structure-generator-selection.1",
+  "frozen_at": "2026-08-26T14:00:00Z",
+  "purpose": "Use binding-pocket-conditioned sequence/structure co-designers for initial target-specific candidate generation.",
+  "sources": {
+    "pepmlm_650m": {
+      "repository": "https://huggingface.co/ChatterjeeLab/PepMLM-650M",
+      "source_revision": "898fca941a9057aebdd1a6164b5ee09a1a71780e",
+      "weights_sha256": "8a3225bca1f9acd9f701ca2e46597c12bab92320e32b68f380ddf3b6d3b20770",
+      "conditioning": "exact target protein sequence + masked peptide span",
+      "runtime_status": "enabled_for_all_six_target_specific_branches"
+    },
+    "pepglad": {
+      "repository": "https://github.com/THUNLP-MT/PepGLAD",
+      "source_revision": "bad015ca50c312a89482adb5220c3d907f13df5c",
+      "license": "MIT",
+      "paper": "https://proceedings.nips.cc/paper_files/paper/2024/file/88ad9774ffcb7a272457e9396f793a07-Paper-Conference.pdf",
+      "model_variant": "codesign-pepbench",
+      "checkpoint_uri": "https://github.com/THUNLP-MT/PepGLAD/releases/download/v1.0/checkpoints.zip#checkpoints/codesign.ckpt",
+      "checkpoint_archive_sha256": "a610e079492a1b1ceab213aea3a0ab875846415e16470897bb54850557f462a0",
+      "checkpoint_sha256": "5f05dc0f678ed7a75c2ce8fc19f63cc145bd4568f75cbfc7f15aeacdddbd3cfe",
+      "checkpoint_size_bytes": 18961125,
+      "runtime_status": "adapter_tested_runtime_smoke_pending"
+    },
+    "pepflow": {
+      "repository": "https://github.com/Ced3-han/PepFlowww",
+      "source_revision": "16e0d267c2dbd96cdacbe5ac07c4dada0d61169b",
+      "license": "MIT",
+      "paper": "https://proceedings.mlr.press/v235/li24o.html",
+      "model_variant": "model2-real-world-design",
+      "checkpoint_uri": "https://drive.google.com/file/d/1f_AcDUY0IBKrRdWVDjyCNbgtgWeKRk7d",
+      "checkpoint_sha256": "80ef4d7a07eddd877067859b5df95c50833cb72c40ef10d6ff5aa1263f0dba21",
+      "checkpoint_size_bytes": 83063321,
+      "runtime_status": "checkpoint_frozen_custom_target_preprocessor_required",
+      "reason": "The official inference entry point consumes a preprocessed peptide-pocket case rather than an arbitrary receptor pocket and length request."
+    }
+  },
+  "routing": [
+    {
+      "target_key": "acea",
+      "initial_generator": "pepglad",
+      "candidate_generators": ["pepglad", "pepmlm_650m"],
+      "challenger_generator": "pepflow",
+      "structure_id": "1IGW",
+      "pocket_key": "catalytic_mg_isocitrate_site",
+      "pocket_evidence_grade": "A",
+      "status": "pepglad_smoke_ready"
+    },
+    {
+      "target_key": "gyra",
+      "initial_generator": "pepglad",
+      "candidate_generators": ["pepglad", "pepmlm_650m"],
+      "challenger_generator": "pepflow",
+      "structure_id": "8QQI",
+      "pocket_key": "lei800_allosteric_dna_surface",
+      "pocket_evidence_grade": "A",
+      "status": "coordinate_preflight_required"
+    },
+    {
+      "target_key": "pbp2a",
+      "initial_generator": "pepglad",
+      "candidate_generators": ["pepglad", "pepmlm_650m"],
+      "challenger_generator": "pepflow",
+      "structure_id": "3ZFZ",
+      "pocket_key": "ceftaroline_muramate_allosteric_site",
+      "pocket_evidence_grade": "B",
+      "status": "coordinate_preflight_required"
+    },
+    {
+      "target_key": "vegfa",
+      "initial_generator": "pepmlm_650m",
+      "candidate_generators": ["pepmlm_650m"],
+      "challenger_generator": null,
+      "status": "sequence_conditioned_fallback_until_pocket_mapping_is_enabled"
+    },
+    {
+      "target_key": "fgf2",
+      "initial_generator": "pepmlm_650m",
+      "candidate_generators": ["pepmlm_650m"],
+      "challenger_generator": null,
+      "status": "sequence_conditioned_fallback_until_pocket_mapping_is_enabled"
+    },
+    {
+      "target_key": "angpt1",
+      "initial_generator": "pepmlm_650m",
+      "candidate_generators": ["pepmlm_650m"],
+      "challenger_generator": null,
+      "status": "sequence_conditioned_fallback_until_pocket_mapping_is_enabled"
+    }
+  ],
+  "target_agnostic_amp_branch_unchanged": true,
+  "persist_every_raw_occurrence": true,
+  "score_all_valid_unique_sequences_with_twelve_metrics": true,
+  "formal_run_submission_allowed_before_real_smoke": false
+}
