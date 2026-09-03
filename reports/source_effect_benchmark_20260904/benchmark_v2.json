@@ -1,7 +1,7 @@
 {
   "schema_version": "ampgent.source-effect-benchmark.1",
   "benchmark_id": "ampgent_source_effect_benchmark_v2_20260904",
-  "observed_at_utc": "2026-09-03T23:01:52.210500+00:00",
+  "observed_at_utc": "2026-09-03T23:06:35.653741+00:00",
   "md_observation": {
     "observed_at_utc": "2026-09-03T22:37:49.808096+00:00",
     "observation_basis": "md_current_identity_snapshot_20260904.json plus live supervisor PID probes; no new full-evidence transition observed",
@@ -50,7 +50,7 @@
     },
     {
       "scope": "target_specific_runs_without_self_contained_score_artifact",
-      "reason": "archive-promotion receipts do not contain a complete score artifact, so they are not assigned downstream denominators"
+      "reason": "runs without a compact score artifact remain excluded from downstream denominators"
     }
   ],
   "records": [
@@ -139,7 +139,7 @@
         "challenger_no_conflict": 1,
         "challenger_conflict": 0,
         "qd_eligible": 1,
-        "qd_new_cell": 0,
+        "qd_new_cell": 1,
         "qd_replacement": 0,
         "rosetta_evaluated_candidates": 1,
         "rosetta_evaluated_decoys": 5,
@@ -157,7 +157,7 @@
       },
       "qd_metrics": {
         "eligible": 1,
-        "new_cell": 0,
+        "new_cell": 1,
         "replacement": 0,
         "best_quality": null,
         "mean_quality": null,
@@ -471,6 +471,135 @@
       }
     },
     {
+      "label": "PBP2a PepMLM archive promotion",
+      "source": "PepMLM_target_conditioned",
+      "source_scope": "run",
+      "target_key": "pbp2a",
+      "run_id": "6f161581-327a-5788-81c2-97b359fffde8",
+      "identity_basis": "run_id=6f161581-327a-5788-81c2-97b359fffde8 + sequence_sha256",
+      "candidate_id_kind": "authoritative_uuid_in_close_receipt; score_row_sequence_sha256",
+      "within_group_unique_sequence_sha256": true,
+      "run_materialized_count": 1,
+      "pg_identity": {
+        "run_id": "6f161581-327a-5788-81c2-97b359fffde8",
+        "tool_call_id": "80000284-e4da-4e49-93e8-d8974b1c44cf",
+        "materialized_candidate_count": 1,
+        "inserted_evaluation_count": 17,
+        "replay_count": 0,
+        "historical_runs_modified": false
+      },
+      "rates": {
+        "proposal_to_materialized": {
+          "count": 1,
+          "denominator": 1,
+          "rate": 1.0,
+          "ci95": [
+            0.20654931437723745,
+            1.0
+          ]
+        },
+        "materialized_to_formal12": {
+          "count": 1,
+          "denominator": 1,
+          "rate": 1.0,
+          "ci95": [
+            0.20654931437723745,
+            1.0
+          ]
+        },
+        "materialized_to_display": {
+          "count": 1,
+          "denominator": 1,
+          "rate": 1.0,
+          "ci95": [
+            0.20654931437723745,
+            1.0
+          ]
+        },
+        "materialized_to_activity_support_ge_2": {
+          "count": 1,
+          "denominator": 1,
+          "rate": 1.0,
+          "ci95": [
+            0.20654931437723745,
+            1.0
+          ]
+        },
+        "materialized_to_excellent": {
+          "count": 1,
+          "denominator": 1,
+          "rate": 1.0,
+          "ci95": [
+            0.20654931437723745,
+            1.0
+          ]
+        },
+        "materialized_to_qd_eligible": {
+          "count": 1,
+          "denominator": 1,
+          "rate": 1.0,
+          "ci95": [
+            0.20654931437723745,
+            1.0
+          ]
+        }
+      },
+      "counts": {
+        "proposal": 1,
+        "materialized": 1,
+        "formal12": 1,
+        "display": 1,
+        "activity_support_ge_2": 1,
+        "excellent": 1,
+        "challenger_reviewed": 1,
+        "challenger_no_conflict": 1,
+        "challenger_conflict": 0,
+        "qd_eligible": 1,
+        "qd_new_cell": 1,
+        "qd_replacement": 0,
+        "rosetta_evaluated_candidates": 0,
+        "rosetta_evaluated_decoys": 0,
+        "rosetta_passed_candidates": 0,
+        "rosetta_pending_candidates": 1,
+        "pool_a_admitted": 0,
+        "md_complete": 0,
+        "md_full_evidence": 0
+      },
+      "challenger": {
+        "apex": "runtime_unavailable",
+        "peptiverse": "runtime_unavailable",
+        "hemopi2_reviewed": 1,
+        "hemopi2_no_conflict": 1
+      },
+      "qd_metrics": {
+        "eligible": 1,
+        "new_cell": 1,
+        "replacement": 0,
+        "best_quality": null,
+        "mean_quality": null,
+        "valid_cell_coverage": 0.000462962962962963,
+        "archive_qd_score": 62.97505266666667,
+        "maximum_cell_concentration": 1.0,
+        "archive_relative_novelty": 1.0,
+        "metric_note": "single-candidate QD fallback uses the recorded actual cell"
+      },
+      "rosetta": {
+        "evaluated_candidates": 0,
+        "evaluated_decoys": 0,
+        "passed_candidates": 0,
+        "pending_candidates": 1,
+        "status": "not_started"
+      },
+      "mean_delta_phi": null,
+      "evidence": {
+        "score_path": "reports/pbp2a_pepmlm_archive_promotion_20260904/materialization_inputs/candidate_scores.csv",
+        "proposal_path": null,
+        "materialization_path": "reports/pbp2a_pepmlm_archive_promotion_20260904/materialization_receipt.json",
+        "qd_path": "reports/pbp2a_pepmlm_archive_promotion_20260904/qd_receipt.json",
+        "challenger_path": "reports/pbp2a_pepmlm_archive_promotion_20260904/materialization_inputs/challenger_review.csv"
+      }
+    },
+    {
       "label": "PBP2a PepMLM source increment",
       "source": "PepMLM_target_conditioned",
       "source_scope": "run",
@@ -555,7 +684,7 @@
         "challenger_no_conflict": 1,
         "challenger_conflict": 0,
         "qd_eligible": 1,
-        "qd_new_cell": 0,
+        "qd_new_cell": 1,
         "qd_replacement": 0,
         "rosetta_evaluated_candidates": 0,
         "rosetta_evaluated_decoys": 0,
@@ -573,7 +702,7 @@
       },
       "qd_metrics": {
         "eligible": 1,
-        "new_cell": 0,
+        "new_cell": 1,
         "replacement": 0,
         "best_quality": null,
         "mean_quality": null,
@@ -684,7 +813,7 @@
         "challenger_no_conflict": 1,
         "challenger_conflict": 0,
         "qd_eligible": 1,
-        "qd_new_cell": 0,
+        "qd_new_cell": 1,
         "qd_replacement": 0,
         "rosetta_evaluated_candidates": 0,
         "rosetta_evaluated_decoys": 0,
@@ -702,7 +831,7 @@
       },
       "qd_metrics": {
         "eligible": 1,
-        "new_cell": 0,
+        "new_cell": 1,
         "replacement": 0,
         "best_quality": null,
         "mean_quality": null,
@@ -813,7 +942,7 @@
         "challenger_no_conflict": 1,
         "challenger_conflict": 0,
         "qd_eligible": 1,
-        "qd_new_cell": 0,
+        "qd_new_cell": 1,
         "qd_replacement": 0,
         "rosetta_evaluated_candidates": 0,
         "rosetta_evaluated_decoys": 0,
@@ -831,7 +960,7 @@
       },
       "qd_metrics": {
         "eligible": 1,
-        "new_cell": 0,
+        "new_cell": 1,
         "replacement": 0,
         "best_quality": null,
         "mean_quality": null,
@@ -942,7 +1071,7 @@
         "challenger_no_conflict": 1,
         "challenger_conflict": 0,
         "qd_eligible": 1,
-        "qd_new_cell": 0,
+        "qd_new_cell": 1,
         "qd_replacement": 0,
         "rosetta_evaluated_candidates": 0,
         "rosetta_evaluated_decoys": 0,
@@ -960,7 +1089,7 @@
       },
       "qd_metrics": {
         "eligible": 1,
-        "new_cell": 0,
+        "new_cell": 1,
         "replacement": 0,
         "best_quality": null,
         "mean_quality": null,
@@ -1071,7 +1200,7 @@
         "challenger_no_conflict": 1,
         "challenger_conflict": 0,
         "qd_eligible": 1,
-        "qd_new_cell": 0,
+        "qd_new_cell": 1,
         "qd_replacement": 0,
         "rosetta_evaluated_candidates": 0,
         "rosetta_evaluated_decoys": 0,
@@ -1089,7 +1218,7 @@
       },
       "qd_metrics": {
         "eligible": 1,
-        "new_cell": 0,
+        "new_cell": 1,
         "replacement": 0,
         "best_quality": null,
         "mean_quality": null,
@@ -1200,7 +1329,7 @@
         "challenger_no_conflict": 1,
         "challenger_conflict": 0,
         "qd_eligible": 1,
-        "qd_new_cell": 0,
+        "qd_new_cell": 1,
         "qd_replacement": 0,
         "rosetta_evaluated_candidates": 0,
         "rosetta_evaluated_decoys": 0,
@@ -1218,7 +1347,7 @@
       },
       "qd_metrics": {
         "eligible": 1,
-        "new_cell": 0,
+        "new_cell": 1,
         "replacement": 0,
         "best_quality": null,
         "mean_quality": null,
@@ -1329,7 +1458,7 @@
         "challenger_no_conflict": 1,
         "challenger_conflict": 0,
         "qd_eligible": 1,
-        "qd_new_cell": 0,
+        "qd_new_cell": 1,
         "qd_replacement": 0,
         "rosetta_evaluated_candidates": 0,
         "rosetta_evaluated_decoys": 0,
@@ -1347,7 +1476,7 @@
       },
       "qd_metrics": {
         "eligible": 1,
-        "new_cell": 0,
+        "new_cell": 1,
         "replacement": 0,
         "best_quality": null,
         "mean_quality": null,
@@ -1458,7 +1587,7 @@
         "challenger_no_conflict": 1,
         "challenger_conflict": 0,
         "qd_eligible": 1,
-        "qd_new_cell": 0,
+        "qd_new_cell": 1,
         "qd_replacement": 0,
         "rosetta_evaluated_candidates": 0,
         "rosetta_evaluated_decoys": 0,
@@ -1476,7 +1605,7 @@
       },
       "qd_metrics": {
         "eligible": 1,
-        "new_cell": 0,
+        "new_cell": 1,
         "replacement": 0,
         "best_quality": null,
         "mean_quality": null,

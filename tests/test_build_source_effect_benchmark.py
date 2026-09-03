@@ -217,3 +217,63 @@ def test_target_specific_qd_without_rosetta_is_not_pool_a(tmp_path: Path) -> Non
     assert record["counts"]["rosetta_pending_candidates"] == 1
     assert record["counts"]["pool_a_admitted"] == 0
     assert result["weighted_total_used"] is False
+
+
+def test_single_candidate_qd_receipt_flags_are_counted(tmp_path: Path) -> None:
+    _write(
+        tmp_path / "score.csv",
+        "sequence_sha256,formal_12_complete,display_eligible,"
+        "activity_model_support_count_calibrated\n"
+        "child,true,true,2\n",
+    )
+    _write(
+        tmp_path / "material.json",
+        json.dumps({"materialized_or_reused_in_run_count": 1}),
+    )
+    _write(
+        tmp_path / "new-cell.json",
+        json.dumps(
+            {
+                "eligible_batch_candidate_count": 1,
+                "contribution": "empty_cell",
+                "new_cell": True,
+                "replacement": False,
+            }
+        ),
+    )
+    _write(
+        tmp_path / "replacement.json",
+        json.dumps(
+            {
+                "eligible_batch_candidate_count": 1,
+                "contribution": "incumbent_replacement",
+                "new_cell": False,
+                "replacement": True,
+            }
+        ),
+    )
+
+    def build(qd_name: str) -> dict:
+        return build_benchmark(
+            {
+                "specs": [
+                    {
+                        "label": "single",
+                        "source": "PepMLM",
+                        "target_key": "target_agnostic_amp",
+                        "run_id": qd_name,
+                        "score_path": "score.csv",
+                        "materialization_path": "material.json",
+                        "qd_path": qd_name,
+                    }
+                ]
+            },
+            tmp_path,
+        )["records"][0]
+
+    new_cell = build("new-cell.json")
+    replacement = build("replacement.json")
+    assert new_cell["counts"]["qd_new_cell"] == 1
+    assert new_cell["counts"]["qd_replacement"] == 0
+    assert replacement["counts"]["qd_new_cell"] == 0
+    assert replacement["counts"]["qd_replacement"] == 1

@@ -168,7 +168,7 @@ def _challenger_counts(
 def _qd_metrics(
     qd: dict[str, Any], rows: list[dict[str, str]], split: bool
 ) -> dict[str, Any]:
-    contributions = qd.get("contributions", [])
+    contributions = qd.get("contributions")
     if split and isinstance(contributions, list):
         row_keys = {_candidate_key(row) for row in rows}
         selected = [
@@ -212,10 +212,25 @@ def _qd_metrics(
         }
 
     eligible = _first_int(qd, "eligible_batch_candidate_count")
-    new_cell = sum(
-        item.get("contribution") == "empty_cell" for item in contributions
-    ) if isinstance(contributions, list) else _first_int(qd, "new_cell_count")
+    new_cell = (
+        sum(item.get("contribution") == "empty_cell" for item in contributions)
+        if isinstance(contributions, list)
+        else _first_int(qd, "new_cell_count")
+    )
     replacement = _first_int(qd, "incumbent_replacement_count", "replacement_count")
+    if not isinstance(contributions, list):
+        receipt_contribution = str(qd.get("contribution", "")).strip().lower()
+        if not new_cell:
+            new_cell = int(_bool(qd.get("new_cell")))
+        if not new_cell and receipt_contribution == "empty_cell":
+            new_cell = 1
+        if not replacement:
+            replacement = int(_bool(qd.get("replacement")))
+        if not replacement and receipt_contribution in {
+            "incumbent_replacement",
+            "replacement",
+        }:
+            replacement = 1
     if not replacement and isinstance(contributions, list):
         replacement = sum(
             item.get("contribution") in {"incumbent_replacement", "replacement"}
@@ -223,11 +238,15 @@ def _qd_metrics(
         )
     if not eligible:
         eligible = new_cell + replacement
-    qualities = [
-        _float(item.get("quality"))
-        for item in contributions
-        if isinstance(item, dict) and _float(item.get("quality")) is not None
-    ]
+    qualities = (
+        [
+            _float(item.get("quality"))
+            for item in contributions
+            if isinstance(item, dict) and _float(item.get("quality")) is not None
+        ]
+        if isinstance(contributions, list)
+        else []
+    )
     best_quality = _float(qd.get("best_peptide_quality"))
     mean_quality = _float(qd.get("mean_peptide_quality"))
     if best_quality is None and qualities:

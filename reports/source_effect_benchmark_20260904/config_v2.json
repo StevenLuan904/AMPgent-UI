@@ -46,7 +46,7 @@
     },
     {
       "scope": "target_specific_runs_without_self_contained_score_artifact",
-      "reason": "archive-promotion receipts do not contain a complete score artifact, so they are not assigned downstream denominators"
+      "reason": "runs without a compact score artifact remain excluded from downstream denominators"
     }
   ],
   "specs": [
@@ -88,6 +88,19 @@
       "qd_path": "reports/pbp2a_pepglad_source_graft_20260904/quality_diversity.json",
       "pool_a_admitted_count": 0,
       "candidate_id_kind": "run_plus_sequence_sha256_pg_bound; targeted_rosetta_pending"
+    },
+    {
+      "label": "PBP2a PepMLM archive promotion",
+      "source": "PepMLM_target_conditioned",
+      "target_key": "pbp2a",
+      "run_id": "6f161581-327a-5788-81c2-97b359fffde8",
+      "proposal_count_override": 1,
+      "score_path": "reports/pbp2a_pepmlm_archive_promotion_20260904/materialization_inputs/candidate_scores.csv",
+      "challenger_path": "reports/pbp2a_pepmlm_archive_promotion_20260904/materialization_inputs/challenger_review.csv",
+      "materialization_path": "reports/pbp2a_pepmlm_archive_promotion_20260904/materialization_receipt.json",
+      "qd_path": "reports/pbp2a_pepmlm_archive_promotion_20260904/qd_receipt.json",
+      "pool_a_admitted_count": 0,
+      "candidate_id_kind": "authoritative_uuid_in_close_receipt; score_row_sequence_sha256"
     },
     {
       "label": "PBP2a PepMLM source increment",
