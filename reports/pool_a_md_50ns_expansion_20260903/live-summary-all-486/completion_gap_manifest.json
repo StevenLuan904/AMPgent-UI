@@ -1,12 +1,11 @@
 {
   "schema_version": "ampgent.pool-a-md-gap-manifest.1",
-  "observed_at_utc": "2026-09-03T02:58:01.132803+00:00",
+  "observed_at_utc": "2026-09-03T03:14:30.078306+00:00",
   "candidate_count": 486,
   "stage_counts": {
-    "complete": 11,
+    "complete": 12,
     "md_running_or_checkpoint_pending": 14,
-    "not_launched": 460,
-    "post_md_analysis_pending": 1
+    "not_launched": 460
   },
   "issue_counts": {},
   "targets": {
@@ -42,9 +41,9 @@
     "pbp2a": {
       "candidate_count": 53,
       "stage_counts": {
+        "complete": 1,
         "md_running_or_checkpoint_pending": 2,
-        "not_launched": 50,
-        "post_md_analysis_pending": 1
+        "not_launched": 50
       }
     },
     "vegfa": {
@@ -5854,6 +5853,22 @@
     {
       "target_key": "pbp2a",
       "run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
+      "candidate_id": "c36aea18-2102-47e1-81e7-a6dee721ae91",
+      "sequence": "SVSRKVQKRKTRGKATQVKKS",
+      "sequence_sha256": "df5c3a9685447702b573e31a72ccdbb295f6813adc19fa2ff0b9284ae883ecd4",
+      "pool_a_rank": 1,
+      "stage": "complete",
+      "md_launched": true,
+      "md_complete": true,
+      "interface_complete": true,
+      "mmgbsa_complete": true,
+      "interface_postgresql_ingested": true,
+      "mmgbsa_postgresql_ingested": true,
+      "issues": []
+    },
+    {
+      "target_key": "pbp2a",
+      "run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
       "candidate_id": "024fbd26-eefd-4e0c-a8f2-22e0bd2678f5",
       "sequence": "RTTSARKGNKWFEKSWRHGGKTQRK",
       "sequence_sha256": "f69fdfc6c6829ad09ee238984392e6185efabb94227e582109b223af5c9954ca",
@@ -6681,22 +6696,6 @@
       "mmgbsa_complete": false,
       "interface_postgresql_ingested": false,
       "mmgbsa_postgresql_ingested": false,
-      "issues": []
-    },
-    {
-      "target_key": "pbp2a",
-      "run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
-      "candidate_id": "c36aea18-2102-47e1-81e7-a6dee721ae91",
-      "sequence": "SVSRKVQKRKTRGKATQVKKS",
-      "sequence_sha256": "df5c3a9685447702b573e31a72ccdbb295f6813adc19fa2ff0b9284ae883ecd4",
-      "pool_a_rank": 1,
-      "stage": "post_md_analysis_pending",
-      "md_launched": true,
-      "md_complete": true,
-      "interface_complete": false,
-      "mmgbsa_complete": true,
-      "interface_postgresql_ingested": false,
-      "mmgbsa_postgresql_ingested": true,
       "issues": []
     },
     {
