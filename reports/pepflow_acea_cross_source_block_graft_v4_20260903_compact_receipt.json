@@ -1,0 +1,41 @@
+{
+  "schema_version": "ampgent.cross-source-block-graft.compact-receipt.2",
+  "operator_id": "cross-source-block-graft-v2-formal-descriptors",
+  "parent_batch": "pepflow_acea_cross_source_block_graft_v3_20260903",
+  "proposal_count": 12,
+  "v4_selection_receipt_sha256": "8457d5e40723fbd8c66c3fb57c445304690998a430b932dccccbc644bfdc4726",
+  "v4_proposals_sha256": "aa664a85b70f88feca0214f7b984d5b6fec2d92ab23830f8c67b3a2fa8e62bcc",
+  "identity_comparison": {
+    "sequence_order_identical_to_v3": true,
+    "candidate_id_order_identical_to_v3": true,
+    "sequence_scores_changed": false,
+    "only_changed_field": "delta_phi",
+    "score_all_replayed": false,
+    "challenger_replayed": false,
+    "qd_replayed": false
+  },
+  "contract_repairs": [
+    "donor display_eligible=true",
+    "donor toxinpred3_label=Non-Toxin",
+    "donor macrel_hemolysis_label=low",
+    "delta_phi uses sequence_developability_metrics plus physicochemical_descriptors(pH=7.4) and behavior_vector"
+  ],
+  "prior_downstream_evidence_reused": {
+    "score_all_candidate_scores_sha256": "6bc613c276ae9bdaf8d2441819defd230e1b3f8bef922a765a8d499536fc3bbf",
+    "calibrated_scores_sha256": "592eb2bdc333598e1a87393e64500a80ce3c7d8a4366c2b2372a91362f325ea1",
+    "hemopi2_review_receipt_sha256": "4337f05c871843693760a299404375ad3481c3b8aed961961bdc87ad3465ae4c",
+    "qd_payload_sha256": "f5ff093b0d9d99530c9dc1d19b9974b6caf72f8c07eee8a8ea32c50fa61868d9"
+  },
+  "postgresql_operational_evidence": {
+    "status": "appended_after_audit",
+    "stage_count": 4,
+    "tool_call_ids": [
+      "adfa3128-96f6-4d3e-88b7-24abdf833d47",
+      "3e929fb2-8922-4b23-bf3f-0de798dac5e4",
+      "811abcfb-6708-4831-8e7b-f1e5635b20cd",
+      "01c5a01b-8657-413e-9657-5e1c9b217d2d"
+    ],
+    "lineage_materialized": false,
+    "gpu_md_rosetta_submitted": false
+  }
+}

@@ -15,31 +15,13 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
+from pepagent.autoresearch_quality_diversity import behavior_vector
+from pepagent.developability import sequence_developability_metrics
+from pepagent.handoff_metrics import physicochemical_descriptors
+
 AMINO_ACIDS = frozenset("ACDEFGHIKLMNPQRSTVWY")
 DEFAULT_BLOCK_LENGTHS = (3, 4, 5)
 DONOR_SOURCE_TOKENS = ("pepglad", "pepmlm", "qd")
-HYDROPHOBICITY = {
-    "A": 0.62,
-    "C": 0.29,
-    "D": -0.90,
-    "E": -0.74,
-    "F": 1.19,
-    "G": 0.48,
-    "H": -0.40,
-    "I": 1.38,
-    "K": -1.50,
-    "L": 1.06,
-    "M": 0.64,
-    "N": -0.78,
-    "P": 0.12,
-    "Q": -0.85,
-    "R": -2.53,
-    "S": -0.18,
-    "T": -0.05,
-    "V": 1.08,
-    "W": 0.81,
-    "Y": 0.26,
-}
 
 
 def _bool(row: dict[str, str], *keys: str) -> bool:
@@ -88,6 +70,14 @@ def _instability_ok(row: dict[str, str]) -> bool:
         return False
 
 
+def _donor_hard_gates_ok(row: dict[str, str]) -> bool:
+    return (
+        _bool(row, "display_eligible")
+        and (row.get("toxinpred3_label") or "").strip().lower() == "non-toxin"
+        and (row.get("macrel_hemolysis_label") or "").strip().lower() == "low"
+    )
+
+
 def select_acceptors(rows: Iterable[dict[str, str]], branch: str = "acea") -> list[dict[str, str]]:
     selected = [
         row
@@ -114,6 +104,7 @@ def select_donors(
         for row in rows
         if (row.get("target_key") or row.get("branch_key") or branch) == branch
         and _valid_sequence(row)
+        and _donor_hard_gates_ok(row)
         and _support(row) >= 2
         and _is_donor_source(row)
         and _instability_ok(row)
@@ -140,22 +131,27 @@ def _mapped_start(
     return min(d_span, round(acceptor_start * d_span / a_span))
 
 
-def _phi(sequence: str) -> tuple[float, float, float, float]:
-    charge = sum(1 for residue in sequence if residue in "KR") - sum(
-        1 for residue in sequence if residue in "DE"
+def _formal_qd_coordinates(sequence: str) -> tuple[float, float, float, float]:
+    metrics = sequence_developability_metrics(sequence)
+    descriptors = physicochemical_descriptors(sequence, ph=7.4)
+    vector = behavior_vector(
+        sequence,
+        net_charge=float(metrics["net_charge_ph7_4"]),
+        hydrophobicity=float(descriptors["hydrophobic_ratio"]),
+        hydrophobic_moment=float(descriptors["hydrophobic_moment"]),
     )
-    ratio = sum(residue in "AILMFWVY" for residue in sequence) / len(sequence)
-    moment = sum(
-        HYDROPHOBICITY[residue] * __import__("math").cos(2 * __import__("math").pi * index / 3.6)
-        for index, residue in enumerate(sequence)
-    ) / len(sequence)
-    return (charge / len(sequence), ratio, moment, float(len(sequence)))
+    return (
+        vector.charge_density,
+        vector.hydrophobicity,
+        vector.hydrophobic_moment,
+        float(vector.length),
+    )
 
 
 def _delta_phi(acceptor: str, donor: str, child: str) -> dict[str, Any]:
     # Transparent behavior-space coordinates; no hydrophobic threshold is applied.
-    before = _phi(acceptor)
-    after = _phi(child)
+    before = _formal_qd_coordinates(acceptor)
+    after = _formal_qd_coordinates(child)
     return {
         "axes": ["net_charge_over_length", "hydrophobic_ratio", "hydrophobic_moment", "length"],
         "acceptor_to_child": [after[index] - before[index] for index in range(4)],
@@ -206,7 +202,7 @@ def generate_grafts(
                     if child_sha in seen_children:
                         continue
                     action = {
-                        "operator_id": "cross-source-block-graft-v1",
+                        "operator_id": "cross-source-block-graft-v2-formal-descriptors",
                         "acceptor_candidate_id": acceptor.get("candidate_id")
                         or acceptor.get("sequence_sha256"),
                         "donor_candidate_id": donor.get("candidate_id")
@@ -327,7 +323,7 @@ def main() -> None:
             writer.writerows(novel_proposals)
     receipt = {
         "schema_version": "ampgent.cross-source-block-graft.1",
-        "operator_id": "cross-source-block-graft-v1",
+        "operator_id": "cross-source-block-graft-v2-formal-descriptors",
         "acceptor_count": len(acceptors),
         "donor_count": len(donors),
         "pair_limit": args.max_pairs,
