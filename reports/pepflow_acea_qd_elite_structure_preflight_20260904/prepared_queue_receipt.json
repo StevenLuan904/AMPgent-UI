@@ -1,0 +1,33 @@
+{
+  "schema_version": "ampgent.structure-prepared-not-dispatched.1",
+  "observed_at_utc": "2026-09-03T18:28:40.9360053Z",
+  "target_key": "acea",
+  "run_id": "5281871a-043f-5685-a29e-2d2fbf1fe3c4",
+  "candidate_count": 4,
+  "queue_status": "prepared_not_dispatched",
+  "dispatch_allowed": false,
+  "task_submitted": false,
+  "workflow_submitted": false,
+  "boltz_started": false,
+  "rosetta_started": false,
+  "nstruct": 5,
+  "md_protocol": "1 ns NPT + 50 ns NVT, single conventional replicate after structure admission",
+  "resource_gate": {
+    "host19_supervisor_pids": [3986807, 3977733],
+    "host19_gpu_compute_count": 8,
+    "synth_supervisor_pid": 1280301,
+    "synth_md_runner_pids": [58820, 1280316, 1280381],
+    "synth_analysis_pid": 3311802,
+    "synth_mmgbsa_pid": 3360111,
+    "failed_gates": ["host19_gpu0-7_owned_by_ampgent_md", "synth_gpu1-3_owned_by_successor_md", "synth_gpu0_external", "synth_gpu4_unknown_or_external", "synth_gpu5_declared_external"],
+    "prohibited_scope_touched": false
+  },
+  "entries": [
+    {"sequence": "GPAGRVVAGNDAVSAFRKKG", "sequence_sha256": "b6023c1794f3a907915033c13889e0af0cc11893005957eb6ea5c175e9ba3df5", "authoritative_candidate_id": "590712b0-d09c-4d84-94ab-dbf62ab7697f", "qd_cell": "q4-h2-m0-l2", "remote_queue_receipt": "/sdd_data/pepagent/ampgent/structure/prepared/acea/pepflow-source-increment-20260904/590712b0-d09c-4d84-94ab-dbf62ab7697f/prepared_queue_receipt.json", "receipt_sha256": "a16beef4e99a39eede6a49a217a26f89ee368ab236cdb6ffa8d63100c3415d6d"},
+    {"sequence": "SGAGRVVAGNDAVSAFRKKG", "sequence_sha256": "2b9b408aa01b00ca7a97d0084aa4905a123f5356017d6169299fb2de8a80885a", "authoritative_candidate_id": "ac175a04-7813-438d-a809-11ab3b909673", "qd_cell": "q4-h2-m1-l2", "remote_queue_receipt": "/sdd_data/pepagent/ampgent/structure/prepared/acea/pepflow-source-increment-20260904/ac175a04-7813-438d-a809-11ab3b909673/prepared_queue_receipt.json", "receipt_sha256": "7bb59519700b928c64c1ffde8c92373594f6bcffc216aec2cc1deb04617d246f"},
+    {"sequence": "AAAGRVVAGNDAVSAFRKKS", "sequence_sha256": "6076f7be434f36604d5f4ce0515d80f20924d253fabd3545187f411f33b443d2", "authoritative_candidate_id": "f8fc4ed4-5040-4104-9a8f-5a8808171df8", "qd_cell": "q4-h3-m0-l2", "remote_queue_receipt": "/sdd_data/pepagent/ampgent/structure/prepared/acea/pepflow-source-increment-20260904/f8fc4ed4-5040-4104-9a8f-5a8808171df8/prepared_queue_receipt.json", "receipt_sha256": "30b1f2a7f1ebb29be7577dd11aa293273638ced74f49dc62d4ab5eeb27b5605b"},
+    {"sequence": "SAAGRVVAGNDAVSAFRKKG", "sequence_sha256": "48fba625c1811f5d1f85af18ffc4923c7fe4deccbc1050197649bf22a3e4a075", "authoritative_candidate_id": "092d39da-c30b-45b1-8d4c-07a04ab63d41", "qd_cell": "q4-h3-m1-l2", "remote_queue_receipt": "/sdd_data/pepagent/ampgent/structure/prepared/acea/pepflow-source-increment-20260904/092d39da-c30b-45b1-8d4c-07a04ab63d41/prepared_queue_receipt.json", "receipt_sha256": "ca3691d8b4376da5adcc79cdc2950bc0dd2d56884b498b9919d19732af4b1e40"}
+  ],
+  "remote_structure_or_trajectory_downloaded": false,
+  "remote_structure_or_trajectory_deleted": false
+}

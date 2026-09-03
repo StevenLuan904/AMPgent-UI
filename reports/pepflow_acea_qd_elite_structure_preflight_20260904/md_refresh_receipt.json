@@ -1,0 +1,50 @@
+{
+  "schema_version": "ampgent.pool-a-md-compact-refresh.2",
+  "observed_at_utc": "2026-09-03T18:33:33.802758Z",
+  "source_commit": "f945cdea8f2f423416a1afd6ac646c7eb5b77104",
+  "identity_union": 486,
+  "main_475": {
+    "supervisor_pid": 3986807,
+    "analysis_supervisor_pid": 3977733,
+    "launch_receipts": 40,
+    "md_complete": 27,
+    "interface_complete": 27,
+    "mmgbsa_complete": 27,
+    "pg_receipts": 52,
+    "compute_gpu_count": 8
+  },
+  "successor_11": {
+    "supervisor_pid": 1280301,
+    "analysis_supervisor_pid": 3311802,
+    "mmgbsa_supervisor_pid": 3360111,
+    "runner_pids": [58820, 1280316, 1280381],
+    "launch_receipts": 5,
+    "md_complete": 2,
+    "interface_complete": 2,
+    "mmgbsa_complete": 2,
+    "pending": 6
+  },
+  "merged_refresh": {
+    "launched": 45,
+    "md_complete": 29,
+    "interface_complete": 28,
+    "mmgbsa_complete": 28,
+    "full_evidence": 28,
+    "running": 16,
+    "not_yet_launched": 457,
+    "failed": 0,
+    "new_md_complete_since_prior_compact_summary": 1,
+    "new_full_evidence_since_prior_compact_summary": 0,
+    "postgresql_evidence_complete": 28
+  },
+  "relay": {
+    "remote_ingester_entries_checked": 4,
+    "new_postgresql_evaluations": 0,
+    "already_complete_entries": 4,
+    "local_receipts_idempotently_reused": 4,
+    "identity_key": "subject_run_id+candidate_id+model_release_key+tool_call_id",
+    "large_structure_trajectory_checkpoint_downloaded": false,
+    "remote_files_deleted": false
+  },
+  "decision": "keep_existing_md_supervisors_running; no_structure_dispatch_for_four_elites"
+}

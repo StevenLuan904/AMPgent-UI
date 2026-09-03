@@ -25,7 +25,11 @@ def _uuid(value: Any, field: str) -> str:
 
 def _path_identity(entry: dict[str, Any]) -> tuple[str, str]:
     identities: set[tuple[str, str]] = set()
-    for file_entry in entry.get("files", []):
+    files = entry.get("files", [])
+    file_entries = files.values() if isinstance(files, dict) else files
+    for file_entry in file_entries:
+        if not isinstance(file_entry, dict):
+            raise ValueError("file identity entry is not an object")
         uri = str(file_entry.get("uri", ""))
         parts = [part for part in uri.replace("\\", "/").split("/") if part]
         try:
@@ -85,15 +89,31 @@ def materialize(state: dict[str, Any], compact_root: Path, source: str) -> dict[
             raise ValueError("candidate launch receipt missing")
         with launch_path.open(encoding="utf-8") as handle:
             launch = json.load(handle)
+        launch_run = launch.get("subject_run_id") or launch.get("run_id")
         if (
             _uuid(launch.get("candidate_id"), "launch candidate_id") != candidate_id
-            or _uuid(launch.get("subject_run_id"), "launch subject_run_id") != run_id
+            or (launch_run is not None and _uuid(launch_run, "launch run_id") != run_id)
             or str(launch.get("target_key", "")).casefold() != target
         ):
             raise ValueError("launch identity drift")
         count = int(entry.get("inserted_evaluation_count", 0))
-        if count <= 0 or not str(entry.get("ingested_at", "")):
+        already_complete = bool(entry.get("already_complete"))
+        if (count <= 0 and not already_complete) or not str(entry.get("ingested_at", "")):
             raise ValueError("invalid ingester receipt fields")
+        if already_complete and count <= 0:
+            if not destination.is_file():
+                raise ValueError("already-complete receipt is missing locally")
+            with destination.open(encoding="utf-8") as handle:
+                current = json.load(handle)
+            if (
+                _uuid(current.get("candidate_id"), "receipt candidate_id") != candidate_id
+                or _uuid(current.get("subject_run_id"), "receipt subject_run_id") != run_id
+                or _uuid(current.get("tool_call_id"), "receipt tool_call_id") != tool_call_id
+                or current.get("model_release_key") != release
+            ):
+                raise ValueError("receipt identity drift")
+            existing += 1
+            continue
         payload = {
             "candidate_id": candidate_id,
             "subject_run_id": run_id,

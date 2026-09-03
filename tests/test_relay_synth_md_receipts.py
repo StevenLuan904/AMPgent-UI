@@ -94,3 +94,30 @@ def test_rejects_launch_and_file_identity_drift(tmp_path):
         materialize({"ingested": [_entry(
             "openmm_ff14sb_tip3p_1ns-npt_50ns-nvt_interface-pbc_v2"
         )]}, tmp_path, "fixture")
+
+
+def test_accepts_ingester_files_mapping_for_already_complete_entry(tmp_path):
+    _root(tmp_path)
+    release = "openmm_ff14sb_tip3p_1ns-npt_50ns-nvt_interface-pbc_v2"
+    materialize({"ingested": [_entry(release)]}, tmp_path, "fixture")
+    state_entry = _entry(release)
+    state_entry["already_complete"] = True
+    state_entry["inserted_evaluation_count"] = 0
+    state_entry["files"] = {"interface_analysis": state_entry["files"][0]}
+    result = materialize({"ingested": [state_entry]}, tmp_path, "fixture")
+    assert result["written_receipt_count"] == 0
+    assert result["existing_idempotent_receipt_count"] == 1
+
+
+def test_accepts_compact_launch_without_run_id_when_state_binds_run(tmp_path):
+    _root(tmp_path)
+    launch = tmp_path / "acea" / CANDIDATE / "launch_receipt.json"
+    launch.write_text(
+        json.dumps({"candidate_id": CANDIDATE, "target_key": "acea"}),
+        encoding="utf-8",
+    )
+    result = materialize(
+        {"ingested": [_entry(
+            "openmm_ff14sb_tip3p_1ns-npt_50ns-nvt_interface-pbc_v2"
+        )]}, tmp_path, "fixture")
+    assert result["written_receipt_count"] == 1
