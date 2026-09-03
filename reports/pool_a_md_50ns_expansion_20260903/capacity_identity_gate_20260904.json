@@ -1,0 +1,62 @@
+{
+  "schema_version": "ampgent.pool-a-md-capacity-identity-gate.1",
+  "observed_at_utc": "2026-09-03T22:04:17.2710858Z",
+  "purpose": "read-only successor capacity gate and 486 identity difference",
+  "host32": {
+    "endpoint": "LabServerNewDirect:32223",
+    "gpu0": {"status": "unreachable", "detail": "Connection refused", "dispatchable": false},
+    "gpu1": {"status": "unreachable", "detail": "Connection refused", "dispatchable": false},
+    "gpu2_gpu3": {"touched": false, "dispatchable": false, "prohibition": "absolute"},
+    "gate": "failed_host32_not_observable"
+  },
+  "main_19": {
+    "md_supervisor_pid": 3986807,
+    "analysis_supervisor_pid": 3977733,
+    "snapshot_count": 475,
+    "launch_receipts": 39,
+    "complete_with_full_evidence": 26,
+    "running_or_incomplete_launched": 13,
+    "failed": 0,
+    "gpu_compute_count": 8,
+    "owner": "AMPgent",
+    "dispatchable_gpu_count": 0
+  },
+  "synth_successor_11": {
+    "md_supervisor_pid": 1280301,
+    "interface_supervisor_pid": 3311802,
+    "mmgbsa_supervisor_pid": 3360111,
+    "runner_pids": [58820, 1280316, 2060743],
+    "snapshot_count": 11,
+    "launch_receipts": 5,
+    "complete_with_full_evidence": 2,
+    "running": 3,
+    "pending": 6,
+    "failed": 0,
+    "dispatchable_gpu_count": 0
+  },
+  "identity_union": {
+    "main_plus_successor_rows": 486,
+    "unique_subject_run_candidate": 486,
+    "cross_queue_duplicate": 0,
+    "launched_unique": 44,
+    "full_evidence_unique": 28,
+    "running_unique": 16,
+    "not_started_unique": 455,
+    "failed_unique": 0,
+    "partition_union": 486,
+    "launched_equals_full_evidence_plus_running": true,
+    "successor_12_excluded_from_baseline": true,
+    "structure_prepared_excluded_from_baseline": true
+  },
+  "protocol": {
+    "single_best_decoy": true,
+    "npt_ns": 1.0,
+    "nvt_ns": 50.0,
+    "replicates_per_candidate": 1,
+    "new_successor_started": false,
+    "new_structure_task_started": false,
+    "remote_large_artifact_downloaded": false,
+    "remote_large_artifact_deleted": false,
+    "prohibited_host32_gpu2_gpu3_touched": false
+  }
+}

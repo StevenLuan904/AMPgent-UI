@@ -1,0 +1,59 @@
+{
+  "schema_version": "ampgent.angpt1-pepmlm-qd-fallback-close.1",
+  "observed_at_utc": "2026-09-03T22:08:26.953454Z",
+  "reason": "host32 GPU0/GPU1 capacity gate failed; completed one local/PG source-QD increment",
+  "source": "PepMLM",
+  "source_stage": "autoresearch_lineage_round100_angpt1_pepmlm_denovo_fullscore_20260901",
+  "target_key": "angpt1",
+  "sequence": "AVRGQRQSDPYRFPGQHQT",
+  "sequence_sha256": "3b7705370186d6f2b4964689c8b0b7ef8c2e430099a242b08fe36863945a4f9c",
+  "quality": {
+    "formal12": true,
+    "display_eligible": true,
+    "activity_support_calibrated": 3,
+    "toxinpred3": "Non-Toxin",
+    "macrel_hemolysis": "low",
+    "guruprasad_instability_index": 39.505263157894746,
+    "hemopi2_conflict_status": "no_conflict",
+    "apex_status": "runtime_unavailable",
+    "peptiverse_status": "runtime_unavailable"
+  },
+  "qd": {
+    "archive_sha256": "33a992c62e98070cb9ca8ebeb72f9b2c83bb868e9caa6731f8d26da3af6b2f3c",
+    "actual_cell_id": "q4-h1-m1-l2",
+    "quality_eligible": true,
+    "contribution": "incumbent_replacement",
+    "new_cell": false,
+    "replacement": true,
+    "archive_qd_score": 62.15975400000001
+  },
+  "postgresql": {
+    "run_id": "1a1fada0-4524-5e2d-8384-99319146278d",
+    "candidate_id": "92177312-b7bf-47b4-9451-adb14ba288ce",
+    "tool_call_id": "3569c447-8c0d-421f-b1fe-a510bff38a31",
+    "run_status": "succeeded",
+    "candidate_count": 1,
+    "evaluation_count": 17,
+    "primary_evaluation_count": 12,
+    "hemopi2_challenger_evaluation_count": 3,
+    "shadow_evaluation_count": 2,
+    "pg_exact_replay_count": 0,
+    "subject_run_candidate_drift_count": 0,
+    "sequence_preflight_existing_count": 0,
+    "tool_call_status": "succeeded"
+  },
+  "pool_a": {
+    "admitted": false,
+    "reason": "target-specific Pool A still requires five-decoy Rosetta median dG < -30",
+    "structure_task": "not_created_due_to_capacity_gate",
+    "md_task_started": false
+  },
+  "evidence": {
+    "score_csv_sha256": "8ce3d253ea340564a0b194d1d0fc60aea348b278cb225bbb416581c57cb4d87a",
+    "challenger_csv_sha256": "5e8f9b2d67daaefbf6f8b838b331ce243120578fd5857ca05122a2e3f8c833f",
+    "materialization_receipt_sha256": "e44dd69e952e0743d0a013c860576ab1ca15d4224315e03f65dee6ece3a54dcf",
+    "capacity_identity_receipt": "reports/pool_a_md_50ns_expansion_20260903/capacity_identity_gate_20260904.json",
+    "remote_large_artifact_downloaded": false,
+    "remote_large_artifact_deleted": false
+  }
+}
