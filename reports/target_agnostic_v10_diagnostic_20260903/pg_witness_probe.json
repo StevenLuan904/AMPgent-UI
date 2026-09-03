@@ -1,0 +1,793 @@
+{
+  "runs": [
+    {
+      "id": "066d3144-2eb1-533f-9c9f-fad39f938f26",
+      "status": "succeeded",
+      "spec_json": "{\"run_id\": \"066d3144-2eb1-533f-9c9f-fad39f938f26\", \"run_kind\": \"seven_branch_design_round\", \"target_id\": \"6c45ae22-e578-4b3e-a885-dee1f11b6390\", \"branch_key\": \"target_agnostic_amp\", \"branch_kind\": \"target_agnostic\", \"epoch_ordinal\": 8, \"round_ordinal\": 8, \"schema_version\": \"ampgent.seven-branch-top-up-round-reservation.1\", \"schedule_sha256\": \"7d3352b37bb577d830926ae38fe8bcd6031b47caab03c086e4f929ee050bb13f\", \"controller_run_id\": \"2f0159cd-d549-589d-9038-5874b3a65dba\", \"top_up_plan_sha256\": \"56a177b40660a394a6e0a2dd1f4b2e66b01b7526e406673ace18c2887a4c3691\", \"target_binding_role\": \"relational_anchor_only\", \"prior_source_run_ids\": [\"f7c3405a-d3dc-55bb-a5e8-4852a7e97166\", \"1da451b5-d8b3-5c3d-b8b4-176c9f35b35a\", \"0f886428-28a0-5ccf-84d2-ac022c2dd462\", \"28ab64d3-91a9-5c9b-b8ac-1e93a6ffa073\", \"c8c29180-c076-5851-a465-a55f8a5ce9ea\"], \"temporal_workflow_id\": \"pepagent-seven-branch-target_agnostic_amp-r8-066d31442eb1533f9c9ffad39f938f26\", \"formal_submission_key\": \"7a8cff652e6dec9a99ff19928d42a224cb9657ac38287b55225f4737c46d019c\", \"design_contract_sha256\": \"2965367f1f876eed1b5972189e1195595eca3fceda2836805847792585b2f199\", \"expected_raw_occurrences\": 3000, \"parent_controller_run_id\": \"306001b2-3af5-58d9-b928-2df5308f9d0c\", \"requested_delivery_count\": 1000, \"execution_contract_sha256\": \"1ae1258795c8a65bfa6e3c2674c472b02221d98a27c064ac6d72ee57c4aed98a\", \"historical_outputs_reused\": false, \"prior_evidence_snapshot_sha256\": \"a6fa87081f3627512fd28db74e2ee39f381876aa9efec619c2d6b6c31ae9724a\"}"
+    },
+    {
+      "id": "0f886428-28a0-5ccf-84d2-ac022c2dd462",
+      "status": "succeeded",
+      "spec_json": "{\"run_id\": \"0f886428-28a0-5ccf-84d2-ac022c2dd462\", \"run_kind\": \"seven_branch_design_round\", \"target_id\": \"6c45ae22-e578-4b3e-a885-dee1f11b6390\", \"branch_key\": \"target_agnostic_amp\", \"branch_kind\": \"target_agnostic\", \"epoch_ordinal\": 5, \"round_ordinal\": 5, \"schema_version\": \"ampgent.seven-branch-top-up-round-reservation.1\", \"schedule_sha256\": \"2739a69eb23addd3c7902e402d3e96089c6f5d4861d7658f339889c1f2e10527\", \"controller_run_id\": \"221fb6e4-304a-509e-9d2a-1899e7f4bdea\", \"top_up_plan_sha256\": \"4972672a0b30f371e4178e9dc4693052d4c13699bee859a3f27941922e04e116\", \"target_binding_role\": \"relational_anchor_only\", \"prior_source_run_ids\": [\"c8c29180-c076-5851-a465-a55f8a5ce9ea\", \"28ab64d3-91a9-5c9b-b8ac-1e93a6ffa073\"], \"temporal_workflow_id\": \"pepagent-seven-branch-target_agnostic_amp-r5-0f88642828a05ccf84d2ac022c2dd462\", \"formal_submission_key\": \"244f0a2ea96972acb524178f1d01db1101e654cf20301866e45f793a10ae4677\", \"design_contract_sha256\": \"2965367f1f876eed1b5972189e1195595eca3fceda2836805847792585b2f199\", \"expected_raw_occurrences\": 3000, \"parent_controller_run_id\": \"306001b2-3af5-58d9-b928-2df5308f9d0c\", \"requested_delivery_count\": 1000, \"execution_contract_sha256\": \"7300fca35ccffcc6f78f256cfda552251624be34d16a210935cb8663de981e40\", \"historical_outputs_reused\": false, \"prior_evidence_snapshot_sha256\": \"9ab74a5ea2a402a62ba711188b57f2d562c198d9779c6ef321823130eb917d0a\"}"
+    },
+    {
+      "id": "1da451b5-d8b3-5c3d-b8b4-176c9f35b35a",
+      "status": "succeeded",
+      "spec_json": "{\"run_id\": \"1da451b5-d8b3-5c3d-b8b4-176c9f35b35a\", \"run_kind\": \"seven_branch_design_round\", \"target_id\": \"6c45ae22-e578-4b3e-a885-dee1f11b6390\", \"branch_key\": \"target_agnostic_amp\", \"branch_kind\": \"target_agnostic\", \"epoch_ordinal\": 7, \"round_ordinal\": 7, \"schema_version\": \"ampgent.seven-branch-top-up-round-reservation.1\", \"schedule_sha256\": \"2abac3085cf4683a1117d703fcf837175ea5f538f8e58faf1b16d31024ac73b2\", \"controller_run_id\": \"1556012c-9732-5b64-a5db-31cd99526ec9\", \"top_up_plan_sha256\": \"378f7aedbc85b40618ca8e07f03b3de000d7c2d16c54e8bcb72322044027a6df\", \"target_binding_role\": \"relational_anchor_only\", \"prior_source_run_ids\": [\"f7c3405a-d3dc-55bb-a5e8-4852a7e97166\", \"0f886428-28a0-5ccf-84d2-ac022c2dd462\", \"28ab64d3-91a9-5c9b-b8ac-1e93a6ffa073\", \"c8c29180-c076-5851-a465-a55f8a5ce9ea\"], \"temporal_workflow_id\": \"pepagent-seven-branch-target_agnostic_amp-r7-1da451b5d8b35c3db8b4176c9f35b35a\", \"formal_submission_key\": \"57a31ee54ae6ae9c398b497eb529ecb864e420b2d6a8ab53dca42b0ac62786d9\", \"design_contract_sha256\": \"2965367f1f876eed1b5972189e1195595eca3fceda2836805847792585b2f199\", \"expected_raw_occurrences\": 3000, \"parent_controller_run_id\": \"306001b2-3af5-58d9-b928-2df5308f9d0c\", \"requested_delivery_count\": 1000, \"execution_contract_sha256\": \"56976e30b516a3acbf61632724eb4aecc26c544f97d5ef480ca01cb0d87389b0\", \"historical_outputs_reused\": false, \"prior_evidence_snapshot_sha256\": \"eab372ca74f5f91f9248065ff7c029a1d48a173a97dd6c916059d664700bc4e5\"}"
+    },
+    {
+      "id": "28ab64d3-91a9-5c9b-b8ac-1e93a6ffa073",
+      "status": "succeeded",
+      "spec_json": "{\"run_id\": \"28ab64d3-91a9-5c9b-b8ac-1e93a6ffa073\", \"run_kind\": \"seven_branch_design_round\", \"target_id\": \"6c45ae22-e578-4b3e-a885-dee1f11b6390\", \"branch_key\": \"target_agnostic_amp\", \"branch_kind\": \"target_agnostic\", \"epoch_ordinal\": 4, \"round_ordinal\": 3, \"schema_version\": \"ampgent.seven-branch-top-up-round-reservation.1\", \"schedule_sha256\": \"e390b4deb95c69cb992a043f987c8d16055abf565fd68a7b825a281fb5e873cc\", \"controller_run_id\": \"306001b2-3af5-58d9-b928-2df5308f9d0c\", \"top_up_plan_sha256\": \"4c2a852d34f3205711ba4fc253ddd4f53ebe8e6b3a9400eace4d29ec52dd6f08\", \"target_binding_role\": \"relational_anchor_only\", \"prior_source_run_ids\": [\"c8c29180-c076-5851-a465-a55f8a5ce9ea\"], \"temporal_workflow_id\": \"pepagent-seven-branch-target_agnostic_amp-r3-28ab64d391a95c9bb8ac1e93a6ffa073\", \"formal_submission_key\": \"eae0b46e2275cdcb25a6b2495f926697cfa107766b17a87a7949f681829e5759\", \"design_contract_sha256\": \"2965367f1f876eed1b5972189e1195595eca3fceda2836805847792585b2f199\", \"expected_raw_occurrences\": 3000, \"parent_controller_run_id\": \"7850aa85-190a-5966-9282-8b341ce5f838\", \"requested_delivery_count\": 1000, \"execution_contract_sha256\": \"f5b4b48ec9921feddb6581f70ee95d9137221e9fac0f6bf0effba9626253b35b\", \"historical_outputs_reused\": false, \"prior_evidence_snapshot_sha256\": \"d36a09e03b3ae2e082118df52c0a793b54eb3bc954a6ae8fbda0c12f533f2dad\"}"
+    },
+    {
+      "id": "3a15dab3-2888-5340-9bb9-4f414c1b986d",
+      "status": "succeeded",
+      "spec_json": "{\"run_id\": \"3a15dab3-2888-5340-9bb9-4f414c1b986d\", \"run_kind\": \"seven_branch_design_round\", \"target_id\": \"6c45ae22-e578-4b3e-a885-dee1f11b6390\", \"branch_key\": \"target_agnostic_amp\", \"branch_kind\": \"target_agnostic\", \"epoch_ordinal\": 11, \"round_ordinal\": 11, \"schema_version\": \"ampgent.seven-branch-top-up-round-reservation.1\", \"schedule_sha256\": \"ce038070fc57b9e29c4331450aa8e149c4595e88b02ead7b310f168ea95800d2\", \"controller_run_id\": \"533186b7-1404-58bb-96ac-d8d915c269a4\", \"top_up_plan_sha256\": \"398dd5d7c1bfb468a4e70b2fa63adae41f5584594181ed4a75e96242ddc208c1\", \"target_binding_role\": \"relational_anchor_only\", \"prior_source_run_ids\": [\"c6df420c-674b-59fd-bb34-5bdae2f296e4\", \"f7c3405a-d3dc-55bb-a5e8-4852a7e97166\", \"6fe56b08-6360-533f-8491-72f7f9a7ff0b\", \"066d3144-2eb1-533f-9c9f-fad39f938f26\", \"1da451b5-d8b3-5c3d-b8b4-176c9f35b35a\", \"0f886428-28a0-5ccf-84d2-ac022c2dd462\", \"28ab64d3-91a9-5c9b-b8ac-1e93a6ffa073\", \"c8c29180-c076-5851-a465-a55f8a5ce9ea\"], \"temporal_workflow_id\": \"pepagent-seven-branch-target_agnostic_amp-r11-3a15dab3288853409bb94f414c1b986d\", \"formal_submission_key\": \"9f846a822c24921420ae9cb7ee15af62028b752235b4132231ff13d4e51b4a81\", \"design_contract_sha256\": \"2965367f1f876eed1b5972189e1195595eca3fceda2836805847792585b2f199\", \"expected_raw_occurrences\": 3000, \"parent_controller_run_id\": \"306001b2-3af5-58d9-b928-2df5308f9d0c\", \"requested_delivery_count\": 1000, \"execution_contract_sha256\": \"0b3ebc857607d2273eb00dd2d9a01258fefee8745914bb4aea393bd889ba34ce\", \"historical_outputs_reused\": false, \"prior_evidence_snapshot_sha256\": \"820605d20a437f978d05ce2969154fd6dfd5e88e52d4678b1d3510c9af402ca3\"}"
+    },
+    {
+      "id": "45c71b2c-a057-5173-a203-cc03deb3d0a2",
+      "status": "running",
+      "spec_json": "{\"run_id\": \"45c71b2c-a057-5173-a203-cc03deb3d0a2\", \"run_kind\": \"seven_branch_design_round\", \"target_id\": \"6c45ae22-e578-4b3e-a885-dee1f11b6390\", \"branch_key\": \"target_agnostic_amp\", \"branch_kind\": \"target_agnostic\", \"epoch_ordinal\": 2, \"round_ordinal\": 1, \"schema_version\": \"ampgent.seven-branch-top-up-round-reservation.1\", \"schedule_sha256\": \"0ce133f47da7cd2c996b425276b1a060ab97532903fb96c19172c480dcfe0543\", \"controller_run_id\": \"ce2b9f46-9ced-51a2-8156-612182058bf3\", \"top_up_plan_sha256\": \"b2023f5830b2844c85848cce8384012a3a9095a22247b291c385299c47b95600\", \"target_binding_role\": \"relational_anchor_only\", \"prior_source_run_ids\": [\"c8c29180-c076-5851-a465-a55f8a5ce9ea\"], \"temporal_workflow_id\": \"pepagent-seven-branch-target_agnostic_amp-r1-45c71b2ca0575173a203cc03deb3d0a2\", \"formal_submission_key\": \"5658dd820ee1f4f648b25b903e98095c9c733de50b855f66a4962988890dbba8\", \"design_contract_sha256\": \"2965367f1f876eed1b5972189e1195595eca3fceda2836805847792585b2f199\", \"expected_raw_occurrences\": 3000, \"parent_controller_run_id\": \"7850aa85-190a-5966-9282-8b341ce5f838\", \"requested_delivery_count\": 1000, \"execution_contract_sha256\": \"3955c4ff486e758da914f533ed9a20085447a5c60b2efffe3a5370eac2549dae\", \"historical_outputs_reused\": false, \"prior_evidence_snapshot_sha256\": \"ef10de723c1aaa8593f8897042e95fec92f05bb2a9d2845373f98bbc7c89e98b\"}"
+    },
+    {
+      "id": "5ff373b0-98c4-5f7e-a146-575a3b1369dc",
+      "status": "succeeded",
+      "spec_json": "{\"purpose\": \"generation\", \"target_id\": \"6c45ae22-e578-4b3e-a885-dee1f11b6390\", \"tool_name\": \"autoresearch_scored_lineage_materializer\", \"target_key\": \"target_agnostic\", \"operation_key\": \"materialize-scored-lineage:ebdaad4ba7268c6e70e58fe74dd420b884b06a6b:1af0a2f66500b001d4976094b97952db8d296f9189547a5deeebeafa2f88de55:target_agnostic_amp:generation-8\", \"schema_version\": \"ampgent.autoresearch-operational-run.1\", \"formal_scientific_run\": false, \"authoritative_call_record\": \"postgresql\"}"
+    },
+    {
+      "id": "6dd891f2-a1b4-586a-acfd-9336990f2b12",
+      "status": "failed",
+      "spec_json": "{\"run_id\": \"6dd891f2-a1b4-586a-acfd-9336990f2b12\", \"run_kind\": \"seven_branch_design_round\", \"target_id\": \"6c45ae22-e578-4b3e-a885-dee1f11b6390\", \"branch_key\": \"target_agnostic_amp\", \"branch_kind\": \"target_agnostic\", \"epoch_ordinal\": 3, \"round_ordinal\": 2, \"schema_version\": \"ampgent.seven-branch-top-up-round-reservation.1\", \"schedule_sha256\": \"edfcd9bd1af8f33b50f8b6dcd0b6cf7d677c3b9060a3ec62aad04a0aebb97dc0\", \"controller_run_id\": \"6c5f46a5-e0bd-5bea-a090-19632e91e150\", \"top_up_plan_sha256\": \"ccc657a2baf8f0eac10f491e3d0fdb813d89e6f60ec982b5bc69a675944c8a60\", \"target_binding_role\": \"relational_anchor_only\", \"prior_source_run_ids\": [\"c8c29180-c076-5851-a465-a55f8a5ce9ea\"], \"temporal_workflow_id\": \"pepagent-seven-branch-target_agnostic_amp-r2-6dd891f2a1b4586aacfd9336990f2b12\", \"formal_submission_key\": \"8d15dc0aa954bc3f3eab850321e6b147878dbdb15bdc5e125bd1d8992b27f96d\", \"design_contract_sha256\": \"2965367f1f876eed1b5972189e1195595eca3fceda2836805847792585b2f199\", \"expected_raw_occurrences\": 3000, \"parent_controller_run_id\": \"7850aa85-190a-5966-9282-8b341ce5f838\", \"requested_delivery_count\": 1000, \"execution_contract_sha256\": \"dc5ad8ec75d0453f63711c18efce3bc55bb5f15ff9eb9dc98a02c0eac73fe053\", \"historical_outputs_reused\": false, \"prior_evidence_snapshot_sha256\": \"296308760aa137df59c73d12ef5901f211f98dcaa85a9e3488bef6b7daf02e7d\"}"
+    },
+    {
+      "id": "6e9b05ef-12b6-5db8-a0e6-3b603bf369e5",
+      "status": "failed",
+      "spec_json": "{\"run_id\": \"6e9b05ef-12b6-5db8-a0e6-3b603bf369e5\", \"run_kind\": \"seven_branch_design_round\", \"target_id\": \"6c45ae22-e578-4b3e-a885-dee1f11b6390\", \"branch_key\": \"target_agnostic_amp\", \"branch_kind\": \"target_agnostic\", \"epoch_ordinal\": 4, \"round_ordinal\": 4, \"schema_version\": \"ampgent.seven-branch-top-up-round-reservation.1\", \"schedule_sha256\": \"ca31b8fb73d0a9aaeaaeb440131acc3252a98da52e5eaab91095f4b131a2039e\", \"controller_run_id\": \"97caedef-e09c-5f72-9a41-9e2aa79a5c6c\", \"top_up_plan_sha256\": \"5650ee04a43960e5bd6789b269b9425d8afc56a4d7f12312f545b59d8f2adb7e\", \"target_binding_role\": \"relational_anchor_only\", \"prior_source_run_ids\": [\"c8c29180-c076-5851-a465-a55f8a5ce9ea\", \"28ab64d3-91a9-5c9b-b8ac-1e93a6ffa073\"], \"temporal_workflow_id\": \"pepagent-seven-branch-target_agnostic_amp-r4-6e9b05ef12b65db8a0e63b603bf369e5\", \"formal_submission_key\": \"8e0d207cb0ecd1d9209e82c7db3be74fb2fdc993c26770b7a22e5e44d791d02d\", \"design_contract_sha256\": \"2965367f1f876eed1b5972189e1195595eca3fceda2836805847792585b2f199\", \"expected_raw_occurrences\": 3000, \"parent_controller_run_id\": \"306001b2-3af5-58d9-b928-2df5308f9d0c\", \"requested_delivery_count\": 1000, \"execution_contract_sha256\": \"d74506daf8d81b5fcb1b1b22fe7aedce4877aee86d6bed06530efea3c115b472\", \"historical_outputs_reused\": false, \"prior_evidence_snapshot_sha256\": \"cae2ccca44798092e42d8830fb6166e966dd12e277a01e736fdab9263c08d3d8\"}"
+    },
+    {
+      "id": "6fe56b08-6360-533f-8491-72f7f9a7ff0b",
+      "status": "succeeded",
+      "spec_json": "{\"run_id\": \"6fe56b08-6360-533f-8491-72f7f9a7ff0b\", \"run_kind\": \"seven_branch_design_round\", \"target_id\": \"6c45ae22-e578-4b3e-a885-dee1f11b6390\", \"branch_key\": \"target_agnostic_amp\", \"branch_kind\": \"target_agnostic\", \"epoch_ordinal\": 10, \"round_ordinal\": 10, \"schema_version\": \"ampgent.seven-branch-top-up-round-reservation.1\", \"schedule_sha256\": \"f044af1d23cae29171c16c617bb3d71352ef4036c0ec5ef8f36386c94004ede1\", \"controller_run_id\": \"71927fa0-f70a-58f5-b8b3-20000c1ba61d\", \"top_up_plan_sha256\": \"9a8de13111f381456e598b7530577316aebee44e75339cfe6d61fd1ea30b8bef\", \"target_binding_role\": \"relational_anchor_only\", \"prior_source_run_ids\": [\"c6df420c-674b-59fd-bb34-5bdae2f296e4\", \"f7c3405a-d3dc-55bb-a5e8-4852a7e97166\", \"066d3144-2eb1-533f-9c9f-fad39f938f26\", \"1da451b5-d8b3-5c3d-b8b4-176c9f35b35a\", \"0f886428-28a0-5ccf-84d2-ac022c2dd462\", \"28ab64d3-91a9-5c9b-b8ac-1e93a6ffa073\", \"c8c29180-c076-5851-a465-a55f8a5ce9ea\"], \"temporal_workflow_id\": \"pepagent-seven-branch-target_agnostic_amp-r10-6fe56b086360533f849172f7f9a7ff0b\", \"formal_submission_key\": \"65e59d61d0ad218225bf285a46715392e6c8805f0f78c104072d7675afd853a9\", \"design_contract_sha256\": \"2965367f1f876eed1b5972189e1195595eca3fceda2836805847792585b2f199\", \"expected_raw_occurrences\": 3000, \"parent_controller_run_id\": \"306001b2-3af5-58d9-b928-2df5308f9d0c\", \"requested_delivery_count\": 1000, \"execution_contract_sha256\": \"b15b71722299bc12c2bba7efb43ab3382aad5c6b0c9bb358f6b57fbb3dd5832a\", \"historical_outputs_reused\": false, \"prior_evidence_snapshot_sha256\": \"019a2045a0d835ba1e25ecd9bca309a93e1c4e1f317dbc53da6c4d1793ec9dea\"}"
+    },
+    {
+      "id": "95f3e8b0-214f-5e60-9d46-840c86ea4be9",
+      "status": "created",
+      "spec_json": "{\"run_id\": \"95f3e8b0-214f-5e60-9d46-840c86ea4be9\", \"run_kind\": \"seven_branch_design_round\", \"target_id\": \"6c45ae22-e578-4b3e-a885-dee1f11b6390\", \"branch_key\": \"target_agnostic_amp\", \"branch_kind\": \"target_agnostic\", \"epoch_ordinal\": 1, \"round_ordinal\": 1, \"schema_version\": \"ampgent.seven-branch-top-up-round-reservation.1\", \"schedule_sha256\": \"fcbb4f8daa84ae09ce9ee6f33012d8c9c86429a972be838c0fef1d8fa68159bd\", \"controller_run_id\": \"14b04037-05d8-5baf-b2a5-8980653c0b08\", \"top_up_plan_sha256\": \"ae8c1bf247506c0fe466a853c8fd060a05efff3e5966ce5e11f129e3735eb50d\", \"target_binding_role\": \"relational_anchor_only\", \"prior_source_run_ids\": [\"c8c29180-c076-5851-a465-a55f8a5ce9ea\"], \"temporal_workflow_id\": \"pepagent-seven-branch-target_agnostic_amp-r1-95f3e8b0214f5e609d46840c86ea4be9\", \"formal_submission_key\": \"4204e1c38d1fb37809fb71ae32d128a1c16c8da2b610cf3bb54ab43e1686bc8d\", \"design_contract_sha256\": \"2965367f1f876eed1b5972189e1195595eca3fceda2836805847792585b2f199\", \"expected_raw_occurrences\": 89400, \"parent_controller_run_id\": \"7850aa85-190a-5966-9282-8b341ce5f838\", \"requested_delivery_count\": 1000, \"execution_contract_sha256\": \"083109099fcd828da12da0a7d2e053ca081f0fb23c47d280f592be22daefa66f\", \"historical_outputs_reused\": false, \"prior_evidence_snapshot_sha256\": \"9d178f795f71317b484e87224fdc6bc283b87688c13d3e962f9459f7ba7b7f65\"}"
+    },
+    {
+      "id": "c6df420c-674b-59fd-bb34-5bdae2f296e4",
+      "status": "succeeded",
+      "spec_json": "{\"run_id\": \"c6df420c-674b-59fd-bb34-5bdae2f296e4\", \"run_kind\": \"seven_branch_design_round\", \"target_id\": \"6c45ae22-e578-4b3e-a885-dee1f11b6390\", \"branch_key\": \"target_agnostic_amp\", \"branch_kind\": \"target_agnostic\", \"epoch_ordinal\": 9, \"round_ordinal\": 9, \"schema_version\": \"ampgent.seven-branch-top-up-round-reservation.1\", \"schedule_sha256\": \"a1e6381163901d7def16e5b27504df0b4b5f2fb5a71513ddf30729eccc52e4e8\", \"controller_run_id\": \"95f47a51-66d5-555c-ba88-176390079420\", \"top_up_plan_sha256\": \"6ddaa7dfebd1ab8a6046b046408dbaa14198e45849658413d09b5a985eb80ed0\", \"target_binding_role\": \"relational_anchor_only\", \"prior_source_run_ids\": [\"c8c29180-c076-5851-a465-a55f8a5ce9ea\", \"28ab64d3-91a9-5c9b-b8ac-1e93a6ffa073\", \"0f886428-28a0-5ccf-84d2-ac022c2dd462\", \"f7c3405a-d3dc-55bb-a5e8-4852a7e97166\", \"1da451b5-d8b3-5c3d-b8b4-176c9f35b35a\", \"066d3144-2eb1-533f-9c9f-fad39f938f26\"], \"temporal_workflow_id\": \"pepagent-seven-branch-target_agnostic_amp-r9-c6df420c674b59fdbb345bdae2f296e4\", \"formal_submission_key\": \"c15408623299ba8e562a65ed8727955b17ce38ff2c3ae597998e0bba5302d2b3\", \"design_contract_sha256\": \"2965367f1f876eed1b5972189e1195595eca3fceda2836805847792585b2f199\", \"expected_raw_occurrences\": 3000, \"parent_controller_run_id\": \"306001b2-3af5-58d9-b928-2df5308f9d0c\", \"requested_delivery_count\": 1000, \"execution_contract_sha256\": \"241cdebf404f91cdb46f404a0da360046376bbd246c4c36ae31e34d4da314e90\", \"historical_outputs_reused\": false, \"prior_evidence_snapshot_sha256\": \"7b1fad84eb10786fbd3400d4545656e8d1a4ed14ffc08ba260672e6a03499533\"}"
+    },
+    {
+      "id": "c8c29180-c076-5851-a465-a55f8a5ce9ea",
+      "status": "succeeded",
+      "spec_json": "{\"run_id\": \"c8c29180-c076-5851-a465-a55f8a5ce9ea\", \"run_kind\": \"seven_branch_design_round\", \"target_id\": \"6c45ae22-e578-4b3e-a885-dee1f11b6390\", \"branch_key\": \"target_agnostic_amp\", \"branch_kind\": \"target_agnostic\", \"round_ordinal\": 0, \"schema_version\": \"ampgent.seven-branch-round-reservation.1\", \"schedule_sha256\": \"d6e17c7e5f533b1d9486971cb8a6992d251a9deb38012d457fa3782fcee8ef24\", \"controller_run_id\": \"7850aa85-190a-5966-9282-8b341ce5f838\", \"target_binding_role\": \"relational_anchor_only\", \"temporal_workflow_id\": \"pepagent-seven-branch-target_agnostic_amp-r0-c8c29180c0765851a465a55f8a5ce9ea\", \"formal_submission_key\": \"918b8c64f77cdfcf2eff54c2555950cdfb5f701c0405b93fe5b8ec10cc8e0c9f\", \"design_contract_sha256\": \"2965367f1f876eed1b5972189e1195595eca3fceda2836805847792585b2f199\", \"expected_raw_occurrences\": 3000, \"requested_delivery_count\": 1000, \"execution_contract_sha256\": \"5e86a954b2bc503f4c2258c6b7628e0b8065322130dc7a4c9cc259fb8d0b1820\", \"historical_outputs_reused\": false}"
+    },
+    {
+      "id": "e4554feb-bab4-5c39-974b-2927463a9709",
+      "status": "succeeded",
+      "spec_json": "{\"purpose\": \"generation\", \"target_id\": \"6c45ae22-e578-4b3e-a885-dee1f11b6390\", \"tool_name\": \"autoresearch_scored_lineage_materializer\", \"target_key\": \"target_agnostic\", \"operation_key\": \"materialize-scored-lineage:52cbcd1110ec9428e1a687032e3c25f392e14100:7f7109767d7cedbd2f2bf45c0f453881ddb600797f06dde405eda906ca52613c:target_agnostic_amp:generation-8\", \"schema_version\": \"ampgent.autoresearch-operational-run.1\", \"formal_scientific_run\": false, \"authoritative_call_record\": \"postgresql\"}"
+    },
+    {
+      "id": "f7c3405a-d3dc-55bb-a5e8-4852a7e97166",
+      "status": "succeeded",
+      "spec_json": "{\"run_id\": \"f7c3405a-d3dc-55bb-a5e8-4852a7e97166\", \"run_kind\": \"seven_branch_design_round\", \"target_id\": \"6c45ae22-e578-4b3e-a885-dee1f11b6390\", \"branch_key\": \"target_agnostic_amp\", \"branch_kind\": \"target_agnostic\", \"epoch_ordinal\": 6, \"round_ordinal\": 6, \"schema_version\": \"ampgent.seven-branch-top-up-round-reservation.1\", \"schedule_sha256\": \"236c7c3e100e5a7edb11715aed983a0e097d9516276d50685af664569c4f987e\", \"controller_run_id\": \"b938b80e-6894-5981-85a4-9a8c77255c53\", \"top_up_plan_sha256\": \"fc5188ddd2f83d0b1457fc51d20a650f27b412d434269986519de1a0e5ed9b1a\", \"target_binding_role\": \"relational_anchor_only\", \"prior_source_run_ids\": [\"0f886428-28a0-5ccf-84d2-ac022c2dd462\", \"28ab64d3-91a9-5c9b-b8ac-1e93a6ffa073\", \"c8c29180-c076-5851-a465-a55f8a5ce9ea\"], \"temporal_workflow_id\": \"pepagent-seven-branch-target_agnostic_amp-r6-f7c3405ad3dc55bba5e84852a7e97166\", \"formal_submission_key\": \"6c64a72f278992257568a93980ec068a7f11b537b2995f424044d1d2dfa85586\", \"design_contract_sha256\": \"2965367f1f876eed1b5972189e1195595eca3fceda2836805847792585b2f199\", \"expected_raw_occurrences\": 3000, \"parent_controller_run_id\": \"306001b2-3af5-58d9-b928-2df5308f9d0c\", \"requested_delivery_count\": 1000, \"execution_contract_sha256\": \"d78014e52840e184f0a1b10b2957eeb2ffdc25de783aafc550e2af5fd86278ab\", \"historical_outputs_reused\": false, \"prior_evidence_snapshot_sha256\": \"f3be25c05540e983ff4e265114ce98eb98467b487f66cb6de9e5978d7d8d8a24\"}"
+    }
+  ],
+  "releases": [
+    {
+      "run_id": "066d3144-2eb1-533f-9c9f-fad39f938f26",
+      "evidence_role": "shadow",
+      "evidence_family": "multiobjective_safety_activity",
+      "model_release_key": "apex_runtime_inventory_v1",
+      "metric_name": "apex_shadow_status",
+      "count": 2637
+    },
+    {
+      "run_id": "066d3144-2eb1-533f-9c9f-fad39f938f26",
+      "evidence_role": "challenger",
+      "evidence_family": "hemolysis",
+      "model_release_key": "hemopi2_v27_calibrated_v39",
+      "metric_name": "calibrated_hemolysis_probability",
+      "count": 2637
+    },
+    {
+      "run_id": "066d3144-2eb1-533f-9c9f-fad39f938f26",
+      "evidence_role": "challenger",
+      "evidence_family": "hemolysis",
+      "model_release_key": "hemopi2_v27_calibrated_v39",
+      "metric_name": "hemopi2_classification_score",
+      "count": 2637
+    },
+    {
+      "run_id": "066d3144-2eb1-533f-9c9f-fad39f938f26",
+      "evidence_role": "challenger",
+      "evidence_family": "hemolysis",
+      "model_release_key": "hemopi2_v27_calibrated_v39",
+      "metric_name": "hemopi2_hc50_um",
+      "count": 2637
+    },
+    {
+      "run_id": "066d3144-2eb1-533f-9c9f-fad39f938f26",
+      "evidence_role": "shadow",
+      "evidence_family": "multiobjective_safety_activity",
+      "model_release_key": "peptiverse_runtime_inventory_v1",
+      "metric_name": "peptiverse_shadow_status",
+      "count": 2637
+    },
+    {
+      "run_id": "0f886428-28a0-5ccf-84d2-ac022c2dd462",
+      "evidence_role": "shadow",
+      "evidence_family": "multiobjective_safety_activity",
+      "model_release_key": "apex_runtime_inventory_v1",
+      "metric_name": "apex_shadow_status",
+      "count": 2635
+    },
+    {
+      "run_id": "0f886428-28a0-5ccf-84d2-ac022c2dd462",
+      "evidence_role": "challenger",
+      "evidence_family": "hemolysis",
+      "model_release_key": "hemopi2_v27_calibrated_v39",
+      "metric_name": "calibrated_hemolysis_probability",
+      "count": 2635
+    },
+    {
+      "run_id": "0f886428-28a0-5ccf-84d2-ac022c2dd462",
+      "evidence_role": "challenger",
+      "evidence_family": "hemolysis",
+      "model_release_key": "hemopi2_v27_calibrated_v39",
+      "metric_name": "hemopi2_classification_score",
+      "count": 2635
+    },
+    {
+      "run_id": "0f886428-28a0-5ccf-84d2-ac022c2dd462",
+      "evidence_role": "challenger",
+      "evidence_family": "hemolysis",
+      "model_release_key": "hemopi2_v27_calibrated_v39",
+      "metric_name": "hemopi2_hc50_um",
+      "count": 2635
+    },
+    {
+      "run_id": "0f886428-28a0-5ccf-84d2-ac022c2dd462",
+      "evidence_role": "shadow",
+      "evidence_family": "multiobjective_safety_activity",
+      "model_release_key": "peptiverse_runtime_inventory_v1",
+      "metric_name": "peptiverse_shadow_status",
+      "count": 2635
+    },
+    {
+      "run_id": "1da451b5-d8b3-5c3d-b8b4-176c9f35b35a",
+      "evidence_role": "shadow",
+      "evidence_family": "multiobjective_safety_activity",
+      "model_release_key": "apex_runtime_inventory_v1",
+      "metric_name": "apex_shadow_status",
+      "count": 2675
+    },
+    {
+      "run_id": "1da451b5-d8b3-5c3d-b8b4-176c9f35b35a",
+      "evidence_role": "challenger",
+      "evidence_family": "hemolysis",
+      "model_release_key": "hemopi2_v27_calibrated_v39",
+      "metric_name": "calibrated_hemolysis_probability",
+      "count": 2675
+    },
+    {
+      "run_id": "1da451b5-d8b3-5c3d-b8b4-176c9f35b35a",
+      "evidence_role": "challenger",
+      "evidence_family": "hemolysis",
+      "model_release_key": "hemopi2_v27_calibrated_v39",
+      "metric_name": "hemopi2_classification_score",
+      "count": 2675
+    },
+    {
+      "run_id": "1da451b5-d8b3-5c3d-b8b4-176c9f35b35a",
+      "evidence_role": "challenger",
+      "evidence_family": "hemolysis",
+      "model_release_key": "hemopi2_v27_calibrated_v39",
+      "metric_name": "hemopi2_hc50_um",
+      "count": 2675
+    },
+    {
+      "run_id": "1da451b5-d8b3-5c3d-b8b4-176c9f35b35a",
+      "evidence_role": "shadow",
+      "evidence_family": "multiobjective_safety_activity",
+      "model_release_key": "peptiverse_runtime_inventory_v1",
+      "metric_name": "peptiverse_shadow_status",
+      "count": 2675
+    },
+    {
+      "run_id": "28ab64d3-91a9-5c9b-b8ac-1e93a6ffa073",
+      "evidence_role": "shadow",
+      "evidence_family": "multiobjective_safety_activity",
+      "model_release_key": "apex_runtime_inventory_v1",
+      "metric_name": "apex_shadow_status",
+      "count": 2628
+    },
+    {
+      "run_id": "28ab64d3-91a9-5c9b-b8ac-1e93a6ffa073",
+      "evidence_role": "challenger",
+      "evidence_family": "hemolysis",
+      "model_release_key": "hemopi2_v27_calibrated_v39",
+      "metric_name": "calibrated_hemolysis_probability",
+      "count": 2628
+    },
+    {
+      "run_id": "28ab64d3-91a9-5c9b-b8ac-1e93a6ffa073",
+      "evidence_role": "challenger",
+      "evidence_family": "hemolysis",
+      "model_release_key": "hemopi2_v27_calibrated_v39",
+      "metric_name": "hemopi2_classification_score",
+      "count": 2628
+    },
+    {
+      "run_id": "28ab64d3-91a9-5c9b-b8ac-1e93a6ffa073",
+      "evidence_role": "challenger",
+      "evidence_family": "hemolysis",
+      "model_release_key": "hemopi2_v27_calibrated_v39",
+      "metric_name": "hemopi2_hc50_um",
+      "count": 2628
+    },
+    {
+      "run_id": "28ab64d3-91a9-5c9b-b8ac-1e93a6ffa073",
+      "evidence_role": "shadow",
+      "evidence_family": "multiobjective_safety_activity",
+      "model_release_key": "peptiverse_runtime_inventory_v1",
+      "metric_name": "peptiverse_shadow_status",
+      "count": 2628
+    },
+    {
+      "run_id": "3a15dab3-2888-5340-9bb9-4f414c1b986d",
+      "evidence_role": "shadow",
+      "evidence_family": "multiobjective_safety_activity",
+      "model_release_key": "apex_runtime_inventory_v1",
+      "metric_name": "apex_shadow_status",
+      "count": 2628
+    },
+    {
+      "run_id": "3a15dab3-2888-5340-9bb9-4f414c1b986d",
+      "evidence_role": "challenger",
+      "evidence_family": "hemolysis",
+      "model_release_key": "hemopi2_v27_calibrated_v39",
+      "metric_name": "calibrated_hemolysis_probability",
+      "count": 2628
+    },
+    {
+      "run_id": "3a15dab3-2888-5340-9bb9-4f414c1b986d",
+      "evidence_role": "challenger",
+      "evidence_family": "hemolysis",
+      "model_release_key": "hemopi2_v27_calibrated_v39",
+      "metric_name": "hemopi2_classification_score",
+      "count": 2628
+    },
+    {
+      "run_id": "3a15dab3-2888-5340-9bb9-4f414c1b986d",
+      "evidence_role": "challenger",
+      "evidence_family": "hemolysis",
+      "model_release_key": "hemopi2_v27_calibrated_v39",
+      "metric_name": "hemopi2_hc50_um",
+      "count": 2628
+    },
+    {
+      "run_id": "3a15dab3-2888-5340-9bb9-4f414c1b986d",
+      "evidence_role": "shadow",
+      "evidence_family": "multiobjective_safety_activity",
+      "model_release_key": "peptiverse_runtime_inventory_v1",
+      "metric_name": "peptiverse_shadow_status",
+      "count": 2628
+    },
+    {
+      "run_id": "45c71b2c-a057-5173-a203-cc03deb3d0a2",
+      "evidence_role": "shadow",
+      "evidence_family": "multiobjective_safety_activity",
+      "model_release_key": "apex_runtime_inventory_v1",
+      "metric_name": "apex_shadow_status",
+      "count": 2589
+    },
+    {
+      "run_id": "45c71b2c-a057-5173-a203-cc03deb3d0a2",
+      "evidence_role": "challenger",
+      "evidence_family": "hemolysis",
+      "model_release_key": "hemopi2_v27_calibrated_v39",
+      "metric_name": "calibrated_hemolysis_probability",
+      "count": 2589
+    },
+    {
+      "run_id": "45c71b2c-a057-5173-a203-cc03deb3d0a2",
+      "evidence_role": "challenger",
+      "evidence_family": "hemolysis",
+      "model_release_key": "hemopi2_v27_calibrated_v39",
+      "metric_name": "hemopi2_classification_score",
+      "count": 2589
+    },
+    {
+      "run_id": "45c71b2c-a057-5173-a203-cc03deb3d0a2",
+      "evidence_role": "challenger",
+      "evidence_family": "hemolysis",
+      "model_release_key": "hemopi2_v27_calibrated_v39",
+      "metric_name": "hemopi2_hc50_um",
+      "count": 2589
+    },
+    {
+      "run_id": "45c71b2c-a057-5173-a203-cc03deb3d0a2",
+      "evidence_role": "shadow",
+      "evidence_family": "multiobjective_safety_activity",
+      "model_release_key": "peptiverse_runtime_inventory_v1",
+      "metric_name": "peptiverse_shadow_status",
+      "count": 2589
+    },
+    {
+      "run_id": "5ff373b0-98c4-5f7e-a146-575a3b1369dc",
+      "evidence_role": "primary",
+      "evidence_family": "score_all",
+      "model_release_key": "ampgent_formal12_frozen",
+      "metric_name": "amp_read_log10_mic_um",
+      "count": 32
+    },
+    {
+      "run_id": "5ff373b0-98c4-5f7e-a146-575a3b1369dc",
+      "evidence_role": "primary",
+      "evidence_family": "score_all",
+      "model_release_key": "ampgent_formal12_frozen",
+      "metric_name": "guruprasad_instability_index",
+      "count": 32
+    },
+    {
+      "run_id": "5ff373b0-98c4-5f7e-a146-575a3b1369dc",
+      "evidence_role": "primary",
+      "evidence_family": "score_all",
+      "model_release_key": "ampgent_formal12_frozen",
+      "metric_name": "hydrophobic_moment_eisenberg",
+      "count": 32
+    },
+    {
+      "run_id": "5ff373b0-98c4-5f7e-a146-575a3b1369dc",
+      "evidence_role": "primary",
+      "evidence_family": "score_all",
+      "model_release_key": "ampgent_formal12_frozen",
+      "metric_name": "hydrophobic_ratio_modlamp",
+      "count": 32
+    },
+    {
+      "run_id": "5ff373b0-98c4-5f7e-a146-575a3b1369dc",
+      "evidence_role": "primary",
+      "evidence_family": "score_all",
+      "model_release_key": "ampgent_formal12_frozen",
+      "metric_name": "llamp_log10_mic_um",
+      "count": 32
+    },
+    {
+      "run_id": "5ff373b0-98c4-5f7e-a146-575a3b1369dc",
+      "evidence_role": "primary",
+      "evidence_family": "score_all",
+      "model_release_key": "ampgent_formal12_frozen",
+      "metric_name": "macrel_amp_probability",
+      "count": 32
+    },
+    {
+      "run_id": "5ff373b0-98c4-5f7e-a146-575a3b1369dc",
+      "evidence_role": "primary",
+      "evidence_family": "score_all",
+      "model_release_key": "ampgent_formal12_frozen",
+      "metric_name": "macrel_hemolysis_label",
+      "count": 32
+    },
+    {
+      "run_id": "5ff373b0-98c4-5f7e-a146-575a3b1369dc",
+      "evidence_role": "primary",
+      "evidence_family": "score_all",
+      "model_release_key": "ampgent_formal12_frozen",
+      "metric_name": "macrel_hemolysis_probability",
+      "count": 32
+    },
+    {
+      "run_id": "5ff373b0-98c4-5f7e-a146-575a3b1369dc",
+      "evidence_role": "primary",
+      "evidence_family": "score_all",
+      "model_release_key": "ampgent_formal12_frozen",
+      "metric_name": "maximum_hydrophobic_run",
+      "count": 32
+    },
+    {
+      "run_id": "5ff373b0-98c4-5f7e-a146-575a3b1369dc",
+      "evidence_role": "primary",
+      "evidence_family": "score_all",
+      "model_release_key": "ampgent_formal12_frozen",
+      "metric_name": "net_charge_ph7_4",
+      "count": 32
+    },
+    {
+      "run_id": "5ff373b0-98c4-5f7e-a146-575a3b1369dc",
+      "evidence_role": "primary",
+      "evidence_family": "score_all",
+      "model_release_key": "ampgent_formal12_frozen",
+      "metric_name": "toxinpred3_hybrid_score",
+      "count": 32
+    },
+    {
+      "run_id": "5ff373b0-98c4-5f7e-a146-575a3b1369dc",
+      "evidence_role": "primary",
+      "evidence_family": "score_all",
+      "model_release_key": "ampgent_formal12_frozen",
+      "metric_name": "toxinpred3_label",
+      "count": 32
+    },
+    {
+      "run_id": "5ff373b0-98c4-5f7e-a146-575a3b1369dc",
+      "evidence_role": "shadow",
+      "evidence_family": "multiobjective_safety_activity",
+      "model_release_key": "apex_runtime_inventory_v1",
+      "metric_name": "apex_shadow_status",
+      "count": 32
+    },
+    {
+      "run_id": "5ff373b0-98c4-5f7e-a146-575a3b1369dc",
+      "evidence_role": "challenger",
+      "evidence_family": "hemolysis",
+      "model_release_key": "hemopi2_v27_calibrated_v39",
+      "metric_name": "calibrated_hemolysis_probability",
+      "count": 32
+    },
+    {
+      "run_id": "5ff373b0-98c4-5f7e-a146-575a3b1369dc",
+      "evidence_role": "challenger",
+      "evidence_family": "hemolysis",
+      "model_release_key": "hemopi2_v27_calibrated_v39",
+      "metric_name": "hemopi2_classification_score",
+      "count": 32
+    },
+    {
+      "run_id": "5ff373b0-98c4-5f7e-a146-575a3b1369dc",
+      "evidence_role": "challenger",
+      "evidence_family": "hemolysis",
+      "model_release_key": "hemopi2_v27_calibrated_v39",
+      "metric_name": "hemopi2_hc50_um",
+      "count": 32
+    },
+    {
+      "run_id": "5ff373b0-98c4-5f7e-a146-575a3b1369dc",
+      "evidence_role": "shadow",
+      "evidence_family": "multiobjective_safety_activity",
+      "model_release_key": "peptiverse_runtime_inventory_v1",
+      "metric_name": "peptiverse_shadow_status",
+      "count": 32
+    },
+    {
+      "run_id": "6e9b05ef-12b6-5db8-a0e6-3b603bf369e5",
+      "evidence_role": "shadow",
+      "evidence_family": "multiobjective_safety_activity",
+      "model_release_key": "apex_runtime_inventory_v1",
+      "metric_name": "apex_shadow_status",
+      "count": 2655
+    },
+    {
+      "run_id": "6e9b05ef-12b6-5db8-a0e6-3b603bf369e5",
+      "evidence_role": "challenger",
+      "evidence_family": "hemolysis",
+      "model_release_key": "hemopi2_v27_calibrated_v39",
+      "metric_name": "calibrated_hemolysis_probability",
+      "count": 2655
+    },
+    {
+      "run_id": "6e9b05ef-12b6-5db8-a0e6-3b603bf369e5",
+      "evidence_role": "challenger",
+      "evidence_family": "hemolysis",
+      "model_release_key": "hemopi2_v27_calibrated_v39",
+      "metric_name": "hemopi2_classification_score",
+      "count": 2655
+    },
+    {
+      "run_id": "6e9b05ef-12b6-5db8-a0e6-3b603bf369e5",
+      "evidence_role": "challenger",
+      "evidence_family": "hemolysis",
+      "model_release_key": "hemopi2_v27_calibrated_v39",
+      "metric_name": "hemopi2_hc50_um",
+      "count": 2655
+    },
+    {
+      "run_id": "6e9b05ef-12b6-5db8-a0e6-3b603bf369e5",
+      "evidence_role": "shadow",
+      "evidence_family": "multiobjective_safety_activity",
+      "model_release_key": "peptiverse_runtime_inventory_v1",
+      "metric_name": "peptiverse_shadow_status",
+      "count": 2655
+    },
+    {
+      "run_id": "6fe56b08-6360-533f-8491-72f7f9a7ff0b",
+      "evidence_role": "shadow",
+      "evidence_family": "multiobjective_safety_activity",
+      "model_release_key": "apex_runtime_inventory_v1",
+      "metric_name": "apex_shadow_status",
+      "count": 2743
+    },
+    {
+      "run_id": "6fe56b08-6360-533f-8491-72f7f9a7ff0b",
+      "evidence_role": "challenger",
+      "evidence_family": "hemolysis",
+      "model_release_key": "hemopi2_v27_calibrated_v39",
+      "metric_name": "calibrated_hemolysis_probability",
+      "count": 2743
+    },
+    {
+      "run_id": "6fe56b08-6360-533f-8491-72f7f9a7ff0b",
+      "evidence_role": "challenger",
+      "evidence_family": "hemolysis",
+      "model_release_key": "hemopi2_v27_calibrated_v39",
+      "metric_name": "hemopi2_classification_score",
+      "count": 2743
+    },
+    {
+      "run_id": "6fe56b08-6360-533f-8491-72f7f9a7ff0b",
+      "evidence_role": "challenger",
+      "evidence_family": "hemolysis",
+      "model_release_key": "hemopi2_v27_calibrated_v39",
+      "metric_name": "hemopi2_hc50_um",
+      "count": 2743
+    },
+    {
+      "run_id": "6fe56b08-6360-533f-8491-72f7f9a7ff0b",
+      "evidence_role": "shadow",
+      "evidence_family": "multiobjective_safety_activity",
+      "model_release_key": "peptiverse_runtime_inventory_v1",
+      "metric_name": "peptiverse_shadow_status",
+      "count": 2743
+    },
+    {
+      "run_id": "c6df420c-674b-59fd-bb34-5bdae2f296e4",
+      "evidence_role": "shadow",
+      "evidence_family": "multiobjective_safety_activity",
+      "model_release_key": "apex_runtime_inventory_v1",
+      "metric_name": "apex_shadow_status",
+      "count": 2747
+    },
+    {
+      "run_id": "c6df420c-674b-59fd-bb34-5bdae2f296e4",
+      "evidence_role": "challenger",
+      "evidence_family": "hemolysis",
+      "model_release_key": "hemopi2_v27_calibrated_v39",
+      "metric_name": "calibrated_hemolysis_probability",
+      "count": 2747
+    },
+    {
+      "run_id": "c6df420c-674b-59fd-bb34-5bdae2f296e4",
+      "evidence_role": "challenger",
+      "evidence_family": "hemolysis",
+      "model_release_key": "hemopi2_v27_calibrated_v39",
+      "metric_name": "hemopi2_classification_score",
+      "count": 2747
+    },
+    {
+      "run_id": "c6df420c-674b-59fd-bb34-5bdae2f296e4",
+      "evidence_role": "challenger",
+      "evidence_family": "hemolysis",
+      "model_release_key": "hemopi2_v27_calibrated_v39",
+      "metric_name": "hemopi2_hc50_um",
+      "count": 2747
+    },
+    {
+      "run_id": "c6df420c-674b-59fd-bb34-5bdae2f296e4",
+      "evidence_role": "shadow",
+      "evidence_family": "multiobjective_safety_activity",
+      "model_release_key": "peptiverse_runtime_inventory_v1",
+      "metric_name": "peptiverse_shadow_status",
+      "count": 2747
+    },
+    {
+      "run_id": "c8c29180-c076-5851-a465-a55f8a5ce9ea",
+      "evidence_role": "shadow",
+      "evidence_family": "multiobjective_safety_activity",
+      "model_release_key": "apex_runtime_inventory_v1",
+      "metric_name": "apex_shadow_status",
+      "count": 2575
+    },
+    {
+      "run_id": "c8c29180-c076-5851-a465-a55f8a5ce9ea",
+      "evidence_role": "challenger",
+      "evidence_family": "hemolysis",
+      "model_release_key": "hemopi2_v27_calibrated_v39",
+      "metric_name": "calibrated_hemolysis_probability",
+      "count": 2575
+    },
+    {
+      "run_id": "c8c29180-c076-5851-a465-a55f8a5ce9ea",
+      "evidence_role": "challenger",
+      "evidence_family": "hemolysis",
+      "model_release_key": "hemopi2_v27_calibrated_v39",
+      "metric_name": "hemopi2_classification_score",
+      "count": 2575
+    },
+    {
+      "run_id": "c8c29180-c076-5851-a465-a55f8a5ce9ea",
+      "evidence_role": "challenger",
+      "evidence_family": "hemolysis",
+      "model_release_key": "hemopi2_v27_calibrated_v39",
+      "metric_name": "hemopi2_hc50_um",
+      "count": 2575
+    },
+    {
+      "run_id": "c8c29180-c076-5851-a465-a55f8a5ce9ea",
+      "evidence_role": "shadow",
+      "evidence_family": "multiobjective_safety_activity",
+      "model_release_key": "peptiverse_runtime_inventory_v1",
+      "metric_name": "peptiverse_shadow_status",
+      "count": 2575
+    },
+    {
+      "run_id": "e4554feb-bab4-5c39-974b-2927463a9709",
+      "evidence_role": "primary",
+      "evidence_family": "score_all",
+      "model_release_key": "ampgent_formal12_frozen",
+      "metric_name": "amp_read_log10_mic_um",
+      "count": 32
+    },
+    {
+      "run_id": "e4554feb-bab4-5c39-974b-2927463a9709",
+      "evidence_role": "primary",
+      "evidence_family": "score_all",
+      "model_release_key": "ampgent_formal12_frozen",
+      "metric_name": "guruprasad_instability_index",
+      "count": 32
+    },
+    {
+      "run_id": "e4554feb-bab4-5c39-974b-2927463a9709",
+      "evidence_role": "primary",
+      "evidence_family": "score_all",
+      "model_release_key": "ampgent_formal12_frozen",
+      "metric_name": "hydrophobic_moment_eisenberg",
+      "count": 32
+    },
+    {
+      "run_id": "e4554feb-bab4-5c39-974b-2927463a9709",
+      "evidence_role": "primary",
+      "evidence_family": "score_all",
+      "model_release_key": "ampgent_formal12_frozen",
+      "metric_name": "hydrophobic_ratio_modlamp",
+      "count": 32
+    },
+    {
+      "run_id": "e4554feb-bab4-5c39-974b-2927463a9709",
+      "evidence_role": "primary",
+      "evidence_family": "score_all",
+      "model_release_key": "ampgent_formal12_frozen",
+      "metric_name": "llamp_log10_mic_um",
+      "count": 32
+    },
+    {
+      "run_id": "e4554feb-bab4-5c39-974b-2927463a9709",
+      "evidence_role": "primary",
+      "evidence_family": "score_all",
+      "model_release_key": "ampgent_formal12_frozen",
+      "metric_name": "macrel_amp_probability",
+      "count": 32
+    },
+    {
+      "run_id": "e4554feb-bab4-5c39-974b-2927463a9709",
+      "evidence_role": "primary",
+      "evidence_family": "score_all",
+      "model_release_key": "ampgent_formal12_frozen",
+      "metric_name": "macrel_hemolysis_label",
+      "count": 32
+    },
+    {
+      "run_id": "e4554feb-bab4-5c39-974b-2927463a9709",
+      "evidence_role": "primary",
+      "evidence_family": "score_all",
+      "model_release_key": "ampgent_formal12_frozen",
+      "metric_name": "macrel_hemolysis_probability",
+      "count": 32
+    },
+    {
+      "run_id": "e4554feb-bab4-5c39-974b-2927463a9709",
+      "evidence_role": "primary",
+      "evidence_family": "score_all",
+      "model_release_key": "ampgent_formal12_frozen",
+      "metric_name": "maximum_hydrophobic_run",
+      "count": 32
+    },
+    {
+      "run_id": "e4554feb-bab4-5c39-974b-2927463a9709",
+      "evidence_role": "primary",
+      "evidence_family": "score_all",
+      "model_release_key": "ampgent_formal12_frozen",
+      "metric_name": "net_charge_ph7_4",
+      "count": 32
+    },
+    {
+      "run_id": "e4554feb-bab4-5c39-974b-2927463a9709",
+      "evidence_role": "primary",
+      "evidence_family": "score_all",
+      "model_release_key": "ampgent_formal12_frozen",
+      "metric_name": "toxinpred3_hybrid_score",
+      "count": 32
+    },
+    {
+      "run_id": "e4554feb-bab4-5c39-974b-2927463a9709",
+      "evidence_role": "primary",
+      "evidence_family": "score_all",
+      "model_release_key": "ampgent_formal12_frozen",
+      "metric_name": "toxinpred3_label",
+      "count": 32
+    },
+    {
+      "run_id": "e4554feb-bab4-5c39-974b-2927463a9709",
+      "evidence_role": "shadow",
+      "evidence_family": "multiobjective_safety_activity",
+      "model_release_key": "apex_runtime_inventory_v1",
+      "metric_name": "apex_shadow_status",
+      "count": 32
+    },
+    {
+      "run_id": "e4554feb-bab4-5c39-974b-2927463a9709",
+      "evidence_role": "challenger",
+      "evidence_family": "hemolysis",
+      "model_release_key": "hemopi2_v27_calibrated_v39",
+      "metric_name": "calibrated_hemolysis_probability",
+      "count": 32
+    },
+    {
+      "run_id": "e4554feb-bab4-5c39-974b-2927463a9709",
+      "evidence_role": "challenger",
+      "evidence_family": "hemolysis",
+      "model_release_key": "hemopi2_v27_calibrated_v39",
+      "metric_name": "hemopi2_classification_score",
+      "count": 32
+    },
+    {
+      "run_id": "e4554feb-bab4-5c39-974b-2927463a9709",
+      "evidence_role": "challenger",
+      "evidence_family": "hemolysis",
+      "model_release_key": "hemopi2_v27_calibrated_v39",
+      "metric_name": "hemopi2_hc50_um",
+      "count": 32
+    },
+    {
+      "run_id": "e4554feb-bab4-5c39-974b-2927463a9709",
+      "evidence_role": "shadow",
+      "evidence_family": "multiobjective_safety_activity",
+      "model_release_key": "peptiverse_runtime_inventory_v1",
+      "metric_name": "peptiverse_shadow_status",
+      "count": 32
+    },
+    {
+      "run_id": "f7c3405a-d3dc-55bb-a5e8-4852a7e97166",
+      "evidence_role": "shadow",
+      "evidence_family": "multiobjective_safety_activity",
+      "model_release_key": "apex_runtime_inventory_v1",
+      "metric_name": "apex_shadow_status",
+      "count": 2650
+    },
+    {
+      "run_id": "f7c3405a-d3dc-55bb-a5e8-4852a7e97166",
+      "evidence_role": "challenger",
+      "evidence_family": "hemolysis",
+      "model_release_key": "hemopi2_v27_calibrated_v39",
+      "metric_name": "calibrated_hemolysis_probability",
+      "count": 2650
+    },
+    {
+      "run_id": "f7c3405a-d3dc-55bb-a5e8-4852a7e97166",
+      "evidence_role": "challenger",
+      "evidence_family": "hemolysis",
+      "model_release_key": "hemopi2_v27_calibrated_v39",
+      "metric_name": "hemopi2_classification_score",
+      "count": 2650
+    },
+    {
+      "run_id": "f7c3405a-d3dc-55bb-a5e8-4852a7e97166",
+      "evidence_role": "challenger",
+      "evidence_family": "hemolysis",
+      "model_release_key": "hemopi2_v27_calibrated_v39",
+      "metric_name": "hemopi2_hc50_um",
+      "count": 2650
+    },
+    {
+      "run_id": "f7c3405a-d3dc-55bb-a5e8-4852a7e97166",
+      "evidence_role": "shadow",
+      "evidence_family": "multiobjective_safety_activity",
+      "model_release_key": "peptiverse_runtime_inventory_v1",
+      "metric_name": "peptiverse_shadow_status",
+      "count": 2650
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "schema_version": "ampgent.autoresearch-proposal-score-probe.1",
+  "observed_at_utc": "2026-09-03T13:16:56.306052+00:00",
+  "source_csv_sha256": "bbaaa7af8dad96d0a327f3b80264f1bf04913171df757adf39fcb45630d2e3fb",
+  "registry_sha256": "7a5152541864e7cec1b94bb5eb9c74d313408b5f4d4781f1565525b577164e55",
+  "proposal_count": 32,
+  "formal_metric_names": [
+    "amp_read_log10_mic_um",
+    "guruprasad_instability_index",
+    "hydrophobic_moment_eisenberg",
+    "hydrophobic_ratio_modlamp",
+    "llamp_log10_mic_um",
+    "macrel_amp_probability",
+    "macrel_hemolysis_label",
+    "macrel_hemolysis_probability",
+    "maximum_hydrophobic_run",
+    "net_charge_ph7_4",
+    "toxinpred3_hybrid_score",
+    "toxinpred3_label"
+  ],
+  "deterministic_metric_supplement": {
+    "method_version": "2026.08.22-v2",
+    "metric_names": [
+      "guruprasad_instability_index",
+      "maximum_hydrophobic_run"
+    ],
+    "parameters": {
+      "ph": 7.4,
+      "c_terminal_amidated": false,
+      "hydrophobic_moment_angle": 100
+    }
+  },
+  "plugin_status": [
+    {
+      "plugin": "physicochemical_developability",
+      "status": "complete",
+      "candidate_count": 32,
+      "adapter_version": "2026.08.04-v1",
+      "result_sha256": "110ada06a7159fe2ab3aef53e21019e16ab2cf08275f12755c7cab445aa4fdca",
+      "reused_verified_result": false,
+      "reason_category": null
+    },
+    {
+      "plugin": "hemolysis_risk",
+      "status": "complete",
+      "candidate_count": 32,
+      "adapter_version": "macrel-1.6.1-8c1f732",
+      "result_sha256": "c6fa5ee82438729c78cb57f7bc93edcffb0ede51203acef637ed562ad4516473",
+      "reused_verified_result": false,
+      "reason_category": null
+    },
+    {
+      "plugin": "toxicity_risk",
+      "status": "complete",
+      "candidate_count": 32,
+      "adapter_version": "toxinpred3-corrected-v0.2-dcdba83",
+      "result_sha256": "9c2aa6ac88a1ec8792eccab2c7d5da84e5454b3f33953132b2c36ec7b9317812",
+      "reused_verified_result": false,
+      "reason_category": null
+    },
+    {
+      "plugin": "mic_potency",
+      "status": "complete",
+      "candidate_count": 32,
+      "adapter_version": "llamp-bb48daa-esm2-16b0dddc",
+      "result_sha256": "a842374b3389505ddf4a39c591d17c78bdb3ea861aede734a3c0eb414fd1c77e",
+      "reused_verified_result": false,
+      "reason_category": null
+    },
+    {
+      "plugin": "mic_potency_amp_read",
+      "status": "complete",
+      "candidate_count": 32,
+      "adapter_version": "amp-read-ec9478b-open-weights-cpu-v1",
+      "result_sha256": "d5b53393dfb697c994173e6eeff6227ea0452cb70c7579e3615a6fd9e9a8182c",
+      "reused_verified_result": false,
+      "reason_category": null
+    },
+    {
+      "plugin": "amp_likeness",
+      "status": "complete",
+      "candidate_count": 32,
+      "adapter_version": "amplify-2.0.1-py36hdfd78af_2",
+      "result_sha256": "ece0fbd4b95f0441e8a04dd31224f89b8c4ccaa5fdb69c4050197054014544f5",
+      "reused_verified_result": false,
+      "reason_category": null
+    }
+  ],
+  "formal_12_complete_count": 32,
+  "display_eligible_count": 27,
+  "excellent_sequence_stage_count": 9,
+  "branch_summary": [
+    {
+      "branch_key": "target_agnostic_amp",
+      "proposal_count": 32,
+      "formal_12_complete_count": 32,
+      "display_eligible_count": 27,
+      "excellent_sequence_stage_count": 9
+    }
+  ],
+  "workflow_submitted": false,
+  "gpu_task_submitted": false,
+  "historical_run_modified": false,
+  "candidate_scores_sha256": "ee5cf8fc8746faac984cc2b71e55ef96ddcb58c8088682ce9d10c40d521931fc",
+  "receipt_payload_sha256": "0b96574e7600f5f15501c075b3b065f9fbf000e34c3b2e3585db2174c49829bc"
+}

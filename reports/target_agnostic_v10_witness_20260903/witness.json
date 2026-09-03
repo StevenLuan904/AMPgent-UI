@@ -1,0 +1,47 @@
+{
+  "schema_version": "ampgent.target-agnostic-calibration-witness.1",
+  "branch": "target_agnostic_amp",
+  "cohort_count": 17087,
+  "source_archive_sha256": "0fb5269d4718222cf970cb573ec530115005bfeb341c8c6297def66f3b2e75a0",
+  "source_concordance_sha256": "7df34e55880b41b0bef6b4e18dd2f024afcf7002939e1ad06445a9144a623bdb",
+  "model_release_key": "ampgent_formal12_frozen",
+  "directions": {
+    "amp_read_log10_mic_um": "minimize",
+    "llamp_log10_mic_um": "minimize",
+    "macrel_amp_probability": "maximize"
+  },
+  "percentile_threshold": 0.75,
+  "display_gate": "ToxinPred3 Non-Toxin + Macrel low + Guruprasad <=50",
+  "display_support_ge_2_count": 31,
+  "frozen_parent_count": 16,
+  "parents_csv": "D:\\DWorkspace\\yangyang\\\u76ae\u80a4\u6297\u83cc\u77ed\u80bd\\agent-platform\\reports\\target_agnostic_v10_witness_20260903\\parents.csv",
+  "parent_ids": [
+    "65f18865-ab64-44e4-825a-edde7a21e880",
+    "8eaf55d7-a110-46b0-914d-2fe0a3c80a5c",
+    "70f7a774-e594-421f-8671-a3510aefbe10",
+    "a3bc9817-2bdf-4b3f-99e9-af70ccd7f68e",
+    "af66948f-0cf4-4e52-afea-ea674566f1f2",
+    "6b6847ff-6f16-45eb-8952-624295d3e078",
+    "948c7c4f-f180-4ce4-bc69-a903449a445e",
+    "fd1ab67d-dbf5-475d-bc7e-4eaffc251c47",
+    "4c08e111-98d1-4e81-a08d-c2b22eb45ab1",
+    "44f33029-e1b1-45ce-b932-bd81aa8cb5b2",
+    "108717c5-17b9-45f1-9054-694aa70effdb",
+    "b067e46e-0af3-4d79-ab0a-54509314970d",
+    "e0de2f9a-8583-4feb-bbff-484a94bbf7f6",
+    "4ed70a5a-1f88-47ef-b6ed-7d450ff471b1",
+    "17a8a792-06d5-461e-8ed9-b70e9cb78c99",
+    "92266ce7-ac45-4657-b796-a960afdf4a6c"
+  ],
+  "source_pg_runs": [
+    "c8c29180-c076-5851-a465-a55f8a5ce9ea",
+    "0f886428-28a0-5ccf-84d2-ac022c2dd462",
+    "1da451b5-d8b3-5c3d-b8b4-176c9f35b35a",
+    "066d3144-2eb1-533f-9c9f-fad39f938f26",
+    "6fe56b08-6360-533f-8491-72f7f9a7ff0b",
+    "c6df420c-674b-59fd-bb34-5bdae2f296e4",
+    "f7c3405a-d3dc-55bb-a5e8-4852a7e97166",
+    "3a15dab3-2888-5340-9bb9-4f414c1b986d"
+  ],
+  "primary_release_evidence": "PG evaluations grouped under ampgent_formal12_frozen; challenger/shadow releases recorded separately in pg_witness_probe.json"
+}
