@@ -1,12 +1,12 @@
 {
   "schema_version": "ampgent.pool-a-md-gap-manifest.1",
-  "observed_at_utc": "2026-09-03T09:05:19.362231+00:00",
+  "observed_at_utc": "2026-09-03T09:27:16.764851+00:00",
   "candidate_count": 486,
   "stage_counts": {
-    "complete": 17,
-    "md_running_or_checkpoint_pending": 14,
-    "not_launched": 454,
-    "post_md_analysis_pending": 1
+    "complete": 18,
+    "md_running_or_checkpoint_pending": 13,
+    "not_launched": 453,
+    "post_md_analysis_pending": 2
   },
   "issue_counts": {},
   "targets": {
@@ -29,14 +29,15 @@
       "candidate_count": 81,
       "stage_counts": {
         "complete": 3,
-        "not_launched": 78
+        "md_running_or_checkpoint_pending": 1,
+        "not_launched": 77
       }
     },
     "gyra": {
       "candidate_count": 100,
       "stage_counts": {
-        "complete": 2,
-        "md_running_or_checkpoint_pending": 2,
+        "complete": 3,
+        "md_running_or_checkpoint_pending": 1,
         "not_launched": 95,
         "post_md_analysis_pending": 1
       }
@@ -45,8 +46,9 @@
       "candidate_count": 53,
       "stage_counts": {
         "complete": 2,
-        "md_running_or_checkpoint_pending": 2,
-        "not_launched": 49
+        "md_running_or_checkpoint_pending": 1,
+        "not_launched": 49,
+        "post_md_analysis_pending": 1
       }
     },
     "vegfa": {
@@ -3008,6 +3010,22 @@
     {
       "target_key": "fgf2",
       "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+      "candidate_id": "690e7089-a489-443b-968a-51b0ab5e2594",
+      "sequence": "TGTRANGQKTRKGQKSKNGRKTSEK",
+      "sequence_sha256": "30842628e443e6bf2a9d532873c6e263d6106a50f79e0e707c7dea6ede63a844",
+      "pool_a_rank": 65,
+      "stage": "md_running_or_checkpoint_pending",
+      "md_launched": true,
+      "md_complete": false,
+      "interface_complete": false,
+      "mmgbsa_complete": false,
+      "interface_postgresql_ingested": false,
+      "mmgbsa_postgresql_ingested": false,
+      "issues": []
+    },
+    {
+      "target_key": "fgf2",
+      "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
       "candidate_id": "573d8484-52e0-4e62-b688-3b6b2042b118",
       "sequence": "RSTNQRTHSKNQYNTRTYVREYHTK",
       "sequence_sha256": "9cc3b64205550eefca611c52699fbd74cdf93e5466f22b8a92f0aa99f8e89996",
@@ -4000,22 +4018,6 @@
     {
       "target_key": "fgf2",
       "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
-      "candidate_id": "690e7089-a489-443b-968a-51b0ab5e2594",
-      "sequence": "TGTRANGQKTRKGQKSKNGRKTSEK",
-      "sequence_sha256": "30842628e443e6bf2a9d532873c6e263d6106a50f79e0e707c7dea6ede63a844",
-      "pool_a_rank": 65,
-      "stage": "not_launched",
-      "md_launched": false,
-      "md_complete": false,
-      "interface_complete": false,
-      "mmgbsa_complete": false,
-      "interface_postgresql_ingested": false,
-      "mmgbsa_postgresql_ingested": false,
-      "issues": []
-    },
-    {
-      "target_key": "fgf2",
-      "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
       "candidate_id": "1c93f83e-058a-4c18-b49b-02ebd5a0f4cb",
       "sequence": "KKGKKTEQASRGRVVRIFRS",
       "sequence_sha256": "b9f8b885e8db1293fbd156192429d92944ccd850e75a7d67045581b9042a559e",
@@ -4288,26 +4290,26 @@
     {
       "target_key": "gyra",
       "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
-      "candidate_id": "f99e07d7-e277-4886-bd45-58ba0c525071",
-      "sequence": "KKKDKSGKRVYGKDKEKAGKKSS",
-      "sequence_sha256": "794c516d087d5d48be8fa64679e4e096d9dcd5021b0ddb91467cb6866ce08aae",
-      "pool_a_rank": 4,
-      "stage": "md_running_or_checkpoint_pending",
+      "candidate_id": "17ef08e8-e6ed-417e-96c0-a71f5eab265e",
+      "sequence": "KTKLLLEKHNRKDNRKQTTQATIKT",
+      "sequence_sha256": "f7c7bc70dc8c770a193f95391ff7208fbf789414c49c8655d4fc5b8e4eb47faa",
+      "pool_a_rank": 3,
+      "stage": "complete",
       "md_launched": true,
-      "md_complete": false,
-      "interface_complete": false,
-      "mmgbsa_complete": false,
-      "interface_postgresql_ingested": false,
-      "mmgbsa_postgresql_ingested": false,
+      "md_complete": true,
+      "interface_complete": true,
+      "mmgbsa_complete": true,
+      "interface_postgresql_ingested": true,
+      "mmgbsa_postgresql_ingested": true,
       "issues": []
     },
     {
       "target_key": "gyra",
       "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
-      "candidate_id": "c5e700eb-e88e-4b06-a7db-9a67921ec53d",
-      "sequence": "NRTRDAHGKGSTKKTKGKFGVKNRK",
-      "sequence_sha256": "67e3f212ba864d4039bc27a2bd7357d93ae7c769fed855be4b095745467d4f10",
-      "pool_a_rank": 14,
+      "candidate_id": "f99e07d7-e277-4886-bd45-58ba0c525071",
+      "sequence": "KKKDKSGKRVYGKDKEKAGKKSS",
+      "sequence_sha256": "794c516d087d5d48be8fa64679e4e096d9dcd5021b0ddb91467cb6866ce08aae",
+      "pool_a_rank": 4,
       "stage": "md_running_or_checkpoint_pending",
       "md_launched": true,
       "md_complete": false,
@@ -5840,17 +5842,17 @@
     {
       "target_key": "gyra",
       "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
-      "candidate_id": "17ef08e8-e6ed-417e-96c0-a71f5eab265e",
-      "sequence": "KTKLLLEKHNRKDNRKQTTQATIKT",
-      "sequence_sha256": "f7c7bc70dc8c770a193f95391ff7208fbf789414c49c8655d4fc5b8e4eb47faa",
-      "pool_a_rank": 3,
+      "candidate_id": "c5e700eb-e88e-4b06-a7db-9a67921ec53d",
+      "sequence": "NRTRDAHGKGSTKKTKGKFGVKNRK",
+      "sequence_sha256": "67e3f212ba864d4039bc27a2bd7357d93ae7c769fed855be4b095745467d4f10",
+      "pool_a_rank": 14,
       "stage": "post_md_analysis_pending",
       "md_launched": true,
       "md_complete": true,
       "interface_complete": false,
-      "mmgbsa_complete": true,
+      "mmgbsa_complete": false,
       "interface_postgresql_ingested": false,
-      "mmgbsa_postgresql_ingested": true,
+      "mmgbsa_postgresql_ingested": false,
       "issues": []
     },
     {
@@ -5883,22 +5885,6 @@
       "mmgbsa_complete": true,
       "interface_postgresql_ingested": true,
       "mmgbsa_postgresql_ingested": true,
-      "issues": []
-    },
-    {
-      "target_key": "pbp2a",
-      "run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
-      "candidate_id": "ce226081-1c90-41e7-a27d-6c38b382b0df",
-      "sequence": "SWFRVKKKTTGKNRVNEYKN",
-      "sequence_sha256": "d2558f8426e4f8d9106410bdb1892165877ade82a9dcc0d991671e221ccced6c",
-      "pool_a_rank": 3,
-      "stage": "md_running_or_checkpoint_pending",
-      "md_launched": true,
-      "md_complete": false,
-      "interface_complete": false,
-      "mmgbsa_complete": false,
-      "interface_postgresql_ingested": false,
-      "mmgbsa_postgresql_ingested": false,
       "issues": []
     },
     {
@@ -6695,6 +6681,22 @@
       "stage": "not_launched",
       "md_launched": false,
       "md_complete": false,
+      "interface_complete": false,
+      "mmgbsa_complete": false,
+      "interface_postgresql_ingested": false,
+      "mmgbsa_postgresql_ingested": false,
+      "issues": []
+    },
+    {
+      "target_key": "pbp2a",
+      "run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
+      "candidate_id": "ce226081-1c90-41e7-a27d-6c38b382b0df",
+      "sequence": "SWFRVKKKTTGKNRVNEYKN",
+      "sequence_sha256": "d2558f8426e4f8d9106410bdb1892165877ade82a9dcc0d991671e221ccced6c",
+      "pool_a_rank": 3,
+      "stage": "post_md_analysis_pending",
+      "md_launched": true,
+      "md_complete": true,
       "interface_complete": false,
       "mmgbsa_complete": false,
       "interface_postgresql_ingested": false,
