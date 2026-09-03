@@ -1,0 +1,127 @@
+{
+  "schema_version": "ampgent.rosetta-five-decoy-preflight.1",
+  "observed_at_local": "2026-09-04T01:21:30.8293803+08:00",
+  "target_key": "acea",
+  "requested_identity": {
+    "run_id": "7a0f596a-4959-5756-b110-e7c489c5c183",
+    "authoritative_candidate_id": "bc91b75a-0922-48aa-82f5-b7ff4ac3c024",
+    "sequence": "AAAGRVVAGNDAVSAFRKKG",
+    "sequence_sha256": "29344dd74fa4348fd6214dc5783baeb1b0b8d02c5ecb5cd9a8fd9f74e4481153"
+  },
+  "pg_exact_audit": {
+    "run_status": "succeeded",
+    "candidate_status": "generated",
+    "candidate_run_match": true,
+    "evaluation_count": 17,
+    "evaluation_tool_call_id": "ca9a3d86-0edf-4317-a7de-a6ee8a9a0757",
+    "structure_evidence_count": 0,
+    "temporal_workflow_id": null,
+    "temporal_run_id": null,
+    "lifecycle_event_count": 2,
+    "lifecycle_event_ids": [
+      "004bafd6-d502-4b57-9945-d6a750254c1b",
+      "c8e80a31-1fa2-4715-8ad1-dd333163e74f"
+    ],
+    "fresh_pg_exact_receipt": "reports/autoresearch_lineage_round102_acea_pepmlm_denovo_fullscore_20260901/rosetta_preflight_20260904/pg_exact_rosetta_candidate_20260904.json",
+    "fresh_pg_exact_status": "unique_existing_candidate_pending_structure"
+  },
+  "local_rosetta_audit": {
+    "inventory_receipt": "reports/autoresearch_lineage_round102_acea_pepmlm_denovo_fullscore_20260901/rosetta_preflight_20260904/local_rosetta_task_inventory.json",
+    "inventory_sha256": "e0c03a90b0f1438cb26c8ab9101e3196dc6aaf3970893c2c99a9d94a782dde98",
+    "completed_count": 0,
+    "in_progress_count": 0,
+    "same_sequence_local_receipt_count": 0
+  },
+  "remote_exact_sequence_task": {
+    "host": "192.168.99.2",
+    "root": "/sdd_data/pepagent/ampgent/structure/acea-round102-sequence-best-rosetta-gap12-20260901-v1",
+    "candidate_root": "candidates/acea/29344dd74fa4348fd6214dc5783baeb1b0b8d02c5ecb5cd9a8fd9f74e4481153",
+    "receipt_candidate_id": "proposal-29344dd74fa4348fd621",
+    "target_sequence_hash_match": true,
+    "authoritative_run_candidate_encoded": false,
+    "launch_status": "running",
+    "nstruct": 200,
+    "gpu_index": 1,
+    "launched_at": "2026-09-01T23:54:03.898952+08:00",
+    "candidate_launch_receipt_sha256": "f5e1f76ad19e6d8dabf2bd3d9ce7f92c1e4f064ca845f252596304866afbbdf1",
+    "batch_launch_receipt_sha256": "72e67ef17169d1add5e21962bc167bd4b9f7e9f4842145be935af93e6937bfef",
+    "progress_sha256": "e4cd731cc8925341ac43042f3e29c3d50ffccaf95dfb578a8c9a4ae4f6bcbadd",
+    "progress_observed_at": "2026-09-02T00:11:07.702931+08:00",
+    "boltz_succeeded": 12,
+    "rosetta_succeeded": 0,
+    "pending": 12,
+    "failed": 0,
+    "matching_candidate_process_count": 0,
+    "completion_receipt_present": false,
+    "classification": "existing_sequence_target_queue_reserved_or_stale; do_not_resubmit"
+  },
+  "resource_gate": {
+    "dispatch_allowed": false,
+    "failed_gates": [
+      "host19_gpu0_7_all_active_ampgent_openmm",
+      "synth_gpu1_3_owned_by_successor_md",
+      "synth_gpu0_external_owner_pid_1362474",
+      "synth_gpu4_external_or_unknown_pid_504832",
+      "synth_gpu5_7_cuda_declared_external_work_pid_130772_130773_130774"
+    ],
+    "host19": {
+      "supervisor_pids": [
+        3986807,
+        3977733
+      ],
+      "gpu_active_count": 8,
+      "gpu_compute_pids": [
+        1795945,
+        1576186,
+        1719939,
+        1798793,
+        1790025,
+        549598,
+        1755891,
+        1723994
+      ],
+      "owner": "huangyu+",
+      "disk": "/data1 42T total, 19T used, 22T available, 48%"
+    },
+    "synth": {
+      "supervisor_pid": 1280301,
+      "md_runner_pids": [
+        58820,
+        1280316,
+        1280381
+      ],
+      "md_runner_gpu_indices": [
+        1,
+        2,
+        3
+      ],
+      "analysis_pid": 3311802,
+      "mmgbsa_pid": 3360111,
+      "external_gpu0_pid": 1362474,
+      "external_gpu4_pid": 504832,
+      "declared_gpu5_6_7_pids": [
+        130772,
+        130773,
+        130774
+      ],
+      "disk": "/sdd_data 7.0T total, 5.5T used, 1.2T available, 83%"
+    },
+    "prohibited_scope_touched": false
+  },
+  "protocol": {
+    "decoy_count_requested": 5,
+    "metric": "InterfaceAnalyzer dG",
+    "pool_a_threshold": "median_dG < -30",
+    "remote_structure_data_downloaded": false,
+    "remote_structure_data_deleted": false,
+    "existing_decoys_restarted": false
+  },
+  "submission": {
+    "submitted": false,
+    "status": "pending_existing_remote_task_and_resource_gate",
+    "new_task_workflow_pid": null,
+    "pool_a_admitted": false,
+    "median_interface_dg": null,
+    "next_action": "Reuse or reconcile the existing remote sequence-hash queue after it reaches a terminal receipt and an authorized resource is available; do not submit a second decoy task."
+  }
+}
