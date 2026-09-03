@@ -1,12 +1,12 @@
 {
   "schema_version": "ampgent.pool-a-md-gap-manifest.1",
-  "observed_at_utc": "2026-09-03T02:53:07.118756+00:00",
+  "observed_at_utc": "2026-09-03T02:58:01.132803+00:00",
   "candidate_count": 486,
   "stage_counts": {
-    "complete": 10,
+    "complete": 11,
     "md_running_or_checkpoint_pending": 14,
     "not_launched": 460,
-    "post_md_analysis_pending": 2
+    "post_md_analysis_pending": 1
   },
   "issue_counts": {},
   "targets": {
@@ -50,9 +50,9 @@
     "vegfa": {
       "candidate_count": 71,
       "stage_counts": {
+        "complete": 1,
         "md_running_or_checkpoint_pending": 1,
-        "not_launched": 69,
-        "post_md_analysis_pending": 1
+        "not_launched": 69
       }
     }
   },
@@ -6701,6 +6701,22 @@
     },
     {
       "target_key": "vegfa",
+      "run_id": "f4d068ba-07b5-59de-ace3-3eca8515863a",
+      "candidate_id": "3daa05cb-6ac0-43ad-b22e-1b790f331ce7",
+      "sequence": "HKGQKYKFKKERWQYKKFDWGKK",
+      "sequence_sha256": "e9742af73a58831017460a025def9448b9fdefc7e1707e4dad222cbc2ed3c122",
+      "pool_a_rank": 1,
+      "stage": "complete",
+      "md_launched": true,
+      "md_complete": true,
+      "interface_complete": true,
+      "mmgbsa_complete": true,
+      "interface_postgresql_ingested": true,
+      "mmgbsa_postgresql_ingested": true,
+      "issues": []
+    },
+    {
+      "target_key": "vegfa",
       "run_id": "d3ab0200-5818-517e-aa17-2b7036200c7e",
       "candidate_id": "e2121432-d8bd-4323-90e2-78626721e216",
       "sequence": "AWGKKLKKFKSKSSDWFEKHSFR",
@@ -7817,22 +7833,6 @@
       "mmgbsa_complete": false,
       "interface_postgresql_ingested": false,
       "mmgbsa_postgresql_ingested": false,
-      "issues": []
-    },
-    {
-      "target_key": "vegfa",
-      "run_id": "f4d068ba-07b5-59de-ace3-3eca8515863a",
-      "candidate_id": "3daa05cb-6ac0-43ad-b22e-1b790f331ce7",
-      "sequence": "HKGQKYKFKKERWQYKKFDWGKK",
-      "sequence_sha256": "e9742af73a58831017460a025def9448b9fdefc7e1707e4dad222cbc2ed3c122",
-      "pool_a_rank": 1,
-      "stage": "post_md_analysis_pending",
-      "md_launched": true,
-      "md_complete": true,
-      "interface_complete": false,
-      "mmgbsa_complete": true,
-      "interface_postgresql_ingested": false,
-      "mmgbsa_postgresql_ingested": true,
       "issues": []
     }
   ]
