@@ -1,0 +1,56 @@
+{
+  "schema_version": "ampgent.cross-source-block-graft.compact-receipt.1",
+  "strategy": "cross-source-block-graft",
+  "branch_key": "acea",
+  "date": "2026-09-03",
+  "acceptor_count": 2,
+  "donor_count": 21331,
+  "proposal_count": 12,
+  "proposal_limit_total": 12,
+  "history_mode": "postgresql",
+  "historical_exact_dedup": "passed",
+  "score_all": {
+    "proposal_count": 12,
+    "formal_12_complete_count": 12,
+    "display_eligible_count": 10,
+    "excellent_sequence_stage_count": 0,
+    "candidate_scores_sha256": "6bc613c276ae9bdaf8d2441819defd230e1b3f8bef922a765a8d499536fc3bbf",
+    "calibrated_scores_sha256": "592eb2bdc333598e1a87393e64500a80ce3c7d8a4366c2b2372a91362f325ea1"
+  },
+  "activity_calibration": {
+    "support_ge_2_count": 0,
+    "excellent_sequence_stage_count": 0,
+    "historical_run_modified": false
+  },
+  "hemopi2_challenger": {
+    "attempted": true,
+    "status": "completed",
+    "worker": "src/pepagent/autoresearch_challenger_worker.py",
+    "reviewed_candidate_count": 12,
+    "no_conflict_count": 4,
+    "conflict_retained_count": 8,
+    "worker_input_sha256": "5c0d0dddf06b60fff57be37944f90d027faa0a75732d681c72b73ef6b97a79b4",
+    "worker_output_sha256": "1c5c017a21b1e7e674013e479099ea32cb48c3366f5b0781140475169ee9e84d",
+    "calibration_sha256": "d9cbe209019de9d625ca0806fafc1b41bec0fdc9f537ab49ca4019a39d4839d9",
+    "candidate_hard_gate_allowed": false,
+    "no_candidate_promoted": true
+  },
+  "qd": {
+    "policy_id": "ampgent-peptide-behavior-space-v1",
+    "total_cell_count": 2160,
+    "quality_gate_candidate_count": 0,
+    "diversity_gain": 0,
+    "covered_cell_count": 0,
+    "valid_cell_coverage": 0.0,
+    "archive_qd_score": 0.0,
+    "contribution_counts": {"quality_gate_failed": 12},
+    "payload_sha256": "f5ff093b0d9d99530c9dc1d19b9974b6caf72f8c07eee8a8ea32c50fa61868d9"
+  },
+  "gpu_md_interface_submitted": false,
+  "lineage_materialized": false,
+  "raw_evidence_paths": {
+    "proposals": "reports/pepflow_acea_cross_source_block_graft_v3_20260903/proposals.csv",
+    "score_all": "reports/pepflow_acea_cross_source_block_graft_scoreall_v3_20260903/",
+    "qd": "reports/pepflow_acea_cross_source_block_graft_qd_v3_20260903.json"
+  }
+}
