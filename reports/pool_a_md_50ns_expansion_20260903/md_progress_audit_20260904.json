@@ -1,0 +1,56 @@
+{
+  "schema_version": "ampgent.pool-a-md-progress-audit.1",
+  "observed_at_local": "2026-09-04T00:57:45+08:00",
+  "baseline_full_evidence": 28,
+  "main_475": {
+    "md_supervisor_pid": 3986807,
+    "analysis_supervisor_pid": 3977733,
+    "launch_receipts": 39,
+    "md_complete_receipts": 26,
+    "interface_complete": 26,
+    "mmgbsa_complete": 26,
+    "failed": 0,
+    "gpu_compute_count": 8,
+    "latest_checkpoint_mtime": 1788454633.862069184
+  },
+  "successor_11": {
+    "supervisor_pid": 1280301,
+    "analysis_supervisor_pid": 3311802,
+    "mmgbsa_supervisor_pid": 3360111,
+    "runners": [
+      {"pid": 58820, "gpu": 1, "candidate_id": "dc5f5319-db18-4b0b-af2d-6906cfcf47ec"},
+      {"pid": 1280316, "gpu": 2, "candidate_id": "428925fe-b10f-435c-914d-a0f7b4a5f147"},
+      {"pid": 1280381, "gpu": 3, "candidate_id": "bf53367f-8705-4e17-bb01-326b237e80ea"}
+    ],
+    "launch_receipts": 5,
+    "md_complete_receipts": 2,
+    "interface_complete": 2,
+    "mmgbsa_complete": 2,
+    "pending": 6,
+    "failed": 0,
+    "latest_checkpoint_mtime": 1788454647.660779532
+  },
+  "merged": {
+    "identity_union": 486,
+    "launched": 44,
+    "full_evidence": 28,
+    "running": 16,
+    "not_yet_launched": 455,
+    "failed": 0,
+    "new_full_evidence_since_baseline": 0
+  },
+  "postgresql_receipts": {
+    "local_compact_receipt_files": 56,
+    "interface_receipts": 28,
+    "mmgbsa_receipts": 28,
+    "duplicate_four_tuple_identity": 0,
+    "relay_or_database_write_performed": false
+  },
+  "resource_guard": {
+    "gpu1_2_3_owned_by_successor": true,
+    "gpu0_4_5_6_7_untouched": true,
+    "prohibited_32_gpu2_3_untouched": true,
+    "remote_large_files_copied_or_deleted": false
+  },
+  "decision": "verified_wait; keep_existing_supervisors_running"
+}
