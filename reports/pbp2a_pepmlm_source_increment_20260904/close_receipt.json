@@ -1,0 +1,85 @@
+{
+  "schema_version": "ampgent.pbp2a-pepmlm-source-increment.close.1",
+  "observed_at_utc": "2026-09-03T20:53:52.5248407Z",
+  "source": "PepMLM",
+  "target_key": "pbp2a",
+  "sequence": "AFAKSLKNELSSLNLALAS",
+  "sequence_sha256": "896a34295d71b4b4ad1f6a7ad7ae45d29c4dfee1480c54cf55cf18c3f63f6855",
+  "source_proposal_id": "proposal-896a34295d71b4b4ad1f",
+  "generation": 104,
+  "pg": {
+    "run_id": "45593820-90db-53df-b29d-b97adfa203f3",
+    "candidate_id": "24185234-d211-40f6-ba2c-ee6abb1c4eb1",
+    "tool_call_id": "c05081a2-0f45-433f-b23a-697f16af5d2d",
+    "run_status": "succeeded",
+    "tool_call_status": "succeeded",
+    "candidate_count": 1,
+    "evaluation_count": 17,
+    "evaluation_roles": {
+      "primary_formal12": 12,
+      "challenger_hemopi2": 3,
+      "shadow_apex": 1,
+      "shadow_peptiverse": 1
+    },
+    "identity": {
+      "subject_run_bound_evaluations": 17,
+      "subject_run_drift": 0,
+      "distinct_candidates": 1,
+      "distinct_tool_calls": 1,
+      "replay_count": 0,
+      "historical_runs_modified": false
+    },
+    "candidate_status": "generated",
+    "candidate_source": "PepMLM",
+    "model_release_keys": [
+      "ampgent_formal12_frozen",
+      "hemopi2_v27_calibrated_v39",
+      "apex_runtime_inventory_v1",
+      "peptiverse_runtime_inventory_v1"
+    ]
+  },
+  "quality": {
+    "formal12_complete": true,
+    "display_eligible": true,
+    "activity_support_calibrated": 3,
+    "toxinpred3": "Non-Toxin",
+    "macrel": "low",
+    "guruprasad_le_50": true,
+    "hemopi2_conflict_status": "no_conflict",
+    "apex_status": "unsupported",
+    "peptiverse_status": "unsupported"
+  },
+  "qd": {
+    "archive_sha256": "c3b8e7f6addc3a080c3a66142064049d32e2c0b2f0a71061c99a4228de8f4dc7",
+    "candidate_csv_sha256": "26e3b2fe13c291963085466e44acd81bf387955f83e608023845d4c361e00016",
+    "actual_cell_id": "q3-h3-m3-l2",
+    "contribution": "empty_cell",
+    "quality_eligible": true,
+    "new_cell": true,
+    "replacement": false,
+    "archive_qd_score": 63.077418333333334,
+    "historical_run_modified": false
+  },
+  "structure_and_md": {
+    "rosetta_required": true,
+    "rosetta_submitted": false,
+    "pool_a_admitted": false,
+    "md_submitted": false,
+    "reason": "No safe authorized GPU/structure slot; existing .19 and synth lanes remain occupied. Targeted Pool A requires five-decoy median dG<-30."
+  },
+  "md_observation": {
+    "identity_union": 486,
+    "launched_unique": 45,
+    "md_complete_unique": 29,
+    "full_evidence_unique": 29,
+    "analysis_pending_unique": 0,
+    "running_unique": 16,
+    "not_started_unique": 441,
+    "failed_unique": 0,
+    "partition_invariants": {
+      "launched_equals_complete_plus_running": true,
+      "disjoint_union_equals_486": true
+    },
+    "new_compact_evidence": false
+  }
+}
