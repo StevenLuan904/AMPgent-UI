@@ -1,0 +1,1561 @@
+{
+  "plugin": {
+    "name": "amp_likeness",
+    "parameters": {}
+  },
+  "contract": {
+    "default_trust": "soft",
+    "maximum_trust": "soft",
+    "reliability": "R2-plus-small-local-crosscheck",
+    "provider": "external",
+    "outputs": {
+      "amplify_probability": [
+        "amplify_probability",
+        "fraction",
+        "numeric"
+      ],
+      "amplify_label": [
+        "amplify_label",
+        null,
+        "text"
+      ]
+    }
+  },
+  "candidate_count": 32,
+  "status": "complete",
+  "records": [
+    {
+      "candidate_id": "proposal-72fc5e63cd2b2b286bd6",
+      "sequence": "GAEKAIGLAKPRVERLQLIGG",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amplify_probability",
+          "numeric_value": 0.813485,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "amplify_label",
+          "numeric_value": null,
+          "text_value": "AMP",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-72fc5e63cd2b2b286bd6",
+        "sequence": "GAEKAIGLAKPRVERLQLIGG",
+        "status": "success",
+        "amplify_probability": "0.813485",
+        "amplify_label": "AMP",
+        "amplify_log_scaled_score": "7.2929",
+        "amplify_submodel_1_probability": "0.13979393",
+        "amplify_submodel_2_probability": "0.9725188",
+        "amplify_submodel_3_probability": "0.97940195",
+        "amplify_submodel_4_probability": "0.9798151",
+        "amplify_submodel_5_probability": "0.99589527",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-94bc9256ff3403087bad",
+      "sequence": "AAERAIGLAKPRVERLQLIGP",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amplify_probability",
+          "numeric_value": 0.34610233,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "amplify_label",
+          "numeric_value": null,
+          "text_value": "non-AMP",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-94bc9256ff3403087bad",
+        "sequence": "AAERAIGLAKPRVERLQLIGP",
+        "status": "success",
+        "amplify_probability": "0.34610233",
+        "amplify_label": "non-AMP",
+        "amplify_log_scaled_score": "1.8449",
+        "amplify_submodel_1_probability": "0.02096564",
+        "amplify_submodel_2_probability": "0.75166726",
+        "amplify_submodel_3_probability": "0.3904797",
+        "amplify_submodel_4_probability": "0.567385",
+        "amplify_submodel_5_probability": "1.412e-05",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-01aff68742dbeb404ee1",
+      "sequence": "AAEKAIALAKPRVERLQLITP",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amplify_probability",
+          "numeric_value": 0.02120037,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "amplify_label",
+          "numeric_value": null,
+          "text_value": "non-AMP",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-01aff68742dbeb404ee1",
+        "sequence": "AAEKAIALAKPRVERLQLITP",
+        "status": "success",
+        "amplify_probability": "0.02120037",
+        "amplify_label": "non-AMP",
+        "amplify_log_scaled_score": "0.0931",
+        "amplify_submodel_1_probability": "0.00090577",
+        "amplify_submodel_2_probability": "0.03396259",
+        "amplify_submodel_3_probability": "0.0357402",
+        "amplify_submodel_4_probability": "0.03529238",
+        "amplify_submodel_5_probability": "0.00010091",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-ea057cd0b9b1c5a35a01",
+      "sequence": "AAEKAIGLARPRVERLQLITV",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amplify_probability",
+          "numeric_value": 0.19179343,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "amplify_label",
+          "numeric_value": null,
+          "text_value": "non-AMP",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-ea057cd0b9b1c5a35a01",
+        "sequence": "AAEKAIGLARPRVERLQLITV",
+        "status": "success",
+        "amplify_probability": "0.19179343",
+        "amplify_label": "non-AMP",
+        "amplify_log_scaled_score": "0.9248",
+        "amplify_submodel_1_probability": "0.0540973",
+        "amplify_submodel_2_probability": "0.13060573",
+        "amplify_submodel_3_probability": "0.1062035",
+        "amplify_submodel_4_probability": "0.6160584",
+        "amplify_submodel_5_probability": "0.05200216",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-70d4e1d9a01d7c4b4f5d",
+      "sequence": "AAEKAIGLAKPRIERLQLIVV",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amplify_probability",
+          "numeric_value": 0.15383767,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "amplify_label",
+          "numeric_value": null,
+          "text_value": "non-AMP",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-70d4e1d9a01d7c4b4f5d",
+        "sequence": "AAEKAIGLAKPRIERLQLIVV",
+        "status": "success",
+        "amplify_probability": "0.15383767",
+        "amplify_label": "non-AMP",
+        "amplify_log_scaled_score": "0.7255",
+        "amplify_submodel_1_probability": "0.01217688",
+        "amplify_submodel_2_probability": "0.37896875",
+        "amplify_submodel_3_probability": "0.09291761",
+        "amplify_submodel_4_probability": "0.18834472",
+        "amplify_submodel_5_probability": "0.09678037",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-5c0e1a0b21de29269473",
+      "sequence": "AAEKAIGLAKVRVERIQLITS",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amplify_probability",
+          "numeric_value": 0.21322238,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "amplify_label",
+          "numeric_value": null,
+          "text_value": "non-AMP",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-5c0e1a0b21de29269473",
+        "sequence": "AAEKAIGLAKVRVERIQLITS",
+        "status": "success",
+        "amplify_probability": "0.21322238",
+        "amplify_label": "non-AMP",
+        "amplify_log_scaled_score": "1.0415",
+        "amplify_submodel_1_probability": "0.0279712",
+        "amplify_submodel_2_probability": "0.20697212",
+        "amplify_submodel_3_probability": "0.11735382",
+        "amplify_submodel_4_probability": "0.05144384",
+        "amplify_submodel_5_probability": "0.6623709",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-6141a1799bec71750631",
+      "sequence": "AAEKAIGLAVVRVERLQLVTS",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amplify_probability",
+          "numeric_value": 0.03623695,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "amplify_label",
+          "numeric_value": null,
+          "text_value": "non-AMP",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-6141a1799bec71750631",
+        "sequence": "AAEKAIGLAVVRVERLQLVTS",
+        "status": "success",
+        "amplify_probability": "0.03623695",
+        "amplify_label": "non-AMP",
+        "amplify_log_scaled_score": "0.1603",
+        "amplify_submodel_1_probability": "0.02121658",
+        "amplify_submodel_2_probability": "0.0157418",
+        "amplify_submodel_3_probability": "0.05885165",
+        "amplify_submodel_4_probability": "0.01257198",
+        "amplify_submodel_5_probability": "0.07280276",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-3d84871e5df597f4695f",
+      "sequence": "GAEKAIGLKFPRVERLQLIGP",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amplify_probability",
+          "numeric_value": 0.87963456,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "amplify_label",
+          "numeric_value": null,
+          "text_value": "AMP",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-3d84871e5df597f4695f",
+        "sequence": "GAEKAIGLKFPRVERLQLIGP",
+        "status": "success",
+        "amplify_probability": "0.87963456",
+        "amplify_label": "AMP",
+        "amplify_log_scaled_score": "9.195",
+        "amplify_submodel_1_probability": "0.7090733",
+        "amplify_submodel_2_probability": "0.902905",
+        "amplify_submodel_3_probability": "0.979864",
+        "amplify_submodel_4_probability": "0.9252463",
+        "amplify_submodel_5_probability": "0.88108456",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-8e4db3419933408f13ae",
+      "sequence": "AAERAIGLKFPRVERLQLITG",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amplify_probability",
+          "numeric_value": 0.40134087,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "amplify_label",
+          "numeric_value": null,
+          "text_value": "non-AMP",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-8e4db3419933408f13ae",
+        "sequence": "AAERAIGLKFPRVERLQLITG",
+        "status": "success",
+        "amplify_probability": "0.40134087",
+        "amplify_label": "non-AMP",
+        "amplify_log_scaled_score": "2.2282",
+        "amplify_submodel_1_probability": "0.18855453",
+        "amplify_submodel_2_probability": "0.42665404",
+        "amplify_submodel_3_probability": "0.5322869",
+        "amplify_submodel_4_probability": "0.85621727",
+        "amplify_submodel_5_probability": "0.00299177",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-54d6baa6d2c94d797563",
+      "sequence": "GAEKAIALAKPRVERLQLITS",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amplify_probability",
+          "numeric_value": 0.541932,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "amplify_label",
+          "numeric_value": null,
+          "text_value": "AMP",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-54d6baa6d2c94d797563",
+        "sequence": "GAEKAIALAKPRVERLQLITS",
+        "status": "success",
+        "amplify_probability": "0.541932",
+        "amplify_label": "AMP",
+        "amplify_log_scaled_score": "3.3907",
+        "amplify_submodel_1_probability": "0.03726652",
+        "amplify_submodel_2_probability": "0.21511182",
+        "amplify_submodel_3_probability": "0.638195",
+        "amplify_submodel_4_probability": "0.88663304",
+        "amplify_submodel_5_probability": "0.9324537",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-2c355d074e38e97410c8",
+      "sequence": "GGEKAIGLARPRVERLQLITS",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amplify_probability",
+          "numeric_value": 0.7353876,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "amplify_label",
+          "numeric_value": null,
+          "text_value": "AMP",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-2c355d074e38e97410c8",
+        "sequence": "GGEKAIGLARPRVERLQLITS",
+        "status": "success",
+        "amplify_probability": "0.7353876",
+        "amplify_label": "AMP",
+        "amplify_log_scaled_score": "5.7739",
+        "amplify_submodel_1_probability": "0.826862",
+        "amplify_submodel_2_probability": "0.74920845",
+        "amplify_submodel_3_probability": "0.4505653",
+        "amplify_submodel_4_probability": "0.6508127",
+        "amplify_submodel_5_probability": "0.9994893",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-c0f1b62007caacf27779",
+      "sequence": "VAEKAIGLAKPRIERLQLITS",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amplify_probability",
+          "numeric_value": 0.9000028,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "amplify_label",
+          "numeric_value": null,
+          "text_value": "AMP",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-c0f1b62007caacf27779",
+        "sequence": "VAEKAIGLAKPRIERLQLITS",
+        "status": "success",
+        "amplify_probability": "0.9000028",
+        "amplify_label": "AMP",
+        "amplify_log_scaled_score": "10.0001",
+        "amplify_submodel_1_probability": "0.679453",
+        "amplify_submodel_2_probability": "0.9955356",
+        "amplify_submodel_3_probability": "0.8322018",
+        "amplify_submodel_4_probability": "0.9930028",
+        "amplify_submodel_5_probability": "0.99982053",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-e269f9afaffaa947c8f4",
+      "sequence": "VVEKAIGLAKPRVERIQLITS",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amplify_probability",
+          "numeric_value": 0.8951594,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "amplify_label",
+          "numeric_value": null,
+          "text_value": "AMP",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-e269f9afaffaa947c8f4",
+        "sequence": "VVEKAIGLAKPRVERIQLITS",
+        "status": "success",
+        "amplify_probability": "0.8951594",
+        "amplify_label": "AMP",
+        "amplify_log_scaled_score": "9.7947",
+        "amplify_submodel_1_probability": "0.80060506",
+        "amplify_submodel_2_probability": "0.99620026",
+        "amplify_submodel_3_probability": "0.69190526",
+        "amplify_submodel_4_probability": "0.99372107",
+        "amplify_submodel_5_probability": "0.9933656",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-394a3c0e15e73047dd41",
+      "sequence": "AAEKAIGLAKGRVERLQLVTS",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amplify_probability",
+          "numeric_value": 0.22720823,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "amplify_label",
+          "numeric_value": null,
+          "text_value": "non-AMP",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-394a3c0e15e73047dd41",
+        "sequence": "AAEKAIGLAKGRVERLQLVTS",
+        "status": "success",
+        "amplify_probability": "0.22720823",
+        "amplify_label": "non-AMP",
+        "amplify_log_scaled_score": "1.1194",
+        "amplify_submodel_1_probability": "0.00792578",
+        "amplify_submodel_2_probability": "0.37341776",
+        "amplify_submodel_3_probability": "0.06277966",
+        "amplify_submodel_4_probability": "0.21279453",
+        "amplify_submodel_5_probability": "0.4791234",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-df588d1717685cf8e166",
+      "sequence": "GAEKAIGLAKPRVERLQLIPP",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amplify_probability",
+          "numeric_value": 0.8588524,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "amplify_label",
+          "numeric_value": null,
+          "text_value": "AMP",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-df588d1717685cf8e166",
+        "sequence": "GAEKAIGLAKPRVERLQLIPP",
+        "status": "success",
+        "amplify_probability": "0.8588524",
+        "amplify_label": "AMP",
+        "amplify_log_scaled_score": "8.5033",
+        "amplify_submodel_1_probability": "0.4097261",
+        "amplify_submodel_2_probability": "0.980552",
+        "amplify_submodel_3_probability": "0.9713169",
+        "amplify_submodel_4_probability": "0.9764431",
+        "amplify_submodel_5_probability": "0.9562239",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-21e1faa0f4a136990459",
+      "sequence": "AAERAIGLAKPRVERLQLISG",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amplify_probability",
+          "numeric_value": 0.36897963,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "amplify_label",
+          "numeric_value": null,
+          "text_value": "non-AMP",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-21e1faa0f4a136990459",
+        "sequence": "AAERAIGLAKPRVERLQLISG",
+        "status": "success",
+        "amplify_probability": "0.36897963",
+        "amplify_label": "non-AMP",
+        "amplify_log_scaled_score": "1.9996",
+        "amplify_submodel_1_probability": "0.05222592",
+        "amplify_submodel_2_probability": "0.5101588",
+        "amplify_submodel_3_probability": "0.6552827",
+        "amplify_submodel_4_probability": "0.6266015",
+        "amplify_submodel_5_probability": "0.00062933",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-aa904162194a7a0ebe77",
+      "sequence": "AVEKAIGLAKPRVERLQLIGG",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amplify_probability",
+          "numeric_value": 0.24715313,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "amplify_label",
+          "numeric_value": null,
+          "text_value": "non-AMP",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-aa904162194a7a0ebe77",
+        "sequence": "AVEKAIGLAKPRVERLQLIGG",
+        "status": "success",
+        "amplify_probability": "0.24715313",
+        "amplify_label": "non-AMP",
+        "amplify_log_scaled_score": "1.2329",
+        "amplify_submodel_1_probability": "0.01169689",
+        "amplify_submodel_2_probability": "0.49004287",
+        "amplify_submodel_3_probability": "0.4918514",
+        "amplify_submodel_4_probability": "0.21164256",
+        "amplify_submodel_5_probability": "0.03053187",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-2f151ea185e0ac75df2e",
+      "sequence": "AAEKGIGLAKPRVERLQLIGP",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amplify_probability",
+          "numeric_value": 0.2100105,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "amplify_label",
+          "numeric_value": null,
+          "text_value": "non-AMP",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-2f151ea185e0ac75df2e",
+        "sequence": "AAEKGIGLAKPRVERLQLIGP",
+        "status": "success",
+        "amplify_probability": "0.2100105",
+        "amplify_label": "non-AMP",
+        "amplify_log_scaled_score": "1.0238",
+        "amplify_submodel_1_probability": "0.01092559",
+        "amplify_submodel_2_probability": "0.8690404",
+        "amplify_submodel_3_probability": "0.14920138",
+        "amplify_submodel_4_probability": "0.01486213",
+        "amplify_submodel_5_probability": "0.00602291",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-ec7ac0db482221568acf",
+      "sequence": "AAEKAIGGAKPRVERLQLITP",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amplify_probability",
+          "numeric_value": 0.40763155,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "amplify_label",
+          "numeric_value": null,
+          "text_value": "non-AMP",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-ec7ac0db482221568acf",
+        "sequence": "AAEKAIGGAKPRVERLQLITP",
+        "status": "success",
+        "amplify_probability": "0.40763155",
+        "amplify_label": "non-AMP",
+        "amplify_log_scaled_score": "2.2741",
+        "amplify_submodel_1_probability": "0.01875727",
+        "amplify_submodel_2_probability": "0.71343845",
+        "amplify_submodel_3_probability": "0.80300033",
+        "amplify_submodel_4_probability": "0.26799744",
+        "amplify_submodel_5_probability": "0.23496406",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-59dbb6ebb695c8461256",
+      "sequence": "AAEKAIGLAKSRVERLQLITV",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amplify_probability",
+          "numeric_value": 0.09857208,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "amplify_label",
+          "numeric_value": null,
+          "text_value": "non-AMP",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-59dbb6ebb695c8461256",
+        "sequence": "AAEKAIGLAKSRVERLQLITV",
+        "status": "success",
+        "amplify_probability": "0.09857208",
+        "amplify_label": "non-AMP",
+        "amplify_log_scaled_score": "0.4507",
+        "amplify_submodel_1_probability": "0.01030012",
+        "amplify_submodel_2_probability": "0.05524087",
+        "amplify_submodel_3_probability": "0.08244924",
+        "amplify_submodel_4_probability": "0.20134388",
+        "amplify_submodel_5_probability": "0.14352624",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-ab204f17964ddbd3e4fe",
+      "sequence": "AAEKAIGLAKPRVYRLQLIVV",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amplify_probability",
+          "numeric_value": 0.12750664,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "amplify_label",
+          "numeric_value": null,
+          "text_value": "non-AMP",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-ab204f17964ddbd3e4fe",
+        "sequence": "AAEKAIGLAKPRVYRLQLIVV",
+        "status": "success",
+        "amplify_probability": "0.12750664",
+        "amplify_label": "non-AMP",
+        "amplify_log_scaled_score": "0.5924",
+        "amplify_submodel_1_probability": "0.02905564",
+        "amplify_submodel_2_probability": "0.19226523",
+        "amplify_submodel_3_probability": "0.20520037",
+        "amplify_submodel_4_probability": "0.20973332",
+        "amplify_submodel_5_probability": "0.00127869",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-783f680615535a86c962",
+      "sequence": "AAEKAIGLAKVRVERLVLITS",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amplify_probability",
+          "numeric_value": 0.30256525,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "amplify_label",
+          "numeric_value": null,
+          "text_value": "non-AMP",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-783f680615535a86c962",
+        "sequence": "AAEKAIGLAKVRVERLVLITS",
+        "status": "success",
+        "amplify_probability": "0.30256525",
+        "amplify_label": "non-AMP",
+        "amplify_log_scaled_score": "1.565",
+        "amplify_submodel_1_probability": "0.02910162",
+        "amplify_submodel_2_probability": "0.490108",
+        "amplify_submodel_3_probability": "0.10121077",
+        "amplify_submodel_4_probability": "0.10401974",
+        "amplify_submodel_5_probability": "0.7883861",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-fa1e14527e2254e94037",
+      "sequence": "AAEKAIGLAVVRVERLQLIVS",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amplify_probability",
+          "numeric_value": 0.06772293,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "amplify_label",
+          "numeric_value": null,
+          "text_value": "non-AMP",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-fa1e14527e2254e94037",
+        "sequence": "AAEKAIGLAVVRVERLQLIVS",
+        "status": "success",
+        "amplify_probability": "0.06772293",
+        "amplify_label": "non-AMP",
+        "amplify_log_scaled_score": "0.3045",
+        "amplify_submodel_1_probability": "0.14280428",
+        "amplify_submodel_2_probability": "0.04032205",
+        "amplify_submodel_3_probability": "0.10744888",
+        "amplify_submodel_4_probability": "0.00942756",
+        "amplify_submodel_5_probability": "0.03861191",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-91bb28d9c6d6cb4c7c07",
+      "sequence": "AVEKAIGLKFPRVERLQLIGP",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amplify_probability",
+          "numeric_value": 0.23410432,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "amplify_label",
+          "numeric_value": null,
+          "text_value": "non-AMP",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-91bb28d9c6d6cb4c7c07",
+        "sequence": "AVEKAIGLKFPRVERLQLIGP",
+        "status": "success",
+        "amplify_probability": "0.23410432",
+        "amplify_label": "non-AMP",
+        "amplify_log_scaled_score": "1.1583",
+        "amplify_submodel_1_probability": "0.09902663",
+        "amplify_submodel_2_probability": "0.5787868",
+        "amplify_submodel_3_probability": "0.3537262",
+        "amplify_submodel_4_probability": "0.13580965",
+        "amplify_submodel_5_probability": "0.00317224",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-08b8e093e1e381f5d84c",
+      "sequence": "AAEKGIGLKFPRVERLQLITG",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amplify_probability",
+          "numeric_value": 0.27872318,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "amplify_label",
+          "numeric_value": null,
+          "text_value": "non-AMP",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-08b8e093e1e381f5d84c",
+        "sequence": "AAEKGIGLKFPRVERLQLITG",
+        "status": "success",
+        "amplify_probability": "0.27872318",
+        "amplify_label": "non-AMP",
+        "amplify_log_scaled_score": "1.419",
+        "amplify_submodel_1_probability": "0.06058846",
+        "amplify_submodel_2_probability": "0.15032183",
+        "amplify_submodel_3_probability": "0.3559645",
+        "amplify_submodel_4_probability": "0.17500898",
+        "amplify_submodel_5_probability": "0.6517322",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-3b8d9cda243d1dc3d220",
+      "sequence": "GAEKAIGGAKPRVERLQLITS",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amplify_probability",
+          "numeric_value": 0.9330662,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "amplify_label",
+          "numeric_value": null,
+          "text_value": "AMP",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-3b8d9cda243d1dc3d220",
+        "sequence": "GAEKAIGGAKPRVERLQLITS",
+        "status": "success",
+        "amplify_probability": "0.9330662",
+        "amplify_label": "AMP",
+        "amplify_log_scaled_score": "11.7435",
+        "amplify_submodel_1_probability": "0.7220699",
+        "amplify_submodel_2_probability": "0.9804444",
+        "amplify_submodel_3_probability": "0.976056",
+        "amplify_submodel_4_probability": "0.9868155",
+        "amplify_submodel_5_probability": "0.999945",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-68dfbf8f3aa2f14a9b8d",
+      "sequence": "GGEKAIGLAKSRVERLQLITS",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amplify_probability",
+          "numeric_value": 0.49677104,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "amplify_label",
+          "numeric_value": null,
+          "text_value": "non-AMP",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-68dfbf8f3aa2f14a9b8d",
+        "sequence": "GGEKAIGLAKSRVERLQLITS",
+        "status": "success",
+        "amplify_probability": "0.49677104",
+        "amplify_label": "non-AMP",
+        "amplify_log_scaled_score": "2.9823",
+        "amplify_submodel_1_probability": "0.08655117",
+        "amplify_submodel_2_probability": "0.4754622",
+        "amplify_submodel_3_probability": "0.26980755",
+        "amplify_submodel_4_probability": "0.65403515",
+        "amplify_submodel_5_probability": "0.99799925",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-28872bcbd12b8b65acc2",
+      "sequence": "VAEKAIGLAKPRVYRLQLITS",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amplify_probability",
+          "numeric_value": 0.9525982,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "amplify_label",
+          "numeric_value": null,
+          "text_value": "AMP",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-28872bcbd12b8b65acc2",
+        "sequence": "VAEKAIGLAKPRVYRLQLITS",
+        "status": "success",
+        "amplify_probability": "0.9525982",
+        "amplify_label": "AMP",
+        "amplify_log_scaled_score": "13.2421",
+        "amplify_submodel_1_probability": "0.8675002",
+        "amplify_submodel_2_probability": "0.9315966",
+        "amplify_submodel_3_probability": "0.9676503",
+        "amplify_submodel_4_probability": "0.9972257",
+        "amplify_submodel_5_probability": "0.9990188",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-51d7b19112bcbda3303a",
+      "sequence": "VVEKAIGLAKPRVERLVLITS",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amplify_probability",
+          "numeric_value": 0.92648774,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "amplify_label",
+          "numeric_value": null,
+          "text_value": "AMP",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-51d7b19112bcbda3303a",
+        "sequence": "VVEKAIGLAKPRVERLVLITS",
+        "status": "success",
+        "amplify_probability": "0.92648774",
+        "amplify_label": "AMP",
+        "amplify_log_scaled_score": "11.3364",
+        "amplify_submodel_1_probability": "0.8342275",
+        "amplify_submodel_2_probability": "0.99869895",
+        "amplify_submodel_3_probability": "0.8052258",
+        "amplify_submodel_4_probability": "0.99742395",
+        "amplify_submodel_5_probability": "0.9968624",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-55febb8655e7dfc7023f",
+      "sequence": "AAEKAIGLAKGRVERLQLIVS",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amplify_probability",
+          "numeric_value": 0.23083596,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "amplify_label",
+          "numeric_value": null,
+          "text_value": "non-AMP",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-55febb8655e7dfc7023f",
+        "sequence": "AAEKAIGLAKGRVERLQLIVS",
+        "status": "success",
+        "amplify_probability": "0.23083596",
+        "amplify_label": "non-AMP",
+        "amplify_log_scaled_score": "1.1398",
+        "amplify_submodel_1_probability": "0.04121587",
+        "amplify_submodel_2_probability": "0.55696684",
+        "amplify_submodel_3_probability": "0.10663436",
+        "amplify_submodel_4_probability": "0.18173727",
+        "amplify_submodel_5_probability": "0.26762545",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-fb4757c90ae952ea0118",
+      "sequence": "AIEKAIGLAKPRVERLQLIPP",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amplify_probability",
+          "numeric_value": 0.3704324,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "amplify_label",
+          "numeric_value": null,
+          "text_value": "non-AMP",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-fb4757c90ae952ea0118",
+        "sequence": "AIEKAIGLAKPRVERLQLIPP",
+        "status": "success",
+        "amplify_probability": "0.3704324",
+        "amplify_label": "non-AMP",
+        "amplify_log_scaled_score": "2.0096",
+        "amplify_submodel_1_probability": "0.12049858",
+        "amplify_submodel_2_probability": "0.8275812",
+        "amplify_submodel_3_probability": "0.4000533",
+        "amplify_submodel_4_probability": "0.5013352",
+        "amplify_submodel_5_probability": "0.00269383",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-c4d340d8c5a3850c35df",
+      "sequence": "AAEKGIGLAKPRVERLQLISG",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amplify_probability",
+          "numeric_value": 0.19681557,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "amplify_label",
+          "numeric_value": null,
+          "text_value": "non-AMP",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-c4d340d8c5a3850c35df",
+        "sequence": "AAEKGIGLAKPRVERLQLISG",
+        "status": "success",
+        "amplify_probability": "0.19681557",
+        "amplify_label": "non-AMP",
+        "amplify_log_scaled_score": "0.9518",
+        "amplify_submodel_1_probability": "0.0249464",
+        "amplify_submodel_2_probability": "0.57873863",
+        "amplify_submodel_3_probability": "0.2344435",
+        "amplify_submodel_4_probability": "0.01635299",
+        "amplify_submodel_5_probability": "0.12959622",
+        "error": ""
+      }
+    }
+  ],
+  "raw_rows": [
+    {
+      "candidate_id": "proposal-72fc5e63cd2b2b286bd6",
+      "sequence": "GAEKAIGLAKPRVERLQLIGG",
+      "status": "success",
+      "amplify_probability": "0.813485",
+      "amplify_label": "AMP",
+      "amplify_log_scaled_score": "7.2929",
+      "amplify_submodel_1_probability": "0.13979393",
+      "amplify_submodel_2_probability": "0.9725188",
+      "amplify_submodel_3_probability": "0.97940195",
+      "amplify_submodel_4_probability": "0.9798151",
+      "amplify_submodel_5_probability": "0.99589527",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-94bc9256ff3403087bad",
+      "sequence": "AAERAIGLAKPRVERLQLIGP",
+      "status": "success",
+      "amplify_probability": "0.34610233",
+      "amplify_label": "non-AMP",
+      "amplify_log_scaled_score": "1.8449",
+      "amplify_submodel_1_probability": "0.02096564",
+      "amplify_submodel_2_probability": "0.75166726",
+      "amplify_submodel_3_probability": "0.3904797",
+      "amplify_submodel_4_probability": "0.567385",
+      "amplify_submodel_5_probability": "1.412e-05",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-01aff68742dbeb404ee1",
+      "sequence": "AAEKAIALAKPRVERLQLITP",
+      "status": "success",
+      "amplify_probability": "0.02120037",
+      "amplify_label": "non-AMP",
+      "amplify_log_scaled_score": "0.0931",
+      "amplify_submodel_1_probability": "0.00090577",
+      "amplify_submodel_2_probability": "0.03396259",
+      "amplify_submodel_3_probability": "0.0357402",
+      "amplify_submodel_4_probability": "0.03529238",
+      "amplify_submodel_5_probability": "0.00010091",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-ea057cd0b9b1c5a35a01",
+      "sequence": "AAEKAIGLARPRVERLQLITV",
+      "status": "success",
+      "amplify_probability": "0.19179343",
+      "amplify_label": "non-AMP",
+      "amplify_log_scaled_score": "0.9248",
+      "amplify_submodel_1_probability": "0.0540973",
+      "amplify_submodel_2_probability": "0.13060573",
+      "amplify_submodel_3_probability": "0.1062035",
+      "amplify_submodel_4_probability": "0.6160584",
+      "amplify_submodel_5_probability": "0.05200216",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-70d4e1d9a01d7c4b4f5d",
+      "sequence": "AAEKAIGLAKPRIERLQLIVV",
+      "status": "success",
+      "amplify_probability": "0.15383767",
+      "amplify_label": "non-AMP",
+      "amplify_log_scaled_score": "0.7255",
+      "amplify_submodel_1_probability": "0.01217688",
+      "amplify_submodel_2_probability": "0.37896875",
+      "amplify_submodel_3_probability": "0.09291761",
+      "amplify_submodel_4_probability": "0.18834472",
+      "amplify_submodel_5_probability": "0.09678037",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-5c0e1a0b21de29269473",
+      "sequence": "AAEKAIGLAKVRVERIQLITS",
+      "status": "success",
+      "amplify_probability": "0.21322238",
+      "amplify_label": "non-AMP",
+      "amplify_log_scaled_score": "1.0415",
+      "amplify_submodel_1_probability": "0.0279712",
+      "amplify_submodel_2_probability": "0.20697212",
+      "amplify_submodel_3_probability": "0.11735382",
+      "amplify_submodel_4_probability": "0.05144384",
+      "amplify_submodel_5_probability": "0.6623709",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-6141a1799bec71750631",
+      "sequence": "AAEKAIGLAVVRVERLQLVTS",
+      "status": "success",
+      "amplify_probability": "0.03623695",
+      "amplify_label": "non-AMP",
+      "amplify_log_scaled_score": "0.1603",
+      "amplify_submodel_1_probability": "0.02121658",
+      "amplify_submodel_2_probability": "0.0157418",
+      "amplify_submodel_3_probability": "0.05885165",
+      "amplify_submodel_4_probability": "0.01257198",
+      "amplify_submodel_5_probability": "0.07280276",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-3d84871e5df597f4695f",
+      "sequence": "GAEKAIGLKFPRVERLQLIGP",
+      "status": "success",
+      "amplify_probability": "0.87963456",
+      "amplify_label": "AMP",
+      "amplify_log_scaled_score": "9.195",
+      "amplify_submodel_1_probability": "0.7090733",
+      "amplify_submodel_2_probability": "0.902905",
+      "amplify_submodel_3_probability": "0.979864",
+      "amplify_submodel_4_probability": "0.9252463",
+      "amplify_submodel_5_probability": "0.88108456",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-8e4db3419933408f13ae",
+      "sequence": "AAERAIGLKFPRVERLQLITG",
+      "status": "success",
+      "amplify_probability": "0.40134087",
+      "amplify_label": "non-AMP",
+      "amplify_log_scaled_score": "2.2282",
+      "amplify_submodel_1_probability": "0.18855453",
+      "amplify_submodel_2_probability": "0.42665404",
+      "amplify_submodel_3_probability": "0.5322869",
+      "amplify_submodel_4_probability": "0.85621727",
+      "amplify_submodel_5_probability": "0.00299177",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-54d6baa6d2c94d797563",
+      "sequence": "GAEKAIALAKPRVERLQLITS",
+      "status": "success",
+      "amplify_probability": "0.541932",
+      "amplify_label": "AMP",
+      "amplify_log_scaled_score": "3.3907",
+      "amplify_submodel_1_probability": "0.03726652",
+      "amplify_submodel_2_probability": "0.21511182",
+      "amplify_submodel_3_probability": "0.638195",
+      "amplify_submodel_4_probability": "0.88663304",
+      "amplify_submodel_5_probability": "0.9324537",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-2c355d074e38e97410c8",
+      "sequence": "GGEKAIGLARPRVERLQLITS",
+      "status": "success",
+      "amplify_probability": "0.7353876",
+      "amplify_label": "AMP",
+      "amplify_log_scaled_score": "5.7739",
+      "amplify_submodel_1_probability": "0.826862",
+      "amplify_submodel_2_probability": "0.74920845",
+      "amplify_submodel_3_probability": "0.4505653",
+      "amplify_submodel_4_probability": "0.6508127",
+      "amplify_submodel_5_probability": "0.9994893",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-c0f1b62007caacf27779",
+      "sequence": "VAEKAIGLAKPRIERLQLITS",
+      "status": "success",
+      "amplify_probability": "0.9000028",
+      "amplify_label": "AMP",
+      "amplify_log_scaled_score": "10.0001",
+      "amplify_submodel_1_probability": "0.679453",
+      "amplify_submodel_2_probability": "0.9955356",
+      "amplify_submodel_3_probability": "0.8322018",
+      "amplify_submodel_4_probability": "0.9930028",
+      "amplify_submodel_5_probability": "0.99982053",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-e269f9afaffaa947c8f4",
+      "sequence": "VVEKAIGLAKPRVERIQLITS",
+      "status": "success",
+      "amplify_probability": "0.8951594",
+      "amplify_label": "AMP",
+      "amplify_log_scaled_score": "9.7947",
+      "amplify_submodel_1_probability": "0.80060506",
+      "amplify_submodel_2_probability": "0.99620026",
+      "amplify_submodel_3_probability": "0.69190526",
+      "amplify_submodel_4_probability": "0.99372107",
+      "amplify_submodel_5_probability": "0.9933656",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-394a3c0e15e73047dd41",
+      "sequence": "AAEKAIGLAKGRVERLQLVTS",
+      "status": "success",
+      "amplify_probability": "0.22720823",
+      "amplify_label": "non-AMP",
+      "amplify_log_scaled_score": "1.1194",
+      "amplify_submodel_1_probability": "0.00792578",
+      "amplify_submodel_2_probability": "0.37341776",
+      "amplify_submodel_3_probability": "0.06277966",
+      "amplify_submodel_4_probability": "0.21279453",
+      "amplify_submodel_5_probability": "0.4791234",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-df588d1717685cf8e166",
+      "sequence": "GAEKAIGLAKPRVERLQLIPP",
+      "status": "success",
+      "amplify_probability": "0.8588524",
+      "amplify_label": "AMP",
+      "amplify_log_scaled_score": "8.5033",
+      "amplify_submodel_1_probability": "0.4097261",
+      "amplify_submodel_2_probability": "0.980552",
+      "amplify_submodel_3_probability": "0.9713169",
+      "amplify_submodel_4_probability": "0.9764431",
+      "amplify_submodel_5_probability": "0.9562239",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-21e1faa0f4a136990459",
+      "sequence": "AAERAIGLAKPRVERLQLISG",
+      "status": "success",
+      "amplify_probability": "0.36897963",
+      "amplify_label": "non-AMP",
+      "amplify_log_scaled_score": "1.9996",
+      "amplify_submodel_1_probability": "0.05222592",
+      "amplify_submodel_2_probability": "0.5101588",
+      "amplify_submodel_3_probability": "0.6552827",
+      "amplify_submodel_4_probability": "0.6266015",
+      "amplify_submodel_5_probability": "0.00062933",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-aa904162194a7a0ebe77",
+      "sequence": "AVEKAIGLAKPRVERLQLIGG",
+      "status": "success",
+      "amplify_probability": "0.24715313",
+      "amplify_label": "non-AMP",
+      "amplify_log_scaled_score": "1.2329",
+      "amplify_submodel_1_probability": "0.01169689",
+      "amplify_submodel_2_probability": "0.49004287",
+      "amplify_submodel_3_probability": "0.4918514",
+      "amplify_submodel_4_probability": "0.21164256",
+      "amplify_submodel_5_probability": "0.03053187",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-2f151ea185e0ac75df2e",
+      "sequence": "AAEKGIGLAKPRVERLQLIGP",
+      "status": "success",
+      "amplify_probability": "0.2100105",
+      "amplify_label": "non-AMP",
+      "amplify_log_scaled_score": "1.0238",
+      "amplify_submodel_1_probability": "0.01092559",
+      "amplify_submodel_2_probability": "0.8690404",
+      "amplify_submodel_3_probability": "0.14920138",
+      "amplify_submodel_4_probability": "0.01486213",
+      "amplify_submodel_5_probability": "0.00602291",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-ec7ac0db482221568acf",
+      "sequence": "AAEKAIGGAKPRVERLQLITP",
+      "status": "success",
+      "amplify_probability": "0.40763155",
+      "amplify_label": "non-AMP",
+      "amplify_log_scaled_score": "2.2741",
+      "amplify_submodel_1_probability": "0.01875727",
+      "amplify_submodel_2_probability": "0.71343845",
+      "amplify_submodel_3_probability": "0.80300033",
+      "amplify_submodel_4_probability": "0.26799744",
+      "amplify_submodel_5_probability": "0.23496406",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-59dbb6ebb695c8461256",
+      "sequence": "AAEKAIGLAKSRVERLQLITV",
+      "status": "success",
+      "amplify_probability": "0.09857208",
+      "amplify_label": "non-AMP",
+      "amplify_log_scaled_score": "0.4507",
+      "amplify_submodel_1_probability": "0.01030012",
+      "amplify_submodel_2_probability": "0.05524087",
+      "amplify_submodel_3_probability": "0.08244924",
+      "amplify_submodel_4_probability": "0.20134388",
+      "amplify_submodel_5_probability": "0.14352624",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-ab204f17964ddbd3e4fe",
+      "sequence": "AAEKAIGLAKPRVYRLQLIVV",
+      "status": "success",
+      "amplify_probability": "0.12750664",
+      "amplify_label": "non-AMP",
+      "amplify_log_scaled_score": "0.5924",
+      "amplify_submodel_1_probability": "0.02905564",
+      "amplify_submodel_2_probability": "0.19226523",
+      "amplify_submodel_3_probability": "0.20520037",
+      "amplify_submodel_4_probability": "0.20973332",
+      "amplify_submodel_5_probability": "0.00127869",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-783f680615535a86c962",
+      "sequence": "AAEKAIGLAKVRVERLVLITS",
+      "status": "success",
+      "amplify_probability": "0.30256525",
+      "amplify_label": "non-AMP",
+      "amplify_log_scaled_score": "1.565",
+      "amplify_submodel_1_probability": "0.02910162",
+      "amplify_submodel_2_probability": "0.490108",
+      "amplify_submodel_3_probability": "0.10121077",
+      "amplify_submodel_4_probability": "0.10401974",
+      "amplify_submodel_5_probability": "0.7883861",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-fa1e14527e2254e94037",
+      "sequence": "AAEKAIGLAVVRVERLQLIVS",
+      "status": "success",
+      "amplify_probability": "0.06772293",
+      "amplify_label": "non-AMP",
+      "amplify_log_scaled_score": "0.3045",
+      "amplify_submodel_1_probability": "0.14280428",
+      "amplify_submodel_2_probability": "0.04032205",
+      "amplify_submodel_3_probability": "0.10744888",
+      "amplify_submodel_4_probability": "0.00942756",
+      "amplify_submodel_5_probability": "0.03861191",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-91bb28d9c6d6cb4c7c07",
+      "sequence": "AVEKAIGLKFPRVERLQLIGP",
+      "status": "success",
+      "amplify_probability": "0.23410432",
+      "amplify_label": "non-AMP",
+      "amplify_log_scaled_score": "1.1583",
+      "amplify_submodel_1_probability": "0.09902663",
+      "amplify_submodel_2_probability": "0.5787868",
+      "amplify_submodel_3_probability": "0.3537262",
+      "amplify_submodel_4_probability": "0.13580965",
+      "amplify_submodel_5_probability": "0.00317224",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-08b8e093e1e381f5d84c",
+      "sequence": "AAEKGIGLKFPRVERLQLITG",
+      "status": "success",
+      "amplify_probability": "0.27872318",
+      "amplify_label": "non-AMP",
+      "amplify_log_scaled_score": "1.419",
+      "amplify_submodel_1_probability": "0.06058846",
+      "amplify_submodel_2_probability": "0.15032183",
+      "amplify_submodel_3_probability": "0.3559645",
+      "amplify_submodel_4_probability": "0.17500898",
+      "amplify_submodel_5_probability": "0.6517322",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-3b8d9cda243d1dc3d220",
+      "sequence": "GAEKAIGGAKPRVERLQLITS",
+      "status": "success",
+      "amplify_probability": "0.9330662",
+      "amplify_label": "AMP",
+      "amplify_log_scaled_score": "11.7435",
+      "amplify_submodel_1_probability": "0.7220699",
+      "amplify_submodel_2_probability": "0.9804444",
+      "amplify_submodel_3_probability": "0.976056",
+      "amplify_submodel_4_probability": "0.9868155",
+      "amplify_submodel_5_probability": "0.999945",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-68dfbf8f3aa2f14a9b8d",
+      "sequence": "GGEKAIGLAKSRVERLQLITS",
+      "status": "success",
+      "amplify_probability": "0.49677104",
+      "amplify_label": "non-AMP",
+      "amplify_log_scaled_score": "2.9823",
+      "amplify_submodel_1_probability": "0.08655117",
+      "amplify_submodel_2_probability": "0.4754622",
+      "amplify_submodel_3_probability": "0.26980755",
+      "amplify_submodel_4_probability": "0.65403515",
+      "amplify_submodel_5_probability": "0.99799925",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-28872bcbd12b8b65acc2",
+      "sequence": "VAEKAIGLAKPRVYRLQLITS",
+      "status": "success",
+      "amplify_probability": "0.9525982",
+      "amplify_label": "AMP",
+      "amplify_log_scaled_score": "13.2421",
+      "amplify_submodel_1_probability": "0.8675002",
+      "amplify_submodel_2_probability": "0.9315966",
+      "amplify_submodel_3_probability": "0.9676503",
+      "amplify_submodel_4_probability": "0.9972257",
+      "amplify_submodel_5_probability": "0.9990188",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-51d7b19112bcbda3303a",
+      "sequence": "VVEKAIGLAKPRVERLVLITS",
+      "status": "success",
+      "amplify_probability": "0.92648774",
+      "amplify_label": "AMP",
+      "amplify_log_scaled_score": "11.3364",
+      "amplify_submodel_1_probability": "0.8342275",
+      "amplify_submodel_2_probability": "0.99869895",
+      "amplify_submodel_3_probability": "0.8052258",
+      "amplify_submodel_4_probability": "0.99742395",
+      "amplify_submodel_5_probability": "0.9968624",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-55febb8655e7dfc7023f",
+      "sequence": "AAEKAIGLAKGRVERLQLIVS",
+      "status": "success",
+      "amplify_probability": "0.23083596",
+      "amplify_label": "non-AMP",
+      "amplify_log_scaled_score": "1.1398",
+      "amplify_submodel_1_probability": "0.04121587",
+      "amplify_submodel_2_probability": "0.55696684",
+      "amplify_submodel_3_probability": "0.10663436",
+      "amplify_submodel_4_probability": "0.18173727",
+      "amplify_submodel_5_probability": "0.26762545",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-fb4757c90ae952ea0118",
+      "sequence": "AIEKAIGLAKPRVERLQLIPP",
+      "status": "success",
+      "amplify_probability": "0.3704324",
+      "amplify_label": "non-AMP",
+      "amplify_log_scaled_score": "2.0096",
+      "amplify_submodel_1_probability": "0.12049858",
+      "amplify_submodel_2_probability": "0.8275812",
+      "amplify_submodel_3_probability": "0.4000533",
+      "amplify_submodel_4_probability": "0.5013352",
+      "amplify_submodel_5_probability": "0.00269383",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-c4d340d8c5a3850c35df",
+      "sequence": "AAEKGIGLAKPRVERLQLISG",
+      "status": "success",
+      "amplify_probability": "0.19681557",
+      "amplify_label": "non-AMP",
+      "amplify_log_scaled_score": "0.9518",
+      "amplify_submodel_1_probability": "0.0249464",
+      "amplify_submodel_2_probability": "0.57873863",
+      "amplify_submodel_3_probability": "0.2344435",
+      "amplify_submodel_4_probability": "0.01635299",
+      "amplify_submodel_5_probability": "0.12959622",
+      "error": ""
+    }
+  ],
+  "stdout_tail": "",
+  "stderr_tail": "",
+  "model_uri": "https://conda.anaconda.org/bioconda/noarch/amplify-2.0.1-py36hdfd78af_2.conda",
+  "weights_sha256": "2ea5787986fca6f6f25091ecd1689a303964480ee86c5bf3fb274318338e7f6e",
+  "limitations": [
+    "Generic AMP-likeness is soft supporting evidence, not AceA binding or potency.",
+    "The local public-control replay does not establish calibration or leakage isolation."
+  ],
+  "adapter_version": "amplify-2.0.1-py36hdfd78af_2",
+  "registry_sha256": "7a5152541864e7cec1b94bb5eb9c74d313408b5f4d4781f1565525b577164e55",
+  "command_argv": [
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\.venv\\Scripts\\python.exe",
+    "-m",
+    "pepagent.model_workers.amplify_metric_cli",
+    "--input",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\reports\\target_agnostic_source_graft_v9_20260903\\score_all_final\\work\\amp_likeness\\candidates.csv",
+    "--output",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\reports\\target_agnostic_source_graft_v9_20260903\\score_all_final\\work\\amp_likeness\\predictions.csv",
+    "--raw-output-dir",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\reports\\target_agnostic_source_graft_v9_20260903\\score_all_final\\work\\amp_likeness\\raw",
+    "--amplify-python",
+    "C:\\Users\\31948\\AppData\\Local\\ampgent-amplify-py36-cf\\python.exe",
+    "--amplify-script",
+    "C:\\Users\\31948\\AppData\\Local\\ampgent-amplify-py36-cf\\share\\amplify\\src\\AMPlify.py",
+    "--weights-directory",
+    "C:\\Users\\31948\\AppData\\Local\\ampgent-amplify-py36-cf\\share\\amplify\\models\\balanced"
+  ]
+}
