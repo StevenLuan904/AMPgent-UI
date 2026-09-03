@@ -30,6 +30,7 @@ def cli():
     parser.add_argument("--remote-root", required=True)
     parser.add_argument("--local-root", required=True, type=Path)
     parser.add_argument("--receipt", required=True, type=Path)
+    parser.add_argument("--batch-mode", choices=("yes", "no"), default="yes")
     return parser.parse_args()
 
 
@@ -38,11 +39,11 @@ def allowed_relative_path(relative: PurePosixPath) -> bool:
     return len(parts) >= 3 and tuple(parts[2:]) in ALLOWED
 
 
-def remote_files(target: str, port: int, root: str) -> list[str]:
+def remote_files(target: str, port: int, root: str, batch_mode: str = "yes") -> list[str]:
     names = " -o ".join(f'-name {shlex.quote(path[-1])}' for path in sorted(ALLOWED))
     command = f"find {shlex.quote(root)} -type f \\( {names} \\) -print"
     completed = subprocess.run(
-        ["ssh", "-o", "BatchMode=yes", "-p", str(port), target, command],
+        ["ssh", "-o", f"BatchMode={batch_mode}", "-p", str(port), target, command],
         check=True,
         capture_output=True,
         text=True,
@@ -56,7 +57,9 @@ def main() -> None:
     copied = []
     ignored = []
     args.local_root.mkdir(parents=True, exist_ok=True)
-    for source in remote_files(args.ssh_target, args.ssh_port, args.remote_root):
+    for source in remote_files(
+        args.ssh_target, args.ssh_port, args.remote_root, args.batch_mode
+    ):
         path = PurePosixPath(source)
         relative = path.relative_to(remote_root)
         if not allowed_relative_path(relative):
@@ -68,6 +71,8 @@ def main() -> None:
         subprocess.run(
             [
                 "scp",
+                "-o",
+                f"BatchMode={args.batch_mode}",
                 "-P",
                 str(args.ssh_port),
                 f"{args.ssh_target}:{source}",
