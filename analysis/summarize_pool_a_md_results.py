@@ -9,10 +9,28 @@ import math
 from collections import defaultdict
 from datetime import UTC, datetime
 from pathlib import Path
-from statistics import fmean
+from statistics import fmean, median, pstdev
 
 MD_RELEASE = "openmm_ff14sb_tip3p_1ns-npt_50ns-nvt_interface-pbc_v2"
 MMGBSA_RELEASE = "ambertools26_mmgbsa_igb5_sparse_v1"
+
+METRIC_SPECS = {
+    "rosetta_median_dg_reu": ("REU", "lower"),
+    "interface_rmsd_mean_nm": ("nm", "lower"),
+    "interface_rmsd_max_nm": ("nm", "lower"),
+    "native_contact_fraction_mean": ("fraction", "higher"),
+    "native_contact_fraction_min": ("fraction", "higher"),
+    "key_contact_occupancy_mean": ("fraction", "higher"),
+    "key_contact_occupancy_max": ("fraction", "higher"),
+    "hydrogen_bond_occupancy": ("fraction", "higher"),
+    "salt_bridge_occupancy": ("fraction", "higher"),
+    "water_bridge_occupancy": ("fraction", "higher"),
+    "maximum_departure_duration_ps": ("ps", "lower"),
+    "maximum_peptide_com_shift_nm": ("nm", "lower"),
+    "mmgbsa_mean_kcal_mol": ("kcal/mol", "lower"),
+    "mmgbsa_ci95_lower_kcal_mol": ("kcal/mol", "descriptive"),
+    "mmgbsa_ci95_upper_kcal_mol": ("kcal/mol", "descriptive"),
+}
 
 
 def cli():
@@ -201,7 +219,79 @@ def mean(rows, key):
     return fmean(values) if values else None
 
 
+def quantile(sorted_values: list[float], probability: float) -> float:
+    if len(sorted_values) == 1:
+        return sorted_values[0]
+    position = probability * (len(sorted_values) - 1)
+    lower = math.floor(position)
+    upper = math.ceil(position)
+    if lower == upper:
+        return sorted_values[lower]
+    fraction = position - lower
+    return sorted_values[lower] * (1 - fraction) + sorted_values[upper] * fraction
+
+
+def metric_distribution(rows: list[dict], key: str, unit: str, direction: str) -> dict:
+    observed = [(row, float(row[key])) for row in rows if row[key] is not None]
+    values = sorted(value for _, value in observed)
+    payload = {
+        "observed_count": len(values),
+        "missing_count": len(rows) - len(values),
+        "unit": unit,
+        "favorable_direction": direction,
+    }
+    if not values:
+        return {
+            **payload,
+            "minimum": None,
+            "maximum": None,
+            "mean": None,
+            "median": None,
+            "population_standard_deviation": None,
+            "p10": None,
+            "p25": None,
+            "p75": None,
+            "p90": None,
+            "best_candidate": None,
+            "worst_candidate": None,
+        }
+    if direction == "higher":
+        best_row, best_value = max(observed, key=lambda item: item[1])
+        worst_row, worst_value = min(observed, key=lambda item: item[1])
+    else:
+        best_row, best_value = min(observed, key=lambda item: item[1])
+        worst_row, worst_value = max(observed, key=lambda item: item[1])
+
+    def identity(row: dict, value: float) -> dict:
+        return {
+            "candidate_id": row["candidate_id"],
+            "run_id": row["run_id"],
+            "sequence_sha256": row["sequence_sha256"],
+            "value": value,
+        }
+
+    return {
+        **payload,
+        "minimum": values[0],
+        "maximum": values[-1],
+        "mean": fmean(values),
+        "median": median(values),
+        "population_standard_deviation": pstdev(values),
+        "p10": quantile(values, 0.10),
+        "p25": quantile(values, 0.25),
+        "p75": quantile(values, 0.75),
+        "p90": quantile(values, 0.90),
+        "best_candidate": identity(best_row, best_value),
+        "worst_candidate": identity(worst_row, worst_value),
+    }
+
+
 def aggregate(rows):
+    departed_observed = [
+        row["peptide_departed"]
+        for row in rows
+        if row["peptide_departed"] is not None
+    ]
     return {
         "expected_candidate_count": len(rows),
         "md_launched_count": sum(row["md_launched"] for row in rows),
@@ -230,6 +320,16 @@ def aggregate(rows):
         "salt_bridge_occupancy_mean": mean(rows, "salt_bridge_occupancy"),
         "water_bridge_occupancy_mean": mean(rows, "water_bridge_occupancy"),
         "mmgbsa_mean_kcal_mol": mean(rows, "mmgbsa_mean_kcal_mol"),
+        "peptide_departure_categories": {
+            "observed_count": len(departed_observed),
+            "missing_count": len(rows) - len(departed_observed),
+            "departed_count": sum(value is True for value in departed_observed),
+            "retained_count": sum(value is False for value in departed_observed),
+        },
+        "metric_distributions": {
+            key: metric_distribution(rows, key, unit, direction)
+            for key, (unit, direction) in METRIC_SPECS.items()
+        },
     }
 
 

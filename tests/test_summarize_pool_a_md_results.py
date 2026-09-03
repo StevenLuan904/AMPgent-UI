@@ -87,6 +87,40 @@ def test_summary_requires_exact_identity_and_reports_all_requested_outputs(tmp_p
     assert result["overall"]["pending_md_count"] == 0
     assert result["overall"]["retry_failure_recorded_count"] == 1
     assert result["overall"]["postgresql_evidence_complete_count"] == 1
+    rmsd = result["overall"]["metric_distributions"]["interface_rmsd_mean_nm"]
+    assert rmsd == {
+        "observed_count": 1,
+        "missing_count": 0,
+        "unit": "nm",
+        "favorable_direction": "lower",
+        "minimum": 0.2,
+        "maximum": 0.2,
+        "mean": 0.2,
+        "median": 0.2,
+        "population_standard_deviation": 0.0,
+        "p10": 0.2,
+        "p25": 0.2,
+        "p75": 0.2,
+        "p90": 0.2,
+        "best_candidate": {
+            "candidate_id": candidate_id,
+            "run_id": run_id,
+            "sequence_sha256": sequence_sha,
+            "value": 0.2,
+        },
+        "worst_candidate": {
+            "candidate_id": candidate_id,
+            "run_id": run_id,
+            "sequence_sha256": sequence_sha,
+            "value": 0.2,
+        },
+    }
+    assert result["overall"]["peptide_departure_categories"] == {
+        "observed_count": 1,
+        "missing_count": 0,
+        "departed_count": 0,
+        "retained_count": 1,
+    }
     assert result["completion_receipt"] == str(
         (tmp_path / "report/completion_receipt.json").resolve()
     )
