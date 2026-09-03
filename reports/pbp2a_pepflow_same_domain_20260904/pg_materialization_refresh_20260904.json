@@ -1,0 +1,151 @@
+{
+  "schema_version": "ampgent.pbp2a-pepflow-same-domain-pg-verification.1",
+  "run_id": "aaf5d3fd-dc43-5677-933d-88db62ba131d",
+  "run": {
+    "run_id": "aaf5d3fd-dc43-5677-933d-88db62ba131d",
+    "status": "succeeded",
+    "target_name": "PBP2a family beta-lactam-resistant peptidoglycan transpeptidase, partial"
+  },
+  "candidate_count": 5,
+  "evaluation_count": 85,
+  "tool_call_count": 1,
+  "tool_calls": [
+    {
+      "tool_call_id": "c2794685-f9fa-42a9-8403-792cfaa0e454",
+      "status": "succeeded",
+      "tool_name": "autoresearch_scored_lineage_materializer"
+    }
+  ],
+  "candidate_evidence": [
+    {
+      "candidate_id": "1a84123a-9758-419b-b9ba-6b629cd5069f",
+      "sequence_sha256": "343682fe0e6a0b8c8a7d66afdceb2e7760a2fb54ecc9b8b4d572a23fe85ae778",
+      "generation": 132,
+      "evaluation_count": 17,
+      "evaluation_metric_names": [
+        "amp_read_log10_mic_um",
+        "apex_shadow_status",
+        "calibrated_hemolysis_probability",
+        "guruprasad_instability_index",
+        "hemopi2_classification_score",
+        "hemopi2_hc50_um",
+        "hydrophobic_moment_eisenberg",
+        "hydrophobic_ratio_modlamp",
+        "llamp_log10_mic_um",
+        "macrel_amp_probability",
+        "macrel_hemolysis_label",
+        "macrel_hemolysis_probability",
+        "maximum_hydrophobic_run",
+        "net_charge_ph7_4",
+        "peptiverse_shadow_status",
+        "toxinpred3_hybrid_score",
+        "toxinpred3_label"
+      ]
+    },
+    {
+      "candidate_id": "e1e21247-1a58-4252-b062-664fd685467b",
+      "sequence_sha256": "cbeda8ec19b9a5ef0b693691be98dce9de932d5e1ddb0e1bc8f9e04b0366e661",
+      "generation": 132,
+      "evaluation_count": 17,
+      "evaluation_metric_names": [
+        "amp_read_log10_mic_um",
+        "apex_shadow_status",
+        "calibrated_hemolysis_probability",
+        "guruprasad_instability_index",
+        "hemopi2_classification_score",
+        "hemopi2_hc50_um",
+        "hydrophobic_moment_eisenberg",
+        "hydrophobic_ratio_modlamp",
+        "llamp_log10_mic_um",
+        "macrel_amp_probability",
+        "macrel_hemolysis_label",
+        "macrel_hemolysis_probability",
+        "maximum_hydrophobic_run",
+        "net_charge_ph7_4",
+        "peptiverse_shadow_status",
+        "toxinpred3_hybrid_score",
+        "toxinpred3_label"
+      ]
+    },
+    {
+      "candidate_id": "eb1bc382-b789-433e-8484-4827ad1debf5",
+      "sequence_sha256": "a461869bc019a4fc9feeca1da2e8f61efd9eaadf714eed23d91d12531891bf50",
+      "generation": 132,
+      "evaluation_count": 17,
+      "evaluation_metric_names": [
+        "amp_read_log10_mic_um",
+        "apex_shadow_status",
+        "calibrated_hemolysis_probability",
+        "guruprasad_instability_index",
+        "hemopi2_classification_score",
+        "hemopi2_hc50_um",
+        "hydrophobic_moment_eisenberg",
+        "hydrophobic_ratio_modlamp",
+        "llamp_log10_mic_um",
+        "macrel_amp_probability",
+        "macrel_hemolysis_label",
+        "macrel_hemolysis_probability",
+        "maximum_hydrophobic_run",
+        "net_charge_ph7_4",
+        "peptiverse_shadow_status",
+        "toxinpred3_hybrid_score",
+        "toxinpred3_label"
+      ]
+    },
+    {
+      "candidate_id": "b6937ce0-9637-441c-8b94-6d1fbc5041e7",
+      "sequence_sha256": "7a4272f3db72bb0172bde9442c12cf4732c0ceea1c996b8b37b6e8969472b304",
+      "generation": 132,
+      "evaluation_count": 17,
+      "evaluation_metric_names": [
+        "amp_read_log10_mic_um",
+        "apex_shadow_status",
+        "calibrated_hemolysis_probability",
+        "guruprasad_instability_index",
+        "hemopi2_classification_score",
+        "hemopi2_hc50_um",
+        "hydrophobic_moment_eisenberg",
+        "hydrophobic_ratio_modlamp",
+        "llamp_log10_mic_um",
+        "macrel_amp_probability",
+        "macrel_hemolysis_label",
+        "macrel_hemolysis_probability",
+        "maximum_hydrophobic_run",
+        "net_charge_ph7_4",
+        "peptiverse_shadow_status",
+        "toxinpred3_hybrid_score",
+        "toxinpred3_label"
+      ]
+    },
+    {
+      "candidate_id": "0b859377-8750-44d6-bccc-791d94a6453e",
+      "sequence_sha256": "d946c60099c25a1695ebb68153ee74ebf7211c9593557e157784761d0edcdc64",
+      "generation": 132,
+      "evaluation_count": 17,
+      "evaluation_metric_names": [
+        "amp_read_log10_mic_um",
+        "apex_shadow_status",
+        "calibrated_hemolysis_probability",
+        "guruprasad_instability_index",
+        "hemopi2_classification_score",
+        "hemopi2_hc50_um",
+        "hydrophobic_moment_eisenberg",
+        "hydrophobic_ratio_modlamp",
+        "llamp_log10_mic_um",
+        "macrel_amp_probability",
+        "macrel_hemolysis_label",
+        "macrel_hemolysis_probability",
+        "maximum_hydrophobic_run",
+        "net_charge_ph7_4",
+        "peptiverse_shadow_status",
+        "toxinpred3_hybrid_score",
+        "toxinpred3_label"
+      ]
+    }
+  ],
+  "expected_input_count": 5,
+  "identity_drift_count": 0,
+  "identity_drift_hashes": [],
+  "per_candidate_evidence_count_17": true,
+  "historical_run_modified": false
+}

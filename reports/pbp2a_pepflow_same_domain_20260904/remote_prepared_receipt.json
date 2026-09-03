@@ -1,0 +1,80 @@
+{
+  "schema_version": "ampgent.pbp2a-pepflow-same-domain-remote-prepared.1",
+  "observed_at_utc": "2026-09-03T23:39:55.1105858Z",
+  "run_id": "aaf5d3fd-dc43-5677-933d-88db62ba131d",
+  "target_key": "pbp2a",
+  "identity_rule": "run_id+candidate_id+target_key+sequence_sha256+task_key",
+  "global_exact_dedup": {
+    "sequence_hashes_checked": 5,
+    "task_keys_checked": 5,
+    "exact_hit_count": 0,
+    "identity_conflict_count": 0,
+    "overwritten_count": 0,
+    "historical_active_pending_completed_prepared_conflict_count": 0
+  },
+  "inventory": {
+    "existing_prepared_count": 8,
+    "new_prepared_count": 5,
+    "skipped_existing_count": 0,
+    "merged_coarse5_count": 13,
+    "existing_reference_manifest": "/sdd_data/pepagent/ampgent/structure/prepared/pbp2a/matched-source-combined-20260904/batch_manifest.json"
+  },
+  "remote_root": "/sdd_data/pepagent/ampgent/structure/prepared/pbp2a/matched-source-combined-20260904",
+  "batch_manifest": {
+    "path": "/sdd_data/pepagent/ampgent/structure/prepared/pbp2a/matched-source-combined-20260904/batch_manifest_pepflow_same_domain_20260904.json",
+    "sha256": "6db5ddd0e51fa108d7c2ce38cb6093136ceb62985c9bfad790532cb84be96e41",
+    "status": "prepared_new",
+    "atomic_write": true
+  },
+  "entries": [
+    {"candidate_id":"1a84123a-9758-419b-b9ba-6b629cd5069f","sequence_sha256":"343682fe0e6a0b8c8a7d66afdceb2e7760a2fb54ecc9b8b4d572a23fe85ae778","task_key":"rosetta5:pbp2a:aaf5d3fd-dc43-5677-933d-88db62ba131d:1a84123a-9758-419b-b9ba-6b629cd5069f","path":"/sdd_data/pepagent/ampgent/structure/prepared/pbp2a/matched-source-combined-20260904/1a84123a-9758-419b-b9ba-6b629cd5069f/prepared_queue_receipt.json","sha256":"5427a7a6cd0d1faa075843281342dc47571f37a74ca4edacc522d6634075181b","status":"prepared_new"},
+    {"candidate_id":"b6937ce0-9637-441c-8b94-6d1fbc5041e7","sequence_sha256":"7a4272f3db72bb0172bde9442c12cf4732c0ceea1c996b8b37b6e8969472b304","task_key":"rosetta5:pbp2a:aaf5d3fd-dc43-5677-933d-88db62ba131d:b6937ce0-9637-441c-8b94-6d1fbc5041e7","path":"/sdd_data/pepagent/ampgent/structure/prepared/pbp2a/matched-source-combined-20260904/b6937ce0-9637-441c-8b94-6d1fbc5041e7/prepared_queue_receipt.json","sha256":"f46fb84b17d152a83066e613ed31bb0f288529cd511098f58fafbabffc027652","status":"prepared_new"},
+    {"candidate_id":"eb1bc382-b789-433e-8484-4827ad1debf5","sequence_sha256":"a461869bc019a4fc9feeca1da2e8f61efd9eaadf714eed23d91d12531891bf50","task_key":"rosetta5:pbp2a:aaf5d3fd-dc43-5677-933d-88db62ba131d:eb1bc382-b789-433e-8484-4827ad1debf5","path":"/sdd_data/pepagent/ampgent/structure/prepared/pbp2a/matched-source-combined-20260904/eb1bc382-b789-433e-8484-4827ad1debf5/prepared_queue_receipt.json","sha256":"6b2ed5cb7a320a8ebc61b28b95afdd2b08861b53630591556dbb3951e8087875","status":"prepared_new"},
+    {"candidate_id":"e1e21247-1a58-4252-b062-664fd685467b","sequence_sha256":"cbeda8ec19b9a5ef0b693691be98dce9de932d5e1ddb0e1bc8f9e04b0366e661","task_key":"rosetta5:pbp2a:aaf5d3fd-dc43-5677-933d-88db62ba131d:e1e21247-1a58-4252-b062-664fd685467b","path":"/sdd_data/pepagent/ampgent/structure/prepared/pbp2a/matched-source-combined-20260904/e1e21247-1a58-4252-b062-664fd685467b/prepared_queue_receipt.json","sha256":"dc78daea8e7509616742a3c204403a041c3a69a9ceeeb4410349e9a0fb471cfe","status":"prepared_new"},
+    {"candidate_id":"0b859377-8750-44d6-bccc-791d94a6453e","sequence_sha256":"d946c60099c25a1695ebb68153ee74ebf7211c9593557e157784761d0edcdc64","task_key":"rosetta5:pbp2a:aaf5d3fd-dc43-5677-933d-88db62ba131d:0b859377-8750-44d6-bccc-791d94a6453e","path":"/sdd_data/pepagent/ampgent/structure/prepared/pbp2a/matched-source-combined-20260904/0b859377-8750-44d6-bccc-791d94a6453e/prepared_queue_receipt.json","sha256":"4fd29bd69feddc3412decec8d575cb610753edc3ed9188b756f1f2d3d24ca3c2","status":"prepared_new"}
+  ],
+  "resource_gate": {
+    "dispatch_allowed": false,
+    "task_submitted": false,
+    "workflow_submitted": false,
+    "reason": "synth GPU1-3 occupied by successor-11 runners; GPU0 external/unknown; GPU4 external/unknown; GPU5-7 protected; no safe idle approved GPU",
+    "remote_structure_or_trajectory_downloaded": false,
+    "remote_structure_or_trajectory_deleted": false
+  },
+  "synth_observation": {
+    "listener": {"host":"127.0.0.1","port":32224,"pid":31396},
+    "supervisor_pid": 1280301,
+    "analysis_pid": 3311802,
+    "mmgbsa_pid": 3360111,
+    "runner_pids": [58820,1280316,2060743],
+    "gpu_state": {"0":"foreign_or_unknown_21984MiB_53pct","1":"successor11_838MiB_100pct","2":"successor11_744MiB_100pct","3":"successor11_800MiB_100pct","4":"foreign_or_unknown_12688MiB_0pct","5":"protected_9MiB_0pct","6":"protected_5MiB_0pct","7":"protected_5MiB_0pct"},
+    "disk": "/sdd_data 7.0T total, 5.5T used, 1.2T available, 83%"
+  },
+  "host19_observation": {
+    "md_supervisor_pid": 3986807,
+    "analysis_supervisor_pid": 3977733,
+    "compute_pids": [1795945,1892180,1719939,1927554,1894513,549598,1853418,1858319],
+    "compute_processes": 8,
+    "status": "observable_running"
+  },
+  "md_identity_snapshot": {
+    "identity_union": 486,
+    "launched_unique": 50,
+    "full_evidence_unique": 31,
+    "analysis_pending_unique": 0,
+    "running_or_incomplete_unique": 19,
+    "not_started_unique": 436,
+    "failed_unique": 0,
+    "disjoint_union_equals_486": true,
+    "launched_equals_full_plus_running": true,
+    "new_full_evidence_since_last_snapshot": 0,
+    "large_artifacts_read": false
+  },
+  "mutations": {
+    "postgresql_write": false,
+    "remote_task_start": false,
+    "remote_large_artifact_download": false,
+    "remote_large_artifact_delete": false,
+    "prohibited_host32_gpu2_gpu3_touched": false
+  }
+}
