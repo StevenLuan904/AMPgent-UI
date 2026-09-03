@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import sys
 from pathlib import Path
 
@@ -59,6 +60,12 @@ def test_generate_excludes_exact_prior_edit_and_preserves_length():
     assert all(len(row["sequence"]) == len(parent["sequence"]) for row in result)
     assert all(row["donor_source"] == "PepGLAD" for row in result)
     assert all(row["graft_start_zero_based"] != 0 for row in result)
+    assert all(row["generation"] == 1 for row in result)
+    assert all(
+        row["parent_sequence_sha256"]
+        == hashlib.sha256(parent["sequence"].encode("utf-8")).hexdigest()
+        for row in result
+    )
 
 
 def test_archive_parent_selection_requires_all_parent_gates_and_balances_family_cell():

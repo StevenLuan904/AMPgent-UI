@@ -1,14 +1,14 @@
 {
   "schema_version": "ampgent.pbp2a-pepglad-source-graft-close.1",
-  "observed_at_utc": "2026-09-03T18:58:35.5083475Z",
+  "observed_at_utc": "2026-09-03T19:06:00Z",
   "operator_id": "pbp2a-pepglad-source-graft-v1",
   "target_key": "pbp2a",
   "input_identity": {
     "proposal_count": 12,
-    "proposal_sha256": "f4a342ef9acacbfa20d1489fdd203d761dd114af6316d5ef5ed832bdd46e4f64",
+    "proposal_sha256": "c866309c962ac2783f0d962c8ed424b24410d42f135b1a57c379b98d756529f7",
     "score_all_count": 12,
-    "score_all_sha256": "271d77d2c450394cd56e5861766420ded14b7f2a8c4e7cc48be65f399ddd3416",
-    "calibrated_sha256": "da4209ed46ad7f04e77419805e92952a264b113e0645935b4cc7473c4f5bd236",
+    "score_all_sha256": "51181715137fb0bcf4cb0c3c3cc49faf26613d8d85456a7fe66015501bd74263",
+    "calibrated_sha256": "3273e3be5bcfdaf79a7ed420b76ca046644f796ae4bb218d3d15456c5f9ea8ee",
     "challenger_sha256": "3c169ba5e3cb757e93707d17ff178801023a95a94ec3fc613e1050a4aca8b1fd",
     "qd_sha256": "5584b1991b9c00462492a4a207dc809766ebb8a574e5e4ab5a58d50645d01266"
   },
@@ -32,16 +32,16 @@
     "candidate_count_written": 0,
     "evaluation_count_written": 0,
     "tool_call_count_written": 0,
-    "materialization_status": "deferred_preflight",
-    "materialization_allowed": false
+    "materialization_status": "pending_after_metadata_repair",
+    "materialization_allowed": true
   },
   "deferred_boundary": {
-    "category": "input_contract_missing_positive_generation",
+    "category": "metadata_repaired_dry_run_required",
     "dry_run_command": "analysis/materialize_autoresearch_scored_lineage.py --dry-run-output",
-    "observed_error": "ValueError: one materialization batch must contain one positive generation",
+    "observed_error": "previous positive-generation rejection repaired; current batch now has generation=132 and parent_sequence_sha256",
     "writes_attempted": false,
-    "parent_binding_note": "score rows retain proposal parent IDs and parent sequences, but no parent_sequence_sha256 field",
-    "next_operator": "add a positive generation and authoritative parent_sequence_sha256 to the frozen batch metadata, then rerun only this fixed 12-row materialization boundary"
+    "parent_binding_note": "4/4 parent sequences resolved in PostgreSQL to run 9640722a-0f63-53e4-892d-ae42b0085445, generation 131, target WP_308061015.1; all 12 children are generation 132",
+    "next_operator": "run dry-run under this committed metadata revision, then one execute-only materialization for this fixed 12-row batch"
   },
   "resource_gate": {
     "gpu_structure_or_md_started": false,

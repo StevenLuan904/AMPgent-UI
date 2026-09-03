@@ -153,8 +153,11 @@ def generate_proposals(
     *,
     prior_edits: set[tuple[str, int, str]] | None = None,
     history_hashes: set[str] | None = None,
+    generation: int = 1,
     max_total: int = 12,
 ) -> list[dict[str, Any]]:
+    if generation < 1:
+        raise ValueError("generation must be positive")
     prior_edits = prior_edits or set()
     history_hashes = history_hashes or set()
     proposals: list[dict[str, Any]] = []
@@ -191,8 +194,12 @@ def generate_proposals(
                     "sequence": child,
                     "sequence_sha256": child_hash,
                     "branch_key": "pbp2a",
+                    "generation": generation,
                     "proposal_mode": "pbp2a-pepglad-source-graft-v1",
                     "parent_sequence": sequence,
+                    "parent_sequence_sha256": hashlib.sha256(
+                        sequence.encode("utf-8")
+                    ).hexdigest(),
                     "parent_candidate_id": parent.get("candidate_id", ""),
                     "parent_archive_candidate_id": parent["archive_candidate_id"],
                     "parent_archive_cell_id": parent["archive_cell_id"],
@@ -236,6 +243,7 @@ def main() -> None:
     parser.add_argument("--pepglad-fragments", type=Path, required=True)
     parser.add_argument("--history-csv", type=Path, action="append", default=[])
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--generation", type=int, default=1)
     parser.add_argument("--max-total", type=int, default=12)
     args = parser.parse_args()
     parents = select_archive_parents(
@@ -250,6 +258,7 @@ def main() -> None:
         fragments,
         prior_edits=prior_edits,
         history_hashes=history_hashes,
+        generation=args.generation,
         max_total=args.max_total,
     )
     args.output_dir.mkdir(parents=True, exist_ok=True)
