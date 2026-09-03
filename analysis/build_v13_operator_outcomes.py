@@ -20,6 +20,8 @@ def sequence_hash(sequence: str) -> str:
 
 
 outcomes = []
+archive_path = ROOT / "reports/target_agnostic_quality_combined_round10_20260826T2112.csv"
+archive_rows = {row["sequence_sha256"]: row for row in read(archive_path)}
 for label in ROUNDS:
     base = ROOT / f"reports/target_agnostic_source_graft_{label}_20260903"
     proposals = {row["sequence_sha256"]: row for row in read(base / "proposals.csv")}
@@ -31,10 +33,14 @@ for label in ROUNDS:
         parent = proposal.get("parent_sequence_sha256", "")
         parent_sequence = ""
         archive_path = ROOT / "reports/target_agnostic_quality_combined_round10_20260826T2112.csv"
-        for candidate in read(archive_path):
-            if candidate["sequence_sha256"] == parent:
-                parent_sequence = candidate["sequence"]
-                break
+        parent_row = archive_rows.get(parent, {})
+        parent_sequence = parent_row.get("sequence", "")
+        delta_phi = {}
+        for key in ("net_charge_ph7_4", "hydrophobic_ratio_modlamp", "hydrophobic_moment_eisenberg"):
+            if parent_row.get(key) and row.get(key):
+                delta_phi[key] = float(row[key]) - float(parent_row[key])
+        if parent_sequence and row.get("sequence"):
+            delta_phi["length"] = len(row["sequence"]) - len(parent_sequence)
         position = proposal.get("graft_start_zero_based", "")
         position_fraction = ""
         from_residue = ""
@@ -56,7 +62,7 @@ for label in ROUNDS:
                 "position_fraction": position_fraction,
                 "from_residue": from_residue,
                 "to_residue": to_residue,
-                "delta_phi": proposal.get("preflight_descriptor", proposal.get("target_cell", "")),
+                "delta_phi": json.dumps(delta_phi, separators=(",", ":")),
                 "display": row.get("display_eligible", ""),
                 "support": row.get("activity_model_support_count_calibrated", ""),
                 "qd_contribution": contribution.get(row["sequence_sha256"], "not_in_qd"),
