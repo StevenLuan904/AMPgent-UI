@@ -1,0 +1,55 @@
+{
+  "schema_version": "ampgent.pool-a-md-throughput-verified-wait.1",
+  "observed_at_utc": "2026-09-04T03:27:45+00:00",
+  "baseline_commit": "7e9462665547d7fb271fa5ea8ee5d8a5dc85b550",
+  "identity_union": 486,
+  "state_partition": {
+    "launched_unique": 45,
+    "md_complete_unique": 29,
+    "full_evidence_unique": 29,
+    "analysis_pending_unique": 0,
+    "running_unique": 16,
+    "not_started_unique": 441,
+    "failed_unique": 0,
+    "partition_total_unique": 486,
+    "launched_equals_complete_plus_running": true,
+    "disjoint_union_equals_486": true
+  },
+  "main_475": {
+    "host": "TargetServerDirect:32222",
+    "md_supervisor_pid": 3986807,
+    "analysis_supervisor_pid": 3977733,
+    "supervisors_alive": true,
+    "gpu_compute_pids": [1795945, 1576186, 1719939, 1798793, 1790025, 549598, 1853418, 1723994],
+    "candidate_level_process_count": 0,
+    "latest_observed_candidate_compact_evidence": "pbp2a/a5e4de18-697e-40c3-aac5-1f672d726b99",
+    "new_compact_files_since_prior_sync": 0
+  },
+  "successor_11": {
+    "live_control_observation": "unobservable_timeout",
+    "probe": "ssh -p 32224 TargetServerDirect",
+    "probe_timeout_seconds": 60,
+    "last_authoritative_handoff": {
+      "supervisor_pid": 1280301,
+      "interface_supervisor_pid": 3311802,
+      "mmgbsa_supervisor_pid": 3360111,
+      "runners": [58820, 1280316, 1280381],
+      "pending": 6,
+      "failed": 0
+    },
+    "successor_12_decision": "remain_prepared_not_dispatched",
+    "reason": "Successor-11 pending/runner termination could not be freshly proven; no second supervisor or task was started."
+  },
+  "sync_safety": {
+    "remote_structure_or_trajectory_copied": false,
+    "remote_checkpoint_or_log_copied": false,
+    "remote_files_deleted": false,
+    "new_md_or_analysis_task_started": false,
+    "postgresql_relay": "not_needed; no new compact evidence"
+  },
+  "provenance": {
+    "compact_sync_receipt": "reports/pool_a_md_50ns_expansion_20260903/compact_sync_live.json",
+    "summary": "reports/pool_a_md_50ns_expansion_20260903/live-summary-all-486/summary.json",
+    "gap_manifest": "reports/pool_a_md_50ns_expansion_20260903/live-summary-all-486/completion_gap_manifest.json"
+  }
+}
