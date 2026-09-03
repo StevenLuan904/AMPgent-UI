@@ -1,12 +1,12 @@
 {
   "schema_version": "ampgent.pool-a-md-gap-manifest.1",
-  "observed_at_utc": "2026-09-03T05:10:35.009326+00:00",
+  "observed_at_utc": "2026-09-03T05:30:40.739693+00:00",
   "candidate_count": 486,
   "stage_counts": {
     "complete": 12,
     "md_running_or_checkpoint_pending": 14,
-    "not_launched": 458,
-    "post_md_analysis_pending": 2
+    "not_launched": 457,
+    "post_md_analysis_pending": 3
   },
   "issue_counts": {},
   "targets": {
@@ -21,8 +21,8 @@
     "angpt1": {
       "candidate_count": 102,
       "stage_counts": {
-        "md_running_or_checkpoint_pending": 2,
-        "not_launched": 100
+        "md_running_or_checkpoint_pending": 3,
+        "not_launched": 99
       }
     },
     "fgf2": {
@@ -53,8 +53,9 @@
       "candidate_count": 71,
       "stage_counts": {
         "complete": 1,
-        "md_running_or_checkpoint_pending": 2,
-        "not_launched": 68
+        "md_running_or_checkpoint_pending": 1,
+        "not_launched": 68,
+        "post_md_analysis_pending": 1
       }
     }
   },
@@ -1364,8 +1365,8 @@
       "sequence": "KKRKSRHETTQRADWGTRII",
       "sequence_sha256": "09ca83319dc140f0ff4f2ec17459a6caee964b00fd06cce84663ea4d3341238a",
       "pool_a_rank": 3,
-      "stage": "not_launched",
-      "md_launched": false,
+      "stage": "md_running_or_checkpoint_pending",
+      "md_launched": true,
       "md_complete": false,
       "interface_complete": false,
       "mmgbsa_complete": false,
@@ -5848,9 +5849,9 @@
       "md_launched": true,
       "md_complete": true,
       "interface_complete": false,
-      "mmgbsa_complete": false,
+      "mmgbsa_complete": true,
       "interface_postgresql_ingested": false,
-      "mmgbsa_postgresql_ingested": false,
+      "mmgbsa_postgresql_ingested": true,
       "issues": []
     },
     {
@@ -6715,22 +6716,6 @@
       "mmgbsa_complete": true,
       "interface_postgresql_ingested": true,
       "mmgbsa_postgresql_ingested": true,
-      "issues": []
-    },
-    {
-      "target_key": "vegfa",
-      "run_id": "d3ab0200-5818-517e-aa17-2b7036200c7e",
-      "candidate_id": "e2121432-d8bd-4323-90e2-78626721e216",
-      "sequence": "AWGKKLKKFKSKSSDWFEKHSFR",
-      "sequence_sha256": "7b17223f1b14deaf9b1dde76ff61256f4d4df1f7dfee2f72cdaaa3ace8e0fbae",
-      "pool_a_rank": 2,
-      "stage": "md_running_or_checkpoint_pending",
-      "md_launched": true,
-      "md_complete": false,
-      "interface_complete": false,
-      "mmgbsa_complete": false,
-      "interface_postgresql_ingested": false,
-      "mmgbsa_postgresql_ingested": false,
       "issues": []
     },
     {
@@ -7831,6 +7816,22 @@
       "stage": "not_launched",
       "md_launched": false,
       "md_complete": false,
+      "interface_complete": false,
+      "mmgbsa_complete": false,
+      "interface_postgresql_ingested": false,
+      "mmgbsa_postgresql_ingested": false,
+      "issues": []
+    },
+    {
+      "target_key": "vegfa",
+      "run_id": "d3ab0200-5818-517e-aa17-2b7036200c7e",
+      "candidate_id": "e2121432-d8bd-4323-90e2-78626721e216",
+      "sequence": "AWGKKLKKFKSKSSDWFEKHSFR",
+      "sequence_sha256": "7b17223f1b14deaf9b1dde76ff61256f4d4df1f7dfee2f72cdaaa3ace8e0fbae",
+      "pool_a_rank": 2,
+      "stage": "post_md_analysis_pending",
+      "md_launched": true,
+      "md_complete": true,
       "interface_complete": false,
       "mmgbsa_complete": false,
       "interface_postgresql_ingested": false,
