@@ -1,0 +1,30 @@
+{
+  "schema_version": "ampgent.targeted-structure-prepared-not-dispatched.1",
+  "target_key": "acea",
+  "run_id": "711cbfde-1897-5077-91bd-da7054293a4a",
+  "candidate_id": "da4630e8-b171-40ba-b685-240060f9d91b",
+  "sequence": "AADPSVAGLSVLKICR",
+  "sequence_sha256": "a5254d2487910ea2e0b86245cfa83f4b24ad79b6ae313bd9936d6a808bd062c9",
+  "task_key": "rosetta-coarse5:acea:da4630e8-b171-40ba-b685-240060f9d91b",
+  "protocol": "exact candidate complex plus five InterfaceAnalyzer decoys",
+  "nstruct": 5,
+  "status": "prepared_not_dispatched",
+  "dispatch_allowed": false,
+  "claim_created": false,
+  "workflow_submitted": false,
+  "boltz_started": false,
+  "rosetta_started": false,
+  "pool_a_admitted": false,
+  "identity_binding": "run_id+candidate_id+target_key+sequence_sha256",
+  "qd": {
+    "actual_cell_id": "q3-h3-m2-l1",
+    "contribution": "empty_cell",
+    "new_cell": true,
+    "replacement": false,
+    "quality_eligible": true,
+    "archive_sha256": "b0ccd8f6183020ae36132c01570b7320acc5335dbd145d1ecbe84e9b18a64384"
+  },
+  "reason": "targeted AceA requires five decoys; .19 GPU0-7 are occupied by AMPgent MD and synth GPUs 1-3 are occupied while GPU0/4 are foreign-or-unknown and GPU5-7 unavailable",
+  "remote_large_artifact_copied": false,
+  "remote_file_deleted": false
+}
