@@ -1,0 +1,92 @@
+{
+  "apex_status": "runtime_unavailable",
+  "arm_receipts": [
+    {
+      "candidate_source_values": [
+        "PepGLAD"
+      ],
+      "evaluation_roles": [
+        {
+          "count": 36,
+          "evidence_family": "hemolysis",
+          "evidence_role": "challenger"
+        },
+        {
+          "count": 144,
+          "evidence_family": "score_all",
+          "evidence_role": "primary"
+        },
+        {
+          "count": 24,
+          "evidence_family": "multiobjective_safety_activity",
+          "evidence_role": "shadow"
+        }
+      ],
+      "materialization_new_or_reused_count": 12,
+      "materialization_replay_count": 0,
+      "pg_candidate_count": 12,
+      "pg_evaluation_count": 204,
+      "pg_tool_call_count": 1,
+      "run_id": "70873f75-af6d-5e6f-bf2d-c6c0a073870f",
+      "source_arm": "PepGLAD",
+      "subject_run_bound_evaluation_count": 204
+    },
+    {
+      "candidate_source_values": [
+        "PepFlow"
+      ],
+      "evaluation_roles": [
+        {
+          "count": 36,
+          "evidence_family": "hemolysis",
+          "evidence_role": "challenger"
+        },
+        {
+          "count": 144,
+          "evidence_family": "score_all",
+          "evidence_role": "primary"
+        },
+        {
+          "count": 24,
+          "evidence_family": "multiobjective_safety_activity",
+          "evidence_role": "shadow"
+        }
+      ],
+      "materialization_new_or_reused_count": 12,
+      "materialization_replay_count": 0,
+      "pg_candidate_count": 12,
+      "pg_evaluation_count": 204,
+      "pg_tool_call_count": 1,
+      "run_id": "b8635566-2bc8-568f-a7f7-31ee342720fb",
+      "source_arm": "PepFlow",
+      "subject_run_bound_evaluation_count": 204
+    }
+  ],
+  "challenger_candidate_count": 24,
+  "child_generation": 133,
+  "formal12_candidate_count": 24,
+  "gpu_rosetta_md_submitted": false,
+  "historical_runs_modified": false,
+  "identity_drift_count": 0,
+  "materialized_candidate_count": 24,
+  "parent_generation": 131,
+  "parent_run_id": "9640722a-0f63-53e4-892d-ae42b0085445",
+  "peptiverse_status": "runtime_unavailable",
+  "pg_new_count": 24,
+  "pg_replay_count": 0,
+  "pool_a_admitted_count": 0,
+  "proposal_count": 24,
+  "qd_eligible_count": 15,
+  "qd_new_cell_count": 0,
+  "qd_replacement_count": 7,
+  "rosetta_required": true,
+  "schema_version": "ampgent.pbp2a-matched-source.final-receipt.1",
+  "shadow_candidate_count": 24,
+  "source_arm_run_ids": {
+    "PepFlow": "b8635566-2bc8-568f-a7f7-31ee342720fb",
+    "PepGLAD": "70873f75-af6d-5e6f-bf2d-c6c0a073870f"
+  },
+  "structure_task_key_count": 7,
+  "structure_tasks_submitted": false,
+  "target_key": "pbp2a"
+}

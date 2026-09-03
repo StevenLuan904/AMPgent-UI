@@ -1,0 +1,107 @@
+{
+  "arms": [
+    {
+      "activity_support_ge_2_count": 12,
+      "apex_status": "runtime_unavailable",
+      "challenger_no_conflict_count": 10,
+      "display_count": 8,
+      "excellent_count": 8,
+      "formal12_count": 12,
+      "peptiverse_status": "runtime_unavailable",
+      "proposal_count": 12,
+      "qd_eligible_count": 7,
+      "qd_new_cell_count": 0,
+      "qd_replacement_count": 3,
+      "source_arm": "PepGLAD",
+      "support_rate": 1.0,
+      "support_wilson95_high": 1.0,
+      "support_wilson95_low": 0.7575059933447592
+    },
+    {
+      "activity_support_ge_2_count": 12,
+      "apex_status": "runtime_unavailable",
+      "challenger_no_conflict_count": 11,
+      "display_count": 9,
+      "excellent_count": 9,
+      "formal12_count": 12,
+      "peptiverse_status": "runtime_unavailable",
+      "proposal_count": 12,
+      "qd_eligible_count": 8,
+      "qd_new_cell_count": 0,
+      "qd_replacement_count": 4,
+      "source_arm": "PepFlow",
+      "support_rate": 1.0,
+      "support_wilson95_high": 1.0,
+      "support_wilson95_low": 0.7575059933447592
+    }
+  ],
+  "comparison": "same parents/generation/seed/positions/length; donor source is the arm variable",
+  "pg_materialization": [
+    {
+      "candidate_source_values": [
+        "PepGLAD"
+      ],
+      "evaluation_roles": [
+        {
+          "count": 36,
+          "evidence_family": "hemolysis",
+          "evidence_role": "challenger"
+        },
+        {
+          "count": 144,
+          "evidence_family": "score_all",
+          "evidence_role": "primary"
+        },
+        {
+          "count": 24,
+          "evidence_family": "multiobjective_safety_activity",
+          "evidence_role": "shadow"
+        }
+      ],
+      "materialization_new_or_reused_count": 12,
+      "materialization_replay_count": 0,
+      "pg_candidate_count": 12,
+      "pg_evaluation_count": 204,
+      "pg_tool_call_count": 1,
+      "run_id": "70873f75-af6d-5e6f-bf2d-c6c0a073870f",
+      "source_arm": "PepGLAD",
+      "subject_run_bound_evaluation_count": 204
+    },
+    {
+      "candidate_source_values": [
+        "PepFlow"
+      ],
+      "evaluation_roles": [
+        {
+          "count": 36,
+          "evidence_family": "hemolysis",
+          "evidence_role": "challenger"
+        },
+        {
+          "count": 144,
+          "evidence_family": "score_all",
+          "evidence_role": "primary"
+        },
+        {
+          "count": 24,
+          "evidence_family": "multiobjective_safety_activity",
+          "evidence_role": "shadow"
+        }
+      ],
+      "materialization_new_or_reused_count": 12,
+      "materialization_replay_count": 0,
+      "pg_candidate_count": 12,
+      "pg_evaluation_count": 204,
+      "pg_tool_call_count": 1,
+      "run_id": "b8635566-2bc8-568f-a7f7-31ee342720fb",
+      "source_arm": "PepFlow",
+      "subject_run_bound_evaluation_count": 204
+    }
+  ],
+  "pool_a_admitted_count": 0,
+  "schema_version": "ampgent.pbp2a-matched-source.benchmark.1",
+  "shadow_runtime_unavailable_not_pass": true,
+  "target_key": "pbp2a",
+  "weighted_total_used": false,
+  "wilson_interval": "95% binomial for support rate"
+}
