@@ -1,0 +1,69 @@
+{
+  "schema_version": "ampgent.rosetta-coarse5-verified-wait.1",
+  "observed_at_local": "2026-09-04T01:41:58+08:00",
+  "host": "192.168.99.2",
+  "owner": "synth",
+  "root": "/sdd_data/pepagent/ampgent/structure/acea-round102-sequence-best-rosetta-gap12-20260901-v1",
+  "target_key": "acea",
+  "run_id": "7a0f596a-4959-5756-b110-e7c489c5c183",
+  "authoritative_candidate_id": "bc91b75a-0922-48aa-82f5-b7ff4ac3c024",
+  "sequence_sha256": "29344dd74fa4348fd6214dc5783baeb1b0b8d02c5ecb5cd9a8fd9f74e4481153",
+  "continuation": {
+    "legacy_root_nstruct": 200,
+    "legacy_root_preserved": true,
+    "protocol": "coarse5-v1",
+    "nstruct": 5,
+    "parallel_decoys": 1,
+    "seed": 202610812,
+    "score_function": "ref2015",
+    "gpu_used": false,
+    "input_structure_sha256": "65e1bcf3b736b1bd8026bf4de204c02ee4017c376af69ff85d953c3d8e8790b3",
+    "request_sha256": "b2f024bf3a2da0be7be0c3edc7ac22c4d1c4fd705d9221f2ee45403f4fa51de5"
+  },
+  "process_observation": {
+    "parent_pid": 1488139,
+    "parent_status": "running",
+    "parent_owner": "synth",
+    "parent_command_root_verified": true,
+    "child_pid": 1534250,
+    "child_status": "running",
+    "child_owner": "synth",
+    "child_stage": "refine_decoy_0004",
+    "child_decoy_index": 4,
+    "second_instance_detected": false
+  },
+  "remote_outputs": {
+    "completed_decoy_json_count": 3,
+    "completed_decoy_indices": [1, 2, 3],
+    "completed_decoy_dg_separated_reu": [
+      7.836643977244819,
+      13.106031087811033,
+      -45.94627132283132
+    ],
+    "decoy_json_sha256": {
+      "1": "6107266a213a2c40829ac5f731c5c6da98e3feef9b9699a3b008602e1be7eec4",
+      "2": "fd5871ed867de7fb6cbd0cbdcb00e93b7c6e2794c5a092b8f96e6b71d4fbef9c",
+      "3": "9b4df4ecd64246e426af5e0c0e337ffefedf799827973c26fe07c15be2a32758"
+    },
+    "scorefile_count": 0,
+    "missing_decoy_indices": [4, 5],
+    "result_json_present": false,
+    "completion_receipt_present": false,
+    "failure_receipt_present": false,
+    "median_dg_separated_reu": null
+  },
+  "decision": {
+    "status": "verified_wait",
+    "pool_a_admitted": false,
+    "md_started": false,
+    "reason": "The exact single continuation is still running; do not interpret the observation timeout as failure and do not start another instance.",
+    "next_boundary": "Wait for this parent to terminate, then verify decoys 1-5, identity, completion/failure receipt, and median before any Pool A decision."
+  },
+  "safety": {
+    "old_200_decoy_task_resumed": false,
+    "external_processes_touched": false,
+    "prohibited_host32_gpu2_gpu3_touched": false,
+    "remote_structure_downloaded": false,
+    "remote_structure_deleted": false
+  }
+}
