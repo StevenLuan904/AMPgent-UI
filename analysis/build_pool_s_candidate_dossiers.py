@@ -58,22 +58,30 @@ def build(
             "conservative_mmgbsa_frontier", target["provisional_frontier"]
         )
     }
+    rows_by_id = exact_index(rows, "candidate")
+    cohort_ids = set(rows_by_id)
     complete_ids = {key(row) for row in complete}
-    if set(contacts) != complete_ids:
+    if not complete_ids <= set(contacts):
         raise ValueError("contact dossier coverage does not match completed candidates")
-    if set(decomposition) != complete_ids:
+    if not complete_ids <= set(decomposition):
         raise ValueError("decomposition dossier coverage does not match completed candidates")
+    if not set(contacts) <= cohort_ids:
+        raise ValueError("contact dossier contains a candidate outside the Pool-A cohort")
+    if not set(decomposition) <= cohort_ids:
+        raise ValueError("decomposition dossier contains a candidate outside the Pool-A cohort")
     if not frontier_ids <= complete_ids:
         raise ValueError("provisional frontier contains an incomplete candidate")
     if not conservative_frontier_ids <= complete_ids:
         raise ValueError("conservative frontier contains an incomplete candidate")
+    for identity, contact in contacts.items():
+        verify_identity(rows_by_id[identity], contact, "contact")
+    for identity, residue in decomposition.items():
+        verify_identity(rows_by_id[identity], residue, "decomposition")
     dossiers = []
     for row in complete:
         identity = key(row)
         contact = contacts[identity]
         residue = decomposition[identity]
-        verify_identity(row, contact, "contact")
-        verify_identity(row, residue, "decomposition")
         supporting = candidate_payload(row)
         dossiers.append(
             {

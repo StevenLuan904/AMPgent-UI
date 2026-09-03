@@ -91,3 +91,39 @@ def test_requires_full_derived_evidence_coverage():
     decomposition["candidates"] = []
     with pytest.raises(ValueError, match="decomposition dossier coverage"):
         build([row], contacts, decomposition, frontier)
+
+
+def test_accepts_partial_mmgbsa_evidence_for_an_incomplete_candidate():
+    complete = completed_row()
+    partial = completed_row() | {
+        "run_id": "run-2",
+        "candidate_id": "candidate-2",
+        "sequence_sha256": "b" * 64,
+        "pool_s_evidence_complete": False,
+        "postgresql_evidence_complete": False,
+    }
+    contacts, decomposition, frontier = evidence(complete)
+    decomposition["candidates"].append(
+        {
+            **{key: partial[key] for key in (
+                "target_key", "run_id", "candidate_id", "sequence", "sequence_sha256"
+            )},
+            "peptide_total_decomposition_kcal_mol": -2.0,
+            "top_favorable_residues": [],
+            "top_unfavorable_residues": [],
+        }
+    )
+    payload = build([complete, partial], contacts, decomposition, frontier)
+    assert payload["complete_dossier_count"] == 1
+    assert payload["pending_dossier_count"] == 1
+
+
+def test_rejects_partial_evidence_outside_pool_a_cohort():
+    row = completed_row()
+    contacts, decomposition, frontier = evidence(row)
+    decomposition["candidates"].append(
+        decomposition["candidates"][0]
+        | {"run_id": "run-outside", "candidate_id": "candidate-outside"}
+    )
+    with pytest.raises(ValueError, match="outside the Pool-A cohort"):
+        build([row], contacts, decomposition, frontier)

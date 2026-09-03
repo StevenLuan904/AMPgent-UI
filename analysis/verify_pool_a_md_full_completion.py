@@ -76,21 +76,30 @@ def verify(
             f"gap identity count={len(expected_identities)}; expected {expected_count}"
         )
 
-    complete_count_fields = {
+    partial_count_fields = {
         "summary.md_complete_count": overall.get("md_complete_count"),
         "summary.interface_complete_count": overall.get("interface_complete_count"),
         "summary.mmgbsa_complete_count": overall.get("mmgbsa_complete_count"),
-        "summary.pool_s_evidence_complete_count": overall.get(
-            "pool_s_evidence_complete_count"
-        ),
-        "summary.postgresql_evidence_complete_count": overall.get(
-            "postgresql_evidence_complete_count"
-        ),
         "contacts.interface_and_postgresql_complete_count": contacts.get(
             "interface_and_postgresql_complete_count"
         ),
         "residues.decomposition_complete_count": residues.get(
             "decomposition_complete_count"
+        ),
+    }
+    for label, value in partial_count_fields.items():
+        observed = int(value if value is not None else -1)
+        if not complete_count <= observed <= expected_count:
+            errors.append(
+                f"{label}={value!r}; expected between {complete_count} and {expected_count}"
+            )
+
+    complete_count_fields = {
+        "summary.pool_s_evidence_complete_count": overall.get(
+            "pool_s_evidence_complete_count"
+        ),
+        "summary.postgresql_evidence_complete_count": overall.get(
+            "postgresql_evidence_complete_count"
         ),
         "frontier.md_and_postgresql_complete_count": frontier.get(
             "md_and_postgresql_complete_count"
@@ -109,10 +118,12 @@ def verify(
     identity_mismatches: dict[str, dict[str, int]] = {}
     for name, observed in report_sets.items():
         missing = complete_identities - observed
-        unexpected = observed - complete_identities
+        unexpected = observed - expected_identities
+        partial = observed - complete_identities
         identity_mismatches[name] = {
             "missing_complete_identity_count": len(missing),
             "unexpected_identity_count": len(unexpected),
+            "valid_partial_identity_count": len(partial - unexpected),
         }
         if missing or unexpected:
             errors.append(

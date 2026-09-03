@@ -74,4 +74,34 @@ def test_identity_mismatch_prevents_completion():
     assert result["cross_report_identity_mismatches"]["contacts"] == {
         "missing_complete_identity_count": 1,
         "unexpected_identity_count": 1,
+        "valid_partial_identity_count": 0,
+    }
+
+
+def test_in_progress_accepts_valid_partial_mmgbsa_evidence():
+    inputs = payloads()
+    partial = {"run_id": "run-2", "candidate_id": "candidate-2"}
+    inputs["summary"]["overall"] |= {
+        "expected_candidate_count": 2,
+        "md_complete_count": 2,
+        "interface_complete_count": 1,
+        "mmgbsa_complete_count": 2,
+    }
+    inputs["gap"]["candidate_count"] = 2
+    inputs["gap"]["candidates"].append({**partial, "stage": "mmgbsa_complete"})
+    inputs["contacts"]["pool_a_candidate_count"] = 2
+    inputs["residues"]["pool_a_candidate_count"] = 2
+    inputs["residues"]["decomposition_complete_count"] = 2
+    inputs["residues"]["candidates"].append(partial)
+    inputs["frontier"]["pool_a_candidate_count"] = 2
+    inputs["dossiers"]["pool_a_candidate_count"] = 2
+    result = verify(**inputs)
+    assert result["status"] == "in_progress"
+    assert result["complete_candidate_count"] == 1
+    assert result["pending_candidate_count"] == 1
+    assert result["consistency_errors"] == []
+    assert result["cross_report_identity_mismatches"]["residues"] == {
+        "missing_complete_identity_count": 0,
+        "unexpected_identity_count": 0,
+        "valid_partial_identity_count": 1,
     }
