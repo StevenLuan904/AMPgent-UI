@@ -60,7 +60,7 @@ Challenger 证据键为 `run_id + candidate_id + model_release_key`；字段为 
 
 - 冻结交付1900；三分支严格库87,989；历史 challenger 147,161候选/735,805证据，不改写。
 - Pool A archive 486个靶点内80/80家族elite：AceA79、GyrA100、PBP2a53、VEGFA71、FGF2 81、ANGPT1 102；严格过门候选498，同家族非elite不属于archive；全部结构与decoy远端保留。
-- `.19` GPU0–7运行首批475条；synth `.2` GPU1运行新增11条；两队列身份无交集，统一总数486。canonical差距为9条完成并入PostgreSQL、14条运行/checkpoint待续、463条未启动；跨报告验收为9/486且身份错配0。非正式smoke不计数。3条靶点内暂定Pool S前沿在MM/GBSA均值与95%CI上界定义下成员一致。两端均为单best-decoy、1 ns NPT+50 ns NVT、checkpoint续算；`.2` 紧凑证据转交`.19`，PDB/DCD/checkpoint只留远端。
+- `.19` GPU0–7运行首批475条；synth `.2` GPU1运行新增11条；两队列身份无交集，统一总数486。canonical差距为9条完成并入PostgreSQL、14条运行/checkpoint待续、463条未启动；跨报告验收为9/486且身份错配0。AceA现有8条中Rosetta dG与MD RMSD/MMGBSA秩相关仅0.262/0.238，MD保持独立必经门。非正式smoke不计数。3条靶点内暂定Pool S前沿在MM/GBSA均值与95%CI上界定义下成员一致。两端均为单best-decoy、1 ns NPT+50 ns NVT、checkpoint续算；`.2` 紧凑证据转交`.19`，PDB/DCD/checkpoint只留远端。
 - `.32 GPU0/GPU1`有外来Prima3D任务不抢占；GPU2/3禁止。
 - 生成来源：PepGLAD三靶点严格库87,989条/8,657家族；target-conditioned PepMLM六靶点24,576/24,576完成12项、12,151过展示门、890条优选子集完成challenger；PepFlow AceA model2真机8/8完成12项与challenger并落库至run `de80b78e-ae0d-5190-93cc-11ee5dee62a2`，5条过展示门、0条过活动/QD门；首批A池475/475按PostgreSQL精确审计均无唯一显式来源，不按序列归因。
 

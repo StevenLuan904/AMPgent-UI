@@ -1,0 +1,103 @@
+{
+  "schema_version": "ampgent.rosetta-md-concordance.1",
+  "observed_at_utc": "2026-09-03T01:04:51.187441+00:00",
+  "scope": "completed Pool-A candidates with PostgreSQL-closed MD evidence",
+  "overall": {
+    "candidate_count": 9,
+    "peptide_departed_count": 0,
+    "metrics": {
+      "interface_rmsd_mean_nm": {
+        "paired_count": 9,
+        "spearman_rho": 0.0,
+        "expected_rho_sign": 1,
+        "signed_alignment": 0.0,
+        "alignment_class": "weak_or_opposite_direction",
+        "unit": "nm"
+      },
+      "native_contact_fraction_mean": {
+        "paired_count": 9,
+        "spearman_rho": -0.13333333333333333,
+        "expected_rho_sign": -1,
+        "signed_alignment": 0.13333333333333333,
+        "alignment_class": "weak_or_opposite_direction",
+        "unit": "fraction"
+      },
+      "mmgbsa_mean_kcal_mol": {
+        "paired_count": 9,
+        "spearman_rho": 0.0,
+        "expected_rho_sign": 1,
+        "signed_alignment": 0.0,
+        "alignment_class": "weak_or_opposite_direction",
+        "unit": "kcal/mol"
+      }
+    }
+  },
+  "targets": {
+    "acea": {
+      "candidate_count": 8,
+      "peptide_departed_count": 0,
+      "metrics": {
+        "interface_rmsd_mean_nm": {
+          "paired_count": 8,
+          "spearman_rho": 0.2619047619047619,
+          "expected_rho_sign": 1,
+          "signed_alignment": 0.2619047619047619,
+          "alignment_class": "weak_or_opposite_direction",
+          "unit": "nm"
+        },
+        "native_contact_fraction_mean": {
+          "paired_count": 8,
+          "spearman_rho": -0.3333333333333333,
+          "expected_rho_sign": -1,
+          "signed_alignment": 0.3333333333333333,
+          "alignment_class": "moderate_expected_direction",
+          "unit": "fraction"
+        },
+        "mmgbsa_mean_kcal_mol": {
+          "paired_count": 8,
+          "spearman_rho": 0.23809523809523808,
+          "expected_rho_sign": 1,
+          "signed_alignment": 0.23809523809523808,
+          "alignment_class": "weak_or_opposite_direction",
+          "unit": "kcal/mol"
+        }
+      }
+    },
+    "fgf2": {
+      "candidate_count": 1,
+      "peptide_departed_count": 0,
+      "metrics": {
+        "interface_rmsd_mean_nm": {
+          "paired_count": 1,
+          "spearman_rho": null,
+          "expected_rho_sign": 1,
+          "signed_alignment": null,
+          "alignment_class": "not_estimable",
+          "unit": "nm"
+        },
+        "native_contact_fraction_mean": {
+          "paired_count": 1,
+          "spearman_rho": null,
+          "expected_rho_sign": -1,
+          "signed_alignment": null,
+          "alignment_class": "not_estimable",
+          "unit": "fraction"
+        },
+        "mmgbsa_mean_kcal_mol": {
+          "paired_count": 1,
+          "spearman_rho": null,
+          "expected_rho_sign": 1,
+          "signed_alignment": null,
+          "alignment_class": "not_estimable",
+          "unit": "kcal/mol"
+        }
+      }
+    }
+  },
+  "decision": "retain_md_as_nonredundant_gate",
+  "limitations": [
+    "Correlations are descriptive model-to-model concordance, not binding validation.",
+    "Fewer than 30 completed candidates is treated as preliminary evidence.",
+    "Pooled correlations can mix target-specific scales; target cohorts remain separate."
+  ]
+}
