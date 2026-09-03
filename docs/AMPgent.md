@@ -60,7 +60,7 @@ Challenger 证据键为 `run_id + candidate_id + model_release_key`；字段为 
 
 - 冻结交付1,900；PepGLAD严格库87,989/8,657 families，双活动支持61,914；PepMLM六靶点24,576完成12项，12,151过展示门；历史challenger 147,161候选/735,805证据。
 - Pool A：498条严格候选、486个80/80 elite families：AceA79/GyrA100/PBP2a53/VEGFA71/FGF2 81/ANGPT1 102；远端结构/decoy全保留。
-- Pool A MD：合并队列486；`.19` GPU0–7满载，MD supervisor PID `3986807`、分析PID `3977733`存活；synth successor-11 supervisor `1280301`、分析 `3311802`、MM/GBSA `3360111` 与 runners `58820/1280316/1280381` 存活；当前 launched45、MD complete29、完整界面/MMGBSA/PG证据28、analysis pending1、运行16、未启动441、失败0。最新刷新见 `reports/pepflow_acea_qd_elite_structure_preflight_20260904/md_refresh_receipt.json`；不重启、不碰外来资源或`.32 GPU2/GPU3`。
+- Pool A MD：合并队列486；`.19` MD supervisor PID `3986807`、分析PID `3977733` 仍存活，GPU0–7均有 AMPgent compute 进程；当前 launched=45、MD complete=29、完整界面/MMGBSA/PG证据=29、analysis_pending=0、running=16、not_started=441、failed=0，互斥并集=486且 `launched=complete+running`。本轮唯一 pending identity `pbp2a/a5e4de18-697e-40c3-aac5-1f672d726b99` 已由远端完整 receipt 与 PG 精确闭合：interface RMSD mean/max=0.2614/0.3545 nm、key contacts=143、H-bond/salt/water=1/1/1、departure=false、MM/GBSA=-116.1438 kcal/mol（95% CI -130.2274,-102.8495）、residue decomposition=659；未启动恢复任务。紧凑证据与分区见 `reports/pool_a_md_50ns_expansion_20260903/md_analysis_recovery_a5e4de18_20260904.json` 与 `live-summary-all-486/refresh_receipt.json`；不重启、不碰外来资源或`.32 GPU2/GPU3`。
 - PepFlow reciprocal 1–2 aa micrograft六靶点共192条PG新颖/full12/HemoPI2，157条过展示门、128条双活性支持、98条QD合格/待Rosetta，新增22格；均已物化（3,264 Evaluation），未提交结构。APEX/PeptiVerse=`runtime_unavailable`；192个factorized父本无法唯一映射PG Candidate，lineage edge=0，不按序列猜测。
 
 | target | PG run | display | support>=2 | QD/new | queue |

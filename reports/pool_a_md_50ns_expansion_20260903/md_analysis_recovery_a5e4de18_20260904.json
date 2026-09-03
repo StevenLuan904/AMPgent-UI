@@ -1,0 +1,89 @@
+{
+  "schema_version": "ampgent.pool-a-md-analysis-recovery.1",
+  "observed_at_utc": "2026-09-04T03:18:06.318591+00:00",
+  "identity": {
+    "subject_run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
+    "candidate_id": "a5e4de18-697e-40c3-aac5-1f672d726b99",
+    "target_key": "pbp2a",
+    "sequence": "KKGNNERKTGQQKNRTGVKGNKHGKS",
+    "sequence_sha256": "a7b7970e89489132386af3133eeaa128eb6de4c6b10fa33ddde2e74261f12091",
+    "target_accession": "WP_308061015.1"
+  },
+  "decision": {
+    "remote_md_status": "succeeded",
+    "analysis_status": "succeeded",
+    "mmgbsa_status": "succeeded",
+    "analysis_recovery_started": false,
+    "new_task_started": false,
+    "reason": "Remote interface and MM/GBSA artifacts plus PostgreSQL ingest receipts were already terminal and identity-matched."
+  },
+  "remote": {
+    "host": "TargetServerDirect:32222",
+    "result_root": "/data1/huangyueshan/pepagent/md/pool-a-full-md-v1/results/pbp2a/a5e4de18-697e-40c3-aac5-1f672d726b99",
+    "md_supervisor_pid": 3986807,
+    "analysis_supervisor_pid": 3977733,
+    "candidate_process_count": 0,
+    "candidate_claim_or_lock_count": 0,
+    "gpu_compute_pids": [1795945, 1576186, 1719939, 1798793, 1790025, 549598, 1853418, 1723994],
+    "disk": "42T total, 19T used, 21T available, 48%",
+    "large_artifacts_downloaded": false,
+    "remote_files_deleted": false
+  },
+  "artifacts": {
+    "manifest_sha256": "33686d169b701a5efa7da10f39c4ac2e1d2d8e072383b29ebdc575bd81a02293",
+    "interface_analysis_sha256": "d9c5b530d27aac3ef5c74ab1024f88bced5a6f132a21ef1e57a3478a86841e09",
+    "interface_timeseries_sha256": "0d066d6e694b805568a749386b50f02115f6bed9d229007ebbfb31c4af102e6e",
+    "mmgbsa_analysis_sha256": "834f265d5ecff853dccd58104d2724f4a9672b066123b258ccb2f8979396e55e",
+    "residue_decomposition_sha256": "ba60e2e5c4dc3bd325eef34b8aee7ef17f4ffc00b83c67b383fdfb7ca2283ec8"
+  },
+  "metrics": {
+    "frame_count": 5000,
+    "interface_rmsd_mean_nm": 0.26141104102134705,
+    "interface_rmsd_max_nm": 0.3544546663761139,
+    "native_contact_fraction_mean": 0.5697874125874126,
+    "native_contact_fraction_min": 0.4195804195804196,
+    "key_contact_count": 143,
+    "hydrogen_bond_occupancy": 1.0,
+    "salt_bridge_occupancy": 1.0,
+    "water_bridge_occupancy": 1.0,
+    "peptide_departed": false,
+    "maximum_departure_duration_ps": 0.0,
+    "maximum_peptide_com_shift_nm": 0.2963789105415344,
+    "mmgbsa_frame_count": 36,
+    "mmgbsa_mean_kcal_mol": -116.14384495555572,
+    "mmgbsa_ci95_lower_kcal_mol": -130.22735144888813,
+    "mmgbsa_ci95_upper_kcal_mol": -102.84945312444474,
+    "residue_decomposition_count": 659
+  },
+  "postgresql": {
+    "candidate_evaluation_count": 34,
+    "md_evaluation_count": 15,
+    "interface_inserted_evaluation_count": 11,
+    "mmgbsa_inserted_evaluation_count": 4,
+    "tool_call_ids": [
+      "90bee772-7eaf-44e0-8e05-6eb9ce8f5a87",
+      "966e6c02-7e24-49d1-81b9-d3efa95e6437"
+    ],
+    "subject_run_binding_drift_count": 0,
+    "relay_status": "already_succeeded_idempotent_audit"
+  },
+  "md_state_partition": {
+    "launched_unique": 45,
+    "md_complete_unique": 29,
+    "full_evidence_unique": 29,
+    "analysis_pending_unique": 0,
+    "running_unique": 16,
+    "not_started_unique": 441,
+    "partition_total_unique": 486,
+    "invariants": {
+      "launched_equals_complete_plus_running": true,
+      "disjoint_union_equals_486": true
+    }
+  },
+  "provenance": {
+    "local_compact_sync": "reports/pool_a_md_50ns_expansion_20260903/compact-evidence/pbp2a/a5e4de18-697e-40c3-aac5-1f672d726b99",
+    "local_refresh": "reports/pool_a_md_50ns_expansion_20260903/live-summary-all-486/refresh_receipt.json",
+    "remote_interface_receipt": "analysis/interface/postgresql_ingest_receipt.json",
+    "remote_mmgbsa_receipt": "analysis/mmgbsa/postgresql_ingest_receipt.json"
+  }
+}

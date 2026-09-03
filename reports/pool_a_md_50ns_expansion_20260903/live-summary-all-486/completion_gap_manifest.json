@@ -1,11 +1,11 @@
 {
   "schema_version": "ampgent.pool-a-md-gap-manifest.1",
-  "observed_at_utc": "2026-09-03T16:25:30.798006+00:00",
+  "observed_at_utc": "2026-09-03T19:18:06.060760+00:00",
   "candidate_count": 486,
   "stage_counts": {
-    "complete": 28,
-    "md_running_or_checkpoint_pending": 14,
-    "not_launched": 444
+    "complete": 29,
+    "md_running_or_checkpoint_pending": 16,
+    "not_launched": 441
   },
   "issue_counts": {},
   "targets": {
@@ -29,23 +29,24 @@
       "candidate_count": 81,
       "stage_counts": {
         "complete": 6,
-        "not_launched": 75
+        "md_running_or_checkpoint_pending": 1,
+        "not_launched": 74
       }
     },
     "gyra": {
       "candidate_count": 100,
       "stage_counts": {
         "complete": 5,
-        "md_running_or_checkpoint_pending": 2,
-        "not_launched": 93
+        "md_running_or_checkpoint_pending": 3,
+        "not_launched": 92
       }
     },
     "pbp2a": {
       "candidate_count": 53,
       "stage_counts": {
-        "complete": 4,
+        "complete": 5,
         "md_running_or_checkpoint_pending": 1,
-        "not_launched": 48
+        "not_launched": 47
       }
     },
     "vegfa": {
@@ -3055,6 +3056,22 @@
     {
       "target_key": "fgf2",
       "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+      "candidate_id": "bf53367f-8705-4e17-bb01-326b237e80ea",
+      "sequence": "DHNYNSRVGKNHRTRKAGKTRKSEYS",
+      "sequence_sha256": "7f9cf7ae55189903cd6e8999a20c78cc1f8c00068aa1bec352c827c08b8769ed",
+      "pool_a_rank": 66,
+      "stage": "md_running_or_checkpoint_pending",
+      "md_launched": true,
+      "md_complete": false,
+      "interface_complete": false,
+      "mmgbsa_complete": false,
+      "interface_postgresql_ingested": false,
+      "mmgbsa_postgresql_ingested": false,
+      "issues": []
+    },
+    {
+      "target_key": "fgf2",
+      "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
       "candidate_id": "a32aadd5-16d3-473a-ba10-8815515d5a56",
       "sequence": "TSIKTRQYSIKKKNTNHKGKHKNR",
       "sequence_sha256": "408bc1d160354b7f4ff55f7cc1911a03a6d689dd708f7bd7b178b794f46f31af",
@@ -4031,22 +4048,6 @@
     {
       "target_key": "fgf2",
       "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
-      "candidate_id": "bf53367f-8705-4e17-bb01-326b237e80ea",
-      "sequence": "DHNYNSRVGKNHRTRKAGKTRKSEYS",
-      "sequence_sha256": "7f9cf7ae55189903cd6e8999a20c78cc1f8c00068aa1bec352c827c08b8769ed",
-      "pool_a_rank": 66,
-      "stage": "not_launched",
-      "md_launched": false,
-      "md_complete": false,
-      "interface_complete": false,
-      "mmgbsa_complete": false,
-      "interface_postgresql_ingested": false,
-      "mmgbsa_postgresql_ingested": false,
-      "issues": []
-    },
-    {
-      "target_key": "fgf2",
-      "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
       "candidate_id": "c370e49c-ca6f-435f-a60a-5a9ada72815f",
       "sequence": "YEIKTASRHTNEKKGKRKTKN",
       "sequence_sha256": "3230b924ccf6a36d72f250c8d055a35b22bdcc5c4d24b104e504633deba4b2a7",
@@ -4355,6 +4356,22 @@
       "sequence": "KKHAKAKSAAKSKRGKVHKGSK",
       "sequence_sha256": "08ce2a7d48a692767dc758b6fe731f7c28fa3db5f28bbf400d9108afa170d9e3",
       "pool_a_rank": 6,
+      "stage": "md_running_or_checkpoint_pending",
+      "md_launched": true,
+      "md_complete": false,
+      "interface_complete": false,
+      "mmgbsa_complete": false,
+      "interface_postgresql_ingested": false,
+      "mmgbsa_postgresql_ingested": false,
+      "issues": []
+    },
+    {
+      "target_key": "gyra",
+      "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
+      "candidate_id": "428925fe-b10f-435c-914d-a0f7b4a5f147",
+      "sequence": "KKHNNWGKKTKKLSSKKNANWQEKAA",
+      "sequence_sha256": "b9d85fcc7bcf332597746a74d82da3f5bc44e99a8f8b828ecf1972e4413815bb",
+      "pool_a_rank": 60,
       "stage": "md_running_or_checkpoint_pending",
       "md_launched": true,
       "md_complete": false,
@@ -5231,22 +5248,6 @@
     {
       "target_key": "gyra",
       "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
-      "candidate_id": "428925fe-b10f-435c-914d-a0f7b4a5f147",
-      "sequence": "KKHNNWGKKTKKLSSKKNANWQEKAA",
-      "sequence_sha256": "b9d85fcc7bcf332597746a74d82da3f5bc44e99a8f8b828ecf1972e4413815bb",
-      "pool_a_rank": 60,
-      "stage": "not_launched",
-      "md_launched": false,
-      "md_complete": false,
-      "interface_complete": false,
-      "mmgbsa_complete": false,
-      "interface_postgresql_ingested": false,
-      "mmgbsa_postgresql_ingested": false,
-      "issues": []
-    },
-    {
-      "target_key": "gyra",
-      "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
       "candidate_id": "da9b7ce5-aafe-4f8d-8407-3593049b5aa5",
       "sequence": "RGTKKRVHRKKAKTHGKAGTK",
       "sequence_sha256": "9b76c7e786114cea55f4bc95ffb588b5de837d8da14dd624226dceedbdb040cc",
@@ -5923,13 +5924,13 @@
       "sequence": "KKGNNERKTGQQKNRTGVKGNKHGKS",
       "sequence_sha256": "a7b7970e89489132386af3133eeaa128eb6de4c6b10fa33ddde2e74261f12091",
       "pool_a_rank": 5,
-      "stage": "md_running_or_checkpoint_pending",
+      "stage": "complete",
       "md_launched": true,
-      "md_complete": false,
-      "interface_complete": false,
-      "mmgbsa_complete": false,
-      "interface_postgresql_ingested": false,
-      "mmgbsa_postgresql_ingested": false,
+      "md_complete": true,
+      "interface_complete": true,
+      "mmgbsa_complete": true,
+      "interface_postgresql_ingested": true,
+      "mmgbsa_postgresql_ingested": true,
       "issues": []
     },
     {
@@ -5939,8 +5940,8 @@
       "sequence": "VKQQRGNTTKSNWKQDKKIYK",
       "sequence_sha256": "8871884da08a368aaddeb5e132749c7fc3dc7b74e0385b761bcad2f7748c705c",
       "pool_a_rank": 6,
-      "stage": "not_launched",
-      "md_launched": false,
+      "stage": "md_running_or_checkpoint_pending",
+      "md_launched": true,
       "md_complete": false,
       "interface_complete": false,
       "mmgbsa_complete": false,
