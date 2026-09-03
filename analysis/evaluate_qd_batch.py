@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import bisect
 import csv
 import json
 from pathlib import Path
@@ -17,6 +18,48 @@ def _rows(path: Path) -> list[dict[str, str]]:
         return list(csv.DictReader(stream))
 
 
+def _qd_rows(path: Path) -> list[dict[str, str]]:
+    rows = _rows(path)
+    if not rows or "amp_read_log10_mic_um__parent_benefit_percentile" in rows[0]:
+        return rows
+    required = (
+        "amp_read_log10_mic_um",
+        "llamp_log10_mic_um",
+        "macrel_amp_probability",
+    )
+    if any(column not in rows[0] for column in required):
+        raise ValueError(f"QD input lacks legacy activity columns: {path}")
+    values = {
+        column: sorted(float(row[column]) for row in rows)
+        for column in required
+    }
+    for row in rows:
+        for column in required:
+            series = values[column]
+            value = float(row[column])
+            rank = bisect.bisect_right(series, value)
+            row[f"{column}__parent_benefit_percentile"] = str(rank / len(series))
+        toxin = row.get("toxinpred3_label", "").lower() == "non-toxin"
+        hemolysis = row.get("macrel_hemolysis_label", "").lower() == "low"
+        stable = float(row.get("guruprasad_instability_index", "999")) <= 50
+        row["display_eligible"] = str(toxin and hemolysis and stable).lower()
+        support = sum(
+            float(row[column]) >= 0.5
+            for column in (
+                "amp_read_log10_mic_um",
+                "llamp_log10_mic_um",
+                "macrel_amp_probability",
+            )
+        )
+        row["activity_model_support_count_calibrated"] = str(int(support))
+    return [
+        row
+        for row in rows
+        if row["display_eligible"] == "true"
+        and int(row["activity_model_support_count_calibrated"]) >= 2
+    ]
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--batch-csv", type=Path, required=True)
@@ -27,7 +70,7 @@ def main() -> None:
     prior = [
         candidate_from_score_row(row)
         for path in args.prior_csv
-        for row in _rows(path)
+        for row in _qd_rows(path)
     ]
     state = build_quality_diversity_archive(prior, batch)
     payload = state.model_dump(mode="json")

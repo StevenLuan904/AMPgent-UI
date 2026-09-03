@@ -75,9 +75,12 @@ def _validate_rows(rows: Sequence[Mapping[str, str]]) -> tuple[str, int]:
     if not rows:
         raise ValueError("scored lineage materialization requires candidate rows")
     branches = {str(row.get("branch_key") or "").strip() for row in rows}
-    generations = {int(str(row.get("generation") or "-1")) for row in rows}
     if len(branches) != 1 or "" in branches:
         raise ValueError("one materialization batch must contain one branch")
+    generation_default = "8" if next(iter(branches)) == "target_agnostic_amp" else "-1"
+    generations = {
+        int(str(row.get("generation") or generation_default)) for row in rows
+    }
     if len(generations) != 1 or min(generations) < 1:
         raise ValueError("one materialization batch must contain one positive generation")
     identities: set[str] = set()
@@ -168,7 +171,7 @@ def _record(
             f"materialize-scored-lineage:{source_commit}:{score_sha256}:{branch}:"
             f"generation-{generation}"
         ),
-        target_key=branch,  # type: ignore[arg-type]
+        target_key=("target_agnostic" if branch == "target_agnostic_amp" else branch),  # type: ignore[arg-type]
         purpose="generation",
         tool_name=TOOL_NAME,
         tool_version=TOOL_VERSION,

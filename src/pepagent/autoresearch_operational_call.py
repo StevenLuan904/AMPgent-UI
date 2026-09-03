@@ -14,6 +14,7 @@ from pepagent.domain.enums import EvaluationStatus, RunStatus
 from pepagent.provenance.hashing import sha256_json
 
 TARGET_ACCESSIONS = {
+    "target_agnostic": "P0A9G6",
     "acea": "P0A9G6",
     "angpt1": "NP_001272991.1",
     "fgf2": "NP_032032.1",
@@ -33,7 +34,9 @@ class OperationalCallRecord(BaseModel):
         "ampgent.autoresearch-operational-call.1"
     )
     operation_key: str = Field(min_length=1, max_length=512)
-    target_key: Literal["acea", "angpt1", "fgf2", "gyra", "pbp2a", "vegfa"]
+    target_key: Literal[
+        "acea", "angpt1", "fgf2", "gyra", "pbp2a", "vegfa", "target_agnostic"
+    ]
     purpose: Literal[
         "generation",
         "score_all",

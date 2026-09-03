@@ -98,6 +98,10 @@ def run(args: argparse.Namespace) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     with args.input_csv.open(encoding="utf-8-sig", newline="") as stream:
         source_rows = list(csv.DictReader(stream))
+    # Target-agnostic proposal inputs intentionally have no target branch.
+    # Keep the frozen scorer contract explicit without changing sequence identity.
+    for row in source_rows:
+        row.setdefault("branch_key", "target_agnostic_amp")
     if args.require_safety_hard_gate_pass:
         source_rows = [
             row

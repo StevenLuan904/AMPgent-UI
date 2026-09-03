@@ -13,6 +13,13 @@ inventory = _MODULE.inventory
 generate_children = _MODULE.generate_children
 
 
+def test_target_agnostic_score_input_uses_explicit_branch_fallback():
+    score_probe = Path(__file__).parents[1] / "analysis" / "autoresearch_proposal_score_probe.py"
+    assert "row.setdefault(\"branch_key\", \"target_agnostic_amp\")" in score_probe.read_text(
+        encoding="utf-8"
+    )
+
+
 def row(**updates):
     result = {
         "sequence_sha256": "a" * 64,
