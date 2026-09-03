@@ -1,11 +1,48 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
 import csv
 import json
 from pathlib import Path
 
+import asyncpg
+
 from pepagent.provenance.hashing import sha256_file, sha256_json
+
+
+async def _authoritative_ids(
+    database_url: str, run_id: str, hashes: list[str]
+) -> dict[str, str]:
+    url = database_url.replace("postgresql+asyncpg://", "postgresql://", 1)
+    conn = await asyncpg.connect(url, timeout=5, command_timeout=10)
+    try:
+        rows = await conn.fetch(
+            """
+            select sequence_sha256, id
+            from candidates
+            where run_id = $1 and sequence_sha256 = any($2::text[])
+            order by sequence_sha256, id
+            """,
+            run_id,
+            hashes,
+        )
+    finally:
+        await conn.close()
+    matches: dict[str, list[str]] = {}
+    for row in rows:
+        matches.setdefault(str(row["sequence_sha256"]), []).append(str(row["id"]))
+    unresolved = sorted(
+        sequence_hash
+        for sequence_hash in hashes
+        if len(matches.get(sequence_hash, [])) != 1
+    )
+    if unresolved:
+        raise ValueError(
+            "authoritative candidate identity unresolved for run "
+            f"{run_id}: {','.join(unresolved)}"
+        )
+    return {sequence_hash: values[0] for sequence_hash, values in matches.items()}
 
 
 def export(args: argparse.Namespace) -> None:
@@ -51,6 +88,17 @@ def export(args: argparse.Namespace) -> None:
             "peptiverse_status": "runtime_unavailable",
             "structure_status": "not_started",
         })
+    if args.database_url:
+        ids = asyncio.run(
+            _authoritative_ids(
+                args.database_url,
+                args.run_id,
+                sorted({row["sequence_sha256"] for row in selected}),
+            )
+        )
+        for row in selected:
+            row["source_proposal_id"] = row["candidate_id"]
+            row["candidate_id"] = ids[row["sequence_sha256"]]
     selected.sort(key=lambda row: (row["target_key"], row["sequence_sha256"]))
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open("w", encoding="utf-8", newline="") as stream:
@@ -83,6 +131,7 @@ def main() -> None:
     parser.add_argument("--qd", type=Path, required=True)
     parser.add_argument("--challenger", type=Path, required=True)
     parser.add_argument("--run-id", required=True)
+    parser.add_argument("--database-url")
     parser.add_argument("--output", type=Path, required=True)
     export(parser.parse_args())
 
