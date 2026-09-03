@@ -35,6 +35,28 @@
       "PostgreSQL evaluation receipts"
     ]
   },
+  "latest_incremental_refresh": {
+    "summary_sha256": "34b4ca0fe64e478057e75c40c99aae1ca22862b1c56318a6c92e338afd05b20",
+    "expected": 486,
+    "launched": 42,
+    "md_complete": 28,
+    "interface_complete": 28,
+    "mmgbsa_complete": 28,
+    "compact_full_evidence": 28,
+    "pg_receipt_confirmed_full_evidence": 26,
+    "pending_full_evidence_by_verifier": 460,
+    "verifier_status": "in_progress",
+    "verifier_consistency_error": "summary.pool_s_evidence_complete_count=28; expected 26",
+    "interpretation": "two successor candidates have complete compact analysis and successful PG relay bundles, but their local PG receipt markers were not part of the compact sync; they are not counted as PG-closed"
+  },
+  "incremental_sync": {
+    "main_copied_file_count": 63,
+    "successor_copied_file_count": 10,
+    "structure_or_trajectory_copied": false,
+    "remote_files_deleted": false,
+    "allowed_content": ["JSON", "CSV", "receipt"],
+    "excluded_content": ["PDB", "DCD", "CHK", "log"]
+  },
   "target_counts": {
     "acea": {"expected": 79, "launched": 13, "md_complete": 8, "full_evidence": 8},
     "angpt1": {"expected": 102, "launched": 3, "md_complete": 0, "full_evidence": 0},
