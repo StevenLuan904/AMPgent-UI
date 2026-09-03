@@ -1,0 +1,27 @@
+{
+  "schema_version": "ampgent.v8.pg-exact.1",
+  "input_sha256": "206f10a516549ccba5dc863b60cee4f985e2f77b6230a954c605de67352f2bb7",
+  "input_count": 1,
+  "batch_size": 4,
+  "timeout_seconds": 30,
+  "max_retries": 3,
+  "matches": [
+    {
+      "candidate_id": "3180e69f-701d-429d-94d6-1067f62e670f",
+      "run_id": "a47b2adf-a2b0-5208-b708-aa9c695fb4c7",
+      "sequence_sha256": "19c23d8a9ba39da6cb4f5d5f563cebffd81e0be5ec804df101ea52b5e90e941a"
+    }
+  ],
+  "historical_exact_match_count": 1,
+  "pg_new_count": 0,
+  "pending_batch_count": 0,
+  "attempts": [
+    {
+      "batch": 0,
+      "retry": 1,
+      "status": "succeeded",
+      "count": 1
+    }
+  ],
+  "materialization_allowed": false
+}

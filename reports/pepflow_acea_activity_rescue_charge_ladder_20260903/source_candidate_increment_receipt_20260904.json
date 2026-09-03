@@ -1,0 +1,64 @@
+{
+  "schema_version": "ampgent.source-candidate-increment.1",
+  "observed_at_local": "2026-09-04T01:05:00+08:00",
+  "source": "PepFlow",
+  "target_key": "acea",
+  "source_proposal_id": "proposal-19c23d8a9ba39da6cb4f",
+  "sequence": "RARGPRSGR",
+  "sequence_sha256": "19c23d8a9ba39da6cb4f5d5f563cebffd81e0be5ec804df101ea52b5e90e941a",
+  "postgresql_identity": {
+    "run_id": "a47b2adf-a2b0-5208-b708-aa9c695fb4c7",
+    "authoritative_candidate_id": "3180e69f-701d-429d-94d6-1067f62e670f",
+    "tool_call_id": "f998464e-bfee-4bc8-8a9a-58b57e250d9b",
+    "candidate_count": 1,
+    "evaluation_count": 17,
+    "historical_exact_replay": false
+  },
+  "quality_evidence": {
+    "formal12_complete": true,
+    "display_eligible": true,
+    "toxinpred3": "Non-Toxin",
+    "macrel": "low",
+    "guruprasad_instability": 39.9,
+    "hemopi2": "no_conflict",
+    "apex_shadow": "runtime_unavailable",
+    "peptiverse_shadow": "runtime_unavailable",
+    "activity_support_calibrated": 0
+  },
+  "qd_2160": {
+    "policy_id": "ampgent-peptide-behavior-space-v1",
+    "quality_eligible": false,
+    "contribution": "quality_gate_failed",
+    "new_cell": false,
+    "replacement": false,
+    "reason": "activity_support_below_2"
+  },
+  "admission": {
+    "pool_a_added": false,
+    "rosetta_submitted": false,
+    "structure_queue_added": false,
+    "historical_runs_modified": false
+  },
+  "artifacts": {
+    "calibrated_scores": {
+      "path": "fullscore/candidate_scores_calibrated.csv",
+      "sha256": "206f10a516549ccba5dc863b60cee4f985e2f77b6230a954c605de67352f2bb7"
+    },
+    "challenger_review": {
+      "path": "challenger_v3/challenger_review.csv",
+      "sha256": "4ddb76abda97d59fd62399ff03ee72dfef9b497426156a97d48394e3e0533850"
+    },
+    "pg_exact": {
+      "path": "pg_exact_materialized_20260904.json",
+      "sha256": "2b2e51754cb046bebf24e9825e50f8730a98ad718753f2b42b91ff8ac850cd4e"
+    },
+    "qd": {
+      "path": "qd_candidate_20260904.json",
+      "sha256": "ea4c4704472ddabe49bbf2c141947e05ebff04fe311af3208ffc6b35cc5aad2a"
+    },
+    "materialization": {
+      "path": "materialization_receipt_20260904.json",
+      "sha256": "7300e8c31d3de9efb1584cbe15a3a3d03eb212e95e45b33b2865b99beca7a928"
+    }
+  }
+}
