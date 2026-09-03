@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import sys
 from pathlib import Path
@@ -29,6 +30,12 @@ def test_micrograft_preserves_length_and_uses_one_or_two_residues():
     assert result
     assert all(len(row["sequence"]) == len(acceptor["sequence"]) for row in result)
     assert all(row["micrograft_length"] in (1, 2) for row in result)
+    assert all(row["generation"] == 1 for row in result)
+    assert all(
+        row["parent_sequence_sha256"]
+        == hashlib.sha256(acceptor["sequence"].encode()).hexdigest()
+        for row in result
+    )
 
 
 def test_target_key_is_explicit_and_acea_regression_remains():
