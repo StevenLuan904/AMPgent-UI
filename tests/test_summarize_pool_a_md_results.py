@@ -1,10 +1,15 @@
 import json
+import sys
+from pathlib import Path
 
 import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from analysis.summarize_pool_a_md_results import (
     MD_RELEASE,
     MMGBSA_RELEASE,
+    partition_md_states,
     summarize,
     validated_ingest_receipt,
 )
@@ -185,3 +190,33 @@ def test_summary_rejects_decomposition_row_count_drift(tmp_path):
             },
             decomposition,
         )
+
+
+def test_md_state_partition_is_exact_and_mutually_exclusive():
+    rows = [
+        {"run_id": "r1", "candidate_id": "c1", "md_launched": True,
+         "md_complete": True, "pool_s_evidence_complete": True},
+        {"run_id": "r2", "candidate_id": "c2", "md_launched": True,
+         "md_complete": True, "pool_s_evidence_complete": False},
+        {"run_id": "r3", "candidate_id": "c3", "md_launched": True,
+         "md_complete": False, "pool_s_evidence_complete": False},
+        {"run_id": "r4", "candidate_id": "c4", "md_launched": False,
+         "md_complete": False, "pool_s_evidence_complete": False},
+    ]
+    assert partition_md_states(rows) == {
+        "launched_unique": 3,
+        "md_complete_unique": 2,
+        "full_evidence_unique": 1,
+        "analysis_pending_unique": 1,
+        "running_unique": 1,
+        "not_started_unique": 1,
+        "partition_total_unique": 4,
+    }
+
+
+def test_md_state_partition_rejects_complete_without_launch():
+    with pytest.raises(ValueError, match="md_complete_without_launch"):
+        partition_md_states([{
+            "run_id": "r1", "candidate_id": "c1", "md_launched": False,
+            "md_complete": True, "pool_s_evidence_complete": False,
+        }])

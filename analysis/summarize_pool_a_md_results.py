@@ -220,6 +220,54 @@ def mean(rows, key):
     return fmean(values) if values else None
 
 
+def partition_md_states(rows: list[dict]) -> dict[str, int]:
+    """Partition the exact run/candidate cohort into mutually exclusive MD states."""
+    identities = [(str(row["run_id"]), str(row["candidate_id"])) for row in rows]
+    if len(set(identities)) != len(identities):
+        raise ValueError("duplicate run/candidate identity in MD cohort")
+    state_counts = {
+        "full_evidence_unique": 0,
+        "analysis_pending_unique": 0,
+        "running_unique": 0,
+        "not_started_unique": 0,
+    }
+    for row in rows:
+        launched = bool(row["md_launched"])
+        complete = bool(row["md_complete"])
+        full = bool(row["pool_s_evidence_complete"])
+        if complete and not launched:
+            raise ValueError("md_complete_without_launch")
+        if full and not complete:
+            raise ValueError("full_evidence_without_md_complete")
+        if full:
+            state_counts["full_evidence_unique"] += 1
+        elif complete:
+            state_counts["analysis_pending_unique"] += 1
+        elif launched:
+            state_counts["running_unique"] += 1
+        else:
+            state_counts["not_started_unique"] += 1
+    launched_unique = sum(
+        state_counts[key]
+        for key in ("full_evidence_unique", "analysis_pending_unique", "running_unique")
+    )
+    md_complete_unique = (
+        state_counts["full_evidence_unique"] + state_counts["analysis_pending_unique"]
+    )
+    if launched_unique != sum(bool(row["md_launched"]) for row in rows):
+        raise ValueError("launched_unique invariant failed")
+    if launched_unique != md_complete_unique + state_counts["running_unique"]:
+        raise ValueError("launched=complete+running invariant failed")
+    if sum(state_counts.values()) != len(rows):
+        raise ValueError("MD state partition does not cover cohort")
+    return {
+        "launched_unique": launched_unique,
+        "md_complete_unique": md_complete_unique,
+        **state_counts,
+        "partition_total_unique": len(rows),
+    }
+
+
 def quantile(sorted_values: list[float], probability: float) -> float:
     if len(sorted_values) == 1:
         return sorted_values[0]
@@ -295,6 +343,7 @@ def aggregate(rows):
         if row["peptide_departed"] is not None
     ]
     return {
+        "md_state_partition": partition_md_states(rows),
         "expected_candidate_count": len(rows),
         "md_launched_count": sum(row["md_launched"] for row in rows),
         "md_complete_count": sum(row["md_complete"] for row in rows),

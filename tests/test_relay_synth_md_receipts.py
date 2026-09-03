@@ -60,6 +60,11 @@ def test_writes_interface_and_mmgbsa_and_is_idempotent(tmp_path):
     }
     assert materialize(state, tmp_path, "fixture") ["written_receipt_count"] == 2
     result = materialize(state, tmp_path, "fixture")
+    assert result["candidate_entry_count"] == 2
+    assert (
+        result["written_receipt_count"] + result["existing_idempotent_receipt_count"]
+        == result["candidate_entry_count"]
+    )
     assert result["existing_idempotent_receipt_count"] == 2
 
 

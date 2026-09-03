@@ -31,7 +31,7 @@
     "mmgbsa_complete": 28,
     "full_evidence": 28,
     "running": 16,
-    "not_yet_launched": 457,
+    "not_started_unique": 441,
     "failed": 0,
     "new_md_complete_since_prior_compact_summary": 1,
     "new_full_evidence_since_prior_compact_summary": 0,
@@ -45,6 +45,33 @@
     "identity_key": "subject_run_id+candidate_id+model_release_key+tool_call_id",
     "large_structure_trajectory_checkpoint_downloaded": false,
     "remote_files_deleted": false
+  },
+  "exact_identity_partition": {
+    "source": "main-475 + successor-11 exact run_id+candidate_id compact union",
+    "main_expected_count": 475,
+    "successor_11_expected_count": 11,
+    "successor_12_included": false,
+    "structure_prepared_included": false,
+    "launched_unique": 45,
+    "md_complete_unique": 29,
+    "analysis_pending_unique": 1,
+    "running_unique": 16,
+    "not_started_unique": 441,
+    "full_evidence_unique": 28,
+    "partition_total_unique": 486,
+    "analysis_pending_identity": "26cb1ff7-144e-5e33-892d-0ac012954716+a5e4de18-697e-40c3-aac5-1f672d726b99",
+    "state_identity_sha256": {
+      "full_evidence": "097d893c63b886f6cca1938b0eb6fd0404e465dd060916e834e374167b33223d",
+      "analysis_pending": "c65c90d21704b841b8e859547db7bb0ef65130101c141177bf39917ac3bb8e98",
+      "running": "ede46cec784c567efff95480fae57f2b6af9c8e22f0e7aa5204f9630a0cffdd5",
+      "not_started": "310dbe6aaf1d0d540eda5f6e59aff96171c2375943bc32ea25a08ffde055b115"
+    },
+    "invariants": {
+      "mutually_exclusive": true,
+      "launched_equals_complete_plus_running": true,
+      "partition_union_equals_486": true,
+      "launched_equals_full_plus_analysis_pending_plus_running": true
+    }
   },
   "decision": "keep_existing_md_supervisors_running; no_structure_dispatch_for_four_elites"
 }
