@@ -1,0 +1,25 @@
+{
+  "schema_version": "ampgent.target-agnostic-source-graft-v12.1",
+  "branch_key": "target_agnostic_amp",
+  "generation": 12,
+  "input_high_activity_display_false": 27,
+  "proposal_count": 26,
+  "formal12": 26,
+  "display": 5,
+  "support_ge_2": 15,
+  "qd_quality_eligible": 1,
+  "qd_new_cell": 0,
+  "qd_replacement": 0,
+  "pool_a_new_archive_contribution": 0,
+  "rescue_conversion": {
+    "macrel_hemolysis": {"input": 22, "display_after": 4, "support_ge_2_after": 13, "qd_eligible": 1},
+    "macrel_hemolysis+guruprasad_gt50": {"input": 3, "display_after": 0, "support_ge_2_after": 1, "qd_eligible": 0},
+    "toxinpred3": {"input": 1, "display_after": 1, "support_ge_2_after": 1, "qd_eligible": 0}
+  },
+  "support_retention": "15/26 children retained support>=2; parent labels were high-activity display-false inputs",
+  "materialization_run_id": "70fe41b6-015b-5cc4-b38a-b63947bba655",
+  "materialized_candidate_count": 26,
+  "materialized_evaluation_count": 442,
+  "materialization_retry_boundary": "initial write succeeded; later retry rejected append-only receipt; no second run",
+  "gpu_rosetta_md_submitted": false
+}
