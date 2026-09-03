@@ -7,7 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "reports/target_agnostic_v13_20260903"
-ROUNDS = ["v10", "v11", "v12"]
+ROUNDS = ["v10", "v11", "v12", "v13"]
 
 
 def read(path: Path):
@@ -24,6 +24,8 @@ archive_path = ROOT / "reports/target_agnostic_quality_combined_round10_20260826
 archive_rows = {row["sequence_sha256"]: row for row in read(archive_path)}
 for label in ROUNDS:
     base = ROOT / f"reports/target_agnostic_source_graft_{label}_20260903"
+    if label == "v13":
+        base = ROOT / "reports/target_agnostic_source_graft_v13_20260903"
     proposals = {row["sequence_sha256"]: row for row in read(base / "proposals.csv")}
     scores = read(base / "candidate_scores_calibrated.csv")
     qd = json.loads((base / "quality_diversity.json").read_text())

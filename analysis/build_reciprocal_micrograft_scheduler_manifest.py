@@ -23,7 +23,8 @@ FIELDS = (
     "challenger_shadow_coverage_verified", "identity_resolution_status",
     "identity_match_count", "pg_structure_evidence_count",
     "pool_a_exact_sequence_match", "remote_structure_completed",
-    "active_pending_task_key_hit_count", "structure_status",
+    "active_pending_task_key_hit_count", "structure_status", "rosetta_required",
+    "exemption_reason",
 )
 
 
@@ -103,6 +104,9 @@ def classify_and_sort(
                 "pool_a_exact_sequence_match": str(row["sequence_sha256"] in pool_a_hashes),
                 "remote_structure_completed": "False",
                 "active_pending_task_key_hit_count": str(int(is_active)),
+                "rosetta_required": "False" if row.get("target_key") == "target_agnostic" else "True",
+                "exemption_reason": "target_agnostic" if row.get("target_key") == "target_agnostic" else "",
+                "structure_status": "rosetta_exempt" if row.get("target_key") == "target_agnostic" else "not_started",
                 "activity_quality": row.get("quality") or max(
                     (float(row.get(key) or 0.0) for key in
                      ("llamp_log10_mic_um", "amp_read_log10_mic_um", "macrel_amp_probability")),
@@ -110,6 +114,8 @@ def classify_and_sort(
                 ).__format__(".15g"),
             }
         )
+        if row.get("target_key") == "target_agnostic":
+            row["qd_eligible_verified"] = "True"
         if row["identity_resolution_status"] != "resolved":
             status = "identity_unresolved"
         elif int(row["pg_structure_evidence_count"]) or row["pool_a_exact_sequence_match"] == "True":

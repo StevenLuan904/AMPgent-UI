@@ -1,0 +1,17 @@
+{
+  "schema_version": "ampgent.target-agnostic-v14-generation.1",
+  "proposal_count": 32,
+  "source_counts": {
+    "PepFlow": 16,
+    "PepGLAD": 16
+  },
+  "parent_count": 31,
+  "operator_rule": "validated_1aa_same_cell_or_quality_improvement",
+  "excluded_rules": [
+    "2-aa_micrograft",
+    "hemolysis-debias",
+    "toxin-neutralize"
+  ],
+  "hydrophobicity_hard_gate": false,
+  "weighted_score": false
+}
