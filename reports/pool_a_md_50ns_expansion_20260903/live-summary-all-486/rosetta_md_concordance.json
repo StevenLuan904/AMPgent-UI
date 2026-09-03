@@ -1,33 +1,33 @@
 {
   "schema_version": "ampgent.rosetta-md-concordance.1",
-  "observed_at_utc": "2026-09-03T05:44:27.297332+00:00",
+  "observed_at_utc": "2026-09-03T08:11:51.010251+00:00",
   "scope": "completed Pool-A candidates with PostgreSQL-closed MD evidence",
   "overall": {
-    "candidate_count": 12,
+    "candidate_count": 17,
     "peptide_departed_count": 0,
     "metrics": {
       "interface_rmsd_mean_nm": {
-        "paired_count": 12,
-        "spearman_rho": -0.13986013986013987,
+        "paired_count": 17,
+        "spearman_rho": 0.08333333333333333,
         "expected_rho_sign": 1,
-        "signed_alignment": -0.13986013986013987,
+        "signed_alignment": 0.08333333333333333,
         "alignment_class": "weak_or_opposite_direction",
         "unit": "nm"
       },
       "native_contact_fraction_mean": {
-        "paired_count": 12,
-        "spearman_rho": -0.11888111888111888,
+        "paired_count": 17,
+        "spearman_rho": -0.16911764705882354,
         "expected_rho_sign": -1,
-        "signed_alignment": 0.11888111888111888,
+        "signed_alignment": 0.16911764705882354,
         "alignment_class": "weak_or_opposite_direction",
         "unit": "fraction"
       },
       "mmgbsa_mean_kcal_mol": {
-        "paired_count": 12,
-        "spearman_rho": 0.20279720279720279,
+        "paired_count": 17,
+        "spearman_rho": 0.375,
         "expected_rho_sign": 1,
-        "signed_alignment": 0.20279720279720279,
-        "alignment_class": "weak_or_opposite_direction",
+        "signed_alignment": 0.375,
+        "alignment_class": "moderate_expected_direction",
         "unit": "kcal/mol"
       }
     }
@@ -64,6 +64,36 @@
       }
     },
     "fgf2": {
+      "candidate_count": 3,
+      "peptide_departed_count": 0,
+      "metrics": {
+        "interface_rmsd_mean_nm": {
+          "paired_count": 3,
+          "spearman_rho": 0.5,
+          "expected_rho_sign": 1,
+          "signed_alignment": 0.5,
+          "alignment_class": "moderate_expected_direction",
+          "unit": "nm"
+        },
+        "native_contact_fraction_mean": {
+          "paired_count": 3,
+          "spearman_rho": 1.0,
+          "expected_rho_sign": -1,
+          "signed_alignment": -1.0,
+          "alignment_class": "weak_or_opposite_direction",
+          "unit": "fraction"
+        },
+        "mmgbsa_mean_kcal_mol": {
+          "paired_count": 3,
+          "spearman_rho": -0.5,
+          "expected_rho_sign": 1,
+          "signed_alignment": -0.5,
+          "alignment_class": "weak_or_opposite_direction",
+          "unit": "kcal/mol"
+        }
+      }
+    },
+    "gyra": {
       "candidate_count": 2,
       "peptide_departed_count": 0,
       "metrics": {
@@ -94,11 +124,11 @@
       }
     },
     "pbp2a": {
-      "candidate_count": 1,
+      "candidate_count": 2,
       "peptide_departed_count": 0,
       "metrics": {
         "interface_rmsd_mean_nm": {
-          "paired_count": 1,
+          "paired_count": 2,
           "spearman_rho": null,
           "expected_rho_sign": 1,
           "signed_alignment": null,
@@ -106,7 +136,7 @@
           "unit": "nm"
         },
         "native_contact_fraction_mean": {
-          "paired_count": 1,
+          "paired_count": 2,
           "spearman_rho": null,
           "expected_rho_sign": -1,
           "signed_alignment": null,
@@ -114,7 +144,7 @@
           "unit": "fraction"
         },
         "mmgbsa_mean_kcal_mol": {
-          "paired_count": 1,
+          "paired_count": 2,
           "spearman_rho": null,
           "expected_rho_sign": 1,
           "signed_alignment": null,
@@ -124,11 +154,11 @@
       }
     },
     "vegfa": {
-      "candidate_count": 1,
+      "candidate_count": 2,
       "peptide_departed_count": 0,
       "metrics": {
         "interface_rmsd_mean_nm": {
-          "paired_count": 1,
+          "paired_count": 2,
           "spearman_rho": null,
           "expected_rho_sign": 1,
           "signed_alignment": null,
@@ -136,7 +166,7 @@
           "unit": "nm"
         },
         "native_contact_fraction_mean": {
-          "paired_count": 1,
+          "paired_count": 2,
           "spearman_rho": null,
           "expected_rho_sign": -1,
           "signed_alignment": null,
@@ -144,7 +174,7 @@
           "unit": "fraction"
         },
         "mmgbsa_mean_kcal_mol": {
-          "paired_count": 1,
+          "paired_count": 2,
           "spearman_rho": null,
           "expected_rho_sign": 1,
           "signed_alignment": null,

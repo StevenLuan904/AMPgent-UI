@@ -60,7 +60,7 @@ Challenger 证据键为 `run_id + candidate_id + model_release_key`；字段为 
 
 - 冻结交付1,900；PepGLAD严格库87,989/8,657 families，双活动支持61,914；PepMLM六靶点24,576完成12项，12,151过展示门；历史challenger 147,161候选/735,805证据。
 - Pool A：498条严格候选、486个80/80 elite families：AceA79/GyrA100/PBP2a53/VEGFA71/FGF2 81/ANGPT1 102；远端结构/decoy全保留。
-- Pool A MD：合并队列486；`.19` GPU0–7满载，MD supervisor PID `3986807`、分析PID `3977733`存活；launched31、MD/MMGBSA17、完整界面+PG证据16、失败0、待MD469、待完整证据470。正式16条均未离位；界面RMSD均值0.297 nm、接触0.647、MM/GBSA均值-110.05 kcal/mol。详见 `reports/pool_a_md_50ns_expansion_20260903/live-summary-all-486/summary.json`。
+- Pool A MD：合并队列486；`.19` GPU0–7满载，MD supervisor PID `3986807`、分析PID `3977733`存活；launched31、MD/MMGBSA/完整界面+PG证据17、失败0、待MD/完整证据469。正式17条均未离位；界面RMSD均值0.304 nm、接触0.642、MM/GBSA均值-110.05 kcal/mol。详见 `reports/pool_a_md_50ns_expansion_20260903/live-summary-all-486/summary.json`。
 - PepFlow AceA：直接、charge-ladder和大块graft均未产生双活动支持；reciprocal 1–2 aa micrograft产生32条PG新颖且全过展示门，24条双活动支持/QD eligible，新增4格。PG run `7c17057c-cf24-57e3-b1b2-96aea38da78c`含32 Candidate、544 Evaluation；24条待Rosetta队列SHA-256 `2fa44108842a25fcdf15ffb1cc8f7c704bc9bc29df21fc53705f9ae8c04c5001`，未提交。32个factorized父本无法唯一映射到权威PG Candidate，lineage edge=0并显式留缺口，不按序列猜测。详见 `reports/pepflow_acea_reciprocal_micrograft_20260903_compact_receipt.json`。
 - PepFlow PBP2a reciprocal micrograft：32条PG新颖，32条full12/HemoPI2，29条过展示门，27条QD eligible并新增5格。PG run `b3d942e0-9054-5905-8982-392a75fad1b1`含32 Candidate、544 Evaluation；27条待Rosetta队列SHA-256 `3979e9b1033655fdc2b15039d117b720126ddc3b4233447b3849986217af6d0a`，未提交。32个父本身份无法唯一解析，lineage edge=0并显式留缺口。详见 `reports/pbp2a_reciprocal_micrograft_20260903_compact_receipt.json`。
 ## 维护
