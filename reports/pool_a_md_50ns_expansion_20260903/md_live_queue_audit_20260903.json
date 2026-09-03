@@ -1,0 +1,75 @@
+{
+  "schema_version": "ampgent.pool-a-md-live-queue-audit.1",
+  "observed_at_local": "2026-09-03T23:43:39+08:00",
+  "scope": "Pool A target-specific 486-candidate MD",
+  "protocol": {
+    "npt_ns": 1.0,
+    "nvt_ns": 50.0,
+    "replicates_per_candidate": 1,
+    "decoy_policy": "single_best_decoy"
+  },
+  "local_durable_summary": {
+    "summary_path": "live-summary-all-486/summary.json",
+    "summary_sha256": "75a1ab87db9b8a7ba2d0231c999da66335a86290fa9636a426c393fd056aeb2f",
+    "expected": 486,
+    "launched": 33,
+    "md_complete": 20,
+    "interface_complete": 18,
+    "mmgbsa_complete": 18,
+    "postgresql_evidence_complete": 18,
+    "pending_md": 466,
+    "pending_full_evidence": 468,
+    "retry_failure_recorded": 0,
+    "peptide_departed": 0,
+    "all_required_evidence_among_md_complete": 18,
+    "md_complete_without_full_evidence": 2,
+    "required_evidence": [
+      "interface RMSD",
+      "native/key contacts",
+      "hydrogen-bond occupancy",
+      "salt-bridge occupancy",
+      "water-bridge occupancy",
+      "departure",
+      "MM/GBSA mean and 95% CI",
+      "residue decomposition",
+      "PostgreSQL evaluation receipts"
+    ]
+  },
+  "target_counts": {
+    "acea": {"expected": 79, "launched": 13, "md_complete": 8, "full_evidence": 8},
+    "angpt1": {"expected": 102, "launched": 3, "md_complete": 0, "full_evidence": 0},
+    "fgf2": {"expected": 81, "launched": 4, "md_complete": 3, "full_evidence": 3},
+    "gyra": {"expected": 100, "launched": 5, "md_complete": 4, "full_evidence": 3},
+    "pbp2a": {"expected": 53, "launched": 4, "md_complete": 3, "full_evidence": 2},
+    "vegfa": {"expected": 71, "launched": 4, "md_complete": 2, "full_evidence": 2}
+  },
+  "rolling_queue_audit": {
+    "local_486_queue_present": true,
+    "authoritative_remote_queue_observed": false,
+    "auto_refill_proven": false,
+    "boundary": "latest local supervisor receipt records a 475-candidate snapshot; current 486 summary is durable locally, but live queue/claim/refill state could not be read",
+    "historical_supervisor_pid": 3986807,
+    "historical_supervisor_receipt": "supervisor_v4_receipt.json"
+  },
+  "remote_read_only_observation": {
+    "approved_endpoint": "ssh -p 32222 TargetServerDirect",
+    "status": "unobservable",
+    "error": "ssh: connect to host 127.0.0.1 port 32222: Connection refused",
+    "md_supervisor_pid": 3986807,
+    "analysis_supervisor_pid": 3977733,
+    "gpu_compute_pid_table": "unobservable",
+    "remote_disk_queue_claim_checkpoint_log": "unobservable",
+    "restarted": false,
+    "new_tasks_submitted": false
+  },
+  "capacity_snapshot": {
+    "path": "var/state/ampgent-gpu-capacity.json",
+    "sha256": "8529e9d9a534b93169770dbf22e009582145194566c3c3565c4bfc99bca7063c",
+    "idle_gpu_keys": [],
+    "dispatch_allowed": false,
+    "unreachable_observations": 20,
+    "prohibited_scope": ["192.168.99.32:2", "192.168.99.32:3"]
+  },
+  "decision": "persist_audit_only; do_not_restart_supervisors_or_submit_md",
+  "next_bottleneck": "restore/read the approved .19 control path, then verify 486 queue claims and automatic refill; scientific evidence coverage remains the limiting durable stage (468 candidates pending full evidence)"
+}
