@@ -2,6 +2,7 @@ param(
     [string]$SynthRoot = '/sdd_data/pepagent/ampgent/md/pool-a-full-md-v1',
     [string]$Host19Root = '/data1/huangyueshan/pepagent/md/pool-a-full-md-v1',
     [Parameter(Mandatory = $true)] [string]$SourceCommit,
+    [string]$LocalCompactRoot = 'reports/pool_a_md_50ns_expansion_20260903/compact-evidence',
     [string]$SynthTarget = 'synth@127.0.0.1',
     [int]$SynthPort = 32224,
     [string]$Host19Target = 'TargetServerDirect',
@@ -63,7 +64,17 @@ if ($bundle.Count -eq 0) {
 if ($LASTEXITCODE -ne 0) {
     throw 'PostgreSQL MD evidence relay failed'
 }
-& ssh -p $Host19Port -o BatchMode=yes -o ConnectTimeout=10 $Host19Target "cat '$state'"
+$stateOutput = @(
+    & ssh -p $Host19Port -o BatchMode=yes -o ConnectTimeout=10 `
+        $Host19Target "cat '$state'"
+)
 if ($LASTEXITCODE -ne 0) {
     throw 'PostgreSQL MD evidence relay state read failed'
+}
+
+$stateOutput | & uv run python analysis/relay_synth_md_receipts.py `
+    --compact-root $LocalCompactRoot `
+    --source synth-successor-11-postgresql-ingester-state
+if ($LASTEXITCODE -ne 0) {
+    throw 'local synth PostgreSQL receipt materialization failed'
 }

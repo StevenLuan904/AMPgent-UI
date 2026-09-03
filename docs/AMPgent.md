@@ -93,6 +93,7 @@ Challenger 证据键为 `run_id + candidate_id + model_release_key`；字段为 
 - target-agnostic v16：PepFlow/PepGLAD各16；full12=32、display=26、support≥2=22、QD replacement=13。PG run=`30778ba0-a7a2-5f4d-aaa5-fb4158e0ac70`，32 Candidate/544 Evaluation；无靶点 Pool A 累计55并停止扩增，`rosetta_required=false`。六个有靶点 Pool A 已完成5-decoy且 `primary_dg<-30`：AceA79、PBP2a53、VEGFA71、FGF2 81、GyrA100、ANGPT1 102。
 - Pool A MD（2026-09-04 00:02 CST）：`.19` 主475与synth successor11按`run_id+candidate_id`并集486、重复0，均为单best-decoy、1 ns NPT+50 ns NVT、单重复并自动补位。合计 launched=42、全证据=28、running=14、未启动=457、失败=0、待全证据=458；`.19` PID `3986807/3977733`，synth PID `3290243/3311802/3360111` 均存活，GPU满载，远端日志/checkpoint推进。全证据含interface RMSD、contacts、氢键/盐桥/水桥、离位、MM/GBSA均值+95% CI、残基分解与PG receipts；不重启、不重复提交、不触碰`.32 GPU2/3`。明细：`reports/pool_a_md_50ns_expansion_20260903/md_live_queue_audit_20260903.json`。
 - Pool A MD 紧凑证据同步（2026-09-04）：`.19`复制63项、synth复制10项，均限于JSON/CSV/receipt；未复制PDB/DCD/CHK/log，未删除远端文件。486汇总刷新为 launched=42、MD/interface/MMGBSA=28；本地PG receipt-confirmed=26，verifier明确2条successor的PG marker尚未进入本地compact汇总，故不将28冒充PG闭合；PG relay为2候选、30 evaluations、failures=0。明细：`reports/pool_a_md_50ns_expansion_20260903/synth-successor-11/postgresql_ingest_compact_receipt.json`。
+- MD relay 自动化（2026-09-04）：relay 成功读取 synth ingester state 后，按 `subject_run_id+candidate_id+model_release_key+tool_call_id` 将本地 compact interface/mmgbsa receipt 原子写入；同内容幂等，路径/身份/内容漂移拒绝，不拉取结构、轨迹、checkpoint，不重复本轮数据库 relay。helper 与 fixture 定向测试已覆盖。
 ## 维护
 
 只更新本文件；删除过时状态；不追加流水账。精确运行明细只写 PostgreSQL 与 JSON/CSV 收据。

@@ -16,3 +16,9 @@ def test_evidence_update_wrapper_orders_sync_relay_and_refresh():
     assert "$ErrorActionPreference = 'Stop'" in source
     assert "SourceCommit -notmatch '^[0-9a-f]{40}$'" in source
     assert "Remove-Item Env:PYTHONPATH" in source
+    relay = (
+        Path(__file__).parents[1]
+        / "deploy/windows/relay_synth_pool_a_md_evidence.ps1"
+    ).read_text(encoding="utf-8")
+    assert "relay_synth_md_receipts.py" in relay
+    assert "$stateOutput" in relay

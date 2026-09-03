@@ -137,6 +137,16 @@
     "unreachable_observations": 20,
     "prohibited_scope": ["192.168.99.32:2", "192.168.99.32:3"]
   },
+  "relay_automation": {
+    "state_source": "synth-successor-11-postgresql-ingester-state",
+    "identity_key": ["subject_run_id", "candidate_id", "model_release_key", "tool_call_id"],
+    "local_helper": "analysis/relay_synth_md_receipts.py",
+    "atomic_write": true,
+    "same_payload_idempotent": true,
+    "identity_or_payload_drift_rejected": true,
+    "large_remote_files_touched": false,
+    "database_relay_repeated_in_this_update": false
+  },
   "decision": "persist_audit_only; do_not_restart_supervisors_or_submit_md",
   "next_bottleneck": "complete and persist the remaining 458 full-evidence MD dossiers across the verified 475+11 exact identity union"
 }
