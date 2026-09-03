@@ -1,0 +1,34 @@
+{
+  "schema_version": "ampgent.pool-a-live-compact.1",
+  "observed_at": "2026-09-03T06:04:30Z",
+  "database": "postgresql@127.0.0.1:55432/pepagent",
+  "pool_a": {
+    "strict_candidate_count": 498,
+    "family_count": 486,
+    "target_counts": {
+      "acea": {"candidates": 82, "families": 79},
+      "gyra": {"candidates": 100, "families": 100},
+      "pbp2a": {"candidates": 53, "families": 53},
+      "vegfa": {"candidates": 80, "families": 71},
+      "fgf2": {"candidates": 81, "families": 81},
+      "angpt1": {"candidates": 102, "families": 102}
+    }
+  },
+  "md_canonical": {
+    "complete": 12,
+    "running_or_checkpoint_pending": 14,
+    "post_md_analysis_pending": 3,
+    "not_launched": 457,
+    "interface_gap_candidates": [
+      "gyra/89982fb4-e32d-49fa-81a6-43fc2208fbd3",
+      "gyra/0b71cf1c-c709-4719-b1ef-350a2a0d3bfd",
+      "vegfa/e2121432-d8bd-4323-90e2-78626721e216"
+    ]
+  },
+  "llamp_search": {
+    "status": "saturated_by_postgresql_exact_dedup",
+    "message": "no novel strict llamp endpoint rescue variants generated",
+    "next_policy": "activity_directed_controlled_two_site_or_hybrid"
+  },
+  "consistency_error_count": 0
+}
