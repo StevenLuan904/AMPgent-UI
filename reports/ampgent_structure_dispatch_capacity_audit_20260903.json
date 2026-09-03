@@ -1,0 +1,30 @@
+{
+  "schema_version": "ampgent.structure-dispatch-capacity-audit.1",
+  "observed_at_utc": "2026-09-03T11:55:57Z",
+  "capacity_snapshot": "var/state/ampgent-gpu-capacity.json",
+  "manifest": {
+    "path": "reports/reciprocal_micrograft_scheduler_ready_manifest_v7_20260903.csv",
+    "rows": 157,
+    "active_pending_task_key_hits": 0,
+    "identity_resolved_unresolved_drift": [157, 0, 0]
+  },
+  "dispatch": {
+    "submitted": false,
+    "dispatch_allowed": false,
+    "reason": "global AMPgent GPU ownership/concurrency gate failed"
+  },
+  "approved_gpu_observations": {
+    "192.168.99.19": "GPU0-7 occupied by AMPgent OpenMM; 72-100% utilization; 743-1282 MiB",
+    "192.168.99.2": "GPU0/1 occupied by existing workloads; GPU2/3 idle but not selected",
+    "192.168.99.32": "GPU0/1 occupied by external prima3d; GPU2/3 prohibited"
+  },
+  "md_durable_diagnostic": {
+    "remote_compute_processes": 9,
+    "production_checkpoint_files": 30,
+    "production_log_files": 30,
+    "analysis_artifact_files": 46,
+    "latest_checkpoint_log_mtime_unix": 1788436556.939850462
+  },
+  "external_processes_untouched": true,
+  "gpu_rosetta_md_submitted": false
+}
