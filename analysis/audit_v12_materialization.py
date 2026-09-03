@@ -1,6 +1,7 @@
 import asyncio
-import asyncpg
 import json
+
+import asyncpg
 
 
 async def main():
