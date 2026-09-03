@@ -1,0 +1,15 @@
+{
+  "schema_version": "ampgent.target-agnostic-v16-calibration.1",
+  "candidate_count": 32,
+  "display_count": 26,
+  "support_ge_2_count": 22,
+  "archive_count": 17087,
+  "model_release_key": "ampgent_formal12_frozen",
+  "branch_key": "target_agnostic_amp",
+  "directions": {
+    "amp_read_log10_mic_um": "minimize",
+    "llamp_log10_mic_um": "minimize",
+    "macrel_amp_probability": "maximize"
+  },
+  "threshold": 0.75
+}

@@ -3,10 +3,12 @@ from __future__ import annotations
 import bisect
 import csv
 import json
+import os
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-BASE = ROOT / "reports/target_agnostic_source_graft_v15_20260903"
+GENERATION = os.environ.get("AMPGENT_GENERATION", "15")
+BASE = ROOT / f"reports/target_agnostic_source_graft_v{GENERATION}_20260903"
 ARCHIVE = ROOT / "reports/target_agnostic_quality_combined_round10_20260826T2112.csv"
 
 
@@ -44,7 +46,7 @@ with (BASE / "candidate_scores_calibrated.csv").open("w", encoding="utf-8", newl
 (BASE / "calibration_receipt.json").write_text(
     json.dumps(
         {
-            "schema_version": "ampgent.target-agnostic-v15-calibration.1",
+            "schema_version": f"ampgent.target-agnostic-v{GENERATION}-calibration.1",
             "candidate_count": len(batch),
             "display_count": sum(
                 row.get("display_eligible", "").lower() == "true" for row in batch

@@ -4,6 +4,7 @@ import bisect
 import csv
 import hashlib
 import json
+import os
 from pathlib import Path
 
 from pepagent.autoresearch_quality_diversity import (
@@ -15,7 +16,8 @@ from pepagent.developability import sequence_developability_metrics
 
 ROOT = Path(__file__).resolve().parents[1]
 ARCHIVE = ROOT / "reports/target_agnostic_quality_combined_round10_20260826T2112.csv"
-OUT = ROOT / "reports/target_agnostic_source_graft_v15_20260903"
+GENERATION = os.environ.get("AMPGENT_GENERATION", "15")
+OUT = ROOT / f"reports/target_agnostic_source_graft_v{GENERATION}_20260903"
 OUTCOMES = ROOT / "reports/target_agnostic_v13_20260903/operator_outcomes.csv"
 SOURCES = [
     ROOT / "reports/target_agnostic_source_graft_v14_20260903/proposals.csv",
@@ -129,7 +131,7 @@ for arm in ("PepFlow", "PepGLAD"):
                     "target_cell": cell(candidate),
                     "parent_cell": cell(parent["sequence"]),
                     "branch_key": "target_agnostic_amp",
-                    "generation": "15",
+            "generation": GENERATION,
                 }
             )
             break
@@ -141,7 +143,7 @@ with (OUT / "proposals.csv").open("w", encoding="utf-8", newline="") as stream:
 (OUT / "generation_receipt.json").write_text(
     json.dumps(
         {
-            "schema_version": "ampgent.target-agnostic-v15-generation.1",
+        "schema_version": f"ampgent.target-agnostic-v{GENERATION}-generation.1",
             "proposal_count": len(rows),
             "source_counts": {a: sum(r["donor_source"] == a for r in rows) for a in donors},
             "parent_count": len(parents),
