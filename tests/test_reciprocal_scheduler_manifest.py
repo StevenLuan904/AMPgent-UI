@@ -8,7 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).parents[1] / "reports"
 MANIFEST = ROOT / "reciprocal_micrograft_scheduler_ready_manifest_20260903.csv"
-RECEIPT = ROOT / "reciprocal_micrograft_scheduler_ready_manifest_20260903.json"
+RECEIPT = ROOT / "reciprocal_micrograft_scheduler_ready_audit_receipt_20260903.json"
 
 
 def test_manifest_has_authoritative_unique_identity_and_frozen_order() -> None:

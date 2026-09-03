@@ -2,11 +2,16 @@
   "active_pending_task_key_hit_count": 0,
   "capacity_audit": {
     "active_gpu_count": 8,
-    "basis": "current .19 AMPgent OpenMM GPU0-7 active; .32 GPU2/GPU3 disabled",
     "dispatch_allowed": false,
     "new_scheduler_limit": 0
   },
   "dispatch_submitted": false,
+  "evidence_input_hashes": {
+    "reports\\ampgent_pool_a_live_20260903T0605Z.json": "4484ba43abdccfae8262daec2ff0fe9b2049920978261040f22a0b7fa9408993",
+    "reports\\pool_a_md_50ns_expansion_20260903\\live-summary\\summary.json": "7a3d42c463087e62acabcab1689685baaffc8a35b6dd368eec6219956bd15f69",
+    "reports\\reciprocal_micrograft_capacity_snapshot_20260903.json": "36a1d9fd43ee8a03e88dbf8fa14098d762bbf5153bd68ff6da3faa6edaf607d7",
+    "reports\\reciprocal_micrograft_task_key_snapshot_20260903.json": "e36167b04eceb496d873391068e072fa41393f7a162abf72c889e15621e4b238"
+  },
   "global_unique_identity_count": 98,
   "global_unique_sequence_count": 98,
   "historical_runs_modified": false,
@@ -22,11 +27,13 @@
     "reports\\pepflow_acea_reciprocal_micrograft_structure_queue_20260903.csv": "2fa44108842a25fcdf15ffb1cc8f7c704bc9bc29df21fc53705f9ae8c04c5001",
     "reports\\vegfa_reciprocal_micrograft_20260903_structure_queue.csv": "1e7f81b18c6c754a448b66a926b56ba3159719dcdb36f3a3770f0f59a6119db6"
   },
-  "manifest_csv_sha256": "baee08c17ba9f5a89ed110cce68dfdd43f221db6e31afbb9115401bbdc5ed4cc",
+  "manifest_csv_sha256": "e012dd83b1195104818f544a968bf35740cdd57acc3e1fda892ba057bc49b31e",
+  "manifest_hash_change_reason": "target round-robin ordering was made explicit after the prior target-block manifest",
+  "manifest_hash_changed": true,
   "pg_structure_evidence_present_count": 0,
-  "pool_a_exact_sequence_match_count": 0,
-  "receipt_payload_sha256": "43cd6e4232074908eb556649d2de84b81dba0a3f77eb1a0b5cd006d034341bd2",
-  "schema_version": "ampgent.reciprocal-micrograft.scheduler-manifest.1",
+  "previous_manifest_csv_sha256": "baee08c17ba9f5a89ed110cce68dfdd43f221db6e31afbb9115401bbdc5ed4cc",
+  "receipt_payload_sha256": "6ae49c40b5ebc1caccb61e91d1dc29e9604240c524de2f644721dbc46c91a0d2",
+  "schema_version": "ampgent.reciprocal-micrograft.scheduler-manifest.2",
   "status_counts": {
     "already_active": 0,
     "already_completed": 0,
