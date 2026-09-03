@@ -74,6 +74,32 @@
     "restarted": false,
     "new_tasks_submitted": false
   },
+  "synth_successor_11": {
+    "host": "192.168.99.2",
+    "root": "/sdd_data/pepagent/ampgent/md/pool-a-full-md-v1/results",
+    "snapshot": "/sdd_data/pepagent/ampgent/md/pool-a-full-md-v1/inputs/pool_a_successor_11_20260903.json",
+    "snapshot_count": 11,
+    "supervisor_pid": 3290243,
+    "reported_probe_pid": 6672,
+    "reported_probe_pid_identity": "root [irq/389-nvidia], not a probe supervisor",
+    "md_compute_pid": 58820,
+    "gpu_index": 1,
+    "gpu_owner": "synth",
+    "gpu_utilization_percent": 100,
+    "analysis_supervisor_pid": 3311802,
+    "mmgbsa_supervisor_pid": 3360111,
+    "state": {"launched": 3, "md_complete": 2, "full_evidence": 2, "running": 1, "pending": 8, "failed": 0},
+    "auto_refill": {"proven": true, "logic": "pending/active/deferred loop; requeue on external completion or vanished output; launch only when GPU is idle"},
+    "recent_checkpoint_log_advancing": true
+  },
+  "merged_identity_audit": {
+    "main_remote_queue_rows": 475,
+    "successor_rows": 11,
+    "union_rows": 486,
+    "unique_run_candidate_id": 486,
+    "cross_queue_duplicate_identity": 0,
+    "coverage_status": "486_identity_union_verified_from_475_main_plus_11_successor; main supervisor remains bound to 475 snapshot"
+  },
   "capacity_snapshot": {
     "path": "var/state/ampgent-gpu-capacity.json",
     "sha256": "8529e9d9a534b93169770dbf22e009582145194566c3c3565c4bfc99bca7063c",
