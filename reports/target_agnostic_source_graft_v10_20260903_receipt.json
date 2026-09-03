@@ -1,0 +1,20 @@
+{
+  "schema_version": "ampgent.target-agnostic-source-graft-v10.1",
+  "branch_key": "target_agnostic_amp",
+  "generation": 10,
+  "proposal_count": 32,
+  "arms": {"PepFlow": 16, "PepGLAD": 16},
+  "control_policy": "existing target-agnostic PG identities reused; no duplicate controls",
+  "witness": "reports/target_agnostic_v10_witness_20260903/witness.json",
+  "formal12": 32,
+  "display": 27,
+  "support_ge_2": 15,
+  "qd_eligible": 11,
+  "qd_new_cell": 0,
+  "qd_replacement": 8,
+  "pool_a_admission": 8,
+  "pool_a_admission_basis": "archive_contribution_only; 8 incumbent replacements; 3 eligible same-cell candidates remain raw/QD audit",
+  "replacement_verification": "reports/target_agnostic_source_graft_v10_20260903/replacement_verification.json",
+  "materialization_input_source_receipt_sha256": "4612d753e15e0bf71d941c363a4aa93ffc56239228db30e1b1b4ce838ed6990e",
+  "gpu_rosetta_md_submitted": false
+}
