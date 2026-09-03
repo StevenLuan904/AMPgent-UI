@@ -36,7 +36,10 @@ for label in ROUNDS:
         parent_row = archive_rows.get(parent, {})
         parent_sequence = parent_row.get("sequence", "")
         delta_phi = {}
-        for key in ("net_charge_ph7_4", "hydrophobic_ratio_modlamp", "hydrophobic_moment_eisenberg"):
+        phi_keys = (
+            "net_charge_ph7_4", "hydrophobic_ratio_modlamp", "hydrophobic_moment_eisenberg"
+        )
+        for key in phi_keys:
             if parent_row.get(key) and row.get(key):
                 delta_phi[key] = float(row[key]) - float(parent_row[key])
         if parent_sequence and row.get("sequence"):
