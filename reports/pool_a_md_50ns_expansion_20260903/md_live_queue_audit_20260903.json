@@ -1,6 +1,6 @@
 {
   "schema_version": "ampgent.pool-a-md-live-queue-audit.1",
-  "observed_at_local": "2026-09-03T23:43:39+08:00",
+  "observed_at_local": "2026-09-04T00:02:00+08:00",
   "scope": "Pool A target-specific 486-candidate MD",
   "protocol": {
     "npt_ns": 1.0,
@@ -45,20 +45,32 @@
   },
   "rolling_queue_audit": {
     "local_486_queue_present": true,
-    "authoritative_remote_queue_observed": false,
-    "auto_refill_proven": false,
-    "boundary": "latest local supervisor receipt records a 475-candidate snapshot; current 486 summary is durable locally, but live queue/claim/refill state could not be read",
+    "authoritative_remote_queue_observed": true,
+    "supervisor_bound_snapshot_count": 475,
+    "remote_candidate_rows": 475,
+    "auto_refill_proven": true,
+    "auto_refill_evidence": "supervise_pool_a_md_idle_v4.py lines 183-248 maintains pending/active/deferred, requeues completed or vanished outputs, and launches pending work only on idle GPU; remote launched count is 39 with 13 not yet complete",
+    "queue_identity_boundary": "the requested local 486 summary and the live supervisor identity do not match: supervisor command line and snapshot are pool_a_snapshot_475_20260903.json; no 486 supervisor switch was made",
     "historical_supervisor_pid": 3986807,
     "historical_supervisor_receipt": "supervisor_v4_receipt.json"
   },
   "remote_read_only_observation": {
     "approved_endpoint": "ssh -p 32222 TargetServerDirect",
-    "status": "unobservable",
-    "error": "ssh: connect to host 127.0.0.1 port 32222: Connection refused",
+    "status": "observable_running",
+    "error": null,
     "md_supervisor_pid": 3986807,
     "analysis_supervisor_pid": 3977733,
-    "gpu_compute_pid_table": "unobservable",
-    "remote_disk_queue_claim_checkpoint_log": "unobservable",
+    "gpu_compute_pid_table": {
+      "count": 8,
+      "all_owner": "huangyu+",
+      "pids": [1795945, 1576186, 1719939, 1798793, 1790025, 549598, 1755891, 1723994],
+      "utilization_percent": [100, 100, 100, 100, 96, 100, 93, 91]
+    },
+    "remote_disk": {"filesystem": "/dev/sdc1", "size": "42T", "used": "19T", "available": "22T", "use_percent": 48},
+    "remote_disk_queue_claim_checkpoint_log": "observed read-only; recent production.log/checkpoint files are advancing",
+    "remote_snapshot_count": 475,
+    "remote_state_counts": {"launched": 39, "complete": 26, "running_or_incomplete_launched": 13, "pending": 449, "failed": 0},
+    "remote_full_evidence_count": 26,
     "restarted": false,
     "new_tasks_submitted": false
   },
@@ -71,5 +83,5 @@
     "prohibited_scope": ["192.168.99.32:2", "192.168.99.32:3"]
   },
   "decision": "persist_audit_only; do_not_restart_supervisors_or_submit_md",
-  "next_bottleneck": "restore/read the approved .19 control path, then verify 486 queue claims and automatic refill; scientific evidence coverage remains the limiting durable stage (468 candidates pending full evidence)"
+  "next_bottleneck": "reconcile the live 475-candidate supervisor identity with the requested 486-candidate queue before any future dispatch; for the live queue, scientific evidence coverage remains limiting (449 candidates pending full evidence)"
 }
