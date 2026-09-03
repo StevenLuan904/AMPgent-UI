@@ -1,0 +1,23 @@
+{
+  "schema_version": "ampgent.pepflow-acea-hybrid-pair-dedup-receipt.1",
+  "observed_at_utc": "2026-09-03T06:16:00Z",
+  "branch": "acea",
+  "parent_source": "reports/pepflow_acea_activity_rescue_charge_ladder_20260903/pepflow_parents_family_annotated.csv",
+  "parent_source_sha256": "593802516987db0b660ce939d60dd54cf4e07f625a0f55f9c7b51dfa9fde6f28",
+  "display_hard_gate_parent_count": 5,
+  "runtime_registry_sha256": "3b74ffaa2b1bb95b92f921575d10b6d0e8f653f52a7bd1ad0c1be369de2b8f5a",
+  "history_mode": "postgresql",
+  "operator_mode": "hybrid-pair",
+  "attempts": [
+    {"endpoint": "llamp", "status": "no_novel_strict_variants_after_exact_history_dedup"},
+    {"endpoint": "amp-read", "status": "no_novel_strict_variants_after_exact_history_dedup"}
+  ],
+  "generated_novel_strict_count": 0,
+  "score_all_count": 0,
+  "challenger_count": 0,
+  "qd_count": 0,
+  "lineage_materialized_count": 0,
+  "pool_a_delta": 0,
+  "gpu_md_interface_impact": "none",
+  "next_action": "retain_saturation_evidence_and_wait_for_new_parent_family_or_new_frozen_search_design"
+}
