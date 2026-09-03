@@ -1,6 +1,6 @@
 {
   "schema_version": "ampgent.pbp2a-pepglad-source-graft-close.1",
-  "observed_at_utc": "2026-09-03T19:06:00Z",
+  "observed_at_utc": "2026-09-03T19:07:30Z",
   "operator_id": "pbp2a-pepglad-source-graft-v1",
   "target_key": "pbp2a",
   "input_identity": {
@@ -29,19 +29,22 @@
     "historical_sequence_gate": "passed",
     "historical_exact_count": 0,
     "pg_new_count_at_sequence_gate": 12,
-    "candidate_count_written": 0,
-    "evaluation_count_written": 0,
-    "tool_call_count_written": 0,
-    "materialization_status": "pending_after_metadata_repair",
-    "materialization_allowed": true
+    "candidate_count_written": 12,
+    "evaluation_count_written": 204,
+    "tool_call_count_written": 1,
+    "materialization_status": "succeeded",
+    "materialization_allowed": true,
+    "run_id": "ae9e8532-4276-5b46-8f4f-6a916b08ffcd",
+    "replay_count": 0,
+    "subject_run_candidate_drift_count": 0,
+    "generation": 132
   },
   "deferred_boundary": {
-    "category": "metadata_repaired_dry_run_required",
-    "dry_run_command": "analysis/materialize_autoresearch_scored_lineage.py --dry-run-output",
-    "observed_error": "previous positive-generation rejection repaired; current batch now has generation=132 and parent_sequence_sha256",
-    "writes_attempted": false,
-    "parent_binding_note": "4/4 parent sequences resolved in PostgreSQL to run 9640722a-0f63-53e4-892d-ae42b0085445, generation 131, target WP_308061015.1; all 12 children are generation 132",
-    "next_operator": "run dry-run under this committed metadata revision, then one execute-only materialization for this fixed 12-row batch"
+    "category": "closed",
+    "previous_error": "missing positive generation",
+    "repair": "generation=132 and authoritative parent_sequence_sha256 added without rerunning generation or score-all",
+    "writes_attempted": true,
+    "parent_binding_note": "4/4 parent sequences resolved in PostgreSQL to run 9640722a-0f63-53e4-892d-ae42b0085445, generation 131, target WP_308061015.1; all 12 children are generation 132"
   },
   "resource_gate": {
     "gpu_structure_or_md_started": false,
@@ -53,8 +56,38 @@
   },
   "pool_a": {
     "targeted_pool_a_added": 0,
-    "structure_queue_added": 0,
-    "reason": "PG materialization was not attempted after the deterministic preflight rejection; QD contribution is not a Pool A claim"
+    "structure_queue_added": 8,
+    "reason": "8 QD new-cell contributions prepared for future exact-once coarse5 Rosetta; no structure or Pool A admission before median dG"
   },
-  "historical_run_modified": false
+  "historical_run_modified": false,
+  "dry_run": {
+    "status": "passed",
+    "receipt": "reports/pbp2a_pepglad_source_graft_20260904/materialization_dry_run_repaired_20260904.json",
+    "operational_run_id": "ae9e8532-4276-5b46-8f4f-6a916b08ffcd",
+    "source_candidate_count": 12,
+    "history_exact_replay_count": 0,
+    "generation": 132,
+    "parent_binding_count": "4/4",
+    "challenger_coverage": "12/12"
+  },
+  "structure_preparation": {
+    "status": "prepared_not_dispatched",
+    "candidate_count": 8,
+    "candidate_ids": [
+      "26285281-0563-4f2a-a580-fbcde12b2869",
+      "af140a7d-2381-4ec5-a9ae-3f277a208412",
+      "64e880b4-2fbe-4a57-9b78-b656605e8337",
+      "f0fc3e06-0e2c-4009-8282-3c8a278d4179",
+      "c39206d7-9fa3-4583-b93f-aeb0705223db",
+      "68494d57-3660-467c-b8fb-e4bf4a0e50e0",
+      "404f8eeb-27dd-43a6-841a-5702bbc54b2c",
+      "038757c9-ed28-4b36-815b-53f5c697539c"
+    ],
+    "nstruct": 5,
+    "dispatch_allowed": false,
+    "task_submitted": false,
+    "boltz_started": false,
+    "rosetta_started": false,
+    "manifest": "reports/pbp2a_pepglad_source_graft_20260904/rosetta_prepared_not_dispatched.json"
+  }
 }
