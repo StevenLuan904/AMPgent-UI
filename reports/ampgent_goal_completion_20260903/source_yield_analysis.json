@@ -1,0 +1,110 @@
+{
+  "schema_version": "ampgent.candidate-source-yield-analysis.1",
+  "observed_at_utc": "2026-09-03T01:11:17.334883+00:00",
+  "display_gate": "ToxinPred3 Non-Toxin; Macrel low; Guruprasad <=50",
+  "sources": {
+    "pepglad": {
+      "strict_unique_candidate_count": 87989,
+      "activity_support_at_least_two_count": 61914,
+      "activity_support_at_least_two_yield": 0.7036561388355362,
+      "family_count_80_80": 8657,
+      "target_count": 3,
+      "limitation": "strict-library-wide challenger denominator is not asserted"
+    },
+    "target_conditioned_pepmlm": {
+      "generated_unique_candidate_count": 24576,
+      "formal_12_complete_count": 24576,
+      "display_eligible_count": 12151,
+      "display_yield": 0.4944254557291667,
+      "per_target": {
+        "acea": {
+          "generated": 4096,
+          "formal_12": 4096,
+          "display_eligible": 2623,
+          "challenger_reviewed": 23,
+          "challenger_conflict": 11,
+          "challenger_no_conflict": 12,
+          "challenger_full_support_no_conflict": 1,
+          "display_yield": 0.640380859375
+        },
+        "angpt1": {
+          "generated": 4096,
+          "formal_12": 4096,
+          "display_eligible": 696,
+          "challenger_reviewed": 223,
+          "challenger_conflict": 93,
+          "challenger_no_conflict": 130,
+          "challenger_full_support_no_conflict": 33,
+          "display_yield": 0.169921875
+        },
+        "fgf2": {
+          "generated": 4096,
+          "formal_12": 4096,
+          "display_eligible": 2132,
+          "challenger_reviewed": 109,
+          "challenger_conflict": 60,
+          "challenger_no_conflict": 49,
+          "challenger_full_support_no_conflict": 2,
+          "display_yield": 0.5205078125
+        },
+        "gyra": {
+          "generated": 4096,
+          "formal_12": 4096,
+          "display_eligible": 2104,
+          "challenger_reviewed": 341,
+          "challenger_conflict": 246,
+          "challenger_no_conflict": 95,
+          "challenger_full_support_no_conflict": 4,
+          "display_yield": 0.513671875
+        },
+        "pbp2a": {
+          "generated": 4096,
+          "formal_12": 4096,
+          "display_eligible": 3167,
+          "challenger_reviewed": 128,
+          "challenger_conflict": 52,
+          "challenger_no_conflict": 76,
+          "challenger_full_support_no_conflict": 11,
+          "display_yield": 0.773193359375
+        },
+        "vegfa": {
+          "generated": 4096,
+          "formal_12": 4096,
+          "display_eligible": 1429,
+          "challenger_reviewed": 66,
+          "challenger_conflict": 53,
+          "challenger_no_conflict": 13,
+          "challenger_full_support_no_conflict": 1,
+          "display_yield": 0.348876953125
+        }
+      },
+      "lowest_display_yield_target": "angpt1",
+      "highest_display_yield_target": "pbp2a",
+      "limitation": "challenger review covers a selected cohort, so its rate is not a generated-pool yield"
+    },
+    "pepflow": {
+      "generated_valid_count": 8,
+      "formal_12_complete_count": 8,
+      "display_eligible_count": 5,
+      "display_yield": 0.625,
+      "qd_quality_gate_pass_count": 0,
+      "qd_quality_gate_yield": 0.0,
+      "pool_a_addition_count": 0,
+      "bottleneck": "activity_qd_gate",
+      "limitation": "eight-candidate pilot is too small for source-level ranking"
+    }
+  },
+  "next_experiment": {
+    "source": "pepflow",
+    "objective": "raise activity-qualified QD-cell yield without relaxing display gates",
+    "design": "larger preregistered batch with activity-conditioned or active-family-seeded sampling; score all valid unique proposals before QD admission",
+    "primary_outcomes": [
+      "display_eligible_count / generated_valid_count",
+      "activity_support_at_least_two_count / generated_valid_count",
+      "valid_new_qd_cell_count / generated_valid_count"
+    ],
+    "launch_status": "deferred_while_authorized_gpu_capacity_is_saturated_by_pool_a_md"
+  },
+  "cross_source_weighted_total_used": false,
+  "claim_limit": "in-silico source and model-screening evidence only"
+}
