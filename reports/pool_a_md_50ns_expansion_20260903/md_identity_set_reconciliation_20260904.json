@@ -1,0 +1,125 @@
+{
+  "schema_version": "ampgent.pool-a-md-identity-reconciliation.1",
+  "reconciled_at_utc": "2026-09-04T04:30:00Z",
+  "cohort": {
+    "identity_key": "subject_run_id+candidate_id",
+    "expected_unique": 486,
+    "main_snapshot_rows": 475,
+    "successor_11_snapshot_rows": 11,
+    "successor_12_included": false,
+    "structure_prepared_included": false
+  },
+  "gate_source": {
+    "capacity_receipt": "capacity_identity_gate_20260904.json",
+    "source_progress_receipt": "md_progress_audit_20260904.json",
+    "source_observed_at_utc": "2026-09-03T16:57:45+00:00",
+    "main_launch_receipts": 39,
+    "main_full_evidence": 26,
+    "successor_launch_receipts": 5,
+    "successor_full_evidence": 2,
+    "launched_unique": 44,
+    "full_evidence_unique": 28,
+    "running_unique": 16,
+    "not_started_unique": 442,
+    "partition_total_unique": 486,
+    "identity_list_persisted": false,
+    "reconstruction_basis": "The source progress observation predates the one launch below; the capacity receipt retained counts but no identity list."
+  },
+  "previous_authoritative_snapshot": {
+    "summary": "live-summary-all-486/summary.json",
+    "observed_at_utc": "2026-09-03T19:18:05.438414+00:00",
+    "launched_unique": 45,
+    "md_complete_unique": 29,
+    "full_evidence_unique": 29,
+    "running_unique": 16,
+    "not_started_unique": 441,
+    "failed_unique": 0,
+    "partition_total_unique": 486,
+    "launched_equals_complete_plus_running": true,
+    "disjoint_union_equals_486": true
+  },
+  "exact_difference": {
+    "previous_minus_gate": [
+      {
+        "subject_run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
+        "candidate_id": "b3e83854-031b-4277-a68d-49a59d54c43f",
+        "target_key": "pbp2a",
+        "sequence": "VKQQRGNTTKSNWKQDKKIYK",
+        "sequence_sha256": "8871884da08a368aaddeb5e132749c7fc3dc7b74e0385b761bcad2f7748c705c",
+        "gate_presence": false,
+        "previous_snapshot_presence": true
+      }
+    ],
+    "gate_minus_previous": [],
+    "difference_count_is_one": true
+  },
+  "missing_identity_evidence": {
+    "candidate": {
+      "run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
+      "candidate_id": "b3e83854-031b-4277-a68d-49a59d54c43f",
+      "generation": 138,
+      "status": "generated"
+    },
+    "remote_launch_receipt": "/data1/huangyueshan/pepagent/md/pool-a-full-md-v1/results/pbp2a/b3e83854-031b-4277-a68d-49a59d54c43f/launch_receipt.json",
+    "remote_launch_receipt_identity_matches": true,
+    "remote_completion_receipt": false,
+    "remote_interface_receipt": false,
+    "remote_mmgbsa_receipt": false,
+    "remote_production_checkpoint": true,
+    "remote_production_log": true,
+    "remote_state": "launched_running_or_incomplete",
+    "postgresql_md_evaluation_count": 0,
+    "postgresql_candidate_evaluation_count": 19,
+    "postgresql_md_tool_call_count": 0,
+    "reason": "This identity was launched after the gate source observation; it is not a completed-evidence omission and must remain running/incomplete."
+  },
+  "full_evidence_transition": {
+    "identity": {
+      "subject_run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
+      "candidate_id": "a5e4de18-697e-40c3-aac5-1f672d726b99"
+    },
+    "remote_launch_receipt": "/data1/huangyueshan/pepagent/md/pool-a-full-md-v1/results/pbp2a/a5e4de18-697e-40c3-aac5-1f672d726b99/launch_receipt.json",
+    "remote_result_root": "/data1/huangyueshan/pepagent/md/pool-a-full-md-v1/results/pbp2a/a5e4de18-697e-40c3-aac5-1f672d726b99",
+    "remote_interface_analysis": true,
+    "remote_mmgbsa_analysis": true,
+    "remote_interface_ingest_receipt": true,
+    "remote_mmgbsa_ingest_receipt": true,
+    "postgresql_md_evaluation_count": 15,
+    "postgresql_interface_evaluations": 11,
+    "postgresql_mmgbsa_evaluations": 4,
+    "postgresql_tool_call_ids": [
+      "90bee772-7eaf-44e0-8e05-6eb9ce8f5a87",
+      "966e6c02-7e24-49d1-81b9-d3efa95e6437"
+    ],
+    "remote_analysis_mtime_utc": {
+      "interface_analysis": "2026-09-03T19:14:31Z",
+      "mmgbsa_analysis": "2026-09-03T19:01:46Z"
+    },
+    "interpretation": "The 29th full-evidence identity was a5e4... completing after the gate source observation; PG evidence is already present, so no relay or database write is required."
+  },
+  "corrected_authoritative_partition": {
+    "launched_unique": 45,
+    "md_complete_unique": 29,
+    "full_evidence_unique": 29,
+    "analysis_pending_unique": 0,
+    "running_unique": 16,
+    "not_started_unique": 441,
+    "failed_unique": 0,
+    "partition_total_unique": 486,
+    "launched_equals_complete_plus_running": true,
+    "disjoint_union_equals_486": true
+  },
+  "later_remote_observation_not_folded_into_baseline": {
+    "main_snapshot_filtered_launch_receipts": 44,
+    "successor_11_snapshot_filtered_launch_receipts": 6,
+    "unique_launch_receipts": 50,
+    "reason": "Five launches are later than the 2026-09-03T19:18:05Z baseline; they are retained as later progress, not used to rewrite the requested 44-versus-45 reconciliation."
+  },
+  "mutations": {
+    "postgresql_write": false,
+    "remote_task_restart": false,
+    "remote_large_artifact_download": false,
+    "remote_large_artifact_delete": false,
+    "prohibited_host32_gpu2_gpu3_touched": false
+  }
+}
