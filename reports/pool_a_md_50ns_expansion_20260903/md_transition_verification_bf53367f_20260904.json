@@ -1,6 +1,6 @@
 {
   "schema_version": "ampgent.pool-a-md-transition-verification.1",
-  "observed_at_utc": "2026-09-03T22:44:06.2272635Z",
+  "observed_at_utc": "2026-09-03T22:51:27.706216Z",
   "identity": {
     "subject_run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
     "candidate_id": "bf53367f-8705-4e17-bb01-326b237e80ea",
@@ -32,15 +32,19 @@
   "pg": {
     "candidate_found": true,
     "candidate_run_identity_match": true,
-    "md_evaluation_count": 0,
-    "interface_evaluation_count": 0,
-    "mmgbsa_evaluation_count": 0,
-    "successful_md_tool_call_ids": [],
+    "md_evaluation_count": 15,
+    "interface_evaluation_count": 11,
+    "mmgbsa_evaluation_count": 4,
+    "successful_md_tool_call_ids": [
+      "8329c1d5-7007-4106-ad7f-d839105d0d47",
+      "5b82bc70-9e4b-4190-8403-aac57a87efb7"
+    ],
     "successful_non_md_tool_call_ids": [
       "87abbcb0-57bd-4248-8f05-477ce82f0989"
     ],
-    "full_md_coverage": false,
-    "postgresql_write_performed": false,
+    "full_md_coverage": true,
+    "postgresql_write_performed": true,
+    "inserted_evaluation_count": 15,
     "duplicate_evidence": 0,
     "identity_drift": 0
   },
@@ -48,13 +52,20 @@
     "remote_result_root": "/sdd_data/pepagent/ampgent/md/pool-a-full-md-v1/results/fgf2/bf53367f-8705-4e17-bb01-326b237e80ea",
     "remote_snapshot_marked_interface_and_mmgbsa_complete": true,
     "local_compact_analysis_available": false,
-    "remote_compact_analysis_read": false,
+    "remote_compact_analysis_read": true,
+    "remote_compact_file_sha256": {
+      "manifest.json": "3ad52048d8a1c67ad72cb36d48782a775f842ab93c9df3cadb54dc088d34ab07",
+      "analysis/interface/interface_analysis.json": "3c550e80b676835457f069b0691625f2001405d3a82119cf0567abe43837cfc2",
+      "analysis/interface/timeseries.csv": "be92f3e6b6856848c2e15d49b2cb24d3e68ed40bfa80c1069148abaacdb0999d",
+      "analysis/mmgbsa/mmgbsa_analysis.json": "3af78266e768090eb97f7c97680617628745e84c05cb4f94e22ca1d1487630b3",
+      "analysis/mmgbsa/residue_decomposition_mean.csv": "101cca91a9c510370d8c940fecaad022737de96737de6606eca506fc5102a1a8"
+    },
     "large_artifacts_read_or_downloaded": false
   },
   "decision": {
-    "verification_status": "pg_incomplete",
-    "ingest_status": "blocked_no_local_compact_analysis",
-    "reason": "PG has the candidate's formal/challenger/shadow evidence but no MD 15-row evidence; the local compact evidence contains only launch_receipt.json, and the authenticated remote compact-analysis read was unavailable. No MD ingest was attempted.",
-    "safe_next_action": "Use the existing authenticated compact-evidence relay when the remote compact JSON/CSV/receipts are observable; do not rerun analysis or download trajectories."
+    "verification_status": "pg_complete",
+    "ingest_status": "inserted_exact_once",
+    "source_commit": "15800558fc547d586b4eddf79f07717fe2e76994",
+    "reason": "The authenticated compact relay validated the successful 1 ns NPT + 50 ns NVT manifest and inserted 11 interface plus 4 MMGBSA evaluations. No trajectory or checkpoint was read or downloaded; no analysis was rerun."
   }
 }
