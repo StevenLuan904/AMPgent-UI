@@ -56,9 +56,41 @@
     "existing_md_task_state": "not_found",
     "duplicate_or_identity_drift": false
   },
+  "md_supervisor_snapshot": {
+    "main_475": {
+      "md_supervisor_pid": 3986807,
+      "analysis_supervisor_pid": 3977733,
+      "launch_receipts": 39,
+      "md_complete": 26,
+      "interface_complete": 26,
+      "mmgbsa_complete": 26,
+      "failed": 0
+    },
+    "successor_11": {
+      "supervisor_pid": 1280301,
+      "analysis_supervisor_pid": 3311802,
+      "mmgbsa_supervisor_pid": 3360111,
+      "runner_pids": [58820, 1280316, 1280381],
+      "launch_receipts": 5,
+      "md_complete": 2,
+      "interface_complete": 2,
+      "mmgbsa_complete": 2,
+      "pending": 6,
+      "failed": 0
+    },
+    "identity_union": 486,
+    "launched": 44,
+    "full_evidence": 28,
+    "running": 16,
+    "not_yet_launched": 455,
+    "failed": 0,
+    "new_candidate_in_existing_snapshot": false
+  },
   "decision": {
     "targeted_pool_a_admitted": true,
     "md_successor_prepared": true,
+    "remote_successor_queue_receipt": "/sdd_data/pepagent/ampgent/md/pool-a-full-md-v1/successor-12-staging/acea/bc91b75a-0922-48aa-82f5-b7ff4ac3c024/prepared_queue_receipt.json",
+    "remote_successor_queue_receipt_sha256": "6dadf74c45f9e27a28692589b8e63858863651531de9f621695586bbedac6c5d",
     "md_started": false,
     "md_dispatch_allowed": false,
     "md_dispatch_reason": "Compact successor manifest prepared only; no MD task submitted in this turn.",
