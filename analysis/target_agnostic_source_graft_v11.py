@@ -20,7 +20,10 @@ PF = (
 )
 PG = (
     ROOT
-    / "reports/pepflow_acea_cross_source_block_graft_scoreall_v3_20260903/candidate_scores_calibrated.csv"
+    / (
+        "reports/pepflow_acea_cross_source_block_graft_scoreall_v3_20260903/"
+        "candidate_scores_calibrated.csv"
+    )
 )
 QD = ROOT / "reports/target_agnostic_source_graft_v10_20260903/quality_diversity.json"
 OUT = ROOT / "reports/target_agnostic_source_graft_v11_20260903"
