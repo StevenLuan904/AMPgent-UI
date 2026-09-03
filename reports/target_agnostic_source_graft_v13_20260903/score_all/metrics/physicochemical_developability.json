@@ -1,0 +1,2830 @@
+{
+  "plugin": {
+    "name": "physicochemical_developability",
+    "parameters": {}
+  },
+  "contract": {
+    "default_trust": "descriptor",
+    "maximum_trust": "descriptor",
+    "reliability": "descriptor-R2",
+    "provider": "builtin",
+    "outputs": {
+      "molecular_weight_da": [
+        "molecular_weight",
+        "Da",
+        "numeric"
+      ],
+      "net_charge_ph7_4": [
+        "net_charge_ph7_4",
+        "elementary_charge",
+        "numeric"
+      ],
+      "isoelectric_point": [
+        "isoelectric_point",
+        "pH",
+        "numeric"
+      ],
+      "hydrophobic_ratio_modlamp": [
+        "hydrophobic_ratio",
+        "fraction",
+        "numeric"
+      ],
+      "hydrophobic_moment_eisenberg": [
+        "hydrophobic_moment",
+        "dimensionless",
+        "numeric"
+      ]
+    }
+  },
+  "candidate_count": 32,
+  "status": "complete",
+  "adapter_version": "2026.08.04-v1",
+  "records": [
+    {
+      "candidate_id": "proposal-0dd17af686e13a672aa8",
+      "sequence": "IWPWKNKLKDLLGGGIQKAWDW",
+      "status": "complete",
+      "observations": [
+        {
+          "metric_name": "molecular_weight_da",
+          "numeric_value": 2653.1,
+          "text_value": null,
+          "unit": "Da"
+        },
+        {
+          "metric_name": "net_charge_ph7_4",
+          "numeric_value": 1.988,
+          "text_value": null,
+          "unit": "elementary_charge"
+        },
+        {
+          "metric_name": "isoelectric_point",
+          "numeric_value": 10.25830078125,
+          "text_value": null,
+          "unit": "pH"
+        },
+        {
+          "metric_name": "hydrophobic_ratio_modlamp",
+          "numeric_value": 0.2727272727272727,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "hydrophobic_moment_eisenberg",
+          "numeric_value": 0.35897665010451824,
+          "text_value": null,
+          "unit": "dimensionless"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-0dd17af686e13a672aa8",
+        "sequence": "IWPWKNKLKDLLGGGIQKAWDW",
+        "status": "complete",
+        "molecular_weight": 2653.1,
+        "net_charge_ph7_4": 1.988,
+        "isoelectric_point": 10.25830078125,
+        "hydrophobic_ratio": 0.2727272727272727,
+        "hydrophobic_moment": 0.35897665010451824,
+        "assumptions": {
+          "ph": 7.4,
+          "termini": "free N-terminus and free C-terminus",
+          "hydrophobicity_scale": "Eisenberg consensus",
+          "hydrophobic_moment_angle_degrees": 100,
+          "hydrophobic_moment_window": 1000,
+          "modlamp_distribution_version": "4.3.2",
+          "modlamp_runtime_version": "4.3.0"
+        },
+        "limitations": [
+          "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+          "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+          "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+        ],
+        "method_version": "2026.08.04-v1"
+      }
+    },
+    {
+      "candidate_id": "proposal-122281280ce83bf789ad",
+      "sequence": "MEKEEKLKWRSWWWWWKWWWKAR",
+      "status": "complete",
+      "observations": [
+        {
+          "metric_name": "molecular_weight_da",
+          "numeric_value": 3436.99,
+          "text_value": null,
+          "unit": "Da"
+        },
+        {
+          "metric_name": "net_charge_ph7_4",
+          "numeric_value": 3.989,
+          "text_value": null,
+          "unit": "elementary_charge"
+        },
+        {
+          "metric_name": "isoelectric_point",
+          "numeric_value": 10.822509765625,
+          "text_value": null,
+          "unit": "pH"
+        },
+        {
+          "metric_name": "hydrophobic_ratio_modlamp",
+          "numeric_value": 0.13043478260869565,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "hydrophobic_moment_eisenberg",
+          "numeric_value": 0.2560177685648433,
+          "text_value": null,
+          "unit": "dimensionless"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-122281280ce83bf789ad",
+        "sequence": "MEKEEKLKWRSWWWWWKWWWKAR",
+        "status": "complete",
+        "molecular_weight": 3436.99,
+        "net_charge_ph7_4": 3.989,
+        "isoelectric_point": 10.822509765625,
+        "hydrophobic_ratio": 0.13043478260869565,
+        "hydrophobic_moment": 0.2560177685648433,
+        "assumptions": {
+          "ph": 7.4,
+          "termini": "free N-terminus and free C-terminus",
+          "hydrophobicity_scale": "Eisenberg consensus",
+          "hydrophobic_moment_angle_degrees": 100,
+          "hydrophobic_moment_window": 1000,
+          "modlamp_distribution_version": "4.3.2",
+          "modlamp_runtime_version": "4.3.0"
+        },
+        "limitations": [
+          "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+          "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+          "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+        ],
+        "method_version": "2026.08.04-v1"
+      }
+    },
+    {
+      "candidate_id": "proposal-0d00601938184f06c100",
+      "sequence": "KFRLWKLLLQLVGERAG",
+      "status": "complete",
+      "observations": [
+        {
+          "metric_name": "molecular_weight_da",
+          "numeric_value": 2027.46,
+          "text_value": null,
+          "unit": "Da"
+        },
+        {
+          "metric_name": "net_charge_ph7_4",
+          "numeric_value": 2.989,
+          "text_value": null,
+          "unit": "elementary_charge"
+        },
+        {
+          "metric_name": "isoelectric_point",
+          "numeric_value": 11.392578125,
+          "text_value": null,
+          "unit": "pH"
+        },
+        {
+          "metric_name": "hydrophobic_ratio_modlamp",
+          "numeric_value": 0.47058823529411764,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "hydrophobic_moment_eisenberg",
+          "numeric_value": 0.2892638721306539,
+          "text_value": null,
+          "unit": "dimensionless"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-0d00601938184f06c100",
+        "sequence": "KFRLWKLLLQLVGERAG",
+        "status": "complete",
+        "molecular_weight": 2027.46,
+        "net_charge_ph7_4": 2.989,
+        "isoelectric_point": 11.392578125,
+        "hydrophobic_ratio": 0.47058823529411764,
+        "hydrophobic_moment": 0.2892638721306539,
+        "assumptions": {
+          "ph": 7.4,
+          "termini": "free N-terminus and free C-terminus",
+          "hydrophobicity_scale": "Eisenberg consensus",
+          "hydrophobic_moment_angle_degrees": 100,
+          "hydrophobic_moment_window": 1000,
+          "modlamp_distribution_version": "4.3.2",
+          "modlamp_runtime_version": "4.3.0"
+        },
+        "limitations": [
+          "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+          "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+          "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+        ],
+        "method_version": "2026.08.04-v1"
+      }
+    },
+    {
+      "candidate_id": "proposal-5ae2704b1ed0b891bf1e",
+      "sequence": "FRWKKWLLAAADEWWWWWWWWWWWW",
+      "status": "complete",
+      "observations": [
+        {
+          "metric_name": "molecular_weight_da",
+          "numeric_value": 3868.41,
+          "text_value": null,
+          "unit": "Da"
+        },
+        {
+          "metric_name": "net_charge_ph7_4",
+          "numeric_value": 0.989,
+          "text_value": null,
+          "unit": "elementary_charge"
+        },
+        {
+          "metric_name": "isoelectric_point",
+          "numeric_value": 9.833984375,
+          "text_value": null,
+          "unit": "pH"
+        },
+        {
+          "metric_name": "hydrophobic_ratio_modlamp",
+          "numeric_value": 0.24,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "hydrophobic_moment_eisenberg",
+          "numeric_value": 0.22116601441352934,
+          "text_value": null,
+          "unit": "dimensionless"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-5ae2704b1ed0b891bf1e",
+        "sequence": "FRWKKWLLAAADEWWWWWWWWWWWW",
+        "status": "complete",
+        "molecular_weight": 3868.41,
+        "net_charge_ph7_4": 0.989,
+        "isoelectric_point": 9.833984375,
+        "hydrophobic_ratio": 0.24,
+        "hydrophobic_moment": 0.22116601441352934,
+        "assumptions": {
+          "ph": 7.4,
+          "termini": "free N-terminus and free C-terminus",
+          "hydrophobicity_scale": "Eisenberg consensus",
+          "hydrophobic_moment_angle_degrees": 100,
+          "hydrophobic_moment_window": 1000,
+          "modlamp_distribution_version": "4.3.2",
+          "modlamp_runtime_version": "4.3.0"
+        },
+        "limitations": [
+          "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+          "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+          "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+        ],
+        "method_version": "2026.08.04-v1"
+      }
+    },
+    {
+      "candidate_id": "proposal-bd01225127bffc087dfd",
+      "sequence": "MVDWMLAMMAKKWKKLLLLTTKDAM",
+      "status": "complete",
+      "observations": [
+        {
+          "metric_name": "molecular_weight_da",
+          "numeric_value": 2997.82,
+          "text_value": null,
+          "unit": "Da"
+        },
+        {
+          "metric_name": "net_charge_ph7_4",
+          "numeric_value": 2.987,
+          "text_value": null,
+          "unit": "elementary_charge"
+        },
+        {
+          "metric_name": "isoelectric_point",
+          "numeric_value": 10.518310546875,
+          "text_value": null,
+          "unit": "pH"
+        },
+        {
+          "metric_name": "hydrophobic_ratio_modlamp",
+          "numeric_value": 0.56,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "hydrophobic_moment_eisenberg",
+          "numeric_value": 0.26515622115127185,
+          "text_value": null,
+          "unit": "dimensionless"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-bd01225127bffc087dfd",
+        "sequence": "MVDWMLAMMAKKWKKLLLLTTKDAM",
+        "status": "complete",
+        "molecular_weight": 2997.82,
+        "net_charge_ph7_4": 2.987,
+        "isoelectric_point": 10.518310546875,
+        "hydrophobic_ratio": 0.56,
+        "hydrophobic_moment": 0.26515622115127185,
+        "assumptions": {
+          "ph": 7.4,
+          "termini": "free N-terminus and free C-terminus",
+          "hydrophobicity_scale": "Eisenberg consensus",
+          "hydrophobic_moment_angle_degrees": 100,
+          "hydrophobic_moment_window": 1000,
+          "modlamp_distribution_version": "4.3.2",
+          "modlamp_runtime_version": "4.3.0"
+        },
+        "limitations": [
+          "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+          "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+          "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+        ],
+        "method_version": "2026.08.04-v1"
+      }
+    },
+    {
+      "candidate_id": "proposal-1b78f79083067b8686c2",
+      "sequence": "NWENLDLWWKNKWWWWWWWWWWRR",
+      "status": "complete",
+      "observations": [
+        {
+          "metric_name": "molecular_weight_da",
+          "numeric_value": 3820.29,
+          "text_value": null,
+          "unit": "Da"
+        },
+        {
+          "metric_name": "net_charge_ph7_4",
+          "numeric_value": 1.989,
+          "text_value": null,
+          "unit": "elementary_charge"
+        },
+        {
+          "metric_name": "isoelectric_point",
+          "numeric_value": 10.65380859375,
+          "text_value": null,
+          "unit": "pH"
+        },
+        {
+          "metric_name": "hydrophobic_ratio_modlamp",
+          "numeric_value": 0.08333333333333333,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "hydrophobic_moment_eisenberg",
+          "numeric_value": 0.08251456697885183,
+          "text_value": null,
+          "unit": "dimensionless"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-1b78f79083067b8686c2",
+        "sequence": "NWENLDLWWKNKWWWWWWWWWWRR",
+        "status": "complete",
+        "molecular_weight": 3820.29,
+        "net_charge_ph7_4": 1.989,
+        "isoelectric_point": 10.65380859375,
+        "hydrophobic_ratio": 0.08333333333333333,
+        "hydrophobic_moment": 0.08251456697885183,
+        "assumptions": {
+          "ph": 7.4,
+          "termini": "free N-terminus and free C-terminus",
+          "hydrophobicity_scale": "Eisenberg consensus",
+          "hydrophobic_moment_angle_degrees": 100,
+          "hydrophobic_moment_window": 1000,
+          "modlamp_distribution_version": "4.3.2",
+          "modlamp_runtime_version": "4.3.0"
+        },
+        "limitations": [
+          "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+          "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+          "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+        ],
+        "method_version": "2026.08.04-v1"
+      }
+    },
+    {
+      "candidate_id": "proposal-7e48fcce867f25131ac9",
+      "sequence": "EKWWYFFRIHFPTILKGW",
+      "status": "complete",
+      "observations": [
+        {
+          "metric_name": "molecular_weight_da",
+          "numeric_value": 2454.87,
+          "text_value": null,
+          "unit": "Da"
+        },
+        {
+          "metric_name": "net_charge_ph7_4",
+          "numeric_value": 2.029,
+          "text_value": null,
+          "unit": "elementary_charge"
+        },
+        {
+          "metric_name": "isoelectric_point",
+          "numeric_value": 10.23193359375,
+          "text_value": null,
+          "unit": "pH"
+        },
+        {
+          "metric_name": "hydrophobic_ratio_modlamp",
+          "numeric_value": 0.3333333333333333,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "hydrophobic_moment_eisenberg",
+          "numeric_value": 0.39808600278539813,
+          "text_value": null,
+          "unit": "dimensionless"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-7e48fcce867f25131ac9",
+        "sequence": "EKWWYFFRIHFPTILKGW",
+        "status": "complete",
+        "molecular_weight": 2454.87,
+        "net_charge_ph7_4": 2.029,
+        "isoelectric_point": 10.23193359375,
+        "hydrophobic_ratio": 0.3333333333333333,
+        "hydrophobic_moment": 0.39808600278539813,
+        "assumptions": {
+          "ph": 7.4,
+          "termini": "free N-terminus and free C-terminus",
+          "hydrophobicity_scale": "Eisenberg consensus",
+          "hydrophobic_moment_angle_degrees": 100,
+          "hydrophobic_moment_window": 1000,
+          "modlamp_distribution_version": "4.3.2",
+          "modlamp_runtime_version": "4.3.0"
+        },
+        "limitations": [
+          "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+          "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+          "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+        ],
+        "method_version": "2026.08.04-v1"
+      }
+    },
+    {
+      "candidate_id": "proposal-90e7d3daa047036cd56a",
+      "sequence": "FMKNVWKWEEKWWRFLLKRAAAADD",
+      "status": "complete",
+      "observations": [
+        {
+          "metric_name": "molecular_weight_da",
+          "numeric_value": 3225.73,
+          "text_value": null,
+          "unit": "Da"
+        },
+        {
+          "metric_name": "net_charge_ph7_4",
+          "numeric_value": 1.989,
+          "text_value": null,
+          "unit": "elementary_charge"
+        },
+        {
+          "metric_name": "isoelectric_point",
+          "numeric_value": 10.2451171875,
+          "text_value": null,
+          "unit": "pH"
+        },
+        {
+          "metric_name": "hydrophobic_ratio_modlamp",
+          "numeric_value": 0.4,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "hydrophobic_moment_eisenberg",
+          "numeric_value": 0.46081004048055296,
+          "text_value": null,
+          "unit": "dimensionless"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-90e7d3daa047036cd56a",
+        "sequence": "FMKNVWKWEEKWWRFLLKRAAAADD",
+        "status": "complete",
+        "molecular_weight": 3225.73,
+        "net_charge_ph7_4": 1.989,
+        "isoelectric_point": 10.2451171875,
+        "hydrophobic_ratio": 0.4,
+        "hydrophobic_moment": 0.46081004048055296,
+        "assumptions": {
+          "ph": 7.4,
+          "termini": "free N-terminus and free C-terminus",
+          "hydrophobicity_scale": "Eisenberg consensus",
+          "hydrophobic_moment_angle_degrees": 100,
+          "hydrophobic_moment_window": 1000,
+          "modlamp_distribution_version": "4.3.2",
+          "modlamp_runtime_version": "4.3.0"
+        },
+        "limitations": [
+          "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+          "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+          "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+        ],
+        "method_version": "2026.08.04-v1"
+      }
+    },
+    {
+      "candidate_id": "proposal-06113810dfbb97f27dba",
+      "sequence": "IVLTKKPKWWQDKQWKKLADKKKK",
+      "status": "complete",
+      "observations": [
+        {
+          "metric_name": "molecular_weight_da",
+          "numeric_value": 3052.71,
+          "text_value": null,
+          "unit": "Da"
+        },
+        {
+          "metric_name": "net_charge_ph7_4",
+          "numeric_value": 7.985,
+          "text_value": null,
+          "unit": "elementary_charge"
+        },
+        {
+          "metric_name": "isoelectric_point",
+          "numeric_value": 11.04248046875,
+          "text_value": null,
+          "unit": "pH"
+        },
+        {
+          "metric_name": "hydrophobic_ratio_modlamp",
+          "numeric_value": 0.20833333333333334,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "hydrophobic_moment_eisenberg",
+          "numeric_value": 0.1962018508780955,
+          "text_value": null,
+          "unit": "dimensionless"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-06113810dfbb97f27dba",
+        "sequence": "IVLTKKPKWWQDKQWKKLADKKKK",
+        "status": "complete",
+        "molecular_weight": 3052.71,
+        "net_charge_ph7_4": 7.985,
+        "isoelectric_point": 11.04248046875,
+        "hydrophobic_ratio": 0.20833333333333334,
+        "hydrophobic_moment": 0.1962018508780955,
+        "assumptions": {
+          "ph": 7.4,
+          "termini": "free N-terminus and free C-terminus",
+          "hydrophobicity_scale": "Eisenberg consensus",
+          "hydrophobic_moment_angle_degrees": 100,
+          "hydrophobic_moment_window": 1000,
+          "modlamp_distribution_version": "4.3.2",
+          "modlamp_runtime_version": "4.3.0"
+        },
+        "limitations": [
+          "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+          "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+          "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+        ],
+        "method_version": "2026.08.04-v1"
+      }
+    },
+    {
+      "candidate_id": "proposal-5fcee80d713dad387d38",
+      "sequence": "TKNKKELKWWKLKLSGAAGAWWKDK",
+      "status": "complete",
+      "observations": [
+        {
+          "metric_name": "molecular_weight_da",
+          "numeric_value": 3001.54,
+          "text_value": null,
+          "unit": "Da"
+        },
+        {
+          "metric_name": "net_charge_ph7_4",
+          "numeric_value": 5.986,
+          "text_value": null,
+          "unit": "elementary_charge"
+        },
+        {
+          "metric_name": "isoelectric_point",
+          "numeric_value": 10.898681640625,
+          "text_value": null,
+          "unit": "pH"
+        },
+        {
+          "metric_name": "hydrophobic_ratio_modlamp",
+          "numeric_value": 0.24,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "hydrophobic_moment_eisenberg",
+          "numeric_value": 0.1232670808149634,
+          "text_value": null,
+          "unit": "dimensionless"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-5fcee80d713dad387d38",
+        "sequence": "TKNKKELKWWKLKLSGAAGAWWKDK",
+        "status": "complete",
+        "molecular_weight": 3001.54,
+        "net_charge_ph7_4": 5.986,
+        "isoelectric_point": 10.898681640625,
+        "hydrophobic_ratio": 0.24,
+        "hydrophobic_moment": 0.1232670808149634,
+        "assumptions": {
+          "ph": 7.4,
+          "termini": "free N-terminus and free C-terminus",
+          "hydrophobicity_scale": "Eisenberg consensus",
+          "hydrophobic_moment_angle_degrees": 100,
+          "hydrophobic_moment_window": 1000,
+          "modlamp_distribution_version": "4.3.2",
+          "modlamp_runtime_version": "4.3.0"
+        },
+        "limitations": [
+          "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+          "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+          "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+        ],
+        "method_version": "2026.08.04-v1"
+      }
+    },
+    {
+      "candidate_id": "proposal-b8403969544f96cef79e",
+      "sequence": "AIAVIQKKEENWWWWKFKWWRWF",
+      "status": "complete",
+      "observations": [
+        {
+          "metric_name": "molecular_weight_da",
+          "numeric_value": 3252.77,
+          "text_value": null,
+          "unit": "Da"
+        },
+        {
+          "metric_name": "net_charge_ph7_4",
+          "numeric_value": 2.989,
+          "text_value": null,
+          "unit": "elementary_charge"
+        },
+        {
+          "metric_name": "isoelectric_point",
+          "numeric_value": 10.67529296875,
+          "text_value": null,
+          "unit": "pH"
+        },
+        {
+          "metric_name": "hydrophobic_ratio_modlamp",
+          "numeric_value": 0.30434782608695654,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "hydrophobic_moment_eisenberg",
+          "numeric_value": 0.29631785580344183,
+          "text_value": null,
+          "unit": "dimensionless"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-b8403969544f96cef79e",
+        "sequence": "AIAVIQKKEENWWWWKFKWWRWF",
+        "status": "complete",
+        "molecular_weight": 3252.77,
+        "net_charge_ph7_4": 2.989,
+        "isoelectric_point": 10.67529296875,
+        "hydrophobic_ratio": 0.30434782608695654,
+        "hydrophobic_moment": 0.29631785580344183,
+        "assumptions": {
+          "ph": 7.4,
+          "termini": "free N-terminus and free C-terminus",
+          "hydrophobicity_scale": "Eisenberg consensus",
+          "hydrophobic_moment_angle_degrees": 100,
+          "hydrophobic_moment_window": 1000,
+          "modlamp_distribution_version": "4.3.2",
+          "modlamp_runtime_version": "4.3.0"
+        },
+        "limitations": [
+          "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+          "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+          "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+        ],
+        "method_version": "2026.08.04-v1"
+      }
+    },
+    {
+      "candidate_id": "proposal-86d0999823954a14b613",
+      "sequence": "KMWKKRFELHVDLWLLKK",
+      "status": "complete",
+      "observations": [
+        {
+          "metric_name": "molecular_weight_da",
+          "numeric_value": 2398.96,
+          "text_value": null,
+          "unit": "Da"
+        },
+        {
+          "metric_name": "net_charge_ph7_4",
+          "numeric_value": 4.03,
+          "text_value": null,
+          "unit": "elementary_charge"
+        },
+        {
+          "metric_name": "isoelectric_point",
+          "numeric_value": 10.83935546875,
+          "text_value": null,
+          "unit": "pH"
+        },
+        {
+          "metric_name": "hydrophobic_ratio_modlamp",
+          "numeric_value": 0.3888888888888889,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "hydrophobic_moment_eisenberg",
+          "numeric_value": 0.10336305235004734,
+          "text_value": null,
+          "unit": "dimensionless"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-86d0999823954a14b613",
+        "sequence": "KMWKKRFELHVDLWLLKK",
+        "status": "complete",
+        "molecular_weight": 2398.96,
+        "net_charge_ph7_4": 4.03,
+        "isoelectric_point": 10.83935546875,
+        "hydrophobic_ratio": 0.3888888888888889,
+        "hydrophobic_moment": 0.10336305235004734,
+        "assumptions": {
+          "ph": 7.4,
+          "termini": "free N-terminus and free C-terminus",
+          "hydrophobicity_scale": "Eisenberg consensus",
+          "hydrophobic_moment_angle_degrees": 100,
+          "hydrophobic_moment_window": 1000,
+          "modlamp_distribution_version": "4.3.2",
+          "modlamp_runtime_version": "4.3.0"
+        },
+        "limitations": [
+          "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+          "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+          "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+        ],
+        "method_version": "2026.08.04-v1"
+      }
+    },
+    {
+      "candidate_id": "proposal-4fbbd387f7c94275f3e2",
+      "sequence": "TKWKKWFWWRWWKWLFRNFLAEDAD",
+      "status": "complete",
+      "observations": [
+        {
+          "metric_name": "molecular_weight_da",
+          "numeric_value": 3531.04,
+          "text_value": null,
+          "unit": "Da"
+        },
+        {
+          "metric_name": "net_charge_ph7_4",
+          "numeric_value": 2.988,
+          "text_value": null,
+          "unit": "elementary_charge"
+        },
+        {
+          "metric_name": "isoelectric_point",
+          "numeric_value": 10.6611328125,
+          "text_value": null,
+          "unit": "pH"
+        },
+        {
+          "metric_name": "hydrophobic_ratio_modlamp",
+          "numeric_value": 0.28,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "hydrophobic_moment_eisenberg",
+          "numeric_value": 0.1707441012427168,
+          "text_value": null,
+          "unit": "dimensionless"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-4fbbd387f7c94275f3e2",
+        "sequence": "TKWKKWFWWRWWKWLFRNFLAEDAD",
+        "status": "complete",
+        "molecular_weight": 3531.04,
+        "net_charge_ph7_4": 2.988,
+        "isoelectric_point": 10.6611328125,
+        "hydrophobic_ratio": 0.28,
+        "hydrophobic_moment": 0.1707441012427168,
+        "assumptions": {
+          "ph": 7.4,
+          "termini": "free N-terminus and free C-terminus",
+          "hydrophobicity_scale": "Eisenberg consensus",
+          "hydrophobic_moment_angle_degrees": 100,
+          "hydrophobic_moment_window": 1000,
+          "modlamp_distribution_version": "4.3.2",
+          "modlamp_runtime_version": "4.3.0"
+        },
+        "limitations": [
+          "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+          "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+          "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+        ],
+        "method_version": "2026.08.04-v1"
+      }
+    },
+    {
+      "candidate_id": "proposal-deee06e71499bbaa3590",
+      "sequence": "FRWKKEWWWWWWWWWWLLLLEWWWW",
+      "status": "complete",
+      "observations": [
+        {
+          "metric_name": "molecular_weight_da",
+          "numeric_value": 4081.73,
+          "text_value": null,
+          "unit": "Da"
+        },
+        {
+          "metric_name": "net_charge_ph7_4",
+          "numeric_value": 0.99,
+          "text_value": null,
+          "unit": "elementary_charge"
+        },
+        {
+          "metric_name": "isoelectric_point",
+          "numeric_value": 9.833984375,
+          "text_value": null,
+          "unit": "pH"
+        },
+        {
+          "metric_name": "hydrophobic_ratio_modlamp",
+          "numeric_value": 0.2,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "hydrophobic_moment_eisenberg",
+          "numeric_value": 0.11982392676599597,
+          "text_value": null,
+          "unit": "dimensionless"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-deee06e71499bbaa3590",
+        "sequence": "FRWKKEWWWWWWWWWWLLLLEWWWW",
+        "status": "complete",
+        "molecular_weight": 4081.73,
+        "net_charge_ph7_4": 0.99,
+        "isoelectric_point": 9.833984375,
+        "hydrophobic_ratio": 0.2,
+        "hydrophobic_moment": 0.11982392676599597,
+        "assumptions": {
+          "ph": 7.4,
+          "termini": "free N-terminus and free C-terminus",
+          "hydrophobicity_scale": "Eisenberg consensus",
+          "hydrophobic_moment_angle_degrees": 100,
+          "hydrophobic_moment_window": 1000,
+          "modlamp_distribution_version": "4.3.2",
+          "modlamp_runtime_version": "4.3.0"
+        },
+        "limitations": [
+          "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+          "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+          "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+        ],
+        "method_version": "2026.08.04-v1"
+      }
+    },
+    {
+      "candidate_id": "proposal-6db587fa0dda6b602440",
+      "sequence": "RWFNWRIIHWKRPDGYGW",
+      "status": "complete",
+      "observations": [
+        {
+          "metric_name": "molecular_weight_da",
+          "numeric_value": 2473.8,
+          "text_value": null,
+          "unit": "Da"
+        },
+        {
+          "metric_name": "net_charge_ph7_4",
+          "numeric_value": 3.029,
+          "text_value": null,
+          "unit": "elementary_charge"
+        },
+        {
+          "metric_name": "isoelectric_point",
+          "numeric_value": 11.18505859375,
+          "text_value": null,
+          "unit": "pH"
+        },
+        {
+          "metric_name": "hydrophobic_ratio_modlamp",
+          "numeric_value": 0.16666666666666666,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "hydrophobic_moment_eisenberg",
+          "numeric_value": 0.23571389895455497,
+          "text_value": null,
+          "unit": "dimensionless"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-6db587fa0dda6b602440",
+        "sequence": "RWFNWRIIHWKRPDGYGW",
+        "status": "complete",
+        "molecular_weight": 2473.8,
+        "net_charge_ph7_4": 3.029,
+        "isoelectric_point": 11.18505859375,
+        "hydrophobic_ratio": 0.16666666666666666,
+        "hydrophobic_moment": 0.23571389895455497,
+        "assumptions": {
+          "ph": 7.4,
+          "termini": "free N-terminus and free C-terminus",
+          "hydrophobicity_scale": "Eisenberg consensus",
+          "hydrophobic_moment_angle_degrees": 100,
+          "hydrophobic_moment_window": 1000,
+          "modlamp_distribution_version": "4.3.2",
+          "modlamp_runtime_version": "4.3.0"
+        },
+        "limitations": [
+          "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+          "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+          "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+        ],
+        "method_version": "2026.08.04-v1"
+      }
+    },
+    {
+      "candidate_id": "proposal-a4f3dffeda951e93ba90",
+      "sequence": "SWDWKLIDLNLFIKKWKWWRR",
+      "status": "complete",
+      "observations": [
+        {
+          "metric_name": "molecular_weight_da",
+          "numeric_value": 2918.45,
+          "text_value": null,
+          "unit": "Da"
+        },
+        {
+          "metric_name": "net_charge_ph7_4",
+          "numeric_value": 3.988,
+          "text_value": null,
+          "unit": "elementary_charge"
+        },
+        {
+          "metric_name": "isoelectric_point",
+          "numeric_value": 11.06494140625,
+          "text_value": null,
+          "unit": "pH"
+        },
+        {
+          "metric_name": "hydrophobic_ratio_modlamp",
+          "numeric_value": 0.2857142857142857,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "hydrophobic_moment_eisenberg",
+          "numeric_value": 0.2042170315159876,
+          "text_value": null,
+          "unit": "dimensionless"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-a4f3dffeda951e93ba90",
+        "sequence": "SWDWKLIDLNLFIKKWKWWRR",
+        "status": "complete",
+        "molecular_weight": 2918.45,
+        "net_charge_ph7_4": 3.988,
+        "isoelectric_point": 11.06494140625,
+        "hydrophobic_ratio": 0.2857142857142857,
+        "hydrophobic_moment": 0.2042170315159876,
+        "assumptions": {
+          "ph": 7.4,
+          "termini": "free N-terminus and free C-terminus",
+          "hydrophobicity_scale": "Eisenberg consensus",
+          "hydrophobic_moment_angle_degrees": 100,
+          "hydrophobic_moment_window": 1000,
+          "modlamp_distribution_version": "4.3.2",
+          "modlamp_runtime_version": "4.3.0"
+        },
+        "limitations": [
+          "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+          "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+          "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+        ],
+        "method_version": "2026.08.04-v1"
+      }
+    },
+    {
+      "candidate_id": "proposal-03f82ae59a1a7c4e5ec0",
+      "sequence": "TKKLWLLKKLWLLDAAHLLDLADAA",
+      "status": "complete",
+      "observations": [
+        {
+          "metric_name": "molecular_weight_da",
+          "numeric_value": 2860.45,
+          "text_value": null,
+          "unit": "Da"
+        },
+        {
+          "metric_name": "net_charge_ph7_4",
+          "numeric_value": 1.03,
+          "text_value": null,
+          "unit": "elementary_charge"
+        },
+        {
+          "metric_name": "isoelectric_point",
+          "numeric_value": 9.650390625,
+          "text_value": null,
+          "unit": "pH"
+        },
+        {
+          "metric_name": "hydrophobic_ratio_modlamp",
+          "numeric_value": 0.56,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "hydrophobic_moment_eisenberg",
+          "numeric_value": 0.203776417642676,
+          "text_value": null,
+          "unit": "dimensionless"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-03f82ae59a1a7c4e5ec0",
+        "sequence": "TKKLWLLKKLWLLDAAHLLDLADAA",
+        "status": "complete",
+        "molecular_weight": 2860.45,
+        "net_charge_ph7_4": 1.03,
+        "isoelectric_point": 9.650390625,
+        "hydrophobic_ratio": 0.56,
+        "hydrophobic_moment": 0.203776417642676,
+        "assumptions": {
+          "ph": 7.4,
+          "termini": "free N-terminus and free C-terminus",
+          "hydrophobicity_scale": "Eisenberg consensus",
+          "hydrophobic_moment_angle_degrees": 100,
+          "hydrophobic_moment_window": 1000,
+          "modlamp_distribution_version": "4.3.2",
+          "modlamp_runtime_version": "4.3.0"
+        },
+        "limitations": [
+          "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+          "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+          "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+        ],
+        "method_version": "2026.08.04-v1"
+      }
+    },
+    {
+      "candidate_id": "proposal-a2f463fb392f48c76fe1",
+      "sequence": "QIEWWLKLLKEKWRWWPYYWMW",
+      "status": "complete",
+      "observations": [
+        {
+          "metric_name": "molecular_weight_da",
+          "numeric_value": 3255.84,
+          "text_value": null,
+          "unit": "Da"
+        },
+        {
+          "metric_name": "net_charge_ph7_4",
+          "numeric_value": 1.985,
+          "text_value": null,
+          "unit": "elementary_charge"
+        },
+        {
+          "metric_name": "isoelectric_point",
+          "numeric_value": 9.90673828125,
+          "text_value": null,
+          "unit": "pH"
+        },
+        {
+          "metric_name": "hydrophobic_ratio_modlamp",
+          "numeric_value": 0.22727272727272727,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "hydrophobic_moment_eisenberg",
+          "numeric_value": 0.3486689806655702,
+          "text_value": null,
+          "unit": "dimensionless"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-a2f463fb392f48c76fe1",
+        "sequence": "QIEWWLKLLKEKWRWWPYYWMW",
+        "status": "complete",
+        "molecular_weight": 3255.84,
+        "net_charge_ph7_4": 1.985,
+        "isoelectric_point": 9.90673828125,
+        "hydrophobic_ratio": 0.22727272727272727,
+        "hydrophobic_moment": 0.3486689806655702,
+        "assumptions": {
+          "ph": 7.4,
+          "termini": "free N-terminus and free C-terminus",
+          "hydrophobicity_scale": "Eisenberg consensus",
+          "hydrophobic_moment_angle_degrees": 100,
+          "hydrophobic_moment_window": 1000,
+          "modlamp_distribution_version": "4.3.2",
+          "modlamp_runtime_version": "4.3.0"
+        },
+        "limitations": [
+          "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+          "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+          "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+        ],
+        "method_version": "2026.08.04-v1"
+      }
+    },
+    {
+      "candidate_id": "proposal-355ff57fe1f8e43bb23d",
+      "sequence": "FIDDLLAKKKLKWWWAWWWIWLWWW",
+      "status": "complete",
+      "observations": [
+        {
+          "metric_name": "molecular_weight_da",
+          "numeric_value": 3591.26,
+          "text_value": null,
+          "unit": "Da"
+        },
+        {
+          "metric_name": "net_charge_ph7_4",
+          "numeric_value": 1.988,
+          "text_value": null,
+          "unit": "elementary_charge"
+        },
+        {
+          "metric_name": "isoelectric_point",
+          "numeric_value": 10.25830078125,
+          "text_value": null,
+          "unit": "pH"
+        },
+        {
+          "metric_name": "hydrophobic_ratio_modlamp",
+          "numeric_value": 0.36,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "hydrophobic_moment_eisenberg",
+          "numeric_value": 0.06736590315716012,
+          "text_value": null,
+          "unit": "dimensionless"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-355ff57fe1f8e43bb23d",
+        "sequence": "FIDDLLAKKKLKWWWAWWWIWLWWW",
+        "status": "complete",
+        "molecular_weight": 3591.26,
+        "net_charge_ph7_4": 1.988,
+        "isoelectric_point": 10.25830078125,
+        "hydrophobic_ratio": 0.36,
+        "hydrophobic_moment": 0.06736590315716012,
+        "assumptions": {
+          "ph": 7.4,
+          "termini": "free N-terminus and free C-terminus",
+          "hydrophobicity_scale": "Eisenberg consensus",
+          "hydrophobic_moment_angle_degrees": 100,
+          "hydrophobic_moment_window": 1000,
+          "modlamp_distribution_version": "4.3.2",
+          "modlamp_runtime_version": "4.3.0"
+        },
+        "limitations": [
+          "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+          "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+          "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+        ],
+        "method_version": "2026.08.04-v1"
+      }
+    },
+    {
+      "candidate_id": "proposal-35be0da193a61158df5c",
+      "sequence": "GAWKLLDALKWMWW",
+      "status": "complete",
+      "observations": [
+        {
+          "metric_name": "molecular_weight_da",
+          "numeric_value": 1804.17,
+          "text_value": null,
+          "unit": "Da"
+        },
+        {
+          "metric_name": "net_charge_ph7_4",
+          "numeric_value": 0.989,
+          "text_value": null,
+          "unit": "elementary_charge"
+        },
+        {
+          "metric_name": "isoelectric_point",
+          "numeric_value": 9.83984375,
+          "text_value": null,
+          "unit": "pH"
+        },
+        {
+          "metric_name": "hydrophobic_ratio_modlamp",
+          "numeric_value": 0.42857142857142855,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "hydrophobic_moment_eisenberg",
+          "numeric_value": 0.3208595758142173,
+          "text_value": null,
+          "unit": "dimensionless"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-35be0da193a61158df5c",
+        "sequence": "GAWKLLDALKWMWW",
+        "status": "complete",
+        "molecular_weight": 1804.17,
+        "net_charge_ph7_4": 0.989,
+        "isoelectric_point": 9.83984375,
+        "hydrophobic_ratio": 0.42857142857142855,
+        "hydrophobic_moment": 0.3208595758142173,
+        "assumptions": {
+          "ph": 7.4,
+          "termini": "free N-terminus and free C-terminus",
+          "hydrophobicity_scale": "Eisenberg consensus",
+          "hydrophobic_moment_angle_degrees": 100,
+          "hydrophobic_moment_window": 1000,
+          "modlamp_distribution_version": "4.3.2",
+          "modlamp_runtime_version": "4.3.0"
+        },
+        "limitations": [
+          "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+          "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+          "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+        ],
+        "method_version": "2026.08.04-v1"
+      }
+    },
+    {
+      "candidate_id": "proposal-14b2e9945a53ae25a0a6",
+      "sequence": "TKEWQKWWWRWIRFVAE",
+      "status": "complete",
+      "observations": [
+        {
+          "metric_name": "molecular_weight_da",
+          "numeric_value": 2435.78,
+          "text_value": null,
+          "unit": "Da"
+        },
+        {
+          "metric_name": "net_charge_ph7_4",
+          "numeric_value": 1.99,
+          "text_value": null,
+          "unit": "elementary_charge"
+        },
+        {
+          "metric_name": "isoelectric_point",
+          "numeric_value": 10.65380859375,
+          "text_value": null,
+          "unit": "pH"
+        },
+        {
+          "metric_name": "hydrophobic_ratio_modlamp",
+          "numeric_value": 0.23529411764705882,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "hydrophobic_moment_eisenberg",
+          "numeric_value": 0.6562638361847936,
+          "text_value": null,
+          "unit": "dimensionless"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-14b2e9945a53ae25a0a6",
+        "sequence": "TKEWQKWWWRWIRFVAE",
+        "status": "complete",
+        "molecular_weight": 2435.78,
+        "net_charge_ph7_4": 1.99,
+        "isoelectric_point": 10.65380859375,
+        "hydrophobic_ratio": 0.23529411764705882,
+        "hydrophobic_moment": 0.6562638361847936,
+        "assumptions": {
+          "ph": 7.4,
+          "termini": "free N-terminus and free C-terminus",
+          "hydrophobicity_scale": "Eisenberg consensus",
+          "hydrophobic_moment_angle_degrees": 100,
+          "hydrophobic_moment_window": 1000,
+          "modlamp_distribution_version": "4.3.2",
+          "modlamp_runtime_version": "4.3.0"
+        },
+        "limitations": [
+          "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+          "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+          "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+        ],
+        "method_version": "2026.08.04-v1"
+      }
+    },
+    {
+      "candidate_id": "proposal-723d4f1a0da321222841",
+      "sequence": "ISWKLSLLTELKKKILP",
+      "status": "complete",
+      "observations": [
+        {
+          "metric_name": "molecular_weight_da",
+          "numeric_value": 2010.51,
+          "text_value": null,
+          "unit": "Da"
+        },
+        {
+          "metric_name": "net_charge_ph7_4",
+          "numeric_value": 2.988,
+          "text_value": null,
+          "unit": "elementary_charge"
+        },
+        {
+          "metric_name": "isoelectric_point",
+          "numeric_value": 10.6904296875,
+          "text_value": null,
+          "unit": "pH"
+        },
+        {
+          "metric_name": "hydrophobic_ratio_modlamp",
+          "numeric_value": 0.4117647058823529,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "hydrophobic_moment_eisenberg",
+          "numeric_value": 0.2740614730373246,
+          "text_value": null,
+          "unit": "dimensionless"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-723d4f1a0da321222841",
+        "sequence": "ISWKLSLLTELKKKILP",
+        "status": "complete",
+        "molecular_weight": 2010.51,
+        "net_charge_ph7_4": 2.988,
+        "isoelectric_point": 10.6904296875,
+        "hydrophobic_ratio": 0.4117647058823529,
+        "hydrophobic_moment": 0.2740614730373246,
+        "assumptions": {
+          "ph": 7.4,
+          "termini": "free N-terminus and free C-terminus",
+          "hydrophobicity_scale": "Eisenberg consensus",
+          "hydrophobic_moment_angle_degrees": 100,
+          "hydrophobic_moment_window": 1000,
+          "modlamp_distribution_version": "4.3.2",
+          "modlamp_runtime_version": "4.3.0"
+        },
+        "limitations": [
+          "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+          "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+          "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+        ],
+        "method_version": "2026.08.04-v1"
+      }
+    },
+    {
+      "candidate_id": "proposal-57191a67ee0241638cae",
+      "sequence": "RWCYRAGVCMYYWWWWWW",
+      "status": "complete",
+      "observations": [
+        {
+          "metric_name": "molecular_weight_da",
+          "numeric_value": 2688.12,
+          "text_value": null,
+          "unit": "Da"
+        },
+        {
+          "metric_name": "net_charge_ph7_4",
+          "numeric_value": 1.676,
+          "text_value": null,
+          "unit": "elementary_charge"
+        },
+        {
+          "metric_name": "isoelectric_point",
+          "numeric_value": 8.8046875,
+          "text_value": null,
+          "unit": "pH"
+        },
+        {
+          "metric_name": "hydrophobic_ratio_modlamp",
+          "numeric_value": 0.2777777777777778,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "hydrophobic_moment_eisenberg",
+          "numeric_value": 0.32208256512692096,
+          "text_value": null,
+          "unit": "dimensionless"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-57191a67ee0241638cae",
+        "sequence": "RWCYRAGVCMYYWWWWWW",
+        "status": "complete",
+        "molecular_weight": 2688.12,
+        "net_charge_ph7_4": 1.676,
+        "isoelectric_point": 8.8046875,
+        "hydrophobic_ratio": 0.2777777777777778,
+        "hydrophobic_moment": 0.32208256512692096,
+        "assumptions": {
+          "ph": 7.4,
+          "termini": "free N-terminus and free C-terminus",
+          "hydrophobicity_scale": "Eisenberg consensus",
+          "hydrophobic_moment_angle_degrees": 100,
+          "hydrophobic_moment_window": 1000,
+          "modlamp_distribution_version": "4.3.2",
+          "modlamp_runtime_version": "4.3.0"
+        },
+        "limitations": [
+          "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+          "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+          "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+        ],
+        "method_version": "2026.08.04-v1"
+      }
+    },
+    {
+      "candidate_id": "proposal-1cfc6427d00a8d526338",
+      "sequence": "KLADDAANWKKWRKIMWW",
+      "status": "complete",
+      "observations": [
+        {
+          "metric_name": "molecular_weight_da",
+          "numeric_value": 2346.76,
+          "text_value": null,
+          "unit": "Da"
+        },
+        {
+          "metric_name": "net_charge_ph7_4",
+          "numeric_value": 2.988,
+          "text_value": null,
+          "unit": "elementary_charge"
+        },
+        {
+          "metric_name": "isoelectric_point",
+          "numeric_value": 10.67529296875,
+          "text_value": null,
+          "unit": "pH"
+        },
+        {
+          "metric_name": "hydrophobic_ratio_modlamp",
+          "numeric_value": 0.3333333333333333,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "hydrophobic_moment_eisenberg",
+          "numeric_value": 0.09379130525972339,
+          "text_value": null,
+          "unit": "dimensionless"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-1cfc6427d00a8d526338",
+        "sequence": "KLADDAANWKKWRKIMWW",
+        "status": "complete",
+        "molecular_weight": 2346.76,
+        "net_charge_ph7_4": 2.988,
+        "isoelectric_point": 10.67529296875,
+        "hydrophobic_ratio": 0.3333333333333333,
+        "hydrophobic_moment": 0.09379130525972339,
+        "assumptions": {
+          "ph": 7.4,
+          "termini": "free N-terminus and free C-terminus",
+          "hydrophobicity_scale": "Eisenberg consensus",
+          "hydrophobic_moment_angle_degrees": 100,
+          "hydrophobic_moment_window": 1000,
+          "modlamp_distribution_version": "4.3.2",
+          "modlamp_runtime_version": "4.3.0"
+        },
+        "limitations": [
+          "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+          "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+          "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+        ],
+        "method_version": "2026.08.04-v1"
+      }
+    },
+    {
+      "candidate_id": "proposal-15cce707dc71083cfc3b",
+      "sequence": "TWLKWWWDLWKKKLLEAAESASTLL",
+      "status": "complete",
+      "observations": [
+        {
+          "metric_name": "molecular_weight_da",
+          "numeric_value": 3103.62,
+          "text_value": null,
+          "unit": "Da"
+        },
+        {
+          "metric_name": "net_charge_ph7_4",
+          "numeric_value": 0.989,
+          "text_value": null,
+          "unit": "elementary_charge"
+        },
+        {
+          "metric_name": "isoelectric_point",
+          "numeric_value": 9.650390625,
+          "text_value": null,
+          "unit": "pH"
+        },
+        {
+          "metric_name": "hydrophobic_ratio_modlamp",
+          "numeric_value": 0.36,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "hydrophobic_moment_eisenberg",
+          "numeric_value": 0.3455180020953083,
+          "text_value": null,
+          "unit": "dimensionless"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-15cce707dc71083cfc3b",
+        "sequence": "TWLKWWWDLWKKKLLEAAESASTLL",
+        "status": "complete",
+        "molecular_weight": 3103.62,
+        "net_charge_ph7_4": 0.989,
+        "isoelectric_point": 9.650390625,
+        "hydrophobic_ratio": 0.36,
+        "hydrophobic_moment": 0.3455180020953083,
+        "assumptions": {
+          "ph": 7.4,
+          "termini": "free N-terminus and free C-terminus",
+          "hydrophobicity_scale": "Eisenberg consensus",
+          "hydrophobic_moment_angle_degrees": 100,
+          "hydrophobic_moment_window": 1000,
+          "modlamp_distribution_version": "4.3.2",
+          "modlamp_runtime_version": "4.3.0"
+        },
+        "limitations": [
+          "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+          "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+          "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+        ],
+        "method_version": "2026.08.04-v1"
+      }
+    },
+    {
+      "candidate_id": "proposal-6c11b36af1fe71fb5606",
+      "sequence": "RWAEEKWWWAAALLLKAAWRAF",
+      "status": "complete",
+      "observations": [
+        {
+          "metric_name": "molecular_weight_da",
+          "numeric_value": 2760.2,
+          "text_value": null,
+          "unit": "Da"
+        },
+        {
+          "metric_name": "net_charge_ph7_4",
+          "numeric_value": 1.99,
+          "text_value": null,
+          "unit": "elementary_charge"
+        },
+        {
+          "metric_name": "isoelectric_point",
+          "numeric_value": 10.65380859375,
+          "text_value": null,
+          "unit": "pH"
+        },
+        {
+          "metric_name": "hydrophobic_ratio_modlamp",
+          "numeric_value": 0.5,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "hydrophobic_moment_eisenberg",
+          "numeric_value": 0.3355318310594661,
+          "text_value": null,
+          "unit": "dimensionless"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-6c11b36af1fe71fb5606",
+        "sequence": "RWAEEKWWWAAALLLKAAWRAF",
+        "status": "complete",
+        "molecular_weight": 2760.2,
+        "net_charge_ph7_4": 1.99,
+        "isoelectric_point": 10.65380859375,
+        "hydrophobic_ratio": 0.5,
+        "hydrophobic_moment": 0.3355318310594661,
+        "assumptions": {
+          "ph": 7.4,
+          "termini": "free N-terminus and free C-terminus",
+          "hydrophobicity_scale": "Eisenberg consensus",
+          "hydrophobic_moment_angle_degrees": 100,
+          "hydrophobic_moment_window": 1000,
+          "modlamp_distribution_version": "4.3.2",
+          "modlamp_runtime_version": "4.3.0"
+        },
+        "limitations": [
+          "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+          "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+          "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+        ],
+        "method_version": "2026.08.04-v1"
+      }
+    },
+    {
+      "candidate_id": "proposal-e3cb44834570fa032828",
+      "sequence": "TKWKALDKKLKLLADELLEEWWWWW",
+      "status": "complete",
+      "observations": [
+        {
+          "metric_name": "molecular_weight_da",
+          "numeric_value": 3315.87,
+          "text_value": null,
+          "unit": "Da"
+        },
+        {
+          "metric_name": "net_charge_ph7_4",
+          "numeric_value": -0.011,
+          "text_value": null,
+          "unit": "elementary_charge"
+        },
+        {
+          "metric_name": "isoelectric_point",
+          "numeric_value": 7.0,
+          "text_value": null,
+          "unit": "pH"
+        },
+        {
+          "metric_name": "hydrophobic_ratio_modlamp",
+          "numeric_value": 0.32,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "hydrophobic_moment_eisenberg",
+          "numeric_value": 0.31724669956220813,
+          "text_value": null,
+          "unit": "dimensionless"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-e3cb44834570fa032828",
+        "sequence": "TKWKALDKKLKLLADELLEEWWWWW",
+        "status": "complete",
+        "molecular_weight": 3315.87,
+        "net_charge_ph7_4": -0.011,
+        "isoelectric_point": 7.0,
+        "hydrophobic_ratio": 0.32,
+        "hydrophobic_moment": 0.31724669956220813,
+        "assumptions": {
+          "ph": 7.4,
+          "termini": "free N-terminus and free C-terminus",
+          "hydrophobicity_scale": "Eisenberg consensus",
+          "hydrophobic_moment_angle_degrees": 100,
+          "hydrophobic_moment_window": 1000,
+          "modlamp_distribution_version": "4.3.2",
+          "modlamp_runtime_version": "4.3.0"
+        },
+        "limitations": [
+          "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+          "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+          "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+        ],
+        "method_version": "2026.08.04-v1"
+      }
+    },
+    {
+      "candidate_id": "proposal-906f6db6e83e773e7831",
+      "sequence": "IEDNDEKLWKLLKLKWWKKKWWWWW",
+      "status": "complete",
+      "observations": [
+        {
+          "metric_name": "molecular_weight_da",
+          "numeric_value": 3573.2,
+          "text_value": null,
+          "unit": "Da"
+        },
+        {
+          "metric_name": "net_charge_ph7_4",
+          "numeric_value": 2.987,
+          "text_value": null,
+          "unit": "elementary_charge"
+        },
+        {
+          "metric_name": "isoelectric_point",
+          "numeric_value": 10.303955078125,
+          "text_value": null,
+          "unit": "pH"
+        },
+        {
+          "metric_name": "hydrophobic_ratio_modlamp",
+          "numeric_value": 0.2,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "hydrophobic_moment_eisenberg",
+          "numeric_value": 0.12839702788549762,
+          "text_value": null,
+          "unit": "dimensionless"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-906f6db6e83e773e7831",
+        "sequence": "IEDNDEKLWKLLKLKWWKKKWWWWW",
+        "status": "complete",
+        "molecular_weight": 3573.2,
+        "net_charge_ph7_4": 2.987,
+        "isoelectric_point": 10.303955078125,
+        "hydrophobic_ratio": 0.2,
+        "hydrophobic_moment": 0.12839702788549762,
+        "assumptions": {
+          "ph": 7.4,
+          "termini": "free N-terminus and free C-terminus",
+          "hydrophobicity_scale": "Eisenberg consensus",
+          "hydrophobic_moment_angle_degrees": 100,
+          "hydrophobic_moment_window": 1000,
+          "modlamp_distribution_version": "4.3.2",
+          "modlamp_runtime_version": "4.3.0"
+        },
+        "limitations": [
+          "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+          "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+          "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+        ],
+        "method_version": "2026.08.04-v1"
+      }
+    },
+    {
+      "candidate_id": "proposal-e02f73bce28144b48aeb",
+      "sequence": "DKLNWKSLDSYWKKFWWLA",
+      "status": "complete",
+      "observations": [
+        {
+          "metric_name": "molecular_weight_da",
+          "numeric_value": 2514.88,
+          "text_value": null,
+          "unit": "Da"
+        },
+        {
+          "metric_name": "net_charge_ph7_4",
+          "numeric_value": 1.986,
+          "text_value": null,
+          "unit": "elementary_charge"
+        },
+        {
+          "metric_name": "isoelectric_point",
+          "numeric_value": 10.020263671875,
+          "text_value": null,
+          "unit": "pH"
+        },
+        {
+          "metric_name": "hydrophobic_ratio_modlamp",
+          "numeric_value": 0.2631578947368421,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "hydrophobic_moment_eisenberg",
+          "numeric_value": 0.3160747189854657,
+          "text_value": null,
+          "unit": "dimensionless"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-e02f73bce28144b48aeb",
+        "sequence": "DKLNWKSLDSYWKKFWWLA",
+        "status": "complete",
+        "molecular_weight": 2514.88,
+        "net_charge_ph7_4": 1.986,
+        "isoelectric_point": 10.020263671875,
+        "hydrophobic_ratio": 0.2631578947368421,
+        "hydrophobic_moment": 0.3160747189854657,
+        "assumptions": {
+          "ph": 7.4,
+          "termini": "free N-terminus and free C-terminus",
+          "hydrophobicity_scale": "Eisenberg consensus",
+          "hydrophobic_moment_angle_degrees": 100,
+          "hydrophobic_moment_window": 1000,
+          "modlamp_distribution_version": "4.3.2",
+          "modlamp_runtime_version": "4.3.0"
+        },
+        "limitations": [
+          "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+          "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+          "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+        ],
+        "method_version": "2026.08.04-v1"
+      }
+    },
+    {
+      "candidate_id": "proposal-ed1f99fd8f538fc1a522",
+      "sequence": "IARLWWWELLWKWKWKALAMAEDA",
+      "status": "complete",
+      "observations": [
+        {
+          "metric_name": "molecular_weight_da",
+          "numeric_value": 3101.67,
+          "text_value": null,
+          "unit": "Da"
+        },
+        {
+          "metric_name": "net_charge_ph7_4",
+          "numeric_value": 0.989,
+          "text_value": null,
+          "unit": "elementary_charge"
+        },
+        {
+          "metric_name": "isoelectric_point",
+          "numeric_value": 9.72607421875,
+          "text_value": null,
+          "unit": "pH"
+        },
+        {
+          "metric_name": "hydrophobic_ratio_modlamp",
+          "numeric_value": 0.4583333333333333,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "hydrophobic_moment_eisenberg",
+          "numeric_value": 0.04687071169846658,
+          "text_value": null,
+          "unit": "dimensionless"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-ed1f99fd8f538fc1a522",
+        "sequence": "IARLWWWELLWKWKWKALAMAEDA",
+        "status": "complete",
+        "molecular_weight": 3101.67,
+        "net_charge_ph7_4": 0.989,
+        "isoelectric_point": 9.72607421875,
+        "hydrophobic_ratio": 0.4583333333333333,
+        "hydrophobic_moment": 0.04687071169846658,
+        "assumptions": {
+          "ph": 7.4,
+          "termini": "free N-terminus and free C-terminus",
+          "hydrophobicity_scale": "Eisenberg consensus",
+          "hydrophobic_moment_angle_degrees": 100,
+          "hydrophobic_moment_window": 1000,
+          "modlamp_distribution_version": "4.3.2",
+          "modlamp_runtime_version": "4.3.0"
+        },
+        "limitations": [
+          "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+          "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+          "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+        ],
+        "method_version": "2026.08.04-v1"
+      }
+    },
+    {
+      "candidate_id": "proposal-99f1064270dd8d4a1a4a",
+      "sequence": "ALWWWPWLPKLWWGIFNGLGFGCF",
+      "status": "complete",
+      "observations": [
+        {
+          "metric_name": "molecular_weight_da",
+          "numeric_value": 2981.52,
+          "text_value": null,
+          "unit": "Da"
+        },
+        {
+          "metric_name": "net_charge_ph7_4",
+          "numeric_value": 0.835,
+          "text_value": null,
+          "unit": "elementary_charge"
+        },
+        {
+          "metric_name": "isoelectric_point",
+          "numeric_value": 8.744140625,
+          "text_value": null,
+          "unit": "pH"
+        },
+        {
+          "metric_name": "hydrophobic_ratio_modlamp",
+          "numeric_value": 0.4166666666666667,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "hydrophobic_moment_eisenberg",
+          "numeric_value": 0.19714486217615293,
+          "text_value": null,
+          "unit": "dimensionless"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-99f1064270dd8d4a1a4a",
+        "sequence": "ALWWWPWLPKLWWGIFNGLGFGCF",
+        "status": "complete",
+        "molecular_weight": 2981.52,
+        "net_charge_ph7_4": 0.835,
+        "isoelectric_point": 8.744140625,
+        "hydrophobic_ratio": 0.4166666666666667,
+        "hydrophobic_moment": 0.19714486217615293,
+        "assumptions": {
+          "ph": 7.4,
+          "termini": "free N-terminus and free C-terminus",
+          "hydrophobicity_scale": "Eisenberg consensus",
+          "hydrophobic_moment_angle_degrees": 100,
+          "hydrophobic_moment_window": 1000,
+          "modlamp_distribution_version": "4.3.2",
+          "modlamp_runtime_version": "4.3.0"
+        },
+        "limitations": [
+          "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+          "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+          "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+        ],
+        "method_version": "2026.08.04-v1"
+      }
+    },
+    {
+      "candidate_id": "proposal-3c80033886185ed4db4e",
+      "sequence": "LWPWRNKLKDLLGGGIQKAWDW",
+      "status": "complete",
+      "observations": [
+        {
+          "metric_name": "molecular_weight_da",
+          "numeric_value": 2681.11,
+          "text_value": null,
+          "unit": "Da"
+        },
+        {
+          "metric_name": "net_charge_ph7_4",
+          "numeric_value": 1.988,
+          "text_value": null,
+          "unit": "elementary_charge"
+        },
+        {
+          "metric_name": "isoelectric_point",
+          "numeric_value": 10.41064453125,
+          "text_value": null,
+          "unit": "pH"
+        },
+        {
+          "metric_name": "hydrophobic_ratio_modlamp",
+          "numeric_value": 0.2727272727272727,
+          "text_value": null,
+          "unit": "fraction"
+        },
+        {
+          "metric_name": "hydrophobic_moment_eisenberg",
+          "numeric_value": 0.3121929095557207,
+          "text_value": null,
+          "unit": "dimensionless"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-3c80033886185ed4db4e",
+        "sequence": "LWPWRNKLKDLLGGGIQKAWDW",
+        "status": "complete",
+        "molecular_weight": 2681.11,
+        "net_charge_ph7_4": 1.988,
+        "isoelectric_point": 10.41064453125,
+        "hydrophobic_ratio": 0.2727272727272727,
+        "hydrophobic_moment": 0.3121929095557207,
+        "assumptions": {
+          "ph": 7.4,
+          "termini": "free N-terminus and free C-terminus",
+          "hydrophobicity_scale": "Eisenberg consensus",
+          "hydrophobic_moment_angle_degrees": 100,
+          "hydrophobic_moment_window": 1000,
+          "modlamp_distribution_version": "4.3.2",
+          "modlamp_runtime_version": "4.3.0"
+        },
+        "limitations": [
+          "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+          "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+          "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+        ],
+        "method_version": "2026.08.04-v1"
+      }
+    }
+  ],
+  "raw_rows": [
+    {
+      "candidate_id": "proposal-0dd17af686e13a672aa8",
+      "sequence": "IWPWKNKLKDLLGGGIQKAWDW",
+      "status": "complete",
+      "molecular_weight": 2653.1,
+      "net_charge_ph7_4": 1.988,
+      "isoelectric_point": 10.25830078125,
+      "hydrophobic_ratio": 0.2727272727272727,
+      "hydrophobic_moment": 0.35897665010451824,
+      "assumptions": {
+        "ph": 7.4,
+        "termini": "free N-terminus and free C-terminus",
+        "hydrophobicity_scale": "Eisenberg consensus",
+        "hydrophobic_moment_angle_degrees": 100,
+        "hydrophobic_moment_window": 1000,
+        "modlamp_distribution_version": "4.3.2",
+        "modlamp_runtime_version": "4.3.0"
+      },
+      "limitations": [
+        "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+        "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+        "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+      ],
+      "method_version": "2026.08.04-v1"
+    },
+    {
+      "candidate_id": "proposal-122281280ce83bf789ad",
+      "sequence": "MEKEEKLKWRSWWWWWKWWWKAR",
+      "status": "complete",
+      "molecular_weight": 3436.99,
+      "net_charge_ph7_4": 3.989,
+      "isoelectric_point": 10.822509765625,
+      "hydrophobic_ratio": 0.13043478260869565,
+      "hydrophobic_moment": 0.2560177685648433,
+      "assumptions": {
+        "ph": 7.4,
+        "termini": "free N-terminus and free C-terminus",
+        "hydrophobicity_scale": "Eisenberg consensus",
+        "hydrophobic_moment_angle_degrees": 100,
+        "hydrophobic_moment_window": 1000,
+        "modlamp_distribution_version": "4.3.2",
+        "modlamp_runtime_version": "4.3.0"
+      },
+      "limitations": [
+        "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+        "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+        "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+      ],
+      "method_version": "2026.08.04-v1"
+    },
+    {
+      "candidate_id": "proposal-0d00601938184f06c100",
+      "sequence": "KFRLWKLLLQLVGERAG",
+      "status": "complete",
+      "molecular_weight": 2027.46,
+      "net_charge_ph7_4": 2.989,
+      "isoelectric_point": 11.392578125,
+      "hydrophobic_ratio": 0.47058823529411764,
+      "hydrophobic_moment": 0.2892638721306539,
+      "assumptions": {
+        "ph": 7.4,
+        "termini": "free N-terminus and free C-terminus",
+        "hydrophobicity_scale": "Eisenberg consensus",
+        "hydrophobic_moment_angle_degrees": 100,
+        "hydrophobic_moment_window": 1000,
+        "modlamp_distribution_version": "4.3.2",
+        "modlamp_runtime_version": "4.3.0"
+      },
+      "limitations": [
+        "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+        "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+        "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+      ],
+      "method_version": "2026.08.04-v1"
+    },
+    {
+      "candidate_id": "proposal-5ae2704b1ed0b891bf1e",
+      "sequence": "FRWKKWLLAAADEWWWWWWWWWWWW",
+      "status": "complete",
+      "molecular_weight": 3868.41,
+      "net_charge_ph7_4": 0.989,
+      "isoelectric_point": 9.833984375,
+      "hydrophobic_ratio": 0.24,
+      "hydrophobic_moment": 0.22116601441352934,
+      "assumptions": {
+        "ph": 7.4,
+        "termini": "free N-terminus and free C-terminus",
+        "hydrophobicity_scale": "Eisenberg consensus",
+        "hydrophobic_moment_angle_degrees": 100,
+        "hydrophobic_moment_window": 1000,
+        "modlamp_distribution_version": "4.3.2",
+        "modlamp_runtime_version": "4.3.0"
+      },
+      "limitations": [
+        "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+        "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+        "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+      ],
+      "method_version": "2026.08.04-v1"
+    },
+    {
+      "candidate_id": "proposal-bd01225127bffc087dfd",
+      "sequence": "MVDWMLAMMAKKWKKLLLLTTKDAM",
+      "status": "complete",
+      "molecular_weight": 2997.82,
+      "net_charge_ph7_4": 2.987,
+      "isoelectric_point": 10.518310546875,
+      "hydrophobic_ratio": 0.56,
+      "hydrophobic_moment": 0.26515622115127185,
+      "assumptions": {
+        "ph": 7.4,
+        "termini": "free N-terminus and free C-terminus",
+        "hydrophobicity_scale": "Eisenberg consensus",
+        "hydrophobic_moment_angle_degrees": 100,
+        "hydrophobic_moment_window": 1000,
+        "modlamp_distribution_version": "4.3.2",
+        "modlamp_runtime_version": "4.3.0"
+      },
+      "limitations": [
+        "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+        "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+        "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+      ],
+      "method_version": "2026.08.04-v1"
+    },
+    {
+      "candidate_id": "proposal-1b78f79083067b8686c2",
+      "sequence": "NWENLDLWWKNKWWWWWWWWWWRR",
+      "status": "complete",
+      "molecular_weight": 3820.29,
+      "net_charge_ph7_4": 1.989,
+      "isoelectric_point": 10.65380859375,
+      "hydrophobic_ratio": 0.08333333333333333,
+      "hydrophobic_moment": 0.08251456697885183,
+      "assumptions": {
+        "ph": 7.4,
+        "termini": "free N-terminus and free C-terminus",
+        "hydrophobicity_scale": "Eisenberg consensus",
+        "hydrophobic_moment_angle_degrees": 100,
+        "hydrophobic_moment_window": 1000,
+        "modlamp_distribution_version": "4.3.2",
+        "modlamp_runtime_version": "4.3.0"
+      },
+      "limitations": [
+        "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+        "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+        "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+      ],
+      "method_version": "2026.08.04-v1"
+    },
+    {
+      "candidate_id": "proposal-7e48fcce867f25131ac9",
+      "sequence": "EKWWYFFRIHFPTILKGW",
+      "status": "complete",
+      "molecular_weight": 2454.87,
+      "net_charge_ph7_4": 2.029,
+      "isoelectric_point": 10.23193359375,
+      "hydrophobic_ratio": 0.3333333333333333,
+      "hydrophobic_moment": 0.39808600278539813,
+      "assumptions": {
+        "ph": 7.4,
+        "termini": "free N-terminus and free C-terminus",
+        "hydrophobicity_scale": "Eisenberg consensus",
+        "hydrophobic_moment_angle_degrees": 100,
+        "hydrophobic_moment_window": 1000,
+        "modlamp_distribution_version": "4.3.2",
+        "modlamp_runtime_version": "4.3.0"
+      },
+      "limitations": [
+        "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+        "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+        "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+      ],
+      "method_version": "2026.08.04-v1"
+    },
+    {
+      "candidate_id": "proposal-90e7d3daa047036cd56a",
+      "sequence": "FMKNVWKWEEKWWRFLLKRAAAADD",
+      "status": "complete",
+      "molecular_weight": 3225.73,
+      "net_charge_ph7_4": 1.989,
+      "isoelectric_point": 10.2451171875,
+      "hydrophobic_ratio": 0.4,
+      "hydrophobic_moment": 0.46081004048055296,
+      "assumptions": {
+        "ph": 7.4,
+        "termini": "free N-terminus and free C-terminus",
+        "hydrophobicity_scale": "Eisenberg consensus",
+        "hydrophobic_moment_angle_degrees": 100,
+        "hydrophobic_moment_window": 1000,
+        "modlamp_distribution_version": "4.3.2",
+        "modlamp_runtime_version": "4.3.0"
+      },
+      "limitations": [
+        "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+        "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+        "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+      ],
+      "method_version": "2026.08.04-v1"
+    },
+    {
+      "candidate_id": "proposal-06113810dfbb97f27dba",
+      "sequence": "IVLTKKPKWWQDKQWKKLADKKKK",
+      "status": "complete",
+      "molecular_weight": 3052.71,
+      "net_charge_ph7_4": 7.985,
+      "isoelectric_point": 11.04248046875,
+      "hydrophobic_ratio": 0.20833333333333334,
+      "hydrophobic_moment": 0.1962018508780955,
+      "assumptions": {
+        "ph": 7.4,
+        "termini": "free N-terminus and free C-terminus",
+        "hydrophobicity_scale": "Eisenberg consensus",
+        "hydrophobic_moment_angle_degrees": 100,
+        "hydrophobic_moment_window": 1000,
+        "modlamp_distribution_version": "4.3.2",
+        "modlamp_runtime_version": "4.3.0"
+      },
+      "limitations": [
+        "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+        "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+        "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+      ],
+      "method_version": "2026.08.04-v1"
+    },
+    {
+      "candidate_id": "proposal-5fcee80d713dad387d38",
+      "sequence": "TKNKKELKWWKLKLSGAAGAWWKDK",
+      "status": "complete",
+      "molecular_weight": 3001.54,
+      "net_charge_ph7_4": 5.986,
+      "isoelectric_point": 10.898681640625,
+      "hydrophobic_ratio": 0.24,
+      "hydrophobic_moment": 0.1232670808149634,
+      "assumptions": {
+        "ph": 7.4,
+        "termini": "free N-terminus and free C-terminus",
+        "hydrophobicity_scale": "Eisenberg consensus",
+        "hydrophobic_moment_angle_degrees": 100,
+        "hydrophobic_moment_window": 1000,
+        "modlamp_distribution_version": "4.3.2",
+        "modlamp_runtime_version": "4.3.0"
+      },
+      "limitations": [
+        "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+        "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+        "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+      ],
+      "method_version": "2026.08.04-v1"
+    },
+    {
+      "candidate_id": "proposal-b8403969544f96cef79e",
+      "sequence": "AIAVIQKKEENWWWWKFKWWRWF",
+      "status": "complete",
+      "molecular_weight": 3252.77,
+      "net_charge_ph7_4": 2.989,
+      "isoelectric_point": 10.67529296875,
+      "hydrophobic_ratio": 0.30434782608695654,
+      "hydrophobic_moment": 0.29631785580344183,
+      "assumptions": {
+        "ph": 7.4,
+        "termini": "free N-terminus and free C-terminus",
+        "hydrophobicity_scale": "Eisenberg consensus",
+        "hydrophobic_moment_angle_degrees": 100,
+        "hydrophobic_moment_window": 1000,
+        "modlamp_distribution_version": "4.3.2",
+        "modlamp_runtime_version": "4.3.0"
+      },
+      "limitations": [
+        "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+        "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+        "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+      ],
+      "method_version": "2026.08.04-v1"
+    },
+    {
+      "candidate_id": "proposal-86d0999823954a14b613",
+      "sequence": "KMWKKRFELHVDLWLLKK",
+      "status": "complete",
+      "molecular_weight": 2398.96,
+      "net_charge_ph7_4": 4.03,
+      "isoelectric_point": 10.83935546875,
+      "hydrophobic_ratio": 0.3888888888888889,
+      "hydrophobic_moment": 0.10336305235004734,
+      "assumptions": {
+        "ph": 7.4,
+        "termini": "free N-terminus and free C-terminus",
+        "hydrophobicity_scale": "Eisenberg consensus",
+        "hydrophobic_moment_angle_degrees": 100,
+        "hydrophobic_moment_window": 1000,
+        "modlamp_distribution_version": "4.3.2",
+        "modlamp_runtime_version": "4.3.0"
+      },
+      "limitations": [
+        "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+        "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+        "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+      ],
+      "method_version": "2026.08.04-v1"
+    },
+    {
+      "candidate_id": "proposal-4fbbd387f7c94275f3e2",
+      "sequence": "TKWKKWFWWRWWKWLFRNFLAEDAD",
+      "status": "complete",
+      "molecular_weight": 3531.04,
+      "net_charge_ph7_4": 2.988,
+      "isoelectric_point": 10.6611328125,
+      "hydrophobic_ratio": 0.28,
+      "hydrophobic_moment": 0.1707441012427168,
+      "assumptions": {
+        "ph": 7.4,
+        "termini": "free N-terminus and free C-terminus",
+        "hydrophobicity_scale": "Eisenberg consensus",
+        "hydrophobic_moment_angle_degrees": 100,
+        "hydrophobic_moment_window": 1000,
+        "modlamp_distribution_version": "4.3.2",
+        "modlamp_runtime_version": "4.3.0"
+      },
+      "limitations": [
+        "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+        "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+        "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+      ],
+      "method_version": "2026.08.04-v1"
+    },
+    {
+      "candidate_id": "proposal-deee06e71499bbaa3590",
+      "sequence": "FRWKKEWWWWWWWWWWLLLLEWWWW",
+      "status": "complete",
+      "molecular_weight": 4081.73,
+      "net_charge_ph7_4": 0.99,
+      "isoelectric_point": 9.833984375,
+      "hydrophobic_ratio": 0.2,
+      "hydrophobic_moment": 0.11982392676599597,
+      "assumptions": {
+        "ph": 7.4,
+        "termini": "free N-terminus and free C-terminus",
+        "hydrophobicity_scale": "Eisenberg consensus",
+        "hydrophobic_moment_angle_degrees": 100,
+        "hydrophobic_moment_window": 1000,
+        "modlamp_distribution_version": "4.3.2",
+        "modlamp_runtime_version": "4.3.0"
+      },
+      "limitations": [
+        "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+        "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+        "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+      ],
+      "method_version": "2026.08.04-v1"
+    },
+    {
+      "candidate_id": "proposal-6db587fa0dda6b602440",
+      "sequence": "RWFNWRIIHWKRPDGYGW",
+      "status": "complete",
+      "molecular_weight": 2473.8,
+      "net_charge_ph7_4": 3.029,
+      "isoelectric_point": 11.18505859375,
+      "hydrophobic_ratio": 0.16666666666666666,
+      "hydrophobic_moment": 0.23571389895455497,
+      "assumptions": {
+        "ph": 7.4,
+        "termini": "free N-terminus and free C-terminus",
+        "hydrophobicity_scale": "Eisenberg consensus",
+        "hydrophobic_moment_angle_degrees": 100,
+        "hydrophobic_moment_window": 1000,
+        "modlamp_distribution_version": "4.3.2",
+        "modlamp_runtime_version": "4.3.0"
+      },
+      "limitations": [
+        "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+        "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+        "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+      ],
+      "method_version": "2026.08.04-v1"
+    },
+    {
+      "candidate_id": "proposal-a4f3dffeda951e93ba90",
+      "sequence": "SWDWKLIDLNLFIKKWKWWRR",
+      "status": "complete",
+      "molecular_weight": 2918.45,
+      "net_charge_ph7_4": 3.988,
+      "isoelectric_point": 11.06494140625,
+      "hydrophobic_ratio": 0.2857142857142857,
+      "hydrophobic_moment": 0.2042170315159876,
+      "assumptions": {
+        "ph": 7.4,
+        "termini": "free N-terminus and free C-terminus",
+        "hydrophobicity_scale": "Eisenberg consensus",
+        "hydrophobic_moment_angle_degrees": 100,
+        "hydrophobic_moment_window": 1000,
+        "modlamp_distribution_version": "4.3.2",
+        "modlamp_runtime_version": "4.3.0"
+      },
+      "limitations": [
+        "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+        "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+        "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+      ],
+      "method_version": "2026.08.04-v1"
+    },
+    {
+      "candidate_id": "proposal-03f82ae59a1a7c4e5ec0",
+      "sequence": "TKKLWLLKKLWLLDAAHLLDLADAA",
+      "status": "complete",
+      "molecular_weight": 2860.45,
+      "net_charge_ph7_4": 1.03,
+      "isoelectric_point": 9.650390625,
+      "hydrophobic_ratio": 0.56,
+      "hydrophobic_moment": 0.203776417642676,
+      "assumptions": {
+        "ph": 7.4,
+        "termini": "free N-terminus and free C-terminus",
+        "hydrophobicity_scale": "Eisenberg consensus",
+        "hydrophobic_moment_angle_degrees": 100,
+        "hydrophobic_moment_window": 1000,
+        "modlamp_distribution_version": "4.3.2",
+        "modlamp_runtime_version": "4.3.0"
+      },
+      "limitations": [
+        "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+        "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+        "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+      ],
+      "method_version": "2026.08.04-v1"
+    },
+    {
+      "candidate_id": "proposal-a2f463fb392f48c76fe1",
+      "sequence": "QIEWWLKLLKEKWRWWPYYWMW",
+      "status": "complete",
+      "molecular_weight": 3255.84,
+      "net_charge_ph7_4": 1.985,
+      "isoelectric_point": 9.90673828125,
+      "hydrophobic_ratio": 0.22727272727272727,
+      "hydrophobic_moment": 0.3486689806655702,
+      "assumptions": {
+        "ph": 7.4,
+        "termini": "free N-terminus and free C-terminus",
+        "hydrophobicity_scale": "Eisenberg consensus",
+        "hydrophobic_moment_angle_degrees": 100,
+        "hydrophobic_moment_window": 1000,
+        "modlamp_distribution_version": "4.3.2",
+        "modlamp_runtime_version": "4.3.0"
+      },
+      "limitations": [
+        "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+        "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+        "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+      ],
+      "method_version": "2026.08.04-v1"
+    },
+    {
+      "candidate_id": "proposal-355ff57fe1f8e43bb23d",
+      "sequence": "FIDDLLAKKKLKWWWAWWWIWLWWW",
+      "status": "complete",
+      "molecular_weight": 3591.26,
+      "net_charge_ph7_4": 1.988,
+      "isoelectric_point": 10.25830078125,
+      "hydrophobic_ratio": 0.36,
+      "hydrophobic_moment": 0.06736590315716012,
+      "assumptions": {
+        "ph": 7.4,
+        "termini": "free N-terminus and free C-terminus",
+        "hydrophobicity_scale": "Eisenberg consensus",
+        "hydrophobic_moment_angle_degrees": 100,
+        "hydrophobic_moment_window": 1000,
+        "modlamp_distribution_version": "4.3.2",
+        "modlamp_runtime_version": "4.3.0"
+      },
+      "limitations": [
+        "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+        "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+        "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+      ],
+      "method_version": "2026.08.04-v1"
+    },
+    {
+      "candidate_id": "proposal-35be0da193a61158df5c",
+      "sequence": "GAWKLLDALKWMWW",
+      "status": "complete",
+      "molecular_weight": 1804.17,
+      "net_charge_ph7_4": 0.989,
+      "isoelectric_point": 9.83984375,
+      "hydrophobic_ratio": 0.42857142857142855,
+      "hydrophobic_moment": 0.3208595758142173,
+      "assumptions": {
+        "ph": 7.4,
+        "termini": "free N-terminus and free C-terminus",
+        "hydrophobicity_scale": "Eisenberg consensus",
+        "hydrophobic_moment_angle_degrees": 100,
+        "hydrophobic_moment_window": 1000,
+        "modlamp_distribution_version": "4.3.2",
+        "modlamp_runtime_version": "4.3.0"
+      },
+      "limitations": [
+        "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+        "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+        "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+      ],
+      "method_version": "2026.08.04-v1"
+    },
+    {
+      "candidate_id": "proposal-14b2e9945a53ae25a0a6",
+      "sequence": "TKEWQKWWWRWIRFVAE",
+      "status": "complete",
+      "molecular_weight": 2435.78,
+      "net_charge_ph7_4": 1.99,
+      "isoelectric_point": 10.65380859375,
+      "hydrophobic_ratio": 0.23529411764705882,
+      "hydrophobic_moment": 0.6562638361847936,
+      "assumptions": {
+        "ph": 7.4,
+        "termini": "free N-terminus and free C-terminus",
+        "hydrophobicity_scale": "Eisenberg consensus",
+        "hydrophobic_moment_angle_degrees": 100,
+        "hydrophobic_moment_window": 1000,
+        "modlamp_distribution_version": "4.3.2",
+        "modlamp_runtime_version": "4.3.0"
+      },
+      "limitations": [
+        "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+        "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+        "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+      ],
+      "method_version": "2026.08.04-v1"
+    },
+    {
+      "candidate_id": "proposal-723d4f1a0da321222841",
+      "sequence": "ISWKLSLLTELKKKILP",
+      "status": "complete",
+      "molecular_weight": 2010.51,
+      "net_charge_ph7_4": 2.988,
+      "isoelectric_point": 10.6904296875,
+      "hydrophobic_ratio": 0.4117647058823529,
+      "hydrophobic_moment": 0.2740614730373246,
+      "assumptions": {
+        "ph": 7.4,
+        "termini": "free N-terminus and free C-terminus",
+        "hydrophobicity_scale": "Eisenberg consensus",
+        "hydrophobic_moment_angle_degrees": 100,
+        "hydrophobic_moment_window": 1000,
+        "modlamp_distribution_version": "4.3.2",
+        "modlamp_runtime_version": "4.3.0"
+      },
+      "limitations": [
+        "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+        "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+        "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+      ],
+      "method_version": "2026.08.04-v1"
+    },
+    {
+      "candidate_id": "proposal-57191a67ee0241638cae",
+      "sequence": "RWCYRAGVCMYYWWWWWW",
+      "status": "complete",
+      "molecular_weight": 2688.12,
+      "net_charge_ph7_4": 1.676,
+      "isoelectric_point": 8.8046875,
+      "hydrophobic_ratio": 0.2777777777777778,
+      "hydrophobic_moment": 0.32208256512692096,
+      "assumptions": {
+        "ph": 7.4,
+        "termini": "free N-terminus and free C-terminus",
+        "hydrophobicity_scale": "Eisenberg consensus",
+        "hydrophobic_moment_angle_degrees": 100,
+        "hydrophobic_moment_window": 1000,
+        "modlamp_distribution_version": "4.3.2",
+        "modlamp_runtime_version": "4.3.0"
+      },
+      "limitations": [
+        "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+        "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+        "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+      ],
+      "method_version": "2026.08.04-v1"
+    },
+    {
+      "candidate_id": "proposal-1cfc6427d00a8d526338",
+      "sequence": "KLADDAANWKKWRKIMWW",
+      "status": "complete",
+      "molecular_weight": 2346.76,
+      "net_charge_ph7_4": 2.988,
+      "isoelectric_point": 10.67529296875,
+      "hydrophobic_ratio": 0.3333333333333333,
+      "hydrophobic_moment": 0.09379130525972339,
+      "assumptions": {
+        "ph": 7.4,
+        "termini": "free N-terminus and free C-terminus",
+        "hydrophobicity_scale": "Eisenberg consensus",
+        "hydrophobic_moment_angle_degrees": 100,
+        "hydrophobic_moment_window": 1000,
+        "modlamp_distribution_version": "4.3.2",
+        "modlamp_runtime_version": "4.3.0"
+      },
+      "limitations": [
+        "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+        "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+        "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+      ],
+      "method_version": "2026.08.04-v1"
+    },
+    {
+      "candidate_id": "proposal-15cce707dc71083cfc3b",
+      "sequence": "TWLKWWWDLWKKKLLEAAESASTLL",
+      "status": "complete",
+      "molecular_weight": 3103.62,
+      "net_charge_ph7_4": 0.989,
+      "isoelectric_point": 9.650390625,
+      "hydrophobic_ratio": 0.36,
+      "hydrophobic_moment": 0.3455180020953083,
+      "assumptions": {
+        "ph": 7.4,
+        "termini": "free N-terminus and free C-terminus",
+        "hydrophobicity_scale": "Eisenberg consensus",
+        "hydrophobic_moment_angle_degrees": 100,
+        "hydrophobic_moment_window": 1000,
+        "modlamp_distribution_version": "4.3.2",
+        "modlamp_runtime_version": "4.3.0"
+      },
+      "limitations": [
+        "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+        "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+        "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+      ],
+      "method_version": "2026.08.04-v1"
+    },
+    {
+      "candidate_id": "proposal-6c11b36af1fe71fb5606",
+      "sequence": "RWAEEKWWWAAALLLKAAWRAF",
+      "status": "complete",
+      "molecular_weight": 2760.2,
+      "net_charge_ph7_4": 1.99,
+      "isoelectric_point": 10.65380859375,
+      "hydrophobic_ratio": 0.5,
+      "hydrophobic_moment": 0.3355318310594661,
+      "assumptions": {
+        "ph": 7.4,
+        "termini": "free N-terminus and free C-terminus",
+        "hydrophobicity_scale": "Eisenberg consensus",
+        "hydrophobic_moment_angle_degrees": 100,
+        "hydrophobic_moment_window": 1000,
+        "modlamp_distribution_version": "4.3.2",
+        "modlamp_runtime_version": "4.3.0"
+      },
+      "limitations": [
+        "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+        "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+        "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+      ],
+      "method_version": "2026.08.04-v1"
+    },
+    {
+      "candidate_id": "proposal-e3cb44834570fa032828",
+      "sequence": "TKWKALDKKLKLLADELLEEWWWWW",
+      "status": "complete",
+      "molecular_weight": 3315.87,
+      "net_charge_ph7_4": -0.011,
+      "isoelectric_point": 7.0,
+      "hydrophobic_ratio": 0.32,
+      "hydrophobic_moment": 0.31724669956220813,
+      "assumptions": {
+        "ph": 7.4,
+        "termini": "free N-terminus and free C-terminus",
+        "hydrophobicity_scale": "Eisenberg consensus",
+        "hydrophobic_moment_angle_degrees": 100,
+        "hydrophobic_moment_window": 1000,
+        "modlamp_distribution_version": "4.3.2",
+        "modlamp_runtime_version": "4.3.0"
+      },
+      "limitations": [
+        "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+        "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+        "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+      ],
+      "method_version": "2026.08.04-v1"
+    },
+    {
+      "candidate_id": "proposal-906f6db6e83e773e7831",
+      "sequence": "IEDNDEKLWKLLKLKWWKKKWWWWW",
+      "status": "complete",
+      "molecular_weight": 3573.2,
+      "net_charge_ph7_4": 2.987,
+      "isoelectric_point": 10.303955078125,
+      "hydrophobic_ratio": 0.2,
+      "hydrophobic_moment": 0.12839702788549762,
+      "assumptions": {
+        "ph": 7.4,
+        "termini": "free N-terminus and free C-terminus",
+        "hydrophobicity_scale": "Eisenberg consensus",
+        "hydrophobic_moment_angle_degrees": 100,
+        "hydrophobic_moment_window": 1000,
+        "modlamp_distribution_version": "4.3.2",
+        "modlamp_runtime_version": "4.3.0"
+      },
+      "limitations": [
+        "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+        "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+        "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+      ],
+      "method_version": "2026.08.04-v1"
+    },
+    {
+      "candidate_id": "proposal-e02f73bce28144b48aeb",
+      "sequence": "DKLNWKSLDSYWKKFWWLA",
+      "status": "complete",
+      "molecular_weight": 2514.88,
+      "net_charge_ph7_4": 1.986,
+      "isoelectric_point": 10.020263671875,
+      "hydrophobic_ratio": 0.2631578947368421,
+      "hydrophobic_moment": 0.3160747189854657,
+      "assumptions": {
+        "ph": 7.4,
+        "termini": "free N-terminus and free C-terminus",
+        "hydrophobicity_scale": "Eisenberg consensus",
+        "hydrophobic_moment_angle_degrees": 100,
+        "hydrophobic_moment_window": 1000,
+        "modlamp_distribution_version": "4.3.2",
+        "modlamp_runtime_version": "4.3.0"
+      },
+      "limitations": [
+        "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+        "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+        "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+      ],
+      "method_version": "2026.08.04-v1"
+    },
+    {
+      "candidate_id": "proposal-ed1f99fd8f538fc1a522",
+      "sequence": "IARLWWWELLWKWKWKALAMAEDA",
+      "status": "complete",
+      "molecular_weight": 3101.67,
+      "net_charge_ph7_4": 0.989,
+      "isoelectric_point": 9.72607421875,
+      "hydrophobic_ratio": 0.4583333333333333,
+      "hydrophobic_moment": 0.04687071169846658,
+      "assumptions": {
+        "ph": 7.4,
+        "termini": "free N-terminus and free C-terminus",
+        "hydrophobicity_scale": "Eisenberg consensus",
+        "hydrophobic_moment_angle_degrees": 100,
+        "hydrophobic_moment_window": 1000,
+        "modlamp_distribution_version": "4.3.2",
+        "modlamp_runtime_version": "4.3.0"
+      },
+      "limitations": [
+        "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+        "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+        "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+      ],
+      "method_version": "2026.08.04-v1"
+    },
+    {
+      "candidate_id": "proposal-99f1064270dd8d4a1a4a",
+      "sequence": "ALWWWPWLPKLWWGIFNGLGFGCF",
+      "status": "complete",
+      "molecular_weight": 2981.52,
+      "net_charge_ph7_4": 0.835,
+      "isoelectric_point": 8.744140625,
+      "hydrophobic_ratio": 0.4166666666666667,
+      "hydrophobic_moment": 0.19714486217615293,
+      "assumptions": {
+        "ph": 7.4,
+        "termini": "free N-terminus and free C-terminus",
+        "hydrophobicity_scale": "Eisenberg consensus",
+        "hydrophobic_moment_angle_degrees": 100,
+        "hydrophobic_moment_window": 1000,
+        "modlamp_distribution_version": "4.3.2",
+        "modlamp_runtime_version": "4.3.0"
+      },
+      "limitations": [
+        "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+        "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+        "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+      ],
+      "method_version": "2026.08.04-v1"
+    },
+    {
+      "candidate_id": "proposal-3c80033886185ed4db4e",
+      "sequence": "LWPWRNKLKDLLGGGIQKAWDW",
+      "status": "complete",
+      "molecular_weight": 2681.11,
+      "net_charge_ph7_4": 1.988,
+      "isoelectric_point": 10.41064453125,
+      "hydrophobic_ratio": 0.2727272727272727,
+      "hydrophobic_moment": 0.3121929095557207,
+      "assumptions": {
+        "ph": 7.4,
+        "termini": "free N-terminus and free C-terminus",
+        "hydrophobicity_scale": "Eisenberg consensus",
+        "hydrophobic_moment_angle_degrees": 100,
+        "hydrophobic_moment_window": 1000,
+        "modlamp_distribution_version": "4.3.2",
+        "modlamp_runtime_version": "4.3.0"
+      },
+      "limitations": [
+        "Transparent sequence descriptors; not experimental safety, stability, or potency.",
+        "The 100-degree hydrophobic moment is an idealized alpha-helical projection and does not assert that the peptide forms an alpha helix.",
+        "Canonical sequence inference does not represent terminal capping, cyclization, D-residues, or other chemical modifications."
+      ],
+      "method_version": "2026.08.04-v1"
+    }
+  ]
+}

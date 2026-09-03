@@ -1,0 +1,1567 @@
+{
+  "plugin": {
+    "name": "toxicity_risk",
+    "parameters": {}
+  },
+  "contract": {
+    "default_trust": "soft",
+    "maximum_trust": "soft",
+    "reliability": "R3-minus-not-assay-matched",
+    "provider": "external",
+    "outputs": {
+      "toxinpred3_ml_score": [
+        "toxinpred3_ml_score",
+        "dimensionless",
+        "numeric"
+      ],
+      "toxinpred3_hybrid_score": [
+        "toxinpred3_hybrid_score",
+        "dimensionless",
+        "numeric"
+      ],
+      "toxinpred3_label": [
+        "toxinpred3_label",
+        null,
+        "text"
+      ]
+    }
+  },
+  "candidate_count": 32,
+  "status": "complete",
+  "records": [
+    {
+      "candidate_id": "proposal-0dd17af686e13a672aa8",
+      "sequence": "IWPWKNKLKDLLGGGIQKAWDW",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "toxinpred3_ml_score",
+          "numeric_value": 0.56,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_hybrid_score",
+          "numeric_value": 0.06,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_label",
+          "numeric_value": null,
+          "text_value": "Non-Toxin",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-0dd17af686e13a672aa8",
+        "sequence": "IWPWKNKLKDLLGGGIQKAWDW",
+        "status": "success",
+        "toxinpred3_ml_score": "0.56",
+        "toxinpred3_hybrid_score": "0.06",
+        "toxinpred3_label": "Non-Toxin",
+        "toxinpred3_positive_motif_match": "false",
+        "toxinpred3_negative_motif_match": "true",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-122281280ce83bf789ad",
+      "sequence": "MEKEEKLKWRSWWWWWKWWWKAR",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "toxinpred3_ml_score",
+          "numeric_value": 0.51,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_hybrid_score",
+          "numeric_value": 0.01,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_label",
+          "numeric_value": null,
+          "text_value": "Non-Toxin",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-122281280ce83bf789ad",
+        "sequence": "MEKEEKLKWRSWWWWWKWWWKAR",
+        "status": "success",
+        "toxinpred3_ml_score": "0.51",
+        "toxinpred3_hybrid_score": "0.01",
+        "toxinpred3_label": "Non-Toxin",
+        "toxinpred3_positive_motif_match": "false",
+        "toxinpred3_negative_motif_match": "true",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-0d00601938184f06c100",
+      "sequence": "KFRLWKLLLQLVGERAG",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "toxinpred3_ml_score",
+          "numeric_value": 0.385,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_hybrid_score",
+          "numeric_value": 0.0,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_label",
+          "numeric_value": null,
+          "text_value": "Non-Toxin",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-0d00601938184f06c100",
+        "sequence": "KFRLWKLLLQLVGERAG",
+        "status": "success",
+        "toxinpred3_ml_score": "0.385",
+        "toxinpred3_hybrid_score": "0.0",
+        "toxinpred3_label": "Non-Toxin",
+        "toxinpred3_positive_motif_match": "false",
+        "toxinpred3_negative_motif_match": "true",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-5ae2704b1ed0b891bf1e",
+      "sequence": "FRWKKWLLAAADEWWWWWWWWWWWW",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "toxinpred3_ml_score",
+          "numeric_value": 0.61,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_hybrid_score",
+          "numeric_value": 0.11,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_label",
+          "numeric_value": null,
+          "text_value": "Non-Toxin",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-5ae2704b1ed0b891bf1e",
+        "sequence": "FRWKKWLLAAADEWWWWWWWWWWWW",
+        "status": "success",
+        "toxinpred3_ml_score": "0.61",
+        "toxinpred3_hybrid_score": "0.11",
+        "toxinpred3_label": "Non-Toxin",
+        "toxinpred3_positive_motif_match": "false",
+        "toxinpred3_negative_motif_match": "true",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-bd01225127bffc087dfd",
+      "sequence": "MVDWMLAMMAKKWKKLLLLTTKDAM",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "toxinpred3_ml_score",
+          "numeric_value": 0.52,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_hybrid_score",
+          "numeric_value": 0.02,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_label",
+          "numeric_value": null,
+          "text_value": "Non-Toxin",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-bd01225127bffc087dfd",
+        "sequence": "MVDWMLAMMAKKWKKLLLLTTKDAM",
+        "status": "success",
+        "toxinpred3_ml_score": "0.52",
+        "toxinpred3_hybrid_score": "0.02",
+        "toxinpred3_label": "Non-Toxin",
+        "toxinpred3_positive_motif_match": "false",
+        "toxinpred3_negative_motif_match": "true",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-1b78f79083067b8686c2",
+      "sequence": "NWENLDLWWKNKWWWWWWWWWWRR",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "toxinpred3_ml_score",
+          "numeric_value": 0.755,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_hybrid_score",
+          "numeric_value": 0.255,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_label",
+          "numeric_value": null,
+          "text_value": "Non-Toxin",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-1b78f79083067b8686c2",
+        "sequence": "NWENLDLWWKNKWWWWWWWWWWRR",
+        "status": "success",
+        "toxinpred3_ml_score": "0.755",
+        "toxinpred3_hybrid_score": "0.255",
+        "toxinpred3_label": "Non-Toxin",
+        "toxinpred3_positive_motif_match": "false",
+        "toxinpred3_negative_motif_match": "true",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-7e48fcce867f25131ac9",
+      "sequence": "EKWWYFFRIHFPTILKGW",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "toxinpred3_ml_score",
+          "numeric_value": 0.445,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_hybrid_score",
+          "numeric_value": 0.0,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_label",
+          "numeric_value": null,
+          "text_value": "Non-Toxin",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-7e48fcce867f25131ac9",
+        "sequence": "EKWWYFFRIHFPTILKGW",
+        "status": "success",
+        "toxinpred3_ml_score": "0.445",
+        "toxinpred3_hybrid_score": "0.0",
+        "toxinpred3_label": "Non-Toxin",
+        "toxinpred3_positive_motif_match": "false",
+        "toxinpred3_negative_motif_match": "true",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-90e7d3daa047036cd56a",
+      "sequence": "FMKNVWKWEEKWWRFLLKRAAAADD",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "toxinpred3_ml_score",
+          "numeric_value": 0.5,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_hybrid_score",
+          "numeric_value": 0.0,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_label",
+          "numeric_value": null,
+          "text_value": "Non-Toxin",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-90e7d3daa047036cd56a",
+        "sequence": "FMKNVWKWEEKWWRFLLKRAAAADD",
+        "status": "success",
+        "toxinpred3_ml_score": "0.5",
+        "toxinpred3_hybrid_score": "0.0",
+        "toxinpred3_label": "Non-Toxin",
+        "toxinpred3_positive_motif_match": "false",
+        "toxinpred3_negative_motif_match": "true",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-06113810dfbb97f27dba",
+      "sequence": "IVLTKKPKWWQDKQWKKLADKKKK",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "toxinpred3_ml_score",
+          "numeric_value": 0.45,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_hybrid_score",
+          "numeric_value": 0.0,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_label",
+          "numeric_value": null,
+          "text_value": "Non-Toxin",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-06113810dfbb97f27dba",
+        "sequence": "IVLTKKPKWWQDKQWKKLADKKKK",
+        "status": "success",
+        "toxinpred3_ml_score": "0.45",
+        "toxinpred3_hybrid_score": "0.0",
+        "toxinpred3_label": "Non-Toxin",
+        "toxinpred3_positive_motif_match": "false",
+        "toxinpred3_negative_motif_match": "true",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-5fcee80d713dad387d38",
+      "sequence": "TKNKKELKWWKLKLSGAAGAWWKDK",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "toxinpred3_ml_score",
+          "numeric_value": 0.69,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_hybrid_score",
+          "numeric_value": 0.19,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_label",
+          "numeric_value": null,
+          "text_value": "Non-Toxin",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-5fcee80d713dad387d38",
+        "sequence": "TKNKKELKWWKLKLSGAAGAWWKDK",
+        "status": "success",
+        "toxinpred3_ml_score": "0.69",
+        "toxinpred3_hybrid_score": "0.19",
+        "toxinpred3_label": "Non-Toxin",
+        "toxinpred3_positive_motif_match": "false",
+        "toxinpred3_negative_motif_match": "true",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-b8403969544f96cef79e",
+      "sequence": "AIAVIQKKEENWWWWKFKWWRWF",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "toxinpred3_ml_score",
+          "numeric_value": 0.59,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_hybrid_score",
+          "numeric_value": 0.09,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_label",
+          "numeric_value": null,
+          "text_value": "Non-Toxin",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-b8403969544f96cef79e",
+        "sequence": "AIAVIQKKEENWWWWKFKWWRWF",
+        "status": "success",
+        "toxinpred3_ml_score": "0.59",
+        "toxinpred3_hybrid_score": "0.09",
+        "toxinpred3_label": "Non-Toxin",
+        "toxinpred3_positive_motif_match": "false",
+        "toxinpred3_negative_motif_match": "true",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-86d0999823954a14b613",
+      "sequence": "KMWKKRFELHVDLWLLKK",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "toxinpred3_ml_score",
+          "numeric_value": 0.49,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_hybrid_score",
+          "numeric_value": 0.0,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_label",
+          "numeric_value": null,
+          "text_value": "Non-Toxin",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-86d0999823954a14b613",
+        "sequence": "KMWKKRFELHVDLWLLKK",
+        "status": "success",
+        "toxinpred3_ml_score": "0.49",
+        "toxinpred3_hybrid_score": "0.0",
+        "toxinpred3_label": "Non-Toxin",
+        "toxinpred3_positive_motif_match": "false",
+        "toxinpred3_negative_motif_match": "true",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-4fbbd387f7c94275f3e2",
+      "sequence": "TKWKKWFWWRWWKWLFRNFLAEDAD",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "toxinpred3_ml_score",
+          "numeric_value": 0.545,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_hybrid_score",
+          "numeric_value": 0.045,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_label",
+          "numeric_value": null,
+          "text_value": "Non-Toxin",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-4fbbd387f7c94275f3e2",
+        "sequence": "TKWKKWFWWRWWKWLFRNFLAEDAD",
+        "status": "success",
+        "toxinpred3_ml_score": "0.545",
+        "toxinpred3_hybrid_score": "0.045",
+        "toxinpred3_label": "Non-Toxin",
+        "toxinpred3_positive_motif_match": "false",
+        "toxinpred3_negative_motif_match": "true",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-deee06e71499bbaa3590",
+      "sequence": "FRWKKEWWWWWWWWWWLLLLEWWWW",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "toxinpred3_ml_score",
+          "numeric_value": 0.745,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_hybrid_score",
+          "numeric_value": 0.245,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_label",
+          "numeric_value": null,
+          "text_value": "Non-Toxin",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-deee06e71499bbaa3590",
+        "sequence": "FRWKKEWWWWWWWWWWLLLLEWWWW",
+        "status": "success",
+        "toxinpred3_ml_score": "0.745",
+        "toxinpred3_hybrid_score": "0.245",
+        "toxinpred3_label": "Non-Toxin",
+        "toxinpred3_positive_motif_match": "false",
+        "toxinpred3_negative_motif_match": "true",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-6db587fa0dda6b602440",
+      "sequence": "RWFNWRIIHWKRPDGYGW",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "toxinpred3_ml_score",
+          "numeric_value": 0.47,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_hybrid_score",
+          "numeric_value": 0.0,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_label",
+          "numeric_value": null,
+          "text_value": "Non-Toxin",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-6db587fa0dda6b602440",
+        "sequence": "RWFNWRIIHWKRPDGYGW",
+        "status": "success",
+        "toxinpred3_ml_score": "0.47",
+        "toxinpred3_hybrid_score": "0.0",
+        "toxinpred3_label": "Non-Toxin",
+        "toxinpred3_positive_motif_match": "false",
+        "toxinpred3_negative_motif_match": "true",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-a4f3dffeda951e93ba90",
+      "sequence": "SWDWKLIDLNLFIKKWKWWRR",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "toxinpred3_ml_score",
+          "numeric_value": 0.645,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_hybrid_score",
+          "numeric_value": 0.145,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_label",
+          "numeric_value": null,
+          "text_value": "Non-Toxin",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-a4f3dffeda951e93ba90",
+        "sequence": "SWDWKLIDLNLFIKKWKWWRR",
+        "status": "success",
+        "toxinpred3_ml_score": "0.645",
+        "toxinpred3_hybrid_score": "0.145",
+        "toxinpred3_label": "Non-Toxin",
+        "toxinpred3_positive_motif_match": "false",
+        "toxinpred3_negative_motif_match": "true",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-03f82ae59a1a7c4e5ec0",
+      "sequence": "TKKLWLLKKLWLLDAAHLLDLADAA",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "toxinpred3_ml_score",
+          "numeric_value": 0.46,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_hybrid_score",
+          "numeric_value": 0.0,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_label",
+          "numeric_value": null,
+          "text_value": "Non-Toxin",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-03f82ae59a1a7c4e5ec0",
+        "sequence": "TKKLWLLKKLWLLDAAHLLDLADAA",
+        "status": "success",
+        "toxinpred3_ml_score": "0.46",
+        "toxinpred3_hybrid_score": "0.0",
+        "toxinpred3_label": "Non-Toxin",
+        "toxinpred3_positive_motif_match": "false",
+        "toxinpred3_negative_motif_match": "true",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-a2f463fb392f48c76fe1",
+      "sequence": "QIEWWLKLLKEKWRWWPYYWMW",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "toxinpred3_ml_score",
+          "numeric_value": 0.51,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_hybrid_score",
+          "numeric_value": 0.01,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_label",
+          "numeric_value": null,
+          "text_value": "Non-Toxin",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-a2f463fb392f48c76fe1",
+        "sequence": "QIEWWLKLLKEKWRWWPYYWMW",
+        "status": "success",
+        "toxinpred3_ml_score": "0.51",
+        "toxinpred3_hybrid_score": "0.01",
+        "toxinpred3_label": "Non-Toxin",
+        "toxinpred3_positive_motif_match": "false",
+        "toxinpred3_negative_motif_match": "true",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-355ff57fe1f8e43bb23d",
+      "sequence": "FIDDLLAKKKLKWWWAWWWIWLWWW",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "toxinpred3_ml_score",
+          "numeric_value": 0.695,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_hybrid_score",
+          "numeric_value": 0.195,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_label",
+          "numeric_value": null,
+          "text_value": "Non-Toxin",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-355ff57fe1f8e43bb23d",
+        "sequence": "FIDDLLAKKKLKWWWAWWWIWLWWW",
+        "status": "success",
+        "toxinpred3_ml_score": "0.695",
+        "toxinpred3_hybrid_score": "0.195",
+        "toxinpred3_label": "Non-Toxin",
+        "toxinpred3_positive_motif_match": "false",
+        "toxinpred3_negative_motif_match": "true",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-35be0da193a61158df5c",
+      "sequence": "GAWKLLDALKWMWW",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "toxinpred3_ml_score",
+          "numeric_value": 0.61,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_hybrid_score",
+          "numeric_value": 0.11,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_label",
+          "numeric_value": null,
+          "text_value": "Non-Toxin",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-35be0da193a61158df5c",
+        "sequence": "GAWKLLDALKWMWW",
+        "status": "success",
+        "toxinpred3_ml_score": "0.61",
+        "toxinpred3_hybrid_score": "0.11",
+        "toxinpred3_label": "Non-Toxin",
+        "toxinpred3_positive_motif_match": "false",
+        "toxinpred3_negative_motif_match": "true",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-14b2e9945a53ae25a0a6",
+      "sequence": "TKEWQKWWWRWIRFVAE",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "toxinpred3_ml_score",
+          "numeric_value": 0.435,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_hybrid_score",
+          "numeric_value": 0.0,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_label",
+          "numeric_value": null,
+          "text_value": "Non-Toxin",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-14b2e9945a53ae25a0a6",
+        "sequence": "TKEWQKWWWRWIRFVAE",
+        "status": "success",
+        "toxinpred3_ml_score": "0.435",
+        "toxinpred3_hybrid_score": "0.0",
+        "toxinpred3_label": "Non-Toxin",
+        "toxinpred3_positive_motif_match": "false",
+        "toxinpred3_negative_motif_match": "true",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-723d4f1a0da321222841",
+      "sequence": "ISWKLSLLTELKKKILP",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "toxinpred3_ml_score",
+          "numeric_value": 0.505,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_hybrid_score",
+          "numeric_value": 0.005,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_label",
+          "numeric_value": null,
+          "text_value": "Non-Toxin",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-723d4f1a0da321222841",
+        "sequence": "ISWKLSLLTELKKKILP",
+        "status": "success",
+        "toxinpred3_ml_score": "0.505",
+        "toxinpred3_hybrid_score": "0.005",
+        "toxinpred3_label": "Non-Toxin",
+        "toxinpred3_positive_motif_match": "false",
+        "toxinpred3_negative_motif_match": "true",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-57191a67ee0241638cae",
+      "sequence": "RWCYRAGVCMYYWWWWWW",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "toxinpred3_ml_score",
+          "numeric_value": 0.805,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_hybrid_score",
+          "numeric_value": 0.305,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_label",
+          "numeric_value": null,
+          "text_value": "Non-Toxin",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-57191a67ee0241638cae",
+        "sequence": "RWCYRAGVCMYYWWWWWW",
+        "status": "success",
+        "toxinpred3_ml_score": "0.805",
+        "toxinpred3_hybrid_score": "0.305",
+        "toxinpred3_label": "Non-Toxin",
+        "toxinpred3_positive_motif_match": "false",
+        "toxinpred3_negative_motif_match": "true",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-1cfc6427d00a8d526338",
+      "sequence": "KLADDAANWKKWRKIMWW",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "toxinpred3_ml_score",
+          "numeric_value": 0.61,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_hybrid_score",
+          "numeric_value": 0.11,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_label",
+          "numeric_value": null,
+          "text_value": "Non-Toxin",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-1cfc6427d00a8d526338",
+        "sequence": "KLADDAANWKKWRKIMWW",
+        "status": "success",
+        "toxinpred3_ml_score": "0.61",
+        "toxinpred3_hybrid_score": "0.11",
+        "toxinpred3_label": "Non-Toxin",
+        "toxinpred3_positive_motif_match": "false",
+        "toxinpred3_negative_motif_match": "true",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-15cce707dc71083cfc3b",
+      "sequence": "TWLKWWWDLWKKKLLEAAESASTLL",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "toxinpred3_ml_score",
+          "numeric_value": 0.485,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_hybrid_score",
+          "numeric_value": 0.0,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_label",
+          "numeric_value": null,
+          "text_value": "Non-Toxin",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-15cce707dc71083cfc3b",
+        "sequence": "TWLKWWWDLWKKKLLEAAESASTLL",
+        "status": "success",
+        "toxinpred3_ml_score": "0.485",
+        "toxinpred3_hybrid_score": "0.0",
+        "toxinpred3_label": "Non-Toxin",
+        "toxinpred3_positive_motif_match": "false",
+        "toxinpred3_negative_motif_match": "true",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-6c11b36af1fe71fb5606",
+      "sequence": "RWAEEKWWWAAALLLKAAWRAF",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "toxinpred3_ml_score",
+          "numeric_value": 0.51,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_hybrid_score",
+          "numeric_value": 0.01,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_label",
+          "numeric_value": null,
+          "text_value": "Non-Toxin",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-6c11b36af1fe71fb5606",
+        "sequence": "RWAEEKWWWAAALLLKAAWRAF",
+        "status": "success",
+        "toxinpred3_ml_score": "0.51",
+        "toxinpred3_hybrid_score": "0.01",
+        "toxinpred3_label": "Non-Toxin",
+        "toxinpred3_positive_motif_match": "false",
+        "toxinpred3_negative_motif_match": "true",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-e3cb44834570fa032828",
+      "sequence": "TKWKALDKKLKLLADELLEEWWWWW",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "toxinpred3_ml_score",
+          "numeric_value": 0.445,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_hybrid_score",
+          "numeric_value": 0.0,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_label",
+          "numeric_value": null,
+          "text_value": "Non-Toxin",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-e3cb44834570fa032828",
+        "sequence": "TKWKALDKKLKLLADELLEEWWWWW",
+        "status": "success",
+        "toxinpred3_ml_score": "0.445",
+        "toxinpred3_hybrid_score": "0.0",
+        "toxinpred3_label": "Non-Toxin",
+        "toxinpred3_positive_motif_match": "false",
+        "toxinpred3_negative_motif_match": "true",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-906f6db6e83e773e7831",
+      "sequence": "IEDNDEKLWKLLKLKWWKKKWWWWW",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "toxinpred3_ml_score",
+          "numeric_value": 0.605,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_hybrid_score",
+          "numeric_value": 0.105,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_label",
+          "numeric_value": null,
+          "text_value": "Non-Toxin",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-906f6db6e83e773e7831",
+        "sequence": "IEDNDEKLWKLLKLKWWKKKWWWWW",
+        "status": "success",
+        "toxinpred3_ml_score": "0.605",
+        "toxinpred3_hybrid_score": "0.105",
+        "toxinpred3_label": "Non-Toxin",
+        "toxinpred3_positive_motif_match": "false",
+        "toxinpred3_negative_motif_match": "true",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-e02f73bce28144b48aeb",
+      "sequence": "DKLNWKSLDSYWKKFWWLA",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "toxinpred3_ml_score",
+          "numeric_value": 0.64,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_hybrid_score",
+          "numeric_value": 0.64,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_label",
+          "numeric_value": null,
+          "text_value": "Toxin",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-e02f73bce28144b48aeb",
+        "sequence": "DKLNWKSLDSYWKKFWWLA",
+        "status": "success",
+        "toxinpred3_ml_score": "0.64",
+        "toxinpred3_hybrid_score": "0.64",
+        "toxinpred3_label": "Toxin",
+        "toxinpred3_positive_motif_match": "false",
+        "toxinpred3_negative_motif_match": "false",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-ed1f99fd8f538fc1a522",
+      "sequence": "IARLWWWELLWKWKWKALAMAEDA",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "toxinpred3_ml_score",
+          "numeric_value": 0.53,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_hybrid_score",
+          "numeric_value": 0.03,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_label",
+          "numeric_value": null,
+          "text_value": "Non-Toxin",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-ed1f99fd8f538fc1a522",
+        "sequence": "IARLWWWELLWKWKWKALAMAEDA",
+        "status": "success",
+        "toxinpred3_ml_score": "0.53",
+        "toxinpred3_hybrid_score": "0.03",
+        "toxinpred3_label": "Non-Toxin",
+        "toxinpred3_positive_motif_match": "false",
+        "toxinpred3_negative_motif_match": "true",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-99f1064270dd8d4a1a4a",
+      "sequence": "ALWWWPWLPKLWWGIFNGLGFGCF",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "toxinpred3_ml_score",
+          "numeric_value": 0.635,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_hybrid_score",
+          "numeric_value": 0.135,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_label",
+          "numeric_value": null,
+          "text_value": "Non-Toxin",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-99f1064270dd8d4a1a4a",
+        "sequence": "ALWWWPWLPKLWWGIFNGLGFGCF",
+        "status": "success",
+        "toxinpred3_ml_score": "0.635",
+        "toxinpred3_hybrid_score": "0.135",
+        "toxinpred3_label": "Non-Toxin",
+        "toxinpred3_positive_motif_match": "false",
+        "toxinpred3_negative_motif_match": "true",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-3c80033886185ed4db4e",
+      "sequence": "LWPWRNKLKDLLGGGIQKAWDW",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "toxinpred3_ml_score",
+          "numeric_value": 0.475,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_hybrid_score",
+          "numeric_value": 0.475,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_label",
+          "numeric_value": null,
+          "text_value": "Toxin",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-3c80033886185ed4db4e",
+        "sequence": "LWPWRNKLKDLLGGGIQKAWDW",
+        "status": "success",
+        "toxinpred3_ml_score": "0.475",
+        "toxinpred3_hybrid_score": "0.475",
+        "toxinpred3_label": "Toxin",
+        "toxinpred3_positive_motif_match": "false",
+        "toxinpred3_negative_motif_match": "false",
+        "error": ""
+      }
+    }
+  ],
+  "raw_rows": [
+    {
+      "candidate_id": "proposal-0dd17af686e13a672aa8",
+      "sequence": "IWPWKNKLKDLLGGGIQKAWDW",
+      "status": "success",
+      "toxinpred3_ml_score": "0.56",
+      "toxinpred3_hybrid_score": "0.06",
+      "toxinpred3_label": "Non-Toxin",
+      "toxinpred3_positive_motif_match": "false",
+      "toxinpred3_negative_motif_match": "true",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-122281280ce83bf789ad",
+      "sequence": "MEKEEKLKWRSWWWWWKWWWKAR",
+      "status": "success",
+      "toxinpred3_ml_score": "0.51",
+      "toxinpred3_hybrid_score": "0.01",
+      "toxinpred3_label": "Non-Toxin",
+      "toxinpred3_positive_motif_match": "false",
+      "toxinpred3_negative_motif_match": "true",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-0d00601938184f06c100",
+      "sequence": "KFRLWKLLLQLVGERAG",
+      "status": "success",
+      "toxinpred3_ml_score": "0.385",
+      "toxinpred3_hybrid_score": "0.0",
+      "toxinpred3_label": "Non-Toxin",
+      "toxinpred3_positive_motif_match": "false",
+      "toxinpred3_negative_motif_match": "true",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-5ae2704b1ed0b891bf1e",
+      "sequence": "FRWKKWLLAAADEWWWWWWWWWWWW",
+      "status": "success",
+      "toxinpred3_ml_score": "0.61",
+      "toxinpred3_hybrid_score": "0.11",
+      "toxinpred3_label": "Non-Toxin",
+      "toxinpred3_positive_motif_match": "false",
+      "toxinpred3_negative_motif_match": "true",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-bd01225127bffc087dfd",
+      "sequence": "MVDWMLAMMAKKWKKLLLLTTKDAM",
+      "status": "success",
+      "toxinpred3_ml_score": "0.52",
+      "toxinpred3_hybrid_score": "0.02",
+      "toxinpred3_label": "Non-Toxin",
+      "toxinpred3_positive_motif_match": "false",
+      "toxinpred3_negative_motif_match": "true",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-1b78f79083067b8686c2",
+      "sequence": "NWENLDLWWKNKWWWWWWWWWWRR",
+      "status": "success",
+      "toxinpred3_ml_score": "0.755",
+      "toxinpred3_hybrid_score": "0.255",
+      "toxinpred3_label": "Non-Toxin",
+      "toxinpred3_positive_motif_match": "false",
+      "toxinpred3_negative_motif_match": "true",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-7e48fcce867f25131ac9",
+      "sequence": "EKWWYFFRIHFPTILKGW",
+      "status": "success",
+      "toxinpred3_ml_score": "0.445",
+      "toxinpred3_hybrid_score": "0.0",
+      "toxinpred3_label": "Non-Toxin",
+      "toxinpred3_positive_motif_match": "false",
+      "toxinpred3_negative_motif_match": "true",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-90e7d3daa047036cd56a",
+      "sequence": "FMKNVWKWEEKWWRFLLKRAAAADD",
+      "status": "success",
+      "toxinpred3_ml_score": "0.5",
+      "toxinpred3_hybrid_score": "0.0",
+      "toxinpred3_label": "Non-Toxin",
+      "toxinpred3_positive_motif_match": "false",
+      "toxinpred3_negative_motif_match": "true",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-06113810dfbb97f27dba",
+      "sequence": "IVLTKKPKWWQDKQWKKLADKKKK",
+      "status": "success",
+      "toxinpred3_ml_score": "0.45",
+      "toxinpred3_hybrid_score": "0.0",
+      "toxinpred3_label": "Non-Toxin",
+      "toxinpred3_positive_motif_match": "false",
+      "toxinpred3_negative_motif_match": "true",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-5fcee80d713dad387d38",
+      "sequence": "TKNKKELKWWKLKLSGAAGAWWKDK",
+      "status": "success",
+      "toxinpred3_ml_score": "0.69",
+      "toxinpred3_hybrid_score": "0.19",
+      "toxinpred3_label": "Non-Toxin",
+      "toxinpred3_positive_motif_match": "false",
+      "toxinpred3_negative_motif_match": "true",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-b8403969544f96cef79e",
+      "sequence": "AIAVIQKKEENWWWWKFKWWRWF",
+      "status": "success",
+      "toxinpred3_ml_score": "0.59",
+      "toxinpred3_hybrid_score": "0.09",
+      "toxinpred3_label": "Non-Toxin",
+      "toxinpred3_positive_motif_match": "false",
+      "toxinpred3_negative_motif_match": "true",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-86d0999823954a14b613",
+      "sequence": "KMWKKRFELHVDLWLLKK",
+      "status": "success",
+      "toxinpred3_ml_score": "0.49",
+      "toxinpred3_hybrid_score": "0.0",
+      "toxinpred3_label": "Non-Toxin",
+      "toxinpred3_positive_motif_match": "false",
+      "toxinpred3_negative_motif_match": "true",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-4fbbd387f7c94275f3e2",
+      "sequence": "TKWKKWFWWRWWKWLFRNFLAEDAD",
+      "status": "success",
+      "toxinpred3_ml_score": "0.545",
+      "toxinpred3_hybrid_score": "0.045",
+      "toxinpred3_label": "Non-Toxin",
+      "toxinpred3_positive_motif_match": "false",
+      "toxinpred3_negative_motif_match": "true",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-deee06e71499bbaa3590",
+      "sequence": "FRWKKEWWWWWWWWWWLLLLEWWWW",
+      "status": "success",
+      "toxinpred3_ml_score": "0.745",
+      "toxinpred3_hybrid_score": "0.245",
+      "toxinpred3_label": "Non-Toxin",
+      "toxinpred3_positive_motif_match": "false",
+      "toxinpred3_negative_motif_match": "true",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-6db587fa0dda6b602440",
+      "sequence": "RWFNWRIIHWKRPDGYGW",
+      "status": "success",
+      "toxinpred3_ml_score": "0.47",
+      "toxinpred3_hybrid_score": "0.0",
+      "toxinpred3_label": "Non-Toxin",
+      "toxinpred3_positive_motif_match": "false",
+      "toxinpred3_negative_motif_match": "true",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-a4f3dffeda951e93ba90",
+      "sequence": "SWDWKLIDLNLFIKKWKWWRR",
+      "status": "success",
+      "toxinpred3_ml_score": "0.645",
+      "toxinpred3_hybrid_score": "0.145",
+      "toxinpred3_label": "Non-Toxin",
+      "toxinpred3_positive_motif_match": "false",
+      "toxinpred3_negative_motif_match": "true",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-03f82ae59a1a7c4e5ec0",
+      "sequence": "TKKLWLLKKLWLLDAAHLLDLADAA",
+      "status": "success",
+      "toxinpred3_ml_score": "0.46",
+      "toxinpred3_hybrid_score": "0.0",
+      "toxinpred3_label": "Non-Toxin",
+      "toxinpred3_positive_motif_match": "false",
+      "toxinpred3_negative_motif_match": "true",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-a2f463fb392f48c76fe1",
+      "sequence": "QIEWWLKLLKEKWRWWPYYWMW",
+      "status": "success",
+      "toxinpred3_ml_score": "0.51",
+      "toxinpred3_hybrid_score": "0.01",
+      "toxinpred3_label": "Non-Toxin",
+      "toxinpred3_positive_motif_match": "false",
+      "toxinpred3_negative_motif_match": "true",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-355ff57fe1f8e43bb23d",
+      "sequence": "FIDDLLAKKKLKWWWAWWWIWLWWW",
+      "status": "success",
+      "toxinpred3_ml_score": "0.695",
+      "toxinpred3_hybrid_score": "0.195",
+      "toxinpred3_label": "Non-Toxin",
+      "toxinpred3_positive_motif_match": "false",
+      "toxinpred3_negative_motif_match": "true",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-35be0da193a61158df5c",
+      "sequence": "GAWKLLDALKWMWW",
+      "status": "success",
+      "toxinpred3_ml_score": "0.61",
+      "toxinpred3_hybrid_score": "0.11",
+      "toxinpred3_label": "Non-Toxin",
+      "toxinpred3_positive_motif_match": "false",
+      "toxinpred3_negative_motif_match": "true",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-14b2e9945a53ae25a0a6",
+      "sequence": "TKEWQKWWWRWIRFVAE",
+      "status": "success",
+      "toxinpred3_ml_score": "0.435",
+      "toxinpred3_hybrid_score": "0.0",
+      "toxinpred3_label": "Non-Toxin",
+      "toxinpred3_positive_motif_match": "false",
+      "toxinpred3_negative_motif_match": "true",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-723d4f1a0da321222841",
+      "sequence": "ISWKLSLLTELKKKILP",
+      "status": "success",
+      "toxinpred3_ml_score": "0.505",
+      "toxinpred3_hybrid_score": "0.005",
+      "toxinpred3_label": "Non-Toxin",
+      "toxinpred3_positive_motif_match": "false",
+      "toxinpred3_negative_motif_match": "true",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-57191a67ee0241638cae",
+      "sequence": "RWCYRAGVCMYYWWWWWW",
+      "status": "success",
+      "toxinpred3_ml_score": "0.805",
+      "toxinpred3_hybrid_score": "0.305",
+      "toxinpred3_label": "Non-Toxin",
+      "toxinpred3_positive_motif_match": "false",
+      "toxinpred3_negative_motif_match": "true",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-1cfc6427d00a8d526338",
+      "sequence": "KLADDAANWKKWRKIMWW",
+      "status": "success",
+      "toxinpred3_ml_score": "0.61",
+      "toxinpred3_hybrid_score": "0.11",
+      "toxinpred3_label": "Non-Toxin",
+      "toxinpred3_positive_motif_match": "false",
+      "toxinpred3_negative_motif_match": "true",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-15cce707dc71083cfc3b",
+      "sequence": "TWLKWWWDLWKKKLLEAAESASTLL",
+      "status": "success",
+      "toxinpred3_ml_score": "0.485",
+      "toxinpred3_hybrid_score": "0.0",
+      "toxinpred3_label": "Non-Toxin",
+      "toxinpred3_positive_motif_match": "false",
+      "toxinpred3_negative_motif_match": "true",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-6c11b36af1fe71fb5606",
+      "sequence": "RWAEEKWWWAAALLLKAAWRAF",
+      "status": "success",
+      "toxinpred3_ml_score": "0.51",
+      "toxinpred3_hybrid_score": "0.01",
+      "toxinpred3_label": "Non-Toxin",
+      "toxinpred3_positive_motif_match": "false",
+      "toxinpred3_negative_motif_match": "true",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-e3cb44834570fa032828",
+      "sequence": "TKWKALDKKLKLLADELLEEWWWWW",
+      "status": "success",
+      "toxinpred3_ml_score": "0.445",
+      "toxinpred3_hybrid_score": "0.0",
+      "toxinpred3_label": "Non-Toxin",
+      "toxinpred3_positive_motif_match": "false",
+      "toxinpred3_negative_motif_match": "true",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-906f6db6e83e773e7831",
+      "sequence": "IEDNDEKLWKLLKLKWWKKKWWWWW",
+      "status": "success",
+      "toxinpred3_ml_score": "0.605",
+      "toxinpred3_hybrid_score": "0.105",
+      "toxinpred3_label": "Non-Toxin",
+      "toxinpred3_positive_motif_match": "false",
+      "toxinpred3_negative_motif_match": "true",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-e02f73bce28144b48aeb",
+      "sequence": "DKLNWKSLDSYWKKFWWLA",
+      "status": "success",
+      "toxinpred3_ml_score": "0.64",
+      "toxinpred3_hybrid_score": "0.64",
+      "toxinpred3_label": "Toxin",
+      "toxinpred3_positive_motif_match": "false",
+      "toxinpred3_negative_motif_match": "false",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-ed1f99fd8f538fc1a522",
+      "sequence": "IARLWWWELLWKWKWKALAMAEDA",
+      "status": "success",
+      "toxinpred3_ml_score": "0.53",
+      "toxinpred3_hybrid_score": "0.03",
+      "toxinpred3_label": "Non-Toxin",
+      "toxinpred3_positive_motif_match": "false",
+      "toxinpred3_negative_motif_match": "true",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-99f1064270dd8d4a1a4a",
+      "sequence": "ALWWWPWLPKLWWGIFNGLGFGCF",
+      "status": "success",
+      "toxinpred3_ml_score": "0.635",
+      "toxinpred3_hybrid_score": "0.135",
+      "toxinpred3_label": "Non-Toxin",
+      "toxinpred3_positive_motif_match": "false",
+      "toxinpred3_negative_motif_match": "true",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-3c80033886185ed4db4e",
+      "sequence": "LWPWRNKLKDLLGGGIQKAWDW",
+      "status": "success",
+      "toxinpred3_ml_score": "0.475",
+      "toxinpred3_hybrid_score": "0.475",
+      "toxinpred3_label": "Toxin",
+      "toxinpred3_positive_motif_match": "false",
+      "toxinpred3_negative_motif_match": "false",
+      "error": ""
+    }
+  ],
+  "stdout_tail": "",
+  "stderr_tail": "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\var\\metric-runtimes\\toxinpred3-py39\\lib\\site-packages\\sklearn\\base.py:329: UserWarning: Trying to unpickle estimator ExtraTreeClassifier from version 1.2.2 when using version 1.0.2. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:\nhttps://scikit-learn.org/stable/modules/model_persistence.html#security-maintainability-limitations\n  warnings.warn(\nD:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\var\\metric-runtimes\\toxinpred3-py39\\lib\\site-packages\\sklearn\\base.py:329: UserWarning: Trying to unpickle estimator ExtraTreesClassifier from version 1.2.2 when using version 1.0.2. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:\nhttps://scikit-learn.org/stable/modules/model_persistence.html#security-maintainability-limitations\n  warnings.warn(\nD:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\var\\metric-runtimes\\toxinpred3-py39\\lib\\site-packages\\sklearn\\base.py:450: UserWarning: X does not have valid feature names, but ExtraTreesClassifier was fitted with feature names\n  warnings.warn(\n",
+  "model_uri": "git+https://github.com/raghavagps/toxinpred3.git@dcdba833cd48cc8a2090ac90f3319fd9bcb87a1c",
+  "weights_sha256": "bacaef2ff40136babe98edcde861ea79d62ea3420a6b1b5d36019fa0ddc2db3b",
+  "limitations": [
+    "Corrected batch runner fixes one-row shape and per-sequence literal MERCI scoring.",
+    "The endpoint is not assay-matched to this project and remains soft evidence."
+  ],
+  "adapter_version": "toxinpred3-corrected-v0.2-dcdba83",
+  "registry_sha256": "7a5152541864e7cec1b94bb5eb9c74d313408b5f4d4781f1565525b577164e55",
+  "command_argv": [
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\var\\metric-runtimes\\toxinpred3-py39\\Scripts\\python.exe",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\src\\pepagent\\model_workers\\toxinpred3_metric_cli.py",
+    "--input",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\reports\\target_agnostic_source_graft_v13_20260903\\score_all\\work\\toxicity_risk\\candidates.csv",
+    "--output",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\reports\\target_agnostic_source_graft_v13_20260903\\score_all\\work\\toxicity_risk\\predictions.csv",
+    "--raw-output-dir",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\reports\\target_agnostic_source_graft_v13_20260903\\score_all\\work\\toxicity_risk\\raw",
+    "--model",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\var\\metric-runtimes\\toxinpred3-src\\model\\unpacked\\toxinpred3.0_model.pkl",
+    "--positive-motifs",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\var\\metric-runtimes\\toxinpred3-src\\motifs\\pos_motif.txt",
+    "--negative-motifs",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\var\\metric-runtimes\\toxinpred3-src\\motifs\\neg_motif.txt",
+    "--threshold",
+    "0.38"
+  ]
+}
