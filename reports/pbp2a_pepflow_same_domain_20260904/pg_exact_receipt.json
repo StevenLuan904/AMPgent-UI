@@ -1,0 +1,53 @@
+{
+  "schema_version": "ampgent.v8.pg-exact.1",
+  "input_sha256": "ad3962359c567e40b4077e78832d35ce2e587a4375d528820b4064c9b2e3c4d2",
+  "input_count": 5,
+  "batch_size": 4,
+  "timeout_seconds": 30,
+  "max_retries": 3,
+  "matches": [
+    {
+      "candidate_id": "1a84123a-9758-419b-b9ba-6b629cd5069f",
+      "run_id": "aaf5d3fd-dc43-5677-933d-88db62ba131d",
+      "sequence_sha256": "343682fe0e6a0b8c8a7d66afdceb2e7760a2fb54ecc9b8b4d572a23fe85ae778"
+    },
+    {
+      "candidate_id": "b6937ce0-9637-441c-8b94-6d1fbc5041e7",
+      "run_id": "aaf5d3fd-dc43-5677-933d-88db62ba131d",
+      "sequence_sha256": "7a4272f3db72bb0172bde9442c12cf4732c0ceea1c996b8b37b6e8969472b304"
+    },
+    {
+      "candidate_id": "eb1bc382-b789-433e-8484-4827ad1debf5",
+      "run_id": "aaf5d3fd-dc43-5677-933d-88db62ba131d",
+      "sequence_sha256": "a461869bc019a4fc9feeca1da2e8f61efd9eaadf714eed23d91d12531891bf50"
+    },
+    {
+      "candidate_id": "e1e21247-1a58-4252-b062-664fd685467b",
+      "run_id": "aaf5d3fd-dc43-5677-933d-88db62ba131d",
+      "sequence_sha256": "cbeda8ec19b9a5ef0b693691be98dce9de932d5e1ddb0e1bc8f9e04b0366e661"
+    },
+    {
+      "candidate_id": "0b859377-8750-44d6-bccc-791d94a6453e",
+      "run_id": "aaf5d3fd-dc43-5677-933d-88db62ba131d",
+      "sequence_sha256": "d946c60099c25a1695ebb68153ee74ebf7211c9593557e157784761d0edcdc64"
+    }
+  ],
+  "historical_exact_match_count": 5,
+  "pg_new_count": 0,
+  "pending_batch_count": 0,
+  "attempts": [
+    {
+      "batch": 0,
+      "retry": 1,
+      "status": "succeeded",
+      "count": 4
+    },
+    {
+      "batch": 1,
+      "retry": 1,
+      "status": "succeeded",
+      "count": 1
+    }
+  ],
+  "materialization_allowed": false
+}

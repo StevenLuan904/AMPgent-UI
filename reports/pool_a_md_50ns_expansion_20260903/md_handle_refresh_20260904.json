@@ -1,0 +1,37 @@
+{
+  "schema_version": "ampgent.pool-a-md-handle-refresh.1",
+  "observed_at_utc": "2026-09-03T23:21:53.149966+00:00",
+  "baseline_identity_union": 486,
+  "baseline_partition": {
+    "launched": 50,
+    "full_evidence": 31,
+    "analysis_pending": 0,
+    "running_or_incomplete": 19,
+    "not_started": 436,
+    "failed": 0,
+    "disjoint_union": true,
+    "launched_equals_full_plus_running": true
+  },
+  "main_475": {
+    "md_supervisor_pid": 3986807,
+    "analysis_supervisor_pid": 3977733,
+    "md_supervisor_alive": true,
+    "analysis_supervisor_alive": true,
+    "ampgent_compute_pid_count": 8,
+    "connection": "ssh -p 32222 TargetServerDirect"
+  },
+  "synth_successor_11": {
+    "listener": "127.0.0.1:32224",
+    "listener_pid": 31396,
+    "remote_probe": "authentication_failed",
+    "error_category": "permission_denied_publickey_password",
+    "remote_scientific_pid_state": "not_reclassified",
+    "last_authoritative_state": "successor-11 pending=6 running=3 complete=2 failed=0",
+    "action": "no_retry_no_restart"
+  },
+  "new_md_completion_observed": 0,
+  "remote_large_files_read": false,
+  "remote_tasks_modified": false,
+  "gpu_or_md_started": false,
+  "historical_run_modified": false
+}
