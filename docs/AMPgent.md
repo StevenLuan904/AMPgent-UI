@@ -72,6 +72,7 @@ Challenger 证据键为 `run_id + candidate_id + model_release_key`；字段为 
 | GyrA | `e880a6fa-2989-5ef9-b428-4a6ddb919283` | 25 | 32 | 25/4 | 25 |
 | ANGPT1 | `195dfbb1-cf6b-5d09-bb50-c1bd14590721` | 21 | 24 | 13/4 | 13 |
 - 六靶点 reciprocal micrograft scheduler manifest：AceA24/PBP2a27/VEGFA1/FGF2 8/GyrA25/ANGPT1 13，共98条；全局序列与 `run_id+authoritative_candidate_id(UUID)` 均98/98唯一，identity unresolved/drift=0，PG结构证据、Pool A精确命中及 active/pending task-key 命中均0，全部 `new_ready`。当前活动GPU 8、新调度上限0，`dispatch_allowed=false`，未提交任务。可由 `analysis/build_reciprocal_micrograft_scheduler_manifest.py` 重放；CSV hash=`e012dd83b1195104818f544a968bf35740cdd57acc3e1fda892ba057bc49b31e`，旧 hash=`baee08c17ba9f5a89ed110cce68dfdd43f221db6e31afbb9115401bbdc5ed4cc` 的差异仅来自显式 target round-robin 排序。详见 CSV 与 audit receipt。
+- QD-gap-directed reciprocal micrograft v2：VEGFA/FGF2 各16 proposals，formal12/display=16/16、16/16；正式 QD eligible=2/9，均为 incumbent replacement，new-cell=0；HemoPI2 reviewed=16/16，no-conflict=10/0，APEX/PeptiVerse 为 `runtime_unavailable` shadow。exact-once materialization 各16 Candidate、192 formal Evaluation、272总 Evaluation；结构队列严格 VEGFA2/FGF2 9，未提交 Rosetta/GPU/MD。扩展 scheduler manifest 至109条后 sequence/authoritative UUID=109/109唯一，unresolved/drift=0，dispatch_allowed=false；CSV hash=`0c9e15a234cf9695e286e65b936ff0828ae989c0ec118cc03df35a09aff7b74b`。
 ## 维护
 
 只更新本文件；删除过时状态；不追加流水账。精确运行明细只写 PostgreSQL 与 JSON/CSV 收据。
