@@ -38,7 +38,7 @@ def _optional_file_sha(path: str | None) -> str | None:
     return sha256_file(candidate) if candidate.exists() else None
 
 
-def load_queues(paths: list[Path]) -> list[dict[str, str]]:
+def load_queues(paths: list[Path], expected_count: int = 98) -> list[dict[str, str]]:
     rows: list[dict[str, str]] = []
     for path in paths:
         with path.open(encoding="utf-8-sig", newline="") as stream:
@@ -49,9 +49,9 @@ def load_queues(paths: list[Path]) -> list[dict[str, str]]:
                 row["queue_source"] = str(path)
                 row["identity_key"] = ""
                 rows.append(row)
-    if len(rows) != 98:
-        raise ValueError(f"expected 98 queue rows, got {len(rows)}")
-    if len({row["sequence"] for row in rows}) != 98:
+    if len(rows) != expected_count:
+        raise ValueError(f"expected {expected_count} queue rows, got {len(rows)}")
+    if len({row["sequence"] for row in rows}) != expected_count:
         raise ValueError("global sequence duplicate")
     return rows
 
@@ -219,7 +219,7 @@ def write_outputs(rows: list[dict[str, str]], queue_paths: list[Path], evidence_
 async def run(args: argparse.Namespace) -> dict[str, Any]:
     queue_paths = [Path(item) for item in args.queue]
     evidence_paths = [Path(item) for item in (args.pool_a_snapshot, args.structure_snapshot, args.task_key_snapshot, args.capacity_snapshot)]
-    rows = load_queues(queue_paths)
+    rows = load_queues(queue_paths, args.expected_count)
     candidates, structure, active = await pg_snapshot(args.database_url, rows)
     resolve_authoritative_ids(rows, candidates)
     pool_snapshot = json.loads(evidence_paths[0].read_text(encoding="utf-8"))
@@ -233,6 +233,7 @@ async def run(args: argparse.Namespace) -> dict[str, Any]:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--queue", action="append", required=True, help="target queue CSV; repeat exactly six times")
+    parser.add_argument("--expected-count", type=int, default=98)
     parser.add_argument("--database-url", required=True)
     parser.add_argument("--pool-a-snapshot", required=True)
     parser.add_argument("--structure-snapshot", required=True)
