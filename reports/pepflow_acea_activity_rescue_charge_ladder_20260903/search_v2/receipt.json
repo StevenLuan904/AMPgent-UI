@@ -1,0 +1,63 @@
+{
+  "schema_version": "ampgent.autoresearch-activity-rescue-search.1",
+  "observed_at_utc": "2026-09-03T05:50:24.265402+00:00",
+  "parent_score_sha256": "593802516987db0b660ce939d60dd54cf4e07f625a0f55f9c7b51dfa9fde6f28",
+  "parent_score_sha256s": [
+    "593802516987db0b660ce939d60dd54cf4e07f625a0f55f9c7b51dfa9fde6f28"
+  ],
+  "source_branch_filter": "acea",
+  "source_row_count_before_branch_filter": 8,
+  "source_row_count_before_family_filter": 8,
+  "source_row_count": 8,
+  "source_family_filters": [],
+  "operator_mode": "charge-ladder",
+  "rescue_endpoint": "macrel",
+  "rescue_metric": "macrel_amp_probability",
+  "rescue_direction": "maximize",
+  "minimum_parent_support": 0,
+  "generation_floor": 2,
+  "plans_sha256": "358854bd589c1f93329820bd8118c679a7d5bdb6aef57d3efb8ab041cf2035ca",
+  "historical_sequence_exclusion_count": 225733,
+  "history_mode": "postgresql",
+  "history_check_status": "postgresql_complete",
+  "display_or_promotion_allowed": true,
+  "input_sequence_exclusion_count": 8,
+  "historical_source_sha256s": [],
+  "parent_count": 3,
+  "parent_family_count": 3,
+  "generated_novel_strict_count": 192,
+  "safety_hard_gate_pass_count": 9,
+  "safety_positive_rescue_gain_count": 1,
+  "full_score_shortlist_count": 1,
+  "plugin_status": [
+    {
+      "plugin": "physicochemical_developability",
+      "status": "complete",
+      "candidate_count": 192,
+      "adapter_version": "2026.08.04-v1",
+      "result_sha256": "a3dd8337fc2c3e027fca3bf02fb183430f5de6f4c71e6542770bc4bf02bcc625"
+    },
+    {
+      "plugin": "hemolysis_risk",
+      "status": "complete",
+      "candidate_count": 192,
+      "adapter_version": "macrel-1.6.1-8c1f732",
+      "result_sha256": "47bc02bf2fca264ffc3a01f38643e1089f8bd541df3e76c5d96528e25676046c"
+    },
+    {
+      "plugin": "toxicity_risk",
+      "status": "complete",
+      "candidate_count": 192,
+      "adapter_version": "toxinpred3-corrected-v0.2-dcdba83",
+      "result_sha256": "de22350af05bfcbb3d6f43b3c0e162b897da989ea7880e43f5a2c4a6ff396bcc"
+    }
+  ],
+  "workflow_submitted": false,
+  "gpu_task_submitted": false,
+  "historical_run_modified": false,
+  "all_search_scores_sha256": "e614348cd2452c7a8de4f7373aa57ce861bda509bb20fc58e13590d7ca1ee7cc",
+  "safety_pass_candidates_sha256": "896dce5c9fa1abcd03741745bb4f5a2021c277f3fa74cfaaf03ba22ed768bda7",
+  "safety_gain_candidates_sha256": "52f0e476526ce0e8b75af0e8a32caf9b2e3985375ba3a60c04d327364eefcdd8",
+  "full_score_shortlist_sha256": "52f0e476526ce0e8b75af0e8a32caf9b2e3985375ba3a60c04d327364eefcdd8",
+  "receipt_payload_sha256": "d9b5d01a59e0d634a9e62804e8e73ea200a6d3e032326bf700776ed7a5548bf0"
+}

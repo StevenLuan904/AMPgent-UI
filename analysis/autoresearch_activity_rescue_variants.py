@@ -5,6 +5,7 @@ import asyncio
 import csv
 import json
 from datetime import UTC, datetime
+from itertools import combinations
 from pathlib import Path
 from typing import Any
 
@@ -29,6 +30,8 @@ HYDROPHOBIC_RESIDUES = frozenset("AILMFWVY")
 CHARGE_PATTERN_REPLACEMENTS = "KRHAGSTNQ"
 CANONICAL_REPLACEMENTS = "ACDEFGHIKLMNPQRSTVWY"
 HYBRID_PAIR_OFFSETS = (-3, 3)
+CHARGE_LADDER_REPLACEMENTS = "KR"
+MAXIMUM_CHARGE_LADDER_VARIANTS_PER_PARENT = 64
 RESCUE_ENDPOINTS = {
     "macrel": {
         "metric": "macrel_amp_probability",
@@ -92,6 +95,20 @@ HYBRID_PAIR_OPERATOR_RELEASE_SHA256 = sha256_json(
         "secondary_replacement_residues": list(CHARGE_PATTERN_REPLACEMENTS),
         "secondary_position_offsets": list(HYBRID_PAIR_OFFSETS),
         "parent_policy": "support2_macrel_gap_local_hydrophobic_charge_pair",
+        "quality_gate": {
+            "guruprasad_instability_index": "<=50",
+            "net_charge_ph7_4": ">=3",
+            "hydrophobic_descriptors": "record_only",
+        },
+    }
+)
+CHARGE_LADDER_OPERATOR_RELEASE_SHA256 = sha256_json(
+    {
+        "operator_id": "autoresearch-charge-ladder-rescue-v1",
+        "replacement_residues": list(CHARGE_LADDER_REPLACEMENTS),
+        "maximum_edits": 4,
+        "maximum_variants_per_parent": MAXIMUM_CHARGE_LADDER_VARIANTS_PER_PARENT,
+        "parent_policy": "activity_gap_minimum_edits_to_positive_charge_region",
         "quality_gate": {
             "guruprasad_instability_index": "<=50",
             "net_charge_ph7_4": ">=3",
@@ -305,6 +322,70 @@ def _generate(
     for parent in parents:
         parent_sequence = parent["sequence"]
         parent_metric_value = float(parent[endpoint["metric"]])
+        if operator_mode == "charge-ladder":
+            operator_id = f"autoresearch-{rescue_endpoint}-charge-ladder-rescue-v1"
+            operator_release_sha256 = (
+                CHARGE_LADDER_OPERATOR_RELEASE_SHA256
+                if rescue_endpoint == "macrel"
+                else sha256_json(
+                    {
+                        "operator_id": operator_id,
+                        "replacement_residues": list(CHARGE_LADDER_REPLACEMENTS),
+                        "maximum_edits": 4,
+                        "maximum_variants_per_parent": (
+                            MAXIMUM_CHARGE_LADDER_VARIANTS_PER_PARENT
+                        ),
+                        "rescue_metric": endpoint["metric"],
+                        "rescue_direction": endpoint["direction"],
+                        "quality_gate": "instability-charge-prefilter-v1",
+                    }
+                )
+            )
+            editable_positions = [
+                position
+                for position, residue in enumerate(parent_sequence)
+                if residue not in CHARGE_LADDER_REPLACEMENTS
+            ]
+            accepted_before = len(generated)
+            for edit_count in range(1, min(4, len(editable_positions)) + 1):
+                for positions in combinations(editable_positions, edit_count):
+                    for replacement in CHARGE_LADDER_REPLACEMENTS:
+                        sequence_chars = list(parent_sequence)
+                        substitutions = []
+                        for position in positions:
+                            old_residue = parent_sequence[position]
+                            sequence_chars[position] = replacement
+                            substitutions.append(
+                                ResidueSubstitution(
+                                    position_zero_based=position,
+                                    from_residue=old_residue,
+                                    to_residue=replacement,
+                                )
+                            )
+                        append_variant(
+                            parent=parent,
+                            parent_metric_value=parent_metric_value,
+                            sequence="".join(sequence_chars),
+                            substitutions=tuple(substitutions),
+                            operator_id=operator_id,
+                            operator_release_sha256=operator_release_sha256,
+                        )
+                        if (
+                            len(generated) - accepted_before
+                            >= MAXIMUM_CHARGE_LADDER_VARIANTS_PER_PARENT
+                        ):
+                            break
+                    if (
+                        len(generated) - accepted_before
+                        >= MAXIMUM_CHARGE_LADDER_VARIANTS_PER_PARENT
+                    ):
+                        break
+                if (
+                    len(generated) - accepted_before
+                    >= MAXIMUM_CHARGE_LADDER_VARIANTS_PER_PARENT
+                ):
+                    break
+            continue
         if operator_mode == "hybrid-pair":
             operator_id = f"autoresearch-{rescue_endpoint}-hybrid-pair-rescue-v1"
             operator_release_sha256 = (
@@ -663,7 +744,13 @@ def main() -> None:
     )
     parser.add_argument(
         "--operator-mode",
-        choices=("hydrophobic", "charge-pattern", "hybrid-pair", "canonical-scan"),
+        choices=(
+            "hydrophobic",
+            "charge-pattern",
+            "charge-ladder",
+            "hybrid-pair",
+            "canonical-scan",
+        ),
         default="hydrophobic",
     )
     run(parser.parse_args())

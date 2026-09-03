@@ -62,7 +62,7 @@ Challenger 证据键为 `run_id + candidate_id + model_release_key`；字段为 
 - Pool A archive 486个靶点内80/80家族elite：AceA79、GyrA100、PBP2a53、VEGFA71、FGF2 81、ANGPT1 102；严格过门候选498，同家族非elite不属于archive；全部结构与decoy远端保留。
 - `.19` GPU0–7运行首批475条；synth `.2` GPU1运行新增11条；两队列身份无交集，统一总数486。已启动29条、生产MD完成15条、MM/GBSA完成入库15条、全证据canonical完成12条、其余未启动457条；两条GyrA均已完成MM/GBSA与残基分解并入库（`0b71cf1c` 899残基，`89982fb4` 901残基），界面分析待完成；VEGFA `e2121432` 的36帧MM/GBSA与415残基分解已入库，均值-100.07 kcal/mol、95% CI [-106.28,-93.96]；GPU已自动补位ANGPT1；失败0、跨报告一致性错误0。AceA现有8条中Rosetta dG与MD RMSD/MMGBSA秩相关仅0.262/0.238，MD保持独立必经门。非正式smoke不计数。5条靶点内暂定Pool S前沿在MM/GBSA均值与95%CI上界定义下成员一致。两端均为单best-decoy、1 ns NPT+50 ns NVT、checkpoint续算；`.2` 紧凑证据转交`.19`，PDB/DCD/checkpoint只留远端。
 - `.32 GPU0`有外来声明不抢占；GPU1虽空闲但当前MD已占满资源上限，不重复派发；GPU2/3禁止。
-- 生成来源：PepGLAD三靶点严格库87,989条/8,657家族，61,914条(70.4%)获至少双活动模型支持；target-conditioned PepMLM六靶点24,576/24,576完成12项、12,151条(49.4%)过展示门、890条优选子集完成challenger；PepFlow AceA model2真机8/8完成12项与challenger并落库至run `de80b78e-ae0d-5190-93cc-11ee5dee62a2`，5条(62.5%)过展示门、0条过活动/QD门，下一批优先改善活动条件化而不降低硬门；首批A池475/475按PostgreSQL精确审计均无唯一显式来源，不按序列归因。
+- 生成来源：PepGLAD三靶点严格库87,989条/8,657家族，61,914条(70.4%)获至少双活动模型支持；target-conditioned PepMLM六靶点24,576/24,576完成12项、12,151条(49.4%)过展示门、890条优选子集完成challenger；PepFlow AceA model2真机8/8完成12项与challenger并落库至run `de80b78e-ae0d-5190-93cc-11ee5dee62a2`，5条过展示门、0条过活动/QD门。其3个新家族的charge-ladder派生192条，9条过展示门，1条完成12项/HemoPI2无冲突但活动支持仍为0；结论是单独增电荷不足，后续以LLAMP/AMP-READ活性导向杂交且不降硬门。首批A池475/475按PostgreSQL精确审计均无唯一显式来源，不按序列归因。
 
 ## 维护
 

@@ -52,17 +52,30 @@
       "challenger_no_conflict_count": 5,
       "qd_quality_gate_pass_count": 0,
       "pool_a_addition_count": 0,
+      "charge_ladder_rescue": {
+        "parent_count": 3,
+        "new_family_count": 3,
+        "novel_proposal_count": 192,
+        "display_eligible_count": 9,
+        "formal_12_complete_count": 1,
+        "hemopi2_no_conflict_count": 1,
+        "activity_support_at_least_two_count": 0,
+        "qd_quality_gate_pass_count": 0,
+        "pool_a_addition_count": 0,
+        "conclusion": "charge-only rescue was insufficient; use activity-model-directed hybridization without lowering gates",
+        "receipt": "reports/pepflow_acea_activity_rescue_charge_ladder_20260903/challenger_v3/receipt.json"
+      },
       "operational_run_id": "de80b78e-ae0d-5190-93cc-11ee5dee62a2",
       "structures_retained_remote": true,
       "historical_runs_modified": false
     }
   },
   "current_pool_a": {
-    "candidate_count": 475,
-    "database_candidate_count": 475,
+    "candidate_count": 486,
+    "database_candidate_count": 486,
     "missing_candidate_count": 0,
     "source_attribution_status": "unattributed_or_ambiguous",
-    "source_counts": {"unattributed_or_ambiguous": 475},
+    "source_counts": {"unattributed_or_ambiguous": 475, "successor_cohort": 11},
     "reason": "exact PostgreSQL candidate_id+run_id audit found no unique explicit provider evidence; no sequence-based inference performed",
     "remote_audit": "/data1/huangyueshan/pepagent/md/pool-a-full-md-v1/results/source_attribution_audit.json"
   },

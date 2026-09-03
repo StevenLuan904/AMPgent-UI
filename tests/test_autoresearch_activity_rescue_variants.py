@@ -382,6 +382,32 @@ def test_activity_rescue_does_not_gate_hydrophobic_descriptors() -> None:
     assert any(float(row["hydrophobic_fraction"]) > 0.45 for row in generated)
 
 
+def test_charge_ladder_reaches_quality_region_from_pepflow_like_parent() -> None:
+    module = _load_module()
+    parent_sequence = "VVVGGGPPNSAGA"
+    parent = {
+        "branch_key": "acea",
+        "generation": "1",
+        "sequence": parent_sequence,
+        "sequence_sha256": hashlib.sha256(parent_sequence.encode()).hexdigest(),
+        "macrel_amp_probability": "0.426",
+        "family_key_80_80": "pepflow-neutral-family",
+    }
+
+    generated, actions = module._generate(
+        [parent], set(), "0" * 64, operator_mode="charge-ladder"
+    )
+
+    assert generated
+    assert len(generated) <= module.MAXIMUM_CHARGE_LADDER_VARIANTS_PER_PARENT
+    assert all(float(row["net_charge_ph7_4"]) >= 3 for row in generated)
+    assert all(float(row["guruprasad_instability_index"]) <= 50 for row in generated)
+    assert all(1 <= len(action["substitutions"]) <= 4 for action in actions)
+    assert {action["operator_id"] for action in actions} == {
+        "autoresearch-macrel-charge-ladder-rescue-v1"
+    }
+
+
 def test_activity_rescue_advances_to_global_generation_floor() -> None:
     module = _load_module()
     parent_sequence = "RTKKKKTTLRREGNRGKWGK"
