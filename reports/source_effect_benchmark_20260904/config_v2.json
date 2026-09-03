@@ -1,0 +1,191 @@
+{
+  "benchmark_id": "ampgent_source_effect_benchmark_v2_20260904",
+  "md_observation": {
+    "observed_at_utc": "2026-09-03T22:37:49.808096+00:00",
+    "observation_basis": "md_current_identity_snapshot_20260904.json plus live supervisor PID probes; no new full-evidence transition observed",
+    "new_compact_evidence_count": 0,
+    "identity_union": 486,
+    "state_partition": {
+      "launched_unique": 50,
+      "md_complete_unique": 31,
+      "full_evidence_unique": 31,
+      "analysis_pending_unique": 0,
+      "running_unique": 19,
+      "not_started_unique": 436,
+      "failed_unique": 0,
+      "partition_total_unique": 486,
+      "launched_equals_full_plus_running": true,
+      "disjoint_union_equals_486": true
+    },
+    "main_475": {
+      "md_supervisor_pid": 3986807,
+      "analysis_supervisor_pid": 3977733,
+      "status": "alive"
+    },
+    "successor_11": {
+      "supervisor_pid": 1280301,
+      "analysis_pid": 3311802,
+      "mmgbsa_pid": 3360111,
+      "status": "alive",
+      "complete": 2,
+      "pending": 6,
+      "running": 3,
+      "failed": 0
+    },
+    "successor_12": {
+      "status": "prepared_not_dispatched",
+      "dispatch_allowed": false
+    },
+    "large_artifacts_read": false,
+    "remote_tasks_mutated": false
+  },
+  "excluded_scopes": [
+    {
+      "scope": "target_agnostic_v13-v16",
+      "reason": "compact artifacts expose donor_source and proposal IDs, but do not export the PG authoritative UUID mapping; excluded rather than treating proposal-* as candidate identity"
+    },
+    {
+      "scope": "target_specific_runs_without_self_contained_score_artifact",
+      "reason": "archive-promotion receipts do not contain a complete score artifact, so they are not assigned downstream denominators"
+    }
+  ],
+  "specs": [
+    {
+      "label": "AceA target-conditioned PepMLM",
+      "source": "PepMLM_target_conditioned",
+      "target_key": "acea",
+      "run_id": "7a0f596a-4959-5756-b110-e7c489c5c183",
+      "proposal_count_override": 1,
+      "score_path": "reports/autoresearch_lineage_round102_acea_pepmlm_denovo_fullscore_20260901/selected_candidate_scores_20260904.csv",
+      "materialization_path": "reports/autoresearch_lineage_round102_acea_pepmlm_denovo_fullscore_20260901/materialization_receipt_single_20260904.json",
+      "qd_path": "reports/autoresearch_lineage_round102_acea_pepmlm_denovo_fullscore_20260901/qd_candidate_20260904.json",
+      "rosetta_path": "reports/autoresearch_lineage_round102_acea_pepmlm_denovo_fullscore_20260901/rosetta_preflight_20260904/rosetta_final_admission_receipt_20260904.json",
+      "pool_a_admitted_count": 1,
+      "candidate_id_kind": "authoritative_uuid_from_pg_source_receipt"
+    },
+    {
+      "label": "AceA PepFlow",
+      "source": "PepFlow",
+      "target_key": "acea",
+      "run_id": "5281871a-043f-5685-a29e-2d2fbf1fe3c4",
+      "score_path": "reports/pepflow_acea_source_increment_20260904/candidate_scores_calibrated.csv",
+      "proposal_path": "reports/pepflow_acea_source_increment_20260904/proposals.csv",
+      "challenger_path": "reports/pepflow_acea_source_increment_20260904/challenger/challenger_review.csv",
+      "materialization_path": "reports/pepflow_acea_source_increment_20260904/materialization_receipt.json",
+      "qd_path": "reports/pepflow_acea_source_increment_20260904/quality_diversity.json",
+      "pool_a_admitted_count": 0,
+      "candidate_id_kind": "run_plus_sequence_sha256_pg_bound; targeted_rosetta_pending"
+    },
+    {
+      "label": "PBP2a PepGLAD",
+      "source": "PepGLAD",
+      "target_key": "pbp2a",
+      "run_id": "ae9e8532-4276-5b46-8f4f-6a916b08ffcd",
+      "score_path": "reports/pbp2a_pepglad_source_graft_20260904/candidate_scores_calibrated.csv",
+      "proposal_path": "reports/pbp2a_pepglad_source_graft_20260904/proposals.csv",
+      "challenger_path": "reports/pbp2a_pepglad_source_graft_20260904/challenger/challenger_review.csv",
+      "materialization_path": "reports/pbp2a_pepglad_source_graft_20260904/materialization_receipt.json",
+      "qd_path": "reports/pbp2a_pepglad_source_graft_20260904/quality_diversity.json",
+      "pool_a_admitted_count": 0,
+      "candidate_id_kind": "run_plus_sequence_sha256_pg_bound; targeted_rosetta_pending"
+    },
+    {
+      "label": "PBP2a PepMLM source increment",
+      "source": "PepMLM_target_conditioned",
+      "target_key": "pbp2a",
+      "run_id": "45593820-90db-53df-b29d-b97adfa203f3",
+      "proposal_count_override": 1,
+      "score_path": "reports/pbp2a_pepmlm_source_increment_20260904/candidate_scores.csv",
+      "challenger_path": "reports/pbp2a_pepmlm_source_increment_20260904/challenger_review.csv",
+      "materialization_path": "reports/pbp2a_pepmlm_source_increment_20260904/materialization_receipt.json",
+      "qd_path": "reports/pbp2a_pepmlm_source_increment_20260904/qd_receipt.json",
+      "pool_a_admitted_count": 0,
+      "candidate_id_kind": "authoritative_uuid_in_close_receipt; score_row_sequence_sha256"
+    },
+    {
+      "label": "PBP2a PepMLM QD follow-up",
+      "source": "PepMLM_target_conditioned",
+      "target_key": "pbp2a",
+      "run_id": "c6623343-bfc6-520b-8af3-3762ff25d02a",
+      "proposal_count_override": 1,
+      "score_path": "reports/pbp2a_pepmlm_qd_followup_20260904/candidate_scores.csv",
+      "challenger_path": "reports/pbp2a_pepmlm_qd_followup_20260904/challenger_review.csv",
+      "materialization_path": "reports/pbp2a_pepmlm_qd_followup_20260904/materialization_receipt.json",
+      "qd_path": "reports/pbp2a_pepmlm_qd_followup_20260904/qd_receipt.json",
+      "pool_a_admitted_count": 0,
+      "candidate_id_kind": "authoritative_uuid_in_close_receipt; score_row_sequence_sha256"
+    },
+    {
+      "label": "VEGFA PepMLM source increment",
+      "source": "PepMLM_target_conditioned",
+      "target_key": "vegfa",
+      "run_id": "98170454-be7f-5ab2-8add-979b9f11ddad",
+      "proposal_count_override": 1,
+      "score_path": "reports/vegfa_pepmlm_source_increment_20260904/selected_score.csv",
+      "materialization_path": "reports/vegfa_pepmlm_source_increment_20260904/materialization_receipt.json",
+      "qd_path": "reports/vegfa_pepmlm_source_increment_20260904/qd_receipt_b44.json",
+      "pool_a_admitted_count": 0,
+      "candidate_id_kind": "authoritative_uuid_in_close_receipt; score_row_sequence_sha256"
+    },
+    {
+      "label": "AceA PepMLM source increment",
+      "source": "PepMLM_target_conditioned",
+      "target_key": "acea",
+      "run_id": "711cbfde-1897-5077-91bd-da7054293a4a",
+      "proposal_count_override": 1,
+      "score_path": "reports/acea_pepmlm_source_increment_20260904/selected_score.csv",
+      "materialization_path": "reports/acea_pepmlm_source_increment_20260904/materialization_receipt.json",
+      "qd_path": "reports/acea_pepmlm_source_increment_20260904/qd_receipt.json",
+      "pool_a_admitted_count": 0,
+      "candidate_id_kind": "authoritative_uuid_in_close_receipt; score_row_sequence_sha256"
+    },
+    {
+      "label": "FGF2 PepMLM source increment",
+      "source": "PepMLM_target_conditioned",
+      "target_key": "fgf2",
+      "run_id": "1ff62322-46ce-5422-8e40-a328b729b984",
+      "proposal_count_override": 1,
+      "score_path": "reports/fgf2_pepmlm_source_increment_20260904/selected_score.csv",
+      "materialization_path": "reports/fgf2_pepmlm_source_increment_20260904/materialization_receipt.json",
+      "qd_path": "reports/fgf2_pepmlm_source_increment_20260904/qd_receipt.json",
+      "pool_a_admitted_count": 0,
+      "candidate_id_kind": "authoritative_uuid_in_close_receipt; score_row_sequence_sha256"
+    },
+    {
+      "label": "GyrA PepMLM source increment",
+      "source": "PepMLM_target_conditioned",
+      "target_key": "gyra",
+      "run_id": "169de8d4-8473-5cdf-9100-f3445ba93704",
+      "proposal_count_override": 1,
+      "score_path": "reports/gyra_pepmlm_source_increment_20260904/selected_score.csv",
+      "materialization_path": "reports/gyra_pepmlm_source_increment_20260904/materialization_receipt.json",
+      "qd_path": "reports/gyra_pepmlm_source_increment_20260904/qd_receipt.json",
+      "pool_a_admitted_count": 0,
+      "candidate_id_kind": "authoritative_uuid_in_close_receipt; score_row_sequence_sha256"
+    },
+    {
+      "label": "FGF2 PepMLM follow-up",
+      "source": "PepMLM_target_conditioned",
+      "target_key": "fgf2",
+      "run_id": "f19e3e47-8db6-5623-a6d0-b669cf54a1f3",
+      "proposal_count_override": 1,
+      "score_path": "reports/fgf2_pepmlm_source_followup_20260904/selected_score.csv",
+      "materialization_path": "reports/fgf2_pepmlm_source_followup_20260904/materialization_receipt.json",
+      "qd_path": "reports/fgf2_pepmlm_source_followup_20260904/qd_receipt.json",
+      "pool_a_admitted_count": 0,
+      "candidate_id_kind": "authoritative_uuid_in_close_receipt; score_row_sequence_sha256"
+    },
+    {
+      "label": "GyrA PepMLM follow-up",
+      "source": "PepMLM_target_conditioned",
+      "target_key": "gyra",
+      "run_id": "e666339b-63ee-5efc-8733-a34b9c9f8694",
+      "proposal_count_override": 1,
+      "score_path": "reports/gyra_pepmlm_source_followup_20260904/selected_score.csv",
+      "materialization_path": "reports/gyra_pepmlm_source_followup_20260904/materialization_receipt.json",
+      "qd_path": "reports/gyra_pepmlm_source_followup_20260904/qd_receipt.json",
+      "pool_a_admitted_count": 0,
+      "candidate_id_kind": "authoritative_uuid_in_close_receipt; score_row_sequence_sha256"
+    }
+  ]
+}

@@ -162,3 +162,58 @@ def test_ci_is_explicit_for_small_denominators(tmp_path: Path) -> None:
     rate = result["records"][0]["rates"]["materialized_to_formal12"]
     assert rate["ci95"][0] == pytest.approx(0.20654931437728953)
     assert rate["ci95"][1] == 1.0
+
+
+def test_target_specific_qd_without_rosetta_is_not_pool_a(tmp_path: Path) -> None:
+    _write(
+        tmp_path / "score.csv",
+        "sequence_sha256,formal_12_complete,display_eligible,"
+        "activity_model_support_count_calibrated\n"
+        "child,true,true,2\n",
+    )
+    _write(
+        tmp_path / "material.json",
+        json.dumps(
+            {
+                "operational_run_id": "run-target",
+                "materialized_or_reused_in_run_count": 1,
+                "inserted_evaluation_count": 17,
+                "challenger_reviewed_count": 1,
+                "challenger_no_conflict_count": 1,
+            }
+        ),
+    )
+    _write(
+        tmp_path / "qd.json",
+        json.dumps(
+            {
+                "actual_cell_id": "q1-h1-m1-l1",
+                "eligible_batch_candidate_count": 1,
+                "new_cell": True,
+                "contribution": "empty_cell",
+            }
+        ),
+    )
+    result = build_benchmark(
+        {
+            "specs": [
+                {
+                    "label": "targeted",
+                    "source": "PepMLM",
+                    "target_key": "fgf2",
+                    "run_id": "run-target",
+                    "proposal_count_override": 1,
+                    "score_path": "score.csv",
+                    "materialization_path": "material.json",
+                    "qd_path": "qd.json",
+                    "pool_a_admitted_count": 0,
+                }
+            ]
+        },
+        tmp_path,
+    )
+    record = result["records"][0]
+    assert record["counts"]["qd_eligible"] == 1
+    assert record["counts"]["rosetta_pending_candidates"] == 1
+    assert record["counts"]["pool_a_admitted"] == 0
+    assert result["weighted_total_used"] is False
