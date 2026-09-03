@@ -1,0 +1,60 @@
+{
+  "schema_version": "ampgent.pool-a-md-transition-verification.1",
+  "observed_at_utc": "2026-09-03T22:44:06.2272635Z",
+  "identity": {
+    "subject_run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+    "candidate_id": "a32aadd5-16d3-473a-ba10-8815515d5a56",
+    "target_key": "fgf2",
+    "sequence_sha256": "408bc1d160354b7f4ff55f7cc1911a03a6d689dd708f7bd7b178b794f46f31af"
+  },
+  "expected_md_coverage": {
+    "total": 15,
+    "interface": 11,
+    "mmgbsa": 4,
+    "metric_names": [
+      "md_hydrogen_bond_occupancy",
+      "md_interface_rmsd_max_nm",
+      "md_interface_rmsd_mean_nm",
+      "md_key_contact_count",
+      "md_maximum_departure_duration_ps",
+      "md_maximum_peptide_com_shift_nm",
+      "md_native_contact_fraction_mean",
+      "md_native_contact_fraction_min",
+      "md_peptide_departed",
+      "md_salt_bridge_occupancy",
+      "md_water_bridge_occupancy",
+      "mmgbsa_binding_energy_ci95_lower_kcal_mol",
+      "mmgbsa_binding_energy_ci95_upper_kcal_mol",
+      "mmgbsa_binding_energy_mean_kcal_mol",
+      "mmgbsa_residue_decomposition_count"
+    ]
+  },
+  "pg": {
+    "candidate_found": true,
+    "candidate_run_identity_match": true,
+    "md_evaluation_count": 15,
+    "interface_evaluation_count": 11,
+    "mmgbsa_evaluation_count": 4,
+    "successful_md_tool_call_ids": [
+      "dad89700-4bec-478b-b059-5fb39a95d86c",
+      "425806a8-5738-44a7-bed5-cf21caf95029"
+    ],
+    "successful_non_md_tool_call_ids": [
+      "87abbcb0-57bd-4248-8f05-477ce82f0989"
+    ],
+    "full_md_coverage": true,
+    "postgresql_write_performed": false,
+    "duplicate_evidence": 0,
+    "identity_drift": 0
+  },
+  "source_observation": {
+    "remote_result_root": "/data1/huangyueshan/pepagent/md/pool-a-full-md-v1/results/fgf2/a32aadd5-16d3-473a-ba10-8815515d5a56",
+    "remote_compact_analysis_read": false,
+    "large_artifacts_read_or_downloaded": false
+  },
+  "decision": {
+    "verification_status": "pg_complete",
+    "ingest_status": "not_needed",
+    "reason": "All required MD evidence is already present in PostgreSQL with succeeded status and exact run/candidate binding; no ingest was performed."
+  }
+}

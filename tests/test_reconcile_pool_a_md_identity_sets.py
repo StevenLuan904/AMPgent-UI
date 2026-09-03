@@ -58,3 +58,36 @@ def test_current_snapshot_has_exact_five_new_identities_and_partition_invariants
     new = payload["new_identities_since_previous_45"]
     assert payload["new_identity_count"] == 5
     assert len({(row["run_id"], row["candidate_id"]) for row in new}) == 5
+
+
+def test_fgf2_transition_receipts_distinguish_pg_complete_and_incomplete() -> None:
+    report_dir = (
+        Path(__file__).parents[1]
+        / "reports/pool_a_md_50ns_expansion_20260903"
+    )
+    complete = json.loads(
+        (report_dir / "md_transition_verification_a32aadd5_20260904.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    incomplete = json.loads(
+        (report_dir / "md_transition_verification_bf53367f_20260904.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert complete["pg"]["md_evaluation_count"] == 15
+    assert complete["pg"]["interface_evaluation_count"] == 11
+    assert complete["pg"]["mmgbsa_evaluation_count"] == 4
+    assert complete["pg"]["full_md_coverage"] is True
+    assert len(complete["pg"]["successful_md_tool_call_ids"]) == 2
+    assert incomplete["pg"]["md_evaluation_count"] == 0
+    assert incomplete["pg"]["full_md_coverage"] is False
+    assert incomplete["decision"]["ingest_status"] == "blocked_no_local_compact_analysis"
+    snapshot = json.loads(
+        (report_dir / "md_current_identity_snapshot_20260904.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    audit = snapshot["postgresql_evidence_audit"]
+    assert audit["pg_complete_full_evidence_unique"] == 30
+    assert audit["transition_pg_complete"] + audit["transition_pg_incomplete"] == 2

@@ -1,0 +1,60 @@
+{
+  "schema_version": "ampgent.pool-a-md-transition-verification.1",
+  "observed_at_utc": "2026-09-03T22:44:06.2272635Z",
+  "identity": {
+    "subject_run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+    "candidate_id": "bf53367f-8705-4e17-bb01-326b237e80ea",
+    "target_key": "fgf2",
+    "sequence_sha256": "7f9cf7ae55189903cd6e8999a20c78cc1f8c00068aa1bec352c827c08b8769ed"
+  },
+  "expected_md_coverage": {
+    "total": 15,
+    "interface": 11,
+    "mmgbsa": 4,
+    "metric_names": [
+      "md_hydrogen_bond_occupancy",
+      "md_interface_rmsd_max_nm",
+      "md_interface_rmsd_mean_nm",
+      "md_key_contact_count",
+      "md_maximum_departure_duration_ps",
+      "md_maximum_peptide_com_shift_nm",
+      "md_native_contact_fraction_mean",
+      "md_native_contact_fraction_min",
+      "md_peptide_departed",
+      "md_salt_bridge_occupancy",
+      "md_water_bridge_occupancy",
+      "mmgbsa_binding_energy_ci95_lower_kcal_mol",
+      "mmgbsa_binding_energy_ci95_upper_kcal_mol",
+      "mmgbsa_binding_energy_mean_kcal_mol",
+      "mmgbsa_residue_decomposition_count"
+    ]
+  },
+  "pg": {
+    "candidate_found": true,
+    "candidate_run_identity_match": true,
+    "md_evaluation_count": 0,
+    "interface_evaluation_count": 0,
+    "mmgbsa_evaluation_count": 0,
+    "successful_md_tool_call_ids": [],
+    "successful_non_md_tool_call_ids": [
+      "87abbcb0-57bd-4248-8f05-477ce82f0989"
+    ],
+    "full_md_coverage": false,
+    "postgresql_write_performed": false,
+    "duplicate_evidence": 0,
+    "identity_drift": 0
+  },
+  "source_observation": {
+    "remote_result_root": "/sdd_data/pepagent/ampgent/md/pool-a-full-md-v1/results/fgf2/bf53367f-8705-4e17-bb01-326b237e80ea",
+    "remote_snapshot_marked_interface_and_mmgbsa_complete": true,
+    "local_compact_analysis_available": false,
+    "remote_compact_analysis_read": false,
+    "large_artifacts_read_or_downloaded": false
+  },
+  "decision": {
+    "verification_status": "pg_incomplete",
+    "ingest_status": "blocked_no_local_compact_analysis",
+    "reason": "PG has the candidate's formal/challenger/shadow evidence but no MD 15-row evidence; the local compact evidence contains only launch_receipt.json, and the authenticated remote compact-analysis read was unavailable. No MD ingest was attempted.",
+    "safe_next_action": "Use the existing authenticated compact-evidence relay when the remote compact JSON/CSV/receipts are observable; do not rerun analysis or download trajectories."
+  }
+}
