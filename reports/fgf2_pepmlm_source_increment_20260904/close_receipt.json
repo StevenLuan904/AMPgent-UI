@@ -1,0 +1,29 @@
+{
+  "schema_version": "ampgent.fgf2-pepmlm-source-increment-close.1",
+  "observed_at_utc": "2026-09-03T21:50:35Z",
+  "target_key": "fgf2",
+  "source": "PepMLM",
+  "source_stage": "fgf2-pepmlm-target-conditioned-generation-99-v2",
+  "sequence": "SPRASGEGGTTTHPYYGT",
+  "sequence_sha256": "b4df85bb61e9965fbd81cac05fe9c1cd39d74d990c076fae2b5000d7ad9b1b70",
+  "postgresql": {
+    "run_id": "1ff62322-46ce-5422-8e40-a328b729b984",
+    "candidate_id": "04aa1c0a-a2e9-41c9-94cc-a6c4a52a34d3",
+    "tool_call_id": "c8c8d0b7-8873-48fa-9e0e-bfc8ce1e8af0",
+    "run_status": "succeeded",
+    "candidate_count": 1,
+    "evaluation_count": 17,
+    "evaluation_role_counts": {"primary": 12, "challenger": 3, "shadow": 2},
+    "shadow_contract": {"apex": {"applicability_status": "runtime_unavailable", "conflict_status": "not_assessed"}, "peptiverse": {"applicability_status": "runtime_unavailable", "conflict_status": "not_assessed"}},
+    "subject_run_candidate_drift_count": 0,
+    "replay_count": 0,
+    "pg_exact_preflight_count": 0
+  },
+  "quality": {"formal12": true, "display_eligible": true, "activity_support_calibrated": 3, "toxinpred3": "Non-Toxin", "macrel_hemolysis": "low", "guruprasad_instability_index": 23.43888888888889, "hemopi2_conflict_status": "no_conflict", "apex_status": "runtime_unavailable", "peptiverse_status": "runtime_unavailable"},
+  "qd": {"archive_sha256": "4c56a521d835ede3dcab6d5680c5b67c9752583b8902bcc08c474827e1108ecf", "actual_cell_id": "q3-h0-m1-l2", "contribution": "empty_cell", "new_cell": true, "replacement": false, "quality_eligible": true},
+  "structure": {"status": "prepared_not_dispatched", "rosetta_required": true, "nstruct": 5, "dispatch_allowed": false, "pool_a_admitted": false, "task_key": "rosetta-coarse5:fgf2:04aa1c0a-a2e9-41c9-94cc-a6c4a52a34d3"},
+  "md_snapshot": {"identity_union": 486, "launched_unique": 45, "md_complete_unique": 29, "full_evidence_unique": 29, "analysis_pending_unique": 0, "running_unique": 16, "not_started_unique": 441, "failed_unique": 0, "successor_11": {"pending": 6, "running": 3, "complete": 2}, "successor_12": "prepared_not_dispatched", "new_complete_since_prior_snapshot": 0},
+  "remote_large_artifact_downloaded": false,
+  "remote_file_deleted": false,
+  "gpu_rosetta_md_started": false
+}
