@@ -1,0 +1,39 @@
+{
+  "schema_version": "ampgent.pool-a-md-verified-wait.1",
+  "observed_at_local": "2026-09-04T00:39:47+08:00",
+  "baseline_full_evidence": 28,
+  "current": {
+    "expected_identity_union": 486,
+    "main_475": {
+      "md_supervisor_pid": 3986807,
+      "analysis_supervisor_pid": 3977733,
+      "interface_complete": 26,
+      "mmgbsa_complete": 26,
+      "status": "observable_running"
+    },
+    "successor_11": {
+      "md_supervisor_pid": 3290243,
+      "analysis_supervisor_pid": 3311802,
+      "mmgbsa_supervisor_pid": 3360111,
+      "interface_complete": 2,
+      "mmgbsa_complete": 2,
+      "status": "observable_running"
+    },
+    "union_full_evidence": 28,
+    "new_full_evidence_since_baseline": 0,
+    "running_or_incomplete_launched": 14,
+    "failed": 0
+  },
+  "durable_progress": {
+    "main_latest_production": "gyra/ff4d085e-7d05-4266-abb2-3f7172e8122b/production.log",
+    "successor_latest_production": "angpt1/dc5f5319-db18-4b0b-af2d-6906cfcf47ec/production.log",
+    "checkpoint_or_log_mtime_observed": true
+  },
+  "actions": {
+    "database_relay": "not_run_no_new_evidence",
+    "compact_sync": "not_run_no_new_evidence",
+    "md_restart": false,
+    "remote_large_files_copied": false,
+    "prohibited_gpus_touched": false
+  }
+}
