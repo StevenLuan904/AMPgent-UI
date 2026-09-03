@@ -1,0 +1,45 @@
+{
+  "active_pending_task_key_hit_count": 0,
+  "capacity_audit": {
+    "active_gpu_count": 8,
+    "basis": "current .19 AMPgent OpenMM GPU0-7 active; .32 GPU2/GPU3 disabled",
+    "dispatch_allowed": false,
+    "new_scheduler_limit": 0
+  },
+  "dispatch_submitted": false,
+  "global_unique_identity_count": 98,
+  "global_unique_sequence_count": 98,
+  "historical_runs_modified": false,
+  "identity_drift_count": 0,
+  "identity_resolved_count": 98,
+  "identity_unresolved_count": 0,
+  "input_count": 98,
+  "input_queue_hashes": {
+    "reports\\angpt1_reciprocal_micrograft_20260903_structure_queue.csv": "7f5189bacadba7b607d0698e3f92d20141aeac914681866fa78bff46cac58d21",
+    "reports\\fgf2_reciprocal_micrograft_20260903_structure_queue.csv": "0d363ffdea6a9de5a3268778691849055b88141053503a7610c49cad4d40a999",
+    "reports\\gyra_reciprocal_micrograft_20260903_structure_queue.csv": "53f8c37dcb0b04b5cc4c7251f263c376befb6d7681a40cf8d3dc79f06915493a",
+    "reports\\pbp2a_reciprocal_micrograft_structure_queue_20260903.csv": "3979e9b1033655fdc2b15039d117b720126ddc3b4233447b3849986217af6d0a",
+    "reports\\pepflow_acea_reciprocal_micrograft_structure_queue_20260903.csv": "2fa44108842a25fcdf15ffb1cc8f7c704bc9bc29df21fc53705f9ae8c04c5001",
+    "reports\\vegfa_reciprocal_micrograft_20260903_structure_queue.csv": "1e7f81b18c6c754a448b66a926b56ba3159719dcdb36f3a3770f0f59a6119db6"
+  },
+  "manifest_csv_sha256": "baee08c17ba9f5a89ed110cce68dfdd43f221db6e31afbb9115401bbdc5ed4cc",
+  "pg_structure_evidence_present_count": 0,
+  "pool_a_exact_sequence_match_count": 0,
+  "receipt_payload_sha256": "43cd6e4232074908eb556649d2de84b81dba0a3f77eb1a0b5cd006d034341bd2",
+  "schema_version": "ampgent.reciprocal-micrograft.scheduler-manifest.1",
+  "status_counts": {
+    "already_active": 0,
+    "already_completed": 0,
+    "identity_unresolved": 0,
+    "new_ready": 98
+  },
+  "target_counts": {
+    "acea": 24,
+    "angpt1": 13,
+    "fgf2": 8,
+    "gyra": 25,
+    "pbp2a": 27,
+    "vegfa": 1
+  },
+  "weighted_q_plus_lambda_d_used": false
+}

@@ -71,6 +71,7 @@ Challenger 证据键为 `run_id + candidate_id + model_release_key`；字段为 
 | FGF2 | `76bd7925-a605-54ef-b1a9-a1a0b0e2baff` | 22 | 17 | 8/4 | 8 |
 | GyrA | `e880a6fa-2989-5ef9-b428-4a6ddb919283` | 25 | 32 | 25/4 | 25 |
 | ANGPT1 | `195dfbb1-cf6b-5d09-bb50-c1bd14590721` | 21 | 24 | 13/4 | 13 |
+- 六靶点 reciprocal micrograft scheduler manifest：AceA24/PBP2a27/VEGFA1/FGF2 8/GyrA25/ANGPT1 13，共98条；全局序列与 `run_id+authoritative_candidate_id(UUID)` 均98/98唯一，identity unresolved/drift=0，PG结构证据、Pool A精确命中及 active/pending task-key 命中均0，全部 `new_ready`。当前活动GPU 8、新调度上限0，`dispatch_allowed=false`，未提交任务。详见 `reports/reciprocal_micrograft_scheduler_ready_manifest_20260903.json`。
 ## 维护
 
 只更新本文件；删除过时状态；不追加流水账。精确运行明细只写 PostgreSQL 与 JSON/CSV 收据。
