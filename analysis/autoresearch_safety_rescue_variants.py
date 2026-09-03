@@ -31,10 +31,9 @@ OPERATOR_RELEASE_SHA256 = sha256_json(
         "editable_residues": sorted(EDITABLE),
         "replacement_residues": list(REPLACEMENTS),
         "quality_gate": {
-            "guruprasad_instability_index": "<50",
-            "maximum_hydrophobic_run": "<=2",
-            "hydrophobic_fraction": "<=0.45",
+            "guruprasad_instability_index": "<=50",
             "net_charge_ph7_4": ">=3",
+            "hydrophobic_descriptors": "record_only",
         },
     }
 )
@@ -177,9 +176,7 @@ def _generate(
                 instability, maximum_hydrophobic_run, net_charge = _sequence_prescreen(sequence)
                 hydrophobic_fraction = _hydrophobic_fraction(sequence)
                 if not (
-                    instability < 50.0
-                    and maximum_hydrophobic_run <= 2
-                    and hydrophobic_fraction <= 0.45
+                    instability <= 50.0
                     and net_charge >= 3.0
                 ):
                     continue

@@ -55,10 +55,9 @@ OPERATOR_RELEASE_SHA256 = sha256_json(
         "replacement_residues": list(HYDROPHOBIC_REPLACEMENTS),
         "parent_policy": "balanced_per_family_support2_macrel_below_parent_top_quartile",
         "quality_gate": {
-            "guruprasad_instability_index": "<50",
-            "maximum_hydrophobic_run": "<=2",
-            "hydrophobic_fraction": "<=0.45",
+            "guruprasad_instability_index": "<=50",
             "net_charge_ph7_4": ">=3",
+            "hydrophobic_descriptors": "record_only",
         },
     }
 )
@@ -68,10 +67,9 @@ CHARGE_PATTERN_OPERATOR_RELEASE_SHA256 = sha256_json(
         "replacement_residues": list(CHARGE_PATTERN_REPLACEMENTS),
         "parent_policy": "balanced_per_family_support2_without_existing_support3",
         "quality_gate": {
-            "guruprasad_instability_index": "<50",
-            "maximum_hydrophobic_run": "<=2",
-            "hydrophobic_fraction": "<=0.45",
+            "guruprasad_instability_index": "<=50",
             "net_charge_ph7_4": ">=3",
+            "hydrophobic_descriptors": "record_only",
         },
     }
 )
@@ -81,10 +79,9 @@ CANONICAL_SCAN_OPERATOR_RELEASE_SHA256 = sha256_json(
         "replacement_residues": list(CANONICAL_REPLACEMENTS),
         "parent_policy": "support2_endpoint_gap_exhaustive_single_substitution",
         "quality_gate": {
-            "guruprasad_instability_index": "<50",
-            "maximum_hydrophobic_run": "<=2",
-            "hydrophobic_fraction": "<=0.45",
+            "guruprasad_instability_index": "<=50",
             "net_charge_ph7_4": ">=3",
+            "hydrophobic_descriptors": "record_only",
         },
     }
 )
@@ -96,10 +93,9 @@ HYBRID_PAIR_OPERATOR_RELEASE_SHA256 = sha256_json(
         "secondary_position_offsets": list(HYBRID_PAIR_OFFSETS),
         "parent_policy": "support2_macrel_gap_local_hydrophobic_charge_pair",
         "quality_gate": {
-            "guruprasad_instability_index": "<50",
-            "maximum_hydrophobic_run": "<=2",
-            "hydrophobic_fraction": "<=0.45",
+            "guruprasad_instability_index": "<=50",
             "net_charge_ph7_4": ">=3",
+            "hydrophobic_descriptors": "record_only",
         },
     }
 )
@@ -228,9 +224,7 @@ def _generate(
         instability, maximum_hydrophobic_run, net_charge = _sequence_prescreen(sequence)
         hydrophobic_fraction = _hydrophobic_fraction(sequence)
         if not (
-            instability < 50.0
-            and maximum_hydrophobic_run <= 2
-            and hydrophobic_fraction <= 0.45
+            instability <= 50.0
             and net_charge >= 3.0
         ):
             return

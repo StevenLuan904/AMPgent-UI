@@ -95,6 +95,30 @@ def test_safety_rescue_actions_preserve_the_source_branch() -> None:
     assert module._single_branch_key([parent]) == "vegfa"
 
 
+def test_safety_rescue_does_not_gate_hydrophobic_descriptors() -> None:
+    analysis_dir = Path(__file__).resolve().parents[1] / "analysis"
+    spec = importlib.util.spec_from_file_location(
+        "_autoresearch_safety_rescue_hydrophobic_descriptors",
+        analysis_dir / "autoresearch_safety_rescue_variants.py",
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    parent_sequence = "KKKAAAAAAAAGGGKKK"
+    parent = {
+        "branch_key": "acea",
+        "generation": "3",
+        "sequence": parent_sequence,
+        "sequence_sha256": hashlib.sha256(parent_sequence.encode()).hexdigest(),
+        "family_key_80_80": "hydrophobic-descriptor-only",
+    }
+
+    generated, _ = module._generate([parent], set(), "0" * 64)
+
+    assert any(int(row["maximum_hydrophobic_run"]) > 2 for row in generated)
+    assert any(float(row["hydrophobic_fraction"]) > 0.45 for row in generated)
+
+
 def _load_calibration_module():
     analysis_dir = Path(__file__).resolve().parents[1] / "analysis"
     sys.path.insert(0, str(analysis_dir))
@@ -302,7 +326,7 @@ def test_canonical_scan_explores_residues_missing_from_narrow_operators() -> Non
     assert all(len(action["substitutions"]) == 1 for action in actions)
 
 
-def test_hybrid_pair_operator_records_two_local_edits_and_strict_prefilter() -> None:
+def test_hybrid_pair_operator_records_two_local_edits_and_quality_prefilter() -> None:
     module = _load_module()
     parent_sequence = "KRHHKKHKKKVSKKKVSGEVHAYG"
     parent = {
@@ -334,10 +358,28 @@ def test_hybrid_pair_operator_records_two_local_edits_and_strict_prefilter() -> 
         == 3
         for action in actions
     )
-    assert all(float(row["guruprasad_instability_index"]) < 50 for row in generated)
-    assert all(int(row["maximum_hydrophobic_run"]) <= 2 for row in generated)
-    assert all(float(row["hydrophobic_fraction"]) <= 0.45 for row in generated)
+    assert all(float(row["guruprasad_instability_index"]) <= 50 for row in generated)
     assert all(float(row["net_charge_ph7_4"]) >= 3 for row in generated)
+    assert all("maximum_hydrophobic_run" in row for row in generated)
+    assert all("hydrophobic_fraction" in row for row in generated)
+
+
+def test_activity_rescue_does_not_gate_hydrophobic_descriptors() -> None:
+    module = _load_module()
+    parent_sequence = "KKKAAAAAAAAGGGKKK"
+    parent = {
+        "branch_key": "acea",
+        "generation": "3",
+        "sequence": parent_sequence,
+        "sequence_sha256": hashlib.sha256(parent_sequence.encode()).hexdigest(),
+        "macrel_amp_probability": "0.2",
+        "family_key_80_80": "hydrophobic-descriptor-only",
+    }
+
+    generated, _ = module._generate([parent], set(), "0" * 64)
+
+    assert any(int(row["maximum_hydrophobic_run"]) > 2 for row in generated)
+    assert any(float(row["hydrophobic_fraction"]) > 0.45 for row in generated)
 
 
 def test_activity_rescue_advances_to_global_generation_floor() -> None:
