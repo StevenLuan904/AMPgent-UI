@@ -1,6 +1,6 @@
 {
   "schema_version": "ampgent.rosetta-coarse5-verified-wait.1",
-  "observed_at_local": "2026-09-04T01:41:58+08:00",
+  "observed_at_local": "2026-09-04T01:44:44+08:00",
   "host": "192.168.99.2",
   "owner": "synth",
   "root": "/sdd_data/pepagent/ampgent/structure/acea-round102-sequence-best-rosetta-gap12-20260901-v1",
@@ -25,28 +25,30 @@
     "parent_status": "running",
     "parent_owner": "synth",
     "parent_command_root_verified": true,
-    "child_pid": 1534250,
+    "child_pid": 1548848,
     "child_status": "running",
     "child_owner": "synth",
-    "child_stage": "refine_decoy_0004",
-    "child_decoy_index": 4,
+    "child_stage": "refine_decoy_0005",
+    "child_decoy_index": 5,
     "second_instance_detected": false
   },
   "remote_outputs": {
-    "completed_decoy_json_count": 3,
-    "completed_decoy_indices": [1, 2, 3],
+    "completed_decoy_json_count": 4,
+    "completed_decoy_indices": [1, 2, 3, 4],
     "completed_decoy_dg_separated_reu": [
       7.836643977244819,
       13.106031087811033,
-      -45.94627132283132
+      -45.94627132283132,
+      -41.84123789354469
     ],
     "decoy_json_sha256": {
       "1": "6107266a213a2c40829ac5f731c5c6da98e3feef9b9699a3b008602e1be7eec4",
       "2": "fd5871ed867de7fb6cbd0cbdcb00e93b7c6e2794c5a092b8f96e6b71d4fbef9c",
-      "3": "9b4df4ecd64246e426af5e0c0e337ffefedf799827973c26fe07c15be2a32758"
+      "3": "9b4df4ecd64246e426af5e0c0e337ffefedf799827973c26fe07c15be2a32758",
+      "4": "884067746440b2b73a8cd35961fdf09be85285c677e5decf3a0892a18fd446ca"
     },
     "scorefile_count": 0,
-    "missing_decoy_indices": [4, 5],
+    "missing_decoy_indices": [5],
     "result_json_present": false,
     "completion_receipt_present": false,
     "failure_receipt_present": false,
