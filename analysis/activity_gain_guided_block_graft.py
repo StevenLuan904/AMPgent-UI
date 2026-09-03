@@ -1,4 +1,5 @@
 """Bounded activity-endpoint-gain-guided block graft operator."""
+
 from __future__ import annotations
 
 import argparse
@@ -100,7 +101,8 @@ def generate_guided(
                     continue
                 action = {
                     "operator_id": "activity-gain-guided-block-graft-v1",
-                    "acceptor_candidate_id": acceptor.get("candidate_id") or acceptor.get("sequence_sha256"),
+                    "acceptor_candidate_id": acceptor.get("candidate_id")
+                    or acceptor.get("sequence_sha256"),
                     "donor_candidate_id": fragment["donor_candidate_id"],
                     "independent_gain_axes": fragment["independent_gain_axes"],
                     "source_donor_block": block,
@@ -118,7 +120,8 @@ def generate_guided(
                         "donor_candidate_id": fragment["donor_candidate_id"],
                         "acceptor_family_key_80_80": _family(acceptor),
                         "donor_family_key_80_80": fragment["donor_family_key_80_80"],
-                        "acceptor_source": acceptor.get("generator_id") or acceptor.get("source", ""),
+                        "acceptor_source": acceptor.get("generator_id")
+                        or acceptor.get("source", ""),
                         "donor_source": fragment["donor_source"],
                         "block_length": length,
                         "acceptor_start_zero_based": start,
@@ -127,7 +130,9 @@ def generate_guided(
                         "endpoint_gain_llamp": fragment["llamp_gain"],
                         "endpoint_gain_amp_read": fragment["amp_read_gain"],
                         "endpoint_gain_macrel": fragment["macrel_gain"],
-                        "delta_phi": json.dumps(_delta_phi(sequence, fragment["donor_sequence"], child), sort_keys=True),
+                        "delta_phi": json.dumps(
+                            _delta_phi(sequence, fragment["donor_sequence"], child), sort_keys=True
+                        ),
                         "guruprasad_precheck": "acceptor_and_donor_le_50",
                         "historical_exact_replay": "pending_postgresql_exact_history_gate",
                     }
@@ -156,26 +161,40 @@ def main() -> None:
         row["historical_exact_replay"] = "passed_postgresql_exact_history_gate"
     args.output_dir.mkdir(parents=True, exist_ok=True)
     if diagnostic:
-        with (args.output_dir / "endpoint_gain_diagnostic.csv").open("w", encoding="utf-8", newline="") as stream:
+        with (args.output_dir / "endpoint_gain_diagnostic.csv").open(
+            "w", encoding="utf-8", newline=""
+        ) as stream:
             writer = csv.DictWriter(stream, fieldnames=list(diagnostic[0]))
-            writer.writeheader(); writer.writerows(diagnostic)
+            writer.writeheader()
+            writer.writerows(diagnostic)
     if novel:
         with (args.output_dir / "proposals.csv").open("w", encoding="utf-8", newline="") as stream:
             writer = csv.DictWriter(stream, fieldnames=list(novel[0]))
-            writer.writeheader(); writer.writerows(novel)
+            writer.writeheader()
+            writer.writerows(novel)
     (args.output_dir / "selection_receipt.json").write_text(
-        json.dumps({
-            "schema_version": "ampgent.activity-gain-guided-block-graft.1",
-            "operator_id": "activity-gain-guided-block-graft-v1",
-            "acceptor_count": len(acceptors),
-            "diagnostic_fragment_count": len(diagnostic),
-            "proposal_count_before_history_gate": len(proposals),
-            "proposal_count": len(novel),
-            "historical_sequence_exclusion_count": len(history),
-            "max_total": args.max_total,
-            "downstream_gates": ["score_all_12", "calibration", "hemopi2_apex_peptiverse_shadow", "qd_2160"],
-            "gpu_md_rosetta_submitted": False,
-        }, indent=2) + "\n", encoding="utf-8"
+        json.dumps(
+            {
+                "schema_version": "ampgent.activity-gain-guided-block-graft.1",
+                "operator_id": "activity-gain-guided-block-graft-v1",
+                "acceptor_count": len(acceptors),
+                "diagnostic_fragment_count": len(diagnostic),
+                "proposal_count_before_history_gate": len(proposals),
+                "proposal_count": len(novel),
+                "historical_sequence_exclusion_count": len(history),
+                "max_total": args.max_total,
+                "downstream_gates": [
+                    "score_all_12",
+                    "calibration",
+                    "hemopi2_apex_peptiverse_shadow",
+                    "qd_2160",
+                ],
+                "gpu_md_rosetta_submitted": False,
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
     )
 
 

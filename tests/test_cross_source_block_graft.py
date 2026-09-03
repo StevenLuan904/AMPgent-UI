@@ -84,5 +84,10 @@ def test_hydrophobicity_is_not_a_gate():
 def test_delta_phi_uses_formal_descriptors_and_qd_axes():
     m = _load()
     row = m._delta_phi("AAGGPGSGEA", "KKRTAAGGKK", "KKGGPGSGEA")
-    assert row["axes"] == ["net_charge_over_length", "hydrophobic_ratio", "hydrophobic_moment", "length"]
+    assert row["axes"] == [
+        "net_charge_over_length",
+        "hydrophobic_ratio",
+        "hydrophobic_moment",
+        "length",
+    ]
     assert row["acceptor_to_child"][0] != 0.0
