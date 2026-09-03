@@ -1,0 +1,64 @@
+{
+  "schema_version": "ampgent.rosetta-coarse5-final-admission.1",
+  "observed_at_local": "2026-09-04T01:52:33+08:00",
+  "host": "192.168.99.2",
+  "owner": "synth",
+  "root": "/sdd_data/pepagent/ampgent/structure/acea-round102-sequence-best-rosetta-gap12-20260901-v1",
+  "target_key": "acea",
+  "run_id": "7a0f596a-4959-5756-b110-e7c489c5c183",
+  "authoritative_candidate_id": "bc91b75a-0922-48aa-82f5-b7ff4ac3c024",
+  "sequence_sha256": "29344dd74fa4348fd6214dc5783baeb1b0b8d02c5ecb5cd9a8fd9f74e4481153",
+  "remote_artifacts": {
+    "input_structure_path": "inputs/boltz_model_0.pdb",
+    "input_structure_sha256": "65e1bcf3b736b1bd8026bf4de204c02ee4017c376af69ff85d953c3d8e8790b3",
+    "request_path": "protocols/coarse5/inputs/rosetta_request.json",
+    "request_sha256": "b2f024bf3a2da0be7be0c3edc7ac22c4d1c4fd705d9221f2ee45403f4fa51de5",
+    "result_path": "protocols/coarse5/results/rosetta_result.json",
+    "result_sha256": "6c08e5d98a686ea369eef0fe758ec31a8aa04d2a8331ea2d5161990217dd5022",
+    "completion_receipt_path": "protocols/coarse5/completion_receipt.json",
+    "completion_receipt_sha256": "2225d12ac18ee7b7242b0c91c1b8b974da0b4dc3d70048c0c35c3bc3c12bd8b2"
+  },
+  "decoys": [
+    {"index": 1, "dG_separated_reu": 7.836643977244819, "json_sha256": "6107266a213a2c40829ac5f731c5c6da98e3feef9b9699a3b008602e1be7eec4"},
+    {"index": 2, "dG_separated_reu": 13.106031087811033, "json_sha256": "fd5871ed867de7fb6cbd0cbdcb00e93b7c6e2794c5a092b8f96e6b71d4fbef9c"},
+    {"index": 3, "dG_separated_reu": -45.94627132283132, "json_sha256": "9b4df4ecd64246e426af5e0c0e337ffefedf799827973c26fe07c15be2a32758"},
+    {"index": 4, "dG_separated_reu": -41.84123789354469, "json_sha256": "884067746440b2b73a8cd35961fdf09be85285c677e5decf3a0892a18fd446ca"},
+    {"index": 5, "dG_separated_reu": -37.85592709108785, "json_sha256": "f74402cbf151a672bb59188c2627360d66857a137c24db62c7cd99c57b6a2b9b"}
+  ],
+  "aggregation": {
+    "nstruct": 5,
+    "indices_unique_and_complete": true,
+    "primary_aggregation": "median_dG_separated_of_all_5_decoys",
+    "median_dG_separated_reu": -37.85592709108785,
+    "minimum_dG_separated_reu": -45.94627132283132,
+    "threshold_reu": -30.0,
+    "strict_pool_a_gate_passed": true
+  },
+  "pg": {
+    "run_status": "succeeded",
+    "candidate_status": "generated",
+    "identity_drift": false,
+    "ingest_state": "validated=1, inserted_evaluations=2, invalid=0",
+    "structure_tool_call_id": "28308f9f-18b9-4ba6-ae74-4550c2eab642",
+    "structure_tool_name": "autoresearch-rosetta-receipt-ingest",
+    "structure_evaluation_metrics": ["rosetta_dg_separated_reu", "rosetta_dg_minimum_reu"],
+    "structure_evaluation_count": 2,
+    "multitarget_structure_evidence_record_count": 0,
+    "remote_postgresql_ingest_marker": "protocols/coarse5/postgresql_ingest_receipt.json"
+  },
+  "decision": {
+    "targeted_pool_a_admitted": true,
+    "md_successor_prepared": true,
+    "md_started": false,
+    "md_dispatch_allowed": false,
+    "md_dispatch_reason": "Compact successor manifest prepared only; no MD task submitted in this turn.",
+    "legacy_200_decoy_task_resumed": false,
+    "second_rosetta_instance_started": false
+  },
+  "safety": {
+    "remote_structures_downloaded": false,
+    "remote_structures_deleted": false,
+    "external_processes_touched": false,
+    "host32_gpu2_gpu3_touched": false
+  }
+}

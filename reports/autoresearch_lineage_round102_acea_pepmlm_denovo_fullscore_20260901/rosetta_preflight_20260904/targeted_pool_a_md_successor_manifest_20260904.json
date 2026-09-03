@@ -1,0 +1,22 @@
+{
+  "schema_version": "ampgent.targeted-pool-a-md-successor-manifest.1",
+  "manifest_status": "prepared_not_dispatched",
+  "dispatch_allowed": false,
+  "reason": "Targeted Pool A admission passed the strict median dG gate; MD task submission is deferred.",
+  "entries": [
+    {
+      "run_id": "7a0f596a-4959-5756-b110-e7c489c5c183",
+      "authoritative_candidate_id": "bc91b75a-0922-48aa-82f5-b7ff4ac3c024",
+      "target_key": "acea",
+      "sequence_sha256": "29344dd74fa4348fd6214dc5783baeb1b0b8d02c5ecb5cd9a8fd9f74e4481153",
+      "sequence": "AAAGRVVAGNDAVSAFRKKG",
+      "pool_a_status": "admitted_by_rosetta_median_dg_lt_minus_30",
+      "rosetta_nstruct": 5,
+      "rosetta_median_dg_separated_reu": -37.85592709108785,
+      "rosetta_result_remote_path": "/sdd_data/pepagent/ampgent/structure/acea-round102-sequence-best-rosetta-gap12-20260901-v1/candidates/acea/29344dd74fa4348fd6214dc5783baeb1b0b8d02c5ecb5cd9a8fd9f74e4481153/protocols/coarse5/results/rosetta_result.json",
+      "md_protocol": "1 ns NPT + 50 ns NVT, single conventional replicate",
+      "task_submitted": false,
+      "remote_structure_or_trajectory_downloaded": false
+    }
+  ]
+}
