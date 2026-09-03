@@ -1,0 +1,69 @@
+{
+  "schema_version": "ampgent.v8.pg-exact.1",
+  "input_sha256": "1e71c9a92bd2c1174ecc70d671363be370ec596cd9007ea9ef0d0ed46bc6506a",
+  "input_count": 32,
+  "batch_size": 4,
+  "timeout_seconds": 30,
+  "max_retries": 3,
+  "matches": [
+    {
+      "candidate_id": "7748c200-0731-466e-b5a0-6f8899ecfb21",
+      "run_id": "4dbf4904-1995-527f-890b-9b5de1f277ce",
+      "sequence_sha256": "093fbbb53229190240cfd1eb8d1d3777d15b205f966b9ee6714856fb5dba9322"
+    }
+  ],
+  "historical_exact_match_count": 1,
+  "pg_new_count": 31,
+  "pending_batch_count": 0,
+  "attempts": [
+    {
+      "batch": 0,
+      "retry": 1,
+      "status": "succeeded",
+      "count": 0
+    },
+    {
+      "batch": 1,
+      "retry": 1,
+      "status": "succeeded",
+      "count": 0
+    },
+    {
+      "batch": 2,
+      "retry": 1,
+      "status": "succeeded",
+      "count": 0
+    },
+    {
+      "batch": 3,
+      "retry": 1,
+      "status": "succeeded",
+      "count": 0
+    },
+    {
+      "batch": 4,
+      "retry": 1,
+      "status": "succeeded",
+      "count": 1
+    },
+    {
+      "batch": 5,
+      "retry": 1,
+      "status": "succeeded",
+      "count": 0
+    },
+    {
+      "batch": 6,
+      "retry": 1,
+      "status": "succeeded",
+      "count": 0
+    },
+    {
+      "batch": 7,
+      "retry": 1,
+      "status": "succeeded",
+      "count": 0
+    }
+  ],
+  "materialization_allowed": false
+}
