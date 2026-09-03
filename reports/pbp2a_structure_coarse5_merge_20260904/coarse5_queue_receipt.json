@@ -1,0 +1,56 @@
+{
+  "active_pending_task_key_count": 0,
+  "candidate_identity_key": "run_id+authoritative_candidate_id",
+  "dispatch_allowed": false,
+  "existing_prepared_count": 8,
+  "existing_prepared_source": "reports\\pbp2a_pepglad_source_graft_20260904\\rosetta_prepared_not_dispatched.json",
+  "global_identity_unique": true,
+  "global_sequence_unique": true,
+  "global_task_key_unique": true,
+  "gpu_started": false,
+  "historical_runs_modified": false,
+  "historical_task_key_match_count": 0,
+  "input_queue_hashes": {
+    "existing_pepglad_prepared": "b55b6735abbca7261635e7332f161507078174984b09944ee81ba74df8092121",
+    "matched_source_task_keys": "ae5de815d63d7990eab36380ab97d820fe9cf6971e27a94b93af73a9cc821fcb"
+  },
+  "input_sets": {
+    "existing_pepglad_prepared_audit": 8,
+    "matched_source_unsubmitted": 7,
+    "merged_identity_union": 16,
+    "pepmlm_source_increment": 1
+  },
+  "new_append_authoritative_ids": [
+    "70873f75-af6d-5e6f-bf2d-c6c0a073870f+038e6264-333a-4337-8153-b02e1339b183",
+    "70873f75-af6d-5e6f-bf2d-c6c0a073870f+3f022241-1a60-4922-96eb-55a7d28cc2cf",
+    "70873f75-af6d-5e6f-bf2d-c6c0a073870f+9b8e006f-043e-422a-9c93-b331266509de",
+    "b8635566-2bc8-568f-a7f7-31ee342720fb+322d1e97-8f55-4725-b620-d9635b6b0b22",
+    "b8635566-2bc8-568f-a7f7-31ee342720fb+37f205b4-1b43-4b07-abca-320be0aa7dc6",
+    "b8635566-2bc8-568f-a7f7-31ee342720fb+52487fc7-7d30-4135-b6cb-a07c3efcf8e2",
+    "b8635566-2bc8-568f-a7f7-31ee342720fb+7dbebd36-8734-4637-8b99-1e14ae29740a",
+    "c6623343-bfc6-520b-8af3-3762ff25d02a+5d67c842-b651-4102-b0f4-abc7390a1d22"
+  ],
+  "new_append_count": 8,
+  "new_source_reports": [
+    "reports\\pbp2a_pepmlm_qd_followup_20260904\\qd_receipt.json",
+    "reports\\pbp2a_pepmlm_qd_followup_20260904\\materialization_receipt.json"
+  ],
+  "observed_at_utc": "2026-09-03T21:06:50.904693+00:00",
+  "pg_structure_evidence_count": 0,
+  "protocol": {
+    "boltz_exact_candidate_sequence": true,
+    "pool_a_median_dg_threshold_reu": -30,
+    "rosetta_decoys_total": 5
+  },
+  "queue_csv_sha256": "594c238113f3a85f246002e7ec0fbb69eb51beac61f8d94aa0ac5397f20f9f03",
+  "remote_blocker": "synth short SSH probe returned Permission denied (publickey,password); no remote queue mutation claimed",
+  "remote_structure_completed_count": 0,
+  "remote_structure_or_trajectory_deleted": false,
+  "remote_structure_or_trajectory_downloaded": false,
+  "remote_write_attempted": false,
+  "remote_write_status": "blocked_synth_authentication",
+  "schema_version": "ampgent.pbp2a-coarse5-queue-merge.1",
+  "target_key": "pbp2a",
+  "task_submitted": false,
+  "workflow_submitted": false
+}

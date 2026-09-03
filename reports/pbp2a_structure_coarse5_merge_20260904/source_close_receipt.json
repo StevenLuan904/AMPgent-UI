@@ -1,0 +1,43 @@
+{
+  "observed_at_utc": "2026-09-03T21:06:50.915075+00:00",
+  "pg": {
+    "candidate_count": 1,
+    "candidate_id": "5d67c842-b651-4102-b0f4-abc7390a1d22",
+    "evaluation_count": 17,
+    "replay_count": 0,
+    "run_id": "c6623343-bfc6-520b-8af3-3762ff25d02a",
+    "run_status": "succeeded",
+    "subject_run_drift": 0,
+    "tool_call_id": "ead0daba-86ae-4e2a-b9da-87b10fdbb2ff"
+  },
+  "qd": {
+    "actual_cell_id": "q3-h2-m0-l2",
+    "archive_qd_score": 62.99655833333333,
+    "archive_sha256": "c3b8e7f6addc3a080c3a66142064049d32e2c0b2f0a71061c99a4228de8f4dc7",
+    "contribution": "empty_cell",
+    "new_cell": true,
+    "quality_eligible": true,
+    "replacement": false
+  },
+  "quality": {
+    "activity_support_calibrated": 3,
+    "apex_status": "runtime_unavailable",
+    "display_eligible": true,
+    "formal12_complete": true,
+    "hemopi2_conflict_status": "no_conflict",
+    "peptiverse_status": "runtime_unavailable"
+  },
+  "queue_merge_receipt": "reports/pbp2a_structure_coarse5_merge_20260904/coarse5_queue_receipt.json",
+  "schema_version": "ampgent.pbp2a-pepmlm-qd-followup.close.1",
+  "sequence": "AIASSKKDAAGTGNLSLAG",
+  "sequence_sha256": "1f3905e762b2f05916accec59f6ad1a6814f618bb479a8cf761577be4fb332cf",
+  "source": "PepMLM",
+  "structure_and_md": {
+    "md_submitted": false,
+    "pool_a_admitted": false,
+    "reason": "No safe GPU; synth queue merge blocked by SSH authentication",
+    "rosetta_required": true,
+    "rosetta_submitted": false
+  },
+  "target_key": "pbp2a"
+}
