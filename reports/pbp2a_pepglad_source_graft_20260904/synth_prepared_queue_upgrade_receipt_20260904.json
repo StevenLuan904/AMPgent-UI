@@ -1,0 +1,52 @@
+{
+  "schema_version": "ampgent.structure-prepared-queue-upgrade.1",
+  "observed_at_utc": "2026-09-03T20:10:00.2080705Z",
+  "target_key": "pbp2a",
+  "run_id": "ae9e8532-4276-5b46-8f4f-6a916b08ffcd",
+  "candidate_count": 8,
+  "pg_exact": {
+    "candidate_count": 8,
+    "candidate_evaluation_count": 204,
+    "evaluations_per_candidate": 17,
+    "toolcall_count": 1,
+    "structure_evidence_count": 0,
+    "candidate_lifecycle_structure_event_count": 0,
+    "identity_drift_count": 0,
+    "sequence_sha256_unique_count": 8,
+    "status": "verified"
+  },
+  "local_source": {
+    "path": "reports/pbp2a_pepglad_source_graft_20260904/rosetta_prepared_not_dispatched.json",
+    "sha256": "b55b6735abbca7261635e7332f161507078174984b09944ee81ba74df8092121"
+  },
+  "remote_root": "/sdd_data/pepagent/ampgent/structure/prepared/pbp2a/pepglad-source-graft-20260904",
+  "remote_batch_manifest": {
+    "path": "/sdd_data/pepagent/ampgent/structure/prepared/pbp2a/pepglad-source-graft-20260904/batch_manifest.json",
+    "sha256": "517cdd55338e38079a70c2bf3683d603d8e453a8a4de210dafec249cb0eb733"
+  },
+  "protocol": {
+    "boltz": "exact candidate sequence complex; no parent structure substitution",
+    "rosetta": "InterfaceAnalyzer coarse5, total nstruct=5 per candidate",
+    "pool_a_gate": "median dG_separated_reu < -30",
+    "dispatch_allowed": false,
+    "task_submitted": false,
+    "workflow_submitted": false,
+    "claim_created": false
+  },
+  "remote_entries": [
+    {"candidate_id": "26285281-0563-4f2a-a580-fbcde12b2869", "sequence_sha256": "75a640c28d1a355f2fb95a906ab889c12f0dd578e2ea23f3091dcb1ca8d02dd8", "qd_cell": "q4-h0-m0-l2", "path": "/sdd_data/pepagent/ampgent/structure/prepared/pbp2a/pepglad-source-graft-20260904/26285281-0563-4f2a-a580-fbcde12b2869/prepared_queue_receipt.json", "sha256": "a87ca687aecae4fbab1719aa373519e34a98d91ff3d873a867762cef9a172501"},
+    {"candidate_id": "af140a7d-2381-4ec5-a9ae-3f277a208412", "sequence_sha256": "88972a30c44b89dfa442988cf7446cd851e24d0046c3ca8a36663e4a4c506907", "qd_cell": "q4-h1-m2-l3", "path": "/sdd_data/pepagent/ampgent/structure/prepared/pbp2a/pepglad-source-graft-20260904/af140a7d-2381-4ec5-a9ae-3f277a208412/prepared_queue_receipt.json", "sha256": "72129f67dc7ea1c8d158ce4929f596e6842335fe4c9039e9ff21dcec49ec16d3"},
+    {"candidate_id": "64e880b4-2fbe-4a57-9b78-b656605e8337", "sequence_sha256": "c3be523f7797ca2d87581b38994dc1476537504ad93dd17214a417ac988da09d", "qd_cell": "q4-h2-m1-l3", "path": "/sdd_data/pepagent/ampgent/structure/prepared/pbp2a/pepglad-source-graft-20260904/64e880b4-2fbe-4a57-9b78-b656605e8337/prepared_queue_receipt.json", "sha256": "ff84ecd597cb2a16ebd0c2e1fb74dd5e81ce7092c9db1c44f594ac37134adbff"},
+    {"candidate_id": "f0fc3e06-0e2c-4009-8282-3c8a278d4179", "sequence_sha256": "5953a331a64055d5a2ce2e144e5c03781f02c4152c5ec0652c2ed9972d48cfcb", "qd_cell": "q5-h0-m2-l2", "path": "/sdd_data/pepagent/ampgent/structure/prepared/pbp2a/pepglad-source-graft-20260904/f0fc3e06-0e2c-4009-8282-3c8a278d4179/prepared_queue_receipt.json", "sha256": "923e0638af0e89672f3803d619d6f93df7dadd6dc78523b3208a4368e676ff37"},
+    {"candidate_id": "c39206d7-9fa3-4583-b93f-aeb0705223db", "sequence_sha256": "6d97d75d952777a9937416064d4743b6a1e8b9467accf4a7507f8e5ae3db55ee", "qd_cell": "q5-h1-m1-l3", "path": "/sdd_data/pepagent/ampgent/structure/prepared/pbp2a/pepglad-source-graft-20260904/c39206d7-9fa3-4583-b93f-aeb0705223db/prepared_queue_receipt.json", "sha256": "38c7229bd5d60af74bb5af191f7491efc8b70bcf2d65986ce97ca1161c9d3e44"},
+    {"candidate_id": "68494d57-3660-467c-b8fb-e4bf4a0e50e0", "sequence_sha256": "340c98df1485a790676684f7f9d7a8a1720cdabe184df0b534a274560fe1d296", "qd_cell": "q5-h1-m2-l2", "path": "/sdd_data/pepagent/ampgent/structure/prepared/pbp2a/pepglad-source-graft-20260904/68494d57-3660-467c-b8fb-e4bf4a0e50e0/prepared_queue_receipt.json", "sha256": "f1361db908d391f4573e27b71b02072fbf23d6ee35ac731bfe4e8a38421e0dc3"},
+    {"candidate_id": "404f8eeb-27dd-43a6-841a-5702bbc54b2c", "sequence_sha256": "7e488239932af09972e5babc53212477844c769f2e3f8b1335daca615ed05396", "qd_cell": "q5-h1-m3-l2", "path": "/sdd_data/pepagent/ampgent/structure/prepared/pbp2a/pepglad-source-graft-20260904/404f8eeb-27dd-43a6-841a-5702bbc54b2c/prepared_queue_receipt.json", "sha256": "ca2fc683af87de442fedf7bb9f86d1d4114f71733b5f4f338aeb08256951b3f6"},
+    {"candidate_id": "038757c9-ed28-4b36-815b-53f5c697539c", "sequence_sha256": "98efacd84537b3ac0d993a2cfeb4932cb05a400ced5e928f459756be20ab78a2", "qd_cell": "q5-h1-m3-l3", "path": "/sdd_data/pepagent/ampgent/structure/prepared/pbp2a/pepglad-source-graft-20260904/038757c9-ed28-4b36-815b-53f5c697539c/prepared_queue_receipt.json", "sha256": "bf64e89c098d95f65a76edec561b87131ec9d46c57f8d0fb402de96458fa069e"}
+  ],
+  "resource_gate": {
+    "host19": {"supervisor_pids": [3986807, 3977733], "gpu_indices": "0-7", "status": "all_owned_by_ampgent_md"},
+    "synth": {"md_supervisor_pid": 1280301, "analysis_pid": 3311802, "mmgbsa_pid": 3360111, "runner_pids": [58820, 1280316, 2060743], "gpu1_2_3": "successor-11 MD occupied", "gpu0": "foreign OmniEpic PID 1362474", "gpu4": "unknown/foreign PID 504832", "gpu5_7": "protected", "gpu6": "existing AMPgent task PID 2194828"},
+    "decision": "prepared_not_dispatched"
+  },
+  "md_refresh": {"new_compact_evidence_count": 0, "relay_performed": false, "identity_union": 486, "launched_unique": 45, "md_complete_unique": 29, "full_evidence_unique": 29, "analysis_pending_unique": 0, "running_unique": 16, "not_started_unique": 441, "failed_unique": 0}
+}
