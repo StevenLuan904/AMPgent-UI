@@ -1,0 +1,68 @@
+{
+  "schema_version": "ampgent.vegfa-pepmlm-source-increment-close.1",
+  "observed_at_utc": "2026-09-03T21:36:11Z",
+  "target_key": "vegfa",
+  "source": "PepMLM",
+  "source_stage": "vegfa-pepmlm-target-conditioned-generation-101",
+  "sequence": "SWWAELLAASGPRLRRAHK",
+  "sequence_sha256": "b44a23e10305e886fac05ad3b3d9454196d52d35cf89a76c0b6acf93bd7b2a23",
+  "postgresql": {
+    "run_id": "98170454-be7f-5ab2-8add-979b9f11ddad",
+    "candidate_id": "af5474ec-97c5-457d-93b3-b861f59705b2",
+    "tool_call_id": "d9261fa5-36e6-495b-85c1-5d444fcbae67",
+    "run_status": "succeeded",
+    "candidate_count": 1,
+    "evaluation_count": 17,
+    "evaluation_role_counts": {"primary": 12, "challenger": 3, "shadow": 2},
+    "shadow_contract": {
+      "apex": {"applicability_status": "runtime_unavailable", "conflict_status": "not_assessed"},
+      "peptiverse": {"applicability_status": "runtime_unavailable", "conflict_status": "not_assessed"}
+    },
+    "subject_run_candidate_drift_count": 0,
+    "replay_count": 0,
+    "pg_exact_preflight_count": 0
+  },
+  "quality": {
+    "formal12": true,
+    "display_eligible": true,
+    "activity_support_calibrated": 3,
+    "toxinpred3": "Non-Toxin",
+    "macrel_hemolysis": "low",
+    "guruprasad_instability_index": 45.873684210526314,
+    "hemopi2_conflict_status": "no_conflict",
+    "apex_status": "runtime_unavailable",
+    "peptiverse_status": "runtime_unavailable"
+  },
+  "qd": {
+    "archive_sha256": "c93161b366584db2d458e44bb3a4b780693a50a3ee8e38d43e748c9e79894f8f",
+    "actual_cell_id": "q4-h2-m3-l2",
+    "contribution": "empty_cell",
+    "new_cell": true,
+    "replacement": false,
+    "quality_eligible": true
+  },
+  "structure": {
+    "status": "prepared_not_dispatched",
+    "rosetta_required": true,
+    "nstruct": 5,
+    "dispatch_allowed": false,
+    "pool_a_admitted": false,
+    "task_key": "rosetta-coarse5:vegfa:af5474ec-97c5-457d-93b3-b861f59705b2"
+  },
+  "md_snapshot": {
+    "identity_union": 486,
+    "launched_unique": 45,
+    "md_complete_unique": 29,
+    "full_evidence_unique": 29,
+    "analysis_pending_unique": 0,
+    "running_unique": 16,
+    "not_started_unique": 441,
+    "failed_unique": 0,
+    "successor_11": {"pending": 6, "running": 3, "complete": 2},
+    "successor_12": "prepared_not_dispatched",
+    "new_complete_since_prior_snapshot": 0
+  },
+  "remote_large_artifact_downloaded": false,
+  "remote_file_deleted": false,
+  "gpu_rosetta_md_started": false
+}
