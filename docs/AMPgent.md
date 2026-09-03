@@ -60,7 +60,7 @@ Challenger 证据键为 `run_id + candidate_id + model_release_key`；字段为 
 
 - 冻结交付1,900；PepGLAD严格库87,989/8,657 families，双活动支持61,914；PepMLM六靶点24,576完成12项，12,151过展示门；历史challenger 147,161候选/735,805证据。
 - Pool A：498条严格候选、486个80/80 elite families：AceA79/GyrA100/PBP2a53/VEGFA71/FGF2 81/ANGPT1 102；远端结构/decoy全保留。
-- Pool A MD：合并队列486；`.19` GPU0–7满载，MD supervisor PID `3986807`、分析PID `3977733`存活；launched31、MD/MMGBSA/完整界面+PG证据17、失败0、待MD/完整证据469。正式17条均未离位；界面RMSD均值0.304 nm、接触0.642、MM/GBSA均值-110.05 kcal/mol。详见 `reports/pool_a_md_50ns_expansion_20260903/live-summary-all-486/summary.json`。
+- Pool A MD：合并队列486；`.19` GPU0–7满载，MD supervisor PID `3986807`、分析PID `3977733`存活；launched32、MD/MMGBSA18、完整界面+PG证据17、失败0、待MD468、待完整证据469。正式17条均未离位；界面RMSD均值0.304 nm、接触0.642、MM/GBSA均值-110.05 kcal/mol。详见 `reports/pool_a_md_50ns_expansion_20260903/live-summary-all-486/summary.json`。
 - PepFlow reciprocal 1–2 aa micrograft六靶点共192条PG新颖/full12/HemoPI2，157条过展示门、128条双活性支持、98条QD合格/待Rosetta，新增22格；均已物化（3,264 Evaluation），未提交结构。APEX/PeptiVerse=`runtime_unavailable`；192个factorized父本无法唯一映射PG Candidate，lineage edge=0，不按序列猜测。
 
 | target | PG run | display | support>=2 | QD/new | queue |
