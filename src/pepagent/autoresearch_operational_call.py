@@ -245,7 +245,7 @@ async def persist_operational_call(
         if call.output_sha256 != expected_output_sha or call.error_json != record.error:
             raise ValueError("operational call retry terminal payload drifted")
         return run, call
-    if call.status != EvaluationStatus.RUNNING or record.status == "running":
+    if call.status != EvaluationStatus.RUNNING and record.status == "running":
         raise ValueError("operational call terminal state cannot be rewritten")
     call.status = record.status
     call.finished_at = record.finished_at or now
