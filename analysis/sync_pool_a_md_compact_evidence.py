@@ -21,6 +21,7 @@ ALLOWED = {
     ("analysis", "mmgbsa", "postgresql_ingest_receipt.json"),
     ("analysis", "mmgbsa", "residue_decomposition_mean.csv"),
 }
+MUTABLE_FILENAMES = {"failure_receipt.json"}
 
 
 def cli():
@@ -31,12 +32,21 @@ def cli():
     parser.add_argument("--local-root", required=True, type=Path)
     parser.add_argument("--receipt", required=True, type=Path)
     parser.add_argument("--batch-mode", choices=("yes", "no"), default="yes")
+    parser.add_argument("--refresh-existing", action="store_true")
     return parser.parse_args()
 
 
 def allowed_relative_path(relative: PurePosixPath) -> bool:
     parts = relative.parts
     return len(parts) >= 3 and tuple(parts[2:]) in ALLOWED
+
+
+def should_copy(relative: PurePosixPath, destination_exists: bool, refresh: bool) -> bool:
+    return (
+        refresh
+        or not destination_exists
+        or relative.name in MUTABLE_FILENAMES
+    )
 
 
 def remote_files(target: str, port: int, root: str, batch_mode: str = "yes") -> list[str]:
@@ -55,6 +65,7 @@ def main() -> None:
     args = cli()
     remote_root = PurePosixPath(args.remote_root)
     copied = []
+    existing = []
     ignored = []
     args.local_root.mkdir(parents=True, exist_ok=True)
     for source in remote_files(
@@ -66,6 +77,9 @@ def main() -> None:
             ignored.append(relative.as_posix())
             continue
         destination = args.local_root.joinpath(*relative.parts)
+        if not should_copy(relative, destination.is_file(), args.refresh_existing):
+            existing.append(relative.as_posix())
+            continue
         destination.parent.mkdir(parents=True, exist_ok=True)
         temporary = destination.with_name(f".{destination.name}.{os.getpid()}.part")
         subprocess.run(
@@ -89,6 +103,8 @@ def main() -> None:
         "local_root": str(args.local_root.resolve()),
         "copied_file_count": len(copied),
         "copied_files": copied,
+        "existing_immutable_file_count": len(existing),
+        "existing_immutable_files": existing,
         "ignored_noncontract_file_count": len(ignored),
         "ignored_noncontract_files": ignored,
         "structure_or_trajectory_copied": False,

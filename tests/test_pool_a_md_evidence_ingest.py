@@ -10,7 +10,7 @@ from analysis.ingest_pool_a_md_evidence import (
     mmgbsa_evidence,
     relocate_file_uris,
 )
-from analysis.sync_pool_a_md_compact_evidence import allowed_relative_path
+from analysis.sync_pool_a_md_compact_evidence import allowed_relative_path, should_copy
 
 
 def write(path: Path, payload: dict) -> None:
@@ -124,6 +124,15 @@ def test_compact_sync_allowlist_excludes_structures_and_trajectories():
     assert allowed_relative_path(PurePosixPath("acea/candidate/manifest.json"))
     assert not allowed_relative_path(PurePosixPath("acea/candidate/production.dcd"))
     assert not allowed_relative_path(PurePosixPath("acea/candidate/prepared_solvated.pdb"))
+
+
+def test_compact_sync_skips_final_evidence_but_refreshes_failure_state():
+    manifest = PurePosixPath("acea/candidate/manifest.json")
+    failure = PurePosixPath("acea/candidate/failure_receipt.json")
+    assert not should_copy(manifest, destination_exists=True, refresh=False)
+    assert should_copy(manifest, destination_exists=False, refresh=False)
+    assert should_copy(manifest, destination_exists=True, refresh=True)
+    assert should_copy(failure, destination_exists=True, refresh=False)
 
 
 def test_evidence_uris_can_point_to_authoritative_remote_tree(tmp_path):
