@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from analysis.refresh_pool_a_md_reports import commands
+from analysis.refresh_pool_a_md_reports import commands, subprocess_environment
 
 
 def test_refresh_pipeline_preserves_dependency_order(tmp_path: Path):
@@ -23,3 +23,13 @@ def test_refresh_pipeline_preserves_dependency_order(tmp_path: Path):
     ]
     assert pipeline[-1][-1] == "--allow-incomplete"
     assert all(command[0] == "python-test" for command in pipeline)
+
+
+def test_refresh_subprocesses_can_import_analysis_namespace(monkeypatch):
+    monkeypatch.setenv("PYTHONPATH", "existing-path")
+    environment = subprocess_environment()
+    repository_root = str(Path(__file__).resolve().parents[1])
+    assert environment["PYTHONPATH"].split(__import__("os").pathsep) == [
+        repository_root,
+        "existing-path",
+    ]

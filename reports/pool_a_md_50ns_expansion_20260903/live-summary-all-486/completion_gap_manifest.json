@@ -1,11 +1,11 @@
 {
   "schema_version": "ampgent.pool-a-md-gap-manifest.1",
-  "observed_at_utc": "2026-09-03T00:52:49.294950+00:00",
+  "observed_at_utc": "2026-09-03T02:13:09.926256+00:00",
   "candidate_count": 486,
   "stage_counts": {
-    "complete": 9,
+    "complete": 10,
     "md_running_or_checkpoint_pending": 14,
-    "not_launched": 463
+    "not_launched": 462
   },
   "issue_counts": {},
   "targets": {
@@ -20,15 +20,14 @@
     "angpt1": {
       "candidate_count": 102,
       "stage_counts": {
-        "md_running_or_checkpoint_pending": 1,
-        "not_launched": 101
+        "md_running_or_checkpoint_pending": 2,
+        "not_launched": 100
       }
     },
     "fgf2": {
       "candidate_count": 81,
       "stage_counts": {
-        "complete": 1,
-        "md_running_or_checkpoint_pending": 1,
+        "complete": 2,
         "not_launched": 79
       }
     },
@@ -1344,8 +1343,8 @@
       "sequence": "RDYKVFRKHVWKTQRKTNST",
       "sequence_sha256": "4abaac866072aaa171784eb00976a600d1d66fc6503a08c31c13c62bc7ba4d5e",
       "pool_a_rank": 2,
-      "stage": "not_launched",
-      "md_launched": false,
+      "stage": "md_running_or_checkpoint_pending",
+      "md_launched": true,
       "md_complete": false,
       "interface_complete": false,
       "mmgbsa_complete": false,
@@ -2976,13 +2975,13 @@
       "sequence": "KTKLSRGKIRVRKNNWDRSI",
       "sequence_sha256": "5076533acccf33d70ea70221d6c659eea6e172e70304953d6091bec21aaa3a42",
       "pool_a_rank": 2,
-      "stage": "md_running_or_checkpoint_pending",
+      "stage": "complete",
       "md_launched": true,
-      "md_complete": false,
-      "interface_complete": false,
-      "mmgbsa_complete": false,
-      "interface_postgresql_ingested": false,
-      "mmgbsa_postgresql_ingested": false,
+      "md_complete": true,
+      "interface_complete": true,
+      "mmgbsa_complete": true,
+      "interface_postgresql_ingested": true,
+      "mmgbsa_postgresql_ingested": true,
       "issues": []
     },
     {

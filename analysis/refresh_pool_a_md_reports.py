@@ -121,11 +121,23 @@ def commands(
     ]
 
 
+def subprocess_environment() -> dict[str, str]:
+    """Keep sibling analysis modules importable when scripts run by absolute path."""
+    environment = os.environ.copy()
+    repository_root = str(Path(__file__).resolve().parent.parent)
+    current = environment.get("PYTHONPATH")
+    environment["PYTHONPATH"] = (
+        repository_root if not current else os.pathsep.join((repository_root, current))
+    )
+    return environment
+
+
 def refresh(snapshot: Path, evidence_root: Path, output_dir: Path) -> dict:
     output_dir.mkdir(parents=True, exist_ok=True)
     pipeline = commands(snapshot, evidence_root, output_dir)
+    environment = subprocess_environment()
     for command in pipeline:
-        subprocess.run(command, check=True)
+        subprocess.run(command, check=True, env=environment)
     summary = json.loads((output_dir / "summary.json").read_text(encoding="utf-8"))
     verification = json.loads(
         (output_dir / "full_completion_verification.json").read_text(encoding="utf-8")
