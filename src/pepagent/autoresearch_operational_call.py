@@ -94,6 +94,22 @@ def operational_run_id(record: OperationalCallRecord) -> uuid.UUID:
     )
 
 
+def validate_existing_call_transition(call_status: str, record_status: str) -> None:
+    """Validate a retry/terminal transition before mutating a persisted ToolCall."""
+    if call_status != EvaluationStatus.RUNNING and record_status == "running":
+        raise ValueError("operational call terminal state cannot be rewritten")
+
+
+def validate_terminal_retry_payload(
+    existing_output_sha: str | None,
+    expected_output_sha: str | None,
+    existing_error: dict[str, Any] | None,
+    expected_error: dict[str, Any] | None,
+) -> None:
+    if existing_output_sha != expected_output_sha or existing_error != expected_error:
+        raise ValueError("operational call retry terminal payload drifted")
+
+
 async def _resolve_target(session: AsyncSession, target_key: str) -> Target:
     accession = TARGET_ACCESSIONS[target_key]
     targets = list(
@@ -242,11 +258,11 @@ async def persist_operational_call(
         sha256_json(record.output_payload) if record.output_payload is not None else None
     )
     if call.status == record.status:
-        if call.output_sha256 != expected_output_sha or call.error_json != record.error:
-            raise ValueError("operational call retry terminal payload drifted")
+        validate_terminal_retry_payload(
+            call.output_sha256, expected_output_sha, call.error_json, record.error
+        )
         return run, call
-    if call.status != EvaluationStatus.RUNNING and record.status == "running":
-        raise ValueError("operational call terminal state cannot be rewritten")
+    validate_existing_call_transition(call.status, record.status)
     call.status = record.status
     call.finished_at = record.finished_at or now
     call.output_sha256 = expected_output_sha

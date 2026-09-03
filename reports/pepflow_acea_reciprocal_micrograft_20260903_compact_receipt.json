@@ -13,7 +13,10 @@
   "qd_new_cell_count": 4,
   "qd_replacement_count": 0,
   "lineage_materialized_count": 0,
-  "structure_ready_count": 0,
+  "unresolved_parent_identity_count": 32,
+  "unresolved_parent_identity_reason": "parent_candidate_id values are non-UUID factorized identifiers and no unique authoritative PG source run/candidate mapping was found",
+  "structure_ready_count": 24,
+  "rosetta_completed_count": 0,
   "pool_a_ready_count": 0,
   "materialization": {
     "experiment_run_id": "7c17057c-cf24-57e3-b1b2-96aea38da78c",
@@ -24,6 +27,7 @@
     "total_evaluation_count": 544,
     "tool_call_count": 1,
     "lineage_close_count": 0,
+    "lineage_edge_count": 0,
     "running_retry_bug_fixed": true
   },
   "structure_queue": {

@@ -8,6 +8,8 @@ from pydantic import ValidationError
 from pepagent.autoresearch_operational_call import (
     OperationalCallRecord,
     operational_run_id,
+    validate_existing_call_transition,
+    validate_terminal_retry_payload,
 )
 
 
@@ -55,3 +57,13 @@ def test_activity_reconciliation_is_a_supported_operational_purpose() -> None:
     )
 
     assert record.purpose == "audit_reconciliation"
+
+
+def test_persist_state_machine_running_retry_and_terminal_transition() -> None:
+    validate_existing_call_transition("running", "running")
+    validate_existing_call_transition("running", "succeeded")
+    with pytest.raises(ValueError, match="terminal state"):
+        validate_existing_call_transition("succeeded", "running")
+    validate_terminal_retry_payload("same", "same", None, None)
+    with pytest.raises(ValueError, match="payload drifted"):
+        validate_terminal_retry_payload("same", "different", None, None)
