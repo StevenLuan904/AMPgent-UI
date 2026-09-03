@@ -1,12 +1,11 @@
 {
   "schema_version": "ampgent.pool-a-md-gap-manifest.1",
-  "observed_at_utc": "2026-09-03T16:17:34.827290+00:00",
+  "observed_at_utc": "2026-09-03T16:25:30.798006+00:00",
   "candidate_count": 486,
   "stage_counts": {
-    "complete": 26,
+    "complete": 28,
     "md_running_or_checkpoint_pending": 14,
-    "not_launched": 444,
-    "postgresql_ingest_pending": 2
+    "not_launched": 444
   },
   "issue_counts": {},
   "targets": {
@@ -29,18 +28,16 @@
     "fgf2": {
       "candidate_count": 81,
       "stage_counts": {
-        "complete": 5,
-        "not_launched": 75,
-        "postgresql_ingest_pending": 1
+        "complete": 6,
+        "not_launched": 75
       }
     },
     "gyra": {
       "candidate_count": 100,
       "stage_counts": {
-        "complete": 4,
+        "complete": 5,
         "md_running_or_checkpoint_pending": 2,
-        "not_launched": 93,
-        "postgresql_ingest_pending": 1
+        "not_launched": 93
       }
     },
     "pbp2a": {
@@ -3042,6 +3039,22 @@
     {
       "target_key": "fgf2",
       "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+      "candidate_id": "690e7089-a489-443b-968a-51b0ab5e2594",
+      "sequence": "TGTRANGQKTRKGQKSKNGRKTSEK",
+      "sequence_sha256": "30842628e443e6bf2a9d532873c6e263d6106a50f79e0e707c7dea6ede63a844",
+      "pool_a_rank": 65,
+      "stage": "complete",
+      "md_launched": true,
+      "md_complete": true,
+      "interface_complete": true,
+      "mmgbsa_complete": true,
+      "interface_postgresql_ingested": true,
+      "mmgbsa_postgresql_ingested": true,
+      "issues": []
+    },
+    {
+      "target_key": "fgf2",
+      "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
       "candidate_id": "a32aadd5-16d3-473a-ba10-8815515d5a56",
       "sequence": "TSIKTRQYSIKKKNTNHKGKHKNR",
       "sequence_sha256": "408bc1d160354b7f4ff55f7cc1911a03a6d689dd708f7bd7b178b794f46f31af",
@@ -4240,22 +4253,6 @@
       "issues": []
     },
     {
-      "target_key": "fgf2",
-      "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
-      "candidate_id": "690e7089-a489-443b-968a-51b0ab5e2594",
-      "sequence": "TGTRANGQKTRKGQKSKNGRKTSEK",
-      "sequence_sha256": "30842628e443e6bf2a9d532873c6e263d6106a50f79e0e707c7dea6ede63a844",
-      "pool_a_rank": 65,
-      "stage": "postgresql_ingest_pending",
-      "md_launched": true,
-      "md_complete": true,
-      "interface_complete": true,
-      "mmgbsa_complete": true,
-      "interface_postgresql_ingested": false,
-      "mmgbsa_postgresql_ingested": false,
-      "issues": []
-    },
-    {
       "target_key": "gyra",
       "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
       "candidate_id": "89982fb4-e32d-49fa-81a6-43fc2208fbd3",
@@ -4310,6 +4307,22 @@
       "sequence": "KKKDKSGKRVYGKDKEKAGKKSS",
       "sequence_sha256": "794c516d087d5d48be8fa64679e4e096d9dcd5021b0ddb91467cb6866ce08aae",
       "pool_a_rank": 4,
+      "stage": "complete",
+      "md_launched": true,
+      "md_complete": true,
+      "interface_complete": true,
+      "mmgbsa_complete": true,
+      "interface_postgresql_ingested": true,
+      "mmgbsa_postgresql_ingested": true,
+      "issues": []
+    },
+    {
+      "target_key": "gyra",
+      "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
+      "candidate_id": "c5e700eb-e88e-4b06-a7db-9a67921ec53d",
+      "sequence": "NRTRDAHGKGSTKKTKGKFGVKNRK",
+      "sequence_sha256": "67e3f212ba864d4039bc27a2bd7357d93ae7c769fed855be4b095745467d4f10",
+      "pool_a_rank": 14,
       "stage": "complete",
       "md_launched": true,
       "md_complete": true,
@@ -5835,22 +5848,6 @@
       "md_complete": false,
       "interface_complete": false,
       "mmgbsa_complete": false,
-      "interface_postgresql_ingested": false,
-      "mmgbsa_postgresql_ingested": false,
-      "issues": []
-    },
-    {
-      "target_key": "gyra",
-      "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
-      "candidate_id": "c5e700eb-e88e-4b06-a7db-9a67921ec53d",
-      "sequence": "NRTRDAHGKGSTKKTKGKFGVKNRK",
-      "sequence_sha256": "67e3f212ba864d4039bc27a2bd7357d93ae7c769fed855be4b095745467d4f10",
-      "pool_a_rank": 14,
-      "stage": "postgresql_ingest_pending",
-      "md_launched": true,
-      "md_complete": true,
-      "interface_complete": true,
-      "mmgbsa_complete": true,
       "interface_postgresql_ingested": false,
       "mmgbsa_postgresql_ingested": false,
       "issues": []
