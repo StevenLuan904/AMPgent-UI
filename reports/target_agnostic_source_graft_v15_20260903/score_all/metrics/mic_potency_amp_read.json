@@ -1,0 +1,2237 @@
+{
+  "plugin": {
+    "name": "mic_potency_amp_read",
+    "parameters": {}
+  },
+  "contract": {
+    "default_trust": "soft",
+    "maximum_trust": "soft",
+    "reliability": "R3-generic-mixed-species-no-similarity-isolated-local-test",
+    "provider": "external",
+    "outputs": {
+      "amp_read_log10_mic_um": [
+        "amp_read_log10_mic_um",
+        "log10(umol/L)",
+        "numeric"
+      ],
+      "amp_read_predicted_mic_um": [
+        "amp_read_predicted_mic_um",
+        "umol/L",
+        "numeric"
+      ],
+      "amp_read_cnn_log10_mic_um": [
+        "amp_read_cnn_log10_mic_um",
+        "log10(umol/L)",
+        "numeric"
+      ],
+      "amp_read_transformer_log10_mic_um": [
+        "amp_read_transformer_log10_mic_um",
+        "log10(umol/L)",
+        "numeric"
+      ],
+      "amp_read_attention_log10_mic_um": [
+        "amp_read_attention_log10_mic_um",
+        "log10(umol/L)",
+        "numeric"
+      ],
+      "amp_read_lstm_log10_mic_um": [
+        "amp_read_lstm_log10_mic_um",
+        "log10(umol/L)",
+        "numeric"
+      ]
+    }
+  },
+  "candidate_count": 32,
+  "status": "complete",
+  "records": [
+    {
+      "candidate_id": "proposal-69f66b130bc3d94da978",
+      "sequence": "LWPWKNKLRDLLGGGIQKAWDW",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 1.048045489338417,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 11.169802375955578,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 1.810081958770752,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 1.0406379699707031,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 0.7677521705627441,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 0.5736632347106934,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-69f66b130bc3d94da978",
+        "sequence": "LWPWKNKLRDLLGGGIQKAWDW",
+        "status": "success",
+        "amp_read_log10_mic_um": "1.048045489338417",
+        "amp_read_predicted_mic_um": "11.169802375955578",
+        "amp_read_cnn_log10_mic_um": "1.810081958770752",
+        "amp_read_transformer_log10_mic_um": "1.0406379699707031",
+        "amp_read_attention_log10_mic_um": "0.7677521705627441",
+        "amp_read_lstm_log10_mic_um": "0.5736632347106934",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-4347ded1af4ca7c2aed0",
+      "sequence": "QLEWWIKLLKEKWRWWPYYWMW",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 1.0465918252841353,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 11.1324774804777,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 1.2900267839431763,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 0.776272714138031,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 0.6813348531723022,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 1.4387680292129517,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-4347ded1af4ca7c2aed0",
+        "sequence": "QLEWWIKLLKEKWRWWPYYWMW",
+        "status": "success",
+        "amp_read_log10_mic_um": "1.0465918252841353",
+        "amp_read_predicted_mic_um": "11.1324774804777",
+        "amp_read_cnn_log10_mic_um": "1.2900267839431763",
+        "amp_read_transformer_log10_mic_um": "0.776272714138031",
+        "amp_read_attention_log10_mic_um": "0.6813348531723022",
+        "amp_read_lstm_log10_mic_um": "1.4387680292129517",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-6184f2b518263a83db87",
+      "sequence": "FKWKRWLLAAADEWWWWWWWWWWWW",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 0.8127852048661145,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 6.498082260547579,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 1.188887119293213,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 0.9871602058410645,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 0.6367206573486328,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 0.43833664059638977,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-6184f2b518263a83db87",
+        "sequence": "FKWKRWLLAAADEWWWWWWWWWWWW",
+        "status": "success",
+        "amp_read_log10_mic_um": "0.8127852048661145",
+        "amp_read_predicted_mic_um": "6.498082260547579",
+        "amp_read_cnn_log10_mic_um": "1.188887119293213",
+        "amp_read_transformer_log10_mic_um": "0.9871602058410645",
+        "amp_read_attention_log10_mic_um": "0.6367206573486328",
+        "amp_read_lstm_log10_mic_um": "0.43833664059638977",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-5bc644be65c0add61614",
+      "sequence": "SKDWQKWWWRWIRFVAE",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 1.0603117361738612,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 11.489780609505647,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 1.146505355834961,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 1.0541186332702637,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 0.6179335117340088,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 1.4227237701416016,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-5bc644be65c0add61614",
+        "sequence": "SKDWQKWWWRWIRFVAE",
+        "status": "success",
+        "amp_read_log10_mic_um": "1.0603117361738612",
+        "amp_read_predicted_mic_um": "11.489780609505647",
+        "amp_read_cnn_log10_mic_um": "1.146505355834961",
+        "amp_read_transformer_log10_mic_um": "1.0541186332702637",
+        "amp_read_attention_log10_mic_um": "0.6179335117340088",
+        "amp_read_lstm_log10_mic_um": "1.4227237701416016",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-f12c923fedd132ea9ca2",
+      "sequence": "DKWWYFFKIHFPTILKGW",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 0.9911323140347117,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 9.797884465258095,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 1.613634705543518,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 1.0809986591339111,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 0.7418917417526245,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 0.5279590487480164,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-f12c923fedd132ea9ca2",
+        "sequence": "DKWWYFFKIHFPTILKGW",
+        "status": "success",
+        "amp_read_log10_mic_um": "0.9911323140347117",
+        "amp_read_predicted_mic_um": "9.797884465258095",
+        "amp_read_cnn_log10_mic_um": "1.613634705543518",
+        "amp_read_transformer_log10_mic_um": "1.0809986591339111",
+        "amp_read_attention_log10_mic_um": "0.7418917417526245",
+        "amp_read_lstm_log10_mic_um": "0.5279590487480164",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-24f715372c43e9944006",
+      "sequence": "RLGDDAANWKKWRKIMWW",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 0.9478641856063563,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 8.868786202612233,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 1.0804598331451416,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 0.8448799848556519,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 1.0009918212890625,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 0.8651124835014343,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-24f715372c43e9944006",
+        "sequence": "RLGDDAANWKKWRKIMWW",
+        "status": "success",
+        "amp_read_log10_mic_um": "0.9478641856063563",
+        "amp_read_predicted_mic_um": "8.868786202612233",
+        "amp_read_cnn_log10_mic_um": "1.0804598331451416",
+        "amp_read_transformer_log10_mic_um": "0.8448799848556519",
+        "amp_read_attention_log10_mic_um": "1.0009918212890625",
+        "amp_read_lstm_log10_mic_um": "0.8651124835014343",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-99ea7f8a01e9c8184c44",
+      "sequence": "SKNRKELKWWKLKLSGAAGAWWKDK",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 0.7311854591736072,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 5.384996919235933,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 1.3104389905929565,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 0.6688652634620667,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 0.5481517314910889,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 0.39725261926651,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-99ea7f8a01e9c8184c44",
+        "sequence": "SKNRKELKWWKLKLSGAAGAWWKDK",
+        "status": "success",
+        "amp_read_log10_mic_um": "0.7311854591736072",
+        "amp_read_predicted_mic_um": "5.384996919235933",
+        "amp_read_cnn_log10_mic_um": "1.3104389905929565",
+        "amp_read_transformer_log10_mic_um": "0.6688652634620667",
+        "amp_read_attention_log10_mic_um": "0.5481517314910889",
+        "amp_read_lstm_log10_mic_um": "0.39725261926651",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-2ecaa06bc86d8589e919",
+      "sequence": "SKWRALDKKLKLLADELLEEWWWWW",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 0.9447149022369665,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 8.804706878258107,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 0.9771838188171387,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 1.2138968706130981,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 1.1998060941696167,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 0.38791531324386597,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-2ecaa06bc86d8589e919",
+        "sequence": "SKWRALDKKLKLLADELLEEWWWWW",
+        "status": "success",
+        "amp_read_log10_mic_um": "0.9447149022369665",
+        "amp_read_predicted_mic_um": "8.804706878258107",
+        "amp_read_cnn_log10_mic_um": "0.9771838188171387",
+        "amp_read_transformer_log10_mic_um": "1.2138968706130981",
+        "amp_read_attention_log10_mic_um": "1.1998060941696167",
+        "amp_read_lstm_log10_mic_um": "0.38791531324386597",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-b5264f80d8c76a7c8012",
+      "sequence": "SKWRKWFWWRWWKWLFRNFLAEDAD",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 0.5970550489431268,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 3.954167378912336,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 0.9806129336357117,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 0.4869609475135803,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 0.4895768165588379,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 0.4310517907142639,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-b5264f80d8c76a7c8012",
+        "sequence": "SKWRKWFWWRWWKWLFRNFLAEDAD",
+        "status": "success",
+        "amp_read_log10_mic_um": "0.5970550489431268",
+        "amp_read_predicted_mic_um": "3.954167378912336",
+        "amp_read_cnn_log10_mic_um": "0.9806129336357117",
+        "amp_read_transformer_log10_mic_um": "0.4869609475135803",
+        "amp_read_attention_log10_mic_um": "0.4895768165588379",
+        "amp_read_lstm_log10_mic_um": "0.4310517907142639",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-cc3b739faffcfafb7b2d",
+      "sequence": "LAKLWWWELLWKWKWKALAMAEDA",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 0.7051762784170824,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 5.07196535572731,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 1.4067354202270508,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 0.4959363341331482,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 0.6543093919754028,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 0.2636786103248596,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-cc3b739faffcfafb7b2d",
+        "sequence": "LAKLWWWELLWKWKWKALAMAEDA",
+        "status": "success",
+        "amp_read_log10_mic_um": "0.7051762784170824",
+        "amp_read_predicted_mic_um": "5.07196535572731",
+        "amp_read_cnn_log10_mic_um": "1.4067354202270508",
+        "amp_read_transformer_log10_mic_um": "0.4959363341331482",
+        "amp_read_attention_log10_mic_um": "0.6543093919754028",
+        "amp_read_lstm_log10_mic_um": "0.2636786103248596",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-838f13f11ae5f61db8b8",
+      "sequence": "TWDWRLIDLNLFIKKWKWWRR",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 1.0353182229224505,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 10.847214366478969,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 1.3942155838012695,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 1.0244216918945312,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 0.7151598930358887,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 1.0074719190597534,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-838f13f11ae5f61db8b8",
+        "sequence": "TWDWRLIDLNLFIKKWKWWRR",
+        "status": "success",
+        "amp_read_log10_mic_um": "1.0353182229224505",
+        "amp_read_predicted_mic_um": "10.847214366478969",
+        "amp_read_cnn_log10_mic_um": "1.3942155838012695",
+        "amp_read_transformer_log10_mic_um": "1.0244216918945312",
+        "amp_read_attention_log10_mic_um": "0.7151598930358887",
+        "amp_read_lstm_log10_mic_um": "1.0074719190597534",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-fda1405b6b1a34f89953",
+      "sequence": "MDKDEKLKWRSWWWWWKWWWKAR",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 0.8517584798707915,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 7.1081810309059525,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 1.4311249256134033,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 0.4650993347167969,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 0.5944809913635254,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 0.9163317680358887,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-fda1405b6b1a34f89953",
+        "sequence": "MDKDEKLKWRSWWWWWKWWWKAR",
+        "status": "success",
+        "amp_read_log10_mic_um": "0.8517584798707915",
+        "amp_read_predicted_mic_um": "7.1081810309059525",
+        "amp_read_cnn_log10_mic_um": "1.4311249256134033",
+        "amp_read_transformer_log10_mic_um": "0.4650993347167969",
+        "amp_read_attention_log10_mic_um": "0.5944809913635254",
+        "amp_read_lstm_log10_mic_um": "0.9163317680358887",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-cb0dfa42bb1e910e8ea4",
+      "sequence": "FLDELLAKKKLKWWWAWWWIWLWWW",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 0.9864118706083762,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 9.69196574718475,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 1.1383827924728394,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 1.3642387390136719,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 0.6986461877822876,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 0.7443575859069824,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-cb0dfa42bb1e910e8ea4",
+        "sequence": "FLDELLAKKKLKWWWAWWWIWLWWW",
+        "status": "success",
+        "amp_read_log10_mic_um": "0.9864118706083762",
+        "amp_read_predicted_mic_um": "9.69196574718475",
+        "amp_read_cnn_log10_mic_um": "1.1383827924728394",
+        "amp_read_transformer_log10_mic_um": "1.3642387390136719",
+        "amp_read_attention_log10_mic_um": "0.6986461877822876",
+        "amp_read_lstm_log10_mic_um": "0.7443575859069824",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-28dbcf4e0d0c76c35ff2",
+      "sequence": "MIDWMIAMMAKKWKKLLLLTTKDAM",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 0.9092826727850294,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 8.114890664956041,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 1.3521054983139038,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 0.4926663339138031,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 1.2584468126296997,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 0.533867359161377,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-28dbcf4e0d0c76c35ff2",
+        "sequence": "MIDWMIAMMAKKWKKLLLLTTKDAM",
+        "status": "success",
+        "amp_read_log10_mic_um": "0.9092826727850294",
+        "amp_read_predicted_mic_um": "8.114890664956041",
+        "amp_read_cnn_log10_mic_um": "1.3521054983139038",
+        "amp_read_transformer_log10_mic_um": "0.4926663339138031",
+        "amp_read_attention_log10_mic_um": "1.2584468126296997",
+        "amp_read_lstm_log10_mic_um": "0.533867359161377",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-da424ff47950f572f040",
+      "sequence": "VSWRLSLLTELKKKILP",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 1.0252186361980915,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 10.597871178901247,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 1.0636755228042603,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 1.2278101444244385,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 0.7979992628097534,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 1.0113874673843384,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-da424ff47950f572f040",
+        "sequence": "VSWRLSLLTELKKKILP",
+        "status": "success",
+        "amp_read_log10_mic_um": "1.0252186361980915",
+        "amp_read_predicted_mic_um": "10.597871178901247",
+        "amp_read_cnn_log10_mic_um": "1.0636755228042603",
+        "amp_read_transformer_log10_mic_um": "1.2278101444244385",
+        "amp_read_attention_log10_mic_um": "0.7979992628097534",
+        "amp_read_lstm_log10_mic_um": "1.0113874673843384",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-5ebb32825e51c515a4c6",
+      "sequence": "FMRNVWRWEEKWWRFLLKRAAAADD",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 0.9932230793018634,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 9.845166818312865,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 1.4680378437042236,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 2.0412089824676514,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 0.5833879709243774,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": -0.11984270811080933,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-5ebb32825e51c515a4c6",
+        "sequence": "FMRNVWRWEEKWWRFLLKRAAAADD",
+        "status": "success",
+        "amp_read_log10_mic_um": "0.9932230793018634",
+        "amp_read_predicted_mic_um": "9.845166818312865",
+        "amp_read_cnn_log10_mic_um": "1.4680378437042236",
+        "amp_read_transformer_log10_mic_um": "2.0412089824676514",
+        "amp_read_attention_log10_mic_um": "0.5833879709243774",
+        "amp_read_lstm_log10_mic_um": "-0.11984270811080933",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-e1487aedc3aa2d3b6c4e",
+      "sequence": "SKRLWLLKKLWLLDAAHLLDLADAA",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 1.1759873234524596,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 14.99641062096411,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 1.5333019495010376,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 0.9741151928901672,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 1.4121743440628052,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 0.7843127250671387,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-e1487aedc3aa2d3b6c4e",
+        "sequence": "SKRLWLLKKLWLLDAAHLLDLADAA",
+        "status": "success",
+        "amp_read_log10_mic_um": "1.1759873234524596",
+        "amp_read_predicted_mic_um": "14.99641062096411",
+        "amp_read_cnn_log10_mic_um": "1.5333019495010376",
+        "amp_read_transformer_log10_mic_um": "0.9741151928901672",
+        "amp_read_attention_log10_mic_um": "1.4121743440628052",
+        "amp_read_lstm_log10_mic_um": "0.7843127250671387",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-9010e3157afde1b36e4f",
+      "sequence": "RFRIWKLLLQLVGERAG",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 0.8364983507837266,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 6.862752723030761,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 1.1933684349060059,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 1.0469309091567993,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 0.9981435537338257,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 0.10747760534286499,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-9010e3157afde1b36e4f",
+        "sequence": "RFRIWKLLLQLVGERAG",
+        "status": "success",
+        "amp_read_log10_mic_um": "0.8364983507837266",
+        "amp_read_predicted_mic_um": "6.862752723030761",
+        "amp_read_cnn_log10_mic_um": "1.1933684349060059",
+        "amp_read_transformer_log10_mic_um": "1.0469309091567993",
+        "amp_read_attention_log10_mic_um": "0.9981435537338257",
+        "amp_read_lstm_log10_mic_um": "0.10747760534286499",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-4d853f68ca04ceda361d",
+      "sequence": "AAWRLLDALKWMWW",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 1.0763983898031713,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 11.923352671573937,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 0.9921644926071167,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 0.9463621973991394,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 1.2337448596954346,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 1.1333210468292236,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-4d853f68ca04ceda361d",
+        "sequence": "AAWRLLDALKWMWW",
+        "status": "success",
+        "amp_read_log10_mic_um": "1.0763983898031713",
+        "amp_read_predicted_mic_um": "11.923352671573937",
+        "amp_read_cnn_log10_mic_um": "0.9921644926071167",
+        "amp_read_transformer_log10_mic_um": "0.9463621973991394",
+        "amp_read_attention_log10_mic_um": "1.2337448596954346",
+        "amp_read_lstm_log10_mic_um": "1.1333210468292236",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-e9642f839801ba943a27",
+      "sequence": "NWDNLELWWKNKWWWWWWWWWWRR",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 0.8392191533205342,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 6.905881999727171,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 1.3385099172592163,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 0.6472781300544739,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 0.5823086500167847,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 0.7887731790542603,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-e9642f839801ba943a27",
+        "sequence": "NWDNLELWWKNKWWWWWWWWWWRR",
+        "status": "success",
+        "amp_read_log10_mic_um": "0.8392191533205342",
+        "amp_read_predicted_mic_um": "6.905881999727171",
+        "amp_read_cnn_log10_mic_um": "1.3385099172592163",
+        "amp_read_transformer_log10_mic_um": "0.6472781300544739",
+        "amp_read_attention_log10_mic_um": "0.5823086500167847",
+        "amp_read_lstm_log10_mic_um": "0.7887731790542603",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-52f3d6c8ba615b5b0d6e",
+      "sequence": "KWCYRGGVCMYYWWWWWW",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 1.0166434550826309,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 10.390667677159286,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 1.2095303535461426,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 0.8688271045684814,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 0.7098157405853271,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 1.278423547744751,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-52f3d6c8ba615b5b0d6e",
+        "sequence": "KWCYRGGVCMYYWWWWWW",
+        "status": "success",
+        "amp_read_log10_mic_um": "1.0166434550826309",
+        "amp_read_predicted_mic_um": "10.390667677159286",
+        "amp_read_cnn_log10_mic_um": "1.2095303535461426",
+        "amp_read_transformer_log10_mic_um": "0.8688271045684814",
+        "amp_read_attention_log10_mic_um": "0.7098157405853271",
+        "amp_read_lstm_log10_mic_um": "1.278423547744751",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-f7d856b7e84624b1d99d",
+      "sequence": "VVITKKPKWWQDKQWKKLADKKKK",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 1.0779320487871038,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 11.965532998029467,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 1.4017084836959839,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 0.7435416579246521,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 0.5611809492111206,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 1.6053459644317627,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-f7d856b7e84624b1d99d",
+        "sequence": "VVITKKPKWWQDKQWKKLADKKKK",
+        "status": "success",
+        "amp_read_log10_mic_um": "1.0779320487871038",
+        "amp_read_predicted_mic_um": "11.965532998029467",
+        "amp_read_cnn_log10_mic_um": "1.4017084836959839",
+        "amp_read_transformer_log10_mic_um": "0.7435416579246521",
+        "amp_read_attention_log10_mic_um": "0.5611809492111206",
+        "amp_read_lstm_log10_mic_um": "1.6053459644317627",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-5c9a0c303de266a79e4f",
+      "sequence": "KWADEKWWWAAALLLKAAWRAF",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 0.9947367903582549,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 9.879541511176807,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 0.9338080883026123,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 0.8222267031669617,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 0.853014349937439,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 1.3699301481246948,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-5c9a0c303de266a79e4f",
+        "sequence": "KWADEKWWWAAALLLKAAWRAF",
+        "status": "success",
+        "amp_read_log10_mic_um": "0.9947367903582549",
+        "amp_read_predicted_mic_um": "9.879541511176807",
+        "amp_read_cnn_log10_mic_um": "0.9338080883026123",
+        "amp_read_transformer_log10_mic_um": "0.8222267031669617",
+        "amp_read_attention_log10_mic_um": "0.853014349937439",
+        "amp_read_lstm_log10_mic_um": "1.3699301481246948",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-5c95bcccffa1e22d2e21",
+      "sequence": "RMWKRRFELHVDLWLLKK",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 0.9336146929483788,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 8.582517407331155,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 1.505908727645874,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 1.2221463918685913,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 0.6493854522705078,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 0.3569639325141907,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-5c95bcccffa1e22d2e21",
+        "sequence": "RMWKRRFELHVDLWLLKK",
+        "status": "success",
+        "amp_read_log10_mic_um": "0.9336146929483788",
+        "amp_read_predicted_mic_um": "8.582517407331155",
+        "amp_read_cnn_log10_mic_um": "1.505908727645874",
+        "amp_read_transformer_log10_mic_um": "1.2221463918685913",
+        "amp_read_attention_log10_mic_um": "0.6493854522705078",
+        "amp_read_lstm_log10_mic_um": "0.3569639325141907",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-1234df3b595f84148982",
+      "sequence": "EKINWKSLDSYWKKFWWLA",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 1.1147673540576923,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 13.024688757930948,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 1.1991300582885742,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 1.1937527656555176,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 1.031387448310852,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 1.0347883701324463,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-1234df3b595f84148982",
+        "sequence": "EKINWKSLDSYWKKFWWLA",
+        "status": "success",
+        "amp_read_log10_mic_um": "1.1147673540576923",
+        "amp_read_predicted_mic_um": "13.024688757930948",
+        "amp_read_cnn_log10_mic_um": "1.1991300582885742",
+        "amp_read_transformer_log10_mic_um": "1.1937527656555176",
+        "amp_read_attention_log10_mic_um": "1.031387448310852",
+        "amp_read_lstm_log10_mic_um": "1.0347883701324463",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-2cb4d1d1fc92f9615993",
+      "sequence": "KWFNWRVIHWKRPDGYGW",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 0.9023781141516174,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 7.986897559030284,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 0.9498522281646729,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 1.0629546642303467,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 0.790088415145874,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 0.8066064119338989,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-2cb4d1d1fc92f9615993",
+        "sequence": "KWFNWRVIHWKRPDGYGW",
+        "status": "success",
+        "amp_read_log10_mic_um": "0.9023781141516174",
+        "amp_read_predicted_mic_um": "7.986897559030284",
+        "amp_read_cnn_log10_mic_um": "0.9498522281646729",
+        "amp_read_transformer_log10_mic_um": "1.0629546642303467",
+        "amp_read_attention_log10_mic_um": "0.790088415145874",
+        "amp_read_lstm_log10_mic_um": "0.8066064119338989",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-165c330ae56e49c52d64",
+      "sequence": "LWPWKNKLKELLGGGIQKAWDW",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 0.8096256137743282,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 6.4509787867781885,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 1.1489803791046143,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 0.8365688920021057,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 0.5943678617477417,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 0.6585699319839478,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-165c330ae56e49c52d64",
+        "sequence": "LWPWKNKLKELLGGGIQKAWDW",
+        "status": "success",
+        "amp_read_log10_mic_um": "0.8096256137743282",
+        "amp_read_predicted_mic_um": "6.4509787867781885",
+        "amp_read_cnn_log10_mic_um": "1.1489803791046143",
+        "amp_read_transformer_log10_mic_um": "0.8365688920021057",
+        "amp_read_attention_log10_mic_um": "0.5943678617477417",
+        "amp_read_lstm_log10_mic_um": "0.6585699319839478",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-0423b373cde3e56bfe5d",
+      "sequence": "QLEWWLRLLKEKWRWWPYYWMW",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 1.130390346263703,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 13.501758828775085,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 1.2805944681167603,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 0.7963598966598511,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 0.7362390756607056,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 1.7084202766418457,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-0423b373cde3e56bfe5d",
+        "sequence": "QLEWWLRLLKEKWRWWPYYWMW",
+        "status": "success",
+        "amp_read_log10_mic_um": "1.130390346263703",
+        "amp_read_predicted_mic_um": "13.501758828775085",
+        "amp_read_cnn_log10_mic_um": "1.2805944681167603",
+        "amp_read_transformer_log10_mic_um": "0.7963598966598511",
+        "amp_read_attention_log10_mic_um": "0.7362390756607056",
+        "amp_read_lstm_log10_mic_um": "1.7084202766418457",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-021bf0f4b09acd95dbd7",
+      "sequence": "FKWKKWILAAADEWWWWWWWWWWWW",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 0.6703015976489681,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 4.680600747568741,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 1.163738489151001,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 0.6488538980484009,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 0.5567574501037598,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 0.3118208050727844,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-021bf0f4b09acd95dbd7",
+        "sequence": "FKWKKWILAAADEWWWWWWWWWWWW",
+        "status": "success",
+        "amp_read_log10_mic_um": "0.6703015976489681",
+        "amp_read_predicted_mic_um": "4.680600747568741",
+        "amp_read_cnn_log10_mic_um": "1.163738489151001",
+        "amp_read_transformer_log10_mic_um": "0.6488538980484009",
+        "amp_read_attention_log10_mic_um": "0.5567574501037598",
+        "amp_read_lstm_log10_mic_um": "0.3118208050727844",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-9e0358de4e930d57d3b1",
+      "sequence": "SKEWQRWWWRWIRFVAE",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 1.0582284821801948,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 11.434797608867232,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 1.152371883392334,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 1.0721502304077148,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 0.6069327592849731,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 1.4014917612075806,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-9e0358de4e930d57d3b1",
+        "sequence": "SKEWQRWWWRWIRFVAE",
+        "status": "success",
+        "amp_read_log10_mic_um": "1.0582284821801948",
+        "amp_read_predicted_mic_um": "11.434797608867232",
+        "amp_read_cnn_log10_mic_um": "1.152371883392334",
+        "amp_read_transformer_log10_mic_um": "1.0721502304077148",
+        "amp_read_attention_log10_mic_um": "0.6069327592849731",
+        "amp_read_lstm_log10_mic_um": "1.4014917612075806",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-3397f92252e01cf82bf4",
+      "sequence": "DKWWYFFRVHFPTILKGW",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 1.104768525057571,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 12.728244965077398,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 1.5648688077926636,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 1.1253572702407837,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 0.7569633722305298,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 0.971871018409729,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-3397f92252e01cf82bf4",
+        "sequence": "DKWWYFFRVHFPTILKGW",
+        "status": "success",
+        "amp_read_log10_mic_um": "1.104768525057571",
+        "amp_read_predicted_mic_um": "12.728244965077398",
+        "amp_read_cnn_log10_mic_um": "1.5648688077926636",
+        "amp_read_transformer_log10_mic_um": "1.1253572702407837",
+        "amp_read_attention_log10_mic_um": "0.7569633722305298",
+        "amp_read_lstm_log10_mic_um": "0.971871018409729",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-e9a0b2b4b2e33df19d23",
+      "sequence": "RLAEDAANWKKWRKIMWW",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 0.904077263805043,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 8.018206998022107,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 1.1367871761322021,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 0.7925986647605896,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 0.9586334228515625,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 0.7282684445381165,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-e9a0b2b4b2e33df19d23",
+        "sequence": "RLAEDAANWKKWRKIMWW",
+        "status": "success",
+        "amp_read_log10_mic_um": "0.904077263805043",
+        "amp_read_predicted_mic_um": "8.018206998022107",
+        "amp_read_cnn_log10_mic_um": "1.1367871761322021",
+        "amp_read_transformer_log10_mic_um": "0.7925986647605896",
+        "amp_read_attention_log10_mic_um": "0.9586334228515625",
+        "amp_read_lstm_log10_mic_um": "0.7282684445381165",
+        "error": ""
+      }
+    }
+  ],
+  "raw_rows": [
+    {
+      "candidate_id": "proposal-69f66b130bc3d94da978",
+      "sequence": "LWPWKNKLRDLLGGGIQKAWDW",
+      "status": "success",
+      "amp_read_log10_mic_um": "1.048045489338417",
+      "amp_read_predicted_mic_um": "11.169802375955578",
+      "amp_read_cnn_log10_mic_um": "1.810081958770752",
+      "amp_read_transformer_log10_mic_um": "1.0406379699707031",
+      "amp_read_attention_log10_mic_um": "0.7677521705627441",
+      "amp_read_lstm_log10_mic_um": "0.5736632347106934",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-4347ded1af4ca7c2aed0",
+      "sequence": "QLEWWIKLLKEKWRWWPYYWMW",
+      "status": "success",
+      "amp_read_log10_mic_um": "1.0465918252841353",
+      "amp_read_predicted_mic_um": "11.1324774804777",
+      "amp_read_cnn_log10_mic_um": "1.2900267839431763",
+      "amp_read_transformer_log10_mic_um": "0.776272714138031",
+      "amp_read_attention_log10_mic_um": "0.6813348531723022",
+      "amp_read_lstm_log10_mic_um": "1.4387680292129517",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-6184f2b518263a83db87",
+      "sequence": "FKWKRWLLAAADEWWWWWWWWWWWW",
+      "status": "success",
+      "amp_read_log10_mic_um": "0.8127852048661145",
+      "amp_read_predicted_mic_um": "6.498082260547579",
+      "amp_read_cnn_log10_mic_um": "1.188887119293213",
+      "amp_read_transformer_log10_mic_um": "0.9871602058410645",
+      "amp_read_attention_log10_mic_um": "0.6367206573486328",
+      "amp_read_lstm_log10_mic_um": "0.43833664059638977",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-5bc644be65c0add61614",
+      "sequence": "SKDWQKWWWRWIRFVAE",
+      "status": "success",
+      "amp_read_log10_mic_um": "1.0603117361738612",
+      "amp_read_predicted_mic_um": "11.489780609505647",
+      "amp_read_cnn_log10_mic_um": "1.146505355834961",
+      "amp_read_transformer_log10_mic_um": "1.0541186332702637",
+      "amp_read_attention_log10_mic_um": "0.6179335117340088",
+      "amp_read_lstm_log10_mic_um": "1.4227237701416016",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-f12c923fedd132ea9ca2",
+      "sequence": "DKWWYFFKIHFPTILKGW",
+      "status": "success",
+      "amp_read_log10_mic_um": "0.9911323140347117",
+      "amp_read_predicted_mic_um": "9.797884465258095",
+      "amp_read_cnn_log10_mic_um": "1.613634705543518",
+      "amp_read_transformer_log10_mic_um": "1.0809986591339111",
+      "amp_read_attention_log10_mic_um": "0.7418917417526245",
+      "amp_read_lstm_log10_mic_um": "0.5279590487480164",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-24f715372c43e9944006",
+      "sequence": "RLGDDAANWKKWRKIMWW",
+      "status": "success",
+      "amp_read_log10_mic_um": "0.9478641856063563",
+      "amp_read_predicted_mic_um": "8.868786202612233",
+      "amp_read_cnn_log10_mic_um": "1.0804598331451416",
+      "amp_read_transformer_log10_mic_um": "0.8448799848556519",
+      "amp_read_attention_log10_mic_um": "1.0009918212890625",
+      "amp_read_lstm_log10_mic_um": "0.8651124835014343",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-99ea7f8a01e9c8184c44",
+      "sequence": "SKNRKELKWWKLKLSGAAGAWWKDK",
+      "status": "success",
+      "amp_read_log10_mic_um": "0.7311854591736072",
+      "amp_read_predicted_mic_um": "5.384996919235933",
+      "amp_read_cnn_log10_mic_um": "1.3104389905929565",
+      "amp_read_transformer_log10_mic_um": "0.6688652634620667",
+      "amp_read_attention_log10_mic_um": "0.5481517314910889",
+      "amp_read_lstm_log10_mic_um": "0.39725261926651",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-2ecaa06bc86d8589e919",
+      "sequence": "SKWRALDKKLKLLADELLEEWWWWW",
+      "status": "success",
+      "amp_read_log10_mic_um": "0.9447149022369665",
+      "amp_read_predicted_mic_um": "8.804706878258107",
+      "amp_read_cnn_log10_mic_um": "0.9771838188171387",
+      "amp_read_transformer_log10_mic_um": "1.2138968706130981",
+      "amp_read_attention_log10_mic_um": "1.1998060941696167",
+      "amp_read_lstm_log10_mic_um": "0.38791531324386597",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-b5264f80d8c76a7c8012",
+      "sequence": "SKWRKWFWWRWWKWLFRNFLAEDAD",
+      "status": "success",
+      "amp_read_log10_mic_um": "0.5970550489431268",
+      "amp_read_predicted_mic_um": "3.954167378912336",
+      "amp_read_cnn_log10_mic_um": "0.9806129336357117",
+      "amp_read_transformer_log10_mic_um": "0.4869609475135803",
+      "amp_read_attention_log10_mic_um": "0.4895768165588379",
+      "amp_read_lstm_log10_mic_um": "0.4310517907142639",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-cc3b739faffcfafb7b2d",
+      "sequence": "LAKLWWWELLWKWKWKALAMAEDA",
+      "status": "success",
+      "amp_read_log10_mic_um": "0.7051762784170824",
+      "amp_read_predicted_mic_um": "5.07196535572731",
+      "amp_read_cnn_log10_mic_um": "1.4067354202270508",
+      "amp_read_transformer_log10_mic_um": "0.4959363341331482",
+      "amp_read_attention_log10_mic_um": "0.6543093919754028",
+      "amp_read_lstm_log10_mic_um": "0.2636786103248596",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-838f13f11ae5f61db8b8",
+      "sequence": "TWDWRLIDLNLFIKKWKWWRR",
+      "status": "success",
+      "amp_read_log10_mic_um": "1.0353182229224505",
+      "amp_read_predicted_mic_um": "10.847214366478969",
+      "amp_read_cnn_log10_mic_um": "1.3942155838012695",
+      "amp_read_transformer_log10_mic_um": "1.0244216918945312",
+      "amp_read_attention_log10_mic_um": "0.7151598930358887",
+      "amp_read_lstm_log10_mic_um": "1.0074719190597534",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-fda1405b6b1a34f89953",
+      "sequence": "MDKDEKLKWRSWWWWWKWWWKAR",
+      "status": "success",
+      "amp_read_log10_mic_um": "0.8517584798707915",
+      "amp_read_predicted_mic_um": "7.1081810309059525",
+      "amp_read_cnn_log10_mic_um": "1.4311249256134033",
+      "amp_read_transformer_log10_mic_um": "0.4650993347167969",
+      "amp_read_attention_log10_mic_um": "0.5944809913635254",
+      "amp_read_lstm_log10_mic_um": "0.9163317680358887",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-cb0dfa42bb1e910e8ea4",
+      "sequence": "FLDELLAKKKLKWWWAWWWIWLWWW",
+      "status": "success",
+      "amp_read_log10_mic_um": "0.9864118706083762",
+      "amp_read_predicted_mic_um": "9.69196574718475",
+      "amp_read_cnn_log10_mic_um": "1.1383827924728394",
+      "amp_read_transformer_log10_mic_um": "1.3642387390136719",
+      "amp_read_attention_log10_mic_um": "0.6986461877822876",
+      "amp_read_lstm_log10_mic_um": "0.7443575859069824",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-28dbcf4e0d0c76c35ff2",
+      "sequence": "MIDWMIAMMAKKWKKLLLLTTKDAM",
+      "status": "success",
+      "amp_read_log10_mic_um": "0.9092826727850294",
+      "amp_read_predicted_mic_um": "8.114890664956041",
+      "amp_read_cnn_log10_mic_um": "1.3521054983139038",
+      "amp_read_transformer_log10_mic_um": "0.4926663339138031",
+      "amp_read_attention_log10_mic_um": "1.2584468126296997",
+      "amp_read_lstm_log10_mic_um": "0.533867359161377",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-da424ff47950f572f040",
+      "sequence": "VSWRLSLLTELKKKILP",
+      "status": "success",
+      "amp_read_log10_mic_um": "1.0252186361980915",
+      "amp_read_predicted_mic_um": "10.597871178901247",
+      "amp_read_cnn_log10_mic_um": "1.0636755228042603",
+      "amp_read_transformer_log10_mic_um": "1.2278101444244385",
+      "amp_read_attention_log10_mic_um": "0.7979992628097534",
+      "amp_read_lstm_log10_mic_um": "1.0113874673843384",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-5ebb32825e51c515a4c6",
+      "sequence": "FMRNVWRWEEKWWRFLLKRAAAADD",
+      "status": "success",
+      "amp_read_log10_mic_um": "0.9932230793018634",
+      "amp_read_predicted_mic_um": "9.845166818312865",
+      "amp_read_cnn_log10_mic_um": "1.4680378437042236",
+      "amp_read_transformer_log10_mic_um": "2.0412089824676514",
+      "amp_read_attention_log10_mic_um": "0.5833879709243774",
+      "amp_read_lstm_log10_mic_um": "-0.11984270811080933",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-e1487aedc3aa2d3b6c4e",
+      "sequence": "SKRLWLLKKLWLLDAAHLLDLADAA",
+      "status": "success",
+      "amp_read_log10_mic_um": "1.1759873234524596",
+      "amp_read_predicted_mic_um": "14.99641062096411",
+      "amp_read_cnn_log10_mic_um": "1.5333019495010376",
+      "amp_read_transformer_log10_mic_um": "0.9741151928901672",
+      "amp_read_attention_log10_mic_um": "1.4121743440628052",
+      "amp_read_lstm_log10_mic_um": "0.7843127250671387",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-9010e3157afde1b36e4f",
+      "sequence": "RFRIWKLLLQLVGERAG",
+      "status": "success",
+      "amp_read_log10_mic_um": "0.8364983507837266",
+      "amp_read_predicted_mic_um": "6.862752723030761",
+      "amp_read_cnn_log10_mic_um": "1.1933684349060059",
+      "amp_read_transformer_log10_mic_um": "1.0469309091567993",
+      "amp_read_attention_log10_mic_um": "0.9981435537338257",
+      "amp_read_lstm_log10_mic_um": "0.10747760534286499",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-4d853f68ca04ceda361d",
+      "sequence": "AAWRLLDALKWMWW",
+      "status": "success",
+      "amp_read_log10_mic_um": "1.0763983898031713",
+      "amp_read_predicted_mic_um": "11.923352671573937",
+      "amp_read_cnn_log10_mic_um": "0.9921644926071167",
+      "amp_read_transformer_log10_mic_um": "0.9463621973991394",
+      "amp_read_attention_log10_mic_um": "1.2337448596954346",
+      "amp_read_lstm_log10_mic_um": "1.1333210468292236",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-e9642f839801ba943a27",
+      "sequence": "NWDNLELWWKNKWWWWWWWWWWRR",
+      "status": "success",
+      "amp_read_log10_mic_um": "0.8392191533205342",
+      "amp_read_predicted_mic_um": "6.905881999727171",
+      "amp_read_cnn_log10_mic_um": "1.3385099172592163",
+      "amp_read_transformer_log10_mic_um": "0.6472781300544739",
+      "amp_read_attention_log10_mic_um": "0.5823086500167847",
+      "amp_read_lstm_log10_mic_um": "0.7887731790542603",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-52f3d6c8ba615b5b0d6e",
+      "sequence": "KWCYRGGVCMYYWWWWWW",
+      "status": "success",
+      "amp_read_log10_mic_um": "1.0166434550826309",
+      "amp_read_predicted_mic_um": "10.390667677159286",
+      "amp_read_cnn_log10_mic_um": "1.2095303535461426",
+      "amp_read_transformer_log10_mic_um": "0.8688271045684814",
+      "amp_read_attention_log10_mic_um": "0.7098157405853271",
+      "amp_read_lstm_log10_mic_um": "1.278423547744751",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-f7d856b7e84624b1d99d",
+      "sequence": "VVITKKPKWWQDKQWKKLADKKKK",
+      "status": "success",
+      "amp_read_log10_mic_um": "1.0779320487871038",
+      "amp_read_predicted_mic_um": "11.965532998029467",
+      "amp_read_cnn_log10_mic_um": "1.4017084836959839",
+      "amp_read_transformer_log10_mic_um": "0.7435416579246521",
+      "amp_read_attention_log10_mic_um": "0.5611809492111206",
+      "amp_read_lstm_log10_mic_um": "1.6053459644317627",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-5c9a0c303de266a79e4f",
+      "sequence": "KWADEKWWWAAALLLKAAWRAF",
+      "status": "success",
+      "amp_read_log10_mic_um": "0.9947367903582549",
+      "amp_read_predicted_mic_um": "9.879541511176807",
+      "amp_read_cnn_log10_mic_um": "0.9338080883026123",
+      "amp_read_transformer_log10_mic_um": "0.8222267031669617",
+      "amp_read_attention_log10_mic_um": "0.853014349937439",
+      "amp_read_lstm_log10_mic_um": "1.3699301481246948",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-5c95bcccffa1e22d2e21",
+      "sequence": "RMWKRRFELHVDLWLLKK",
+      "status": "success",
+      "amp_read_log10_mic_um": "0.9336146929483788",
+      "amp_read_predicted_mic_um": "8.582517407331155",
+      "amp_read_cnn_log10_mic_um": "1.505908727645874",
+      "amp_read_transformer_log10_mic_um": "1.2221463918685913",
+      "amp_read_attention_log10_mic_um": "0.6493854522705078",
+      "amp_read_lstm_log10_mic_um": "0.3569639325141907",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-1234df3b595f84148982",
+      "sequence": "EKINWKSLDSYWKKFWWLA",
+      "status": "success",
+      "amp_read_log10_mic_um": "1.1147673540576923",
+      "amp_read_predicted_mic_um": "13.024688757930948",
+      "amp_read_cnn_log10_mic_um": "1.1991300582885742",
+      "amp_read_transformer_log10_mic_um": "1.1937527656555176",
+      "amp_read_attention_log10_mic_um": "1.031387448310852",
+      "amp_read_lstm_log10_mic_um": "1.0347883701324463",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-2cb4d1d1fc92f9615993",
+      "sequence": "KWFNWRVIHWKRPDGYGW",
+      "status": "success",
+      "amp_read_log10_mic_um": "0.9023781141516174",
+      "amp_read_predicted_mic_um": "7.986897559030284",
+      "amp_read_cnn_log10_mic_um": "0.9498522281646729",
+      "amp_read_transformer_log10_mic_um": "1.0629546642303467",
+      "amp_read_attention_log10_mic_um": "0.790088415145874",
+      "amp_read_lstm_log10_mic_um": "0.8066064119338989",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-165c330ae56e49c52d64",
+      "sequence": "LWPWKNKLKELLGGGIQKAWDW",
+      "status": "success",
+      "amp_read_log10_mic_um": "0.8096256137743282",
+      "amp_read_predicted_mic_um": "6.4509787867781885",
+      "amp_read_cnn_log10_mic_um": "1.1489803791046143",
+      "amp_read_transformer_log10_mic_um": "0.8365688920021057",
+      "amp_read_attention_log10_mic_um": "0.5943678617477417",
+      "amp_read_lstm_log10_mic_um": "0.6585699319839478",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-0423b373cde3e56bfe5d",
+      "sequence": "QLEWWLRLLKEKWRWWPYYWMW",
+      "status": "success",
+      "amp_read_log10_mic_um": "1.130390346263703",
+      "amp_read_predicted_mic_um": "13.501758828775085",
+      "amp_read_cnn_log10_mic_um": "1.2805944681167603",
+      "amp_read_transformer_log10_mic_um": "0.7963598966598511",
+      "amp_read_attention_log10_mic_um": "0.7362390756607056",
+      "amp_read_lstm_log10_mic_um": "1.7084202766418457",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-021bf0f4b09acd95dbd7",
+      "sequence": "FKWKKWILAAADEWWWWWWWWWWWW",
+      "status": "success",
+      "amp_read_log10_mic_um": "0.6703015976489681",
+      "amp_read_predicted_mic_um": "4.680600747568741",
+      "amp_read_cnn_log10_mic_um": "1.163738489151001",
+      "amp_read_transformer_log10_mic_um": "0.6488538980484009",
+      "amp_read_attention_log10_mic_um": "0.5567574501037598",
+      "amp_read_lstm_log10_mic_um": "0.3118208050727844",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-9e0358de4e930d57d3b1",
+      "sequence": "SKEWQRWWWRWIRFVAE",
+      "status": "success",
+      "amp_read_log10_mic_um": "1.0582284821801948",
+      "amp_read_predicted_mic_um": "11.434797608867232",
+      "amp_read_cnn_log10_mic_um": "1.152371883392334",
+      "amp_read_transformer_log10_mic_um": "1.0721502304077148",
+      "amp_read_attention_log10_mic_um": "0.6069327592849731",
+      "amp_read_lstm_log10_mic_um": "1.4014917612075806",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-3397f92252e01cf82bf4",
+      "sequence": "DKWWYFFRVHFPTILKGW",
+      "status": "success",
+      "amp_read_log10_mic_um": "1.104768525057571",
+      "amp_read_predicted_mic_um": "12.728244965077398",
+      "amp_read_cnn_log10_mic_um": "1.5648688077926636",
+      "amp_read_transformer_log10_mic_um": "1.1253572702407837",
+      "amp_read_attention_log10_mic_um": "0.7569633722305298",
+      "amp_read_lstm_log10_mic_um": "0.971871018409729",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-e9a0b2b4b2e33df19d23",
+      "sequence": "RLAEDAANWKKWRKIMWW",
+      "status": "success",
+      "amp_read_log10_mic_um": "0.904077263805043",
+      "amp_read_predicted_mic_um": "8.018206998022107",
+      "amp_read_cnn_log10_mic_um": "1.1367871761322021",
+      "amp_read_transformer_log10_mic_um": "0.7925986647605896",
+      "amp_read_attention_log10_mic_um": "0.9586334228515625",
+      "amp_read_lstm_log10_mic_um": "0.7282684445381165",
+      "error": ""
+    }
+  ],
+  "stdout_tail": "",
+  "stderr_tail": "",
+  "model_uri": "git+https://github.com/MicroResearchLab/AMP-potency-prediction-EvoGradient.git@ec9478b5e0d0aff4f92d6381c5027855390104c4",
+  "weights_sha256": "06a577e36a833d36fad8b2af03f79cef8b3e795269918dcdee263967d197565f",
+  "limitations": [
+    "Generic mixed-species MIC estimate; it is not E. coli-specific or a wet-lab MIC.",
+    "Component predictions are retained and no cross-family consensus is fabricated.",
+    "The local comparison is not similarity-isolated from the released training data."
+  ],
+  "adapter_version": "amp-read-ec9478b-open-weights-cpu-v1",
+  "registry_sha256": "7a5152541864e7cec1b94bb5eb9c74d313408b5f4d4781f1565525b577164e55",
+  "command_argv": [
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\var\\metric-runtimes\\llamp-py39\\Scripts\\python.exe",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\src\\pepagent\\model_workers\\amp_read_metric_cli.py",
+    "--input",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\reports\\target_agnostic_source_graft_v15_20260903\\score_all\\work\\mic_potency_amp_read\\candidates.csv",
+    "--output",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\reports\\target_agnostic_source_graft_v15_20260903\\score_all\\work\\mic_potency_amp_read\\predictions.csv",
+    "--raw-output-dir",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\reports\\target_agnostic_source_graft_v15_20260903\\score_all\\work\\mic_potency_amp_read\\raw",
+    "--upstream-repository",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\var\\metric-runtimes\\amp-read-src",
+    "--cnn",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\var\\metric-runtimes\\amp-read-src\\model\\regression\\CNN.pth",
+    "--cnn-sha256",
+    "da071c6624666e128aae79643dcbe6084fce339711b902a3ba89e4eb3aeee07e",
+    "--transformer",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\var\\metric-runtimes\\amp-read-src\\model\\regression\\Transformer.pth",
+    "--transformer-sha256",
+    "658a354dd0c76c1851516af361ea0899568642c02cc0fab0f6a55a87579fcc44",
+    "--attention",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\var\\metric-runtimes\\amp-read-src\\model\\regression\\Attention.pth",
+    "--attention-sha256",
+    "5dbea063bb56ffe7e903538aab4f4a90688d0f87f89c4ed26851fb649062283a",
+    "--lstm",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\var\\metric-runtimes\\amp-read-src\\model\\regression\\LSTM.pth",
+    "--lstm-sha256",
+    "6f6d2784149a77fe430125aad612efe20cd3ef4e9b6680b5ec29b10ac99f9594",
+    "--source-sha256",
+    "1bed5830995e9d2f47bcbf64249d7e53ddb90eca83cc5f80b5ab9d6901220ba1",
+    "--device",
+    "cpu"
+  ]
+}

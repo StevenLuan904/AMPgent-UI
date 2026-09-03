@@ -1,0 +1,49 @@
+{
+  "active_pending_task_key_hit_count": 0,
+  "capacity_audit": {
+    "active_gpu_count": 8,
+    "dispatch_allowed": false,
+    "new_scheduler_limit": 0
+  },
+  "dispatch_submitted": false,
+  "evidence_input_hashes": {
+    "reports\\ampgent_pool_a_live_20260903T0605Z.json": "4484ba43abdccfae8262daec2ff0fe9b2049920978261040f22a0b7fa9408993",
+    "reports\\pool_a_md_50ns_expansion_20260903\\live-summary\\summary.json": "7a3d42c463087e62acabcab1689685baaffc8a35b6dd368eec6219956bd15f69",
+    "reports\\reciprocal_micrograft_capacity_snapshot_20260903.json": "36a1d9fd43ee8a03e88dbf8fa14098d762bbf5153bd68ff6da3faa6edaf607d7",
+    "reports\\reciprocal_micrograft_task_key_snapshot_20260903.json": "e36167b04eceb496d873391068e072fa41393f7a162abf72c889e15621e4b238"
+  },
+  "global_unique_identity_count": 189,
+  "global_unique_sequence_count": 189,
+  "historical_runs_modified": false,
+  "identity_drift_count": 0,
+  "identity_resolved_count": 189,
+  "identity_unresolved_count": 0,
+  "input_count": 189,
+  "input_queue_hashes": {
+    "reports\\reciprocal_micrograft_scheduler_ready_manifest_v14_20260903.csv": "b79718b4051a7cde51544c8ac9e965638110cd5435bd5ba4253a5df4b31f7dae",
+    "reports\\target_agnostic_source_graft_v15_20260903\\pool_a_entries.csv": "9bcf5b39f9cd7d2b5496059fd1d612c58a4d92e65aa2fb4e77d5669126de6de9"
+  },
+  "manifest_csv_sha256": "e4e6239dcd7a3f3954d557ff6b81fd8bb94411328609a3af0ec9ac932f894fd5",
+  "manifest_hash_change_reason": "target round-robin ordering was made explicit after the prior target-block manifest",
+  "manifest_hash_changed": true,
+  "pg_structure_evidence_present_count": 0,
+  "previous_manifest_csv_sha256": "b79718b4051a7cde51544c8ac9e965638110cd5435bd5ba4253a5df4b31f7dae",
+  "receipt_payload_sha256": "7a73f0b2e2fa06af9a0f00b80d675cf576d102e7570eef99d9c4813510fb344d",
+  "schema_version": "ampgent.reciprocal-micrograft.scheduler-manifest.2",
+  "status_counts": {
+    "already_active": 0,
+    "already_completed": 0,
+    "identity_unresolved": 0,
+    "new_ready": 189
+  },
+  "target_counts": {
+    "acea": 25,
+    "angpt1": 17,
+    "fgf2": 44,
+    "gyra": 29,
+    "pbp2a": 37,
+    "target_agnostic": 32,
+    "vegfa": 5
+  },
+  "weighted_q_plus_lambda_d_used": false
+}
