@@ -36,18 +36,18 @@
     ]
   },
   "latest_incremental_refresh": {
-    "summary_sha256": "34b4ca0fe64e478057e75c40c99aae1ca22862b1c56318a6c92e338afd05b20",
+    "summary_sha256": "db4c12c2a7fac37661de07c8839a1be0c18ec7a80703a1749db4799e0358fe05",
     "expected": 486,
     "launched": 42,
     "md_complete": 28,
     "interface_complete": 28,
     "mmgbsa_complete": 28,
     "compact_full_evidence": 28,
-    "pg_receipt_confirmed_full_evidence": 26,
-    "pending_full_evidence_by_verifier": 460,
+    "pg_receipt_confirmed_full_evidence": 28,
+    "pending_full_evidence_by_verifier": 458,
     "verifier_status": "in_progress",
-    "verifier_consistency_error": "summary.pool_s_evidence_complete_count=28; expected 26",
-    "interpretation": "two successor candidates have complete compact analysis and successful PG relay bundles, but their local PG receipt markers were not part of the compact sync; they are not counted as PG-closed"
+    "verifier_consistency_error": null,
+    "interpretation": "all 28 compact full-evidence candidates have exact local PostgreSQL receipt markers"
   },
   "incremental_sync": {
     "main_copied_file_count": 63,
@@ -101,15 +101,15 @@
     "root": "/sdd_data/pepagent/ampgent/md/pool-a-full-md-v1/results",
     "snapshot": "/sdd_data/pepagent/ampgent/md/pool-a-full-md-v1/inputs/pool_a_successor_11_20260903.json",
     "snapshot_count": 11,
-    "supervisor_pid": 3290243,
+    "supervisor_pid": 1280301,
     "local_probe_supervisor_pid": 6672,
     "md_compute_pid": 58820,
-    "gpu_index": 1,
+    "gpu_indices": [1, 2, 3],
     "gpu_owner": "synth",
     "gpu_utilization_percent": 100,
     "analysis_supervisor_pid": 3311802,
     "mmgbsa_supervisor_pid": 3360111,
-    "state": {"launched": 3, "md_complete": 2, "full_evidence": 2, "running": 1, "pending": 8, "failed": 0},
+    "state": {"launched": 5, "md_complete": 2, "full_evidence": 2, "running": 3, "pending": 6, "failed": 0},
     "auto_refill": {"proven": true, "logic": "pending/active/deferred loop; requeue on external completion or vanished output; launch only when GPU is idle"},
     "recent_checkpoint_log_advancing": true
   },
@@ -121,10 +121,10 @@
     "cross_queue_duplicate_identity": 0,
     "coverage_status": "486_identity_union_verified_from_475_main_plus_11_successor; main supervisor remains bound to 475 snapshot",
     "combined_progress": {
-      "launched": 42,
+      "launched": 44,
       "full_evidence": 28,
-      "running": 14,
-      "not_yet_launched": 457,
+      "running": 16,
+      "not_yet_launched": 455,
       "pending_full_evidence": 458,
       "failed": 0
     }
@@ -147,6 +147,18 @@
     "large_remote_files_touched": false,
     "database_relay_repeated_in_this_update": false
   },
-  "decision": "persist_audit_only; do_not_restart_supervisors_or_submit_md",
+  "successor_supervisor_handoff": {
+    "observed_at_local": "2026-09-04T00:50:38+08:00",
+    "old_supervisor_pid": 3290243,
+    "new_supervisor_pid": 1280301,
+    "gpu_indices": [1, 2, 3],
+    "preserved_runner_pid": 58820,
+    "new_runner_pids": [1280316, 1280381],
+    "externally_active_detected": 1,
+    "unresolved_count": 0,
+    "duplicate_output_identity_observed": false,
+    "gpu5_and_gpu7_excluded_for_cuda_declarations": true
+  },
+  "decision": "controlled_successor_supervisor_handoff; preserve_active_runner; add_gpu2_gpu3_only",
   "next_bottleneck": "complete and persist the remaining 458 full-evidence MD dossiers across the verified 475+11 exact identity union"
 }

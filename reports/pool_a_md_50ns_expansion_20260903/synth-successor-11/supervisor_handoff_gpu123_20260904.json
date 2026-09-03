@@ -1,0 +1,23 @@
+{
+  "schema_version": "ampgent.pool-a-md-supervisor-handoff.1",
+  "observed_at_local": "2026-09-04T00:50:38+08:00",
+  "host": "192.168.99.2",
+  "snapshot": "/sdd_data/pepagent/ampgent/md/pool-a-full-md-v1/inputs/pool_a_successor_11_20260903.json",
+  "snapshot_candidate_count": 11,
+  "result_root": "/sdd_data/pepagent/ampgent/md/pool-a-full-md-v1/results",
+  "old_supervisor_pid": 3290243,
+  "new_supervisor_pid": 1280301,
+  "gpu_indices": [1, 2, 3],
+  "platform": "OpenCL",
+  "preserved_active_runner": {"pid": 58820, "candidate_id": "dc5f5319-db18-4b0b-af2d-6906cfcf47ec", "gpu_index": 1},
+  "new_runners": [
+    {"pid": 1280316, "candidate_id": "428925fe-b10f-435c-914d-a0f7b4a5f147", "gpu_index": 2},
+    {"pid": 1280381, "candidate_id": "bf53367f-8705-4e17-bb01-326b237e80ea", "gpu_index": 3}
+  ],
+  "externally_active_detected": 1,
+  "unresolved_count": 0,
+  "excluded_gpu_indices": {"0": "foreign_compute", "4": "foreign_compute", "5": "cuda_declaration", "6": "existing_pepagent_compute", "7": "cuda_declaration"},
+  "old_runner_stopped": false,
+  "duplicate_output_identity_observed": false,
+  "remote_files_deleted": false
+}
