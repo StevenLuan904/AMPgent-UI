@@ -80,8 +80,7 @@
     "snapshot": "/sdd_data/pepagent/ampgent/md/pool-a-full-md-v1/inputs/pool_a_successor_11_20260903.json",
     "snapshot_count": 11,
     "supervisor_pid": 3290243,
-    "reported_probe_pid": 6672,
-    "reported_probe_pid_identity": "root [irq/389-nvidia], not a probe supervisor",
+    "local_probe_supervisor_pid": 6672,
     "md_compute_pid": 58820,
     "gpu_index": 1,
     "gpu_owner": "synth",
@@ -98,7 +97,15 @@
     "union_rows": 486,
     "unique_run_candidate_id": 486,
     "cross_queue_duplicate_identity": 0,
-    "coverage_status": "486_identity_union_verified_from_475_main_plus_11_successor; main supervisor remains bound to 475 snapshot"
+    "coverage_status": "486_identity_union_verified_from_475_main_plus_11_successor; main supervisor remains bound to 475 snapshot",
+    "combined_progress": {
+      "launched": 42,
+      "full_evidence": 28,
+      "running": 14,
+      "not_yet_launched": 457,
+      "pending_full_evidence": 458,
+      "failed": 0
+    }
   },
   "capacity_snapshot": {
     "path": "var/state/ampgent-gpu-capacity.json",
@@ -109,5 +116,5 @@
     "prohibited_scope": ["192.168.99.32:2", "192.168.99.32:3"]
   },
   "decision": "persist_audit_only; do_not_restart_supervisors_or_submit_md",
-  "next_bottleneck": "reconcile the live 475-candidate supervisor identity with the requested 486-candidate queue before any future dispatch; for the live queue, scientific evidence coverage remains limiting (449 candidates pending full evidence)"
+  "next_bottleneck": "complete and persist the remaining 458 full-evidence MD dossiers across the verified 475+11 exact identity union"
 }
