@@ -29,3 +29,18 @@ def test_micrograft_preserves_length_and_uses_one_or_two_residues():
     assert result
     assert all(len(row["sequence"]) == len(acceptor["sequence"]) for row in result)
     assert all(row["micrograft_length"] in (1, 2) for row in result)
+
+
+def test_target_key_is_explicit_and_acea_regression_remains():
+    module = _load()
+    row = {
+        "target_key": "pbp2a",
+        "display_eligible": "True",
+        "formal_metrics_complete": "True",
+        "toxinpred3_label": "Non-Toxin",
+        "macrel_hemolysis_label": "low",
+        "activity_model_support_count": "2",
+        "sequence": "KKLAAAGGKK",
+    }
+    assert module.safe_active(row, "pbp2a")
+    assert not module.safe_active(row, "acea")

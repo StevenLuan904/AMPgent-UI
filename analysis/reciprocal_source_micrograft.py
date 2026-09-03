@@ -21,9 +21,9 @@ def rows(path: Path):
         return list(csv.DictReader(f))
 
 
-def safe_active(row: dict[str, str]) -> bool:
+def safe_active(row: dict[str, str], target_key: str) -> bool:
     return (
-        row.get("target_key") == "acea"
+        row.get("target_key") == target_key
         and row.get("display_eligible") == "True"
         and row.get("formal_metrics_complete") == "True"
         and row.get("toxinpred3_label") == "Non-Toxin"
@@ -45,7 +45,7 @@ def phi(sequence: str):
     return [v.charge_density, v.hydrophobicity, v.hydrophobic_moment, v.length]
 
 
-def generate(acceptors, pepflow, history, limit=32):
+def generate(acceptors, pepflow, history, target_key="acea", limit=32):
     fragments = []
     for parent in sorted(
         pepflow, key=lambda x: (x.get("family_key_80_80", ""), x.get("sequence", ""))
@@ -76,7 +76,7 @@ def generate(acceptors, pepflow, history, limit=32):
                     {
                         "sequence": child,
                         "sequence_sha256": sha,
-                        "branch_key": "acea",
+                        "branch_key": target_key,
                         "proposal_mode": "reciprocal-source-micrograft",
                         "parent_sequence": seq,
                         "parent_candidate_id": acceptor.get("candidate_id", ""),
@@ -116,12 +116,13 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--acceptor-csv", type=Path, required=True)
     p.add_argument("--pepflow-csv", type=Path, required=True)
+    p.add_argument("--target-key", required=True)
     p.add_argument("--output-dir", type=Path, required=True)
     args = p.parse_args()
-    acceptors = [r for r in rows(args.acceptor_csv) if safe_active(r)]
+    acceptors = [r for r in rows(args.acceptor_csv) if safe_active(r, args.target_key)]
     pepflow = rows(args.pepflow_csv)
     history = asyncio.run(_historical_sequence_sha256s())
-    proposals = generate(acceptors, pepflow, history)
+    proposals = generate(acceptors, pepflow, history, target_key=args.target_key)
     args.output_dir.mkdir(parents=True, exist_ok=True)
     with (args.output_dir / "proposals.csv").open("w", encoding="utf-8", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(proposals[0]) if proposals else ["sequence"])
@@ -132,6 +133,7 @@ def main():
             {
                 "schema_version": "ampgent.reciprocal-source-micrograft.1",
                 "operator_id": "reciprocal-source-micrograft-v1",
+                "target_key": args.target_key,
                 "acceptor_count": len(acceptors),
                 "pepflow_source_count": len(pepflow),
                 "proposal_count": len(proposals),
