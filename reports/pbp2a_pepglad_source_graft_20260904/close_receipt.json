@@ -1,0 +1,60 @@
+{
+  "schema_version": "ampgent.pbp2a-pepglad-source-graft-close.1",
+  "observed_at_utc": "2026-09-03T18:58:35.5083475Z",
+  "operator_id": "pbp2a-pepglad-source-graft-v1",
+  "target_key": "pbp2a",
+  "input_identity": {
+    "proposal_count": 12,
+    "proposal_sha256": "f4a342ef9acacbfa20d1489fdd203d761dd114af6316d5ef5ed832bdd46e4f64",
+    "score_all_count": 12,
+    "score_all_sha256": "271d77d2c450394cd56e5861766420ded14b7f2a8c4e7cc48be65f399ddd3416",
+    "calibrated_sha256": "da4209ed46ad7f04e77419805e92952a264b113e0645935b4cc7473c4f5bd236",
+    "challenger_sha256": "3c169ba5e3cb757e93707d17ff178801023a95a94ec3fc613e1050a4aca8b1fd",
+    "qd_sha256": "5584b1991b9c00462492a4a207dc809766ebb8a574e5e4ab5a58d50645d01266"
+  },
+  "scientific_counts": {
+    "formal12": 12,
+    "display": 10,
+    "activity_support_ge_2": 11,
+    "excellent_calibrated": 9,
+    "hemopi2_reviewed": 12,
+    "hemopi2_no_conflict": 7,
+    "apex_shadow": "runtime_unavailable",
+    "peptiverse_shadow": "runtime_unavailable",
+    "qd_eligible": 9,
+    "qd_new_cell": 8,
+    "qd_replacement": 0
+  },
+  "postgresql": {
+    "historical_sequence_gate": "passed",
+    "historical_exact_count": 0,
+    "pg_new_count_at_sequence_gate": 12,
+    "candidate_count_written": 0,
+    "evaluation_count_written": 0,
+    "tool_call_count_written": 0,
+    "materialization_status": "deferred_preflight",
+    "materialization_allowed": false
+  },
+  "deferred_boundary": {
+    "category": "input_contract_missing_positive_generation",
+    "dry_run_command": "analysis/materialize_autoresearch_scored_lineage.py --dry-run-output",
+    "observed_error": "ValueError: one materialization batch must contain one positive generation",
+    "writes_attempted": false,
+    "parent_binding_note": "score rows retain proposal parent IDs and parent sequences, but no parent_sequence_sha256 field",
+    "next_operator": "add a positive generation and authoritative parent_sequence_sha256 to the frozen batch metadata, then rerun only this fixed 12-row materialization boundary"
+  },
+  "resource_gate": {
+    "gpu_structure_or_md_started": false,
+    "safe_structure_gpu_count": 0,
+    "remote_observation": ".19 supervisor/analysis 3986807/3977733 and synth MD/analysis/MMGBSA 1280301/3311802/3360111 observed alive; all authorized compute lanes occupied",
+    "prepared_structure_queues": 4,
+    "prepared_status": "prepared_not_dispatched",
+    "no_remote_large_files_downloaded_or_deleted": true
+  },
+  "pool_a": {
+    "targeted_pool_a_added": 0,
+    "structure_queue_added": 0,
+    "reason": "PG materialization was not attempted after the deterministic preflight rejection; QD contribution is not a Pool A claim"
+  },
+  "historical_run_modified": false
+}

@@ -1,0 +1,23 @@
+{
+  "schema_version": "ampgent.pbp2a-pepglad-source-graft.1",
+  "operator_id": "pbp2a-pepglad-source-graft-v1",
+  "target_key": "pbp2a",
+  "parent_selection": "PBP2a archive elite + display + formal12 + calibrated activity_support>=2",
+  "parent_count": 4,
+  "pepglad_fragment_count": 3,
+  "proposal_count": 12,
+  "proposal_limit": 12,
+  "prior_edit_count": 32,
+  "historical_sequence_hash_count": 226738,
+  "downstream_gates": [
+    "postgresql_exact_history",
+    "toxinpred3_non_toxin",
+    "macrel_low",
+    "guruprasad_le_50",
+    "score_all_12",
+    "calibration",
+    "hemopi2_challenger",
+    "qd_2160"
+  ],
+  "gpu_rosetta_md_submitted": false
+}
