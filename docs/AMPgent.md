@@ -62,6 +62,7 @@ Challenger 证据键为 `run_id + candidate_id + model_release_key`；字段为 
 - Pool A：498条严格候选、486个80/80 elite families：AceA79/GyrA100/PBP2a53/VEGFA71/FGF2 81/ANGPT1 102；远端结构/decoy全保留。
 - Pool A MD：合并队列486；`.19` GPU0–7满载，MD supervisor PID `3986807`、分析PID `3977733`存活；launched31、MD/MMGBSA17、完整界面+PG证据16、失败0、待MD469、待完整证据470。正式16条均未离位；界面RMSD均值0.297 nm、接触0.647、MM/GBSA均值-110.05 kcal/mol。详见 `reports/pool_a_md_50ns_expansion_20260903/live-summary-all-486/summary.json`。
 - PepFlow AceA：直接、charge-ladder和大块graft均未产生双活动支持；reciprocal 1–2 aa micrograft产生32条PG新颖且全过展示门，24条双活动支持/QD eligible，新增4格。PG run `7c17057c-cf24-57e3-b1b2-96aea38da78c`含32 Candidate、544 Evaluation；24条待Rosetta队列SHA-256 `2fa44108842a25fcdf15ffb1cc8f7c704bc9bc29df21fc53705f9ae8c04c5001`，未提交。32个factorized父本无法唯一映射到权威PG Candidate，lineage edge=0并显式留缺口，不按序列猜测。详见 `reports/pepflow_acea_reciprocal_micrograft_20260903_compact_receipt.json`。
+- reciprocal micrograft 已泛化为显式 `--target-key` 并在 PBP2a（当前最少53个 family）运行：PG exact 后32/32 proposal，32/32 full12，29 display-safe，30 support>=2，HemoPI2 32/32（31无冲突、1冲突），QD eligible 27、新格5、替换0；结构队列27条，未提交 Rosetta/GPU/MD。LLAMP/AMP-READ/Macrel 最佳分别为 `AASDLRLNGNLCAGGPKKVV` (0.962581)、`AASDLRLNGGLCAGGPKKKV` (0.993548)、`AASDLRLNGVLCAGGPKKKV` (0.987097)。APEX/PeptiVerse runtime_unavailable；父本身份32条仍无法唯一解析，lineage close保持0。详见 `reports/pbp2a_reciprocal_micrograft_20260903_compact_receipt.json`。
 ## 维护
 
 只更新本文件；删除过时状态；不追加流水账。精确运行明细只写 PostgreSQL 与 JSON/CSV 收据。
