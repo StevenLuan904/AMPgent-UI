@@ -1,0 +1,23 @@
+{
+  "schema_version": "ampgent.targeted-structure-prepared-not-dispatched.1",
+  "target_key": "gyra",
+  "run_id": "e666339b-63ee-5efc-8733-a34b9c9f8694",
+  "candidate_id": "48e42024-f5e9-4eee-a720-2f577738fe32",
+  "sequence": "ESREEWWARSGAATLTAKAAAAR",
+  "sequence_sha256": "2bddd1a09a195b655f25e175d6f2fb9ec7bba17465d7af0632b7c8bce5e1a0d0",
+  "task_key": "rosetta-coarse5:gyra:48e42024-f5e9-4eee-a720-2f577738fe32",
+  "protocol": "exact candidate complex plus five InterfaceAnalyzer decoys",
+  "nstruct": 5,
+  "status": "prepared_not_dispatched",
+  "dispatch_allowed": false,
+  "claim_created": false,
+  "workflow_submitted": false,
+  "boltz_started": false,
+  "rosetta_started": false,
+  "pool_a_admitted": false,
+  "identity_binding": "run_id+candidate_id+target_key+sequence_sha256",
+  "qd": {"actual_cell_id": "q3-h2-m1-l3", "contribution": "empty_cell", "new_cell": true, "replacement": false, "quality_eligible": true, "archive_sha256": "d1b4ca0aaad02974de4a44581bd3a1822002fe1c3c724704336506377000313f"},
+  "reason": "targeted GyrA requires five decoys; .19 GPU0-7 and synth GPUs 1-3 are occupied, GPU0/4 are foreign-or-unknown, and GPU5-7 are unavailable",
+  "remote_large_artifact_copied": false,
+  "remote_file_deleted": false
+}

@@ -1,0 +1,23 @@
+{
+  "schema_version": "ampgent.targeted-structure-prepared-not-dispatched.1",
+  "target_key": "fgf2",
+  "run_id": "f19e3e47-8db6-5623-a6d0-b669cf54a1f3",
+  "candidate_id": "0f63a4ed-f01c-4fd9-b666-db894cca7e63",
+  "sequence": "VREEALSSSYGTYPGRKP",
+  "sequence_sha256": "5122ded2ec402157979b77f9add27761806729cedfbc80df175d66644bf91c77",
+  "task_key": "rosetta-coarse5:fgf2:0f63a4ed-f01c-4fd9-b666-db894cca7e63",
+  "protocol": "exact candidate complex plus five InterfaceAnalyzer decoys",
+  "nstruct": 5,
+  "status": "prepared_not_dispatched",
+  "dispatch_allowed": false,
+  "claim_created": false,
+  "workflow_submitted": false,
+  "boltz_started": false,
+  "rosetta_started": false,
+  "pool_a_admitted": false,
+  "identity_binding": "run_id+candidate_id+target_key+sequence_sha256",
+  "qd": {"actual_cell_id": "q3-h1-m2-l2", "contribution": "empty_cell", "new_cell": true, "replacement": false, "quality_eligible": true, "archive_sha256": "4c56a521d835ede3dcab6d5680c5b67c9752583b8902bcc08c474827e1108ecf"},
+  "reason": "targeted FGF2 requires five decoys; .19 GPU0-7 and synth GPUs 1-3 are occupied, GPU0/4 are foreign-or-unknown, and GPU5-7 are unavailable",
+  "remote_large_artifact_copied": false,
+  "remote_file_deleted": false
+}
