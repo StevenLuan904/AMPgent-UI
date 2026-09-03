@@ -1,0 +1,88 @@
+{
+  "schema_version": "ampgent.pbp2a-pepmlm-archive-promotion-close.1",
+  "observed_at_utc": "2026-09-03T21:27:25Z",
+  "target_key": "pbp2a",
+  "source": "PepMLM",
+  "source_stage": "autoresearch_lineage_round104_pbp2a_pepmlm_denovo_fullscore_20260901",
+  "sequence": "AASKKSKSDKVGNLLQAA",
+  "sequence_sha256": "001b3cd012f42f8e0f940de59f109ce8e5d25626aeebd677d7e6cc6766542a5e",
+  "postgresql": {
+    "run_id": "6f161581-327a-5788-81c2-97b359fffde8",
+    "candidate_id": "2611cffa-bf88-425c-93e5-f0e5c84616c8",
+    "tool_call_id": "80000284-e4da-4e49-93e8-d8974b1c44cf",
+    "run_status": "succeeded",
+    "candidate_count": 1,
+    "evaluation_count": 17,
+    "evaluation_roles": ["primary", "challenger", "shadow"],
+    "evaluation_role_counts": {"primary": 12, "challenger": 3, "shadow": 2},
+    "shadow_contract": {
+      "apex": {"applicability_status": "runtime_unavailable", "conflict_status": "not_assessed"},
+      "peptiverse": {"applicability_status": "runtime_unavailable", "conflict_status": "not_assessed"}
+    },
+    "subject_run_candidate_drift_count": 0,
+    "replay_count": 0,
+    "pg_exact_preflight_count": 0
+  },
+  "quality": {
+    "formal12": true,
+    "display_eligible": true,
+    "activity_support_calibrated": 3,
+    "toxinpred3": "Non-Toxin",
+    "macrel_hemolysis": "low",
+    "guruprasad_instability_index": 8.68888888888889,
+    "hemopi2_conflict_status": "no_conflict",
+    "apex_status": "runtime_unavailable",
+    "peptiverse_status": "runtime_unavailable"
+  },
+  "qd": {
+    "archive_sha256": "c3b8e7f6addc3a080c3a66142064049d32e2c0b2f0a71061c99a4228de8f4dc7",
+    "actual_cell_id": "q4-h2-m1-l2",
+    "contribution": "empty_cell",
+    "new_cell": true,
+    "replacement": false,
+    "quality_eligible": true
+  },
+  "structure": {
+    "status": "prepared_not_dispatched",
+    "rosetta_required": true,
+    "nstruct": 5,
+    "dispatch_allowed": false,
+    "pool_a_admitted": false,
+    "reason": "targeted PBP2a requires five InterfaceAnalyzer decoys with median dG < -30",
+    "task_key": "rosetta-coarse5:pbp2a:2611cffa-bf88-425c-93e5-f0e5c84616c8:001b3cd012f42f8e0f940de59f109ce8e5d25626aeebd677d7e6cc6766542a5e"
+  },
+  "md_snapshot": {
+    "identity_union": 486,
+    "launched_unique": 45,
+    "md_complete_unique": 29,
+    "full_evidence_unique": 29,
+    "running_unique": 16,
+    "not_started_unique": 441,
+    "successor_12": "prepared_not_dispatched",
+    "new_complete_since_prior_snapshot": 0
+  },
+  "remote_observation": {
+    "main_19": {
+      "md_supervisor_pid": 3986807,
+      "analysis_supervisor_pid": 3977733,
+      "supervisors_alive": true,
+      "gpu_compute_pids": [1795945, 1576186, 1719939, 1798793, 1859913, 549598, 1853418, 1858319],
+      "disk": "/data1 42T total, 19T used, 21T available, 48%",
+      "safe_new_gpu_slot": false
+    },
+    "synth": {
+      "successor_11_supervisor_pid": 1280301,
+      "interface_supervisor_pid": 3311802,
+      "mmgbsa_supervisor_pid": 3360111,
+      "runners": [58820, 1280316, 2060743],
+      "occupied_gpus": [1, 2, 3],
+      "successor_11_pending": 6,
+      "safe_new_gpu_slot": false,
+      "successor_12": "prepared_not_dispatched"
+    },
+    "prohibited_or_foreign_resources_touched": false
+  },
+  "large_remote_artifact_downloaded": false,
+  "remote_file_deleted": false,
+  "gpu_rosetta_md_started": false
+}
