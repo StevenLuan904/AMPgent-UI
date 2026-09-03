@@ -1,0 +1,111 @@
+{
+  "schema_version": "ampgent.pool-a-md-current-snapshot.1",
+  "observed_at_utc": "2026-09-03T22:37:49.808096+00:00",
+  "identity_key": "subject_run_id+candidate_id",
+  "cohort": {
+    "expected_unique": 486,
+    "main_snapshot_rows": 475,
+    "successor_11_snapshot_rows": 11,
+    "cross_snapshot_identity_intersection": 0,
+    "successor_12_excluded": true,
+    "structure_prepared_excluded": true
+  },
+  "current_partition": {
+    "launched_unique": 50,
+    "full_evidence_unique": 31,
+    "analysis_pending_unique": 0,
+    "running_or_incomplete_unique": 19,
+    "not_started_unique": 436,
+    "failed_unique": 0,
+    "partition_total_unique": 486,
+    "launched_equals_full_plus_running": true,
+    "disjoint_union_equals_486": true
+  },
+  "identity_set_hashes": {
+    "launched": "20c9062474e2fff1b0042027f0bc28412b0744a020bdfcf1f65e03ef86537551",
+    "full_evidence": "c4857bfba3951a05b9c7fe6ab4c27c734fd072ac543b049d08eb1ef728f0bcfd",
+    "analysis_pending": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+    "running_or_incomplete": "4b11efc4091b121162875931ed1f80a7c64aa6e7de15cb682d410f470f91ddc0",
+    "failed": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+  },
+  "identity_set_counts": {
+    "launched": 50,
+    "full_evidence": 31,
+    "analysis_pending": 0,
+    "running_or_incomplete": 19,
+    "failed": 0
+  },
+  "new_identities_since_previous_45": [
+    {
+      "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
+      "candidate_id": "ebcba88d-0674-4326-9c28-0364e93130d1",
+      "target_key": "gyra",
+      "sequence_sha256": "dbe77b1a71f82cad397af19ad7d103755766555cf7e81d3d5ac2226f9292b399",
+      "status": "running_or_incomplete"
+    },
+    {
+      "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+      "candidate_id": "a32aadd5-16d3-473a-ba10-8815515d5a56",
+      "target_key": "fgf2",
+      "sequence_sha256": "408bc1d160354b7f4ff55f7cc1911a03a6d689dd708f7bd7b178b794f46f31af",
+      "status": "full_evidence"
+    },
+    {
+      "run_id": "64497af6-6ac6-5163-95e9-46239b9889b8",
+      "candidate_id": "23dce4ad-fd9a-44fd-9cd2-247db2aaf998",
+      "target_key": "vegfa",
+      "sequence_sha256": "e05302056112792af92c2a197d65ae2ba7b967b51a7374154b106aee1cccddbc",
+      "status": "running_or_incomplete"
+    },
+    {
+      "run_id": "9bcbda95-56a0-52b0-80ba-296fc22a0e4e",
+      "candidate_id": "5d9d1948-50f5-4f63-9580-1750ed762b2a",
+      "target_key": "angpt1",
+      "sequence_sha256": "dd3402e593ea34ad5f3eb846d19155801162c123016a82d1efc1d5b3ece6cc36",
+      "status": "running_or_incomplete"
+    },
+    {
+      "run_id": "9bcbda95-56a0-52b0-80ba-296fc22a0e4e",
+      "candidate_id": "868ff629-8442-4042-9182-30005f8f50cf",
+      "target_key": "angpt1",
+      "sequence_sha256": "d7137960d685a64afe6c34f3868841819160ed9dcc15a7681c463b30e6fdd577",
+      "status": "running_or_incomplete"
+    }
+  ],
+  "new_identity_count": 5,
+  "full_evidence_transition_since_previous_29": [
+    {
+      "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+      "candidate_id": "bf53367f-8705-4e17-bb01-326b237e80ea",
+      "evidence": "synth interface+MMGBSA"
+    },
+    {
+      "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+      "candidate_id": "a32aadd5-16d3-473a-ba10-8815515d5a56",
+      "evidence": "main interface+MMGBSA"
+    }
+  ],
+  "source_observation": {
+    "main_snapshot_filtered_launch_receipts": 44,
+    "main_full_evidence": 28,
+    "successor_11_snapshot_filtered_launch_receipts": 6,
+    "successor_11_full_evidence": 3,
+    "source_files": [
+      "remote main snapshot + launch receipts",
+      "remote successor-11 snapshot + launch receipts"
+    ],
+    "large_artifacts_read": false
+  },
+  "provenance": {
+    "previous_baseline": "md_identity_set_reconciliation_20260904.json",
+    "previous_identity_csv": "live-summary-all-486/candidates.csv",
+    "previous_identity_csv_sha256": "98a850d96eda4e3a450d6fb0cd6aaab1e687b3ca0205d68fef12d8161285e147"
+  },
+  "mutations": {
+    "postgresql_write": false,
+    "remote_task_restart": false,
+    "remote_large_artifact_download": false,
+    "remote_large_artifact_delete": false,
+    "prohibited_host32_gpu2_gpu3_touched": false
+  }
+}
