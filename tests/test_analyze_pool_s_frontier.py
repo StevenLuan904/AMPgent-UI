@@ -58,3 +58,19 @@ def test_incomplete_candidate_is_reported_but_not_promoted_to_front():
     assert result["pool_a_candidate_count"] == 2
     assert result["md_and_postgresql_complete_count"] == 1
     assert result["targets"]["acea"]["provisional_frontier_count"] == 1
+
+
+def test_reports_mean_vs_conservative_mmgbsa_frontier_sensitivity():
+    mean_leader = row("a", 0.2, 0.8, -50)
+    conservative_leader = row("b", 0.2, 0.8, -45)
+    mean_leader["mmgbsa_ci95_upper_kcal_mol"] = -10.0
+    conservative_leader["mmgbsa_ci95_upper_kcal_mol"] = -40.0
+    result = analyze([mean_leader, conservative_leader])
+    target = result["targets"]["acea"]
+    assert [item["candidate_id"] for item in target["provisional_frontier"]] == ["a"]
+    assert [
+        item["candidate_id"] for item in target["conservative_mmgbsa_frontier"]
+    ] == ["b"]
+    assert target["frontier_membership_stable_count"] == 0
+    assert target["mean_only_frontier_count"] == 1
+    assert target["conservative_only_frontier_count"] == 1

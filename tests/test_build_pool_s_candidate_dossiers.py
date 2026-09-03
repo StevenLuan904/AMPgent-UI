@@ -53,7 +53,12 @@ def evidence(row):
         ]
     }
     frontier = {
-        "targets": {"acea": {"provisional_frontier": [identity]}}
+        "targets": {
+            "acea": {
+                "provisional_frontier": [identity],
+                "conservative_mmgbsa_frontier": [identity],
+            }
+        }
     }
     return contacts, decomposition, frontier
 
@@ -65,6 +70,8 @@ def test_builds_complete_candidate_dossier():
     assert payload["complete_dossier_count"] == 1
     dossier = payload["dossiers"][0]
     assert dossier["provisional_pool_s_frontier_member"] is True
+    assert dossier["conservative_mmgbsa_frontier_member"] is True
+    assert dossier["frontier_membership_stable"] is True
     assert dossier["interaction_occupancy"]["water_bridge"] == 0.7
     assert dossier["mmgbsa"]["confidence_interval_95_kcal_mol"] == [-22.0, -18.0]
 

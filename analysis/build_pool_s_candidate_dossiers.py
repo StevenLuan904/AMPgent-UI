@@ -51,6 +51,13 @@ def build(
         for target in frontier["targets"].values()
         for item in target["provisional_frontier"]
     }
+    conservative_frontier_ids = {
+        key(item)
+        for target in frontier["targets"].values()
+        for item in target.get(
+            "conservative_mmgbsa_frontier", target["provisional_frontier"]
+        )
+    }
     complete_ids = {key(row) for row in complete}
     if set(contacts) != complete_ids:
         raise ValueError("contact dossier coverage does not match completed candidates")
@@ -58,6 +65,8 @@ def build(
         raise ValueError("decomposition dossier coverage does not match completed candidates")
     if not frontier_ids <= complete_ids:
         raise ValueError("provisional frontier contains an incomplete candidate")
+    if not conservative_frontier_ids <= complete_ids:
+        raise ValueError("conservative frontier contains an incomplete candidate")
     dossiers = []
     for row in complete:
         identity = key(row)
@@ -72,6 +81,12 @@ def build(
                 "pool_a_rank": row["pool_a_rank"],
                 "rosetta_median_dg_reu": row["rosetta_median_dg_reu"],
                 "provisional_pool_s_frontier_member": identity in frontier_ids,
+                "conservative_mmgbsa_frontier_member": (
+                    identity in conservative_frontier_ids
+                ),
+                "frontier_membership_stable": (
+                    identity in frontier_ids and identity in conservative_frontier_ids
+                ),
                 "interface": {
                     "rmsd_mean_nm": row["interface_rmsd_mean_nm"],
                     "rmsd_maximum_nm": row["interface_rmsd_max_nm"],
@@ -128,6 +143,10 @@ def build(
         "complete_dossier_count": len(dossiers),
         "pending_dossier_count": len(rows) - len(dossiers),
         "provisional_pool_s_frontier_count": len(frontier_ids),
+        "conservative_mmgbsa_frontier_count": len(conservative_frontier_ids),
+        "frontier_membership_stable_count": len(
+            frontier_ids & conservative_frontier_ids
+        ),
         "dossiers": dossiers,
         "limitations": [
             "computed MD, Rosetta and MM/GBSA evidence; not experimental activity or affinity",

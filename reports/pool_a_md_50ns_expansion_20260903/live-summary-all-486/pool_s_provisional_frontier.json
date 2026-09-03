@@ -1,6 +1,6 @@
 {
-  "schema_version": "ampgent.pool-s-provisional-md-pareto.1",
-  "observed_at_utc": "2026-09-03T00:27:30.684140+00:00",
+  "schema_version": "ampgent.pool-s-provisional-md-pareto.2",
+  "observed_at_utc": "2026-09-03T00:49:37.623764+00:00",
   "scope": "target-local; no cross-target energy comparison",
   "status": "provisional_until_full_pool_a_md_completion",
   "objectives": {
@@ -8,15 +8,27 @@
     "native_contact_fraction_mean": "higher",
     "mmgbsa_mean_kcal_mol": "lower"
   },
+  "conservative_mmgbsa_objectives": {
+    "interface_rmsd_mean_nm": "lower",
+    "native_contact_fraction_mean": "higher",
+    "mmgbsa_ci95_upper_kcal_mol": "lower"
+  },
+  "conservative_energy_definition": "upper bound of within-trajectory block 95% MM/GBSA confidence interval",
   "weighted_total_used": false,
   "pool_a_candidate_count": 486,
   "md_and_postgresql_complete_count": 9,
   "provisional_frontier_count": 3,
+  "conservative_mmgbsa_frontier_count": 3,
+  "frontier_membership_stable_count": 3,
   "targets": {
     "acea": {
       "pool_a_candidate_count": 79,
       "md_and_postgresql_complete_count": 8,
       "provisional_frontier_count": 2,
+      "conservative_mmgbsa_frontier_count": 2,
+      "frontier_membership_stable_count": 2,
+      "mean_only_frontier_count": 0,
+      "conservative_only_frontier_count": 0,
       "objective_conflict_retained": true,
       "endpoint_leaders": {
         "interface_rmsd_mean_nm": {
@@ -156,24 +168,146 @@
           "mmgbsa_frame_count": 36,
           "decomposition_residue_count": 459
         }
+      ],
+      "conservative_mmgbsa_frontier": [
+        {
+          "target_key": "acea",
+          "run_id": "62018508-a9c8-5004-a579-f82ca60c6f5c",
+          "candidate_id": "5b7f9e8b-f9bc-46c4-bbe0-7f154eb73b26",
+          "sequence": "RVTRATREYGKKYRYTSATSK",
+          "sequence_sha256": "c5b42e19dba55fea8e5b7a516e5eac0771aa1183110f880c5f5f7997d52b6de2",
+          "interface_rmsd_mean_nm": 0.23873676359653473,
+          "native_contact_fraction_mean": 0.7824260000000001,
+          "mmgbsa_mean_kcal_mol": -156.85734369777805,
+          "pool_a_rank": 3,
+          "rosetta_median_dg_reu": -63.22533343087224,
+          "interface_rmsd_max_nm": 0.3755515217781067,
+          "native_contact_fraction_min": 0.62,
+          "key_contact_count": 100,
+          "key_contact_occupancy_mean": 0.782426,
+          "key_contact_occupancy_max": 1.0,
+          "hydrogen_bond_occupancy": 1.0,
+          "salt_bridge_occupancy": 1.0,
+          "water_bridge_occupancy": 1.0,
+          "peptide_departed": false,
+          "maximum_departure_duration_ps": 0.0,
+          "maximum_peptide_com_shift_nm": 0.2411022037267685,
+          "mmgbsa_ci95_lower_kcal_mol": -166.77205111111255,
+          "mmgbsa_ci95_upper_kcal_mol": -147.74316609778015,
+          "mmgbsa_frame_count": 36,
+          "decomposition_residue_count": 455
+        },
+        {
+          "target_key": "acea",
+          "run_id": "62018508-a9c8-5004-a579-f82ca60c6f5c",
+          "candidate_id": "88900415-fb04-4f7c-b6a2-525c6a0cb0cd",
+          "sequence": "SHRRTVKFFRGKHGRKRKKRGENLD",
+          "sequence_sha256": "5f9a95575af725c668f8526f4d8999a1b8f26e8188dc6c8a54836e02f88ee9b8",
+          "interface_rmsd_mean_nm": 0.19560359418392181,
+          "native_contact_fraction_mean": 0.696876,
+          "mmgbsa_mean_kcal_mol": -186.46011854666705,
+          "pool_a_rank": 6,
+          "rosetta_median_dg_reu": -57.09940920508703,
+          "interface_rmsd_max_nm": 0.2638920545578003,
+          "native_contact_fraction_min": 0.51,
+          "key_contact_count": 100,
+          "key_contact_occupancy_mean": 0.696876,
+          "key_contact_occupancy_max": 1.0,
+          "hydrogen_bond_occupancy": 1.0,
+          "salt_bridge_occupancy": 1.0,
+          "water_bridge_occupancy": 1.0,
+          "peptide_departed": false,
+          "maximum_departure_duration_ps": 0.0,
+          "maximum_peptide_com_shift_nm": 0.2781633734703064,
+          "mmgbsa_ci95_lower_kcal_mol": -206.25118536889036,
+          "mmgbsa_ci95_upper_kcal_mol": -164.77722656666626,
+          "mmgbsa_frame_count": 36,
+          "decomposition_residue_count": 459
+        }
+      ],
+      "frontier_membership_stable": [
+        {
+          "target_key": "acea",
+          "run_id": "62018508-a9c8-5004-a579-f82ca60c6f5c",
+          "candidate_id": "5b7f9e8b-f9bc-46c4-bbe0-7f154eb73b26",
+          "sequence": "RVTRATREYGKKYRYTSATSK",
+          "sequence_sha256": "c5b42e19dba55fea8e5b7a516e5eac0771aa1183110f880c5f5f7997d52b6de2",
+          "interface_rmsd_mean_nm": 0.23873676359653473,
+          "native_contact_fraction_mean": 0.7824260000000001,
+          "mmgbsa_mean_kcal_mol": -156.85734369777805,
+          "pool_a_rank": 3,
+          "rosetta_median_dg_reu": -63.22533343087224,
+          "interface_rmsd_max_nm": 0.3755515217781067,
+          "native_contact_fraction_min": 0.62,
+          "key_contact_count": 100,
+          "key_contact_occupancy_mean": 0.782426,
+          "key_contact_occupancy_max": 1.0,
+          "hydrogen_bond_occupancy": 1.0,
+          "salt_bridge_occupancy": 1.0,
+          "water_bridge_occupancy": 1.0,
+          "peptide_departed": false,
+          "maximum_departure_duration_ps": 0.0,
+          "maximum_peptide_com_shift_nm": 0.2411022037267685,
+          "mmgbsa_ci95_lower_kcal_mol": -166.77205111111255,
+          "mmgbsa_ci95_upper_kcal_mol": -147.74316609778015,
+          "mmgbsa_frame_count": 36,
+          "decomposition_residue_count": 455
+        },
+        {
+          "target_key": "acea",
+          "run_id": "62018508-a9c8-5004-a579-f82ca60c6f5c",
+          "candidate_id": "88900415-fb04-4f7c-b6a2-525c6a0cb0cd",
+          "sequence": "SHRRTVKFFRGKHGRKRKKRGENLD",
+          "sequence_sha256": "5f9a95575af725c668f8526f4d8999a1b8f26e8188dc6c8a54836e02f88ee9b8",
+          "interface_rmsd_mean_nm": 0.19560359418392181,
+          "native_contact_fraction_mean": 0.696876,
+          "mmgbsa_mean_kcal_mol": -186.46011854666705,
+          "pool_a_rank": 6,
+          "rosetta_median_dg_reu": -57.09940920508703,
+          "interface_rmsd_max_nm": 0.2638920545578003,
+          "native_contact_fraction_min": 0.51,
+          "key_contact_count": 100,
+          "key_contact_occupancy_mean": 0.696876,
+          "key_contact_occupancy_max": 1.0,
+          "hydrogen_bond_occupancy": 1.0,
+          "salt_bridge_occupancy": 1.0,
+          "water_bridge_occupancy": 1.0,
+          "peptide_departed": false,
+          "maximum_departure_duration_ps": 0.0,
+          "maximum_peptide_com_shift_nm": 0.2781633734703064,
+          "mmgbsa_ci95_lower_kcal_mol": -206.25118536889036,
+          "mmgbsa_ci95_upper_kcal_mol": -164.77722656666626,
+          "mmgbsa_frame_count": 36,
+          "decomposition_residue_count": 459
+        }
       ]
     },
     "angpt1": {
       "pool_a_candidate_count": 102,
       "md_and_postgresql_complete_count": 0,
       "provisional_frontier_count": 0,
+      "conservative_mmgbsa_frontier_count": 0,
+      "frontier_membership_stable_count": 0,
+      "mean_only_frontier_count": 0,
+      "conservative_only_frontier_count": 0,
       "objective_conflict_retained": false,
       "endpoint_leaders": {
         "interface_rmsd_mean_nm": null,
         "native_contact_fraction_mean": null,
         "mmgbsa_mean_kcal_mol": null
       },
-      "provisional_frontier": []
+      "provisional_frontier": [],
+      "conservative_mmgbsa_frontier": [],
+      "frontier_membership_stable": []
     },
     "fgf2": {
       "pool_a_candidate_count": 81,
       "md_and_postgresql_complete_count": 1,
       "provisional_frontier_count": 1,
+      "conservative_mmgbsa_frontier_count": 1,
+      "frontier_membership_stable_count": 1,
+      "mean_only_frontier_count": 0,
+      "conservative_only_frontier_count": 0,
       "objective_conflict_retained": false,
       "endpoint_leaders": {
         "interface_rmsd_mean_nm": {
@@ -286,43 +420,119 @@
           "mmgbsa_frame_count": 36,
           "decomposition_residue_count": 180
         }
+      ],
+      "conservative_mmgbsa_frontier": [
+        {
+          "target_key": "fgf2",
+          "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+          "candidate_id": "075fd107-8b78-48f8-8339-6f583070ad86",
+          "sequence": "VYKKEKKTYNNEHFKTYGKAKTHFIR",
+          "sequence_sha256": "9dbe915f3c5364fb4c8e1b51e9146324723b387fb72edfad6c2f2d707927721a",
+          "interface_rmsd_mean_nm": 0.3783884346485138,
+          "native_contact_fraction_mean": 0.5340440677966102,
+          "mmgbsa_mean_kcal_mol": -47.43512851333302,
+          "pool_a_rank": 1,
+          "rosetta_median_dg_reu": -63.22859688653008,
+          "interface_rmsd_max_nm": 0.5665899515151978,
+          "native_contact_fraction_min": 0.2542372881355932,
+          "key_contact_count": 59,
+          "key_contact_occupancy_mean": 0.5340440677966102,
+          "key_contact_occupancy_max": 1.0,
+          "hydrogen_bond_occupancy": 1.0,
+          "salt_bridge_occupancy": 0.35,
+          "water_bridge_occupancy": 0.996,
+          "peptide_departed": false,
+          "maximum_departure_duration_ps": 0.0,
+          "maximum_peptide_com_shift_nm": 0.4884454607963562,
+          "mmgbsa_ci95_lower_kcal_mol": -52.631670111111106,
+          "mmgbsa_ci95_upper_kcal_mol": -42.87269135555496,
+          "mmgbsa_frame_count": 36,
+          "decomposition_residue_count": 180
+        }
+      ],
+      "frontier_membership_stable": [
+        {
+          "target_key": "fgf2",
+          "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+          "candidate_id": "075fd107-8b78-48f8-8339-6f583070ad86",
+          "sequence": "VYKKEKKTYNNEHFKTYGKAKTHFIR",
+          "sequence_sha256": "9dbe915f3c5364fb4c8e1b51e9146324723b387fb72edfad6c2f2d707927721a",
+          "interface_rmsd_mean_nm": 0.3783884346485138,
+          "native_contact_fraction_mean": 0.5340440677966102,
+          "mmgbsa_mean_kcal_mol": -47.43512851333302,
+          "pool_a_rank": 1,
+          "rosetta_median_dg_reu": -63.22859688653008,
+          "interface_rmsd_max_nm": 0.5665899515151978,
+          "native_contact_fraction_min": 0.2542372881355932,
+          "key_contact_count": 59,
+          "key_contact_occupancy_mean": 0.5340440677966102,
+          "key_contact_occupancy_max": 1.0,
+          "hydrogen_bond_occupancy": 1.0,
+          "salt_bridge_occupancy": 0.35,
+          "water_bridge_occupancy": 0.996,
+          "peptide_departed": false,
+          "maximum_departure_duration_ps": 0.0,
+          "maximum_peptide_com_shift_nm": 0.4884454607963562,
+          "mmgbsa_ci95_lower_kcal_mol": -52.631670111111106,
+          "mmgbsa_ci95_upper_kcal_mol": -42.87269135555496,
+          "mmgbsa_frame_count": 36,
+          "decomposition_residue_count": 180
+        }
       ]
     },
     "gyra": {
       "pool_a_candidate_count": 100,
       "md_and_postgresql_complete_count": 0,
       "provisional_frontier_count": 0,
+      "conservative_mmgbsa_frontier_count": 0,
+      "frontier_membership_stable_count": 0,
+      "mean_only_frontier_count": 0,
+      "conservative_only_frontier_count": 0,
       "objective_conflict_retained": false,
       "endpoint_leaders": {
         "interface_rmsd_mean_nm": null,
         "native_contact_fraction_mean": null,
         "mmgbsa_mean_kcal_mol": null
       },
-      "provisional_frontier": []
+      "provisional_frontier": [],
+      "conservative_mmgbsa_frontier": [],
+      "frontier_membership_stable": []
     },
     "pbp2a": {
       "pool_a_candidate_count": 53,
       "md_and_postgresql_complete_count": 0,
       "provisional_frontier_count": 0,
+      "conservative_mmgbsa_frontier_count": 0,
+      "frontier_membership_stable_count": 0,
+      "mean_only_frontier_count": 0,
+      "conservative_only_frontier_count": 0,
       "objective_conflict_retained": false,
       "endpoint_leaders": {
         "interface_rmsd_mean_nm": null,
         "native_contact_fraction_mean": null,
         "mmgbsa_mean_kcal_mol": null
       },
-      "provisional_frontier": []
+      "provisional_frontier": [],
+      "conservative_mmgbsa_frontier": [],
+      "frontier_membership_stable": []
     },
     "vegfa": {
       "pool_a_candidate_count": 71,
       "md_and_postgresql_complete_count": 0,
       "provisional_frontier_count": 0,
+      "conservative_mmgbsa_frontier_count": 0,
+      "frontier_membership_stable_count": 0,
+      "mean_only_frontier_count": 0,
+      "conservative_only_frontier_count": 0,
       "objective_conflict_retained": false,
       "endpoint_leaders": {
         "interface_rmsd_mean_nm": null,
         "native_contact_fraction_mean": null,
         "mmgbsa_mean_kcal_mol": null
       },
-      "provisional_frontier": []
+      "provisional_frontier": [],
+      "conservative_mmgbsa_frontier": [],
+      "frontier_membership_stable": []
     }
   },
   "limitations": [

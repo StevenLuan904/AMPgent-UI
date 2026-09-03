@@ -16,6 +16,11 @@ OBJECTIVES = {
     "native_contact_fraction_mean": "higher",
     "mmgbsa_mean_kcal_mol": "lower",
 }
+CONSERVATIVE_OBJECTIVES = {
+    "interface_rmsd_mean_nm": "lower",
+    "native_contact_fraction_mean": "higher",
+    "mmgbsa_ci95_upper_kcal_mol": "lower",
+}
 IDENTITY_FIELDS = ("target_key", "run_id", "candidate_id", "sequence", "sequence_sha256")
 SUPPORTING_FIELDS = (
     "pool_a_rank",
@@ -78,25 +83,33 @@ def typed(row: dict[str, str]) -> dict:
 
 
 def better(left: float, right: float, direction: str) -> bool:
+    left = float(left)
+    right = float(right)
     if math.isclose(left, right, rel_tol=1e-6, abs_tol=1e-8):
         return False
     return left < right if direction == "lower" else left > right
 
 
-def dominates(left: dict, right: dict) -> bool:
+def dominates(left: dict, right: dict, objectives: dict[str, str] = OBJECTIVES) -> bool:
     comparisons = [
         better(left[key], right[key], direction)
-        for key, direction in OBJECTIVES.items()
+        for key, direction in objectives.items()
     ]
     reverse = [
         better(right[key], left[key], direction)
-        for key, direction in OBJECTIVES.items()
+        for key, direction in objectives.items()
     ]
     return any(comparisons) and not any(reverse)
 
 
-def pareto_front(rows: list[dict]) -> list[dict]:
-    return [row for row in rows if not any(dominates(other, row) for other in rows)]
+def pareto_front(
+    rows: list[dict], objectives: dict[str, str] = OBJECTIVES
+) -> list[dict]:
+    return [
+        row
+        for row in rows
+        if not any(dominates(other, row, objectives) for other in rows)
+    ]
 
 
 def candidate_payload(row: dict) -> dict:
@@ -110,6 +123,8 @@ def analyze(rows: list[dict]) -> dict:
         grouped[row["target_key"]].append(row)
     targets = {}
     frontier_rows = []
+    conservative_frontier_rows = []
+    stable_frontier_rows = []
     for target, target_rows in sorted(grouped.items()):
         complete = [
             row
@@ -121,7 +136,21 @@ def analyze(rows: list[dict]) -> dict:
             pareto_front(complete),
             key=lambda row: (int(row["pool_a_rank"]), row["candidate_id"]),
         )
+        conservative_front = sorted(
+            pareto_front(complete, CONSERVATIVE_OBJECTIVES),
+            key=lambda row: (int(row["pool_a_rank"]), row["candidate_id"]),
+        )
+        front_ids = {(row["run_id"], row["candidate_id"]) for row in front}
+        conservative_ids = {
+            (row["run_id"], row["candidate_id"]) for row in conservative_front
+        }
+        stable_ids = front_ids & conservative_ids
+        stable_front = [
+            row for row in front if (row["run_id"], row["candidate_id"]) in stable_ids
+        ]
         frontier_rows.extend(front)
+        conservative_frontier_rows.extend(conservative_front)
+        stable_frontier_rows.extend(stable_front)
         leaders = {}
         for key, direction in OBJECTIVES.items():
             if not complete:
@@ -135,16 +164,30 @@ def analyze(rows: list[dict]) -> dict:
             "pool_a_candidate_count": len(target_rows),
             "md_and_postgresql_complete_count": len(complete),
             "provisional_frontier_count": len(front),
+            "conservative_mmgbsa_frontier_count": len(conservative_front),
+            "frontier_membership_stable_count": len(stable_front),
+            "mean_only_frontier_count": len(front_ids - conservative_ids),
+            "conservative_only_frontier_count": len(conservative_ids - front_ids),
             "objective_conflict_retained": len(front) > 1,
             "endpoint_leaders": leaders,
             "provisional_frontier": [candidate_payload(row) for row in front],
+            "conservative_mmgbsa_frontier": [
+                candidate_payload(row) for row in conservative_front
+            ],
+            "frontier_membership_stable": [
+                candidate_payload(row) for row in stable_front
+            ],
         }
     return {
-        "schema_version": "ampgent.pool-s-provisional-md-pareto.1",
+        "schema_version": "ampgent.pool-s-provisional-md-pareto.2",
         "observed_at_utc": datetime.now(UTC).isoformat(),
         "scope": "target-local; no cross-target energy comparison",
         "status": "provisional_until_full_pool_a_md_completion",
         "objectives": OBJECTIVES,
+        "conservative_mmgbsa_objectives": CONSERVATIVE_OBJECTIVES,
+        "conservative_energy_definition": (
+            "upper bound of within-trajectory block 95% MM/GBSA confidence interval"
+        ),
         "weighted_total_used": False,
         "pool_a_candidate_count": len(rows),
         "md_and_postgresql_complete_count": sum(
@@ -152,6 +195,8 @@ def analyze(rows: list[dict]) -> dict:
             for row in rows
         ),
         "provisional_frontier_count": len(frontier_rows),
+        "conservative_mmgbsa_frontier_count": len(conservative_frontier_rows),
+        "frontier_membership_stable_count": len(stable_frontier_rows),
         "targets": targets,
         "limitations": [
             "computed MD and MM/GBSA evidence; not experimental activity or affinity",
