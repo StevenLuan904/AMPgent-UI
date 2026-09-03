@@ -103,6 +103,34 @@
       "candidate_id_kind": "authoritative_uuid_in_close_receipt; score_row_sequence_sha256"
     },
     {
+      "label": "PBP2a matched-source PepGLAD",
+      "source": "PepGLAD",
+      "target_key": "pbp2a",
+      "run_id": "70873f75-af6d-5e6f-bf2d-c6c0a073870f",
+      "source_split": true,
+      "evidence_strength": "matched_controlled",
+      "score_path": "reports/pbp2a_matched_source_experiment_20260904/materialization_inputs/pepglad_candidate_scores.csv",
+      "challenger_path": "reports/pbp2a_matched_source_experiment_20260904/materialization_inputs/pepglad_challenger.csv",
+      "materialization_path": "reports/pbp2a_matched_source_experiment_20260904/materialization_pepglad.json",
+      "qd_path": "reports/pbp2a_matched_source_experiment_20260904/qd/quality_diversity.json",
+      "pool_a_admitted_count": 0,
+      "candidate_id_kind": "authoritative_uuid_in_arm_run; score_row_proposal_id_retained_as_source_only"
+    },
+    {
+      "label": "PBP2a matched-source PepFlow",
+      "source": "PepFlow",
+      "target_key": "pbp2a",
+      "run_id": "b8635566-2bc8-568f-a7f7-31ee342720fb",
+      "source_split": true,
+      "evidence_strength": "matched_controlled",
+      "score_path": "reports/pbp2a_matched_source_experiment_20260904/materialization_inputs/pepflow_candidate_scores.csv",
+      "challenger_path": "reports/pbp2a_matched_source_experiment_20260904/materialization_inputs/pepflow_challenger.csv",
+      "materialization_path": "reports/pbp2a_matched_source_experiment_20260904/materialization_pepflow.json",
+      "qd_path": "reports/pbp2a_matched_source_experiment_20260904/qd/quality_diversity.json",
+      "pool_a_admitted_count": 0,
+      "candidate_id_kind": "authoritative_uuid_in_arm_run; score_row_proposal_id_retained_as_source_only"
+    },
+    {
       "label": "PBP2a PepMLM source increment",
       "source": "PepMLM_target_conditioned",
       "target_key": "pbp2a",

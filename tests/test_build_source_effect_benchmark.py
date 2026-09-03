@@ -216,6 +216,7 @@ def test_target_specific_qd_without_rosetta_is_not_pool_a(tmp_path: Path) -> Non
     assert record["counts"]["qd_eligible"] == 1
     assert record["counts"]["rosetta_pending_candidates"] == 1
     assert record["counts"]["pool_a_admitted"] == 0
+    assert record["evidence_strength"] == "run_scoped_observational"
     assert result["weighted_total_used"] is False
 
 
@@ -277,3 +278,67 @@ def test_single_candidate_qd_receipt_flags_are_counted(tmp_path: Path) -> None:
     assert new_cell["counts"]["qd_replacement"] == 0
     assert replacement["counts"]["qd_new_cell"] == 0
     assert replacement["counts"]["qd_replacement"] == 1
+
+
+def test_matched_controlled_arms_drive_next_operator(tmp_path: Path) -> None:
+    score_rows = [
+        "source_arm,donor_source,sequence_sha256,formal_12_complete,"
+        "display_eligible,activity_model_support_count_calibrated"
+    ]
+    challenger_rows = [
+        "donor_source,sequence_sha256,challenger_conflict_status"
+    ]
+    contributions = []
+    for source, contribution_count, contribution in (
+        ("PepGLAD", 2, "empty_cell"),
+        ("PepFlow", 3, "incumbent_replacement"),
+    ):
+        for index in range(3):
+            key = f"{source.lower()}-{index}"
+            score_rows.append(f"{source},{source},{key},true,true,2")
+            challenger_rows.append(f"{source},{key},no_conflict")
+            if index < contribution_count:
+                contributions.append(
+                    {
+                        "candidate_id": key,
+                        "cell_id": f"{source}-{index}",
+                        "contribution": contribution,
+                    }
+                )
+    _write(tmp_path / "score.csv", "\n".join(score_rows) + "\n")
+    _write(tmp_path / "challenger.csv", "\n".join(challenger_rows) + "\n")
+    _write(
+        tmp_path / "material.json",
+        json.dumps({"source_candidate_count": 6}),
+    )
+    _write(
+        tmp_path / "qd.json",
+        json.dumps({"contributions": contributions}),
+    )
+    result = build_benchmark(
+        {
+            "specs": [
+                {
+                    "label": "matched",
+                    "source": "mixed",
+                    "target_key": "pbp2a",
+                    "run_id": "run-matched",
+                    "source_split": True,
+                    "evidence_strength": "matched_controlled",
+                    "score_path": "score.csv",
+                    "challenger_path": "challenger.csv",
+                    "materialization_path": "material.json",
+                    "qd_path": "qd.json",
+                }
+            ]
+        },
+        tmp_path,
+    )
+    by_source = {record["source"]: record for record in result["records"]}
+    assert by_source["PepGLAD"]["evidence_strength"] == "matched_controlled"
+    assert by_source["PepFlow"]["counts"]["qd_replacement"] == 3
+    assert result["next_operator"]["selection_basis"] == (
+        "matched_controlled_same_target_operator"
+    )
+    assert result["next_operator"]["source"] == "PepFlow"
+    assert result["next_operator"]["target_key"] == "pbp2a"

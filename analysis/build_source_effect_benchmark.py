@@ -371,6 +371,9 @@ def _record(spec: dict[str, Any], base: Path) -> list[dict[str, Any]]:
                 "label": spec["label"] if source == "all" else f"{spec['label']} / {source}",
                 "source": spec["source"] if source == "all" else source,
                 "source_scope": "run" if source == "all" else "run_source_split",
+                "evidence_strength": spec.get(
+                    "evidence_strength", "run_scoped_observational"
+                ),
                 "target_key": spec["target_key"],
                 "run_id": spec["run_id"],
                 "identity_basis": f"run_id={spec['run_id']} + sequence_sha256",
@@ -445,11 +448,30 @@ def _record(spec: dict[str, Any], base: Path) -> list[dict[str, Any]]:
 
 
 def _next_operator(records: list[dict[str, Any]], base_dir: Path) -> dict[str, Any]:
+    controlled = [
+        record
+        for record in records
+        if record["evidence_strength"] == "matched_controlled"
+        and record["counts"]["materialized"] >= 3
+    ]
     comparable = [
         record
         for record in records
         if record["source_scope"] == "run" and record["counts"]["materialized"] >= 3
     ]
+    if controlled:
+        comparable = controlled
+        selection_basis = "matched_controlled_same_target_operator"
+        reason = (
+            "preferred matched same-target/operator control; highest observed "
+            "QD-eligible conversion within the controlled arms"
+        )
+    else:
+        selection_basis = "run_scoped_observational"
+        reason = (
+            "highest observed QD-eligible conversion among comparable materialized "
+            "batches; target/operator are confounded"
+        )
     if not comparable:
         return {"status": "insufficient_comparable_runs"}
     chosen = max(
@@ -469,12 +491,10 @@ def _next_operator(records: list[dict[str, Any]], base_dir: Path) -> dict[str, A
             qd_cells.append(str(item["cell_id"]))
     return {
         "status": "provisional_observational_choice",
+        "selection_basis": selection_basis,
         "source": chosen["source"],
         "target_key": chosen["target_key"],
-        "reason": (
-            "highest observed QD-eligible conversion among comparable materialized "
-            "batches; target/operator are confounded"
-        ),
+        "reason": reason,
         "target_qd_region": sorted(set(qd_cells)),
         "property_displacement": chosen["mean_delta_phi"],
         "operator": (
@@ -513,7 +533,8 @@ def build_benchmark(config: dict[str, Any], base_dir: Path) -> dict[str, Any]:
 
 
 CSV_FIELDS = [
-    "label", "source", "source_scope", "target_key", "run_id", "candidate_id_kind",
+    "label", "source", "source_scope", "evidence_strength", "target_key", "run_id",
+    "candidate_id_kind",
     "proposal", "materialized", "formal12", "display", "activity_support_ge_2",
     "excellent", "challenger_reviewed", "challenger_no_conflict", "challenger_conflict",
     "qd_eligible", "qd_new_cell", "qd_replacement", "rosetta_evaluated_candidates",
@@ -536,7 +557,9 @@ def write_csv(records: list[dict[str, Any]], path: Path) -> None:
             writer.writerow(
                 {
                     "label": record["label"], "source": record["source"],
-                    "source_scope": record["source_scope"], "target_key": record["target_key"],
+                    "source_scope": record["source_scope"],
+                    "evidence_strength": record["evidence_strength"],
+                    "target_key": record["target_key"],
                     "run_id": record["run_id"], "candidate_id_kind": record["candidate_id_kind"],
                     **counts, "best_quality": qd["best_quality"],
                     "mean_quality": qd["mean_quality"],
