@@ -175,6 +175,7 @@ def candidate_row(expected: dict, root: Path) -> dict:
         "target_key": expected["target_key"],
         "candidate_id": expected["candidate_id"],
         "run_id": expected["run_id"],
+        "sequence": expected.get("sequence"),
         "sequence_sha256": expected["sequence_sha256"],
         "pool_a_rank": expected["pool_a_rank"],
         "rosetta_median_dg_reu": expected["primary_dg"],
@@ -266,6 +267,7 @@ def metric_distribution(rows: list[dict], key: str, unit: str, direction: str) -
         return {
             "candidate_id": row["candidate_id"],
             "run_id": row["run_id"],
+            "sequence": row["sequence"],
             "sequence_sha256": row["sequence_sha256"],
             "value": value,
         }

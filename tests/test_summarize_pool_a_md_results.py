@@ -23,6 +23,7 @@ def test_summary_requires_exact_identity_and_reports_all_requested_outputs(tmp_p
         "target_key": "acea",
         "candidate_id": candidate_id,
         "run_id": run_id,
+        "sequence": "KKLLKKLLKKLL",
         "sequence_sha256": sequence_sha,
         "pool_a_rank": 1,
         "primary_dg": -40.0,
@@ -105,12 +106,14 @@ def test_summary_requires_exact_identity_and_reports_all_requested_outputs(tmp_p
         "best_candidate": {
             "candidate_id": candidate_id,
             "run_id": run_id,
+            "sequence": "KKLLKKLLKKLL",
             "sequence_sha256": sequence_sha,
             "value": 0.2,
         },
         "worst_candidate": {
             "candidate_id": candidate_id,
             "run_id": run_id,
+            "sequence": "KKLLKKLLKKLL",
             "sequence_sha256": sequence_sha,
             "value": 0.2,
         },
