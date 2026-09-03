@@ -1,0 +1,26 @@
+{
+  "schema_version": "ampgent.target-agnostic-source-graft-v8.inventory.1",
+  "proposal_cap": 32,
+  "requested_arms": {"pepglad": 16, "pepflow": 16},
+  "local_source_evidence": {
+    "pepflow_input": "reports/pepflow_acea_reciprocal_micrograft_scoreall_20260903/candidate_scores_calibrated.csv",
+    "pepflow_display_safe_support_ge_2": 24,
+    "pepglad_input": "reports/pepflow_acea_cross_source_block_graft_scoreall_v3_20260903/candidate_scores_calibrated.csv",
+    "pepglad_input_rows": 12,
+    "pepglad_display_safe_support_ge_2": 0,
+    "pepglad_raw_fragment_sources": 12
+  },
+  "generated_proposals": 32,
+  "proposal_file": "reports/target_agnostic_source_graft_v8_20260903_proposals.csv",
+  "arm_counts": {"pepglad_raw_fragment": 16, "pepflow": 16},
+  "arm_semantics": "PepFlow donors pass source gate; PepGLAD donors are raw fragments and donor_display_eligible=false; final child gates remain mandatory",
+  "reason": "generation/preflight only; formal score-all, PG exact history, challenger and QD are pending",
+  "gpu_rosetta_md_submitted": false,
+  "postgresql_exact_history_gate": "blocked_by_asyncpg_connect_timeout_after_generation; PG-new not asserted",
+  "formal12_count": 0,
+  "challenger_count": 0,
+  "qd_eligible_count": 0,
+  "pool_a_materialized_count": 0,
+  "hydrophobic_hard_gate_used": false,
+  "weighted_q_plus_lambda_d_used": false
+}
