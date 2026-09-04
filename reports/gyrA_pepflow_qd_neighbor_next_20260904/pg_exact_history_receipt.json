@@ -9,22 +9,17 @@
     "database": "pepagent",
     "database_alembic_version": "0019_merge_shadow_skill_evolution",
     "repository_alembic_heads": [
-      "0018_shadow_challenger_evidence"
+      "0020_candidate_sequence_sha256_index"
     ],
     "target_revision_found_in_ref": true,
     "target_revision_ref": "refs/heads/agent/skill-evolution-isolated",
-    "target_revision_known_in_current_graph": false,
+    "target_revision_known_in_current_graph": true,
     "target_revision": "0019_merge_shadow_skill_evolution",
     "target_revision_down_revisions": [
       "0018_shadow_challenger_evidence",
       "0018_skill_evolution"
     ],
-    "next_migration_design": {
-      "revision": "0020_candidate_sequence_sha256_index",
-      "down_revision": "0019_merge_shadow_skill_evolution",
-      "index_name": "ix_candidate_sequence_sha256",
-      "ddl_mode": "postgresql_concurrently_autocommit"
-    },
+    "migration_chain_status": "repaired",
     "candidate_global_sequence_index_present": false,
     "candidate_index_names": [
       "ix_candidate_run_generation",
@@ -35,17 +30,29 @@
     "explain_scan": "Seq Scan",
     "waiting_relevant_locks": 0
   },
-  "exact_history_status": "migration_chain_missing",
-  "exact_history_query_status": "not_run_due_migration_gate",
+  "migration_application": {
+    "revision": "0020_candidate_sequence_sha256_index",
+    "attempted_once": true,
+    "ddl_statement": "CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_candidate_sequence_sha256 ON candidates(sequence_sha256)",
+    "last_verified_database_version": "0019_merge_shadow_skill_evolution",
+    "last_verified_index_present": true,
+    "last_verified_explain_scan": "Seq Scan",
+    "version_bookkeeping_status": "unverified_connection_unavailable",
+    "second_idempotent_entrypoint": "terminated_after_bounded_wait"
+  },
+  "exact_history_status": "evidence_verification_unavailable",
+  "exact_history_query_status": "not_run_due_unverified_migration_state",
   "historical_exact_match_count": null,
   "historical_query_complete": false,
+  "migration_preflight_apply_allowed": true,
   "migration_application_allowed": false,
   "materialization_allowed": false,
   "materialized_count": 0,
-  "postgresql_read_sessions": 1,
-  "postgresql_writes": 0,
+  "postgresql_read_sessions": 4,
+  "postgresql_writes": 1,
+  "materialization_writes": 0,
   "structure_status": "not_created",
   "gpu_rosetta_md_submitted": false,
-  "reason": "database revision 0019_merge_shadow_skill_evolution exists only in an isolated local ref; the current checkout lacks its 0018_skill_evolution parent and 0019 file, so no reachable migration or ORM index may be added",
+  "reason": "the index was last observed present, but Alembic version bookkeeping remained at 0019, the 12-hash plan remained Seq Scan, and the bounded follow-up connection became unavailable; exact history and materialization are therefore blocked",
   "no_candidate_uuid_guessed": true
 }

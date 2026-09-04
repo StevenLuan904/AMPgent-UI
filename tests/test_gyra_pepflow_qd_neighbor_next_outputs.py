@@ -52,14 +52,15 @@ def test_next_batch_receipts_keep_provisional_and_formal_boundaries() -> None:
     assert qd["challenger_no_conflict_count"] == 12
     assert qd["provisional_eligible_after_challenger_count"] == 8
     assert close["persistence"]["pool_a_admitted"] is False
-    assert close["persistence"]["postgresql_writes"] == 0
+    assert close["persistence"]["historical_pg_gate"] == "evidence_verification_unavailable"
+    assert close["persistence"]["postgresql_writes"] == 1
+    assert close["persistence"]["materialization_writes"] == 0
     assert close["provisional_qd"]["formal_pg_new"] is False
     assert close["challenger"]["hemopi2_reviewed_count"] == 12
     assert close["challenger"]["hemopi2_no_conflict_count"] == 12
-    assert pg_history["exact_history_status"] == "migration_chain_missing"
+    assert pg_history["exact_history_status"] == "evidence_verification_unavailable"
     assert pg_history["historical_exact_match_count"] is None
     assert pg_history["materialization_allowed"] is False
-    assert pg_history["postgresql_writes"] == 0
-    assert pg_history["preflight"]["next_migration_design"]["revision"] == (
-        "0020_candidate_sequence_sha256_index"
-    )
+    assert pg_history["materialization_writes"] == 0
+    assert pg_history["migration_application"]["last_verified_index_present"] is True
+    assert pg_history["migration_application"]["last_verified_explain_scan"] == "Seq Scan"
