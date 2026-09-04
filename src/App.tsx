@@ -52,7 +52,7 @@ import { assertMatchingRunIdentity, type RunIdentity } from './runIdentity'
 import { formatRunTitle } from './runPresentation'
 import { buildRuntimeGraph, runtimeActivitySummary, runtimeCallSummary, runtimeEventStatus, runtimeRetrySummary, type RuntimeGraphModel } from './runtimeGraph'
 import { readableRuntimeNodeCount, selectReadableRuntimeNodeIds } from './runtimeViewport'
-import { nodeDetailCacheTtlMs, observerIdlePrefetchDelayMs, observerInitialPrefetchCount, observerListTimeoutMs, observerNodeDetailCacheKey, observerNodeDetailTimeoutMs, observerPollingIntervalMs, observerPrefetchStageOrder, observerResponseIsStale, observerRunDetailCacheKey, observerRunDetailTimeoutMs, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion, observerStaleRetryDelayMs } from './observerPolling'
+import { nodeDetailCacheTtlMs, observerIdlePrefetchDelayMs, observerInitialPrefetchCount, observerListTimeoutMs, observerInFlightStageIds, observerMergePrefetchQueue, observerNextPrefetchStage, observerNodeDetailCacheKey, observerNodeDetailTimeoutMs, observerPendingPrefetchCount, observerPollingIntervalMs, observerPrefetchQueueMatches, observerPrefetchInFlightKey, observerPrefetchRefreshExpired, observerPrefetchStageOrder, observerRequeuePrefetchStage, observerResponseIsStale, observerRunDetailCacheKey, observerRunDetailTimeoutMs, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion, observerStaleRetryDelayMs, type ObserverPrefetchQueue } from './observerPolling'
 import { schedulerHealthDescription, schedulerHealthPresentation } from './schedulerHealth'
 import type {
   CandidatePreview,
@@ -217,11 +217,14 @@ function useRunData(enabled: boolean, apiBase: string) {
   const pendingDetailRunId = useRef<string | null>(null)
   const detailEpoch = useRef(0)
   const previousSelectedId = useRef(selectedId)
+  const previousApiBase = useRef(apiBase)
   const selectedIdRef = useRef(selectedId)
   const detailRunIdRef = useRef<string | null>(initialCachedDetail ? initialSelectedId : null)
   const nodeFetchInFlight = useRef(new Set<string>())
   const loadedStageKeys = useRef(new Set<string>())
   const currentStageIds = useRef<string[]>([])
+  const prefetchQueue = useRef<ObserverPrefetchQueue | null>(null)
+  const prefetchInFlightStageIds = useRef(new Set<string>())
   const idlePrefetchTimer = useRef<number | null>(null)
   const alignedStructureCounts = useRef<Record<string, number>>({})
   const runIdentities = useRef<Record<string, RunIdentity>>({})
@@ -262,7 +265,7 @@ function useRunData(enabled: boolean, apiBase: string) {
     }
   }, [apiBase])
 
-  const loadNodeDetail = useCallback(async (runId: string, stageId: string, epoch: number) => {
+  const loadNodeDetail = useCallback(async (runId: string, stageId: string, epoch: number, options: { refreshExpired?: boolean } = {}) => {
     const cacheKey = observerNodeDetailCacheKey(apiBase, runId, stageId)
     const cached = nodeDetailCache.get(cacheKey)
     const cacheIsFresh = cached !== undefined && Date.now() - cached.fetchedAt < nodeDetailCacheTtlMs
@@ -270,7 +273,7 @@ function useRunData(enabled: boolean, apiBase: string) {
       if (selectedIdRef.current === runId && epoch === detailEpoch.current) {
         setNodeDetails((current) => current[stageId] === cached.detail ? current : { ...current, [stageId]: cached.detail })
       }
-      if (cacheIsFresh) return true
+      if (cacheIsFresh || options.refreshExpired === false) return true
     }
     if (nodeFetchInFlight.current.has(cacheKey)) return Boolean(cached)
     nodeFetchInFlight.current.add(cacheKey)
@@ -295,6 +298,47 @@ function useRunData(enabled: boolean, apiBase: string) {
       nodeFetchInFlight.current.delete(cacheKey)
     }
   }, [apiBase])
+
+  const schedulePrefetchPump = useCallback((delay = observerIdlePrefetchDelayMs) => {
+    if (idlePrefetchTimer.current !== null) window.clearTimeout(idlePrefetchTimer.current)
+    idlePrefetchTimer.current = window.setTimeout(() => prefetchPumpRef.current(), delay)
+  }, [])
+  const prefetchPumpRef = useRef<() => void>(() => undefined)
+  const prefetchPump = useCallback(() => {
+    const queue = prefetchQueue.current
+    if (!queue || queue.nextIndex >= queue.orderedStageIds.length || queue.epoch !== detailEpoch.current) {
+      idlePrefetchTimer.current = null
+      return
+    }
+    if (document.hidden) {
+      schedulePrefetchPump(1_500)
+      return
+    }
+    if (runsInFlight.current || detailInFlight.current) {
+      schedulePrefetchPump(2_000)
+      return
+    }
+    const cachedStageIds = new Set(queue.orderedStageIds.filter((stageId) => nodeDetailCache.has(observerNodeDetailCacheKey(apiBase, queue.runId, stageId))))
+    const next = observerNextPrefetchStage(queue, cachedStageIds, observerInFlightStageIds(queue.runId, prefetchInFlightStageIds.current))
+    prefetchQueue.current = next.queue
+    if (!next.stageId) {
+      idlePrefetchTimer.current = null
+      setNodeDetailFetch((current) => ({ ...current, deferred: 0 }))
+      return
+    }
+    const stageId = next.stageId
+    const inFlightKey = observerPrefetchInFlightKey(queue.runId, stageId)
+    setNodeDetailFetch((current) => ({ ...current, deferred: Math.max(0, current.deferred - 1) }))
+    prefetchInFlightStageIds.current.add(inFlightKey)
+    void loadNodeDetail(queue.runId, stageId, queue.epoch, { refreshExpired: false }).then((succeeded) => {
+      if (!observerPrefetchQueueMatches(prefetchQueue.current, queue.runId, queue.epoch ?? -1)) return
+      if (!succeeded) prefetchQueue.current = observerRequeuePrefetchStage(prefetchQueue.current!, stageId)
+    }).finally(() => {
+      prefetchInFlightStageIds.current.delete(inFlightKey)
+      if (observerPrefetchQueueMatches(prefetchQueue.current, queue.runId, queue.epoch ?? -1)) schedulePrefetchPump()
+    })
+  }, [apiBase, loadNodeDetail, schedulePrefetchPump])
+  prefetchPumpRef.current = prefetchPump
 
   const loadDetail = useCallback(async (runId: string, quiet = false) => {
     if (detailInFlight.current) {
@@ -326,37 +370,39 @@ function useRunData(enabled: boolean, apiBase: string) {
         if (nodeDetailCache.has(cacheKey)) loadedStageKeys.current.add(cacheKey)
         return loadedStageKeys.current.has(cacheKey)
       }).length
-      setNodeDetailFetch((current) => ({ requested: stages.length, loaded: Math.min(stages.length, cachedCount), failed: sameRun ? current.failed : 0, deferred: 0 }))
       setError(null)
       setSyncingStale(staleResponse)
       if (staleResponse) setStaleDetailRevision((revision) => revision + 1)
       setLoading(false)
 
-      // Only prefetch the first small slice. The graph is interactive immediately;
-      // remaining stage rows are pulled one-by-one while the document is idle.
       const orderedStages = observerPrefetchStageOrder(stages)
-      const initialStages = orderedStages.slice(0, observerInitialPrefetchCount(orderedStages.length))
-      void Promise.all(initialStages.map((stage) => loadNodeDetail(runId, stage.id, epoch)))
-      if (idlePrefetchTimer.current !== null) window.clearTimeout(idlePrefetchTimer.current)
-      let nextIndex = initialStages.length
-      setNodeDetailFetch((current) => ({ ...current, deferred: Math.max(0, orderedStages.length - nextIndex) }))
-      const pump = () => {
-        if (epoch !== detailEpoch.current || nextIndex >= orderedStages.length) return
-        if (document.hidden) {
-          idlePrefetchTimer.current = window.setTimeout(pump, 1_500)
-          return
-        }
-        if (runsInFlight.current || detailInFlight.current) {
-          idlePrefetchTimer.current = window.setTimeout(pump, 2_000)
-          return
-        }
-        const stage = orderedStages[nextIndex++]
-        setNodeDetailFetch((current) => ({ ...current, deferred: Math.max(0, current.deferred - 1) }))
-        void loadNodeDetail(runId, stage.id, epoch).finally(() => {
-          idlePrefetchTimer.current = window.setTimeout(pump, observerIdlePrefetchDelayMs)
-        })
+      const queueBefore = prefetchQueue.current
+      const queue = observerMergePrefetchQueue(runId, orderedStages, queueBefore, observerInitialPrefetchCount(orderedStages.length))
+      const isNewQueue = queueBefore === null || queueBefore.runId !== runId || queueBefore.epoch !== epoch
+      prefetchQueue.current = { ...queue, epoch }
+      const cachedStageIds = new Set(stages.filter((stage) => nodeDetailCache.has(observerNodeDetailCacheKey(apiBase, runId, stage.id))).map((stage) => stage.id))
+      setNodeDetailFetch((current) => ({
+        requested: stages.length,
+        loaded: Math.min(stages.length, cachedCount),
+        failed: sameRun ? current.failed : 0,
+        deferred: observerPendingPrefetchCount(queue, cachedStageIds),
+      }))
+      if (isNewQueue) {
+        const initialStages = orderedStages.slice(0, observerInitialPrefetchCount(orderedStages.length))
+        void Promise.all(initialStages.map((stage) => loadNodeDetail(runId, stage.id, epoch, { refreshExpired: observerPrefetchRefreshExpired('initial') })))
+        if (observerPendingPrefetchCount(queue, cachedStageIds) > 0) schedulePrefetchPump()
+      } else if (quiet) {
+        // A quiet refresh may renew only the highest-value progress rows. The
+        // idle queue treats any existing cache, including an expired one, as
+        // fulfilled so its tail keeps advancing instead of being re-read.
+        const highValueStages = orderedStages.slice(0, observerInitialPrefetchCount(orderedStages.length))
+        void Promise.all(highValueStages.map((stage) => loadNodeDetail(runId, stage.id, epoch, { refreshExpired: true })))
+        if (observerPendingPrefetchCount(queue, cachedStageIds) > 0 && idlePrefetchTimer.current === null) schedulePrefetchPump()
+      } else if (observerPendingPrefetchCount(queue, cachedStageIds) > 0 && idlePrefetchTimer.current === null) {
+        // A completed queue can gain new stages from a later detail snapshot.
+        // Wake the existing queue without replaying its initial slice.
+        schedulePrefetchPump()
       }
-      if (nextIndex < orderedStages.length) idlePrefetchTimer.current = window.setTimeout(pump, observerIdlePrefetchDelayMs)
     } catch (cause) {
       if (epoch === detailEpoch.current) {
         setError(readableDataError(cause, '无法连接观察器接口'))
@@ -372,7 +418,7 @@ function useRunData(enabled: boolean, apiBase: string) {
       pendingDetailRunId.current = null
       if (pendingRunId && pendingRunId !== runId) void loadDetail(pendingRunId)
     }
-  }, [apiBase, loadNodeDetail])
+  }, [apiBase, loadNodeDetail, schedulePrefetchPump])
 
   useEffect(() => {
     selectedIdRef.current = selectedId
@@ -380,6 +426,8 @@ function useRunData(enabled: boolean, apiBase: string) {
     previousSelectedId.current = selectedId
     detailEpoch.current += 1
     detailRunIdRef.current = null
+    prefetchQueue.current = null
+    prefetchInFlightStageIds.current.clear()
     if (idlePrefetchTimer.current !== null) window.clearTimeout(idlePrefetchTimer.current)
     setDetail(null)
     setNodeDetails({})
@@ -389,10 +437,20 @@ function useRunData(enabled: boolean, apiBase: string) {
 
   useEffect(() => {
     if (!enabled) {
+      if (idlePrefetchTimer.current !== null) window.clearTimeout(idlePrefetchTimer.current)
+      idlePrefetchTimer.current = null
+      prefetchQueue.current = null
+      prefetchInFlightStageIds.current.clear()
       setLoading(false)
       return
     }
     loadRuns().catch(reportBackgroundSyncError)
+    return () => {
+      if (idlePrefetchTimer.current !== null) window.clearTimeout(idlePrefetchTimer.current)
+      idlePrefetchTimer.current = null
+      prefetchQueue.current = null
+      prefetchInFlightStageIds.current.clear()
+    }
   }, [enabled, loadRuns, reportBackgroundSyncError])
 
   useEffect(() => {
@@ -444,6 +502,15 @@ function useRunData(enabled: boolean, apiBase: string) {
   }, [])
 
   useEffect(() => {
+    const apiChanged = previousApiBase.current !== apiBase
+    previousApiBase.current = apiBase
+    if (apiChanged) {
+      detailEpoch.current += 1
+      detailRunIdRef.current = null
+      prefetchQueue.current = null
+      prefetchInFlightStageIds.current.clear()
+      if (idlePrefetchTimer.current !== null) window.clearTimeout(idlePrefetchTimer.current)
+    }
     const cachedRuns = readObserverCache<RunListResponse>(observerRunListCacheKey(apiBase), apiBase)
     if (cachedRuns) setRuns(cachedRuns.payload.runs)
     if (!selectedId) return

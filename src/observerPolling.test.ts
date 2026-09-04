@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { nodeDetailCacheTtlMs, observerIdlePrefetchDelayMs, observerInitialPrefetchCount, observerListTimeoutMs, observerNodeDetailCacheKey, observerNodeDetailTimeoutMs, observerPollingIntervalMs, observerPrefetchStageOrder, observerResponseIsStale, observerRunDetailCacheKey, observerRunDetailTimeoutMs, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion, observerStaleRetryDelayMs } from './observerPolling'
+import { nodeDetailCacheTtlMs, observerCreatePrefetchQueue, observerIdlePrefetchDelayMs, observerInitialPrefetchCount, observerInFlightStageIds, observerListTimeoutMs, observerMergePrefetchQueue, observerNextPrefetchStage, observerNodeDetailCacheKey, observerNodeDetailTimeoutMs, observerPendingPrefetchCount, observerPollingIntervalMs, observerPrefetchQueueMatches, observerPrefetchInFlightKey, observerPrefetchRefreshExpired, observerPrefetchStageOrder, observerRequeuePrefetchStage, observerResponseIsStale, observerRunDetailCacheKey, observerRunDetailTimeoutMs, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion, observerStaleRetryDelayMs } from './observerPolling'
 
 describe('observer refresh policy', () => {
   it('refreshes active runs more often than terminal runs', () => {
@@ -14,6 +14,11 @@ describe('observer refresh policy', () => {
     expect(observerInitialPrefetchCount(2)).toBe(2)
     expect(observerInitialPrefetchCount(0)).toBe(0)
     expect(nodeDetailCacheTtlMs).toBe(60_000)
+  })
+
+  it('refreshes expired cache for the initial slice but not the idle tail', () => {
+    expect(observerPrefetchRefreshExpired('initial')).toBe(true)
+    expect(observerPrefetchRefreshExpired('idle')).toBe(false)
   })
 
   it('uses a remote-read budget that tolerates slow aggregate queries', () => {
@@ -36,6 +41,75 @@ describe('observer refresh policy', () => {
     const completed = { status: 'pending', current: 2, total: 4, id: 'progress' }
     const running = { status: 'running', current: 0, total: 1, id: 'active' }
     expect(observerPrefetchStageOrder([pending, completed, running]).map((stage) => stage.id)).toEqual(['active', 'progress', 'empty'])
+  })
+
+  it('keeps the idle queue cursor across same-run detail refreshes', () => {
+    const stages = [
+      { id: 'first', status: 'running', current: 1, total: 2 },
+      { id: 'second', status: 'pending', current: 0, total: 0 },
+      { id: 'third', status: 'pending', current: 0, total: 0 },
+      { id: 'fourth', status: 'pending', current: 0, total: 0 },
+    ]
+    const initial = observerCreatePrefetchQueue('run-1', stages)
+    expect(initial.nextIndex).toBe(2)
+    const afterThird = observerNextPrefetchStage(initial, new Set()).queue
+    expect(afterThird.nextIndex).toBe(3)
+    const refreshed = observerMergePrefetchQueue('run-1', stages, afterThird)
+    expect(refreshed.nextIndex).toBe(3)
+    const fourth = observerNextPrefetchStage(refreshed, new Set())
+    expect(fourth.stageId).toBe('fourth')
+    expect(observerPendingPrefetchCount(fourth.queue, new Set())).toBe(0)
+  })
+
+  it('skips cached tail nodes without rewinding or issuing a duplicate prefetch', () => {
+    const stages = [
+      { id: 'first', status: 'running', current: 1, total: 2 },
+      { id: 'second', status: 'pending', current: 0, total: 0 },
+      { id: 'third', status: 'pending', current: 0, total: 0 },
+      { id: 'fourth', status: 'pending', current: 0, total: 0 },
+    ]
+    const queue = observerCreatePrefetchQueue('run-1', stages)
+    const next = observerNextPrefetchStage(queue, new Set(['third']))
+    expect(next.stageId).toBe('fourth')
+    expect(next.queue.nextIndex).toBe(4)
+  })
+
+  it('restarts a completed queue when a later detail adds a new stage', () => {
+    const stages = [
+      { id: 'first', status: 'running', current: 1, total: 2 },
+      { id: 'second', status: 'pending', current: 0, total: 0 },
+      { id: 'third', status: 'pending', current: 0, total: 0 },
+    ]
+    const complete = observerNextPrefetchStage(
+      observerNextPrefetchStage(observerCreatePrefetchQueue('run-1', stages), new Set(['third'])).queue,
+      new Set(['third', 'first', 'second']),
+    ).queue
+    const merged = observerMergePrefetchQueue('run-1', [...stages, { id: 'new-stage', status: 'running', current: 1, total: 1 }], complete)
+    expect(merged.nextIndex).toBe(3)
+    expect(observerNextPrefetchStage(merged, new Set(['first', 'second', 'third'])).stageId).toBe('new-stage')
+  })
+
+  it('does not select an in-flight item and retries a failed item once', () => {
+    const queue = observerCreatePrefetchQueue('run-1', [
+      { id: 'first', status: 'running', current: 1, total: 1 },
+      { id: 'second', status: 'pending', current: 0, total: 0 },
+      { id: 'third', status: 'pending', current: 0, total: 0 },
+    ])
+    const blocked = observerNextPrefetchStage(queue, new Set(), new Set(['third']))
+    expect(blocked.stageId).toBeNull()
+    const afterFailure = observerRequeuePrefetchStage({ ...queue, nextIndex: 3 }, 'third')
+    expect(afterFailure.nextIndex).toBe(2)
+    expect(observerRequeuePrefetchStage(afterFailure, 'third').nextIndex).toBe(2)
+  })
+
+  it('isolates unfinished prefetches when switching from run A to run B', () => {
+    const runAQueue = { ...observerCreatePrefetchQueue('run-a', [{ id: 'shared', status: 'pending', current: 0, total: 0 }]), epoch: 1 }
+    const runBQueue = { ...observerCreatePrefetchQueue('run-b', [{ id: 'shared', status: 'pending', current: 0, total: 0 }]), epoch: 2 }
+    const inFlight = new Set([observerPrefetchInFlightKey('run-a', 'shared'), observerPrefetchInFlightKey('run-b', 'shared')])
+    expect(observerInFlightStageIds('run-a', inFlight)).toEqual(new Set(['shared']))
+    expect(observerInFlightStageIds('run-b', inFlight)).toEqual(new Set(['shared']))
+    expect(observerPrefetchQueueMatches(runAQueue, 'run-b', 2)).toBe(false)
+    expect(observerPrefetchQueueMatches(runBQueue, 'run-b', 2)).toBe(true)
   })
 
   it('isolates cached stage details by normalized observer base URL', () => {
