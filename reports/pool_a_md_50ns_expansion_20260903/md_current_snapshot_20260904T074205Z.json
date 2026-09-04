@@ -1,0 +1,71 @@
+{
+  "schema_version": "ampgent.pool-a-md-current-snapshot.2",
+  "observed_at_utc": "2026-09-04T07:42:05.726229+00:00",
+  "identity_key": "subject_run_id+candidate_id",
+  "identity_union": 486,
+  "partition": {
+    "launched_unique": 61,
+    "md_complete_unique": 45,
+    "full_evidence_unique": 44,
+    "analysis_pending_unique": 1,
+    "running_unique": 16,
+    "not_started_unique": 425,
+    "failed_unique": 0,
+    "launched_equals_md_complete_plus_running": true,
+    "full_plus_analysis_pending_equals_md_complete": true,
+    "disjoint_union_equals_486": true
+  },
+  "analysis_pending": [
+    {
+      "target_key": "gyra",
+      "subject_run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
+      "candidate_id": "428925fe-b10f-435c-914d-a0f7b4a5f147",
+      "reason": "interface_missing; MMGBSA compact evidence present"
+    }
+  ],
+  "postgresql_exact_audit": {
+    "interface_candidate_count": 44,
+    "mmgbsa_candidate_count": 45,
+    "both_candidate_count": 44,
+    "interface_only_count": 0,
+    "mmgbsa_only_count": 1,
+    "mmgbsa_only_identity": [
+      "2998677d-7061-5f76-bb6e-1a6d4a009700+428925fe-b10f-435c-914d-a0f7b4a5f147"
+    ],
+    "local_full_missing_pg_both": 0,
+    "pg_both_missing_local_full": 0
+  },
+  "remote_observation": {
+    "host_19": {
+      "connection": "ssh -p 32222 TargetServerDirect",
+      "md_supervisor_pid": 3986807,
+      "analysis_supervisor_pid": 3977733,
+      "supervisors_alive": true,
+      "gpu_compute_count": 8,
+      "disk_use_percent": 48
+    },
+    "synth": {
+      "connection": "synth@127.0.0.1:32224",
+      "md_supervisor_pid": 1280301,
+      "analysis_supervisor_pid": 3311802,
+      "mmgbsa_supervisor_pid": 3360111,
+      "runner_pids": [58820, 2060743],
+      "gpu_indices": [1, 2, 3],
+      "supervisors_alive": true,
+      "disk_use_percent": 83
+    }
+  },
+  "compact_sync": {
+    "host_19_copied_file_count": 17,
+    "synth_copied_file_count": 4,
+    "remote_large_artifact_downloaded": false,
+    "remote_large_artifact_deleted": false,
+    "md_report_refresh": "live-summary-all-486/refresh_receipt.json"
+  },
+  "mutations": {
+    "md_restart": false,
+    "new_md_submission": false,
+    "postgresql_write": true,
+    "prohibited_host32_gpu2_gpu3_touched": false
+  }
+}

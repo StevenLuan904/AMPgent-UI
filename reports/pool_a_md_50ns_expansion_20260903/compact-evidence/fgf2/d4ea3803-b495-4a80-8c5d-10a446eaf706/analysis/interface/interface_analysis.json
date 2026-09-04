@@ -1,0 +1,205 @@
+{
+  "schema_version": "ampgent.pool-a-md-interface-analysis.2",
+  "frame_count": 5000,
+  "frame_ps": 10.0,
+  "interface_rmsd_nm": {
+    "mean": 0.2870359718799591,
+    "maximum": 0.42012426257133484
+  },
+  "native_contact_fraction": {
+    "mean": 0.5883771428571428,
+    "minimum": 0.3142857142857143
+  },
+  "key_contacts": [
+    {
+      "receptor_residue": "PHE38",
+      "peptide_residue": "PHE2",
+      "occupancy": 0.5682
+    },
+    {
+      "receptor_residue": "VAL51",
+      "peptide_residue": "PHE2",
+      "occupancy": 0.7052
+    },
+    {
+      "receptor_residue": "ARG52",
+      "peptide_residue": "LYS1",
+      "occupancy": 0.1016
+    },
+    {
+      "receptor_residue": "ARG52",
+      "peptide_residue": "PHE2",
+      "occupancy": 0.66
+    },
+    {
+      "receptor_residue": "ARG52",
+      "peptide_residue": "ARG3",
+      "occupancy": 0.8338
+    },
+    {
+      "receptor_residue": "ARG52",
+      "peptide_residue": "ASN20",
+      "occupancy": 0.9924
+    },
+    {
+      "receptor_residue": "HIS58",
+      "peptide_residue": "PHE2",
+      "occupancy": 0.6508
+    },
+    {
+      "receptor_residue": "HIS58",
+      "peptide_residue": "HIS4",
+      "occupancy": 0.3176
+    },
+    {
+      "receptor_residue": "HIS58",
+      "peptide_residue": "PHE19",
+      "occupancy": 0.765
+    },
+    {
+      "receptor_residue": "ARG89",
+      "peptide_residue": "PHE19",
+      "occupancy": 0.4314
+    },
+    {
+      "receptor_residue": "ARG89",
+      "peptide_residue": "ASN20",
+      "occupancy": 0.3214
+    },
+    {
+      "receptor_residue": "LEU90",
+      "peptide_residue": "PHE2",
+      "occupancy": 0.4318
+    },
+    {
+      "receptor_residue": "LEU90",
+      "peptide_residue": "ALA18",
+      "occupancy": 0.9924
+    },
+    {
+      "receptor_residue": "LEU90",
+      "peptide_residue": "PHE19",
+      "occupancy": 1.0
+    },
+    {
+      "receptor_residue": "LEU91",
+      "peptide_residue": "THR16",
+      "occupancy": 0.8458
+    },
+    {
+      "receptor_residue": "LEU91",
+      "peptide_residue": "VAL17",
+      "occupancy": 1.0
+    },
+    {
+      "receptor_residue": "LEU91",
+      "peptide_residue": "ALA18",
+      "occupancy": 0.9346
+    },
+    {
+      "receptor_residue": "ALA92",
+      "peptide_residue": "ARG15",
+      "occupancy": 0.5474
+    },
+    {
+      "receptor_residue": "ALA92",
+      "peptide_residue": "THR16",
+      "occupancy": 1.0
+    },
+    {
+      "receptor_residue": "ALA92",
+      "peptide_residue": "VAL17",
+      "occupancy": 1.0
+    },
+    {
+      "receptor_residue": "ALA92",
+      "peptide_residue": "PHE19",
+      "occupancy": 0.9584
+    },
+    {
+      "receptor_residue": "SER93",
+      "peptide_residue": "GLY14",
+      "occupancy": 0.2184
+    },
+    {
+      "receptor_residue": "SER93",
+      "peptide_residue": "ARG15",
+      "occupancy": 0.8332
+    },
+    {
+      "receptor_residue": "SER93",
+      "peptide_residue": "THR16",
+      "occupancy": 0.987
+    },
+    {
+      "receptor_residue": "LYS94",
+      "peptide_residue": "ARG13",
+      "occupancy": 0.4074
+    },
+    {
+      "receptor_residue": "LYS94",
+      "peptide_residue": "GLY14",
+      "occupancy": 0.8718
+    },
+    {
+      "receptor_residue": "LYS94",
+      "peptide_residue": "ARG15",
+      "occupancy": 0.8012
+    },
+    {
+      "receptor_residue": "CYS95",
+      "peptide_residue": "ARG13",
+      "occupancy": 0.2446
+    },
+    {
+      "receptor_residue": "CYS95",
+      "peptide_residue": "GLY14",
+      "occupancy": 0.2116
+    },
+    {
+      "receptor_residue": "VAL96",
+      "peptide_residue": "ARG13",
+      "occupancy": 0.3946
+    },
+    {
+      "receptor_residue": "LYS118",
+      "peptide_residue": "ARG13",
+      "occupancy": 0.218
+    },
+    {
+      "receptor_residue": "LYS118",
+      "peptide_residue": "GLY14",
+      "occupancy": 0.0144
+    },
+    {
+      "receptor_residue": "LYS118",
+      "peptide_residue": "THR16",
+      "occupancy": 0.0048
+    },
+    {
+      "receptor_residue": "TYR119",
+      "peptide_residue": "THR16",
+      "occupancy": 0.1044
+    },
+    {
+      "receptor_residue": "TRP122",
+      "peptide_residue": "VAL7",
+      "occupancy": 0.224
+    }
+  ],
+  "hydrogen_bond_occupancy": 1.0,
+  "salt_bridge_occupancy": 0.0992,
+  "water_bridge_occupancy": 0.982,
+  "peptide_departed": false,
+  "interaction_sample_count": 500,
+  "interaction_stride": 10,
+  "maximum_departure_duration_ps": 0.0,
+  "maximum_peptide_com_shift_nm": 0.4087207317352295,
+  "definitions": {
+    "key_contact": "native residue pair closest-heavy <=0.45 nm",
+    "salt_bridge": "charged side-chain atom distance <=0.40 nm",
+    "hydrogen_bond": "MDTraj Wernet-Nilsson geometric criterion",
+    "water_bridge": "same water participates in Wernet-Nilsson hydrogen bonds to receptor and peptide in one frame",
+    "departure": "native-contact fraction <0.2 and peptide COM shift >1.0 nm sustained >=1 ns"
+  }
+}
