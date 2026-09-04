@@ -29,8 +29,10 @@ def test_v4_keeps_new_runs_run_scoped_and_populates_matrix() -> None:
     gyra = by_run["e42e5097-aa1b-55ab-a191-93a923d7f51a"]
     assert (vegfa["counts"]["proposal"], vegfa["counts"]["materialized"]) == (8, 1)
     assert (vegfa["counts"]["qd_new_cell"], vegfa["counts"]["qd_replacement"]) == (1, 0)
+    assert vegfa["materialized_cohort"]["challenger_no_conflict"] == 1
     assert (gyra["counts"]["proposal"], gyra["counts"]["materialized"]) == (12, 3)
     assert (gyra["counts"]["qd_new_cell"], gyra["counts"]["qd_replacement"]) == (2, 1)
+    assert gyra["materialized_cohort"]["challenger_no_conflict"] == 3
     assert result["coverage_matrix"]["cells"]["PepMLM:vegfa"]["record_count"] == 2
     assert result["coverage_matrix"]["cells"]["PepGLAD:gyra"]["run_ids"] == [
         "e42e5097-aa1b-55ab-a191-93a923d7f51a"

@@ -401,7 +401,16 @@ def _record(spec: dict[str, Any], base: Path) -> list[dict[str, Any]]:
         materialized_challenger_rows = _load_csv(
             _resolve(base, spec.get("materialized_challenger_path"))
         )
-        if not materialized_challenger_rows:
+        if not materialized_challenger_rows and materialized_rows:
+            materialized_keys = {
+                _candidate_key(row) for row in materialized_rows
+            }
+            materialized_challenger_rows = [
+                row
+                for row in challenger_rows
+                if _candidate_key(row) in materialized_keys
+            ]
+        if not materialized_challenger_rows and not challenger_rows:
             materialized_challenger_rows = materialized_rows
         if split:
             materialized_challenger_rows = [
