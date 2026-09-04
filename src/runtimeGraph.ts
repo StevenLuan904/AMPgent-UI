@@ -768,7 +768,10 @@ function computePositions(nodes: GraphStage[]) {
     const lane = laneByType[node.runtime?.node_type ?? 'generation'] ?? 2
     laneCounts[lane] += 1
   }
-  const laneColumns = laneCounts.map((count) => count > 7 ? 8 : count > 5 ? 6 : 5)
+  // Prefer horizontal browsing to stacking extra rows. A dense run remains
+  // fully represented, while the first readable window can show all three
+  // lane headers without shrinking the cards below the readable zoom floor.
+  const laneColumns = laneCounts.map((count) => count > 7 ? count : count > 5 ? 6 : 5)
   const laneRows = laneCounts.map((count, lane) => count === 0 ? 0 : Math.ceil(count / laneColumns[lane]))
   // Expanded aggregate cards contain their own summary and are taller than
   // ordinary cards. Give that lane a larger row step so its local member grid

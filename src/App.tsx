@@ -51,6 +51,7 @@ import { LaneLabel, WorkflowNode, type LaneNode, type StageNode } from './Workfl
 import { assertMatchingRunIdentity, type RunIdentity } from './runIdentity'
 import { formatRunTitle } from './runPresentation'
 import { buildRuntimeGraph, runtimeActivitySummary, runtimeEventStatus, runtimeRetrySummary, type RuntimeGraphModel } from './runtimeGraph'
+import { readableRuntimeNodeCount, selectReadableRuntimeNodeIds } from './runtimeViewport'
 import { nodeDetailCacheTtlMs, observerIdlePrefetchDelayMs, observerInitialPrefetchCount, observerListTimeoutMs, observerNodeDetailCacheKey, observerNodeDetailTimeoutMs, observerPollingIntervalMs, observerPrefetchStageOrder, observerResponseIsStale, observerRunDetailCacheKey, observerRunDetailTimeoutMs, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion, observerStaleRetryDelayMs } from './observerPolling'
 import { schedulerHealthDescription, schedulerHealthPresentation } from './schedulerHealth'
 import type {
@@ -616,20 +617,66 @@ function GraphView({
   onToggleGroup: (id: string) => void
 }) {
   const flowInstance = useRef<ReactFlowInstance<LaneNode | StageNode, Edge> | null>(null)
+  const initialFitRunId = useRef<string | null>(null)
+  const currentFitRunId = useRef(detail.run.id)
+  const initialFitAttempts = useRef(0)
+  const initialFitInFlight = useRef(false)
+  const initialFitPending = useRef(false)
+  const userInteracted = useRef(false)
+  const programmaticFit = useRef(false)
   const hasDeferredNodeDetails = (runtimeGraph.sourceFetch?.deferred ?? 0) > 0
+  const readableRuntimeNodeIds = useMemo(() => selectReadableRuntimeNodeIds(runtimeGraph.nodes, runtimeGraph.positions), [runtimeGraph.nodes, runtimeGraph.positions])
   const fitReadableViewport = useCallback(async () => {
     const instance = flowInstance.current
-    if (!instance) return
-    await instance.fitView({ padding: 0.18, minZoom: 0.8, maxZoom: 1, duration: 180 })
-    const viewport = instance.getViewport()
-    const positions = Object.values(runtimeGraph.positions)
-    if (!positions.length) return
-    const minX = Math.min(...positions.map((position) => position.x))
-    const minY = Math.min(...positions.map((position) => position.y))
-    const x = 132 - minX * viewport.zoom
-    const y = Math.max(viewport.y, 138 - minY * viewport.zoom)
-    if (x !== viewport.x || y !== viewport.y) await instance.setViewport({ ...viewport, x, y }, { duration: 120 })
-  }, [runtimeGraph.positions])
+    if (!instance) return false
+    const readableIds = new Set(['lane:events', 'lane:tools', 'lane:candidates', ...readableRuntimeNodeIds])
+    const readableNodes = instance.getNodes().filter((node) => readableIds.has(node.id))
+    if (!readableNodes.length) return false
+    programmaticFit.current = true
+    try {
+      const result = await instance.fitView({ nodes: readableNodes, padding: 0.18, minZoom: 0.9, maxZoom: 1, duration: 180 })
+      if (result === false) return false
+      // The summary is intentionally outside the React Flow viewport. Keep
+      // the earliest selected lane below it without shrinking the readable
+      // zoom. Later nodes remain available by panning.
+      const viewport = instance.getViewport()
+      const minimumNodeY = Math.min(...readableNodes.map((node) => node.position.y))
+      const safeViewportY = 128 - minimumNodeY * viewport.zoom
+      if (viewport.y < safeViewportY) {
+        await instance.setViewport({ ...viewport, y: safeViewportY }, { duration: 120 })
+      }
+      return true
+    } finally {
+      programmaticFit.current = false
+    }
+  }, [readableRuntimeNodeIds])
+  const fitReadableViewportRef = useRef(fitReadableViewport)
+  fitReadableViewportRef.current = fitReadableViewport
+  const scheduleInitialFit = useCallback(() => {
+    if (initialFitRunId.current === currentFitRunId.current || userInteracted.current || initialFitInFlight.current || initialFitAttempts.current >= 4) return
+    if (!flowInstance.current) {
+      initialFitPending.current = true
+      return
+    }
+    initialFitPending.current = false
+    initialFitAttempts.current += 1
+    initialFitInFlight.current = true
+    window.requestAnimationFrame(() => {
+      if (initialFitRunId.current === currentFitRunId.current || userInteracted.current) {
+        initialFitInFlight.current = false
+        return
+      }
+      const runId = currentFitRunId.current
+      void fitReadableViewportRef.current().then((succeeded) => {
+        initialFitInFlight.current = false
+        if (succeeded && currentFitRunId.current === runId && !userInteracted.current) {
+          initialFitRunId.current = currentFitRunId.current
+        } else if (!succeeded && currentFitRunId.current === runId && !userInteracted.current) {
+          scheduleInitialFit()
+        }
+      })
+    })
+  }, [])
   useEffect(() => {
     const applyChineseControlLabels = () => {
       const root = document.querySelector('.graph-area')
@@ -648,19 +695,21 @@ function GraphView({
     return () => window.cancelAnimationFrame(frame)
   }, [detail.run.id])
   useEffect(() => {
-    // Establish one readable initial window when a run or its observed node
-    // set changes. Selecting a node must not reset the scientist's pan/zoom.
-    let settleFrame = 0
-    const frame = window.requestAnimationFrame(() => {
-      settleFrame = window.requestAnimationFrame(() => {
-        void fitReadableViewport()
-      })
-    })
-    return () => {
-      window.cancelAnimationFrame(frame)
-      if (settleFrame) window.cancelAnimationFrame(settleFrame)
-    }
-  }, [detail.run.id, fitReadableViewport, runtimeGraph.nodes.length])
+    // Establish one readable initial window per run. Selecting a node, loading
+    // more details, resizing the inspector, or expanding a group must not
+    // reset the scientist's pan/zoom.
+    currentFitRunId.current = detail.run.id
+    flowInstance.current = null
+    initialFitRunId.current = null
+    initialFitAttempts.current = 0
+    initialFitInFlight.current = false
+    initialFitPending.current = true
+    userInteracted.current = false
+    scheduleInitialFit()
+  }, [detail.run.id, scheduleInitialFit])
+  useEffect(() => {
+    scheduleInitialFit()
+  }, [readableRuntimeNodeIds.length, scheduleInitialFit])
   const nodes = useMemo<Array<StageNode | LaneNode>>(() => {
     const nodesInLane = (types: string[]) => runtimeGraph.nodes.filter((stage) => types.includes(stage.runtime?.node_type ?? ''))
     const laneY = (types: string[], fallback: number) => {
@@ -752,9 +801,10 @@ function GraphView({
         onNodeClick={handleNodeClick}
         onNodeDoubleClick={handleNodeDoubleClick}
         onEdgeClick={handleEdgeClick}
-        onInit={(instance) => { flowInstance.current = instance }}
-        fitViewOptions={{ padding: 0.16, minZoom: 0.8, maxZoom: 0.9 }}
-        defaultViewport={{ x: 22, y: 68, zoom: 0.82 }}
+        onInit={(instance) => { flowInstance.current = instance; scheduleInitialFit() }}
+        onMoveStart={() => { if (!programmaticFit.current) userInteracted.current = true }}
+        fitViewOptions={{ padding: 0.16, minZoom: 0.9, maxZoom: 1 }}
+        defaultViewport={{ x: 22, y: 68, zoom: 0.9 }}
         minZoom={0.2}
         maxZoom={1.35}
         proOptions={{ hideAttribution: true }}
@@ -769,7 +819,7 @@ function GraphView({
         <div className="runtime-graph-summary-head"><span className="runtime-live-dot" /><b>{syncingStale ? '上次读取 · 正在同步' : detail.source === 'postgresql' ? '真实运行图' : '验收运行图'}</b><small>可见 {runtimeGraph.nodes.length} · 关系 {runtimeGraph.edges.length}</small></div>
         <div className="runtime-graph-stats"><span>调用 {runtimeGraph.stats.observedCalls}</span><span>事件 {runtimeGraph.stats.observedEvents}</span><span>{runtimeActivitySummary(detail.run.status, runtimeGraph.stats.openActivities)}</span><span>聚合 {runtimeGraph.nodes.filter((node) => ['tool_group', 'event_group', 'batch_group'].includes(node.runtime?.node_type ?? '')).length}</span>{runtimeRetrySummary(runtimeGraph.stats.toolRetries, runtimeGraph.stats.activityRetries).map((label) => <span key={label}>{label}</span>)}<span>并行组 {runtimeGraph.stats.parallelGroups}</span>{runtimeGraph.stats.cycles > 0 && <span>依赖循环 {runtimeGraph.stats.cycles}</span>}</div>
         {!!runtimeGraph.gaps.length && <p title={runtimeGraph.gaps.join('；')}>数据契约缺口 {runtimeGraph.gaps.length} 项 · 未补画未知关系</p>}
-        <div className="runtime-graph-legend"><span><i className="legend-dot time" />位置按观测时间</span><span><i className="legend-line dependency" />依赖</span><span><i className="legend-line association" />关联/分组</span><span className="runtime-graph-nav">{runtimeGraph.nodes.length > 12 ? `首屏优先可读，后续还有约 ${runtimeGraph.nodes.length - 12} 项可向右平移` : '当前事实均在初始范围内'}</span></div>
+        <div className="runtime-graph-legend"><span><i className="legend-dot time" />位置按观测时间</span><span><i className="legend-line dependency" />依赖</span><span><i className="legend-line association" />关联/分组</span><span className="runtime-graph-nav">{readableRuntimeNodeCount(runtimeGraph.nodes) > readableRuntimeNodeIds.length ? `首屏优先可读，后续还有约 ${readableRuntimeNodeCount(runtimeGraph.nodes) - readableRuntimeNodeIds.length} 项可向右平移` : '当前事实均在初始范围内'}</span></div>
       </div>
     </div>
   )

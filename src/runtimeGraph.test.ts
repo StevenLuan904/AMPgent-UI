@@ -503,7 +503,7 @@ describe('buildRuntimeGraph', () => {
     expect(result.nodes.map((node) => node.id)).toContain('event:4')
   })
 
-  it('starts each lane after its wrapped rows instead of a fixed y offset', () => {
+  it('starts each lane after its actual rows instead of a fixed y offset', () => {
     const eventTypes = ['run.started', 'run.completed', 'run.failed', 'run.cancelled', 'run.progress', 'candidate.scored', 'candidate.created', 'candidate.rejected', 'tool_call.started']
     const events = eventTypes.map((type, index) => ({
       sequence_no: index + 1,
@@ -515,7 +515,7 @@ describe('buildRuntimeGraph', () => {
     const result = buildRuntimeGraph(detail(events), { worker: nodeDetail([call('call-1', 'boltz', '2026-09-04T00:00:10Z')]) })
     const eventPositions = events.map((_, index) => result.positions[`event:${index + 1}`].y)
     const toolPosition = result.positions['call:call-1'].y
-    expect(eventPositions).toEqual([150, 150, 150, 150, 150, 150, 150, 150, 340])
+    expect(eventPositions).toEqual([150, 150, 150, 150, 150, 150, 150, 150, 150])
     expect(toolPosition).toBeGreaterThan(eventPositions.at(-1)! + 200)
   })
 
