@@ -1,0 +1,33 @@
+{
+  "schema_version": "ampgent.vegfa-pepflow-peripheral-rescue-preflight.1",
+  "current_phase": "preflight",
+  "target_key": "vegfa",
+  "source": "PepFlow",
+  "operator_id": "vegfa-pepflow-peripheral-rescue-1aa-v1",
+  "seed": 20260904,
+  "parent_run_id": "98170454-be7f-5ab2-8add-979b9f11ddad",
+  "parent_candidate_id": "af5474ec-97c5-457d-93b3-b861f59705b2",
+  "parent_sequence_sha256": "b44a23e10305e886fac05ad3b3d9454196d52d35cf89a76c0b6acf93bd7b2a23",
+  "reference_slot_count": 8,
+  "matched_slot_positions": [
+    3,
+    7,
+    8,
+    9
+  ],
+  "matched_edit_budget": "one_residue_equal_length",
+  "donor_artifact": "reports/gyrA_pepflow_qd_neighbor_20260904/proposals.csv",
+  "donor_artifact_sha256": "e00605f15553e1ccce3cab76113669c71784bb7969b17a61562266a1e01672ac",
+  "donor_row_count": 4,
+  "donor_source_values": [
+    "PepFlow"
+  ],
+  "potential_child_hash_count": 8,
+  "pg_exact_existing_child_count": 0,
+  "historical_edit_key_count": 8,
+  "historical_sequence_hash_count": 8,
+  "pg_new_formable_count": 6,
+  "generation_started": false,
+  "score_all_started": false,
+  "materialization_started": false
+}
