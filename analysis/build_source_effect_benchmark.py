@@ -130,6 +130,8 @@ def _source_name(value: str) -> str:
         return "PepGLAD"
     if normalized == "pepflow":
         return "PepFlow"
+    if normalized in {"pepmlm", "pepmlm-target-conditioned"}:
+        return "PepMLM"
     return value.strip() or "unknown"
 
 
@@ -166,10 +168,11 @@ def _challenger_counts(
 
 
 def _qd_metrics(
-    qd: dict[str, Any], rows: list[dict[str, str]], split: bool
+    qd: dict[str, Any], rows: list[dict[str, str]], split: bool, *,
+    filter_to_rows: bool = False,
 ) -> dict[str, Any]:
     contributions = qd.get("contributions")
-    if split and isinstance(contributions, list):
+    if (split or filter_to_rows) and isinstance(contributions, list):
         row_keys = {_candidate_key(row) for row in rows}
         selected = [
             item
@@ -208,7 +211,11 @@ def _qd_metrics(
                 else None
             ),
             "archive_relative_novelty": None,
-            "metric_note": "source split recomputed from same-run QD contributions",
+            "metric_note": (
+                "source split recomputed from same-run QD contributions"
+                if split
+                else "materialized cohort filtered from same-run QD contributions"
+            ),
         }
 
     eligible = _first_int(qd, "eligible_batch_candidate_count")
@@ -406,9 +413,13 @@ def _record(spec: dict[str, Any], base: Path) -> list[dict[str, Any]]:
         materialized_challenger_reviewed, materialized_challenger_no_conflict = (
             _challenger_counts(materialized_challenger_rows, material, split)
         )
-        qd_metrics = _qd_metrics(qd, materialized_rows, split)
+        qd_metrics = _qd_metrics(qd, rows, split)
+        materialized_qd_metrics = _qd_metrics(
+            qd, materialized_rows, split, filter_to_rows=True
+        )
         qd_eligible = qd_metrics["eligible"]
-        rosetta = _rosetta(spec, qd_eligible, base)
+        materialized_qd_eligible = materialized_qd_metrics["eligible"]
+        rosetta = _rosetta(spec, materialized_qd_eligible, base)
         admitted = spec.get("pool_a_admitted_count")
         if admitted is None:
             admitted = qd_metrics["new_cell"] + qd_metrics["replacement"]
@@ -468,7 +479,9 @@ def _record(spec: dict[str, Any], base: Path) -> list[dict[str, Any]]:
                     "materialized_to_excellent": _rate(
                         materialized_excellent, materialized
                     ),
-                    "materialized_to_qd_eligible": _rate(qd_eligible, materialized),
+                    "materialized_to_qd_eligible": _rate(
+                        materialized_qd_eligible, materialized
+                    ),
                 },
                 "materialized_cohort": {
                     "candidate_count": materialized,
@@ -478,9 +491,9 @@ def _record(spec: dict[str, Any], base: Path) -> list[dict[str, Any]]:
                     "excellent": materialized_excellent,
                     "challenger_reviewed": materialized_challenger_reviewed,
                     "challenger_no_conflict": materialized_challenger_no_conflict,
-                    "qd_eligible": qd_eligible,
-                    "qd_new_cell": qd_metrics["new_cell"],
-                    "qd_replacement": qd_metrics["replacement"],
+                    "qd_eligible": materialized_qd_eligible,
+                    "qd_new_cell": materialized_qd_metrics["new_cell"],
+                    "qd_replacement": materialized_qd_metrics["replacement"],
                 },
                 "counts": {
                     "proposal": proposals,
@@ -588,6 +601,46 @@ def _next_operator(records: list[dict[str, Any]], base_dir: Path) -> dict[str, A
     }
 
 
+def _coverage_matrix(records: list[dict[str, Any]]) -> dict[str, Any]:
+    """Summarize benchmark-record coverage without inferring missing science."""
+    targets = ["acea", "gyra", "pbp2a", "vegfa", "fgf2", "angpt1"]
+    sources = ["PepGLAD", "PepFlow", "PepMLM"]
+    cells: dict[str, dict[str, Any]] = {}
+    for target in targets:
+        for source in sources:
+            matching = [
+                record
+                for record in records
+                if record["target_key"].casefold() == target
+                and _source_name(record["source"]) == source
+            ]
+            cells[f"{source}:{target}"] = {
+                "target_key": target,
+                "source": source,
+                "record_count": len(matching),
+                "run_ids": [record["run_id"] for record in matching],
+                "materialized_count": sum(
+                    record["counts"]["materialized"] for record in matching
+                ),
+                "qd_eligible_count": sum(
+                    record["counts"]["qd_eligible"] for record in matching
+                ),
+                "status": (
+                    "recorded" if matching else "benchmark_not_recorded"
+                ),
+            }
+    return {
+        "sources": sources,
+        "targets": targets,
+        "cells": cells,
+        "interpretation": (
+            "benchmark_not_recorded means this explicit compact benchmark has no "
+            "self-contained row; it is not evidence that the source-target pair "
+            "was never run"
+        ),
+    }
+
+
 def build_benchmark(config: dict[str, Any], base_dir: Path) -> dict[str, Any]:
     records = [record for spec in config["specs"] for record in _record(spec, base_dir)]
     return {
@@ -604,6 +657,7 @@ def build_benchmark(config: dict[str, Any], base_dir: Path) -> dict[str, Any]:
         ),
         "excluded_scopes": config.get("excluded_scopes", []),
         "records": records,
+        "coverage_matrix": _coverage_matrix(records),
         "next_operator": _next_operator(records, base_dir),
         "weighted_total_used": False,
         "shadow_runtime_policy": "runtime_unavailable is structured coverage, never a pass",

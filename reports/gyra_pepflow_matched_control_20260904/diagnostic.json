@@ -1,0 +1,46 @@
+{
+  "control_source": "PepFlow",
+  "decision": {
+    "do_not_score_or_materialize": true,
+    "do_not_submit_rosetta": true,
+    "matched_control_eligible": false,
+    "reason": "The shared parent and one-residue budget are valid, but the PepFlow artifact supplies only four donor residues. On the two reference positions this yields seven distinct children after excluding reference edits, not twelve PG-new slot outputs.",
+    "reason_category": "pepflow_donor_alphabet_collapses_12_slots"
+  },
+  "design_contract": {
+    "pepflow_donor_rows": 12,
+    "pepflow_parent_identity_rows": 1,
+    "pepflow_unique_donor_residues": [
+      "G",
+      "P",
+      "S",
+      "V"
+    ],
+    "seed": 20260904,
+    "single_residue_budget": true,
+    "slot_count": 12,
+    "source_parent_shared": true,
+    "unique_position_from_to_slots": 12
+  },
+  "evidence": {
+    "control_donor_artifact": "reports/gyrA_pepflow_qd_neighbor_20260904/proposals.csv",
+    "reference_proposals": "reports/gyrA_pepglad_source_expansion_20260904_run2/proposals.csv"
+  },
+  "preflight": {
+    "exact_slot_match": false,
+    "pg_exact_checked": false,
+    "projected_unique_children_after_reference_edit_exclusion": 7,
+    "projected_unique_edit_keys": 7,
+    "reference_edit_overlap_excluded": 12
+  },
+  "reference_source": "PepGLAD",
+  "schema_version": "ampgent.gyra-pepflow-matched-control-diagnostic.1",
+  "source_parent": {
+    "candidate_id": "48e42024-f5e9-4eee-a720-2f577738fe32",
+    "identity_verified": true,
+    "run_id": "e666339b-63ee-5efc-8733-a34b9c9f8694",
+    "sequence": "ESREEWWARSGAATLTAKAAAAR",
+    "sequence_sha256": "2bddd1a09a195b655f25e175d6f2fb9ec7bba17465d7af0632b7c8bce5e1a0d0"
+  },
+  "target_key": "gyra"
+}

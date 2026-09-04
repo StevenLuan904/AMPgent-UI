@@ -1,0 +1,50 @@
+{
+  "benchmark_id": "ampgent_source_effect_benchmark_v4_20260904",
+  "observed_at_utc": "2026-09-04T14:00:00Z",
+  "specs": [
+    {
+      "label": "GyrA PepFlow QD neighbor",
+      "source": "PepFlow",
+      "target_key": "gyra",
+      "run_id": "e405720e-7087-5765-9dde-6148aee0c7aa",
+      "score_path": "reports/gyrA_pepflow_qd_neighbor_20260904/candidate_scores_calibrated.csv",
+      "materialized_score_path": "reports/gyrA_pepflow_qd_neighbor_20260904/selected_candidate_scores.csv",
+      "proposal_path": "reports/gyrA_pepflow_qd_neighbor_20260904/proposals.csv",
+      "challenger_path": "reports/gyrA_pepflow_qd_neighbor_20260904/challenger/challenger_review.csv",
+      "materialized_challenger_path": "reports/gyrA_pepflow_qd_neighbor_20260904/selected_challenger_review.csv",
+      "materialization_path": "reports/gyrA_pepflow_qd_neighbor_20260904/materialization_receipt.json",
+      "qd_path": "reports/gyrA_pepflow_qd_neighbor_20260904/quality_diversity.json",
+      "pool_a_admitted_count": 0,
+      "candidate_id_kind": "authoritative_uuid_in_close_receipt; score_row_sequence_sha256"
+    },
+    {
+      "label": "VEGFA PepMLM peripheral rescue",
+      "source": "PepMLM",
+      "target_key": "vegfa",
+      "run_id": "d710662b-a74c-50ec-b152-5ea4d72903d3",
+      "score_path": "reports/vegfa_pepmlm_peripheral_rescue_20260904_v1/score_all/candidate_scores.csv",
+      "materialized_score_path": "reports/vegfa_pepmlm_peripheral_rescue_20260904_v1/materialization_input/candidate_scores.csv",
+      "proposal_path": "reports/vegfa_pepmlm_peripheral_rescue_20260904_v1/proposals.csv",
+      "challenger_path": "reports/vegfa_pepmlm_peripheral_rescue_20260904_v1/challenger/challenger_review.csv",
+      "materialized_challenger_path": "reports/vegfa_pepmlm_peripheral_rescue_20260904_v1/materialization_input/challenger_review.csv",
+      "materialization_path": "reports/vegfa_pepmlm_peripheral_rescue_20260904_v1/materialization_receipt.json",
+      "qd_path": "reports/vegfa_pepmlm_peripheral_rescue_20260904_v1/qd_summary.json",
+      "pool_a_admitted_count": 0,
+      "candidate_id_kind": "authoritative_uuid_in_close_receipt; score_row_sequence_sha256"
+    },
+    {
+      "label": "GyrA PepGLAD source expansion run2",
+      "source": "PepGLAD",
+      "target_key": "gyra",
+      "run_id": "e42e5097-aa1b-55ab-a191-93a923d7f51a",
+      "score_path": "reports/gyrA_pepglad_source_expansion_20260904_run2/calibration/candidate_scores_calibrated.csv",
+      "materialized_score_path": "reports/gyrA_pepglad_source_expansion_20260904_run2/materialization_candidate_scores.csv",
+      "proposal_path": "reports/gyrA_pepglad_source_expansion_20260904_run2/proposals.csv",
+      "challenger_path": "reports/gyrA_pepglad_source_expansion_20260904_run2/challenger/challenger_review.csv",
+      "materialization_path": "reports/gyrA_pepglad_source_expansion_20260904_run2/materialization_receipt.json",
+      "qd_path": "reports/gyrA_pepglad_source_expansion_20260904_run2/qd/quality_diversity.json",
+      "pool_a_admitted_count": 0,
+      "candidate_id_kind": "authoritative_uuid_in_pg_readback; score_row_sequence_sha256"
+    }
+  ]
+}
