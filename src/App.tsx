@@ -590,6 +590,7 @@ function CanvasHeader({ detail, refreshing, syncingStale, selectionMode, selecte
 function GraphView({
   detail,
   runtimeGraph,
+  authoritativeToolRecords,
   syncingStale,
   analysisSnapshot,
   persistedDistributions,
@@ -604,6 +605,7 @@ function GraphView({
 }: {
   detail: RunDetail
   runtimeGraph: RuntimeGraphModel
+  authoritativeToolRecords?: number
   syncingStale: boolean
   analysisSnapshot: AnalysisSnapshot | null
   persistedDistributions: Record<string, ResultDistributionData>
@@ -817,7 +819,7 @@ function GraphView({
       <button className="runtime-fit-button" aria-label="回到可读视图" title="回到可读视图" onClick={() => { void fitReadableViewport() }}>可读视图</button>
       <div className="runtime-graph-summary" role="status">
         <div className="runtime-graph-summary-head"><span className="runtime-live-dot" /><b>{syncingStale ? '上次读取 · 正在同步' : detail.source === 'postgresql' ? '真实运行图' : '验收运行图'}</b><small>可见 {runtimeGraph.nodes.length} · 关系 {runtimeGraph.edges.length}</small></div>
-        <div className="runtime-graph-stats"><span>{runtimeCallSummary(runtimeGraph.stats.observedCalls, detail.run.tool_call_count)}</span><span>事件 {runtimeGraph.stats.observedEvents}</span><span>{runtimeActivitySummary(detail.run.status, runtimeGraph.stats.openActivities)}</span><span>聚合 {runtimeGraph.nodes.filter((node) => ['tool_group', 'event_group', 'batch_group'].includes(node.runtime?.node_type ?? '')).length}</span>{runtimeRetrySummary(runtimeGraph.stats.toolRetries, runtimeGraph.stats.activityRetries).map((label) => <span key={label}>{label}</span>)}<span>并行组 {runtimeGraph.stats.parallelGroups}</span>{runtimeGraph.stats.cycles > 0 && <span>依赖循环 {runtimeGraph.stats.cycles}</span>}</div>
+        <div className="runtime-graph-stats"><span>{runtimeCallSummary(runtimeGraph.stats.observedCalls, authoritativeToolRecords)}</span><span>事件 {runtimeGraph.stats.observedEvents}</span><span>{runtimeActivitySummary(detail.run.status, runtimeGraph.stats.openActivities)}</span><span>聚合 {runtimeGraph.nodes.filter((node) => ['tool_group', 'event_group', 'batch_group'].includes(node.runtime?.node_type ?? '')).length}</span>{runtimeRetrySummary(runtimeGraph.stats.toolRetries, runtimeGraph.stats.activityRetries).map((label) => <span key={label}>{label}</span>)}<span>并行组 {runtimeGraph.stats.parallelGroups}</span>{runtimeGraph.stats.cycles > 0 && <span>依赖循环 {runtimeGraph.stats.cycles}</span>}</div>
         {!!runtimeGraph.gaps.length && <p title={runtimeGraph.gaps.join('；')}>数据契约缺口 {runtimeGraph.gaps.length} 项 · 未补画未知关系</p>}
         <div className="runtime-graph-legend"><span><i className="legend-dot time" />位置按观测时间</span><span><i className="legend-line dependency" />依赖</span><span><i className="legend-line association" />关联/分组</span><span className="runtime-graph-nav">{readableRuntimeNodeCount(runtimeGraph.nodes) > readableRuntimeNodeIds.length ? `首屏优先可读，后续还有约 ${readableRuntimeNodeCount(runtimeGraph.nodes) - readableRuntimeNodeIds.length} 项可向右平移` : '当前事实均在初始范围内'}</span></div>
       </div>
@@ -1340,7 +1342,8 @@ export default function App() {
               <GraphView
                 detail={data.detail}
                 runtimeGraph={runtimeGraph!}
-                 syncingStale={data.syncingStale}
+                authoritativeToolRecords={data.runs.find((run) => run.id === data.selectedId)?.tool_call_count}
+                syncingStale={data.syncingStale}
                  analysisSnapshot={analysisSnapshot}
                  persistedDistributions={persistedDistributions}
                 selectedStage={selectedStage}
