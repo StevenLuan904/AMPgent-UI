@@ -1,0 +1,66 @@
+{
+  "schema_version": "ampgent.pool-a-md-verified-wait.1",
+  "observed_at_utc": "2026-09-04T04:48:48.8039645Z",
+  "decision": "verified_wait",
+  "source": "deploy/windows/check_ampgent_gpu_capacity.ps1",
+  "main_019": {
+    "host": "192.168.99.19",
+    "gpu_count": 8,
+    "all_gpus_running_ampgent_openmm": true,
+    "gpu_pid_by_index": {
+      "0": 1795945,
+      "1": 1892180,
+      "2": 2022433,
+      "3": 2087744,
+      "4": 1894513,
+      "5": 2085684,
+      "6": 1987758,
+      "7": 1858319
+    },
+    "utilization_percent_by_index": {
+      "0": 83,
+      "1": 100,
+      "2": 100,
+      "3": 94,
+      "4": 100,
+      "5": 81,
+      "6": 100,
+      "7": 100
+    },
+    "turnover_since_previous_observation": {
+      "gpu3": {
+        "previous_pid": 1927554,
+        "current_pid": 2087744
+      },
+      "gpu5": {
+        "previous_pid": 1992350,
+        "current_pid": 2085684
+      }
+    }
+  },
+  "synth": {
+    "host": "192.168.99.2",
+    "ampgent_md_gpu_pid_by_index": {
+      "1": 58820,
+      "2": 1280316,
+      "3": 2060743
+    },
+    "utilization_percent_by_index": {
+      "1": 100,
+      "2": 93,
+      "3": 100
+    },
+    "gpu0_foreign_process_present": true,
+    "gpu4_foreign_or_unknown_process_present": true,
+    "gpu5_to_7_reserved_by_cuda_declarations": true
+  },
+  "host_032": {
+    "status": "unreachable",
+    "gpu2_gpu3_prohibited": true,
+    "touched": false
+  },
+  "idle_authorized_gpu_count": 0,
+  "new_task_submitted": false,
+  "existing_task_restarted": false,
+  "interpretation": "Exact live OpenMM handles and GPU3/GPU5 PID turnover prove the existing queue is advancing; no safe idle GPU was available, so exact-once supervisors remain authoritative."
+}
