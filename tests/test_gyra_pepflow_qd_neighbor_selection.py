@@ -28,6 +28,9 @@ def test_pg_timeout_is_fail_closed_and_does_not_claim_writes() -> None:
     payload = json.loads(RECEIPT.read_text(encoding="utf-8"))
     postgres = payload["postgresql"]
     assert postgres["status"] == "evidence_verification_unavailable"
+    assert postgres["readback_phase"] == "candidate_identity"
+    assert postgres["experiment_run_status_verified"] == "succeeded"
+    assert postgres["error_category"] == "statement_timeout"
     assert postgres["identity_binding_verified"] is False
     assert postgres["writes_attempted"] == 0
     assert payload["selected_evidence"]["score_all"][

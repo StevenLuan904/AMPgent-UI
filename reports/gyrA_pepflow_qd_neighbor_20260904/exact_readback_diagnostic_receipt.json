@@ -1,0 +1,33 @@
+{
+  "schema_version": "ampgent.pg-exact-readback-diagnostic.1",
+  "run_id": "e405720e-7087-5765-9dde-6148aee0c7aa",
+  "authoritative_candidate_count": 8,
+  "candidate_id_source": "coarse5_prepared_queue.csv",
+  "session_count": 1,
+  "statement_timeout_ms": 2500,
+  "status": "evidence_verification_unavailable",
+  "steps": {
+    "experiment_run": {
+      "status": "succeeded",
+      "run_status": "succeeded"
+    },
+    "candidate_identity": {
+      "status": "statement_timeout",
+      "matched_candidate_count": null,
+      "identity_verified": false
+    },
+    "evaluation_group": {
+      "status": "not_attempted",
+      "reason": "candidate_identity_timeout"
+    },
+    "drift_check": {
+      "status": "not_attempted",
+      "reason": "candidate_identity_timeout"
+    }
+  },
+  "error_category": "statement_timeout",
+  "writes_attempted": 0,
+  "replay_attempted": false,
+  "model_release_key_binding_verified": false,
+  "recovery_action": "retry the indexed candidate identity read only after the local PG service is responsive"
+}
