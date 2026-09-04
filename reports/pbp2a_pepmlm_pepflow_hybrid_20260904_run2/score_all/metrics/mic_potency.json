@@ -1,0 +1,515 @@
+{
+  "plugin": {
+    "name": "mic_potency",
+    "parameters": {}
+  },
+  "contract": {
+    "default_trust": "soft",
+    "maximum_trust": "soft",
+    "reliability": "R3-author-test-not-similarity-isolated",
+    "provider": "external",
+    "outputs": {
+      "llamp_log10_mic_um": [
+        "llamp_log10_mic_um",
+        "log10(umol/L)",
+        "numeric"
+      ],
+      "llamp_predicted_mic_um": [
+        "llamp_predicted_mic_um",
+        "umol/L",
+        "numeric"
+      ]
+    }
+  },
+  "candidate_count": 12,
+  "status": "complete",
+  "records": [
+    {
+      "candidate_id": "proposal-cbef8ed1978fe6e03a18",
+      "sequence": "NNAKEGPSRDSLKESLTTAAA",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "llamp_log10_mic_um",
+          "numeric_value": 1.9890778064727783,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "llamp_predicted_mic_um",
+          "numeric_value": 97.51643286326681,
+          "text_value": null,
+          "unit": "umol/L"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-cbef8ed1978fe6e03a18",
+        "sequence": "NNAKEGPSRDSLKESLTTAAA",
+        "status": "success",
+        "llamp_log10_mic_um": "1.9890778064727783",
+        "llamp_predicted_mic_um": "97.51643286326681",
+        "species": "Escherichia coli",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-be076fb3464d224fc4fc",
+      "sequence": "NNAGPVKSRDSLKESLTTAAA",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "llamp_log10_mic_um",
+          "numeric_value": 1.8679500818252563,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "llamp_predicted_mic_um",
+          "numeric_value": 73.7819419667522,
+          "text_value": null,
+          "unit": "umol/L"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-be076fb3464d224fc4fc",
+        "sequence": "NNAGPVKSRDSLKESLTTAAA",
+        "status": "success",
+        "llamp_log10_mic_um": "1.8679500818252563",
+        "llamp_predicted_mic_um": "73.7819419667522",
+        "species": "Escherichia coli",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-e15fa4b90148ff7fe351",
+      "sequence": "NNAKEYKGPVSLKESLTTAAA",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "llamp_log10_mic_um",
+          "numeric_value": 1.8504197597503662,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "llamp_predicted_mic_um",
+          "numeric_value": 70.86303678067985,
+          "text_value": null,
+          "unit": "umol/L"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-e15fa4b90148ff7fe351",
+        "sequence": "NNAKEYKGPVSLKESLTTAAA",
+        "status": "success",
+        "llamp_log10_mic_um": "1.8504197597503662",
+        "llamp_predicted_mic_um": "70.86303678067985",
+        "species": "Escherichia coli",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-c2509fd33102272d547e",
+      "sequence": "NNAKEYKGVDSLKESLTTAAA",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "llamp_log10_mic_um",
+          "numeric_value": 1.9394131898880005,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "llamp_predicted_mic_um",
+          "numeric_value": 86.97875558801184,
+          "text_value": null,
+          "unit": "umol/L"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-c2509fd33102272d547e",
+        "sequence": "NNAKEYKGVDSLKESLTTAAA",
+        "status": "success",
+        "llamp_log10_mic_um": "1.9394131898880005",
+        "llamp_predicted_mic_um": "86.97875558801184",
+        "species": "Escherichia coli",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-56ef4547b4558ccc91d6",
+      "sequence": "AAAKEKGPIQVLGLSKLG",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "llamp_log10_mic_um",
+          "numeric_value": 1.962445855140686,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "llamp_predicted_mic_um",
+          "numeric_value": 91.71615828417332,
+          "text_value": null,
+          "unit": "umol/L"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-56ef4547b4558ccc91d6",
+        "sequence": "AAAKEKGPIQVLGLSKLG",
+        "status": "success",
+        "llamp_log10_mic_um": "1.962445855140686",
+        "llamp_predicted_mic_um": "91.71615828417332",
+        "species": "Escherichia coli",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-aa1e058e5011dadd9a02",
+      "sequence": "AAAKEKGPSQVLGLSKLG",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "llamp_log10_mic_um",
+          "numeric_value": 1.8103697299957275,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "llamp_predicted_mic_um",
+          "numeric_value": 64.62041309755986,
+          "text_value": null,
+          "unit": "umol/L"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-aa1e058e5011dadd9a02",
+        "sequence": "AAAKEKGPSQVLGLSKLG",
+        "status": "success",
+        "llamp_log10_mic_um": "1.8103697299957275",
+        "llamp_predicted_mic_um": "64.62041309755986",
+        "species": "Escherichia coli",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-8ad74690d54ffedb760e",
+      "sequence": "AAAGPVDDIQVLGLSKLG",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "llamp_log10_mic_um",
+          "numeric_value": 1.9789210557937622,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "llamp_predicted_mic_um",
+          "numeric_value": 95.26229845243878,
+          "text_value": null,
+          "unit": "umol/L"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-8ad74690d54ffedb760e",
+        "sequence": "AAAGPVDDIQVLGLSKLG",
+        "status": "success",
+        "llamp_log10_mic_um": "1.9789210557937622",
+        "llamp_predicted_mic_um": "95.26229845243878",
+        "species": "Escherichia coli",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-39c3fac1ae2ab3c3e43a",
+      "sequence": "AAAKGPVDIQVLGLSKLG",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "llamp_log10_mic_um",
+          "numeric_value": 1.9052196741104126,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "llamp_predicted_mic_um",
+          "numeric_value": 80.39326632377123,
+          "text_value": null,
+          "unit": "umol/L"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-39c3fac1ae2ab3c3e43a",
+        "sequence": "AAAKGPVDIQVLGLSKLG",
+        "status": "success",
+        "llamp_log10_mic_um": "1.9052196741104126",
+        "llamp_predicted_mic_um": "80.39326632377123",
+        "species": "Escherichia coli",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-aa1edba9cb5f42f29743",
+      "sequence": "AAAKEGPVIQVLGLSKLG",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "llamp_log10_mic_um",
+          "numeric_value": 2.240748882293701,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "llamp_predicted_mic_um",
+          "numeric_value": 174.08000171381204,
+          "text_value": null,
+          "unit": "umol/L"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-aa1edba9cb5f42f29743",
+        "sequence": "AAAKEGPVIQVLGLSKLG",
+        "status": "success",
+        "llamp_log10_mic_um": "2.240748882293701",
+        "llamp_predicted_mic_um": "174.08000171381204",
+        "species": "Escherichia coli",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-9f61a3507fe2242f76d7",
+      "sequence": "AAAGVKDDIQVLGLSKLG",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "llamp_log10_mic_um",
+          "numeric_value": 2.1442089080810547,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "llamp_predicted_mic_um",
+          "numeric_value": 139.3827112464227,
+          "text_value": null,
+          "unit": "umol/L"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-9f61a3507fe2242f76d7",
+        "sequence": "AAAGVKDDIQVLGLSKLG",
+        "status": "success",
+        "llamp_log10_mic_um": "2.1442089080810547",
+        "llamp_predicted_mic_um": "139.3827112464227",
+        "species": "Escherichia coli",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-7b38a0a72517134461d1",
+      "sequence": "AAAKEKGVIQVLGLSKLG",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "llamp_log10_mic_um",
+          "numeric_value": 2.1389505863189697,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "llamp_predicted_mic_um",
+          "numeric_value": 137.70527800091398,
+          "text_value": null,
+          "unit": "umol/L"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-7b38a0a72517134461d1",
+        "sequence": "AAAKEKGVIQVLGLSKLG",
+        "status": "success",
+        "llamp_log10_mic_um": "2.1389505863189697",
+        "llamp_predicted_mic_um": "137.70527800091398",
+        "species": "Escherichia coli",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-f99bbc28cc41ff6dd8f3",
+      "sequence": "AAAKGVSDIQVLGLSKLG",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "llamp_log10_mic_um",
+          "numeric_value": 2.0587472915649414,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "llamp_predicted_mic_um",
+          "numeric_value": 114.48465812009592,
+          "text_value": null,
+          "unit": "umol/L"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-f99bbc28cc41ff6dd8f3",
+        "sequence": "AAAKGVSDIQVLGLSKLG",
+        "status": "success",
+        "llamp_log10_mic_um": "2.0587472915649414",
+        "llamp_predicted_mic_um": "114.48465812009592",
+        "species": "Escherichia coli",
+        "error": ""
+      }
+    }
+  ],
+  "raw_rows": [
+    {
+      "candidate_id": "proposal-cbef8ed1978fe6e03a18",
+      "sequence": "NNAKEGPSRDSLKESLTTAAA",
+      "status": "success",
+      "llamp_log10_mic_um": "1.9890778064727783",
+      "llamp_predicted_mic_um": "97.51643286326681",
+      "species": "Escherichia coli",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-be076fb3464d224fc4fc",
+      "sequence": "NNAGPVKSRDSLKESLTTAAA",
+      "status": "success",
+      "llamp_log10_mic_um": "1.8679500818252563",
+      "llamp_predicted_mic_um": "73.7819419667522",
+      "species": "Escherichia coli",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-e15fa4b90148ff7fe351",
+      "sequence": "NNAKEYKGPVSLKESLTTAAA",
+      "status": "success",
+      "llamp_log10_mic_um": "1.8504197597503662",
+      "llamp_predicted_mic_um": "70.86303678067985",
+      "species": "Escherichia coli",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-c2509fd33102272d547e",
+      "sequence": "NNAKEYKGVDSLKESLTTAAA",
+      "status": "success",
+      "llamp_log10_mic_um": "1.9394131898880005",
+      "llamp_predicted_mic_um": "86.97875558801184",
+      "species": "Escherichia coli",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-56ef4547b4558ccc91d6",
+      "sequence": "AAAKEKGPIQVLGLSKLG",
+      "status": "success",
+      "llamp_log10_mic_um": "1.962445855140686",
+      "llamp_predicted_mic_um": "91.71615828417332",
+      "species": "Escherichia coli",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-aa1e058e5011dadd9a02",
+      "sequence": "AAAKEKGPSQVLGLSKLG",
+      "status": "success",
+      "llamp_log10_mic_um": "1.8103697299957275",
+      "llamp_predicted_mic_um": "64.62041309755986",
+      "species": "Escherichia coli",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-8ad74690d54ffedb760e",
+      "sequence": "AAAGPVDDIQVLGLSKLG",
+      "status": "success",
+      "llamp_log10_mic_um": "1.9789210557937622",
+      "llamp_predicted_mic_um": "95.26229845243878",
+      "species": "Escherichia coli",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-39c3fac1ae2ab3c3e43a",
+      "sequence": "AAAKGPVDIQVLGLSKLG",
+      "status": "success",
+      "llamp_log10_mic_um": "1.9052196741104126",
+      "llamp_predicted_mic_um": "80.39326632377123",
+      "species": "Escherichia coli",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-aa1edba9cb5f42f29743",
+      "sequence": "AAAKEGPVIQVLGLSKLG",
+      "status": "success",
+      "llamp_log10_mic_um": "2.240748882293701",
+      "llamp_predicted_mic_um": "174.08000171381204",
+      "species": "Escherichia coli",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-9f61a3507fe2242f76d7",
+      "sequence": "AAAGVKDDIQVLGLSKLG",
+      "status": "success",
+      "llamp_log10_mic_um": "2.1442089080810547",
+      "llamp_predicted_mic_um": "139.3827112464227",
+      "species": "Escherichia coli",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-7b38a0a72517134461d1",
+      "sequence": "AAAKEKGVIQVLGLSKLG",
+      "status": "success",
+      "llamp_log10_mic_um": "2.1389505863189697",
+      "llamp_predicted_mic_um": "137.70527800091398",
+      "species": "Escherichia coli",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-f99bbc28cc41ff6dd8f3",
+      "sequence": "AAAKGVSDIQVLGLSKLG",
+      "status": "success",
+      "llamp_log10_mic_um": "2.0587472915649414",
+      "llamp_predicted_mic_um": "114.48465812009592",
+      "species": "Escherichia coli",
+      "error": ""
+    }
+  ],
+  "stdout_tail": "",
+  "stderr_tail": "Some weights of EsmModel were not initialized from the model checkpoint at D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\var\\metric-runtimes\\llamp-models\\peptide_tuned_ESM-2 and are newly initialized: ['esm.pooler.dense.bias', 'esm.pooler.dense.weight']\nYou should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.\nD:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\var\\metric-runtimes\\llamp-py39\\lib\\site-packages\\transformers\\tokenization_utils_base.py:1601: FutureWarning: `clean_up_tokenization_spaces` was not set. It will be set to `True` by default. This behavior will be depracted in transformers v4.45, and will be then set to `False` by default. For more details check this issue: https://github.com/huggingface/transformers/issues/31884\n  warnings.warn(\n",
+  "model_uri": "git+https://github.com/GIST-CSBL/LLAMP.git@bb48daaa94b947edac46e498dec741911cf98edc",
+  "weights_sha256": "be331f32d8df620a955dfd86647cedd81f91fd315e5a8cefbc1cdd66c43f7f6e",
+  "limitations": [
+    "E. coli species-conditioned output is a soft estimate, not a wet-lab MIC.",
+    "The author test is not sequence-similarity isolated from training data.",
+    "The PolyForm Noncommercial license limits this runtime to noncommercial research."
+  ],
+  "adapter_version": "llamp-bb48daa-esm2-16b0dddc",
+  "registry_sha256": "7a5152541864e7cec1b94bb5eb9c74d313408b5f4d4781f1565525b577164e55",
+  "command_argv": [
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\var\\metric-runtimes\\llamp-py39\\Scripts\\python.exe",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\src\\pepagent\\model_workers\\llamp_metric_cli.py",
+    "--input",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\reports\\pbp2a_pepmlm_pepflow_hybrid_20260904_run2\\score_all\\work\\mic_potency\\candidates.csv",
+    "--output",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\reports\\pbp2a_pepmlm_pepflow_hybrid_20260904_run2\\score_all\\work\\mic_potency\\predictions.csv",
+    "--raw-output-dir",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\reports\\pbp2a_pepmlm_pepflow_hybrid_20260904_run2\\score_all\\work\\mic_potency\\raw",
+    "--upstream-repository",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\var\\metric-runtimes\\llamp-src",
+    "--base-model",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\var\\metric-runtimes\\llamp-models\\peptide_tuned_ESM-2",
+    "--checkpoint",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\var\\metric-runtimes\\llamp-models\\LLAMP.pth",
+    "--genome-features",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\var\\metric-runtimes\\llamp-src\\data\\Genomic_featrues\\genome_features.pt",
+    "--model-sha256",
+    "f23fc9291d8df70ef00fafb8c7fe4ed91d1eac0ffc8653898c87024e86365d02",
+    "--config-sha256",
+    "20e97e4c6a228e6b4f59002710cbff704be3551b9f26a1b4599238cf80d7e804",
+    "--checkpoint-sha256",
+    "be331f32d8df620a955dfd86647cedd81f91fd315e5a8cefbc1cdd66c43f7f6e",
+    "--genome-features-sha256",
+    "2d71635dbc8769f92177ca20e3e60ad4b79544d51f0570e7c2f89fcdb0b02df7",
+    "--batch-size",
+    "32",
+    "--device",
+    "cpu"
+  ]
+}
