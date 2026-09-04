@@ -17,6 +17,10 @@ from analysis.summarize_pool_a_residue_decomposition import AA3_TO_AA1
 
 CONTACT_STABILITY_THRESHOLD = 0.5
 TOP_CONTACT_COUNT = 10
+INTERFACE_ANALYSIS_SCHEMAS = {
+    "ampgent.pool-a-md-interface-analysis.2",
+    "ampgent.pool-a-md-interface-analysis.3",
+}
 
 
 def residue_label(label: object) -> tuple[str, int]:
@@ -45,7 +49,7 @@ def candidate_contacts(candidate: dict, evidence_root: Path) -> dict | None:
         / "analysis/interface/interface_analysis.json"
     )
     analysis = json.loads(path.read_text(encoding="utf-8"))
-    if analysis.get("schema_version") != "ampgent.pool-a-md-interface-analysis.2":
+    if analysis.get("schema_version") not in INTERFACE_ANALYSIS_SCHEMAS:
         raise ValueError(f"unexpected interface schema for {candidate['candidate_id']}")
     sequence = candidate["sequence"]
     contacts = []

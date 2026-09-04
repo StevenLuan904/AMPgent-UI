@@ -13,6 +13,10 @@ from statistics import fmean, median, pstdev
 
 MD_RELEASE = "openmm_ff14sb_tip3p_1ns-npt_50ns-nvt_interface-pbc_v2"
 MMGBSA_RELEASE = "ambertools26_mmgbsa_igb5_sparse_v1"
+INTERFACE_ANALYSIS_SCHEMAS = {
+    "ampgent.pool-a-md-interface-analysis.2",
+    "ampgent.pool-a-md-interface-analysis.3",
+}
 
 METRIC_SPECS = {
     "rosetta_median_dg_reu": ("REU", "lower"),
@@ -63,7 +67,8 @@ def finite(value: object, label: str) -> float:
 def validated_interface_evidence(interface: dict | None) -> bool:
     if interface is None:
         return False
-    if interface.get("schema_version") != "ampgent.pool-a-md-interface-analysis.2":
+    schema = interface.get("schema_version")
+    if schema not in INTERFACE_ANALYSIS_SCHEMAS:
         raise ValueError("unexpected interface-analysis schema")
     for path in (
         ("interface_rmsd_nm", "mean"),
@@ -89,6 +94,34 @@ def validated_interface_evidence(interface: dict | None) -> bool:
             raise ValueError(f"key_contacts[{index}].occupancy is outside [0, 1]")
     if not isinstance(interface.get("peptide_departed"), bool):
         raise ValueError("peptide_departed is not boolean")
+    if schema.endswith(".3"):
+        network = interface.get("hydrogen_bond_network")
+        required = {
+            "bond_count_per_frame",
+            "unique_atom_pair_count",
+            "unique_residue_pair_count",
+            "persistent_residue_pair_count",
+            "residue_pairs",
+            "atom_pairs",
+        }
+        if not isinstance(network, dict) or not required <= network.keys():
+            raise ValueError("interface-analysis v3 hydrogen-bond network is incomplete")
+        count_per_frame = network["bond_count_per_frame"]
+        if not isinstance(count_per_frame, dict):
+            raise ValueError("interface-analysis v3 bond-count summary is malformed")
+        for key in ("mean", "median", "maximum", "p95"):
+            label = f"hydrogen_bond_network.bond_count_per_frame.{key}"
+            if finite(count_per_frame.get(key), label) < 0:
+                raise ValueError(
+                    f"hydrogen_bond_network.bond_count_per_frame.{key} is negative"
+                )
+        for key in (
+            "unique_atom_pair_count",
+            "unique_residue_pair_count",
+            "persistent_residue_pair_count",
+        ):
+            if int(network[key]) < 0:
+                raise ValueError(f"hydrogen_bond_network.{key} is negative")
     return True
 
 
