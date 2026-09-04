@@ -80,11 +80,12 @@ export function WorkflowNode({ data }: NodeProps<StageNode>) {
   const progress = stage.total > 0 ? Math.min(100, Math.round((stage.current / stage.total) * 100)) : 0
   const stateIcon = stage.status === 'completed' ? <Check /> : stage.status === 'stopped' ? <CircleStop /> : null
   const isStructure = stage.kind === 'structure'
+  const isRuntime = Boolean(stage.runtime)
   const showsTargets = stage.id === 'targets' && branches.length > 0
   const qualityGate = stage.id === 'candidate_pool' ? stage.generation_quality_gate : undefined
   const evidenceLabel = distribution?.values.length ? '结果分布' : '暂无结果'
   return (
-    <div className={`workflow-node stage-${stage.id} kind-${stage.kind} grade-${stage.insight.grade} node-${stage.status}${selected ? ' is-selected' : ''}`}>
+    <div className={`workflow-node stage-${stage.id} kind-${stage.kind} grade-${stage.insight.grade} node-${stage.status}${isRuntime ? ' is-runtime-node' : ''}${selected ? ' is-selected' : ''}`}>
       <Handle type="target" position={Position.Left} className="flow-handle" />
       <div className="node-heading">
         <span className="node-icon"><Icon /></span>
@@ -105,7 +106,7 @@ export function WorkflowNode({ data }: NodeProps<StageNode>) {
         </div>
       )}
       {isStructure && <MoleculeViewer key={viewer?.artifact_sha256 ?? 'empty'} artifact={viewer} compact autoRotate />}
-      {distribution && <ResultDistribution data={distribution} compact />}
+      {!isRuntime && distribution && <ResultDistribution data={distribution} compact />}
       {showsTargets ? (
         <div className="node-targets">
           {branches.slice(0, 2).map((branch) => (

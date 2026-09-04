@@ -43,13 +43,13 @@ import { candidateGenerationLabel, formatGenerationPopulation } from './generati
 import { formatQualityGateRule, qualityGateCountSteps, qualityGateStatusLabel } from './generationQualityGate'
 import {
   distributionForStage,
-  loadPersistedRunDistributions,
   ResultDistribution,
   type ResultDistributionData,
 } from './ResultDistribution'
 import { LaneLabel, WorkflowNode, type LaneNode, type StageNode } from './WorkflowNode'
 import { assertMatchingRunIdentity, type RunIdentity } from './runIdentity'
 import { formatRunTitle } from './runPresentation'
+import { buildRuntimeGraph, type RuntimeGraphModel } from './runtimeGraph'
 import { schedulerHealthDescription, schedulerHealthPresentation } from './schedulerHealth'
 import type {
   CandidatePreview,
@@ -82,37 +82,6 @@ function readApiBase() {
 function getConfiguredApiBase() {
   return readApiBase()
 }
-const nodePositions: Record<string, { x: number; y: number }> = {
-  target_data: { x: 20, y: 350 },
-  knowledge: { x: 440, y: 350 },
-  amp_designer: { x: 860, y: 40 },
-  ampgan: { x: 860, y: 290 },
-  hydramp: { x: 860, y: 540 },
-  candidate_pool: { x: 1280, y: 350 },
-  mic: { x: 1700, y: -100 },
-  amp_read: { x: 1700, y: 150 },
-  hemolysis: { x: 1700, y: 400 },
-  toxicity: { x: 1700, y: 650 },
-  developability: { x: 1700, y: 900 },
-  admission: { x: 2120, y: 350 },
-  targets: { x: 2540, y: 350 },
-  boltz: { x: 2960, y: 305 },
-  rosetta: { x: 3380, y: 305 },
-  portfolio: { x: 3800, y: 350 },
-}
-const laneLabels: Array<{ id: string; label: string; x: number }> = [
-  { id: 'data', label: '靶点数据', x: 20 },
-  { id: 'knowledge', label: '知识证据', x: 440 },
-  { id: 'design', label: '设计模型', x: 860 },
-  { id: 'candidates', label: '候选集合', x: 1280 },
-  { id: 'evaluation', label: '模型评估', x: 1700 },
-  { id: 'decision', label: '候选决策', x: 2120 },
-  { id: 'targets', label: '靶点分派', x: 2540 },
-  { id: 'boltz', label: 'Boltz 2', x: 2960 },
-  { id: 'rosetta', label: 'Rosetta', x: 3380 },
-  { id: 'review', label: '科学评审', x: 3800 },
-]
-
 const statusText: Record<string, string> = {
   created: '已创建', submitted: '已提交', running: '运行中', succeeded: '已完成', failed: '运行异常终止', cancelled: '已取消',
   completed: '已完成', stopped: '已停止', pending: '待写入',
@@ -151,180 +120,49 @@ function readableDataError(cause: unknown, fallback: string) {
   return fallback
 }
 
-function readableTargetName(value: unknown) {
-  const name = typeof value === 'string' ? value : ''
-  if (name.includes('PBP2a')) return 'PBP2a耐β-内酰胺转肽酶'
-  if (name.includes('DNA gyrase')) return 'DNA旋转酶A亚基'
-  return name || '结构靶点'
-}
-
-function reconcilePersistedStructure(detail: RunDetail, nodeDetails: Partial<Record<'boltz' | 'rosetta', NodeDetail>>) {
-  const createdPayload = detail.events.find((event) => event.type === 'run.created')?.payload ?? {}
-  const target = recordValue(createdPayload.target)
-  const sourceCandidateIds = Array.isArray(createdPayload.source_candidate_ids) ? createdPayload.source_candidate_ids : []
-  const successfulCalls = (node: NodeDetail | undefined) => node?.calls.filter((call) => call.status === 'succeeded') ?? []
-  const boltzCalls = successfulCalls(nodeDetails.boltz)
-  const rosettaCalls = successfulCalls(nodeDetails.rosetta)
-  if (!boltzCalls.length && !rosettaCalls.length) return detail
-  const boltzStructures = boltzCalls.flatMap((call) => call.artifacts)
-    .filter((artifact) => artifact.media_type === 'chemical/x-cif' || artifact.media_type === 'chemical/x-pdb').length
-  const rosettaPdbArtifacts = rosettaCalls.flatMap((call) => call.artifacts)
-    .filter((artifact) => artifact.media_type === 'chemical/x-pdb').length
-  const persistedRosettaResults = nodeDetails.rosetta?.structure_results
-    .reduce((total, result) => total + result.records, 0) ?? 0
-  const rosettaAnalyzerCalls = rosettaCalls.filter((call) => call.tool_name.includes('interface-analyzer'))
-  const plannedRosettaResults = rosettaAnalyzerCalls.reduce((total, call) => {
-    const nstruct = Number(recordValue(call.inputs).nstruct)
-    return total + (Number.isFinite(nstruct) ? nstruct : 0)
-  }, 0)
-  const rosettaStructures = persistedRosettaResults || plannedRosettaResults || rosettaPdbArtifacts
-
-  const stageUpdates: Partial<Record<string, { current: number; total: number; verdict: string; reason: string }>> = {
-    boltz: boltzCalls.length ? {
-      current: boltzCalls.length,
-      total: nodeDetails.boltz?.calls.length ?? boltzCalls.length,
-      verdict: '复合物构象已写入',
-      reason: `${boltzCalls.length} 次结构预测均可追溯至节点明细。`,
-    } : undefined,
-    rosetta: rosettaCalls.length ? {
-      current: rosettaStructures || rosettaCalls.length,
-      total: rosettaStructures || rosettaCalls.length,
-      verdict: '界面精修已写入',
-      reason: `${rosettaAnalyzerCalls.length || rosettaCalls.length} 次界面评估生成 ${rosettaStructures} 份精修构象。`,
-    } : undefined,
-  }
-  if (target.name) {
-    stageUpdates.targets = {
-      current: 1,
-      total: 1,
-      verdict: '靶点口袋已锁定',
-      reason: `${readableTargetName(target.name)} · ${Array.isArray(target.pocket_residues) ? target.pocket_residues.length : 0} 个口袋残基。`,
-    }
-  }
-  if (sourceCandidateIds.length) {
-    stageUpdates.candidate_pool = {
-      current: sourceCandidateIds.length,
-      total: sourceCandidateIds.length,
-      verdict: '结构候选已载入',
-      reason: `${sourceCandidateIds.length} 条来源候选进入本轮结构复核。`,
-    }
-  }
-
-  const graphNodes = detail.graph.nodes.map((stage) => {
-    const update = stageUpdates[stage.id]
-    if (!update || (stage.current > 0 && stage.status !== 'pending')) return stage
-    return {
-      ...stage,
-      status: 'completed' as const,
-      current: update.current,
-      total: update.total,
-      provenance: 'database' as const,
-      insight: {
-        ...stage.insight,
-        grade: 'good' as const,
-        verdict: update.verdict,
-        reason: update.reason,
-        facts: [
-          { label: '成功', value: String(update.current) },
-          { label: '记录', value: String(update.total) },
-          { label: '来源', value: '节点明细' },
-        ],
-        source: 'observer_summary' as const,
-      },
-    }
-  })
-
-  const viewerFromCall = (call: ToolAttempt | undefined): ViewerArtifact | null => {
-    if (!call) return null
-    const artifact = call.artifacts.find((item) => item.media_type === 'chemical/x-cif' || item.media_type === 'chemical/x-pdb')
-    if (!artifact) return null
-    const inputs = recordValue(call.inputs)
-    const sequence = typeof inputs.peptide_sequence === 'string' ? inputs.peptide_sequence : ''
-    return {
-      candidate_id: `${detail.run.id}:${call.id}`,
-      sequence,
-      target_id: typeof createdPayload.target_id === 'string' ? createdPayload.target_id : '',
-      target_name: readableTargetName(target.name),
-      lane: 'native',
-      seed: call.random_seed ?? 0,
-      artifact_sha256: artifact.sha256,
-      media_type: artifact.media_type,
-      artifact_url: artifact.url,
-    }
-  }
-  const persistedViewer = viewerFromCall(boltzCalls[0])
-  const viewers = { ...detail.viewers }
-  if (persistedViewer && !viewers.boltz) viewers.boltz = persistedViewer
-  if (persistedViewer && !viewers.rosetta) viewers.rosetta = persistedViewer
-
-  const persistedBranch = target.name ? {
-    order: 1,
-    key: typeof createdPayload.target_branch_key === 'string' ? createdPayload.target_branch_key : '结构靶点',
-    role: '原位口袋',
-    status: 'completed',
-    target_id: typeof createdPayload.target_id === 'string' ? createdPayload.target_id : '',
-    target_name: readableTargetName(target.name),
-    organism: typeof target.organism === 'string' ? target.organism : null,
-    accession: typeof target.accession === 'string' ? target.accession : null,
-    sequence: typeof target.sequence === 'string' ? target.sequence : '',
-    sequence_length: typeof target.sequence === 'string' ? target.sequence.length : 0,
-    evidence_namespace: typeof target.source_database === 'string' ? target.source_database : '数据库靶点记录',
-    coordinate_sha256: '',
-  } : null
-
-  return {
-    ...detail,
-    run: {
-      ...detail.run,
-      structure_record_count: Math.max(
-        Number.isFinite(detail.run.structure_record_count) ? detail.run.structure_record_count : 0,
-        boltzStructures + rosettaPdbArtifacts,
-      ),
-    },
-    counts: {
-      ...detail.counts,
-      admitted: (detail.counts.admitted ?? 0) > 0 ? detail.counts.admitted : sourceCandidateIds.length,
-      boltz_poses: (detail.counts.boltz_poses ?? 0) > 0 ? detail.counts.boltz_poses : boltzStructures,
-      rosetta_decoys: (detail.counts.rosetta_decoys ?? 0) > 0 ? detail.counts.rosetta_decoys : rosettaStructures,
-    },
-    branches: detail.branches.length || !persistedBranch ? detail.branches : [persistedBranch],
-    graph: { ...detail.graph, nodes: graphNodes },
-    viewer: detail.viewer ?? persistedViewer,
-    viewers,
-  }
-}
-
 function useRunData(enabled: boolean, apiBase: string) {
+  const requestedRunId = new URLSearchParams(window.location.search).get('run')
   const [runs, setRuns] = useState<RunListItem[]>([])
-  const [selectedId, setSelectedIdState] = useState<string | null>(() => window.localStorage.getItem(selectedRunStorageKey))
+  const [selectedId, setSelectedIdState] = useState<string | null>(() => requestedRunId ?? window.localStorage.getItem(selectedRunStorageKey))
   const [detail, setDetail] = useState<RunDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [nodeDetails, setNodeDetails] = useState<Record<string, NodeDetail>>({})
+  const runsInFlight = useRef(false)
+  const detailInFlight = useRef(false)
   const alignedStructureCounts = useRef<Record<string, number>>({})
   const runIdentities = useRef<Record<string, RunIdentity>>({})
 
   const loadRuns = useCallback(async () => {
-    const response = await fetch(`${apiBase}/v1/observer/runs?limit=100`)
-    if (!response.ok) throw new Error(`轮次列表读取失败：${response.status}`)
-    const payload = await response.json() as RunListResponse
-    runIdentities.current = Object.fromEntries(payload.runs.map((run) => [run.id, {
-      id: run.id,
-      temporal_workflow_id: run.temporal_workflow_id,
-      temporal_run_id: run.temporal_run_id,
-    }]))
-    setRuns(payload.runs.map((run) => ({
-      ...run,
-      structure_record_count: Math.max(run.structure_record_count, alignedStructureCounts.current[run.id] ?? 0),
-    })))
-    setSelectedIdState((current) => {
-      const next = current && payload.runs.some((run) => run.id === current) ? current : payload.runs[0]?.id ?? null
-      if (next) window.localStorage.setItem(selectedRunStorageKey, next)
-      return next
-    })
+    if (runsInFlight.current) return
+    runsInFlight.current = true
+    try {
+      const response = await fetch(`${apiBase}/v1/observer/runs?limit=12`)
+      if (!response.ok) throw new Error(`轮次列表读取失败：${response.status}`)
+      const payload = await response.json() as RunListResponse
+      runIdentities.current = Object.fromEntries(payload.runs.map((run) => [run.id, {
+        id: run.id,
+        temporal_workflow_id: run.temporal_workflow_id,
+        temporal_run_id: run.temporal_run_id,
+      }]))
+      setRuns(payload.runs.map((run) => ({
+        ...run,
+        structure_record_count: Math.max(run.structure_record_count, alignedStructureCounts.current[run.id] ?? 0),
+      })))
+      setSelectedIdState((current) => {
+        const next = requestedRunId ?? (current && payload.runs.some((run) => run.id === current) ? current : payload.runs[0]?.id ?? null)
+        if (next) window.localStorage.setItem(selectedRunStorageKey, next)
+        return next
+      })
+    } finally {
+      runsInFlight.current = false
+    }
   }, [apiBase])
 
   const loadDetail = useCallback(async (runId: string, quiet = false) => {
+    if (detailInFlight.current) return
+    detailInFlight.current = true
     if (!quiet) setLoading(true)
     else setRefreshing(true)
     try {
@@ -332,27 +170,33 @@ function useRunData(enabled: boolean, apiBase: string) {
       if (!response.ok) throw new Error(`轮次详情读取失败：${response.status}`)
       const payload = await response.json() as RunDetail
       assertMatchingRunIdentity(runIdentities.current[runId] ?? { id: runId }, payload.run)
-      const hasPersistedStructureEvents = payload.events.some((event) => event.actor === 'boltz2' || event.actor.includes('rosetta'))
-      if (!hasPersistedStructureEvents) {
-        setDetail(payload)
-      } else {
-        const entries = await Promise.all((['boltz', 'rosetta'] as const).map(async (nodeId) => {
-          const nodeResponse = await fetch(`${apiBase}/v1/observer/runs/${runId}/nodes/${nodeId}`)
-          return [nodeId, nodeResponse.ok ? await nodeResponse.json() as NodeDetail : undefined] as const
-        }))
-        const reconciled = reconcilePersistedStructure(payload, Object.fromEntries(entries))
-        setDetail(reconciled)
-        if (reconciled.run.structure_record_count !== payload.run.structure_record_count) {
-          alignedStructureCounts.current[runId] = reconciled.run.structure_record_count
-          setRuns((current) => current.map((run) => run.id === runId
-            ? { ...run, structure_record_count: reconciled.run.structure_record_count }
-            : run))
-        }
-      }
+      // Keep the authoritative response intact. The runtime graph is built below from
+      // observed calls/events; legacy stage reconciliation must not manufacture stages.
+      setDetail(payload)
+      setNodeDetails({})
       setError(null)
+      setLoading(false)
+
+      // The run summary is useful even when one legacy node-detail endpoint is slow.
+      // Enrichment is deliberately best-effort and never blocks the event/candidate graph.
+      const entries = await Promise.all((payload.graph?.nodes ?? []).map(async (stage) => {
+        const controller = new AbortController()
+        const timeout = window.setTimeout(() => controller.abort(), 20000)
+        try {
+          const nodeResponse = await fetch(`${apiBase}/v1/observer/runs/${runId}/nodes/${encodeURIComponent(stage.id)}`, { signal: controller.signal })
+          return [stage.id, nodeResponse.ok ? await nodeResponse.json() as NodeDetail : undefined] as const
+        } catch {
+          return [stage.id, undefined] as const
+        } finally {
+          window.clearTimeout(timeout)
+        }
+      }))
+      const details = Object.fromEntries(entries.filter((entry): entry is [string, NodeDetail] => entry[1] !== undefined))
+      setNodeDetails(details)
     } catch (cause) {
       setError(readableDataError(cause, '无法连接观察器接口'))
     } finally {
+      detailInFlight.current = false
       setLoading(false)
       setRefreshing(false)
     }
@@ -397,12 +241,12 @@ function useRunData(enabled: boolean, apiBase: string) {
     setSelectedIdState(runId)
   }, [])
 
-  return { runs, selectedId, setSelectedId, detail, error, loading, refreshing, retry, refresh: () => selectedId && loadDetail(selectedId, true) }
+  return { runs, selectedId, setSelectedId, detail, nodeDetails, error, loading, refreshing, retry, refresh: () => selectedId && loadDetail(selectedId, true) }
 }
 
 function RunList({ runs, selectedId, onSelect }: { runs: RunListItem[]; selectedId: string | null; onSelect: (id: string) => void }) {
   if (!runs.length) {
-    return <div className="run-list"><div className="run-row active frozen-run-row"><span className="run-status-dot status-cancelled" /><span className="run-row-copy"><strong>发布冻结轮次 · 773 条候选</strong><small>8月19日 21:46 · 已取消</small></span></div></div>
+    return <div className="run-list"><div className="run-list-empty"><Database /><span><b>暂无可用运行数据</b><small>观察器接口未返回可展示的 PostgreSQL 运行记录。</small></span></div></div>
   }
   return (
     <div className="run-list">
@@ -518,6 +362,7 @@ function CanvasHeader({ detail, refreshing, selectionMode, selectedCount, onRefr
 
 function GraphView({
   detail,
+  runtimeGraph,
   analysisSnapshot,
   persistedDistributions,
   selectedStage,
@@ -529,6 +374,7 @@ function GraphView({
   onSelectEdge,
 }: {
   detail: RunDetail
+  runtimeGraph: RuntimeGraphModel
   analysisSnapshot: AnalysisSnapshot | null
   persistedDistributions: Record<string, ResultDistributionData>
   selectedStage: string | null
@@ -540,19 +386,10 @@ function GraphView({
   onSelectEdge: (edge: GraphEdgeDetail) => void
 }) {
   const nodes = useMemo<Array<StageNode | LaneNode>>(() => [
-    ...laneLabels.map((lane, index): LaneNode => ({
-      id: `lane-${lane.id}`,
-      type: 'lane',
-      position: { x: lane.x, y: -68 },
-      data: { label: lane.label, index: String(index + 1).padStart(2, '0') },
-      draggable: false,
-      selectable: false,
-      focusable: false,
-    })),
-    ...detail.graph.nodes.map((stage): StageNode => ({
+    ...runtimeGraph.nodes.map((stage): StageNode => ({
       id: stage.id,
       type: 'stage',
-      position: nodePositions[stage.id] ?? { x: 0, y: 0 },
+      position: runtimeGraph.positions[stage.id] ?? { x: 0, y: 0 },
       data: {
         stage,
         branches: detail.branches,
@@ -564,9 +401,9 @@ function GraphView({
       },
       draggable: false,
     })),
-  ], [analysisSelection, analysisSnapshot, detail, persistedDistributions, selectedStage, selectionMode])
-  const stageById = useMemo(() => Object.fromEntries(detail.graph.nodes.map((node) => [node.id, node])), [detail])
-  const edges = useMemo<Edge[]>(() => detail.graph.edges.map((edge, index) => {
+  ], [analysisSelection, analysisSnapshot, detail, persistedDistributions, runtimeGraph, selectedStage, selectionMode])
+  const stageById = useMemo(() => Object.fromEntries(runtimeGraph.nodes.map((node) => [node.id, node])), [runtimeGraph.nodes])
+  const edges = useMemo<Edge[]>(() => runtimeGraph.edges.map((edge, index) => {
     const source = stageById[edge.source] as GraphStage | undefined
     const active = source?.status === 'completed' || source?.status === 'running'
     const isSelected = selectedEdge?.source === edge.source && selectedEdge?.target === edge.target
@@ -577,16 +414,16 @@ function GraphView({
       type: 'default',
       pathOptions: { curvature: 0.32 },
       animated: source?.status === 'running',
-      label: edge.label ?? undefined,
+      label: edge.provenance === 'derived' ? undefined : edge.label ?? undefined,
       labelStyle: { fill: '#536176', fontSize: 8, fontWeight: 600 },
       labelBgStyle: { fill: '#ffffff', fillOpacity: 0.94 },
       labelBgPadding: [6, 4],
       labelBgBorderRadius: 5,
       data: { detail: edge },
       markerEnd: { type: MarkerType.ArrowClosed, width: 12, height: 12, color: isSelected ? '#2257ee' : active ? '#111827' : '#cbd1dc' },
-      style: { stroke: isSelected ? '#2257ee' : active ? '#111827' : '#cbd1dc', strokeWidth: isSelected ? 2.8 : active ? 1.8 : 1.3 },
+      style: { stroke: isSelected ? '#2257ee' : active ? '#111827' : '#cbd1dc', strokeWidth: isSelected ? 2.8 : active ? 1.8 : 1.3, strokeDasharray: edge.provenance === 'derived' ? '5 4' : undefined },
     }
-  }), [detail.graph.edges, selectedEdge, stageById])
+  }), [runtimeGraph.edges, selectedEdge, stageById])
   const handleNodeClick: NodeMouseHandler = (_, node) => {
     if (node.type !== 'stage') return
     if (selectionMode) onToggleAnalysis(node.id)
@@ -605,9 +442,11 @@ function GraphView({
         nodeTypes={nodeTypes}
         onNodeClick={handleNodeClick}
         onEdgeClick={handleEdgeClick}
-        defaultViewport={{ x: 22, y: 92, zoom: 0.82 }}
-        minZoom={0.34}
-        maxZoom={1.25}
+        fitView
+        fitViewOptions={{ padding: 0.2, maxZoom: 0.85 }}
+        defaultViewport={{ x: 22, y: 92, zoom: 0.72 }}
+        minZoom={0.2}
+        maxZoom={1.35}
         proOptions={{ hideAttribution: true }}
         nodesConnectable={false}
         elementsSelectable
@@ -615,6 +454,11 @@ function GraphView({
         <Background variant={BackgroundVariant.Dots} gap={26} size={1} color="#e8ebf1" />
         <Controls showInteractive={false} position="bottom-left" />
       </ReactFlow>
+      <div className="runtime-graph-summary" role="status">
+        <div className="runtime-graph-summary-head"><span className="runtime-live-dot" /><b>真实运行图</b><small>节点 {runtimeGraph.nodes.length} · 显式边 {runtimeGraph.edges.length}</small></div>
+        <div className="runtime-graph-stats"><span>调用 {runtimeGraph.stats.observedCalls}</span><span>事件 {runtimeGraph.stats.observedEvents}</span><span>重复 {runtimeGraph.stats.repeatedTools}</span><span>重试 {runtimeGraph.stats.retries}</span><span>并行组 {runtimeGraph.stats.parallelGroups}</span>{runtimeGraph.stats.cycles > 0 && <span>循环 {runtimeGraph.stats.cycles}</span>}</div>
+        {!!runtimeGraph.gaps.length && <p title={runtimeGraph.gaps.join('；')}>数据契约缺口 {runtimeGraph.gaps.length} 项 · 未补画未知关系</p>}
+      </div>
     </div>
   )
 }
@@ -816,7 +660,7 @@ function QualityGatePanel({ gate }: { gate: GenerationQualityGate }) {
 
 function Inspector({ detail, stageId, analysisSnapshot, distributionOverride, onClose }: { detail: RunDetail; stageId: string; analysisSnapshot: AnalysisSnapshot | null; distributionOverride?: ResultDistributionData; onClose: () => void }) {
   const stage = detail.graph.nodes.find((item) => item.id === stageId) ?? detail.graph.nodes[0]
-  const groupLabel = { inputs: '输入', design: '设计', evaluation: '评估', decision: '决策', structure: '结构', review: '评审' }[stage.group]
+  const groupLabel = { inputs: '输入', design: '设计', evaluation: '评估', decision: '决策', structure: '结构', review: '评审', observed: '运行观测' }[stage.group]
   const [nodeDetail, setNodeDetail] = useState<NodeDetail | null>(null)
   const [detailError, setDetailError] = useState<string | null>(null)
   const qualityGate = nodeDetail?.generation_quality_gate ?? stage.generation_quality_gate ?? detail.generation_quality_gate
@@ -916,17 +760,45 @@ function Inspector({ detail, stageId, analysisSnapshot, distributionOverride, on
   )
 }
 
-function EdgeInspector({ detail, edge, onClose }: { detail: RunDetail; edge: GraphEdgeDetail; onClose: () => void }) {
-  const source = detail.graph.nodes.find((node) => node.id === edge.source)
-  const target = detail.graph.nodes.find((node) => node.id === edge.target)
+function EdgeInspector({ graph, edge, onClose }: { graph: RuntimeGraphModel; edge: GraphEdgeDetail; onClose: () => void }) {
+  const source = graph.nodes.find((node) => node.id === edge.source)
+  const target = graph.nodes.find((node) => node.id === edge.target)
   return (
     <aside className="inspector edge-inspector">
-      <div className="inspector-header"><div><small>决策证据边 · 格式化上下文</small><h2>{edge.label ?? '证据依赖关系'}</h2></div><button className="icon-button" onClick={onClose}><X /></button></div>
-      <section className="edge-route"><div><span>{source?.label}</span><small>{source?.current.toLocaleString()} 条已持久化</small></div><i><Route /></i><div><span>{target?.label}</span><small>{target ? statusText[target.status] : '—'}</small></div></section>
+      <div className="inspector-header"><div><small>运行关系 · {edge.provenance === 'database' ? '数据库显式字段' : '图上聚合字段'}</small><h2>{edge.label ?? '运行关系'}</h2></div><button className="icon-button" aria-label="关闭运行关系详情" onClick={onClose}><X /></button></div>
+      <section className="edge-route"><div><span>{source?.label ?? edge.source}</span><small>{source ? `${source.current.toLocaleString()} 条记录` : '节点未返回'}</small></div><i><Route /></i><div><span>{target?.label ?? edge.target}</span><small>{target ? statusText[target.status] : '节点未返回'}</small></div></section>
       <section className="inspector-section">
         <div className="analysis-kicker"><BrainCircuit />决策上下文</div>
         <p className="edge-rationale">{edge.rationale}</p>
+        <div className="runtime-provenance-chip">{edge.provenance === 'database' ? '关系来自显式数据库字段' : '关系来自候选代际分组，仅用于阅读'}</div>
       </section>
+    </aside>
+  )
+}
+
+function RuntimeInspector({ detail, graph, nodeId, onClose }: { detail: RunDetail; graph: RuntimeGraphModel; nodeId: string; onClose: () => void }) {
+  const node = graph.nodes.find((item) => item.id === nodeId)
+  if (!node) return null
+  const call = nodeId.startsWith('call:') ? graph.calls[nodeId.slice(5)] : undefined
+  const event = nodeId.startsWith('event:') ? graph.events[nodeId.slice(6)] : undefined
+  const candidate = nodeId.startsWith('candidate:') ? detail.candidates.find((item) => item.id === nodeId.slice(10)) : undefined
+  const generation = nodeId.startsWith('generation:') ? nodeId.slice(11) : undefined
+  return (
+    <aside className="inspector expanded-inspector runtime-inspector">
+      <div className="inspector-header">
+        <div><small>运行节点 · 数据库直读</small><h2 title={node.label}>{node.label}</h2></div>
+        <button className="icon-button" aria-label="关闭运行节点详情" onClick={onClose}><X /></button>
+      </div>
+      <section className={`scientific-summary grade-${node.insight.grade}`}>
+        <div><small>{node.runtime?.node_type === 'tool_call' ? '工具调用事实' : node.runtime?.node_type === 'lifecycle_event' ? '生命周期事件事实' : '候选数据事实'}</small><strong><i />{node.insight.verdict}</strong></div>
+        <p>{node.insight.reason}</p>
+        <span>{node.insight.facts.map((fact) => `${fact.label} ${fact.value}`).join(' · ')}</span>
+      </section>
+      {call && <section className="inspector-section"><div className="section-title"><h3>工具调用与证据</h3><span className={`stage-badge ${node.status}`}>{statusText[call.status] ?? call.status}</span></div><ToolAttemptDisclosure call={call} /></section>}
+      {event && <section className="inspector-section"><div className="analysis-kicker"><Clock3 />事件 payload</div><div className="runtime-event-meta"><b>{event.actor}</b><span>序号 {event.sequence_no} · {formatTime(event.occurred_at)}</span></div><pre className="runtime-json">{JSON.stringify(event.payload, null, 2)}</pre></section>}
+      {candidate && <section className="inspector-section"><div className="analysis-kicker"><GitBranch />候选记录</div><code className="runtime-sequence">{candidate.sequence}</code><div className="fact-grid"><Fact label="代际" value={candidate.generation ?? '—'} /><Fact label="父候选" value={candidate.parent_id ?? '未返回'} /><Fact label="生成调用" value={candidate.generator_call_id ?? '未返回'} /><Fact label="序列长度" value={candidate.length} /></div></section>}
+      {generation && <section className="inspector-section"><div className="analysis-kicker"><Layers3 />代际分组</div><p className="runtime-note">此节点由候选记录中明确的 <code>generation={generation}</code> 字段聚合而成；它不是预设阶段，也不代表执行依赖。</p></section>}
+      <section className="inspector-section runtime-provenance"><div className="analysis-kicker"><Database />图构造契约</div><p>可见节点来自本次运行详情返回的工具调用、生命周期事件、候选记录和显式字段。未返回的依赖关系不在图中补画。</p><ul>{graph.gaps.slice(0, 5).map((gap) => <li key={gap}>{gap}</li>)}</ul></section>
     </aside>
   )
 }
@@ -997,7 +869,7 @@ function DataConnectionDialog({ value, onClose, onSave }: { value: string; onClo
 }
 
 export default function App() {
-  const [activeView, setActiveView] = useState<'overview' | 'analysis' | 'evidence'>('analysis')
+  const [activeView, setActiveView] = useState<'overview' | 'analysis' | 'evidence'>('overview')
   const [apiBase, setApiBase] = useState(readApiBase)
   const [connectionOpen, setConnectionOpen] = useState(false)
   const data = useRunData(true, apiBase)
@@ -1008,6 +880,7 @@ export default function App() {
   const [analysisSnapshot, setAnalysisSnapshot] = useState<AnalysisSnapshot | null>(null)
   const [persistedDistributions, setPersistedDistributions] = useState<Record<string, ResultDistributionData>>({})
   const structureRun = useMemo(() => data.runs.find((run) => run.structure_record_count > 0) ?? null, [data.runs])
+  const runtimeGraph = useMemo(() => data.detail ? buildRuntimeGraph(data.detail, data.nodeDetails) : null, [data.detail, data.nodeDetails])
   useEffect(() => {
     let cancelled = false
     const liveAnalyticsEnabled = import.meta.env.VITE_ANALYTICS_API_ENABLED === 'true'
@@ -1024,14 +897,12 @@ export default function App() {
       setPersistedDistributions({})
       return
     }
-    const controller = new AbortController()
+    // Runtime overview nodes already carry their own observed facts. Do not
+    // eagerly dereference every artifact just to fill the legacy distribution
+    // widget; missing artifact storage must remain an explicit user action.
     setPersistedDistributions({})
-    void loadPersistedRunDistributions(apiBase, detail, controller.signal)
-      .then((value) => { if (!controller.signal.aborted) setPersistedDistributions(value) })
-      .catch(() => { if (!controller.signal.aborted) setPersistedDistributions({}) })
-    return () => controller.abort()
   }, [apiBase, data.detail?.run.id])
-  const selectedAnalysisNodes = useMemo(() => data.detail?.graph.nodes.filter((node) => analysisSelection.includes(node.id)) ?? [], [analysisSelection, data.detail])
+  const selectedAnalysisNodes = useMemo(() => runtimeGraph?.nodes.filter((node) => analysisSelection.includes(node.id)) ?? [], [analysisSelection, runtimeGraph])
   const toggleAnalysisNode = (id: string) => setAnalysisSelection((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
   return (
     <div className="app-shell">
@@ -1075,6 +946,7 @@ export default function App() {
               />
               <GraphView
                 detail={data.detail}
+                runtimeGraph={runtimeGraph!}
                 analysisSnapshot={analysisSnapshot}
                 persistedDistributions={persistedDistributions}
                 selectedStage={selectedStage}
@@ -1101,8 +973,8 @@ export default function App() {
               )}
               {!selectionMode && <div className="canvas-footnote"><PanelLeftClose />拖拽画布 · 点击节点 · 5 秒更新</div>}
             </main>
-            {selectedStage && <Inspector detail={data.detail} stageId={selectedStage} analysisSnapshot={analysisSnapshot} distributionOverride={persistedDistributions[selectedStage]} onClose={() => setSelectedStage(null)} />}
-            {selectedEdge && <EdgeInspector detail={data.detail} edge={selectedEdge} onClose={() => setSelectedEdge(null)} />}
+            {selectedStage && <RuntimeInspector detail={data.detail} graph={runtimeGraph!} nodeId={selectedStage} onClose={() => setSelectedStage(null)} />}
+            {selectedEdge && <EdgeInspector graph={runtimeGraph!} edge={selectedEdge} onClose={() => setSelectedEdge(null)} />}
           </>
         ) : (
           <main className="main-canvas"><LoadingScreen error={data.error} onRetry={() => { void data.retry() }} onOpenAnalysis={() => setActiveView('analysis')} /></main>

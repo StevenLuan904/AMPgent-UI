@@ -33,8 +33,8 @@ export interface RunListResponse {
 export interface GraphStage {
   id: string
   label: string
-  kind: 'data' | 'model' | 'decision' | 'structure' | 'review'
-  group: 'inputs' | 'design' | 'evaluation' | 'decision' | 'structure' | 'review'
+  kind: 'data' | 'model' | 'decision' | 'structure' | 'review' | 'tool'
+  group: 'inputs' | 'design' | 'evaluation' | 'decision' | 'structure' | 'review' | 'observed'
   status: StageStatus
   current: number
   total: number
@@ -48,6 +48,18 @@ export interface GraphStage {
     facts: Array<{ label: string; value: string }>
     source: 'observer_summary' | 'persisted_decision'
   }
+  runtime?: RuntimeNodeMeta
+}
+
+export interface RuntimeNodeMeta {
+  node_type: 'tool_call' | 'lifecycle_event' | 'generation'
+  source_id: string
+  observed_at: string | null
+  actor?: string
+  tool_name?: string
+  attempt?: number
+  explicit_relation_count?: number
+  candidate_count?: number
 }
 
 export interface CandidateMetric {
@@ -64,6 +76,8 @@ export interface CandidatePreview {
   sequence: string
   length: number
   generation?: number
+  parent_id?: string | null
+  generator_call_id?: string | null
   proposal_rank: number | null
   cohort: string
   pareto_front: number | null
@@ -187,7 +201,7 @@ export interface GraphEdgeDetail {
   target: string
   label: string | null
   rationale: string
-  provenance: 'database' | 'topology'
+  provenance: 'database' | 'topology' | 'derived'
 }
 
 export interface ToolArtifact {
