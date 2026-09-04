@@ -1,0 +1,94 @@
+{
+  "schema_version": "ampgent.pbp2a-pepmlm-pepflow-hybrid-qd-gap-v1",
+  "target_key": "PBP2a",
+  "source": "PepMLM-target-conditioned-ancestry_x_PepFlow-donor",
+  "operator_id": "pbp2a-pepmlm-ancestry-pepflow-donor-qd-gap-v1",
+  "candidate_csv_sha256": "2a8da219d90602f14c19604053fa1fd76280efbdadb09d5cd64e1e9816d45736",
+  "archive_sha256": "072b2f1dd7e876109f205ebc4b1cb116a08b541ee98775f5f4f46496bc708bde",
+  "candidate_count": 12,
+  "quality_eligible_count": 4,
+  "new_cell_count": 3,
+  "replacement_count": 0,
+  "same_cell_non_elite_count": 1,
+  "quality_gate_failed_count": 8,
+  "contributions": [
+    {
+      "candidate_id": "b9a2435a4cf5711bb9ede07c55aeda806421485633cf624378e21225ffd3c30a",
+      "cell_id": "q2-h2-m1-l2",
+      "contribution": "same_cell_non_elite",
+      "incumbent_candidate_id": "421d56b67e953ce501087e2cf6a0977fb3aee7e4e8da68e60633edade2cf8172"
+    },
+    {
+      "candidate_id": "66ae2ef8383f85cb98ed8ddb42e06360f1da0a94a5b54872e084d6ffdfee1f9b",
+      "cell_id": "q2-h1-m2-l2",
+      "contribution": "empty_cell",
+      "incumbent_candidate_id": null
+    },
+    {
+      "candidate_id": "6c991132dc0cd8ea79b7af0c5621a380f6a46fc6c5f4f051c466d7d30f068805",
+      "cell_id": "q2-h2-m3-l0",
+      "contribution": "empty_cell",
+      "incumbent_candidate_id": null
+    },
+    {
+      "candidate_id": "abd15e6a53b6905e7b47c2b8b09f3754faa9f1edfd899a0de274d5becadf7c01",
+      "cell_id": "q2-h1-m2-l0",
+      "contribution": "empty_cell",
+      "incumbent_candidate_id": null
+    },
+    {
+      "candidate_id": "155638e354f0c40069510176bd8a9b238fa40f2af22ac58a1959facb9b1fba2f",
+      "cell_id": "q2-h3-m0-l2",
+      "contribution": "quality_gate_failed",
+      "incumbent_candidate_id": null
+    },
+    {
+      "candidate_id": "7e63a93976f9419fba79d452606a7623bf1bdf469a1bef7306efd73816b7c132",
+      "cell_id": "q2-h3-m1-l2",
+      "contribution": "quality_gate_failed",
+      "incumbent_candidate_id": null
+    },
+    {
+      "candidate_id": "987adbbf865450cd43fd87e25ccb1c119ab5b469fbcd7e6eb365f3f7bb62e13e",
+      "cell_id": "q2-h2-m2-l2",
+      "contribution": "quality_gate_failed",
+      "incumbent_candidate_id": null
+    },
+    {
+      "candidate_id": "779744478da344fb8c208827dca935d0db8198bcf6fcd9c212ffb8789e04397a",
+      "cell_id": "q2-h3-m3-l2",
+      "contribution": "quality_gate_failed",
+      "incumbent_candidate_id": null
+    },
+    {
+      "candidate_id": "8615d1bb133e1e896a5a57ae91af22ebdcd222a1dd9e73df4b7b323be09900c0",
+      "cell_id": "q3-h2-m0-l2",
+      "contribution": "quality_gate_failed",
+      "incumbent_candidate_id": null
+    },
+    {
+      "candidate_id": "56766e3fa6faf3205aa3579bd7400a9999b8d419ca3cf1bac9b663817d55f92d",
+      "cell_id": "q2-h2-m1-l0",
+      "contribution": "quality_gate_failed",
+      "incumbent_candidate_id": null
+    },
+    {
+      "candidate_id": "1029ac3ed235fb241d87f5776cba30f98d9c2dc2e2c6cb8ccfd2d897243e6ee4",
+      "cell_id": "q2-h2-m3-l2",
+      "contribution": "quality_gate_failed",
+      "incumbent_candidate_id": null
+    },
+    {
+      "candidate_id": "15fd5a48bcb2ed52dc12b177ef875981fc6704635616492635dcc9e20a41ae2b",
+      "cell_id": "q3-h2-m1-l2",
+      "contribution": "quality_gate_failed",
+      "incumbent_candidate_id": null
+    }
+  ],
+  "archive_qd_score": 71.31526800000003,
+  "valid_cell_coverage": 0.03935185185185185,
+  "maximum_cell_concentration": 0.25,
+  "archive_relative_novelty": 0.75,
+  "historical_run_modified": false,
+  "qd_candidates_csv_sha256": "7a4c36fed1094099544c4704c608607d3dd4750e76588905bae12a9778625682"
+}

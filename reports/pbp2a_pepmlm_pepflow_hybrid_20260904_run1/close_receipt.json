@@ -1,0 +1,71 @@
+{
+  "schema_version": "ampgent.pbp2a-pepmlm-pepflow-hybrid-close.1",
+  "target_key": "pbp2a",
+  "source_arm": "PepMLM-target-conditioned-ancestry_x_PepFlow-donor",
+  "operator_id": "pbp2a-pepmlm-ancestry-pepflow-donor-qd-gap-v1",
+  "generation": 105,
+  "seed": 20260904,
+  "parent_run_id": "d407db4d-f5f9-5846-a5f3-1449d4f2a7e5",
+  "parent_count": 5,
+  "parent_source": "PepMLM-target-conditioned",
+  "donor_source": "PepFlow",
+  "proposal_count": 12,
+  "formal12_count": 12,
+  "display_eligible_count": 12,
+  "calibrated_activity_support_ge2_count": 4,
+  "excellent_calibrated_count": 4,
+  "challenger": {
+    "reviewed_count": 12,
+    "no_conflict_count": 8,
+    "conflict_count": 4,
+    "apex_status": "runtime_unavailable",
+    "peptiverse_status": "runtime_unavailable",
+    "shadow_conflict_status": "not_assessed",
+    "is_primary_hard_gate": false
+  },
+  "qd": {
+    "candidate_count": 12,
+    "quality_eligible_count": 4,
+    "new_cell_count": 3,
+    "replacement_count": 0,
+    "same_cell_non_elite_count": 1,
+    "quality_gate_failed_count": 8,
+    "valid_cell_coverage": 0.03935185185185185,
+    "archive_qd_score": 71.31526800000003,
+    "archive_relative_novelty": 0.75,
+    "archive_path": "reports/pbp2a_pepmlm_qd_gap_v1_20260904/qd_receipt.json"
+  },
+  "materialization": {
+    "run_id": "bb9f7ece-98f4-5088-9857-d5c362990452",
+    "authoritative_candidate_ids": [
+      "104021be-18da-4794-9b69-944fd97a80a1",
+      "b2132d01-b4e9-4552-8f0d-aa61fd6555b7",
+      "fe524c70-2fc0-438d-b440-256f2feff9db"
+    ],
+    "candidate_count": 3,
+    "evaluation_count": 51,
+    "evaluation_count_per_candidate": 17,
+    "tool_call_id": "d936e91a-3fe1-446b-a655-1a47106f36af",
+    "global_exact_replay_skip_count": 0,
+    "identity_drift_count": 0,
+    "pg_verification": "reports/pbp2a_pepmlm_pepflow_hybrid_20260904_run1/pg_verification.json"
+  },
+  "coarse5": {
+    "candidate_count": 3,
+    "queue": "reports/pbp2a_pepmlm_pepflow_hybrid_20260904_run1/coarse5_prepared/coarse5_prepared_queue.csv",
+    "nstruct": 5,
+    "status": "prepared_not_dispatched",
+    "dispatch_allowed": false,
+    "median_dg_gate": -30,
+    "pool_a_admitted_count": 0
+  },
+  "gpu_rosetta_md_submitted": false,
+  "historical_runs_modified": false,
+  "source_receipts": {
+    "generation_sha256": "8a21b5dbf16d738071dddaaef71f5141fb5689675050b751a8645d60d85a7469",
+    "score_all_sha256": "411c6ace274a5334c25fcc05137ed730c66decd1204186d8013f3045aefa79e8",
+    "calibration_sha256": "d4e7a7b43aac56516f597c9749a9c2cc01b12e6ca68632e23059fa136f87a9c6",
+    "challenger_sha256": "079d32a0938fe28dee95934ba8abf1db428b27c7aa9936ab3cfeb5699a944acb",
+    "qd_sha256": "2d0afee29d0a0c71fa19ceb88de6b48c7d6b8c7800498f587930eb1b260e2591"
+  }
+}

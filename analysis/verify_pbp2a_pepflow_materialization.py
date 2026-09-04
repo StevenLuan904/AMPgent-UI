@@ -14,11 +14,12 @@ import asyncpg
 
 async def verify(dsn: str, run_id: str, input_csv: Path) -> dict[str, object]:
     expected = {
-        row["sequence_sha256"]: row for row in csv.DictReader(
-            input_csv.open(encoding="utf-8-sig", newline="")
-        )
+        row["sequence_sha256"]: row
+        for row in csv.DictReader(input_csv.open(encoding="utf-8-sig", newline=""))
     }
-    connection = await asyncpg.connect(dsn, timeout=5, command_timeout=15)
+    # The approved localhost tunnel terminates plain PostgreSQL; leaving
+    # asyncpg's SSL negotiation implicit can hang during tunnel handoff.
+    connection = await asyncpg.connect(dsn, timeout=8, command_timeout=15, ssl=False)
     try:
         run = await connection.fetchrow(
             """

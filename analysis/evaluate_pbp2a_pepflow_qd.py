@@ -110,6 +110,15 @@ def main() -> None:
         "quality_gate_failed_count": sum(
             item.contribution == "quality_gate_failed" for item in state.contributions
         ),
+        "contributions": [
+            {
+                "candidate_id": item.candidate_id,
+                "cell_id": item.cell_id,
+                "contribution": item.contribution,
+                "incumbent_candidate_id": item.incumbent_candidate_id,
+            }
+            for item in state.contributions
+        ],
         "archive_qd_score": state.archive_qd_score,
         "valid_cell_coverage": state.valid_cell_coverage,
         "maximum_cell_concentration": state.maximum_cell_concentration,
