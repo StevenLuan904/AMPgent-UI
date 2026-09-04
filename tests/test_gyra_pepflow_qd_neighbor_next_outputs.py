@@ -70,7 +70,12 @@ def test_next_batch_receipts_keep_provisional_and_formal_boundaries() -> None:
     ] == 0
     assert pg_history["migration_application"]["stale_backend_termination_succeeded_count"] == 2
     assert pg_history["migration_application"]["stale_backend_termination_false_count"] == 1
-    assert pg_history["migration_application"]["recovery_drop_status"] == "statement_timeout"
+    assert pg_history["migration_application"]["recovery_drop_status"] == "lock_timeout"
+    assert pg_history["migration_application"]["recovery_drop_blocker_category"] == (
+        "non_long_lived_granted_target_relation_locks"
+    )
+    assert pg_history["migration_application"]["recovery_drop_blocker_count"] == 5
+    assert pg_history["migration_application"]["recovery_drop_long_session_blocker_count"] == 0
     assert pg_history["migration_application"]["recovery_create_attempted"] is False
     assert pg_history["migration_application"]["recovery_stamp_attempted"] is False
     assert pg_history["migration_application"]["last_verified_explain_scan"] == "Seq Scan"

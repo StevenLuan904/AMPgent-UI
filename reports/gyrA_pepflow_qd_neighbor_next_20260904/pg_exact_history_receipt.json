@@ -42,7 +42,7 @@
       "indislive": true
     },
     "last_verified_explain_scan": "Seq Scan",
-    "version_bookkeeping_status": "blocked_drop_statement_timeout",
+    "version_bookkeeping_status": "blocked_drop_lock_timeout",
     "second_idempotent_entrypoint": "terminated_after_bounded_wait",
     "relevant_create_index_backend_count": 3,
     "relevant_create_index_backend_count_after_termination": 0,
@@ -52,12 +52,15 @@
     "stale_backend_termination_false_count": 1,
     "stale_backend_termination_reason": "exact_query_and_post_first_apply_time_criteria_met; one_backend_returned_false_and_then_relevant_backend_count_was_zero",
     "recovery_drop_attempted_once": true,
-    "recovery_drop_status": "statement_timeout",
+    "recovery_drop_status": "lock_timeout",
+    "recovery_drop_blocker_category": "non_long_lived_granted_target_relation_locks",
+    "recovery_drop_blocker_count": 5,
+    "recovery_drop_long_session_blocker_count": 0,
     "recovery_create_attempted": false,
     "recovery_stamp_attempted": false
   },
   "exact_history_status": "evidence_verification_unavailable",
-  "exact_history_query_status": "not_run_due_drop_timeout",
+  "exact_history_query_status": "not_run_due_drop_lock_timeout",
   "historical_exact_match_count": null,
   "historical_query_complete": false,
   "migration_preflight_apply_allowed": true,
@@ -69,6 +72,6 @@
   "materialization_writes": 0,
   "structure_status": "not_created",
   "gpu_rosetta_md_submitted": false,
-  "reason": "the invalid index had three precisely matched stale CREATE backends; two were terminated, the third returned false and relevant backend count became zero, but the one authorized DROP INDEX CONCURRENTLY timed out; CREATE, stamp, exact history, and materialization were not performed",
+  "reason": "the invalid index had three precisely matched stale CREATE backends; two were terminated, the third returned false and relevant backend count became zero, but the one authorized DROP INDEX CONCURRENTLY hit the 5-second lock timeout from five granted target-relation locks with no long-session blocker; CREATE, stamp, exact history, and materialization were not performed",
   "no_candidate_uuid_guessed": true
 }

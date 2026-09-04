@@ -48,7 +48,7 @@
     "materialization_writes": 0,
     "formal_evidence_persistence_status": "deferred_until_pg_history",
     "exact_history_status": "evidence_verification_unavailable",
-    "materialization_status_reason": "relevant_backends_zero_but_authorized_drop_index_concurrently_statement_timeout",
+    "materialization_status_reason": "relevant_backends_zero_but_drop_index_concurrently_lock_timeout_with_five_granted_target_relation_locks",
     "challenger_filter_policy": "exclude_conflicts_only"
   },
   "execution_safety": {
