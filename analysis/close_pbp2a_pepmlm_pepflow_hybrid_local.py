@@ -38,7 +38,9 @@ def close(output_dir: Path) -> dict:
         for row in read_csv(output_dir / "challenger" / "challenger_review.csv")
     }
     qd_contributions = [
-        row for row in qd["contributions"] if row["contribution"] in {"empty_cell", "replacement"}
+        row
+        for row in qd["contributions"]
+        if row["contribution"] in {"empty_cell", "incumbent_replacement", "replacement"}
     ]
     valid = [
         row
@@ -107,7 +109,11 @@ def close(output_dir: Path) -> dict:
         },
         "algorithm_adjustment": {
             "triggered": False,
-            "reason": "primary_motif_support_ge_2_count_nonzero",
+            "reason": (
+                "primary_motif_support_ge_2_count_nonzero"
+                if calibration["support_ge_2_count"] > 0
+                else "no_valid_qd_candidate_after_frozen_activity_calibration"
+            ),
         },
         "persistence": {
             "historical_pg_gate": "pending",
@@ -121,7 +127,7 @@ def close(output_dir: Path) -> dict:
         },
         "scientific_increment": (
             "12 local target-conditioned PepMLM ancestry x PepFlow motif candidates; "
-            "4 pass display+support+challenger+new-cell provisional gates"
+            f"{len(valid)} pass display+support+challenger+new-cell provisional gates"
         ),
         "failure_funnel": "failure_funnel.json",
         "property_displacement": "property_displacement.csv",

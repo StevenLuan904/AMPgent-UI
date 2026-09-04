@@ -69,3 +69,42 @@ def test_local_hybrid_motifs_are_bounded_and_history_excludes_negative_batch() -
     assert len({row["actual_cell_preflight"] for row in proposals}) == 12
     assert all(row["historical_pg_gate"] == "pending" for row in proposals)
     assert all(row["materialization_status"] == "proposed_not_materialized" for row in proposals)
+
+
+def test_generation_107_closes_fail_closed_when_frozen_activity_support_is_zero() -> None:
+    report = ROOT / "reports" / "pbp2a_pepmlm_pepflow_hybrid_20260904_run3"
+    generation = json.loads((report / "generation_receipt.json").read_text(encoding="utf-8"))
+    score = json.loads((report / "score_all" / "receipt.json").read_text(encoding="utf-8"))
+    calibration = json.loads((report / "calibration_receipt.json").read_text(encoding="utf-8"))
+    challenger = json.loads((report / "challenger" / "receipt.json").read_text(encoding="utf-8"))
+    qd = json.loads((report / "provisional_qd.json").read_text(encoding="utf-8"))
+    close = json.loads((report / "close_receipt.json").read_text(encoding="utf-8"))
+    closed_loop = json.loads((report / "closed_loop_receipt.json").read_text(encoding="utf-8"))
+
+    assert generation["generation"] == 107
+    assert generation["proposal_count"] == 10
+    assert generation["operator_variant"] == "activity_preserving_fallback"
+    assert generation["fixed_archive_cell_count"] == 2160
+    assert score["formal_12_complete_count"] == 12
+    assert score["display_eligible_count"] == 11
+    assert calibration["support_ge_2_count"] == 0
+    assert challenger["reviewed_candidate_count"] == 12
+    assert challenger["candidate_identity_coverage_complete"] is True
+    assert qd["quality_eligible_count"] == 0
+    assert qd["new_cell_count"] == 0
+    assert qd["replacement_count"] == 0
+    assert close["qd"]["valid_candidate_count"] == 0
+    assert close["persistence"]["candidate_identity_status"] == "proposal_only"
+    assert close["algorithm_adjustment"]["reason"] == (
+        "no_valid_qd_candidate_after_frozen_activity_calibration"
+    )
+    assert closed_loop["verify"]["pg_new_count"] == 0
+    assert closed_loop["verify"]["prepared_coarse5_count"] == 0
+    proposals = _read(report / "proposals.csv")
+    assert len({row["sequence_sha256"] for row in proposals}) == 10
+    assert len({row["actual_cell_preflight"] for row in proposals}) == 10
+    assert all(
+        row["protected_key_motif_policy"]
+        == "preserve_charged_scaffold;mutate_only_low_attribution_neutral_positions"
+        for row in proposals
+    )
