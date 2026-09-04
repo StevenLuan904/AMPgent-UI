@@ -1,0 +1,53 @@
+{
+  "schema_version": "ampgent.angpt1-pepmlm-qd-neighbor-close.1",
+  "status": "closed_unmaterialized_pg_blocked",
+  "target_key": "angpt1",
+  "source": "PepMLM-target-conditioned",
+  "operator_id": "angpt1-pepmlm-qd-neighbor-1aa-v1",
+  "generation_parent_run_id": "195dfbb1-cf6b-5d09-bb50-c1bd14590721",
+  "calibration_reference_run_id": "2bcb662d-da67-51e3-adbe-997d3aacad89",
+  "parent_witness_role_separation": true,
+  "proposal_count": 12,
+  "formal_12_complete_count": 12,
+  "display_eligible_count": 12,
+  "calibrated_support_ge_2_count": 9,
+  "excellent_calibrated_count": 9,
+  "challenger_reviewed_count": 12,
+  "challenger_no_conflict_count": 12,
+  "apex_status": "runtime_unavailable",
+  "peptiverse_status": "runtime_unavailable",
+  "shadow_conflict_status": "not_assessed",
+  "qd_quality_eligible_count": 9,
+  "qd_new_cell_count": 2,
+  "qd_replacement_count": 0,
+  "qd_same_cell_non_elite_count": 7,
+  "qd_contribution_sequence_sha256": [
+    "0543a98e85fd78461c55f557a91a90a829dc678343ec179a2b05bca383afb00f",
+    "27174c8516e41ddc294dd601ece745355a01e82cb26a92062858e9391f77fc78"
+  ],
+  "pg_exact": {
+    "preflight_status": "blocked",
+    "materialization_status": "not_attempted_after_preflight",
+    "attempted_once": true,
+    "run_id": null,
+    "candidate_count": 0,
+    "evaluation_count": 0,
+    "tool_call_id": null,
+    "replay_count": 0,
+    "identity_drift_count": 0
+  },
+  "coarse5": {
+    "prepared_count": 0,
+    "nstruct": 5,
+    "dispatch_allowed": false,
+    "reason": "PG blocked; no authoritative candidate UUID"
+  },
+  "archive_baseline": {
+    "covered_cell_count": 79,
+    "empty_cell_count": 2081,
+    "policy_id": "ampgent-peptide-behavior-space-v1",
+    "contribution_is_batch_scoped": true
+  },
+  "historical_run_modified": false,
+  "gpu_rosetta_md_submitted": false
+}

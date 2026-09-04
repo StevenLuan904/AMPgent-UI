@@ -1,0 +1,30 @@
+{
+  "schema_version": "ampgent.angpt1-pepmlm-qd-neighbor-materialization.1",
+  "status": "blocked",
+  "stage": "pg_exact_preflight",
+  "target_key": "angpt1",
+  "source": "PepMLM-target-conditioned",
+  "operator_id": "angpt1-pepmlm-qd-neighbor-1aa-v1",
+  "source_commit": "0780485f93eb96833e1798a78bcae5b7ff36be8f",
+  "materialization_allowed": false,
+  "executed": false,
+  "attempted_once": true,
+  "error_category": "runtime_unavailable",
+  "error_boundary": "postgresql_exact_candidate_lookup_before_transaction",
+  "error_summary": "asyncpg connection failed: WinError 1225 connection refused and WinError 5 access denied",
+  "pg_write_count": 0,
+  "pg_readback": null,
+  "qd_quality_eligible_count": 9,
+  "qd_new_cell_count": 2,
+  "qd_replacement_count": 0,
+  "materialization_candidate_count": 2,
+  "materialization_candidate_sequence_sha256": [
+    "0543a98e85fd78461c55f557a91a90a829dc678343ec179a2b05bca383afb00f",
+    "27174c8516e41ddc294dd601ece745355a01e82cb26a92062858e9391f77fc78"
+  ],
+  "coarse5_prepared_count": 0,
+  "reason_coarse5_not_created": "authoritative_candidate_uuid unavailable without PG materialization",
+  "offline_witness_is_not_pg_evidence": true,
+  "historical_run_modified": false,
+  "gpu_rosetta_md_submitted": false
+}

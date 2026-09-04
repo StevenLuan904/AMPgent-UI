@@ -261,6 +261,14 @@ async def _run(args: argparse.Namespace) -> None:
     reference_sources: dict[str, str] = {}
     fallback_source_hashes: dict[str, list[str]] = {}
     for branch in branches:
+        if args.frozen_only:
+            if not args.fallback_calibrated_csv:
+                raise ValueError("--frozen-only requires --fallback-calibrated-csv")
+            fallback_witnesses[branch], fallback_source_hashes[branch] = (
+                _load_frozen_percentile_witnesses(branch, args.fallback_calibrated_csv)
+            )
+            reference_sources[branch] = "frozen_calibrated_witness_monotonic_lower_bound"
+            continue
         try:
             (
                 reference[branch],
@@ -352,6 +360,11 @@ def main() -> None:
     parser.add_argument("--output-csv", type=Path, required=True)
     parser.add_argument("--output-json", type=Path, required=True)
     parser.add_argument("--fallback-calibrated-csv", type=Path, action="append", default=[])
+    parser.add_argument(
+        "--frozen-only",
+        action="store_true",
+        help="use the supplied frozen witness without querying PostgreSQL",
+    )
     parser.add_argument(
         "--parent-run-id",
         action="append",
