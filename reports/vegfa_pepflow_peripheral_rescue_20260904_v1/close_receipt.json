@@ -1,0 +1,69 @@
+{
+  "schema_version": "ampgent.vegfa-pepflow-peripheral-rescue-close.1",
+  "target_key": "vegfa",
+  "source": "PepFlow",
+  "operator_id": "vegfa-pepflow-peripheral-rescue-1aa-v1",
+  "generation": 6,
+  "seed": 20260904,
+  "proposal_count": 6,
+  "parent": {
+    "run_id": "98170454-be7f-5ab2-8add-979b9f11ddad",
+    "candidate_id": "af5474ec-97c5-457d-93b3-b861f59705b2",
+    "sequence": "SWWAELLAASGPRLRRAHK",
+    "sequence_sha256": "b44a23e10305e886fac05ad3b3d9454196d52d35cf89a76c0b6acf93bd7b2a23",
+    "identity_kind": "authoritative_candidate"
+  },
+  "formal12": {
+    "score_all_complete": 6,
+    "registry_sha256": "7a5152541864e7cec1b94bb5eb9c74d313408b5f4d4781f1565525b577164e55",
+    "candidate_scores_sha256": "708f38b0b73eb93f752befdb8a214bfa5a47ed3040835c3154271ae0447c295a"
+  },
+  "display_gate": {
+    "display_eligible_count": 3,
+    "toxinpred3_non_toxin_count": 6,
+    "macrel_low_count": 5,
+    "guruprasad_le_50_count": 3
+  },
+  "calibration": {
+    "reference_run_id": "98170454-be7f-5ab2-8add-979b9f11ddad",
+    "support_ge_2_count": 0,
+    "excellent_count": 0
+  },
+  "challenger": {
+    "hemopi2_reviewed_count": 6,
+    "hemopi2_no_conflict_count": 4,
+    "hemopi2_conflict_count": 2,
+    "apex": {
+      "applicability_status": "runtime_unavailable",
+      "conflict_status": "not_assessed"
+    },
+    "peptiverse": {
+      "applicability_status": "runtime_unavailable",
+      "conflict_status": "not_assessed"
+    }
+  },
+  "qd": {
+    "candidate_count": 6,
+    "quality_eligible_count": 0,
+    "new_cell_count": 0,
+    "replacement_count": 0,
+    "contribution": "none",
+    "qd_summary_sha256": "0d6377f864722b62e58c1e322523575de9abb1ea2f61e58ce1b6d1a260d8704d"
+  },
+  "materialization": {
+    "executed": false,
+    "candidate_count": 0,
+    "evaluation_count": 0,
+    "reason": "quality gate and QD contribution intersection is empty"
+  },
+  "structure_queue": {
+    "candidate_count": 0,
+    "prepared_not_dispatched": false,
+    "dispatch_allowed": false
+  },
+  "history": {
+    "pg_exact_existing_child_count": 0,
+    "proposal_only_history_excluded_count": 2,
+    "historical_runs_modified": false
+  }
+}

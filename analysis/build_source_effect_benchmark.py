@@ -329,9 +329,14 @@ def _record(spec: dict[str, Any], base: Path) -> list[dict[str, Any]]:
         raise ValueError(
             f"materialized_score_path has no rows: {spec['materialized_score_path']}"
         )
-    materialized_groups = _source_groups(
-        materialized_score_rows or score_rows, split
-    )
+    if spec.get("materialized_score_path"):
+        materialized_groups = _source_groups(
+            materialized_score_rows, split
+        )
+    elif materialized_run == 0:
+        materialized_groups = {source: [] for source in groups}
+    else:
+        materialized_groups = _source_groups(score_rows, split)
     proposal_groups = _source_groups(proposal_rows, split) if proposal_rows else {}
     result: list[dict[str, Any]] = []
     for source, rows in groups.items():

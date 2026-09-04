@@ -1,0 +1,39 @@
+{
+  "schema_version": "ampgent.vegfa-pepflow-peripheral-rescue-generation.1",
+  "target_key": "vegfa",
+  "source": "PepFlow",
+  "operator_id": "vegfa-pepflow-peripheral-rescue-1aa-v1",
+  "seed": 20260904,
+  "generation": 6,
+  "proposal_count": 6,
+  "parent_run_id": "98170454-be7f-5ab2-8add-979b9f11ddad",
+  "parent_candidate_id": "af5474ec-97c5-457d-93b3-b861f59705b2",
+  "parent_identity_kind": "authoritative_candidate",
+  "parent_sequence_sha256": "b44a23e10305e886fac05ad3b3d9454196d52d35cf89a76c0b6acf93bd7b2a23",
+  "reference_source": "VEGFA PepMLM peripheral rescue",
+  "reference_proposals_path": "reports/vegfa_pepmlm_peripheral_rescue_20260904_v1/proposals.csv",
+  "reference_proposals_sha256": "5feafc5d4e8ae171da27353cd90e7e49c6d745b3331080c201b38d08cb8c47a0",
+  "reference_slot_count": 8,
+  "matched_slot_positions": [
+    3,
+    7,
+    8,
+    9
+  ],
+  "matched_edit_budget": "one_residue_equal_length",
+  "donor_artifact": "reports/gyrA_pepflow_qd_neighbor_20260904/proposals.csv",
+  "donor_artifact_sha256": "e00605f15553e1ccce3cab76113669c71784bb7969b17a61562266a1e01672ac",
+  "donor_row_count": 4,
+  "donor_source_values": [
+    "PepFlow"
+  ],
+  "source_generation_receipt_sha256": "d1662dfb2dbd25e75fc45d9c5d4f78d056a8cc3499fad3d1c08d89219773457e",
+  "source_score_receipt_sha256": "45a4e811a4971d83b4d3129a6c10e384a715bee03c8128e9c402e156e89d0a4d",
+  "pg_exact_checked_child_count": 8,
+  "pg_exact_existing_child_count": 0,
+  "historical_edit_key_count": 8,
+  "historical_sequence_hash_count": 8,
+  "equal_length_single_residue_count": 6,
+  "gpu_rosetta_md_submitted": false,
+  "historical_runs_modified": false
+}
