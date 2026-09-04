@@ -315,13 +315,24 @@ def _record(spec: dict[str, Any], base: Path) -> list[dict[str, Any]]:
         material, "materialized_or_reused_in_run_count", "source_candidate_count"
     )
     groups = _source_groups(score_rows, split)
+    materialized_score_rows = _load_csv(
+        _resolve(base, spec.get("materialized_score_path"))
+    )
+    if spec.get("materialized_score_path") and not materialized_score_rows:
+        raise ValueError(
+            f"materialized_score_path has no rows: {spec['materialized_score_path']}"
+        )
+    materialized_groups = _source_groups(
+        materialized_score_rows or score_rows, split
+    )
     proposal_groups = _source_groups(proposal_rows, split) if proposal_rows else {}
     result: list[dict[str, Any]] = []
     for source, rows in groups.items():
+        materialized_rows = materialized_groups.get(source, [])
         proposals = len(proposal_groups.get(source, [])) if proposal_rows else len(rows)
         if source == "all" and "proposal_count_override" in spec:
             proposals = _int(spec["proposal_count_override"])
-        materialized = len(rows)
+        materialized = len(materialized_rows)
         full12 = sum(_bool(row.get("formal_12_complete")) for row in rows)
         display = sum(_bool(row.get("display_eligible")) for row in rows)
         support = sum(
@@ -343,6 +354,31 @@ def _record(spec: dict[str, Any], base: Path) -> list[dict[str, Any]]:
             )
             for row in rows
         )
+        materialized_full12 = sum(
+            _bool(row.get("formal_12_complete")) for row in materialized_rows
+        )
+        materialized_display = sum(
+            _bool(row.get("display_eligible")) for row in materialized_rows
+        )
+        materialized_support = sum(
+            _int(
+                row.get(
+                    "activity_model_support_count_calibrated",
+                    row.get("activity_model_support_count"),
+                )
+            )
+            >= 2
+            for row in materialized_rows
+        )
+        materialized_excellent = sum(
+            _bool(
+                row.get(
+                    "excellent_sequence_stage_calibrated",
+                    row.get("excellent_sequence_stage"),
+                )
+            )
+            for row in materialized_rows
+        )
         challenge_rows = (
             [
                 row
@@ -355,7 +391,22 @@ def _record(spec: dict[str, Any], base: Path) -> list[dict[str, Any]]:
         challenger_reviewed, challenger_no_conflict = _challenger_counts(
             challenge_rows, material, split
         )
-        qd_metrics = _qd_metrics(qd, rows, split)
+        materialized_challenger_rows = _load_csv(
+            _resolve(base, spec.get("materialized_challenger_path"))
+        )
+        if not materialized_challenger_rows:
+            materialized_challenger_rows = materialized_rows
+        if split:
+            materialized_challenger_rows = [
+                row
+                for row in materialized_challenger_rows
+                if _source_name(row.get("donor_source", row.get("source", "")))
+                == source
+            ]
+        materialized_challenger_reviewed, materialized_challenger_no_conflict = (
+            _challenger_counts(materialized_challenger_rows, material, split)
+        )
+        qd_metrics = _qd_metrics(qd, materialized_rows, split)
         qd_eligible = qd_metrics["eligible"]
         rosetta = _rosetta(spec, qd_eligible, base)
         admitted = spec.get("pool_a_admitted_count")
@@ -399,11 +450,37 @@ def _record(spec: dict[str, Any], base: Path) -> list[dict[str, Any]]:
                 },
                 "rates": {
                     "proposal_to_materialized": _rate(materialized, proposals),
-                    "materialized_to_formal12": _rate(full12, materialized),
-                    "materialized_to_display": _rate(display, materialized),
-                    "materialized_to_activity_support_ge_2": _rate(support, materialized),
-                    "materialized_to_excellent": _rate(excellent, materialized),
+                    "proposal_to_formal12": _rate(full12, proposals),
+                    "proposal_to_display": _rate(display, proposals),
+                    "proposal_to_activity_support_ge_2": _rate(support, proposals),
+                    "proposal_to_challenger_reviewed": _rate(
+                        challenger_reviewed, proposals
+                    ),
+                    "materialized_to_formal12": _rate(
+                        materialized_full12, materialized
+                    ),
+                    "materialized_to_display": _rate(
+                        materialized_display, materialized
+                    ),
+                    "materialized_to_activity_support_ge_2": _rate(
+                        materialized_support, materialized
+                    ),
+                    "materialized_to_excellent": _rate(
+                        materialized_excellent, materialized
+                    ),
                     "materialized_to_qd_eligible": _rate(qd_eligible, materialized),
+                },
+                "materialized_cohort": {
+                    "candidate_count": materialized,
+                    "formal12": materialized_full12,
+                    "display": materialized_display,
+                    "activity_support_ge_2": materialized_support,
+                    "excellent": materialized_excellent,
+                    "challenger_reviewed": materialized_challenger_reviewed,
+                    "challenger_no_conflict": materialized_challenger_no_conflict,
+                    "qd_eligible": qd_eligible,
+                    "qd_new_cell": qd_metrics["new_cell"],
+                    "qd_replacement": qd_metrics["replacement"],
                 },
                 "counts": {
                     "proposal": proposals,
@@ -437,6 +514,7 @@ def _record(spec: dict[str, Any], base: Path) -> list[dict[str, Any]]:
                 "mean_delta_phi": _delta_phi(proposal_groups.get(source, rows)),
                 "evidence": {
                     "score_path": spec["score_path"],
+                    "materialized_score_path": spec.get("materialized_score_path"),
                     "proposal_path": spec.get("proposal_path"),
                     "materialization_path": spec["materialization_path"],
                     "qd_path": spec["qd_path"],
