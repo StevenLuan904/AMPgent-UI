@@ -156,7 +156,9 @@ def build_proposals(
                 continue
             parents[parent_id] = {
                 "candidate_id": parent_id,
-                "run_id": (row.get("parent_run_id") or parent_run_id).strip(),
+                "run_id": (
+                    row.get("parent_run_id") or row.get("run_id") or parent_run_id
+                ).strip(),
                 "sequence": sequence,
                 "sequence_sha256": parent_sha,
                 "qd_cell": row.get(
@@ -281,6 +283,7 @@ def main() -> None:
         writer = csv.DictWriter(stream, fieldnames=list(proposals[0]))
         writer.writeheader()
         writer.writerows(proposals)
+    parent_run_ids = sorted({row["parent_run_id"] for row in proposals})
     receipt = {
         "schema_version": generation_schema_for_target(args.target_key),
         "target_key": normalize_target_key(args.target_key),
@@ -289,8 +292,8 @@ def main() -> None:
         "seed": SEED,
         "generation": 3,
         "proposal_count": len(proposals),
-        "parent_run_id": args.parent_run_id,
-        "parent_run_ids": sorted({row["parent_run_id"] for row in proposals}),
+        "parent_run_id": parent_run_ids[0] if len(parent_run_ids) == 1 else "",
+        "parent_run_ids": parent_run_ids,
         "parent_count": len({row["parent_candidate_id"] for row in proposals}),
         "donor_count": len(donor_rows),
         "historical_edit_count": len(edits),

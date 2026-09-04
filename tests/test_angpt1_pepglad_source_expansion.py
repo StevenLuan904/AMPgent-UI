@@ -80,6 +80,37 @@ def test_target_parameter_changes_only_stable_provenance_identity() -> None:
     )
 
 
+def test_parent_run_id_prefers_authoritative_parent_row_run_id() -> None:
+    parent = {
+        "candidate_id": "00000000-0000-0000-0000-000000000003",
+        "run_id": "11111111-1111-4111-8111-111111111111",
+        "sequence": "ACDEFG",
+        "sequence_sha256": sha256_text("ACDEFG"),
+        "target_key": "GyrA",
+        "display_eligible": "true",
+        "activity_support_count_calibrated": "2",
+        "qd_eligible": "true",
+    }
+    donor = {
+        "donor_candidate_id": "pepglad-row",
+        "donor_fragment": "W",
+        "donor_residue": "W",
+        "donor_artifact": "fixture.csv",
+        "donor_row_number": "2",
+        "donor_row_sha256": "b" * 64,
+    }
+    rows = build_proposals(
+        [parent],
+        [donor],
+        set(),
+        set(),
+        target_key="GyrA",
+        parent_run_id="99999999-9999-4999-8999-999999999999",
+        limit=1,
+    )
+    assert rows[0]["parent_run_id"] == parent["run_id"]
+
+
 def test_explicit_history_inputs_are_supported_for_bounded_replay() -> None:
     assert "--history-csv" in Path(
         "analysis/generate_angpt1_pepglad_source_expansion.py"
