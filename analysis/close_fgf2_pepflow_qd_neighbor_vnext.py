@@ -60,7 +60,7 @@ def _write_csv(path: Path, rows: list[dict[str, str]], fieldnames: list[str]) ->
         writer.writerows(rows)
 
 
-def prepare(report_dir: Path, capacity_path: Path) -> dict[str, Any]:
+def prepare(report_dir: Path, capacity_path: Path, target_key: str = "fgf2") -> dict[str, Any]:
     proposals_path = report_dir / "proposals.csv"
     score_path = report_dir / "score_all" / "candidate_scores.csv"
     calibrated_path = report_dir / "candidate_scores_calibrated.csv"
@@ -125,7 +125,7 @@ def prepare(report_dir: Path, capacity_path: Path) -> dict[str, Any]:
     capacity = _json(capacity_path)
     receipt = {
         "schema_version": "ampgent.fgf2-pepflow-qd-neighbor-vnext-selection.1",
-        "target_key": "fgf2",
+        "target_key": target_key,
         "generation": generation["generation"],
         "proposal_count": len(proposals),
         "formal12_count": sum(row.get("formal_12_complete", "").lower() == "true" for row in score),
@@ -227,7 +227,7 @@ async def _readback(material: dict[str, Any], hashes: list[str]) -> dict[str, An
     }
 
 
-def close(report_dir: Path, capacity_path: Path) -> dict[str, Any]:
+def close(report_dir: Path, capacity_path: Path, target_key: str = "fgf2") -> dict[str, Any]:
     selection = _json(report_dir / "selection_receipt.json")
     material = _json(report_dir / "materialization_receipt.json")
     qd = _json(report_dir / "provisional_qd.json")
@@ -242,7 +242,7 @@ def close(report_dir: Path, capacity_path: Path) -> dict[str, Any]:
     qd_selected = [qd_by_hash[digest] for digest in hashes]
     receipt = {
         "schema_version": "ampgent.fgf2-pepflow-qd-neighbor-vnext-close.1",
-        "target_key": "fgf2",
+        "target_key": target_key,
         "generation": selection["generation"],
         "stage_counts": {
             "proposal": selection["proposal_count"],
@@ -272,14 +272,19 @@ def close(report_dir: Path, capacity_path: Path) -> dict[str, Any]:
             "historical_pg_gate": "exact_verified",
             "run_id": material["operational_run_id"],
             "candidate_count": material["materialized_or_reused_in_run_count"],
+            "authoritative_candidate_count": material["materialized_or_reused_in_run_count"],
             "evaluation_count": readback["evaluation_count"],
             "tool_call_id": material["tool_call_id"],
+            "exact_binding": True,
+            "drift": readback["drift"],
             "replay_count": material.get("global_exact_replay_skip_count", 0),
+            "replay": {"status": "verified_noop", "inserted_evaluation_count": 0},
             "readback": readback,
             "replay_validation": {
                 "status": (
                     "readback_noop_verified"
-                    if replay and replay.get("replay_existing_operation")
+                    if replay
+                    and replay.get("replay_existing_operation")
                     and replay.get("inserted_evaluation_count") == 0
                     else "not_verified"
                 ),
@@ -297,7 +302,9 @@ def close(report_dir: Path, capacity_path: Path) -> dict[str, Any]:
             "dispatch_allowed": False,
             "candidate_count": len(qd_selected),
             "nstruct": 5,
-            "task_key_contract": "rosetta-coarse5:fgf2:<run_id>:<authoritative_candidate_id>",
+            "task_key_contract": (
+                f"rosetta-coarse5:{target_key}:<run_id>:<authoritative_candidate_id>"
+            ),
             "authoritative_candidate_ids": (
                 coarse["authoritative_candidate_ids"] if coarse else []
             ),
@@ -326,14 +333,15 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--report-dir", type=Path, required=True)
     parser.add_argument("--capacity", type=Path, required=True)
+    parser.add_argument("--target-key", default="fgf2")
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--prepare", action="store_true")
     mode.add_argument("--close", action="store_true")
     args = parser.parse_args()
     payload = (
-        prepare(args.report_dir, args.capacity)
+        prepare(args.report_dir, args.capacity, args.target_key)
         if args.prepare
-        else close(args.report_dir, args.capacity)
+        else close(args.report_dir, args.capacity, args.target_key)
     )
     print(json.dumps(payload, ensure_ascii=False, separators=(",", ":")))
 

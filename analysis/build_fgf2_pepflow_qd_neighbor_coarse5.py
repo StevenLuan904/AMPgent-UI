@@ -42,7 +42,7 @@ async def _authoritative(run_id: str, hashes: list[str]) -> dict[str, Candidate]
     return result
 
 
-def build(report_dir: Path, output_dir: Path) -> dict[str, Any]:
+def build(report_dir: Path, output_dir: Path, target_key: str = "fgf2") -> dict[str, Any]:
     material = _json(report_dir / "materialization_receipt.json")
     qd = _json(report_dir / "provisional_qd.json")
     selected = _rows(report_dir / "materialization_input" / "candidate_scores.csv")
@@ -65,13 +65,13 @@ def build(report_dir: Path, output_dir: Path) -> dict[str, Any]:
         candidate_id = str(candidate.id)
         rows.append(
             {
-                "target_key": "fgf2",
+                "target_key": target_key,
                 "run_id": run_id,
                 "authoritative_candidate_id": candidate_id,
                 "sequence_sha256": digest,
                 "qd_cell": contribution["cell_id"],
                 "qd_contribution": contribution["contribution"],
-                "task_key": f"rosetta-coarse5:fgf2:{run_id}:{candidate_id}",
+                "task_key": f"rosetta-coarse5:{target_key}:{run_id}:{candidate_id}",
                 "nstruct": 5,
                 "existing_decoys": 0,
                 "remaining_decoys": 5,
@@ -91,7 +91,7 @@ def build(report_dir: Path, output_dir: Path) -> dict[str, Any]:
         writer.writerows(rows)
     receipt = {
         "schema_version": "ampgent.fgf2-pepflow-qd-neighbor-vnext-coarse5.1",
-        "target_key": "fgf2",
+        "target_key": target_key,
         "run_id": run_id,
         "materialization_tool_call_id": material["tool_call_id"],
         "candidate_count": len(rows),
@@ -129,10 +129,13 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--report-dir", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--target-key", default="fgf2")
     args = parser.parse_args()
     print(
         json.dumps(
-            build(args.report_dir, args.output_dir), ensure_ascii=False, separators=(",", ":")
+            build(args.report_dir, args.output_dir, args.target_key),
+            ensure_ascii=False,
+            separators=(",", ":"),
         )
     )
 
