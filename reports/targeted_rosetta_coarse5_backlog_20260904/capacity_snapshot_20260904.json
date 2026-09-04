@@ -1,0 +1,300 @@
+{
+  "schema_version": "ampgent.gpu-capacity-snapshot.1",
+  "captured_at": "2026-09-04T00:08:33.8986375+00:00",
+  "allowed_probe_scope": [
+    {
+      "host": "192.168.99.19",
+      "gpu_indices": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "host": "192.168.99.32",
+      "gpu_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "host": "192.168.99.2",
+      "gpu_indices": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    }
+  ],
+  "prohibited_use_scope": [
+    {
+      "host": "192.168.99.32",
+      "gpu_indices": [
+        2,
+        3
+      ]
+    }
+  ],
+  "idle_gpu_keys": [],
+  "observation_keys": [
+    "192.168.99.19:0:observed:False",
+    "192.168.99.19:1:observed:False",
+    "192.168.99.19:2:observed:False",
+    "192.168.99.19:3:observed:False",
+    "192.168.99.19:4:observed:False",
+    "192.168.99.19:5:observed:False",
+    "192.168.99.19:6:observed:False",
+    "192.168.99.19:7:observed:False",
+    "192.168.99.2:0:observed:False",
+    "192.168.99.2:1:observed:False",
+    "192.168.99.2:2:observed:False",
+    "192.168.99.2:3:observed:False",
+    "192.168.99.2:4:observed:False",
+    "192.168.99.2:5:observed:False",
+    "192.168.99.2:6:observed:False",
+    "192.168.99.2:7:observed:False",
+    "192.168.99.32:0:unreachable:False",
+    "192.168.99.32:1:unreachable:False",
+    "192.168.99.32:2:unreachable:False",
+    "192.168.99.32:3:unreachable:False"
+  ],
+  "wake_required": true,
+  "observations": [
+    {
+      "host": "192.168.99.19",
+      "gpu_index": 0,
+      "status": "observed",
+      "uuid": "GPU-ad283278-45ff-d25d-7b1e-af81de9cda3c",
+      "memory_used_mib": 1158,
+      "utilization_percent": 100,
+      "compute_processes": "1795945, /data1/huangyueshan/pepagent/envs/openmm-md-py311-v1/bin/python, 1104",
+      "cuda_visible_devices_declarations": "1795945",
+      "idle": false
+    },
+    {
+      "host": "192.168.99.19",
+      "gpu_index": 1,
+      "status": "observed",
+      "uuid": "GPU-152ebeb6-a274-9645-ceea-ba98924d9646",
+      "memory_used_mib": 1178,
+      "utilization_percent": 100,
+      "compute_processes": "1892180, /data1/huangyueshan/pepagent/envs/openmm-md-py311-v1/bin/python, 1144",
+      "cuda_visible_devices_declarations": "1892180",
+      "idle": false
+    },
+    {
+      "host": "192.168.99.19",
+      "gpu_index": 2,
+      "status": "observed",
+      "uuid": "GPU-bc92b0e0-5104-886b-00b4-e69141cefb1a",
+      "memory_used_mib": 1142,
+      "utilization_percent": 100,
+      "compute_processes": "1719939, /data1/huangyueshan/pepagent/envs/openmm-md-py311-v1/bin/python, 1108",
+      "cuda_visible_devices_declarations": "1719939",
+      "idle": false
+    },
+    {
+      "host": "192.168.99.19",
+      "gpu_index": 3,
+      "status": "observed",
+      "uuid": "GPU-f52b1e17-ad91-fb04-9ea0-e445a7594395",
+      "memory_used_mib": 974,
+      "utilization_percent": 94,
+      "compute_processes": "1927554, /data1/huangyueshan/pepagent/envs/openmm-md-py311-v1/bin/python, 940",
+      "cuda_visible_devices_declarations": "1927554",
+      "idle": false
+    },
+    {
+      "host": "192.168.99.19",
+      "gpu_index": 4,
+      "status": "observed",
+      "uuid": "GPU-c2e5bb9e-d0f6-5a48-80a7-2d37905904a3",
+      "memory_used_mib": 1006,
+      "utilization_percent": 93,
+      "compute_processes": "1894513, /data1/huangyueshan/pepagent/envs/openmm-md-py311-v1/bin/python, 972",
+      "cuda_visible_devices_declarations": "1894513",
+      "idle": false
+    },
+    {
+      "host": "192.168.99.19",
+      "gpu_index": 5,
+      "status": "observed",
+      "uuid": "GPU-73b13103-3924-7261-64c5-6113325ce1de",
+      "memory_used_mib": 1282,
+      "utilization_percent": 73,
+      "compute_processes": "549598, /data1/huangyueshan/pepagent/envs/openmm-md-py311-v1/bin/python, 1248",
+      "cuda_visible_devices_declarations": "549598",
+      "idle": false
+    },
+    {
+      "host": "192.168.99.19",
+      "gpu_index": 6,
+      "status": "observed",
+      "uuid": "GPU-0123fcd6-bc4f-1317-b51f-4796dd63705e",
+      "memory_used_mib": 976,
+      "utilization_percent": 100,
+      "compute_processes": "1853418, /data1/huangyueshan/pepagent/envs/openmm-md-py311-v1/bin/python, 942",
+      "cuda_visible_devices_declarations": "1853418",
+      "idle": false
+    },
+    {
+      "host": "192.168.99.19",
+      "gpu_index": 7,
+      "status": "observed",
+      "uuid": "GPU-c387fce5-f695-2f1e-62dd-bea0f5a13e06",
+      "memory_used_mib": 1954,
+      "utilization_percent": 71,
+      "compute_processes": "1858319, /data1/huangyueshan/pepagent/envs/openmm-md-py311-v1/bin/python, 1920",
+      "cuda_visible_devices_declarations": "1858319",
+      "idle": false
+    },
+    {
+      "host": "192.168.99.32",
+      "gpu_index": 0,
+      "status": "unreachable",
+      "detail": "banner exchange: Connection to UNKNOWN port -1: Connection refused",
+      "idle": false
+    },
+    {
+      "host": "192.168.99.32",
+      "gpu_index": 1,
+      "status": "unreachable",
+      "detail": "banner exchange: Connection to UNKNOWN port -1: Connection refused",
+      "idle": false
+    },
+    {
+      "host": "192.168.99.32",
+      "gpu_index": 2,
+      "status": "unreachable",
+      "detail": "banner exchange: Connection to UNKNOWN port -1: Connection refused",
+      "idle": false
+    },
+    {
+      "host": "192.168.99.32",
+      "gpu_index": 3,
+      "status": "unreachable",
+      "detail": "banner exchange: Connection to UNKNOWN port -1: Connection refused",
+      "idle": false
+    },
+    {
+      "host": "192.168.99.2",
+      "gpu_index": 0,
+      "status": "observed",
+      "uuid": "GPU-346ed3a9-87e5-7d66-585d-eac116615ab8",
+      "memory_used_mib": 24248,
+      "utilization_percent": 68,
+      "compute_processes": [
+        "1362474, /amax/data/shubinghao/conda_envs/OmniEpic/bin/python, 23470",
+        "58820, /sdd_data/pepagent/envs/openmm-md-py311-uv-v1/bin/python, 254",
+        "1280316, /sdd_data/pepagent/envs/openmm-md-py311-uv-v1/bin/python, 254",
+        "2060743, /sdd_data/pepagent/envs/openmm-md-py311-uv-v1/bin/python, 254"
+      ],
+      "cuda_visible_devices_declarations": [
+        "1362474",
+        "3347685",
+        "3347689",
+        "3347690",
+        "3347691"
+      ],
+      "idle": false
+    },
+    {
+      "host": "192.168.99.2",
+      "gpu_index": 1,
+      "status": "observed",
+      "uuid": "GPU-147282e6-7177-b567-9294-6ef7dd9ff6d4",
+      "memory_used_mib": 838,
+      "utilization_percent": 100,
+      "compute_processes": "58820, /sdd_data/pepagent/envs/openmm-md-py311-uv-v1/bin/python, 828",
+      "cuda_visible_devices_declarations": null,
+      "idle": false
+    },
+    {
+      "host": "192.168.99.2",
+      "gpu_index": 2,
+      "status": "observed",
+      "uuid": "GPU-472f1dee-b151-fe85-8ffe-0228f045f83a",
+      "memory_used_mib": 744,
+      "utilization_percent": 92,
+      "compute_processes": "1280316, /sdd_data/pepagent/envs/openmm-md-py311-uv-v1/bin/python, 734",
+      "cuda_visible_devices_declarations": null,
+      "idle": false
+    },
+    {
+      "host": "192.168.99.2",
+      "gpu_index": 3,
+      "status": "observed",
+      "uuid": "GPU-0a8d1473-3efc-ada5-40c3-d5d846c5dc5e",
+      "memory_used_mib": 800,
+      "utilization_percent": 100,
+      "compute_processes": "2060743, /sdd_data/pepagent/envs/openmm-md-py311-uv-v1/bin/python, 790",
+      "cuda_visible_devices_declarations": null,
+      "idle": false
+    },
+    {
+      "host": "192.168.99.2",
+      "gpu_index": 4,
+      "status": "observed",
+      "uuid": "GPU-db667c55-892f-21f7-df3b-92c87e18c8e0",
+      "memory_used_mib": 12688,
+      "utilization_percent": 0,
+      "compute_processes": "504832, [Not Found], 12674",
+      "cuda_visible_devices_declarations": null,
+      "idle": false
+    },
+    {
+      "host": "192.168.99.2",
+      "gpu_index": 5,
+      "status": "observed",
+      "uuid": "GPU-1585f1ab-abc0-a7f4-b445-c35e2886d8af",
+      "memory_used_mib": 9,
+      "utilization_percent": 0,
+      "compute_processes": null,
+      "cuda_visible_devices_declarations": [
+        "130772",
+        "3410178"
+      ],
+      "idle": false
+    },
+    {
+      "host": "192.168.99.2",
+      "gpu_index": 6,
+      "status": "observed",
+      "uuid": "GPU-b995fb94-961f-6f65-28db-dccfe611b053",
+      "memory_used_mib": 5,
+      "utilization_percent": 0,
+      "compute_processes": null,
+      "cuda_visible_devices_declarations": [
+        "130773",
+        "3394115"
+      ],
+      "idle": false
+    },
+    {
+      "host": "192.168.99.2",
+      "gpu_index": 7,
+      "status": "observed",
+      "uuid": "GPU-d8fc1c91-5a48-a3e0-3a92-3513db6e06d1",
+      "memory_used_mib": 5,
+      "utilization_percent": 0,
+      "compute_processes": null,
+      "cuda_visible_devices_declarations": [
+        "130774",
+        "3350980"
+      ],
+      "idle": false
+    }
+  ]
+}

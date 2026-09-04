@@ -1,0 +1,71 @@
+{
+  "schema_version": "ampgent.operational-increment.1",
+  "observed_at_utc": "2026-09-04T00:08:33Z",
+  "scope": "Pool A MD/Rosetta capacity and targeted coarse5 backlog; read-only",
+  "md_identity_snapshot": {
+    "union": 486,
+    "launched": 50,
+    "full_evidence": 31,
+    "analysis_pending": 0,
+    "running_or_incomplete": 19,
+    "not_started": 436,
+    "failed": 0,
+    "invariants": {
+      "partition_total_equals_486": true,
+      "launched_equals_full_plus_running": true
+    },
+    "new_completion_observed": false
+  },
+  "control_plane": {
+    "postgresql": {
+      "listener": "127.0.0.1:55432",
+      "candidate_count": 211278,
+      "succeeded_evaluation_count": 3144232,
+      "structure_evidence_count": 2023,
+      "access": "read_only_query_succeeded"
+    },
+    "api_8000": "unavailable",
+    "api_8001": "unavailable",
+    "temporal_7233": "unavailable"
+  },
+  "resources": {
+    "host_19": {
+      "supervisor_pid": 3986807,
+      "analysis_pid": 3977733,
+      "gpu_indices": "0-7",
+      "status": "all_observed_busy_ampgent"
+    },
+    "synth": {
+      "md_supervisor_pid": 1280301,
+      "analysis_pid": 3311802,
+      "mmgbsa_pid": 3360111,
+      "md_runner_pids": [58820, 1280316, 2060743],
+      "managed_gpu_indices": "1-3",
+      "gpu_5_7": "low_utilization_but_no_existing_ampgent_supervisor",
+      "dispatch_safe": false
+    },
+    "host_32": {
+      "gpu_0_3": "unreachable",
+      "gpu_2_3_dispatch": "prohibited"
+    }
+  },
+  "targeted_backlog": {
+    "pg_identity_rows": 29,
+    "backlog_ready": 1,
+    "remote_exact_hits": 0,
+    "existing_structure_or_task_excluded": 21,
+    "candidate_id": "24185234-d211-40f6-ba2c-ee6abb1c4eb1",
+    "run_id": "45593820-90db-53df-b29d-b97adfa203f3",
+    "target_key": "pbp2a",
+    "task_submitted": false
+  },
+  "decision": {
+    "new_md_or_rosetta_started": false,
+    "source_candidate_generated": false,
+    "reason": "no_safe_existing_supervisor_slot_and_control_plane_unavailable",
+    "proposal_or_bare_idle_gpu_not_counted_as_scientific_candidate": true,
+    "remote_large_files_downloaded": false,
+    "remote_files_deleted": false,
+    "foreign_processes_touched": false
+  }
+}
