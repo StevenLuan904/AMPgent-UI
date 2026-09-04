@@ -1,0 +1,80 @@
+{
+  "schema_version": "ampgent.angpt1-pepflow-qd-neighbor-close.1",
+  "target_key": "angpt1",
+  "source": "PepFlow",
+  "operator_id": "angpt1-pepflow-qd-neighbor-1aa-v2",
+  "seed": 20260904,
+  "generation": 2,
+  "counts": {
+    "proposal": 12,
+    "pg_new": 12,
+    "formal12": 12,
+    "display": 11,
+    "activity_support_ge_2": 12,
+    "excellent": 11,
+    "challenger_reviewed": 12,
+    "challenger_no_conflict": 12,
+    "qd_eligible": 11,
+    "qd_new_cell": 1,
+    "qd_replacement": 2,
+    "materialized_candidates": 3,
+    "evaluations": 51,
+    "coarse5_prepared": 3,
+    "pool_a_admitted": 0
+  },
+  "postgresql": {
+    "run_id": "a9cde5ec-d241-561a-ae19-e8de0c6c95a3",
+    "tool_call_id": "d826e377-648c-4c07-8950-4d0f8ee3b763",
+    "candidate_ids": [
+      "3cf72071-92b5-4ad3-a111-1c9e733a68e2",
+      "9adb7487-cdbe-4d75-890c-455959d41328",
+      "3ebcb368-d393-47c9-9759-8ebde1ff5e87"
+    ],
+    "candidate_count": 3,
+    "evaluation_count": 51,
+    "per_candidate_evaluation_count": {
+      "3cf72071-92b5-4ad3-a111-1c9e733a68e2": 17,
+      "9adb7487-cdbe-4d75-890c-455959d41328": 17,
+      "3ebcb368-d393-47c9-9759-8ebde1ff5e87": 17
+    },
+    "primary_evaluations": 36,
+    "challenger_evaluations": 9,
+    "shadow_evaluations": 6,
+    "subject_run_drift_count": 0,
+    "replay_count": 0,
+    "status": "succeeded"
+  },
+  "shadow_contract": {
+    "apex": {
+      "applicability_status": "runtime_unavailable",
+      "conflict_status": "not_assessed"
+    },
+    "peptiverse": {
+      "applicability_status": "runtime_unavailable",
+      "conflict_status": "not_assessed"
+    }
+  },
+  "qd": {
+    "archive_sha256": "d6e26c121c9d4f3e56e3e326a50afdc032c6c907517a7b9c716097cbd5fc1d0e",
+    "new_cell_count": 1,
+    "replacement_count": 2,
+    "effective_archive_contribution_count": 3,
+    "same_cell_non_elite_count": 8
+  },
+  "structure": {
+    "queue_csv": "coarse5_prepared_queue.csv",
+    "queue_sha256": "30d255fada19c87900f541a56bd173e2db93278cff12423541a1d656ef5cb83f",
+    "task_key_identity": "run_id+candidate_id+target_key",
+    "nstruct": 5,
+    "existing_decoys": 0,
+    "remaining_decoys": 5,
+    "status": "prepared_not_dispatched",
+    "dispatch_allowed": false,
+    "median_dg_gate": "< -30 required before targeted Pool A",
+    "pool_a_admitted": false
+  },
+  "historical_runs_modified": false,
+  "remote_large_artifact_downloaded": false,
+  "remote_file_deleted": false,
+  "receipt_payload_sha256": "a49c8e55dd068efa00050524343e3a21b235b99f39c226feb9d1d86b1625148b"
+}
