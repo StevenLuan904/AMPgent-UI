@@ -51,7 +51,7 @@ import { LaneLabel, WorkflowNode, type LaneNode, type StageNode } from './Workfl
 import { assertMatchingRunIdentity, type RunIdentity } from './runIdentity'
 import { formatRunTitle } from './runPresentation'
 import { buildRuntimeGraph, type RuntimeGraphModel } from './runtimeGraph'
-import { nodeDetailCacheTtlMs, observerInitialPrefetchCount, observerNodeDetailCacheKey, observerPollingIntervalMs, observerRunDetailCacheKey, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion } from './observerPolling'
+import { nodeDetailCacheTtlMs, observerIdlePrefetchDelayMs, observerInitialPrefetchCount, observerListTimeoutMs, observerNodeDetailCacheKey, observerNodeDetailTimeoutMs, observerPollingIntervalMs, observerPrefetchStageOrder, observerRunDetailCacheKey, observerRunDetailTimeoutMs, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion } from './observerPolling'
 import { schedulerHealthDescription, schedulerHealthPresentation } from './schedulerHealth'
 import type {
   CandidatePreview,
@@ -206,7 +206,7 @@ function useRunData(enabled: boolean, apiBase: string) {
   const [refreshing, setRefreshing] = useState(false)
   const [syncingStale, setSyncingStale] = useState(Boolean(initialCachedDetail))
   const [nodeDetails, setNodeDetails] = useState<Record<string, NodeDetail>>({})
-  const [nodeDetailFetch, setNodeDetailFetch] = useState({ requested: 0, loaded: 0, failed: 0 })
+  const [nodeDetailFetch, setNodeDetailFetch] = useState({ requested: 0, loaded: 0, failed: 0, deferred: 0 })
   const runsInFlight = useRef(false)
   const detailInFlight = useRef(false)
   const pendingDetailRunId = useRef<string | null>(null)
@@ -231,7 +231,7 @@ function useRunData(enabled: boolean, apiBase: string) {
     if (runsInFlight.current) return
     runsInFlight.current = true
     try {
-      const payload = await fetchJsonWithTimeout<RunListResponse>(`${apiBase}/v1/observer/runs?limit=12`, 15_000)
+      const payload = await fetchJsonWithTimeout<RunListResponse>(`${apiBase}/v1/observer/runs?limit=12`, observerListTimeoutMs)
       runIdentities.current = Object.fromEntries(payload.runs.map((run) => [run.id, {
         id: run.id,
         temporal_workflow_id: run.temporal_workflow_id,
@@ -268,7 +268,7 @@ function useRunData(enabled: boolean, apiBase: string) {
     if (nodeFetchInFlight.current.has(cacheKey)) return Boolean(cached)
     nodeFetchInFlight.current.add(cacheKey)
     try {
-      const nodeDetail = await fetchJsonWithTimeout<NodeDetail>(`${apiBase}/v1/observer/runs/${runId}/nodes/${encodeURIComponent(stageId)}`, 12_000)
+      const nodeDetail = await fetchJsonWithTimeout<NodeDetail>(`${apiBase}/v1/observer/runs/${runId}/nodes/${encodeURIComponent(stageId)}`, observerNodeDetailTimeoutMs)
       nodeDetailCache.set(cacheKey, { detail: nodeDetail, fetchedAt: Date.now() })
       if (selectedIdRef.current === runId && epoch === detailEpoch.current) {
         setNodeDetails((current) => ({ ...current, [stageId]: nodeDetail }))
@@ -297,7 +297,7 @@ function useRunData(enabled: boolean, apiBase: string) {
     if (!quiet) setLoading(true)
     else setRefreshing(true)
     try {
-      const payload = await fetchJsonWithTimeout<RunDetail>(`${apiBase}/v1/observer/runs/${runId}`, 15_000)
+      const payload = await fetchJsonWithTimeout<RunDetail>(`${apiBase}/v1/observer/runs/${runId}`, observerRunDetailTimeoutMs)
       assertMatchingRunIdentity(runIdentities.current[runId] ?? { id: runId }, payload.run)
       if (epoch !== detailEpoch.current) return
       const stages = payload.graph?.nodes ?? []
@@ -315,29 +315,36 @@ function useRunData(enabled: boolean, apiBase: string) {
         if (nodeDetailCache.has(cacheKey)) loadedStageKeys.current.add(cacheKey)
         return loadedStageKeys.current.has(cacheKey)
       }).length
-      setNodeDetailFetch((current) => ({ requested: stages.length, loaded: Math.min(stages.length, cachedCount), failed: sameRun ? current.failed : 0 }))
+      setNodeDetailFetch((current) => ({ requested: stages.length, loaded: Math.min(stages.length, cachedCount), failed: sameRun ? current.failed : 0, deferred: 0 }))
       setError(null)
       setSyncingStale(false)
       setLoading(false)
 
       // Only prefetch the first small slice. The graph is interactive immediately;
       // remaining stage rows are pulled one-by-one while the document is idle.
-      const initialStages = stages.slice(0, observerInitialPrefetchCount(stages.length))
+      const orderedStages = observerPrefetchStageOrder(stages)
+      const initialStages = orderedStages.slice(0, observerInitialPrefetchCount(orderedStages.length))
       void Promise.all(initialStages.map((stage) => loadNodeDetail(runId, stage.id, epoch)))
       if (idlePrefetchTimer.current !== null) window.clearTimeout(idlePrefetchTimer.current)
       let nextIndex = initialStages.length
+      setNodeDetailFetch((current) => ({ ...current, deferred: Math.max(0, orderedStages.length - nextIndex) }))
       const pump = () => {
-        if (epoch !== detailEpoch.current || nextIndex >= stages.length) return
+        if (epoch !== detailEpoch.current || nextIndex >= orderedStages.length) return
         if (document.hidden) {
           idlePrefetchTimer.current = window.setTimeout(pump, 1_500)
           return
         }
-        const stage = stages[nextIndex++]
+        if (runsInFlight.current || detailInFlight.current) {
+          idlePrefetchTimer.current = window.setTimeout(pump, 2_000)
+          return
+        }
+        const stage = orderedStages[nextIndex++]
+        setNodeDetailFetch((current) => ({ ...current, deferred: Math.max(0, current.deferred - 1) }))
         void loadNodeDetail(runId, stage.id, epoch).finally(() => {
-          idlePrefetchTimer.current = window.setTimeout(pump, 500)
+          idlePrefetchTimer.current = window.setTimeout(pump, observerIdlePrefetchDelayMs)
         })
       }
-      if (nextIndex < stages.length) idlePrefetchTimer.current = window.setTimeout(pump, 1_200)
+      if (nextIndex < orderedStages.length) idlePrefetchTimer.current = window.setTimeout(pump, observerIdlePrefetchDelayMs)
     } catch (cause) {
       if (epoch === detailEpoch.current) {
         setError(readableDataError(cause, '无法连接观察器接口'))
@@ -364,7 +371,7 @@ function useRunData(enabled: boolean, apiBase: string) {
     if (idlePrefetchTimer.current !== null) window.clearTimeout(idlePrefetchTimer.current)
     setDetail(null)
     setNodeDetails({})
-    setNodeDetailFetch({ requested: 0, loaded: 0, failed: 0 })
+    setNodeDetailFetch({ requested: 0, loaded: 0, failed: 0, deferred: 0 })
     setLoading(Boolean(selectedId))
   }, [selectedId])
 
@@ -385,8 +392,8 @@ function useRunData(enabled: boolean, apiBase: string) {
   useEffect(() => {
     if (!enabled) return
     const timer = window.setInterval(() => {
-      if (!document.hidden) void loadRuns().catch(reportBackgroundSyncError)
-    }, 30_000)
+      if (!document.hidden && !detailInFlight.current) void loadRuns().catch(reportBackgroundSyncError)
+    }, 45_000)
     return () => window.clearInterval(timer)
   }, [enabled, loadRuns, reportBackgroundSyncError])
 
@@ -394,7 +401,7 @@ function useRunData(enabled: boolean, apiBase: string) {
     if (!enabled || !selectedId) return
     const intervalMs = observerPollingIntervalMs(detail?.run.status)
     const timer = window.setInterval(() => {
-      if (!document.hidden) void loadDetail(selectedId, true).catch(reportBackgroundSyncError)
+      if (!document.hidden && !runsInFlight.current) void loadDetail(selectedId, true).catch(reportBackgroundSyncError)
     }, intervalMs)
     return () => window.clearInterval(timer)
   }, [detail?.run.status, enabled, loadDetail, reportBackgroundSyncError, selectedId])
@@ -431,7 +438,7 @@ function useRunData(enabled: boolean, apiBase: string) {
     detailRunIdRef.current = null
     setDetail(null)
     setNodeDetails({})
-    setNodeDetailFetch({ requested: 0, loaded: 0, failed: 0 })
+    setNodeDetailFetch({ requested: 0, loaded: 0, failed: 0, deferred: 0 })
     setSyncingStale(false)
     setLoading(true)
   }, [apiBase, selectedId])
@@ -590,6 +597,7 @@ function GraphView({
   onToggleGroup: (id: string) => void
 }) {
   const flowInstance = useRef<ReactFlowInstance<LaneNode | StageNode, Edge> | null>(null)
+  const hasDeferredNodeDetails = (runtimeGraph.sourceFetch?.deferred ?? 0) > 0
   useEffect(() => {
     const applyChineseControlLabels = () => {
       const root = document.querySelector('.graph-area')
@@ -631,23 +639,27 @@ function GraphView({
     const active = source?.status === 'completed' || source?.status === 'running'
     const isSelected = selectedEdge?.source === edge.source && selectedEdge?.target === edge.target
     const isDependency = edge.relation_kind === 'dependency'
+    const isRetry = edge.relation_kind === 'retry'
+    const isFallback = edge.relation_kind === 'fallback'
+    const isParallel = edge.relation_kind === 'parallel'
     const isAssociation = edge.relation_kind === 'association' || edge.relation_kind === 'lineage' || edge.relation_kind === 'grouping'
-    const stroke = isSelected ? '#2257ee' : isDependency ? '#8793a5' : isAssociation ? '#c3cad6' : active ? '#aab4c2' : '#d6dbe3'
+    const stroke = isSelected ? '#2257ee' : isDependency ? '#8793a5' : isRetry ? '#b58b4a' : isFallback ? '#8d7db1' : isParallel ? '#9aa7bb' : isAssociation ? '#c3cad6' : active ? '#aab4c2' : '#d6dbe3'
+    const isCausal = isDependency || isRetry || isFallback
     return {
       id: `${edge.source}-${edge.target}-${index}`,
       source: edge.source,
       target: edge.target,
       type: 'smoothstep',
       pathOptions: { offset: 22, stepPosition: 0.55 },
-      animated: source?.status === 'running',
-      label: edge.provenance === 'derived' ? undefined : edge.label ?? undefined,
-      labelStyle: { fill: '#536176', fontSize: 10, fontWeight: 600 },
+      animated: source?.status === 'running' && isCausal,
+      label: edge.provenance === 'derived' && !isParallel ? undefined : edge.label ?? undefined,
+      labelStyle: { fill: '#536176', fontSize: 11, fontWeight: 600 },
       labelBgStyle: { fill: '#ffffff', fillOpacity: 0.98 },
       labelBgPadding: [6, 4],
       labelBgBorderRadius: 5,
       data: { detail: edge },
-      markerEnd: { type: MarkerType.ArrowClosed, width: 11, height: 11, color: stroke },
-      style: { stroke, strokeWidth: isSelected ? 2 : isDependency ? 1.4 : 1.15, strokeDasharray: isAssociation || edge.provenance === 'derived' ? '4 5' : undefined },
+      markerEnd: isCausal ? { type: MarkerType.ArrowClosed, width: 11, height: 11, color: stroke } : undefined,
+      style: { stroke, strokeWidth: isSelected ? 2 : isCausal ? 1.4 : 1.15, strokeDasharray: isParallel ? '2 4' : isAssociation || edge.provenance === 'derived' ? '4 5' : undefined },
     }
   }), [runtimeGraph.edges, selectedEdge, stageById])
   const handleNodeClick: NodeMouseHandler = (_, node) => {
@@ -686,8 +698,8 @@ function GraphView({
         <Controls showInteractive={false} showFitView={false} position="bottom-left" />
       </ReactFlow>
       <button className="runtime-fit-button" aria-label="适合画布" title="适合画布" onClick={() => flowInstance.current?.setViewport({ x: 22, y: 68, zoom: 0.82 }, { duration: 180 })}>适合画布</button>
-      <div className={`runtime-lane-labels ${runtimeGraph.stats.observedCalls === 0 ? 'compact' : ''}`} aria-hidden="true"><span><b>01</b>观测时间轨<small>按时间从左至右</small></span><span><b>02</b>工具调用<small>{runtimeGraph.stats.observedCalls > 0 ? '同段聚合，可展开尝试' : runtimeGraph.gaps.some((gap) => gap.includes('节点明细正在')) ? '正在读取工具调用明细' : '未观测到工具调用'}</small></span><span><b>03</b>代际 / 候选<small>谱系与记录独立呈现</small></span></div>
-      {runtimeGraph.stats.observedCalls === 0 && runtimeGraph.sourceFetch && runtimeGraph.sourceFetch.loaded + runtimeGraph.sourceFetch.failed < runtimeGraph.sourceFetch.requested && <div className="runtime-tool-loading" role="status"><i /><span>正在读取工具调用明细…</span><b>{runtimeGraph.sourceFetch.loaded}/{runtimeGraph.sourceFetch.requested}</b></div>}
+      <div className={`runtime-lane-labels ${runtimeGraph.stats.observedCalls === 0 ? 'compact' : ''}`} aria-hidden="true"><span><b>01</b>观测时间轨<small>按时间从左至右</small></span><span><b>02</b>工具调用<small>{runtimeGraph.stats.observedCalls > 0 ? '同段聚合，可展开尝试' : hasDeferredNodeDetails ? '明细尚未读取，按需加载' : runtimeGraph.gaps.some((gap) => gap.includes('节点明细正在')) ? '正在读取工具调用明细' : '未观测到工具调用'}</small></span><span><b>03</b>代际 / 候选<small>谱系与记录独立呈现</small></span></div>
+      {runtimeGraph.stats.observedCalls === 0 && runtimeGraph.sourceFetch && runtimeGraph.sourceFetch.loaded + runtimeGraph.sourceFetch.failed < runtimeGraph.sourceFetch.requested && <div className="runtime-tool-loading" role="status"><i /><span>{hasDeferredNodeDetails ? '工具调用明细按需读取，当前尚未完整呈现' : '正在读取工具调用明细…'}</span><b>{runtimeGraph.sourceFetch.loaded}/{runtimeGraph.sourceFetch.requested}</b></div>}
       <div className="runtime-graph-summary" role="status">
         <div className="runtime-graph-summary-head"><span className="runtime-live-dot" /><b>{syncingStale ? '上次读取 · 正在同步' : detail.source === 'postgresql' ? '真实运行图' : '验收运行图'}</b><small>可见 {runtimeGraph.nodes.length} · 关系 {runtimeGraph.edges.length}</small></div>
         <div className="runtime-graph-stats"><span>调用 {runtimeGraph.stats.observedCalls}</span><span>事件 {runtimeGraph.stats.observedEvents}</span><span>聚合 {Object.keys(runtimeGraph.toolGroups).length}</span><span>重试 {runtimeGraph.stats.retries}</span><span>并行组 {runtimeGraph.stats.parallelGroups}</span>{runtimeGraph.stats.cycles > 0 && <span>依赖循环 {runtimeGraph.stats.cycles}</span>}</div>
@@ -914,7 +926,7 @@ function Inspector({ detail, stageId, analysisSnapshot, distributionOverride, on
           setDetailError(null)
           return
         }
-        const nodeDetail = await fetchJsonWithTimeout<NodeDetail>(`${getConfiguredApiBase()}/v1/observer/runs/${detail.run.id}/nodes/${encodeURIComponent(stageId)}`, 12_000)
+        const nodeDetail = await fetchJsonWithTimeout<NodeDetail>(`${getConfiguredApiBase()}/v1/observer/runs/${detail.run.id}/nodes/${encodeURIComponent(stageId)}`, observerNodeDetailTimeoutMs)
         nodeDetailCache.set(cacheKey, { detail: nodeDetail, fetchedAt: Date.now() })
         setNodeDetail(nodeDetail)
         setDetailError(null)
@@ -1001,17 +1013,25 @@ function Inspector({ detail, stageId, analysisSnapshot, distributionOverride, on
   )
 }
 
+const relationKindLabels: Record<NonNullable<GraphEdgeDetail['relation_kind']>, string> = {
+  dependency: '依赖', retry: '重试', fallback: '回退', parallel: '并行观测组', association: '关联', lineage: '父子谱系', grouping: '代际分组',
+}
+
 function EdgeInspector({ graph, edge, onClose }: { graph: RuntimeGraphModel; edge: GraphEdgeDetail; onClose: () => void }) {
   const source = graph.nodes.find((node) => node.id === edge.source)
   const target = graph.nodes.find((node) => node.id === edge.target)
+  const relationLabel = edge.relation_kind ? relationKindLabels[edge.relation_kind] : '运行关系'
+  const provenanceLabel = edge.relation_kind === 'parallel' && edge.provenance === 'derived'
+    ? '基于观测时间区间重叠；不代表调度依赖'
+    : edge.provenance === 'database' ? '关系来自显式数据库字段' : '关系来自图上观测或候选代际分组'
   return (
     <aside className="inspector edge-inspector">
-      <div className="inspector-header"><div><small>运行关系 · {edge.provenance === 'database' ? '数据库显式字段' : '图上聚合字段'}</small><h2>{edge.label ?? '运行关系'}</h2></div><button className="icon-button" aria-label="关闭运行关系详情" onClick={onClose}><X /></button></div>
+      <div className="inspector-header"><div><small>运行关系 · {relationLabel} · {edge.provenance === 'database' ? '数据库显式字段' : '图上观测字段'}</small><h2>{edge.label ?? relationLabel}</h2></div><button className="icon-button" aria-label="关闭运行关系详情" onClick={onClose}><X /></button></div>
       <section className="edge-route"><div><span>{source?.label ?? edge.source}</span><small>{source ? `${source.current.toLocaleString()} 条记录` : '节点未返回'}</small></div><i><Route /></i><div><span>{target?.label ?? edge.target}</span><small>{target ? statusText[target.status] : '节点未返回'}</small></div></section>
       <section className="inspector-section">
         <div className="analysis-kicker"><BrainCircuit />决策上下文</div>
         <p className="edge-rationale">{edge.rationale}</p>
-        <div className="runtime-provenance-chip">{edge.provenance === 'database' ? '关系来自显式数据库字段' : '关系来自候选代际分组，仅用于阅读'}</div>
+        <div className="runtime-provenance-chip">{provenanceLabel}</div>
       </section>
     </aside>
   )
@@ -1155,7 +1175,7 @@ export default function App() {
   const toggleAnalysisNode = (id: string) => setAnalysisSelection((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
   return (
     <div className="app-shell">
-      <div className="topbar"><button><ArrowLeft /></button><div className="brand"><span><FlaskConical /></span>AMPgent <i>科学分析</i></div><button className={`source-state ${activeView === 'overview' && data.error ? 'has-error' : ''}`} onClick={() => setConnectionOpen(true)} title="查看或修改只读数据连接"><Database /><span>{activeView !== 'overview' ? '分析数据 · 只读' : data.syncingStale ? '上次读取 · 正在同步' : data.detail && data.detail.run.id === data.selectedId ? data.detail.source === 'postgresql' ? '数据库已连接' : '验收数据 · 只读夹具' : data.error ? '观察器不可用' : '正在连接'}</span><span className="live-dot" /><Settings2 /></button></div>
+      <div className="topbar"><button><ArrowLeft /></button><div className="brand"><span><FlaskConical /></span>AMPgent <i>科学分析</i></div><button className={`source-state ${activeView === 'overview' && data.error ? 'has-error' : ''}`} onClick={() => setConnectionOpen(true)} title="查看或修改只读数据连接"><Database /><span>{activeView !== 'overview' ? '分析数据 · 只读' : data.syncingStale ? '上次读取 · 正在同步' : data.detail && data.detail.run.id === data.selectedId ? data.detail.source === 'postgresql' ? '数据库已连接' : '验收数据 · 只读夹具' : data.error ? '观察器不可用' : data.runs.length > 0 ? '轮次已读取 · 正在读取详情' : '正在连接'}</span><span className="live-dot" /><Settings2 /></button></div>
       <div className="workspace">
         <Sidebar
           runs={data.runs}
@@ -1198,9 +1218,9 @@ export default function App() {
               <GraphView
                 detail={data.detail}
                 runtimeGraph={runtimeGraph!}
-                syncingStale={data.syncingStale}
-                analysisSnapshot={analysisSnapshot}
-                persistedDistributions={persistedDistributions}
+                 syncingStale={data.syncingStale}
+                 analysisSnapshot={analysisSnapshot}
+                 persistedDistributions={persistedDistributions}
                 selectedStage={selectedStage}
                 selectedEdge={selectedEdge}
                 selectionMode={selectionMode}

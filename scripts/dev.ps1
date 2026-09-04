@@ -1,7 +1,8 @@
 ﻿param(
     [int]$ApiPort = 8081,
     [int]$UiPort = 5173,
-    [switch]$FullControlPlane
+    [switch]$FullControlPlane,
+    [switch]$ApiOnly
 )
 
 $ErrorActionPreference = 'Stop'
@@ -122,6 +123,24 @@ if (-not (Test-AmpgentApi)) {
 }
 else {
     Write-Host "复用已运行的数据服务：http://127.0.0.1:$ApiPort" -ForegroundColor Green
+}
+
+if ($ApiOnly) {
+    try {
+        Write-Host '数据服务监督进程已启动。' -ForegroundColor Green
+        while (Test-AmpgentApi) {
+            Start-Sleep -Seconds 5
+        }
+        throw '数据服务已停止响应。'
+    }
+    finally {
+        if ($ownsApiProcess -and $apiProcess -and -not $apiProcess.HasExited) {
+            Stop-Process -Id $apiProcess.Id -ErrorAction SilentlyContinue
+        }
+        if ($ownsTunnelProcess -and $tunnelProcess -and -not $tunnelProcess.HasExited) {
+            Stop-Process -Id $tunnelProcess.Id -ErrorAction SilentlyContinue
+        }
+    }
 }
 
 $env:AMPGENT_API_TARGET = "http://127.0.0.1:$ApiPort"

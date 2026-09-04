@@ -11,7 +11,9 @@
 
 ## 关系与状态语义
 
-`provenance=database` 表示关系直接来自接口字段；`provenance=derived` 只表示候选按已持久化代际字段分组，不代表执行依赖。工具调用的 `attempt` 保留重试语义，未完成状态按接口状态映射为进行中、待观测或已停止。前端不会按时间顺序自动连接相邻节点，也不会把失败的读取当作成功结果。
+`provenance=database` 表示关系直接来自接口字段；`provenance=derived` 只表示候选按已持久化代际字段分组或调用区间重叠观测，不代表执行依赖。未完成状态按接口状态映射为进行中、待观测或已停止。前端不会按时间顺序自动连接相邻节点，也不会把失败的读取当作成功结果。
+
+`relation_kind=dependency` 仅来自显式依赖白名单；`retry` 仅来自 `retry_of_call_id`、`retried_call_id`、`recovery_of_call_id` 及数组形式；`fallback` 仅来自 `fallback_from_call_id` 及数组形式。它们不根据时间、attempt 数字、失败文本或相邻位置猜测，并且只有 dependency 进入循环检测。`relation_kind=parallel` 只有后端显式 `parallel_group_id`（`provenance=database`）或已返回的 queued/finished 区间重叠（`provenance=derived`）两类来源；后者只称“并行观测组”，不宣称调度依赖。
 
 生命周期状态映射：`.started`、`.running`、`.progress` → 进行中；`.created`、`.succeeded`、`.completed`、`.persisted`、`.materialized`、`.recorded`、`.accepted`、`.rejected` → 已完成；`.failed`、`.cancelled` → 已停止；其余后缀 → 待观测。原始事件键仍保存在节点详情中。
 

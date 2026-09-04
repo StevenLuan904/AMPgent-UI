@@ -55,7 +55,7 @@ describe('buildRuntimeGraph', () => {
     expect(result.nodes.map((node) => node.id)).not.toEqual(expect.arrayContaining(['call:call-1', 'call:call-2']))
     expect(result.stats).toMatchObject({ observedCalls: 2, observedEvents: 1, repeatedTools: 1, retries: 1, unfinished: 1 })
     expect(result.edges).toEqual(expect.arrayContaining([expect.objectContaining({ source: 'event:1', target: 'tool-group:ampgan:call-1', provenance: 'database', relation_kind: 'association' })]))
-    expect(result.gaps).toContain('接口未返回工具调用依赖边；未按时间顺序补画推断边。')
+    expect(result.gaps).toContain('接口未返回工具调用依赖、重试或回退关系；未按时间顺序补画推断边。')
   })
 
   it('preserves explicit dependency cycles instead of flattening them', () => {
@@ -124,5 +124,39 @@ describe('buildRuntimeGraph', () => {
     const group = result.nodes.find((node) => node.runtime?.node_type === 'tool_group')
     expect(group?.insight.facts[0]).toMatchObject({ label: '操作构成', value: expect.stringContaining('AMPGAN v2 1') })
     expect(group?.insight.facts[0].value).toContain('AMP read 1')
+  })
+
+  it('keeps retry and fallback relations distinct from explicit dependencies', () => {
+    const original = call('call-1', 'tool-a', '2026-09-04T00:00:00Z')
+    const retried = call('call-2', 'tool-a', '2026-09-04T00:00:02Z', { inputs: { retry_of_call_id: 'call-1' } })
+    const fallback = call('call-3', 'tool-b', '2026-09-04T00:00:04Z', { inputs: { fallback_from_call_id: 'call-1' } })
+    const dependent = call('call-4', 'tool-c', '2026-09-04T00:00:06Z', { inputs: { depends_on_call_id: 'call-1' } })
+    const sources = { worker: nodeDetail([original, retried, fallback, dependent]) }
+    const result = buildRuntimeGraph(detail(), sources)
+    const group = result.nodes.find((node) => node.id === 'tool-group:tool-a:call-1')
+    expect(group?.insight.facts.find((fact) => fact.label === '关系')?.value).toBe('重试 1 · 回退 0')
+    expect(result.edges).toEqual(expect.arrayContaining([
+      expect.objectContaining({ source: 'tool-group:tool-a:call-1', target: 'call:call-3', label: '回退', relation_kind: 'fallback', provenance: 'database' }),
+      expect.objectContaining({ source: 'tool-group:tool-a:call-1', target: 'call:call-4', label: '依赖', relation_kind: 'dependency', provenance: 'database' }),
+    ]))
+    const expanded = buildRuntimeGraph(detail(), sources, { expandedGroups: new Set(['tool-group:tool-a:call-1']) })
+    expect(expanded.edges).toEqual(expect.arrayContaining([
+      expect.objectContaining({ source: 'call:call-1', target: 'call:call-2', label: '重试/恢复', relation_kind: 'retry', provenance: 'database' }),
+    ]))
+    expect(expanded.stats.cycles).toBe(0)
+  })
+
+  it('shows explicit parallel groups and derived overlap without treating either as dependency', () => {
+    const explicitA = call('call-1', 'tool-a', '2026-09-04T00:00:00Z', { inputs: { parallel_group_id: 'pg-1' }, finished_at: '2026-09-04T00:00:01Z' })
+    const explicitB = call('call-2', 'tool-b', '2026-09-04T00:05:00Z', { inputs: { parallel_group_id: 'pg-1' }, finished_at: '2026-09-04T00:05:01Z' })
+    const overlapA = call('call-3', 'tool-c', '2026-09-04T00:10:00Z', { finished_at: '2026-09-04T00:10:05Z' })
+    const overlapB = call('call-4', 'tool-d', '2026-09-04T00:10:02Z', { finished_at: '2026-09-04T00:10:06Z' })
+    const result = buildRuntimeGraph(detail(), { worker: nodeDetail([explicitA, explicitB, overlapA, overlapB]) })
+    expect(result.edges).toEqual(expect.arrayContaining([
+      expect.objectContaining({ label: '并行观测组', relation_kind: 'parallel', provenance: 'database' }),
+      expect.objectContaining({ label: '并行观测组 · 观测', relation_kind: 'parallel', provenance: 'derived' }),
+    ]))
+    expect(result.stats.parallelGroups).toBe(2)
+    expect(result.stats.cycles).toBe(0)
   })
 })

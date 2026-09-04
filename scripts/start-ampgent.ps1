@@ -1,10 +1,13 @@
 ﻿param(
-    [int]$UiPort = 5173
+    [int]$UiPort = 5173,
+    [int]$ApiPort = 8081
 )
 
 $ErrorActionPreference = 'Stop'
 $appRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
 $appUrl = "http://127.0.0.1:$UiPort/"
+$apiUrl = "http://127.0.0.1:$ApiPort/healthz"
+$proxiedApiUrl = "http://127.0.0.1:$UiPort/healthz"
 
 function Test-AmpgentUi {
     try {
@@ -14,6 +17,38 @@ function Test-AmpgentUi {
     catch {
         return $false
     }
+}
+
+function Test-AmpgentEndpoint([string]$url) {
+    try {
+        $response = Invoke-RestMethod -Method Get -Uri $url -TimeoutSec 2
+        return $response.status -eq 'ok'
+    }
+    catch {
+        return $false
+    }
+}
+
+function Start-HiddenProcess(
+    [string]$filePath,
+    [string[]]$arguments,
+    [string]$stdoutPath,
+    [string]$stderrPath
+) {
+    Start-Process -FilePath $filePath `
+        -ArgumentList $arguments `
+        -WorkingDirectory $appRoot `
+        -WindowStyle Hidden `
+        -RedirectStandardOutput $stdoutPath `
+        -RedirectStandardError $stderrPath | Out-Null
+}
+
+function Wait-Until([scriptblock]$condition, [int]$attempts, [string]$failureMessage) {
+    foreach ($attempt in 1..$attempts) {
+        if (& $condition) { return }
+        Start-Sleep -Milliseconds 500
+    }
+    throw $failureMessage
 }
 
 function Show-LaunchError([string]$message) {
@@ -27,34 +62,39 @@ function Show-LaunchError([string]$message) {
 }
 
 try {
-    if (-not (Test-AmpgentUi)) {
-        $npmCommand = (Get-Command npm.cmd -ErrorAction Stop).Source
-        $logDirectory = Join-Path $appRoot 'output\launcher'
-        New-Item -ItemType Directory -Path $logDirectory -Force | Out-Null
-        $stdoutPath = Join-Path $logDirectory 'application.out.log'
-        $stderrPath = Join-Path $logDirectory 'application.err.log'
+    $npmCommand = (Get-Command npm.cmd -ErrorAction Stop).Source
+    $powerShellPath = (Get-Command powershell.exe -ErrorAction Stop).Source
+    $logDirectory = Join-Path $appRoot 'output\launcher'
+    New-Item -ItemType Directory -Path $logDirectory -Force | Out-Null
 
-        Start-Process -FilePath $npmCommand `
-            -ArgumentList @('run', 'dev') `
-            -WorkingDirectory $appRoot `
-            -WindowStyle Hidden `
-            -RedirectStandardOutput $stdoutPath `
-            -RedirectStandardError $stderrPath | Out-Null
-
-        $ready = $false
-        foreach ($attempt in 1..90) {
-            if (Test-AmpgentUi) {
-                $ready = $true
-                break
-            }
-            Start-Sleep -Milliseconds 500
-        }
-
-        if (-not $ready) {
-            throw "应用未能在 45 秒内就绪。请查看 $stderrPath"
-        }
+    # Supervise the UI and observer independently. HTML may still respond after
+    # a previous observer process has gone away, so HTML alone is not readiness.
+    if (-not (Test-AmpgentEndpoint $apiUrl)) {
+        $apiStdoutPath = Join-Path $logDirectory 'data-service.out.log'
+        $apiStderrPath = Join-Path $logDirectory 'data-service.err.log'
+        $devScript = Join-Path $PSScriptRoot 'dev.ps1'
+        Start-HiddenProcess $powerShellPath @(
+            '-NoLogo', '-NoProfile', '-ExecutionPolicy', 'Bypass',
+            '-File', $devScript, '-ApiPort', "$ApiPort", '-ApiOnly'
+        ) $apiStdoutPath $apiStderrPath
+        Wait-Until { Test-AmpgentEndpoint $apiUrl } 90 "数据服务未能在 45 秒内就绪。请查看 $apiStderrPath"
     }
 
+    if (-not (Test-AmpgentUi)) {
+        $uiStdoutPath = Join-Path $logDirectory 'interface.out.log'
+        $uiStderrPath = Join-Path $logDirectory 'interface.err.log'
+        $previousApiTarget = $env:AMPGENT_API_TARGET
+        $env:AMPGENT_API_TARGET = "http://127.0.0.1:$ApiPort"
+        try {
+            Start-HiddenProcess $npmCommand @('run', 'dev:ui', '--', '--port', "$UiPort") $uiStdoutPath $uiStderrPath
+        }
+        finally {
+            $env:AMPGENT_API_TARGET = $previousApiTarget
+        }
+        Wait-Until { Test-AmpgentUi } 90 "界面未能在 45 秒内就绪。请查看 $uiStderrPath"
+    }
+
+    Wait-Until { Test-AmpgentEndpoint $proxiedApiUrl } 30 '界面已启动，但数据服务代理尚未就绪。'
     Start-Process $appUrl | Out-Null
 }
 catch {

@@ -26,7 +26,7 @@ export interface RuntimeGraphModel {
   calls: Record<string, ToolAttempt>
   events: Record<string, TimelineEvent>
   toolGroups: Record<string, string[]>
-  sourceFetch?: { requested: number; loaded: number; failed: number }
+  sourceFetch?: { requested: number; loaded: number; failed: number; deferred?: number }
   gaps: string[]
   stats: RuntimeGraphStats
 }
@@ -37,6 +37,7 @@ export interface RuntimeGraphOptions {
     requested: number
     loaded: number
     failed: number
+    deferred?: number
   }
 }
 
@@ -106,6 +107,10 @@ const dependencyKeys = new Set([
   'input_from_call_ids',
 ])
 
+const retryKeys = new Set(['retry_of_call_id', 'retry_of_call_ids', 'retried_call_id', 'retried_call_ids', 'recovery_of_call_id', 'recovery_of_call_ids'])
+const fallbackKeys = new Set(['fallback_from_call_id', 'fallback_from_call_ids'])
+const parallelKeys = new Set(['parallel_group_id', 'parallel_group_ids'])
+
 const associationKeys = new Set(['tool_call_id', 'tool_call_ids', 'associated_call_id', 'associated_call_ids', 'event_id', 'event_ids'])
 
 function idsForKeys(value: unknown, keys: Set<string>, key = ''): string[] {
@@ -118,6 +123,18 @@ function idsForKeys(value: unknown, keys: Set<string>, key = ''): string[] {
 
 function dependencyIds(value: unknown) {
   return idsForKeys(value, dependencyKeys)
+}
+
+function retryIds(value: unknown) {
+  return idsForKeys(value, retryKeys)
+}
+
+function fallbackIds(value: unknown) {
+  return idsForKeys(value, fallbackKeys)
+}
+
+function parallelGroupIds(value: unknown) {
+  return idsForKeys(value, parallelKeys)
 }
 
 function associationIds(value: unknown) {
@@ -139,6 +156,10 @@ function explicitBatchIdentity(value: unknown): string | null {
 
 function callBatchIdentity(call: ToolAttempt) {
   return explicitBatchIdentity(call.inputs) ?? explicitBatchIdentity(call.parameters)
+}
+
+function firstParallelGroupId(call: ToolAttempt) {
+  return [...parallelGroupIds(call.inputs), ...parallelGroupIds(call.parameters)][0] ?? null
 }
 
 function addEdge(
@@ -307,11 +328,17 @@ function operationComposition(calls: ToolAttempt[]) {
   return [...counts.entries()].map(([name, count]) => `${name} ${count}`).join(' · ')
 }
 
+function relationCount(calls: ToolAttempt[], collect: (value: unknown) => string[]) {
+  return calls.reduce((total, call) => total + new Set([...collect(call.inputs), ...collect(call.parameters)]).size, 0)
+}
+
 function toolGroupNode(toolName: string, groupedCalls: ToolAttempt[], expanded: boolean, groupId: string, groupingBasis: string, displayBatchLabel: string): GraphStage {
   const hasActive = groupedCalls.some((call) => activeStatuses.has(call.status))
   const hasStopped = groupedCalls.some((call) => stoppedStatuses.has(call.status))
   const status = hasActive ? 'running' : hasStopped && groupedCalls.some((call) => callStatuses.has(call.status)) ? 'pending' : hasStopped ? 'stopped' : groupedCalls.every((call) => callStatuses.has(call.status)) ? 'completed' : 'pending'
   const grade = hasActive ? 'okay' : hasStopped && groupedCalls.some((call) => callStatuses.has(call.status)) ? 'fair' : hasStopped ? 'bad' : groupedCalls.every((call) => callStatuses.has(call.status)) ? 'good' : 'neutral'
+  const retryCount = relationCount(groupedCalls, retryIds)
+  const fallbackCount = relationCount(groupedCalls, fallbackIds)
   return {
     id: groupId,
     label: `${displayBatchLabel} · ${groupedCalls.length} 次调用`,
@@ -329,6 +356,7 @@ function toolGroupNode(toolName: string, groupedCalls: ToolAttempt[], expanded: 
         { label: '操作构成', value: operationComposition(groupedCalls) },
         { label: '状态', value: statusBreakdown(groupedCalls) },
         { label: '时间', value: observedSpan(groupedCalls) },
+        { label: '关系', value: `重试 ${retryCount} · 回退 ${fallbackCount}` },
       ],
       source: 'observer_summary',
     },
@@ -533,6 +561,26 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
     if (groupId && !expandedGroups.has(groupId)) return groupId
     return nodeIds.has(`call:${id}`) ? `call:${id}` : id
   }
+  const explicitParallelBuckets = new Map<string, ToolAttempt[]>()
+  for (const call of Object.values(calls)) {
+    const parallelId = firstParallelGroupId(call)
+    if (parallelId) explicitParallelBuckets.set(parallelId, [...(explicitParallelBuckets.get(parallelId) ?? []), call])
+  }
+  const parallelRelationSignatures = new Set<string>()
+  const addParallelGroup = (grouped: ToolAttempt[], provenance: 'database' | 'derived', rationale: string) => {
+    if (grouped.length < 2) return
+    const signature = grouped.map((call) => call.id).sort().join('|')
+    if (parallelRelationSignatures.has(signature)) return
+    parallelRelationSignatures.add(signature)
+    let labeled = false
+    const anchor = callIdToNode(grouped[0].id)
+    for (const call of grouped.slice(1)) {
+      const target = callIdToNode(call.id)
+      const edgeLabel = labeled ? null : provenance === 'database' ? '并行观测组' : '并行观测组 · 观测'
+      addEdge(edges, seen, { source: anchor, target, label: edgeLabel, rationale, provenance, relation_kind: 'parallel' })
+      if (anchor !== target) labeled = true
+    }
+  }
   for (const call of Object.values(calls)) {
     const source = callIdToNode(call.id)
     const relationIdsFromCall = [...dependencyIds(call.inputs), ...dependencyIds(call.parameters)]
@@ -540,7 +588,41 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
       const target = callIdToNode(parentId)
       if (target.startsWith('call:') || target.startsWith('tool-group:')) addEdge(edges, seen, { source: target, target: source, label: '依赖', rationale: '工具调用输入或参数中的结构化依赖字段提供了上游调用标识；聚合端点仅代表其子调用集合。', provenance: 'database', relation_kind: 'dependency' })
     }
+    const typedRelations: Array<{ ids: string[]; kind: 'retry' | 'fallback'; label: string; rationale: string }> = [
+      { ids: [...retryIds(call.inputs), ...retryIds(call.parameters)], kind: 'retry', label: '重试/恢复', rationale: '工具调用字段明确提供 retry_of_call_id、retried_call_id 或 recovery_of_call_id；此边表示重试/恢复关系，不由 attempt 数字或时间推断。' },
+      { ids: [...fallbackIds(call.inputs), ...fallbackIds(call.parameters)], kind: 'fallback', label: '回退', rationale: '工具调用字段明确提供 fallback_from_call_id；此边表示回退来源，不由失败状态或时间推断。' },
+    ]
+    for (const relation of typedRelations) for (const upstreamId of relation.ids) {
+      const target = callIdToNode(upstreamId)
+      if (target.startsWith('call:') || target.startsWith('tool-group:')) addEdge(edges, seen, { source: target, target: source, label: relation.label, rationale: relation.rationale, provenance: 'database', relation_kind: relation.kind })
+    }
   }
+  for (const [parallelId, grouped] of explicitParallelBuckets) {
+    addParallelGroup(grouped, 'database', `工具调用字段明确提供 parallel_group_id=${parallelId}；此边表示同组并行观测，不代表调度依赖。`)
+  }
+  const observedIntervals = Object.values(calls).map((call) => ({
+    call,
+    start: Date.parse(call.queued_at),
+    end: Date.parse(call.finished_at ?? call.started_at ?? call.queued_at),
+  })).filter((item) => Number.isFinite(item.start) && Number.isFinite(item.end)).sort((left, right) => left.start - right.start)
+  let overlapGroup: ToolAttempt[] = []
+  let overlapEnd = Number.NEGATIVE_INFINITY
+  const flushOverlapGroup = () => {
+    if (overlapGroup.length > 1) addParallelGroup(overlapGroup, 'derived', '调用时间区间存在重叠；这是观察到的并行区间，不代表后端调度依赖。')
+    overlapGroup = []
+    overlapEnd = Number.NEGATIVE_INFINITY
+  }
+  for (const item of observedIntervals) {
+    if (overlapGroup.length && item.start <= overlapEnd) {
+      overlapGroup.push(item.call)
+      overlapEnd = Math.max(overlapEnd, item.end)
+    } else {
+      flushOverlapGroup()
+      overlapGroup = [item.call]
+      overlapEnd = item.end
+    }
+  }
+  flushOverlapGroup()
   for (const event of Object.values(events)) {
     const source = `event:${event.sequence_no}`
     for (const reference of associationIds(event.payload)) {
@@ -564,8 +646,8 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
 
   const gaps: string[] = []
   if (!Object.keys(calls).length) gaps.push('接口未返回工具调用明细；当前仅能显示生命周期事件。')
-  if (Object.keys(calls).length && !edges.some((edge) => edge.provenance === 'database' && edge.source.startsWith('call:'))) {
-    gaps.push('接口未返回工具调用依赖边；未按时间顺序补画推断边。')
+  if (Object.keys(calls).length && !edges.some((edge) => edge.provenance === 'database' && ['dependency', 'retry', 'fallback'].includes(edge.relation_kind ?? ''))) {
+    gaps.push('接口未返回工具调用依赖、重试或回退关系；未按时间顺序补画推断边。')
   }
   if (detail.candidates.length && !detail.candidates.some((candidate) => candidate.parent_id)) {
     gaps.push('候选预览未返回 parent_id；父子代际关系暂不可观测。')
@@ -573,28 +655,13 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
   if (detail.events.length >= 32) gaps.push('接口仅返回最近 32 条事件；历史事件可能未进入本次运行图。')
   if (Object.values(sources).some((source) => (source?.calls.length ?? 0) >= 40)) gaps.push('至少一个节点明细只返回 40 次工具调用；完整调用集合缺少分页契约。')
   if (options.sourceFetch && options.sourceFetch.failed > 0) gaps.push(`节点明细仅加载 ${options.sourceFetch.loaded}/${options.sourceFetch.requested} 个；${options.sourceFetch.failed} 个读取失败或超时，当前运行图不完整。`)
+  else if (options.sourceFetch && options.sourceFetch.loaded < options.sourceFetch.requested && (options.sourceFetch.deferred ?? 0) > 0) gaps.push(`节点明细已加载 ${options.sourceFetch.loaded}/${options.sourceFetch.requested} 个；其余 ${options.sourceFetch.deferred} 个按需读取，当前运行图仍不完整。`)
   else if (options.sourceFetch && options.sourceFetch.loaded < options.sourceFetch.requested) gaps.push(`节点明细正在加载 ${options.sourceFetch.loaded}/${options.sourceFetch.requested} 个；当前运行图仍不完整。`)
   if (!detail.graph.nodes.length) gaps.push('运行详情未提供阶段摘要；无法核对旧版兼容数据。')
 
   const toolCounts = new Map<string, number>()
   for (const call of Object.values(calls)) toolCounts.set(call.tool_name, (toolCounts.get(call.tool_name) ?? 0) + 1)
-  const intervals = Object.values(calls).map((call) => ({
-    start: Date.parse(call.queued_at),
-    end: Date.parse(call.finished_at ?? call.started_at ?? call.queued_at),
-  })).filter((item) => Number.isFinite(item.start))
-  intervals.sort((a, b) => a.start - b.start)
-  let parallelGroups = 0
-  let activeEnd = Number.NEGATIVE_INFINITY
-  for (let index = 0; index < intervals.length;) {
-    const end = intervals[index].end
-    let groupSize = 0
-    while (index < intervals.length && intervals[index].start <= Math.max(activeEnd, end)) {
-      activeEnd = Math.max(activeEnd, intervals[index].end)
-      groupSize += 1
-      index += 1
-    }
-    if (groupSize > 1) parallelGroups += 1
-  }
+  const parallelGroups = parallelRelationSignatures.size
   const stats: RuntimeGraphStats = {
     observedCalls: Object.keys(calls).length,
     observedEvents: Object.keys(events).length,
