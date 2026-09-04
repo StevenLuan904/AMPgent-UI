@@ -7,6 +7,7 @@ import asyncio
 import csv
 import json
 import uuid
+from collections.abc import Mapping
 from pathlib import Path
 
 from sqlalchemy import select
@@ -40,6 +41,7 @@ def build(
     target_key: str = "angpt1",
     source: str = "PepGLAD",
     operator_id: str | None = None,
+    authoritative_candidates: Mapping[str, Candidate] | None = None,
 ) -> dict:
     scores = list(csv.DictReader(score_csv.open(encoding="utf-8-sig", newline="")))
     qd = json.loads(qd_json.read_text(encoding="utf-8"))
@@ -56,7 +58,14 @@ def build(
     resolved_operator_id = operator_id or (
         f"{target_key}-{source.casefold()}-source-expansion-1aa-v1"
     )
-    found = asyncio.run(_pg_candidates(run_id, [row["sequence_sha256"] for row in selected]))
+    selected_hashes = [row["sequence_sha256"] for row in selected]
+    found = (
+        dict(authoritative_candidates)
+        if authoritative_candidates is not None
+        else asyncio.run(_pg_candidates(run_id, selected_hashes))
+    )
+    if set(found) != set(selected_hashes):
+        raise ValueError("PG materialization mapping is incomplete")
     queue = []
     for row in sorted(selected, key=lambda item: item["sequence"]):
         digest = row["sequence_sha256"]

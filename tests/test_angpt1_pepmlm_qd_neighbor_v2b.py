@@ -100,3 +100,60 @@ def test_v2b_integrity_and_blocked_pg_contract() -> None:
     assert blocked["materialization_candidate_count"] == 2
     assert blocked["coarse5_prepared_count"] == 0
     assert blocked["offline_witness_is_not_pg_evidence"] is True
+
+
+def test_v2b_pg_new_close_has_formal_qd_and_prepared_only_coarse5() -> None:
+    history = json.loads(
+        (REPORT / "pg_exact_history_receipt.json").read_text(encoding="utf-8")
+    )
+    close = json.loads(
+        (REPORT / "pg_materialization_close_receipt.json").read_text(encoding="utf-8")
+    )
+    materialization = json.loads(
+        (REPORT / "resume_v2b/materialization_receipt.json").read_text(encoding="utf-8")
+    )
+    readback = json.loads(
+        (REPORT / "resume_v2b/pg_materialization_readback.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    qd_evidence = json.loads(
+        (REPORT / "resume_v2b/qd_evidence_persistence_receipt.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    coarse = json.loads(
+        (REPORT / "resume_v2b/coarse5_prepared/coarse5_prepared_receipt.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert history["candidate_hit_count"] == 0
+    assert history["operational_score_all_hit_count"] == 0
+    assert history["rejected_occurrence_count"] == 0
+    assert len(history["pg_new_hashes"]) == 2
+    assert materialization["materialized_or_reused_in_run_count"] == 2
+    assert readback["complete"] is True
+    assert readback["candidate_count"] == 2
+    assert readback["evaluation_count"] == 34
+    assert readback["evaluation_count_per_candidate"] == [17, 17]
+    assert readback["drift"] == 0
+    assert qd_evidence["status"] == "readback_verified"
+    assert qd_evidence["qd_evaluation_count"] == 6
+    assert qd_evidence["new_cell_count"] == 2
+    assert qd_evidence["replacement_count"] == 0
+    assert close["status"] == "closed_formal_pg_new"
+    assert close["source_provisional_qd"]["formal_pg_new"] is False
+    assert close["final_qd"]["formal_pg_new"] is True
+    assert close["final_qd"]["future_priority_only"] is False
+    assert close["final_qd"]["quality_eligible_count"] == 2
+    assert close["final_qd"]["materialized_contribution_counts"] == {
+        "new_cell": 2,
+        "replacement": 0,
+    }
+    assert close["persistence"]["authoritative_candidate_count"] == 2
+    assert close["persistence"]["evaluation_count"] == 34
+    assert close["persistence"]["qd_evidence_evaluation_count"] == 6
+    assert coarse["candidate_count"] == 2
+    assert coarse["nstruct"] == 5
+    assert coarse["dispatch_allowed"] is False
+    assert coarse["pool_a_admitted_count"] == 0

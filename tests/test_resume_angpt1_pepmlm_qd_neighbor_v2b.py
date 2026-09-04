@@ -60,7 +60,7 @@ def test_pg_unavailable_is_zero_write_and_skips_materializer(tmp_path: Path) -> 
     assert calls == []
 
 
-def test_all_exact_candidates_are_idempotent_noop(tmp_path: Path) -> None:
+def test_all_exact_candidates_are_reused_for_prepared_coarse5(tmp_path: Path) -> None:
     manifest = load_manifest(REPORT)
     sequences = _sequences()
     existing = {
@@ -80,17 +80,36 @@ def test_all_exact_candidates_are_idempotent_noop(tmp_path: Path) -> None:
         calls.append(True)
         return {}
 
+    materialization_path = tmp_path / "materialization_receipt.json"
+    materialization_path.write_text(
+        json.dumps({"operational_run_id": str(manifest.expected_run_id)}),
+        encoding="utf-8",
+    )
+
+    def coarse_builder(**kwargs: Any) -> dict[str, Any]:
+        assert kwargs["materialization_json"] == materialization_path
+        return {
+            "run_id": str(manifest.expected_run_id),
+            "candidate_count": 2,
+            "nstruct": 5,
+            "dispatch_allowed": False,
+        }
+
     result = asyncio.run(
         resume(
             REPORT,
             existing_lookup=lookup,
             materializer=materializer,
+            coarse_builder=coarse_builder,
             output_dir=tmp_path,
         )
     )
-    assert result["status"] == "already_materialized"
-    assert result["decision"] == "no-op"
+    assert result["status"] == "already_materialized_and_coarse5_prepared"
+    assert result["decision"] == "prepared_not_dispatched"
     assert result["materializer_called"] is False
+    assert result["coarse5_prepared_count"] == 2
+    assert result["nstruct"] == 5
+    assert result["dispatch_allowed"] is False
     assert calls == []
 
 

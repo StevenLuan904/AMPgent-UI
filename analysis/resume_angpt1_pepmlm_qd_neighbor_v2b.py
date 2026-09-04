@@ -20,13 +20,24 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
-from analysis.materialize_autoresearch_scored_lineage import (
-    _existing_candidates,
-    _record,
-)
-from analysis.materialize_autoresearch_scored_lineage import (
-    materialize as exact_materialize,
-)
+try:
+    from analysis.materialize_autoresearch_scored_lineage import (
+        _existing_candidates,
+        _record,
+    )
+    from analysis.materialize_autoresearch_scored_lineage import (
+        materialize as exact_materialize,
+    )
+except ModuleNotFoundError as error:
+    if error.name != "analysis":
+        raise
+    from materialize_autoresearch_scored_lineage import (  # type: ignore[no-redef]
+        _existing_candidates,
+        _record,
+    )
+    from materialize_autoresearch_scored_lineage import (
+        materialize as exact_materialize,
+    )
 from pepagent.autoresearch_operational_call import operational_run_id
 from pepagent.provenance.hashing import sha256_text
 
@@ -286,9 +297,38 @@ async def _default_materializer(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def _default_coarse_builder(**kwargs: Any) -> dict[str, Any]:
-    from analysis.build_angpt1_pepglad_coarse5_prepared import build
+    try:
+        from analysis.build_angpt1_pepglad_coarse5_prepared import build
+    except ModuleNotFoundError as error:
+        if error.name != "analysis":
+            raise
+        from build_angpt1_pepglad_coarse5_prepared import build  # type: ignore[no-redef]
 
     return build(**kwargs)
+
+
+async def _prepare_coarse5(
+    coarse_builder: Callable[..., Mapping[str, Any]],
+    *,
+    manifest: ResumeManifest,
+    materialization_path: Path,
+    destination: Path,
+    authoritative_candidates: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Run the synchronous PG-backed builder outside the active event loop."""
+
+    kwargs: dict[str, Any] = {
+        "score_csv": manifest.materialization_scores_path,
+        "qd_json": manifest.qd_summary_path,
+        "materialization_json": materialization_path,
+        "output_dir": destination / "coarse5_prepared",
+        "target_key": "angpt1",
+        "source": "PepMLM-target-conditioned",
+        "operator_id": manifest.operator_id,
+    }
+    if coarse_builder is _default_coarse_builder and authoritative_candidates is not None:
+        kwargs["authoritative_candidates"] = authoritative_candidates
+    return dict(await asyncio.to_thread(coarse_builder, **kwargs))
 
 
 async def resume(
@@ -333,16 +373,39 @@ async def resume(
         run_ids = {_candidate_run_id(existing[digest]) for digest in manifest.sequence_sha256s}
         if None in run_ids:
             raise ValueError("existing PostgreSQL candidate has no valid run identity")
+        destination = (output_dir or manifest.report_root / "resume_v2b").resolve()
+        materialization_path = destination / "materialization_receipt.json"
+        if not materialization_path.is_file():
+            raise ValueError("already-materialized recovery lacks its materialization receipt")
+        coarse = await _prepare_coarse5(
+            coarse_builder,
+            manifest=manifest,
+            materialization_path=materialization_path,
+            destination=destination,
+            authoritative_candidates=existing,
+        )
+        run_id = str(next(iter(run_ids)))
+        if str(coarse.get("run_id")) != run_id or int(coarse.get("nstruct", 0)) != 5:
+            raise ValueError("coarse5 receipt is not bound to the authoritative run")
+        if coarse.get("dispatch_allowed") is not False:
+            raise ValueError("resume coarse5 path must remain non-dispatchable")
+        if int(coarse.get("candidate_count", 0)) != 2:
+            raise ValueError("coarse5 receipt does not contain both authoritative candidates")
         return {
             "schema_version": SCHEMA_VERSION,
-            "status": "already_materialized",
-            "decision": "no-op",
+            "status": "already_materialized_and_coarse5_prepared",
+            "decision": "prepared_not_dispatched",
             "materializer_called": False,
             "pg_write_count": 0,
-            "coarse5_prepared_count": 0,
+            "coarse5_prepared_count": int(coarse["candidate_count"]),
+            "nstruct": 5,
             "dispatch_allowed": False,
             "materialization_run_ids": sorted(str(item) for item in run_ids),
             "sequence_sha256s": list(manifest.sequence_sha256s),
+            "materialization_receipt": str(materialization_path),
+            "coarse5_receipt": str(
+                destination / "coarse5_prepared" / "coarse5_prepared_receipt.json"
+            ),
             "historical_runs_modified": False,
         }
     if existing:
@@ -365,6 +428,12 @@ async def resume(
     if materialized.get("historical_runs_modified", False):
         raise ValueError("recovery modified a historical run")
 
+    authoritative_candidates = dict(
+        await _existing_candidates(manifest.sequence_sha256s, manifest.expected_run_id)
+    )
+    if len(authoritative_candidates) != 2:
+        raise ValueError("materialized candidate readback is incomplete")
+
     destination = (output_dir or manifest.report_root / "resume_v2b").resolve()
     destination.mkdir(parents=True, exist_ok=True)
     materialization_path = destination / "materialization_receipt.json"
@@ -374,16 +443,12 @@ async def resume(
         json.dumps(materialized, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
-    coarse = dict(
-        coarse_builder(
-            score_csv=manifest.materialization_scores_path,
-            qd_json=manifest.qd_summary_path,
-            materialization_json=materialization_path,
-            output_dir=destination / "coarse5_prepared",
-            target_key="angpt1",
-            source="PepMLM-target-conditioned",
-            operator_id=manifest.operator_id,
-        )
+    coarse = await _prepare_coarse5(
+        coarse_builder,
+        manifest=manifest,
+        materialization_path=materialization_path,
+        destination=destination,
+        authoritative_candidates=authoritative_candidates,
     )
     if str(coarse.get("run_id")) != run_id or int(coarse.get("nstruct", 0)) != 5:
         raise ValueError("coarse5 receipt is not bound to the authoritative run")

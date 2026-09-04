@@ -1,0 +1,38 @@
+{
+  "authoritative_candidate_ids": [
+    "7239d88e-302a-4f04-baa7-a0966bfdc802",
+    "1ebc1c41-6581-48e9-9f36-6d8e1fc857a2"
+  ],
+  "candidate_count": 2,
+  "candidate_scores_sha256": "94691bccb0c17916f6deada49002c508c07aecaeff2b81dd6a748ef4b241dc98",
+  "dispatch_allowed": false,
+  "existing_decoys_total": 0,
+  "historical_runs_modified": false,
+  "materialization_sha256": "c80213ed0056c7761253540409fa980ee922d82c480cad424abccde542acd321",
+  "median_dg_gate": -30,
+  "nstruct": 5,
+  "operator_id": "angpt1-pepmlm-qd-neighbor-1aa-v1",
+  "pg_readback": {
+    "candidate_count": 2,
+    "evaluation_count": 34,
+    "evaluation_count_per_candidate": 17,
+    "global_exact_replay_skip_count": 0,
+    "identity_drift_count": 0,
+    "tool_call_id": "609cac75-b848-4af3-84e1-25c7d534e7c0"
+  },
+  "pool_a_admitted_count": 0,
+  "qd_sha256": "ac00c3c31bbf99919fc354e289b701127b07c0f24e18b7cc61daae132092bad6",
+  "queue_csv_sha256": "cc8eb0431312ee05ec7c5d60ffab099cf758f613337e58384216a2430a4b1eb4",
+  "receipt_payload_sha256": "aa9ce3d0ed11130d5a5d23a17ca0cc379f0355edcee7b0fbbbdad1764e8acba5",
+  "remaining_decoys_total": 10,
+  "remote_file_deleted": false,
+  "remote_large_artifact_downloaded": false,
+  "rosetta_required": true,
+  "run_id": "d396862a-90ad-504b-ab5d-55b594928159",
+  "schema_version": "ampgent.angpt1-pepmlm-target-conditioned-coarse5-prepared.1",
+  "source": "PepMLM-target-conditioned",
+  "status": "prepared_not_dispatched",
+  "target_key": "angpt1",
+  "task_key_count": 2,
+  "task_key_identity": "target_key+run_id+authoritative_candidate_id"
+}
