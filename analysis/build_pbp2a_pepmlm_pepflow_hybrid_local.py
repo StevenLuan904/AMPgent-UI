@@ -5,17 +5,24 @@ from __future__ import annotations
 import argparse
 import csv
 import hashlib
+import importlib.util
 import json
 from itertools import permutations
 from pathlib import Path
 from typing import Any
 
-from build_pbp2a_pepmlm_pepflow_hybrid import (
-    archive_cells,
-    candidate_cell,
-    phi,
-    select_donors,
+_HELPER_PATH = Path(__file__).with_name("build_pbp2a_pepmlm_pepflow_hybrid.py")
+_HELPER_SPEC = importlib.util.spec_from_file_location(
+    "ampgent_pbp2a_pepmlm_pepflow_hybrid", _HELPER_PATH
 )
+if _HELPER_SPEC is None or _HELPER_SPEC.loader is None:
+    raise ImportError(f"cannot load local hybrid helper: {_HELPER_PATH}")
+_HELPER = importlib.util.module_from_spec(_HELPER_SPEC)
+_HELPER_SPEC.loader.exec_module(_HELPER)
+archive_cells = _HELPER.archive_cells
+candidate_cell = _HELPER.candidate_cell
+phi = _HELPER.phi
+select_donors = _HELPER.select_donors
 
 OPERATOR_ID = "pbp2a-pepmlm-pepflow-hybrid-local-v2"
 TARGET_KEY = "PBP2a"

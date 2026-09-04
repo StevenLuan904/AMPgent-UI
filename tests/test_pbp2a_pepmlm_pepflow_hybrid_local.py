@@ -12,6 +12,11 @@ SPEC = importlib.util.spec_from_file_location("pbp2a_hybrid_local", SOURCE)
 assert SPEC and SPEC.loader
 MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
+CLOSE_SOURCE = ROOT / "analysis" / "close_pbp2a_pepmlm_pepflow_hybrid_local.py"
+CLOSE_SPEC = importlib.util.spec_from_file_location("pbp2a_hybrid_local_close", CLOSE_SOURCE)
+assert CLOSE_SPEC and CLOSE_SPEC.loader
+CLOSE_MODULE = importlib.util.module_from_spec(CLOSE_SPEC)
+CLOSE_SPEC.loader.exec_module(CLOSE_MODULE)
 
 
 def _read(path: Path) -> list[dict[str, str]]:
@@ -20,6 +25,7 @@ def _read(path: Path) -> list[dict[str, str]]:
 
 
 def test_local_hybrid_receipts_are_complete_but_pg_pending() -> None:
+    assert callable(CLOSE_MODULE.close)
     generation = json.loads((REPORT / "generation_receipt.json").read_text(encoding="utf-8"))
     score = json.loads((REPORT / "score_all" / "receipt.json").read_text(encoding="utf-8"))
     calibration = json.loads(
