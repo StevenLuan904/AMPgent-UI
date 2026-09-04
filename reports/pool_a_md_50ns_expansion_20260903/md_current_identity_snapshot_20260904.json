@@ -12,22 +12,23 @@
   },
   "current_partition": {
     "launched_unique": 50,
-    "full_evidence_unique": 31,
-    "analysis_pending_unique": 0,
-    "running_or_incomplete_unique": 19,
+    "full_evidence_unique": 36,
+    "analysis_pending_unique": 2,
+    "running_or_incomplete_unique": 12,
     "not_started_unique": 436,
     "failed_unique": 0,
     "partition_total_unique": 486,
-    "launched_equals_full_plus_running": true,
+    "launched_equals_full_plus_running": false,
+    "launched_equals_full_plus_analysis_pending_plus_running": true,
     "disjoint_union_equals_486": true
   },
   "postgresql_evidence_audit": {
-    "current_full_evidence_unique": 31,
+    "current_full_evidence_unique": 36,
     "prior_29_pg_complete": 29,
-    "transition_candidates_checked": 2,
-    "transition_pg_complete": 2,
+    "transition_candidates_checked": 7,
+    "transition_pg_complete": 7,
     "transition_pg_incomplete": 0,
-    "pg_complete_full_evidence_unique": 31,
+    "pg_complete_full_evidence_unique": 36,
     "incomplete_candidate_ids": [],
     "no_md_pg_write_performed": false,
     "bf_exact_ingest_inserted_evaluations": 15
@@ -41,9 +42,9 @@
   },
   "identity_set_counts": {
     "launched": 50,
-    "full_evidence": 31,
-    "analysis_pending": 0,
-    "running_or_incomplete": 19,
+    "full_evidence": 36,
+    "analysis_pending": 2,
+    "running_or_incomplete": 12,
     "failed": 0
   },
   "new_identities_since_previous_45": [
@@ -96,6 +97,17 @@
       "evidence": "main interface+MMGBSA"
     }
   ],
+  "remote_compact_transition": {
+    "receipt": "md_remote_compact_transition_20260904.json",
+    "main_full_evidence_before": 28,
+    "new_main_full_evidence": 5,
+    "canonical_both_files_pg_complete": 5,
+    "canonical_mmgbsa_only_interface_missing": 2,
+    "latest_full_evidence_unique": 36,
+    "latest_analysis_pending_unique": 2,
+    "latest_running_or_incomplete_unique": 12,
+    "pg_new_evaluations": 0
+  },
   "source_observation": {
     "main_snapshot_filtered_launch_receipts": 44,
     "main_full_evidence": 28,

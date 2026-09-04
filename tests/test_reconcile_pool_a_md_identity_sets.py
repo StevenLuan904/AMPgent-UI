@@ -47,13 +47,18 @@ def test_current_snapshot_has_exact_five_new_identities_and_partition_invariants
     payload = json.loads(snapshot.read_text(encoding="utf-8"))
     counts = payload["current_partition"]
     assert counts["launched_unique"] == 50
-    assert counts["full_evidence_unique"] == 31
-    assert counts["analysis_pending_unique"] == 0
-    assert counts["running_or_incomplete_unique"] == 19
+    assert counts["full_evidence_unique"] == 36
+    assert counts["analysis_pending_unique"] == 2
+    assert counts["running_or_incomplete_unique"] == 12
     assert counts["not_started_unique"] == 436
     assert counts["failed_unique"] == 0
     assert counts["partition_total_unique"] == 486
-    assert counts["launched_equals_full_plus_running"] is True
+    assert counts["launched_equals_full_plus_running"] is False
+    assert counts["launched_unique"] == (
+        counts["full_evidence_unique"]
+        + counts["analysis_pending_unique"]
+        + counts["running_or_incomplete_unique"]
+    )
     assert counts["disjoint_union_equals_486"] is True
     new = payload["new_identities_since_previous_45"]
     assert payload["new_identity_count"] == 5
@@ -92,6 +97,6 @@ def test_fgf2_transition_receipts_are_pg_complete() -> None:
         )
     )
     audit = snapshot["postgresql_evidence_audit"]
-    assert audit["pg_complete_full_evidence_unique"] == 31
-    assert audit["transition_pg_complete"] + audit["transition_pg_incomplete"] == 2
+    assert audit["pg_complete_full_evidence_unique"] == 36
+    assert audit["transition_pg_complete"] + audit["transition_pg_incomplete"] == 7
     assert audit["transition_pg_incomplete"] == 0
