@@ -1,0 +1,30 @@
+{
+  "schema_version": "ampgent.pool-a-md-compact-delta.1",
+  "observed_at_utc": "2026-09-04T06:29:31Z",
+  "identity_key": "subject_run_id+candidate_id",
+  "candidate": {
+    "target_key": "vegfa",
+    "run_id": "f4d068ba-07b5-59de-ace3-3eca8515863a",
+    "candidate_id": "f6755e1e-c08f-496c-8f36-84d18138e366",
+    "mmgbsa_mean_kcal_mol": -76.0360550088891,
+    "mmgbsa_ci95_kcal_mol": [-83.6750788111109, -70.2713210888913],
+    "mmgbsa_frame_count": 36,
+    "residue_decomposition_present": true,
+    "postgresql_evaluations_inserted": 4,
+    "interface_pending": true
+  },
+  "state_partition": {
+    "expected_unique": 486,
+    "launched_unique": 58,
+    "md_complete_unique": 42,
+    "full_evidence_unique": 40,
+    "analysis_pending_unique": 2,
+    "running_unique": 16,
+    "not_started_unique": 428,
+    "failed_unique": 0
+  },
+  "source_sync_receipt": "compact-sync-20260904T0630Z.json",
+  "structure_or_trajectory_copied": false,
+  "remote_files_deleted": false,
+  "remote_task_restarted": false
+}
