@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildRuntimeGraph, countActivityRetries, countOpenActivities, deriveLifecycleToolCalls, displayEventName, displayEventSemanticName, displayObservedEventName, displayToolName, layoutColumnsForWidth, runtimeActivitySummary, runtimeCallSummary, runtimeRetrySummary } from './runtimeGraph'
+import { buildRuntimeGraph, countActivityRetries, countOpenActivities, deriveLifecycleToolCalls, displayEventContext, displayEventName, displayEventSemanticName, displayObservedEventName, displayToolName, layoutColumnsForWidth, runtimeActivitySummary, runtimeCallSummary, runtimeRetrySummary } from './runtimeGraph'
 import type { NodeDetail, RunDetail, ToolAttempt } from './types'
 
 const call = (id: string, toolName: string, queuedAt: string, overrides: Partial<ToolAttempt> = {}): ToolAttempt => ({
@@ -71,6 +71,14 @@ describe('buildRuntimeGraph', () => {
     expect(displayObservedEventName('activity.succeeded', { activity_type: 'evaluate_v38_sequence_metric' })).toBe('序列指标计算 · 成功')
     expect(displayObservedEventName('activity.failed', { activity_type: 'opaque_activity' })).toBe('活动 · 失败')
     expect(displayObservedEventName('activity.started', {})).toBe('活动 · 开始')
+  })
+
+  it('renders only explicit iteration and generation context without inferring it', () => {
+    expect(displayEventContext({ iteration_no: 39, generation: 4 })).toEqual(['第 39 轮', '第 4 代'])
+    expect(displayObservedEventName('agent_decision.recorded', { iteration_no: 39 })).toBe('智能体决策已记录 · 第 39 轮')
+    expect(displayObservedEventName('autoresearch.action.recorded', { generation: 4 })).toBe('生成动作已记录 · 第 4 代')
+    expect(displayEventContext({ iteration_no: 'not-a-number', generation: -1 })).toEqual([])
+    expect(displayObservedEventName('agent_decision.recorded', { iteration_no: 'not-a-number' })).toBe('智能体决策已记录')
   })
 
   it('materializes explicit lifecycle tool_call_id observations and deduplicates node-detail calls', () => {

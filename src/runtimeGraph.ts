@@ -464,12 +464,26 @@ function displayActivityType(activityType: string) {
   return labels[activityType]
 }
 
+export function displayEventContext(payload?: unknown) {
+  const value = record(payload)
+  const context: string[] = []
+  const iteration = integerField(value.iteration_no)
+  const generation = integerField(value.generation)
+  if (iteration !== null) context.push(`第 ${iteration} 轮`)
+  if (generation !== null) context.push(`第 ${generation} 代`)
+  return context
+}
+
 /** Use the persisted activity type for lifecycle event detail labels. */
 export function displayObservedEventName(type: string, payload?: unknown) {
   const activityType = text(record(payload).activity_type).trim()
-  if (activityType) return `${displayActivityType(activityType) ?? '活动'} · ${displayEventState(type)}`
-  if (type.toLowerCase().startsWith('activity.')) return `活动 · ${displayEventState(type)}`
-  return displayEventName(type)
+  const base = activityType
+    ? `${displayActivityType(activityType) ?? '活动'} · ${displayEventState(type)}`
+    : type.toLowerCase().startsWith('activity.')
+    ? `活动 · ${displayEventState(type)}`
+    : displayEventName(type)
+  const context = displayEventContext(payload)
+  return context.length ? `${base} · ${context.join(' · ')}` : base
 }
 
 function displayErrorCategory(errorCategory: string) {
@@ -670,6 +684,7 @@ function eventNode(event: TimelineEvent): GraphStage {
       reason: `${displayActor(event.actor)} · 序号 ${event.sequence_no}`,
       facts: [
         { label: '语义', value: baseEventName },
+        ...displayEventContext(event.payload).map((value) => ({ label: value.endsWith('轮') ? '轮次' : '代际', value })),
         { label: '序号', value: String(event.sequence_no) },
         ...(activityAttemptLabel(event) ? [{ label: '尝试', value: activityAttemptLabel(event)! }] : []),
         ...(recoveryLabel ? [{ label: '恢复', value: recoveryLabel }] : []),
@@ -757,6 +772,21 @@ function eventComposition(events: TimelineEvent[]) {
   return [...counts.entries()].map(([name, count]) => `${name} ${count}`).join(' · ')
 }
 
+function eventContextFacts(events: TimelineEvent[]) {
+  const iterations = new Set<string>()
+  const generations = new Set<string>()
+  for (const event of events) {
+    for (const context of displayEventContext(event.payload)) {
+      if (context.endsWith('轮')) iterations.add(context)
+      if (context.endsWith('代')) generations.add(context)
+    }
+  }
+  return [
+    ...(iterations.size ? [{ label: '轮次', value: [...iterations].join('、') }] : []),
+    ...(generations.size ? [{ label: '代际', value: [...generations].join('、') }] : []),
+  ]
+}
+
 function aggregateSemanticLabel(calls: ToolAttempt[], events: TimelineEvent[]) {
   const callIds = new Set(calls.map((call) => call.id))
   const materializedCalls = calls.filter((call) => !call.tool_name.startsWith('observed_lifecycle:'))
@@ -825,6 +855,7 @@ function runtimeGroupNode(groupedCalls: ToolAttempt[], groupedEvents: TimelineEv
   const progressFacts = executionFactList.filter(({ label }) => label === '进度')
   const salientFacts = [
     ...recoveryLabels.map((value) => ({ label: '恢复', value })),
+    ...eventContextFacts(groupedEvents),
     ...executionFactList.filter(({ label }) => label !== '进度'),
     ...activityAttemptFacts(groupedEvents),
     ...progressFacts,
