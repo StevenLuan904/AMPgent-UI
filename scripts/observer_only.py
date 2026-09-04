@@ -43,11 +43,73 @@ class ObserverReadCoalescingMiddleware:
         return 10.0
 
     @staticmethod
+    def _stale_window(path: str) -> float:
+        # A stale response is only used while a refresh is running or the
+        # remote tunnel is briefly unavailable. Every stale read still starts
+        # one background refresh, so normal polling observes the new snapshot
+        # on its next pass without blocking the interface on tunnel latency.
+        if path == "/v1/observer/runs":
+            return 120.0
+        if "/nodes/" in path:
+            return 90.0
+        return 60.0
+
+    @staticmethod
     async def _send_cached(send: Any, response: _CachedResponse, cache_state: bytes) -> None:
         headers = [(key, value) for key, value in response.headers if key.lower() != b"x-ampgent-cache"]
         headers.append((b"x-ampgent-cache", cache_state))
         await send({"type": "http.response.start", "status": response.status, "headers": headers})
         await send({"type": "http.response.body", "body": response.body, "more_body": False})
+
+    async def _refresh_in_background(
+        self,
+        key: bytes,
+        scope: dict[str, Any],
+        previous: _CachedResponse,
+        future: asyncio.Future[_CachedResponse],
+    ) -> None:
+        messages: list[dict[str, Any]] = []
+        request_delivered = False
+
+        async def receive() -> dict[str, Any]:
+            nonlocal request_delivered
+            if not request_delivered:
+                request_delivered = True
+                return {"type": "http.request", "body": b"", "more_body": False}
+            return {"type": "http.disconnect"}
+
+        async def capture(message: dict[str, Any]) -> None:
+            messages.append(message)
+
+        resolved = previous
+        try:
+            await self.app(dict(scope), receive, capture)
+            start = next(message for message in messages if message["type"] == "http.response.start")
+            body = b"".join(
+                bytes(message.get("body") or b"")
+                for message in messages
+                if message["type"] == "http.response.body"
+            )
+            refreshed = _CachedResponse(
+                status=int(start["status"]),
+                headers=list(start.get("headers") or []),
+                body=body,
+                expires_at=time.monotonic() + self._ttl(str(scope.get("path") or "")),
+            )
+            if refreshed.status == 200 and len(body) <= 4_000_000:
+                resolved = refreshed
+                async with self._lock:
+                    self._cache[key] = refreshed
+        except BaseException:
+            # Preserve the last successful read. A later request will retry;
+            # database or tunnel failures remain visible through fresh reads
+            # once the stale safety window expires.
+            resolved = previous
+        finally:
+            async with self._lock:
+                self._inflight.pop(key, None)
+                if not future.done():
+                    future.set_result(resolved)
 
     async def __call__(self, scope: dict[str, Any], receive: Any, send: Any) -> None:
         path = str(scope.get("path") or "")
@@ -58,16 +120,27 @@ class ObserverReadCoalescingMiddleware:
         key = path.encode("utf-8") + b"?" + bytes(scope.get("query_string") or b"")
         now = time.monotonic()
         owner = False
+        stale: _CachedResponse | None = None
         async with self._lock:
             cached = self._cache.get(key)
             if cached is not None and cached.expires_at > now:
                 await self._send_cached(send, cached, b"hit")
                 return
             future = self._inflight.get(key)
-            if future is None:
+            if cached is not None and cached.expires_at + self._stale_window(path) > now:
+                stale = cached
+                if future is None:
+                    future = asyncio.get_running_loop().create_future()
+                    self._inflight[key] = future
+                    asyncio.create_task(self._refresh_in_background(key, scope, cached, future))
+            elif future is None:
                 future = asyncio.get_running_loop().create_future()
                 self._inflight[key] = future
                 owner = True
+
+        if stale is not None:
+            await self._send_cached(send, stale, b"stale-refresh")
+            return
 
         if not owner:
             shared = await asyncio.shield(future)
