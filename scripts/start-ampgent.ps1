@@ -51,21 +51,6 @@ function Wait-Until([scriptblock]$condition, [int]$attempts, [string]$failureMes
     throw $failureMessage
 }
 
-function Initialize-AmpgentReadCache([string]$baseUrl) {
-    try {
-        $runsResponse = Invoke-RestMethod -Method Get -Uri "$baseUrl/v1/observer/runs?limit=12" -TimeoutSec 35
-        $latestRunId = @($runsResponse.runs)[0].id
-        if ($latestRunId) {
-            Invoke-RestMethod -Method Get -Uri "$baseUrl/v1/observer/runs/$latestRunId" -TimeoutSec 35 | Out-Null
-        }
-        return $true
-    }
-    catch {
-        # Warm-up is best effort. The UI keeps its normal retry and error states.
-        return $false
-    }
-}
-
 function Show-LaunchError([string]$message) {
     Add-Type -AssemblyName PresentationFramework
     [System.Windows.MessageBox]::Show(
@@ -110,8 +95,18 @@ try {
     }
 
     Wait-Until { Test-AmpgentEndpoint $proxiedApiUrl } 30 '界面已启动，但数据服务代理尚未就绪。'
-    Initialize-AmpgentReadCache "http://127.0.0.1:$UiPort" | Out-Null
     Start-Process $appUrl | Out-Null
+
+    # Opening the interface must not wait for remote PostgreSQL aggregation.
+    # The UI can render its last verified snapshot immediately, while this
+    # best-effort helper coalesces with the first browser refresh in the API.
+    $warmupScript = Join-Path $PSScriptRoot 'warm-observer-cache.ps1'
+    $warmupStdoutPath = Join-Path $logDirectory 'cache-warmup.out.log'
+    $warmupStderrPath = Join-Path $logDirectory 'cache-warmup.err.log'
+    Start-HiddenProcess $powerShellPath @(
+        '-NoLogo', '-NoProfile', '-ExecutionPolicy', 'Bypass',
+        '-File', $warmupScript, '-BaseUrl', "http://127.0.0.1:$UiPort"
+    ) $warmupStdoutPath $warmupStderrPath
 }
 catch {
     Show-LaunchError $_.Exception.Message

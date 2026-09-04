@@ -209,7 +209,7 @@ export interface GraphEdgeDetail {
   label: string | null
   rationale: string
   provenance: 'database' | 'topology' | 'derived'
-  relation_kind?: 'dependency' | 'retry' | 'fallback' | 'parallel' | 'association' | 'lineage' | 'grouping'
+  relation_kind?: 'dependency' | 'retry' | 'fallback' | 'parallel' | 'sequence' | 'association' | 'lineage' | 'grouping'
 }
 
 export interface ToolArtifact {

@@ -602,13 +602,13 @@ function GraphView({
   const fitReadableViewport = useCallback(async () => {
     const instance = flowInstance.current
     if (!instance) return
-    await instance.fitView({ padding: 0.22, minZoom: 0.64, maxZoom: 1, duration: 180 })
+    await instance.fitView({ padding: 0.18, minZoom: 0.8, maxZoom: 1, duration: 180 })
     const viewport = instance.getViewport()
     const positions = Object.values(runtimeGraph.positions)
     if (!positions.length) return
     const minX = Math.min(...positions.map((position) => position.x))
     const minY = Math.min(...positions.map((position) => position.y))
-    const x = Math.max(viewport.x, 150 - minX * viewport.zoom)
+    const x = 132 - minX * viewport.zoom
     const y = Math.max(viewport.y, 138 - minY * viewport.zoom)
     if (x !== viewport.x || y !== viewport.y) await instance.setViewport({ ...viewport, x, y }, { duration: 120 })
   }, [runtimeGraph.positions])
@@ -630,9 +630,8 @@ function GraphView({
     return () => window.cancelAnimationFrame(frame)
   }, [detail.run.id])
   useEffect(() => {
-    // Opening the inspector changes the flex width of the canvas. Re-fit after
-    // that layout settles so the first column is not left outside the new
-    // viewport; the user can still pan afterwards.
+    // Establish one readable initial window when a run or its observed node
+    // set changes. Selecting a node must not reset the scientist's pan/zoom.
     let settleFrame = 0
     const frame = window.requestAnimationFrame(() => {
       settleFrame = window.requestAnimationFrame(() => {
@@ -643,7 +642,7 @@ function GraphView({
       window.cancelAnimationFrame(frame)
       if (settleFrame) window.cancelAnimationFrame(settleFrame)
     }
-  }, [detail.run.id, fitReadableViewport, runtimeGraph.nodes.length, selectedStage])
+  }, [detail.run.id, fitReadableViewport, runtimeGraph.nodes.length])
   const nodes = useMemo<Array<StageNode | LaneNode>>(() => {
     const nodesInLane = (types: string[]) => runtimeGraph.nodes.filter((stage) => types.includes(stage.runtime?.node_type ?? ''))
     const laneY = (types: string[], fallback: number) => {
@@ -655,9 +654,9 @@ function GraphView({
     const candidateY = laneY(['generation'], eventBottom + 440)
     const toolY = laneY(['tool_call', 'tool_group', 'batch_group'], Math.round((eventBottom + candidateY) / 2))
     const laneNodes: LaneNode[] = [
-      { id: 'lane:events', type: 'lane', position: { x: 0, y: laneY(['lifecycle_event', 'event_group'], 150) }, data: { index: '01', label: '观测时间轨', description: '按持久化时间排列' }, draggable: false, selectable: false },
-      { id: 'lane:tools', type: 'lane', position: { x: 0, y: toolY }, data: { index: '02', label: '工具调用', description: runtimeGraph.stats.observedCalls > 0 ? '同段聚合，可展开明细' : hasDeferredNodeDetails ? '明细按需读取' : '未观测到调用' }, draggable: false, selectable: false },
-      { id: 'lane:candidates', type: 'lane', position: { x: 0, y: candidateY }, data: { index: '03', label: '代际 / 候选', description: '谱系与记录独立呈现' }, draggable: false, selectable: false },
+      { id: 'lane:events', type: 'lane', position: { x: 0, y: laneY(['lifecycle_event', 'event_group'], 150) }, initialWidth: 132, initialHeight: 47, data: { index: '01', label: '观测时间轨', description: '按持久化时间排列' }, draggable: false, selectable: false },
+      { id: 'lane:tools', type: 'lane', position: { x: 0, y: toolY }, initialWidth: 132, initialHeight: 47, data: { index: '02', label: '工具调用', description: runtimeGraph.stats.observedCalls > 0 ? '同段聚合，可展开明细' : hasDeferredNodeDetails ? '明细按需读取' : '未观测到调用' }, draggable: false, selectable: false },
+      { id: 'lane:candidates', type: 'lane', position: { x: 0, y: candidateY }, initialWidth: 132, initialHeight: 47, data: { index: '03', label: '代际 / 候选', description: '谱系与记录独立呈现' }, draggable: false, selectable: false },
     ]
     return [
       ...laneNodes,
@@ -665,6 +664,8 @@ function GraphView({
       id: stage.id,
       type: 'stage',
       position: runtimeGraph.positions[stage.id] ?? { x: 0, y: 0 },
+      initialWidth: 280,
+      initialHeight: stage.kind === 'structure' ? 250 : stage.id === 'targets' ? 224 : 180,
       data: {
         stage,
         branches: detail.branches,
@@ -688,8 +689,9 @@ function GraphView({
     const isRetry = edge.relation_kind === 'retry'
     const isFallback = edge.relation_kind === 'fallback'
     const isParallel = edge.relation_kind === 'parallel'
+    const isSequence = edge.relation_kind === 'sequence'
     const isAssociation = edge.relation_kind === 'association' || edge.relation_kind === 'lineage' || edge.relation_kind === 'grouping'
-    const stroke = isSelected ? '#2257ee' : isDependency ? '#8793a5' : isRetry ? '#b58b4a' : isFallback ? '#8d7db1' : isParallel ? '#9aa7bb' : isAssociation ? '#c3cad6' : active ? '#aab4c2' : '#d6dbe3'
+    const stroke = isSelected ? '#2257ee' : isDependency ? '#8793a5' : isRetry ? '#b58b4a' : isFallback ? '#8d7db1' : isParallel ? '#9aa7bb' : isSequence ? '#aeb8c7' : isAssociation ? '#c3cad6' : active ? '#aab4c2' : '#d6dbe3'
     const isCausal = isDependency || isRetry || isFallback
     return {
       id: `${edge.source}-${edge.target}-${index}`,
@@ -698,14 +700,14 @@ function GraphView({
       type: 'smoothstep',
       pathOptions: { offset: 22, stepPosition: 0.55 },
       animated: source?.status === 'running' && isCausal,
-      label: edge.provenance === 'derived' && !isParallel ? undefined : edge.label ?? undefined,
+      label: edge.provenance === 'derived' && !isParallel && !isSequence ? undefined : edge.label ?? undefined,
       labelStyle: { fill: '#536176', fontSize: 11, fontWeight: 600 },
       labelBgStyle: { fill: '#ffffff', fillOpacity: 0.98 },
       labelBgPadding: [6, 4],
       labelBgBorderRadius: 5,
       data: { detail: edge },
-      markerEnd: isCausal ? { type: MarkerType.ArrowClosed, width: 11, height: 11, color: stroke } : undefined,
-      style: { stroke, strokeWidth: isSelected ? 2 : isCausal ? 1.4 : 1.15, strokeDasharray: isParallel ? '2 4' : isAssociation || edge.provenance === 'derived' ? '4 5' : undefined },
+      markerEnd: isCausal || isSequence ? { type: MarkerType.ArrowClosed, width: isSequence ? 8 : 11, height: isSequence ? 8 : 11, color: stroke } : undefined,
+      style: { stroke, strokeWidth: isSelected ? 2 : isCausal ? 1.4 : 1.15, strokeDasharray: isParallel ? '2 4' : isSequence ? '3 6' : isAssociation || edge.provenance === 'derived' ? '4 5' : undefined },
     }
   }), [runtimeGraph.edges, selectedEdge, stageById])
   const handleNodeClick: NodeMouseHandler = (_, node) => {
@@ -733,7 +735,7 @@ function GraphView({
         onNodeDoubleClick={handleNodeDoubleClick}
         onEdgeClick={handleEdgeClick}
         onInit={(instance) => { flowInstance.current = instance }}
-        fitViewOptions={{ padding: 0.16, minZoom: 0.58, maxZoom: 0.86 }}
+        fitViewOptions={{ padding: 0.16, minZoom: 0.8, maxZoom: 0.9 }}
         defaultViewport={{ x: 22, y: 68, zoom: 0.82 }}
         minZoom={0.2}
         maxZoom={1.35}
@@ -744,7 +746,7 @@ function GraphView({
         <Background variant={BackgroundVariant.Dots} gap={26} size={1} color="#e8ebf1" />
         <Controls showInteractive={false} showFitView={false} position="bottom-left" />
       </ReactFlow>
-      <button className="runtime-fit-button" aria-label="适合画布" title="适合画布" onClick={() => { void fitReadableViewport() }}>适合画布</button>
+      <button className="runtime-fit-button" aria-label="回到可读视图" title="回到可读视图" onClick={() => { void fitReadableViewport() }}>可读视图</button>
       <div className="runtime-graph-summary" role="status">
         <div className="runtime-graph-summary-head"><span className="runtime-live-dot" /><b>{syncingStale ? '上次读取 · 正在同步' : detail.source === 'postgresql' ? '真实运行图' : '验收运行图'}</b><small>可见 {runtimeGraph.nodes.length} · 关系 {runtimeGraph.edges.length}</small></div>
         <div className="runtime-graph-stats"><span>调用 {runtimeGraph.stats.observedCalls}</span><span>事件 {runtimeGraph.stats.observedEvents}</span><span>聚合 {runtimeGraph.nodes.filter((node) => ['tool_group', 'event_group', 'batch_group'].includes(node.runtime?.node_type ?? '')).length}</span><span>重试 {runtimeGraph.stats.retries}</span><span>并行组 {runtimeGraph.stats.parallelGroups}</span>{runtimeGraph.stats.cycles > 0 && <span>依赖循环 {runtimeGraph.stats.cycles}</span>}</div>
@@ -1059,14 +1061,16 @@ function Inspector({ detail, stageId, analysisSnapshot, distributionOverride, on
 }
 
 const relationKindLabels: Record<NonNullable<GraphEdgeDetail['relation_kind']>, string> = {
-  dependency: '依赖', retry: '重试', fallback: '回退', parallel: '并行观测组', association: '关联', lineage: '父子谱系', grouping: '代际分组',
+  dependency: '依赖', retry: '重试', fallback: '回退', parallel: '并行观测组', sequence: '观测先后', association: '关联', lineage: '父子谱系', grouping: '代际分组',
 }
 
 function EdgeInspector({ graph, edge, onClose }: { graph: RuntimeGraphModel; edge: GraphEdgeDetail; onClose: () => void }) {
   const source = graph.nodes.find((node) => node.id === edge.source)
   const target = graph.nodes.find((node) => node.id === edge.target)
   const relationLabel = edge.relation_kind ? relationKindLabels[edge.relation_kind] : '运行关系'
-  const provenanceLabel = edge.relation_kind === 'parallel' && edge.provenance === 'derived'
+  const provenanceLabel = edge.relation_kind === 'sequence'
+    ? '按持久化时间与事件序号排列；不代表依赖、重试或触发'
+    : edge.relation_kind === 'parallel' && edge.provenance === 'derived'
     ? '基于观测时间区间重叠；不代表调度依赖'
     : edge.provenance === 'database' ? '关系来自显式数据库字段' : '关系来自图上观测或候选代际分组'
   return (

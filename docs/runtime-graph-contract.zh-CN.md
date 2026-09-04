@@ -15,7 +15,11 @@
 
 `relation_kind=dependency` 仅来自显式依赖白名单；`retry` 仅来自 `retry_of_call_id`、`retried_call_id`、`recovery_of_call_id` 及数组形式；`fallback` 仅来自 `fallback_from_call_id` 及数组形式。它们不根据时间、attempt 数字、失败文本或相邻位置猜测，并且只有 dependency 进入循环检测。`relation_kind=parallel` 只有后端显式 `parallel_group_id`（`provenance=database`）或已返回的 queued/finished 区间重叠（`provenance=derived`）两类来源；后者只称“并行观测组”，不宣称调度依赖。
 
+`relation_kind=sequence` 只用于串联同一运行中已返回的工作流执行簇与恢复调度事件，来源是持久化时间及事件序号。它表示“随后观测到”，不表示依赖、重试、回退或触发；不参与循环检测，也不计入重试统计。
+
 生命周期状态映射：`.started`、`.running`、`.progress` → 进行中；`.created`、`.succeeded`、`.completed`、`.persisted`、`.materialized`、`.recorded`、`.accepted`、`.rejected` → 已完成；`.failed`、`.cancelled` → 已停止；其余后缀 → 待观测。原始事件键仍保存在节点详情中。
+
+恢复调度事件只把“调度记录已写入”显示为已调度，不代表后续执行成功；`recovery_attempt` 只用于显示恢复次数，不计作工具重试。
 
 ## 已确认的接口缺口
 

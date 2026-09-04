@@ -250,6 +250,12 @@ describe('buildRuntimeGraph', () => {
     })
     expect(executionGroup?.insight.facts.find((fact) => fact.label === '操作构成')?.value).toContain('生成规划 1')
     expect(executionGroup?.insight.facts.find((fact) => fact.label === '操作构成')?.value).toContain('规划持久化 1')
+    const expanded = buildRuntimeGraph(detail([
+      activity(1, 'activity.started', 1, 'plan_autoresearch_actions'),
+      activity(2, 'activity.succeeded', 1, 'plan_autoresearch_actions'),
+    ]), {}, { expandedGroups: new Set(['batch-group:workflow_run_id%3Dworkflow-run-a']) })
+    expect(expanded.nodes.find((node) => node.id === 'event:1')?.label).toBe('生成规划 · 开始')
+    expect(expanded.nodes.find((node) => node.id === 'event:2')?.label).toBe('生成规划 · 成功')
   })
 
   it('keeps separate workflow executions in separate expandable groups', () => {
@@ -261,6 +267,84 @@ describe('buildRuntimeGraph', () => {
     const groups = result.nodes.filter((node) => node.runtime?.node_type === 'event_group')
     expect(groups).toHaveLength(2)
     expect(groups.every((node) => node.status === 'stopped' && node.total === 1)).toBe(true)
+  })
+
+  it('links execution clusters and recovery records only as non-causal observation order', () => {
+    const events: RunDetail['events'] = [
+      { sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: 'workflow-run-a', activity_id: 1, attempt: 1 }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'activity.failed', actor: 'observer-writer', payload: { workflow_run_id: 'workflow-run-a', activity_id: 1, attempt: 1 }, occurred_at: '2026-09-04T00:00:02Z' },
+      { sequence_no: 3, type: 'mvp_human.autoresearch.recovery_scheduled', actor: 'mvp-human-controller', payload: { recovery_attempt: 2 }, occurred_at: '2026-09-04T00:00:03Z' },
+      { sequence_no: 4, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: 'workflow-run-b', activity_id: 1, attempt: 1 }, occurred_at: '2026-09-04T00:00:04Z' },
+      { sequence_no: 5, type: 'activity.succeeded', actor: 'observer-writer', payload: { workflow_run_id: 'workflow-run-b', activity_id: 1, attempt: 1 }, occurred_at: '2026-09-04T00:00:05Z' },
+    ]
+    const result = buildRuntimeGraph(detail(events))
+    const first = result.nodes.find((node) => node.label.startsWith('第 1 次执行'))
+    const recovery = result.nodes.find((node) => node.label === '第 2 次恢复调度')
+    const second = result.nodes.find((node) => node.label.startsWith('第 2 次执行'))
+    expect(first).toBeDefined()
+    expect(recovery).toBeDefined()
+    expect(second).toBeDefined()
+    expect(result.edges).toEqual(expect.arrayContaining([
+      expect.objectContaining({ source: first!.id, target: recovery!.id, relation_kind: 'sequence', provenance: 'derived', label: '观测先后' }),
+      expect.objectContaining({ source: recovery!.id, target: second!.id, relation_kind: 'sequence', provenance: 'derived' }),
+    ]))
+    expect(result.stats.retries).toBe(0)
+    expect(result.stats.cycles).toBe(0)
+  })
+
+  it('shows an explicit recovery attempt without inferring a retry or fallback', () => {
+    const result = buildRuntimeGraph(detail([{
+      sequence_no: 1,
+      type: 'mvp_human.autoresearch.recovery_scheduled',
+      actor: 'mvp-human-controller',
+      payload: { recovery_attempt: 4, error_category: 'WorkerTimeout' },
+      occurred_at: '2026-09-04T00:00:01Z',
+    }]))
+    const event = result.nodes.find((node) => node.id === 'event:1')
+    expect(event).toMatchObject({ label: '第 4 次恢复调度', status: 'completed', insight: { verdict: '已调度' } })
+    expect(event?.insight.facts).toEqual(expect.arrayContaining([{ label: '恢复', value: '第 4 次恢复调度' }]))
+    expect(result.stats.retries).toBe(0)
+    expect(result.edges).toHaveLength(0)
+  })
+
+  it('reports the latest failed activity boundary in a workflow execution cluster', () => {
+    const execution = 'workflow-run-failed'
+    const result = buildRuntimeGraph(detail([
+      { sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 1, attempt: 1, activity_type: 'generate_v38_sequence_cell', completed: 0, expected: 8 }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'activity.failed', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 1, attempt: 1, activity_type: 'generate_v38_sequence_cell', error_type: 'ActivityError', completed: 3, expected: 8 }, occurred_at: '2026-09-04T00:00:02Z' },
+    ]))
+    const group = result.nodes.find((node) => node.runtime?.node_type === 'event_group')
+    expect(group?.status).toBe('stopped')
+    expect(group?.insight.facts).toEqual(expect.arrayContaining([
+      { label: '停止位置', value: '序列生成' },
+      { label: '错误类别', value: '活动执行错误' },
+      { label: '进度', value: '3/8' },
+    ]))
+  })
+
+  it('reports partial completion from the latest terminal activity boundary', () => {
+    const execution = 'workflow-run-partial'
+    const result = buildRuntimeGraph(detail([
+      { sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 1, attempt: 1, activity_type: 'score_v38_multitarget_rosetta', completed: 0, expected: 12 }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'activity.succeeded', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 1, attempt: 1, activity_type: 'score_v38_multitarget_rosetta', completed: 7, expected: 12 }, occurred_at: '2026-09-04T00:00:02Z' },
+    ]))
+    const group = result.nodes.find((node) => node.runtime?.node_type === 'event_group')
+    expect(group?.insight.facts).toEqual(expect.arrayContaining([
+      { label: '最近活动', value: 'Rosetta 界面评分' },
+      { label: '进度', value: '7/12' },
+    ]))
+    expect(group?.insight.facts.some((fact) => fact.label === '错误类别')).toBe(false)
+  })
+
+  it('does not fabricate execution facts when the latest terminal boundary omits them', () => {
+    const execution = 'workflow-run-missing-facts'
+    const result = buildRuntimeGraph(detail([
+      { sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 1, attempt: 1, activity_type: 'unknown_activity', completed: 0, expected: 4 }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'activity.failed', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 1, attempt: 1 }, occurred_at: '2026-09-04T00:00:02Z' },
+    ]))
+    const group = result.nodes.find((node) => node.runtime?.node_type === 'event_group')
+    expect(group).toBeDefined()
+    expect(group?.insight.facts.some((fact) => ['停止位置', '错误类别', '进度'].includes(fact.label))).toBe(false)
   })
 
   it('uses continuous same-type observation groups only as an explicitly derived fallback', () => {
@@ -277,7 +361,7 @@ describe('buildRuntimeGraph', () => {
   })
 
   it('starts each lane after its wrapped rows instead of a fixed y offset', () => {
-    const eventTypes = ['run.started', 'run.completed', 'run.failed', 'run.cancelled', 'run.progress', 'candidate.scored']
+    const eventTypes = ['run.started', 'run.completed', 'run.failed', 'run.cancelled', 'run.progress', 'candidate.scored', 'candidate.created', 'candidate.rejected', 'tool_call.started']
     const events = eventTypes.map((type, index) => ({
       sequence_no: index + 1,
       type,
@@ -288,7 +372,7 @@ describe('buildRuntimeGraph', () => {
     const result = buildRuntimeGraph(detail(events), { worker: nodeDetail([call('call-1', 'boltz', '2026-09-04T00:00:10Z')]) })
     const eventPositions = events.map((_, index) => result.positions[`event:${index + 1}`].y)
     const toolPosition = result.positions['call:call-1'].y
-    expect(eventPositions).toEqual([150, 150, 150, 150, 150, 340])
+    expect(eventPositions).toEqual([150, 150, 150, 150, 150, 150, 150, 150, 340])
     expect(toolPosition).toBeGreaterThan(eventPositions.at(-1)! + 200)
   })
 
@@ -309,7 +393,7 @@ describe('buildRuntimeGraph', () => {
     expect(group).toBeDefined()
     const result = buildRuntimeGraph(detail(), { worker: nodeDetail(calls) }, { expandedGroups: new Set([group!.id]) })
     const groupPosition = result.positions[group!.id]
-    const wrappedMemberPosition = result.positions['call:call-5']
+    const wrappedMemberPosition = result.positions['call:call-6']
     expect(groupPosition).toBeDefined()
     expect(wrappedMemberPosition.y - groupPosition.y).toBeGreaterThanOrEqual(300)
   })

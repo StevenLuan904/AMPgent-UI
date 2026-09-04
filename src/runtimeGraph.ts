@@ -175,6 +175,7 @@ function addEdge(
 }
 
 export function runtimeEventStatus(event: TimelineEvent) {
+  if (event.type.toLowerCase().includes('recovery_scheduled')) return 'completed'
   const terminalSuffixes = ['succeeded', 'completed', 'persisted', 'materialized', 'recorded', 'accepted', 'rejected', 'created']
   if (terminalSuffixes.some((suffix) => event.type.endsWith(`.${suffix}`))) return 'completed'
   if (event.type.endsWith('.started') || event.type.endsWith('.running') || event.type.endsWith('.progress')) return 'running'
@@ -197,6 +198,7 @@ const eventLabels: Record<string, string> = {
   'run.succeeded': '运行完成',
   'run.failed': '运行失败',
   'run.cancelled': '运行已取消',
+  'mvp_human.autoresearch.recovery_scheduled': '恢复调度',
   'tool_call.started': '工具调用开始',
   'tool_call.completed': '工具调用完成',
   'tool_call.succeeded': '工具调用成功',
@@ -204,6 +206,13 @@ const eventLabels: Record<string, string> = {
   'candidate.created': '候选已记录',
   'candidate.scored': '候选已评分',
   'candidate.rejected': '候选已淘汰',
+}
+
+const eventStateLabels: Record<string, string> = { started: '开始', running: '进行中', progress: '进度更新', completed: '完成', succeeded: '成功', failed: '失败', cancelled: '已取消', created: '已创建', persisted: '已持久化', materialized: '已物化', recorded: '已记录', accepted: '已接受', rejected: '已淘汰' }
+
+function displayEventState(type: string) {
+  const suffix = type.split('.').at(-1) ?? type
+  return eventStateLabels[suffix] ?? '事件'
 }
 
 function displayToolName(toolName: string) {
@@ -221,14 +230,12 @@ function displayToolName(toolName: string) {
 function displayEventName(type: string) {
   if (eventLabels[type]) return eventLabels[type]
   const normalized = type.toLowerCase()
-  const suffix = type.split('.').at(-1) ?? type
-  const suffixLabels: Record<string, string> = { started: '开始', running: '进行中', progress: '进度更新', completed: '完成', succeeded: '成功', failed: '失败', cancelled: '已取消', created: '已创建', persisted: '已持久化', materialized: '已物化', recorded: '已记录', accepted: '已接受', rejected: '已淘汰' }
-  const state = suffixLabels[suffix] ?? '事件'
+  const state = displayEventState(type)
   if (/multitarget.*structure/.test(normalized)) return `结构证据 · ${state}`
   if (/scored.*lineage|lineage.*scored/.test(normalized)) return `评分谱系 · ${state}`
   if (/operational_run/.test(normalized)) return `运行记录 · ${state}`
   if (/operational\.call/.test(normalized)) return `工具调用 · ${state}`
-  return `生命周期 · ${suffixLabels[suffix] ?? '事件'}`
+  return `生命周期 · ${state}`
 }
 
 function displayActor(actor: string) {
@@ -240,11 +247,116 @@ function displayActor(actor: string) {
   return '运行参与者'
 }
 
+function integerField(value: unknown) {
+  if (typeof value === 'number' && Number.isInteger(value) && Number.isFinite(value) && value >= 0) return value
+  if (typeof value === 'string' && /^\d+$/.test(value.trim())) return Number(value)
+  return null
+}
+
+function recoveryAttemptLabel(event: TimelineEvent) {
+  if (!event.type.toLowerCase().includes('recovery')) return null
+  const attempt = integerField(record(event.payload).recovery_attempt)
+  return attempt !== null && attempt > 0 ? `第 ${attempt} 次恢复调度` : null
+}
+
+function displayActivityType(activityType: string) {
+  const labels: Record<string, string> = {
+    mark_run_started: '运行启动',
+    persist_autoresearch_score_all_bundle: '评分汇总持久化',
+    plan_autoresearch_actions: '生成规划',
+    persist_autoresearch_action_plan: '规划持久化',
+    execute_autoresearch_action_batch: '执行操作批次',
+    persist_autoresearch_children: '候选持久化',
+    generate_v38_sequence_cell: '序列生成',
+    persist_v38_score_all_generation: '代际评分持久化',
+    evaluate_v38_sequence_metric: '序列指标计算',
+    persist_v38_sequence_metric: '指标持久化',
+    evaluate_v38_sequence_admission: '候选准入评估',
+    persist_v38_sequence_admission: '准入结果持久化',
+    refine_v38_sequences_with_knowledge: '知识引导精修',
+    persist_v38_refinement_children: '精修候选持久化',
+    plan_v38_multitarget_structure: '结构预测规划',
+    predict_v38_multitarget_structure: 'Boltz 结构预测',
+    persist_v38_multitarget_boltz: 'Boltz 结构持久化',
+    score_v38_multitarget_rosetta: 'Rosetta 界面评分',
+    persist_v38_multitarget_rosetta: 'Rosetta 结果持久化',
+    persist_v38_final_portfolio_replay: '最终组合复核',
+    finalize_autoresearch_iteration: '迭代收束',
+    mark_run_succeeded: '运行完成',
+    mark_run_failed: '运行失败',
+    mark_run_cancelled: '运行取消',
+  }
+  return labels[activityType]
+}
+
+function displayErrorCategory(errorCategory: string) {
+  const labels: Record<string, string> = {
+    timeout: '超时',
+    statement_timeout: '数据库超时',
+    timeouterror: '超时',
+    workertimeout: '工作器超时',
+    connectivity: '连接异常',
+    connectionerror: '连接异常',
+    operationalerror: '服务连接异常',
+    unavailable: '服务不可用',
+    permission: '权限不足',
+    permissionerror: '权限不足',
+    worker_execution_not_authorized: '工作器未获授权',
+    not_found: '未找到',
+    notfounderror: '未找到',
+    application_error: '应用错误',
+    valueerror: '应用错误',
+    runtimeerror: '应用错误',
+    activityerror: '活动执行错误',
+    cancelled: '已取消',
+    cancellederror: '已取消',
+    unknown: '未知错误',
+  }
+  return labels[errorCategory.trim().toLowerCase()]
+}
+
+function isTerminalActivityEvent(event: TimelineEvent) {
+  const payload = record(event.payload)
+  const activityId = payload.activity_id
+  const hasActivityIdentity = Boolean(text(payload.workflow_run_id)) && (typeof activityId === 'string' || typeof activityId === 'number')
+  const suffix = event.type.toLowerCase().split('.').at(-1)
+  return hasActivityIdentity && ['succeeded', 'completed', 'failed', 'cancelled'].includes(suffix ?? '')
+}
+
+function latestTerminalActivityEvent(events: TimelineEvent[]) {
+  return events.filter(isTerminalActivityEvent).sort((left, right) => {
+    const leftTime = Date.parse(left.occurred_at)
+    const rightTime = Date.parse(right.occurred_at)
+    return (Number.isFinite(leftTime) ? leftTime : Number.MIN_SAFE_INTEGER) - (Number.isFinite(rightTime) ? rightTime : Number.MIN_SAFE_INTEGER) || left.sequence_no - right.sequence_no
+  }).at(-1)
+}
+
+function executionFacts(events: TimelineEvent[]) {
+  if (!events.some((event) => eventExecutionIdentity(event.payload))) return []
+  const latest = latestTerminalActivityEvent(events)
+  if (!latest) return []
+  const payload = record(latest.payload)
+  const facts: Array<{ label: string; value: string }> = []
+  const activityType = text(payload.activity_type)
+  const activityLabel = activityType ? displayActivityType(activityType) : undefined
+  if (activityLabel) facts.push({ label: stoppedStatuses.has(runtimeEventStatus(latest)) ? '停止位置' : '最近活动', value: activityLabel })
+  const errorCategory = text(payload.error_category) || text(payload.error_type)
+  const errorLabel = errorCategory ? displayErrorCategory(errorCategory) : undefined
+  if (errorLabel) facts.push({ label: '错误类别', value: errorLabel })
+  const completed = integerField(payload.completed)
+  const expected = integerField(payload.expected)
+  if (completed !== null && expected !== null) facts.push({ label: '进度', value: `${completed}/${expected}` })
+  return facts
+}
+
 function eventNode(event: TimelineEvent): GraphStage {
+  const recoveryLabel = recoveryAttemptLabel(event)
   const status = runtimeEventStatus(event)
+  const activityLabel = displayActivityType(text(record(event.payload).activity_type))
+  const eventName = activityLabel ? `${activityLabel} · ${displayEventState(event.type)}` : displayEventName(event.type)
   return {
     id: `event:${event.sequence_no}`,
-    label: displayEventName(event.type),
+    label: recoveryLabel ?? eventName,
     kind: 'decision',
     group: 'observed',
     status,
@@ -252,12 +364,13 @@ function eventNode(event: TimelineEvent): GraphStage {
     total: 1,
     provenance: 'database',
     insight: {
-      grade: status === 'completed' ? 'good' : status === 'stopped' ? 'bad' : status === 'running' ? 'okay' : 'neutral',
-      verdict: statusLabel(status),
+      grade: recoveryLabel ? 'okay' : status === 'completed' ? 'good' : status === 'stopped' ? 'bad' : status === 'running' ? 'okay' : 'neutral',
+      verdict: recoveryLabel ? '已调度' : statusLabel(status),
       reason: `${displayActor(event.actor)} · 序号 ${event.sequence_no}`,
       facts: [
-        { label: '语义', value: displayEventName(event.type) },
+        { label: '语义', value: eventName },
         { label: '序号', value: String(event.sequence_no) },
+        ...(recoveryLabel ? [{ label: '恢复', value: recoveryLabel }] : []),
       ],
       source: 'observer_summary',
     },
@@ -334,11 +447,7 @@ function eventComposition(events: TimelineEvent[]) {
   for (const event of events) activities.set(eventActivityIdentity(event) ?? `event:${event.sequence_no}`, event)
   for (const event of activities.values()) {
     const activityType = text(record(event.payload).activity_type)
-    const name = activityType.includes('plan_autoresearch') ? '生成规划'
-      : activityType.includes('persist_autoresearch_action_plan') ? '规划持久化'
-        : activityType.includes('evaluate_v38_sequence_metric') ? '序列指标计算'
-          : activityType.includes('persist_v38_sequence_metric') ? '指标持久化'
-            : activityType ? '运行活动' : displayEventName(event.type)
+    const name = recoveryAttemptLabel(event) ?? (activityType ? displayActivityType(activityType) ?? '运行活动' : displayEventName(event.type))
     counts.set(name, (counts.get(name) ?? 0) + 1)
   }
   return [...counts.entries()].map(([name, count]) => `${name} ${count}`).join(' · ')
@@ -389,6 +498,11 @@ function runtimeGroupNode(groupedCalls: ToolAttempt[], groupedEvents: TimelineEv
   const statusText = [...statusSummary.entries()].map(([label, count]) => `${label} ${count}`).join(' · ')
   const observedDates = [...groupedCalls.map((call) => observedAt(call)), ...groupedEvents.map((event) => event.occurred_at)].filter((value): value is string => Boolean(value)).sort()
   const observedSpanText = observedDates.length > 1 ? `时间跨度 ${Math.max(0, Math.round((Date.parse(observedDates.at(-1)!) - Date.parse(observedDates[0])) / 1000))} 秒` : '时间范围不完整'
+  const recoveryLabels = [...new Set(groupedEvents.map(recoveryAttemptLabel).filter((value): value is string => Boolean(value)))]
+  const salientFacts = [
+    ...recoveryLabels.map((value) => ({ label: '恢复', value })),
+    ...executionFacts(groupedEvents),
+  ]
   const runtimeType = groupedEvents.length && !groupedCalls.length ? 'event_group' : groupedEvents.length ? 'batch_group' : 'tool_group'
   const countLabel = groupedCalls.length && eventStatuses.length ? `${groupedCalls.length} 次调用 · ${eventStatuses.length} 项活动` : groupedCalls.length ? `${groupedCalls.length} 次调用` : `${eventStatuses.length} 项活动`
   return {
@@ -405,11 +519,12 @@ function runtimeGroupNode(groupedCalls: ToolAttempt[], groupedEvents: TimelineEv
        verdict: countLabel,
        reason: groupingBasis.startsWith('后端执行字段') ? '持久化执行标识 · 同次活动汇总' : groupingBasis.startsWith('后端字段') ? '结构化批次字段 · 同批操作汇总' : '连续同类观测汇总 · 不代表执行因果',
        facts: [
-         { label: '操作构成', value: operationSummary },
-         { label: '状态', value: statusText },
-         { label: '时间', value: observedSpanText },
-         { label: '关系', value: `重试 ${retryCount} · 回退 ${fallbackCount}` },
-      ],
+          ...salientFacts,
+          { label: '操作构成', value: operationSummary },
+          { label: '状态', value: statusText },
+          { label: '时间', value: observedSpanText },
+          { label: '关系', value: `重试 ${retryCount} · 回退 ${fallbackCount}` },
+       ],
       source: 'observer_summary',
     },
     runtime: {
@@ -529,7 +644,8 @@ function computePositions(nodes: GraphStage[]) {
     const lane = laneByType[node.runtime?.node_type ?? 'generation'] ?? 2
     laneCounts[lane] += 1
   }
-  const laneRows = laneCounts.map((count) => count === 0 ? 0 : Math.ceil(count / 5))
+  const laneColumns = laneCounts.map((count) => count > 7 ? 8 : count > 5 ? 6 : 5)
+  const laneRows = laneCounts.map((count, lane) => count === 0 ? 0 : Math.ceil(count / laneColumns[lane]))
   // Expanded aggregate cards contain their own summary and are taller than
   // ordinary cards. Give that lane a larger row step so its local member grid
   // cannot collide with the aggregate card or the following lane.
@@ -550,8 +666,9 @@ function computePositions(nodes: GraphStage[]) {
     const lane = laneByType[node.runtime?.node_type ?? 'generation'] ?? 2
     const index = laneCounters.get(lane) ?? 0
     laneCounters.set(lane, index + 1)
-    const column = index % 5
-    const row = Math.floor(index / 5)
+    const columns = laneColumns[lane] ?? 5
+    const column = index % columns
+    const row = Math.floor(index / columns)
     positions[node.id] = { x: 155 + column * 315, y: (laneY[lane] ?? laneY[2]) + row * (laneRowSteps[lane] ?? 190) }
   })
   return positions
@@ -646,15 +763,20 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
     for (const event of bucket.events) groupIdByEvent.set(`event:${event.sequence_no}`, groupId)
   }
   const expandedGroups = options.expandedGroups ?? new Set<string>()
-  let aggregateIndex = 0
+  let executionIndex = 0
+  let batchIndex = 0
+  let observationIndex = 0
   const callNodes = bucketRecords.flatMap((bucket) => {
     const total = bucket.calls.length + bucket.events.length
     if (total === 1) return [...bucket.calls.map(callNode), ...bucket.events.map(eventNode)]
     const groupId = groupIdFor(bucket)
     const expanded = expandedGroups.has(groupId)
     const groupingBasis = bucket.basis
-    aggregateIndex += 1
-    const displayBatchLabel = groupingBasis.startsWith('后端执行字段') ? `第 ${aggregateIndex} 次执行` : groupingBasis.startsWith('后端字段') ? `第 ${aggregateIndex} 批` : `观测组 ${aggregateIndex}`
+    const displayBatchLabel = groupingBasis.startsWith('后端执行字段')
+      ? `第 ${++executionIndex} 次执行`
+      : groupingBasis.startsWith('后端字段')
+        ? `第 ${++batchIndex} 批`
+        : `观测组 ${++observationIndex}`
     return [runtimeGroupNode(bucket.calls, bucket.events, expanded, groupId, groupingBasis, displayBatchLabel), ...(expanded ? [...bucket.calls.map(callNode), ...bucket.events.map(eventNode)] : [])]
   })
   const nodes = [
@@ -671,6 +793,28 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
   const nodeIds = new Set(nodes.map((node) => node.id))
   const edges: GraphEdgeDetail[] = []
   const seen = new Set<string>()
+  const bucketNodeId = (bucket: { key: string; calls: ToolAttempt[]; events: TimelineEvent[] }) => {
+    if (bucket.calls.length + bucket.events.length > 1) return groupIdFor(bucket)
+    if (bucket.calls[0]) return `call:${bucket.calls[0].id}`
+    return bucket.events[0] ? `event:${bucket.events[0].sequence_no}` : null
+  }
+  const executionSequence = bucketRecords.filter((bucket) => (
+    bucket.basis.startsWith('后端执行字段')
+    || bucket.events.some((event) => event.type.toLowerCase().includes('recovery_scheduled'))
+  ))
+  executionSequence.slice(1).forEach((bucket, index) => {
+    const source = bucketNodeId(executionSequence[index])
+    const target = bucketNodeId(bucket)
+    if (!source || !target || !nodeIds.has(source) || !nodeIds.has(target)) return
+    addEdge(edges, seen, {
+      source,
+      target,
+      label: index === 0 ? '观测先后' : null,
+      rationale: '仅按同一运行中持久化时间与事件序号排列工作流执行簇和恢复调度记录；表示随后观测到，不表示依赖、重试、回退或触发。',
+      provenance: 'derived',
+      relation_kind: 'sequence',
+    })
+  })
   const callIdToNode = (id: string) => {
     const groupId = groupIdByCall.get(id)
     if (groupId && !expandedGroups.has(groupId)) return groupId
