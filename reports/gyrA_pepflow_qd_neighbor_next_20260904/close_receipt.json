@@ -48,7 +48,7 @@
     "materialization_writes": 0,
     "formal_evidence_persistence_status": "deferred_until_pg_history",
     "exact_history_status": "evidence_verification_unavailable",
-    "materialization_status_reason": "index_last_observed_present_but_database_version_and_query_plan_not_closed",
+    "materialization_status_reason": "relevant_backends_zero_but_authorized_drop_index_concurrently_statement_timeout",
     "challenger_filter_policy": "exclude_conflicts_only"
   },
   "execution_safety": {

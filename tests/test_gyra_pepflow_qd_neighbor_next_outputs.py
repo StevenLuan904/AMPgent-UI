@@ -63,4 +63,14 @@ def test_next_batch_receipts_keep_provisional_and_formal_boundaries() -> None:
     assert pg_history["materialization_allowed"] is False
     assert pg_history["materialization_writes"] == 0
     assert pg_history["migration_application"]["last_verified_index_present"] is True
+    assert pg_history["migration_application"]["last_verified_index_flags"]["indisvalid"] is False
+    assert pg_history["migration_application"]["stale_backend_termination"] == "partial"
+    assert pg_history["migration_application"][
+        "relevant_create_index_backend_count_after_termination"
+    ] == 0
+    assert pg_history["migration_application"]["stale_backend_termination_succeeded_count"] == 2
+    assert pg_history["migration_application"]["stale_backend_termination_false_count"] == 1
+    assert pg_history["migration_application"]["recovery_drop_status"] == "statement_timeout"
+    assert pg_history["migration_application"]["recovery_create_attempted"] is False
+    assert pg_history["migration_application"]["recovery_stamp_attempted"] is False
     assert pg_history["migration_application"]["last_verified_explain_scan"] == "Seq Scan"
