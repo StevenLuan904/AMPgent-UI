@@ -1,0 +1,58 @@
+{
+  "schema_version": "ampgent.pool-a-md-compact-delta.1",
+  "observed_at_utc": "2026-09-04T05:30:52.332963Z",
+  "scope": "main_475_only",
+  "identity_key": "subject_run_id+candidate_id",
+  "state_partition": {
+    "expected_candidate_count": 475,
+    "launched_unique": 52,
+    "md_complete_unique": 39,
+    "full_evidence_unique": 36,
+    "analysis_pending_unique": 3,
+    "running_unique": 13,
+    "not_started_unique": 423,
+    "failed_unique": 0,
+    "partition_total_unique": 475
+  },
+  "new_compact_evidence": {
+    "copied_file_count": 8,
+    "new_launch_count": 1,
+    "new_mmgbsa_count": 2,
+    "new_full_evidence_count": 0,
+    "structure_or_trajectory_copied": false,
+    "remote_files_deleted": false
+  },
+  "mmgbsa_only_candidates": [
+    {
+      "target_key": "angpt1",
+      "run_id": "9bcbda95-56a0-52b0-80ba-296fc22a0e4e",
+      "candidate_id": "0ec51e71-56fb-43b2-87a1-d71f83657df9",
+      "mmgbsa_mean_kcal_mol": -84.13998004000081,
+      "mmgbsa_ci95_kcal_mol": [-90.86329595999902, -78.87732546000208],
+      "residue_decomposition_present": true,
+      "interface_pending": true
+    },
+    {
+      "target_key": "pbp2a",
+      "run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
+      "candidate_id": "c6833768-7739-4b53-9752-2fd772270d47",
+      "mmgbsa_mean_kcal_mol": -115.39084398888973,
+      "mmgbsa_ci95_kcal_mol": [-126.62752769333439, -105.69685728444567],
+      "residue_decomposition_present": true,
+      "interface_pending": true
+    }
+  ],
+  "new_launch": {
+    "target_key": "fgf2",
+    "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+    "candidate_id": "d4ea3803-b495-4a80-8c5d-10a446eaf706",
+    "status": "running"
+  },
+  "supervisors": {
+    "md_pid": 3986807,
+    "analysis_pid": 3977733,
+    "status": "alive"
+  },
+  "full_486_note": "successor-11 was not resynchronized in this observation; do not replace the last exact 486-candidate union with this main-475 snapshot",
+  "source_sync_receipt": "compact-sync-20260904T0529Z.json"
+}
