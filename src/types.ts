@@ -52,7 +52,7 @@ export interface GraphStage {
 }
 
 export interface RuntimeNodeMeta {
-  node_type: 'tool_call' | 'lifecycle_event' | 'generation'
+  node_type: 'tool_call' | 'tool_group' | 'lifecycle_event' | 'generation'
   source_id: string
   observed_at: string | null
   actor?: string
@@ -60,6 +60,12 @@ export interface RuntimeNodeMeta {
   attempt?: number
   explicit_relation_count?: number
   candidate_count?: number
+  child_ids?: string[]
+  grouping_basis?: string
+  expanded?: boolean
+  status_breakdown?: string
+  observed_span?: string
+  raw_label?: string
 }
 
 export interface CandidateMetric {
@@ -202,6 +208,7 @@ export interface GraphEdgeDetail {
   label: string | null
   rationale: string
   provenance: 'database' | 'topology' | 'derived'
+  relation_kind?: 'dependency' | 'association' | 'lineage' | 'grouping'
 }
 
 export interface ToolArtifact {

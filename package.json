@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File scripts/dev.ps1",
+    "dev:observer": "powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File scripts/dev.ps1",
+    "dev:control-plane": "powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File scripts/dev.ps1 -FullControlPlane",
     "dev:ui": "vite --host 127.0.0.1 --port 5173 --strictPort",
     "install:start-menu": "powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File scripts/install-start-menu.ps1",
     "uninstall:start-menu": "powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File scripts/uninstall-start-menu.ps1",

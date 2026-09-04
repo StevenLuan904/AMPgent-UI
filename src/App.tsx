@@ -9,6 +9,7 @@ import {
   type Edge,
   type EdgeMouseHandler,
   type NodeMouseHandler,
+  type ReactFlowInstance,
 } from '@xyflow/react'
 import {
   Activity,
@@ -50,6 +51,7 @@ import { LaneLabel, WorkflowNode, type LaneNode, type StageNode } from './Workfl
 import { assertMatchingRunIdentity, type RunIdentity } from './runIdentity'
 import { formatRunTitle } from './runPresentation'
 import { buildRuntimeGraph, type RuntimeGraphModel } from './runtimeGraph'
+import { nodeDetailCacheTtlMs, observerInitialPrefetchCount, observerNodeDetailCacheKey, observerPollingIntervalMs, observerRunDetailCacheKey, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion } from './observerPolling'
 import { schedulerHealthDescription, schedulerHealthPresentation } from './schedulerHealth'
 import type {
   CandidatePreview,
@@ -87,6 +89,25 @@ const statusText: Record<string, string> = {
   completed: '已完成', stopped: '已停止', pending: '待写入',
 }
 
+const eventTypeLabels: Record<string, string> = {
+  'run.created': '运行已创建', 'run.started': '运行开始', 'run.succeeded': '运行完成', 'run.failed': '运行失败', 'run.cancelled': '运行已取消',
+  'tool_call.started': '工具调用开始', 'tool_call.completed': '工具调用完成', 'tool_call.succeeded': '工具调用成功', 'tool_call.failed': '工具调用失败',
+  'candidate.created': '候选已记录', 'candidate.scored': '候选已评分', 'candidate.rejected': '候选已淘汰',
+}
+
+function readableEventType(type: string) {
+  if (eventTypeLabels[type]) return eventTypeLabels[type]
+  const suffix = type.split('.').at(-1) ?? '未命名'
+  const suffixLabels: Record<string, string> = { created: '已创建', started: '开始', running: '进行中', completed: '完成', succeeded: '成功', failed: '失败', cancelled: '已取消', persisted: '已持久化', materialized: '已物化', recorded: '已记录', accepted: '已接受', rejected: '已淘汰', progress: '进度更新' }
+  const normalized = type.toLowerCase()
+  const state = suffixLabels[suffix] ?? suffix
+  if (/multitarget.*structure/.test(normalized)) return `结构证据 · ${state}`
+  if (/scored.*lineage|lineage.*scored/.test(normalized)) return `评分谱系 · ${state}`
+  if (/operational_run/.test(normalized)) return `运行记录 · ${state}`
+  if (/operational\.call/.test(normalized)) return `工具调用 · ${state}`
+  return `生命周期事件 · ${state}`
+}
+
 const metricLabels: Record<string, string> = {
   llamp_log10_mic_um: '最小抑菌浓度预测',
   amp_read_log10_mic_um: '交叉模型最小抑菌浓度预测',
@@ -110,37 +131,107 @@ const professionalTermHelp: Record<string, string> = {
   rosetta: 'Rosetta用于采样并评估蛋白质与短肽的界面构象。',
 }
 
+const runtimeToolLabels: Record<string, string> = {
+  amp_designer: 'AMP Designer',
+  ampgan: 'AMPGAN v2',
+  hydramp: 'HydrAMP',
+  amp_read: 'AMP read',
+  boltz: 'Boltz 2',
+  rosetta: 'Rosetta',
+}
+
 function formatTime(value: string | null) {
   if (!value) return '—'
   return new Intl.DateTimeFormat('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(value))
 }
 
 function readableDataError(cause: unknown, fallback: string) {
-  if (cause instanceof Error && /^(轮次|数据库|无法)/.test(cause.message)) return cause.message
+  if (cause instanceof Error && /^(轮次|数据库|无法|数据服务)/.test(cause.message)) return cause.message
   return fallback
+}
+
+const nodeDetailCache = new Map<string, { detail: NodeDetail; fetchedAt: number }>()
+
+async function fetchJsonWithTimeout<T>(url: string, timeoutMs: number): Promise<T> {
+  const controller = new AbortController()
+  const timeout = window.setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    const response = await fetch(url, { signal: controller.signal })
+    if (!response.ok) throw new Error(`数据服务响应 ${response.status}`)
+    return await response.json() as T
+  } catch (cause) {
+    if (controller.signal.aborted) throw new Error(`数据服务超时（${Math.round(timeoutMs / 1000)} 秒）`)
+    throw cause
+  } finally {
+    window.clearTimeout(timeout)
+  }
+}
+
+type ObserverCacheEnvelope<T> = { version: number; apiBase: string; fetchedAt: number; payload: T }
+
+function readObserverCache<T>(key: string, apiBase: string): { payload: T; fetchedAt: number } | null {
+  try {
+    const raw = window.localStorage.getItem(key)
+    if (!raw) return null
+    const cached = JSON.parse(raw) as Partial<ObserverCacheEnvelope<T>>
+    if (cached.version !== observerSnapshotCacheVersion || cached.apiBase !== normalizeApiBase(apiBase) || typeof cached.fetchedAt !== 'number' || cached.payload === undefined) return null
+    if (Date.now() - cached.fetchedAt < 0 || Date.now() - cached.fetchedAt > observerSnapshotCacheTtlMs) return null
+    return { payload: cached.payload as T, fetchedAt: cached.fetchedAt }
+  } catch {
+    return null
+  }
+}
+
+function writeObserverCache<T>(key: string, apiBase: string, payload: T) {
+  const envelope: ObserverCacheEnvelope<T> = { version: observerSnapshotCacheVersion, apiBase: normalizeApiBase(apiBase), fetchedAt: Date.now(), payload }
+  try {
+    const encoded = JSON.stringify(envelope)
+    if (encoded.length > observerSnapshotCacheMaxBytes) return
+    window.localStorage.setItem(key, encoded)
+  } catch {
+    // Cache is an optimization only; private mode or quota limits must not
+    // affect the authoritative request path.
+  }
 }
 
 function useRunData(enabled: boolean, apiBase: string) {
   const requestedRunId = new URLSearchParams(window.location.search).get('run')
-  const [runs, setRuns] = useState<RunListItem[]>([])
-  const [selectedId, setSelectedIdState] = useState<string | null>(() => requestedRunId ?? window.localStorage.getItem(selectedRunStorageKey))
-  const [detail, setDetail] = useState<RunDetail | null>(null)
+  const initialSelectedId = requestedRunId ?? window.localStorage.getItem(selectedRunStorageKey)
+  const initialCachedDetail = initialSelectedId ? readObserverCache<RunDetail>(observerRunDetailCacheKey(apiBase, initialSelectedId), apiBase) : null
+  const [runs, setRuns] = useState<RunListItem[]>(() => readObserverCache<RunListResponse>(observerRunListCacheKey(apiBase), apiBase)?.payload.runs ?? [])
+  const [selectedId, setSelectedIdState] = useState<string | null>(initialSelectedId)
+  const [detail, setDetail] = useState<RunDetail | null>(initialCachedDetail?.payload ?? null)
   const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!initialCachedDetail)
   const [refreshing, setRefreshing] = useState(false)
+  const [syncingStale, setSyncingStale] = useState(Boolean(initialCachedDetail))
   const [nodeDetails, setNodeDetails] = useState<Record<string, NodeDetail>>({})
+  const [nodeDetailFetch, setNodeDetailFetch] = useState({ requested: 0, loaded: 0, failed: 0 })
   const runsInFlight = useRef(false)
   const detailInFlight = useRef(false)
+  const pendingDetailRunId = useRef<string | null>(null)
+  const detailEpoch = useRef(0)
+  const previousSelectedId = useRef(selectedId)
+  const selectedIdRef = useRef(selectedId)
+  const detailRunIdRef = useRef<string | null>(initialCachedDetail ? initialSelectedId : null)
+  const nodeFetchInFlight = useRef(new Set<string>())
+  const loadedStageKeys = useRef(new Set<string>())
+  const currentStageIds = useRef<string[]>([])
+  const idlePrefetchTimer = useRef<number | null>(null)
   const alignedStructureCounts = useRef<Record<string, number>>({})
   const runIdentities = useRef<Record<string, RunIdentity>>({})
+
+  const reportBackgroundSyncError = useCallback((cause: unknown) => {
+    setError(readableDataError(cause, '同步延迟'))
+    setSyncingStale(true)
+    setLoading(false)
+  }, [])
 
   const loadRuns = useCallback(async () => {
     if (runsInFlight.current) return
     runsInFlight.current = true
     try {
-      const response = await fetch(`${apiBase}/v1/observer/runs?limit=12`)
-      if (!response.ok) throw new Error(`轮次列表读取失败：${response.status}`)
-      const payload = await response.json() as RunListResponse
+      const payload = await fetchJsonWithTimeout<RunListResponse>(`${apiBase}/v1/observer/runs?limit=12`, 15_000)
       runIdentities.current = Object.fromEntries(payload.runs.map((run) => [run.id, {
         id: run.id,
         temporal_workflow_id: run.temporal_workflow_id,
@@ -150,7 +241,11 @@ function useRunData(enabled: boolean, apiBase: string) {
         ...run,
         structure_record_count: Math.max(run.structure_record_count, alignedStructureCounts.current[run.id] ?? 0),
       })))
+      writeObserverCache(observerRunListCacheKey(apiBase), apiBase, payload)
       setSelectedIdState((current) => {
+        // A valid deep link may point to an older run outside the recent-list page.
+        // Keep it and let the authoritative detail endpoint validate it; an invalid
+        // link then fails honestly instead of silently showing another run.
         const next = requestedRunId ?? (current && payload.runs.some((run) => run.id === current) ? current : payload.runs[0]?.id ?? null)
         if (next) window.localStorage.setItem(selectedRunStorageKey, next)
         return next
@@ -160,69 +255,149 @@ function useRunData(enabled: boolean, apiBase: string) {
     }
   }, [apiBase])
 
+  const loadNodeDetail = useCallback(async (runId: string, stageId: string, epoch: number) => {
+    const cacheKey = observerNodeDetailCacheKey(apiBase, runId, stageId)
+    const cached = nodeDetailCache.get(cacheKey)
+    const cacheIsFresh = cached !== undefined && Date.now() - cached.fetchedAt < nodeDetailCacheTtlMs
+    if (cached) {
+      if (selectedIdRef.current === runId && epoch === detailEpoch.current) {
+        setNodeDetails((current) => current[stageId] === cached.detail ? current : { ...current, [stageId]: cached.detail })
+      }
+      if (cacheIsFresh) return true
+    }
+    if (nodeFetchInFlight.current.has(cacheKey)) return Boolean(cached)
+    nodeFetchInFlight.current.add(cacheKey)
+    try {
+      const nodeDetail = await fetchJsonWithTimeout<NodeDetail>(`${apiBase}/v1/observer/runs/${runId}/nodes/${encodeURIComponent(stageId)}`, 12_000)
+      nodeDetailCache.set(cacheKey, { detail: nodeDetail, fetchedAt: Date.now() })
+      if (selectedIdRef.current === runId && epoch === detailEpoch.current) {
+        setNodeDetails((current) => ({ ...current, [stageId]: nodeDetail }))
+        loadedStageKeys.current.add(cacheKey)
+        const loaded = currentStageIds.current.filter((id) => loadedStageKeys.current.has(observerNodeDetailCacheKey(apiBase, runId, id))).length
+        setNodeDetailFetch((current) => ({ ...current, loaded: Math.min(current.requested, loaded) }))
+      }
+      return true
+    } catch {
+      if (selectedIdRef.current === runId && epoch === detailEpoch.current && !cached) {
+        setNodeDetailFetch((current) => ({ ...current, failed: current.failed + 1 }))
+      }
+      return false
+    } finally {
+      nodeFetchInFlight.current.delete(cacheKey)
+    }
+  }, [apiBase])
+
   const loadDetail = useCallback(async (runId: string, quiet = false) => {
-    if (detailInFlight.current) return
+    if (detailInFlight.current) {
+      pendingDetailRunId.current = runId
+      return
+    }
     detailInFlight.current = true
+    const epoch = detailEpoch.current
     if (!quiet) setLoading(true)
     else setRefreshing(true)
     try {
-      const response = await fetch(`${apiBase}/v1/observer/runs/${runId}`)
-      if (!response.ok) throw new Error(`轮次详情读取失败：${response.status}`)
-      const payload = await response.json() as RunDetail
+      const payload = await fetchJsonWithTimeout<RunDetail>(`${apiBase}/v1/observer/runs/${runId}`, 15_000)
       assertMatchingRunIdentity(runIdentities.current[runId] ?? { id: runId }, payload.run)
-      // Keep the authoritative response intact. The runtime graph is built below from
-      // observed calls/events; legacy stage reconciliation must not manufacture stages.
+      if (epoch !== detailEpoch.current) return
+      const stages = payload.graph?.nodes ?? []
+      const sameRun = detailRunIdRef.current === runId
+      detailRunIdRef.current = runId
       setDetail(payload)
-      setNodeDetails({})
+      writeObserverCache(observerRunDetailCacheKey(apiBase, runId), apiBase, payload)
+      // A quiet refresh updates the authoritative run summary without discarding
+      // already loaded stage details. Those rows are cached and refreshed separately.
+      if (!sameRun) setNodeDetails({})
+      currentStageIds.current = stages.map((stage) => stage.id)
+      if (!sameRun) loadedStageKeys.current.clear()
+      const cachedCount = stages.filter((stage) => {
+        const cacheKey = observerNodeDetailCacheKey(apiBase, runId, stage.id)
+        if (nodeDetailCache.has(cacheKey)) loadedStageKeys.current.add(cacheKey)
+        return loadedStageKeys.current.has(cacheKey)
+      }).length
+      setNodeDetailFetch((current) => ({ requested: stages.length, loaded: Math.min(stages.length, cachedCount), failed: sameRun ? current.failed : 0 }))
       setError(null)
+      setSyncingStale(false)
       setLoading(false)
 
-      // The run summary is useful even when one legacy node-detail endpoint is slow.
-      // Enrichment is deliberately best-effort and never blocks the event/candidate graph.
-      const entries = await Promise.all((payload.graph?.nodes ?? []).map(async (stage) => {
-        const controller = new AbortController()
-        const timeout = window.setTimeout(() => controller.abort(), 20000)
-        try {
-          const nodeResponse = await fetch(`${apiBase}/v1/observer/runs/${runId}/nodes/${encodeURIComponent(stage.id)}`, { signal: controller.signal })
-          return [stage.id, nodeResponse.ok ? await nodeResponse.json() as NodeDetail : undefined] as const
-        } catch {
-          return [stage.id, undefined] as const
-        } finally {
-          window.clearTimeout(timeout)
+      // Only prefetch the first small slice. The graph is interactive immediately;
+      // remaining stage rows are pulled one-by-one while the document is idle.
+      const initialStages = stages.slice(0, observerInitialPrefetchCount(stages.length))
+      void Promise.all(initialStages.map((stage) => loadNodeDetail(runId, stage.id, epoch)))
+      if (idlePrefetchTimer.current !== null) window.clearTimeout(idlePrefetchTimer.current)
+      let nextIndex = initialStages.length
+      const pump = () => {
+        if (epoch !== detailEpoch.current || nextIndex >= stages.length) return
+        if (document.hidden) {
+          idlePrefetchTimer.current = window.setTimeout(pump, 1_500)
+          return
         }
-      }))
-      const details = Object.fromEntries(entries.filter((entry): entry is [string, NodeDetail] => entry[1] !== undefined))
-      setNodeDetails(details)
+        const stage = stages[nextIndex++]
+        void loadNodeDetail(runId, stage.id, epoch).finally(() => {
+          idlePrefetchTimer.current = window.setTimeout(pump, 500)
+        })
+      }
+      if (nextIndex < stages.length) idlePrefetchTimer.current = window.setTimeout(pump, 1_200)
     } catch (cause) {
-      setError(readableDataError(cause, '无法连接观察器接口'))
+      if (epoch === detailEpoch.current) {
+        setError(readableDataError(cause, '无法连接观察器接口'))
+        setSyncingStale(true)
+      }
     } finally {
       detailInFlight.current = false
-      setLoading(false)
-      setRefreshing(false)
+      if (epoch === detailEpoch.current) {
+        setLoading(false)
+        setRefreshing(false)
+      }
+      const pendingRunId = pendingDetailRunId.current
+      pendingDetailRunId.current = null
+      if (pendingRunId && pendingRunId !== runId) void loadDetail(pendingRunId)
     }
-  }, [apiBase])
+  }, [apiBase, loadNodeDetail])
+
+  useEffect(() => {
+    selectedIdRef.current = selectedId
+    if (previousSelectedId.current === selectedId) return
+    previousSelectedId.current = selectedId
+    detailEpoch.current += 1
+    detailRunIdRef.current = null
+    if (idlePrefetchTimer.current !== null) window.clearTimeout(idlePrefetchTimer.current)
+    setDetail(null)
+    setNodeDetails({})
+    setNodeDetailFetch({ requested: 0, loaded: 0, failed: 0 })
+    setLoading(Boolean(selectedId))
+  }, [selectedId])
 
   useEffect(() => {
     if (!enabled) {
       setLoading(false)
       return
     }
-    setLoading(true)
-    loadRuns().catch((cause) => {
-      setError(readableDataError(cause, '无法连接观察器接口'))
-      setLoading(false)
-    })
-  }, [enabled, loadRuns])
+    loadRuns().catch(reportBackgroundSyncError)
+  }, [enabled, loadRuns, reportBackgroundSyncError])
 
   useEffect(() => {
     if (!enabled || !selectedId) return
-    void loadDetail(selectedId)
+    void loadDetail(selectedId, detailRunIdRef.current === selectedId).catch(reportBackgroundSyncError)
+    return () => { pendingDetailRunId.current = null }
+  }, [enabled, loadDetail, reportBackgroundSyncError, selectedId])
+
+  useEffect(() => {
+    if (!enabled) return
     const timer = window.setInterval(() => {
-      void loadRuns()
-      void loadDetail(selectedId, true)
-    }, 5000)
+      if (!document.hidden) void loadRuns().catch(reportBackgroundSyncError)
+    }, 30_000)
     return () => window.clearInterval(timer)
-  }, [enabled, selectedId, loadDetail, loadRuns])
+  }, [enabled, loadRuns, reportBackgroundSyncError])
+
+  useEffect(() => {
+    if (!enabled || !selectedId) return
+    const intervalMs = observerPollingIntervalMs(detail?.run.status)
+    const timer = window.setInterval(() => {
+      if (!document.hidden) void loadDetail(selectedId, true).catch(reportBackgroundSyncError)
+    }, intervalMs)
+    return () => window.clearInterval(timer)
+  }, [detail?.run.status, enabled, loadDetail, reportBackgroundSyncError, selectedId])
 
   const retry = useCallback(async () => {
     setError(null)
@@ -241,21 +416,42 @@ function useRunData(enabled: boolean, apiBase: string) {
     setSelectedIdState(runId)
   }, [])
 
-  return { runs, selectedId, setSelectedId, detail, nodeDetails, error, loading, refreshing, retry, refresh: () => selectedId && loadDetail(selectedId, true) }
+  useEffect(() => {
+    const cachedRuns = readObserverCache<RunListResponse>(observerRunListCacheKey(apiBase), apiBase)
+    if (cachedRuns) setRuns(cachedRuns.payload.runs)
+    if (!selectedId) return
+    const cachedDetail = readObserverCache<RunDetail>(observerRunDetailCacheKey(apiBase, selectedId), apiBase)
+    if (cachedDetail && cachedDetail.payload.run.id === selectedId) {
+      detailRunIdRef.current = selectedId
+      setDetail(cachedDetail.payload)
+      setSyncingStale(true)
+      setLoading(false)
+      return
+    }
+    detailRunIdRef.current = null
+    setDetail(null)
+    setNodeDetails({})
+    setNodeDetailFetch({ requested: 0, loaded: 0, failed: 0 })
+    setSyncingStale(false)
+    setLoading(true)
+  }, [apiBase, selectedId])
+
+  return { runs, selectedId, setSelectedId, detail, nodeDetails, nodeDetailFetch, error, loading, refreshing, syncingStale, retry, refresh: () => selectedId && loadDetail(selectedId, true) }
 }
 
-function RunList({ runs, selectedId, onSelect }: { runs: RunListItem[]; selectedId: string | null; onSelect: (id: string) => void }) {
+function RunList({ runs, selectedId, graphObservedCalls, onSelect }: { runs: RunListItem[]; selectedId: string | null; graphObservedCalls: number | null; onSelect: (id: string) => void }) {
   if (!runs.length) {
     return <div className="run-list"><div className="run-list-empty"><Database /><span><b>暂无可用运行数据</b><small>观察器接口未返回可展示的 PostgreSQL 运行记录。</small></span></div></div>
   }
   return (
     <div className="run-list">
+      {!runs.some((run) => run.id === selectedId) && selectedId && <div className="run-list-missing"><b>当前运行不在最近列表</b><small>仍以 URL 指定的 PostgreSQL run id 读取详情，不会高亮其他运行。</small></div>}
       {runs.map((run) => (
         <button key={run.id} className={`run-row ${run.id === selectedId ? 'active' : ''}`} onClick={() => onSelect(run.id)}>
           <span className={`run-status-dot status-${run.status}`} />
           <span className="run-row-copy">
                 <strong>{formatRunTitle(run)}</strong>
-            <small>{formatTime(run.created_at)} · {run.tool_call_count} 次工具运行</small>
+            <small title="列表统计来自运行记录；是否已映射到运行图以当前详情为准.">{formatTime(run.created_at)} · {run.tool_call_count} 条工具记录{run.id === selectedId && run.tool_call_count > 0 && graphObservedCalls === 0 ? ' · 尚未映射到运行图' : ''}</small>
           </span>
           <ChevronRight />
         </button>
@@ -267,6 +463,7 @@ function RunList({ runs, selectedId, onSelect }: { runs: RunListItem[]; selected
 function Sidebar({
   runs,
   selectedId,
+  graphObservedCalls,
   structureRun,
   activeView,
   onView,
@@ -275,6 +472,7 @@ function Sidebar({
 }: {
   runs: RunListItem[]
   selectedId: string | null
+  graphObservedCalls: number | null
   structureRun: RunListItem | null
   activeView: 'overview' | 'analysis' | 'evidence'
   onView: (view: 'overview' | 'analysis' | 'evidence') => void
@@ -290,7 +488,7 @@ function Sidebar({
         <button className={activeView === 'evidence' ? 'active' : ''} onClick={() => onView('evidence')}><Database />证据库</button>
       </nav>
       <div className="sidebar-label runs-label">轮次 · 科学运行</div>
-      <RunList runs={runs} selectedId={selectedId} onSelect={onSelect} />
+      <RunList runs={runs} selectedId={selectedId} graphObservedCalls={graphObservedCalls} onSelect={onSelect} />
       <div className="sidebar-sections">
         <button><span><SparkIcon icon="sequence" /></span><b>序列设计</b><small>生成模型与十一项指标</small></button>
         <button><span><GitBranch /></span><b>多靶点</b><small>原位与错误口袋对照</small></button>
@@ -313,9 +511,10 @@ function SparkIcon({ icon }: { icon: string }) {
   return icon === 'sequence' ? <Activity /> : <CircleDot />
 }
 
-function CanvasHeader({ detail, refreshing, selectionMode, selectedCount, onRefresh, onToggleSelection }: {
+function CanvasHeader({ detail, refreshing, syncingStale, selectionMode, selectedCount, onRefresh, onToggleSelection }: {
   detail: RunDetail
   refreshing: boolean
+  syncingStale: boolean
   selectionMode: boolean
   selectedCount: number
   onRefresh: () => void
@@ -333,10 +532,11 @@ function CanvasHeader({ detail, refreshing, selectionMode, selectedCount, onRefr
   const schedulerHealthTitle = temporalObservability
     ? `${schedulerHealthDescription(temporalObservability)}${temporalObservability.observed_at ? ` · ${formatTime(temporalObservability.observed_at)} 观测` : ''}`
     : ''
+  const isAcceptanceFixture = detail.source !== 'postgresql'
   return (
     <header className="canvas-header">
       <div className="canvas-title-block">
-        <div className="eyebrow"><span>轮次 · 正式科学运行</span></div>
+        <div className="eyebrow"><span>{syncingStale ? '上次读取 · 正在同步' : isAcceptanceFixture ? '验收数据 · 只读夹具' : '轮次 · 正式科学运行'}</span></div>
         <h1>{isStructureReview ? '短肽结构证据复核' : '序列优先的短肽设计'}</h1>
         <div className="round-meta">
           <span>{formatTime(detail.run.created_at)} 创建</span><i />
@@ -363,6 +563,7 @@ function CanvasHeader({ detail, refreshing, selectionMode, selectedCount, onRefr
 function GraphView({
   detail,
   runtimeGraph,
+  syncingStale,
   analysisSnapshot,
   persistedDistributions,
   selectedStage,
@@ -372,9 +573,11 @@ function GraphView({
   onSelect,
   onToggleAnalysis,
   onSelectEdge,
+  onToggleGroup,
 }: {
   detail: RunDetail
   runtimeGraph: RuntimeGraphModel
+  syncingStale: boolean
   analysisSnapshot: AnalysisSnapshot | null
   persistedDistributions: Record<string, ResultDistributionData>
   selectedStage: string | null
@@ -384,7 +587,26 @@ function GraphView({
   onSelect: (id: string) => void
   onToggleAnalysis: (id: string) => void
   onSelectEdge: (edge: GraphEdgeDetail) => void
+  onToggleGroup: (id: string) => void
 }) {
+  const flowInstance = useRef<ReactFlowInstance<LaneNode | StageNode, Edge> | null>(null)
+  useEffect(() => {
+    const applyChineseControlLabels = () => {
+      const root = document.querySelector('.graph-area')
+      if (!root) return
+      const labels: Array<[string, string]> = [
+        ['.react-flow__controls-zoomin', '放大画布'],
+        ['.react-flow__controls-zoomout', '缩小画布'],
+      ]
+      labels.forEach(([selector, label]) => {
+        const control = root.querySelector<HTMLElement>(selector)
+        control?.setAttribute('aria-label', label)
+        control?.setAttribute('title', label)
+      })
+    }
+    const frame = window.requestAnimationFrame(applyChineseControlLabels)
+    return () => window.cancelAnimationFrame(frame)
+  }, [detail.run.id])
   const nodes = useMemo<Array<StageNode | LaneNode>>(() => [
     ...runtimeGraph.nodes.map((stage): StageNode => ({
       id: stage.id,
@@ -398,36 +620,43 @@ function GraphView({
           ?? distributionForStage(analysisSnapshot, detail, stage.id)
           ?? { label: '节点结果', unit: '条', values: [], source: '尚无数值结果', direction: 'neutral' },
         selected: selectionMode ? analysisSelection.includes(stage.id) : selectedStage === stage.id,
+        onToggleGroup,
       },
       draggable: false,
     })),
-  ], [analysisSelection, analysisSnapshot, detail, persistedDistributions, runtimeGraph, selectedStage, selectionMode])
+  ], [analysisSelection, analysisSnapshot, detail, onToggleGroup, persistedDistributions, runtimeGraph, selectedStage, selectionMode])
   const stageById = useMemo(() => Object.fromEntries(runtimeGraph.nodes.map((node) => [node.id, node])), [runtimeGraph.nodes])
   const edges = useMemo<Edge[]>(() => runtimeGraph.edges.map((edge, index) => {
     const source = stageById[edge.source] as GraphStage | undefined
     const active = source?.status === 'completed' || source?.status === 'running'
     const isSelected = selectedEdge?.source === edge.source && selectedEdge?.target === edge.target
+    const isDependency = edge.relation_kind === 'dependency'
+    const isAssociation = edge.relation_kind === 'association' || edge.relation_kind === 'lineage' || edge.relation_kind === 'grouping'
+    const stroke = isSelected ? '#2257ee' : isDependency ? '#8793a5' : isAssociation ? '#c3cad6' : active ? '#aab4c2' : '#d6dbe3'
     return {
       id: `${edge.source}-${edge.target}-${index}`,
       source: edge.source,
       target: edge.target,
-      type: 'default',
-      pathOptions: { curvature: 0.32 },
+      type: 'smoothstep',
+      pathOptions: { offset: 22, stepPosition: 0.55 },
       animated: source?.status === 'running',
       label: edge.provenance === 'derived' ? undefined : edge.label ?? undefined,
-      labelStyle: { fill: '#536176', fontSize: 8, fontWeight: 600 },
-      labelBgStyle: { fill: '#ffffff', fillOpacity: 0.94 },
+      labelStyle: { fill: '#536176', fontSize: 10, fontWeight: 600 },
+      labelBgStyle: { fill: '#ffffff', fillOpacity: 0.98 },
       labelBgPadding: [6, 4],
       labelBgBorderRadius: 5,
       data: { detail: edge },
-      markerEnd: { type: MarkerType.ArrowClosed, width: 12, height: 12, color: isSelected ? '#2257ee' : active ? '#111827' : '#cbd1dc' },
-      style: { stroke: isSelected ? '#2257ee' : active ? '#111827' : '#cbd1dc', strokeWidth: isSelected ? 2.8 : active ? 1.8 : 1.3, strokeDasharray: edge.provenance === 'derived' ? '5 4' : undefined },
+      markerEnd: { type: MarkerType.ArrowClosed, width: 11, height: 11, color: stroke },
+      style: { stroke, strokeWidth: isSelected ? 2 : isDependency ? 1.4 : 1.15, strokeDasharray: isAssociation || edge.provenance === 'derived' ? '4 5' : undefined },
     }
   }), [runtimeGraph.edges, selectedEdge, stageById])
   const handleNodeClick: NodeMouseHandler = (_, node) => {
     if (node.type !== 'stage') return
     if (selectionMode) onToggleAnalysis(node.id)
     else onSelect(node.id)
+  }
+  const handleNodeDoubleClick: NodeMouseHandler = (_, node) => {
+    if (node.type === 'stage' && (node.data as StageNode['data']).stage.runtime?.node_type === 'tool_group') onToggleGroup(node.id)
   }
   const handleEdgeClick: EdgeMouseHandler = (_, edge) => {
     const edgeDetail = (edge.data as { detail?: GraphEdgeDetail } | undefined)?.detail
@@ -437,14 +666,16 @@ function GraphView({
   return (
     <div className="graph-area">
       <ReactFlow
+        key={detail.run.id}
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
         onNodeClick={handleNodeClick}
+        onNodeDoubleClick={handleNodeDoubleClick}
         onEdgeClick={handleEdgeClick}
-        fitView
-        fitViewOptions={{ padding: 0.2, maxZoom: 0.85 }}
-        defaultViewport={{ x: 22, y: 92, zoom: 0.72 }}
+        onInit={(instance) => { flowInstance.current = instance }}
+        fitViewOptions={{ padding: 0.16, minZoom: 0.58, maxZoom: 0.86 }}
+        defaultViewport={{ x: 22, y: 68, zoom: 0.82 }}
         minZoom={0.2}
         maxZoom={1.35}
         proOptions={{ hideAttribution: true }}
@@ -452,12 +683,16 @@ function GraphView({
         elementsSelectable
       >
         <Background variant={BackgroundVariant.Dots} gap={26} size={1} color="#e8ebf1" />
-        <Controls showInteractive={false} position="bottom-left" />
+        <Controls showInteractive={false} showFitView={false} position="bottom-left" />
       </ReactFlow>
+      <button className="runtime-fit-button" aria-label="适合画布" title="适合画布" onClick={() => flowInstance.current?.setViewport({ x: 22, y: 68, zoom: 0.82 }, { duration: 180 })}>适合画布</button>
+      <div className={`runtime-lane-labels ${runtimeGraph.stats.observedCalls === 0 ? 'compact' : ''}`} aria-hidden="true"><span><b>01</b>观测时间轨<small>按时间从左至右</small></span><span><b>02</b>工具调用<small>{runtimeGraph.stats.observedCalls > 0 ? '同段聚合，可展开尝试' : runtimeGraph.gaps.some((gap) => gap.includes('节点明细正在')) ? '正在读取工具调用明细' : '未观测到工具调用'}</small></span><span><b>03</b>代际 / 候选<small>谱系与记录独立呈现</small></span></div>
+      {runtimeGraph.stats.observedCalls === 0 && runtimeGraph.sourceFetch && runtimeGraph.sourceFetch.loaded + runtimeGraph.sourceFetch.failed < runtimeGraph.sourceFetch.requested && <div className="runtime-tool-loading" role="status"><i /><span>正在读取工具调用明细…</span><b>{runtimeGraph.sourceFetch.loaded}/{runtimeGraph.sourceFetch.requested}</b></div>}
       <div className="runtime-graph-summary" role="status">
-        <div className="runtime-graph-summary-head"><span className="runtime-live-dot" /><b>真实运行图</b><small>节点 {runtimeGraph.nodes.length} · 显式边 {runtimeGraph.edges.length}</small></div>
-        <div className="runtime-graph-stats"><span>调用 {runtimeGraph.stats.observedCalls}</span><span>事件 {runtimeGraph.stats.observedEvents}</span><span>重复 {runtimeGraph.stats.repeatedTools}</span><span>重试 {runtimeGraph.stats.retries}</span><span>并行组 {runtimeGraph.stats.parallelGroups}</span>{runtimeGraph.stats.cycles > 0 && <span>循环 {runtimeGraph.stats.cycles}</span>}</div>
+        <div className="runtime-graph-summary-head"><span className="runtime-live-dot" /><b>{syncingStale ? '上次读取 · 正在同步' : detail.source === 'postgresql' ? '真实运行图' : '验收运行图'}</b><small>可见 {runtimeGraph.nodes.length} · 关系 {runtimeGraph.edges.length}</small></div>
+        <div className="runtime-graph-stats"><span>调用 {runtimeGraph.stats.observedCalls}</span><span>事件 {runtimeGraph.stats.observedEvents}</span><span>聚合 {Object.keys(runtimeGraph.toolGroups).length}</span><span>重试 {runtimeGraph.stats.retries}</span><span>并行组 {runtimeGraph.stats.parallelGroups}</span>{runtimeGraph.stats.cycles > 0 && <span>依赖循环 {runtimeGraph.stats.cycles}</span>}</div>
         {!!runtimeGraph.gaps.length && <p title={runtimeGraph.gaps.join('；')}>数据契约缺口 {runtimeGraph.gaps.length} 项 · 未补画未知关系</p>}
+        <div className="runtime-graph-legend"><span><i className="legend-dot time" />位置按观测时间</span><span><i className="legend-line dependency" />依赖</span><span><i className="legend-line association" />关联/分组</span><span className="runtime-graph-nav">{runtimeGraph.nodes.length > 12 ? `首屏优先可读，后续还有约 ${runtimeGraph.nodes.length - 12} 项可向右平移` : '当前事实均在初始范围内'}</span></div>
       </div>
     </div>
   )
@@ -571,7 +806,7 @@ function ToolAttemptDisclosure({ call }: { call: ToolAttempt }) {
       <summary>
         <span className={`attempt-state ${call.status}`} aria-hidden="true" />
         <span className="attempt-name">
-          <b title="专业计算工具名称；其输出在此作为可追溯的计算证据。">{call.tool_name}</b>
+          <b title={`${professionalTermHelp[call.tool_name] ?? '工具调用事实'} 原始键：${call.tool_name}`}>{runtimeToolLabels[call.tool_name] ?? '工具调用'}</b>
           <small title={context ? `${context.target} · ${lane}` : call.tool_version}>
             {context ? `${context.target} · ${lane}` : inputs.plugin ? String(inputs.plugin) : '持久化运行'} <i /> 第 {call.attempt} 次尝试
           </small>
@@ -672,9 +907,16 @@ function Inspector({ detail, stageId, analysisSnapshot, distributionOverride, on
     const controller = new AbortController()
     const load = async () => {
       try {
-        const response = await fetch(`${getConfiguredApiBase()}/v1/observer/runs/${detail.run.id}/nodes/${stageId}`, { signal: controller.signal })
-        if (!response.ok) throw new Error(`node evidence: ${response.status}`)
-        setNodeDetail(await response.json() as NodeDetail)
+        const cacheKey = observerNodeDetailCacheKey(getConfiguredApiBase(), detail.run.id, stageId)
+        const cached = nodeDetailCache.get(cacheKey)
+        if (cached && Date.now() - cached.fetchedAt < nodeDetailCacheTtlMs) {
+          setNodeDetail(cached.detail)
+          setDetailError(null)
+          return
+        }
+        const nodeDetail = await fetchJsonWithTimeout<NodeDetail>(`${getConfiguredApiBase()}/v1/observer/runs/${detail.run.id}/nodes/${encodeURIComponent(stageId)}`, 12_000)
+        nodeDetailCache.set(cacheKey, { detail: nodeDetail, fetchedAt: Date.now() })
+        setNodeDetail(nodeDetail)
         setDetailError(null)
       } catch (cause) {
         if (!controller.signal.aborted) setDetailError(cause instanceof Error ? cause.message : '节点证据读取失败')
@@ -682,8 +924,7 @@ function Inspector({ detail, stageId, analysisSnapshot, distributionOverride, on
     }
     setNodeDetail(null)
     void load()
-    const timer = window.setInterval(load, 5000)
-    return () => { controller.abort(); window.clearInterval(timer) }
+    return () => { controller.abort() }
   }, [detail.run.id, stageId])
 
   return (
@@ -754,7 +995,7 @@ function Inspector({ detail, stageId, analysisSnapshot, distributionOverride, on
       )}
       <details className="detail-disclosure timeline-disclosure">
         <summary><Clock3 />数据库事件 <span>{detail.events.length}</span><ChevronRight /></summary>
-        <div className="event-list detail-content">{detail.events.slice(0, 12).map((event) => <div className="event-row" key={event.sequence_no}><i /><div><b>{event.type.replaceAll('.', ' / ')}</b><span>{event.actor} · {formatTime(event.occurred_at)}</span></div></div>)}</div>
+        <div className="event-list detail-content">{detail.events.slice(0, 12).map((event) => <div className="event-row" key={event.sequence_no}><i /><div><b>{readableEventType(event.type)}</b><span>{event.type} · {event.actor} · {formatTime(event.occurred_at)}</span></div></div>)}</div>
       </details>
     </aside>
   )
@@ -776,29 +1017,33 @@ function EdgeInspector({ graph, edge, onClose }: { graph: RuntimeGraphModel; edg
   )
 }
 
-function RuntimeInspector({ detail, graph, nodeId, onClose }: { detail: RunDetail; graph: RuntimeGraphModel; nodeId: string; onClose: () => void }) {
+function RuntimeInspector({ detail, graph, nodeId, onClose, onToggleGroup }: { detail: RunDetail; graph: RuntimeGraphModel; nodeId: string; onClose: () => void; onToggleGroup: (id: string) => void }) {
   const node = graph.nodes.find((item) => item.id === nodeId)
   if (!node) return null
   const call = nodeId.startsWith('call:') ? graph.calls[nodeId.slice(5)] : undefined
   const event = nodeId.startsWith('event:') ? graph.events[nodeId.slice(6)] : undefined
   const candidate = nodeId.startsWith('candidate:') ? detail.candidates.find((item) => item.id === nodeId.slice(10)) : undefined
   const generation = nodeId.startsWith('generation:') ? nodeId.slice(11) : undefined
+  const groupCallIds = node.runtime?.node_type === 'tool_group' ? node.runtime.child_ids ?? [] : []
+  const groupCalls = groupCallIds.map((id) => graph.calls[id]).filter((item): item is ToolAttempt => Boolean(item))
+  const groupExpanded = groupCallIds.some((id) => graph.nodes.some((item) => item.id === `call:${id}`))
   return (
     <aside className="inspector expanded-inspector runtime-inspector">
       <div className="inspector-header">
-        <div><small>运行节点 · 数据库直读</small><h2 title={node.label}>{node.label}</h2></div>
+        <div><small>{node.runtime?.node_type === 'tool_group' ? '运行节点 · 可追溯聚合' : '运行节点 · 数据库直读'}</small><h2 title={node.label}>{node.label}</h2></div>
         <button className="icon-button" aria-label="关闭运行节点详情" onClick={onClose}><X /></button>
       </div>
       <section className={`scientific-summary grade-${node.insight.grade}`}>
-        <div><small>{node.runtime?.node_type === 'tool_call' ? '工具调用事实' : node.runtime?.node_type === 'lifecycle_event' ? '生命周期事件事实' : '候选数据事实'}</small><strong><i />{node.insight.verdict}</strong></div>
+        <div><small>{node.runtime?.node_type === 'tool_call' ? '工具调用事实' : node.runtime?.node_type === 'tool_group' ? '工具调用聚合事实' : node.runtime?.node_type === 'lifecycle_event' ? '生命周期事件事实' : '候选数据事实'}</small><strong><i />{node.insight.verdict}</strong></div>
         <p>{node.insight.reason}</p>
         <span>{node.insight.facts.map((fact) => `${fact.label} ${fact.value}`).join(' · ')}</span>
       </section>
+      {node.runtime?.node_type === 'tool_group' && <section className="inspector-section runtime-group-section"><div className="section-title"><h3>重复调用明细</h3><button className="group-toggle" onClick={() => onToggleGroup(node.id)}>{groupExpanded ? '收起尝试' : '展开尝试'}</button></div><p className="runtime-note">默认只显示聚合事实；双击图中聚合节点或使用此按钮，可查看每次尝试。卡面不展示内部标识，详情保留原始聚合依据。</p><code className="runtime-raw-key">聚合依据：{node.runtime.grouping_basis ?? '未返回'}</code><div className="runtime-group-list">{groupCalls.map((item) => <div key={item.id}><span className={`attempt-state ${item.status}`} /><b>尝试 {item.attempt}</b><small>{statusText[item.status] ?? item.status} · {item.id.slice(0, 8)}</small></div>)}</div></section>}
       {call && <section className="inspector-section"><div className="section-title"><h3>工具调用与证据</h3><span className={`stage-badge ${node.status}`}>{statusText[call.status] ?? call.status}</span></div><ToolAttemptDisclosure call={call} /></section>}
-      {event && <section className="inspector-section"><div className="analysis-kicker"><Clock3 />事件 payload</div><div className="runtime-event-meta"><b>{event.actor}</b><span>序号 {event.sequence_no} · {formatTime(event.occurred_at)}</span></div><pre className="runtime-json">{JSON.stringify(event.payload, null, 2)}</pre></section>}
-      {candidate && <section className="inspector-section"><div className="analysis-kicker"><GitBranch />候选记录</div><code className="runtime-sequence">{candidate.sequence}</code><div className="fact-grid"><Fact label="代际" value={candidate.generation ?? '—'} /><Fact label="父候选" value={candidate.parent_id ?? '未返回'} /><Fact label="生成调用" value={candidate.generator_call_id ?? '未返回'} /><Fact label="序列长度" value={candidate.length} /></div></section>}
+      {event && <section className="inspector-section"><div className="analysis-kicker"><Clock3 />事件 payload</div><div className="runtime-event-meta"><b>{event.actor}</b><span>序号 {event.sequence_no} · {formatTime(event.occurred_at)}</span></div><div className="runtime-raw-key">原始事件键：{event.type}</div><pre className="runtime-json">{JSON.stringify(event.payload, null, 2)}</pre></section>}
+      {candidate && <section className="inspector-section"><div className="analysis-kicker"><GitBranch />候选记录</div><code className="runtime-sequence">{candidate.sequence}</code><div className="fact-grid"><Fact label="代际" value={candidate.generation ?? '—'} /><Fact label="父候选" value={candidate.parent_id ?? '未返回'} /><Fact label="生成调用" value={candidate.generator_call_id ?? '未返回'} /><Fact label="序列长度" value={candidate.length} /></div>{candidate.reasons.length > 0 && <div className="runtime-reasons"><span>后端返回原因（未用于状态推断）</span>{candidate.reasons.map((reason) => <b key={reason}>{reason}</b>)}</div>}</section>}
       {generation && <section className="inspector-section"><div className="analysis-kicker"><Layers3 />代际分组</div><p className="runtime-note">此节点由候选记录中明确的 <code>generation={generation}</code> 字段聚合而成；它不是预设阶段，也不代表执行依赖。</p></section>}
-      <section className="inspector-section runtime-provenance"><div className="analysis-kicker"><Database />图构造契约</div><p>可见节点来自本次运行详情返回的工具调用、生命周期事件、候选记录和显式字段。未返回的依赖关系不在图中补画。</p><ul>{graph.gaps.slice(0, 5).map((gap) => <li key={gap}>{gap}</li>)}</ul></section>
+      <section className="inspector-section runtime-provenance"><div className="analysis-kicker"><Database />图构造契约</div><p>可见节点来自本次运行详情返回的工具调用、生命周期事件、候选记录和显式字段。未返回的依赖关系不在图中补画；关联边不表示因果。</p><ul>{graph.gaps.slice(0, 5).map((gap) => <li key={gap}>{gap}</li>)}</ul></section>
     </aside>
   )
 }
@@ -879,8 +1124,12 @@ export default function App() {
   const [analysisSelection, setAnalysisSelection] = useState<string[]>([])
   const [analysisSnapshot, setAnalysisSnapshot] = useState<AnalysisSnapshot | null>(null)
   const [persistedDistributions, setPersistedDistributions] = useState<Record<string, ResultDistributionData>>({})
+  const [expandedRuntimeGroups, setExpandedRuntimeGroups] = useState<Set<string>>(new Set())
   const structureRun = useMemo(() => data.runs.find((run) => run.structure_record_count > 0) ?? null, [data.runs])
-  const runtimeGraph = useMemo(() => data.detail ? buildRuntimeGraph(data.detail, data.nodeDetails) : null, [data.detail, data.nodeDetails])
+  const runtimeGraph = useMemo(() => data.detail ? buildRuntimeGraph(data.detail, data.nodeDetails, { expandedGroups: expandedRuntimeGroups, sourceFetch: data.nodeDetailFetch }) : null, [data.detail, data.nodeDetails, data.nodeDetailFetch, expandedRuntimeGroups])
+  useEffect(() => {
+    setExpandedRuntimeGroups(new Set())
+  }, [data.detail?.run.id])
   useEffect(() => {
     let cancelled = false
     const liveAnalyticsEnabled = import.meta.env.VITE_ANALYTICS_API_ENABLED === 'true'
@@ -906,11 +1155,12 @@ export default function App() {
   const toggleAnalysisNode = (id: string) => setAnalysisSelection((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
   return (
     <div className="app-shell">
-      <div className="topbar"><button><ArrowLeft /></button><div className="brand"><span><FlaskConical /></span>AMPgent <i>科学分析</i></div><button className={`source-state ${activeView === 'overview' && data.error ? 'has-error' : ''}`} onClick={() => setConnectionOpen(true)} title="查看或修改只读数据连接"><Database /><span>{activeView !== 'overview' ? '分析数据 · 只读' : data.detail ? '数据库已连接' : data.error ? '观察器不可用' : '正在连接'}</span><span className="live-dot" /><Settings2 /></button></div>
+      <div className="topbar"><button><ArrowLeft /></button><div className="brand"><span><FlaskConical /></span>AMPgent <i>科学分析</i></div><button className={`source-state ${activeView === 'overview' && data.error ? 'has-error' : ''}`} onClick={() => setConnectionOpen(true)} title="查看或修改只读数据连接"><Database /><span>{activeView !== 'overview' ? '分析数据 · 只读' : data.syncingStale ? '上次读取 · 正在同步' : data.detail && data.detail.run.id === data.selectedId ? data.detail.source === 'postgresql' ? '数据库已连接' : '验收数据 · 只读夹具' : data.error ? '观察器不可用' : '正在连接'}</span><span className="live-dot" /><Settings2 /></button></div>
       <div className="workspace">
         <Sidebar
           runs={data.runs}
           selectedId={data.selectedId}
+          graphObservedCalls={runtimeGraph?.stats.observedCalls ?? null}
           structureRun={structureRun}
           activeView={activeView}
           onView={(view) => { setActiveView(view); setSelectedStage(null); setSelectedEdge(null) }}
@@ -929,12 +1179,13 @@ export default function App() {
           <AnalysisDashboard detail={data.detail} seedNodeIds={analysisSelection} apiBase={apiBase} />
         ) : activeView === 'evidence' ? (
           <EvidenceDashboard runId={data.detail?.run.id} />
-        ) : data.detail && !data.loading ? (
+        ) : data.detail && data.detail.run.id === data.selectedId && !data.loading ? (
           <>
             <main className="main-canvas">
               <CanvasHeader
                 detail={data.detail}
                 refreshing={data.refreshing}
+                syncingStale={data.syncingStale}
                 selectionMode={selectionMode}
                 selectedCount={analysisSelection.length}
                 onRefresh={data.refresh}
@@ -947,6 +1198,7 @@ export default function App() {
               <GraphView
                 detail={data.detail}
                 runtimeGraph={runtimeGraph!}
+                syncingStale={data.syncingStale}
                 analysisSnapshot={analysisSnapshot}
                 persistedDistributions={persistedDistributions}
                 selectedStage={selectedStage}
@@ -956,6 +1208,7 @@ export default function App() {
                 onSelect={(id) => { setSelectedStage(id); setSelectedEdge(null) }}
                 onToggleAnalysis={toggleAnalysisNode}
                 onSelectEdge={(edge) => { setSelectedEdge(edge); setSelectedStage(null) }}
+                onToggleGroup={(id) => setExpandedRuntimeGroups((current) => { const next = new Set(current); if (next.has(id)) next.delete(id); else next.add(id); return next })}
               />
               {selectionMode && (
                 <div className="analysis-selection-bar">
@@ -971,9 +1224,9 @@ export default function App() {
                   <button className="build-analysis" disabled={!analysisSelection.length} onClick={() => { setActiveView('analysis'); setSelectionMode(false) }}>生成分析卡片</button>
                 </div>
               )}
-              {!selectionMode && <div className="canvas-footnote"><PanelLeftClose />拖拽画布 · 点击节点 · 5 秒更新</div>}
+              {!selectionMode && <div className="canvas-footnote"><PanelLeftClose />拖拽画布 · 点击节点 · 按运行状态自动刷新</div>}
             </main>
-            {selectedStage && <RuntimeInspector detail={data.detail} graph={runtimeGraph!} nodeId={selectedStage} onClose={() => setSelectedStage(null)} />}
+            {selectedStage && <RuntimeInspector detail={data.detail} graph={runtimeGraph!} nodeId={selectedStage} onClose={() => setSelectedStage(null)} onToggleGroup={(id) => setExpandedRuntimeGroups((current) => { const next = new Set(current); if (next.has(id)) next.delete(id); else next.add(id); return next })} />}
             {selectedEdge && <EdgeInspector graph={runtimeGraph!} edge={selectedEdge} onClose={() => setSelectedEdge(null)} />}
           </>
         ) : (

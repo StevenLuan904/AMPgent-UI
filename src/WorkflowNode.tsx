@@ -14,6 +14,7 @@ import {
   Gauge,
   ShieldCheck,
   Target,
+  ChevronRight,
 } from 'lucide-react'
 import { MoleculeViewer } from './MoleculeViewer'
 import { ResultDistribution, type ResultDistributionData } from './ResultDistribution'
@@ -26,6 +27,7 @@ export interface StageNodeData extends Record<string, unknown> {
   viewer: ViewerArtifact | null
   selected: boolean
   distribution: ResultDistributionData | null
+  onToggleGroup?: (id: string) => void
 }
 
 export type StageNode = Node<StageNodeData, 'stage'>
@@ -74,23 +76,36 @@ const termDescriptions: Record<string, string> = {
   rosetta: 'Rosetta用于采样并评估蛋白质与短肽的界面构象。',
 }
 
+const runtimeTermDescriptions: Record<string, string> = {
+  amp_designer: 'AMP Designer：基于模型生成抗菌短肽候选序列。',
+  ampgan: 'AMPGAN v2：用于生成抗菌肽候选的对抗生成模型。',
+  hydramp: 'HydrAMP：用于生成并优化抗菌肽候选序列。',
+  amp_read: 'AMP read：交叉复核候选短肽的抗菌活性预测。',
+  boltz: 'Boltz 2：预测蛋白质与短肽复合物的三维构象。',
+  rosetta: 'Rosetta：采样并评估蛋白质与短肽的界面构象。',
+}
+
 export function WorkflowNode({ data }: NodeProps<StageNode>) {
-  const { stage, branches, viewer, selected, distribution } = data
+  const { stage, branches, viewer, selected, distribution, onToggleGroup } = data
   const Icon = iconById[stage.id as keyof typeof iconById] ?? Database
   const progress = stage.total > 0 ? Math.min(100, Math.round((stage.current / stage.total) * 100)) : 0
   const stateIcon = stage.status === 'completed' ? <Check /> : stage.status === 'stopped' ? <CircleStop /> : null
   const isStructure = stage.kind === 'structure'
   const isRuntime = Boolean(stage.runtime)
+  const runtimeType = stage.runtime?.node_type ?? 'stage'
+  const runtimeTitle = stage.runtime?.tool_name
+    ? `${runtimeTermDescriptions[stage.runtime.tool_name] ?? '工具调用事实'} 原始键：${stage.runtime.tool_name}`
+    : stage.runtime?.raw_label ? `原始键：${stage.runtime.raw_label}` : termDescriptions[stage.id]
   const showsTargets = stage.id === 'targets' && branches.length > 0
   const qualityGate = stage.id === 'candidate_pool' ? stage.generation_quality_gate : undefined
-  const evidenceLabel = distribution?.values.length ? '结果分布' : '暂无结果'
+  const hasEvidenceDistribution = Boolean(distribution?.values.length)
   return (
-    <div className={`workflow-node stage-${stage.id} kind-${stage.kind} grade-${stage.insight.grade} node-${stage.status}${isRuntime ? ' is-runtime-node' : ''}${selected ? ' is-selected' : ''}`}>
+    <div className={`workflow-node stage-${stage.id} kind-${stage.kind} grade-${stage.insight.grade} node-${stage.status}${isRuntime ? ` is-runtime-node runtime-${runtimeType}${stage.runtime?.node_type === 'tool_group' && stage.runtime.expanded ? ' runtime-group-expanded' : ''}` : ''}${selected ? ' is-selected' : ''}`}>
       <Handle type="target" position={Position.Left} className="flow-handle" />
       <div className="node-heading">
         <span className="node-icon"><Icon /></span>
-        <span className="node-title" title={termDescriptions[stage.id]}>{stage.label}</span>
-        <span className="node-state-icon">{stateIcon}</span>
+        <span className="node-title" title={runtimeTitle}>{stage.label}</span>
+        <span className="node-state-icon">{stage.insight.grade === 'neutral' ? null : stateIcon}</span>
       </div>
       <div
         className="node-verdict"
@@ -119,15 +134,16 @@ export function WorkflowNode({ data }: NodeProps<StageNode>) {
         </div>
       ) : (
         <div className="node-facts">
-          {stage.insight.facts.slice(0, 2).map((fact) => (
+          {stage.insight.facts.slice(0, stage.runtime?.node_type === 'tool_group' ? 3 : 2).map((fact) => (
             <span key={fact.label}><small>{fact.label}</small><strong title={fact.value}>{fact.value}</strong></span>
           ))}
         </div>
       )}
       <div className="node-meta">
         <span>{stage.current.toLocaleString()} / {stage.total.toLocaleString()}</span>
-        <span className={`evidence-chip ${stage.provenance}`}>{evidenceLabel}</span>
+        {(!isRuntime || hasEvidenceDistribution) && <span className={`evidence-chip ${stage.provenance}`}>{hasEvidenceDistribution ? '结果分布' : '暂无结果'}</span>}
       </div>
+      {stage.runtime?.node_type === 'tool_group' && onToggleGroup && <button className="node-group-toggle" onClick={(event) => { event.stopPropagation(); onToggleGroup(stage.id) }}><span>{stage.runtime.expanded ? '收起尝试' : `展开 ${stage.runtime.child_ids?.length ?? stage.total} 次尝试`}</span><ChevronRight /></button>}
       <div className="progress-track"><i style={{ width: `${progress}%` }} /></div>
       <Handle type="source" position={Position.Right} className="flow-handle" />
     </div>
