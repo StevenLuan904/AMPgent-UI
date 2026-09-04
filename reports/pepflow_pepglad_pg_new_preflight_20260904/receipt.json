@@ -1,0 +1,111 @@
+{
+  "schema_version": "ampgent.pepflow-pepglad-pg-new-preflight.1",
+  "observed_at_utc": "2026-09-04T00:40:00Z",
+  "scope": "one-candidate-promotion-preflight",
+  "decision": "no_materialization",
+  "materialization": {
+    "candidate_count": 0,
+    "evaluation_count": 0,
+    "coarse5_prepared_count": 0,
+    "reason": "no PG-new candidate satisfies all existing score/challenger/QD gates"
+  },
+  "md_observation": {
+    "main_supervisor_pid": 3986807,
+    "main_analysis_pid": 3977733,
+    "main_handles_alive": true,
+    "synth_listener": "127.0.0.1:32224",
+    "synth_listener_pid": 31396,
+    "synth_observation": "authentication_failed",
+    "full_evidence_paired_remote_ingest": 31,
+    "new_full_evidence_observed": 0,
+    "large_artifacts_read": false,
+    "remote_tasks_modified": false
+  },
+  "exact_audit": [
+    {
+      "source": "PepFlow",
+      "target": "acea",
+      "artifact": "reports/pepflow_acea_source_increment_20260904/candidate_scores_calibrated.csv",
+      "artifact_sha256": "f78a939064e87f9e5ccdbd7a8efd205e666df8cf13bcfa42d76c7cd2f322c141",
+      "score_rows": 26,
+      "formal12": 26,
+      "display": 18,
+      "support_ge_2": 23,
+      "qd_valid": 4,
+      "pg_exact": 26,
+      "pg_new": 0
+    },
+    {
+      "source": "PepFlow",
+      "target": "fgf2",
+      "artifact": "reports/fgf2_qd_gap_reciprocal_micrograft_v5_20260903/candidate_scores_calibrated.csv",
+      "artifact_sha256": "d00a1b5c2d5d619e6f0e51c27d8af70963638e49382ac69748e85d5efe0f968d",
+      "score_rows": 17,
+      "formal12": 17,
+      "display": 15,
+      "support_ge_2": 15,
+      "qd_valid": 15,
+      "pg_exact": 17,
+      "pg_new": 0
+    },
+    {
+      "source": "PepFlow",
+      "target": "pbp2a",
+      "artifact": "reports/pbp2a_pepflow_same_domain_20260904/candidate_scores_calibrated.csv",
+      "artifact_sha256": "b2fb4a5f946d09652d0deb1769ff518cd49ca9a951c6f767cec489c6bb3c943d",
+      "score_rows": 12,
+      "formal12": 12,
+      "display": 10,
+      "support_ge_2": 12,
+      "qd_valid": 5,
+      "pg_exact": 5,
+      "pg_new": 7,
+      "pg_new_qd_valid": 0,
+      "note": "the five QD replacements are the five existing PG identities; the seven new identities are non-contributing or failed"
+    },
+    {
+      "source": "PepGLAD fragment",
+      "target": "acea",
+      "artifact": "reports/pepflow_acea_activity_gain_guided_scoreall_20260903/candidate_scores_calibrated.csv",
+      "artifact_sha256": "bfc0b74b684a37f02def05a1400cd3eb2a6e3877ea10eb59d80cd69887a84a1d",
+      "score_rows": 24,
+      "formal12": 24,
+      "display": 20,
+      "support_ge_2": 0,
+      "pg_exact": 0,
+      "pg_new": 24,
+      "qd_valid": 0,
+      "reason": "same-domain calibrated activity support is zero"
+    },
+    {
+      "source": "PepGLAD fragment",
+      "target": "acea",
+      "artifact": "reports/pepflow_acea_cross_source_block_graft_scoreall_v3_20260903/candidate_scores_calibrated.csv",
+      "artifact_sha256": "592eb2bdc333598e1a87393e64500a80ce3c7d8a4366b2c2372a91362f325ea1",
+      "score_rows": 12,
+      "formal12": 12,
+      "display": 6,
+      "support_ge_2": 0,
+      "pg_exact": 0,
+      "pg_new": 12,
+      "qd_valid": 0,
+      "reason": "same-domain calibrated activity support is zero"
+    }
+  ],
+  "gate_semantics": {
+    "required": ["formal12", "display", "activity_support_ge_2", "guruprasad_le_50", "qd_empty_cell_or_incumbent_replacement", "pg_new"],
+    "apex": "runtime_unavailable/not_assessed",
+    "peptiverse": "runtime_unavailable/not_assessed",
+    "hydrophobic_metrics": "descriptive_only",
+    "history_rule": "sequence_sha256 exact global PostgreSQL identity; no cross-run merging"
+  },
+  "conclusion": "the available pre-2026-09-04 PepFlow/PepGLAD scored+challenger inventory is saturated at the required gates; do not materialize a duplicate or a support-zero candidate",
+  "mutations": {
+    "postgresql_write": false,
+    "remote_task_restart": false,
+    "gpu_started": false,
+    "remote_large_artifact_download": false,
+    "remote_large_artifact_delete": false,
+    "host32_gpu2_gpu3_touched": false
+  }
+}
