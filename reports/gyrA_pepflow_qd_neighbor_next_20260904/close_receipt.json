@@ -39,13 +39,15 @@
     "future_priority_only": true
   },
   "persistence": {
-    "historical_pg_gate": "pending",
+    "historical_pg_gate": "migration_chain_missing",
     "materialization_status": "proposed_not_materialized",
     "candidate_identity_status": "proposal_only",
     "pool_a_admitted": false,
-    "postgresql_reads": 0,
+    "postgresql_reads": 1,
     "postgresql_writes": 0,
     "formal_evidence_persistence_status": "deferred_until_pg_history",
+    "exact_history_status": "migration_chain_missing",
+    "materialization_status_reason": "database_0019_exists_only_in_isolated_ref_and_current_checkout_lacks_0018_skill_evolution_parent",
     "challenger_filter_policy": "exclude_conflicts_only"
   },
   "execution_safety": {
@@ -71,6 +73,7 @@
     "calibration": "calibration_receipt.json",
     "challenger": "challenger/receipt.json",
     "provisional_qd": "provisional_qd.json",
-    "provisional_qd_receipt": "provisional_qd_receipt.json"
+    "provisional_qd_receipt": "provisional_qd_receipt.json",
+    "pg_exact_history": "pg_exact_history_receipt.json"
   }
 }

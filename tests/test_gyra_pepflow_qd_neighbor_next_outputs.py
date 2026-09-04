@@ -21,6 +21,7 @@ def test_next_batch_receipts_keep_provisional_and_formal_boundaries() -> None:
     challenger = _json("challenger/receipt.json")
     qd = _json("provisional_qd_receipt.json")
     close = _json("close_receipt.json")
+    pg_history = _json("pg_exact_history_receipt.json")
     with (REPORT / "challenger/hemopi2_results.csv").open(
         encoding="utf-8-sig", newline=""
     ) as stream:
@@ -55,3 +56,10 @@ def test_next_batch_receipts_keep_provisional_and_formal_boundaries() -> None:
     assert close["provisional_qd"]["formal_pg_new"] is False
     assert close["challenger"]["hemopi2_reviewed_count"] == 12
     assert close["challenger"]["hemopi2_no_conflict_count"] == 12
+    assert pg_history["exact_history_status"] == "migration_chain_missing"
+    assert pg_history["historical_exact_match_count"] is None
+    assert pg_history["materialization_allowed"] is False
+    assert pg_history["postgresql_writes"] == 0
+    assert pg_history["preflight"]["next_migration_design"]["revision"] == (
+        "0020_candidate_sequence_sha256_index"
+    )

@@ -1,0 +1,51 @@
+{
+  "schema_version": "ampgent.gyra-pepflow-pg-exact-history.1",
+  "target_key": "GyrA",
+  "input_csv": "proposals.csv",
+  "input_csv_sha256": "8ae79627ec31cababbc74a1c075bc5e64001be37026d24a480dae3f1397dac0c",
+  "input_count": 12,
+  "preflight": {
+    "status": "ok",
+    "database": "pepagent",
+    "database_alembic_version": "0019_merge_shadow_skill_evolution",
+    "repository_alembic_heads": [
+      "0018_shadow_challenger_evidence"
+    ],
+    "target_revision_found_in_ref": true,
+    "target_revision_ref": "refs/heads/agent/skill-evolution-isolated",
+    "target_revision_known_in_current_graph": false,
+    "target_revision": "0019_merge_shadow_skill_evolution",
+    "target_revision_down_revisions": [
+      "0018_shadow_challenger_evidence",
+      "0018_skill_evolution"
+    ],
+    "next_migration_design": {
+      "revision": "0020_candidate_sequence_sha256_index",
+      "down_revision": "0019_merge_shadow_skill_evolution",
+      "index_name": "ix_candidate_sequence_sha256",
+      "ddl_mode": "postgresql_concurrently_autocommit"
+    },
+    "candidate_global_sequence_index_present": false,
+    "candidate_index_names": [
+      "ix_candidate_run_generation",
+      "ix_candidate_run_sequence",
+      "pk_candidates"
+    ],
+    "explain_root": "Gather",
+    "explain_scan": "Seq Scan",
+    "waiting_relevant_locks": 0
+  },
+  "exact_history_status": "migration_chain_missing",
+  "exact_history_query_status": "not_run_due_migration_gate",
+  "historical_exact_match_count": null,
+  "historical_query_complete": false,
+  "migration_application_allowed": false,
+  "materialization_allowed": false,
+  "materialized_count": 0,
+  "postgresql_read_sessions": 1,
+  "postgresql_writes": 0,
+  "structure_status": "not_created",
+  "gpu_rosetta_md_submitted": false,
+  "reason": "database revision 0019_merge_shadow_skill_evolution exists only in an isolated local ref; the current checkout lacks its 0018_skill_evolution parent and 0019 file, so no reachable migration or ORM index may be added",
+  "no_candidate_uuid_guessed": true
+}
