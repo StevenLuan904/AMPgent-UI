@@ -21,6 +21,10 @@ def test_next_batch_receipts_keep_provisional_and_formal_boundaries() -> None:
     challenger = _json("challenger/receipt.json")
     qd = _json("provisional_qd_receipt.json")
     close = _json("close_receipt.json")
+    with (REPORT / "challenger/hemopi2_results.csv").open(
+        encoding="utf-8-sig", newline=""
+    ) as stream:
+        hemopi2_results = list(csv.DictReader(stream))
 
     assert len(proposals) == 12
     assert {row["historical_pg_gate"] for row in proposals} == {"pending"}
@@ -30,11 +34,24 @@ def test_next_batch_receipts_keep_provisional_and_formal_boundaries() -> None:
     assert score_receipt["formal_12_complete_count"] == 12
     assert score_receipt["display_eligible_count"] == 11
     assert calibration["support_ge_2_count"] == 9
-    assert challenger["challenger_status"] == "runtime_unavailable"
-    assert challenger["reviewed_candidate_count"] == 0
+    assert challenger["reviewed_candidate_count"] == 12
+    assert challenger["candidate_identity_coverage_count"] == 12
+    assert challenger["candidate_identity_coverage_complete"] is True
+    assert challenger["challenger_no_conflict_count"] == 12
+    assert challenger["challenger_conflict_count"] == 0
+    assert challenger["missing_verified_runtimes"] == ["apex", "peptiverse"]
+    assert len(hemopi2_results) == 12
+    assert {row["hemopi2_classification_label"] for row in hemopi2_results} == {"0"}
+    assert {row["challenger_conflict_status"] for row in hemopi2_results} == {
+        "no_conflict"
+    }
     assert qd["status"] == "provisional_only"
     assert qd["provisional_new_cell_count"] == 8
     assert qd["provisional_replacement_count"] == 0
+    assert qd["challenger_no_conflict_count"] == 12
+    assert qd["provisional_eligible_after_challenger_count"] == 8
     assert close["persistence"]["pool_a_admitted"] is False
     assert close["persistence"]["postgresql_writes"] == 0
     assert close["provisional_qd"]["formal_pg_new"] is False
+    assert close["challenger"]["hemopi2_reviewed_count"] == 12
+    assert close["challenger"]["hemopi2_no_conflict_count"] == 12

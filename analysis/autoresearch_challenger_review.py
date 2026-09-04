@@ -11,6 +11,24 @@ from autoresearch_challenger_rescue_round3 import _run_hemopi2
 
 from pepagent.provenance.hashing import sha256_file, sha256_json
 
+HEMOPI2_RESULT_FIELDS = (
+    "candidate_id",
+    "sequence",
+    "sequence_sha256",
+    "branch_key",
+    "target_key",
+    "hemopi2_classification_label",
+    "hemopi2_classification_score",
+    "hemopi2_hc50_um",
+    "validator_version",
+    "calibrated_hemolysis_probability",
+    "calibration_risk_threshold",
+    "calibration_threshold_exceeded",
+    "reported_hc50_below_100_um",
+    "challenger_conflict_status",
+    "candidate_hard_gate_allowed",
+)
+
 
 def _write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
     if not rows:
@@ -67,6 +85,10 @@ def run(args: argparse.Namespace) -> None:
         )
     )
     _write_csv(output_dir / "challenger_review.csv", review)
+    hemopi2_results = [
+        {field: row[field] for field in HEMOPI2_RESULT_FIELDS} for row in review
+    ]
+    _write_csv(output_dir / "hemopi2_results.csv", hemopi2_results)
     no_conflict = [row for row in review if row["challenger_conflict_status"] == "no_conflict"]
     if no_conflict:
         _write_csv(output_dir / "challenger_no_conflict.csv", no_conflict)
@@ -119,6 +141,13 @@ def run(args: argparse.Namespace) -> None:
         "source_csv_sha256": sha256_file(args.input_csv),
         "review_scope": args.scope,
         "reviewed_candidate_count": len(review),
+        "candidate_identity_coverage_count": len(
+            {str(row["candidate_id"]) for row in review}
+        ),
+        "candidate_identity_coverage_complete": len(
+            {str(row["candidate_id"]) for row in review}
+        )
+        == len(rows),
         "reviewed_excellent_candidate_count": sum(
             row.get("excellent_sequence_stage_calibrated", "").lower() == "true"
             for row in review
@@ -131,6 +160,9 @@ def run(args: argparse.Namespace) -> None:
         **challenger_hashes,
         "challenger_review_csv_sha256": sha256_file(
             output_dir / "challenger_review.csv"
+        ),
+        "hemopi2_results_csv_sha256": sha256_file(
+            output_dir / "hemopi2_results.csv"
         ),
         "challenger_is_not_a_primary_hard_gate": True,
         "missing_verified_runtimes": ["apex", "peptiverse"],

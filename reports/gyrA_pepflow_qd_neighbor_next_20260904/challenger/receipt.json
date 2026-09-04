@@ -1,19 +1,36 @@
 {
-  "candidate_input_count": 12,
+  "schema_version": "ampgent.autoresearch-challenger-review.1",
+  "observed_at_utc": "2026-09-04T10:34:36.359087+00:00",
+  "source_csv_sha256": "c5b9fb18b648d159f0e7ebe7db55f161f1353029f3ef3a51524ed029782c94a7",
+  "review_scope": "formal12",
+  "reviewed_candidate_count": 12,
+  "candidate_identity_coverage_count": 12,
+  "candidate_identity_coverage_complete": true,
+  "reviewed_excellent_candidate_count": 8,
+  "challenger_no_conflict_count": 12,
   "challenger_conflict_count": 0,
+  "challenger_full_support_no_conflict_count": 0,
+  "challenger_new_family_no_conflict_count": 0,
+  "branch_summary": [
+    {
+      "branch_key": "gyra",
+      "excellent_candidate_count": 8,
+      "challenger_no_conflict_count": 12,
+      "challenger_conflict_count": 0
+    }
+  ],
+  "worker_input_sha256": "89b03fee541818ec6ecfde4166095f42735e5b08d8131ba0c06424b9df6efe61",
+  "worker_output_sha256": "767fdd87a1f9b379a6aceaa470cccdc66b0d6e7767c6752283199e8e3651aae4",
+  "calibration_sha256": "d9cbe209019de9d625ca0806fafc1b41bec0fdc9f537ab49ca4019a39d4839d9",
+  "challenger_review_csv_sha256": "9a8a9d17c87411ebde2b9a54f3f60a1a35c461c9936da234e72a6d239a78fa50",
+  "hemopi2_results_csv_sha256": "4dbe3f06ad8014d605d8d30de433d47f15268b9f711cb8ab17a46ab91852b833",
   "challenger_is_not_a_primary_hard_gate": true,
-  "challenger_no_conflict_count": 0,
-  "challenger_status": "runtime_unavailable",
+  "missing_verified_runtimes": [
+    "apex",
+    "peptiverse"
+  ],
+  "workflow_submitted": false,
   "gpu_task_submitted": false,
   "historical_run_modified": false,
-  "missing_verified_runtimes": [
-    "hemopi2"
-  ],
-  "observed_at_utc": "2026-09-04T10:26:37.115971+00:00",
-  "review_csv_sha256": "a1183c21583f8caa0c36b033deed04ea4455903fa29f512ffde20c18306ca6c4",
-  "review_scope": "formal12",
-  "reviewed_candidate_count": 0,
-  "schema_version": "ampgent.autoresearch-challenger-review.1",
-  "source_csv_sha256": "c5b9fb18b648d159f0e7ebe7db55f161f1353029f3ef3a51524ed029782c94a7",
-  "workflow_submitted": false
+  "receipt_payload_sha256": "6959c55b313bedc7a6d161ac327e7286a6bf635292d8822f04d2cf31c2bee72a"
 }

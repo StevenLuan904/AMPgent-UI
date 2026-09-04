@@ -10,6 +10,11 @@
   "provisional_replacement_count": 0,
   "provisional_same_cell_count": 0,
   "provisional_quality_gate_failed_count": 0,
+  "challenger_reviewed_count": 12,
+  "challenger_no_conflict_count": 12,
+  "challenger_conflict_count": 0,
+  "challenger_filter_policy": "exclude_conflicts_only",
+  "provisional_eligible_after_challenger_count": 8,
   "formal_pg_new": false,
   "historical_pg_gate": "pending",
   "materialization_status": "proposed_not_materialized",
@@ -24,6 +29,7 @@
   "source_qd_sha256": "02cc57bfedd173c958c42fc61e538e66a84960560a65eabaa009f620648bf5ad",
   "limitations": [
     "PG exact history unavailable; no candidate UUID or materialization was created",
+    "APEX and PeptiVerse runtimes remain unavailable and not assessed",
     "QD cells and incumbent comparisons are provisional and are not a formal QD contribution"
   ]
 }
