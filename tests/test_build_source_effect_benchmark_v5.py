@@ -24,6 +24,13 @@ def test_v5_records_nonmaterialized_vegfa_pepflow_without_fabricating_pg() -> No
     record = result["records"][-1]
     assert record["target_key"] == "vegfa"
     assert record["source"] == "PepFlow"
+    assert record["run_id"] is None
+    assert record["source_scope"] == "artifact"
+    assert record["evidence_strength"] == "artifact_scoped_nonmaterialized"
+    assert record["source_artifact_id"] == (
+        "vegfa-pepflow-peripheral-rescue-20260904-v1:close-receipt"
+    )
+    assert record["identity_basis"].startswith("artifact_id=")
     assert record["counts"] == {
         **record["counts"],
         "proposal": 6,
@@ -35,7 +42,12 @@ def test_v5_records_nonmaterialized_vegfa_pepflow_without_fabricating_pg() -> No
     }
     assert record["pg_identity"]["materialized_candidate_count"] == 0
     assert record["pg_identity"]["tool_call_id"] is None
-    assert result["coverage_matrix"]["cells"]["PepFlow:vegfa"]["status"] == "recorded"
+    assert record["qd_metrics"]["valid_cell_coverage"] == 0.0
+    assert record["qd_metrics"]["archive_qd_score"] is None
+    assert record["archive_baseline"]["not_batch_contribution"] is True
+    assert result["coverage_matrix"]["cells"]["PepFlow:vegfa"]["status"] == (
+        "artifact_recorded_nonmaterialized"
+    )
     assert all(
         0 <= rate["rate"] <= 1
         for rate in record["rates"].values()

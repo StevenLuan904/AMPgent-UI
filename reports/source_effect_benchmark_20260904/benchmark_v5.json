@@ -41,7 +41,7 @@
     "large_artifacts_read": false,
     "remote_tasks_mutated": false
   },
-  "identity_policy": "never merge sequences across run_id; source splits remain inside one run",
+  "identity_policy": "never merge sequences across run_id; artifact-scoped rows use artifact_id",
   "denominator_policy": "proposal, materialized, and downstream rates retain explicit stage denominators",
   "excluded_scopes": [
     {
@@ -61,6 +61,7 @@
       "evidence_strength": "run_scoped_observational",
       "target_key": "acea",
       "run_id": "7a0f596a-4959-5756-b110-e7c489c5c183",
+      "source_artifact_id": null,
       "identity_basis": "run_id=7a0f596a-4959-5756-b110-e7c489c5c183 + sequence_sha256",
       "candidate_id_kind": "authoritative_uuid_from_pg_source_receipt",
       "within_group_unique_sequence_sha256": true,
@@ -216,6 +217,14 @@
         "archive_relative_novelty": 1.0,
         "metric_note": "single-candidate QD fallback uses the recorded actual cell"
       },
+      "archive_baseline": {
+        "scope": "frozen_archive",
+        "archive_qd_score": 36.919230999999996,
+        "valid_cell_coverage": null,
+        "maximum_cell_concentration": null,
+        "archive_relative_novelty": null,
+        "not_batch_contribution": true
+      },
       "rosetta": {
         "evaluated_candidates": 1,
         "evaluated_decoys": 5,
@@ -241,6 +250,7 @@
       "evidence_strength": "run_scoped_observational",
       "target_key": "acea",
       "run_id": "5281871a-043f-5685-a29e-2d2fbf1fe3c4",
+      "source_artifact_id": null,
       "identity_basis": "run_id=5281871a-043f-5685-a29e-2d2fbf1fe3c4 + sequence_sha256",
       "candidate_id_kind": "run_plus_sequence_sha256_pg_bound; targeted_rosetta_pending",
       "within_group_unique_sequence_sha256": true,
@@ -396,6 +406,14 @@
         "archive_relative_novelty": 0.26666666666666666,
         "metric_note": null
       },
+      "archive_baseline": {
+        "scope": "frozen_archive",
+        "archive_qd_score": 7.086511,
+        "valid_cell_coverage": 0.003703703703703704,
+        "maximum_cell_concentration": 0.5333333333333333,
+        "archive_relative_novelty": 0.26666666666666666,
+        "not_batch_contribution": true
+      },
       "rosetta": {
         "evaluated_candidates": 0,
         "evaluated_decoys": 0,
@@ -434,6 +452,7 @@
       "evidence_strength": "run_scoped_observational",
       "target_key": "pbp2a",
       "run_id": "ae9e8532-4276-5b46-8f4f-6a916b08ffcd",
+      "source_artifact_id": null,
       "identity_basis": "run_id=ae9e8532-4276-5b46-8f4f-6a916b08ffcd + sequence_sha256",
       "candidate_id_kind": "run_plus_sequence_sha256_pg_bound; targeted_rosetta_pending",
       "within_group_unique_sequence_sha256": true,
@@ -589,6 +608,14 @@
         "archive_relative_novelty": 0.8888888888888888,
         "metric_note": null
       },
+      "archive_baseline": {
+        "scope": "frozen_archive",
+        "archive_qd_score": 11.604300666666669,
+        "valid_cell_coverage": 0.0060185185185185185,
+        "maximum_cell_concentration": 0.2222222222222222,
+        "archive_relative_novelty": 0.8888888888888888,
+        "not_batch_contribution": true
+      },
       "rosetta": {
         "evaluated_candidates": 0,
         "evaluated_decoys": 0,
@@ -627,6 +654,7 @@
       "evidence_strength": "run_scoped_observational",
       "target_key": "pbp2a",
       "run_id": "6f161581-327a-5788-81c2-97b359fffde8",
+      "source_artifact_id": null,
       "identity_basis": "run_id=6f161581-327a-5788-81c2-97b359fffde8 + sequence_sha256",
       "candidate_id_kind": "authoritative_uuid_in_close_receipt; score_row_sequence_sha256",
       "within_group_unique_sequence_sha256": true,
@@ -782,6 +810,14 @@
         "archive_relative_novelty": 1.0,
         "metric_note": "single-candidate QD fallback uses the recorded actual cell"
       },
+      "archive_baseline": {
+        "scope": "frozen_archive",
+        "archive_qd_score": 62.97505266666667,
+        "valid_cell_coverage": null,
+        "maximum_cell_concentration": null,
+        "archive_relative_novelty": null,
+        "not_batch_contribution": true
+      },
       "rosetta": {
         "evaluated_candidates": 0,
         "evaluated_decoys": 0,
@@ -806,6 +842,7 @@
       "evidence_strength": "matched_controlled",
       "target_key": "pbp2a",
       "run_id": "70873f75-af6d-5e6f-bf2d-c6c0a073870f",
+      "source_artifact_id": null,
       "identity_basis": "run_id=70873f75-af6d-5e6f-bf2d-c6c0a073870f + sequence_sha256",
       "candidate_id_kind": "authoritative_uuid_in_arm_run; score_row_proposal_id_retained_as_source_only",
       "within_group_unique_sequence_sha256": true,
@@ -961,6 +998,14 @@
         "archive_relative_novelty": null,
         "metric_note": "source split recomputed from same-run QD contributions"
       },
+      "archive_baseline": {
+        "scope": "frozen_archive",
+        "archive_qd_score": 62.73677133333334,
+        "valid_cell_coverage": 0.032407407407407406,
+        "maximum_cell_concentration": 0.2,
+        "archive_relative_novelty": 0.0,
+        "not_batch_contribution": true
+      },
       "rosetta": {
         "evaluated_candidates": 0,
         "evaluated_decoys": 0,
@@ -985,6 +1030,7 @@
       "evidence_strength": "matched_controlled",
       "target_key": "pbp2a",
       "run_id": "b8635566-2bc8-568f-a7f7-31ee342720fb",
+      "source_artifact_id": null,
       "identity_basis": "run_id=b8635566-2bc8-568f-a7f7-31ee342720fb + sequence_sha256",
       "candidate_id_kind": "authoritative_uuid_in_arm_run; score_row_proposal_id_retained_as_source_only",
       "within_group_unique_sequence_sha256": true,
@@ -1140,6 +1186,14 @@
         "archive_relative_novelty": null,
         "metric_note": "source split recomputed from same-run QD contributions"
       },
+      "archive_baseline": {
+        "scope": "frozen_archive",
+        "archive_qd_score": 62.73677133333334,
+        "valid_cell_coverage": 0.032407407407407406,
+        "maximum_cell_concentration": 0.2,
+        "archive_relative_novelty": 0.0,
+        "not_batch_contribution": true
+      },
       "rosetta": {
         "evaluated_candidates": 0,
         "evaluated_decoys": 0,
@@ -1164,6 +1218,7 @@
       "evidence_strength": "run_scoped_observational",
       "target_key": "pbp2a",
       "run_id": "45593820-90db-53df-b29d-b97adfa203f3",
+      "source_artifact_id": null,
       "identity_basis": "run_id=45593820-90db-53df-b29d-b97adfa203f3 + sequence_sha256",
       "candidate_id_kind": "authoritative_uuid_in_close_receipt; score_row_sequence_sha256",
       "within_group_unique_sequence_sha256": true,
@@ -1319,6 +1374,14 @@
         "archive_relative_novelty": 1.0,
         "metric_note": "single-candidate QD fallback uses the recorded actual cell"
       },
+      "archive_baseline": {
+        "scope": "frozen_archive",
+        "archive_qd_score": 63.077418333333334,
+        "valid_cell_coverage": null,
+        "maximum_cell_concentration": null,
+        "archive_relative_novelty": null,
+        "not_batch_contribution": true
+      },
       "rosetta": {
         "evaluated_candidates": 0,
         "evaluated_decoys": 0,
@@ -1343,6 +1406,7 @@
       "evidence_strength": "run_scoped_observational",
       "target_key": "pbp2a",
       "run_id": "c6623343-bfc6-520b-8af3-3762ff25d02a",
+      "source_artifact_id": null,
       "identity_basis": "run_id=c6623343-bfc6-520b-8af3-3762ff25d02a + sequence_sha256",
       "candidate_id_kind": "authoritative_uuid_in_close_receipt; score_row_sequence_sha256",
       "within_group_unique_sequence_sha256": true,
@@ -1498,6 +1562,14 @@
         "archive_relative_novelty": 1.0,
         "metric_note": "single-candidate QD fallback uses the recorded actual cell"
       },
+      "archive_baseline": {
+        "scope": "frozen_archive",
+        "archive_qd_score": 62.99655833333333,
+        "valid_cell_coverage": null,
+        "maximum_cell_concentration": null,
+        "archive_relative_novelty": null,
+        "not_batch_contribution": true
+      },
       "rosetta": {
         "evaluated_candidates": 0,
         "evaluated_decoys": 0,
@@ -1522,6 +1594,7 @@
       "evidence_strength": "run_scoped_observational",
       "target_key": "vegfa",
       "run_id": "98170454-be7f-5ab2-8add-979b9f11ddad",
+      "source_artifact_id": null,
       "identity_basis": "run_id=98170454-be7f-5ab2-8add-979b9f11ddad + sequence_sha256",
       "candidate_id_kind": "authoritative_uuid_in_close_receipt; score_row_sequence_sha256",
       "within_group_unique_sequence_sha256": true,
@@ -1677,6 +1750,14 @@
         "archive_relative_novelty": 1.0,
         "metric_note": "single-candidate QD fallback uses the recorded actual cell"
       },
+      "archive_baseline": {
+        "scope": "frozen_archive",
+        "archive_qd_score": 1.605686,
+        "valid_cell_coverage": null,
+        "maximum_cell_concentration": null,
+        "archive_relative_novelty": null,
+        "not_batch_contribution": true
+      },
       "rosetta": {
         "evaluated_candidates": 0,
         "evaluated_decoys": 0,
@@ -1701,6 +1782,7 @@
       "evidence_strength": "run_scoped_observational",
       "target_key": "acea",
       "run_id": "711cbfde-1897-5077-91bd-da7054293a4a",
+      "source_artifact_id": null,
       "identity_basis": "run_id=711cbfde-1897-5077-91bd-da7054293a4a + sequence_sha256",
       "candidate_id_kind": "authoritative_uuid_in_close_receipt; score_row_sequence_sha256",
       "within_group_unique_sequence_sha256": true,
@@ -1856,6 +1938,14 @@
         "archive_relative_novelty": 1.0,
         "metric_note": "single-candidate QD fallback uses the recorded actual cell"
       },
+      "archive_baseline": {
+        "scope": "frozen_archive",
+        "archive_qd_score": 4.043870666666667,
+        "valid_cell_coverage": null,
+        "maximum_cell_concentration": null,
+        "archive_relative_novelty": null,
+        "not_batch_contribution": true
+      },
       "rosetta": {
         "evaluated_candidates": 0,
         "evaluated_decoys": 0,
@@ -1880,6 +1970,7 @@
       "evidence_strength": "run_scoped_observational",
       "target_key": "fgf2",
       "run_id": "1ff62322-46ce-5422-8e40-a328b729b984",
+      "source_artifact_id": null,
       "identity_basis": "run_id=1ff62322-46ce-5422-8e40-a328b729b984 + sequence_sha256",
       "candidate_id_kind": "authoritative_uuid_in_close_receipt; score_row_sequence_sha256",
       "within_group_unique_sequence_sha256": true,
@@ -2035,6 +2126,14 @@
         "archive_relative_novelty": 1.0,
         "metric_note": "single-candidate QD fallback uses the recorded actual cell"
       },
+      "archive_baseline": {
+        "scope": "frozen_archive",
+        "archive_qd_score": 3.957780333333333,
+        "valid_cell_coverage": null,
+        "maximum_cell_concentration": null,
+        "archive_relative_novelty": null,
+        "not_batch_contribution": true
+      },
       "rosetta": {
         "evaluated_candidates": 0,
         "evaluated_decoys": 0,
@@ -2059,6 +2158,7 @@
       "evidence_strength": "run_scoped_observational",
       "target_key": "gyra",
       "run_id": "169de8d4-8473-5cdf-9100-f3445ba93704",
+      "source_artifact_id": null,
       "identity_basis": "run_id=169de8d4-8473-5cdf-9100-f3445ba93704 + sequence_sha256",
       "candidate_id_kind": "authoritative_uuid_in_close_receipt; score_row_sequence_sha256",
       "within_group_unique_sequence_sha256": true,
@@ -2214,6 +2314,14 @@
         "archive_relative_novelty": 1.0,
         "metric_note": "single-candidate QD fallback uses the recorded actual cell"
       },
+      "archive_baseline": {
+        "scope": "frozen_archive",
+        "archive_qd_score": 3.777122666666666,
+        "valid_cell_coverage": null,
+        "maximum_cell_concentration": null,
+        "archive_relative_novelty": null,
+        "not_batch_contribution": true
+      },
       "rosetta": {
         "evaluated_candidates": 0,
         "evaluated_decoys": 0,
@@ -2238,6 +2346,7 @@
       "evidence_strength": "run_scoped_observational",
       "target_key": "fgf2",
       "run_id": "f19e3e47-8db6-5623-a6d0-b669cf54a1f3",
+      "source_artifact_id": null,
       "identity_basis": "run_id=f19e3e47-8db6-5623-a6d0-b669cf54a1f3 + sequence_sha256",
       "candidate_id_kind": "authoritative_uuid_in_close_receipt; score_row_sequence_sha256",
       "within_group_unique_sequence_sha256": true,
@@ -2393,6 +2502,14 @@
         "archive_relative_novelty": 1.0,
         "metric_note": "single-candidate QD fallback uses the recorded actual cell"
       },
+      "archive_baseline": {
+        "scope": "frozen_archive",
+        "archive_qd_score": 3.9859269999999998,
+        "valid_cell_coverage": null,
+        "maximum_cell_concentration": null,
+        "archive_relative_novelty": null,
+        "not_batch_contribution": true
+      },
       "rosetta": {
         "evaluated_candidates": 0,
         "evaluated_decoys": 0,
@@ -2417,6 +2534,7 @@
       "evidence_strength": "run_scoped_observational",
       "target_key": "gyra",
       "run_id": "e666339b-63ee-5efc-8733-a34b9c9f8694",
+      "source_artifact_id": null,
       "identity_basis": "run_id=e666339b-63ee-5efc-8733-a34b9c9f8694 + sequence_sha256",
       "candidate_id_kind": "authoritative_uuid_in_close_receipt; score_row_sequence_sha256",
       "within_group_unique_sequence_sha256": true,
@@ -2572,6 +2690,14 @@
         "archive_relative_novelty": 1.0,
         "metric_note": "single-candidate QD fallback uses the recorded actual cell"
       },
+      "archive_baseline": {
+        "scope": "frozen_archive",
+        "archive_qd_score": 3.7979559999999997,
+        "valid_cell_coverage": null,
+        "maximum_cell_concentration": null,
+        "archive_relative_novelty": null,
+        "not_batch_contribution": true
+      },
       "rosetta": {
         "evaluated_candidates": 0,
         "evaluated_decoys": 0,
@@ -2596,6 +2722,7 @@
       "evidence_strength": "run_scoped_observational",
       "target_key": "gyra",
       "run_id": "e405720e-7087-5765-9dde-6148aee0c7aa",
+      "source_artifact_id": null,
       "identity_basis": "run_id=e405720e-7087-5765-9dde-6148aee0c7aa + sequence_sha256",
       "candidate_id_kind": "authoritative_uuid_in_close_receipt; score_row_sequence_sha256",
       "within_group_unique_sequence_sha256": true,
@@ -2751,6 +2878,14 @@
         "archive_relative_novelty": 1.0,
         "metric_note": null
       },
+      "archive_baseline": {
+        "scope": "frozen_archive",
+        "archive_qd_score": 78.46069133333334,
+        "valid_cell_coverage": 0.040740740740740744,
+        "maximum_cell_concentration": 0.125,
+        "archive_relative_novelty": 1.0,
+        "not_batch_contribution": true
+      },
       "rosetta": {
         "evaluated_candidates": 0,
         "evaluated_decoys": 0,
@@ -2775,6 +2910,7 @@
       "evidence_strength": "run_scoped_observational",
       "target_key": "vegfa",
       "run_id": "d710662b-a74c-50ec-b152-5ea4d72903d3",
+      "source_artifact_id": null,
       "identity_basis": "run_id=d710662b-a74c-50ec-b152-5ea4d72903d3 + sequence_sha256",
       "candidate_id_kind": "authoritative_uuid_in_close_receipt; score_row_sequence_sha256",
       "within_group_unique_sequence_sha256": true,
@@ -2930,6 +3066,14 @@
         "archive_relative_novelty": 1.0,
         "metric_note": null
       },
+      "archive_baseline": {
+        "scope": "frozen_archive",
+        "archive_qd_score": 1.562011,
+        "valid_cell_coverage": 0.000925925925925926,
+        "maximum_cell_concentration": 1.0,
+        "archive_relative_novelty": 1.0,
+        "not_batch_contribution": true
+      },
       "rosetta": {
         "evaluated_candidates": 0,
         "evaluated_decoys": 0,
@@ -2954,6 +3098,7 @@
       "evidence_strength": "run_scoped_observational",
       "target_key": "gyra",
       "run_id": "e42e5097-aa1b-55ab-a191-93a923d7f51a",
+      "source_artifact_id": null,
       "identity_basis": "run_id=e42e5097-aa1b-55ab-a191-93a923d7f51a + sequence_sha256",
       "candidate_id_kind": "authoritative_uuid_in_pg_readback; score_row_sequence_sha256",
       "within_group_unique_sequence_sha256": true,
@@ -3109,6 +3254,14 @@
         "archive_relative_novelty": 0.25,
         "metric_note": null
       },
+      "archive_baseline": {
+        "scope": "frozen_archive",
+        "archive_qd_score": 80.22209033333333,
+        "valid_cell_coverage": 0.041666666666666664,
+        "maximum_cell_concentration": 0.625,
+        "archive_relative_novelty": 0.25,
+        "not_batch_contribution": true
+      },
       "rosetta": {
         "evaluated_candidates": 0,
         "evaluated_decoys": 0,
@@ -3129,16 +3282,17 @@
     {
       "label": "VEGFA PepFlow peripheral rescue",
       "source": "PepFlow",
-      "source_scope": "run",
-      "evidence_strength": "run_scoped_observational",
+      "source_scope": "artifact",
+      "evidence_strength": "artifact_scoped_nonmaterialized",
       "target_key": "vegfa",
-      "run_id": "pending-no-pg-materialization",
-      "identity_basis": "run_id=pending-no-pg-materialization + sequence_sha256",
+      "run_id": null,
+      "source_artifact_id": "vegfa-pepflow-peripheral-rescue-20260904-v1:close-receipt",
+      "identity_basis": "artifact_id=vegfa-pepflow-peripheral-rescue-20260904-v1:close-receipt + sequence_sha256",
       "candidate_id_kind": "proposal_only_no_candidate_materialized",
       "within_group_unique_sequence_sha256": true,
       "run_materialized_count": 0,
       "pg_identity": {
-        "run_id": "pending-no-pg-materialization",
+        "run_id": null,
         "tool_call_id": null,
         "materialized_candidate_count": 0,
         "inserted_evaluation_count": 0,
@@ -3267,11 +3421,19 @@
         "replacement": 0,
         "best_quality": null,
         "mean_quality": null,
-        "valid_cell_coverage": 0.000925925925925926,
-        "archive_qd_score": 1.562011,
+        "valid_cell_coverage": 0.0,
+        "archive_qd_score": null,
         "maximum_cell_concentration": null,
         "archive_relative_novelty": null,
         "metric_note": null
+      },
+      "archive_baseline": {
+        "scope": "frozen_archive",
+        "archive_qd_score": 1.562011,
+        "valid_cell_coverage": 0.000925925925925926,
+        "maximum_cell_concentration": 0.0,
+        "archive_relative_novelty": 0.0,
+        "not_batch_contribution": true
       },
       "rosetta": {
         "evaluated_candidates": 0,
@@ -3311,6 +3473,7 @@
         "source": "PepGLAD",
         "record_count": 0,
         "run_ids": [],
+        "artifact_ids": [],
         "materialized_count": 0,
         "qd_eligible_count": 0,
         "status": "benchmark_not_recorded"
@@ -3322,6 +3485,7 @@
         "run_ids": [
           "5281871a-043f-5685-a29e-2d2fbf1fe3c4"
         ],
+        "artifact_ids": [],
         "materialized_count": 26,
         "qd_eligible_count": 15,
         "status": "recorded"
@@ -3334,6 +3498,7 @@
           "7a0f596a-4959-5756-b110-e7c489c5c183",
           "711cbfde-1897-5077-91bd-da7054293a4a"
         ],
+        "artifact_ids": [],
         "materialized_count": 2,
         "qd_eligible_count": 2,
         "status": "recorded"
@@ -3345,6 +3510,7 @@
         "run_ids": [
           "e42e5097-aa1b-55ab-a191-93a923d7f51a"
         ],
+        "artifact_ids": [],
         "materialized_count": 3,
         "qd_eligible_count": 8,
         "status": "recorded"
@@ -3356,6 +3522,7 @@
         "run_ids": [
           "e405720e-7087-5765-9dde-6148aee0c7aa"
         ],
+        "artifact_ids": [],
         "materialized_count": 8,
         "qd_eligible_count": 8,
         "status": "recorded"
@@ -3368,6 +3535,7 @@
           "169de8d4-8473-5cdf-9100-f3445ba93704",
           "e666339b-63ee-5efc-8733-a34b9c9f8694"
         ],
+        "artifact_ids": [],
         "materialized_count": 2,
         "qd_eligible_count": 2,
         "status": "recorded"
@@ -3380,6 +3548,7 @@
           "ae9e8532-4276-5b46-8f4f-6a916b08ffcd",
           "70873f75-af6d-5e6f-bf2d-c6c0a073870f"
         ],
+        "artifact_ids": [],
         "materialized_count": 24,
         "qd_eligible_count": 16,
         "status": "recorded"
@@ -3391,6 +3560,7 @@
         "run_ids": [
           "b8635566-2bc8-568f-a7f7-31ee342720fb"
         ],
+        "artifact_ids": [],
         "materialized_count": 12,
         "qd_eligible_count": 8,
         "status": "recorded"
@@ -3404,6 +3574,7 @@
           "45593820-90db-53df-b29d-b97adfa203f3",
           "c6623343-bfc6-520b-8af3-3762ff25d02a"
         ],
+        "artifact_ids": [],
         "materialized_count": 3,
         "qd_eligible_count": 3,
         "status": "recorded"
@@ -3413,6 +3584,7 @@
         "source": "PepGLAD",
         "record_count": 0,
         "run_ids": [],
+        "artifact_ids": [],
         "materialized_count": 0,
         "qd_eligible_count": 0,
         "status": "benchmark_not_recorded"
@@ -3421,12 +3593,13 @@
         "target_key": "vegfa",
         "source": "PepFlow",
         "record_count": 1,
-        "run_ids": [
-          "pending-no-pg-materialization"
+        "run_ids": [],
+        "artifact_ids": [
+          "vegfa-pepflow-peripheral-rescue-20260904-v1:close-receipt"
         ],
         "materialized_count": 0,
         "qd_eligible_count": 0,
-        "status": "recorded"
+        "status": "artifact_recorded_nonmaterialized"
       },
       "PepMLM:vegfa": {
         "target_key": "vegfa",
@@ -3436,6 +3609,7 @@
           "98170454-be7f-5ab2-8add-979b9f11ddad",
           "d710662b-a74c-50ec-b152-5ea4d72903d3"
         ],
+        "artifact_ids": [],
         "materialized_count": 2,
         "qd_eligible_count": 2,
         "status": "recorded"
@@ -3445,6 +3619,7 @@
         "source": "PepGLAD",
         "record_count": 0,
         "run_ids": [],
+        "artifact_ids": [],
         "materialized_count": 0,
         "qd_eligible_count": 0,
         "status": "benchmark_not_recorded"
@@ -3454,6 +3629,7 @@
         "source": "PepFlow",
         "record_count": 0,
         "run_ids": [],
+        "artifact_ids": [],
         "materialized_count": 0,
         "qd_eligible_count": 0,
         "status": "benchmark_not_recorded"
@@ -3466,6 +3642,7 @@
           "1ff62322-46ce-5422-8e40-a328b729b984",
           "f19e3e47-8db6-5623-a6d0-b669cf54a1f3"
         ],
+        "artifact_ids": [],
         "materialized_count": 2,
         "qd_eligible_count": 2,
         "status": "recorded"
@@ -3475,6 +3652,7 @@
         "source": "PepGLAD",
         "record_count": 0,
         "run_ids": [],
+        "artifact_ids": [],
         "materialized_count": 0,
         "qd_eligible_count": 0,
         "status": "benchmark_not_recorded"
@@ -3484,6 +3662,7 @@
         "source": "PepFlow",
         "record_count": 0,
         "run_ids": [],
+        "artifact_ids": [],
         "materialized_count": 0,
         "qd_eligible_count": 0,
         "status": "benchmark_not_recorded"
@@ -3493,6 +3672,7 @@
         "source": "PepMLM",
         "record_count": 0,
         "run_ids": [],
+        "artifact_ids": [],
         "materialized_count": 0,
         "qd_eligible_count": 0,
         "status": "benchmark_not_recorded"

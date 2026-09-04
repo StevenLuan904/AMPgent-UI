@@ -2,8 +2,10 @@
 
 The input is an explicit JSON manifest of immutable compact artifacts.  No
 sequence is merged across runs: records are keyed by ``run_id`` and, for
-source-split runs, by the source column in that same run.  This is an audit
-summary, not a winner score; all rates retain their stage denominator.
+source-split runs, by the source column in that same run.  Non-materialized
+artifacts use an explicit artifact identity and never imply a PostgreSQL
+ExperimentRun.  This is an audit summary, not a winner score; all rates retain
+their stage denominator.
 """
 
 from __future__ import annotations
@@ -286,6 +288,17 @@ def _qd_metrics(
     }
 
 
+def _archive_baseline(qd: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "scope": "frozen_archive",
+        "archive_qd_score": _float(qd.get("archive_qd_score")),
+        "valid_cell_coverage": _float(qd.get("valid_cell_coverage")),
+        "maximum_cell_concentration": _float(qd.get("maximum_cell_concentration")),
+        "archive_relative_novelty": _float(qd.get("archive_relative_novelty")),
+        "not_batch_contribution": True,
+    }
+
+
 def _rosetta(spec: dict[str, Any], qd_eligible: int, base: Path) -> dict[str, Any]:
     path_value = spec.get("rosetta_path")
     if not path_value:
@@ -428,6 +441,12 @@ def _record(spec: dict[str, Any], base: Path) -> list[dict[str, Any]]:
             _challenger_counts(materialized_challenger_rows, material, split)
         )
         qd_metrics = _qd_metrics(qd, rows, split)
+        archive_baseline = _archive_baseline(qd)
+        if qd_metrics["eligible"] == 0:
+            qd_metrics["valid_cell_coverage"] = 0.0
+            qd_metrics["archive_qd_score"] = None
+            qd_metrics["maximum_cell_concentration"] = None
+            qd_metrics["archive_relative_novelty"] = None
         materialized_qd_metrics = _qd_metrics(
             qd, materialized_rows, split, filter_to_rows=True
         )
@@ -446,18 +465,26 @@ def _record(spec: dict[str, Any], base: Path) -> list[dict[str, Any]]:
             {
                 "label": spec["label"] if source == "all" else f"{spec['label']} / {source}",
                 "source": spec["source"] if source == "all" else source,
-                "source_scope": "run" if source == "all" else "run_source_split",
+                "source_scope": spec.get(
+                    "source_scope",
+                    "run" if source == "all" else "run_source_split",
+                ),
                 "evidence_strength": spec.get(
                     "evidence_strength", "run_scoped_observational"
                 ),
                 "target_key": spec["target_key"],
-                "run_id": spec["run_id"],
-                "identity_basis": f"run_id={spec['run_id']} + sequence_sha256",
+                "run_id": spec.get("run_id"),
+                "source_artifact_id": spec.get("source_artifact_id"),
+                "identity_basis": (
+                    f"artifact_id={spec['source_artifact_id']} + sequence_sha256"
+                    if spec.get("source_scope") == "artifact"
+                    else f"run_id={spec.get('run_id')} + sequence_sha256"
+                ),
                 "candidate_id_kind": identity_kind,
                 "within_group_unique_sequence_sha256": len(keys) == len(set(keys)),
                 "run_materialized_count": materialized_run,
                 "pg_identity": {
-                    "run_id": material.get("operational_run_id", spec["run_id"]),
+                    "run_id": material.get("operational_run_id", spec.get("run_id")),
                     "tool_call_id": material.get("tool_call_id"),
                     "materialized_candidate_count": materialized_run,
                     "inserted_evaluation_count": _first_int(
@@ -537,6 +564,7 @@ def _record(spec: dict[str, Any], base: Path) -> list[dict[str, Any]]:
                     "hemopi2_no_conflict": challenger_no_conflict,
                 },
                 "qd_metrics": qd_metrics,
+                "archive_baseline": archive_baseline,
                 "rosetta": rosetta,
                 "mean_delta_phi": _delta_phi(proposal_groups.get(source, rows)),
                 "evidence": {
@@ -632,7 +660,14 @@ def _coverage_matrix(records: list[dict[str, Any]]) -> dict[str, Any]:
                 "target_key": target,
                 "source": source,
                 "record_count": len(matching),
-                "run_ids": [record["run_id"] for record in matching],
+                "run_ids": [
+                    record["run_id"] for record in matching if record["run_id"]
+                ],
+                "artifact_ids": [
+                    record["source_artifact_id"]
+                    for record in matching
+                    if record.get("source_artifact_id")
+                ],
                 "materialized_count": sum(
                     record["counts"]["materialized"] for record in matching
                 ),
@@ -640,7 +675,11 @@ def _coverage_matrix(records: list[dict[str, Any]]) -> dict[str, Any]:
                     record["counts"]["qd_eligible"] for record in matching
                 ),
                 "status": (
-                    "recorded" if matching else "benchmark_not_recorded"
+                    "artifact_recorded_nonmaterialized"
+                    if any(record["source_scope"] == "artifact" for record in matching)
+                    else "recorded"
+                    if matching
+                    else "benchmark_not_recorded"
                 ),
             }
     return {
@@ -663,7 +702,7 @@ def build_benchmark(config: dict[str, Any], base_dir: Path) -> dict[str, Any]:
         "observed_at_utc": config.get("observed_at_utc") or datetime.now(UTC).isoformat(),
         "md_observation": config.get("md_observation"),
         "identity_policy": (
-            "never merge sequences across run_id; source splits remain inside one run"
+            "never merge sequences across run_id; artifact-scoped rows use artifact_id"
         ),
         "denominator_policy": (
             "proposal, materialized, and downstream rates retain explicit stage "
