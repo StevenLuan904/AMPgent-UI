@@ -22,6 +22,8 @@ def test_next_batch_receipts_keep_provisional_and_formal_boundaries() -> None:
     qd = _json("provisional_qd_receipt.json")
     close = _json("close_receipt.json")
     pg_history = _json("pg_exact_history_receipt.json")
+    pg_close = _json("pg_materialization_close_receipt.json")
+    qd_evidence = _json("qd_evidence_persistence_receipt.json")
     with (REPORT / "challenger/hemopi2_results.csv").open(
         encoding="utf-8-sig", newline=""
     ) as stream:
@@ -65,3 +67,24 @@ def test_next_batch_receipts_keep_provisional_and_formal_boundaries() -> None:
     assert pg_history["pg_new_count"] == 8
     assert pg_history["rejected_occurrence_count"] == 0
     assert pg_history["materialization_status"] == "already_materialized"
+    assert pg_close["source_provisional_qd"]["formal_pg_new"] is False
+    assert pg_close["source_provisional_qd"]["future_priority_only"] is True
+    assert pg_close["final_qd"]["status"] == "formal_pg_new_materialized"
+    assert pg_close["final_qd"]["formal_pg_new"] is True
+    assert pg_close["final_qd"]["future_priority_only"] is False
+    assert pg_close["final_qd"]["quality_eligible_count"] == 8
+    assert pg_close["final_qd"]["new_cell_count"] == 8
+    assert pg_close["final_qd"]["replacement_count"] == 0
+    assert pg_close["final_qd"]["materialized_contribution_counts"] == {
+        "new_cell": 8,
+        "replacement": 0,
+    }
+    assert qd_evidence["status"] == "readback_verified"
+    assert qd_evidence["qd_evaluation_count"] == 24
+    assert qd_evidence["candidate_mutations"] == 0
+    assert qd_evidence["historical_runs_modified"] is False
+    assert pg_close["persistence"]["authoritative_candidate_count"] > 0
+    assert not (
+        pg_close["final_qd"]["formal_pg_new"] is False
+        or pg_close["final_qd"]["future_priority_only"] is True
+    )
