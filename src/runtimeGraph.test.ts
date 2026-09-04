@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildRuntimeGraph } from './runtimeGraph'
+import { buildRuntimeGraph, countOpenActivities, runtimeActivitySummary } from './runtimeGraph'
 import type { NodeDetail, RunDetail, ToolAttempt } from './types'
 
 const call = (id: string, toolName: string, queuedAt: string, overrides: Partial<ToolAttempt> = {}): ToolAttempt => ({
@@ -46,6 +46,35 @@ const detail = (events: RunDetail['events'] = [], candidates: RunDetail['candida
 const nodeDetail = (calls: ToolAttempt[]): NodeDetail => ({ source: 'postgresql', read_only: true, node_id: 'dynamic', narrative: [], calls, metrics: {}, reasoning: { decisions: [], status_counts: {}, reason_counts: {}, considered: 0, admitted: 0 }, structure_results: [] })
 
 describe('buildRuntimeGraph', () => {
+  it('counts completed and failed activities as closed, while isolating attempts', () => {
+    const execution = 'workflow-run-open-activity'
+    const events: RunDetail['events'] = [
+      { sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 1, attempt: 1 }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'activity.succeeded', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 1, attempt: 1 }, occurred_at: '2026-09-04T00:00:02Z' },
+      { sequence_no: 3, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 1, attempt: 2 }, occurred_at: '2026-09-04T00:00:03Z' },
+      { sequence_no: 4, type: 'activity.failed', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 2, attempt: 1 }, occurred_at: '2026-09-04T00:00:04Z' },
+      { sequence_no: 5, type: 'activity.running', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 3, attempt: 1 }, occurred_at: '2026-09-04T00:00:05Z' },
+    ]
+    expect(countOpenActivities(events)).toBe(2)
+    expect(buildRuntimeGraph(detail(events)).stats.openActivities).toBe(2)
+  })
+
+  it('does not count activities or recovery scheduling without the complete activity identity', () => {
+    const events: RunDetail['events'] = [
+      { sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: 'workflow-run-missing-attempt', activity_id: 1 }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'activity.started', actor: 'observer-writer', payload: { activity_id: 2, attempt: 1 }, occurred_at: '2026-09-04T00:00:02Z' },
+      { sequence_no: 3, type: 'mvp_human.autoresearch.recovery_scheduled', actor: 'mvp-human-controller', payload: { workflow_run_id: 'workflow-run-missing-attempt', recovery_attempt: 4 }, occurred_at: '2026-09-04T00:00:03Z' },
+    ]
+    expect(countOpenActivities(events)).toBe(0)
+    expect(buildRuntimeGraph(detail(events)).stats.openActivities).toBe(0)
+  })
+
+  it('uses a precise running summary when no activity boundary is open', () => {
+    expect(runtimeActivitySummary('running', 0)).toBe('等待后续活动观测')
+    expect(runtimeActivitySummary('running', 2)).toBe('开放活动 2')
+    expect(runtimeActivitySummary('succeeded', 0)).toBe('开放活动 0')
+  })
+
   it('builds observed call/event nodes and reports missing dependency contract', () => {
     const first = call('call-1', 'ampgan', '2026-09-04T00:00:00Z', { attempt: 2 })
     const second = call('call-2', 'ampgan', '2026-09-04T00:00:01Z', { status: 'running', finished_at: null })

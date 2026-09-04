@@ -19,6 +19,8 @@
 
 生命周期事件只有在持久化 `attempt > 1` 时才形成“活动重试”事实；首次尝试不占运行摘要。活动重试事实不会自动生成跨执行的 `retry` 边。同一工作流执行中，只有两个活动都具有完整且相互重叠的 `started → terminal` 时间区间时，才派生 `relation_kind=parallel`；它表示并行观测，不代表调度依赖。
 
+开放活动按 `workflow_run_id + activity_id + attempt` 的最新生命周期边界计数；缺少任一身份字段的事件不进入计数。运行仍为进行中但开放活动为零时，摘要显示“等待后续活动观测”，不据此推断停滞或失败，也不创建占位节点。
+
 生命周期状态映射：`.started`、`.running`、`.progress` → 进行中；`.created`、`.succeeded`、`.completed`、`.persisted`、`.materialized`、`.recorded`、`.accepted`、`.rejected` → 已完成；`.failed`、`.cancelled` → 已停止；其余后缀 → 待观测。原始事件键仍保存在节点详情中。
 
 恢复调度事件只把“调度记录已写入”显示为已调度，不代表后续执行成功；`recovery_attempt` 只用于显示恢复次数，不计作工具重试。

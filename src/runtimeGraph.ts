@@ -11,6 +11,7 @@ import type {
 export interface RuntimeGraphStats {
   observedCalls: number
   observedEvents: number
+  openActivities: number
   repeatedTools: number
   retries: number
   parallelGroups: number
@@ -331,6 +332,42 @@ function isTerminalActivityEvent(event: TimelineEvent) {
   const hasActivityIdentity = Boolean(text(payload.workflow_run_id)) && (typeof activityId === 'string' || typeof activityId === 'number')
   const suffix = event.type.toLowerCase().split('.').at(-1)
   return hasActivityIdentity && ['succeeded', 'completed', 'failed', 'cancelled'].includes(suffix ?? '')
+}
+
+function activityBoundaryIdentity(event: TimelineEvent) {
+  const payload = record(event.payload)
+  const workflowRunId = text(payload.workflow_run_id).trim()
+  const activityId = payload.activity_id
+  const attempt = integerField(payload.attempt)
+  if (!workflowRunId || (typeof activityId !== 'string' && typeof activityId !== 'number') || attempt === null || attempt < 1) return null
+  return `${workflowRunId}:activity=${activityId}:attempt=${attempt}`
+}
+
+function activityBoundaryEvents(events: TimelineEvent[]) {
+  return [...events].sort((left, right) => {
+    const leftTime = Date.parse(left.occurred_at)
+    const rightTime = Date.parse(right.occurred_at)
+    return (Number.isFinite(leftTime) ? leftTime : Number.MAX_SAFE_INTEGER) - (Number.isFinite(rightTime) ? rightTime : Number.MAX_SAFE_INTEGER) || left.sequence_no - right.sequence_no
+  })
+}
+
+export function countOpenActivities(events: TimelineEvent[]) {
+  const states = new Map<string, boolean>()
+  for (const event of activityBoundaryEvents(events)) {
+    const identity = activityBoundaryIdentity(event)
+    if (!identity) continue
+    const suffix = event.type.toLowerCase().split('.').at(-1)
+    if (suffix === 'started' || suffix === 'running') states.set(identity, true)
+    else if (['succeeded', 'completed', 'failed', 'cancelled'].includes(suffix ?? '')) states.set(identity, false)
+  }
+  return [...states.values()].filter(Boolean).length
+}
+
+export function runtimeActivitySummary(runStatus: string, openActivities: number) {
+  const normalizedCount = Number.isInteger(openActivities) && openActivities >= 0 ? openActivities : 0
+  return normalizedCount === 0 && runStatus === 'running'
+    ? '等待后续活动观测'
+    : `开放活动 ${normalizedCount}`
 }
 
 function latestTerminalActivityEvent(events: TimelineEvent[]) {
@@ -1014,6 +1051,7 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
   const stats: RuntimeGraphStats = {
     observedCalls: Object.keys(calls).length,
     observedEvents: Object.keys(events).length,
+    openActivities: countOpenActivities(Object.values(events)),
     repeatedTools: [...toolCounts.values()].filter((count) => count > 1).length,
     retries: Object.values(calls).filter((call) => call.attempt > 1).length,
     parallelGroups,
