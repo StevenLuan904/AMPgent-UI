@@ -41,7 +41,7 @@ function Get-ObserverSourceFingerprint {
         foreach ($source in @(
             @{ Label = 'observer_only.py'; Path = $ObserverPath },
             @{ Label = 'pepagent/api/observer.py'; Path = $RouterPath }
-        ) | Sort-Object Label) {
+        ) | Sort-Object { $_['Label'] }) {
             $labelBytes = [System.Text.Encoding]::UTF8.GetBytes($source.Label)
             $stream.Write($labelBytes, 0, $labelBytes.Length)
             $stream.Write([byte[]](0), 0, 1)

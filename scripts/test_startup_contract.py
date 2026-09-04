@@ -23,6 +23,13 @@ class StartupContractTests(unittest.TestCase):
             ):
                 self.assertIn(required, text, f"{name} missing {required}")
 
+    def test_launchers_sort_fingerprint_sources_by_hashtable_key(self):
+        """Windows PowerShell 5.1 does not reliably expose hashtable keys as properties."""
+        for name in ("dev.ps1", "start-ampgent.ps1"):
+            text = self.read(name)
+            self.assertIn("Sort-Object { $_['Label'] }", text)
+            self.assertNotIn("Sort-Object Label", text)
+
     def test_dev_only_replaces_a_confirmed_observer_process(self):
         text = self.read("dev.ps1")
         for required in (
