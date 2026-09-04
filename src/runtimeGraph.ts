@@ -309,6 +309,15 @@ const toolLabels: Record<string, string> = {
   amp_read: 'AMP read',
   boltz: 'Boltz 2',
   rosetta: 'Rosetta',
+  'autoresearch-frozen-action-executor': '冻结动作执行',
+  'autoresearch-multi-front-archive': '多前沿归档',
+  'autoresearch-multi-front-rule-planner': '多前沿规则规划',
+  'autoresearch-replay-bundle': '重放证据包',
+  'v38-metric-hemolysis_risk': '溶血风险评估',
+  'v38-metric-mic_potency': 'MIC 活性预测',
+  'v38-metric-mic_potency_amp_read': 'AMP read 活性复核',
+  'v38-metric-physicochemical_developability': '理化可开发性评估',
+  'v38-metric-toxicity_risk': '毒性风险评估',
 }
 
 const eventLabels: Record<string, string> = {
@@ -325,6 +334,11 @@ const eventLabels: Record<string, string> = {
   'candidate.created': '候选已记录',
   'candidate.scored': '候选已评分',
   'candidate.rejected': '候选已淘汰',
+  'agent_decision.recorded': '智能体决策已记录',
+  'autoresearch.action.recorded': '生成动作已记录',
+  'autoresearch.archive.updated': '多前沿归档已更新',
+  'autoresearch.checkpoint.recorded': '迭代检查点已记录',
+  'v38.sequence_metric.persisted': '序列指标已持久化',
 }
 
 const eventStateLabels: Record<string, string> = { started: '开始', running: '进行中', progress: '进度更新', completed: '完成', succeeded: '成功', failed: '失败', cancelled: '已取消', created: '已创建', persisted: '已持久化', materialized: '已物化', recorded: '已记录', accepted: '已接受', rejected: '已淘汰' }
@@ -334,7 +348,7 @@ function displayEventState(type: string) {
   return eventStateLabels[suffix] ?? '事件'
 }
 
-function displayToolName(toolName: string) {
+export function displayToolName(toolName: string) {
   if (toolLabels[toolName]) return toolLabels[toolName]
   const normalized = toolName.toLowerCase()
   if (/v38[-_.]?generate.*ampgan|ampgan.*generate/.test(normalized)) return 'AMPGAN v2 生成'
@@ -343,10 +357,10 @@ function displayToolName(toolName: string) {
   if (/rosetta|interface.*refin/.test(normalized)) return 'Rosetta 界面精修'
   if (/generate|design/.test(normalized)) return '候选生成'
   if (/score|rank|admission/.test(normalized)) return '候选评分与筛选'
-  return '工具调用'
+  return '未命名工具'
 }
 
-function displayEventName(type: string) {
+export function displayEventName(type: string) {
   if (eventLabels[type]) return eventLabels[type]
   const normalized = type.toLowerCase()
   const state = displayEventState(type)
@@ -354,7 +368,39 @@ function displayEventName(type: string) {
   if (/scored.*lineage|lineage.*scored/.test(normalized)) return `评分谱系 · ${state}`
   if (/operational_run/.test(normalized)) return `运行记录 · ${state}`
   if (/operational\.call/.test(normalized)) return `工具调用 · ${state}`
-  return `生命周期 · ${state}`
+  return `未命名事件 · ${state}`
+}
+
+const eventSemanticLabels: Record<string, string> = {
+  'run.created': '运行',
+  'run.started': '运行',
+  'run.succeeded': '运行',
+  'run.failed': '运行',
+  'run.cancelled': '运行',
+  'mvp_human.autoresearch.recovery_scheduled': '恢复调度',
+  'tool_call.started': '工具调用',
+  'tool_call.completed': '工具调用',
+  'tool_call.succeeded': '工具调用',
+  'tool_call.failed': '工具调用',
+  'candidate.created': '候选',
+  'candidate.scored': '候选评分',
+  'candidate.rejected': '候选筛选',
+  'agent_decision.recorded': '智能体决策',
+  'autoresearch.action.recorded': '生成动作',
+  'autoresearch.archive.updated': '多前沿归档',
+  'autoresearch.checkpoint.recorded': '迭代检查点',
+  'v38.sequence_metric.persisted': '序列指标',
+}
+
+/** Stable scientific subject used for aggregate display; raw event type stays in metadata. */
+export function displayEventSemanticName(type: string) {
+  if (eventSemanticLabels[type]) return eventSemanticLabels[type]
+  const normalized = type.toLowerCase()
+  if (/multitarget.*structure/.test(normalized)) return '结构证据'
+  if (/scored.*lineage|lineage.*scored/.test(normalized)) return '评分谱系'
+  if (/operational_run/.test(normalized)) return '运行记录'
+  if (/operational\.call/.test(normalized)) return '工具调用'
+  return '未命名事件'
 }
 
 function displayActor(actor: string) {
@@ -416,6 +462,14 @@ function displayActivityType(activityType: string) {
     mark_run_cancelled: '运行取消',
   }
   return labels[activityType]
+}
+
+/** Use the persisted activity type for lifecycle event detail labels. */
+export function displayObservedEventName(type: string, payload?: unknown) {
+  const activityType = text(record(payload).activity_type).trim()
+  if (activityType) return `${displayActivityType(activityType) ?? '活动'} · ${displayEventState(type)}`
+  if (type.toLowerCase().startsWith('activity.')) return `活动 · ${displayEventState(type)}`
+  return displayEventName(type)
 }
 
 function displayErrorCategory(errorCategory: string) {
@@ -599,8 +653,7 @@ function activityAttemptFacts(events: TimelineEvent[]) {
 function eventNode(event: TimelineEvent): GraphStage {
   const recoveryLabel = recoveryAttemptLabel(event)
   const status = runtimeEventStatus(event)
-  const activityLabel = displayActivityType(text(record(event.payload).activity_type))
-  const baseEventName = activityLabel ? `${activityLabel} · ${displayEventState(event.type)}` : displayEventName(event.type)
+  const baseEventName = displayObservedEventName(event.type, event.payload)
   const eventName = activityAttemptLabel(event) ? `${baseEventName} · ${activityAttemptLabel(event)}` : baseEventName
   return {
     id: `event:${event.sequence_no}`,
@@ -636,7 +689,7 @@ function eventNode(event: TimelineEvent): GraphStage {
 
 function callNode(call: ToolAttempt): GraphStage {
   const status = nodeStatus(call.status)
-  const artifactCount = call.artifacts.length
+  const artifactCount = call.artifacts?.length ?? 0
   const observedAttempt = call.attempt_observed !== false
   const semanticLabel = call.activity_type ? displayActivityType(call.activity_type) : undefined
   return {
@@ -702,6 +755,21 @@ function eventComposition(events: TimelineEvent[]) {
     counts.set(name, (counts.get(name) ?? 0) + 1)
   }
   return [...counts.entries()].map(([name, count]) => `${name} ${count}`).join(' · ')
+}
+
+function aggregateSemanticLabel(calls: ToolAttempt[], events: TimelineEvent[]) {
+  const callIds = new Set(calls.map((call) => call.id))
+  const materializedCalls = calls.filter((call) => !call.tool_name.startsWith('observed_lifecycle:'))
+  const callLabels = materializedCalls
+    .map((call) => call.activity_type ? displayActivityType(call.activity_type) ?? displayToolName(call.tool_name) : displayToolName(call.tool_name))
+    .filter((label) => label !== '未命名工具')
+  const eventLabelsForAggregate = events
+    .filter((event) => !callIds.has(text(record(event.payload).tool_call_id)) || materializedCalls.length === 0)
+    .map((event) => displayActivityType(text(record(event.payload).activity_type)) ?? displayEventSemanticName(event.type))
+    .filter((label) => label !== '未命名事件')
+  const labels = callLabels.length > 0 ? callLabels : eventLabelsForAggregate
+  const uniqueLabels = [...new Set(labels)]
+  return uniqueLabels.length === 1 ? uniqueLabels[0] : null
 }
 
 function relationCount(calls: ToolAttempt[], collect: (value: unknown) => string[]) {
@@ -1039,20 +1107,13 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
     for (const event of bucket.events) groupIdByEvent.set(`event:${event.sequence_no}`, groupId)
   }
   const expandedGroups = options.expandedGroups ?? new Set<string>()
-  let executionIndex = 0
-  let batchIndex = 0
-  let observationIndex = 0
   const callNodes = bucketRecords.flatMap((bucket) => {
     const total = bucket.calls.length + bucket.events.length
     if (total === 1) return [...bucket.calls.map(callNode), ...bucket.events.map(eventNode)]
     const groupId = groupIdFor(bucket)
     const expanded = expandedGroups.has(groupId)
     const groupingBasis = bucket.basis
-    const displayBatchLabel = groupingBasis.startsWith('后端执行字段')
-      ? `第 ${++executionIndex} 次执行`
-      : groupingBasis.startsWith('后端字段')
-        ? `第 ${++batchIndex} 批`
-        : `观测组 ${++observationIndex}`
+    const displayBatchLabel = aggregateSemanticLabel(bucket.calls, bucket.events) ?? '混合观测组'
     return [runtimeGroupNode(bucket.calls, bucket.events, expanded, groupId, groupingBasis, displayBatchLabel), ...(expanded ? [...bucket.calls.map(callNode), ...bucket.events.map(eventNode)] : [])]
   })
   const nodes = [

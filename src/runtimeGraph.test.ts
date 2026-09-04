@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildRuntimeGraph, countActivityRetries, countOpenActivities, deriveLifecycleToolCalls, layoutColumnsForWidth, runtimeActivitySummary, runtimeCallSummary, runtimeRetrySummary } from './runtimeGraph'
+import { buildRuntimeGraph, countActivityRetries, countOpenActivities, deriveLifecycleToolCalls, displayEventName, displayEventSemanticName, displayObservedEventName, displayToolName, layoutColumnsForWidth, runtimeActivitySummary, runtimeCallSummary, runtimeRetrySummary } from './runtimeGraph'
 import type { NodeDetail, RunDetail, ToolAttempt } from './types'
 
 const call = (id: string, toolName: string, queuedAt: string, overrides: Partial<ToolAttempt> = {}): ToolAttempt => ({
@@ -46,6 +46,33 @@ const detail = (events: RunDetail['events'] = [], candidates: RunDetail['candida
 const nodeDetail = (calls: ToolAttempt[]): NodeDetail => ({ source: 'postgresql', read_only: true, node_id: 'dynamic', narrative: [], calls, metrics: {}, reasoning: { decisions: [], status_counts: {}, reason_counts: {}, considered: 0, admitted: 0 }, structure_results: [] })
 
 describe('buildRuntimeGraph', () => {
+  it('maps persisted tool keys to concise Chinese labels and keeps unknown keys neutral', () => {
+    expect(displayToolName('autoresearch-frozen-action-executor')).toBe('冻结动作执行')
+    expect(displayToolName('autoresearch-multi-front-rule-planner')).toBe('多前沿规则规划')
+    expect(displayToolName('v38-metric-mic_potency')).toBe('MIC 活性预测')
+    expect(displayToolName('v38-metric-physicochemical_developability')).toBe('理化可开发性评估')
+    expect(displayToolName('untrusted-internal-tool-key')).toBe('未命名工具')
+  })
+
+  it('maps persisted event keys to distinct scientific labels and keeps unknown events neutral', () => {
+    expect(displayEventName('agent_decision.recorded')).toBe('智能体决策已记录')
+    expect(displayEventName('autoresearch.action.recorded')).toBe('生成动作已记录')
+    expect(displayEventName('autoresearch.archive.updated')).toBe('多前沿归档已更新')
+    expect(displayEventName('autoresearch.checkpoint.recorded')).toBe('迭代检查点已记录')
+    expect(displayEventName('v38.sequence_metric.persisted')).toBe('序列指标已持久化')
+    expect(displayEventName('opaque.internal.event')).toBe('未命名事件 · 事件')
+    expect(displayEventSemanticName('autoresearch.archive.updated')).toBe('多前沿归档')
+    expect(displayEventSemanticName('autoresearch.action.recorded')).toBe('生成动作')
+    expect(displayEventSemanticName('opaque.internal.event')).toBe('未命名事件')
+  })
+
+  it('uses persisted activity type for lifecycle event labels, with a neutral fallback for unknown types', () => {
+    expect(displayObservedEventName('activity.started', { activity_type: 'evaluate_v38_sequence_metric' })).toBe('序列指标计算 · 开始')
+    expect(displayObservedEventName('activity.succeeded', { activity_type: 'evaluate_v38_sequence_metric' })).toBe('序列指标计算 · 成功')
+    expect(displayObservedEventName('activity.failed', { activity_type: 'opaque_activity' })).toBe('活动 · 失败')
+    expect(displayObservedEventName('activity.started', {})).toBe('活动 · 开始')
+  })
+
   it('materializes explicit lifecycle tool_call_id observations and deduplicates node-detail calls', () => {
     const events: RunDetail['events'] = [
       { sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: 'workflow-coverage', activity_id: 8, attempt: 1, status: 'started', activity_type: 'evaluate_v38_sequence_metric', tool_call_id: 'call-explicit' }, occurred_at: '2026-09-04T00:00:01Z' },
@@ -278,7 +305,7 @@ describe('buildRuntimeGraph', () => {
       { sequence_no: 1, type: 'v38.multitarget_structure.persisted', actor: 'worker', payload: { tool_call_id: 'call-1' }, occurred_at: '2026-09-04T00:00:01Z' },
     ]), { worker: nodeDetail([observed]) })
     const group = result.nodes.find((node) => node.runtime?.node_type === 'batch_group')
-    expect(group).toMatchObject({ status: 'completed', label: '观测组 1 · 1 项活动' })
+    expect(group).toMatchObject({ status: 'completed', label: 'Boltz 2 · 1 项活动' })
     expect(group?.runtime?.event_ids).toEqual(['event:1'])
     const expanded = buildRuntimeGraph(detail([
       { sequence_no: 1, type: 'v38.multitarget_structure.persisted', actor: 'worker', payload: { tool_call_id: 'call-1' }, occurred_at: '2026-09-04T00:00:01Z' },
@@ -329,6 +356,26 @@ describe('buildRuntimeGraph', () => {
     const group = result.nodes.find((node) => node.runtime?.node_type === 'tool_group')
     expect(group?.insight.facts[0]).toMatchObject({ label: '操作构成', value: expect.stringContaining('AMPGAN v2 1') })
     expect(group?.insight.facts[0].value).toContain('AMP read 1')
+  })
+
+  it('uses a persisted event semantic as the aggregate title instead of a sequence number', () => {
+    const result = buildRuntimeGraph(detail([
+      { sequence_no: 1, type: 'autoresearch.archive.updated', actor: 'observer', payload: {}, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'autoresearch.archive.updated', actor: 'observer', payload: {}, occurred_at: '2026-09-04T00:00:02Z' },
+      { sequence_no: 3, type: 'autoresearch.archive.updated', actor: 'observer', payload: {}, occurred_at: '2026-09-04T00:00:03Z' },
+    ]))
+    const group = result.nodes.find((node) => node.runtime?.node_type === 'event_group')
+    expect(group?.label).toBe('多前沿归档 · 3 项活动')
+    expect(group?.label).not.toContain('观测组')
+  })
+
+  it('uses mixed observation wording when an explicitly grouped batch has no common semantic', () => {
+    const result = buildRuntimeGraph(detail([
+      { sequence_no: 1, type: 'autoresearch.archive.updated', actor: 'observer', payload: { batch_id: 'batch-mixed' }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'autoresearch.action.recorded', actor: 'observer', payload: { batch_id: 'batch-mixed' }, occurred_at: '2026-09-04T00:00:02Z' },
+    ]))
+    const group = result.nodes.find((node) => node.runtime?.node_type === 'event_group')
+    expect(group?.label).toBe('混合观测组 · 2 项活动')
   })
 
   it('keeps retry and fallback relations distinct from explicit dependencies', () => {
@@ -409,7 +456,7 @@ describe('buildRuntimeGraph', () => {
     const group = result.nodes.find((node) => node.runtime?.node_type === 'batch_group')
     expect(group?.runtime?.child_ids).toEqual(['call-1', 'call-2'])
     expect(group?.runtime?.event_ids).toEqual(['event:1', 'event:2'])
-    expect(group?.label).toBe('第 1 批 · 4 项活动')
+    expect(group?.label).toBe('混合观测组 · 4 项活动')
   })
 
   it('folds real lifecycle boundaries by exact workflow execution and uses the latest boundary as activity status', () => {
@@ -429,7 +476,7 @@ describe('buildRuntimeGraph', () => {
     ]))
     const executionGroup = result.nodes.find((node) => node.runtime?.node_type === 'event_group')
     expect(executionGroup).toMatchObject({
-      label: '第 1 次执行 · 2 项活动',
+      label: '混合观测组 · 2 项活动',
       status: 'completed',
       current: 2,
       total: 2,
@@ -465,9 +512,9 @@ describe('buildRuntimeGraph', () => {
       { sequence_no: 5, type: 'activity.succeeded', actor: 'observer-writer', payload: { workflow_run_id: 'workflow-run-b', activity_id: 1, attempt: 1 }, occurred_at: '2026-09-04T00:00:05Z' },
     ]
     const result = buildRuntimeGraph(detail(events))
-    const first = result.nodes.find((node) => node.label.startsWith('第 1 次执行'))
+    const first = result.nodes.find((node) => node.runtime?.event_ids?.includes('event:1'))
     const recovery = result.nodes.find((node) => node.label === '第 2 次恢复调度')
-    const second = result.nodes.find((node) => node.label.startsWith('第 2 次执行'))
+    const second = result.nodes.find((node) => node.runtime?.event_ids?.includes('event:4'))
     expect(first).toBeDefined()
     expect(recovery).toBeDefined()
     expect(second).toBeDefined()

@@ -50,7 +50,7 @@ import {
 import { LaneLabel, WorkflowNode, type LaneNode, type StageNode } from './WorkflowNode'
 import { assertMatchingRunIdentity, type RunIdentity } from './runIdentity'
 import { formatRunTitle } from './runPresentation'
-import { buildRuntimeGraph, runtimeActivitySummary, runtimeCallSummary, runtimeEventStatus, runtimeRetrySummary, type RuntimeGraphModel } from './runtimeGraph'
+import { buildRuntimeGraph, displayObservedEventName, displayToolName, runtimeActivitySummary, runtimeCallSummary, runtimeEventStatus, runtimeRetrySummary, type RuntimeGraphModel } from './runtimeGraph'
 import { readableRuntimeNodeCount, selectReadableRuntimeNodeIds } from './runtimeViewport'
 import { nodeDetailCacheTtlMs, observerIdlePrefetchDelayMs, observerInitialPrefetchCount, observerListTimeoutMs, observerInFlightStageIds, observerMergePrefetchQueue, observerNextPrefetchStage, observerNodeDetailCacheKey, observerNodeDetailTimeoutMs, observerPendingPrefetchCount, observerPollingIntervalMs, observerPrefetchQueueMatches, observerPrefetchInFlightKey, observerPrefetchRefreshExpired, observerPrefetchStageOrder, observerRequeuePrefetchStage, observerResponseIsStale, observerRunDetailCacheKey, observerRunDetailTimeoutMs, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion, observerStaleRetryDelayMs, type ObserverPrefetchQueue } from './observerPolling'
 import { schedulerHealthDescription, schedulerHealthPresentation } from './schedulerHealth'
@@ -91,23 +91,8 @@ const statusText: Record<string, string> = {
   completed: '已完成', stopped: '已停止', pending: '待写入',
 }
 
-const eventTypeLabels: Record<string, string> = {
-  'run.created': '运行已创建', 'run.started': '运行开始', 'run.succeeded': '运行完成', 'run.failed': '运行失败', 'run.cancelled': '运行已取消',
-  'tool_call.started': '工具调用开始', 'tool_call.completed': '工具调用完成', 'tool_call.succeeded': '工具调用成功', 'tool_call.failed': '工具调用失败',
-  'candidate.created': '候选已记录', 'candidate.scored': '候选已评分', 'candidate.rejected': '候选已淘汰',
-}
-
-function readableEventType(type: string) {
-  if (eventTypeLabels[type]) return eventTypeLabels[type]
-  const suffix = type.split('.').at(-1) ?? '未命名'
-  const suffixLabels: Record<string, string> = { created: '已创建', started: '开始', running: '进行中', completed: '完成', succeeded: '成功', failed: '失败', cancelled: '已取消', persisted: '已持久化', materialized: '已物化', recorded: '已记录', accepted: '已接受', rejected: '已淘汰', progress: '进度更新' }
-  const normalized = type.toLowerCase()
-  const state = suffixLabels[suffix] ?? suffix
-  if (/multitarget.*structure/.test(normalized)) return `结构证据 · ${state}`
-  if (/scored.*lineage|lineage.*scored/.test(normalized)) return `评分谱系 · ${state}`
-  if (/operational_run/.test(normalized)) return `运行记录 · ${state}`
-  if (/operational\.call/.test(normalized)) return `工具调用 · ${state}`
-  return `生命周期事件 · ${state}`
+function readableEventType(type: string, payload?: unknown) {
+  return displayObservedEventName(type, payload)
 }
 
 const metricLabels: Record<string, string> = {
@@ -131,15 +116,6 @@ const professionalTermHelp: Record<string, string> = {
   amp_read: 'AMP read用于交叉复核候选短肽的抗菌活性预测。',
   boltz: 'Boltz 2用于预测蛋白质与短肽复合物的三维构象。',
   rosetta: 'Rosetta用于采样并评估蛋白质与短肽的界面构象。',
-}
-
-const runtimeToolLabels: Record<string, string> = {
-  amp_designer: 'AMP Designer',
-  ampgan: 'AMPGAN v2',
-  hydramp: 'HydrAMP',
-  amp_read: 'AMP read',
-  boltz: 'Boltz 2',
-  rosetta: 'Rosetta',
 }
 
 function formatTime(value: string | null) {
@@ -1035,7 +1011,7 @@ function ToolAttemptDisclosure({ call }: { call: ToolAttempt }) {
       <summary>
         <span className={`attempt-state ${call.status}`} aria-hidden="true" />
         <span className="attempt-name">
-          <b title={`${professionalTermHelp[call.tool_name] ?? '工具调用事实'} 原始键：${call.tool_name}`}>{runtimeToolLabels[call.tool_name] ?? '工具调用'}</b>
+          <b title={`${professionalTermHelp[call.tool_name] ?? '工具调用事实'} 原始键：${call.tool_name}`}>{displayToolName(call.tool_name)}</b>
           <small title={context ? `${context.target} · ${lane}` : call.tool_version}>
             {context ? `${context.target} · ${lane}` : inputs.plugin ? String(inputs.plugin) : '持久化运行'} <i /> 第 {call.attempt} 次尝试
           </small>
@@ -1225,7 +1201,7 @@ function Inspector({ detail, stageId, analysisSnapshot, distributionOverride, on
       )}
       <details className="detail-disclosure timeline-disclosure">
         <summary><Clock3 />数据库事件 <span>{detail.events.length}</span><ChevronRight /></summary>
-        <div className="event-list detail-content">{detail.events.slice(0, 12).map((event) => <div className="event-row" key={event.sequence_no}><i /><div><b>{readableEventType(event.type)}</b><span>{event.type} · {event.actor} · {formatTime(event.occurred_at)}</span></div></div>)}</div>
+        <div className="event-list detail-content">{detail.events.slice(0, 12).map((event) => <div className="event-row" key={event.sequence_no}><i /><div><b>{readableEventType(event.type, event.payload)}</b><span>{event.type} · {event.actor} · {formatTime(event.occurred_at)}</span></div></div>)}</div>
       </details>
     </aside>
   )
@@ -1282,7 +1258,7 @@ function RuntimeInspector({ detail, graph, nodeId, onClose, onToggleGroup }: { d
         <p>{node.insight.reason}</p>
         <span>{node.insight.facts.map((fact) => `${fact.label} ${fact.value}`).join(' · ')}</span>
       </section>
-      {isRuntimeGroup && <section className="inspector-section runtime-group-section"><div className="section-title"><h3>聚合明细</h3><button className="group-toggle" onClick={() => onToggleGroup(node.id)}>{groupExpanded ? '收起明细' : '展开明细'}</button></div><p className="runtime-note">默认显示批次或连续观测的汇总事实；展开后可按时间查看工具调用与生命周期事件。</p><code className="runtime-raw-key">聚合依据：{node.runtime?.grouping_basis ?? '未返回'}</code><div className="runtime-group-list">{groupCalls.map((item) => <div key={item.id}><span className={`attempt-state ${item.status}`} /><b>尝试 {item.attempt}</b><small>{statusText[item.status] ?? item.status}</small></div>)}{groupEvents.map((item) => { const status = runtimeEventStatus(item); return <div key={`event:${item.sequence_no}`}><span className={`attempt-state ${status}`} /><b>事件 {item.sequence_no}</b><small>{readableEventType(item.type)} · {statusText[status]} · {formatTime(item.occurred_at)}</small></div> })}</div></section>}
+      {isRuntimeGroup && <section className="inspector-section runtime-group-section"><div className="section-title"><h3>聚合明细</h3><button className="group-toggle" onClick={() => onToggleGroup(node.id)}>{groupExpanded ? '收起明细' : '展开明细'}</button></div><p className="runtime-note">默认显示批次或连续观测的汇总事实；展开后可按时间查看工具调用与生命周期事件。</p><code className="runtime-raw-key">聚合依据：{node.runtime?.grouping_basis ?? '未返回'}</code><div className="runtime-group-list">{groupCalls.map((item) => <div key={item.id}><span className={`attempt-state ${item.status}`} /><b>尝试 {item.attempt}</b><small>{statusText[item.status] ?? item.status}</small></div>)}{groupEvents.map((item) => { const status = runtimeEventStatus(item); return <div key={`event:${item.sequence_no}`}><span className={`attempt-state ${status}`} /><b>事件 {item.sequence_no}</b><small>{readableEventType(item.type, item.payload)} · {statusText[status]} · {formatTime(item.occurred_at)}</small></div> })}</div></section>}
       {call && <section className="inspector-section"><div className="section-title"><h3>工具调用与证据</h3><span className={`stage-badge ${node.status}`}>{statusText[call.status] ?? call.status}</span></div><ToolAttemptDisclosure call={call} /></section>}
       {event && <section className="inspector-section"><div className="analysis-kicker"><Clock3 />事件 payload</div><div className="runtime-event-meta"><b>{event.actor}</b><span>序号 {event.sequence_no} · {formatTime(event.occurred_at)}</span></div><div className="runtime-raw-key">原始事件键：{event.type}</div><pre className="runtime-json">{JSON.stringify(event.payload, null, 2)}</pre></section>}
       {candidate && <section className="inspector-section"><div className="analysis-kicker"><GitBranch />候选记录</div><code className="runtime-sequence">{candidate.sequence}</code><div className="fact-grid"><Fact label="代际" value={candidate.generation ?? '—'} /><Fact label="父候选" value={candidate.parent_id ?? '未返回'} /><Fact label="生成调用" value={candidate.generator_call_id ?? '未返回'} /><Fact label="序列长度" value={candidate.length} /></div>{candidate.reasons.length > 0 && <div className="runtime-reasons"><span>后端返回原因（未用于状态推断）</span>{candidate.reasons.map((reason) => <b key={reason}>{reason}</b>)}</div>}</section>}
