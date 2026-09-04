@@ -1,0 +1,126 @@
+{
+  "csv_sha256": "5455c0576eef938bfcdc48811a2ecd99b3f45c75e498be070bf9f86d5f078968",
+  "dispatch_allowed": false,
+  "historical_runs_modified": false,
+  "identity": "run_id+authoritative_candidate_id+target+sequence_sha256+task_key",
+  "inputs": {
+    "benchmark_json": "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\reports\\source_effect_benchmark_20260904\\benchmark_v2.json",
+    "benchmark_sha256": "9eda5f71017487be1542ecf8cca83be80649a955cfc772f226da64b3d0faaed0",
+    "md_snapshot": {
+      "cohort": {
+        "cross_snapshot_identity_intersection": 0,
+        "expected_unique": 486,
+        "main_snapshot_rows": 475,
+        "structure_prepared_excluded": true,
+        "successor_11_snapshot_rows": 11,
+        "successor_12_excluded": true
+      },
+      "current_partition": {
+        "analysis_pending_unique": 0,
+        "disjoint_union_equals_486": true,
+        "failed_unique": 0,
+        "full_evidence_unique": 31,
+        "launched_equals_full_plus_running": true,
+        "launched_unique": 50,
+        "not_started_unique": 436,
+        "partition_total_unique": 486,
+        "running_or_incomplete_unique": 19
+      },
+      "observed_at_utc": "2026-09-03T22:37:49.808096+00:00",
+      "path": "reports\\pool_a_md_50ns_expansion_20260903\\md_current_identity_snapshot_20260904.json",
+      "sha256": "fded2719ca5847e43fa1c9061ea625881ae3966e25081dcaf1d20a6a8994321d"
+    },
+    "pg_url_identity": "local authenticated PostgreSQL read-only query",
+    "pool_counts_json": "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\reports\\ampgent_pool_a_live_20260903T0605Z.json",
+    "pool_counts_sha256": "4484ba43abdccfae8262daec2ff0fe9b2049920978261040f22a0b7fa9408993"
+  },
+  "md_snapshot": {
+    "cohort": {
+      "cross_snapshot_identity_intersection": 0,
+      "expected_unique": 486,
+      "main_snapshot_rows": 475,
+      "structure_prepared_excluded": true,
+      "successor_11_snapshot_rows": 11,
+      "successor_12_excluded": true
+    },
+    "current_partition": {
+      "analysis_pending_unique": 0,
+      "disjoint_union_equals_486": true,
+      "failed_unique": 0,
+      "full_evidence_unique": 31,
+      "launched_equals_full_plus_running": true,
+      "launched_unique": 50,
+      "not_started_unique": 436,
+      "partition_total_unique": 486,
+      "running_or_incomplete_unique": 19
+    },
+    "observed_at_utc": "2026-09-03T22:37:49.808096+00:00",
+    "path": "reports\\pool_a_md_50ns_expansion_20260903\\md_current_identity_snapshot_20260904.json",
+    "sha256": "fded2719ca5847e43fa1c9061ea625881ae3966e25081dcaf1d20a6a8994321d"
+  },
+  "nstruct": 5,
+  "observed_at": "2026-09-04T00:03:03.551497+00:00",
+  "rows": [
+    {
+      "activity_support": 3,
+      "archive_qd_score": 63.077418333333334,
+      "balance_gap_to_50": 0,
+      "candidate_id": "24185234-d211-40f6-ba2c-ee6abb1c4eb1",
+      "challenger_status": "no_conflict",
+      "display": 1,
+      "evidence_sources": "none",
+      "existing_decoy_count": 0,
+      "formal12": 1,
+      "nstruct": 5,
+      "pg_succeeded_evaluations": 15,
+      "pool_a_count": 53,
+      "priority": 1,
+      "qd_cell": "q3-h3-m3-l2",
+      "qd_contribution": "empty_cell",
+      "qd_new_cell": 1,
+      "qd_quality": 0.0,
+      "qd_replacement": 0,
+      "quality_eligible": 1,
+      "remaining_decoy_count": 5,
+      "rosetta_task_key": "rosetta5:pbp2a:45593820-90db-53df-b29d-b97adfa203f3:24185234-d211-40f6-ba2c-ee6abb1c4eb1",
+      "run_id": "45593820-90db-53df-b29d-b97adfa203f3",
+      "sequence": "AFAKSLKNELSSLNLALAS",
+      "sequence_sha256": "896a34295d71b4b4ad1f6a7ad7ae45d29c4dfee1480c54cf55cf18c3f63f6855",
+      "source": "PepMLM_target_conditioned",
+      "status": "backlog_ready",
+      "structure_evidence_count": 0,
+      "target": "WP_308061015.1",
+      "target_key": "pbp2a"
+    }
+  ],
+  "schema_version": "ampgent.targeted-rosetta-coarse5-backlog.1",
+  "scope": "six target-specific branches; target-agnostic excluded",
+  "selection": "formal12+display+challenger+QD contribution; no weighted q+lambdaD",
+  "summary": {
+    "candidate_count": 1,
+    "excluded_counts": {
+      "existing_structure_or_task": 21,
+      "out_of_scope": 2
+    },
+    "pg_identity_rows": 29,
+    "pool_a_counts": {
+      "acea": 82,
+      "angpt1": 102,
+      "fgf2": 81,
+      "gyra": 100,
+      "pbp2a": 53,
+      "vegfa": 80
+    },
+    "remote_exact_hits": 0,
+    "remote_inventory_used": "reports\\targeted_rosetta_coarse5_backlog_20260904\\remote_structure_inventory_receipt.json",
+    "target_counts": {
+      "acea": 0,
+      "angpt1": 0,
+      "fgf2": 0,
+      "gyra": 0,
+      "pbp2a": 1,
+      "vegfa": 0
+    },
+    "task_submitted": false
+  }
+}
