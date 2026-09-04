@@ -1,0 +1,87 @@
+{
+  "schema_version": "ampgent.synth-remote-recheck.1",
+  "observed_at_utc": "2026-09-04T02:18:44.4736422+00:00",
+  "auth": {
+    "route": "approved DPAPI credential plus SSH_ASKPASS",
+    "direct_ssh_failure_not_used": true,
+    "secret_material_persisted": false,
+    "listener": {
+      "host": "127.0.0.1",
+      "port": 32224,
+      "pid": 31396
+    },
+    "minimal_probe": {
+      "identity": "uid=1016(synth) gid=1017(synth)",
+      "hostname": "admin.cluster.local",
+      "df_available_bytes": 1223985988,
+      "df_capacity_percent": 83
+    }
+  },
+  "successor11": {
+    "root": "/sdd_data/pepagent/ampgent/md/pool-a-full-md-v1",
+    "source_manifest_count": 11,
+    "supervisor_pid": 1280301,
+    "analysis_pid": 3311802,
+    "mmgbsa_pid": 3360111,
+    "runner_pids": [
+      58820,
+      1280316,
+      2060743
+    ],
+    "result_dirs_observed": 6,
+    "compact_interface_mmgbsa_complete_dirs": 3,
+    "completion_receipt_file_count": 0,
+    "pg_export_entries": 6,
+    "pg_inserted_evaluations": 0,
+    "pg_already_complete_entries": 6,
+    "identity_drift": 0,
+    "large_artifacts_read": false
+  },
+  "md_486_snapshot": {
+    "path": "reports\\pool_a_md_50ns_expansion_20260903\\md_current_identity_snapshot_20260904.json",
+    "identity_union": 486,
+    "launched_unique": 50,
+    "full_evidence_unique": 31,
+    "analysis_pending_unique": 0,
+    "running_or_incomplete_unique": 19,
+    "not_started_unique": 436,
+    "failed_unique": 0,
+    "disjoint_union_equals_486": true,
+    "launched_equals_full_plus_running": true
+  },
+  "compact_sync": {
+    "path": "reports\\pool_a_md_50ns_expansion_20260903\\synth-successor-11\\compact-sync-20260904.json",
+    "copied_file_count": 6,
+    "structure_or_trajectory_copied": false,
+    "remote_files_deleted": false
+  },
+  "local_relay": {
+    "written_missing_markers": 2,
+    "idempotent_existing_markers": 4,
+    "pg_write_this_round": 0,
+    "replay_only": true,
+    "candidate": "fgf2/bf53367f-8705-4e17-bb01-326b237e80ea",
+    "markers": "interface+mmgbsa"
+  },
+  "targeted_prepared": {
+    "path": "reports\\angpt1_pepglad_matched_control_20260904_v3\\remote_prepared_receipt_20260904.json",
+    "remote_root": "/sdd_data/pepagent/ampgent/structure/prepared/targeted-global-coarse5-20260904-v2",
+    "entry_count": 13,
+    "remote_verified_count": 13,
+    "initial_atomic_write_observed_count": 13,
+    "current_verification_new_count": 0,
+    "current_verification_skipped_existing_count": 13,
+    "overwrite_count": 0,
+    "conflict_count": 0,
+    "dispatch_allowed": false,
+    "task_submitted": false,
+    "workflow_submitted": false
+  },
+  "mutations": {
+    "postgresql_write": false,
+    "remote_task_start": false,
+    "remote_large_artifact_download": false,
+    "remote_large_artifact_delete": false,
+    "prohibited_host32_gpu2_gpu3_touched": false
+  }
+}
