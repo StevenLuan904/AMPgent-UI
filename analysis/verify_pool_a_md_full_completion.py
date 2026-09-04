@@ -622,7 +622,9 @@ def main() -> None:
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     temporary = args.output.with_name(f".{args.output.name}.{os.getpid()}.tmp")
-    temporary.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+    temporary.write_text(
+        json.dumps(result, separators=(",", ":")) + "\n", encoding="utf-8"
+    )
     temporary.replace(args.output)
     if not result["all_required_evidence_complete"] and not args.allow_incomplete:
         raise SystemExit(1)
