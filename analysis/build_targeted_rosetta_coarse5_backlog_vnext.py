@@ -35,7 +35,10 @@ from analysis.build_targeted_rosetta_coarse5_backlog import (
 )
 
 CONTRIBUTIONS = {"empty_cell", "incumbent_replacement", "replacement"}
+# A retained model disagreement is complete challenger evidence; it is not a
+# primary hard-gate pass, but it must not erase an authoritative prepared task.
 CONFLICT_OK = {"no_conflict"}
+RETAINED_CONFLICT = "cross_model_disagreement_retained"
 CSV_FIELDS = (
     "priority",
     "target_key",
@@ -111,6 +114,18 @@ SOURCE_SPECS = (
         "close": "pg_materialization_close_receipt.json",
         "qd": "resume_v2b/qd_evidence_persistence_receipt.json",
     },
+    {
+        "name": "fgf2_generation5",
+        "target": "fgf2",
+        "generation": "5",
+        "report": "reports/fgf2_pepflow_qd_neighbor_vnext_20260904_generation5_v4",
+        "queue": "coarse5_prepared/coarse5_prepared_queue.csv",
+        "score": "candidate_scores_calibrated.csv",
+        "challenger": "challenger/challenger_review.csv",
+        "close": "close_receipt.json",
+        "qd": "provisional_qd.json",
+        "allow_retained_challenger_conflict": "true",
+    },
 )
 
 
@@ -129,6 +144,14 @@ def discover_queue_specs(root: Path) -> list[dict[str, str]]:
         report = current.relative_to(root).as_posix()
         if report in explicit_reports:
             continue
+        eligibility_path = current / "targeted_backlog_eligibility.json"
+        if eligibility_path.exists():
+            eligibility = read_json(eligibility_path)
+            if (
+                isinstance(eligibility, dict)
+                and eligibility.get("effective_status") != "authoritative"
+            ):
+                continue
         target = norm_target(rows[0].get("target_key"))
         if target not in TARGETS:
             continue
@@ -264,13 +287,19 @@ def score_passes(row: dict[str, str]) -> bool:
     )
 
 
-def challenger_passes(row: dict[str, str]) -> bool:
+def challenger_passes(row: dict[str, str], allow_retained_conflict: bool = False) -> bool:
     return bool(
         text(row.get("hemopi2_classification_label"))
         and text(row.get("validator_version"))
         and text(row.get("hemopi2_classification_score"))
         and text(row.get("hemopi2_hc50_um"))
-        and text(row.get("challenger_conflict_status")) in CONFLICT_OK
+        and (
+            text(row.get("challenger_conflict_status")) in CONFLICT_OK
+            or (
+                allow_retained_conflict
+                and text(row.get("challenger_conflict_status")) == RETAINED_CONFLICT
+            )
+        )
     )
 
 
@@ -398,8 +427,9 @@ def normalize_source_rows(
         challenger = challengers.get(sequence_sha, {})
         qd = qd_by_hash.get(sequence_sha, {})
         contribution = qd_contribution(item.get("qd_contribution", qd.get("contribution")))
-        valid = (
-            contribution in CONTRIBUTIONS and score_passes(score) and challenger_passes(challenger)
+        valid = contribution in CONTRIBUTIONS and score_passes(score) and challenger_passes(
+            challenger,
+            allow_retained_conflict=truth(spec.get("allow_retained_challenger_conflict")),
         )
         if not valid:
             diagnostics["source_candidate_gate_failed"] += 1

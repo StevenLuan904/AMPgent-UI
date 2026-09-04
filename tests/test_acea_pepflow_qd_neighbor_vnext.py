@@ -8,6 +8,7 @@ import pytest
 ROOT = Path(__file__).parents[1]
 sys.path.insert(0, str(ROOT / "analysis"))
 
+from build_targeted_rosetta_coarse5_backlog_vnext import challenger_passes  # noqa: E402, I001
 from close_fgf2_pepflow_qd_neighbor_vnext import _identity  # noqa: E402, I001
 
 
@@ -84,6 +85,17 @@ def test_acea_close_records_formal_pg_new_qd_and_prepared_only_queue() -> None:
     assert queue["dispatch_allowed"] is False
     assert queue["remote_dispatch_submitted"] is False
     assert backlog["summary"]["rows"] == 50
+    assert backlog["summary"]["target_counts"]["acea"] == 4
+    assert backlog["summary"]["target_counts"]["fgf2"] == 6
+    backlog_rows = _csv(BACKLOG / "targeted_rosetta_coarse5_backlog_vnext.csv")
+    assert not any(
+        row["target_key"] == "acea" and row["source_generation"] == "4"
+        for row in backlog_rows
+    )
+    assert sum(
+        row["target_key"] == "fgf2" and row["source_generation"] == "5"
+        for row in backlog_rows
+    ) == 3
     assert backlog["dispatch_allowed"] is False
     assert backlog["requires_remote_exact_preflight"] is True
 
@@ -95,3 +107,22 @@ def test_acea_identity_contract_rejects_sequence_order_drift() -> None:
     ]
     with pytest.raises(ValueError, match="sequence identity/order drifted"):
         _identity(list(reversed(expected)), expected, "AceA fixture")
+
+
+def test_retained_challenger_disagreement_remains_complete_evidence() -> None:
+    row = {
+        "hemopi2_classification_label": "0",
+        "validator_version": "HemoPI2-test",
+        "hemopi2_classification_score": "0.3",
+        "hemopi2_hc50_um": "160",
+        "challenger_conflict_status": "cross_model_disagreement_retained",
+    }
+    assert challenger_passes(row) is False
+    assert challenger_passes(row, allow_retained_conflict=True) is True
+
+
+def test_acea_current_pg_unavailable_is_proposal_only_and_has_no_uuid() -> None:
+    eligibility = _json(REPORT / "targeted_backlog_eligibility.json")
+    assert eligibility["effective_status"] == "proposal_only_pending"
+    assert eligibility["authoritative_candidate_ids"] == []
+    assert eligibility["postgresql_status"] == "unavailable"
