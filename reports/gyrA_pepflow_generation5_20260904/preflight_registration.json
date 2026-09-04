@@ -1,0 +1,44 @@
+{
+  "schema_version": "ampgent.gyrA-pepflow-followup-preflight.1",
+  "target_key": "GyrA",
+  "generation": 5,
+  "seed": 20260904,
+  "operator_id": "gyrA-pepflow-followup-1aa-c-terminal-empty-cell-v1",
+  "source": "PepFlow",
+  "parent_source": "PepFlow-materialized-hybrid-QD-elite",
+  "parent_run_id": "8b9aba3a-ca15-54fe-bfa9-bba6c065f229",
+  "parent_candidate_ids": [
+    "0d9a2a79-f5cb-4bba-a00d-875b4ba98be4",
+    "9b2d51a9-c926-476f-97cd-97f9e2edf266",
+    "d5622b47-e15e-4a0e-bca0-9d657eef21ed"
+  ],
+  "parent_identity_basis": "authoritative_candidate_id+sequence_sha256",
+  "protected_core": "N-terminal PP/RK/WW; zero-based edit positions >=11 only",
+  "edit_budget": "one residue, equal length",
+  "registered_target_empty_cells": [
+    "q2-h2-m1-l3",
+    "q2-h2-m2-l3",
+    "q2-h2-m3-l3",
+    "q2-h3-m0-l3",
+    "q2-h3-m3-l3",
+    "q3-h3-m1-l3",
+    "q3-h3-m2-l3",
+    "q4-h3-m1-l3"
+  ],
+  "parent_occupied_cells": [
+    "q3-h2-m2-l3",
+    "q4-h2-m0-l3",
+    "q4-h2-m1-l3"
+  ],
+  "expected_delta_phi": {
+    "axes": ["charge_density", "hydrophobicity", "hydrophobic_moment", "length"],
+    "G_or_S_donor": {"charge_density": 0.0, "length": 0.0, "hydrophobicity": "non_positive"},
+    "V_donor": {"charge_density": 0.0, "length": 0.0, "hydrophobicity": "non_negative"},
+    "hydrophobic_moment": "recomputed_from_formal_descriptor",
+    "cell_rule": "actual_child_phi_must_land_in_registered_empty_cell"
+  },
+  "donor_residues": ["G", "S", "V"],
+  "historical_sequence_and_edit_gate": "postgresql_exact_sequence_plus_all_gyrA_prior_edit_csvs",
+  "gpu_rosetta_md_submitted": false,
+  "materialization_pending": true
+}

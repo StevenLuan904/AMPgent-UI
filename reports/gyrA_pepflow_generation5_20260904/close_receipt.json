@@ -1,0 +1,88 @@
+{
+  "schema_version": "ampgent.gyrA-pepflow-followup-close.1",
+  "target_key": "GyrA",
+  "generation": 5,
+  "seed": 20260904,
+  "operator_id": "gyrA-pepflow-followup-1aa-c-terminal-empty-cell-v1",
+  "source": "PepGLAD-ancestry_x_PepFlow-donor",
+  "evidence_arm": "PepGLAD-ancestry_x_PepFlow-donor",
+  "parent_source": "generation4_hybrid_QD_elite",
+  "immediate_parent_source": "generation4_hybrid_QD_elite",
+  "ancestral_parent_source": "PepGLAD",
+  "donor_source": "PepFlow",
+  "parent_run_id": "8b9aba3a-ca15-54fe-bfa9-bba6c065f229",
+  "parent_candidate_ids": [
+    "0d9a2a79-f5cb-4bba-a00d-875b4ba98be4",
+    "9b2d51a9-c926-476f-97cd-97f9e2edf266",
+    "d5622b47-e15e-4a0e-bca0-9d657eef21ed"
+  ],
+  "parent_occupied_cells": [
+    "q3-h2-m2-l3",
+    "q4-h2-m0-l3",
+    "q4-h2-m1-l3"
+  ],
+  "registered_empty_cells": [
+    "q2-h2-m1-l3",
+    "q2-h2-m2-l3",
+    "q2-h2-m3-l3",
+    "q2-h3-m0-l3",
+    "q2-h3-m3-l3",
+    "q3-h3-m1-l3",
+    "q3-h3-m2-l3",
+    "q4-h3-m1-l3"
+  ],
+  "protected_core": "N-terminal PP/RK/WW; zero-based edit positions >=11",
+  "donor_residues": [
+    "G",
+    "S",
+    "V"
+  ],
+  "proposal_count": 12,
+  "pg_new_count": 12,
+  "formal12_count": 12,
+  "display_count": 12,
+  "calibrated_support_ge_2_count": 7,
+  "excellent_count": 7,
+  "challenger_reviewed_count": 12,
+  "challenger_no_conflict_count": 2,
+  "challenger_conflict_count": 10,
+  "apex_status": "runtime_unavailable",
+  "apex_conflict_status": "not_assessed",
+  "peptiverse_status": "runtime_unavailable",
+  "peptiverse_conflict_status": "not_assessed",
+  "qd_quality_eligible_count": 7,
+  "qd_new_cell_count": 4,
+  "qd_replacement_count": 0,
+  "qd_contribution_counts": {
+    "empty_cell": 4,
+    "incumbent_replacement": 0
+  },
+  "materialization_run_id": "843feb2a-7d1a-53a0-b221-a0c055f0edf2",
+  "authoritative_candidate_ids": [
+    "a26b5fe5-eb07-4384-a2df-db0185b23ae1",
+    "2797ede9-0270-496e-9c48-3b7c37d04800",
+    "12a5b0e6-d906-43ce-ba43-0dc3b0260b7c",
+    "f0193b80-127f-4fe8-a2a9-29a1aa5c96db"
+  ],
+  "pg_readback": {
+    "candidate_count": 4,
+    "evaluation_count": 68,
+    "tool_call_count": 1,
+    "tool_call_id": "622d6e5c-bef2-411e-a4de-a466be857e76",
+    "replay_count": 0,
+    "identity_drift_count": 0
+  },
+  "coarse5_prepared_count": 4,
+  "dispatch_allowed": false,
+  "rosetta_status": "prepared_not_dispatched",
+  "median_dg_gate": -30,
+  "pool_a_admitted_count": 0,
+  "hydrophobic_metric_used_as_gate": false,
+  "weighted_total_used": false,
+  "score_all_path": "score_all_verified_runtime",
+  "failed_runtime_diagnostic_path": null,
+  "historical_runs_modified": false,
+  "archive_after_generation4": "archive_after_generation4.json",
+  "materialization_candidate_scores_path": "selected_candidate_scores.csv",
+  "structure_queue_path": "coarse5_prepared/coarse5_prepared_queue.csv"
+}

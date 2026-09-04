@@ -79,10 +79,24 @@ def generate(
     proposal_mode: str = "pepflow_source_qd_empty_cell_neighbor",
     min_fragment_length: int = 1,
     max_fragment_length: int = 1,
+    min_edit_position_zero_based: int = 0,
+    registered_empty_cells: set[str] | None = None,
 ) -> list[dict[str, Any]]:
     if limit != 12:
         raise ValueError("this frozen batch requires exactly 12 proposals")
-    empty = set(archive["empty_cell_ids"])
+    parent_occupied_cells = {
+        row.get("qd_cell", "").strip()
+        for row in parents
+        if row.get("qd_cell", "").strip()
+    }
+    empty = set(archive["empty_cell_ids"]) - parent_occupied_cells
+    registered = set(registered_empty_cells or ())
+    overlap = sorted(registered & parent_occupied_cells)
+    if overlap:
+        raise ValueError(
+            "registered empty cells overlap parent occupied cells: "
+            + ",".join(overlap)
+        )
     policy = BehaviorSpacePolicy.model_validate(archive["policy"])
     donor_rows = []
     for row in sorted(
@@ -111,7 +125,9 @@ def generate(
         sequence = parent["sequence"].strip().upper()
         for donor_index, donor in enumerate(donor_rows):
             residue = donor["donor_fragment"].strip().upper()
-            for position in range(len(sequence) - len(residue) + 1):
+            for position in range(
+                min_edit_position_zero_based, len(sequence) - len(residue) + 1
+            ):
                 if residue == sequence[position : position + len(residue)]:
                     continue
                 edit = (sequence, position, residue)
@@ -123,6 +139,8 @@ def generate(
                     continue
                 cell = _candidate_cell(child, policy)
                 if cell not in empty:
+                    continue
+                if registered_empty_cells and cell not in registered_empty_cells:
                     continue
                 before, after = phi(sequence), phi(child)
                 candidates.append(
@@ -151,6 +169,9 @@ def generate(
                         "donor_fragment": residue,
                         "donor_artifact_row": donor.get("proposal_id", ""),
                         "donor_artifact_id": donor.get("proposal_id", ""),
+                        "donor_artifact": donor.get("donor_artifact", ""),
+                        "donor_row_number": donor.get("donor_row_number", ""),
+                        "donor_row_sha256": donor.get("donor_row_sha256", ""),
                         "actual_cell_preflight": cell,
                         "target_cell_hit_preflight": "true",
                         "delta_phi_skill": json.dumps(
@@ -219,6 +240,8 @@ def main() -> None:
     parser.add_argument("--proposal-mode", default="pepflow_source_qd_empty_cell_neighbor")
     parser.add_argument("--min-donor-fragment-length", type=int, default=1)
     parser.add_argument("--max-donor-fragment-length", type=int, default=1)
+    parser.add_argument("--min-edit-position-zero-based", type=int, default=0)
+    parser.add_argument("--registered-empty-cell", action="append", default=[])
     args = parser.parse_args()
     parents = _safe_parents(_rows(args.parents_csv), args.target)
     if not parents:
@@ -241,6 +264,8 @@ def main() -> None:
         proposal_mode=args.proposal_mode,
         min_fragment_length=args.min_donor_fragment_length,
         max_fragment_length=args.max_donor_fragment_length,
+        min_edit_position_zero_based=args.min_edit_position_zero_based,
+        registered_empty_cells=set(args.registered_empty_cell),
     )
     if len(proposals) != args.limit:
         raise ValueError(f"only {len(proposals)} PG-new empty-cell proposals available")
@@ -275,6 +300,15 @@ def main() -> None:
             args.min_donor_fragment_length,
             args.max_donor_fragment_length,
         ],
+        "min_edit_position_zero_based": args.min_edit_position_zero_based,
+        "registered_empty_cells": sorted(set(args.registered_empty_cell)),
+        "parent_occupied_cells": sorted(
+            {
+                row.get("qd_cell", "").strip()
+                for row in parents
+                if row.get("qd_cell", "").strip()
+            }
+        ),
     }
     (args.output_dir / "generation_receipt.json").write_text(
         json.dumps(receipt, ensure_ascii=False, indent=2, sort_keys=True) + "\n",

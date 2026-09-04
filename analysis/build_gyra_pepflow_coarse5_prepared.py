@@ -15,6 +15,11 @@ from pepagent.db.models import Candidate
 from pepagent.db.session import SessionFactory
 from pepagent.provenance.hashing import sha256_file, sha256_json
 
+HYBRID_SOURCE = "PepGLAD-ancestry_x_PepFlow-donor"
+IMMEDIATE_PARENT_SOURCE = "generation4_hybrid_QD_elite"
+ANCESTRAL_PARENT_SOURCE = "PepGLAD"
+DONOR_SOURCE = "PepFlow"
+
 
 async def _pg_candidates(run_id: str, hashes: list[str]) -> dict[str, Candidate]:
     async with SessionFactory() as session:
@@ -64,9 +69,12 @@ def build(
                 "candidate_id": str(candidate.id),
                 "sequence": candidate.sequence,
                 "sequence_sha256": candidate.sequence_sha256,
-                "source": "PepGLAD-parent_x_PepFlow-donor",
-                "parent_source": row.get("parent_source", "PepGLAD"),
-                "donor_source": row.get("donor_source", "PepFlow"),
+                "source": HYBRID_SOURCE,
+                "evidence_arm": HYBRID_SOURCE,
+                "parent_source": IMMEDIATE_PARENT_SOURCE,
+                "immediate_parent_source": IMMEDIATE_PARENT_SOURCE,
+                "ancestral_parent_source": ANCESTRAL_PARENT_SOURCE,
+                "donor_source": DONOR_SOURCE,
                 "source_run_id": row.get("source_run_id", row.get("parent_run_id", "")),
                 "donor_artifact_id": row.get("donor_artifact_id", ""),
                 "operator_id": row.get("operator_id", ""),
@@ -99,9 +107,12 @@ def build(
         "pool_a_admitted_count": 0,
         "median_dg_gate": -30,
         "median_dg_gate_semantics": "median InterfaceAnalyzer dG must be < gate before Pool A",
-        "source": "PepGLAD-parent_x_PepFlow-donor",
-        "parent_source": "PepGLAD",
-        "donor_source": "PepFlow",
+        "source": HYBRID_SOURCE,
+        "evidence_arm": HYBRID_SOURCE,
+        "parent_source": IMMEDIATE_PARENT_SOURCE,
+        "immediate_parent_source": IMMEDIATE_PARENT_SOURCE,
+        "ancestral_parent_source": ANCESTRAL_PARENT_SOURCE,
+        "donor_source": DONOR_SOURCE,
         "operator_id": sorted({row.get("operator_id", "") for row in selected}),
         "source_run_ids": sorted(
             {row.get("source_run_id", row.get("parent_run_id", "")) for row in selected}
