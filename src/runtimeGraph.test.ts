@@ -254,8 +254,8 @@ describe('buildRuntimeGraph', () => {
       activity(1, 'activity.started', 1, 'plan_autoresearch_actions'),
       activity(2, 'activity.succeeded', 1, 'plan_autoresearch_actions'),
     ]), {}, { expandedGroups: new Set(['batch-group:workflow_run_id%3Dworkflow-run-a']) })
-    expect(expanded.nodes.find((node) => node.id === 'event:1')?.label).toBe('生成规划 · 开始')
-    expect(expanded.nodes.find((node) => node.id === 'event:2')?.label).toBe('生成规划 · 成功')
+    expect(expanded.nodes.find((node) => node.id === 'event:1')?.label).toBe('生成规划 · 开始 · 第 1 次尝试')
+    expect(expanded.nodes.find((node) => node.id === 'event:2')?.label).toBe('生成规划 · 成功 · 第 1 次尝试')
   })
 
   it('keeps separate workflow executions in separate expandable groups', () => {
@@ -305,6 +305,75 @@ describe('buildRuntimeGraph', () => {
     expect(event?.insight.facts).toEqual(expect.arrayContaining([{ label: '恢复', value: '第 4 次恢复调度' }]))
     expect(result.stats.retries).toBe(0)
     expect(result.edges).toHaveLength(0)
+  })
+
+  it('shows persisted activity attempts and counts only attempt greater than one as activity retries', () => {
+    const execution = 'workflow-run-activity-retry'
+    const result = buildRuntimeGraph(detail([
+      { sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 7, activity_type: 'generate_v38_sequence_cell', attempt: 1, completed: 0, expected: 8 }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'activity.failed', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 7, activity_type: 'generate_v38_sequence_cell', attempt: 1, completed: 3, expected: 8, error_category: 'timeout' }, occurred_at: '2026-09-04T00:00:02Z' },
+      { sequence_no: 3, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 7, activity_type: 'generate_v38_sequence_cell', attempt: 2, completed: 0, expected: 8 }, occurred_at: '2026-09-04T00:00:03Z' },
+      { sequence_no: 4, type: 'activity.succeeded', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 7, activity_type: 'generate_v38_sequence_cell', attempt: 2, completed: 8, expected: 8 }, occurred_at: '2026-09-04T00:00:04Z' },
+    ]))
+    const group = result.nodes.find((node) => node.runtime?.node_type === 'event_group')
+    expect(group?.insight.facts.slice(0, 3)).toEqual([
+      { label: '最近活动', value: '序列生成' },
+      { label: '活动重试', value: '1 个活动 · 最高第 2 次' },
+      { label: '进度', value: '8/8' },
+    ])
+    expect(group?.insight.facts.some(({ label }) => label === '活动尝试')).toBe(false)
+    expect(result.stats.retries).toBe(0)
+  })
+
+  it('omits the activity attempt summary when all persisted attempts are first attempts', () => {
+    const execution = 'workflow-run-first-attempt-only'
+    const result = buildRuntimeGraph(detail([
+      { sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 1, activity_type: 'generate_v38_sequence_cell', attempt: 1 }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'activity.succeeded', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 1, activity_type: 'generate_v38_sequence_cell', attempt: 1 }, occurred_at: '2026-09-04T00:00:02Z' },
+    ]))
+    const group = result.nodes.find((node) => node.runtime?.node_type === 'event_group')
+    expect(group?.insight.facts.some(({ label }) => label === '活动尝试' || label === '活动重试')).toBe(false)
+  })
+
+  it('labels expanded activity boundaries with type, lifecycle state, and persisted attempt', () => {
+    const execution = 'workflow-run-expanded-activity'
+    const events = [
+      { sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 3, activity_type: 'generate_v38_sequence_cell', attempt: 2 }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'activity.succeeded', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 3, activity_type: 'generate_v38_sequence_cell', attempt: 2 }, occurred_at: '2026-09-04T00:00:02Z' },
+    ] as RunDetail['events']
+    const group = buildRuntimeGraph(detail(events)).nodes.find((node) => node.runtime?.node_type === 'event_group')
+    const expanded = buildRuntimeGraph(detail(events), {}, { expandedGroups: new Set([group!.id]) })
+    expect(expanded.nodes.find((node) => node.id === 'event:1')).toMatchObject({ label: '序列生成 · 开始 · 第 2 次尝试' })
+    expect(expanded.nodes.find((node) => node.id === 'event:2')).toMatchObject({ label: '序列生成 · 成功 · 第 2 次尝试' })
+    expect(expanded.nodes.find((node) => node.id === 'event:2')?.insight.facts).toEqual(expect.arrayContaining([{ label: '尝试', value: '第 2 次尝试' }]))
+  })
+
+  it('derives parallel observation edges only from complete overlapping activity intervals', () => {
+    const execution = 'workflow-run-parallel-activities'
+    const events: RunDetail['events'] = [
+      { sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 1, activity_type: 'generate_v38_sequence_cell', attempt: 1 }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 2, activity_type: 'score_v38_multitarget_rosetta', attempt: 1 }, occurred_at: '2026-09-04T00:00:03Z' },
+      { sequence_no: 3, type: 'activity.succeeded', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 1, activity_type: 'generate_v38_sequence_cell', attempt: 1 }, occurred_at: '2026-09-04T00:00:05Z' },
+      { sequence_no: 4, type: 'activity.failed', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 2, activity_type: 'score_v38_multitarget_rosetta', attempt: 1 }, occurred_at: '2026-09-04T00:00:07Z' },
+    ]
+    const collapsed = buildRuntimeGraph(detail(events))
+    const group = collapsed.nodes.find((node) => node.runtime?.node_type === 'event_group')
+    const result = buildRuntimeGraph(detail(events), {}, { expandedGroups: new Set([group!.id]) })
+    expect(result.edges).toEqual(expect.arrayContaining([
+      expect.objectContaining({ source: 'event:1', target: 'event:2', relation_kind: 'parallel', provenance: 'derived', rationale: expect.stringContaining('按持久化活动区间重叠') }),
+    ]))
+    expect(result.edges.find((edge) => edge.relation_kind === 'parallel')?.rationale).toContain('不代表调度依赖')
+  })
+
+  it('does not infer activity parallelism when either activity lacks a terminal boundary', () => {
+    const execution = 'workflow-run-incomplete-activities'
+    const events: RunDetail['events'] = [
+      { sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 1, activity_type: 'generate_v38_sequence_cell', attempt: 1 }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 2, activity_type: 'score_v38_multitarget_rosetta', attempt: 1 }, occurred_at: '2026-09-04T00:00:03Z' },
+      { sequence_no: 3, type: 'activity.succeeded', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 2, activity_type: 'score_v38_multitarget_rosetta', attempt: 1 }, occurred_at: '2026-09-04T00:00:07Z' },
+    ]
+    const result = buildRuntimeGraph(detail(events), {}, { expandedGroups: new Set(['batch-group:workflow_run_id%3Dworkflow-run-incomplete-activities']) })
+    expect(result.edges.some((edge) => edge.relation_kind === 'parallel' && edge.provenance === 'derived')).toBe(false)
   })
 
   it('reports the latest failed activity boundary in a workflow execution cluster', () => {

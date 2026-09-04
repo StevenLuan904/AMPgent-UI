@@ -259,6 +259,16 @@ function recoveryAttemptLabel(event: TimelineEvent) {
   return attempt !== null && attempt > 0 ? `第 ${attempt} 次恢复调度` : null
 }
 
+function activityAttempt(event: TimelineEvent) {
+  const attempt = integerField(record(event.payload).attempt)
+  return attempt !== null && attempt > 0 ? attempt : null
+}
+
+function activityAttemptLabel(event: TimelineEvent) {
+  const attempt = activityAttempt(event)
+  return attempt === null ? null : `第 ${attempt} 次尝试`
+}
+
 function displayActivityType(activityType: string) {
   const labels: Record<string, string> = {
     mark_run_started: '运行启动',
@@ -331,6 +341,38 @@ function latestTerminalActivityEvent(events: TimelineEvent[]) {
   }).at(-1)
 }
 
+type ActivityInterval = {
+  execution: string
+  logicalActivity: string
+  started: TimelineEvent
+  start: number
+  end: number
+}
+
+function activityIntervals(events: TimelineEvent[]) {
+  const byActivity = new Map<string, TimelineEvent[]>()
+  for (const event of events) {
+    const identity = eventActivityIdentity(event)
+    if (identity) byActivity.set(identity, [...(byActivity.get(identity) ?? []), event])
+  }
+  const intervals: ActivityInterval[] = []
+  for (const activityEvents of byActivity.values()) {
+    const ordered = [...activityEvents].sort((left, right) => left.sequence_no - right.sequence_no)
+    const started = ordered.find((event) => event.type.toLowerCase().split('.').at(-1) === 'started')
+    const start = started ? Date.parse(started.occurred_at) : Number.NaN
+    if (!started || !Number.isFinite(start)) continue
+    const terminal = ordered.filter((event) => isTerminalActivityEvent(event) && Date.parse(event.occurred_at) >= start).at(-1)
+    const end = terminal ? Date.parse(terminal.occurred_at) : Number.NaN
+    if (!terminal || !Number.isFinite(end) || end < start) continue
+    const payload = record(started.payload)
+    const activityId = payload.activity_id
+    const execution = eventExecutionIdentity(started.payload)
+    if (!execution || (typeof activityId !== 'string' && typeof activityId !== 'number')) continue
+    intervals.push({ execution, logicalActivity: `${execution}:activity=${activityId}`, started, start, end })
+  }
+  return intervals
+}
+
 function executionFacts(events: TimelineEvent[]) {
   if (!events.some((event) => eventExecutionIdentity(event.payload))) return []
   const latest = latestTerminalActivityEvent(events)
@@ -349,11 +391,26 @@ function executionFacts(events: TimelineEvent[]) {
   return facts
 }
 
+function activityAttemptFacts(events: TimelineEvent[]) {
+  const attempted = events.map((event) => ({ event, attempt: activityAttempt(event) })).filter((item): item is { event: TimelineEvent; attempt: number } => item.attempt !== null)
+  if (!attempted.length) return []
+  const maxAttempt = Math.max(...attempted.map((item) => item.attempt))
+  const retriedActivities = new Set(attempted.filter((item) => item.attempt > 1).map(({ event }) => {
+    const payload = record(event.payload)
+    const activityId = payload.activity_id
+    const execution = eventExecutionIdentity(event.payload)
+    return execution && (typeof activityId === 'string' || typeof activityId === 'number') ? `${execution}:activity=${activityId}` : `event:${event.sequence_no}`
+  }))
+  if (!retriedActivities.size) return []
+  return [{ label: '活动重试', value: `${retriedActivities.size} 个活动 · 最高第 ${maxAttempt} 次` }]
+}
+
 function eventNode(event: TimelineEvent): GraphStage {
   const recoveryLabel = recoveryAttemptLabel(event)
   const status = runtimeEventStatus(event)
   const activityLabel = displayActivityType(text(record(event.payload).activity_type))
-  const eventName = activityLabel ? `${activityLabel} · ${displayEventState(event.type)}` : displayEventName(event.type)
+  const baseEventName = activityLabel ? `${activityLabel} · ${displayEventState(event.type)}` : displayEventName(event.type)
+  const eventName = activityAttemptLabel(event) ? `${baseEventName} · ${activityAttemptLabel(event)}` : baseEventName
   return {
     id: `event:${event.sequence_no}`,
     label: recoveryLabel ?? eventName,
@@ -368,8 +425,9 @@ function eventNode(event: TimelineEvent): GraphStage {
       verdict: recoveryLabel ? '已调度' : statusLabel(status),
       reason: `${displayActor(event.actor)} · 序号 ${event.sequence_no}`,
       facts: [
-        { label: '语义', value: eventName },
+        { label: '语义', value: baseEventName },
         { label: '序号', value: String(event.sequence_no) },
+        ...(activityAttemptLabel(event) ? [{ label: '尝试', value: activityAttemptLabel(event)! }] : []),
         ...(recoveryLabel ? [{ label: '恢复', value: recoveryLabel }] : []),
       ],
       source: 'observer_summary',
@@ -499,9 +557,13 @@ function runtimeGroupNode(groupedCalls: ToolAttempt[], groupedEvents: TimelineEv
   const observedDates = [...groupedCalls.map((call) => observedAt(call)), ...groupedEvents.map((event) => event.occurred_at)].filter((value): value is string => Boolean(value)).sort()
   const observedSpanText = observedDates.length > 1 ? `时间跨度 ${Math.max(0, Math.round((Date.parse(observedDates.at(-1)!) - Date.parse(observedDates[0])) / 1000))} 秒` : '时间范围不完整'
   const recoveryLabels = [...new Set(groupedEvents.map(recoveryAttemptLabel).filter((value): value is string => Boolean(value)))]
+  const executionFactList = executionFacts(groupedEvents)
+  const progressFacts = executionFactList.filter(({ label }) => label === '进度')
   const salientFacts = [
     ...recoveryLabels.map((value) => ({ label: '恢复', value })),
-    ...executionFacts(groupedEvents),
+    ...executionFactList.filter(({ label }) => label !== '进度'),
+    ...activityAttemptFacts(groupedEvents),
+    ...progressFacts,
   ]
   const runtimeType = groupedEvents.length && !groupedCalls.length ? 'event_group' : groupedEvents.length ? 'batch_group' : 'tool_group'
   const countLabel = groupedCalls.length && eventStatuses.length ? `${groupedCalls.length} 次调用 · ${eventStatuses.length} 项活动` : groupedCalls.length ? `${groupedCalls.length} 次调用` : `${eventStatuses.length} 项活动`
@@ -887,6 +949,27 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
     const groupId = groupIdByEvent.get(id)
     if (groupId && !expandedGroups.has(groupId)) return groupId
     return nodeIds.has(id) ? id : null
+  }
+  const activityParallelIntervals = activityIntervals(Object.values(events))
+  for (let leftIndex = 0; leftIndex < activityParallelIntervals.length; leftIndex += 1) {
+    const left = activityParallelIntervals[leftIndex]
+    for (const right of activityParallelIntervals.slice(leftIndex + 1)) {
+      if (left.execution !== right.execution || left.logicalActivity === right.logicalActivity || left.start >= right.end || right.start >= left.end) continue
+      const source = eventIdToNode(`event:${left.started.sequence_no}`)
+      const target = eventIdToNode(`event:${right.started.sequence_no}`)
+      if (!source || !target || source === target) continue
+      const signature = `activity:${[left.logicalActivity, right.logicalActivity].sort().join('|')}`
+      if (parallelRelationSignatures.has(signature)) continue
+      parallelRelationSignatures.add(signature)
+      addEdge(edges, seen, {
+        source,
+        target,
+        label: '并行观测组 · 观测',
+        rationale: '按持久化活动区间重叠；同一 workflow execution 内的 started→terminal 边界完整。这是派生并行观测，不代表调度依赖。',
+        provenance: 'derived',
+        relation_kind: 'parallel',
+      })
+    }
   }
   for (const event of Object.values(events)) {
     const source = eventIdToNode(`event:${event.sequence_no}`)

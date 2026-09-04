@@ -17,6 +17,8 @@
 
 `relation_kind=sequence` 只用于串联同一运行中已返回的工作流执行簇与恢复调度事件，来源是持久化时间及事件序号。它表示“随后观测到”，不表示依赖、重试、回退或触发；不参与循环检测，也不计入重试统计。
 
+生命周期事件只有在持久化 `attempt > 1` 时才形成“活动重试”事实；首次尝试不占运行摘要。活动重试事实不会自动生成跨执行的 `retry` 边。同一工作流执行中，只有两个活动都具有完整且相互重叠的 `started → terminal` 时间区间时，才派生 `relation_kind=parallel`；它表示并行观测，不代表调度依赖。
+
 生命周期状态映射：`.started`、`.running`、`.progress` → 进行中；`.created`、`.succeeded`、`.completed`、`.persisted`、`.materialized`、`.recorded`、`.accepted`、`.rejected` → 已完成；`.failed`、`.cancelled` → 已停止；其余后缀 → 待观测。原始事件键仍保存在节点详情中。
 
 恢复调度事件只把“调度记录已写入”显示为已调度，不代表后续执行成功；`recovery_attempt` 只用于显示恢复次数，不计作工具重试。
