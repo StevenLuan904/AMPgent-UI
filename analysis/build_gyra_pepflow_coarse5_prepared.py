@@ -42,6 +42,11 @@ def build(
     qd_json: Path,
     materialization_json: Path,
     output_dir: Path,
+    *,
+    source: str = HYBRID_SOURCE,
+    parent_source: str = IMMEDIATE_PARENT_SOURCE,
+    ancestral_parent_source: str = ANCESTRAL_PARENT_SOURCE,
+    donor_source: str = DONOR_SOURCE,
 ) -> dict:
     scores = []
     with score_csv.open(encoding="utf-8-sig", newline="") as handle:
@@ -69,13 +74,20 @@ def build(
                 "candidate_id": str(candidate.id),
                 "sequence": candidate.sequence,
                 "sequence_sha256": candidate.sequence_sha256,
-                "source": HYBRID_SOURCE,
-                "evidence_arm": HYBRID_SOURCE,
-                "parent_source": IMMEDIATE_PARENT_SOURCE,
-                "immediate_parent_source": IMMEDIATE_PARENT_SOURCE,
-                "ancestral_parent_source": ANCESTRAL_PARENT_SOURCE,
-                "donor_source": DONOR_SOURCE,
+                "source": source,
+                "evidence_arm": source,
+                "parent_source": parent_source,
+                "immediate_parent_source": parent_source,
+                "ancestral_parent_source": ancestral_parent_source,
+                "donor_source": donor_source,
                 "source_run_id": row.get("source_run_id", row.get("parent_run_id", "")),
+                "parent_run_id": row.get("parent_run_id", ""),
+                "parent_candidate_id": row.get("parent_candidate_id", ""),
+                "parent_sequence_sha256": row.get("parent_sequence_sha256", ""),
+                "edit_position_zero_based": row.get("edit_position_zero_based", ""),
+                "from_residue": row.get("from_residue", ""),
+                "to_residue": row.get("to_residue", ""),
+                "donor_candidate_id": row.get("donor_candidate_id", ""),
                 "donor_artifact_id": row.get("donor_artifact_id", ""),
                 "operator_id": row.get("operator_id", ""),
                 "qd_cell": qd_row["cell_id"],
@@ -107,15 +119,18 @@ def build(
         "pool_a_admitted_count": 0,
         "median_dg_gate": -30,
         "median_dg_gate_semantics": "median InterfaceAnalyzer dG must be < gate before Pool A",
-        "source": HYBRID_SOURCE,
-        "evidence_arm": HYBRID_SOURCE,
-        "parent_source": IMMEDIATE_PARENT_SOURCE,
-        "immediate_parent_source": IMMEDIATE_PARENT_SOURCE,
-        "ancestral_parent_source": ANCESTRAL_PARENT_SOURCE,
-        "donor_source": DONOR_SOURCE,
+        "source": source,
+        "evidence_arm": source,
+        "parent_source": parent_source,
+        "immediate_parent_source": parent_source,
+        "ancestral_parent_source": ancestral_parent_source,
+        "donor_source": donor_source,
         "operator_id": sorted({row.get("operator_id", "") for row in selected}),
         "source_run_ids": sorted(
             {row.get("source_run_id", row.get("parent_run_id", "")) for row in selected}
+        ),
+        "parent_candidate_ids": sorted(
+            {row.get("parent_candidate_id", "") for row in selected}
         ),
         "donor_artifact_ids": sorted({row.get("donor_artifact_id", "") for row in selected}),
         "qd_contribution_counts": {
@@ -145,10 +160,23 @@ def main() -> None:
     parser.add_argument("--qd-json", type=Path, required=True)
     parser.add_argument("--materialization-json", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--source", default=HYBRID_SOURCE)
+    parser.add_argument("--parent-source", default=IMMEDIATE_PARENT_SOURCE)
+    parser.add_argument("--ancestral-parent-source", default=ANCESTRAL_PARENT_SOURCE)
+    parser.add_argument("--donor-source", default=DONOR_SOURCE)
     args = parser.parse_args()
     print(
         json.dumps(
-            build(args.score_csv, args.qd_json, args.materialization_json, args.output_dir)
+            build(
+                args.score_csv,
+                args.qd_json,
+                args.materialization_json,
+                args.output_dir,
+                source=args.source,
+                parent_source=args.parent_source,
+                ancestral_parent_source=args.ancestral_parent_source,
+                donor_source=args.donor_source,
+            )
         )
     )
 

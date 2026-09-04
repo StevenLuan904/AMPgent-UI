@@ -24,7 +24,13 @@ def _hashes(path: Path) -> dict[str, str]:
     return {str(row["sequence_sha256"]): str(row["sequence"]) for row in rows}
 
 
-async def verify(materialization_receipt: Path, candidate_input: Path) -> dict[str, Any]:
+async def verify(
+    materialization_receipt: Path,
+    candidate_input: Path,
+    *,
+    expected_candidate_count: int = 4,
+    target_key: str = "PBP2a",
+) -> dict[str, Any]:
     receipt = json.loads(
         await asyncio.to_thread(materialization_receipt.read_text, encoding="utf-8")
     )
@@ -112,7 +118,7 @@ async def verify(materialization_receipt: Path, candidate_input: Path) -> dict[s
     return {
         "schema_version": "ampgent.pbp2a-pepflow-hybrid.materialization-readback.1",
         "observed_at_utc": datetime.now(UTC).isoformat(),
-        "target_key": "PBP2a",
+        "target_key": target_key,
         "run_id": str(run_id),
         "tool_call_id": str(expected_tool_call_id),
         "candidate_count": len(candidates),
@@ -143,9 +149,9 @@ async def verify(materialization_receipt: Path, candidate_input: Path) -> dict[s
         },
         "drift": 0 if not identity_drift and not exact_binding_errors else 1,
         "complete": (
-            len(candidates) == 4
-            and len(evaluations) == 68
-            and sorted(per_candidate.values()) == [17, 17, 17, 17]
+            len(candidates) == expected_candidate_count
+            and len(evaluations) == expected_candidate_count * 17
+            and sorted(per_candidate.values()) == [17] * expected_candidate_count
             and len(tool_calls) == 1
             and tool_calls[0].status == "succeeded"
             and len(events) == 1
@@ -160,8 +166,17 @@ def main() -> None:
     parser.add_argument("--materialization-receipt", type=Path, required=True)
     parser.add_argument("--candidate-input", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--expected-candidate-count", type=int, default=4)
+    parser.add_argument("--target-key", default="PBP2a")
     args = parser.parse_args()
-    payload = asyncio.run(verify(args.materialization_receipt, args.candidate_input))
+    payload = asyncio.run(
+        verify(
+            args.materialization_receipt,
+            args.candidate_input,
+            expected_candidate_count=args.expected_candidate_count,
+            target_key=args.target_key,
+        )
+    )
     args.output.write_text(
         json.dumps(payload, ensure_ascii=False, separators=(",", ":")), encoding="utf-8"
     )
