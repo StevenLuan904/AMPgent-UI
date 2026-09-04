@@ -1,0 +1,60 @@
+{
+  "schema_version": "ampgent.gyra-pepflow-qd-neighbor-close.1",
+  "target_key": "gyra",
+  "source": "PepFlow",
+  "operator_id": "gyrA-pepflow-qd-neighbor-1aa-v1",
+  "generation": 2,
+  "seed": 20260904,
+  "counts": {
+    "proposal": 12,
+    "pg_new": 12,
+    "formal12": 12,
+    "display": 11,
+    "activity_support_ge_2": 9,
+    "display_and_activity_support_ge_2": 8,
+    "challenger_reviewed": 12,
+    "challenger_no_conflict": 11,
+    "qd_eligible": 8,
+    "qd_new_cell": 8,
+    "qd_replacement": 0,
+    "materialized_candidates": 8,
+    "evaluations": 136,
+    "coarse5_prepared": 8,
+    "pool_a_admitted": 0
+  },
+  "postgresql": {
+    "run_id": "e405720e-7087-5765-9dde-6148aee0c7aa",
+    "tool_call_id": "e4e3a373-4e8f-450d-962b-3e1fab0c4526",
+    "candidate_ids": [
+      "e6120cea-c508-4047-b77a-5e63da2f597f",
+      "d287b0b9-d499-46eb-a55a-ff11b3eef96e",
+      "28186211-a484-4eda-973c-2bacd2ae8443",
+      "a10badbe-ad8e-4560-9de5-c994da2bed88",
+      "bbfa10c6-da76-4286-874d-600d27771fb5",
+      "0038effb-58a5-4d66-b439-3026fa6fe323",
+      "72f9df8b-4d54-4b9d-8f08-4a7f892b763d",
+      "3e14071c-4462-4ced-bafc-34f2fb772e82"
+    ],
+    "candidate_count": 8,
+    "evaluation_count": 136,
+    "primary_evaluations": 96,
+    "challenger_evaluations": 24,
+    "shadow_evaluations": 16,
+    "subject_run_drift_count": 0,
+    "replay_count": 0,
+    "status": "succeeded"
+  },
+  "shadow_contract": {
+    "apex": {"applicability_status": "runtime_unavailable", "conflict_status": "not_assessed"},
+    "peptiverse": {"applicability_status": "runtime_unavailable", "conflict_status": "not_assessed"}
+  },
+  "structure": {
+    "status": "prepared_not_dispatched",
+    "nstruct": 5,
+    "dispatch_allowed": false,
+    "median_dg_gate": "< -30 required before targeted Pool A",
+    "pool_a_admitted": false
+  },
+  "historical_runs_modified": false,
+  "gpu_rosetta_md_submitted": false
+}
