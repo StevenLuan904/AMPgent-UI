@@ -1,0 +1,71 @@
+{
+  "schema_version": "ampgent.gyra-pepflow-qd-neighbor-next-close.1",
+  "target_key": "GyrA",
+  "generation": 3,
+  "seed": 20260904,
+  "proposal_count": 12,
+  "formal_12_complete_count": 12,
+  "display_eligible_count": 11,
+  "calibrated_support_ge_2_count": 9,
+  "display_and_support_ge_2_count": 8,
+  "excellent_sequence_stage_count": 8,
+  "hard_gate_counts": {
+    "toxinpred3_non_toxin": 12,
+    "macrel_low": 11,
+    "guruprasad_le_50": 12,
+    "hydrophobic_run_or_fraction_gate": false
+  },
+  "challenger": {
+    "hemopi2_status": "runtime_unavailable",
+    "hemopi2_reviewed_count": 0,
+    "hemopi2_no_conflict_count": 0,
+    "hemopi2_conflict_count": 0,
+    "candidate_hard_gate_allowed": false,
+    "apex_status": "runtime_unavailable",
+    "apex_assessment": "not_assessed",
+    "peptiverse_status": "runtime_unavailable",
+    "peptiverse_assessment": "not_assessed"
+  },
+  "provisional_qd": {
+    "status": "provisional_only",
+    "fixed_cell_count": 2160,
+    "quality_eligible_count": 8,
+    "new_cell_count": 8,
+    "replacement_count": 0,
+    "formal_pg_new": false,
+    "future_priority_only": true
+  },
+  "persistence": {
+    "historical_pg_gate": "pending",
+    "materialization_status": "proposed_not_materialized",
+    "candidate_identity_status": "proposal_only",
+    "pool_a_admitted": false,
+    "postgresql_reads": 0,
+    "postgresql_writes": 0,
+    "formal_evidence_persistence_status": "deferred_until_pg_history"
+  },
+  "execution_safety": {
+    "structure_status": "not_created",
+    "rosetta_submitted": false,
+    "md_submitted": false,
+    "gpu_task_submitted": false,
+    "scientific_increment": "provisional_source_increment_only"
+  },
+  "artifact_sha256": {
+    "proposals_csv": "8ae79627ec31cababbc74a1c075bc5e64001be37026d24a480dae3f1397dac0c",
+    "score_all_receipt": "7090bab33aecf8f34d4c073c939d080c9794a28191dcf158cec19ab5559c5bb4",
+    "calibrated_scores_csv": "c5b9fb18b648d159f0e7ebe7db55f161f1353029f3ef3a51524ed029782c94a7",
+    "calibration_receipt": "c72d2f90db4f829657da0991809a965fb1f4fdaf43679300dd220a1649096ab4",
+    "provisional_qd": "02cc57bfedd173c958c42fc61e538e66a84960560a65eabaa009f620648bf5ad",
+    "challenger_receipt": "c7818dd5db510799420c4c41878a42a4f51c5e7cbb38f11e0e9237fbf154ed2b"
+  },
+  "artifacts": {
+    "proposals": "proposals.csv",
+    "score_all": "score_all/receipt.json",
+    "calibrated_scores": "candidate_scores_calibrated.csv",
+    "calibration": "calibration_receipt.json",
+    "challenger": "challenger/receipt.json",
+    "provisional_qd": "provisional_qd.json",
+    "provisional_qd_receipt": "provisional_qd_receipt.json"
+  }
+}

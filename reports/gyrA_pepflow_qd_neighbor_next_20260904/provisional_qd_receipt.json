@@ -1,0 +1,29 @@
+{
+  "schema_version": "ampgent.gyra-pepflow-provisional-qd.1",
+  "status": "provisional_only",
+  "target_key": "GyrA",
+  "generation": 3,
+  "fixed_qd_cell_count": 2160,
+  "source_candidate_count": 12,
+  "quality_eligible_candidate_count": 8,
+  "provisional_new_cell_count": 8,
+  "provisional_replacement_count": 0,
+  "provisional_same_cell_count": 0,
+  "provisional_quality_gate_failed_count": 0,
+  "formal_pg_new": false,
+  "historical_pg_gate": "pending",
+  "materialization_status": "proposed_not_materialized",
+  "candidate_identity_status": "proposal_only",
+  "pool_a_admitted": false,
+  "priority_use": "future_pg_recovery_queue_only",
+  "incumbent_quality_comparison": "computed_against_local_archive_only",
+  "postgresql_reads": 0,
+  "postgresql_writes": 0,
+  "structure_status": "not_created",
+  "gpu_rosetta_md_submitted": false,
+  "source_qd_sha256": "02cc57bfedd173c958c42fc61e538e66a84960560a65eabaa009f620648bf5ad",
+  "limitations": [
+    "PG exact history unavailable; no candidate UUID or materialization was created",
+    "QD cells and incumbent comparisons are provisional and are not a formal QD contribution"
+  ]
+}
