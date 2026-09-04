@@ -8,6 +8,11 @@ export const observerIdlePrefetchDelayMs = 8_000
 export const observerSnapshotCacheVersion = 1
 export const observerSnapshotCacheTtlMs = 24 * 60 * 60 * 1_000
 export const observerSnapshotCacheMaxBytes = 2_000_000
+export const observerStaleRetryDelayMs = 3_000
+
+export function observerResponseIsStale(cacheState: string | null) {
+  return cacheState === 'restored-stale' || cacheState === 'stale-refresh'
+}
 
 function normalizedApiBase(apiBase: string) {
   return apiBase.trim().replace(/\/+$/, '') || 'local'

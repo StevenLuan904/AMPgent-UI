@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { nodeDetailCacheTtlMs, observerIdlePrefetchDelayMs, observerInitialPrefetchCount, observerListTimeoutMs, observerNodeDetailCacheKey, observerNodeDetailTimeoutMs, observerPollingIntervalMs, observerPrefetchStageOrder, observerRunDetailCacheKey, observerRunDetailTimeoutMs, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion } from './observerPolling'
+import { nodeDetailCacheTtlMs, observerIdlePrefetchDelayMs, observerInitialPrefetchCount, observerListTimeoutMs, observerNodeDetailCacheKey, observerNodeDetailTimeoutMs, observerPollingIntervalMs, observerPrefetchStageOrder, observerResponseIsStale, observerRunDetailCacheKey, observerRunDetailTimeoutMs, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion, observerStaleRetryDelayMs } from './observerPolling'
 
 describe('observer refresh policy', () => {
   it('refreshes active runs more often than terminal runs', () => {
@@ -21,6 +21,14 @@ describe('observer refresh policy', () => {
     expect(observerRunDetailTimeoutMs).toBe(30_000)
     expect(observerNodeDetailTimeoutMs).toBe(20_000)
     expect(observerIdlePrefetchDelayMs).toBe(8_000)
+    expect(observerStaleRetryDelayMs).toBe(3_000)
+  })
+
+  it('treats restored and background-refresh responses as stale, but not fresh hits', () => {
+    expect(observerResponseIsStale('restored-stale')).toBe(true)
+    expect(observerResponseIsStale('stale-refresh')).toBe(true)
+    expect(observerResponseIsStale('hit')).toBe(false)
+    expect(observerResponseIsStale(null)).toBe(false)
   })
 
   it('prioritizes observable progress without changing the server order for ties', () => {

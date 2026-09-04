@@ -51,7 +51,7 @@ import { LaneLabel, WorkflowNode, type LaneNode, type StageNode } from './Workfl
 import { assertMatchingRunIdentity, type RunIdentity } from './runIdentity'
 import { formatRunTitle } from './runPresentation'
 import { buildRuntimeGraph, runtimeActivitySummary, runtimeEventStatus, runtimeRetrySummary, type RuntimeGraphModel } from './runtimeGraph'
-import { nodeDetailCacheTtlMs, observerIdlePrefetchDelayMs, observerInitialPrefetchCount, observerListTimeoutMs, observerNodeDetailCacheKey, observerNodeDetailTimeoutMs, observerPollingIntervalMs, observerPrefetchStageOrder, observerRunDetailCacheKey, observerRunDetailTimeoutMs, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion } from './observerPolling'
+import { nodeDetailCacheTtlMs, observerIdlePrefetchDelayMs, observerInitialPrefetchCount, observerListTimeoutMs, observerNodeDetailCacheKey, observerNodeDetailTimeoutMs, observerPollingIntervalMs, observerPrefetchStageOrder, observerResponseIsStale, observerRunDetailCacheKey, observerRunDetailTimeoutMs, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion, observerStaleRetryDelayMs } from './observerPolling'
 import { schedulerHealthDescription, schedulerHealthPresentation } from './schedulerHealth'
 import type {
   CandidatePreview,
@@ -153,13 +153,15 @@ function readableDataError(cause: unknown, fallback: string) {
 
 const nodeDetailCache = new Map<string, { detail: NodeDetail; fetchedAt: number }>()
 
-async function fetchJsonWithTimeout<T>(url: string, timeoutMs: number): Promise<T> {
+type ObserverFetchResult<T> = { payload: T; cacheState: string | null }
+
+async function fetchJsonWithTimeout<T>(url: string, timeoutMs: number): Promise<ObserverFetchResult<T>> {
   const controller = new AbortController()
   const timeout = window.setTimeout(() => controller.abort(), timeoutMs)
   try {
     const response = await fetch(url, { signal: controller.signal })
     if (!response.ok) throw new Error(`数据服务响应 ${response.status}`)
-    return await response.json() as T
+    return { payload: await response.json() as T, cacheState: response.headers.get('x-ampgent-cache') }
   } catch (cause) {
     if (controller.signal.aborted) throw new Error(`数据服务超时（${Math.round(timeoutMs / 1000)} 秒）`)
     throw cause
@@ -206,6 +208,7 @@ function useRunData(enabled: boolean, apiBase: string) {
   const [loading, setLoading] = useState(!initialCachedDetail)
   const [refreshing, setRefreshing] = useState(false)
   const [syncingStale, setSyncingStale] = useState(Boolean(initialCachedDetail))
+  const [staleDetailRevision, setStaleDetailRevision] = useState(0)
   const [nodeDetails, setNodeDetails] = useState<Record<string, NodeDetail>>({})
   const [nodeDetailFetch, setNodeDetailFetch] = useState({ requested: 0, loaded: 0, failed: 0, deferred: 0 })
   const runsInFlight = useRef(false)
@@ -232,7 +235,9 @@ function useRunData(enabled: boolean, apiBase: string) {
     if (runsInFlight.current) return
     runsInFlight.current = true
     try {
-      const payload = await fetchJsonWithTimeout<RunListResponse>(`${apiBase}/v1/observer/runs?limit=12`, observerListTimeoutMs)
+      const response = await fetchJsonWithTimeout<RunListResponse>(`${apiBase}/v1/observer/runs?limit=12`, observerListTimeoutMs)
+      const payload = response.payload
+      if (observerResponseIsStale(response.cacheState)) setSyncingStale(true)
       runIdentities.current = Object.fromEntries(payload.runs.map((run) => [run.id, {
         id: run.id,
         temporal_workflow_id: run.temporal_workflow_id,
@@ -242,7 +247,7 @@ function useRunData(enabled: boolean, apiBase: string) {
         ...run,
         structure_record_count: Math.max(run.structure_record_count, alignedStructureCounts.current[run.id] ?? 0),
       })))
-      writeObserverCache(observerRunListCacheKey(apiBase), apiBase, payload)
+      if (!observerResponseIsStale(response.cacheState)) writeObserverCache(observerRunListCacheKey(apiBase), apiBase, payload)
       setSelectedIdState((current) => {
         // A valid deep link may point to an older run outside the recent-list page.
         // Keep it and let the authoritative detail endpoint validate it; an invalid
@@ -269,7 +274,9 @@ function useRunData(enabled: boolean, apiBase: string) {
     if (nodeFetchInFlight.current.has(cacheKey)) return Boolean(cached)
     nodeFetchInFlight.current.add(cacheKey)
     try {
-      const nodeDetail = await fetchJsonWithTimeout<NodeDetail>(`${apiBase}/v1/observer/runs/${runId}/nodes/${encodeURIComponent(stageId)}`, observerNodeDetailTimeoutMs)
+      const response = await fetchJsonWithTimeout<NodeDetail>(`${apiBase}/v1/observer/runs/${runId}/nodes/${encodeURIComponent(stageId)}`, observerNodeDetailTimeoutMs)
+      const nodeDetail = response.payload
+      if (observerResponseIsStale(response.cacheState) && selectedIdRef.current === runId && epoch === detailEpoch.current) setSyncingStale(true)
       nodeDetailCache.set(cacheKey, { detail: nodeDetail, fetchedAt: Date.now() })
       if (selectedIdRef.current === runId && epoch === detailEpoch.current) {
         setNodeDetails((current) => ({ ...current, [stageId]: nodeDetail }))
@@ -298,14 +305,16 @@ function useRunData(enabled: boolean, apiBase: string) {
     if (!quiet) setLoading(true)
     else setRefreshing(true)
     try {
-      const payload = await fetchJsonWithTimeout<RunDetail>(`${apiBase}/v1/observer/runs/${runId}`, observerRunDetailTimeoutMs)
+      const response = await fetchJsonWithTimeout<RunDetail>(`${apiBase}/v1/observer/runs/${runId}`, observerRunDetailTimeoutMs)
+      const payload = response.payload
+      const staleResponse = observerResponseIsStale(response.cacheState)
       assertMatchingRunIdentity(runIdentities.current[runId] ?? { id: runId }, payload.run)
       if (epoch !== detailEpoch.current) return
       const stages = payload.graph?.nodes ?? []
       const sameRun = detailRunIdRef.current === runId
       detailRunIdRef.current = runId
       setDetail(payload)
-      writeObserverCache(observerRunDetailCacheKey(apiBase, runId), apiBase, payload)
+      if (!staleResponse) writeObserverCache(observerRunDetailCacheKey(apiBase, runId), apiBase, payload)
       // A quiet refresh updates the authoritative run summary without discarding
       // already loaded stage details. Those rows are cached and refreshed separately.
       if (!sameRun) setNodeDetails({})
@@ -318,7 +327,8 @@ function useRunData(enabled: boolean, apiBase: string) {
       }).length
       setNodeDetailFetch((current) => ({ requested: stages.length, loaded: Math.min(stages.length, cachedCount), failed: sameRun ? current.failed : 0, deferred: 0 }))
       setError(null)
-      setSyncingStale(false)
+      setSyncingStale(staleResponse)
+      if (staleResponse) setStaleDetailRevision((revision) => revision + 1)
       setLoading(false)
 
       // Only prefetch the first small slice. The graph is interactive immediately;
@@ -406,6 +416,14 @@ function useRunData(enabled: boolean, apiBase: string) {
     }, intervalMs)
     return () => window.clearInterval(timer)
   }, [detail?.run.status, enabled, loadDetail, reportBackgroundSyncError, selectedId])
+
+  useEffect(() => {
+    if (!enabled || !selectedId || !syncingStale || staleDetailRevision === 0) return
+    const timer = window.setTimeout(() => {
+      if (!document.hidden && !detailInFlight.current) void loadDetail(selectedId, true).catch(reportBackgroundSyncError)
+    }, observerStaleRetryDelayMs)
+    return () => window.clearTimeout(timer)
+  }, [enabled, loadDetail, reportBackgroundSyncError, selectedId, staleDetailRevision, syncingStale])
 
   const retry = useCallback(async () => {
     setError(null)
@@ -973,7 +991,8 @@ function Inspector({ detail, stageId, analysisSnapshot, distributionOverride, on
           setDetailError(null)
           return
         }
-        const nodeDetail = await fetchJsonWithTimeout<NodeDetail>(`${getConfiguredApiBase()}/v1/observer/runs/${detail.run.id}/nodes/${encodeURIComponent(stageId)}`, observerNodeDetailTimeoutMs)
+        const response = await fetchJsonWithTimeout<NodeDetail>(`${getConfiguredApiBase()}/v1/observer/runs/${detail.run.id}/nodes/${encodeURIComponent(stageId)}`, observerNodeDetailTimeoutMs)
+        const nodeDetail = response.payload
         nodeDetailCache.set(cacheKey, { detail: nodeDetail, fetchedAt: Date.now() })
         setNodeDetail(nodeDetail)
         setDetailError(null)
