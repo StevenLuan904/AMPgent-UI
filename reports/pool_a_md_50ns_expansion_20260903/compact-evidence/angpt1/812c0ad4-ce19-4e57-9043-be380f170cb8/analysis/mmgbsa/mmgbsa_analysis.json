@@ -1,0 +1,29 @@
+{
+  "schema_version": "ampgent.pool-a-mmgbsa.1",
+  "method": "single-trajectory MM/GBSA",
+  "ambertools_environment": "/data1/huangyueshan/pepagent/md/pool-a-full-md-v1/mmgbsa-env",
+  "igb": 5,
+  "saltcon_molar": 0.15,
+  "frame_count": 36,
+  "startframe": 501,
+  "endframe": 9999999,
+  "interval": 125,
+  "mean_binding_energy_kcal_mol": -110.96457726666631,
+  "moving_block_length_frames": 6,
+  "bootstrap_replicates": 2000,
+  "confidence_interval_95_kcal_mol": [
+    -123.61422721777929,
+    -99.2171191288874
+  ],
+  "receptor_residue_count": 497,
+  "peptide_residue_range": [
+    498,
+    523
+  ],
+  "topology_atom_count": 224488,
+  "decomposition_residue_count": 523,
+  "limitations": [
+    "within-trajectory block-bootstrap CI; not independent replicate uncertainty",
+    "computed binding estimate; not experimental affinity"
+  ]
+}

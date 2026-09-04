@@ -1,0 +1,80 @@
+{
+  "schema_version": "ampgent.pool-a-md-compact-delta.1",
+  "observed_at_utc": "2026-09-04T05:01:56.344555Z",
+  "identity_key": "subject_run_id+candidate_id",
+  "baseline": {
+    "launched_unique": 50,
+    "full_evidence_unique": 36,
+    "analysis_pending_unique": 2,
+    "running_or_incomplete_unique": 12,
+    "not_started_unique": 436
+  },
+  "current": {
+    "launched_unique": 57,
+    "md_complete_unique": 41,
+    "full_evidence_unique": 39,
+    "analysis_pending_unique": 2,
+    "running_unique": 16,
+    "not_started_unique": 429,
+    "failed_unique": 0,
+    "pending_full_evidence_unique": 447
+  },
+  "delta": {
+    "launched_unique": 7,
+    "full_evidence_unique": 3,
+    "not_started_unique": -7
+  },
+  "new_full_evidence": [
+    {
+      "target_key": "fgf2",
+      "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+      "candidate_id": "fde5ac50-1824-4f5d-bc48-1ff65850dde8",
+      "sequence_sha256": "01f8e214284a8a58b19ef8a74dbe013af30f4ce54093dd37e56af4ff982c5957",
+      "interface_rmsd_mean_nm": 0.5936640501022339,
+      "peptide_departed": false,
+      "mmgbsa_mean_kcal_mol": -86.97724042666681,
+      "mmgbsa_ci95_kcal_mol": [-95.32598098888876, -78.63663103111168],
+      "postgresql_evidence_complete": true
+    },
+    {
+      "target_key": "angpt1",
+      "run_id": "9bcbda95-56a0-52b0-80ba-296fc22a0e4e",
+      "candidate_id": "1064e16d-f11f-401c-afbb-d6f35120cd90",
+      "sequence_sha256": "4abaac866072aaa171784eb00976a600d1d66fc6503a08c31c13c62bc7ba4d5e",
+      "interface_rmsd_mean_nm": 0.3813313841819763,
+      "peptide_departed": false,
+      "mmgbsa_mean_kcal_mol": -98.65314660666388,
+      "mmgbsa_ci95_kcal_mol": [-102.80807421555265, -93.64427825555461],
+      "postgresql_evidence_complete": true
+    },
+    {
+      "target_key": "angpt1",
+      "run_id": "9bcbda95-56a0-52b0-80ba-296fc22a0e4e",
+      "candidate_id": "812c0ad4-ce19-4e57-9043-be380f170cb8",
+      "sequence_sha256": "57cf8d7cb9a2b896c62a40407a6b77d2bea6e153461b487da5978f406fcec732",
+      "interface_rmsd_mean_nm": 0.42071792483329773,
+      "peptide_departed": false,
+      "mmgbsa_mean_kcal_mol": -110.96457726666631,
+      "mmgbsa_ci95_kcal_mol": [-123.61422721777929, -99.2171191288874],
+      "postgresql_evidence_complete": true
+    }
+  ],
+  "evidence_contract": {
+    "interface_rmsd": true,
+    "key_contacts": true,
+    "hydrogen_bonds": true,
+    "salt_bridges": true,
+    "water_bridges": true,
+    "departure": true,
+    "mmgbsa_mean_and_ci95": true,
+    "residue_decomposition": true,
+    "consistency_error_count": 0
+  },
+  "compact_sync": {
+    "receipt": "compact-sync-20260904Tmd-delta.json",
+    "copied_file_count": 76,
+    "structure_or_trajectory_copied": false,
+    "remote_files_deleted": false
+  },
+  "full_completion_status": "in_progress"
+}

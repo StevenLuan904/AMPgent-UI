@@ -1,0 +1,3319 @@
+{
+  "schema_version": "ampgent.pool-a-md-summary.1",
+  "observed_at_utc": "2026-09-04T05:01:55.266518+00:00",
+  "overall": {
+    "md_state_partition": {
+      "launched_unique": 57,
+      "md_complete_unique": 41,
+      "full_evidence_unique": 39,
+      "analysis_pending_unique": 2,
+      "running_unique": 16,
+      "not_started_unique": 429,
+      "partition_total_unique": 486
+    },
+    "expected_candidate_count": 486,
+    "md_launched_count": 57,
+    "md_complete_count": 41,
+    "interface_complete_count": 39,
+    "mmgbsa_complete_count": 39,
+    "pool_s_evidence_complete_count": 39,
+    "pending_md_count": 445,
+    "pending_pool_s_evidence_count": 447,
+    "retry_failure_recorded_count": 0,
+    "interface_postgresql_ingested_count": 39,
+    "mmgbsa_postgresql_ingested_count": 39,
+    "postgresql_evidence_complete_count": 39,
+    "peptide_departed_count": 0,
+    "interface_rmsd_mean_nm": 0.3629407416551541,
+    "native_contact_fraction_mean": 0.6130221564903929,
+    "hydrogen_bond_occupancy_mean": 1.0,
+    "salt_bridge_occupancy_mean": 0.9185538461538462,
+    "water_bridge_occupancy_mean": 0.998974358974359,
+    "mmgbsa_mean_kcal_mol": -102.98265744284902,
+    "peptide_departure_categories": {
+      "observed_count": 39,
+      "missing_count": 447,
+      "departed_count": 0,
+      "retained_count": 39
+    },
+    "metric_distributions": {
+      "rosetta_median_dg_reu": {
+        "observed_count": 486,
+        "missing_count": 0,
+        "unit": "REU",
+        "favorable_direction": "lower",
+        "minimum": -85.43307628387788,
+        "maximum": -30.03156120766228,
+        "mean": -44.58674380712336,
+        "median": -43.482313251621406,
+        "population_standard_deviation": 9.68157899641072,
+        "p10": -57.60190507636628,
+        "p25": -50.1997464898983,
+        "p75": -37.19892266419549,
+        "p90": -33.06627967531773,
+        "best_candidate": {
+          "candidate_id": "3daa05cb-6ac0-43ad-b22e-1b790f331ce7",
+          "run_id": "f4d068ba-07b5-59de-ace3-3eca8515863a",
+          "sequence": "HKGQKYKFKKERWQYKKFDWGKK",
+          "sequence_sha256": "e9742af73a58831017460a025def9448b9fdefc7e1707e4dad222cbc2ed3c122",
+          "value": -85.43307628387788
+        },
+        "worst_candidate": {
+          "candidate_id": "cdc7b212-2da1-4b2d-bd89-7457e4658cab",
+          "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+          "sequence": "RIVWNDTAKKNKKVFVKHKTT",
+          "sequence_sha256": "fa6796d0989aae37f7d83273659b3eed1adde071a31c30d99a2af8077b0b6f46",
+          "value": -30.03156120766228
+        }
+      },
+      "interface_rmsd_mean_nm": {
+        "observed_count": 39,
+        "missing_count": 447,
+        "unit": "nm",
+        "favorable_direction": "lower",
+        "minimum": 0.17682594060897827,
+        "maximum": 1.0851720571517944,
+        "mean": 0.3629407416551541,
+        "median": 0.2784189283847809,
+        "population_standard_deviation": 0.20173263688596307,
+        "p10": 0.22165391445159913,
+        "p25": 0.2582976371049881,
+        "p75": 0.38937002420425415,
+        "p90": 0.6060137629508975,
+        "best_candidate": {
+          "candidate_id": "17ef08e8-e6ed-417e-96c0-a71f5eab265e",
+          "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
+          "sequence": "KTKLLLEKHNRKDNRKQTTQATIKT",
+          "sequence_sha256": "f7c7bc70dc8c770a193f95391ff7208fbf789414c49c8655d4fc5b8e4eb47faa",
+          "value": 0.17682594060897827
+        },
+        "worst_candidate": {
+          "candidate_id": "690e7089-a489-443b-968a-51b0ab5e2594",
+          "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+          "sequence": "TGTRANGQKTRKGQKSKNGRKTSEK",
+          "sequence_sha256": "30842628e443e6bf2a9d532873c6e263d6106a50f79e0e707c7dea6ede63a844",
+          "value": 1.0851720571517944
+        }
+      },
+      "interface_rmsd_max_nm": {
+        "observed_count": 39,
+        "missing_count": 447,
+        "unit": "nm",
+        "favorable_direction": "lower",
+        "minimum": 0.22506429255008698,
+        "maximum": 1.8458665609359741,
+        "mean": 0.5825872448010322,
+        "median": 0.41521015763282776,
+        "population_standard_deviation": 0.4067745644837464,
+        "p10": 0.30671401023864747,
+        "p25": 0.36062122881412506,
+        "p75": 0.597571611404419,
+        "p90": 0.9484577417373676,
+        "best_candidate": {
+          "candidate_id": "17ef08e8-e6ed-417e-96c0-a71f5eab265e",
+          "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
+          "sequence": "KTKLLLEKHNRKDNRKQTTQATIKT",
+          "sequence_sha256": "f7c7bc70dc8c770a193f95391ff7208fbf789414c49c8655d4fc5b8e4eb47faa",
+          "value": 0.22506429255008698
+        },
+        "worst_candidate": {
+          "candidate_id": "bf53367f-8705-4e17-bb01-326b237e80ea",
+          "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+          "sequence": "DHNYNSRVGKNHRTRKAGKTRKSEYS",
+          "sequence_sha256": "7f9cf7ae55189903cd6e8999a20c78cc1f8c00068aa1bec352c827c08b8769ed",
+          "value": 1.8458665609359741
+        }
+      },
+      "native_contact_fraction_mean": {
+        "observed_count": 39,
+        "missing_count": 447,
+        "unit": "fraction",
+        "favorable_direction": "higher",
+        "minimum": 0.3588941176470588,
+        "maximum": 0.8204561403508771,
+        "mean": 0.6130221564903929,
+        "median": 0.6057794871794873,
+        "population_standard_deviation": 0.09540272167272155,
+        "p10": 0.520179404489235,
+        "p25": 0.5612896126760563,
+        "p75": 0.6621991407490426,
+        "p90": 0.743281637671681,
+        "best_candidate": {
+          "candidate_id": "e2121432-d8bd-4323-90e2-78626721e216",
+          "run_id": "d3ab0200-5818-517e-aa17-2b7036200c7e",
+          "sequence": "AWGKKLKKFKSKSSDWFEKHSFR",
+          "sequence_sha256": "7b17223f1b14deaf9b1dde76ff61256f4d4df1f7dfee2f72cdaaa3ace8e0fbae",
+          "value": 0.8204561403508771
+        },
+        "worst_candidate": {
+          "candidate_id": "690e7089-a489-443b-968a-51b0ab5e2594",
+          "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+          "sequence": "TGTRANGQKTRKGQKSKNGRKTSEK",
+          "sequence_sha256": "30842628e443e6bf2a9d532873c6e263d6106a50f79e0e707c7dea6ede63a844",
+          "value": 0.3588941176470588
+        }
+      },
+      "native_contact_fraction_min": {
+        "observed_count": 39,
+        "missing_count": 447,
+        "unit": "fraction",
+        "favorable_direction": "higher",
+        "minimum": 0.11764705882352941,
+        "maximum": 0.6666666666666666,
+        "mean": 0.43067130366771567,
+        "median": 0.45,
+        "population_standard_deviation": 0.12358064383330239,
+        "p10": 0.25222703981080014,
+        "p25": 0.3335540254237288,
+        "p75": 0.5097169811320754,
+        "p90": 0.6112727272727273,
+        "best_candidate": {
+          "candidate_id": "e2121432-d8bd-4323-90e2-78626721e216",
+          "run_id": "d3ab0200-5818-517e-aa17-2b7036200c7e",
+          "sequence": "AWGKKLKKFKSKSSDWFEKHSFR",
+          "sequence_sha256": "7b17223f1b14deaf9b1dde76ff61256f4d4df1f7dfee2f72cdaaa3ace8e0fbae",
+          "value": 0.6666666666666666
+        },
+        "worst_candidate": {
+          "candidate_id": "690e7089-a489-443b-968a-51b0ab5e2594",
+          "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+          "sequence": "TGTRANGQKTRKGQKSKNGRKTSEK",
+          "sequence_sha256": "30842628e443e6bf2a9d532873c6e263d6106a50f79e0e707c7dea6ede63a844",
+          "value": 0.11764705882352941
+        }
+      },
+      "key_contact_occupancy_mean": {
+        "observed_count": 39,
+        "missing_count": 447,
+        "unit": "fraction",
+        "favorable_direction": "higher",
+        "minimum": 0.35889411764705886,
+        "maximum": 0.8204561403508772,
+        "mean": 0.6130221564903929,
+        "median": 0.6057794871794872,
+        "population_standard_deviation": 0.09540272167272155,
+        "p10": 0.520179404489235,
+        "p25": 0.5612896126760563,
+        "p75": 0.6621991407490427,
+        "p90": 0.7432816376716809,
+        "best_candidate": {
+          "candidate_id": "e2121432-d8bd-4323-90e2-78626721e216",
+          "run_id": "d3ab0200-5818-517e-aa17-2b7036200c7e",
+          "sequence": "AWGKKLKKFKSKSSDWFEKHSFR",
+          "sequence_sha256": "7b17223f1b14deaf9b1dde76ff61256f4d4df1f7dfee2f72cdaaa3ace8e0fbae",
+          "value": 0.8204561403508772
+        },
+        "worst_candidate": {
+          "candidate_id": "690e7089-a489-443b-968a-51b0ab5e2594",
+          "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+          "sequence": "TGTRANGQKTRKGQKSKNGRKTSEK",
+          "sequence_sha256": "30842628e443e6bf2a9d532873c6e263d6106a50f79e0e707c7dea6ede63a844",
+          "value": 0.35889411764705886
+        }
+      },
+      "key_contact_occupancy_max": {
+        "observed_count": 39,
+        "missing_count": 447,
+        "unit": "fraction",
+        "favorable_direction": "higher",
+        "minimum": 0.9938,
+        "maximum": 1.0,
+        "mean": 0.9997230769230768,
+        "median": 1.0,
+        "population_standard_deviation": 0.0010343985093444967,
+        "p10": 0.99952,
+        "p25": 1.0,
+        "p75": 1.0,
+        "p90": 1.0,
+        "best_candidate": {
+          "candidate_id": "c95d9ec8-bf99-4110-b704-057cb64eb46a",
+          "run_id": "4288f009-d188-5d32-bf2f-1bf62c1a2855",
+          "sequence": "HFFKTKTAGVQGKTKRTKKTN",
+          "sequence_sha256": "d376fa38a9bb4e942bc2254670c0593fb4843792886433b50e7978c92c21df06",
+          "value": 1.0
+        },
+        "worst_candidate": {
+          "candidate_id": "bf53367f-8705-4e17-bb01-326b237e80ea",
+          "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+          "sequence": "DHNYNSRVGKNHRTRKAGKTRKSEYS",
+          "sequence_sha256": "7f9cf7ae55189903cd6e8999a20c78cc1f8c00068aa1bec352c827c08b8769ed",
+          "value": 0.9938
+        }
+      },
+      "hydrogen_bond_occupancy": {
+        "observed_count": 39,
+        "missing_count": 447,
+        "unit": "fraction",
+        "favorable_direction": "higher",
+        "minimum": 1.0,
+        "maximum": 1.0,
+        "mean": 1.0,
+        "median": 1.0,
+        "population_standard_deviation": 0.0,
+        "p10": 1.0,
+        "p25": 1.0,
+        "p75": 1.0,
+        "p90": 1.0,
+        "best_candidate": {
+          "candidate_id": "c95d9ec8-bf99-4110-b704-057cb64eb46a",
+          "run_id": "4288f009-d188-5d32-bf2f-1bf62c1a2855",
+          "sequence": "HFFKTKTAGVQGKTKRTKKTN",
+          "sequence_sha256": "d376fa38a9bb4e942bc2254670c0593fb4843792886433b50e7978c92c21df06",
+          "value": 1.0
+        },
+        "worst_candidate": {
+          "candidate_id": "c95d9ec8-bf99-4110-b704-057cb64eb46a",
+          "run_id": "4288f009-d188-5d32-bf2f-1bf62c1a2855",
+          "sequence": "HFFKTKTAGVQGKTKRTKKTN",
+          "sequence_sha256": "d376fa38a9bb4e942bc2254670c0593fb4843792886433b50e7978c92c21df06",
+          "value": 1.0
+        }
+      },
+      "salt_bridge_occupancy": {
+        "observed_count": 39,
+        "missing_count": 447,
+        "unit": "fraction",
+        "favorable_direction": "higher",
+        "minimum": 0.35,
+        "maximum": 1.0,
+        "mean": 0.9185538461538462,
+        "median": 1.0,
+        "population_standard_deviation": 0.17266611302676388,
+        "p10": 0.63892,
+        "p25": 0.9745999999999999,
+        "p75": 1.0,
+        "p90": 1.0,
+        "best_candidate": {
+          "candidate_id": "c95d9ec8-bf99-4110-b704-057cb64eb46a",
+          "run_id": "4288f009-d188-5d32-bf2f-1bf62c1a2855",
+          "sequence": "HFFKTKTAGVQGKTKRTKKTN",
+          "sequence_sha256": "d376fa38a9bb4e942bc2254670c0593fb4843792886433b50e7978c92c21df06",
+          "value": 1.0
+        },
+        "worst_candidate": {
+          "candidate_id": "075fd107-8b78-48f8-8339-6f583070ad86",
+          "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+          "sequence": "VYKKEKKTYNNEHFKTYGKAKTHFIR",
+          "sequence_sha256": "9dbe915f3c5364fb4c8e1b51e9146324723b387fb72edfad6c2f2d707927721a",
+          "value": 0.35
+        }
+      },
+      "water_bridge_occupancy": {
+        "observed_count": 39,
+        "missing_count": 447,
+        "unit": "fraction",
+        "favorable_direction": "higher",
+        "minimum": 0.976,
+        "maximum": 1.0,
+        "mean": 0.998974358974359,
+        "median": 1.0,
+        "population_standard_deviation": 0.0038662721692247757,
+        "p10": 0.998,
+        "p25": 1.0,
+        "p75": 1.0,
+        "p90": 1.0,
+        "best_candidate": {
+          "candidate_id": "c95d9ec8-bf99-4110-b704-057cb64eb46a",
+          "run_id": "4288f009-d188-5d32-bf2f-1bf62c1a2855",
+          "sequence": "HFFKTKTAGVQGKTKRTKKTN",
+          "sequence_sha256": "d376fa38a9bb4e942bc2254670c0593fb4843792886433b50e7978c92c21df06",
+          "value": 1.0
+        },
+        "worst_candidate": {
+          "candidate_id": "690e7089-a489-443b-968a-51b0ab5e2594",
+          "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+          "sequence": "TGTRANGQKTRKGQKSKNGRKTSEK",
+          "sequence_sha256": "30842628e443e6bf2a9d532873c6e263d6106a50f79e0e707c7dea6ede63a844",
+          "value": 0.976
+        }
+      },
+      "maximum_departure_duration_ps": {
+        "observed_count": 39,
+        "missing_count": 447,
+        "unit": "ps",
+        "favorable_direction": "lower",
+        "minimum": 0.0,
+        "maximum": 80.0,
+        "mean": 2.051282051282051,
+        "median": 0.0,
+        "population_standard_deviation": 12.644951800962003,
+        "p10": 0.0,
+        "p25": 0.0,
+        "p75": 0.0,
+        "p90": 0.0,
+        "best_candidate": {
+          "candidate_id": "c95d9ec8-bf99-4110-b704-057cb64eb46a",
+          "run_id": "4288f009-d188-5d32-bf2f-1bf62c1a2855",
+          "sequence": "HFFKTKTAGVQGKTKRTKKTN",
+          "sequence_sha256": "d376fa38a9bb4e942bc2254670c0593fb4843792886433b50e7978c92c21df06",
+          "value": 0.0
+        },
+        "worst_candidate": {
+          "candidate_id": "690e7089-a489-443b-968a-51b0ab5e2594",
+          "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+          "sequence": "TGTRANGQKTRKGQKSKNGRKTSEK",
+          "sequence_sha256": "30842628e443e6bf2a9d532873c6e263d6106a50f79e0e707c7dea6ede63a844",
+          "value": 80.0
+        }
+      },
+      "maximum_peptide_com_shift_nm": {
+        "observed_count": 39,
+        "missing_count": 447,
+        "unit": "nm",
+        "favorable_direction": "lower",
+        "minimum": 0.11424895375967026,
+        "maximum": 1.940124273300171,
+        "mean": 0.5202437534164159,
+        "median": 0.34504035115242004,
+        "population_standard_deviation": 0.4545343353600612,
+        "p10": 0.2405482918024063,
+        "p25": 0.27962158620357513,
+        "p75": 0.5142301023006439,
+        "p90": 0.9473866462707545,
+        "best_candidate": {
+          "candidate_id": "cb3781b2-983a-455c-b482-0d06c0eb18fa",
+          "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
+          "sequence": "KKHSKVSRTTAKSNRIRKDT",
+          "sequence_sha256": "45143ff1b748095c473032fc583a91bcff53d57e5e38260c60a2274f7ded4405",
+          "value": 0.11424895375967026
+        },
+        "worst_candidate": {
+          "candidate_id": "690e7089-a489-443b-968a-51b0ab5e2594",
+          "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+          "sequence": "TGTRANGQKTRKGQKSKNGRKTSEK",
+          "sequence_sha256": "30842628e443e6bf2a9d532873c6e263d6106a50f79e0e707c7dea6ede63a844",
+          "value": 1.940124273300171
+        }
+      },
+      "mmgbsa_mean_kcal_mol": {
+        "observed_count": 39,
+        "missing_count": 447,
+        "unit": "kcal/mol",
+        "favorable_direction": "lower",
+        "minimum": -187.15037860666612,
+        "maximum": -25.119780679999774,
+        "mean": -102.98265744284902,
+        "median": -98.34639050000244,
+        "population_standard_deviation": 38.84563857071782,
+        "p10": -157.5585654342224,
+        "p25": -123.48650147444468,
+        "p75": -81.13823093222248,
+        "p90": -58.10832173199995,
+        "best_candidate": {
+          "candidate_id": "17ef08e8-e6ed-417e-96c0-a71f5eab265e",
+          "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
+          "sequence": "KTKLLLEKHNRKDNRKQTTQATIKT",
+          "sequence_sha256": "f7c7bc70dc8c770a193f95391ff7208fbf789414c49c8655d4fc5b8e4eb47faa",
+          "value": -187.15037860666612
+        },
+        "worst_candidate": {
+          "candidate_id": "690e7089-a489-443b-968a-51b0ab5e2594",
+          "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+          "sequence": "TGTRANGQKTRKGQKSKNGRKTSEK",
+          "sequence_sha256": "30842628e443e6bf2a9d532873c6e263d6106a50f79e0e707c7dea6ede63a844",
+          "value": -25.119780679999774
+        }
+      },
+      "mmgbsa_ci95_lower_kcal_mol": {
+        "observed_count": 39,
+        "missing_count": 447,
+        "unit": "kcal/mol",
+        "favorable_direction": "descriptive",
+        "minimum": -206.25118536889036,
+        "maximum": -28.977406704444054,
+        "mean": -110.32251030917385,
+        "median": -102.80807421555265,
+        "population_standard_deviation": 41.05073184371095,
+        "p10": -167.5100946777791,
+        "p25": -130.02876941666602,
+        "p75": -88.69331704222213,
+        "p90": -62.23865343422037,
+        "best_candidate": {
+          "candidate_id": "88900415-fb04-4f7c-b6a2-525c6a0cb0cd",
+          "run_id": "62018508-a9c8-5004-a579-f82ca60c6f5c",
+          "sequence": "SHRRTVKFFRGKHGRKRKKRGENLD",
+          "sequence_sha256": "5f9a95575af725c668f8526f4d8999a1b8f26e8188dc6c8a54836e02f88ee9b8",
+          "value": -206.25118536889036
+        },
+        "worst_candidate": {
+          "candidate_id": "690e7089-a489-443b-968a-51b0ab5e2594",
+          "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+          "sequence": "TGTRANGQKTRKGQKSKNGRKTSEK",
+          "sequence_sha256": "30842628e443e6bf2a9d532873c6e263d6106a50f79e0e707c7dea6ede63a844",
+          "value": -28.977406704444054
+        }
+      },
+      "mmgbsa_ci95_upper_kcal_mol": {
+        "observed_count": 39,
+        "missing_count": 447,
+        "unit": "kcal/mol",
+        "favorable_direction": "descriptive",
+        "minimum": -179.3489217155508,
+        "maximum": -20.645072868888633,
+        "mean": -95.7089381773221,
+        "median": -89.96343947111262,
+        "population_standard_deviation": 36.83218998949045,
+        "p10": -150.50814257733214,
+        "p25": -115.62782495000019,
+        "p75": -73.43278353888819,
+        "p90": -53.81594702489051,
+        "best_candidate": {
+          "candidate_id": "17ef08e8-e6ed-417e-96c0-a71f5eab265e",
+          "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
+          "sequence": "KTKLLLEKHNRKDNRKQTTQATIKT",
+          "sequence_sha256": "f7c7bc70dc8c770a193f95391ff7208fbf789414c49c8655d4fc5b8e4eb47faa",
+          "value": -179.3489217155508
+        },
+        "worst_candidate": {
+          "candidate_id": "690e7089-a489-443b-968a-51b0ab5e2594",
+          "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+          "sequence": "TGTRANGQKTRKGQKSKNGRKTSEK",
+          "sequence_sha256": "30842628e443e6bf2a9d532873c6e263d6106a50f79e0e707c7dea6ede63a844",
+          "value": -20.645072868888633
+        }
+      }
+    }
+  },
+  "targets": {
+    "acea": {
+      "md_state_partition": {
+        "launched_unique": 13,
+        "md_complete_unique": 8,
+        "full_evidence_unique": 8,
+        "analysis_pending_unique": 0,
+        "running_unique": 5,
+        "not_started_unique": 66,
+        "partition_total_unique": 79
+      },
+      "expected_candidate_count": 79,
+      "md_launched_count": 13,
+      "md_complete_count": 8,
+      "interface_complete_count": 8,
+      "mmgbsa_complete_count": 8,
+      "pool_s_evidence_complete_count": 8,
+      "pending_md_count": 71,
+      "pending_pool_s_evidence_count": 71,
+      "retry_failure_recorded_count": 0,
+      "interface_postgresql_ingested_count": 8,
+      "mmgbsa_postgresql_ingested_count": 8,
+      "postgresql_evidence_complete_count": 8,
+      "peptide_departed_count": 0,
+      "interface_rmsd_mean_nm": 0.265373308211565,
+      "native_contact_fraction_mean": 0.623432086330034,
+      "hydrogen_bond_occupancy_mean": 1.0,
+      "salt_bridge_occupancy_mean": 0.999675,
+      "water_bridge_occupancy_mean": 1.0,
+      "mmgbsa_mean_kcal_mol": -112.3967339955555,
+      "peptide_departure_categories": {
+        "observed_count": 8,
+        "missing_count": 71,
+        "departed_count": 0,
+        "retained_count": 8
+      },
+      "metric_distributions": {
+        "rosetta_median_dg_reu": {
+          "observed_count": 79,
+          "missing_count": 0,
+          "unit": "REU",
+          "favorable_direction": "lower",
+          "minimum": -68.93610090810111,
+          "maximum": -30.058485343153166,
+          "mean": -43.79162367148424,
+          "median": -43.63248246053902,
+          "population_standard_deviation": 8.434566774805335,
+          "p10": -54.94680392116645,
+          "p25": -48.63378918787788,
+          "p75": -36.72175752845605,
+          "p90": -34.235413134858135,
+          "best_candidate": {
+            "candidate_id": "c95d9ec8-bf99-4110-b704-057cb64eb46a",
+            "run_id": "4288f009-d188-5d32-bf2f-1bf62c1a2855",
+            "sequence": "HFFKTKTAGVQGKTKRTKKTN",
+            "sequence_sha256": "d376fa38a9bb4e942bc2254670c0593fb4843792886433b50e7978c92c21df06",
+            "value": -68.93610090810111
+          },
+          "worst_candidate": {
+            "candidate_id": "903d6c3b-576f-481e-9e92-284d5810f902",
+            "run_id": "4288f009-d188-5d32-bf2f-1bf62c1a2855",
+            "sequence": "SYKKKTAKNIRQTKARKKGRF",
+            "sequence_sha256": "08789cf3ccf137feb41fe4e5f75d374e0fdec661cd8963681a1740759a9fe8fb",
+            "value": -30.058485343153166
+          }
+        },
+        "interface_rmsd_mean_nm": {
+          "observed_count": 8,
+          "missing_count": 71,
+          "unit": "nm",
+          "favorable_direction": "lower",
+          "minimum": 0.19560359418392181,
+          "maximum": 0.3003648817539215,
+          "mean": 0.265373308211565,
+          "median": 0.27491773664951324,
+          "population_standard_deviation": 0.0316071510493527,
+          "p10": 0.22579681277275088,
+          "p25": 0.26003215089440346,
+          "p75": 0.28088652342557907,
+          "p90": 0.2967492282390594,
+          "best_candidate": {
+            "candidate_id": "88900415-fb04-4f7c-b6a2-525c6a0cb0cd",
+            "run_id": "62018508-a9c8-5004-a579-f82ca60c6f5c",
+            "sequence": "SHRRTVKFFRGKHGRKRKKRGENLD",
+            "sequence_sha256": "5f9a95575af725c668f8526f4d8999a1b8f26e8188dc6c8a54836e02f88ee9b8",
+            "value": 0.19560359418392181
+          },
+          "worst_candidate": {
+            "candidate_id": "2c3922e9-83e4-470e-afc8-0608140eb1c0",
+            "run_id": "62018508-a9c8-5004-a579-f82ca60c6f5c",
+            "sequence": "RKKNQETAASFWRKHQWTGKYQ",
+            "sequence_sha256": "200e8fcbe217f031b1cc8a472a72fcad35b715d79bdc40b5e1e5cb10faf2293f",
+            "value": 0.3003648817539215
+          }
+        },
+        "interface_rmsd_max_nm": {
+          "observed_count": 8,
+          "missing_count": 71,
+          "unit": "nm",
+          "favorable_direction": "lower",
+          "minimum": 0.2638920545578003,
+          "maximum": 0.4782072901725769,
+          "mean": 0.4013957008719444,
+          "median": 0.40216247737407684,
+          "population_standard_deviation": 0.06548717220365582,
+          "p10": 0.3359190702438355,
+          "p25": 0.3733605891466141,
+          "p75": 0.4570080116391182,
+          "p90": 0.4721730649471283,
+          "best_candidate": {
+            "candidate_id": "88900415-fb04-4f7c-b6a2-525c6a0cb0cd",
+            "run_id": "62018508-a9c8-5004-a579-f82ca60c6f5c",
+            "sequence": "SHRRTVKFFRGKHGRKRKKRGENLD",
+            "sequence_sha256": "5f9a95575af725c668f8526f4d8999a1b8f26e8188dc6c8a54836e02f88ee9b8",
+            "value": 0.2638920545578003
+          },
+          "worst_candidate": {
+            "candidate_id": "fb8b236e-ee82-412a-bada-98581eea440f",
+            "run_id": "7c20b52a-8189-5f27-a4a9-12be50968707",
+            "sequence": "NDHGSYKYRDRKWYKRKYRKTGKRK",
+            "sequence_sha256": "6e2cc6d0d9080cc534dcc2f255676c47f2e81801d87d2a64e0c4e2acf0ef6c21",
+            "value": 0.4782072901725769
+          }
+        },
+        "native_contact_fraction_mean": {
+          "observed_count": 8,
+          "missing_count": 71,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 0.5001186440677966,
+          "maximum": 0.7824260000000001,
+          "mean": 0.623432086330034,
+          "median": 0.6120783974358974,
+          "population_standard_deviation": 0.08741388210896038,
+          "p10": 0.5237014265536724,
+          "p25": 0.5583083333333333,
+          "p75": 0.6869159387755102,
+          "p90": 0.7225410000000001,
+          "best_candidate": {
+            "candidate_id": "5b7f9e8b-f9bc-46c4-bbe0-7f154eb73b26",
+            "run_id": "62018508-a9c8-5004-a579-f82ca60c6f5c",
+            "sequence": "RVTRATREYGKKYRYTSATSK",
+            "sequence_sha256": "c5b42e19dba55fea8e5b7a516e5eac0771aa1183110f880c5f5f7997d52b6de2",
+            "value": 0.7824260000000001
+          },
+          "worst_candidate": {
+            "candidate_id": "2c3922e9-83e4-470e-afc8-0608140eb1c0",
+            "run_id": "62018508-a9c8-5004-a579-f82ca60c6f5c",
+            "sequence": "RKKNQETAASFWRKHQWTGKYQ",
+            "sequence_sha256": "200e8fcbe217f031b1cc8a472a72fcad35b715d79bdc40b5e1e5cb10faf2293f",
+            "value": 0.5001186440677966
+          }
+        },
+        "native_contact_fraction_min": {
+          "observed_count": 8,
+          "missing_count": 71,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 0.328125,
+          "maximum": 0.62,
+          "mean": 0.4438627345087318,
+          "median": 0.4342948717948718,
+          "population_standard_deviation": 0.09336841756159442,
+          "p10": 0.33572563559322033,
+          "p25": 0.3659957627118644,
+          "p75": 0.5100510204081633,
+          "p90": 0.5431428571428571,
+          "best_candidate": {
+            "candidate_id": "5b7f9e8b-f9bc-46c4-bbe0-7f154eb73b26",
+            "run_id": "62018508-a9c8-5004-a579-f82ca60c6f5c",
+            "sequence": "RVTRATREYGKKYRYTSATSK",
+            "sequence_sha256": "c5b42e19dba55fea8e5b7a516e5eac0771aa1183110f880c5f5f7997d52b6de2",
+            "value": 0.62
+          },
+          "worst_candidate": {
+            "candidate_id": "fb8b236e-ee82-412a-bada-98581eea440f",
+            "run_id": "7c20b52a-8189-5f27-a4a9-12be50968707",
+            "sequence": "NDHGSYKYRDRKWYKRKYRKTGKRK",
+            "sequence_sha256": "6e2cc6d0d9080cc534dcc2f255676c47f2e81801d87d2a64e0c4e2acf0ef6c21",
+            "value": 0.328125
+          }
+        },
+        "key_contact_occupancy_mean": {
+          "observed_count": 8,
+          "missing_count": 71,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 0.5001186440677966,
+          "maximum": 0.782426,
+          "mean": 0.623432086330034,
+          "median": 0.6120783974358974,
+          "population_standard_deviation": 0.08741388210896037,
+          "p10": 0.5237014265536724,
+          "p25": 0.5583083333333333,
+          "p75": 0.6869159387755103,
+          "p90": 0.722541,
+          "best_candidate": {
+            "candidate_id": "5b7f9e8b-f9bc-46c4-bbe0-7f154eb73b26",
+            "run_id": "62018508-a9c8-5004-a579-f82ca60c6f5c",
+            "sequence": "RVTRATREYGKKYRYTSATSK",
+            "sequence_sha256": "c5b42e19dba55fea8e5b7a516e5eac0771aa1183110f880c5f5f7997d52b6de2",
+            "value": 0.782426
+          },
+          "worst_candidate": {
+            "candidate_id": "2c3922e9-83e4-470e-afc8-0608140eb1c0",
+            "run_id": "62018508-a9c8-5004-a579-f82ca60c6f5c",
+            "sequence": "RKKNQETAASFWRKHQWTGKYQ",
+            "sequence_sha256": "200e8fcbe217f031b1cc8a472a72fcad35b715d79bdc40b5e1e5cb10faf2293f",
+            "value": 0.5001186440677966
+          }
+        },
+        "key_contact_occupancy_max": {
+          "observed_count": 8,
+          "missing_count": 71,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 0.9988,
+          "maximum": 1.0,
+          "mean": 0.99975,
+          "median": 1.0,
+          "population_standard_deviation": 0.00044440972086577733,
+          "p10": 0.99908,
+          "p25": 0.9998,
+          "p75": 1.0,
+          "p90": 1.0,
+          "best_candidate": {
+            "candidate_id": "c95d9ec8-bf99-4110-b704-057cb64eb46a",
+            "run_id": "4288f009-d188-5d32-bf2f-1bf62c1a2855",
+            "sequence": "HFFKTKTAGVQGKTKRTKKTN",
+            "sequence_sha256": "d376fa38a9bb4e942bc2254670c0593fb4843792886433b50e7978c92c21df06",
+            "value": 1.0
+          },
+          "worst_candidate": {
+            "candidate_id": "fb8b236e-ee82-412a-bada-98581eea440f",
+            "run_id": "7c20b52a-8189-5f27-a4a9-12be50968707",
+            "sequence": "NDHGSYKYRDRKWYKRKYRKTGKRK",
+            "sequence_sha256": "6e2cc6d0d9080cc534dcc2f255676c47f2e81801d87d2a64e0c4e2acf0ef6c21",
+            "value": 0.9988
+          }
+        },
+        "hydrogen_bond_occupancy": {
+          "observed_count": 8,
+          "missing_count": 71,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 1.0,
+          "maximum": 1.0,
+          "mean": 1.0,
+          "median": 1.0,
+          "population_standard_deviation": 0.0,
+          "p10": 1.0,
+          "p25": 1.0,
+          "p75": 1.0,
+          "p90": 1.0,
+          "best_candidate": {
+            "candidate_id": "c95d9ec8-bf99-4110-b704-057cb64eb46a",
+            "run_id": "4288f009-d188-5d32-bf2f-1bf62c1a2855",
+            "sequence": "HFFKTKTAGVQGKTKRTKKTN",
+            "sequence_sha256": "d376fa38a9bb4e942bc2254670c0593fb4843792886433b50e7978c92c21df06",
+            "value": 1.0
+          },
+          "worst_candidate": {
+            "candidate_id": "c95d9ec8-bf99-4110-b704-057cb64eb46a",
+            "run_id": "4288f009-d188-5d32-bf2f-1bf62c1a2855",
+            "sequence": "HFFKTKTAGVQGKTKRTKKTN",
+            "sequence_sha256": "d376fa38a9bb4e942bc2254670c0593fb4843792886433b50e7978c92c21df06",
+            "value": 1.0
+          }
+        },
+        "salt_bridge_occupancy": {
+          "observed_count": 8,
+          "missing_count": 71,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 0.9974,
+          "maximum": 1.0,
+          "mean": 0.999675,
+          "median": 1.0,
+          "population_standard_deviation": 0.0008598691760960074,
+          "p10": 0.99922,
+          "p25": 1.0,
+          "p75": 1.0,
+          "p90": 1.0,
+          "best_candidate": {
+            "candidate_id": "c95d9ec8-bf99-4110-b704-057cb64eb46a",
+            "run_id": "4288f009-d188-5d32-bf2f-1bf62c1a2855",
+            "sequence": "HFFKTKTAGVQGKTKRTKKTN",
+            "sequence_sha256": "d376fa38a9bb4e942bc2254670c0593fb4843792886433b50e7978c92c21df06",
+            "value": 1.0
+          },
+          "worst_candidate": {
+            "candidate_id": "d67a2139-ebac-434e-a885-0b0a80d59f72",
+            "run_id": "62018508-a9c8-5004-a579-f82ca60c6f5c",
+            "sequence": "RKNQFDEGGRKHFVGREKKKQFKNFK",
+            "sequence_sha256": "78ed0ab71661c3213e6a471d2146a7defaf22639cde32d8ec798841361b60c69",
+            "value": 0.9974
+          }
+        },
+        "water_bridge_occupancy": {
+          "observed_count": 8,
+          "missing_count": 71,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 1.0,
+          "maximum": 1.0,
+          "mean": 1.0,
+          "median": 1.0,
+          "population_standard_deviation": 0.0,
+          "p10": 1.0,
+          "p25": 1.0,
+          "p75": 1.0,
+          "p90": 1.0,
+          "best_candidate": {
+            "candidate_id": "c95d9ec8-bf99-4110-b704-057cb64eb46a",
+            "run_id": "4288f009-d188-5d32-bf2f-1bf62c1a2855",
+            "sequence": "HFFKTKTAGVQGKTKRTKKTN",
+            "sequence_sha256": "d376fa38a9bb4e942bc2254670c0593fb4843792886433b50e7978c92c21df06",
+            "value": 1.0
+          },
+          "worst_candidate": {
+            "candidate_id": "c95d9ec8-bf99-4110-b704-057cb64eb46a",
+            "run_id": "4288f009-d188-5d32-bf2f-1bf62c1a2855",
+            "sequence": "HFFKTKTAGVQGKTKRTKKTN",
+            "sequence_sha256": "d376fa38a9bb4e942bc2254670c0593fb4843792886433b50e7978c92c21df06",
+            "value": 1.0
+          }
+        },
+        "maximum_departure_duration_ps": {
+          "observed_count": 8,
+          "missing_count": 71,
+          "unit": "ps",
+          "favorable_direction": "lower",
+          "minimum": 0.0,
+          "maximum": 0.0,
+          "mean": 0.0,
+          "median": 0.0,
+          "population_standard_deviation": 0.0,
+          "p10": 0.0,
+          "p25": 0.0,
+          "p75": 0.0,
+          "p90": 0.0,
+          "best_candidate": {
+            "candidate_id": "c95d9ec8-bf99-4110-b704-057cb64eb46a",
+            "run_id": "4288f009-d188-5d32-bf2f-1bf62c1a2855",
+            "sequence": "HFFKTKTAGVQGKTKRTKKTN",
+            "sequence_sha256": "d376fa38a9bb4e942bc2254670c0593fb4843792886433b50e7978c92c21df06",
+            "value": 0.0
+          },
+          "worst_candidate": {
+            "candidate_id": "c95d9ec8-bf99-4110-b704-057cb64eb46a",
+            "run_id": "4288f009-d188-5d32-bf2f-1bf62c1a2855",
+            "sequence": "HFFKTKTAGVQGKTKRTKKTN",
+            "sequence_sha256": "d376fa38a9bb4e942bc2254670c0593fb4843792886433b50e7978c92c21df06",
+            "value": 0.0
+          }
+        },
+        "maximum_peptide_com_shift_nm": {
+          "observed_count": 8,
+          "missing_count": 71,
+          "unit": "nm",
+          "favorable_direction": "lower",
+          "minimum": 0.2411022037267685,
+          "maximum": 0.5306497812271118,
+          "mean": 0.33896652050316334,
+          "median": 0.31550973653793335,
+          "population_standard_deviation": 0.08976059233831052,
+          "p10": 0.24735237807035448,
+          "p25": 0.2711302861571312,
+          "p75": 0.38886284828186035,
+          "p90": 0.43459157049655917,
+          "best_candidate": {
+            "candidate_id": "5b7f9e8b-f9bc-46c4-bbe0-7f154eb73b26",
+            "run_id": "62018508-a9c8-5004-a579-f82ca60c6f5c",
+            "sequence": "RVTRATREYGKKYRYTSATSK",
+            "sequence_sha256": "c5b42e19dba55fea8e5b7a516e5eac0771aa1183110f880c5f5f7997d52b6de2",
+            "value": 0.2411022037267685
+          },
+          "worst_candidate": {
+            "candidate_id": "fb8b236e-ee82-412a-bada-98581eea440f",
+            "run_id": "7c20b52a-8189-5f27-a4a9-12be50968707",
+            "sequence": "NDHGSYKYRDRKWYKRKYRKTGKRK",
+            "sequence_sha256": "6e2cc6d0d9080cc534dcc2f255676c47f2e81801d87d2a64e0c4e2acf0ef6c21",
+            "value": 0.5306497812271118
+          }
+        },
+        "mmgbsa_mean_kcal_mol": {
+          "observed_count": 8,
+          "missing_count": 71,
+          "unit": "kcal/mol",
+          "favorable_direction": "lower",
+          "minimum": -186.46011854666705,
+          "maximum": -58.39276620444437,
+          "mean": -112.3967339955555,
+          "median": -90.33163082444395,
+          "population_standard_deviation": 44.746793194995305,
+          "p10": -168.19245223,
+          "p25": -157.7338708683335,
+          "p75": -78.92601946611136,
+          "p90": -71.28017856977752,
+          "best_candidate": {
+            "candidate_id": "88900415-fb04-4f7c-b6a2-525c6a0cb0cd",
+            "run_id": "62018508-a9c8-5004-a579-f82ca60c6f5c",
+            "sequence": "SHRRTVKFFRGKHGRKRKKRGENLD",
+            "sequence_sha256": "5f9a95575af725c668f8526f4d8999a1b8f26e8188dc6c8a54836e02f88ee9b8",
+            "value": -186.46011854666705
+          },
+          "worst_candidate": {
+            "candidate_id": "d67a2139-ebac-434e-a885-0b0a80d59f72",
+            "run_id": "62018508-a9c8-5004-a579-f82ca60c6f5c",
+            "sequence": "RKNQFDEGGRKHFVGREKKKQFKNFK",
+            "sequence_sha256": "78ed0ab71661c3213e6a471d2146a7defaf22639cde32d8ec798841361b60c69",
+            "value": -58.39276620444437
+          }
+        },
+        "mmgbsa_ci95_lower_kcal_mol": {
+          "observed_count": 8,
+          "missing_count": 71,
+          "unit": "kcal/mol",
+          "favorable_direction": "descriptive",
+          "minimum": -206.25118536889036,
+          "maximum": -62.52677273999828,
+          "mean": -121.27349785111151,
+          "median": -95.91028302444423,
+          "population_standard_deviation": 48.686235319994566,
+          "p10": -181.19894387177888,
+          "p25": -167.69460556944574,
+          "p75": -88.29515329111214,
+          "p90": -76.11771273977747,
+          "best_candidate": {
+            "candidate_id": "88900415-fb04-4f7c-b6a2-525c6a0cb0cd",
+            "run_id": "62018508-a9c8-5004-a579-f82ca60c6f5c",
+            "sequence": "SHRRTVKFFRGKHGRKRKKRGENLD",
+            "sequence_sha256": "5f9a95575af725c668f8526f4d8999a1b8f26e8188dc6c8a54836e02f88ee9b8",
+            "value": -206.25118536889036
+          },
+          "worst_candidate": {
+            "candidate_id": "d67a2139-ebac-434e-a885-0b0a80d59f72",
+            "run_id": "62018508-a9c8-5004-a579-f82ca60c6f5c",
+            "sequence": "RKNQFDEGGRKHFVGREKKKQFKNFK",
+            "sequence_sha256": "78ed0ab71661c3213e6a471d2146a7defaf22639cde32d8ec798841361b60c69",
+            "value": -62.52677273999828
+          }
+        },
+        "mmgbsa_ci95_upper_kcal_mol": {
+          "observed_count": 8,
+          "missing_count": 71,
+          "unit": "kcal/mol",
+          "favorable_direction": "descriptive",
+          "minimum": -164.77722656666626,
+          "maximum": -54.027301073335174,
+          "mean": -103.319979240834,
+          "median": -84.80178309444409,
+          "population_standard_deviation": 40.84824192981007,
+          "p10": -154.74413425266556,
+          "p25": -148.41843396000144,
+          "p75": -70.10609989000106,
+          "p90": -65.02220375200294,
+          "best_candidate": {
+            "candidate_id": "88900415-fb04-4f7c-b6a2-525c6a0cb0cd",
+            "run_id": "62018508-a9c8-5004-a579-f82ca60c6f5c",
+            "sequence": "SHRRTVKFFRGKHGRKRKKRGENLD",
+            "sequence_sha256": "5f9a95575af725c668f8526f4d8999a1b8f26e8188dc6c8a54836e02f88ee9b8",
+            "value": -164.77722656666626
+          },
+          "worst_candidate": {
+            "candidate_id": "d67a2139-ebac-434e-a885-0b0a80d59f72",
+            "run_id": "62018508-a9c8-5004-a579-f82ca60c6f5c",
+            "sequence": "RKNQFDEGGRKHFVGREKKKQFKNFK",
+            "sequence_sha256": "78ed0ab71661c3213e6a471d2146a7defaf22639cde32d8ec798841361b60c69",
+            "value": -54.027301073335174
+          }
+        }
+      }
+    },
+    "angpt1": {
+      "md_state_partition": {
+        "launched_unique": 9,
+        "md_complete_unique": 5,
+        "full_evidence_unique": 4,
+        "analysis_pending_unique": 1,
+        "running_unique": 4,
+        "not_started_unique": 93,
+        "partition_total_unique": 102
+      },
+      "expected_candidate_count": 102,
+      "md_launched_count": 9,
+      "md_complete_count": 5,
+      "interface_complete_count": 4,
+      "mmgbsa_complete_count": 4,
+      "pool_s_evidence_complete_count": 4,
+      "pending_md_count": 97,
+      "pending_pool_s_evidence_count": 98,
+      "retry_failure_recorded_count": 0,
+      "interface_postgresql_ingested_count": 4,
+      "mmgbsa_postgresql_ingested_count": 4,
+      "postgresql_evidence_complete_count": 4,
+      "peptide_departed_count": 0,
+      "interface_rmsd_mean_nm": 0.5211338624358177,
+      "native_contact_fraction_mean": 0.5268338986486487,
+      "hydrogen_bond_occupancy_mean": 1.0,
+      "salt_bridge_occupancy_mean": 0.9387,
+      "water_bridge_occupancy_mean": 0.999,
+      "mmgbsa_mean_kcal_mol": -85.44490210388804,
+      "peptide_departure_categories": {
+        "observed_count": 4,
+        "missing_count": 98,
+        "departed_count": 0,
+        "retained_count": 4
+      },
+      "metric_distributions": {
+        "rosetta_median_dg_reu": {
+          "observed_count": 102,
+          "missing_count": 0,
+          "unit": "REU",
+          "favorable_direction": "lower",
+          "minimum": -76.16574372160471,
+          "maximum": -30.424061191037993,
+          "mean": -47.05442619433663,
+          "median": -45.67782036097111,
+          "population_standard_deviation": 10.176840280551016,
+          "p10": -61.20433370255686,
+          "p25": -54.311460806690036,
+          "p75": -39.51477474797209,
+          "p90": -33.84779475267609,
+          "best_candidate": {
+            "candidate_id": "8e0fb633-2192-401f-b4ab-fa48fb812e45",
+            "run_id": "9bcbda95-56a0-52b0-80ba-296fc22a0e4e",
+            "sequence": "SGGRDNTQTKGQYGRTQHKGKKKNS",
+            "sequence_sha256": "2a7e54fca3599771adaf854f4305cd692c59b7ee884f1d5310604b67fdfc8bd5",
+            "value": -76.16574372160471
+          },
+          "worst_candidate": {
+            "candidate_id": "bd9d543d-8ded-4ae8-b044-ceccc3515bae",
+            "run_id": "9bcbda95-56a0-52b0-80ba-296fc22a0e4e",
+            "sequence": "KSTGKGWRKKRSGATGYTWNKNQT",
+            "sequence_sha256": "0b96279d8312307e6bbfd0ba066742fbb0ed4ad49f821e51832ab998f4e7705b",
+            "value": -30.424061191037993
+          }
+        },
+        "interface_rmsd_mean_nm": {
+          "observed_count": 4,
+          "missing_count": 98,
+          "unit": "nm",
+          "favorable_direction": "lower",
+          "minimum": 0.29953616857528687,
+          "maximum": 0.98294997215271,
+          "mean": 0.5211338624358177,
+          "median": 0.401024654507637,
+          "population_standard_deviation": 0.2701887074661241,
+          "p10": 0.3240747332572937,
+          "p25": 0.36088258028030396,
+          "p75": 0.5612759366631508,
+          "p90": 0.8142803579568864,
+          "best_candidate": {
+            "candidate_id": "ba88382d-586e-4e41-8009-916a73263632",
+            "run_id": "9bcbda95-56a0-52b0-80ba-296fc22a0e4e",
+            "sequence": "KKRKSRHETTQRADWGTRII",
+            "sequence_sha256": "09ca83319dc140f0ff4f2ec17459a6caee964b00fd06cce84663ea4d3341238a",
+            "value": 0.29953616857528687
+          },
+          "worst_candidate": {
+            "candidate_id": "8e0fb633-2192-401f-b4ab-fa48fb812e45",
+            "run_id": "9bcbda95-56a0-52b0-80ba-296fc22a0e4e",
+            "sequence": "SGGRDNTQTKGQYGRTQHKGKKKNS",
+            "sequence_sha256": "2a7e54fca3599771adaf854f4305cd692c59b7ee884f1d5310604b67fdfc8bd5",
+            "value": 0.98294997215271
+          }
+        },
+        "interface_rmsd_max_nm": {
+          "observed_count": 4,
+          "missing_count": 98,
+          "unit": "nm",
+          "favorable_direction": "lower",
+          "minimum": 0.41399312019348145,
+          "maximum": 1.671396255493164,
+          "mean": 0.8196509629487991,
+          "median": 0.5966072380542755,
+          "population_standard_deviation": 0.4979926152716732,
+          "p10": 0.458253288269043,
+          "p25": 0.5246435403823853,
+          "p75": 0.8916146606206894,
+          "p90": 1.3594836175441745,
+          "best_candidate": {
+            "candidate_id": "ba88382d-586e-4e41-8009-916a73263632",
+            "run_id": "9bcbda95-56a0-52b0-80ba-296fc22a0e4e",
+            "sequence": "KKRKSRHETTQRADWGTRII",
+            "sequence_sha256": "09ca83319dc140f0ff4f2ec17459a6caee964b00fd06cce84663ea4d3341238a",
+            "value": 0.41399312019348145
+          },
+          "worst_candidate": {
+            "candidate_id": "8e0fb633-2192-401f-b4ab-fa48fb812e45",
+            "run_id": "9bcbda95-56a0-52b0-80ba-296fc22a0e4e",
+            "sequence": "SGGRDNTQTKGQYGRTQHKGKKKNS",
+            "sequence_sha256": "2a7e54fca3599771adaf854f4305cd692c59b7ee884f1d5310604b67fdfc8bd5",
+            "value": 1.671396255493164
+          }
+        },
+        "native_contact_fraction_mean": {
+          "observed_count": 4,
+          "missing_count": 98,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 0.4086,
+          "maximum": 0.602125,
+          "mean": 0.5268338986486487,
+          "median": 0.5483052972972973,
+          "population_standard_deviation": 0.0735497379516783,
+          "p10": 0.44357837837837844,
+          "p25": 0.496045945945946,
+          "p75": 0.57909325,
+          "p90": 0.5929123000000001,
+          "best_candidate": {
+            "candidate_id": "1064e16d-f11f-401c-afbb-d6f35120cd90",
+            "run_id": "9bcbda95-56a0-52b0-80ba-296fc22a0e4e",
+            "sequence": "RDYKVFRKHVWKTQRKTNST",
+            "sequence_sha256": "4abaac866072aaa171784eb00976a600d1d66fc6503a08c31c13c62bc7ba4d5e",
+            "value": 0.602125
+          },
+          "worst_candidate": {
+            "candidate_id": "8e0fb633-2192-401f-b4ab-fa48fb812e45",
+            "run_id": "9bcbda95-56a0-52b0-80ba-296fc22a0e4e",
+            "sequence": "SGGRDNTQTKGQYGRTQHKGKKKNS",
+            "sequence_sha256": "2a7e54fca3599771adaf854f4305cd692c59b7ee884f1d5310604b67fdfc8bd5",
+            "value": 0.4086
+          }
+        },
+        "native_contact_fraction_min": {
+          "observed_count": 4,
+          "missing_count": 98,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 0.2441860465116279,
+          "maximum": 0.42857142857142855,
+          "mean": 0.32701819759959294,
+          "median": 0.31765765765765763,
+          "population_standard_deviation": 0.06587950463912326,
+          "p10": 0.2655248271527341,
+          "p25": 0.2975329981143935,
+          "p75": 0.34714285714285714,
+          "p90": 0.396,
+          "best_candidate": {
+            "candidate_id": "1064e16d-f11f-401c-afbb-d6f35120cd90",
+            "run_id": "9bcbda95-56a0-52b0-80ba-296fc22a0e4e",
+            "sequence": "RDYKVFRKHVWKTQRKTNST",
+            "sequence_sha256": "4abaac866072aaa171784eb00976a600d1d66fc6503a08c31c13c62bc7ba4d5e",
+            "value": 0.42857142857142855
+          },
+          "worst_candidate": {
+            "candidate_id": "8e0fb633-2192-401f-b4ab-fa48fb812e45",
+            "run_id": "9bcbda95-56a0-52b0-80ba-296fc22a0e4e",
+            "sequence": "SGGRDNTQTKGQYGRTQHKGKKKNS",
+            "sequence_sha256": "2a7e54fca3599771adaf854f4305cd692c59b7ee884f1d5310604b67fdfc8bd5",
+            "value": 0.2441860465116279
+          }
+        },
+        "key_contact_occupancy_mean": {
+          "observed_count": 4,
+          "missing_count": 98,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 0.4086,
+          "maximum": 0.602125,
+          "mean": 0.5268338986486487,
+          "median": 0.5483052972972973,
+          "population_standard_deviation": 0.0735497379516783,
+          "p10": 0.44357837837837844,
+          "p25": 0.496045945945946,
+          "p75": 0.57909325,
+          "p90": 0.5929123000000001,
+          "best_candidate": {
+            "candidate_id": "1064e16d-f11f-401c-afbb-d6f35120cd90",
+            "run_id": "9bcbda95-56a0-52b0-80ba-296fc22a0e4e",
+            "sequence": "RDYKVFRKHVWKTQRKTNST",
+            "sequence_sha256": "4abaac866072aaa171784eb00976a600d1d66fc6503a08c31c13c62bc7ba4d5e",
+            "value": 0.602125
+          },
+          "worst_candidate": {
+            "candidate_id": "8e0fb633-2192-401f-b4ab-fa48fb812e45",
+            "run_id": "9bcbda95-56a0-52b0-80ba-296fc22a0e4e",
+            "sequence": "SGGRDNTQTKGQYGRTQHKGKKKNS",
+            "sequence_sha256": "2a7e54fca3599771adaf854f4305cd692c59b7ee884f1d5310604b67fdfc8bd5",
+            "value": 0.4086
+          }
+        },
+        "key_contact_occupancy_max": {
+          "observed_count": 4,
+          "missing_count": 98,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 0.9998,
+          "maximum": 1.0,
+          "mean": 0.99995,
+          "median": 1.0,
+          "population_standard_deviation": 8.660254037843432e-05,
+          "p10": 0.99986,
+          "p25": 0.99995,
+          "p75": 1.0,
+          "p90": 1.0,
+          "best_candidate": {
+            "candidate_id": "8e0fb633-2192-401f-b4ab-fa48fb812e45",
+            "run_id": "9bcbda95-56a0-52b0-80ba-296fc22a0e4e",
+            "sequence": "SGGRDNTQTKGQYGRTQHKGKKKNS",
+            "sequence_sha256": "2a7e54fca3599771adaf854f4305cd692c59b7ee884f1d5310604b67fdfc8bd5",
+            "value": 1.0
+          },
+          "worst_candidate": {
+            "candidate_id": "ba88382d-586e-4e41-8009-916a73263632",
+            "run_id": "9bcbda95-56a0-52b0-80ba-296fc22a0e4e",
+            "sequence": "KKRKSRHETTQRADWGTRII",
+            "sequence_sha256": "09ca83319dc140f0ff4f2ec17459a6caee964b00fd06cce84663ea4d3341238a",
+            "value": 0.9998
+          }
+        },
+        "hydrogen_bond_occupancy": {
+          "observed_count": 4,
+          "missing_count": 98,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 1.0,
+          "maximum": 1.0,
+          "mean": 1.0,
+          "median": 1.0,
+          "population_standard_deviation": 0.0,
+          "p10": 1.0,
+          "p25": 1.0,
+          "p75": 1.0,
+          "p90": 1.0,
+          "best_candidate": {
+            "candidate_id": "8e0fb633-2192-401f-b4ab-fa48fb812e45",
+            "run_id": "9bcbda95-56a0-52b0-80ba-296fc22a0e4e",
+            "sequence": "SGGRDNTQTKGQYGRTQHKGKKKNS",
+            "sequence_sha256": "2a7e54fca3599771adaf854f4305cd692c59b7ee884f1d5310604b67fdfc8bd5",
+            "value": 1.0
+          },
+          "worst_candidate": {
+            "candidate_id": "8e0fb633-2192-401f-b4ab-fa48fb812e45",
+            "run_id": "9bcbda95-56a0-52b0-80ba-296fc22a0e4e",
+            "sequence": "SGGRDNTQTKGQYGRTQHKGKKKNS",
+            "sequence_sha256": "2a7e54fca3599771adaf854f4305cd692c59b7ee884f1d5310604b67fdfc8bd5",
+            "value": 1.0
+          }
+        },
+        "salt_bridge_occupancy": {
+          "observed_count": 4,
+          "missing_count": 98,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 0.7548,
+          "maximum": 1.0,
+          "mean": 0.9387,
+          "median": 1.0,
+          "population_standard_deviation": 0.10617471450397217,
+          "p10": 0.82836,
+          "p25": 0.9387,
+          "p75": 1.0,
+          "p90": 1.0,
+          "best_candidate": {
+            "candidate_id": "1064e16d-f11f-401c-afbb-d6f35120cd90",
+            "run_id": "9bcbda95-56a0-52b0-80ba-296fc22a0e4e",
+            "sequence": "RDYKVFRKHVWKTQRKTNST",
+            "sequence_sha256": "4abaac866072aaa171784eb00976a600d1d66fc6503a08c31c13c62bc7ba4d5e",
+            "value": 1.0
+          },
+          "worst_candidate": {
+            "candidate_id": "8e0fb633-2192-401f-b4ab-fa48fb812e45",
+            "run_id": "9bcbda95-56a0-52b0-80ba-296fc22a0e4e",
+            "sequence": "SGGRDNTQTKGQYGRTQHKGKKKNS",
+            "sequence_sha256": "2a7e54fca3599771adaf854f4305cd692c59b7ee884f1d5310604b67fdfc8bd5",
+            "value": 0.7548
+          }
+        },
+        "water_bridge_occupancy": {
+          "observed_count": 4,
+          "missing_count": 98,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 0.998,
+          "maximum": 1.0,
+          "mean": 0.999,
+          "median": 0.999,
+          "population_standard_deviation": 0.0010000000000000009,
+          "p10": 0.998,
+          "p25": 0.998,
+          "p75": 1.0,
+          "p90": 1.0,
+          "best_candidate": {
+            "candidate_id": "8e0fb633-2192-401f-b4ab-fa48fb812e45",
+            "run_id": "9bcbda95-56a0-52b0-80ba-296fc22a0e4e",
+            "sequence": "SGGRDNTQTKGQYGRTQHKGKKKNS",
+            "sequence_sha256": "2a7e54fca3599771adaf854f4305cd692c59b7ee884f1d5310604b67fdfc8bd5",
+            "value": 1.0
+          },
+          "worst_candidate": {
+            "candidate_id": "1064e16d-f11f-401c-afbb-d6f35120cd90",
+            "run_id": "9bcbda95-56a0-52b0-80ba-296fc22a0e4e",
+            "sequence": "RDYKVFRKHVWKTQRKTNST",
+            "sequence_sha256": "4abaac866072aaa171784eb00976a600d1d66fc6503a08c31c13c62bc7ba4d5e",
+            "value": 0.998
+          }
+        },
+        "maximum_departure_duration_ps": {
+          "observed_count": 4,
+          "missing_count": 98,
+          "unit": "ps",
+          "favorable_direction": "lower",
+          "minimum": 0.0,
+          "maximum": 0.0,
+          "mean": 0.0,
+          "median": 0.0,
+          "population_standard_deviation": 0.0,
+          "p10": 0.0,
+          "p25": 0.0,
+          "p75": 0.0,
+          "p90": 0.0,
+          "best_candidate": {
+            "candidate_id": "8e0fb633-2192-401f-b4ab-fa48fb812e45",
+            "run_id": "9bcbda95-56a0-52b0-80ba-296fc22a0e4e",
+            "sequence": "SGGRDNTQTKGQYGRTQHKGKKKNS",
+            "sequence_sha256": "2a7e54fca3599771adaf854f4305cd692c59b7ee884f1d5310604b67fdfc8bd5",
+            "value": 0.0
+          },
+          "worst_candidate": {
+            "candidate_id": "8e0fb633-2192-401f-b4ab-fa48fb812e45",
+            "run_id": "9bcbda95-56a0-52b0-80ba-296fc22a0e4e",
+            "sequence": "SGGRDNTQTKGQYGRTQHKGKKKNS",
+            "sequence_sha256": "2a7e54fca3599771adaf854f4305cd692c59b7ee884f1d5310604b67fdfc8bd5",
+            "value": 0.0
+          }
+        },
+        "maximum_peptide_com_shift_nm": {
+          "observed_count": 4,
+          "missing_count": 98,
+          "unit": "nm",
+          "favorable_direction": "lower",
+          "minimum": 0.3908705711364746,
+          "maximum": 1.8558449745178223,
+          "mean": 0.7983129471540451,
+          "median": 0.4732681214809418,
+          "population_standard_deviation": 0.6117385481627624,
+          "p10": 0.4082271456718445,
+          "p25": 0.4342620074748993,
+          "p75": 0.8373190611600876,
+          "p90": 1.4484346091747287,
+          "best_candidate": {
+            "candidate_id": "ba88382d-586e-4e41-8009-916a73263632",
+            "run_id": "9bcbda95-56a0-52b0-80ba-296fc22a0e4e",
+            "sequence": "KKRKSRHETTQRADWGTRII",
+            "sequence_sha256": "09ca83319dc140f0ff4f2ec17459a6caee964b00fd06cce84663ea4d3341238a",
+            "value": 0.3908705711364746
+          },
+          "worst_candidate": {
+            "candidate_id": "8e0fb633-2192-401f-b4ab-fa48fb812e45",
+            "run_id": "9bcbda95-56a0-52b0-80ba-296fc22a0e4e",
+            "sequence": "SGGRDNTQTKGQYGRTQHKGKKKNS",
+            "sequence_sha256": "2a7e54fca3599771adaf854f4305cd692c59b7ee884f1d5310604b67fdfc8bd5",
+            "value": 1.8558449745178223
+          }
+        },
+        "mmgbsa_mean_kcal_mol": {
+          "observed_count": 4,
+          "missing_count": 98,
+          "unit": "kcal/mol",
+          "favorable_direction": "lower",
+          "minimum": -110.96457726666631,
+          "maximum": -56.97054384222227,
+          "mean": -85.44490210388804,
+          "median": -86.92224365333179,
+          "population_standard_deviation": 20.86645719291989,
+          "p10": -107.27114806866558,
+          "p25": -101.73100427166449,
+          "p75": -70.63614148555534,
+          "p90": -62.436782899555496,
+          "best_candidate": {
+            "candidate_id": "812c0ad4-ce19-4e57-9043-be380f170cb8",
+            "run_id": "9bcbda95-56a0-52b0-80ba-296fc22a0e4e",
+            "sequence": "RAEKKGRGTTGKKGKKEGKSKRGHHR",
+            "sequence_sha256": "57cf8d7cb9a2b896c62a40407a6b77d2bea6e153461b487da5978f406fcec732",
+            "value": -110.96457726666631
+          },
+          "worst_candidate": {
+            "candidate_id": "8e0fb633-2192-401f-b4ab-fa48fb812e45",
+            "run_id": "9bcbda95-56a0-52b0-80ba-296fc22a0e4e",
+            "sequence": "SGGRDNTQTKGQYGRTQHKGKKKNS",
+            "sequence_sha256": "2a7e54fca3599771adaf854f4305cd692c59b7ee884f1d5310604b67fdfc8bd5",
+            "value": -56.97054384222227
+          }
+        },
+        "mmgbsa_ci95_lower_kcal_mol": {
+          "observed_count": 4,
+          "missing_count": 98,
+          "unit": "kcal/mol",
+          "favorable_direction": "descriptive",
+          "minimum": -123.61422721777929,
+          "maximum": -61.086176211108764,
+          "mean": -92.23603906666575,
+          "median": -92.1218764188875,
+          "population_standard_deviation": 23.363006872435584,
+          "p10": -117.37238131711129,
+          "p25": -108.0096124661093,
+          "p75": -76.34830301944393,
+          "p90": -67.19102693444283,
+          "best_candidate": {
+            "candidate_id": "812c0ad4-ce19-4e57-9043-be380f170cb8",
+            "run_id": "9bcbda95-56a0-52b0-80ba-296fc22a0e4e",
+            "sequence": "RAEKKGRGTTGKKGKKEGKSKRGHHR",
+            "sequence_sha256": "57cf8d7cb9a2b896c62a40407a6b77d2bea6e153461b487da5978f406fcec732",
+            "value": -123.61422721777929
+          },
+          "worst_candidate": {
+            "candidate_id": "8e0fb633-2192-401f-b4ab-fa48fb812e45",
+            "run_id": "9bcbda95-56a0-52b0-80ba-296fc22a0e4e",
+            "sequence": "SGGRDNTQTKGQYGRTQHKGKKKNS",
+            "sequence_sha256": "2a7e54fca3599771adaf854f4305cd692c59b7ee884f1d5310604b67fdfc8bd5",
+            "value": -61.086176211108764
+          }
+        },
+        "mmgbsa_ci95_upper_kcal_mol": {
+          "observed_count": 4,
+          "missing_count": 98,
+          "unit": "kcal/mol",
+          "favorable_direction": "descriptive",
+          "minimum": -99.2171191288874,
+          "maximum": -52.97053083111187,
+          "mean": -78.85948071722203,
+          "median": -81.62513645444443,
+          "population_standard_deviation": 18.633896603298563,
+          "p10": -97.54526686688756,
+          "p25": -95.03748847388782,
+          "p75": -65.44712869777865,
+          "p90": -57.96116997777858,
+          "best_candidate": {
+            "candidate_id": "812c0ad4-ce19-4e57-9043-be380f170cb8",
+            "run_id": "9bcbda95-56a0-52b0-80ba-296fc22a0e4e",
+            "sequence": "RAEKKGRGTTGKKGKKEGKSKRGHHR",
+            "sequence_sha256": "57cf8d7cb9a2b896c62a40407a6b77d2bea6e153461b487da5978f406fcec732",
+            "value": -99.2171191288874
+          },
+          "worst_candidate": {
+            "candidate_id": "8e0fb633-2192-401f-b4ab-fa48fb812e45",
+            "run_id": "9bcbda95-56a0-52b0-80ba-296fc22a0e4e",
+            "sequence": "SGGRDNTQTKGQYGRTQHKGKKKNS",
+            "sequence_sha256": "2a7e54fca3599771adaf854f4305cd692c59b7ee884f1d5310604b67fdfc8bd5",
+            "value": -52.97053083111187
+          }
+        }
+      }
+    },
+    "fgf2": {
+      "md_state_partition": {
+        "launched_unique": 9,
+        "md_complete_unique": 9,
+        "full_evidence_unique": 9,
+        "analysis_pending_unique": 0,
+        "running_unique": 0,
+        "not_started_unique": 72,
+        "partition_total_unique": 81
+      },
+      "expected_candidate_count": 81,
+      "md_launched_count": 9,
+      "md_complete_count": 9,
+      "interface_complete_count": 9,
+      "mmgbsa_complete_count": 9,
+      "pool_s_evidence_complete_count": 9,
+      "pending_md_count": 72,
+      "pending_pool_s_evidence_count": 72,
+      "retry_failure_recorded_count": 0,
+      "interface_postgresql_ingested_count": 9,
+      "mmgbsa_postgresql_ingested_count": 9,
+      "postgresql_evidence_complete_count": 9,
+      "peptide_departed_count": 0,
+      "interface_rmsd_mean_nm": 0.5195738871892294,
+      "native_contact_fraction_mean": 0.5665944217699851,
+      "hydrogen_bond_occupancy_mean": 1.0,
+      "salt_bridge_occupancy_mean": 0.722111111111111,
+      "water_bridge_occupancy_mean": 0.996,
+      "mmgbsa_mean_kcal_mol": -70.2578612871605,
+      "peptide_departure_categories": {
+        "observed_count": 9,
+        "missing_count": 72,
+        "departed_count": 0,
+        "retained_count": 9
+      },
+      "metric_distributions": {
+        "rosetta_median_dg_reu": {
+          "observed_count": 81,
+          "missing_count": 0,
+          "unit": "REU",
+          "favorable_direction": "lower",
+          "minimum": -63.22859688653008,
+          "maximum": -30.03156120766228,
+          "mean": -41.10065623419353,
+          "median": -39.35383914618333,
+          "population_standard_deviation": 8.660276318875043,
+          "p10": -54.37363872722241,
+          "p25": -46.15989208090704,
+          "p75": -34.15943890224864,
+          "p90": -30.90631694690535,
+          "best_candidate": {
+            "candidate_id": "075fd107-8b78-48f8-8339-6f583070ad86",
+            "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+            "sequence": "VYKKEKKTYNNEHFKTYGKAKTHFIR",
+            "sequence_sha256": "9dbe915f3c5364fb4c8e1b51e9146324723b387fb72edfad6c2f2d707927721a",
+            "value": -63.22859688653008
+          },
+          "worst_candidate": {
+            "candidate_id": "cdc7b212-2da1-4b2d-bd89-7457e4658cab",
+            "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+            "sequence": "RIVWNDTAKKNKKVFVKHKTT",
+            "sequence_sha256": "fa6796d0989aae37f7d83273659b3eed1adde071a31c30d99a2af8077b0b6f46",
+            "value": -30.03156120766228
+          }
+        },
+        "interface_rmsd_mean_nm": {
+          "observed_count": 9,
+          "missing_count": 72,
+          "unit": "nm",
+          "favorable_direction": "lower",
+          "minimum": 0.29022476077079773,
+          "maximum": 1.0851720571517944,
+          "mean": 0.5195738871892294,
+          "median": 0.3783884346485138,
+          "population_standard_deviation": 0.25316272360326514,
+          "p10": 0.3171791732311249,
+          "p25": 0.33949291706085205,
+          "p75": 0.5936640501022339,
+          "p90": 0.8563005685806275,
+          "best_candidate": {
+            "candidate_id": "573d8484-52e0-4e62-b688-3b6b2042b118",
+            "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+            "sequence": "RSTNQRTHSKNQYNTRTYVREYHTK",
+            "sequence_sha256": "9cc3b64205550eefca611c52699fbd74cdf93e5466f22b8a92f0aa99f8e89996",
+            "value": 0.29022476077079773
+          },
+          "worst_candidate": {
+            "candidate_id": "690e7089-a489-443b-968a-51b0ab5e2594",
+            "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+            "sequence": "TGTRANGQKTRKGQKSKNGRKTSEK",
+            "sequence_sha256": "30842628e443e6bf2a9d532873c6e263d6106a50f79e0e707c7dea6ede63a844",
+            "value": 1.0851720571517944
+          }
+        },
+        "interface_rmsd_max_nm": {
+          "observed_count": 9,
+          "missing_count": 72,
+          "unit": "nm",
+          "favorable_direction": "lower",
+          "minimum": 0.3886631727218628,
+          "maximum": 1.8458665609359741,
+          "mean": 0.8863907059033712,
+          "median": 0.6840430498123169,
+          "population_standard_deviation": 0.5150648983496923,
+          "p10": 0.515511441230774,
+          "p25": 0.5665899515151978,
+          "p75": 0.8076554536819458,
+          "p90": 1.8149985074996948,
+          "best_candidate": {
+            "candidate_id": "573d8484-52e0-4e62-b688-3b6b2042b118",
+            "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+            "sequence": "RSTNQRTHSKNQYNTRTYVREYHTK",
+            "sequence_sha256": "9cc3b64205550eefca611c52699fbd74cdf93e5466f22b8a92f0aa99f8e89996",
+            "value": 0.3886631727218628
+          },
+          "worst_candidate": {
+            "candidate_id": "bf53367f-8705-4e17-bb01-326b237e80ea",
+            "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+            "sequence": "DHNYNSRVGKNHRTRKAGKTRKSEYS",
+            "sequence_sha256": "7f9cf7ae55189903cd6e8999a20c78cc1f8c00068aa1bec352c827c08b8769ed",
+            "value": 1.8458665609359741
+          }
+        },
+        "native_contact_fraction_mean": {
+          "observed_count": 9,
+          "missing_count": 72,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 0.3588941176470588,
+          "maximum": 0.7913481481481481,
+          "mean": 0.5665944217699851,
+          "median": 0.5561042253521127,
+          "population_standard_deviation": 0.1135182076097239,
+          "p10": 0.45344075901328273,
+          "p25": 0.5340440677966102,
+          "p75": 0.5897433962264151,
+          "p90": 0.6994792296296296,
+          "best_candidate": {
+            "candidate_id": "7fea5ee7-7122-457b-b4bd-b23b2a33abba",
+            "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+            "sequence": "QYGKGHSGKTHQFRTRTAKS",
+            "sequence_sha256": "f7cb3733734bfe412e7a8bfc38f9ebd4be6a9352bc184a22bbc6899ddc378536",
+            "value": 0.7913481481481481
+          },
+          "worst_candidate": {
+            "candidate_id": "690e7089-a489-443b-968a-51b0ab5e2594",
+            "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+            "sequence": "TGTRANGQKTRKGQKSKNGRKTSEK",
+            "sequence_sha256": "30842628e443e6bf2a9d532873c6e263d6106a50f79e0e707c7dea6ede63a844",
+            "value": 0.3588941176470588
+          }
+        },
+        "native_contact_fraction_min": {
+          "observed_count": 9,
+          "missing_count": 72,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 0.11764705882352941,
+          "maximum": 0.6296296296296297,
+          "mean": 0.34011764538950723,
+          "median": 0.28205128205128205,
+          "population_standard_deviation": 0.15545434731222812,
+          "p10": 0.20417457305502848,
+          "p25": 0.23943661971830985,
+          "p75": 0.4528301886792453,
+          "p90": 0.5525925925925926,
+          "best_candidate": {
+            "candidate_id": "7fea5ee7-7122-457b-b4bd-b23b2a33abba",
+            "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+            "sequence": "QYGKGHSGKTHQFRTRTAKS",
+            "sequence_sha256": "f7cb3733734bfe412e7a8bfc38f9ebd4be6a9352bc184a22bbc6899ddc378536",
+            "value": 0.6296296296296297
+          },
+          "worst_candidate": {
+            "candidate_id": "690e7089-a489-443b-968a-51b0ab5e2594",
+            "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+            "sequence": "TGTRANGQKTRKGQKSKNGRKTSEK",
+            "sequence_sha256": "30842628e443e6bf2a9d532873c6e263d6106a50f79e0e707c7dea6ede63a844",
+            "value": 0.11764705882352941
+          }
+        },
+        "key_contact_occupancy_mean": {
+          "observed_count": 9,
+          "missing_count": 72,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 0.35889411764705886,
+          "maximum": 0.7913481481481481,
+          "mean": 0.5665944217699851,
+          "median": 0.5561042253521127,
+          "population_standard_deviation": 0.11351820760972389,
+          "p10": 0.45344075901328273,
+          "p25": 0.5340440677966102,
+          "p75": 0.589743396226415,
+          "p90": 0.6994792296296296,
+          "best_candidate": {
+            "candidate_id": "7fea5ee7-7122-457b-b4bd-b23b2a33abba",
+            "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+            "sequence": "QYGKGHSGKTHQFRTRTAKS",
+            "sequence_sha256": "f7cb3733734bfe412e7a8bfc38f9ebd4be6a9352bc184a22bbc6899ddc378536",
+            "value": 0.7913481481481481
+          },
+          "worst_candidate": {
+            "candidate_id": "690e7089-a489-443b-968a-51b0ab5e2594",
+            "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+            "sequence": "TGTRANGQKTRKGQKSKNGRKTSEK",
+            "sequence_sha256": "30842628e443e6bf2a9d532873c6e263d6106a50f79e0e707c7dea6ede63a844",
+            "value": 0.35889411764705886
+          }
+        },
+        "key_contact_occupancy_max": {
+          "observed_count": 9,
+          "missing_count": 72,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 0.9938,
+          "maximum": 1.0,
+          "mean": 0.9990444444444445,
+          "median": 1.0,
+          "population_standard_deviation": 0.0019545451935374207,
+          "p10": 0.9971599999999999,
+          "p25": 0.9996,
+          "p75": 1.0,
+          "p90": 1.0,
+          "best_candidate": {
+            "candidate_id": "075fd107-8b78-48f8-8339-6f583070ad86",
+            "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+            "sequence": "VYKKEKKTYNNEHFKTYGKAKTHFIR",
+            "sequence_sha256": "9dbe915f3c5364fb4c8e1b51e9146324723b387fb72edfad6c2f2d707927721a",
+            "value": 1.0
+          },
+          "worst_candidate": {
+            "candidate_id": "bf53367f-8705-4e17-bb01-326b237e80ea",
+            "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+            "sequence": "DHNYNSRVGKNHRTRKAGKTRKSEYS",
+            "sequence_sha256": "7f9cf7ae55189903cd6e8999a20c78cc1f8c00068aa1bec352c827c08b8769ed",
+            "value": 0.9938
+          }
+        },
+        "hydrogen_bond_occupancy": {
+          "observed_count": 9,
+          "missing_count": 72,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 1.0,
+          "maximum": 1.0,
+          "mean": 1.0,
+          "median": 1.0,
+          "population_standard_deviation": 0.0,
+          "p10": 1.0,
+          "p25": 1.0,
+          "p75": 1.0,
+          "p90": 1.0,
+          "best_candidate": {
+            "candidate_id": "075fd107-8b78-48f8-8339-6f583070ad86",
+            "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+            "sequence": "VYKKEKKTYNNEHFKTYGKAKTHFIR",
+            "sequence_sha256": "9dbe915f3c5364fb4c8e1b51e9146324723b387fb72edfad6c2f2d707927721a",
+            "value": 1.0
+          },
+          "worst_candidate": {
+            "candidate_id": "075fd107-8b78-48f8-8339-6f583070ad86",
+            "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+            "sequence": "VYKKEKKTYNNEHFKTYGKAKTHFIR",
+            "sequence_sha256": "9dbe915f3c5364fb4c8e1b51e9146324723b387fb72edfad6c2f2d707927721a",
+            "value": 1.0
+          }
+        },
+        "salt_bridge_occupancy": {
+          "observed_count": 9,
+          "missing_count": 72,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 0.35,
+          "maximum": 1.0,
+          "mean": 0.722111111111111,
+          "median": 0.659,
+          "population_standard_deviation": 0.24845259974688866,
+          "p10": 0.46136,
+          "p25": 0.4954,
+          "p75": 0.982,
+          "p90": 0.9980800000000001,
+          "best_candidate": {
+            "candidate_id": "fde5ac50-1824-4f5d-bc48-1ff65850dde8",
+            "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+            "sequence": "YYKNKDAGKEKKANTKRVWHTRGA",
+            "sequence_sha256": "01f8e214284a8a58b19ef8a74dbe013af30f4ce54093dd37e56af4ff982c5957",
+            "value": 1.0
+          },
+          "worst_candidate": {
+            "candidate_id": "075fd107-8b78-48f8-8339-6f583070ad86",
+            "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+            "sequence": "VYKKEKKTYNNEHFKTYGKAKTHFIR",
+            "sequence_sha256": "9dbe915f3c5364fb4c8e1b51e9146324723b387fb72edfad6c2f2d707927721a",
+            "value": 0.35
+          }
+        },
+        "water_bridge_occupancy": {
+          "observed_count": 9,
+          "missing_count": 72,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 0.976,
+          "maximum": 1.0,
+          "mean": 0.996,
+          "median": 0.998,
+          "population_standard_deviation": 0.00724185366080015,
+          "p10": 0.992,
+          "p25": 0.996,
+          "p75": 1.0,
+          "p90": 1.0,
+          "best_candidate": {
+            "candidate_id": "e04a97c8-60f8-429d-a795-efec87868fb5",
+            "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+            "sequence": "KTKLSRGKIRVRKNNWDRSI",
+            "sequence_sha256": "5076533acccf33d70ea70221d6c659eea6e172e70304953d6091bec21aaa3a42",
+            "value": 1.0
+          },
+          "worst_candidate": {
+            "candidate_id": "690e7089-a489-443b-968a-51b0ab5e2594",
+            "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+            "sequence": "TGTRANGQKTRKGQKSKNGRKTSEK",
+            "sequence_sha256": "30842628e443e6bf2a9d532873c6e263d6106a50f79e0e707c7dea6ede63a844",
+            "value": 0.976
+          }
+        },
+        "maximum_departure_duration_ps": {
+          "observed_count": 9,
+          "missing_count": 72,
+          "unit": "ps",
+          "favorable_direction": "lower",
+          "minimum": 0.0,
+          "maximum": 80.0,
+          "mean": 8.88888888888889,
+          "median": 0.0,
+          "population_standard_deviation": 25.141574442188357,
+          "p10": 0.0,
+          "p25": 0.0,
+          "p75": 0.0,
+          "p90": 16.000000000000014,
+          "best_candidate": {
+            "candidate_id": "075fd107-8b78-48f8-8339-6f583070ad86",
+            "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+            "sequence": "VYKKEKKTYNNEHFKTYGKAKTHFIR",
+            "sequence_sha256": "9dbe915f3c5364fb4c8e1b51e9146324723b387fb72edfad6c2f2d707927721a",
+            "value": 0.0
+          },
+          "worst_candidate": {
+            "candidate_id": "690e7089-a489-443b-968a-51b0ab5e2594",
+            "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+            "sequence": "TGTRANGQKTRKGQKSKNGRKTSEK",
+            "sequence_sha256": "30842628e443e6bf2a9d532873c6e263d6106a50f79e0e707c7dea6ede63a844",
+            "value": 80.0
+          }
+        },
+        "maximum_peptide_com_shift_nm": {
+          "observed_count": 9,
+          "missing_count": 72,
+          "unit": "nm",
+          "favorable_direction": "lower",
+          "minimum": 0.2604124844074249,
+          "maximum": 1.940124273300171,
+          "mean": 0.82309357325236,
+          "median": 0.5931232571601868,
+          "population_standard_deviation": 0.5422264910581805,
+          "p10": 0.4244118511676788,
+          "p25": 0.4884454607963562,
+          "p75": 0.7531878352165222,
+          "p90": 1.713700246810913,
+          "best_candidate": {
+            "candidate_id": "573d8484-52e0-4e62-b688-3b6b2042b118",
+            "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+            "sequence": "RSTNQRTHSKNQYNTRTYVREYHTK",
+            "sequence_sha256": "9cc3b64205550eefca611c52699fbd74cdf93e5466f22b8a92f0aa99f8e89996",
+            "value": 0.2604124844074249
+          },
+          "worst_candidate": {
+            "candidate_id": "690e7089-a489-443b-968a-51b0ab5e2594",
+            "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+            "sequence": "TGTRANGQKTRKGQKSKNGRKTSEK",
+            "sequence_sha256": "30842628e443e6bf2a9d532873c6e263d6106a50f79e0e707c7dea6ede63a844",
+            "value": 1.940124273300171
+          }
+        },
+        "mmgbsa_mean_kcal_mol": {
+          "observed_count": 9,
+          "missing_count": 72,
+          "unit": "kcal/mol",
+          "favorable_direction": "lower",
+          "minimum": -113.65481094666679,
+          "maximum": -25.119780679999774,
+          "mean": -70.2578612871605,
+          "median": -82.64288767555566,
+          "population_standard_deviation": 27.920213593252566,
+          "p10": -92.31275453066681,
+          "p25": -86.70827854000017,
+          "p75": -47.43512851333302,
+          "p90": -29.15130536088885,
+          "best_candidate": {
+            "candidate_id": "e04a97c8-60f8-429d-a795-efec87868fb5",
+            "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+            "sequence": "KTKLSRGKIRVRKNNWDRSI",
+            "sequence_sha256": "5076533acccf33d70ea70221d6c659eea6e172e70304953d6091bec21aaa3a42",
+            "value": -113.65481094666679
+          },
+          "worst_candidate": {
+            "candidate_id": "690e7089-a489-443b-968a-51b0ab5e2594",
+            "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+            "sequence": "TGTRANGQKTRKGQKSKNGRKTSEK",
+            "sequence_sha256": "30842628e443e6bf2a9d532873c6e263d6106a50f79e0e707c7dea6ede63a844",
+            "value": -25.119780679999774
+          }
+        },
+        "mmgbsa_ci95_lower_kcal_mol": {
+          "observed_count": 9,
+          "missing_count": 72,
+          "unit": "kcal/mol",
+          "favorable_direction": "descriptive",
+          "minimum": -120.34460691777797,
+          "maximum": -28.977406704444054,
+          "mean": -75.63549452691348,
+          "median": -87.45880317777808,
+          "population_standard_deviation": 28.994380347158078,
+          "p10": -100.3297061746666,
+          "p25": -92.83503034888876,
+          "p75": -52.631670111111106,
+          "p90": -32.24109233822192,
+          "best_candidate": {
+            "candidate_id": "e04a97c8-60f8-429d-a795-efec87868fb5",
+            "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+            "sequence": "KTKLSRGKIRVRKNNWDRSI",
+            "sequence_sha256": "5076533acccf33d70ea70221d6c659eea6e172e70304953d6091bec21aaa3a42",
+            "value": -120.34460691777797
+          },
+          "worst_candidate": {
+            "candidate_id": "690e7089-a489-443b-968a-51b0ab5e2594",
+            "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+            "sequence": "TGTRANGQKTRKGQKSKNGRKTSEK",
+            "sequence_sha256": "30842628e443e6bf2a9d532873c6e263d6106a50f79e0e707c7dea6ede63a844",
+            "value": -28.977406704444054
+          }
+        },
+        "mmgbsa_ci95_upper_kcal_mol": {
+          "observed_count": 9,
+          "missing_count": 72,
+          "unit": "kcal/mol",
+          "favorable_direction": "descriptive",
+          "minimum": -107.33209700444445,
+          "maximum": -20.645072868888633,
+          "mean": -65.12805229481492,
+          "median": -77.71680091111178,
+          "population_standard_deviation": 27.12105237456353,
+          "p10": -88.43984491377778,
+          "p25": -80.529373151111,
+          "p75": -42.87269135555496,
+          "p90": -25.920129905333525,
+          "best_candidate": {
+            "candidate_id": "e04a97c8-60f8-429d-a795-efec87868fb5",
+            "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+            "sequence": "KTKLSRGKIRVRKNNWDRSI",
+            "sequence_sha256": "5076533acccf33d70ea70221d6c659eea6e172e70304953d6091bec21aaa3a42",
+            "value": -107.33209700444445
+          },
+          "worst_candidate": {
+            "candidate_id": "690e7089-a489-443b-968a-51b0ab5e2594",
+            "run_id": "577f08b8-b582-5142-bd8d-1990bad63f06",
+            "sequence": "TGTRANGQKTRKGQKSKNGRKTSEK",
+            "sequence_sha256": "30842628e443e6bf2a9d532873c6e263d6106a50f79e0e707c7dea6ede63a844",
+            "value": -20.645072868888633
+          }
+        }
+      }
+    },
+    "gyra": {
+      "md_state_partition": {
+        "launched_unique": 10,
+        "md_complete_unique": 7,
+        "full_evidence_unique": 7,
+        "analysis_pending_unique": 0,
+        "running_unique": 3,
+        "not_started_unique": 90,
+        "partition_total_unique": 100
+      },
+      "expected_candidate_count": 100,
+      "md_launched_count": 10,
+      "md_complete_count": 7,
+      "interface_complete_count": 7,
+      "mmgbsa_complete_count": 7,
+      "pool_s_evidence_complete_count": 7,
+      "pending_md_count": 93,
+      "pending_pool_s_evidence_count": 93,
+      "retry_failure_recorded_count": 0,
+      "interface_postgresql_ingested_count": 7,
+      "mmgbsa_postgresql_ingested_count": 7,
+      "postgresql_evidence_complete_count": 7,
+      "peptide_departed_count": 0,
+      "interface_rmsd_mean_nm": 0.23715481162071228,
+      "native_contact_fraction_mean": 0.6695660685282067,
+      "hydrogen_bond_occupancy_mean": 1.0,
+      "salt_bridge_occupancy_mean": 1.0,
+      "water_bridge_occupancy_mean": 1.0,
+      "mmgbsa_mean_kcal_mol": -140.11649905555657,
+      "peptide_departure_categories": {
+        "observed_count": 7,
+        "missing_count": 93,
+        "departed_count": 0,
+        "retained_count": 7
+      },
+      "metric_distributions": {
+        "rosetta_median_dg_reu": {
+          "observed_count": 100,
+          "missing_count": 0,
+          "unit": "REU",
+          "favorable_direction": "lower",
+          "minimum": -78.5152604848638,
+          "maximum": -30.514382937270057,
+          "mean": -44.82328715512162,
+          "median": -43.88940469620752,
+          "population_standard_deviation": 8.71890993893478,
+          "p10": -56.25912981055507,
+          "p25": -50.784181062516666,
+          "p75": -38.563142232937366,
+          "p90": -33.82502684919759,
+          "best_candidate": {
+            "candidate_id": "89982fb4-e32d-49fa-81a6-43fc2208fbd3",
+            "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
+            "sequence": "KGHRNTNRIRGTHWKQSKKKKRNFNH",
+            "sequence_sha256": "66f91e0667f0a57aae03105ccfc7ce8e50eb9ab04350273955dd5fe59aa67d7b",
+            "value": -78.5152604848638
+          },
+          "worst_candidate": {
+            "candidate_id": "57180767-d8ca-44fe-975b-88f9076bd20e",
+            "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
+            "sequence": "KHKSQKAGNSKKGKNSKEIAVHK",
+            "sequence_sha256": "ed2ba9b22ebb93eb0ff6de9a9492014f8ab0a5ca3788199998d803f4ada079c4",
+            "value": -30.514382937270057
+          }
+        },
+        "interface_rmsd_mean_nm": {
+          "observed_count": 7,
+          "missing_count": 93,
+          "unit": "nm",
+          "favorable_direction": "lower",
+          "minimum": 0.17682594060897827,
+          "maximum": 0.27314817905426025,
+          "mean": 0.23715481162071228,
+          "median": 0.25742265582084656,
+          "population_standard_deviation": 0.03734787566509339,
+          "p10": 0.1801189512014389,
+          "p25": 0.21341808140277863,
+          "p75": 0.2629253715276718,
+          "p90": 0.2692661464214325,
+          "best_candidate": {
+            "candidate_id": "17ef08e8-e6ed-417e-96c0-a71f5eab265e",
+            "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
+            "sequence": "KTKLLLEKHNRKDNRKQTTQATIKT",
+            "sequence_sha256": "f7c7bc70dc8c770a193f95391ff7208fbf789414c49c8655d4fc5b8e4eb47faa",
+            "value": 0.17682594060897827
+          },
+          "worst_candidate": {
+            "candidate_id": "0b71cf1c-c709-4719-b1ef-350a2a0d3bfd",
+            "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
+            "sequence": "GGRKWTSKLQKKFGQREKTEWEHK",
+            "sequence_sha256": "3835d18942615e4e398b45786b772b4ef47269a1e98a5bf95d382a04cc860008",
+            "value": 0.27314817905426025
+          }
+        },
+        "interface_rmsd_max_nm": {
+          "observed_count": 7,
+          "missing_count": 93,
+          "unit": "nm",
+          "favorable_direction": "lower",
+          "minimum": 0.22506429255008698,
+          "maximum": 0.4012874662876129,
+          "mean": 0.3360390897308077,
+          "median": 0.37123769521713257,
+          "population_standard_deviation": 0.059783658279099955,
+          "p10": 0.2611754536628723,
+          "p25": 0.29720737040042877,
+          "p75": 0.380134716629982,
+          "p90": 0.3903071641921997,
+          "best_candidate": {
+            "candidate_id": "17ef08e8-e6ed-417e-96c0-a71f5eab265e",
+            "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
+            "sequence": "KTKLLLEKHNRKDNRKQTTQATIKT",
+            "sequence_sha256": "f7c7bc70dc8c770a193f95391ff7208fbf789414c49c8655d4fc5b8e4eb47faa",
+            "value": 0.22506429255008698
+          },
+          "worst_candidate": {
+            "candidate_id": "ff4d085e-7d05-4266-abb2-3f7172e8122b",
+            "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
+            "sequence": "KKHAKAKSAAKSKRGKVHKGSK",
+            "sequence_sha256": "08ce2a7d48a692767dc758b6fe731f7c28fa3db5f28bbf400d9108afa170d9e3",
+            "value": 0.4012874662876129
+          }
+        },
+        "native_contact_fraction_mean": {
+          "observed_count": 7,
+          "missing_count": 93,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 0.601375,
+          "maximum": 0.7612254545454545,
+          "mean": 0.6695660685282067,
+          "median": 0.6591951807228915,
+          "population_standard_deviation": 0.05616212899834388,
+          "p10": 0.6050269230769231,
+          "p25": 0.6305840301003345,
+          "p75": 0.7019993921142156,
+          "p90": 0.7477675918901243,
+          "best_candidate": {
+            "candidate_id": "cb3781b2-983a-455c-b482-0d06c0eb18fa",
+            "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
+            "sequence": "KKHSKVSRTTAKSNRIRKDT",
+            "sequence_sha256": "45143ff1b748095c473032fc583a91bcff53d57e5e38260c60a2274f7ded4405",
+            "value": 0.7612254545454545
+          },
+          "worst_candidate": {
+            "candidate_id": "0b71cf1c-c709-4719-b1ef-350a2a0d3bfd",
+            "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
+            "sequence": "GGRKWTSKLQKKFGQREKTEWEHK",
+            "sequence_sha256": "3835d18942615e4e398b45786b772b4ef47269a1e98a5bf95d382a04cc860008",
+            "value": 0.601375
+          }
+        },
+        "native_contact_fraction_min": {
+          "observed_count": 7,
+          "missing_count": 93,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 0.4431818181818182,
+          "maximum": 0.6258992805755396,
+          "mean": 0.5145600399005498,
+          "median": 0.4939759036144578,
+          "population_standard_deviation": 0.068605835116996,
+          "p10": 0.45169133192389,
+          "p25": 0.45945140131186646,
+          "p75": 0.5599802371541502,
+          "p90": 0.6158142576847613,
+          "best_candidate": {
+            "candidate_id": "17ef08e8-e6ed-417e-96c0-a71f5eab265e",
+            "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
+            "sequence": "KTKLLLEKHNRKDNRKQTTQATIKT",
+            "sequence_sha256": "f7c7bc70dc8c770a193f95391ff7208fbf789414c49c8655d4fc5b8e4eb47faa",
+            "value": 0.6258992805755396
+          },
+          "worst_candidate": {
+            "candidate_id": "0b71cf1c-c709-4719-b1ef-350a2a0d3bfd",
+            "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
+            "sequence": "GGRKWTSKLQKKFGQREKTEWEHK",
+            "sequence_sha256": "3835d18942615e4e398b45786b772b4ef47269a1e98a5bf95d382a04cc860008",
+            "value": 0.4431818181818182
+          }
+        },
+        "key_contact_occupancy_mean": {
+          "observed_count": 7,
+          "missing_count": 93,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 0.601375,
+          "maximum": 0.7612254545454544,
+          "mean": 0.6695660685282067,
+          "median": 0.6591951807228916,
+          "population_standard_deviation": 0.05616212899834385,
+          "p10": 0.6050269230769231,
+          "p25": 0.6305840301003345,
+          "p75": 0.7019993921142156,
+          "p90": 0.7477675918901243,
+          "best_candidate": {
+            "candidate_id": "cb3781b2-983a-455c-b482-0d06c0eb18fa",
+            "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
+            "sequence": "KKHSKVSRTTAKSNRIRKDT",
+            "sequence_sha256": "45143ff1b748095c473032fc583a91bcff53d57e5e38260c60a2274f7ded4405",
+            "value": 0.7612254545454544
+          },
+          "worst_candidate": {
+            "candidate_id": "0b71cf1c-c709-4719-b1ef-350a2a0d3bfd",
+            "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
+            "sequence": "GGRKWTSKLQKKFGQREKTEWEHK",
+            "sequence_sha256": "3835d18942615e4e398b45786b772b4ef47269a1e98a5bf95d382a04cc860008",
+            "value": 0.601375
+          }
+        },
+        "key_contact_occupancy_max": {
+          "observed_count": 7,
+          "missing_count": 93,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 1.0,
+          "maximum": 1.0,
+          "mean": 1.0,
+          "median": 1.0,
+          "population_standard_deviation": 0.0,
+          "p10": 1.0,
+          "p25": 1.0,
+          "p75": 1.0,
+          "p90": 1.0,
+          "best_candidate": {
+            "candidate_id": "89982fb4-e32d-49fa-81a6-43fc2208fbd3",
+            "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
+            "sequence": "KGHRNTNRIRGTHWKQSKKKKRNFNH",
+            "sequence_sha256": "66f91e0667f0a57aae03105ccfc7ce8e50eb9ab04350273955dd5fe59aa67d7b",
+            "value": 1.0
+          },
+          "worst_candidate": {
+            "candidate_id": "89982fb4-e32d-49fa-81a6-43fc2208fbd3",
+            "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
+            "sequence": "KGHRNTNRIRGTHWKQSKKKKRNFNH",
+            "sequence_sha256": "66f91e0667f0a57aae03105ccfc7ce8e50eb9ab04350273955dd5fe59aa67d7b",
+            "value": 1.0
+          }
+        },
+        "hydrogen_bond_occupancy": {
+          "observed_count": 7,
+          "missing_count": 93,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 1.0,
+          "maximum": 1.0,
+          "mean": 1.0,
+          "median": 1.0,
+          "population_standard_deviation": 0.0,
+          "p10": 1.0,
+          "p25": 1.0,
+          "p75": 1.0,
+          "p90": 1.0,
+          "best_candidate": {
+            "candidate_id": "89982fb4-e32d-49fa-81a6-43fc2208fbd3",
+            "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
+            "sequence": "KGHRNTNRIRGTHWKQSKKKKRNFNH",
+            "sequence_sha256": "66f91e0667f0a57aae03105ccfc7ce8e50eb9ab04350273955dd5fe59aa67d7b",
+            "value": 1.0
+          },
+          "worst_candidate": {
+            "candidate_id": "89982fb4-e32d-49fa-81a6-43fc2208fbd3",
+            "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
+            "sequence": "KGHRNTNRIRGTHWKQSKKKKRNFNH",
+            "sequence_sha256": "66f91e0667f0a57aae03105ccfc7ce8e50eb9ab04350273955dd5fe59aa67d7b",
+            "value": 1.0
+          }
+        },
+        "salt_bridge_occupancy": {
+          "observed_count": 7,
+          "missing_count": 93,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 1.0,
+          "maximum": 1.0,
+          "mean": 1.0,
+          "median": 1.0,
+          "population_standard_deviation": 0.0,
+          "p10": 1.0,
+          "p25": 1.0,
+          "p75": 1.0,
+          "p90": 1.0,
+          "best_candidate": {
+            "candidate_id": "89982fb4-e32d-49fa-81a6-43fc2208fbd3",
+            "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
+            "sequence": "KGHRNTNRIRGTHWKQSKKKKRNFNH",
+            "sequence_sha256": "66f91e0667f0a57aae03105ccfc7ce8e50eb9ab04350273955dd5fe59aa67d7b",
+            "value": 1.0
+          },
+          "worst_candidate": {
+            "candidate_id": "89982fb4-e32d-49fa-81a6-43fc2208fbd3",
+            "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
+            "sequence": "KGHRNTNRIRGTHWKQSKKKKRNFNH",
+            "sequence_sha256": "66f91e0667f0a57aae03105ccfc7ce8e50eb9ab04350273955dd5fe59aa67d7b",
+            "value": 1.0
+          }
+        },
+        "water_bridge_occupancy": {
+          "observed_count": 7,
+          "missing_count": 93,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 1.0,
+          "maximum": 1.0,
+          "mean": 1.0,
+          "median": 1.0,
+          "population_standard_deviation": 0.0,
+          "p10": 1.0,
+          "p25": 1.0,
+          "p75": 1.0,
+          "p90": 1.0,
+          "best_candidate": {
+            "candidate_id": "89982fb4-e32d-49fa-81a6-43fc2208fbd3",
+            "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
+            "sequence": "KGHRNTNRIRGTHWKQSKKKKRNFNH",
+            "sequence_sha256": "66f91e0667f0a57aae03105ccfc7ce8e50eb9ab04350273955dd5fe59aa67d7b",
+            "value": 1.0
+          },
+          "worst_candidate": {
+            "candidate_id": "89982fb4-e32d-49fa-81a6-43fc2208fbd3",
+            "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
+            "sequence": "KGHRNTNRIRGTHWKQSKKKKRNFNH",
+            "sequence_sha256": "66f91e0667f0a57aae03105ccfc7ce8e50eb9ab04350273955dd5fe59aa67d7b",
+            "value": 1.0
+          }
+        },
+        "maximum_departure_duration_ps": {
+          "observed_count": 7,
+          "missing_count": 93,
+          "unit": "ps",
+          "favorable_direction": "lower",
+          "minimum": 0.0,
+          "maximum": 0.0,
+          "mean": 0.0,
+          "median": 0.0,
+          "population_standard_deviation": 0.0,
+          "p10": 0.0,
+          "p25": 0.0,
+          "p75": 0.0,
+          "p90": 0.0,
+          "best_candidate": {
+            "candidate_id": "89982fb4-e32d-49fa-81a6-43fc2208fbd3",
+            "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
+            "sequence": "KGHRNTNRIRGTHWKQSKKKKRNFNH",
+            "sequence_sha256": "66f91e0667f0a57aae03105ccfc7ce8e50eb9ab04350273955dd5fe59aa67d7b",
+            "value": 0.0
+          },
+          "worst_candidate": {
+            "candidate_id": "89982fb4-e32d-49fa-81a6-43fc2208fbd3",
+            "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
+            "sequence": "KGHRNTNRIRGTHWKQSKKKKRNFNH",
+            "sequence_sha256": "66f91e0667f0a57aae03105ccfc7ce8e50eb9ab04350273955dd5fe59aa67d7b",
+            "value": 0.0
+          }
+        },
+        "maximum_peptide_com_shift_nm": {
+          "observed_count": 7,
+          "missing_count": 93,
+          "unit": "nm",
+          "favorable_direction": "lower",
+          "minimum": 0.11424895375967026,
+          "maximum": 0.34504035115242004,
+          "mean": 0.244799082832677,
+          "median": 0.26434579491615295,
+          "population_standard_deviation": 0.08964377507270138,
+          "p10": 0.1396155208349228,
+          "p25": 0.16333454102277756,
+          "p75": 0.3316446989774704,
+          "p90": 0.3446909308433532,
+          "best_candidate": {
+            "candidate_id": "cb3781b2-983a-455c-b482-0d06c0eb18fa",
+            "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
+            "sequence": "KKHSKVSRTTAKSNRIRKDT",
+            "sequence_sha256": "45143ff1b748095c473032fc583a91bcff53d57e5e38260c60a2274f7ded4405",
+            "value": 0.11424895375967026
+          },
+          "worst_candidate": {
+            "candidate_id": "ff4d085e-7d05-4266-abb2-3f7172e8122b",
+            "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
+            "sequence": "KKHAKAKSAAKSKRGKVHKGSK",
+            "sequence_sha256": "08ce2a7d48a692767dc758b6fe731f7c28fa3db5f28bbf400d9108afa170d9e3",
+            "value": 0.34504035115242004
+          }
+        },
+        "mmgbsa_mean_kcal_mol": {
+          "observed_count": 7,
+          "missing_count": 93,
+          "unit": "kcal/mol",
+          "favorable_direction": "lower",
+          "minimum": -187.15037860666612,
+          "maximum": -98.34639050000244,
+          "mean": -140.11649905555657,
+          "median": -134.67123907111468,
+          "population_standard_deviation": 32.15213982401772,
+          "p10": -182.80782309199867,
+          "p25": -163.93998332110976,
+          "p75": -116.38375928444658,
+          "p90": -99.89421600800151,
+          "best_candidate": {
+            "candidate_id": "17ef08e8-e6ed-417e-96c0-a71f5eab265e",
+            "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
+            "sequence": "KTKLLLEKHNRKDNRKQTTQATIKT",
+            "sequence_sha256": "f7c7bc70dc8c770a193f95391ff7208fbf789414c49c8655d4fc5b8e4eb47faa",
+            "value": -187.15037860666612
+          },
+          "worst_candidate": {
+            "candidate_id": "ff4d085e-7d05-4266-abb2-3f7172e8122b",
+            "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
+            "sequence": "KKHAKAKSAAKSKRGKVHKGSK",
+            "sequence_sha256": "08ce2a7d48a692767dc758b6fe731f7c28fa3db5f28bbf400d9108afa170d9e3",
+            "value": -98.34639050000244
+          }
+        },
+        "mmgbsa_ci95_lower_kcal_mol": {
+          "observed_count": 7,
+          "missing_count": 93,
+          "unit": "kcal/mol",
+          "favorable_direction": "descriptive",
+          "minimum": -194.3163267355583,
+          "maximum": -101.36698766888578,
+          "mean": -147.85854224571523,
+          "median": -138.45631991555882,
+          "population_standard_deviation": 35.218833320977346,
+          "p10": -193.18189967422285,
+          "p25": -179.3299487399987,
+          "p75": -121.1051319600031,
+          "p90": -103.54456843155538,
+          "best_candidate": {
+            "candidate_id": "17ef08e8-e6ed-417e-96c0-a71f5eab265e",
+            "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
+            "sequence": "KTKLLLEKHNRKDNRKQTTQATIKT",
+            "sequence_sha256": "f7c7bc70dc8c770a193f95391ff7208fbf789414c49c8655d4fc5b8e4eb47faa",
+            "value": -194.3163267355583
+          },
+          "worst_candidate": {
+            "candidate_id": "ff4d085e-7d05-4266-abb2-3f7172e8122b",
+            "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
+            "sequence": "KKHAKAKSAAKSKRGKVHKGSK",
+            "sequence_sha256": "08ce2a7d48a692767dc758b6fe731f7c28fa3db5f28bbf400d9108afa170d9e3",
+            "value": -101.36698766888578
+          }
+        },
+        "mmgbsa_ci95_upper_kcal_mol": {
+          "observed_count": 7,
+          "missing_count": 93,
+          "unit": "kcal/mol",
+          "favorable_direction": "descriptive",
+          "minimum": -179.3489217155508,
+          "maximum": -95.40961279778314,
+          "mean": -132.48636260063572,
+          "median": -128.89292562221888,
+          "population_standard_deviation": 29.81274781747264,
+          "p10": -173.26652536222088,
+          "p25": -150.661665645558,
+          "p75": -111.21487338889061,
+          "p90": -96.57820641111469,
+          "best_candidate": {
+            "candidate_id": "17ef08e8-e6ed-417e-96c0-a71f5eab265e",
+            "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
+            "sequence": "KTKLLLEKHNRKDNRKQTTQATIKT",
+            "sequence_sha256": "f7c7bc70dc8c770a193f95391ff7208fbf789414c49c8655d4fc5b8e4eb47faa",
+            "value": -179.3489217155508
+          },
+          "worst_candidate": {
+            "candidate_id": "ff4d085e-7d05-4266-abb2-3f7172e8122b",
+            "run_id": "2998677d-7061-5f76-bb6e-1a6d4a009700",
+            "sequence": "KKHAKAKSAAKSKRGKVHKGSK",
+            "sequence_sha256": "08ce2a7d48a692767dc758b6fe731f7c28fa3db5f28bbf400d9108afa170d9e3",
+            "value": -95.40961279778314
+          }
+        }
+      }
+    },
+    "pbp2a": {
+      "md_state_partition": {
+        "launched_unique": 8,
+        "md_complete_unique": 7,
+        "full_evidence_unique": 6,
+        "analysis_pending_unique": 1,
+        "running_unique": 1,
+        "not_started_unique": 45,
+        "partition_total_unique": 53
+      },
+      "expected_candidate_count": 53,
+      "md_launched_count": 8,
+      "md_complete_count": 7,
+      "interface_complete_count": 6,
+      "mmgbsa_complete_count": 6,
+      "pool_s_evidence_complete_count": 6,
+      "pending_md_count": 46,
+      "pending_pool_s_evidence_count": 47,
+      "retry_failure_recorded_count": 0,
+      "interface_postgresql_ingested_count": 6,
+      "mmgbsa_postgresql_ingested_count": 6,
+      "postgresql_evidence_complete_count": 6,
+      "peptide_departed_count": 0,
+      "interface_rmsd_mean_nm": 0.334930161635081,
+      "native_contact_fraction_mean": 0.6144322312915474,
+      "hydrogen_bond_occupancy_mean": 1.0,
+      "salt_bridge_occupancy_mean": 0.9430666666666667,
+      "water_bridge_occupancy_mean": 1.0,
+      "mmgbsa_mean_kcal_mol": -97.81313861999968,
+      "peptide_departure_categories": {
+        "observed_count": 6,
+        "missing_count": 47,
+        "departed_count": 0,
+        "retained_count": 6
+      },
+      "metric_distributions": {
+        "rosetta_median_dg_reu": {
+          "observed_count": 53,
+          "missing_count": 0,
+          "unit": "REU",
+          "favorable_direction": "lower",
+          "minimum": -69.36351546079823,
+          "maximum": -30.19845421798709,
+          "mean": -42.38665163697032,
+          "median": -42.321893129723776,
+          "population_standard_deviation": 9.041372166032843,
+          "p10": -54.13735357675859,
+          "p25": -49.492810241195684,
+          "p75": -34.340502412761,
+          "p90": -31.083740996115736,
+          "best_candidate": {
+            "candidate_id": "c36aea18-2102-47e1-81e7-a6dee721ae91",
+            "run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
+            "sequence": "SVSRKVQKRKTRGKATQVKKS",
+            "sequence_sha256": "df5c3a9685447702b573e31a72ccdbb295f6813adc19fa2ff0b9284ae883ecd4",
+            "value": -69.36351546079823
+          },
+          "worst_candidate": {
+            "candidate_id": "0bb21967-79a8-4191-8eab-8e3f181f765c",
+            "run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
+            "sequence": "KKKNSRTRFSWGQITGNSWREHGNK",
+            "sequence_sha256": "3ce692e7784b103a4bddbbec5f0a6e9b9dd8481443b1556a995c6b6359c0137e",
+            "value": -30.19845421798709
+          }
+        },
+        "interface_rmsd_mean_nm": {
+          "observed_count": 6,
+          "missing_count": 47,
+          "unit": "nm",
+          "favorable_direction": "lower",
+          "minimum": 0.22114181518554688,
+          "maximum": 0.6554126143455505,
+          "mean": 0.334930161635081,
+          "median": 0.2512948662042618,
+          "population_standard_deviation": 0.1571034914712656,
+          "p10": 0.22146187722682953,
+          "p25": 0.22663112729787827,
+          "p75": 0.3718439117074013,
+          "p90": 0.5320337414741516,
+          "best_candidate": {
+            "candidate_id": "b3e83854-031b-4277-a68d-49a59d54c43f",
+            "run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
+            "sequence": "VKQQRGNTTKSNWKQDKKIYK",
+            "sequence_sha256": "8871884da08a368aaddeb5e132749c7fc3dc7b74e0385b761bcad2f7748c705c",
+            "value": 0.22114181518554688
+          },
+          "worst_candidate": {
+            "candidate_id": "ce226081-1c90-41e7-a27d-6c38b382b0df",
+            "run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
+            "sequence": "SWFRVKKKTTGKNRVNEYKN",
+            "sequence_sha256": "d2558f8426e4f8d9106410bdb1892165877ade82a9dcc0d991671e221ccced6c",
+            "value": 0.6554126143455505
+          }
+        },
+        "interface_rmsd_max_nm": {
+          "observed_count": 6,
+          "missing_count": 47,
+          "unit": "nm",
+          "favorable_direction": "lower",
+          "minimum": 0.2969093322753906,
+          "maximum": 1.5116668939590454,
+          "mean": 0.569933240612348,
+          "median": 0.3435090631246567,
+          "population_standard_deviation": 0.43276786260138406,
+          "p10": 0.312141090631485,
+          "p25": 0.3286705017089844,
+          "p75": 0.5360878482460976,
+          "p90": 1.054149568080902,
+          "best_candidate": {
+            "candidate_id": "b3e83854-031b-4277-a68d-49a59d54c43f",
+            "run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
+            "sequence": "VKQQRGNTTKSNWKQDKKIYK",
+            "sequence_sha256": "8871884da08a368aaddeb5e132749c7fc3dc7b74e0385b761bcad2f7748c705c",
+            "value": 0.2969093322753906
+          },
+          "worst_candidate": {
+            "candidate_id": "ce226081-1c90-41e7-a27d-6c38b382b0df",
+            "run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
+            "sequence": "SWFRVKKKTTGKNRVNEYKN",
+            "sequence_sha256": "d2558f8426e4f8d9106410bdb1892165877ade82a9dcc0d991671e221ccced6c",
+            "value": 1.5116668939590454
+          }
+        },
+        "native_contact_fraction_mean": {
+          "observed_count": 6,
+          "missing_count": 47,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 0.5549164556962025,
+          "maximum": 0.7007513513513514,
+          "mean": 0.6144322312915474,
+          "median": 0.6085714096385543,
+          "population_standard_deviation": 0.05230000089096668,
+          "p10": 0.5623519341418075,
+          "p25": 0.5706750594405595,
+          "p75": 0.6439477164471841,
+          "p90": 0.6723733500942803,
+          "best_candidate": {
+            "candidate_id": "b3e83854-031b-4277-a68d-49a59d54c43f",
+            "run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
+            "sequence": "VKQQRGNTTKSNWKQDKKIYK",
+            "sequence_sha256": "8871884da08a368aaddeb5e132749c7fc3dc7b74e0385b761bcad2f7748c705c",
+            "value": 0.7007513513513514
+          },
+          "worst_candidate": {
+            "candidate_id": "ce226081-1c90-41e7-a27d-6c38b382b0df",
+            "run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
+            "sequence": "SWFRVKKKTTGKNRVNEYKN",
+            "sequence_sha256": "d2558f8426e4f8d9106410bdb1892165877ade82a9dcc0d991671e221ccced6c",
+            "value": 0.5549164556962025
+          }
+        },
+        "native_contact_fraction_min": {
+          "observed_count": 6,
+          "missing_count": 47,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 0.4177215189873418,
+          "maximum": 0.5675675675675675,
+          "mean": 0.46082139102442277,
+          "median": 0.43584337349397595,
+          "population_standard_deviation": 0.05379099514173868,
+          "p10": 0.4186509692838807,
+          "p25": 0.4201070014323026,
+          "p75": 0.47877906976744183,
+          "p90": 0.5279698302954117,
+          "best_candidate": {
+            "candidate_id": "b3e83854-031b-4277-a68d-49a59d54c43f",
+            "run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
+            "sequence": "VKQQRGNTTKSNWKQDKKIYK",
+            "sequence_sha256": "8871884da08a368aaddeb5e132749c7fc3dc7b74e0385b761bcad2f7748c705c",
+            "value": 0.5675675675675675
+          },
+          "worst_candidate": {
+            "candidate_id": "ce226081-1c90-41e7-a27d-6c38b382b0df",
+            "run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
+            "sequence": "SWFRVKKKTTGKNRVNEYKN",
+            "sequence_sha256": "d2558f8426e4f8d9106410bdb1892165877ade82a9dcc0d991671e221ccced6c",
+            "value": 0.4177215189873418
+          }
+        },
+        "key_contact_occupancy_mean": {
+          "observed_count": 6,
+          "missing_count": 47,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 0.5549164556962025,
+          "maximum": 0.7007513513513514,
+          "mean": 0.6144322312915474,
+          "median": 0.6085714096385542,
+          "population_standard_deviation": 0.052300000890966696,
+          "p10": 0.5623519341418075,
+          "p25": 0.5706750594405595,
+          "p75": 0.6439477164471841,
+          "p90": 0.6723733500942803,
+          "best_candidate": {
+            "candidate_id": "b3e83854-031b-4277-a68d-49a59d54c43f",
+            "run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
+            "sequence": "VKQQRGNTTKSNWKQDKKIYK",
+            "sequence_sha256": "8871884da08a368aaddeb5e132749c7fc3dc7b74e0385b761bcad2f7748c705c",
+            "value": 0.7007513513513514
+          },
+          "worst_candidate": {
+            "candidate_id": "ce226081-1c90-41e7-a27d-6c38b382b0df",
+            "run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
+            "sequence": "SWFRVKKKTTGKNRVNEYKN",
+            "sequence_sha256": "d2558f8426e4f8d9106410bdb1892165877ade82a9dcc0d991671e221ccced6c",
+            "value": 0.5549164556962025
+          }
+        },
+        "key_contact_occupancy_max": {
+          "observed_count": 6,
+          "missing_count": 47,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 1.0,
+          "maximum": 1.0,
+          "mean": 1.0,
+          "median": 1.0,
+          "population_standard_deviation": 0.0,
+          "p10": 1.0,
+          "p25": 1.0,
+          "p75": 1.0,
+          "p90": 1.0,
+          "best_candidate": {
+            "candidate_id": "c36aea18-2102-47e1-81e7-a6dee721ae91",
+            "run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
+            "sequence": "SVSRKVQKRKTRGKATQVKKS",
+            "sequence_sha256": "df5c3a9685447702b573e31a72ccdbb295f6813adc19fa2ff0b9284ae883ecd4",
+            "value": 1.0
+          },
+          "worst_candidate": {
+            "candidate_id": "c36aea18-2102-47e1-81e7-a6dee721ae91",
+            "run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
+            "sequence": "SVSRKVQKRKTRGKATQVKKS",
+            "sequence_sha256": "df5c3a9685447702b573e31a72ccdbb295f6813adc19fa2ff0b9284ae883ecd4",
+            "value": 1.0
+          }
+        },
+        "hydrogen_bond_occupancy": {
+          "observed_count": 6,
+          "missing_count": 47,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 1.0,
+          "maximum": 1.0,
+          "mean": 1.0,
+          "median": 1.0,
+          "population_standard_deviation": 0.0,
+          "p10": 1.0,
+          "p25": 1.0,
+          "p75": 1.0,
+          "p90": 1.0,
+          "best_candidate": {
+            "candidate_id": "c36aea18-2102-47e1-81e7-a6dee721ae91",
+            "run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
+            "sequence": "SVSRKVQKRKTRGKATQVKKS",
+            "sequence_sha256": "df5c3a9685447702b573e31a72ccdbb295f6813adc19fa2ff0b9284ae883ecd4",
+            "value": 1.0
+          },
+          "worst_candidate": {
+            "candidate_id": "c36aea18-2102-47e1-81e7-a6dee721ae91",
+            "run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
+            "sequence": "SVSRKVQKRKTRGKATQVKKS",
+            "sequence_sha256": "df5c3a9685447702b573e31a72ccdbb295f6813adc19fa2ff0b9284ae883ecd4",
+            "value": 1.0
+          }
+        },
+        "salt_bridge_occupancy": {
+          "observed_count": 6,
+          "missing_count": 47,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 0.673,
+          "maximum": 1.0,
+          "mean": 0.9430666666666667,
+          "median": 0.9978,
+          "population_standard_deviation": 0.12083005512794495,
+          "p10": 0.8314,
+          "p25": 0.9914000000000001,
+          "p75": 0.99985,
+          "p90": 1.0,
+          "best_candidate": {
+            "candidate_id": "ce226081-1c90-41e7-a27d-6c38b382b0df",
+            "run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
+            "sequence": "SWFRVKKKTTGKNRVNEYKN",
+            "sequence_sha256": "d2558f8426e4f8d9106410bdb1892165877ade82a9dcc0d991671e221ccced6c",
+            "value": 1.0
+          },
+          "worst_candidate": {
+            "candidate_id": "b3e83854-031b-4277-a68d-49a59d54c43f",
+            "run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
+            "sequence": "VKQQRGNTTKSNWKQDKKIYK",
+            "sequence_sha256": "8871884da08a368aaddeb5e132749c7fc3dc7b74e0385b761bcad2f7748c705c",
+            "value": 0.673
+          }
+        },
+        "water_bridge_occupancy": {
+          "observed_count": 6,
+          "missing_count": 47,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 1.0,
+          "maximum": 1.0,
+          "mean": 1.0,
+          "median": 1.0,
+          "population_standard_deviation": 0.0,
+          "p10": 1.0,
+          "p25": 1.0,
+          "p75": 1.0,
+          "p90": 1.0,
+          "best_candidate": {
+            "candidate_id": "c36aea18-2102-47e1-81e7-a6dee721ae91",
+            "run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
+            "sequence": "SVSRKVQKRKTRGKATQVKKS",
+            "sequence_sha256": "df5c3a9685447702b573e31a72ccdbb295f6813adc19fa2ff0b9284ae883ecd4",
+            "value": 1.0
+          },
+          "worst_candidate": {
+            "candidate_id": "c36aea18-2102-47e1-81e7-a6dee721ae91",
+            "run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
+            "sequence": "SVSRKVQKRKTRGKATQVKKS",
+            "sequence_sha256": "df5c3a9685447702b573e31a72ccdbb295f6813adc19fa2ff0b9284ae883ecd4",
+            "value": 1.0
+          }
+        },
+        "maximum_departure_duration_ps": {
+          "observed_count": 6,
+          "missing_count": 47,
+          "unit": "ps",
+          "favorable_direction": "lower",
+          "minimum": 0.0,
+          "maximum": 0.0,
+          "mean": 0.0,
+          "median": 0.0,
+          "population_standard_deviation": 0.0,
+          "p10": 0.0,
+          "p25": 0.0,
+          "p75": 0.0,
+          "p90": 0.0,
+          "best_candidate": {
+            "candidate_id": "c36aea18-2102-47e1-81e7-a6dee721ae91",
+            "run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
+            "sequence": "SVSRKVQKRKTRGKATQVKKS",
+            "sequence_sha256": "df5c3a9685447702b573e31a72ccdbb295f6813adc19fa2ff0b9284ae883ecd4",
+            "value": 0.0
+          },
+          "worst_candidate": {
+            "candidate_id": "c36aea18-2102-47e1-81e7-a6dee721ae91",
+            "run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
+            "sequence": "SVSRKVQKRKTRGKATQVKKS",
+            "sequence_sha256": "df5c3a9685447702b573e31a72ccdbb295f6813adc19fa2ff0b9284ae883ecd4",
+            "value": 0.0
+          }
+        },
+        "maximum_peptide_com_shift_nm": {
+          "observed_count": 6,
+          "missing_count": 47,
+          "unit": "nm",
+          "favorable_direction": "lower",
+          "minimum": 0.23833264410495758,
+          "maximum": 1.6942074298858643,
+          "mean": 0.5329696411887804,
+          "median": 0.29587221145629883,
+          "population_standard_deviation": 0.5226198703415224,
+          "p10": 0.24559297412633896,
+          "p25": 0.26348135620355606,
+          "p75": 0.38960476219654083,
+          "p90": 1.0574437379837036,
+          "best_candidate": {
+            "candidate_id": "c36aea18-2102-47e1-81e7-a6dee721ae91",
+            "run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
+            "sequence": "SVSRKVQKRKTRGKATQVKKS",
+            "sequence_sha256": "df5c3a9685447702b573e31a72ccdbb295f6813adc19fa2ff0b9284ae883ecd4",
+            "value": 0.23833264410495758
+          },
+          "worst_candidate": {
+            "candidate_id": "ce226081-1c90-41e7-a27d-6c38b382b0df",
+            "run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
+            "sequence": "SWFRVKKKTTGKNRVNEYKN",
+            "sequence_sha256": "d2558f8426e4f8d9106410bdb1892165877ade82a9dcc0d991671e221ccced6c",
+            "value": 1.6942074298858643
+          }
+        },
+        "mmgbsa_mean_kcal_mol": {
+          "observed_count": 6,
+          "missing_count": 47,
+          "unit": "kcal/mol",
+          "favorable_direction": "lower",
+          "minimum": -124.93758887111214,
+          "maximum": -65.24695856666607,
+          "mean": -97.81313861999968,
+          "median": -97.44275765666578,
+          "population_standard_deviation": 19.539018679450628,
+          "p10": -120.54071691333394,
+          "p25": -112.04083137777766,
+          "p75": -88.03712417722143,
+          "p90": -75.45594128999932,
+          "best_candidate": {
+            "candidate_id": "024fbd26-eefd-4e0c-a8f2-22e0bd2678f5",
+            "run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
+            "sequence": "RTTSARKGNKWFEKSWRHGGKTQRK",
+            "sequence_sha256": "f69fdfc6c6829ad09ee238984392e6185efabb94227e582109b223af5c9954ca",
+            "value": -124.93758887111214
+          },
+          "worst_candidate": {
+            "candidate_id": "b3e83854-031b-4277-a68d-49a59d54c43f",
+            "run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
+            "sequence": "VKQQRGNTTKSNWKQDKKIYK",
+            "sequence_sha256": "8871884da08a368aaddeb5e132749c7fc3dc7b74e0385b761bcad2f7748c705c",
+            "value": -65.24695856666607
+          }
+        },
+        "mmgbsa_ci95_lower_kcal_mol": {
+          "observed_count": 6,
+          "missing_count": 47,
+          "unit": "kcal/mol",
+          "favorable_direction": "descriptive",
+          "minimum": -130.22735144888813,
+          "maximum": -72.67252949333277,
+          "mean": -107.00451388555568,
+          "median": -106.53144027666735,
+          "population_standard_deviation": 19.78895138643044,
+          "p10": -129.88320643111132,
+          "p25": -124.43816644888993,
+          "p75": -98.3757950527776,
+          "p90": -84.59889494888837,
+          "best_candidate": {
+            "candidate_id": "a5e4de18-697e-40c3-aac5-1f672d726b99",
+            "run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
+            "sequence": "KKGNNERKTGQQKNRTGVKGNKHGKS",
+            "sequence_sha256": "a7b7970e89489132386af3133eeaa128eb6de4c6b10fa33ddde2e74261f12091",
+            "value": -130.22735144888813
+          },
+          "worst_candidate": {
+            "candidate_id": "b3e83854-031b-4277-a68d-49a59d54c43f",
+            "run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
+            "sequence": "VKQQRGNTTKSNWKQDKKIYK",
+            "sequence_sha256": "8871884da08a368aaddeb5e132749c7fc3dc7b74e0385b761bcad2f7748c705c",
+            "value": -72.67252949333277
+          }
+        },
+        "mmgbsa_ci95_upper_kcal_mol": {
+          "observed_count": 6,
+          "missing_count": 47,
+          "unit": "kcal/mol",
+          "favorable_direction": "descriptive",
+          "minimum": -120.20991612666778,
+          "maximum": -58.16699460888785,
+          "mean": -89.05790018703631,
+          "median": -88.24275086888736,
+          "population_standard_deviation": 19.474105967969784,
+          "p10": -111.52968462555626,
+          "p25": -99.58899608611097,
+          "p75": -79.14612083499834,
+          "p90": -67.4012650666653,
+          "best_candidate": {
+            "candidate_id": "024fbd26-eefd-4e0c-a8f2-22e0bd2678f5",
+            "run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
+            "sequence": "RTTSARKGNKWFEKSWRHGGKTQRK",
+            "sequence_sha256": "f69fdfc6c6829ad09ee238984392e6185efabb94227e582109b223af5c9954ca",
+            "value": -120.20991612666778
+          },
+          "worst_candidate": {
+            "candidate_id": "b3e83854-031b-4277-a68d-49a59d54c43f",
+            "run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
+            "sequence": "VKQQRGNTTKSNWKQDKKIYK",
+            "sequence_sha256": "8871884da08a368aaddeb5e132749c7fc3dc7b74e0385b761bcad2f7748c705c",
+            "value": -58.16699460888785
+          }
+        }
+      }
+    },
+    "vegfa": {
+      "md_state_partition": {
+        "launched_unique": 8,
+        "md_complete_unique": 5,
+        "full_evidence_unique": 5,
+        "analysis_pending_unique": 0,
+        "running_unique": 3,
+        "not_started_unique": 63,
+        "partition_total_unique": 71
+      },
+      "expected_candidate_count": 71,
+      "md_launched_count": 8,
+      "md_complete_count": 5,
+      "interface_complete_count": 5,
+      "mmgbsa_complete_count": 5,
+      "pool_s_evidence_complete_count": 5,
+      "pending_md_count": 66,
+      "pending_pool_s_evidence_count": 66,
+      "retry_failure_recorded_count": 0,
+      "interface_postgresql_ingested_count": 5,
+      "mmgbsa_postgresql_ingested_count": 5,
+      "postgresql_evidence_complete_count": 5,
+      "peptide_departed_count": 0,
+      "interface_rmsd_mean_nm": 0.32026747465133665,
+      "native_contact_fraction_mean": 0.6680332309027719,
+      "hydrogen_bond_occupancy_mean": 1.0,
+      "salt_bridge_occupancy_mean": 0.9827999999999999,
+      "water_bridge_occupancy_mean": 1.0,
+      "mmgbsa_mean_kcal_mol": -115.07101663955548,
+      "peptide_departure_categories": {
+        "observed_count": 5,
+        "missing_count": 66,
+        "departed_count": 0,
+        "retained_count": 5
+      },
+      "metric_distributions": {
+        "rosetta_median_dg_reu": {
+          "observed_count": 71,
+          "missing_count": 0,
+          "unit": "REU",
+          "favorable_direction": "lower",
+          "minimum": -85.43307628387788,
+          "maximum": -30.212407205701425,
+          "mean": -47.212582269733794,
+          "median": -44.69097368749635,
+          "population_standard_deviation": 11.229618901089118,
+          "p10": -62.808461441047484,
+          "p25": -54.30812900161976,
+          "p75": -38.53845384337646,
+          "p90": -35.45746400047551,
+          "best_candidate": {
+            "candidate_id": "3daa05cb-6ac0-43ad-b22e-1b790f331ce7",
+            "run_id": "f4d068ba-07b5-59de-ace3-3eca8515863a",
+            "sequence": "HKGQKYKFKKERWQYKKFDWGKK",
+            "sequence_sha256": "e9742af73a58831017460a025def9448b9fdefc7e1707e4dad222cbc2ed3c122",
+            "value": -85.43307628387788
+          },
+          "worst_candidate": {
+            "candidate_id": "5eb4e261-3e49-4d23-b045-ca11b6ea0057",
+            "run_id": "64497af6-6ac6-5163-95e9-46239b9889b8",
+            "sequence": "TNRYKKNGGVRNGNRVRSKNKKKN",
+            "sequence_sha256": "3e9d5ddab5007be170c002e2f547781fb7ebe5db4be0a3c5b9a4cfd84eba1dc5",
+            "value": -30.212407205701425
+          }
+        },
+        "interface_rmsd_mean_nm": {
+          "observed_count": 5,
+          "missing_count": 66,
+          "unit": "nm",
+          "favorable_direction": "lower",
+          "minimum": 0.2259860336780548,
+          "maximum": 0.4288562536239624,
+          "mean": 0.32026747465133665,
+          "median": 0.2784189283847809,
+          "population_standard_deviation": 0.07854009820495106,
+          "p10": 0.2438586175441742,
+          "p25": 0.27066749334335327,
+          "p75": 0.397408664226532,
+          "p90": 0.4162772178649902,
+          "best_candidate": {
+            "candidate_id": "e2121432-d8bd-4323-90e2-78626721e216",
+            "run_id": "d3ab0200-5818-517e-aa17-2b7036200c7e",
+            "sequence": "AWGKKLKKFKSKSSDWFEKHSFR",
+            "sequence_sha256": "7b17223f1b14deaf9b1dde76ff61256f4d4df1f7dfee2f72cdaaa3ace8e0fbae",
+            "value": 0.2259860336780548
+          },
+          "worst_candidate": {
+            "candidate_id": "3daa05cb-6ac0-43ad-b22e-1b790f331ce7",
+            "run_id": "f4d068ba-07b5-59de-ace3-3eca8515863a",
+            "sequence": "HKGQKYKFKKERWQYKKFDWGKK",
+            "sequence_sha256": "e9742af73a58831017460a025def9448b9fdefc7e1707e4dad222cbc2ed3c122",
+            "value": 0.4288562536239624
+          }
+        },
+        "interface_rmsd_max_nm": {
+          "observed_count": 5,
+          "missing_count": 66,
+          "unit": "nm",
+          "favorable_direction": "lower",
+          "minimum": 0.34228578209877014,
+          "maximum": 0.7243959903717041,
+          "mean": 0.49634873270988467,
+          "median": 0.4724309742450714,
+          "population_standard_deviation": 0.14746590843921745,
+          "p10": 0.3439659893512726,
+          "p25": 0.34648630023002625,
+          "p75": 0.5961446166038513,
+          "p90": 0.673095440864563,
+          "best_candidate": {
+            "candidate_id": "e2121432-d8bd-4323-90e2-78626721e216",
+            "run_id": "d3ab0200-5818-517e-aa17-2b7036200c7e",
+            "sequence": "AWGKKLKKFKSKSSDWFEKHSFR",
+            "sequence_sha256": "7b17223f1b14deaf9b1dde76ff61256f4d4df1f7dfee2f72cdaaa3ace8e0fbae",
+            "value": 0.34228578209877014
+          },
+          "worst_candidate": {
+            "candidate_id": "ca3a4069-9f61-47fe-b386-57d8132fcd67",
+            "run_id": "aa5fa315-f0bf-556f-a65b-b8ae6a192a5f",
+            "sequence": "VGKKKDWGRKKTFDWGKVKSKKFGVR",
+            "sequence_sha256": "8a94e858bd8aeb8404dc9ea842d5e6b06b7b2d8bd36b8e7c269aa4d0aa4e2149",
+            "value": 0.7243959903717041
+          }
+        },
+        "native_contact_fraction_mean": {
+          "observed_count": 5,
+          "missing_count": 66,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 0.6057794871794873,
+          "maximum": 0.8204561403508771,
+          "mean": 0.6680332309027719,
+          "median": 0.6335864864864865,
+          "population_standard_deviation": 0.07775002420701635,
+          "p10": 0.6140375036284471,
+          "p25": 0.6264245283018868,
+          "p75": 0.6539195121951219,
+          "p90": 0.7538414890885751,
+          "best_candidate": {
+            "candidate_id": "e2121432-d8bd-4323-90e2-78626721e216",
+            "run_id": "d3ab0200-5818-517e-aa17-2b7036200c7e",
+            "sequence": "AWGKKLKKFKSKSSDWFEKHSFR",
+            "sequence_sha256": "7b17223f1b14deaf9b1dde76ff61256f4d4df1f7dfee2f72cdaaa3ace8e0fbae",
+            "value": 0.8204561403508771
+          },
+          "worst_candidate": {
+            "candidate_id": "8b7c092b-dab5-45c4-a93a-ec3c4a5f2c2a",
+            "run_id": "aa5fa315-f0bf-556f-a65b-b8ae6a192a5f",
+            "sequence": "YKTRTRSKVRGKFSKFKTVR",
+            "sequence_sha256": "06266246440027aead8769279c45d9f8731eddd30b7843964a6b5d1b5bfba05c",
+            "value": 0.6057794871794873
+          }
+        },
+        "native_contact_fraction_min": {
+          "observed_count": 5,
+          "missing_count": 66,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 0.38461538461538464,
+          "maximum": 0.6666666666666666,
+          "mean": 0.5018597485233472,
+          "median": 0.47560975609756095,
+          "population_standard_deviation": 0.0921829027031851,
+          "p10": 0.41995841995842,
+          "p25": 0.47297297297297297,
+          "p75": 0.5094339622641509,
+          "p90": 0.6037735849056604,
+          "best_candidate": {
+            "candidate_id": "e2121432-d8bd-4323-90e2-78626721e216",
+            "run_id": "d3ab0200-5818-517e-aa17-2b7036200c7e",
+            "sequence": "AWGKKLKKFKSKSSDWFEKHSFR",
+            "sequence_sha256": "7b17223f1b14deaf9b1dde76ff61256f4d4df1f7dfee2f72cdaaa3ace8e0fbae",
+            "value": 0.6666666666666666
+          },
+          "worst_candidate": {
+            "candidate_id": "8b7c092b-dab5-45c4-a93a-ec3c4a5f2c2a",
+            "run_id": "aa5fa315-f0bf-556f-a65b-b8ae6a192a5f",
+            "sequence": "YKTRTRSKVRGKFSKFKTVR",
+            "sequence_sha256": "06266246440027aead8769279c45d9f8731eddd30b7843964a6b5d1b5bfba05c",
+            "value": 0.38461538461538464
+          }
+        },
+        "key_contact_occupancy_mean": {
+          "observed_count": 5,
+          "missing_count": 66,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 0.6057794871794872,
+          "maximum": 0.8204561403508772,
+          "mean": 0.6680332309027719,
+          "median": 0.6335864864864864,
+          "population_standard_deviation": 0.07775002420701642,
+          "p10": 0.614037503628447,
+          "p25": 0.6264245283018868,
+          "p75": 0.653919512195122,
+          "p90": 0.7538414890885752,
+          "best_candidate": {
+            "candidate_id": "e2121432-d8bd-4323-90e2-78626721e216",
+            "run_id": "d3ab0200-5818-517e-aa17-2b7036200c7e",
+            "sequence": "AWGKKLKKFKSKSSDWFEKHSFR",
+            "sequence_sha256": "7b17223f1b14deaf9b1dde76ff61256f4d4df1f7dfee2f72cdaaa3ace8e0fbae",
+            "value": 0.8204561403508772
+          },
+          "worst_candidate": {
+            "candidate_id": "8b7c092b-dab5-45c4-a93a-ec3c4a5f2c2a",
+            "run_id": "aa5fa315-f0bf-556f-a65b-b8ae6a192a5f",
+            "sequence": "YKTRTRSKVRGKFSKFKTVR",
+            "sequence_sha256": "06266246440027aead8769279c45d9f8731eddd30b7843964a6b5d1b5bfba05c",
+            "value": 0.6057794871794872
+          }
+        },
+        "key_contact_occupancy_max": {
+          "observed_count": 5,
+          "missing_count": 66,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 1.0,
+          "maximum": 1.0,
+          "mean": 1.0,
+          "median": 1.0,
+          "population_standard_deviation": 0.0,
+          "p10": 1.0,
+          "p25": 1.0,
+          "p75": 1.0,
+          "p90": 1.0,
+          "best_candidate": {
+            "candidate_id": "3daa05cb-6ac0-43ad-b22e-1b790f331ce7",
+            "run_id": "f4d068ba-07b5-59de-ace3-3eca8515863a",
+            "sequence": "HKGQKYKFKKERWQYKKFDWGKK",
+            "sequence_sha256": "e9742af73a58831017460a025def9448b9fdefc7e1707e4dad222cbc2ed3c122",
+            "value": 1.0
+          },
+          "worst_candidate": {
+            "candidate_id": "3daa05cb-6ac0-43ad-b22e-1b790f331ce7",
+            "run_id": "f4d068ba-07b5-59de-ace3-3eca8515863a",
+            "sequence": "HKGQKYKFKKERWQYKKFDWGKK",
+            "sequence_sha256": "e9742af73a58831017460a025def9448b9fdefc7e1707e4dad222cbc2ed3c122",
+            "value": 1.0
+          }
+        },
+        "hydrogen_bond_occupancy": {
+          "observed_count": 5,
+          "missing_count": 66,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 1.0,
+          "maximum": 1.0,
+          "mean": 1.0,
+          "median": 1.0,
+          "population_standard_deviation": 0.0,
+          "p10": 1.0,
+          "p25": 1.0,
+          "p75": 1.0,
+          "p90": 1.0,
+          "best_candidate": {
+            "candidate_id": "3daa05cb-6ac0-43ad-b22e-1b790f331ce7",
+            "run_id": "f4d068ba-07b5-59de-ace3-3eca8515863a",
+            "sequence": "HKGQKYKFKKERWQYKKFDWGKK",
+            "sequence_sha256": "e9742af73a58831017460a025def9448b9fdefc7e1707e4dad222cbc2ed3c122",
+            "value": 1.0
+          },
+          "worst_candidate": {
+            "candidate_id": "3daa05cb-6ac0-43ad-b22e-1b790f331ce7",
+            "run_id": "f4d068ba-07b5-59de-ace3-3eca8515863a",
+            "sequence": "HKGQKYKFKKERWQYKKFDWGKK",
+            "sequence_sha256": "e9742af73a58831017460a025def9448b9fdefc7e1707e4dad222cbc2ed3c122",
+            "value": 1.0
+          }
+        },
+        "salt_bridge_occupancy": {
+          "observed_count": 5,
+          "missing_count": 66,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 0.9492,
+          "maximum": 1.0,
+          "mean": 0.9827999999999999,
+          "median": 0.9982,
+          "population_standard_deviation": 0.021072446464518522,
+          "p10": 0.9561600000000001,
+          "p25": 0.9666,
+          "p75": 1.0,
+          "p90": 1.0,
+          "best_candidate": {
+            "candidate_id": "3daa05cb-6ac0-43ad-b22e-1b790f331ce7",
+            "run_id": "f4d068ba-07b5-59de-ace3-3eca8515863a",
+            "sequence": "HKGQKYKFKKERWQYKKFDWGKK",
+            "sequence_sha256": "e9742af73a58831017460a025def9448b9fdefc7e1707e4dad222cbc2ed3c122",
+            "value": 1.0
+          },
+          "worst_candidate": {
+            "candidate_id": "e2121432-d8bd-4323-90e2-78626721e216",
+            "run_id": "d3ab0200-5818-517e-aa17-2b7036200c7e",
+            "sequence": "AWGKKLKKFKSKSSDWFEKHSFR",
+            "sequence_sha256": "7b17223f1b14deaf9b1dde76ff61256f4d4df1f7dfee2f72cdaaa3ace8e0fbae",
+            "value": 0.9492
+          }
+        },
+        "water_bridge_occupancy": {
+          "observed_count": 5,
+          "missing_count": 66,
+          "unit": "fraction",
+          "favorable_direction": "higher",
+          "minimum": 1.0,
+          "maximum": 1.0,
+          "mean": 1.0,
+          "median": 1.0,
+          "population_standard_deviation": 0.0,
+          "p10": 1.0,
+          "p25": 1.0,
+          "p75": 1.0,
+          "p90": 1.0,
+          "best_candidate": {
+            "candidate_id": "3daa05cb-6ac0-43ad-b22e-1b790f331ce7",
+            "run_id": "f4d068ba-07b5-59de-ace3-3eca8515863a",
+            "sequence": "HKGQKYKFKKERWQYKKFDWGKK",
+            "sequence_sha256": "e9742af73a58831017460a025def9448b9fdefc7e1707e4dad222cbc2ed3c122",
+            "value": 1.0
+          },
+          "worst_candidate": {
+            "candidate_id": "3daa05cb-6ac0-43ad-b22e-1b790f331ce7",
+            "run_id": "f4d068ba-07b5-59de-ace3-3eca8515863a",
+            "sequence": "HKGQKYKFKKERWQYKKFDWGKK",
+            "sequence_sha256": "e9742af73a58831017460a025def9448b9fdefc7e1707e4dad222cbc2ed3c122",
+            "value": 1.0
+          }
+        },
+        "maximum_departure_duration_ps": {
+          "observed_count": 5,
+          "missing_count": 66,
+          "unit": "ps",
+          "favorable_direction": "lower",
+          "minimum": 0.0,
+          "maximum": 0.0,
+          "mean": 0.0,
+          "median": 0.0,
+          "population_standard_deviation": 0.0,
+          "p10": 0.0,
+          "p25": 0.0,
+          "p75": 0.0,
+          "p90": 0.0,
+          "best_candidate": {
+            "candidate_id": "3daa05cb-6ac0-43ad-b22e-1b790f331ce7",
+            "run_id": "f4d068ba-07b5-59de-ace3-3eca8515863a",
+            "sequence": "HKGQKYKFKKERWQYKKFDWGKK",
+            "sequence_sha256": "e9742af73a58831017460a025def9448b9fdefc7e1707e4dad222cbc2ed3c122",
+            "value": 0.0
+          },
+          "worst_candidate": {
+            "candidate_id": "3daa05cb-6ac0-43ad-b22e-1b790f331ce7",
+            "run_id": "f4d068ba-07b5-59de-ace3-3eca8515863a",
+            "sequence": "HKGQKYKFKKERWQYKKFDWGKK",
+            "sequence_sha256": "e9742af73a58831017460a025def9448b9fdefc7e1707e4dad222cbc2ed3c122",
+            "value": 0.0
+          }
+        },
+        "maximum_peptide_com_shift_nm": {
+          "observed_count": 5,
+          "missing_count": 66,
+          "unit": "nm",
+          "favorable_direction": "lower",
+          "minimum": 0.28107979893684387,
+          "maximum": 0.7699597477912903,
+          "mean": 0.4130537688732147,
+          "median": 0.34017959237098694,
+          "population_standard_deviation": 0.1832079412221326,
+          "p10": 0.28126718401908873,
+          "p25": 0.28154826164245605,
+          "p75": 0.39250144362449646,
+          "p90": 0.6189764261245728,
+          "best_candidate": {
+            "candidate_id": "e2121432-d8bd-4323-90e2-78626721e216",
+            "run_id": "d3ab0200-5818-517e-aa17-2b7036200c7e",
+            "sequence": "AWGKKLKKFKSKSSDWFEKHSFR",
+            "sequence_sha256": "7b17223f1b14deaf9b1dde76ff61256f4d4df1f7dfee2f72cdaaa3ace8e0fbae",
+            "value": 0.28107979893684387
+          },
+          "worst_candidate": {
+            "candidate_id": "ca3a4069-9f61-47fe-b386-57d8132fcd67",
+            "run_id": "aa5fa315-f0bf-556f-a65b-b8ae6a192a5f",
+            "sequence": "VGKKKDWGRKKTFDWGKVKSKKFGVR",
+            "sequence_sha256": "8a94e858bd8aeb8404dc9ea842d5e6b06b7b2d8bd36b8e7c269aa4d0aa4e2149",
+            "value": 0.7699597477912903
+          }
+        },
+        "mmgbsa_mean_kcal_mol": {
+          "observed_count": 5,
+          "missing_count": 66,
+          "unit": "kcal/mol",
+          "favorable_direction": "lower",
+          "minimum": -154.75708818888876,
+          "maximum": -93.02632840000106,
+          "mean": -115.07101663955548,
+          "median": -105.46971700444345,
+          "population_standard_deviation": 22.030772997903146,
+          "p10": -141.66841854444414,
+          "p25": -122.0354140777772,
+          "p75": -100.06653552666688,
+          "p90": -95.8424112506674,
+          "best_candidate": {
+            "candidate_id": "3daa05cb-6ac0-43ad-b22e-1b790f331ce7",
+            "run_id": "f4d068ba-07b5-59de-ace3-3eca8515863a",
+            "sequence": "HKGQKYKFKKERWQYKKFDWGKK",
+            "sequence_sha256": "e9742af73a58831017460a025def9448b9fdefc7e1707e4dad222cbc2ed3c122",
+            "value": -154.75708818888876
+          },
+          "worst_candidate": {
+            "candidate_id": "bf624b6e-1357-4738-a12d-2814e94a30a9",
+            "run_id": "aa5fa315-f0bf-556f-a65b-b8ae6a192a5f",
+            "sequence": "RKRKSTKFHGGRATKKFDLKQRYK",
+            "sequence_sha256": "8d203e78cde2bae308891fe155aeeeffe120cf8b8d5d74de9ba469d149207aa5",
+            "value": -93.02632840000106
+          }
+        },
+        "mmgbsa_ci95_lower_kcal_mol": {
+          "observed_count": 5,
+          "missing_count": 66,
+          "unit": "kcal/mol",
+          "favorable_direction": "descriptive",
+          "minimum": -158.68426411555524,
+          "maximum": -96.27032364222225,
+          "mean": -121.13788664133253,
+          "median": -114.62157635555326,
+          "population_standard_deviation": 21.756882922338683,
+          "p10": -147.1426334231107,
+          "p25": -129.83018738444395,
+          "p75": -106.283081708888,
+          "p90": -100.27542686888856,
+          "best_candidate": {
+            "candidate_id": "3daa05cb-6ac0-43ad-b22e-1b790f331ce7",
+            "run_id": "f4d068ba-07b5-59de-ace3-3eca8515863a",
+            "sequence": "HKGQKYKFKKERWQYKKFDWGKK",
+            "sequence_sha256": "e9742af73a58831017460a025def9448b9fdefc7e1707e4dad222cbc2ed3c122",
+            "value": -158.68426411555524
+          },
+          "worst_candidate": {
+            "candidate_id": "bf624b6e-1357-4738-a12d-2814e94a30a9",
+            "run_id": "aa5fa315-f0bf-556f-a65b-b8ae6a192a5f",
+            "sequence": "RKRKSTKFHGGRATKKFDLKQRYK",
+            "sequence_sha256": "8d203e78cde2bae308891fe155aeeeffe120cf8b8d5d74de9ba469d149207aa5",
+            "value": -96.27032364222225
+          }
+        },
+        "mmgbsa_ci95_upper_kcal_mol": {
+          "observed_count": 5,
+          "missing_count": 66,
+          "unit": "kcal/mol",
+          "favorable_direction": "descriptive",
+          "minimum": -150.7637626999996,
+          "maximum": -89.96343947111262,
+          "mean": -108.5492844279999,
+          "median": -97.0172459622212,
+          "population_standard_deviation": 22.269588760981133,
+          "p10": -134.8765511293328,
+          "p25": -111.04573377333259,
+          "p75": -93.95624023333349,
+          "p90": -91.56055977600097,
+          "best_candidate": {
+            "candidate_id": "3daa05cb-6ac0-43ad-b22e-1b790f331ce7",
+            "run_id": "f4d068ba-07b5-59de-ace3-3eca8515863a",
+            "sequence": "HKGQKYKFKKERWQYKKFDWGKK",
+            "sequence_sha256": "e9742af73a58831017460a025def9448b9fdefc7e1707e4dad222cbc2ed3c122",
+            "value": -150.7637626999996
+          },
+          "worst_candidate": {
+            "candidate_id": "bf624b6e-1357-4738-a12d-2814e94a30a9",
+            "run_id": "aa5fa315-f0bf-556f-a65b-b8ae6a192a5f",
+            "sequence": "RKRKSTKFHGGRATKKFDLKQRYK",
+            "sequence_sha256": "8d203e78cde2bae308891fe155aeeeffe120cf8b8d5d74de9ba469d149207aa5",
+            "value": -89.96343947111262
+          }
+        }
+      }
+    }
+  },
+  "candidate_report": "D:\\DWorkspace\\yangyang\\\u76ae\u80a4\u6297\u83cc\u77ed\u80bd\\agent-platform\\reports\\pool_a_md_50ns_expansion_20260903\\live-summary-20260904T0501Z\\candidates.csv",
+  "completion_receipt": null
+}

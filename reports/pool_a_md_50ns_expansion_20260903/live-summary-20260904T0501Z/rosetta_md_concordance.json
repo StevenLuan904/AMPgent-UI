@@ -1,0 +1,223 @@
+{
+  "schema_version": "ampgent.rosetta-md-concordance.1",
+  "observed_at_utc": "2026-09-04T05:01:56.175677+00:00",
+  "scope": "completed Pool-A candidates with PostgreSQL-closed MD evidence",
+  "overall": {
+    "candidate_count": 39,
+    "peptide_departed_count": 0,
+    "metrics": {
+      "interface_rmsd_mean_nm": {
+        "paired_count": 39,
+        "spearman_rho": -0.001417004048582996,
+        "expected_rho_sign": 1,
+        "signed_alignment": -0.001417004048582996,
+        "alignment_class": "weak_or_opposite_direction",
+        "unit": "nm"
+      },
+      "native_contact_fraction_mean": {
+        "paired_count": 39,
+        "spearman_rho": -0.19534412955465588,
+        "expected_rho_sign": -1,
+        "signed_alignment": 0.19534412955465588,
+        "alignment_class": "weak_or_opposite_direction",
+        "unit": "fraction"
+      },
+      "mmgbsa_mean_kcal_mol": {
+        "paired_count": 39,
+        "spearman_rho": 0.28724696356275303,
+        "expected_rho_sign": 1,
+        "signed_alignment": 0.28724696356275303,
+        "alignment_class": "weak_or_opposite_direction",
+        "unit": "kcal/mol"
+      }
+    }
+  },
+  "targets": {
+    "acea": {
+      "candidate_count": 8,
+      "peptide_departed_count": 0,
+      "metrics": {
+        "interface_rmsd_mean_nm": {
+          "paired_count": 8,
+          "spearman_rho": 0.2619047619047619,
+          "expected_rho_sign": 1,
+          "signed_alignment": 0.2619047619047619,
+          "alignment_class": "weak_or_opposite_direction",
+          "unit": "nm"
+        },
+        "native_contact_fraction_mean": {
+          "paired_count": 8,
+          "spearman_rho": -0.3333333333333333,
+          "expected_rho_sign": -1,
+          "signed_alignment": 0.3333333333333333,
+          "alignment_class": "moderate_expected_direction",
+          "unit": "fraction"
+        },
+        "mmgbsa_mean_kcal_mol": {
+          "paired_count": 8,
+          "spearman_rho": 0.23809523809523808,
+          "expected_rho_sign": 1,
+          "signed_alignment": 0.23809523809523808,
+          "alignment_class": "weak_or_opposite_direction",
+          "unit": "kcal/mol"
+        }
+      }
+    },
+    "angpt1": {
+      "candidate_count": 4,
+      "peptide_departed_count": 0,
+      "metrics": {
+        "interface_rmsd_mean_nm": {
+          "paired_count": 4,
+          "spearman_rho": -0.4,
+          "expected_rho_sign": 1,
+          "signed_alignment": -0.4,
+          "alignment_class": "weak_or_opposite_direction",
+          "unit": "nm"
+        },
+        "native_contact_fraction_mean": {
+          "paired_count": 4,
+          "spearman_rho": 0.2,
+          "expected_rho_sign": -1,
+          "signed_alignment": -0.2,
+          "alignment_class": "weak_or_opposite_direction",
+          "unit": "fraction"
+        },
+        "mmgbsa_mean_kcal_mol": {
+          "paired_count": 4,
+          "spearman_rho": -0.8,
+          "expected_rho_sign": 1,
+          "signed_alignment": -0.8,
+          "alignment_class": "weak_or_opposite_direction",
+          "unit": "kcal/mol"
+        }
+      }
+    },
+    "fgf2": {
+      "candidate_count": 9,
+      "peptide_departed_count": 0,
+      "metrics": {
+        "interface_rmsd_mean_nm": {
+          "paired_count": 9,
+          "spearman_rho": 0.6333333333333333,
+          "expected_rho_sign": 1,
+          "signed_alignment": 0.6333333333333333,
+          "alignment_class": "moderate_expected_direction",
+          "unit": "nm"
+        },
+        "native_contact_fraction_mean": {
+          "paired_count": 9,
+          "spearman_rho": -0.55,
+          "expected_rho_sign": -1,
+          "signed_alignment": 0.55,
+          "alignment_class": "moderate_expected_direction",
+          "unit": "fraction"
+        },
+        "mmgbsa_mean_kcal_mol": {
+          "paired_count": 9,
+          "spearman_rho": 0.45,
+          "expected_rho_sign": 1,
+          "signed_alignment": 0.45,
+          "alignment_class": "moderate_expected_direction",
+          "unit": "kcal/mol"
+        }
+      }
+    },
+    "gyra": {
+      "candidate_count": 7,
+      "peptide_departed_count": 0,
+      "metrics": {
+        "interface_rmsd_mean_nm": {
+          "paired_count": 7,
+          "spearman_rho": -0.14285714285714285,
+          "expected_rho_sign": 1,
+          "signed_alignment": -0.14285714285714285,
+          "alignment_class": "weak_or_opposite_direction",
+          "unit": "nm"
+        },
+        "native_contact_fraction_mean": {
+          "paired_count": 7,
+          "spearman_rho": 0.0,
+          "expected_rho_sign": -1,
+          "signed_alignment": -0.0,
+          "alignment_class": "weak_or_opposite_direction",
+          "unit": "fraction"
+        },
+        "mmgbsa_mean_kcal_mol": {
+          "paired_count": 7,
+          "spearman_rho": 0.21428571428571427,
+          "expected_rho_sign": 1,
+          "signed_alignment": 0.21428571428571427,
+          "alignment_class": "weak_or_opposite_direction",
+          "unit": "kcal/mol"
+        }
+      }
+    },
+    "pbp2a": {
+      "candidate_count": 6,
+      "peptide_departed_count": 0,
+      "metrics": {
+        "interface_rmsd_mean_nm": {
+          "paired_count": 6,
+          "spearman_rho": -0.3142857142857143,
+          "expected_rho_sign": 1,
+          "signed_alignment": -0.3142857142857143,
+          "alignment_class": "weak_or_opposite_direction",
+          "unit": "nm"
+        },
+        "native_contact_fraction_mean": {
+          "paired_count": 6,
+          "spearman_rho": 0.14285714285714285,
+          "expected_rho_sign": -1,
+          "signed_alignment": -0.14285714285714285,
+          "alignment_class": "weak_or_opposite_direction",
+          "unit": "fraction"
+        },
+        "mmgbsa_mean_kcal_mol": {
+          "paired_count": 6,
+          "spearman_rho": 0.3142857142857143,
+          "expected_rho_sign": 1,
+          "signed_alignment": 0.3142857142857143,
+          "alignment_class": "moderate_expected_direction",
+          "unit": "kcal/mol"
+        }
+      }
+    },
+    "vegfa": {
+      "candidate_count": 5,
+      "peptide_departed_count": 0,
+      "metrics": {
+        "interface_rmsd_mean_nm": {
+          "paired_count": 5,
+          "spearman_rho": -0.1,
+          "expected_rho_sign": 1,
+          "signed_alignment": -0.1,
+          "alignment_class": "weak_or_opposite_direction",
+          "unit": "nm"
+        },
+        "native_contact_fraction_mean": {
+          "paired_count": 5,
+          "spearman_rho": 0.0,
+          "expected_rho_sign": -1,
+          "signed_alignment": -0.0,
+          "alignment_class": "weak_or_opposite_direction",
+          "unit": "fraction"
+        },
+        "mmgbsa_mean_kcal_mol": {
+          "paired_count": 5,
+          "spearman_rho": 0.2,
+          "expected_rho_sign": 1,
+          "signed_alignment": 0.2,
+          "alignment_class": "weak_or_opposite_direction",
+          "unit": "kcal/mol"
+        }
+      }
+    }
+  },
+  "decision": "retain_md_as_nonredundant_gate",
+  "limitations": [
+    "Correlations are descriptive model-to-model concordance, not binding validation.",
+    "Fewer than 30 completed candidates is treated as preliminary evidence.",
+    "Pooled correlations can mix target-specific scales; target cohorts remain separate."
+  ]
+}
