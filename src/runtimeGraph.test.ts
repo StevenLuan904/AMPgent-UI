@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildRuntimeGraph, countActivityRetries, countOpenActivities, deriveLifecycleToolCalls, deriveToolSummaryGaps, displayEventContext, displayEventName, displayEventSemanticName, displayObservedEventName, displayToolName, layoutColumnsForWidth, runtimeActivitySummary, runtimeCallSummary, runtimeObservationSummary, runtimeRetrySummary } from './runtimeGraph'
+import { buildRuntimeGraph, candidatePreviewCountLabel, candidatePreviewDenominator, candidatePreviewLabel, countActivityRetries, countOpenActivities, deriveLifecycleToolCalls, deriveToolSummaryGaps, displayEventContext, displayEventName, displayEventSemanticName, displayObservedEventName, displayToolName, layoutColumnsForWidth, runtimeActivitySummary, runtimeCallSummary, runtimeObservationSummary, runtimeRetrySummary } from './runtimeGraph'
 import type { NodeDetail, RunDetail, ToolAttempt } from './types'
 
 const call = (id: string, toolName: string, queuedAt: string, overrides: Partial<ToolAttempt> = {}): ToolAttempt => ({
@@ -85,6 +85,49 @@ describe('buildRuntimeGraph', () => {
     expect(displayObservedEventName('autoresearch.action.recorded', { generation: 4 })).toBe('生成动作已记录 · 第 4 代')
     expect(displayEventContext({ iteration_no: 'not-a-number', generation: -1 })).toEqual([])
     expect(displayObservedEventName('agent_decision.recorded', { iteration_no: 'not-a-number' })).toBe('智能体决策已记录')
+  })
+
+  it('separates authoritative population counts from candidate preview scope', () => {
+    const candidates = [
+      { id: 'candidate-1', sequence: 'KKLL', length: 4, proposal_rank: 1, cohort: 'exploration', pareto_front: null, reasons: [], metrics: [], generation: 1 },
+      { id: 'candidate-2', sequence: 'KLLK', length: 4, proposal_rank: 2, cohort: 'exploration', pareto_front: null, reasons: [], metrics: [], generation: 1 },
+      { id: 'candidate-3', sequence: 'LLKK', length: 4, proposal_rank: 3, cohort: 'exploration', pareto_front: null, reasons: [], metrics: [], generation: 2, parent_id: 'candidate-1', generator_call_id: 'call-generator' },
+    ]
+    const scopedDetail = {
+      ...detail([], candidates),
+      counts: { candidates: 114 },
+      display_population: { candidate_count: 108, candidate_record_count: 114, excluded_candidate_count: 6, exclusion_reason: 'historical_exact_replay' as const },
+      generation_population: { baseline_candidate_count: 0, descendant_candidate_count: 129, max_generation: 40 },
+    }
+    expect(candidatePreviewDenominator(scopedDetail)).toBe(108)
+    expect(candidatePreviewLabel(2, 108)).toBe('2/108')
+    expect(candidatePreviewCountLabel(3, 108)).toBe('3/108 条')
+    const collapsed = buildRuntimeGraph(scopedDetail)
+    expect(collapsed.nodes.find((node) => node.id === 'population-summary')).toMatchObject({ label: '种群汇总', current: 3, total: 108, runtime: { node_type: 'population_summary' } })
+    expect(collapsed.nodes.find((node) => node.id === 'generation:1')).toMatchObject({ label: '第 1 代预览 · 2 条', current: 2, total: 0, runtime: { node_type: 'candidate_group', child_ids: ['candidate-1', 'candidate-2'], expanded: false } })
+    expect(collapsed.nodes.some((node) => node.id === 'candidate:candidate-1')).toBe(false)
+    expect(collapsed.nodes.find((node) => node.id === 'generation:1')?.insight.facts).toEqual(expect.arrayContaining([{ label: '预览记录', value: '2/108 条' }]))
+    expect(collapsed.gaps).toContain('候选预览已返回 3/108 条；其余候选未进入运行图。')
+    expect(collapsed.gaps).toContain('接口种群口径不一致：展示 108 条；基线与新生子代合计 129 条。')
+    expect(collapsed.nodes.find((node) => node.id === 'population-summary')?.insight.facts).toEqual(expect.arrayContaining([{ label: '数据状态', value: '接口计数不一致' }]))
+    expect(collapsed.gaps).not.toContain('候选预览未返回 parent_id；父子代际关系暂不可观测。')
+    expect(collapsed.edges).not.toEqual(expect.arrayContaining([expect.objectContaining({ relation_kind: 'lineage' })]))
+
+    const expanded = buildRuntimeGraph(scopedDetail, { worker: nodeDetail([call('call-generator', 'hydramp', '2026-09-04T00:00:00Z')]) }, { expandedGroups: new Set(['generation:2']) })
+    expect(expanded.nodes.slice(-2).map((node) => node.id)).toEqual(['generation:2', 'candidate:candidate-3'])
+    expect(expanded.nodes.find((node) => node.id === 'candidate:candidate-3')).toMatchObject({ current: 1, total: 0, runtime: { node_type: 'candidate_preview', preview_index: 3, preview_total: 108 } })
+    expect(expanded.edges).toEqual(expect.arrayContaining([expect.objectContaining({ source: 'call:call-generator', target: 'candidate:candidate-3', relation_kind: 'association' })]))
+    expect(expanded.edges).not.toEqual(expect.arrayContaining([expect.objectContaining({ relation_kind: 'lineage' })]))
+  })
+
+  it('uses a backend display count only when available and keeps excluded records out of the denominator', () => {
+    const candidate = { id: 'candidate-missing-scope', sequence: 'KKLL', length: 4, proposal_rank: null, cohort: 'exploration', pareto_front: null, reasons: [], metrics: [] }
+    expect(candidatePreviewDenominator({ ...detail([], [candidate]), counts: {}, run: { ...detail().run, candidate_count: 7 } })).toBe(7)
+    expect(candidatePreviewDenominator({ ...detail([], [candidate]), counts: { candidates: 7 }, display_population: { candidate_count: 0, candidate_record_count: 7, excluded_candidate_count: 7, exclusion_reason: 'historical_exact_replay' } })).toBe(0)
+    expect(candidatePreviewLabel(1, 0)).toBe('已返回第 1 条')
+    expect(candidatePreviewLabel(4, 3)).toBe('已返回第 4 条')
+    expect(candidatePreviewCountLabel(1, 0)).toBe('已返回 1 条')
+    expect(buildRuntimeGraph({ ...detail([], [candidate]), counts: {}, run: { ...detail().run, candidate_count: Number.NaN } }).nodes.find((node) => node.id === 'candidate:candidate-missing-scope')?.insight.facts).toEqual(expect.arrayContaining([{ label: '预览记录', value: '已返回第 1 条' }]))
   })
 
   it('materializes explicit lifecycle tool_call_id observations and deduplicates node-detail calls', () => {
@@ -296,10 +339,10 @@ describe('buildRuntimeGraph', () => {
     const summaryDetail = { ...detail(), tool_summary: { 'tool-a': { succeeded: 2 }, 'unknown-internal-tool': { failed: 3 } } }
     const result = buildRuntimeGraph(summaryDetail, { worker: nodeDetail([observed]) })
     const group = result.nodes.find((node) => node.id === 'tool-summary-group')
-    expect(group).toMatchObject({ label: '工具汇总 · 5 项统计', status: 'pending', insight: { verdict: '仅汇总统计', reason: '数据库仅提供汇总计数；逐次记录、时间与依赖缺失' }, runtime: { summary_only: true, child_ids: ['tool-summary:tool-a', 'tool-summary:unknown-internal-tool'] } })
+    expect(group).toMatchObject({ label: '尚缺逐次明细 · 4 项', status: 'pending', current: 1, total: 5, insight: { verdict: '仅汇总统计', reason: '数据库仅提供汇总计数；逐次记录、时间与依赖缺失' }, runtime: { summary_only: true, child_ids: ['tool-summary:tool-a', 'tool-summary:unknown-internal-tool'] } })
     expect(group?.insight.facts).toEqual(expect.arrayContaining([
       { label: '状态构成', value: '已完成 2 · 失败 3' },
-      { label: '统计覆盖', value: '总量 5 · 已有逐次 1 · 缺少逐次 4 · 展开 0/2 个工具' },
+      { label: '统计覆盖', value: '总量 5 · 已有逐次 1 · 缺少逐次 4 · 展开 0/2 个缺口工具' },
     ]))
     expect(group?.runtime?.summary_tools?.find((tool) => tool.tool_name === 'unknown-internal-tool')?.display_name).toBe('未命名工具')
     expect(result.edges.some((edge) => edge.source.startsWith('tool-summary:') || edge.target.startsWith('tool-summary:'))).toBe(false)
@@ -310,6 +353,7 @@ describe('buildRuntimeGraph', () => {
     const summaryDetail = { ...detail(), tool_summary: { 'tool-a': { succeeded: 2 }, 'tool-b': { running: 1, failed: 1 } } }
     const result = buildRuntimeGraph(summaryDetail, {}, { expandedGroups: new Set(['tool-summary-group']) })
     expect(result.nodes.map((node) => node.id)).toEqual(expect.arrayContaining(['tool-summary-group', 'tool-summary:tool-a', 'tool-summary:tool-b']))
+    expect(result.nodes.find((node) => node.id === 'tool-summary:tool-b')).toMatchObject({ current: 0, total: 2 })
     expect(result.nodes.find((node) => node.id === 'tool-summary:tool-b')?.insight.facts).toEqual(expect.arrayContaining([
       { label: '状态构成', value: '进行中 1 · 失败 1' },
       { label: '统计总量', value: '2' },
@@ -339,7 +383,10 @@ describe('buildRuntimeGraph', () => {
     ])
     const result = buildRuntimeGraph({ ...detail(), tool_summary: toolSummary }, { worker: nodeDetail(materialized) })
     expect(result.stats).toMatchObject({ toolSummaryRecords: 352, toolSummaryMaterialized: 195, toolSummaryMissing: 157 })
-    expect(result.nodes.find((node) => node.id === 'tool-summary-group')?.label).toBe('工具汇总 · 157 项统计')
+    expect(result.nodes.find((node) => node.id === 'tool-summary-group')).toMatchObject({ label: '尚缺逐次明细 · 157 项', current: 195, total: 352 })
+    expect(result.nodes.find((node) => node.id === 'tool-summary-group')?.insight.facts).toEqual(expect.arrayContaining([
+      { label: '统计覆盖', value: '总量 352 · 已有逐次 195 · 缺少逐次 157 · 展开 0/4 个缺口工具' },
+    ]))
     expect(result.edges.filter((edge) => edge.source.startsWith('tool-summary') || edge.target.startsWith('tool-summary'))).toHaveLength(0)
   })
 
@@ -347,7 +394,7 @@ describe('buildRuntimeGraph', () => {
     const candidate = { id: 'candidate-summary', sequence: 'KKLL', length: 4, proposal_rank: 1, cohort: 'exploration', pareto_front: null, reasons: [], metrics: [], generation: 1 }
     const result = buildRuntimeGraph({ ...detail([{ sequence_no: 1, type: 'run.started', actor: 'worker', payload: {}, occurred_at: '2026-09-04T00:00:00Z' }], [candidate]), tool_summary: { 'tool-a': { succeeded: 2 } } }, { worker: nodeDetail([call('summary-a', 'tool-a', '2026-09-04T00:00:01Z')]) })
     const toolY = result.positions['call:summary-a']?.y
-    const candidateY = result.positions['candidate:candidate-summary']?.y
+    const candidateY = result.positions['generation:1']?.y
     const summaryY = result.positions['tool-summary-group']?.y
     expect(toolY).toBeDefined()
     expect(candidateY).toBeDefined()
@@ -778,8 +825,8 @@ describe('buildRuntimeGraph', () => {
     const eventPositions = events.map((_, index) => result.positions[`event:${index + 1}`].y)
     const toolPosition = result.positions['call:call-1'].y
     expect(eventPositions.slice(0, 5)).toEqual([150, 150, 150, 150, 150])
-    expect(eventPositions.slice(5).every((value) => value > 150)).toBe(true)
-    expect(toolPosition).toBeGreaterThan(Math.max(...eventPositions) + 200)
+    expect(new Set(eventPositions)).toEqual(new Set([150]))
+    expect(toolPosition).toBeGreaterThan(Math.max(...eventPositions) + 170)
   })
 
   it('does not reserve a full empty tool row between events and candidates', () => {
@@ -788,8 +835,22 @@ describe('buildRuntimeGraph', () => {
       { sequence_no: 1, type: 'run.started', actor: 'worker', payload: {}, occurred_at: '2026-09-04T00:00:00Z' },
     ], [candidate]))
     const eventY = result.positions['event:1'].y
-    const candidateY = result.positions['candidate:candidate-1'].y
+    const candidateY = result.positions['generation:1'].y
     expect(candidateY - eventY).toBeLessThanOrEqual(280)
+  })
+
+  it('keeps a dense folded tool timeline horizontal so it does not push candidates down', () => {
+    const calls = Array.from({ length: 117 }, (_, index) => call(
+      `timeline-call-${index + 1}`,
+      `tool-${index + 1}`,
+      `2026-09-04T00:${String(Math.floor(index / 60)).padStart(2, '0')}:${String(index % 60).padStart(2, '0')}Z`,
+    ))
+    const candidate = { id: 'timeline-candidate', sequence: 'KKLL', length: 4, proposal_rank: 1, cohort: 'exploration', pareto_front: null, reasons: [], metrics: [], generation: 1 }
+    const result = buildRuntimeGraph(detail([], [candidate]), { worker: nodeDetail(calls) })
+    const toolY = result.positions['call:timeline-call-117'].y
+    const candidateY = result.positions['generation:1'].y
+    expect(candidateY - toolY).toBeLessThanOrEqual(280)
+    expect(new Set(calls.map((item) => result.positions[`call:${item.id}`].y)).size).toBe(1)
   })
 
   it('reserves a taller local row step for expanded aggregate members', () => {

@@ -14,6 +14,10 @@ export function observerResponseIsStale(cacheState: string | null) {
   return cacheState === 'restored-stale' || cacheState === 'stale-refresh'
 }
 
+export function observerDetailFailureMessage(updatedAt: string | null | undefined) {
+  return `详情读取失败 · 显示截至 ${updatedAt || '未知时间'} 的数据`
+}
+
 function normalizedApiBase(apiBase: string) {
   return apiBase.trim().replace(/\/+$/, '') || 'local'
 }

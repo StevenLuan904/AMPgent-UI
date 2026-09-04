@@ -22,11 +22,11 @@ describe('readable runtime viewport selection', () => {
       node('summary-1', 'tool_summary_group', '', 'pending'),
     ]
     const selected = selectReadableRuntimeNodeIds(nodes)
-    expect(selected).toHaveLength(9)
-    expect(selected.filter((id) => id.startsWith('event-'))).toHaveLength(3)
-    expect(selected.filter((id) => id.startsWith('tool-'))).toHaveLength(3)
+    expect(selected).toHaveLength(7)
+    expect(selected.filter((id) => id.startsWith('event-'))).toHaveLength(2)
+    expect(selected.filter((id) => id.startsWith('tool-'))).toHaveLength(2)
     expect(selected.filter((id) => id.startsWith('generation-'))).toHaveLength(2)
-    expect(selected).toEqual(expect.arrayContaining(['event-1', 'event-2', 'event-3', 'tool-1', 'tool-2', 'tool-3', 'generation-1', 'generation-2', 'summary-1']))
+    expect(selected).toEqual(expect.arrayContaining(['event-1', 'event-2', 'tool-1', 'tool-2', 'generation-1', 'generation-2', 'summary-1']))
   })
 
   it('keeps an expanded aggregate and nearby members in the readable window', () => {
@@ -39,6 +39,33 @@ describe('readable runtime viewport selection', () => {
     ]
     const selected = selectReadableRuntimeNodeIds(nodes, 6)
     expect(selected).toEqual(expect.arrayContaining(['batch-1', 'member-1', 'member-2', 'event-1', 'generation-1']))
+  })
+
+  it('keeps a population summary and a candidate preview group discoverable together', () => {
+    const nodes = [
+      node('population-summary', 'population_summary', ''),
+      node('generation-1', 'candidate_group', ''),
+      node('candidate-1', 'candidate_preview', ''),
+      node('event-1', 'event_group', '2026-09-04T00:00:01Z'),
+      node('tool-1', 'tool_group', '2026-09-04T00:00:02Z'),
+    ]
+    const selected = selectReadableRuntimeNodeIds(nodes)
+    expect(selected).toEqual(expect.arrayContaining(['population-summary', 'generation-1']))
+  })
+
+  it('includes every member of a small expanded candidate group when requested', () => {
+    const nodes = [
+      node('event-1', 'event_group', '2026-09-04T00:00:01Z'),
+      node('tool-1', 'tool_group', '2026-09-04T00:00:02Z'),
+      node('population-summary', 'population_summary', ''),
+      node('generation-1', 'candidate_group', '', 'completed', true),
+      node('candidate-1', 'candidate_preview', ''),
+      node('candidate-2', 'candidate_preview', ''),
+      node('candidate-3', 'candidate_preview', ''),
+    ]
+    expect(selectReadableRuntimeNodeIds(nodes, 10)).toEqual(expect.arrayContaining([
+      'generation-1', 'candidate-1', 'candidate-2', 'candidate-3', 'population-summary',
+    ]))
   })
 
   it('prefers a spatially contiguous lane prefix over a late candidate record', () => {

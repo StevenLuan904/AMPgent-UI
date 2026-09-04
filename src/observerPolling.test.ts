@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { nodeDetailCacheTtlMs, observerCreatePrefetchQueue, observerIdlePrefetchDelayMs, observerInitialPrefetchCount, observerInFlightStageIds, observerListTimeoutMs, observerMergePrefetchQueue, observerNextPrefetchStage, observerNodeDetailCacheKey, observerNodeDetailTimeoutMs, observerPendingPrefetchCount, observerPollingIntervalMs, observerPrefetchQueueMatches, observerPrefetchInFlightKey, observerPrefetchRefreshExpired, observerPrefetchStageOrder, observerRequeuePrefetchStage, observerResponseIsStale, observerRunDetailCacheKey, observerRunDetailTimeoutMs, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion, observerStaleRetryDelayMs } from './observerPolling'
+import { nodeDetailCacheTtlMs, observerCreatePrefetchQueue, observerDetailFailureMessage, observerIdlePrefetchDelayMs, observerInitialPrefetchCount, observerInFlightStageIds, observerListTimeoutMs, observerMergePrefetchQueue, observerNextPrefetchStage, observerNodeDetailCacheKey, observerNodeDetailTimeoutMs, observerPendingPrefetchCount, observerPollingIntervalMs, observerPrefetchQueueMatches, observerPrefetchInFlightKey, observerPrefetchRefreshExpired, observerPrefetchStageOrder, observerRequeuePrefetchStage, observerResponseIsStale, observerRunDetailCacheKey, observerRunDetailTimeoutMs, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion, observerStaleRetryDelayMs } from './observerPolling'
 
 describe('observer refresh policy', () => {
   it('refreshes active runs more often than terminal runs', () => {
@@ -34,6 +34,11 @@ describe('observer refresh policy', () => {
     expect(observerResponseIsStale('stale-refresh')).toBe(true)
     expect(observerResponseIsStale('hit')).toBe(false)
     expect(observerResponseIsStale(null)).toBe(false)
+  })
+
+  it('keeps a detail read failure explicit when a previous snapshot is retained', () => {
+    expect(observerDetailFailureMessage('2026-09-05T01:02:03Z')).toBe('详情读取失败 · 显示截至 2026-09-05T01:02:03Z 的数据')
+    expect(observerDetailFailureMessage(undefined)).toBe('详情读取失败 · 显示截至 未知时间 的数据')
   })
 
   it('prioritizes observable progress without changing the server order for ties', () => {

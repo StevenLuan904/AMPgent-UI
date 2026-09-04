@@ -50,9 +50,11 @@ import {
 import { LaneLabel, WorkflowNode, type LaneNode, type StageNode } from './WorkflowNode'
 import { assertMatchingRunIdentity, type RunIdentity } from './runIdentity'
 import { formatRunTitle } from './runPresentation'
-import { buildRuntimeGraph, displayObservedEventName, displayToolName, runtimeActivitySummary, runtimeCallSummary, runtimeEventStatus, runtimeObservationSummary, runtimeRetrySummary, type RuntimeGraphModel } from './runtimeGraph'
+import { buildRuntimeGraph, candidatePreviewCountLabel, candidatePreviewDenominator, displayObservedEventName, displayToolName, runtimeActivitySummary, runtimeCallSummary, runtimeEventStatus, runtimeObservationSummary, runtimeRetrySummary, type RuntimeGraphModel } from './runtimeGraph'
 import { readableRuntimeNodeCount, selectReadableRuntimeNodeIds } from './runtimeViewport'
-import { nodeDetailCacheTtlMs, observerIdlePrefetchDelayMs, observerInitialPrefetchCount, observerListTimeoutMs, observerInFlightStageIds, observerMergePrefetchQueue, observerNextPrefetchStage, observerNodeDetailCacheKey, observerNodeDetailTimeoutMs, observerPendingPrefetchCount, observerPollingIntervalMs, observerPrefetchQueueMatches, observerPrefetchInFlightKey, observerPrefetchRefreshExpired, observerPrefetchStageOrder, observerRequeuePrefetchStage, observerResponseIsStale, observerRunDetailCacheKey, observerRunDetailTimeoutMs, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion, observerStaleRetryDelayMs, type ObserverPrefetchQueue } from './observerPolling'
+import { nodeDetailCacheTtlMs, observerDetailFailureMessage, observerIdlePrefetchDelayMs, observerInitialPrefetchCount, observerListTimeoutMs, observerInFlightStageIds, observerMergePrefetchQueue, observerNextPrefetchStage, observerNodeDetailCacheKey, observerNodeDetailTimeoutMs, observerPendingPrefetchCount, observerPollingIntervalMs, observerPrefetchQueueMatches, observerPrefetchInFlightKey, observerPrefetchRefreshExpired, observerPrefetchStageOrder, observerRequeuePrefetchStage, observerResponseIsStale, observerRunDetailCacheKey, observerRunDetailTimeoutMs, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion, observerStaleRetryDelayMs, type ObserverPrefetchQueue } from './observerPolling'
+
+const readableViewportMinZoom = 0.75
 import { schedulerHealthDescription, schedulerHealthPresentation } from './schedulerHealth'
 import type {
   CandidatePreview,
@@ -185,6 +187,8 @@ function useRunData(enabled: boolean, apiBase: string) {
   const [loading, setLoading] = useState(!initialCachedDetail)
   const [refreshing, setRefreshing] = useState(false)
   const [syncingStale, setSyncingStale] = useState(Boolean(initialCachedDetail))
+  const [detailSyncError, setDetailSyncError] = useState<string | null>(null)
+  const [lastSuccessfulDetailAt, setLastSuccessfulDetailAt] = useState<string | null>(initialCachedDetail?.payload.updated_at ?? null)
   const [staleDetailRevision, setStaleDetailRevision] = useState(0)
   const [nodeDetails, setNodeDetails] = useState<Record<string, NodeDetail>>({})
   const [nodeDetailFetch, setNodeDetailFetch] = useState({ requested: 0, loaded: 0, failed: 0, deferred: 0 })
@@ -196,6 +200,10 @@ function useRunData(enabled: boolean, apiBase: string) {
   const previousApiBase = useRef(apiBase)
   const selectedIdRef = useRef(selectedId)
   const detailRunIdRef = useRef<string | null>(initialCachedDetail ? initialSelectedId : null)
+  const detailRef = useRef<RunDetail | null>(initialCachedDetail?.payload ?? null)
+  detailRef.current = detail
+  const lastSuccessfulDetailAtRef = useRef<string | null>(initialCachedDetail?.payload.updated_at ?? null)
+  lastSuccessfulDetailAtRef.current = lastSuccessfulDetailAt
   const nodeFetchInFlight = useRef(new Set<string>())
   const loadedStageKeys = useRef(new Set<string>())
   const currentStageIds = useRef<string[]>([])
@@ -346,6 +354,11 @@ function useRunData(enabled: boolean, apiBase: string) {
       const sameRun = detailRunIdRef.current === runId
       detailRunIdRef.current = runId
       setDetail(payload)
+      setDetailSyncError(null)
+      if (!staleResponse) {
+        lastSuccessfulDetailAtRef.current = payload.updated_at
+        setLastSuccessfulDetailAt(payload.updated_at)
+      }
       if (!staleResponse) writeObserverCache(observerRunDetailCacheKey(apiBase, runId), apiBase, payload)
       // A quiet refresh updates the authoritative run summary without discarding
       // already loaded stage details. Those rows are cached and refreshed separately.
@@ -393,9 +406,15 @@ function useRunData(enabled: boolean, apiBase: string) {
       }
     } catch (cause) {
       if (epoch === detailEpoch.current) {
-        setError(readableDataError(cause, '无法连接观察器接口'))
+        if (detailRunIdRef.current === runId && detailRef.current) {
+          setDetailSyncError(observerDetailFailureMessage(formatTime(lastSuccessfulDetailAtRef.current ?? detailRef.current.updated_at)))
+          setError(null)
+          setSyncingStale(false)
+        } else {
+          setError(readableDataError(cause, '无法连接观察器接口'))
+        }
         detailStale.current = true
-        setSyncingStale(true)
+        if (detailRunIdRef.current !== runId || !detailRef.current) setSyncingStale(true)
       }
     } finally {
       detailInFlight.current = false
@@ -419,6 +438,9 @@ function useRunData(enabled: boolean, apiBase: string) {
     prefetchInFlightStageIds.current.clear()
     if (idlePrefetchTimer.current !== null) window.clearTimeout(idlePrefetchTimer.current)
     setDetail(null)
+    setDetailSyncError(null)
+    lastSuccessfulDetailAtRef.current = null
+    setLastSuccessfulDetailAt(null)
     detailStale.current = false
     setSyncingStale(runsStale.current)
     setNodeDetails({})
@@ -510,6 +532,9 @@ function useRunData(enabled: boolean, apiBase: string) {
     if (cachedDetail && cachedDetail.payload.run.id === selectedId) {
       detailRunIdRef.current = selectedId
       setDetail(cachedDetail.payload)
+      setDetailSyncError(null)
+      lastSuccessfulDetailAtRef.current = cachedDetail.payload.updated_at
+      setLastSuccessfulDetailAt(cachedDetail.payload.updated_at)
       detailStale.current = true
       setSyncingStale(runsStale.current || detailStale.current)
       setLoading(false)
@@ -524,7 +549,12 @@ function useRunData(enabled: boolean, apiBase: string) {
     setLoading(true)
   }, [apiBase, selectedId])
 
-  return { runs, selectedId, setSelectedId, detail, nodeDetails, nodeDetailFetch, error, loading, refreshing, syncingStale, retry, refresh: () => selectedId && loadDetail(selectedId, true) }
+  const refresh = useCallback(() => {
+    setDetailSyncError(null)
+    return selectedId ? loadDetail(selectedId, true) : undefined
+  }, [loadDetail, selectedId])
+
+  return { runs, selectedId, setSelectedId, detail, nodeDetails, nodeDetailFetch, error, loading, refreshing, syncingStale, detailSyncError, lastSuccessfulDetailAt, retry, refresh }
 }
 
 function RunList({ runs, selectedId, graphObservedCalls, onSelect }: { runs: RunListItem[]; selectedId: string | null; graphObservedCalls: number | null; onSelect: (id: string) => void }) {
@@ -599,10 +629,11 @@ function SparkIcon({ icon }: { icon: string }) {
   return icon === 'sequence' ? <Activity /> : <CircleDot />
 }
 
-function CanvasHeader({ detail, refreshing, syncingStale, selectionMode, selectedCount, onRefresh, onToggleSelection }: {
+function CanvasHeader({ detail, refreshing, syncingStale, detailSyncError, selectionMode, selectedCount, onRefresh, onToggleSelection }: {
   detail: RunDetail
   refreshing: boolean
   syncingStale: boolean
+  detailSyncError: string | null
   selectionMode: boolean
   selectedCount: number
   onRefresh: () => void
@@ -610,6 +641,7 @@ function CanvasHeader({ detail, refreshing, syncingStale, selectionMode, selecte
 }) {
   const isStructureReview = (detail.counts.boltz_poses ?? 0) > 0 || (detail.counts.rosetta_decoys ?? 0) > 0
   const displayCandidateCount = detail.display_population?.candidate_count ?? detail.counts.candidates
+  const previewTotal = candidatePreviewDenominator(detail)
   const excludedCandidateCount = detail.display_population?.excluded_candidate_count ?? detail.counts.excluded_candidates ?? detail.candidate_exclusions?.length ?? 0
   const generationSummary = detail.generation_population
     ? formatGenerationPopulation(detail.generation_population)
@@ -624,11 +656,12 @@ function CanvasHeader({ detail, refreshing, syncingStale, selectionMode, selecte
   return (
     <header className="canvas-header">
       <div className="canvas-title-block">
-        <div className="eyebrow"><span>{syncingStale ? '上次读取 · 正在同步' : isAcceptanceFixture ? '验收数据 · 只读夹具' : '轮次 · 正式科学运行'}</span></div>
+        <div className="eyebrow"><span>{detailSyncError ?? (syncingStale ? '上次读取 · 正在同步' : isAcceptanceFixture ? '验收数据 · 只读夹具' : '轮次 · 正式科学运行')}</span></div>
         <h1>{isStructureReview ? '短肽结构证据复核' : '序列优先的短肽设计'}</h1>
         <div className="round-meta">
           <span>{formatTime(detail.run.created_at)} 创建</span><i />
           <span>{generationSummary}</span><i />
+          <span>候选预览 {candidatePreviewCountLabel(detail.candidates.length, previewTotal)}</span><i />
           {excludedCandidateCount > 0 && <><span title="历史运行中已存在的生成子代，仅保留审计记录。">{excludedCandidateCount.toLocaleString()} 个历史重放已排除</span><i /></>}
           <span>{detail.counts.admitted.toLocaleString()} 个进入结构阶段</span><i />
           <span>{detail.branches.length} 个靶点</span><i />
@@ -641,7 +674,10 @@ function CanvasHeader({ detail, refreshing, syncingStale, selectionMode, selecte
         </button>
         <span className={`run-pill status-${scientificStatus}`} title="科学运行状态来自权威数据库。"><i />{statusText[scientificStatus] ?? scientificStatus}</span>
         {schedulerHealth && <span className={`observability-pill tone-${schedulerHealth.tone}`} title={schedulerHealthTitle}>{schedulerHealth.label}</span>}
-        <button className="icon-button" onClick={onRefresh} title="立即刷新"><RefreshCw className={refreshing ? 'spin' : ''} /></button>
+        <button className={`icon-button ${detailSyncError ? 'retry-detail-button' : ''}`} onClick={onRefresh} title={detailSyncError ? '重试详情读取' : '立即刷新'} aria-label={detailSyncError ? '重试详情' : '立即刷新'}>
+          <RefreshCw className={refreshing ? 'spin' : ''} />
+          {detailSyncError && <span>重试详情</span>}
+        </button>
         <button className="icon-button"><Ellipsis /></button>
       </div>
     </header>
@@ -653,6 +689,7 @@ function GraphView({
   runtimeGraph,
   authoritativeToolRecords,
   syncingStale,
+  detailSyncError,
   analysisSnapshot,
   persistedDistributions,
   selectedStage,
@@ -669,6 +706,7 @@ function GraphView({
   runtimeGraph: RuntimeGraphModel
   authoritativeToolRecords?: number
   syncingStale: boolean
+  detailSyncError: string | null
   analysisSnapshot: AnalysisSnapshot | null
   persistedDistributions: Record<string, ResultDistributionData>
   selectedStage: string | null
@@ -682,20 +720,30 @@ function GraphView({
   onAvailableWidthChange: (width: number) => void
 }) {
   const flowInstance = useRef<ReactFlowInstance<LaneNode | StageNode, Edge> | null>(null)
-  const initialFitRunId = useRef<string | null>(null)
   const currentFitRunId = useRef(detail.run.id)
   const initialFitAttempts = useRef(0)
   const initialFitInFlight = useRef(false)
   const initialFitPending = useRef(false)
+  const initialFitTimer = useRef<number | null>(null)
+  const lastFittedLayoutSignature = useRef<string | null>(null)
+  const layoutSignatureRef = useRef('')
+  const scheduleInitialFitRef = useRef<() => void>(() => undefined)
   const userInteracted = useRef(false)
   const programmaticFit = useRef(false)
   const graphAreaRef = useRef<HTMLDivElement>(null)
+  const [graphViewportSize, setGraphViewportSize] = useState({ width: 0, height: 0 })
+  const [measuredLayoutVersion, setMeasuredLayoutVersion] = useState(0)
   const hasDeferredNodeDetails = (runtimeGraph.sourceFetch?.deferred ?? 0) > 0
   useEffect(() => {
     const element = graphAreaRef.current
     if (!element) return
     const reportWidth = () => {
       if (element.clientWidth > 0) onAvailableWidthChange(element.clientWidth)
+      if (element.clientWidth > 0 && element.clientHeight > 0) {
+        setGraphViewportSize((previous) => previous.width === element.clientWidth && previous.height === element.clientHeight
+          ? previous
+          : { width: element.clientWidth, height: element.clientHeight })
+      }
     }
     reportWidth()
     if (typeof ResizeObserver === 'undefined') return
@@ -703,58 +751,176 @@ function GraphView({
     observer.observe(element)
     return () => observer.disconnect()
   }, [onAvailableWidthChange])
-  const readableRuntimeNodeIds = useMemo(() => selectReadableRuntimeNodeIds(runtimeGraph.nodes, runtimeGraph.positions), [runtimeGraph.nodes, runtimeGraph.positions])
+  // The fixed coverage strip already represents summary-only evidence on a
+  // short screen. Reserve the separate summary card only when the graph has
+  // enough vertical room for all four factual lanes (the 1440px profile).
+  const includeSummaryCardInReadableWindow = graphViewportSize.height === 0 || graphViewportSize.height >= 1200
+  const readableRuntimeNodeIds = useMemo(() => {
+    const smallExpandedCandidateGroup = runtimeGraph.nodes.some((node) => node.runtime?.node_type === 'candidate_group'
+      && node.runtime.expanded
+      && (node.runtime.child_ids?.length ?? 0) <= 3)
+    const selected = selectReadableRuntimeNodeIds(runtimeGraph.nodes, runtimeGraph.positions, smallExpandedCandidateGroup ? 10 : 7)
+    if (includeSummaryCardInReadableWindow) return selected
+    return selected.filter((id) => runtimeGraph.nodes.find((node) => node.id === id)?.runtime?.node_type !== 'tool_summary_group'
+      && runtimeGraph.nodes.find((node) => node.id === id)?.runtime?.node_type !== 'tool_summary')
+  }, [includeSummaryCardInReadableWindow, runtimeGraph.nodes, runtimeGraph.positions])
+  const readableLayoutSignature = useMemo(() => [
+    `${graphViewportSize.width}x${graphViewportSize.height}`,
+    ...readableRuntimeNodeIds.map((id) => {
+      const position = runtimeGraph.positions[id]
+      return `${id}:${position ? `${Math.round(position.x)},${Math.round(position.y)}` : 'unplaced'}`
+    }),
+    `measured:${measuredLayoutVersion}`,
+  ].join('|'), [graphViewportSize.height, graphViewportSize.width, measuredLayoutVersion, readableRuntimeNodeIds, runtimeGraph.positions])
+  layoutSignatureRef.current = readableLayoutSignature
+  const markUserInteracted = useCallback(() => {
+    if (!programmaticFit.current) userInteracted.current = true
+  }, [])
+  const handleToggleGroup = useCallback((id: string) => {
+    markUserInteracted()
+    onToggleGroup(id)
+  }, [markUserInteracted, onToggleGroup])
   const fitReadableViewport = useCallback(async () => {
     const instance = flowInstance.current
     if (!instance) return false
-    const readableIds = new Set(['lane:events', 'lane:tools', 'lane:candidates', 'lane:summary', ...readableRuntimeNodeIds])
-    const readableNodes = instance.getNodes().filter((node) => readableIds.has(node.id))
-    if (!readableNodes.length) return false
+    const readableIds = new Set(['lane:events', 'lane:tools', 'lane:candidates', ...readableRuntimeNodeIds])
+    // On a short viewport the fixed summary bar already carries the coverage
+    // counts. Keep its lane label in the graph, but do not reserve a second
+    // full row for the duplicate summary card while choosing the initial view.
+    if (includeSummaryCardInReadableWindow) readableIds.add('lane:summary')
+    if (!instance.getNodes().some((node) => readableIds.has(node.id))) return false
     programmaticFit.current = true
     try {
-      const result = await instance.fitView({ nodes: readableNodes, padding: 0.18, minZoom: 0.9, maxZoom: 1, duration: 180 })
-      if (result === false) return false
-      // The summary lane is part of the readable window and sits above the
-      // timed lanes. Keep its first card below the fixed graph toolbar
-      // without shrinking the readable zoom; later nodes remain available by
-      // panning.
-      const viewport = instance.getViewport()
-      const minimumNodeY = Math.min(...readableNodes.map((node) => node.position.y))
-      const safeViewportY = 128 - minimumNodeY * viewport.zoom
-      if (viewport.y < safeViewportY) {
-        await instance.setViewport({ ...viewport, y: safeViewportY }, { duration: 120 })
+      // Wait for one layout frame so React Flow has measured the cards, then
+      // use the current instance nodes directly. Calling fitView here would
+      // let its internal animation overwrite the deterministic viewport.
+      await new Promise<void>((resolve) => window.requestAnimationFrame(() => window.requestAnimationFrame(() => resolve())))
+      const readableNodes = instance.getNodes().filter((node) => readableIds.has(node.id))
+      if (!readableNodes.length) return false
+      const currentZoom = Math.max(0.01, instance.getViewport().zoom)
+      const domNodes = new Map(
+        [...document.querySelectorAll<HTMLElement>('.react-flow__node')]
+          .map((element) => [element.getAttribute('data-id'), element] as const),
+      )
+      const measuredNodes = readableNodes.map((node) => {
+        const element = domNodes.get(node.id)
+        const rect = element?.getBoundingClientRect()
+        const domWidth = rect && rect.width > 0 ? rect.width / currentZoom : 0
+        const domHeight = rect && rect.height > 0 ? rect.height / currentZoom : 0
+        return {
+          node,
+          width: (node.measured?.width ?? 0) > 0 ? node.measured!.width! : domWidth,
+          height: (node.measured?.height ?? 0) > 0 ? node.measured!.height! : domHeight,
+        }
+      })
+      if (!measuredNodes.every(({ width, height }) => width > 0 && height > 0)) return false
+      // React Flow may measure the first render before the cards are mounted,
+      // leaving a large viewport at the minimum zoom. Re-center from the
+      // selected node bounds after fitView so the result is deterministic on
+      // both 1920 and 2560 screens. The top summary and bottom controls keep
+      // a reserved band; later records remain available by panning.
+      const graphRect = graphAreaRef.current?.getBoundingClientRect()
+      if (graphRect) {
+        const measuredBounds = measuredNodes.map(({ node, width, height }) => ({
+          left: node.position.x,
+          top: node.position.y,
+          right: node.position.x + width,
+          bottom: node.position.y + height,
+        }))
+        const minimumNodeX = Math.min(...measuredBounds.map((node) => node.left))
+        const minimumNodeY = Math.min(...measuredBounds.map((node) => node.top))
+        const maximumNodeX = Math.max(...measuredBounds.map((node) => node.right))
+        const maximumNodeY = Math.max(...measuredBounds.map((node) => node.bottom))
+        const boundsWidth = Math.max(1, maximumNodeX - minimumNodeX)
+        const boundsHeight = Math.max(1, maximumNodeY - minimumNodeY)
+        const usableWidth = Math.max(1, graphRect.width - 96)
+        const usableHeight = Math.max(1, graphRect.height - 122)
+        const zoom = Math.min(1, Math.max(readableViewportMinZoom, Math.min(usableWidth / boundsWidth, usableHeight / boundsHeight)))
+        const topSafety = 110
+        const bottomSafety = graphRect.height - 12
+        const centeredY = topSafety + (usableHeight - boundsHeight * zoom) / 2 - minimumNodeY * zoom
+        const topAlignedY = topSafety - minimumNodeY * zoom
+        const bottomAlignedY = bottomSafety - maximumNodeY * zoom
+        const viewport = {
+          x: 48 + (usableWidth - boundsWidth * zoom) / 2 - minimumNodeX * zoom,
+          y: Math.min(bottomAlignedY, Math.max(topAlignedY, centeredY)),
+          zoom,
+        }
+        await instance.setViewport(viewport, { duration: 120 })
+        // The measured card height is authoritative for the final screen check.
+        // Stacked pseudo-cards can extend beyond React Flow's node box, so make
+        // one bounded correction against the actual canvas and fixed summary.
+        await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()))
+        const currentViewport = instance.getViewport()
+        const currentGraphRect = graphAreaRef.current?.getBoundingClientRect()
+        const summaryRect = document.querySelector<HTMLElement>('.runtime-graph-summary')?.getBoundingClientRect()
+        const screenRects = readableNodes
+          .map((node) => domNodes.get(node.id)?.getBoundingClientRect())
+          .filter((rect): rect is DOMRect => Boolean(rect && rect.width > 0 && rect.height > 0))
+        if (currentGraphRect && screenRects.length) {
+          const topBoundary = Math.max(currentGraphRect.top + 12, (summaryRect?.bottom ?? currentGraphRect.top) + 10)
+          const bottomBoundary = currentGraphRect.bottom - 12
+          const minimumScreenTop = Math.min(...screenRects.map((rect) => rect.top))
+          const maximumScreenBottom = Math.max(...screenRects.map((rect) => rect.bottom))
+          const topOverflow = Math.max(0, topBoundary - minimumScreenTop)
+          const bottomOverflow = Math.max(0, maximumScreenBottom - bottomBoundary)
+          if (topOverflow > 0 && bottomOverflow > 0) {
+            const availableHeight = Math.max(1, bottomBoundary - topBoundary)
+            const occupiedHeight = Math.max(1, maximumScreenBottom - minimumScreenTop)
+              const correctedZoom = Math.max(readableViewportMinZoom, currentViewport.zoom * Math.min(0.98, availableHeight / occupiedHeight))
+            if (correctedZoom < currentViewport.zoom - 0.005) {
+              const minimumWorldY = (minimumScreenTop - currentGraphRect.top - currentViewport.y) / currentViewport.zoom
+              await instance.setViewport({
+                x: currentViewport.x,
+                y: topBoundary - currentGraphRect.top - minimumWorldY * correctedZoom,
+                zoom: correctedZoom,
+              }, { duration: 0 })
+            }
+          } else if (topOverflow > 0 || bottomOverflow > 0) {
+            await instance.setViewport({
+              ...currentViewport,
+              y: currentViewport.y + (topOverflow > 0 ? topOverflow : -bottomOverflow),
+            }, { duration: 0 })
+          }
+        }
       }
       return true
     } finally {
       programmaticFit.current = false
     }
-  }, [readableRuntimeNodeIds])
+  }, [includeSummaryCardInReadableWindow, readableRuntimeNodeIds])
   const fitReadableViewportRef = useRef(fitReadableViewport)
   fitReadableViewportRef.current = fitReadableViewport
   const scheduleInitialFit = useCallback(() => {
-    if (initialFitRunId.current === currentFitRunId.current || userInteracted.current || initialFitInFlight.current || initialFitAttempts.current >= 4) return
+    const signature = layoutSignatureRef.current
+    if (!signature || userInteracted.current || initialFitInFlight.current || initialFitAttempts.current >= 8 || lastFittedLayoutSignature.current === signature) return
     if (!flowInstance.current) {
       initialFitPending.current = true
       return
     }
+    if (initialFitTimer.current !== null) window.clearTimeout(initialFitTimer.current)
     initialFitPending.current = false
-    initialFitAttempts.current += 1
-    initialFitInFlight.current = true
-    window.requestAnimationFrame(() => {
-      if (initialFitRunId.current === currentFitRunId.current || userInteracted.current) {
-        initialFitInFlight.current = false
-        return
-      }
+    initialFitTimer.current = window.setTimeout(() => {
+      initialFitTimer.current = null
+      if (userInteracted.current || initialFitInFlight.current) return
       const runId = currentFitRunId.current
+      const signatureAtStart = layoutSignatureRef.current
+      initialFitAttempts.current += 1
+      initialFitInFlight.current = true
       void fitReadableViewportRef.current().then((succeeded) => {
         initialFitInFlight.current = false
-        if (succeeded && currentFitRunId.current === runId && !userInteracted.current) {
-          initialFitRunId.current = currentFitRunId.current
-        } else if (!succeeded && currentFitRunId.current === runId && !userInteracted.current) {
-          scheduleInitialFit()
+        const layoutStillMatches = layoutSignatureRef.current === signatureAtStart
+        if (succeeded && currentFitRunId.current === runId && !userInteracted.current && layoutStillMatches) {
+          lastFittedLayoutSignature.current = signatureAtStart
+        } else if (currentFitRunId.current === runId && !userInteracted.current) {
+          scheduleInitialFitRef.current()
         }
       })
-    })
+    }, 140)
+  }, [])
+  scheduleInitialFitRef.current = scheduleInitialFit
+  useEffect(() => () => {
+    if (initialFitTimer.current !== null) window.clearTimeout(initialFitTimer.current)
   }, [])
   useEffect(() => {
     const applyChineseControlLabels = () => {
@@ -778,17 +944,17 @@ function GraphView({
     // more details, resizing the inspector, or expanding a group must not
     // reset the scientist's pan/zoom.
     currentFitRunId.current = detail.run.id
-    flowInstance.current = null
-    initialFitRunId.current = null
+    lastFittedLayoutSignature.current = null
     initialFitAttempts.current = 0
     initialFitInFlight.current = false
     initialFitPending.current = true
+    if (initialFitTimer.current !== null) window.clearTimeout(initialFitTimer.current)
     userInteracted.current = false
     scheduleInitialFit()
   }, [detail.run.id, scheduleInitialFit])
   useEffect(() => {
     scheduleInitialFit()
-  }, [readableRuntimeNodeIds.length, scheduleInitialFit])
+  }, [readableLayoutSignature, scheduleInitialFit])
   const nodes = useMemo<Array<StageNode | LaneNode>>(() => {
     const nodesInLane = (types: string[]) => runtimeGraph.nodes.filter((stage) => types.includes(stage.runtime?.node_type ?? ''))
     const laneY = (types: string[], fallback: number) => {
@@ -800,21 +966,27 @@ function GraphView({
     const eventY = laneY(['lifecycle_event', 'event_group'], summaryY + 340)
     const eventBottom = eventNodes.map((stage) => runtimeGraph.positions[stage.id]?.y ?? eventY).reduce((maximum, value) => Math.max(maximum, value), eventY)
     const toolY = laneY(['tool_call', 'tool_group', 'batch_group'], eventBottom + 340)
-    const candidateY = laneY(['generation'], toolY + 340)
+    const candidateY = laneY(['generation', 'candidate_group', 'candidate_preview', 'population_summary'], toolY + 340)
     const laneNodes: LaneNode[] = [
       { id: 'lane:summary', type: 'lane', position: { x: 0, y: summaryY }, initialWidth: 132, initialHeight: 47, data: { index: '01', label: '汇总覆盖', description: runtimeGraph.stats.toolSummaryRecords > 0 ? '仅状态计数，无逐次时间' : '未返回汇总计数' }, draggable: false, selectable: false },
       { id: 'lane:events', type: 'lane', position: { x: 0, y: eventY }, initialWidth: 132, initialHeight: 47, data: { index: '02', label: '观测时间轨', description: '按持久化时间排列' }, draggable: false, selectable: false },
       { id: 'lane:tools', type: 'lane', position: { x: 0, y: toolY }, initialWidth: 132, initialHeight: 47, data: { index: '03', label: '工具调用', description: runtimeGraph.stats.observedCalls > 0 ? '同段聚合，可展开明细' : hasDeferredNodeDetails ? '明细按需读取' : '未观测到调用' }, draggable: false, selectable: false },
-      { id: 'lane:candidates', type: 'lane', position: { x: 0, y: candidateY }, initialWidth: 132, initialHeight: 47, data: { index: '04', label: '代际 / 候选', description: '谱系与记录独立呈现' }, draggable: false, selectable: false },
+      { id: 'lane:candidates', type: 'lane', position: { x: 0, y: candidateY }, initialWidth: 132, initialHeight: 47, data: { index: '04', label: '种群汇总 / 候选预览', description: '汇总口径与返回预览分开' }, draggable: false, selectable: false },
     ]
     return [
       ...laneNodes,
-      ...runtimeGraph.nodes.map((stage): StageNode => ({
+      ...runtimeGraph.nodes.map((stage): StageNode => {
+        const basePosition = runtimeGraph.positions[stage.id] ?? { x: 0, y: 0 }
+        const isSummaryNode = ['tool_summary_group', 'tool_summary'].includes(stage.runtime?.node_type ?? '')
+        const compactSummaryPosition = isSummaryNode && graphViewportSize.height > 0 && graphViewportSize.height < 1000
+          ? { ...basePosition, x: basePosition.x + Math.max(graphViewportSize.width + 420, 1600) }
+          : basePosition
+        return ({
       id: stage.id,
       type: 'stage',
-      position: runtimeGraph.positions[stage.id] ?? { x: 0, y: 0 },
+      position: compactSummaryPosition,
       initialWidth: 280,
-      initialHeight: stage.kind === 'structure' ? 250 : stage.id === 'targets' ? 224 : ['tool_group', 'event_group', 'batch_group', 'tool_summary_group'].includes(stage.runtime?.node_type ?? '') ? 260 : 180,
+      initialHeight: stage.kind === 'structure' ? 250 : stage.id === 'targets' ? 224 : ['tool_group', 'event_group', 'batch_group', 'tool_summary_group', 'candidate_group'].includes(stage.runtime?.node_type ?? '') ? 260 : 180,
       data: {
         stage,
         branches: detail.branches,
@@ -823,12 +995,13 @@ function GraphView({
           ?? distributionForStage(analysisSnapshot, detail, stage.id)
           ?? { label: '节点结果', unit: '条', values: [], source: '尚无数值结果', direction: 'neutral' },
         selected: selectionMode ? analysisSelection.includes(stage.id) : selectedStage === stage.id,
-        onToggleGroup,
+        onToggleGroup: handleToggleGroup,
       },
       draggable: false,
-      })),
+        })
+      }),
     ]
-  }, [analysisSelection, analysisSnapshot, detail, hasDeferredNodeDetails, onToggleGroup, persistedDistributions, runtimeGraph, selectedStage, selectionMode])
+  }, [analysisSelection, analysisSnapshot, detail, graphViewportSize.height, graphViewportSize.width, handleToggleGroup, hasDeferredNodeDetails, persistedDistributions, runtimeGraph, selectedStage, selectionMode])
   const stageById = useMemo(() => Object.fromEntries(runtimeGraph.nodes.map((node) => [node.id, node])), [runtimeGraph.nodes])
   const edges = useMemo<Edge[]>(() => runtimeGraph.edges.map((edge, index) => {
     const source = stageById[edge.source] as GraphStage | undefined
@@ -861,14 +1034,19 @@ function GraphView({
   }), [runtimeGraph.edges, selectedEdge, stageById])
   const handleNodeClick: NodeMouseHandler = (_, node) => {
     if (node.type !== 'stage') return
+    markUserInteracted()
     if (selectionMode) onToggleAnalysis(node.id)
     else onSelect(node.id)
   }
   const handleNodeDoubleClick: NodeMouseHandler = (_, node) => {
     const nodeType = node.type === 'stage' ? (node.data as StageNode['data']).stage.runtime?.node_type : undefined
-    if (nodeType === 'tool_group' || nodeType === 'event_group' || nodeType === 'batch_group') onToggleGroup(node.id)
+    if (nodeType === 'tool_group' || nodeType === 'event_group' || nodeType === 'batch_group') {
+      markUserInteracted()
+      onToggleGroup(node.id)
+    }
   }
   const handleEdgeClick: EdgeMouseHandler = (_, edge) => {
+    markUserInteracted()
     const edgeDetail = (edge.data as { detail?: GraphEdgeDetail } | undefined)?.detail
     if (edgeDetail) onSelectEdge(edgeDetail)
   }
@@ -883,9 +1061,12 @@ function GraphView({
         onNodeClick={handleNodeClick}
         onNodeDoubleClick={handleNodeDoubleClick}
         onEdgeClick={handleEdgeClick}
+        onNodesChange={(changes) => {
+            if (changes.some((change) => change.type === 'dimensions')) setMeasuredLayoutVersion((version) => version + 1)
+        }}
         onInit={(instance) => { flowInstance.current = instance; scheduleInitialFit() }}
         onMoveStart={() => { if (!programmaticFit.current) userInteracted.current = true }}
-        fitViewOptions={{ padding: 0.16, minZoom: 0.9, maxZoom: 1 }}
+        fitViewOptions={{ padding: 0.12, minZoom: readableViewportMinZoom, maxZoom: 1 }}
         defaultViewport={{ x: 22, y: 68, zoom: 0.9 }}
         minZoom={0.2}
         maxZoom={1.35}
@@ -898,10 +1079,10 @@ function GraphView({
       </ReactFlow>
       <button className="runtime-fit-button" aria-label="回到可读视图" title="回到可读视图" onClick={() => { void fitReadableViewport() }}>可读视图</button>
       <div className="runtime-graph-summary" role="status">
-        <div className="runtime-graph-summary-head"><span className="runtime-live-dot" /><b>{syncingStale ? '上次读取 · 正在同步' : detail.source === 'postgresql' ? '真实运行图' : '验收运行图'}</b><small>可见 {runtimeGraph.nodes.length} · 关系 {runtimeGraph.edges.length}</small></div>
+        <div className="runtime-graph-summary-head"><span className="runtime-live-dot" /><b>{detailSyncError ?? (syncingStale ? '上次读取 · 正在同步' : detail.source === 'postgresql' ? '真实运行图' : '验收运行图')}</b><small>可见 {runtimeGraph.nodes.length} · 关系 {runtimeGraph.edges.length}</small></div>
         <div className="runtime-graph-stats"><span>{runtimeGraph.stats.toolSummaryRecords > 0 ? runtimeObservationSummary(runtimeGraph.stats.observedCalls, runtimeGraph.stats.toolSummaryMaterialized, true) : runtimeCallSummary(runtimeGraph.stats.observedCalls, authoritativeToolRecords)}</span>{runtimeGraph.stats.toolSummaryRecords > 0 && <span>汇总覆盖 {runtimeGraph.stats.toolSummaryRecords}/{runtimeGraph.stats.toolSummaryRecords} · 逐次工具明细 {runtimeGraph.stats.toolSummaryMaterialized}/{runtimeGraph.stats.toolSummaryRecords}</span>}<span>事件 {runtimeGraph.stats.observedEvents}</span><span>{runtimeActivitySummary(detail.run.status, runtimeGraph.stats.openActivities)}</span><span>聚合 {runtimeGraph.nodes.filter((node) => ['tool_group', 'event_group', 'batch_group', 'tool_summary_group'].includes(node.runtime?.node_type ?? '')).length}</span>{runtimeRetrySummary(runtimeGraph.stats.toolRetries, runtimeGraph.stats.activityRetries).map((label) => <span key={label}>{label}</span>)}<span>并行组 {runtimeGraph.stats.parallelGroups}</span>{runtimeGraph.stats.cycles > 0 && <span>依赖循环 {runtimeGraph.stats.cycles}</span>}</div>
         {!!runtimeGraph.gaps.length && <p title={runtimeGraph.gaps.join('；')}>数据契约缺口 {runtimeGraph.gaps.length} 项 · 未补画未知关系</p>}
-        <div className="runtime-graph-legend"><span><i className="legend-dot time" />位置按观测时间</span><span><i className="legend-line dependency" />依赖</span><span><i className="legend-line association" />关联/分组</span><span className="runtime-graph-nav">{readableRuntimeNodeCount(runtimeGraph.nodes) > readableRuntimeNodeIds.length ? `首屏优先可读，后续还有约 ${readableRuntimeNodeCount(runtimeGraph.nodes) - readableRuntimeNodeIds.length} 项可向右平移` : '当前事实均在初始范围内'}</span></div>
+        <div className="runtime-graph-legend"><span><i className="legend-dot time" />位置按观测时间</span><span><i className="legend-line dependency" />依赖</span><span><i className="legend-line association" />关联/分组</span><span className="runtime-graph-nav">{readableRuntimeNodeCount(runtimeGraph.nodes) > readableRuntimeNodeIds.length ? `首屏优先可读，后续还有约 ${readableRuntimeNodeCount(runtimeGraph.nodes) - readableRuntimeNodeIds.length} 项可拖动画布查看` : '首屏保留四条泳道；可拖动画布复核全部记录'}</span></div>
       </div>
     </div>
   )
@@ -916,7 +1097,7 @@ function CandidateCard({ candidate }: { candidate: CandidatePreview }) {
   const cohort = candidate.cohort === 'mature_core' ? '成熟核心' : candidate.cohort === 'exploration' ? '探索组' : '候选组'
   return (
     <div className="candidate-card">
-      <div><span className="cohort-chip">{cohort}</span>{candidate.generation !== undefined && <small>{candidateGenerationLabel(candidate.generation)}</small>}<small>{candidate.length} 个氨基酸</small></div>
+      <div><span className="cohort-chip">候选预览 · {cohort}</span>{candidate.generation !== undefined && <small>{candidateGenerationLabel(candidate.generation)}</small>}<small>{candidate.length} 个氨基酸</small></div>
       <code>{candidate.sequence}</code>
       <div className="candidate-metrics">
         {visibleMetrics.map((metric) => <span key={metric.name}><b>{metric.value?.toFixed(2)}</b>{metricLabels[metric.name] ?? '计算指标'}</span>)}
@@ -1244,33 +1425,37 @@ function RuntimeInspector({ detail, graph, nodeId, onClose, onToggleGroup }: { d
   const event = nodeId.startsWith('event:') ? graph.events[nodeId.slice(6)] : undefined
   const candidate = nodeId.startsWith('candidate:') ? detail.candidates.find((item) => item.id === nodeId.slice(10)) : undefined
   const generation = nodeId.startsWith('generation:') ? nodeId.slice(11) : undefined
-  const groupTypes = new Set(['tool_group', 'event_group', 'batch_group', 'tool_summary_group'])
+  const isPopulationSummary = node.runtime?.node_type === 'population_summary'
+  const groupTypes = new Set(['tool_group', 'event_group', 'batch_group', 'tool_summary_group', 'candidate_group'])
   const isRuntimeGroup = Boolean(node.runtime?.node_type && groupTypes.has(node.runtime.node_type))
   const isToolSummary = node.runtime?.node_type === 'tool_summary'
   const groupCallIds = isRuntimeGroup ? node.runtime?.child_ids ?? [] : []
   const groupEventIds = isRuntimeGroup ? node.runtime?.event_ids ?? [] : []
+  const groupCandidateIds = node.runtime?.node_type === 'candidate_group' ? node.runtime?.child_ids ?? [] : []
   const groupCalls = groupCallIds.map((id) => graph.calls[id]).filter((item): item is ToolAttempt => Boolean(item))
   const groupEvents = groupEventIds.map((id) => graph.events[id]).filter((item): item is TimelineEvent => Boolean(item))
+  const groupCandidates = groupCandidateIds.map((id) => detail.candidates.find((candidate) => candidate.id === id)).filter((item): item is CandidatePreview => Boolean(item))
   const summaryTools = node.runtime?.summary_tools ?? []
-  const groupExpanded = [...groupCallIds.map((id) => `call:${id}`), ...groupEventIds, ...summaryTools.map((item) => `tool-summary:${encodeURIComponent(item.tool_name)}`)].some((id) => graph.nodes.some((item) => item.id === id))
+  const groupExpanded = [...groupCallIds.map((id) => `call:${id}`), ...groupEventIds, ...groupCandidateIds.map((id) => `candidate:${id}`), ...summaryTools.map((item) => `tool-summary:${encodeURIComponent(item.tool_name)}`)].some((id) => graph.nodes.some((item) => item.id === id))
   return (
     <aside className="inspector expanded-inspector runtime-inspector">
       <div className="inspector-header">
-        <div><small>{isRuntimeGroup ? '运行节点 · 可追溯聚合' : '运行节点 · 数据库直读'}</small><h2 title={node.label}>{node.label}</h2></div>
+        <div><small>{isRuntimeGroup ? '运行节点 · 可追溯聚合' : isPopulationSummary ? '运行节点 · 种群口径' : '运行节点 · 数据库直读'}</small><h2 title={node.label}>{node.label}</h2></div>
         <button className="icon-button" aria-label="关闭运行节点详情" onClick={onClose}><X /></button>
       </div>
       <section className={`scientific-summary grade-${node.insight.grade}`}>
-        <div><small>{node.runtime?.node_type === 'tool_call' ? '工具调用事实' : isRuntimeGroup ? '运行观测聚合事实' : node.runtime?.node_type === 'lifecycle_event' ? '生命周期事件事实' : '候选数据事实'}</small><strong><i />{node.insight.verdict}</strong></div>
+        <div><small>{node.runtime?.node_type === 'tool_call' ? '工具调用事实' : isRuntimeGroup ? '运行观测聚合事实' : isPopulationSummary ? '权威种群汇总事实' : node.runtime?.node_type === 'lifecycle_event' ? '生命周期事件事实' : '候选数据事实'}</small><strong><i />{node.insight.verdict}</strong></div>
         <p>{node.insight.reason}</p>
         <span>{node.insight.facts.map((fact) => `${fact.label} ${fact.value}`).join(' · ')}</span>
       </section>
-      {isRuntimeGroup && <section className="inspector-section runtime-group-section"><div className="section-title"><h3>{node.runtime?.node_type === 'tool_summary_group' ? '汇总工具明细' : '聚合明细'}</h3><button className="group-toggle" onClick={() => onToggleGroup(node.id)}>{groupExpanded ? '收起明细' : '展开明细'}</button></div><p className="runtime-note">{node.runtime?.node_type === 'tool_summary_group' ? '数据库状态汇总；逐次明细按工具与状态核对。' : '默认显示批次或连续观测的汇总事实；展开后可按时间查看工具调用与生命周期事件。'}</p><code className="runtime-raw-key">聚合依据：{node.runtime?.grouping_basis ?? '未返回'}</code><div className="runtime-group-list">{summaryTools.map((item) => <div key={item.tool_name}><span className="attempt-state pending" /><b>{item.display_name}</b><small>汇总 {item.summary_count} · 已映射 {item.materialized_count} · 尚缺 {item.missing_count}</small></div>)}{groupCalls.map((item) => <div key={item.id}><span className={`attempt-state ${item.status}`} /><b>尝试 {item.attempt}</b><small>{statusText[item.status] ?? item.status}</small></div>)}{groupEvents.map((item) => { const status = runtimeEventStatus(item); return <div key={`event:${item.sequence_no}`}><span className={`attempt-state ${status}`} /><b>事件 {item.sequence_no}</b><small>{readableEventType(item.type, item.payload)} · {statusText[status]} · {formatTime(item.occurred_at)}</small></div> })}</div></section>}
+      {isRuntimeGroup && <section className="inspector-section runtime-group-section"><div className="section-title"><h3>{node.runtime?.node_type === 'tool_summary_group' ? '汇总工具明细' : node.runtime?.node_type === 'candidate_group' ? '代际预览明细' : '聚合明细'}</h3><button className="group-toggle" onClick={() => onToggleGroup(node.id)}>{groupExpanded ? '收起明细' : '展开明细'}</button></div><p className="runtime-note">{node.runtime?.node_type === 'tool_summary_group' ? '数据库状态汇总；逐次明细按工具与状态核对。' : node.runtime?.node_type === 'candidate_group' ? '按候选记录中明确的 generation 字段分组。' : '默认显示批次或连续观测的汇总事实；展开后可按时间查看工具调用与生命周期事件。'}</p><code className="runtime-raw-key">聚合依据：{node.runtime?.grouping_basis ?? '候选记录 generation 字段'}</code><div className="runtime-group-list">{summaryTools.map((item) => <div key={item.tool_name}><span className="attempt-state pending" /><b>{item.display_name}</b><small>汇总 {item.summary_count} · 已映射 {item.materialized_count} · 尚缺 {item.missing_count}</small></div>)}{groupCalls.map((item) => <div key={item.id}><span className={`attempt-state ${item.status}`} /><b>尝试 {item.attempt}</b><small>{statusText[item.status] ?? item.status}</small></div>)}{groupEvents.map((item) => { const status = runtimeEventStatus(item); return <div key={`event:${item.sequence_no}`}><span className={`attempt-state ${status}`} /><b>事件 {item.sequence_no}</b><small>{readableEventType(item.type, item.payload)} · {statusText[status]} · {formatTime(item.occurred_at)}</small></div> })}{groupCandidates.map((item) => <div key={item.id}><span className="attempt-state pending" /><b>候选预览 {item.proposal_rank === null ? item.id.slice(0, 8) : `#${item.proposal_rank}`}</b><small>{item.length} 个氨基酸 · {item.parent_id ? '有父候选' : '未返回父候选'}</small></div>)}</div></section>}
       {isToolSummary && <section className="inspector-section runtime-group-section"><div className="section-title"><h3>汇总级工具证据</h3><span className="stage-badge pending">仅汇总</span></div><p className="runtime-note">数据库状态汇总；逐次明细未返回。</p><div className="runtime-group-list">{summaryTools.map((item) => <div key={item.tool_name}><span className="attempt-state pending" /><b>汇总数量 {item.summary_count}</b><small>已映射 {item.materialized_count} · 尚缺 {item.missing_count}</small></div>)}</div></section>}
+      {isPopulationSummary && <section className="inspector-section"><div className="analysis-kicker"><Layers3 />种群口径</div><p className="runtime-note">数据库汇总计数；候选轨仅展示当前返回预览。</p><div className="fact-grid">{node.insight.facts.map((fact) => <Fact key={fact.label} label={fact.label} value={fact.value} />)}</div></section>}
       {call && <section className="inspector-section"><div className="section-title"><h3>工具调用与证据</h3><span className={`stage-badge ${node.status}`}>{statusText[call.status] ?? call.status}</span></div><ToolAttemptDisclosure call={call} /></section>}
       {event && <section className="inspector-section"><div className="analysis-kicker"><Clock3 />事件 payload</div><div className="runtime-event-meta"><b>{event.actor}</b><span>序号 {event.sequence_no} · {formatTime(event.occurred_at)}</span></div><div className="runtime-raw-key">原始事件键：{event.type}</div><pre className="runtime-json">{JSON.stringify(event.payload, null, 2)}</pre></section>}
-      {candidate && <section className="inspector-section"><div className="analysis-kicker"><GitBranch />候选记录</div><code className="runtime-sequence">{candidate.sequence}</code><div className="fact-grid"><Fact label="代际" value={candidate.generation ?? '—'} /><Fact label="父候选" value={candidate.parent_id ?? '未返回'} /><Fact label="生成调用" value={candidate.generator_call_id ?? '未返回'} /><Fact label="序列长度" value={candidate.length} /></div>{candidate.reasons.length > 0 && <div className="runtime-reasons"><span>后端返回原因（未用于状态推断）</span>{candidate.reasons.map((reason) => <b key={reason}>{reason}</b>)}</div>}</section>}
+      {candidate && <section className="inspector-section"><div className="analysis-kicker"><GitBranch />候选预览记录</div><code className="runtime-sequence">{candidate.sequence}</code><div className="fact-grid"><Fact label="代际" value={candidate.generation ?? '—'} /><Fact label="父候选" value={candidate.parent_id ?? '未返回'} /><Fact label="生成调用" value={candidate.generator_call_id ?? '未返回'} /><Fact label="序列长度" value={candidate.length} /><Fact label="预览范围" value={node.runtime?.preview_index && node.runtime.preview_total !== null ? `${node.runtime.preview_index}/${node.runtime.preview_total}` : node.runtime?.preview_index ? `已返回第 ${node.runtime.preview_index} 条` : '当前返回记录'} /></div>{candidate.reasons.length > 0 && <div className="runtime-reasons"><span>后端返回原因（未用于状态推断）</span>{candidate.reasons.map((reason) => <b key={reason}>{reason}</b>)}</div>}</section>}
       {generation && <section className="inspector-section"><div className="analysis-kicker"><Layers3 />代际分组</div><p className="runtime-note">此节点由候选记录中明确的 <code>generation={generation}</code> 字段聚合而成；它不是预设阶段，也不代表执行依赖。</p></section>}
-      {isToolSummary || node.runtime?.node_type === 'tool_summary_group' ? <details className="inspector-section runtime-provenance detail-disclosure"><summary><Database />图构造契约 <span>数据缺口 {graph.gaps.length} 项</span><ChevronRight /></summary><div className="detail-content"><p>可见节点来自本次运行详情返回的工具调用、生命周期事件、候选记录和显式字段。未返回的依赖关系不在图中补画；关联边不表示因果。</p><ul>{graph.gaps.slice(0, 5).map((gap) => <li key={gap}>{gap}</li>)}</ul></div></details> : <section className="inspector-section runtime-provenance"><div className="analysis-kicker"><Database />图构造契约</div><p>可见节点来自本次运行详情返回的工具调用、生命周期事件、候选记录和显式字段。未返回的依赖关系不在图中补画；关联边不表示因果。</p><ul>{graph.gaps.slice(0, 5).map((gap) => <li key={gap}>{gap}</li>)}</ul></section>}
+      {isToolSummary || node.runtime?.node_type === 'tool_summary_group' || isPopulationSummary ? <details className="inspector-section runtime-provenance detail-disclosure"><summary><Database />图构造契约 <span>数据缺口 {graph.gaps.length} 项</span><ChevronRight /></summary><div className="detail-content"><p>可见节点来自本次运行详情返回的真实记录与显式字段。</p><ul>{graph.gaps.slice(0, 5).map((gap) => <li key={gap}>{gap}</li>)}</ul></div></details> : <section className="inspector-section runtime-provenance"><div className="analysis-kicker"><Database />图构造契约</div><p>可见节点来自本次运行详情返回的工具调用、生命周期事件、候选记录和显式字段。未返回的依赖关系不在图中补画；关联边不表示因果。</p><ul>{graph.gaps.slice(0, 5).map((gap) => <li key={gap}>{gap}</li>)}</ul></section>}
     </aside>
   )
 }
@@ -1383,7 +1568,7 @@ export default function App() {
   const toggleAnalysisNode = (id: string) => setAnalysisSelection((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
   return (
     <div className="app-shell">
-      <div className="topbar"><button><ArrowLeft /></button><div className="brand"><span><FlaskConical /></span>AMPgent <i>科学分析</i></div><button className={`source-state ${activeView === 'overview' && data.error ? 'has-error' : ''}`} onClick={() => setConnectionOpen(true)} title="查看或修改只读数据连接"><Database /><span>{activeView !== 'overview' ? '分析数据 · 只读' : data.syncingStale ? '上次读取 · 正在同步' : data.detail && data.detail.run.id === data.selectedId ? data.detail.source === 'postgresql' ? '数据库已连接' : '验收数据 · 只读夹具' : data.error ? '观察器不可用' : data.runs.length > 0 ? '轮次已读取 · 正在读取详情' : '正在连接'}</span><span className="live-dot" /><Settings2 /></button></div>
+      <div className="topbar"><button><ArrowLeft /></button><div className="brand"><span><FlaskConical /></span>AMPgent <i>科学分析</i></div><button className={`source-state ${activeView === 'overview' && (data.error || data.detailSyncError) ? 'has-error' : ''}`} onClick={() => setConnectionOpen(true)} title="查看或修改只读数据连接"><Database /><span>{activeView !== 'overview' ? '分析数据 · 只读' : data.detailSyncError ?? (data.syncingStale ? '上次读取 · 正在同步' : data.detail && data.detail.run.id === data.selectedId ? data.detail.source === 'postgresql' ? '数据库已连接' : '验收数据 · 只读夹具' : data.error ? '观察器不可用' : data.runs.length > 0 ? '轮次已读取 · 正在读取详情' : '正在连接')}</span><span className="live-dot" /><Settings2 /></button></div>
       <div className="workspace">
         <Sidebar
           runs={data.runs}
@@ -1414,6 +1599,7 @@ export default function App() {
                 detail={data.detail}
                 refreshing={data.refreshing}
                 syncingStale={data.syncingStale}
+                detailSyncError={data.detailSyncError}
                 selectionMode={selectionMode}
                 selectedCount={analysisSelection.length}
                 onRefresh={data.refresh}
@@ -1428,6 +1614,7 @@ export default function App() {
                 runtimeGraph={runtimeGraph!}
                 authoritativeToolRecords={data.runs.find((run) => run.id === data.selectedId)?.tool_call_count}
                 syncingStale={data.syncingStale}
+                detailSyncError={data.detailSyncError}
                  analysisSnapshot={analysisSnapshot}
                  persistedDistributions={persistedDistributions}
                 selectedStage={selectedStage}

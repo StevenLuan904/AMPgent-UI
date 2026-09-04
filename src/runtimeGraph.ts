@@ -985,18 +985,18 @@ function summaryOperationComposition(tools: RuntimeSummaryTool[]) {
   return tools.map((tool) => `${tool.display_name} ${tool.summary_count}`).join(' · ')
 }
 
-function toolSummaryGroupNode(tools: RuntimeSummaryTool[], expanded: boolean): GraphStage {
-  const summaryCount = tools.reduce((total, tool) => total + tool.summary_count, 0)
-  const materializedCount = tools.reduce((total, tool) => total + tool.materialized_count, 0)
-  const missingCount = tools.reduce((total, tool) => total + tool.missing_count, 0)
+function toolSummaryGroupNode(tools: RuntimeSummaryTool[], coverage: { total: number; materialized: number; missing: number }, expanded: boolean): GraphStage {
+  const summaryCount = coverage.total
+  const materializedCount = coverage.materialized
+  const missingCount = coverage.missing
   const groupId = 'tool-summary-group'
   return {
     id: groupId,
-    label: `工具汇总 · ${summaryCount} 项统计`,
+    label: `尚缺逐次明细 · ${missingCount} 项`,
     kind: 'tool',
     group: 'observed',
     status: 'pending',
-    current: summaryCount,
+    current: materializedCount,
     total: summaryCount,
     provenance: 'derived',
     insight: {
@@ -1006,7 +1006,7 @@ function toolSummaryGroupNode(tools: RuntimeSummaryTool[], expanded: boolean): G
       facts: [
         { label: '操作构成', value: summaryOperationComposition(tools) },
         { label: '状态构成', value: summaryStatusBreakdown(tools) },
-        { label: '统计覆盖', value: `总量 ${summaryCount} · 已有逐次 ${materializedCount} · 缺少逐次 ${missingCount} · 展开 ${expanded ? tools.length : 0}/${tools.length} 个工具` },
+        { label: '统计覆盖', value: `总量 ${summaryCount} · 已有逐次 ${materializedCount} · 缺少逐次 ${missingCount} · 展开 ${expanded ? tools.length : 0}/${tools.length} 个缺口工具` },
       ],
       source: 'observer_summary',
     },
@@ -1032,7 +1032,7 @@ function toolSummaryNode(tool: RuntimeSummaryTool): GraphStage {
     kind: 'tool',
     group: 'observed',
     status: 'pending',
-    current: tool.summary_count,
+    current: tool.materialized_count,
     total: tool.summary_count,
     provenance: 'derived',
     insight: {
@@ -1059,59 +1059,145 @@ function toolSummaryNode(tool: RuntimeSummaryTool): GraphStage {
   }
 }
 
-function generationNode(generation: number, count: number): GraphStage {
+function nonNegativeInteger(value: unknown) {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0 ? value : null
+}
+
+export function candidatePreviewDenominator(detail: Pick<RunDetail, 'display_population' | 'counts' | 'run'>) {
+  const displayPopulation = detail.display_population
+  if (displayPopulation) {
+    return nonNegativeInteger(displayPopulation.candidate_count)
+  }
+  return nonNegativeInteger(detail.counts.candidates) ?? nonNegativeInteger(detail.run.candidate_count)
+}
+
+export function candidatePreviewLabel(index: number, total: number | null) {
+  return total === null || !Number.isInteger(index) || index < 1 || total < index || total <= 0 ? `已返回第 ${index} 条` : `${index}/${total}`
+}
+
+export function candidatePreviewCountLabel(count: number, total: number | null) {
+  return total !== null && total >= count && (total > 0 || count === 0) ? `${count}/${total} 条` : `已返回 ${count} 条`
+}
+
+function populationSummaryNode(detail: RunDetail, previewTotal: number | null): GraphStage | null {
+  const generation = detail.generation_population
+  const display = detail.display_population
+  if (!generation && !display) return null
+  const previewCount = detail.candidates.length
+  const facts: Array<{ label: string; value: string }> = [
+    { label: '候选预览', value: candidatePreviewCountLabel(previewCount, previewTotal) },
+  ]
+  if (generation) {
+    facts.push(
+      { label: '基线候选', value: String(generation.baseline_candidate_count) },
+      { label: '新生子代', value: String(generation.descendant_candidate_count) },
+      { label: '最高代', value: `第 ${generation.max_generation} 代` },
+    )
+  }
+  if (display && display.excluded_candidate_count > 0) {
+    facts.push({ label: '排除记录', value: String(display.excluded_candidate_count) })
+  }
+  if (previewTotal !== null && previewTotal < previewCount) {
+    facts.push({ label: '数据状态', value: '接口计数不一致' })
+  }
+  if (generation && display && generation.baseline_candidate_count + generation.descendant_candidate_count !== display.candidate_count && !facts.some((fact) => fact.label === '数据状态')) {
+    facts.push({ label: '数据状态', value: '接口计数不一致' })
+  }
+  const scope = generation && display ? 'mixed' : generation ? 'generation_population' : 'display_population'
+  const total = previewTotal !== null && previewTotal >= previewCount ? previewTotal : previewCount
   return {
-    id: `generation:${generation}`,
-    label: `第 ${generation} 代`,
+    id: 'population-summary',
+    label: '种群汇总',
     kind: 'data',
     group: 'observed',
-    status: 'completed',
-    current: count,
-    total: count,
+    status: 'pending',
+    current: previewCount,
+    total,
     provenance: 'database',
     insight: {
-      grade: 'okay',
-      verdict: `${count} 条候选记录`,
-      reason: '按候选记录中持久化的 generation 字段分组；不是预设流程阶段。',
-      facts: [{ label: '候选预览', value: String(count) }, { label: '代际', value: String(generation) }],
+      grade: 'neutral',
+      verdict: '权威种群计数',
+      reason: '数据库返回的种群计数；候选轨显示当前预览。',
+      facts,
       source: 'observer_summary',
     },
     runtime: {
-      node_type: 'generation',
-      source_id: String(generation),
+      node_type: 'population_summary',
+      source_id: 'population-summary',
       observed_at: null,
-      candidate_count: count,
+      candidate_count: previewCount,
+      preview_total: previewTotal,
+      population_scope: scope,
       explicit_relation_count: 0,
     },
   }
 }
 
-function candidateNode(candidate: CandidatePreview): GraphStage {
+function generationNode(generation: number, candidates: CandidatePreview[], expanded: boolean, previewTotal: number | null): GraphStage {
+  const count = candidates.length
+  return {
+    id: `generation:${generation}`,
+    label: `第 ${generation} 代预览 · ${count} 条`,
+    kind: 'data',
+    group: 'observed',
+    status: 'completed',
+    current: count,
+    // A generation preview has no per-generation denominator in the API.
+    // Keep the count factual, but let the renderer suppress progress semantics.
+    total: 0,
+    provenance: 'database',
+    insight: {
+      grade: 'okay',
+      verdict: `${count} 条预览记录`,
+      reason: '按当前返回预览中的 generation 字段分组；不代表完整代际数量。',
+      facts: [{ label: '预览记录', value: candidatePreviewCountLabel(count, previewTotal) }, { label: '代际', value: `第 ${generation} 代` }, { label: '展开', value: expanded ? `${count} 条个体` : '收起' }],
+      source: 'observer_summary',
+    },
+    runtime: {
+      node_type: 'candidate_group',
+      source_id: String(generation),
+      observed_at: null,
+      candidate_count: count,
+      child_ids: candidates.map((candidate) => candidate.id),
+      grouping_basis: '候选记录明确 generation 字段',
+      preview_total: previewTotal,
+      expanded,
+      explicit_relation_count: 0,
+    },
+  }
+}
+
+function candidateNode(candidate: CandidatePreview, previewIndex: number, previewTotal: number | null): GraphStage {
   const rank = candidate.proposal_rank === null ? candidate.id.slice(0, 8) : `#${candidate.proposal_rank}`
   return {
     id: `candidate:${candidate.id}`,
-    label: `候选 ${rank}`,
+    label: `候选预览 ${rank}`,
     kind: 'data',
     group: 'observed',
     status: 'completed',
     current: 1,
-    total: 1,
+    // One returned preview is not a completed one-item task. The population
+    // denominator belongs to the population summary, not to this card.
+    total: 0,
     provenance: 'database',
     insight: {
       grade: 'neutral',
       verdict: '已记录',
       reason: `${candidate.sequence.slice(0, 18)}${candidate.sequence.length > 18 ? '…' : ''} · ${candidate.length} 个氨基酸`,
       facts: [
-        { label: '代际', value: candidate.generation === undefined ? '—' : String(candidate.generation) },
+        { label: '预览记录', value: candidatePreviewLabel(previewIndex, previewTotal) },
+        { label: '代际', value: candidate.generation === undefined ? '—' : `第 ${candidate.generation} 代` },
         { label: '来源', value: candidate.generator_call_id ? '工具调用' : '未返回' },
       ],
       source: 'observer_summary',
     },
     runtime: {
-      node_type: 'generation',
+      node_type: 'candidate_preview',
       source_id: candidate.id,
       observed_at: null,
       candidate_count: 1,
+      preview_index: previewIndex,
+      preview_total: previewTotal,
       explicit_relation_count: 0,
     },
   }
@@ -1148,7 +1234,7 @@ export function layoutColumnsForWidth(availableWidth: number | undefined) {
 
 function computePositions(nodes: GraphStage[], requestedColumns?: number, availableWidth?: number) {
   const positions: Record<string, { x: number; y: number }> = {}
-  const laneByType: Record<string, number> = { tool_summary_group: 0, tool_summary: 0, lifecycle_event: 1, event_group: 1, tool_group: 2, batch_group: 2, tool_call: 2, generation: 3 }
+  const laneByType: Record<string, number> = { tool_summary_group: 0, tool_summary: 0, lifecycle_event: 1, event_group: 1, tool_group: 2, batch_group: 2, tool_call: 2, generation: 3, candidate_group: 3, candidate_preview: 3, population_summary: 3 }
   const laneItems: GraphStage[][] = [[], [], [], []]
   // buildRuntimeGraph emits a bucket followed by its expanded members. Keep
   // that order inside each lane: it preserves chronological bucket order and
@@ -1159,15 +1245,30 @@ function computePositions(nodes: GraphStage[], requestedColumns?: number, availa
     laneItems[lane].push(node)
   })
   const maximumColumns = Math.max(1, Math.min(7, Math.round(requestedColumns ?? layoutColumnsForWidth(availableWidth))))
-  const laneColumns = laneItems.map((items) => items.length <= maximumColumns ? Math.max(items.length, 1) : maximumColumns)
-  const rowGap = 34
-  const laneGap = 42
+  // Timeline lanes are intentionally horizontal in their folded state. A
+  // large number of observed calls must extend the time band, not push the
+  // population lane many screen-heights below it. Expanded groups are the
+  // exception: their local members use a bounded grid so one group remains
+  // compact and readable.
+  const laneColumns = laneItems.map((items, lane) => {
+    const hasExpandedGroup = items.some((node) => node.runtime?.expanded)
+    const horizontalTimeline = lane === 1 || (lane === 2 && !hasExpandedGroup)
+    if (horizontalTimeline) return Math.max(items.length, 1)
+    return items.length <= maximumColumns ? Math.max(items.length, 1) : maximumColumns
+  })
+  // Keep the four factual lanes discoverable in a readable viewport. The
+  // values mirror the rendered runtime cards and are accumulated per lane row.
+  const rowGap = 24
+  const laneGap = 8
   const nodeHeight = (node: GraphStage) => {
     // Group cards include operation/status/time facts and a visible expand
     // affordance; their rendered height is materially larger than a plain
     // node. Reserve that real card footprint before placing the next lane.
+    // WorkflowNode reserves 260px for every runtime group, including expanded
+    // groups. Match that rendered footprint so the next lane cannot overlap a
+    // card whose measured height is not available to this pure layout pass.
     if (node.runtime?.expanded) return 260
-    if (['tool_group', 'event_group', 'batch_group', 'tool_summary_group'].includes(node.runtime?.node_type ?? '')) return 260
+    if (['tool_group', 'event_group', 'batch_group', 'tool_summary_group', 'candidate_group'].includes(node.runtime?.node_type ?? '')) return 260
     return 180
   }
   const laneRowHeights = laneItems.map((items, lane) => {
@@ -1305,17 +1406,33 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
   })
   const summaryGaps = deriveToolSummaryGaps(detail.tool_summary, Object.values(calls))
   const summaryCoverage = toolSummaryCoverage(detail.tool_summary, Object.values(calls))
+  const previewTotal = candidatePreviewDenominator(detail)
+  const populationSummary = populationSummaryNode(detail, previewTotal)
+  const candidatesByGeneration = new Map<number, CandidatePreview[]>()
+  const ungroupedCandidates: CandidatePreview[] = []
+  for (const candidate of detail.candidates) {
+    if (candidate.generation === undefined) ungroupedCandidates.push(candidate)
+    else candidatesByGeneration.set(candidate.generation, [...(candidatesByGeneration.get(candidate.generation) ?? []), candidate])
+  }
+  const previewIndexById = new Map(detail.candidates.map((candidate, index) => [candidate.id, index + 1] as const))
+  const generationPreviewNodes = [...candidatesByGeneration.entries()].flatMap(([generation, candidates]) => [
+    generationNode(generation, candidates, expandedGroups.has(`generation:${generation}`), previewTotal),
+    ...(expandedGroups.has(`generation:${generation}`)
+      ? candidates.map((candidate) => candidateNode(candidate, previewIndexById.get(candidate.id) ?? 1, previewTotal))
+      : []),
+  ])
   const nodes = [
     ...callNodes,
-    ...(summaryGaps.length ? [toolSummaryGroupNode(summaryGaps, expandedGroups.has('tool-summary-group')), ...(expandedGroups.has('tool-summary-group') ? summaryGaps.map(toolSummaryNode) : [])] : []),
-    ...detail.candidates.map(candidateNode),
+    ...(summaryGaps.length ? [toolSummaryGroupNode(summaryGaps, summaryCoverage, expandedGroups.has('tool-summary-group')), ...(expandedGroups.has('tool-summary-group') ? summaryGaps.map(toolSummaryNode) : [])] : []),
+    ...(populationSummary ? [populationSummary] : []),
+    ...ungroupedCandidates.map((candidate) => candidateNode(candidate, previewIndexById.get(candidate.id) ?? 1, previewTotal)),
+    ...generationPreviewNodes,
   ]
   const countsByGeneration = new Map<number, number>()
   for (const candidate of detail.candidates) {
     if (candidate.generation === undefined) continue
     countsByGeneration.set(candidate.generation, (countsByGeneration.get(candidate.generation) ?? 0) + 1)
   }
-  for (const [generation, count] of countsByGeneration) nodes.push(generationNode(generation, count))
 
   const nodeIds = new Set(nodes.map((node) => node.id))
   const edges: GraphEdgeDetail[] = []
@@ -1446,15 +1563,14 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
   }
   const candidateIds = new Set(detail.candidates.map((candidate) => candidate.id))
   for (const candidate of detail.candidates) {
-    if (candidate.parent_id && candidateIds.has(candidate.parent_id)) {
-      addEdge(edges, seen, { source: `candidate:${candidate.parent_id}`, target: `candidate:${candidate.id}`, label: '父子谱系', rationale: '候选记录显式提供 parent_id；这是候选谱系，不是执行依赖。', provenance: 'database', relation_kind: 'lineage' })
+    const candidateNodeId = `candidate:${candidate.id}`
+    const candidateVisible = nodeIds.has(candidateNodeId)
+    if (candidate.parent_id && candidateIds.has(candidate.parent_id) && candidateVisible && nodeIds.has(`candidate:${candidate.parent_id}`)) {
+      addEdge(edges, seen, { source: `candidate:${candidate.parent_id}`, target: candidateNodeId, label: '父子谱系', rationale: '候选记录显式提供 parent_id；这是候选谱系，不是执行依赖。', provenance: 'database', relation_kind: 'lineage' })
     }
-    if (candidate.generator_call_id) {
+    if (candidate.generator_call_id && candidateVisible) {
       const source = callIdToNode(candidate.generator_call_id)
-      if (nodeIds.has(source)) addEdge(edges, seen, { source, target: `candidate:${candidate.id}`, label: '生成来源', rationale: '候选记录显式提供 generator_call_id；这是来源关联，不表示该调用的执行依赖。', provenance: 'database', relation_kind: 'association' })
-    }
-    if (candidate.generation !== undefined && nodeIds.has(`generation:${candidate.generation}`)) {
-      addEdge(edges, seen, { source: `generation:${candidate.generation}`, target: `candidate:${candidate.id}`, label: '代际分组', rationale: '候选记录显式提供 generation；此边仅表示数据分组，不代表执行依赖或时间顺序。', provenance: 'derived', relation_kind: 'grouping' })
+      if (nodeIds.has(source)) addEdge(edges, seen, { source, target: candidateNodeId, label: '生成来源', rationale: '候选记录显式提供 generator_call_id；这是来源关联，不表示该调用的执行依赖。', provenance: 'database', relation_kind: 'association' })
     }
   }
 
@@ -1465,6 +1581,18 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
   }
   if (detail.candidates.length && !detail.candidates.some((candidate) => candidate.parent_id)) {
     gaps.push('候选预览未返回 parent_id；父子代际关系暂不可观测。')
+  }
+  if (detail.candidates.length && previewTotal === null) {
+    gaps.push(`候选预览已返回 ${detail.candidates.length} 条；接口未返回可展示总数。`)
+  } else if (previewTotal !== null && detail.candidates.length < previewTotal) {
+    gaps.push(`候选预览已返回 ${detail.candidates.length}/${previewTotal} 条；其余候选未进入运行图。`)
+  } else if (previewTotal !== null && detail.candidates.length > previewTotal) {
+    gaps.push(`候选预览 ${detail.candidates.length} 条超过接口展示口径 ${previewTotal} 条；保留原始记录。`)
+  }
+  if (detail.display_population && detail.generation_population) {
+    const displayTotal = detail.display_population.candidate_count
+    const populationTotal = detail.generation_population.baseline_candidate_count + detail.generation_population.descendant_candidate_count
+    if (displayTotal !== populationTotal) gaps.push(`接口种群口径不一致：展示 ${displayTotal} 条；基线与新生子代合计 ${populationTotal} 条。`)
   }
   if (detail.events.length >= 32) gaps.push('接口仅返回最近 32 条事件；历史事件可能未进入本次运行图。')
   if (Object.values(sources).some((source) => (source?.calls.length ?? 0) >= 40)) gaps.push('至少一个节点明细只返回 40 次工具调用；完整调用集合缺少分页契约。')

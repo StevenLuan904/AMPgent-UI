@@ -5,6 +5,7 @@
 ## 当前已使用的事实入口
 
 - `GET /v1/observer/runs/{run_id}`：运行状态、生命周期 `events`、候选预览 `candidates`，以及仅用于兼容读取节点明细的 `graph.nodes`。
+- 同一响应中的 `generation_population` 与 `display_population` 是种群汇总事实；`candidates` 只是本次返回的候选预览。预览卡显示 `n/候选总数`，不得用预览条数代替完整种群计数；`candidate_record_count` 仅用于审计，不改变展示分母。
 - `GET /v1/observer/runs/{run_id}/nodes/{node_id}`：节点范围内的 `calls`、证据文件与工具调用参数；返回的每个 `ToolAttempt` 生成一个工具调用节点。
 - 候选记录的 `generation` 生成代际分组节点；`parent_id` 与 `generator_call_id` 若存在，分别生成父子谱系和生成来源边。
 - 事件 payload 或工具调用 `inputs`/`parameters` 中明确出现的调用、事件标识，才生成数据库显式关系边。
@@ -44,3 +45,4 @@
 - 生命周期事件若携带与工具调用一致的显式批次身份，或通过 `tool_call_id` 精确指向同一调用，可与对应调用进入同一折叠观测簇；展开后仍保留每条事件和调用。没有这些字段时，只能把连续、相邻、同事件类型与角色的记录标为“连续同类观测组”，不得宣称真实实验批次或因果关系。单条记录不人为包装成聚合簇。
 - 生命周期事件带有 `workflow_run_id` 时，同一工作流执行进入一个可展开的“第 N 次执行”观测簇；`activity_id + attempt` 标识同一活动，活动状态取其最新边界事件，避免把已经成功或失败的活动继续标为进行中。不同 `workflow_run_id` 绝不合并。
 - `candidate` 节点只表示候选记录存在，默认中性；前端不从 `reasons` 文本猜淘汰或质量。只有后端显式 decision/status/quality gate 契约补齐后，才可显示相应结论。
+- 有明确 `generation` 的候选预览按代际聚成 `candidate_group`，折叠卡只表达该代返回的预览数量；展开后才显示 `candidate_preview` 个体。没有代际字段的候选保持独立记录，不按时间或序号补分组。种群汇总节点与候选预览分开，只有显式 `parent_id`/`generator_call_id` 且个体可见时才画谱系或来源关联。
