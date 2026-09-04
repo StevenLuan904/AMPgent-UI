@@ -321,14 +321,15 @@ async def _run(args: argparse.Namespace) -> None:
                 "activity_support_percentile_semantics": percentile_semantics,
             }
         )
-    calibrated.sort(
-        key=lambda row: (
-            row["branch_key"],
-            row["excellent_sequence_stage_calibrated"] != "true",
-            -int(row["activity_model_support_count_calibrated"]),
-            row["sequence"],
+    if not args.preserve_input_order:
+        calibrated.sort(
+            key=lambda row: (
+                row["branch_key"],
+                row["excellent_sequence_stage_calibrated"] != "true",
+                -int(row["activity_model_support_count_calibrated"]),
+                row["sequence"],
+            )
         )
-    )
     args.output_csv.parent.mkdir(parents=True, exist_ok=True)
     _write_csv(args.output_csv, calibrated)
     receipt = {
@@ -347,6 +348,10 @@ async def _run(args: argparse.Namespace) -> None:
         ),
         "output_csv_sha256": sha256_file(args.output_csv),
         "historical_run_modified": False,
+        "identity_contract": {
+            "candidate_count": len(calibrated),
+            "sequence_order_preserved": args.preserve_input_order,
+        },
     }
     receipt["receipt_payload_sha256"] = sha256_json(receipt)
     args.output_json.write_text(
@@ -371,6 +376,11 @@ def main() -> None:
         default=[],
         metavar="BRANCH=UUID",
         help="override the frozen parent run for one branch without changing defaults",
+    )
+    parser.add_argument(
+        "--preserve-input-order",
+        action="store_true",
+        help="retain the exact input identity order for a downstream close contract",
     )
     args = parser.parse_args()
     for override in args.parent_run_id:

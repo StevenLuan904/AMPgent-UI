@@ -150,7 +150,7 @@ Challenger 证据键为 `run_id + candidate_id + model_release_key`；字段为 
 
 - ANGPT1 PepMLM QD-neighbor v2b（2026-09-04）：12条 verified score-all（formal/display=12/12）、冻结同域 support≥2=9/9、HemoPI2=12/12 no-conflict，APEX/PeptiVerse=`runtime_unavailable/not_assessed`；固定2160-cell QD 的2条 empty-cell 已通过 exact-scan PG history 闭合为2 PG-new Candidate、每条17 Evaluation，并追加6条可重放QD evidence。coarse5=2、nstruct=5、`prepared_not_dispatched`、Pool A=0；索引仍沿用 invalid-index exact-scan fallback，未执行DDL/远端/GPU/Rosetta/MD。详见 `reports/angpt1_pepmlm_qd_neighbor_v2b_20260904/pg_materialization_close_receipt.json`。
 - targeted Rosetta coarse5 backlog vNext（2026-09-04）：将旧9行与全部已收据化 target-specific prepared/QD 队列（含 PBP2a generation106=4、GyrA generation3=8、ANGPT1 v2b=2）合并为47个唯一 `rosetta5:<target>:<run_id>:<candidate_id>` 身份（AceA/ANGPT1/FGF2/GyrA/PBP2a/VEGFA=`4/6/3/22/11/1`）；PG按 run+candidate 精确回读、无序列全表扫描，47 prepared/0 new_ready、dispatch=false，所有未有远端精确状态者保留 `requires_remote_exact_preflight=true`，未启动 GPU/Rosetta/MD。详见 `reports/targeted_rosetta_coarse5_backlog_20260904/vnext/`。
-- 当前 vNext 闭环（2026-09-04）：唯一一次远端观测因本地汇总故障 fail-closed，未触碰 `.32 GPU2/GPU3`；转入 PBP2a PepMLM×PepFlow generation107 本地增量，10 proposals、formal12/display=12/11、冻结校准 support≥2=0、HemoPI2=12（6 no-conflict）、QD=0/0/0，PG/结构/GPU/Rosetta/MD均未写入或启动，详见 `reports/pbp2a_pepmlm_pepflow_hybrid_20260904_run3/closed_loop_receipt.json`。
+- 当前 vNext 闭环（2026-09-04，corrected/supersedes `67ce39d4`）：唯一一次远端观测 fail-closed，未触碰 `.32 GPU2/GPU3`；run3 identity 修复后 PBP2a PepMLM×PepFlow generation107 为10 proposals、formal12/display=10/10、冻结校准 support≥2=0、HemoPI2=10（7 no-conflict）、QD=0/0/0，PG/结构/GPU/Rosetta/MD均未写入或启动，详见 `reports/pbp2a_pepmlm_pepflow_hybrid_20260904_run3/closed_loop_receipt.json`。
 
 ## 维护
 

@@ -23,12 +23,55 @@ def read_csv(path: Path) -> list[dict[str, str]]:
         return list(csv.DictReader(stream))
 
 
+def _sequence_identity(
+    rows: list[dict[str, str]], *, source: Path
+) -> list[tuple[str | None, str]]:
+    identity: list[tuple[str | None, str]] = []
+    for index, row in enumerate(rows, start=2):
+        sequence = "".join(str(row.get("sequence") or "").split()).upper()
+        declared = str(row.get("sequence_sha256") or "").strip().lower()
+        if sequence:
+            digest = hashlib.sha256(sequence.encode("utf-8")).hexdigest()
+        elif len(declared) == 64:
+            digest = declared
+        else:
+            raise ValueError(f"identity contract: missing sequence/hash at {source}:{index}")
+        if declared and declared != digest:
+            raise ValueError(f"identity contract: sequence hash drift at {source}:{index}")
+        identity.append((sequence or None, digest))
+    return identity
+
+
+def _assert_identity(expected_path: Path, actual_path: Path) -> None:
+    expected = _sequence_identity(read_csv(expected_path), source=expected_path)
+    actual = _sequence_identity(read_csv(actual_path), source=actual_path)
+    expected_digests = [digest for _, digest in expected]
+    actual_digests = [digest for _, digest in actual]
+    sequences_match = all(
+        actual_sequence is None or actual_sequence == expected_sequence
+        for (actual_sequence, _), (expected_sequence, _) in zip(
+            actual, expected, strict=True
+        )
+    )
+    if actual_digests != expected_digests or not sequences_match:
+        overlap = len(set(actual_digests) & set(expected_digests))
+        raise ValueError(
+            "identity contract: downstream artifact does not exactly match proposals "
+            f"(rows={len(actual)}/{len(expected)}, overlap={overlap}, order_or_hash_drift=true)"
+        )
+
+
 def close(output_dir: Path) -> dict:
     generation = load_json(output_dir / "generation_receipt.json")
     score = load_json(output_dir / "score_all" / "receipt.json")
     calibration = load_json(output_dir / "calibration_receipt.json")
     challenger = load_json(output_dir / "challenger" / "receipt.json")
     qd = load_json(output_dir / "provisional_qd.json")
+    proposals_path = output_dir / "proposals.csv"
+    _assert_identity(proposals_path, output_dir / "score_all" / "candidate_scores.csv")
+    _assert_identity(proposals_path, output_dir / "candidate_scores_calibrated.csv")
+    _assert_identity(proposals_path, output_dir / "challenger" / "challenger_review.csv")
+    _assert_identity(proposals_path, output_dir / "qd_candidates.csv")
     calibrated = {
         row["sequence_sha256"]: row
         for row in read_csv(output_dir / "candidate_scores_calibrated.csv")
@@ -107,6 +150,17 @@ def close(output_dir: Path) -> dict:
             "replacement_count": qd["replacement_count"],
             "valid_candidate_count": len(valid),
         },
+        "identity_contract": {
+            "expected": "proposals.csv",
+            "candidate_count": len(calibrated),
+            "sequence_order_verified": True,
+            "artifact_sha256": {
+                "score_all": sha256_file(output_dir / "score_all" / "candidate_scores.csv"),
+                "calibrated": sha256_file(output_dir / "candidate_scores_calibrated.csv"),
+                "challenger": sha256_file(output_dir / "challenger" / "challenger_review.csv"),
+                "qd": sha256_file(output_dir / "qd_candidates.csv"),
+            },
+        },
         "algorithm_adjustment": {
             "triggered": False,
             "reason": (
@@ -126,7 +180,8 @@ def close(output_dir: Path) -> dict:
             "gpu_rosetta_md_submitted": False,
         },
         "scientific_increment": (
-            "12 local target-conditioned PepMLM ancestry x PepFlow motif candidates; "
+            f"{generation['proposal_count']} local target-conditioned PepMLM ancestry x "
+            "PepFlow motif candidates; "
             f"{len(valid)} pass display+support+challenger+new-cell provisional gates"
         ),
         "failure_funnel": "failure_funnel.json",

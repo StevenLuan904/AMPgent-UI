@@ -53,6 +53,43 @@ def _write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
         writer.writerows(rows)
 
 
+def _sequence_identity(rows: list[dict[str, str]], *, source: Path) -> list[tuple[str, str]]:
+    identity: list[tuple[str, str]] = []
+    for index, row in enumerate(rows, start=2):
+        sequence = "".join(str(row.get("sequence") or "").split()).upper()
+        if not sequence:
+            raise ValueError(f"identity contract: empty sequence at {source}:{index}")
+        digest = sha256_text(sequence)
+        declared = str(row.get("sequence_sha256") or "").strip().lower()
+        if declared and declared != digest:
+            raise ValueError(f"identity contract: sequence hash drift at {source}:{index}")
+        identity.append((sequence, digest))
+    return identity
+
+
+def _assert_input_identity(
+    rows: list[dict[str, str]], *, expected_path: Path, source: Path | None = None
+) -> None:
+    with expected_path.open(encoding="utf-8-sig", newline="") as stream:
+        expected_rows = list(csv.DictReader(stream))
+    actual_identity = _sequence_identity(rows, source=source or Path("<input>"))
+    expected_identity = _sequence_identity(expected_rows, source=expected_path)
+    if len({digest for _, digest in expected_identity}) != len(expected_identity):
+        raise ValueError("identity contract: expected proposals contain duplicate sequences")
+    if len({digest for _, digest in actual_identity}) != len(actual_identity):
+        raise ValueError("identity contract: score-all input contains duplicate sequences")
+    if actual_identity != expected_identity:
+        overlap = len(
+            {digest for _, digest in actual_identity}
+            & {digest for _, digest in expected_identity}
+        )
+        raise ValueError(
+            "identity contract: score-all input must exactly match expected proposals "
+            f"(rows={len(actual_identity)}/{len(expected_identity)}, "
+            f"overlap={overlap}, order_or_hash_drift=true)"
+        )
+
+
 def _metric_values(result: dict[str, Any]) -> dict[str, dict[str, Any]]:
     values: dict[str, dict[str, Any]] = {}
     for record in result.get("records", []):
@@ -98,6 +135,12 @@ def run(args: argparse.Namespace) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     with args.input_csv.open(encoding="utf-8-sig", newline="") as stream:
         source_rows = list(csv.DictReader(stream))
+    if args.expected_input_csv is not None:
+        _assert_input_identity(
+            source_rows,
+            expected_path=args.expected_input_csv,
+            source=args.input_csv,
+        )
     # Target-agnostic proposal inputs intentionally have no target branch.
     # Keep the frozen scorer contract explicit without changing sequence identity.
     for row in source_rows:
@@ -224,16 +267,17 @@ def run(args: argparse.Namespace) -> None:
                 "structure_md_status": "not_started",
             }
         )
-    scored_rows.sort(
-        key=lambda row: (
-            row["branch_key"],
-            row["excellent_sequence_stage"] != "true",
-            -int(row["activity_model_support_count"]),
-            float(row.get("amp_read_log10_mic_um", 99.0)),
-            float(row.get("llamp_log10_mic_um", 99.0)),
-            row["sequence"],
+    if args.expected_input_csv is None:
+        scored_rows.sort(
+            key=lambda row: (
+                row["branch_key"],
+                row["excellent_sequence_stage"] != "true",
+                -int(row["activity_model_support_count"]),
+                float(row.get("amp_read_log10_mic_um", 99.0)),
+                float(row.get("llamp_log10_mic_um", 99.0)),
+                row["sequence"],
+            )
         )
-    )
     _write_csv(output_dir / "candidate_scores.csv", scored_rows)
     _write_csv(output_dir / "metric_status.csv", statuses)
 
@@ -285,6 +329,13 @@ def run(args: argparse.Namespace) -> None:
         "historical_run_modified": False,
         "candidate_scores_sha256": sha256_file(output_dir / "candidate_scores.csv"),
     }
+    if args.expected_input_csv is not None:
+        receipt["identity_contract"] = {
+            "expected_input_sha256": sha256_file(args.expected_input_csv),
+            "sequence_identity_verified": True,
+            "sequence_order_preserved": True,
+            "candidate_count": len(scored_rows),
+        }
     receipt["receipt_payload_sha256"] = sha256_json(receipt)
     (output_dir / "receipt.json").write_text(
         json.dumps(receipt, ensure_ascii=False, indent=2) + "\n",
@@ -298,6 +349,11 @@ def main() -> None:
     parser.add_argument("--registry", type=Path, required=True)
     parser.add_argument("--repo-root", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument(
+        "--expected-input-csv",
+        type=Path,
+        help="fail closed unless input sequence identities and order match this CSV",
+    )
     parser.add_argument("--require-safety-hard-gate-pass", action="store_true")
     parser.add_argument("--skip-amplify", action="store_true")
     parser.add_argument("--reuse-existing-metrics", action="store_true")

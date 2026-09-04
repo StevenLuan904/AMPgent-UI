@@ -1,29 +1,29 @@
 {
   "schema_version": "ampgent.autoresearch-challenger-review.1",
-  "observed_at_utc": "2026-09-04T13:35:51.526319+00:00",
-  "source_csv_sha256": "8a9ef9fca0e73b50d987bd5076b3708a02c213756640df342520de3e26a43a87",
+  "observed_at_utc": "2026-09-04T13:52:34.087030+00:00",
+  "source_csv_sha256": "77ea20b460cd74f99820e9206408455737ba58a0b5ddba4aded6948a23aea92a",
   "review_scope": "formal12",
-  "reviewed_candidate_count": 12,
-  "candidate_identity_coverage_count": 12,
+  "reviewed_candidate_count": 10,
+  "candidate_identity_coverage_count": 10,
   "candidate_identity_coverage_complete": true,
   "reviewed_excellent_candidate_count": 0,
-  "challenger_no_conflict_count": 6,
-  "challenger_conflict_count": 6,
+  "challenger_no_conflict_count": 7,
+  "challenger_conflict_count": 3,
   "challenger_full_support_no_conflict_count": 0,
   "challenger_new_family_no_conflict_count": 0,
   "branch_summary": [
     {
       "branch_key": "pbp2a",
       "excellent_candidate_count": 0,
-      "challenger_no_conflict_count": 6,
-      "challenger_conflict_count": 6
+      "challenger_no_conflict_count": 7,
+      "challenger_conflict_count": 3
     }
   ],
-  "worker_input_sha256": "2712be8747a218f049b965b2b4f7c77e61930baa5f5bdcdd8d8f06669997823d",
-  "worker_output_sha256": "0d7c03f887b59d6b2cef15c9ecd6c951d3e68ef3bdc3a95b7c010aaf00060dfe",
+  "worker_input_sha256": "651d294614bd76bb3b06c51326be0f17c5a8dae10debb7fb80f95b1ade21f0ac",
+  "worker_output_sha256": "8487a005066482507a55d92415530b1d608ef83fd5b41db2aa2dbfe64e89b92e",
   "calibration_sha256": "d9cbe209019de9d625ca0806fafc1b41bec0fdc9f537ab49ca4019a39d4839d9",
-  "challenger_review_csv_sha256": "463cbe8f7ed419266d87ee964c4909a6605e2a929823d9aaaffb4c5770895625",
-  "hemopi2_results_csv_sha256": "4fe8997c5a09e7580e1e638c36581f336d234c7a30d7ddeb61cc434758675dbd",
+  "challenger_review_csv_sha256": "9fe9f771632edd8a65e8aa6537ae58b85043287ea79df55e57530f2fdf37e798",
+  "hemopi2_results_csv_sha256": "e0f31e440e89fc7c178be59f1f4641f61e423f2cb580698bbd4db8a5fcfd7b87",
   "challenger_is_not_a_primary_hard_gate": true,
   "missing_verified_runtimes": [
     "apex",
@@ -32,5 +32,9 @@
   "workflow_submitted": false,
   "gpu_task_submitted": false,
   "historical_run_modified": false,
-  "receipt_payload_sha256": "62717e7c073165164aefefe13de63e2fa23cc5fe0202563d8443d5b1bd0da5b2"
+  "identity_contract": {
+    "candidate_count": 10,
+    "sequence_order_preserved": true
+  },
+  "receipt_payload_sha256": "c924311fb4db56704e8589fce685457582eb9749ff41e27d7b594cf63653bdb8"
 }

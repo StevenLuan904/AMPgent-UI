@@ -85,22 +85,29 @@ def test_generation_107_closes_fail_closed_when_frozen_activity_support_is_zero(
     assert generation["proposal_count"] == 10
     assert generation["operator_variant"] == "activity_preserving_fallback"
     assert generation["fixed_archive_cell_count"] == 2160
-    assert score["formal_12_complete_count"] == 12
-    assert score["display_eligible_count"] == 11
+    assert score["proposal_count"] == 10
+    assert score["formal_12_complete_count"] == 10
+    assert score["display_eligible_count"] == 10
     assert calibration["support_ge_2_count"] == 0
-    assert challenger["reviewed_candidate_count"] == 12
+    assert challenger["reviewed_candidate_count"] == 10
     assert challenger["candidate_identity_coverage_complete"] is True
     assert qd["quality_eligible_count"] == 0
     assert qd["new_cell_count"] == 0
     assert qd["replacement_count"] == 0
     assert close["qd"]["valid_candidate_count"] == 0
+    assert close["identity_contract"]["candidate_count"] == 10
+    assert close["identity_contract"]["sequence_order_verified"] is True
     assert close["persistence"]["candidate_identity_status"] == "proposal_only"
     assert close["algorithm_adjustment"]["reason"] == (
         "no_valid_qd_candidate_after_frozen_activity_calibration"
     )
     assert closed_loop["verify"]["pg_new_count"] == 0
     assert closed_loop["verify"]["prepared_coarse5_count"] == 0
+    assert closed_loop["identity_contract"]["rows"] == 10
+    assert closed_loop["identity_contract"]["sequence_overlap"] == 10
+    assert closed_loop["identity_contract"]["order_match"] is True
     proposals = _read(report / "proposals.csv")
+    assert len(proposals) == 10
     assert len({row["sequence_sha256"] for row in proposals}) == 10
     assert len({row["actual_cell_preflight"] for row in proposals}) == 10
     assert all(

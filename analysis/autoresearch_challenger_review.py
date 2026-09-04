@@ -75,15 +75,16 @@ def run(args: argparse.Namespace) -> None:
         model_root=args.hemopi2_model_root,
         calibration_path=args.hemopi2_calibration,
     )
-    review.sort(
-        key=lambda row: (
-            row["branch_key"],
-            row["challenger_conflict_status"] != "no_conflict",
-            float(row["calibrated_hemolysis_probability"]),
-            -int(row["activity_model_support_count_calibrated"]),
-            row["sequence"],
+    if not args.preserve_input_order:
+        review.sort(
+            key=lambda row: (
+                row["branch_key"],
+                row["challenger_conflict_status"] != "no_conflict",
+                float(row["calibrated_hemolysis_probability"]),
+                -int(row["activity_model_support_count_calibrated"]),
+                row["sequence"],
+            )
         )
-    )
     _write_csv(output_dir / "challenger_review.csv", review)
     hemopi2_results = [
         {field: row[field] for field in HEMOPI2_RESULT_FIELDS} for row in review
@@ -169,6 +170,10 @@ def run(args: argparse.Namespace) -> None:
         "workflow_submitted": False,
         "gpu_task_submitted": False,
         "historical_run_modified": False,
+        "identity_contract": {
+            "candidate_count": len(review),
+            "sequence_order_preserved": args.preserve_input_order,
+        },
     }
     if full_support_no_conflict:
         receipt["challenger_full_support_no_conflict_sha256"] = sha256_file(
@@ -194,6 +199,11 @@ def main() -> None:
     parser.add_argument("--hemopi2-model-root", type=Path, required=True)
     parser.add_argument("--hemopi2-calibration", type=Path, required=True)
     parser.add_argument("--scope", choices=("formal12", "excellent"), default="formal12")
+    parser.add_argument(
+        "--preserve-input-order",
+        action="store_true",
+        help="retain exact input identity order for a downstream close contract",
+    )
     run(parser.parse_args())
 
 
