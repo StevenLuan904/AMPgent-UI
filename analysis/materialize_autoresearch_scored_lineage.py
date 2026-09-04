@@ -18,7 +18,7 @@ from pepagent.autoresearch_operational_call import (
     operational_run_id,
     persist_operational_call,
 )
-from pepagent.db.models import Candidate, Evaluation
+from pepagent.db.models import Candidate, Evaluation, ToolCall
 from pepagent.db.repository import ExperimentRepository
 from pepagent.db.session import SessionFactory
 from pepagent.provenance.hashing import sha256_file, sha256_json, sha256_text
@@ -149,6 +149,19 @@ async def _existing_candidates(
     for candidate in candidates:
         result.setdefault(candidate.sequence_sha256, candidate)
     return result
+
+
+async def _has_terminal_operation(record: OperationalCallRecord) -> bool:
+    """Detect a completed idempotent operation without mutating its lifecycle."""
+    run_id = operational_run_id(record)
+    idempotency_key = sha256_json(
+        {"run_id": str(run_id), "operation_key": record.operation_key}
+    )
+    async with SessionFactory() as session:
+        call = await session.scalar(
+            select(ToolCall).where(ToolCall.idempotency_key == idempotency_key)
+        )
+    return call is not None and call.status != "running"
 
 
 def _record(
@@ -476,20 +489,25 @@ async def materialize(args: argparse.Namespace, *, execute: bool) -> dict[str, A
         summary["receipt_payload_sha256"] = sha256_json(summary)
         return summary
 
+    replay_existing = await _has_terminal_operation(record)
+    summary["replay_existing_operation"] = replay_existing
     batch_size = int(args.batch_size)
     if batch_size < 1:
         raise ValueError("batch size must be positive")
     running_record = record.model_copy(
         update={"status": "running", "output_payload": None, "finished_at": None}
     )
-    async with SessionFactory() as session, session.begin():
-        await persist_operational_call(session, running_record)
+    if not replay_existing:
+        async with SessionFactory() as session, session.begin():
+            await persist_operational_call(session, running_record)
 
     inserted_evaluation_count = 0
     for offset in range(0, len(accepted_rows), batch_size):
         batch = accepted_rows[offset : offset + batch_size]
         async with SessionFactory() as session, session.begin():
-            run, call = await persist_operational_call(session, running_record)
+            run, call = await persist_operational_call(
+                session, record if replay_existing else running_record
+            )
             repository = ExperimentRepository(session)
             parent_hashes = sorted(
                 {
@@ -579,19 +597,20 @@ async def materialize(args: argparse.Namespace, *, execute: bool) -> dict[str, A
                 "candidate_scores_sha256": score_sha256,
             }
         )
-        await repository.append_event(
-            "run",
-            run.id,
-            "autoresearch.scored_lineage.materialized",
-            TOOL_NAME,
-            {
-                **summary,
-                "tool_call_id": str(call.id),
-                "inserted_evaluation_count": inserted_evaluation_count,
-                "event_idempotency_key": event_key,
-            },
-            idempotency_key=event_key,
-        )
+        if not replay_existing:
+            await repository.append_event(
+                "run",
+                run.id,
+                "autoresearch.scored_lineage.materialized",
+                TOOL_NAME,
+                {
+                    **summary,
+                    "tool_call_id": str(call.id),
+                    "inserted_evaluation_count": inserted_evaluation_count,
+                    "event_idempotency_key": event_key,
+                },
+                idempotency_key=event_key,
+            )
         summary["tool_call_id"] = str(call.id)
         summary["inserted_evaluation_count"] = inserted_evaluation_count
         summary["batch_size"] = batch_size

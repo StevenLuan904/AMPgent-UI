@@ -52,7 +52,8 @@ def load_authoritative_parents(
     authority_by_sha = {
         row["sequence_sha256"]: row
         for row in authority_rows
-        if row.get("candidate_id") and row.get("sequence_sha256")
+        if (row.get("candidate_id") or row.get("authoritative_candidate_id"))
+        and row.get("sequence_sha256")
     }
     selected: list[dict[str, str]] = []
     for row in score_rows:
@@ -67,9 +68,12 @@ def load_authoritative_parents(
             and int(row.get("activity_model_support_count_calibrated", 0) or 0) >= 2
         ):
             continue
+        authority_candidate_id = authority.get("candidate_id") or authority.get(
+            "authoritative_candidate_id"
+        )
         selected.append(
             {
-                "candidate_id": authority["candidate_id"],
+                "candidate_id": authority_candidate_id,
                 "parent_run_id": authority["run_id"],
                 "sequence": sequence,
                 "sequence_sha256": sequence_sha,
@@ -196,18 +200,14 @@ def build_proposals(
                             ],
                             "acceptor_to_child": [
                                 after_value - before_value
-                                for before_value, after_value in zip(
-                                    before, after, strict=True
-                                )
+                                for before_value, after_value in zip(before, after, strict=True)
                             ],
                         },
                         sort_keys=True,
                     ),
                     "history_gate": "postgresql_exact_sequence_and_prior_edit_passed",
                     "parent_display_eligible": "true",
-                    "parent_activity_support_calibrated": parent[
-                        "activity_support_calibrated"
-                    ],
+                    "parent_activity_support_calibrated": parent["activity_support_calibrated"],
                 }
                 candidates_by_parent[parent["candidate_id"]].append(row)
                 seen.add(child_sha)
