@@ -64,7 +64,12 @@ def build(
                 "candidate_id": str(candidate.id),
                 "sequence": candidate.sequence,
                 "sequence_sha256": candidate.sequence_sha256,
-                "source": "PepFlow",
+                "source": "PepGLAD-parent_x_PepFlow-donor",
+                "parent_source": row.get("parent_source", "PepGLAD"),
+                "donor_source": row.get("donor_source", "PepFlow"),
+                "source_run_id": row.get("source_run_id", row.get("parent_run_id", "")),
+                "donor_artifact_id": row.get("donor_artifact_id", ""),
+                "operator_id": row.get("operator_id", ""),
                 "qd_cell": qd_row["cell_id"],
                 "qd_contribution": qd_row["contribution"],
                 "priority_rank": rank,
@@ -92,7 +97,16 @@ def build(
         "nstruct": 5,
         "dispatch_allowed": False,
         "pool_a_admitted_count": 0,
-        "median_dg_gate": "< -30 required before Pool A",
+        "median_dg_gate": -30,
+        "median_dg_gate_semantics": "median InterfaceAnalyzer dG must be < gate before Pool A",
+        "source": "PepGLAD-parent_x_PepFlow-donor",
+        "parent_source": "PepGLAD",
+        "donor_source": "PepFlow",
+        "operator_id": sorted({row.get("operator_id", "") for row in selected}),
+        "source_run_ids": sorted(
+            {row.get("source_run_id", row.get("parent_run_id", "")) for row in selected}
+        ),
+        "donor_artifact_ids": sorted({row.get("donor_artifact_id", "") for row in selected}),
         "qd_contribution_counts": {
             "empty_cell": sum(row["qd_contribution"] == "empty_cell" for row in rows),
             "incumbent_replacement": sum(

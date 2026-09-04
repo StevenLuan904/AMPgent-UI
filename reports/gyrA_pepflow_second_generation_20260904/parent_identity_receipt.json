@@ -1,0 +1,14 @@
+{
+  "schema_version": "ampgent.gyra-pepflow-second-generation-parent-identity.1",
+  "target_key": "GyrA",
+  "source_run_id": "e42e5097-aa1b-55ab-a191-93a923d7f51a",
+  "identity_basis": "postgresql_run_candidate_sequence_sha256",
+  "parent_count": 3,
+  "authoritative_candidate_ids": [
+    "f2f584c5-ae4e-49fe-bda2-267806161706",
+    "ababbd18-e41b-4a7b-9cbb-cd4d789daf46",
+    "0b330ebe-9010-4ce3-9772-d26c151ea82a"
+  ],
+  "sequence_sha256_verified": true,
+  "source_note": "Exact PostgreSQL readback of GyrA PepGLAD run2 materialized candidates; no sequence-only cross-run resolution."
+}

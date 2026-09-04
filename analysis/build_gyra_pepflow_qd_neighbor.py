@@ -75,6 +75,10 @@ def generate(
     generation: int,
     seed: int,
     limit: int,
+    operator_id: str = "gyrA-pepflow-qd-neighbor-1aa-v1",
+    proposal_mode: str = "pepflow_source_qd_empty_cell_neighbor",
+    min_fragment_length: int = 1,
+    max_fragment_length: int = 1,
 ) -> list[dict[str, Any]]:
     if limit != 12:
         raise ValueError("this frozen batch requires exactly 12 proposals")
@@ -92,7 +96,8 @@ def generate(
         if row.get("donor_source", "").casefold() != "pepflow":
             continue
         fragment = (row.get("donor_fragment") or "").strip().upper()
-        if len(fragment) != 1 or not fragment.isalpha():
+        valid_length = min_fragment_length <= len(fragment) <= max_fragment_length
+        if not valid_length or not fragment.isalpha():
             continue
         donor_rows.append(row)
     if not donor_rows:
@@ -104,15 +109,15 @@ def generate(
     candidates: list[dict[str, Any]] = []
     for parent_index, parent in enumerate(parents):
         sequence = parent["sequence"].strip().upper()
-        for position in range(len(sequence)):
-            for donor_index, donor in enumerate(donor_rows):
-                residue = donor["donor_fragment"].strip().upper()
-                if residue == sequence[position]:
+        for donor_index, donor in enumerate(donor_rows):
+            residue = donor["donor_fragment"].strip().upper()
+            for position in range(len(sequence) - len(residue) + 1):
+                if residue == sequence[position : position + len(residue)]:
                     continue
                 edit = (sequence, position, residue)
                 if edit in prior_edits:
                     continue
-                child = sequence[:position] + residue + sequence[position + 1 :]
+                child = sequence[:position] + residue + sequence[position + len(residue) :]
                 digest = _sha(child)
                 if digest in seen:
                     continue
@@ -128,21 +133,24 @@ def generate(
                         "target_key": target,
                         "generation": generation,
                         "seed": seed,
-                        "operator_id": "gyrA-pepflow-qd-neighbor-1aa-v1",
-                        "proposal_mode": "pepflow_source_qd_empty_cell_neighbor",
+                        "operator_id": operator_id,
+                        "proposal_mode": proposal_mode,
+                        "parent_source": "PepGLAD",
+                        "source_run_id": parent["run_id"],
                         "parent_run_id": parent["run_id"],
                         "parent_candidate_id": parent["candidate_id"],
                         "parent_sequence": sequence,
                         "parent_sequence_sha256": parent["sequence_sha256"],
                         "edit_position_zero_based": position,
                         "edit_position_1based": position + 1,
-                        "from_residue": sequence[position],
+                        "from_residue": sequence[position : position + len(residue)],
                         "to_residue": residue,
                         "donor_candidate_id": donor.get("donor_candidate_id", ""),
                         "donor_source": "PepFlow",
                         "donor_sequence": donor.get("donor_sequence", ""),
                         "donor_fragment": residue,
                         "donor_artifact_row": donor.get("proposal_id", ""),
+                        "donor_artifact_id": donor.get("proposal_id", ""),
                         "actual_cell_preflight": cell,
                         "target_cell_hit_preflight": "true",
                         "delta_phi_skill": json.dumps(
@@ -207,6 +215,10 @@ def main() -> None:
     parser.add_argument("--generation", type=int, default=2)
     parser.add_argument("--seed", type=int, default=20260904)
     parser.add_argument("--limit", type=int, default=12)
+    parser.add_argument("--operator-id", default="gyrA-pepflow-qd-neighbor-1aa-v1")
+    parser.add_argument("--proposal-mode", default="pepflow_source_qd_empty_cell_neighbor")
+    parser.add_argument("--min-donor-fragment-length", type=int, default=1)
+    parser.add_argument("--max-donor-fragment-length", type=int, default=1)
     args = parser.parse_args()
     parents = _safe_parents(_rows(args.parents_csv), args.target)
     if not parents:
@@ -225,6 +237,10 @@ def main() -> None:
         generation=args.generation,
         seed=args.seed,
         limit=args.limit,
+        operator_id=args.operator_id,
+        proposal_mode=args.proposal_mode,
+        min_fragment_length=args.min_donor_fragment_length,
+        max_fragment_length=args.max_donor_fragment_length,
     )
     if len(proposals) != args.limit:
         raise ValueError(f"only {len(proposals)} PG-new empty-cell proposals available")
@@ -236,7 +252,7 @@ def main() -> None:
         writer.writerows(proposals)
     receipt = {
         "schema_version": "ampgent.gyra-pepflow-qd-neighbor-generation.1",
-        "operator_id": "gyrA-pepflow-qd-neighbor-1aa-v1",
+        "operator_id": args.operator_id,
         "target_key": args.target,
         "generation": args.generation,
         "seed": args.seed,
@@ -250,6 +266,15 @@ def main() -> None:
         "proposal_csv_sha256": _sha(path.read_text(encoding="utf-8-sig")),
         "gpu_rosetta_md_submitted": False,
         "materialization_pending": True,
+        "proposal_mode": args.proposal_mode,
+        "parent_source": "PepGLAD",
+        "donor_source": "PepFlow",
+        "source_run_ids": sorted({row["parent_run_id"] for row in proposals}),
+        "donor_artifact_ids": sorted({row["donor_artifact_id"] for row in proposals}),
+        "donor_fragment_length": [
+            args.min_donor_fragment_length,
+            args.max_donor_fragment_length,
+        ],
     }
     (args.output_dir / "generation_receipt.json").write_text(
         json.dumps(receipt, ensure_ascii=False, indent=2, sort_keys=True) + "\n",

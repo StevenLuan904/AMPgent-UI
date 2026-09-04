@@ -1,0 +1,97 @@
+{
+  "benchmark_id": "ampgent_source_effect_benchmark_v9_20260904",
+  "observed_at_utc": "2026-09-04T06:55:00Z",
+  "selection_exclusions": [
+    {
+      "target_key": "pbp2a",
+      "source": "PepFlow",
+      "reason": "already completed by same-domain generation-132 run aaf5d3fd; do not select as an unrun gap"
+    }
+  ],
+  "next_operator_override": {
+    "status": "inventory_closed_no_unresolved_matrix_gap",
+    "selection_basis": "exact_artifact_and_pg_inventory",
+    "reason": "All four prior benchmark_not_recorded cells have authoritative compact evidence; no new run is justified without repeating an existing source-target experiment.",
+    "resolved_cells": [
+      "PepFlow:angpt1",
+      "PepGLAD:angpt1",
+      "PepGLAD:acea",
+      "PepGLAD:vegfa"
+    ],
+    "negative_cell": {
+      "source": "PepGLAD",
+      "target_key": "vegfa",
+      "status": "artifact_recorded_nonmaterialized",
+      "reason": "formal12/challenger/QD are complete; calibrated activity support is 0, so materialization is correctly zero"
+    },
+    "next_scientific_priority": "Only a new operator with a fresh preregistered parent/donor and explicit PG-new design should be considered; do not rerun PBP2a PepFlow.",
+    "guardrails": [
+      "no weighted q+lambdaD ranking",
+      "no hydrophobic hard gate",
+      "APEX/PeptiVerse runtime_unavailable is not a pass",
+      "Rosetta median dG<-30 remains required before targeted Pool A"
+    ]
+  },
+  "specs": [
+    {
+      "label": "AceA PepGLAD source expansion",
+      "source": "PepGLAD",
+      "target_key": "acea",
+      "run_id": "76399b9d-cda6-5df2-85ea-8294bd3a9526",
+      "score_path": "reports/acea_pepglad_source_expansion_20260904_v2/candidate_scores_calibrated.csv",
+      "materialized_score_path": "reports/acea_pepglad_source_expansion_20260904_v2/materialization_inputs/candidate_scores_qd_contributors.csv",
+      "proposal_path": "reports/acea_pepglad_source_expansion_20260904_v2/proposals.csv",
+      "challenger_path": "reports/acea_pepglad_source_expansion_20260904_v2/challenger/challenger_review.csv",
+      "materialization_path": "reports/acea_pepglad_source_expansion_20260904_v2/materialization_receipt.json",
+      "qd_path": "reports/acea_pepglad_source_expansion_20260904_v2/qd_summary.json",
+      "pool_a_admitted_count": 0,
+      "candidate_id_kind": "authoritative_uuid_from_pg_run_readback"
+    },
+    {
+      "label": "ANGPT1 PepFlow QD neighbor",
+      "source": "PepFlow",
+      "target_key": "angpt1",
+      "run_id": "a9cde5ec-d241-561a-ae19-e8de0c6c95a3",
+      "score_path": "reports/angpt1_pepflow_qd_neighbor_20260904/candidate_scores_calibrated.csv",
+      "materialized_score_path": "reports/angpt1_pepflow_qd_neighbor_20260904/materialization_inputs/candidate_scores.csv",
+      "proposal_path": "reports/angpt1_pepflow_qd_neighbor_20260904/proposals.csv",
+      "challenger_path": "reports/angpt1_pepflow_qd_neighbor_20260904/challenger/challenger_review.csv",
+      "materialized_challenger_path": "reports/angpt1_pepflow_qd_neighbor_20260904/materialization_inputs/challenger_review.csv",
+      "materialization_path": "reports/angpt1_pepflow_qd_neighbor_20260904/materialization_receipt.json",
+      "qd_path": "reports/angpt1_pepflow_qd_neighbor_20260904/quality_diversity.json",
+      "pool_a_admitted_count": 0,
+      "candidate_id_kind": "authoritative_uuid_from_pg_run_readback"
+    },
+    {
+      "label": "ANGPT1 PepGLAD matched control",
+      "source": "PepGLAD",
+      "target_key": "angpt1",
+      "run_id": "8d950460-0fd6-577a-8ddc-89e180538fa6",
+      "score_path": "reports/angpt1_pepglad_matched_control_20260904_v3/candidate_scores_calibrated.csv",
+      "materialized_score_path": "reports/angpt1_pepglad_matched_control_20260904_v3/materialization_inputs/candidate_scores.csv",
+      "proposal_path": "reports/angpt1_pepglad_matched_control_20260904_v3/proposals.csv",
+      "challenger_path": "reports/angpt1_pepglad_matched_control_20260904_v3/challenger/challenger_review.csv",
+      "materialized_challenger_path": "reports/angpt1_pepglad_matched_control_20260904_v3/materialization_inputs/challenger_review.csv",
+      "materialization_path": "reports/angpt1_pepglad_matched_control_20260904_v3/materialization_receipt.json",
+      "qd_path": "reports/angpt1_pepglad_matched_control_20260904_v3/quality_diversity.json",
+      "pool_a_admitted_count": 0,
+      "candidate_id_kind": "authoritative_uuid_from_pg_run_readback"
+    },
+    {
+      "label": "VEGFA PepGLAD source expansion negative result",
+      "source": "PepGLAD",
+      "target_key": "vegfa",
+      "run_id": null,
+      "source_scope": "artifact",
+      "evidence_strength": "artifact_scoped_nonmaterialized",
+      "source_artifact_id": "vegfa-pepglad-source-expansion-20260904-run1:close-receipt",
+      "score_path": "reports/vegfa_pepglad_source_expansion_20260904_run1/candidate_scores_calibrated.csv",
+      "proposal_path": "reports/vegfa_pepglad_source_expansion_20260904_run1/generated/proposals.csv",
+      "challenger_path": "reports/vegfa_pepglad_source_expansion_20260904_run1/challenger/challenger_review.csv",
+      "materialization_path": "reports/vegfa_pepglad_source_expansion_20260904_run1/close_receipt.json",
+      "qd_path": "reports/vegfa_pepglad_source_expansion_20260904_run1/qd_summary.json",
+      "pool_a_admitted_count": 0,
+      "candidate_id_kind": "artifact_id_plus_sequence_sha256"
+    }
+  ]
+}

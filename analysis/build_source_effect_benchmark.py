@@ -220,7 +220,12 @@ def _qd_metrics(
             ),
         }
 
-    eligible = _first_int(qd, "eligible_batch_candidate_count")
+    eligible = _first_int(
+        qd,
+        "eligible_batch_candidate_count",
+        "quality_eligible_count",
+        "eligible_count",
+    )
     new_cell = (
         sum(item.get("contribution") == "empty_cell" for item in contributions)
         if isinstance(contributions, list)
@@ -267,6 +272,13 @@ def _qd_metrics(
         eligible = 1
         new_cell = int(_bool(qd.get("new_cell")))
         replacement = int(_bool(qd.get("replacement")))
+    if filter_to_rows and not isinstance(contributions, list):
+        # Flat QD receipts describe the whole batch.  When a materialized
+        # score subset is supplied, its rows are the materialized QD cohort;
+        # never let whole-batch counts make a downstream rate exceed 1.
+        eligible = min(eligible, len(rows))
+        new_cell = min(new_cell, eligible)
+        replacement = min(replacement, max(0, eligible - new_cell))
     return {
         "eligible": eligible,
         "new_cell": new_cell,
@@ -586,7 +598,35 @@ def _record(spec: dict[str, Any], base: Path) -> list[dict[str, Any]]:
     return result
 
 
-def _next_operator(records: list[dict[str, Any]], base_dir: Path) -> dict[str, Any]:
+def _next_operator(
+    records: list[dict[str, Any]],
+    base_dir: Path,
+    *,
+    selection_exclusions: list[dict[str, Any]] | None = None,
+    override: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    if override is not None:
+        return override
+
+    def excluded(record: dict[str, Any]) -> bool:
+        for item in selection_exclusions or []:
+            target_matches = (
+                not item.get("target_key")
+                or str(item["target_key"]).casefold()
+                == str(record["target_key"]).casefold()
+            )
+            source_matches = (
+                not item.get("source")
+                or _source_name(str(item["source"]))
+                == _source_name(str(record["source"]))
+            )
+            run_ids = {str(value) for value in item.get("run_ids", [])}
+            run_matches = not run_ids or str(record.get("run_id")) in run_ids
+            if target_matches and source_matches and run_matches:
+                return True
+        return False
+
+    records = [record for record in records if not excluded(record)]
     controlled = [
         record
         for record in records
@@ -714,10 +754,16 @@ def build_benchmark(config: dict[str, Any], base_dir: Path) -> dict[str, Any]:
             "proposal, materialized, and downstream rates retain explicit stage "
             "denominators"
         ),
+        "selection_exclusions": config.get("selection_exclusions", []),
         "excluded_scopes": config.get("excluded_scopes", []),
         "records": records,
         "coverage_matrix": _coverage_matrix(records),
-        "next_operator": _next_operator(records, base_dir),
+        "next_operator": _next_operator(
+            records,
+            base_dir,
+            selection_exclusions=config.get("selection_exclusions"),
+            override=config.get("next_operator_override"),
+        ),
         "weighted_total_used": False,
         "shadow_runtime_policy": "runtime_unavailable is structured coverage, never a pass",
     }

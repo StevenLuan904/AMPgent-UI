@@ -25,6 +25,10 @@ def main() -> None:
     ]
     config["benchmark_id"] = additions[-1]["benchmark_id"]
     config["observed_at_utc"] = additions[-1]["observed_at_utc"]
+    if "selection_exclusions" in additions[-1]:
+        config["selection_exclusions"] = additions[-1]["selection_exclusions"]
+    if "next_operator_override" in additions[-1]:
+        config["next_operator_override"] = additions[-1]["next_operator_override"]
     config["specs"] = [
         *config["specs"],
         *(spec for addition in additions for spec in addition["specs"]),
