@@ -1,0 +1,21 @@
+{
+  "schema_version": "ampgent.source-qd-candidate-promotion.1",
+  "source": "PepMLM",
+  "source_stage": "autoresearch_de_novo_family_probe_round7_fullscore_20260906",
+  "generator": {"operator_id": "autoresearch-rule-de-novo-v4", "seed": 20261208},
+  "target_key": "angpt1",
+  "sequence": "AGHKSKNKKGAGAKGRDKRK",
+  "sequence_sha256": "789f2228179e1f50a94adcecc9aa3a36ca40867e471cf12d1023d14c462168c3",
+  "source_proposal_id": "proposal-789f2228179e1f50a94a",
+  "parent": null,
+  "formal12_complete": true,
+  "display_eligible": true,
+  "activity_support_calibrated": 3,
+  "toxinpred3_label": "Non-Toxin",
+  "macrel_hemolysis_label": "low",
+  "guruprasad_instability_index": 28.255,
+  "challenger": {"reviewed": true, "conflict_status": "no_conflict", "apex_status": "runtime_unavailable", "peptiverse_status": "runtime_unavailable"},
+  "qd": {"actual_cell_id": "q6-h1-m0-l2", "contribution": "empty_cell", "new_cell": true, "replacement": false, "quality_eligible": true, "archive_sha256": "55a5fe0ed8fa8d310c0cff4e5ddd3fd738f11f1fe1ceba00a7026c14e5483d7c"},
+  "upstream_hashes": {"candidate_scores_sha256": "0e13115b176c7e92ba3dda86eb21c822d23e9e57396916d28dc43e0d75f67bd2", "challenger_csv_sha256": "0005b1876648c8964d56ce6658fbee1a3867e4d3f3f1390fa73a6ad62c41c59d", "qd_receipt_sha256": "7eb9071353472bf9db49af21c939aaf61ccc0ea7f5710dc345932a261936fce4"},
+  "provenance": {"score_all_complete": true, "hemopi2_structured": true, "history_exact_preflight": "pending_before_materialization"}
+}
