@@ -1,0 +1,53 @@
+{
+  "authoritative_candidate_ids": [
+    "26c2934f-1d73-4a2c-8c72-cc79c9c2c36f",
+    "f9d94756-2517-4b63-8bd5-7f3b881774f2",
+    "450c65db-9221-4cd4-9210-76649346b730",
+    "b3fc5e81-a4a7-4180-9000-7b9f7e181cc8",
+    "de51b7d5-d0d4-4f08-89cb-6299e7269c45",
+    "34cfde59-3fdf-4b82-94e2-72c565b403d9",
+    "625195cd-01ec-418a-aec7-f67530af4341",
+    "dd8f95ce-b8f8-4122-882f-8992065ad395",
+    "6ee462c7-7c62-4e00-9d56-765a614d0df1",
+    "126733b2-3fe6-4665-9b98-d637d2db73c6",
+    "0290567c-fa67-4d6e-9e91-2fbabc06f2ba",
+    "afd3531a-39b4-4f49-ae40-f37dbc147435"
+  ],
+  "candidate_count": 12,
+  "candidate_scores_sha256": "26b1f5a2782a520a7f6931bb13f158e244957aa4f8816fe651e60d4395a67475",
+  "dispatch_allowed": false,
+  "existing_decoys_total": 0,
+  "historical_runs_modified": false,
+  "materialization_sha256": "1d967bc5b5475cbc71b5ae3e687b2167100fa959a2fb95c60f5b78cdf775396b",
+  "median_dg_gate": -30,
+  "nstruct": 5,
+  "operator_id": "pbp2a-pepmlm-target-conditioned-qd-gap-selection-v1",
+  "pg_readback": {
+    "candidate_count": 12,
+    "evaluation_count": 204,
+    "evaluation_count_per_candidate": 17,
+    "global_exact_replay_skip_count": 0,
+    "identity_drift_count": 0,
+    "tool_call_id": "12451226-125d-4b40-a5b2-2c4ea5f177ef"
+  },
+  "pool_a_admitted_count": 0,
+  "qd_sha256": "23dbef84cc78a5fd2a6898af9741413ec5ea71c8a4957f7cbfc336164b82f95c",
+  "queue_csv_sha256": "cfacc5aaa03b65b9d2017a3a038a0905e9b34aaf893a2640bb1b64a381bdee15",
+  "receipt_payload_sha256": "c7fea75c87d3bed0292d919f0927146a5d726c85394f9424b83f69f255e2dd0b",
+  "remaining_decoys_total": 60,
+  "remote_file_deleted": false,
+  "remote_large_artifact_downloaded": false,
+  "rosetta_required": true,
+  "run_id": "d407db4d-f5f9-5846-a5f3-1449d4f2a7e5",
+  "schema_version": "ampgent.pbp2a-pepmlm-coarse5-prepared.1",
+  "source": "PepMLM",
+  "status": "prepared_not_dispatched",
+  "status_normalization": {
+    "basis": "PG exact preflight and materialization receipt: replay=0",
+    "historical_exact_replay": false,
+    "score_all_status": "complete"
+  },
+  "target_key": "pbp2a",
+  "task_key_count": 12,
+  "task_key_identity": "target_key+run_id+authoritative_candidate_id"
+}
