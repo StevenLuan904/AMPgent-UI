@@ -187,6 +187,7 @@ class Candidate(Base, TimestampMixin):
     __table_args__ = (
         Index("ix_candidate_run_generation", "run_id", "generation"),
         Index("ix_candidate_run_sequence", "run_id", "sequence_sha256", unique=True),
+        Index("ix_candidate_sequence_sha256", "sequence_sha256"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -409,6 +410,11 @@ class AutoResearchAction(Base):
             "action_kind IN ('point_edit', 'controlled_mix', 'de_novo')",
             name="autoresearch_action_kind",
         ),
+        CheckConstraint(
+            "(skill_revision_id IS NULL AND skill_experiment_id IS NULL) OR "
+            "(skill_revision_id IS NOT NULL AND skill_experiment_id IS NOT NULL)",
+            name="autoresearch_action_skill_binding_pair",
+        ),
         Index("ix_autoresearch_action_iteration", "run_id", "iteration_no", "branch_key"),
     )
 
@@ -427,6 +433,10 @@ class AutoResearchAction(Base):
     forbidden_changes_json: Mapped[list[str]] = mapped_column(JSONB, nullable=False)
     action_spec_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     action_sha256: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    skill_revision_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("skills.id"))
+    skill_experiment_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("skill_experiments.id")
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -679,6 +689,561 @@ class AutoResearchCheckpoint(Base):
     replay_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     receipt_sha256: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
     metadata_json: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class Skill(Base, TimestampMixin):
+    """One immutable semantic/action revision in the evidence-gated skill library."""
+
+    __tablename__ = "skills"
+    __table_args__ = (
+        UniqueConstraint("skill_key", "revision", name="uq_skill_key_revision"),
+        UniqueConstraint("program_fingerprint", name="uq_skill_program_fingerprint"),
+        CheckConstraint("revision > 0", name="skill_positive_revision"),
+        CheckConstraint("state_version > 0", name="skill_positive_state_version"),
+        CheckConstraint(
+            "skill_kind IN ("
+            "'edit_program', 'search_program', 'search_policy', 'generator_tool', 'composite'"
+            ")",
+            name="skill_kind",
+        ),
+        CheckConstraint(
+            "lifecycle_state IN ("
+            "'proposed', 'compiled', 'testing', 'promoted', 'active', "
+            "'rejected', 'suspended', 'retired'"
+            ")",
+            name="skill_lifecycle_state",
+        ),
+        CheckConstraint(
+            "lifecycle_state IN ('proposed', 'rejected') OR ("
+            "compiled_ir_json IS NOT NULL AND compiler_version IS NOT NULL AND "
+            "program_fingerprint IS NOT NULL AND family_fingerprint IS NOT NULL"
+            ")",
+            name="skill_compilation_state",
+        ),
+        CheckConstraint(
+            "lifecycle_state NOT IN ('promoted', 'active', 'suspended', 'retired') OR "
+            "(promotion_scope_json IS NOT NULL AND promotion_decision_json IS NOT NULL AND "
+            "promotion_decision_sha256 IS NOT NULL)",
+            name="skill_promotion_scope",
+        ),
+        CheckConstraint(
+            "lifecycle_state <> 'active' OR active_library_sha256 IS NOT NULL",
+            name="skill_active_library",
+        ),
+        CheckConstraint(
+            "(planner_policy_json IS NULL AND planner_policy_sha256 IS NULL AND "
+            "planner_policy_artifact_id IS NULL) OR "
+            "(planner_policy_json IS NOT NULL AND planner_policy_sha256 IS NOT NULL AND "
+            "planner_policy_artifact_id IS NOT NULL)",
+            name="skill_planner_policy_binding",
+        ),
+        CheckConstraint(
+            "canonical_skill_revision_id IS NULL OR canonical_skill_revision_id <> id",
+            name="skill_canonical_not_self",
+        ),
+        CheckConstraint(
+            "supersedes_skill_revision_id IS NULL OR supersedes_skill_revision_id <> id",
+            name="skill_supersedes_not_self",
+        ),
+        Index("ix_skill_state_kind", "lifecycle_state", "skill_kind"),
+        Index("ix_skill_family_fingerprint", "family_fingerprint"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    skill_key: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=False, default=uuid.uuid4
+    )
+    revision: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    canonical_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    skill_kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    lifecycle_state: Mapped[str] = mapped_column(String(32), nullable=False, default="proposed")
+    semantic_spec_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    semantic_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    context_spec_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    context_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    expected_effect_spec_json: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSONB, nullable=False
+    )
+    expected_effect_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    compiled_ir_json: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    compiler_version: Mapped[str | None] = mapped_column(String(128))
+    compiler_environment_sha256: Mapped[str | None] = mapped_column(String(64))
+    program_fingerprint: Mapped[str | None] = mapped_column(String(64))
+    family_fingerprint: Mapped[str | None] = mapped_column(String(64))
+    canonical_skill_revision_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("skills.id")
+    )
+    supersedes_skill_revision_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("skills.id")
+    )
+    history_cutoff_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    source_manifest_artifact_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("artifacts.id"), nullable=False
+    )
+    created_by_agent_decision_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("agent_decisions.id")
+    )
+    state_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    promotion_scope_json: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    promotion_decision_json: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    promotion_decision_sha256: Mapped[str | None] = mapped_column(String(64))
+    active_library_sha256: Mapped[str | None] = mapped_column(String(64))
+    planner_policy_json: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    planner_policy_sha256: Mapped[str | None] = mapped_column(String(64))
+    planner_policy_artifact_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("artifacts.id")
+    )
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+
+
+class SkillExperiment(Base):
+    """A frozen controlled edit or campaign evaluation of one Skill."""
+
+    __tablename__ = "skill_experiments"
+    __table_args__ = (
+        CheckConstraint(
+            "experiment_type IN ('paired_edit', 'campaign_ab')",
+            name="skill_experiment_type",
+        ),
+        CheckConstraint(
+            "(experiment_type = 'campaign_ab' AND baseline_run_id IS NOT NULL AND "
+            "treatment_run_id IS NOT NULL AND harness_trial_id IS NOT NULL AND "
+            "baseline_run_id <> treatment_run_id) OR "
+            "(experiment_type = 'paired_edit' AND baseline_run_id IS NULL AND "
+            "treatment_run_id IS NULL AND harness_trial_id IS NULL)",
+            name="skill_experiment_type_campaign_bindings",
+        ),
+        CheckConstraint(
+            "phase IN ('historical_replay', 'counterfactual', 'shadow', 'prospective')",
+            name="skill_experiment_phase",
+        ),
+        CheckConstraint(
+            "status IN ('draft', 'preregistered', 'running', 'completed', 'failed', "
+            "'invalidated')",
+            name="skill_experiment_status",
+        ),
+        CheckConstraint(
+            "baseline_program_fingerprint <> treatment_program_fingerprint",
+            name="skill_experiment_distinct_programs",
+        ),
+        CheckConstraint(
+            "baseline_scorer_unit_budget >= 0 AND treatment_scorer_unit_budget >= 0 AND "
+            "baseline_proposal_budget >= 0 AND treatment_proposal_budget >= 0 AND "
+            "baseline_generator_tool_call_budget >= 0 AND "
+            "treatment_generator_tool_call_budget >= 0",
+            name="skill_experiment_nonnegative_budgets",
+        ),
+        CheckConstraint(
+            "phase <> 'prospective' OR (testing_state_version IS NOT NULL AND "
+            "testing_state_version > 0 AND blinding_manifest_artifact_id IS NOT NULL AND "
+            "preregistered_at IS NOT NULL)",
+            name="skill_experiment_prospective_testing_version",
+        ),
+        CheckConstraint(
+            "baseline_scorer_units_consumed IS NULL OR baseline_scorer_units_consumed >= 0",
+            name="skill_experiment_nonnegative_baseline_scorer_usage",
+        ),
+        CheckConstraint(
+            "treatment_scorer_units_consumed IS NULL OR treatment_scorer_units_consumed >= 0",
+            name="skill_experiment_nonnegative_treatment_scorer_usage",
+        ),
+        CheckConstraint(
+            "baseline_proposals_consumed IS NULL OR baseline_proposals_consumed >= 0",
+            name="skill_experiment_nonnegative_baseline_proposal_usage",
+        ),
+        CheckConstraint(
+            "treatment_proposals_consumed IS NULL OR treatment_proposals_consumed >= 0",
+            name="skill_experiment_nonnegative_treatment_proposal_usage",
+        ),
+        CheckConstraint(
+            "baseline_generator_tool_calls_consumed IS NULL OR "
+            "baseline_generator_tool_calls_consumed >= 0",
+            name="skill_experiment_nonnegative_baseline_generator_usage",
+        ),
+        CheckConstraint(
+            "treatment_generator_tool_calls_consumed IS NULL OR "
+            "treatment_generator_tool_calls_consumed >= 0",
+            name="skill_experiment_nonnegative_treatment_generator_usage",
+        ),
+        CheckConstraint(
+            "status <> 'completed' OR ("
+            "baseline_scorer_units_consumed IS NOT NULL AND "
+            "treatment_scorer_units_consumed IS NOT NULL AND "
+            "baseline_proposals_consumed IS NOT NULL AND "
+            "treatment_proposals_consumed IS NOT NULL AND "
+            "baseline_generator_tool_calls_consumed IS NOT NULL AND "
+            "treatment_generator_tool_calls_consumed IS NOT NULL AND "
+            "baseline_atomic_scorer_usage_json IS NOT NULL AND "
+            "treatment_atomic_scorer_usage_json IS NOT NULL AND "
+            "scorer_usage_ledger_artifact_id IS NOT NULL AND "
+            "result_artifact_id IS NOT NULL AND "
+            "replay_artifact_id IS NOT NULL AND "
+            "denominator_complete = true AND replay_verified = true"
+            ")",
+            name="skill_experiment_completed_usage_ledger",
+        ),
+        CheckConstraint(
+            "status <> 'completed' OR (receipt_sha256 IS NOT NULL AND finished_at IS NOT NULL)",
+            name="skill_experiment_completed_receipt",
+        ),
+        CheckConstraint(
+            "status <> 'completed' OR ("
+            "scorer_usage_ledger_artifact_id <> result_artifact_id AND "
+            "scorer_usage_ledger_artifact_id <> replay_artifact_id AND "
+            "result_artifact_id <> replay_artifact_id)",
+            name="skill_experiment_distinct_terminal_artifacts",
+        ),
+        CheckConstraint(
+            "status <> 'completed' OR phase <> 'prospective' OR ("
+            "baseline_scorer_units_consumed = baseline_scorer_unit_budget AND "
+            "treatment_scorer_units_consumed = treatment_scorer_unit_budget"
+            ")",
+            name="skill_experiment_completed_prospective_budget_consumed",
+        ),
+        CheckConstraint(
+            "status <> 'completed' OR ("
+            "baseline_atomic_scorer_usage_json = baseline_atomic_scorer_budget_json AND "
+            "treatment_atomic_scorer_usage_json = treatment_atomic_scorer_budget_json"
+            ")",
+            name="skill_experiment_completed_atomic_budget_consumed",
+        ),
+        CheckConstraint(
+            "status <> 'completed' OR phase <> 'prospective' OR ("
+            "baseline_proposals_consumed = baseline_proposal_budget AND "
+            "treatment_proposals_consumed = treatment_proposal_budget AND "
+            "baseline_generator_tool_calls_consumed = "
+            "baseline_generator_tool_call_budget AND "
+            "treatment_generator_tool_calls_consumed = "
+            "treatment_generator_tool_call_budget"
+            ")",
+            name="skill_experiment_completed_prospective_proposals_consumed",
+        ),
+        CheckConstraint(
+            "status = 'draft' OR ("
+            "history_partition_artifact_id IS NOT NULL AND "
+            "pair_or_seed_manifest_artifact_id IS NOT NULL AND "
+            "budget_contract_artifact_id IS NOT NULL AND "
+            "endpoint_contract_artifact_id IS NOT NULL AND "
+            "evaluator_manifest_artifact_id IS NOT NULL"
+            ")",
+            name="skill_experiment_preregistration_artifacts",
+        ),
+        Index(
+            "ix_skill_experiment_skill_phase",
+            "skill_revision_id",
+            "phase",
+            "testing_state_version",
+            "status",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    experiment_key: Mapped[str] = mapped_column(String(128), nullable=False, unique=True)
+    skill_revision_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("skills.id"), nullable=False)
+    experiment_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    phase: Mapped[str] = mapped_column(String(32), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="draft")
+    testing_state_version: Mapped[int | None] = mapped_column(Integer)
+    scope_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    context_spec_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    context_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    hypothesis_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    baseline_program_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    treatment_program_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    history_partition_artifact_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("artifacts.id")
+    )
+    pair_or_seed_manifest_artifact_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("artifacts.id")
+    )
+    budget_contract_artifact_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("artifacts.id")
+    )
+    endpoint_contract_artifact_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("artifacts.id")
+    )
+    evaluator_manifest_artifact_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("artifacts.id")
+    )
+    blinding_manifest_artifact_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("artifacts.id")
+    )
+    randomization_seed: Mapped[int | None] = mapped_column(BigInteger)
+    baseline_scorer_unit_budget: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    treatment_scorer_unit_budget: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    baseline_atomic_scorer_budget_json: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSONB, nullable=False
+    )
+    treatment_atomic_scorer_budget_json: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSONB, nullable=False
+    )
+    baseline_proposal_budget: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    treatment_proposal_budget: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    baseline_generator_tool_call_budget: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0
+    )
+    treatment_generator_tool_call_budget: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0
+    )
+    baseline_scorer_units_consumed: Mapped[int | None] = mapped_column(Integer)
+    treatment_scorer_units_consumed: Mapped[int | None] = mapped_column(Integer)
+    baseline_atomic_scorer_usage_json: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB)
+    treatment_atomic_scorer_usage_json: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB)
+    baseline_proposals_consumed: Mapped[int | None] = mapped_column(Integer)
+    treatment_proposals_consumed: Mapped[int | None] = mapped_column(Integer)
+    baseline_generator_tool_calls_consumed: Mapped[int | None] = mapped_column(Integer)
+    treatment_generator_tool_calls_consumed: Mapped[int | None] = mapped_column(Integer)
+    scorer_usage_ledger_artifact_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("artifacts.id")
+    )
+    budget_shortfall_json: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, default=dict, nullable=False
+    )
+    baseline_run_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("experiment_runs.id"))
+    treatment_run_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("experiment_runs.id"))
+    harness_trial_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("harness_trials.id"))
+    preregistered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    result_artifact_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("artifacts.id"))
+    replay_artifact_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("artifacts.id"))
+    denominator_complete: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    replay_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    receipt_sha256: Mapped[str | None] = mapped_column(String(64), unique=True)
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class SkillCampaignComparison(Base):
+    """One replayable controlled baseline-versus-Skill campaign effect."""
+
+    __tablename__ = "skill_campaign_comparisons"
+    __table_args__ = (
+        UniqueConstraint(
+            "experiment_id",
+            "independent_unit_id",
+            "endpoint_name",
+            name="uq_skill_campaign_comparison_cell",
+        ),
+        CheckConstraint(
+            "baseline_program_fingerprint <> treatment_program_fingerprint",
+            name="skill_campaign_distinct_programs",
+        ),
+        CheckConstraint(
+            "direction IN ('minimize', 'maximize')",
+            name="skill_campaign_direction",
+        ),
+        CheckConstraint(
+            "status IN ('succeeded', 'failed', 'incomparable')",
+            name="skill_campaign_status",
+        ),
+        CheckConstraint(
+            "(status = 'succeeded' AND baseline_raw_outcome IS NOT NULL AND "
+            "treatment_raw_outcome IS NOT NULL AND raw_delta IS NOT NULL AND "
+            "improvement_delta IS NOT NULL) OR "
+            "(status <> 'succeeded' AND baseline_raw_outcome IS NULL AND "
+            "treatment_raw_outcome IS NULL AND raw_delta IS NULL AND "
+            "improvement_delta IS NULL)",
+            name="skill_campaign_effect_value_semantics",
+        ),
+        CheckConstraint(
+            "baseline_outcome_artifact_id <> treatment_outcome_artifact_id AND "
+            "baseline_receipt_artifact_id <> treatment_receipt_artifact_id AND "
+            "baseline_harness_outcome_id <> treatment_harness_outcome_id AND "
+            "baseline_search_tool_call_id <> treatment_search_tool_call_id AND "
+            "baseline_portfolio_artifact_id <> treatment_portfolio_artifact_id",
+            name="skill_campaign_distinct_arm_artifacts",
+        ),
+        CheckConstraint(
+            "denominator_complete = true AND replay_verified = true",
+            name="skill_campaign_complete_replay",
+        ),
+        Index(
+            "ix_skill_campaign_comparison_experiment",
+            "experiment_id",
+            "independent_unit_id",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    experiment_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("skill_experiments.id"), nullable=False
+    )
+    independent_unit_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    endpoint_name: Mapped[str] = mapped_column(String(128), nullable=False)
+    endpoint_family: Mapped[str] = mapped_column(String(64), nullable=False)
+    direction: Mapped[str] = mapped_column(String(16), nullable=False)
+    unit: Mapped[str] = mapped_column(String(64), nullable=False)
+    metric_version: Mapped[str] = mapped_column(String(128), nullable=False)
+    initial_pool_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    seed_manifest_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    budget_contract_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    random_seed: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    baseline_program_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    treatment_program_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    baseline_frozen_budget_json: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False
+    )
+    treatment_frozen_budget_json: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False
+    )
+    baseline_harness_outcome_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("harness_outcomes.id"), nullable=False
+    )
+    treatment_harness_outcome_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("harness_outcomes.id"), nullable=False
+    )
+    baseline_outcome_artifact_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("artifacts.id"), nullable=False
+    )
+    treatment_outcome_artifact_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("artifacts.id"), nullable=False
+    )
+    baseline_receipt_artifact_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("artifacts.id"), nullable=False
+    )
+    treatment_receipt_artifact_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("artifacts.id"), nullable=False
+    )
+    baseline_search_tool_call_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("tool_calls.id"), nullable=False
+    )
+    treatment_search_tool_call_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("tool_calls.id"), nullable=False
+    )
+    baseline_portfolio_artifact_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("artifacts.id"), nullable=False
+    )
+    treatment_portfolio_artifact_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("artifacts.id"), nullable=False
+    )
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    baseline_raw_outcome: Mapped[float | None] = mapped_column(Float)
+    treatment_raw_outcome: Mapped[float | None] = mapped_column(Float)
+    raw_delta: Mapped[float | None] = mapped_column(Float)
+    improvement_delta: Mapped[float | None] = mapped_column(Float)
+    denominator_complete: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    replay_verified: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    comparison_sha256: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class SkillEvidence(Base):
+    """One immutable endpoint/context observation or effect/decision snapshot."""
+
+    __tablename__ = "skill_evidence"
+    __table_args__ = (
+        UniqueConstraint(
+            "experiment_id",
+            "independent_unit_id",
+            "endpoint_name",
+            name="uq_skill_evidence_experiment_cell",
+        ),
+        CheckConstraint(
+            "evidence_kind IN ("
+            "'historical_hypothesis', 'paired_edit_effect', 'campaign_effect', "
+            "'failure_observation', 'equivalence_assertion', "
+            "'effect_estimate_snapshot', 'promotion_decision'"
+            ")",
+            name="skill_evidence_kind",
+        ),
+        CheckConstraint(
+            "evidence_grade IN ("
+            "'retrospective_observational', 'counterfactual', 'shadow', "
+            "'prospective_controlled', 'external_experimental'"
+            ")",
+            name="skill_evidence_grade",
+        ),
+        CheckConstraint(
+            "comparison_kind IN ('numeric_delta', 'categorical_transition', 'set_outcome')",
+            name="skill_evidence_comparison_kind",
+        ),
+        CheckConstraint(
+            "direction IN ('minimize', 'maximize', 'audit', 'categorical')",
+            name="skill_evidence_direction",
+        ),
+        CheckConstraint(
+            "sample_size >= 0 AND denominator >= sample_size",
+            name="skill_evidence_complete_denominator",
+        ),
+        CheckConstraint(
+            "promotion_eligible = false OR evidence_grade = 'prospective_controlled'",
+            name="skill_evidence_promotion_grade",
+        ),
+        CheckConstraint(
+            "promotion_eligible = false OR (experiment_id IS NOT NULL AND "
+            "replay_artifact_id IS NOT NULL AND "
+            "((source_autoresearch_metric_delta_id IS NOT NULL AND "
+            "source_skill_campaign_comparison_id IS NULL AND "
+            "source_harness_outcome_id IS NULL) OR "
+            "(source_autoresearch_metric_delta_id IS NULL AND "
+            "source_skill_campaign_comparison_id IS NOT NULL AND "
+            "source_harness_outcome_id IS NULL)))",
+            name="skill_evidence_promotion_typed_source",
+        ),
+        CheckConstraint(
+            "(source_autoresearch_metric_delta_id IS NULL AND "
+            "source_skill_campaign_comparison_id IS NULL) OR "
+            "(source_autoresearch_metric_delta_id IS NULL AND "
+            "source_harness_outcome_id IS NULL) OR "
+            "(source_skill_campaign_comparison_id IS NULL AND "
+            "source_harness_outcome_id IS NULL)",
+            name="skill_evidence_at_most_one_typed_source",
+        ),
+        Index(
+            "ix_skill_evidence_effect_context",
+            "skill_revision_id",
+            "context_sha256",
+            "endpoint_name",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    skill_revision_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("skills.id"), nullable=False)
+    experiment_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("skill_experiments.id"))
+    evidence_kind: Mapped[str] = mapped_column(String(64), nullable=False)
+    evidence_grade: Mapped[str] = mapped_column(String(32), nullable=False)
+    promotion_eligible: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    context_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    context_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    program_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    endpoint_family: Mapped[str] = mapped_column(String(64), nullable=False)
+    endpoint_name: Mapped[str] = mapped_column(String(128), nullable=False)
+    independent_unit_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    metric_version: Mapped[str] = mapped_column(String(128), nullable=False)
+    comparison_kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    direction: Mapped[str] = mapped_column(String(16), nullable=False)
+    effect_value: Mapped[float | None] = mapped_column(Float)
+    raw_effect_value: Mapped[float | None] = mapped_column(Float)
+    unit: Mapped[str | None] = mapped_column(String(64))
+    sample_size: Mapped[int] = mapped_column(Integer, nullable=False)
+    denominator: Mapped[int] = mapped_column(Integer, nullable=False)
+    uncertainty_json: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    limitations_json: Mapped[list[str]] = mapped_column(JSONB, default=list, nullable=False)
+    source_autoresearch_metric_delta_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("autoresearch_metric_deltas.id")
+    )
+    source_skill_campaign_comparison_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("skill_campaign_comparisons.id")
+    )
+    source_harness_outcome_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("harness_outcomes.id")
+    )
+    source_artifact_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("artifacts.id"), nullable=False
+    )
+    effect_model_version: Mapped[str | None] = mapped_column(String(128))
+    effect_model_config_sha256: Mapped[str | None] = mapped_column(String(64))
+    replay_artifact_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("artifacts.id"))
+    evidence_sha256: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
