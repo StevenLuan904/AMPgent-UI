@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildRuntimeGraph, countOpenActivities, runtimeActivitySummary } from './runtimeGraph'
+import { buildRuntimeGraph, countActivityRetries, countOpenActivities, runtimeActivitySummary, runtimeRetrySummary } from './runtimeGraph'
 import type { NodeDetail, RunDetail, ToolAttempt } from './types'
 
 const call = (id: string, toolName: string, queuedAt: string, overrides: Partial<ToolAttempt> = {}): ToolAttempt => ({
@@ -46,6 +46,51 @@ const detail = (events: RunDetail['events'] = [], candidates: RunDetail['candida
 const nodeDetail = (calls: ToolAttempt[]): NodeDetail => ({ source: 'postgresql', read_only: true, node_id: 'dynamic', narrative: [], calls, metrics: {}, reasoning: { decisions: [], status_counts: {}, reason_counts: {}, considered: 0, admitted: 0 }, structure_results: [] })
 
 describe('buildRuntimeGraph', () => {
+  it('separates tool-only retries from activity-only retries', () => {
+    const toolRetry = call('tool-retry', 'ampgan', '2026-09-04T00:00:00Z', { attempt: 2 })
+    const activityEvents: RunDetail['events'] = [
+      { sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: 'workflow-activity-retry', activity_id: 1, attempt: 1 }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'activity.failed', actor: 'observer-writer', payload: { workflow_run_id: 'workflow-activity-retry', activity_id: 1, attempt: 1 }, occurred_at: '2026-09-04T00:00:02Z' },
+      { sequence_no: 3, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: 'workflow-activity-retry', activity_id: 1, attempt: 2 }, occurred_at: '2026-09-04T00:00:03Z' },
+    ]
+    const toolOnly = buildRuntimeGraph(detail(), { worker: nodeDetail([toolRetry]) })
+    const activityOnly = buildRuntimeGraph(detail(activityEvents))
+    expect(toolOnly.stats).toMatchObject({ toolRetries: 1, activityRetries: 0, retries: 1 })
+    expect(activityOnly.stats).toMatchObject({ toolRetries: 0, activityRetries: 1, retries: 0 })
+    expect(runtimeRetrySummary(toolOnly.stats.toolRetries, toolOnly.stats.activityRetries)).toEqual(['工具重试 1'])
+    expect(runtimeRetrySummary(activityOnly.stats.toolRetries, activityOnly.stats.activityRetries)).toEqual(['活动重试 1'])
+  })
+
+  it('deduplicates multiple persisted retry attempts for one activity', () => {
+    const events: RunDetail['events'] = [
+      { sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: 'workflow-multiple-attempts', activity_id: 9, attempt: 2 }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: 'workflow-multiple-attempts', activity_id: 9, attempt: 3 }, occurred_at: '2026-09-04T00:00:02Z' },
+    ]
+    expect(countActivityRetries(events)).toBe(1)
+    expect(buildRuntimeGraph(detail(events)).stats.activityRetries).toBe(1)
+  })
+
+  it('shows both retry categories, while neither category stays absent', () => {
+    const activityEvents: RunDetail['events'] = [
+      { sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: 'workflow-both-retries', activity_id: 1, attempt: 1 }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: 'workflow-both-retries', activity_id: 1, attempt: 2 }, occurred_at: '2026-09-04T00:00:02Z' },
+    ]
+    const both = buildRuntimeGraph(detail(activityEvents), { worker: nodeDetail([call('tool-retry', 'ampgan', '2026-09-04T00:00:00Z', { attempt: 2 })]) })
+    const neither = buildRuntimeGraph(detail([{ sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: 'workflow-no-retries', activity_id: 1, attempt: 1 }, occurred_at: '2026-09-04T00:00:01Z' }]))
+    expect(both.stats).toMatchObject({ toolRetries: 1, activityRetries: 1 })
+    expect(runtimeRetrySummary(both.stats.toolRetries, both.stats.activityRetries)).toEqual(['活动重试 1', '工具重试 1'])
+    expect(neither.stats).toMatchObject({ toolRetries: 0, activityRetries: 0, retries: 0 })
+    expect(runtimeRetrySummary(neither.stats.toolRetries, neither.stats.activityRetries)).toEqual([])
+  })
+
+  it('does not count recovery scheduling as either retry category', () => {
+    const events: RunDetail['events'] = [{ sequence_no: 1, type: 'mvp_human.autoresearch.recovery_scheduled', actor: 'mvp-human-controller', payload: { recovery_attempt: 4 }, occurred_at: '2026-09-04T00:00:01Z' }]
+    const result = buildRuntimeGraph(detail(events))
+    expect(countActivityRetries(events)).toBe(0)
+    expect(result.stats).toMatchObject({ toolRetries: 0, activityRetries: 0, retries: 0 })
+    expect(runtimeRetrySummary(result.stats.toolRetries, result.stats.activityRetries)).toEqual([])
+  })
+
   it('counts completed and failed activities as closed, while isolating attempts', () => {
     const execution = 'workflow-run-open-activity'
     const events: RunDetail['events'] = [

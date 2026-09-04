@@ -13,6 +13,9 @@ export interface RuntimeGraphStats {
   observedEvents: number
   openActivities: number
   repeatedTools: number
+  toolRetries: number
+  activityRetries: number
+  /** @deprecated Use toolRetries; this compatibility field never includes lifecycle activity retries. */
   retries: number
   parallelGroups: number
   cycles: number
@@ -334,13 +337,19 @@ function isTerminalActivityEvent(event: TimelineEvent) {
   return hasActivityIdentity && ['succeeded', 'completed', 'failed', 'cancelled'].includes(suffix ?? '')
 }
 
-function activityBoundaryIdentity(event: TimelineEvent) {
+function activityLogicalIdentity(event: TimelineEvent) {
   const payload = record(event.payload)
   const workflowRunId = text(payload.workflow_run_id).trim()
   const activityId = payload.activity_id
-  const attempt = integerField(payload.attempt)
-  if (!workflowRunId || (typeof activityId !== 'string' && typeof activityId !== 'number') || attempt === null || attempt < 1) return null
-  return `${workflowRunId}:activity=${activityId}:attempt=${attempt}`
+  if (!workflowRunId || (typeof activityId !== 'string' && typeof activityId !== 'number')) return null
+  return `${workflowRunId}:activity=${activityId}`
+}
+
+function activityBoundaryIdentity(event: TimelineEvent) {
+  const identity = activityLogicalIdentity(event)
+  const attempt = integerField(record(event.payload).attempt)
+  if (!identity || attempt === null || attempt < 1) return null
+  return `${identity}:attempt=${attempt}`
 }
 
 function activityBoundaryEvents(events: TimelineEvent[]) {
@@ -361,6 +370,28 @@ export function countOpenActivities(events: TimelineEvent[]) {
     else if (['succeeded', 'completed', 'failed', 'cancelled'].includes(suffix ?? '')) states.set(identity, false)
   }
   return [...states.values()].filter(Boolean).length
+}
+
+function activityAttemptsByIdentity(events: TimelineEvent[]) {
+  const attempts = new Map<string, number>()
+  for (const event of events) {
+    const identity = activityLogicalIdentity(event)
+    const attempt = identity ? integerField(record(event.payload).attempt) : null
+    if (!identity || attempt === null) continue
+    attempts.set(identity, Math.max(attempts.get(identity) ?? 0, attempt))
+  }
+  return attempts
+}
+
+export function countActivityRetries(events: TimelineEvent[]) {
+  return [...activityAttemptsByIdentity(events).values()].filter((attempt) => attempt > 1).length
+}
+
+export function runtimeRetrySummary(toolRetries: number, activityRetries: number) {
+  const labels: string[] = []
+  if (Number.isInteger(activityRetries) && activityRetries > 0) labels.push(`活动重试 ${activityRetries}`)
+  if (Number.isInteger(toolRetries) && toolRetries > 0) labels.push(`工具重试 ${toolRetries}`)
+  return labels
 }
 
 export function runtimeActivitySummary(runStatus: string, openActivities: number) {
@@ -429,17 +460,11 @@ function executionFacts(events: TimelineEvent[]) {
 }
 
 function activityAttemptFacts(events: TimelineEvent[]) {
-  const attempted = events.map((event) => ({ event, attempt: activityAttempt(event) })).filter((item): item is { event: TimelineEvent; attempt: number } => item.attempt !== null)
-  if (!attempted.length) return []
-  const maxAttempt = Math.max(...attempted.map((item) => item.attempt))
-  const retriedActivities = new Set(attempted.filter((item) => item.attempt > 1).map(({ event }) => {
-    const payload = record(event.payload)
-    const activityId = payload.activity_id
-    const execution = eventExecutionIdentity(event.payload)
-    return execution && (typeof activityId === 'string' || typeof activityId === 'number') ? `${execution}:activity=${activityId}` : `event:${event.sequence_no}`
-  }))
-  if (!retriedActivities.size) return []
-  return [{ label: '活动重试', value: `${retriedActivities.size} 个活动 · 最高第 ${maxAttempt} 次` }]
+  const attempts = activityAttemptsByIdentity(events)
+  const retriedActivities = [...attempts.values()].filter((attempt) => attempt > 1)
+  if (!retriedActivities.length) return []
+  const maxAttempt = Math.max(...attempts.values())
+  return [{ label: '活动重试', value: `${retriedActivities.length} 个活动 · 最高第 ${maxAttempt} 次` }]
 }
 
 function eventNode(event: TimelineEvent): GraphStage {
@@ -1048,12 +1073,16 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
   const toolCounts = new Map<string, number>()
   for (const call of Object.values(calls)) toolCounts.set(call.tool_name, (toolCounts.get(call.tool_name) ?? 0) + 1)
   const parallelGroups = parallelRelationSignatures.size
+  const toolRetries = Object.values(calls).filter((call) => call.attempt > 1).length
+  const activityRetries = countActivityRetries(Object.values(events))
   const stats: RuntimeGraphStats = {
     observedCalls: Object.keys(calls).length,
     observedEvents: Object.keys(events).length,
     openActivities: countOpenActivities(Object.values(events)),
     repeatedTools: [...toolCounts.values()].filter((count) => count > 1).length,
-    retries: Object.values(calls).filter((call) => call.attempt > 1).length,
+    toolRetries,
+    activityRetries,
+    retries: toolRetries,
     parallelGroups,
     cycles: detectCycles(nodes.map((node) => node.id), edges),
     unfinished: Object.values(calls).filter((call) => !callStatuses.has(call.status) && !stoppedStatuses.has(call.status)).length,
