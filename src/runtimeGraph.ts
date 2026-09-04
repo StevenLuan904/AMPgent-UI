@@ -907,8 +907,11 @@ function computePositions(nodes: GraphStage[], requestedColumns?: number, availa
   const rowGap = 34
   const laneGap = 42
   const nodeHeight = (node: GraphStage) => {
-    if (node.runtime?.expanded) return 224
-    if (['tool_group', 'event_group', 'batch_group'].includes(node.runtime?.node_type ?? '')) return 184
+    // Group cards include operation/status/time facts and a visible expand
+    // affordance; their rendered height is materially larger than a plain
+    // node. Reserve that real card footprint before placing the next lane.
+    if (node.runtime?.expanded) return 260
+    if (['tool_group', 'event_group', 'batch_group'].includes(node.runtime?.node_type ?? '')) return 260
     return 180
   }
   const laneRowHeights = laneItems.map((items, lane) => {
@@ -1217,7 +1220,8 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
   if (options.sourceFetch && options.sourceFetch.failed > 0) gaps.push(`节点明细仅加载 ${options.sourceFetch.loaded}/${options.sourceFetch.requested} 个；${options.sourceFetch.failed} 个读取失败或超时，当前运行图不完整。`)
   else if (options.sourceFetch && options.sourceFetch.loaded < options.sourceFetch.requested && (options.sourceFetch.deferred ?? 0) > 0) gaps.push(`节点明细已加载 ${options.sourceFetch.loaded}/${options.sourceFetch.requested} 个；其余 ${options.sourceFetch.deferred} 个按需读取，当前运行图仍不完整。`)
   else if (options.sourceFetch && options.sourceFetch.loaded < options.sourceFetch.requested) gaps.push(`节点明细正在加载 ${options.sourceFetch.loaded}/${options.sourceFetch.requested} 个；当前运行图仍不完整。`)
-  if (!detail.graph.nodes.length) gaps.push('运行详情未提供阶段摘要；无法核对旧版兼容数据。')
+  if (detail.graph.nodes.length) gaps.push('详情中的固定拓扑摘要仅用于兼容核对，未纳入运行图；当前图仅使用真实事件、工具调用、候选与显式关系。')
+  else gaps.push('运行详情未提供阶段摘要；无法核对旧版兼容数据。')
 
   const toolCounts = new Map<string, number>()
   for (const call of Object.values(calls)) toolCounts.set(call.tool_name, (toolCounts.get(call.tool_name) ?? 0) + 1)

@@ -244,6 +244,7 @@ describe('buildRuntimeGraph', () => {
     const expanded = buildRuntimeGraph(detail([{ sequence_no: 1, type: 'tool_call.started', actor: 'worker', payload: { tool_call_id: 'call-1' }, occurred_at: '2026-09-04T00:00:00Z' }]), { worker: nodeDetail([first, second]) }, { expandedGroups: new Set(['tool-group:ampgan:call-1']) })
     expect(expanded.edges).toEqual(expect.arrayContaining([expect.objectContaining({ source: 'event:1', target: 'call:call-1', provenance: 'database', relation_kind: 'association' })]))
     expect(result.gaps).toContain('接口未返回工具调用依赖、重试或回退关系；未按时间顺序补画推断边。')
+    expect(result.gaps).toContain('详情中的固定拓扑摘要仅用于兼容核对，未纳入运行图；当前图仅使用真实事件、工具调用、候选与显式关系。')
   })
 
   it('preserves explicit dependency cycles instead of flattening them', () => {
