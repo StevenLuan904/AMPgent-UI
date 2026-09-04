@@ -1,0 +1,82 @@
+{
+  "schema_version": "ampgent.vegfa-pepmlm-peripheral-rescue-close.1",
+  "target_key": "vegfa",
+  "source": "PepMLM",
+  "operator_id": "vegfa-pepmlm-peripheral-rescue-1aa-v1",
+  "generation": 5,
+  "seed": 20260904,
+  "strategy": "preserve_N_terminal_WW_and_edit_peripheral_A_or_S_positions",
+  "proposal_count": 8,
+  "pg_exact": {
+    "potential_child_hashes_checked": 8,
+    "pg_existing_child_hashes": 0,
+    "pg_new_proposals": 8,
+    "historical_edit_keys_checked": 0,
+    "historical_replay_count": 0
+  },
+  "parent": {
+    "run_id": "98170454-be7f-5ab2-8add-979b9f11ddad",
+    "candidate_id": "af5474ec-97c5-457d-93b3-b861f59705b2",
+    "sequence": "SWWAELLAASGPRLRRAHK",
+    "sequence_sha256": "b44a23e10305e886fac05ad3b3d9454196d52d35cf89a76c0b6acf93bd7b2a23",
+    "identity_kind": "authoritative_candidate"
+  },
+  "formal12": {
+    "complete": 8,
+    "display_eligible": 4,
+    "toxinpred3_non_toxin": 8,
+    "macrel_low": 8,
+    "guruprasad_le_50": 4,
+    "calibrated_activity_support_ge_2": 1,
+    "excellent": 1
+  },
+  "challenger": {
+    "hemopi2_reviewed": 8,
+    "hemopi2_no_conflict": 8,
+    "hemopi2_conflict": 0,
+    "apex": {
+      "applicability_status": "runtime_unavailable",
+      "conflict_status": "not_assessed"
+    },
+    "peptiverse": {
+      "applicability_status": "runtime_unavailable",
+      "conflict_status": "not_assessed"
+    }
+  },
+  "qd": {
+    "archive_cells": 2160,
+    "quality_eligible": 1,
+    "new_cell": 1,
+    "incumbent_replacement": 0,
+    "effective_archive_contribution": 1,
+    "candidate_sequence_sha256": "a8b20057ca7190756674d43eeb02820152d75f4197882d928bb3526ed0fc761b",
+    "cell_id": "q4-h2-m3-l2",
+    "contribution": "empty_cell"
+  },
+  "materialization": {
+    "run_id": "d710662b-a74c-50ec-b152-5ea4d72903d3",
+    "candidate_id": "566eded1-dabc-40d1-88d0-7d50c07195b6",
+    "tool_call_id": "778d55d9-0fda-4813-bed5-a55f9a6e040c",
+    "candidate_count": 1,
+    "evaluation_count": 17,
+    "evaluation_count_per_candidate": 17,
+    "formal_evaluation_count": 12,
+    "challenger_evaluation_count": 3,
+    "shadow_evaluation_count": 2,
+    "subject_run_drift_count": 0,
+    "global_exact_replay_skip_count": 0,
+    "status": "succeeded"
+  },
+  "structure_queue": {
+    "count": 1,
+    "candidate_id": "566eded1-dabc-40d1-88d0-7d50c07195b6",
+    "task_key": "rosetta-coarse5:vegfa:d710662b-a74c-50ec-b152-5ea4d72903d3:566eded1-dabc-40d1-88d0-7d50c07195b6",
+    "nstruct": 5,
+    "status": "prepared_not_dispatched",
+    "dispatch_allowed": false,
+    "median_dg_gate": -30,
+    "pool_a_admitted": false
+  },
+  "historical_runs_modified": false,
+  "gpu_rosetta_md_submitted": false
+}
