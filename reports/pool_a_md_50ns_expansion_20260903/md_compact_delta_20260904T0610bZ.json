@@ -1,0 +1,32 @@
+{
+  "schema_version": "ampgent.pool-a-md-compact-delta.1",
+  "observed_at_utc": "2026-09-04T06:09:52Z",
+  "identity_key": "subject_run_id+candidate_id",
+  "state_partition": {
+    "expected_unique": 486,
+    "launched_unique": 58,
+    "md_complete_unique": 42,
+    "full_evidence_unique": 40,
+    "analysis_pending_unique": 2,
+    "running_unique": 16,
+    "not_started_unique": 428,
+    "failed_unique": 0
+  },
+  "new_launch": {
+    "target_key": "angpt1",
+    "run_id": "9bcbda95-56a0-52b0-80ba-296fc22a0e4e",
+    "candidate_id": "d029d236-d2af-47e6-827e-80d453a55cc9",
+    "gpu_index": 6
+  },
+  "new_md_completion": {
+    "target_key": "vegfa",
+    "candidate_id": "f6755e1e-c08f-496c-8f36-84d18138e366",
+    "npt_ns": 1.0,
+    "production_ns": 50.0,
+    "analysis_pending": true
+  },
+  "source_sync_receipt": "compact-sync-20260904T0620Z.json",
+  "structure_or_trajectory_copied": false,
+  "remote_files_deleted": false,
+  "remote_task_restarted": false
+}
