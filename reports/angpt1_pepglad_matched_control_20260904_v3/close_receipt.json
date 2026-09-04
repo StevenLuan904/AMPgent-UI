@@ -1,0 +1,41 @@
+{
+  "schema_version": "ampgent.angpt1-pepglad-matched-control-close.1",
+  "target_key": "angpt1",
+  "source": "PepGLAD",
+  "operator_id": "angpt1-pepglad-matched-control-1aa-v1",
+  "seed": 20260904,
+  "proposal_count": 12,
+  "formal12_count": 12,
+  "display_count": 10,
+  "activity_support_ge_2_count": 11,
+  "challenger_reviewed_count": 12,
+  "challenger_no_conflict_count": 12,
+  "shadow_status": {
+    "apex": "runtime_unavailable/not_assessed",
+    "peptiverse": "runtime_unavailable/not_assessed"
+  },
+  "qd": {
+    "quality_eligible_count": 9,
+    "new_cell_count": 1,
+    "replacement_count": 0,
+    "same_cell_non_elite_count": 8
+  },
+  "postgresql": {
+    "run_id": "8d950460-0fd6-577a-8ddc-89e180538fa6",
+    "candidate_ids": ["d4faf661-4c20-415d-93f5-a680ca194a59"],
+    "candidate_count": 1,
+    "evaluation_count": 17,
+    "tool_call_id": "05d3ce9d-c20e-4f81-889e-5b4bce734110",
+    "subject_run_drift_count": 0
+  },
+  "structure_queue": {
+    "candidate_count": 1,
+    "status": "prepared_not_dispatched",
+    "dispatch_allowed": false,
+    "nstruct": 5,
+    "pool_a_admitted_count": 0,
+    "median_dg_gate": "< -30 required before Pool A"
+  },
+  "historical_runs_modified": false,
+  "gpu_rosetta_md_submitted": false
+}
