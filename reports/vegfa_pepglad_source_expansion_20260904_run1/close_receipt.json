@@ -1,0 +1,84 @@
+{
+  "schema_version": "ampgent.vegfa-pepglad-source-expansion-close.1",
+  "observed_at_utc": "2026-09-04T04:14:57.3018559Z",
+  "target_key": "vegfa",
+  "source": "PepGLAD",
+  "operator_id": "vegfa-pepglad-source-expansion-1aa-v1",
+  "generation": {
+    "proposal_count": 12,
+    "pg_new_count": 12,
+    "parent_count": 1,
+    "donor_count": 14,
+    "historical_edit_count": 92,
+    "gpu_rosetta_md_submitted": false
+  },
+  "formal12": {
+    "score_all_complete": 12,
+    "display_eligible": 6,
+    "calibrated_support_ge_2": 4,
+    "excellent": 0,
+    "hemopi2_reviewed": 12,
+    "hemopi2_no_conflict": 10,
+    "hemopi2_conflict": 2,
+    "apex": "runtime_unavailable/not_assessed",
+    "peptiverse": "runtime_unavailable/not_assessed"
+  },
+  "calibration": {
+    "parent_run_id": "98170454-be7f-5ab2-8add-979b9f11ddad",
+    "reference_source": "postgresql_asyncpg",
+    "legacy_contract_compatibility": "parent projection now explicitly includes activity and safety gate metrics",
+    "historical_run_modified": false
+  },
+  "qd": {
+    "eligible_batch_candidate_count": 0,
+    "new_cell_count": 0,
+    "incumbent_replacement_count": 0,
+    "effective_archive_contribution": 0,
+    "historical_run_modified": false
+  },
+  "pg_exact_preflight": {
+    "proposal_count": 12,
+    "unique_sequence_sha256_count": 12,
+    "global_existing_candidate_count": 0,
+    "replay_count": 0,
+    "materialization_allowed": false,
+    "reason": "no candidate passed excellent/QD contribution gate"
+  },
+  "materialization": {
+    "candidate_count": 0,
+    "evaluation_count": 0,
+    "tool_call_id": null,
+    "historical_runs_modified": false
+  },
+  "coarse5": {
+    "candidate_count": 0,
+    "nstruct": 5,
+    "status": "not_created",
+    "dispatch_allowed": false,
+    "reason": "no new-cell or incumbent-replacement candidate"
+  },
+  "failure_classification": {
+    "scientific_stage": "quality_gate_and_qd",
+    "runtime_failure": false,
+    "interpretation": "formal scoring and challenger completed; no candidate met the downstream quality/QD contribution gate"
+  },
+  "support_candidate_failure_diagnosis": {
+    "candidate_count": 4,
+    "display_and_support_intersection_count": 0,
+    "toxinpred3_fail_count": 0,
+    "macrel_high_fail_count": 4,
+    "guruprasad_over_50_fail_count": 1,
+    "diagnosis_csv": "support_failure_diagnosis.csv"
+  },
+  "next_operator_selection": {
+    "operator_id": "vegfa-pepglad-macrel-rescue-1aa-v1",
+    "basis": "all four support-positive rows fail Macrel low; one also exceeds Guruprasad 50",
+    "proposal_limit": 12,
+    "strategy": "conservative one-residue safety rescue preserving activity-support parent patterns",
+    "hard_gates_unchanged": true,
+    "hydrophobicity_hard_gate": false,
+    "requires_formal12_calibration_challenger_qd": true
+  },
+  "remote_large_artifact_downloaded": false,
+  "historical_runs_modified": false
+}

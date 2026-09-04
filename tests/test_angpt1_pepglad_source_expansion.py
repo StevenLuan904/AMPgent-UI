@@ -92,6 +92,8 @@ def test_calibration_parent_override_is_available_without_changing_default() -> 
     )
     assert '"--parent-run-id"' in text
     assert "PARENT_RUNS[branch.strip().casefold()]" in text
+    assert "PARENT_GATE_METRICS" in text
+    assert "activity_metrics = {metric_name for metric_name, _ in ACTIVITY_METRICS}" in text
 
 
 def test_acea_source_expansion_receipts_keep_qd_and_shadow_semantics() -> None:

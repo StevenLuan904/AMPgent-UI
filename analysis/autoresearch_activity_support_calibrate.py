@@ -32,6 +32,20 @@ ACTIVITY_METRICS = (
     ("llamp_log10_mic_um", "minimize"),
     ("macrel_amp_probability", "maximize"),
 )
+PARENT_GATE_METRICS = frozenset(
+    {
+        "guruprasad_instability_index",
+        "toxinpred3_label",
+        "macrel_hemolysis_label",
+    }
+)
+
+
+def _parent_required_metrics(contract_metrics: set[str]) -> set[str]:
+    """Keep parent safety evidence available for legacy contract projections."""
+
+    activity_metrics = {metric_name for metric_name, _ in ACTIVITY_METRICS}
+    return set(contract_metrics) | PARENT_GATE_METRICS | activity_metrics
 
 
 def _write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
@@ -50,8 +64,13 @@ async def _parent_metric_values(branch_key: str) -> dict[str, list[float]]:
         if run is None:
             raise ValueError(f"missing parent run: {run_id}")
         request = dict((run.spec_json or {}).get("workflow_request") or {})
-        required_metrics = set(
-            (request.get("execution_contract") or {}).get("required_sequence_metrics") or ()
+        required_metrics = _parent_required_metrics(
+            set(
+                (request.get("execution_contract") or {}).get(
+                    "required_sequence_metrics"
+                )
+                or ()
+            )
         )
         candidates = list(
             await session.scalars(
@@ -106,8 +125,13 @@ def _parent_metric_values_sync(branch_key: str) -> dict[str, list[float]]:
             if run is None:
                 raise ValueError(f"missing parent run: {run_id}")
             request = dict((run.spec_json or {}).get("workflow_request") or {})
-            required_metrics = set(
-                (request.get("execution_contract") or {}).get("required_sequence_metrics") or ()
+            required_metrics = _parent_required_metrics(
+                set(
+                    (request.get("execution_contract") or {}).get(
+                        "required_sequence_metrics"
+                    )
+                    or ()
+                )
             )
             candidates = list(
                 session.scalars(
