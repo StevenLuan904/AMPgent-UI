@@ -1,0 +1,29 @@
+{
+  "schema_version": "ampgent.pool-a-md-compact-delta.1",
+  "observed_at_utc": "2026-09-04T05:55:44Z",
+  "identity_key": "subject_run_id+candidate_id",
+  "candidate": {
+    "target_key": "pbp2a",
+    "run_id": "26cb1ff7-144e-5e33-892d-0ac012954716",
+    "candidate_id": "c6833768-7739-4b53-9752-2fd772270d47",
+    "interface_rmsd_mean_nm": 0.2455703616142273,
+    "native_contact_fraction_mean": 0.6324666666666666,
+    "hydrogen_bond_occupancy": 1.0,
+    "salt_bridge_occupancy": 1.0,
+    "water_bridge_occupancy": 1.0,
+    "peptide_departed": false,
+    "mmgbsa_mean_kcal_mol": -115.39084398888973,
+    "mmgbsa_ci95_kcal_mol": [-126.62752769333439, -105.69685728444567],
+    "residue_decomposition_present": true
+  },
+  "state_delta": {
+    "main_475_full_evidence_unique_before": 36,
+    "main_475_full_evidence_unique_after": 37,
+    "full_486_full_evidence_unique_before": 39,
+    "full_486_full_evidence_unique_after": 40
+  },
+  "source_sync_receipt": "compact-sync-20260904T0555Z.json",
+  "structure_or_trajectory_copied": false,
+  "remote_files_deleted": false,
+  "remote_task_restarted": false
+}
