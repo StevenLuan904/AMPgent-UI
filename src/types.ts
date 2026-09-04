@@ -52,7 +52,7 @@ export interface GraphStage {
 }
 
 export interface RuntimeNodeMeta {
-  node_type: 'tool_call' | 'tool_group' | 'lifecycle_event' | 'generation'
+  node_type: 'tool_call' | 'tool_group' | 'event_group' | 'batch_group' | 'lifecycle_event' | 'generation'
   source_id: string
   observed_at: string | null
   actor?: string
@@ -61,6 +61,7 @@ export interface RuntimeNodeMeta {
   explicit_relation_count?: number
   candidate_count?: number
   child_ids?: string[]
+  event_ids?: string[]
   grouping_basis?: string
   expanded?: boolean
   status_breakdown?: string

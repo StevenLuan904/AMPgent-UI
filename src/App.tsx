@@ -50,7 +50,7 @@ import {
 import { LaneLabel, WorkflowNode, type LaneNode, type StageNode } from './WorkflowNode'
 import { assertMatchingRunIdentity, type RunIdentity } from './runIdentity'
 import { formatRunTitle } from './runPresentation'
-import { buildRuntimeGraph, type RuntimeGraphModel } from './runtimeGraph'
+import { buildRuntimeGraph, runtimeEventStatus, type RuntimeGraphModel } from './runtimeGraph'
 import { nodeDetailCacheTtlMs, observerIdlePrefetchDelayMs, observerInitialPrefetchCount, observerListTimeoutMs, observerNodeDetailCacheKey, observerNodeDetailTimeoutMs, observerPollingIntervalMs, observerPrefetchStageOrder, observerRunDetailCacheKey, observerRunDetailTimeoutMs, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion } from './observerPolling'
 import { schedulerHealthDescription, schedulerHealthPresentation } from './schedulerHealth'
 import type {
@@ -63,6 +63,7 @@ import type {
   RunDetail,
   RunListItem,
   RunListResponse,
+  TimelineEvent,
   ToolAttempt,
   ViewerArtifact,
 } from './types'
@@ -598,6 +599,19 @@ function GraphView({
 }) {
   const flowInstance = useRef<ReactFlowInstance<LaneNode | StageNode, Edge> | null>(null)
   const hasDeferredNodeDetails = (runtimeGraph.sourceFetch?.deferred ?? 0) > 0
+  const fitReadableViewport = useCallback(async () => {
+    const instance = flowInstance.current
+    if (!instance) return
+    await instance.fitView({ padding: 0.22, minZoom: 0.64, maxZoom: 1, duration: 180 })
+    const viewport = instance.getViewport()
+    const positions = Object.values(runtimeGraph.positions)
+    if (!positions.length) return
+    const minX = Math.min(...positions.map((position) => position.x))
+    const minY = Math.min(...positions.map((position) => position.y))
+    const x = Math.max(viewport.x, 150 - minX * viewport.zoom)
+    const y = Math.max(viewport.y, 138 - minY * viewport.zoom)
+    if (x !== viewport.x || y !== viewport.y) await instance.setViewport({ ...viewport, x, y }, { duration: 120 })
+  }, [runtimeGraph.positions])
   useEffect(() => {
     const applyChineseControlLabels = () => {
       const root = document.querySelector('.graph-area')
@@ -615,8 +629,39 @@ function GraphView({
     const frame = window.requestAnimationFrame(applyChineseControlLabels)
     return () => window.cancelAnimationFrame(frame)
   }, [detail.run.id])
-  const nodes = useMemo<Array<StageNode | LaneNode>>(() => [
-    ...runtimeGraph.nodes.map((stage): StageNode => ({
+  useEffect(() => {
+    // Opening the inspector changes the flex width of the canvas. Re-fit after
+    // that layout settles so the first column is not left outside the new
+    // viewport; the user can still pan afterwards.
+    let settleFrame = 0
+    const frame = window.requestAnimationFrame(() => {
+      settleFrame = window.requestAnimationFrame(() => {
+        void fitReadableViewport()
+      })
+    })
+    return () => {
+      window.cancelAnimationFrame(frame)
+      if (settleFrame) window.cancelAnimationFrame(settleFrame)
+    }
+  }, [detail.run.id, fitReadableViewport, runtimeGraph.nodes.length, selectedStage])
+  const nodes = useMemo<Array<StageNode | LaneNode>>(() => {
+    const nodesInLane = (types: string[]) => runtimeGraph.nodes.filter((stage) => types.includes(stage.runtime?.node_type ?? ''))
+    const laneY = (types: string[], fallback: number) => {
+      const values = nodesInLane(types).map((stage) => runtimeGraph.positions[stage.id]?.y).filter((value): value is number => typeof value === 'number')
+      return values.length ? Math.min(...values) : fallback
+    }
+    const eventNodes = nodesInLane(['lifecycle_event', 'event_group'])
+    const eventBottom = eventNodes.map((stage) => runtimeGraph.positions[stage.id]?.y ?? 150).reduce((maximum, value) => Math.max(maximum, value), 150)
+    const candidateY = laneY(['generation'], eventBottom + 440)
+    const toolY = laneY(['tool_call', 'tool_group', 'batch_group'], Math.round((eventBottom + candidateY) / 2))
+    const laneNodes: LaneNode[] = [
+      { id: 'lane:events', type: 'lane', position: { x: 0, y: laneY(['lifecycle_event', 'event_group'], 150) }, data: { index: '01', label: '观测时间轨', description: '按持久化时间排列' }, draggable: false, selectable: false },
+      { id: 'lane:tools', type: 'lane', position: { x: 0, y: toolY }, data: { index: '02', label: '工具调用', description: runtimeGraph.stats.observedCalls > 0 ? '同段聚合，可展开明细' : hasDeferredNodeDetails ? '明细按需读取' : '未观测到调用' }, draggable: false, selectable: false },
+      { id: 'lane:candidates', type: 'lane', position: { x: 0, y: candidateY }, data: { index: '03', label: '代际 / 候选', description: '谱系与记录独立呈现' }, draggable: false, selectable: false },
+    ]
+    return [
+      ...laneNodes,
+      ...runtimeGraph.nodes.map((stage): StageNode => ({
       id: stage.id,
       type: 'stage',
       position: runtimeGraph.positions[stage.id] ?? { x: 0, y: 0 },
@@ -631,8 +676,9 @@ function GraphView({
         onToggleGroup,
       },
       draggable: false,
-    })),
-  ], [analysisSelection, analysisSnapshot, detail, onToggleGroup, persistedDistributions, runtimeGraph, selectedStage, selectionMode])
+      })),
+    ]
+  }, [analysisSelection, analysisSnapshot, detail, hasDeferredNodeDetails, onToggleGroup, persistedDistributions, runtimeGraph, selectedStage, selectionMode])
   const stageById = useMemo(() => Object.fromEntries(runtimeGraph.nodes.map((node) => [node.id, node])), [runtimeGraph.nodes])
   const edges = useMemo<Edge[]>(() => runtimeGraph.edges.map((edge, index) => {
     const source = stageById[edge.source] as GraphStage | undefined
@@ -668,7 +714,8 @@ function GraphView({
     else onSelect(node.id)
   }
   const handleNodeDoubleClick: NodeMouseHandler = (_, node) => {
-    if (node.type === 'stage' && (node.data as StageNode['data']).stage.runtime?.node_type === 'tool_group') onToggleGroup(node.id)
+    const nodeType = node.type === 'stage' ? (node.data as StageNode['data']).stage.runtime?.node_type : undefined
+    if (nodeType === 'tool_group' || nodeType === 'event_group' || nodeType === 'batch_group') onToggleGroup(node.id)
   }
   const handleEdgeClick: EdgeMouseHandler = (_, edge) => {
     const edgeDetail = (edge.data as { detail?: GraphEdgeDetail } | undefined)?.detail
@@ -697,12 +744,10 @@ function GraphView({
         <Background variant={BackgroundVariant.Dots} gap={26} size={1} color="#e8ebf1" />
         <Controls showInteractive={false} showFitView={false} position="bottom-left" />
       </ReactFlow>
-      <button className="runtime-fit-button" aria-label="适合画布" title="适合画布" onClick={() => flowInstance.current?.setViewport({ x: 22, y: 68, zoom: 0.82 }, { duration: 180 })}>适合画布</button>
-      <div className={`runtime-lane-labels ${runtimeGraph.stats.observedCalls === 0 ? 'compact' : ''}`} aria-hidden="true"><span><b>01</b>观测时间轨<small>按时间从左至右</small></span><span><b>02</b>工具调用<small>{runtimeGraph.stats.observedCalls > 0 ? '同段聚合，可展开尝试' : hasDeferredNodeDetails ? '明细尚未读取，按需加载' : runtimeGraph.gaps.some((gap) => gap.includes('节点明细正在')) ? '正在读取工具调用明细' : '未观测到工具调用'}</small></span><span><b>03</b>代际 / 候选<small>谱系与记录独立呈现</small></span></div>
-      {runtimeGraph.stats.observedCalls === 0 && runtimeGraph.sourceFetch && runtimeGraph.sourceFetch.loaded + runtimeGraph.sourceFetch.failed < runtimeGraph.sourceFetch.requested && <div className="runtime-tool-loading" role="status"><i /><span>{hasDeferredNodeDetails ? '工具调用明细按需读取，当前尚未完整呈现' : '正在读取工具调用明细…'}</span><b>{runtimeGraph.sourceFetch.loaded}/{runtimeGraph.sourceFetch.requested}</b></div>}
+      <button className="runtime-fit-button" aria-label="适合画布" title="适合画布" onClick={() => { void fitReadableViewport() }}>适合画布</button>
       <div className="runtime-graph-summary" role="status">
         <div className="runtime-graph-summary-head"><span className="runtime-live-dot" /><b>{syncingStale ? '上次读取 · 正在同步' : detail.source === 'postgresql' ? '真实运行图' : '验收运行图'}</b><small>可见 {runtimeGraph.nodes.length} · 关系 {runtimeGraph.edges.length}</small></div>
-        <div className="runtime-graph-stats"><span>调用 {runtimeGraph.stats.observedCalls}</span><span>事件 {runtimeGraph.stats.observedEvents}</span><span>聚合 {Object.keys(runtimeGraph.toolGroups).length}</span><span>重试 {runtimeGraph.stats.retries}</span><span>并行组 {runtimeGraph.stats.parallelGroups}</span>{runtimeGraph.stats.cycles > 0 && <span>依赖循环 {runtimeGraph.stats.cycles}</span>}</div>
+        <div className="runtime-graph-stats"><span>调用 {runtimeGraph.stats.observedCalls}</span><span>事件 {runtimeGraph.stats.observedEvents}</span><span>聚合 {runtimeGraph.nodes.filter((node) => ['tool_group', 'event_group', 'batch_group'].includes(node.runtime?.node_type ?? '')).length}</span><span>重试 {runtimeGraph.stats.retries}</span><span>并行组 {runtimeGraph.stats.parallelGroups}</span>{runtimeGraph.stats.cycles > 0 && <span>依赖循环 {runtimeGraph.stats.cycles}</span>}</div>
         {!!runtimeGraph.gaps.length && <p title={runtimeGraph.gaps.join('；')}>数据契约缺口 {runtimeGraph.gaps.length} 项 · 未补画未知关系</p>}
         <div className="runtime-graph-legend"><span><i className="legend-dot time" />位置按观测时间</span><span><i className="legend-line dependency" />依赖</span><span><i className="legend-line association" />关联/分组</span><span className="runtime-graph-nav">{runtimeGraph.nodes.length > 12 ? `首屏优先可读，后续还有约 ${runtimeGraph.nodes.length - 12} 项可向右平移` : '当前事实均在初始范围内'}</span></div>
       </div>
@@ -1044,21 +1089,25 @@ function RuntimeInspector({ detail, graph, nodeId, onClose, onToggleGroup }: { d
   const event = nodeId.startsWith('event:') ? graph.events[nodeId.slice(6)] : undefined
   const candidate = nodeId.startsWith('candidate:') ? detail.candidates.find((item) => item.id === nodeId.slice(10)) : undefined
   const generation = nodeId.startsWith('generation:') ? nodeId.slice(11) : undefined
-  const groupCallIds = node.runtime?.node_type === 'tool_group' ? node.runtime.child_ids ?? [] : []
+  const groupTypes = new Set(['tool_group', 'event_group', 'batch_group'])
+  const isRuntimeGroup = Boolean(node.runtime?.node_type && groupTypes.has(node.runtime.node_type))
+  const groupCallIds = isRuntimeGroup ? node.runtime?.child_ids ?? [] : []
+  const groupEventIds = isRuntimeGroup ? node.runtime?.event_ids ?? [] : []
   const groupCalls = groupCallIds.map((id) => graph.calls[id]).filter((item): item is ToolAttempt => Boolean(item))
-  const groupExpanded = groupCallIds.some((id) => graph.nodes.some((item) => item.id === `call:${id}`))
+  const groupEvents = groupEventIds.map((id) => graph.events[id]).filter((item): item is TimelineEvent => Boolean(item))
+  const groupExpanded = [...groupCallIds.map((id) => `call:${id}`), ...groupEventIds].some((id) => graph.nodes.some((item) => item.id === id))
   return (
     <aside className="inspector expanded-inspector runtime-inspector">
       <div className="inspector-header">
-        <div><small>{node.runtime?.node_type === 'tool_group' ? '运行节点 · 可追溯聚合' : '运行节点 · 数据库直读'}</small><h2 title={node.label}>{node.label}</h2></div>
+        <div><small>{isRuntimeGroup ? '运行节点 · 可追溯聚合' : '运行节点 · 数据库直读'}</small><h2 title={node.label}>{node.label}</h2></div>
         <button className="icon-button" aria-label="关闭运行节点详情" onClick={onClose}><X /></button>
       </div>
       <section className={`scientific-summary grade-${node.insight.grade}`}>
-        <div><small>{node.runtime?.node_type === 'tool_call' ? '工具调用事实' : node.runtime?.node_type === 'tool_group' ? '工具调用聚合事实' : node.runtime?.node_type === 'lifecycle_event' ? '生命周期事件事实' : '候选数据事实'}</small><strong><i />{node.insight.verdict}</strong></div>
+        <div><small>{node.runtime?.node_type === 'tool_call' ? '工具调用事实' : isRuntimeGroup ? '运行观测聚合事实' : node.runtime?.node_type === 'lifecycle_event' ? '生命周期事件事实' : '候选数据事实'}</small><strong><i />{node.insight.verdict}</strong></div>
         <p>{node.insight.reason}</p>
         <span>{node.insight.facts.map((fact) => `${fact.label} ${fact.value}`).join(' · ')}</span>
       </section>
-      {node.runtime?.node_type === 'tool_group' && <section className="inspector-section runtime-group-section"><div className="section-title"><h3>重复调用明细</h3><button className="group-toggle" onClick={() => onToggleGroup(node.id)}>{groupExpanded ? '收起尝试' : '展开尝试'}</button></div><p className="runtime-note">默认只显示聚合事实；双击图中聚合节点或使用此按钮，可查看每次尝试。卡面不展示内部标识，详情保留原始聚合依据。</p><code className="runtime-raw-key">聚合依据：{node.runtime.grouping_basis ?? '未返回'}</code><div className="runtime-group-list">{groupCalls.map((item) => <div key={item.id}><span className={`attempt-state ${item.status}`} /><b>尝试 {item.attempt}</b><small>{statusText[item.status] ?? item.status} · {item.id.slice(0, 8)}</small></div>)}</div></section>}
+      {isRuntimeGroup && <section className="inspector-section runtime-group-section"><div className="section-title"><h3>聚合明细</h3><button className="group-toggle" onClick={() => onToggleGroup(node.id)}>{groupExpanded ? '收起明细' : '展开明细'}</button></div><p className="runtime-note">默认显示批次或连续观测的汇总事实；展开后可按时间查看工具调用与生命周期事件。</p><code className="runtime-raw-key">聚合依据：{node.runtime?.grouping_basis ?? '未返回'}</code><div className="runtime-group-list">{groupCalls.map((item) => <div key={item.id}><span className={`attempt-state ${item.status}`} /><b>尝试 {item.attempt}</b><small>{statusText[item.status] ?? item.status}</small></div>)}{groupEvents.map((item) => { const status = runtimeEventStatus(item); return <div key={`event:${item.sequence_no}`}><span className={`attempt-state ${status}`} /><b>事件 {item.sequence_no}</b><small>{readableEventType(item.type)} · {statusText[status]} · {formatTime(item.occurred_at)}</small></div> })}</div></section>}
       {call && <section className="inspector-section"><div className="section-title"><h3>工具调用与证据</h3><span className={`stage-badge ${node.status}`}>{statusText[call.status] ?? call.status}</span></div><ToolAttemptDisclosure call={call} /></section>}
       {event && <section className="inspector-section"><div className="analysis-kicker"><Clock3 />事件 payload</div><div className="runtime-event-meta"><b>{event.actor}</b><span>序号 {event.sequence_no} · {formatTime(event.occurred_at)}</span></div><div className="runtime-raw-key">原始事件键：{event.type}</div><pre className="runtime-json">{JSON.stringify(event.payload, null, 2)}</pre></section>}
       {candidate && <section className="inspector-section"><div className="analysis-kicker"><GitBranch />候选记录</div><code className="runtime-sequence">{candidate.sequence}</code><div className="fact-grid"><Fact label="代际" value={candidate.generation ?? '—'} /><Fact label="父候选" value={candidate.parent_id ?? '未返回'} /><Fact label="生成调用" value={candidate.generator_call_id ?? '未返回'} /><Fact label="序列长度" value={candidate.length} /></div>{candidate.reasons.length > 0 && <div className="runtime-reasons"><span>后端返回原因（未用于状态推断）</span>{candidate.reasons.map((reason) => <b key={reason}>{reason}</b>)}</div>}</section>}

@@ -174,7 +174,7 @@ function addEdge(
   edges.push(edge)
 }
 
-function eventStatus(event: TimelineEvent) {
+export function runtimeEventStatus(event: TimelineEvent) {
   const terminalSuffixes = ['succeeded', 'completed', 'persisted', 'materialized', 'recorded', 'accepted', 'rejected', 'created']
   if (terminalSuffixes.some((suffix) => event.type.endsWith(`.${suffix}`))) return 'completed'
   if (event.type.endsWith('.started') || event.type.endsWith('.running') || event.type.endsWith('.progress')) return 'running'
@@ -241,7 +241,7 @@ function displayActor(actor: string) {
 }
 
 function eventNode(event: TimelineEvent): GraphStage {
-  const status = eventStatus(event)
+  const status = runtimeEventStatus(event)
   return {
     id: `event:${event.sequence_no}`,
     label: displayEventName(event.type),
@@ -328,50 +328,103 @@ function operationComposition(calls: ToolAttempt[]) {
   return [...counts.entries()].map(([name, count]) => `${name} ${count}`).join(' · ')
 }
 
+function eventComposition(events: TimelineEvent[]) {
+  const counts = new Map<string, number>()
+  const activities = new Map<string, TimelineEvent>()
+  for (const event of events) activities.set(eventActivityIdentity(event) ?? `event:${event.sequence_no}`, event)
+  for (const event of activities.values()) {
+    const activityType = text(record(event.payload).activity_type)
+    const name = activityType.includes('plan_autoresearch') ? '生成规划'
+      : activityType.includes('persist_autoresearch_action_plan') ? '规划持久化'
+        : activityType.includes('evaluate_v38_sequence_metric') ? '序列指标计算'
+          : activityType.includes('persist_v38_sequence_metric') ? '指标持久化'
+            : activityType ? '运行活动' : displayEventName(event.type)
+    counts.set(name, (counts.get(name) ?? 0) + 1)
+  }
+  return [...counts.entries()].map(([name, count]) => `${name} ${count}`).join(' · ')
+}
+
 function relationCount(calls: ToolAttempt[], collect: (value: unknown) => string[]) {
   return calls.reduce((total, call) => total + new Set([...collect(call.inputs), ...collect(call.parameters)]).size, 0)
 }
 
-function toolGroupNode(toolName: string, groupedCalls: ToolAttempt[], expanded: boolean, groupId: string, groupingBasis: string, displayBatchLabel: string): GraphStage {
-  const hasActive = groupedCalls.some((call) => activeStatuses.has(call.status))
-  const hasStopped = groupedCalls.some((call) => stoppedStatuses.has(call.status))
-  const status = hasActive ? 'running' : hasStopped && groupedCalls.some((call) => callStatuses.has(call.status)) ? 'pending' : hasStopped ? 'stopped' : groupedCalls.every((call) => callStatuses.has(call.status)) ? 'completed' : 'pending'
-  const grade = hasActive ? 'okay' : hasStopped && groupedCalls.some((call) => callStatuses.has(call.status)) ? 'fair' : hasStopped ? 'bad' : groupedCalls.every((call) => callStatuses.has(call.status)) ? 'good' : 'neutral'
+function eventActivityIdentity(event: TimelineEvent) {
+  const payload = record(event.payload)
+  const workflowRunId = text(payload.workflow_run_id)
+  const activityId = payload.activity_id
+  const attempt = payload.attempt
+  if (!workflowRunId || (typeof activityId !== 'string' && typeof activityId !== 'number')) return null
+  return `${workflowRunId}:activity=${activityId}:attempt=${typeof attempt === 'string' || typeof attempt === 'number' ? attempt : 1}`
+}
+
+function eventExecutionIdentity(value: unknown): string | null {
+  if (!value || typeof value !== 'object') return null
+  for (const [key, nested] of Object.entries(value as Record<string, unknown>)) {
+    if (key.toLowerCase() === 'workflow_run_id' && typeof nested === 'string' && nested.trim()) return `workflow_run_id=${nested.trim()}`
+    const child = eventExecutionIdentity(nested)
+    if (child) return child
+  }
+  return null
+}
+
+function eventOutcomeStatuses(events: TimelineEvent[]) {
+  const outcomes = new Map<string, string>()
+  for (const event of events) outcomes.set(eventActivityIdentity(event) ?? `event:${event.sequence_no}`, runtimeEventStatus(event))
+  return [...outcomes.values()]
+}
+
+function runtimeGroupNode(groupedCalls: ToolAttempt[], groupedEvents: TimelineEvent[], expanded: boolean, groupId: string, groupingBasis: string, displayBatchLabel: string): GraphStage {
+  const eventStatuses = eventOutcomeStatuses(groupedEvents)
+  const statuses = [...groupedCalls.map((call) => call.status), ...eventStatuses]
+  const hasActive = statuses.some((status) => activeStatuses.has(status))
+  const hasStopped = statuses.some((status) => stoppedStatuses.has(status))
+  const hasCompleted = statuses.some((status) => callStatuses.has(status))
+  const status = hasActive ? 'running' : hasStopped ? 'stopped' : statuses.length > 0 && statuses.every((item) => callStatuses.has(item)) ? 'completed' : 'pending'
+  const grade = hasActive ? 'okay' : hasStopped && hasCompleted ? 'fair' : hasStopped ? 'bad' : statuses.length > 0 && statuses.every((item) => callStatuses.has(item)) ? 'good' : 'neutral'
   const retryCount = relationCount(groupedCalls, retryIds)
   const fallbackCount = relationCount(groupedCalls, fallbackIds)
+  const total = groupedCalls.length + eventStatuses.length
+  const operationSummary = [operationComposition(groupedCalls), eventComposition(groupedEvents)].filter(Boolean).join(' · ')
+  const statusSummary = statuses.map(statusLabel).reduce((counts, item) => counts.set(item, (counts.get(item) ?? 0) + 1), new Map<string, number>())
+  const statusText = [...statusSummary.entries()].map(([label, count]) => `${label} ${count}`).join(' · ')
+  const observedDates = [...groupedCalls.map((call) => observedAt(call)), ...groupedEvents.map((event) => event.occurred_at)].filter((value): value is string => Boolean(value)).sort()
+  const observedSpanText = observedDates.length > 1 ? `时间跨度 ${Math.max(0, Math.round((Date.parse(observedDates.at(-1)!) - Date.parse(observedDates[0])) / 1000))} 秒` : '时间范围不完整'
+  const runtimeType = groupedEvents.length && !groupedCalls.length ? 'event_group' : groupedEvents.length ? 'batch_group' : 'tool_group'
+  const countLabel = groupedCalls.length && eventStatuses.length ? `${groupedCalls.length} 次调用 · ${eventStatuses.length} 项活动` : groupedCalls.length ? `${groupedCalls.length} 次调用` : `${eventStatuses.length} 项活动`
   return {
     id: groupId,
-    label: `${displayBatchLabel} · ${groupedCalls.length} 次调用`,
+    label: `${displayBatchLabel} · ${total} 项活动`,
     kind: 'tool',
     group: 'observed',
     status,
-    current: groupedCalls.filter((call) => callStatuses.has(call.status)).length,
-    total: groupedCalls.length,
+    current: statuses.filter((item) => callStatuses.has(item)).length,
+    total,
     provenance: 'derived',
     insight: {
       grade,
-      verdict: `${groupedCalls.length} 次调用`,
-      reason: groupingBasis.startsWith('后端字段') ? '结构化批次字段 · 同批操作汇总' : `${displayToolName(toolName)} · 连续观测汇总`,
-      facts: [
-        { label: '操作构成', value: operationComposition(groupedCalls) },
-        { label: '状态', value: statusBreakdown(groupedCalls) },
-        { label: '时间', value: observedSpan(groupedCalls) },
-        { label: '关系', value: `重试 ${retryCount} · 回退 ${fallbackCount}` },
+       verdict: countLabel,
+       reason: groupingBasis.startsWith('后端执行字段') ? '持久化执行标识 · 同次活动汇总' : groupingBasis.startsWith('后端字段') ? '结构化批次字段 · 同批操作汇总' : '连续同类观测汇总 · 不代表执行因果',
+       facts: [
+         { label: '操作构成', value: operationSummary },
+         { label: '状态', value: statusText },
+         { label: '时间', value: observedSpanText },
+         { label: '关系', value: `重试 ${retryCount} · 回退 ${fallbackCount}` },
       ],
       source: 'observer_summary',
     },
     runtime: {
-      node_type: 'tool_group',
-      source_id: groupId,
-      tool_name: toolName,
-      observed_at: groupedCalls.map(observedAt).filter((value): value is string => Boolean(value)).sort()[0] ?? null,
-      child_ids: groupedCalls.map((call) => call.id),
-      grouping_basis: groupingBasis,
-      expanded,
-      status_breakdown: statusBreakdown(groupedCalls),
-      observed_span: observedSpan(groupedCalls),
-      raw_label: toolName,
-      candidate_count: groupedCalls.length,
+       node_type: runtimeType,
+       source_id: groupId,
+       tool_name: groupedCalls[0]?.tool_name,
+       observed_at: observedDates[0] ?? null,
+       child_ids: groupedCalls.map((call) => call.id),
+       event_ids: groupedEvents.map((event) => `event:${event.sequence_no}`),
+       grouping_basis: groupingBasis,
+       expanded,
+       status_breakdown: statusText,
+       observed_span: observedSpanText,
+       raw_label: groupedCalls[0]?.tool_name ?? groupedEvents[0]?.type,
+       candidate_count: groupedCalls.length,
       explicit_relation_count: 0,
     },
   }
@@ -463,22 +516,43 @@ function computePositions(nodes: GraphStage[]) {
   const sorted = [...nodes].sort((left, right) => {
     const a = left.runtime?.observed_at ? Date.parse(left.runtime.observed_at) : Number.MAX_SAFE_INTEGER
     const b = right.runtime?.observed_at ? Date.parse(right.runtime.observed_at) : Number.MAX_SAFE_INTEGER
-    const leftPriority = left.runtime?.node_type === 'tool_group' ? 0 : 1
-    const rightPriority = right.runtime?.node_type === 'tool_group' ? 0 : 1
+    const leftPriority = ['tool_group', 'event_group', 'batch_group'].includes(left.runtime?.node_type ?? '') ? 0 : 1
+    const rightPriority = ['tool_group', 'event_group', 'batch_group'].includes(right.runtime?.node_type ?? '') ? 0 : 1
     return a - b || leftPriority - rightPriority || left.id.localeCompare(right.id)
   })
   const positions: Record<string, { x: number; y: number }> = {}
-  const laneByType: Record<string, number> = { lifecycle_event: 0, tool_group: 1, tool_call: 1, generation: 2 }
-  const hasTools = nodes.some((node) => node.runtime?.node_type === 'tool_group' || node.runtime?.node_type === 'tool_call')
-  // Folded batch cards include a visible affordance and three summary rows;
-  // leave a real lane gap so the candidate lane cannot intercept that control.
-  const laneY = hasTools ? [120, 335, 620] : [120, 210, 335]
+  const laneByType: Record<string, number> = { lifecycle_event: 0, event_group: 0, tool_group: 1, batch_group: 1, tool_call: 1, generation: 2 }
+  // Compute each lane's start from its actual wrapped row count. A fixed y
+  // offset lets a second event row collide with the first tool row.
+  const laneCounts = [0, 0, 0]
+  for (const node of sorted) {
+    const lane = laneByType[node.runtime?.node_type ?? 'generation'] ?? 2
+    laneCounts[lane] += 1
+  }
+  const laneRows = laneCounts.map((count) => count === 0 ? 0 : Math.ceil(count / 5))
+  // Expanded aggregate cards contain their own summary and are taller than
+  // ordinary cards. Give that lane a larger row step so its local member grid
+  // cannot collide with the aggregate card or the following lane.
+  const laneRowSteps = laneCounts.map((_, lane) => sorted.some((node) => {
+    const nodeLane = laneByType[node.runtime?.node_type ?? 'generation'] ?? 2
+    return nodeLane === lane && node.runtime?.expanded
+  }) ? 320 : sorted.some((node) => {
+    const nodeLane = laneByType[node.runtime?.node_type ?? 'generation'] ?? 2
+    return nodeLane === lane && ['tool_group', 'event_group', 'batch_group'].includes(node.runtime?.node_type ?? '')
+  }) ? 280 : 190)
+  const laneY = [
+    150,
+    150 + laneRows[0] * laneRowSteps[0] + 65,
+    150 + laneRows[0] * laneRowSteps[0] + 65 + laneRows[1] * laneRowSteps[1] + 65,
+  ]
   const laneCounters = new Map<number, number>()
   sorted.forEach((node) => {
     const lane = laneByType[node.runtime?.node_type ?? 'generation'] ?? 2
     const index = laneCounters.get(lane) ?? 0
     laneCounters.set(lane, index + 1)
-    positions[node.id] = { x: 135 + index * 290, y: laneY[lane] ?? laneY[2] }
+    const column = index % 5
+    const row = Math.floor(index / 5)
+    positions[node.id] = { x: 155 + column * 315, y: (laneY[lane] ?? laneY[2]) + row * (laneRowSteps[lane] ?? 190) }
   })
   return positions
 }
@@ -514,36 +588,77 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
       fallbackBases.push('工具名 + 连续相邻观测时间')
     }
   }
-  const explicitGroups = [...explicitBuckets.entries()].map(([identity, grouped]) => ({ grouped: grouped.sort((left, right) => (Date.parse(observedAt(left) ?? '') - Date.parse(observedAt(right) ?? '')) || left.id.localeCompare(right.id)), basis: `后端字段 ${identity}` }))
-  const fallbackGroupRecords = fallbackGroups.map((grouped, index) => ({ grouped, basis: fallbackBases[index] }))
+  const explicitGroups = [...explicitBuckets.entries()].map(([identity, grouped]) => ({ key: identity, grouped: grouped.sort((left, right) => (Date.parse(observedAt(left) ?? '') - Date.parse(observedAt(right) ?? '')) || left.id.localeCompare(right.id)), basis: `后端字段 ${identity}` }))
+  const fallbackGroupRecords = fallbackGroups.map((grouped, index) => ({ key: `fallback:${grouped[0].id}`, grouped, basis: fallbackBases[index] }))
   const callGroupRecords = [...explicitGroups, ...fallbackGroupRecords].sort((left, right) => {
     const leftTime = Date.parse(observedAt(left.grouped[0]) ?? '')
     const rightTime = Date.parse(observedAt(right.grouped[0]) ?? '')
     return (Number.isFinite(leftTime) ? leftTime : Number.MAX_SAFE_INTEGER) - (Number.isFinite(rightTime) ? rightTime : Number.MAX_SAFE_INTEGER) || left.grouped[0].id.localeCompare(right.grouped[0].id)
   })
-  const callGroups = callGroupRecords.map((record) => record.grouped)
-  const groupingBases = callGroupRecords.map((record) => record.basis)
-  const groupedCallGroups = callGroupRecords.filter(({ grouped }) => grouped.length > 1)
-  const toolGroups = Object.fromEntries(groupedCallGroups.map(({ grouped }) => {
-    const groupId = `tool-group:${encodeURIComponent(grouped[0].tool_name)}:${encodeURIComponent(grouped[0].id)}`
-    return [groupId, grouped.map((call) => call.id)]
-  }))
+  const callRecordById = new Map(callGroupRecords.flatMap((record) => record.grouped.map((call) => [call.id, record] as const)))
+  const eventGroups = new Map<string, { key: string; grouped: TimelineEvent[]; basis: string }>()
+  let activeEventGroup: { key: string; grouped: TimelineEvent[]; basis: string } | null = null
+  for (const event of Object.values(events)) {
+    const explicitIdentity = explicitBatchIdentity(event.payload)
+    const relatedCallId = associationIds(event.payload).find((id) => calls[id])
+    const linkedRecord = relatedCallId ? callRecordById.get(relatedCallId) : undefined
+    const executionIdentity = eventExecutionIdentity(event.payload)
+    const key = explicitIdentity ?? linkedRecord?.key ?? executionIdentity
+    const basis = explicitIdentity ? `后端字段 ${explicitIdentity}` : linkedRecord ? `后端关联字段 tool_call_id=${relatedCallId}` : executionIdentity ? `后端执行字段 ${executionIdentity}` : null
+    if (key && basis) {
+      const existing = eventGroups.get(key) ?? { key, grouped: [], basis }
+      existing.grouped.push(event)
+      eventGroups.set(key, existing)
+      activeEventGroup = null
+      continue
+    }
+    const previous = activeEventGroup?.grouped.at(-1)
+    const gap = previous ? Date.parse(event.occurred_at) - Date.parse(previous.occurred_at) : Number.POSITIVE_INFINITY
+    if (!previous || previous.type !== event.type || previous.actor !== event.actor || !Number.isFinite(gap) || gap < 0 || gap > 5 * 60 * 1000) {
+      activeEventGroup = { key: `event-observation:${event.sequence_no}`, grouped: [event], basis: '连续同类观测：事件类型 + 角色 + 相邻时间' }
+      eventGroups.set(activeEventGroup.key, activeEventGroup)
+    } else if (activeEventGroup) {
+      activeEventGroup.grouped.push(event)
+    }
+  }
+  const runtimeBuckets = new Map<string, { key: string; calls: ToolAttempt[]; events: TimelineEvent[]; basis: string }>()
+  for (const record of callGroupRecords) runtimeBuckets.set(record.key, { key: record.key, calls: record.grouped, events: [], basis: record.basis })
+  for (const record of eventGroups.values()) {
+    const bucket = runtimeBuckets.get(record.key)
+    if (bucket) bucket.events.push(...record.grouped)
+    else runtimeBuckets.set(record.key, { key: record.key, calls: [], events: record.grouped, basis: record.basis })
+  }
+  const bucketRecords = [...runtimeBuckets.values()].sort((left, right) => {
+    const leftTime = Date.parse((left.calls[0] ? observedAt(left.calls[0]) : left.events[0]?.occurred_at) ?? '')
+    const rightTime = Date.parse((right.calls[0] ? observedAt(right.calls[0]) : right.events[0]?.occurred_at) ?? '')
+    return (Number.isFinite(leftTime) ? leftTime : Number.MAX_SAFE_INTEGER) - (Number.isFinite(rightTime) ? rightTime : Number.MAX_SAFE_INTEGER) || left.key.localeCompare(right.key)
+  })
+  const groupIdFor = (bucket: { key: string; calls: ToolAttempt[]; events: TimelineEvent[] }) => bucket.calls.length > 1
+    ? `tool-group:${encodeURIComponent(bucket.calls[0].tool_name)}:${encodeURIComponent(bucket.calls[0].id)}`
+    : `batch-group:${encodeURIComponent(bucket.key)}`
+  const groupedBuckets = bucketRecords.filter((bucket) => bucket.calls.length + bucket.events.length > 1)
+  const toolGroups = Object.fromEntries(groupedBuckets.filter((bucket) => bucket.calls.length > 0).map((bucket) => [groupIdFor(bucket), bucket.calls.map((call) => call.id)]))
   const groupIdByCall = new Map<string, string>()
-  for (const [groupId, callIds] of Object.entries(toolGroups)) for (const callId of callIds) groupIdByCall.set(callId, groupId)
+  const groupIdByEvent = new Map<string, string>()
+  for (const bucket of groupedBuckets) {
+    const groupId = groupIdFor(bucket)
+    for (const call of bucket.calls) groupIdByCall.set(call.id, groupId)
+    for (const event of bucket.events) groupIdByEvent.set(`event:${event.sequence_no}`, groupId)
+  }
   const expandedGroups = options.expandedGroups ?? new Set<string>()
   let aggregateIndex = 0
-  const callNodes = callGroups.flatMap((grouped, groupIndex) => {
-    if (grouped.length === 1) return grouped.map(callNode)
-    const groupId = `tool-group:${encodeURIComponent(grouped[0].tool_name)}:${encodeURIComponent(grouped[0].id)}`
+  const callNodes = bucketRecords.flatMap((bucket) => {
+    const total = bucket.calls.length + bucket.events.length
+    if (total === 1) return [...bucket.calls.map(callNode), ...bucket.events.map(eventNode)]
+    const groupId = groupIdFor(bucket)
     const expanded = expandedGroups.has(groupId)
-    const groupingBasis = groupingBases[groupIndex]
+    const groupingBasis = bucket.basis
     aggregateIndex += 1
-    const displayBatchLabel = groupingBasis.startsWith('后端字段') ? `第 ${aggregateIndex} 批` : `${displayToolName(grouped[0].tool_name)} 观测批次 ${aggregateIndex}`
-    return [toolGroupNode(grouped[0].tool_name, grouped, expanded, groupId, groupingBasis, displayBatchLabel), ...(expanded ? grouped.map(callNode) : [])]
+    const displayBatchLabel = groupingBasis.startsWith('后端执行字段') ? `第 ${aggregateIndex} 次执行` : groupingBasis.startsWith('后端字段') ? `第 ${aggregateIndex} 批` : `观测组 ${aggregateIndex}`
+    return [runtimeGroupNode(bucket.calls, bucket.events, expanded, groupId, groupingBasis, displayBatchLabel), ...(expanded ? [...bucket.calls.map(callNode), ...bucket.events.map(eventNode)] : [])]
   })
   const nodes = [
     ...callNodes,
-    ...Object.values(events).map(eventNode),
     ...detail.candidates.map(candidateNode),
   ]
   const countsByGeneration = new Map<number, number>()
@@ -561,6 +676,7 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
     if (groupId && !expandedGroups.has(groupId)) return groupId
     return nodeIds.has(`call:${id}`) ? `call:${id}` : id
   }
+  const isCallEndpoint = (id: string) => id.startsWith('call:') || id.startsWith('tool-group:') || id.startsWith('batch-group:')
   const explicitParallelBuckets = new Map<string, ToolAttempt[]>()
   for (const call of Object.values(calls)) {
     const parallelId = firstParallelGroupId(call)
@@ -586,7 +702,7 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
     const relationIdsFromCall = [...dependencyIds(call.inputs), ...dependencyIds(call.parameters)]
     for (const parentId of relationIdsFromCall) {
       const target = callIdToNode(parentId)
-      if (target.startsWith('call:') || target.startsWith('tool-group:')) addEdge(edges, seen, { source: target, target: source, label: '依赖', rationale: '工具调用输入或参数中的结构化依赖字段提供了上游调用标识；聚合端点仅代表其子调用集合。', provenance: 'database', relation_kind: 'dependency' })
+      if (isCallEndpoint(target)) addEdge(edges, seen, { source: target, target: source, label: '依赖', rationale: '工具调用输入或参数中的结构化依赖字段提供了上游调用标识；聚合端点仅代表其子调用集合。', provenance: 'database', relation_kind: 'dependency' })
     }
     const typedRelations: Array<{ ids: string[]; kind: 'retry' | 'fallback'; label: string; rationale: string }> = [
       { ids: [...retryIds(call.inputs), ...retryIds(call.parameters)], kind: 'retry', label: '重试/恢复', rationale: '工具调用字段明确提供 retry_of_call_id、retried_call_id 或 recovery_of_call_id；此边表示重试/恢复关系，不由 attempt 数字或时间推断。' },
@@ -594,7 +710,7 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
     ]
     for (const relation of typedRelations) for (const upstreamId of relation.ids) {
       const target = callIdToNode(upstreamId)
-      if (target.startsWith('call:') || target.startsWith('tool-group:')) addEdge(edges, seen, { source: target, target: source, label: relation.label, rationale: relation.rationale, provenance: 'database', relation_kind: relation.kind })
+      if (isCallEndpoint(target)) addEdge(edges, seen, { source: target, target: source, label: relation.label, rationale: relation.rationale, provenance: 'database', relation_kind: relation.kind })
     }
   }
   for (const [parallelId, grouped] of explicitParallelBuckets) {
@@ -623,10 +739,16 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
     }
   }
   flushOverlapGroup()
+  const eventIdToNode = (id: string) => {
+    const groupId = groupIdByEvent.get(id)
+    if (groupId && !expandedGroups.has(groupId)) return groupId
+    return nodeIds.has(id) ? id : null
+  }
   for (const event of Object.values(events)) {
-    const source = `event:${event.sequence_no}`
+    const source = eventIdToNode(`event:${event.sequence_no}`)
+    if (!source) continue
     for (const reference of associationIds(event.payload)) {
-      const target = calls[reference] ? callIdToNode(reference) : nodeIds.has(`event:${reference}`) ? `event:${reference}` : null
+      const target = calls[reference] ? callIdToNode(reference) : eventIdToNode(`event:${reference}`)
       if (target) addEdge(edges, seen, { source, target, label: '关联', rationale: '事件 payload 仅提供结构化关联标识；这不表示事件产生、触发或依赖该工具调用。', provenance: 'database', relation_kind: 'association' })
     }
   }

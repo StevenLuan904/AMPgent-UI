@@ -51,6 +51,21 @@ function Wait-Until([scriptblock]$condition, [int]$attempts, [string]$failureMes
     throw $failureMessage
 }
 
+function Initialize-AmpgentReadCache([string]$baseUrl) {
+    try {
+        $runsResponse = Invoke-RestMethod -Method Get -Uri "$baseUrl/v1/observer/runs?limit=12" -TimeoutSec 35
+        $latestRunId = @($runsResponse.runs)[0].id
+        if ($latestRunId) {
+            Invoke-RestMethod -Method Get -Uri "$baseUrl/v1/observer/runs/$latestRunId" -TimeoutSec 35 | Out-Null
+        }
+        return $true
+    }
+    catch {
+        # Warm-up is best effort. The UI keeps its normal retry and error states.
+        return $false
+    }
+}
+
 function Show-LaunchError([string]$message) {
     Add-Type -AssemblyName PresentationFramework
     [System.Windows.MessageBox]::Show(
@@ -95,6 +110,7 @@ try {
     }
 
     Wait-Until { Test-AmpgentEndpoint $proxiedApiUrl } 30 '界面已启动，但数据服务代理尚未就绪。'
+    Initialize-AmpgentReadCache "http://127.0.0.1:$UiPort" | Out-Null
     Start-Process $appUrl | Out-Null
 }
 catch {
