@@ -74,7 +74,12 @@ def _scan_history(
     )
 
 
-def _parents(score_path: Path, queue_path: Path, qd_path: Path) -> list[dict[str, str]]:
+def _parents(
+    score_path: Path,
+    queue_path: Path,
+    qd_path: Path,
+    required_candidate_ids: set[str] | None = None,
+) -> list[dict[str, str]]:
     scores = {row["sequence_sha256"].lower(): row for row in _rows(score_path)}
     queue = _rows(queue_path)
     qd = _rows(qd_path)
@@ -110,19 +115,59 @@ def _parents(score_path: Path, queue_path: Path, qd_path: Path) -> list[dict[str
                 "activity_support_calibrated": score["activity_model_support_count_calibrated"],
             }
         )
-    if len(parents) != 4 or len({row["candidate_id"] for row in parents}) != 4:
+    if required_candidate_ids is not None:
+        parents = [row for row in parents if row["candidate_id"] in required_candidate_ids]
+        if len(parents) != len(required_candidate_ids) or len(
+            {row["candidate_id"] for row in parents}
+        ) != len(required_candidate_ids):
+            raise ValueError("requested authoritative AceA parent identities are incomplete")
+    elif len(parents) != 4 or len({row["candidate_id"] for row in parents}) != 4:
         raise ValueError("expected four authoritative AceA PepGLAD QD parents")
     return sorted(parents, key=lambda row: (row["qd_cell"], row["sequence_sha256"]))
 
 
+def _require_parent_readback(path: Path, candidate_ids: set[str]) -> dict[str, Any]:
+    receipt = _json(path)
+    observed = {str(value).lower() for value in receipt.get("candidate_ids", [])}
+    if (
+        receipt.get("status") != "readback_verified"
+        or str(receipt.get("run_id", "")).lower()
+        != "c6718e9b-15be-5197-87b0-ffe9d78d2ed7"
+        or observed != {value.lower() for value in candidate_ids}
+        or receipt.get("candidate_count") != len(candidate_ids)
+        or receipt.get("evaluation_count") != len(candidate_ids) * 17
+        or receipt.get("identity_drift") != 0
+    ):
+        raise ValueError("AceA parent exact PG readback contract failed")
+    return receipt
+
+
 def run(args: argparse.Namespace) -> dict[str, Any]:
+    global GENERATION, OPERATOR_ID
     output_dir = args.output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=False)
+    GENERATION = args.generation
+    OPERATOR_ID = args.operator_id
     source_expansion.TARGET_KEY = TARGET_KEY
     source_expansion.GENERATION = GENERATION
     source_expansion.OPERATOR_ID = OPERATOR_ID
     source_expansion._POLICY = source_expansion._read_policy(args.archive_json)
-    parents = _parents(args.parent_scores, args.parent_queue, args.parent_qd)
+    required_parent_ids = {
+        value.strip().lower() for value in args.parent_candidate_ids
+    } or None
+    if required_parent_ids and args.parent_readback_receipt is None:
+        raise ValueError("parent exact PG readback receipt is required")
+    parent_readback = (
+        _require_parent_readback(args.parent_readback_receipt, required_parent_ids)
+        if required_parent_ids
+        else None
+    )
+    parents = _parents(
+        args.parent_scores,
+        args.parent_queue,
+        args.parent_qd,
+        required_candidate_ids=required_parent_ids,
+    )
     donors = source_expansion.load_pepflow_donors(args.donor_csv)
     history, prior_edits, scan = _scan_history(args.repo_root / "reports", output_dir)
     archive = _json(args.archive_json)
@@ -152,6 +197,12 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "parent_source_evidence": ["AceA_PepGLAD_QD_new_cell_elites", "AceA_PepFlow_source_parent"],
         "parent_count": len(parents),
         "authoritative_parent_candidate_ids": [row["candidate_id"] for row in parents],
+        "parent_exact_readback_receipt": (
+            str(args.parent_readback_receipt) if parent_readback else None
+        ),
+        "parent_exact_readback_receipt_sha256": (
+            sha256_file(args.parent_readback_receipt) if parent_readback else None
+        ),
         "parent_run_ids": sorted({row["parent_run_id"] for row in parents}),
         "donor_count": len(donors),
         "donor_artifact": str(args.donor_csv),
@@ -203,6 +254,10 @@ def main() -> None:
     parser.add_argument("--donor-csv", type=Path, required=True)
     parser.add_argument("--archive-json", type=Path, required=True)
     parser.add_argument("--capacity", type=Path, required=True)
+    parser.add_argument("--parent-readback-receipt", type=Path)
+    parser.add_argument("--parent-candidate-ids", nargs="*", default=[])
+    parser.add_argument("--generation", type=int, default=4)
+    parser.add_argument("--operator-id", default=OPERATOR_ID)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--limit", type=int, default=12)
     args = parser.parse_args()
