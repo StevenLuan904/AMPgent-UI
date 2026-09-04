@@ -223,6 +223,10 @@ export interface ToolArtifact {
 export interface ToolAttempt {
   id: string
   tool_name: string
+  /** Present only when a lifecycle event supplied a semantic activity name. */
+  activity_type?: string
+  /** False means the lifecycle payload did not provide an attempt number. */
+  attempt_observed?: boolean
   tool_version: string
   status: string
   attempt: number

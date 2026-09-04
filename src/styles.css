@@ -528,7 +528,7 @@ button:focus-visible { outline: 2px solid #315be8; outline-offset: 2px; }
 .runtime-live-dot { width: 7px; height: 7px; border-radius: 50%; background: #2b9a70; box-shadow: 0 0 0 3px #e8f6f0; }
 .runtime-graph-stats { display: flex; flex-wrap: wrap; gap: 5px 12px; margin-top: 7px; color: #6b778b; font: 500 11px "DM Mono", monospace; }
 .runtime-graph-summary p { margin: 7px 0 0; color: #9b6a35; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.workflow-node.kind-tool { border-left: 3px solid #5578d3; }
+.workflow-node.kind-tool { border: 1px solid #d7dee8; }
 .workflow-node.kind-tool .node-title { font-family: "DM Mono", monospace; font-size: 10px; }
 .workflow-node.is-runtime-node { min-height: 135px; }
 .workflow-node.is-runtime-node .node-verdict { min-height: 24px; }
@@ -571,16 +571,16 @@ button:focus-visible { outline: 2px solid #315be8; outline-offset: 2px; }
 .workflow-node.is-runtime-node .node-verdict > b { font-size: 13px; }
 .workflow-node.is-runtime-node .node-meta { font-size: 12px; }
 .workflow-node.is-runtime-node .evidence-chip { font-size: 11px; }
-.runtime-tool_group, .runtime-event_group, .runtime-batch_group { border-top: 1px solid #6379c2; }
+.runtime-tool_group, .runtime-event_group, .runtime-batch_group { border: 1px solid #cfd8e5; }
 .runtime-tool_group, .runtime-event_group, .runtime-batch_group { position: relative; z-index: 2; box-shadow: 0 7px 16px rgba(47,66,113,.10); }
 .workflow-node.is-runtime-node, .workflow-node.is-runtime-node.node-pending { background: #fff; }
 .runtime-tool_group.runtime-group-expanded::before, .runtime-tool_group.runtime-group-expanded::after, .runtime-event_group.runtime-group-expanded::before, .runtime-event_group.runtime-group-expanded::after, .runtime-batch_group.runtime-group-expanded::before, .runtime-batch_group.runtime-group-expanded::after { display: none; }
-.runtime-tool_group::before, .runtime-tool_group::after, .runtime-event_group::before, .runtime-event_group::after, .runtime-batch_group::before, .runtime-batch_group::after { content: ""; position: absolute; z-index: -1; inset: 7px -8px -8px 7px; border: 1px solid #d4dce9; border-radius: 12px; background: linear-gradient(180deg, #ffffff, #fbfcfd); box-shadow: 0 4px 9px rgba(41,55,92,.07), inset 0 1px 0 #fff; pointer-events: none; }
-.runtime-tool_group::after, .runtime-event_group::after, .runtime-batch_group::after { inset: 14px -15px -15px 14px; background: linear-gradient(180deg, #ffffff, #fafbfd); box-shadow: 0 3px 7px rgba(41,55,92,.05), inset 0 1px 0 #fff; }
-.runtime-tool_call { border-top: 1px solid #9bb2dd; }
+.runtime-tool_group::before, .runtime-tool_group::after, .runtime-event_group::before, .runtime-event_group::after, .runtime-batch_group::before, .runtime-batch_group::after { content: ""; position: absolute; z-index: -1; inset: 10px -12px -12px 10px; border: 1px solid #d4dce9; border-radius: 12px; background: linear-gradient(180deg, #ffffff, #fbfcfd); box-shadow: 0 5px 11px rgba(41,55,92,.09), inset 0 1px 0 #fff; pointer-events: none; }
+.runtime-tool_group::after, .runtime-event_group::after, .runtime-batch_group::after { inset: 20px -23px -23px 20px; background: linear-gradient(180deg, #ffffff, #fafbfd); box-shadow: 0 4px 9px rgba(41,55,92,.07), inset 0 1px 0 #fff; }
+.runtime-tool_call { border: 1px solid #d7dee8; }
 .runtime-tool_group, .runtime-tool_call { animation: batchReveal .18s ease-out; }
-.runtime-lifecycle_event { border-top: 2px solid #a6b0c5; }
-.runtime-generation { border-top: 2px solid #b6a5d2; }
+.runtime-lifecycle_event { border: 1px solid #d7dee8; }
+.runtime-generation { border: 1px solid #d7dee8; }
 .runtime-group-list { display: grid; gap: 5px; margin-top: 10px; }
 .runtime-group-list > div { min-width: 0; min-height: 31px; display: grid; grid-template-columns: 8px 55px minmax(0, 1fr); align-items: center; gap: 7px; padding: 0 8px; border: 1px solid #e6eaf1; border-radius: 6px; background: #fbfcfe; }
 .runtime-group-list b { color: #4c5b73; font-size: 11px; }

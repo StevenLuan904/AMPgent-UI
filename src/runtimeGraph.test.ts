@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildRuntimeGraph, countActivityRetries, countOpenActivities, runtimeActivitySummary, runtimeCallSummary, runtimeRetrySummary } from './runtimeGraph'
+import { buildRuntimeGraph, countActivityRetries, countOpenActivities, deriveLifecycleToolCalls, layoutColumnsForWidth, runtimeActivitySummary, runtimeCallSummary, runtimeRetrySummary } from './runtimeGraph'
 import type { NodeDetail, RunDetail, ToolAttempt } from './types'
 
 const call = (id: string, toolName: string, queuedAt: string, overrides: Partial<ToolAttempt> = {}): ToolAttempt => ({
@@ -46,6 +46,111 @@ const detail = (events: RunDetail['events'] = [], candidates: RunDetail['candida
 const nodeDetail = (calls: ToolAttempt[]): NodeDetail => ({ source: 'postgresql', read_only: true, node_id: 'dynamic', narrative: [], calls, metrics: {}, reasoning: { decisions: [], status_counts: {}, reason_counts: {}, considered: 0, admitted: 0 }, structure_results: [] })
 
 describe('buildRuntimeGraph', () => {
+  it('materializes explicit lifecycle tool_call_id observations and deduplicates node-detail calls', () => {
+    const events: RunDetail['events'] = [
+      { sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: 'workflow-coverage', activity_id: 8, attempt: 1, status: 'started', activity_type: 'evaluate_v38_sequence_metric', tool_call_id: 'call-explicit' }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'activity.succeeded', actor: 'observer-writer', payload: { workflow_run_id: 'workflow-coverage', activity_id: 8, attempt: 1, status: 'succeeded', activity_type: 'evaluate_v38_sequence_metric', tool_call_id: 'call-explicit' }, occurred_at: '2026-09-04T00:00:03Z' },
+    ]
+    const synthesized = deriveLifecycleToolCalls(events)
+    expect(synthesized).toHaveLength(1)
+    expect(synthesized[0]).toMatchObject({ id: 'call-explicit', status: 'succeeded', attempt: 1, attempt_observed: true, activity_type: 'evaluate_v38_sequence_metric' })
+
+    const materialized = call('call-explicit', 'v38-metric-mic_potency', '2026-09-04T00:00:01Z', { status: 'succeeded', attempt: 1 })
+    const result = buildRuntimeGraph(detail(events), { worker: nodeDetail([materialized]) })
+    expect(Object.keys(result.calls)).toEqual(['call-explicit'])
+    expect(result.stats.observedCalls).toBe(1)
+    expect(result.nodes.some((node) => node.runtime?.event_ids?.includes('event:1'))).toBe(true)
+  })
+
+  it('keeps adjacent event-only tool_call_ids in separate observation groups', () => {
+    const events: RunDetail['events'] = [
+      { sequence_no: 1, type: 'tool_call.succeeded', actor: 'worker', payload: { tool_call_id: 'event-call-1', status: 'succeeded' }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'tool_call.succeeded', actor: 'worker', payload: { tool_call_id: 'event-call-2', status: 'succeeded' }, occurred_at: '2026-09-04T00:00:02Z' },
+    ]
+    const result = buildRuntimeGraph(detail(events))
+    const groups = result.nodes.filter((node) => node.runtime?.node_type === 'batch_group')
+    expect(groups).toHaveLength(2)
+    expect(groups.map((node) => node.runtime?.child_ids)).toEqual(expect.arrayContaining([['event-call-1'], ['event-call-2']]))
+    expect(groups.every((node) => node.runtime?.grouping_basis?.startsWith('事件关联字段 tool_call_id='))).toBe(true)
+  })
+
+  it('wraps an expanded dense batch into local rows instead of one long horizontal strip', () => {
+    const calls = Array.from({ length: 36 }, (_, index) => call(
+      `dense-call-${index}`,
+      index % 2 === 0 ? 'hydramp' : 'ampgan',
+      `2026-09-04T00:00:${String(index).padStart(2, '0')}Z`,
+      { inputs: { batch_id: 'dense-batch' } },
+    ))
+    const source = { worker: nodeDetail(calls) }
+    const collapsed = buildRuntimeGraph(detail(), source)
+    const group = collapsed.nodes.find((node) => node.runtime?.node_type === 'tool_group')
+    expect(group).toBeDefined()
+    expect(collapsed.nodes.filter((node) => node.id.startsWith('call:dense-call-'))).toHaveLength(0)
+
+    const expanded = buildRuntimeGraph(detail(), source, { expandedGroups: new Set([group!.id]) })
+    const childPositions = calls.map((item) => expanded.positions[`call:${item.id}`])
+    expect(childPositions.every(Boolean)).toBe(true)
+    expect(new Set(childPositions.map((position) => position.y)).size).toBeGreaterThan(1)
+    expect(Math.max(...childPositions.map((position) => position.x)) - Math.min(...childPositions.map((position) => position.x))).toBeLessThan(1_500)
+    const generationPosition = expanded.positions['generation:1']
+    if (generationPosition) {
+      expect(generationPosition.y).toBeGreaterThan(Math.max(...childPositions.map((position) => position.y)))
+    }
+  })
+
+  it('selects readable responsive columns without reading browser globals', () => {
+    expect(layoutColumnsForWidth(1610)).toBe(5)
+    expect(layoutColumnsForWidth(2310)).toBe(7)
+    expect(layoutColumnsForWidth(undefined)).toBe(5)
+  })
+
+  it('uses the supplied layout width to reduce dense rows at a wide viewport', () => {
+    const calls = Array.from({ length: 36 }, (_, index) => call(
+      `wide-call-${index}`,
+      'hydramp',
+      `2026-09-04T00:00:${String(index).padStart(2, '0')}Z`,
+      { inputs: { batch_id: 'wide-batch' } },
+    ))
+    const source = { worker: nodeDetail(calls) }
+    const collapsed = buildRuntimeGraph(detail(), source, { availableWidth: 1610 })
+    const group = collapsed.nodes.find((node) => node.runtime?.child_ids?.length === 36)
+    expect(group).toBeDefined()
+    const narrow = buildRuntimeGraph(detail(), source, { availableWidth: 1610, expandedGroups: new Set([group!.id]) })
+    const wide = buildRuntimeGraph(detail(), source, { availableWidth: 2310, expandedGroups: new Set([group!.id]) })
+    const narrowRows = new Set(calls.map((item) => narrow.positions[`call:${item.id}`].y)).size
+    const wideRows = new Set(calls.map((item) => wide.positions[`call:${item.id}`].y)).size
+    expect(narrowRows).toBe(8)
+    expect(wideRows).toBe(6)
+    expect(Math.max(...calls.map((item) => wide.positions[`call:${item.id}`].x)) - Math.min(...calls.map((item) => wide.positions[`call:${item.id}`].x))).toBeLessThan(2_000)
+  })
+
+  it('counts an associated lifecycle event once in the folded call summary', () => {
+    const events: RunDetail['events'] = [
+      { sequence_no: 1, type: 'tool_call.started', actor: 'worker', payload: { tool_call_id: 'event-call-one', status: 'started' }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'tool_call.succeeded', actor: 'worker', payload: { tool_call_id: 'event-call-one', status: 'succeeded' }, occurred_at: '2026-09-04T00:00:02Z' },
+    ]
+    const result = buildRuntimeGraph(detail(events))
+    const group = result.nodes.find((node) => node.runtime?.node_type === 'batch_group')
+    expect(group?.insight.verdict).toBe('1 次调用')
+    expect(group?.insight.facts.find((fact) => fact.label === '操作构成')?.value).toContain('关联事件 2')
+    expect(result.stats.observedCalls).toBe(1)
+  })
+
+  it('uses explicit lifecycle dependency fields without inferring from event order', () => {
+    const upstream = call('call-upstream', 'ampgan', '2026-09-04T00:00:00Z')
+    const events: RunDetail['events'] = [{
+      sequence_no: 1,
+      type: 'activity.succeeded',
+      actor: 'observer-writer',
+      payload: { workflow_run_id: 'workflow-dependency', activity_id: 2, attempt: 1, status: 'succeeded', tool_call_id: 'call-downstream', parent_call_id: 'call-upstream' },
+      occurred_at: '2026-09-04T00:00:02Z',
+    }]
+    const result = buildRuntimeGraph(detail(events), { worker: nodeDetail([upstream]) })
+    expect(result.edges).toEqual(expect.arrayContaining([
+      expect.objectContaining({ source: 'call:call-upstream', relation_kind: 'dependency', provenance: 'database' }),
+    ]))
+  })
+
   it('separates tool-only retries from activity-only retries', () => {
     const toolRetry = call('tool-retry', 'ampgan', '2026-09-04T00:00:00Z', { attempt: 2 })
     const activityEvents: RunDetail['events'] = [
@@ -172,7 +277,7 @@ describe('buildRuntimeGraph', () => {
       { sequence_no: 1, type: 'v38.multitarget_structure.persisted', actor: 'worker', payload: { tool_call_id: 'call-1' }, occurred_at: '2026-09-04T00:00:01Z' },
     ]), { worker: nodeDetail([observed]) })
     const group = result.nodes.find((node) => node.runtime?.node_type === 'batch_group')
-    expect(group).toMatchObject({ status: 'completed', label: '观测组 1 · 2 项活动' })
+    expect(group).toMatchObject({ status: 'completed', label: '观测组 1 · 1 项活动' })
     expect(group?.runtime?.event_ids).toEqual(['event:1'])
     const expanded = buildRuntimeGraph(detail([
       { sequence_no: 1, type: 'v38.multitarget_structure.persisted', actor: 'worker', payload: { tool_call_id: 'call-1' }, occurred_at: '2026-09-04T00:00:01Z' },
@@ -189,7 +294,7 @@ describe('buildRuntimeGraph', () => {
       { sequence_no: 2, type: 'tool_call.succeeded', actor: 'worker', payload: { tool_call_id: 'call-1' }, occurred_at: '2026-09-04T00:00:02Z' },
     ]), { worker: nodeDetail([observed]) })
     expect(result.edges.some((edge) => edge.source === edge.target)).toBe(false)
-    expect(result.nodes.some((node) => node.runtime?.event_ids?.length === 2 && node.insight.verdict.includes('2 项活动'))).toBe(true)
+    expect(result.nodes.some((node) => node.runtime?.event_ids?.length === 2 && node.insight.verdict === '1 次调用')).toBe(true)
   })
 
   it('uses a concise Chinese role on event cards while retaining the raw actor in runtime metadata', () => {
@@ -522,8 +627,9 @@ describe('buildRuntimeGraph', () => {
     const result = buildRuntimeGraph(detail(events), { worker: nodeDetail([call('call-1', 'boltz', '2026-09-04T00:00:10Z')]) })
     const eventPositions = events.map((_, index) => result.positions[`event:${index + 1}`].y)
     const toolPosition = result.positions['call:call-1'].y
-    expect(eventPositions).toEqual([150, 150, 150, 150, 150, 150, 150, 150, 150])
-    expect(toolPosition).toBeGreaterThan(eventPositions.at(-1)! + 200)
+    expect(eventPositions.slice(0, 5)).toEqual([150, 150, 150, 150, 150])
+    expect(eventPositions.slice(5).every((value) => value > 150)).toBe(true)
+    expect(toolPosition).toBeGreaterThan(Math.max(...eventPositions) + 200)
   })
 
   it('does not reserve a full empty tool row between events and candidates', () => {
@@ -533,7 +639,7 @@ describe('buildRuntimeGraph', () => {
     ], [candidate]))
     const eventY = result.positions['event:1'].y
     const candidateY = result.positions['candidate:candidate-1'].y
-    expect(candidateY - eventY).toBeLessThanOrEqual(320)
+    expect(candidateY - eventY).toBeLessThanOrEqual(280)
   })
 
   it('reserves a taller local row step for expanded aggregate members', () => {
@@ -545,6 +651,7 @@ describe('buildRuntimeGraph', () => {
     const groupPosition = result.positions[group!.id]
     const wrappedMemberPosition = result.positions['call:call-6']
     expect(groupPosition).toBeDefined()
-    expect(wrappedMemberPosition.y - groupPosition.y).toBeGreaterThanOrEqual(300)
+    expect(wrappedMemberPosition.y - groupPosition.y).toBeGreaterThanOrEqual(224)
+    expect(wrappedMemberPosition.y - groupPosition.y).toBeLessThan(300)
   })
 })

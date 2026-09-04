@@ -687,6 +687,7 @@ function GraphView({
   onToggleAnalysis,
   onSelectEdge,
   onToggleGroup,
+  onAvailableWidthChange,
 }: {
   detail: RunDetail
   runtimeGraph: RuntimeGraphModel
@@ -702,6 +703,7 @@ function GraphView({
   onToggleAnalysis: (id: string) => void
   onSelectEdge: (edge: GraphEdgeDetail) => void
   onToggleGroup: (id: string) => void
+  onAvailableWidthChange: (width: number) => void
 }) {
   const flowInstance = useRef<ReactFlowInstance<LaneNode | StageNode, Edge> | null>(null)
   const initialFitRunId = useRef<string | null>(null)
@@ -711,7 +713,20 @@ function GraphView({
   const initialFitPending = useRef(false)
   const userInteracted = useRef(false)
   const programmaticFit = useRef(false)
+  const graphAreaRef = useRef<HTMLDivElement>(null)
   const hasDeferredNodeDetails = (runtimeGraph.sourceFetch?.deferred ?? 0) > 0
+  useEffect(() => {
+    const element = graphAreaRef.current
+    if (!element) return
+    const reportWidth = () => {
+      if (element.clientWidth > 0) onAvailableWidthChange(element.clientWidth)
+    }
+    reportWidth()
+    if (typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(reportWidth)
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [onAvailableWidthChange])
   const readableRuntimeNodeIds = useMemo(() => selectReadableRuntimeNodeIds(runtimeGraph.nodes, runtimeGraph.positions), [runtimeGraph.nodes, runtimeGraph.positions])
   const fitReadableViewport = useCallback(async () => {
     const instance = flowInstance.current
@@ -879,7 +894,7 @@ function GraphView({
   }
 
   return (
-    <div className="graph-area">
+    <div className="graph-area" ref={graphAreaRef}>
       <ReactFlow
         key={detail.run.id}
         nodes={nodes}
@@ -1354,8 +1369,9 @@ export default function App() {
   const [analysisSnapshot, setAnalysisSnapshot] = useState<AnalysisSnapshot | null>(null)
   const [persistedDistributions, setPersistedDistributions] = useState<Record<string, ResultDistributionData>>({})
   const [expandedRuntimeGroups, setExpandedRuntimeGroups] = useState<Set<string>>(new Set())
+  const [graphAvailableWidth, setGraphAvailableWidth] = useState(0)
   const structureRun = useMemo(() => data.runs.find((run) => run.structure_record_count > 0) ?? null, [data.runs])
-  const runtimeGraph = useMemo(() => data.detail ? buildRuntimeGraph(data.detail, data.nodeDetails, { expandedGroups: expandedRuntimeGroups, sourceFetch: data.nodeDetailFetch }) : null, [data.detail, data.nodeDetails, data.nodeDetailFetch, expandedRuntimeGroups])
+  const runtimeGraph = useMemo(() => data.detail ? buildRuntimeGraph(data.detail, data.nodeDetails, { expandedGroups: expandedRuntimeGroups, availableWidth: graphAvailableWidth, sourceFetch: data.nodeDetailFetch }) : null, [data.detail, data.nodeDetails, data.nodeDetailFetch, expandedRuntimeGroups, graphAvailableWidth])
   useEffect(() => {
     setExpandedRuntimeGroups(new Set())
   }, [data.detail?.run.id])
@@ -1439,6 +1455,7 @@ export default function App() {
                 onToggleAnalysis={toggleAnalysisNode}
                 onSelectEdge={(edge) => { setSelectedEdge(edge); setSelectedStage(null) }}
                 onToggleGroup={(id) => setExpandedRuntimeGroups((current) => { const next = new Set(current); if (next.has(id)) next.delete(id); else next.add(id); return next })}
+                onAvailableWidthChange={setGraphAvailableWidth}
               />
               {selectionMode && (
                 <div className="analysis-selection-bar">

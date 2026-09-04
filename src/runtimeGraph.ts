@@ -37,6 +37,10 @@ export interface RuntimeGraphModel {
 
 export interface RuntimeGraphOptions {
   expandedGroups?: ReadonlySet<string>
+  /** Width of the actual graph viewport in CSS pixels; never read from window here. */
+  availableWidth?: number
+  /** Explicit override for deterministic callers and tests. */
+  layoutColumns?: number
   sourceFetch?: {
     requested: number
     loaded: number
@@ -86,11 +90,28 @@ function statusLabel(status: string) {
   return !status || status === 'pending' ? '待观测' : status
 }
 
-function collectCalls(sources: Sources) {
+function collectCalls(sources: Sources, lifecycleEvents: TimelineEvent[] = []) {
   const result: Record<string, ToolAttempt> = {}
   for (const detail of Object.values(sources)) {
     for (const call of detail?.calls ?? []) {
       result[call.id] ??= call
+    }
+  }
+  for (const observedCall of deriveLifecycleToolCalls(lifecycleEvents)) {
+    const materialized = result[observedCall.id]
+    if (!materialized) {
+      result[observedCall.id] = observedCall
+      continue
+    }
+    // Keep the node-detail ToolAttempt authoritative, but retain only the
+    // structured relation fields observed on lifecycle payloads so explicit
+    // edges are not lost when the two read paths overlap.
+    const observedInputs = record(observedCall.inputs)
+    const materializedInputs = record(materialized.inputs)
+    result[observedCall.id] = {
+      ...materialized,
+      inputs: { ...observedInputs, ...materializedInputs },
+      activity_type: materialized.activity_type ?? observedCall.activity_type,
     }
   }
   return result
@@ -145,6 +166,96 @@ function associationIds(value: unknown) {
   return idsForKeys(value, associationKeys)
 }
 
+function lifecycleStatus(event: TimelineEvent) {
+  const payloadStatus = text(record(event.payload).status).trim().toLowerCase()
+  if (['queued', 'submitted', 'started', 'running', 'progress', 'succeeded', 'completed', 'failed', 'cancelled', 'stopped'].includes(payloadStatus)) return payloadStatus
+  const observedStatus = runtimeEventStatus(event)
+  if (observedStatus === 'completed') return 'succeeded'
+  if (observedStatus === 'running') return 'running'
+  if (observedStatus === 'stopped') return 'failed'
+  return 'pending'
+}
+
+function lifecycleRelationInputs(payload: Record<string, unknown>) {
+  const result: Record<string, unknown> = {}
+  const visit = (value: unknown) => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return
+    for (const [key, nested] of Object.entries(value as Record<string, unknown>)) {
+      const normalized = key.toLowerCase()
+      if (dependencyKeys.has(normalized) || retryKeys.has(normalized) || fallbackKeys.has(normalized) || parallelKeys.has(normalized) || batchKeys.has(normalized)) result[key] = nested
+      else visit(nested)
+    }
+  }
+  visit(payload)
+  return result
+}
+
+/**
+ * Materializes only tool_call_id-bearing lifecycle observations. This is not
+ * a replacement for node-detail ToolAttempt rows: it is a read-only coverage
+ * bridge for explicit IDs, with unknown tool/attempt fields left unknown.
+ */
+export function deriveLifecycleToolCalls(events: TimelineEvent[]): ToolAttempt[] {
+  const byId = new Map<string, ToolAttempt>()
+  const ordered = [...events].sort((left, right) => {
+    const leftTime = Date.parse(left.occurred_at)
+    const rightTime = Date.parse(right.occurred_at)
+    return (Number.isFinite(leftTime) ? leftTime : Number.MAX_SAFE_INTEGER) - (Number.isFinite(rightTime) ? rightTime : Number.MAX_SAFE_INTEGER) || left.sequence_no - right.sequence_no
+  })
+  for (const event of ordered) {
+    const payload = record(event.payload)
+    const id = text(payload.tool_call_id).trim()
+    if (!id) continue
+    const status = lifecycleStatus(event)
+    const attempt = integerField(payload.attempt)
+    const activityType = text(payload.activity_type).trim() || undefined
+    const isActive = activeStatuses.has(status)
+    const isTerminal = callStatuses.has(status) || stoppedStatuses.has(status)
+    const existing = byId.get(id)
+    if (!existing) {
+      byId.set(id, {
+        id,
+        tool_name: activityType ?? `observed_lifecycle:${event.type}`,
+        activity_type: activityType,
+        attempt: attempt ?? 1,
+        attempt_observed: attempt !== null,
+        tool_version: text(payload.tool_version) || '未返回',
+        status,
+        queued_at: event.occurred_at,
+        started_at: isActive ? event.occurred_at : null,
+        finished_at: isTerminal ? event.occurred_at : null,
+        duration_seconds: null,
+        random_seed: null,
+        model_uri: null,
+        weights_sha256: null,
+        environment_sha256: '',
+        input_sha256: '',
+        output_sha256: null,
+        inputs: lifecycleRelationInputs(payload),
+        parameters: {},
+        error: payload.error_message ?? payload.error_type ?? null,
+        artifacts: [],
+      })
+      continue
+    }
+    const existingAttempt = integerField(existing.attempt)
+    const startedAt = existing.started_at ?? (isActive ? event.occurred_at : null)
+    const finishedAt = isTerminal ? event.occurred_at : existing.finished_at
+    byId.set(id, {
+      ...existing,
+      activity_type: existing.activity_type ?? activityType,
+      attempt: Math.max(existingAttempt ?? 1, attempt ?? 1),
+      attempt_observed: existing.attempt_observed === true || attempt !== null,
+      status,
+      started_at: startedAt,
+      finished_at: finishedAt,
+      inputs: { ...record(existing.inputs), ...lifecycleRelationInputs(payload) },
+      error: payload.error_message ?? payload.error_type ?? existing.error,
+    })
+  }
+  return [...byId.values()]
+}
+
 const batchKeys = new Set(['batch_id', 'batch', 'iteration', 'iteration_id', 'generation', 'action_plan', 'action_plan_id', 'parent_call_id'])
 
 function explicitBatchIdentity(value: unknown): string | null {
@@ -159,6 +270,10 @@ function explicitBatchIdentity(value: unknown): string | null {
 }
 
 function callBatchIdentity(call: ToolAttempt) {
+  // A lifecycle-only observation has no tool name to justify a fallback
+  // segment. Keep it isolated by its explicit tool_call_id instead of
+  // claiming that neighboring observations share a batch.
+  if (!call.activity_type && call.tool_name.startsWith('observed_lifecycle:')) return `observed_tool_call_id=${call.id}`
   return explicitBatchIdentity(call.inputs) ?? explicitBatchIdentity(call.parameters)
 }
 
@@ -522,9 +637,11 @@ function eventNode(event: TimelineEvent): GraphStage {
 function callNode(call: ToolAttempt): GraphStage {
   const status = nodeStatus(call.status)
   const artifactCount = call.artifacts.length
+  const observedAttempt = call.attempt_observed !== false
+  const semanticLabel = call.activity_type ? displayActivityType(call.activity_type) : undefined
   return {
     id: `call:${call.id}`,
-    label: displayToolName(call.tool_name),
+    label: semanticLabel ?? displayToolName(call.tool_name),
     kind: 'tool',
     group: 'observed',
     status,
@@ -534,7 +651,7 @@ function callNode(call: ToolAttempt): GraphStage {
     insight: {
       grade: gradeFor(call.status),
       verdict: statusLabel(call.status),
-        reason: `第 ${call.attempt} 次尝试 · 已记录工具证据`,
+        reason: `${observedAttempt ? `第 ${call.attempt} 次尝试 · ` : ''}已记录工具证据`,
       facts: [
         { label: '状态', value: statusLabel(call.status) },
         { label: '证据文件', value: String(artifactCount) },
@@ -569,7 +686,7 @@ function observedSpan(calls: ToolAttempt[]) {
 function operationComposition(calls: ToolAttempt[]) {
   const counts = new Map<string, number>()
   for (const call of calls) {
-    const name = displayToolName(call.tool_name)
+    const name = call.activity_type ? displayActivityType(call.activity_type) ?? displayToolName(call.tool_name) : displayToolName(call.tool_name)
     counts.set(name, (counts.get(name) ?? 0) + 1)
   }
   return [...counts.entries()].map(([name, count]) => `${name} ${count}`).join(' · ')
@@ -617,7 +734,10 @@ function eventOutcomeStatuses(events: TimelineEvent[]) {
 }
 
 function runtimeGroupNode(groupedCalls: ToolAttempt[], groupedEvents: TimelineEvent[], expanded: boolean, groupId: string, groupingBasis: string, displayBatchLabel: string): GraphStage {
-  const eventStatuses = eventOutcomeStatuses(groupedEvents)
+  const groupedCallIds = new Set(groupedCalls.map((call) => call.id))
+  const associatedEvents = groupedEvents.filter((event) => groupedCallIds.has(text(record(event.payload).tool_call_id)))
+  const independentEvents = groupedEvents.filter((event) => !groupedCallIds.has(text(record(event.payload).tool_call_id)))
+  const eventStatuses = eventOutcomeStatuses(independentEvents)
   const statuses = [...groupedCalls.map((call) => call.status), ...eventStatuses]
   const hasActive = statuses.some((status) => activeStatuses.has(status))
   const hasStopped = statuses.some((status) => stoppedStatuses.has(status))
@@ -627,7 +747,7 @@ function runtimeGroupNode(groupedCalls: ToolAttempt[], groupedEvents: TimelineEv
   const retryCount = relationCount(groupedCalls, retryIds)
   const fallbackCount = relationCount(groupedCalls, fallbackIds)
   const total = groupedCalls.length + eventStatuses.length
-  const operationSummary = [operationComposition(groupedCalls), eventComposition(groupedEvents)].filter(Boolean).join(' · ')
+  const operationSummary = [operationComposition(groupedCalls), eventComposition(independentEvents), associatedEvents.length ? `关联事件 ${associatedEvents.length}` : ''].filter(Boolean).join(' · ')
   const statusSummary = statuses.map(statusLabel).reduce((counts, item) => counts.set(item, (counts.get(item) ?? 0) + 1), new Map<string, number>())
   const statusText = [...statusSummary.entries()].map(([label, count]) => `${label} ${count}`).join(' · ')
   const observedDates = [...groupedCalls.map((call) => observedAt(call)), ...groupedEvents.map((event) => event.occurred_at)].filter((value): value is string => Boolean(value)).sort()
@@ -655,7 +775,7 @@ function runtimeGroupNode(groupedCalls: ToolAttempt[], groupedEvents: TimelineEv
     insight: {
       grade,
        verdict: countLabel,
-       reason: groupingBasis.startsWith('后端执行字段') ? '持久化执行标识 · 同次活动汇总' : groupingBasis.startsWith('后端字段') ? '结构化批次字段 · 同批操作汇总' : '连续同类观测汇总 · 不代表执行因果',
+       reason: groupingBasis.startsWith('后端执行字段') ? '持久化执行标识 · 同次活动汇总' : groupingBasis.startsWith('后端字段') ? '结构化批次字段 · 同批操作汇总' : groupingBasis.startsWith('事件关联字段') ? '事件关联字段 · 同一工具调用观测汇总' : '连续同类观测汇总 · 不代表执行因果',
        facts: [
           ...salientFacts,
           { label: '操作构成', value: operationSummary },
@@ -765,58 +885,64 @@ function detectCycles(nodes: string[], edges: GraphEdgeDetail[]) {
   return cycles
 }
 
-function computePositions(nodes: GraphStage[]) {
-  const sorted = [...nodes].sort((left, right) => {
-    const a = left.runtime?.observed_at ? Date.parse(left.runtime.observed_at) : Number.MAX_SAFE_INTEGER
-    const b = right.runtime?.observed_at ? Date.parse(right.runtime.observed_at) : Number.MAX_SAFE_INTEGER
-    const leftPriority = ['tool_group', 'event_group', 'batch_group'].includes(left.runtime?.node_type ?? '') ? 0 : 1
-    const rightPriority = ['tool_group', 'event_group', 'batch_group'].includes(right.runtime?.node_type ?? '') ? 0 : 1
-    return a - b || leftPriority - rightPriority || left.id.localeCompare(right.id)
-  })
+export function layoutColumnsForWidth(availableWidth: number | undefined) {
+  if (!Number.isFinite(availableWidth) || (availableWidth ?? 0) <= 0) return 5
+  return Math.max(5, Math.min(7, Math.round((availableWidth as number) / 315)))
+}
+
+function computePositions(nodes: GraphStage[], requestedColumns?: number, availableWidth?: number) {
   const positions: Record<string, { x: number; y: number }> = {}
   const laneByType: Record<string, number> = { lifecycle_event: 0, event_group: 0, tool_group: 1, batch_group: 1, tool_call: 1, generation: 2 }
-  // Compute each lane's start from its actual wrapped row count. A fixed y
-  // offset lets a second event row collide with the first tool row.
-  const laneCounts = [0, 0, 0]
-  for (const node of sorted) {
+  const laneItems: GraphStage[][] = [[], [], []]
+  // buildRuntimeGraph emits a bucket followed by its expanded members. Keep
+  // that order inside each lane: it preserves chronological bucket order and
+  // keeps an expanded batch local instead of re-scattering its members by a
+  // second global sort.
+  nodes.forEach((node) => {
     const lane = laneByType[node.runtime?.node_type ?? 'generation'] ?? 2
-    laneCounts[lane] += 1
+    laneItems[lane].push(node)
+  })
+  const maximumColumns = Math.max(1, Math.min(7, Math.round(requestedColumns ?? layoutColumnsForWidth(availableWidth))))
+  const laneColumns = laneItems.map((items) => items.length <= maximumColumns ? Math.max(items.length, 1) : maximumColumns)
+  const rowGap = 34
+  const laneGap = 42
+  const nodeHeight = (node: GraphStage) => {
+    if (node.runtime?.expanded) return 224
+    if (['tool_group', 'event_group', 'batch_group'].includes(node.runtime?.node_type ?? '')) return 184
+    return 180
   }
-  // Prefer horizontal browsing to stacking extra rows. A dense run remains
-  // fully represented, while the first readable window can show all three
-  // lane headers without shrinking the cards below the readable zoom floor.
-  const laneColumns = laneCounts.map((count) => count > 7 ? count : count > 5 ? 6 : 5)
-  const laneRows = laneCounts.map((count, lane) => count === 0 ? 0 : Math.ceil(count / laneColumns[lane]))
-  // Expanded aggregate cards contain their own summary and are taller than
-  // ordinary cards. Give that lane a larger row step so its local member grid
-  // cannot collide with the aggregate card or the following lane.
-  const laneRowSteps = laneCounts.map((_, lane) => sorted.some((node) => {
-    const nodeLane = laneByType[node.runtime?.node_type ?? 'generation'] ?? 2
-    return nodeLane === lane && node.runtime?.expanded
-  }) ? 320 : sorted.some((node) => {
-    const nodeLane = laneByType[node.runtime?.node_type ?? 'generation'] ?? 2
-    return nodeLane === lane && ['tool_group', 'event_group', 'batch_group'].includes(node.runtime?.node_type ?? '')
-  }) ? 280 : 190)
-  const laneY = [
-    150,
-    150 + laneRows[0] * laneRowSteps[0] + 65,
-    150 + laneRows[0] * laneRowSteps[0] + 65 + laneRows[1] * laneRowSteps[1] + 65,
-  ]
-  const laneCounters = new Map<number, number>()
-  sorted.forEach((node) => {
-    const lane = laneByType[node.runtime?.node_type ?? 'generation'] ?? 2
-    const index = laneCounters.get(lane) ?? 0
-    laneCounters.set(lane, index + 1)
-    const columns = laneColumns[lane] ?? 5
-    const column = index % columns
-    const row = Math.floor(index / columns)
-    positions[node.id] = { x: 155 + column * 315, y: (laneY[lane] ?? laneY[2]) + row * (laneRowSteps[lane] ?? 190) }
+  const laneRowHeights = laneItems.map((items, lane) => {
+    const columns = laneColumns[lane]
+    const rowHeights: number[] = []
+    for (let index = 0; index < items.length; index += columns) {
+      rowHeights.push(Math.max(...items.slice(index, index + columns).map(nodeHeight)))
+    }
+    return rowHeights
+  })
+  const laneY: number[] = []
+  let nextLaneY = 150
+  for (let lane = 0; lane < laneItems.length; lane += 1) {
+    laneY[lane] = nextLaneY
+    const occupiedHeight = laneRowHeights[lane].reduce((total, height) => total + height, 0)
+      + Math.max(0, laneRowHeights[lane].length - 1) * rowGap
+    // An empty lane contributes no card row. Keeping only the inter-lane gap
+    // prevents a missing tool lane from becoming a large blank band.
+    nextLaneY += occupiedHeight + laneGap
+  }
+  laneItems.forEach((items, lane) => {
+    const columns = laneColumns[lane]
+    items.forEach((node, index) => {
+      const row = Math.floor(index / columns)
+      const column = index % columns
+      const rowOffset = laneRowHeights[lane].slice(0, row).reduce((total, height) => total + height + rowGap, 0)
+      positions[node.id] = { x: 155 + column * 315, y: laneY[lane] + rowOffset }
+    })
   })
   return positions
 }
 
 export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, options: RuntimeGraphOptions = {}): RuntimeGraphModel {
-  const calls = collectCalls(sources)
+  const calls = collectCalls(sources, detail.events)
   const events = Object.fromEntries([...detail.events].sort((a, b) => a.sequence_no - b.sequence_no).map((event) => [`event:${event.sequence_no}`, event]))
   const orderedCalls = Object.values(calls).sort((left, right) => {
     const leftTime = Date.parse(observedAt(left) ?? '')
@@ -846,7 +972,13 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
       fallbackBases.push('工具名 + 连续相邻观测时间')
     }
   }
-  const explicitGroups = [...explicitBuckets.entries()].map(([identity, grouped]) => ({ key: identity, grouped: grouped.sort((left, right) => (Date.parse(observedAt(left) ?? '') - Date.parse(observedAt(right) ?? '')) || left.id.localeCompare(right.id)), basis: `后端字段 ${identity}` }))
+  const explicitGroups = [...explicitBuckets.entries()].map(([identity, grouped]) => ({
+    key: identity,
+    grouped: grouped.sort((left, right) => (Date.parse(observedAt(left) ?? '') - Date.parse(observedAt(right) ?? '')) || left.id.localeCompare(right.id)),
+    basis: identity.startsWith('observed_tool_call_id=')
+      ? `事件关联字段 tool_call_id=${identity.slice('observed_tool_call_id='.length)}`
+      : `后端字段 ${identity}`,
+  }))
   const fallbackGroupRecords = fallbackGroups.map((grouped, index) => ({ key: `fallback:${grouped[0].id}`, grouped, basis: fallbackBases[index] }))
   const callGroupRecords = [...explicitGroups, ...fallbackGroupRecords].sort((left, right) => {
     const leftTime = Date.parse(observedAt(left.grouped[0]) ?? '')
@@ -1090,7 +1222,7 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
   const toolCounts = new Map<string, number>()
   for (const call of Object.values(calls)) toolCounts.set(call.tool_name, (toolCounts.get(call.tool_name) ?? 0) + 1)
   const parallelGroups = parallelRelationSignatures.size
-  const toolRetries = Object.values(calls).filter((call) => call.attempt > 1).length
+  const toolRetries = Object.values(calls).filter((call) => call.attempt_observed !== false && call.attempt > 1).length
   const activityRetries = countActivityRetries(Object.values(events))
   const stats: RuntimeGraphStats = {
     observedCalls: Object.keys(calls).length,
@@ -1105,5 +1237,5 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
     unfinished: Object.values(calls).filter((call) => !callStatuses.has(call.status) && !stoppedStatuses.has(call.status)).length,
     generations: countsByGeneration.size,
   }
-  return { nodes, edges, positions: computePositions(nodes), calls, events, toolGroups, sourceFetch: options.sourceFetch, gaps, stats }
+  return { nodes, edges, positions: computePositions(nodes, options.layoutColumns, options.availableWidth), calls, events, toolGroups, sourceFetch: options.sourceFetch, gaps, stats }
 }
