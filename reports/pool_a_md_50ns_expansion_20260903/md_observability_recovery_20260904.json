@@ -1,0 +1,149 @@
+{
+  "schema_version": "ampgent.pool-a-md-observability-recovery.1",
+  "observed_at_utc": "2026-09-04T02:58:20.1716492Z",
+  "observation_scope": "read_only_channel_recovery",
+  "decision": "verified_wait",
+  "identity_key": "subject_run_id+candidate_id",
+  "tunnel_recovery": {
+    "method": "repository_probe_tunnels_with_approved_external_credential_route",
+    "start_scripts": [
+      "deploy/tunnels/start_019_ampgent_probe_tunnel.ps1",
+      "deploy/tunnels/start_synth_ampgent_probe_tunnel.ps1"
+    ],
+    "credential_route": "approved_external_DPAPI_plus_SSH_ASKPASS",
+    "secrets_persisted_or_printed": false,
+    "main_019": {
+      "local_endpoint": "127.0.0.1:32222",
+      "listener_pid": 45184,
+      "wrapper_pid": 38072,
+      "listener_observed": true
+    },
+    "synth": {
+      "local_endpoint": "127.0.0.1:32224",
+      "listener_pid": 9372,
+      "wrapper_pid": 45068,
+      "listener_observed": true
+    }
+  },
+  "remote_read_only_observation": {
+    "main_019": {
+      "host": "admin.cluster.local",
+      "supervisor_pids": {
+        "md": 3986807,
+        "analysis": 3977733
+      },
+      "alive": true,
+      "owner": "huangyu+",
+      "commands_identity_verified": true,
+      "gpu_utilization_percent_by_index": {
+        "0": 100,
+        "1": 100,
+        "2": 99,
+        "3": 94,
+        "4": 93,
+        "5": 95,
+        "6": 28,
+        "7": 100
+      },
+      "ampgent_compute_pid_count": 8,
+      "disk": {
+        "filesystem": "/dev/sdc1",
+        "available_blocks": 22484123536,
+        "used_percent": 48
+      },
+      "compact_remote_file_inventory": {
+        "interface_analysis_json": 36,
+        "mmgbsa_analysis_json": 35,
+        "completion_receipt": 0
+      },
+      "optional_ingester_state_probe": {
+        "status": "unavailable",
+        "error_category": "remote_python_executable_not_found",
+        "exit_code": 127,
+        "supervisor_probe_succeeded": true
+      }
+    },
+    "synth_successor_11": {
+      "host": "admin.cluster.local",
+      "root": "/sdd_data/pepagent/ampgent/md/pool-a-full-md-v1",
+      "supervisor_pids": {
+        "md": 1280301,
+        "interface_analysis": 3311802,
+        "mmgbsa": 3360111
+      },
+      "runner_pids": [58820, 1280316, 2060743],
+      "alive_pids": true,
+      "owner": "synth",
+      "commands_identity_verified": true,
+      "gpu_observation": {
+        "ampgent": {
+          "1": {"pid": 58820, "utilization_percent": 86, "memory_mib": 838},
+          "2": {"pid": 1280316, "utilization_percent": 100, "memory_mib": 744},
+          "3": {"pid": 2060743, "utilization_percent": 92, "memory_mib": 800}
+        },
+        "untouched_foreign_or_protected": [
+          {"gpu": 0, "pid": 1362474, "owner": "foreign", "utilization_percent": 31},
+          {"gpu": 4, "pid": 504832, "owner": "foreign_or_unknown", "utilization_percent": 0},
+          {"gpu": 5, "owner": "protected", "utilization_percent": 0},
+          {"gpu": 6, "owner": "protected", "utilization_percent": 0},
+          {"gpu": 7, "owner": "protected", "utilization_percent": 0}
+        ],
+        "prohibited_32_gpu2_gpu3_touched": false
+      },
+      "disk": {
+        "filesystem": "/dev/sdc1",
+        "available_blocks": 1221429500,
+        "used_percent": 83
+      },
+      "compact_remote_file_inventory": {
+        "interface_analysis_json": 3,
+        "mmgbsa_analysis_json": 3,
+        "completion_receipt": 0,
+        "snapshot_mtime_epoch": 1788391910
+      }
+    }
+  },
+  "current_486_authoritative_partition": {
+    "identity_union": 486,
+    "launched_unique": 50,
+    "full_evidence_unique": 31,
+    "analysis_pending_unique": 0,
+    "running_or_incomplete_unique": 19,
+    "not_started_unique": 436,
+    "failed_unique": 0,
+    "partition_total_unique": 486,
+    "launched_equals_full_plus_running": true,
+    "disjoint_union_equals_486": true,
+    "pg_complete_full_evidence_unique": 31,
+    "new_full_evidence_count_observable": 0,
+    "relative_to_full_evidence_baseline_31": {
+      "baseline_full_evidence_unique": 31,
+      "current_full_evidence_unique": 31,
+      "delta_full_evidence_unique": 0
+    },
+    "basis": "existing exact identity snapshot and compact receipts; no new completion receipt or PG delta observed"
+  },
+  "postgresql_read_only_probe": {
+    "status": "unavailable",
+    "error_category": "local_pg_endpoint_unavailable_winerror_1225_5",
+    "writes_performed": false,
+    "ingest_performed": false,
+    "new_evaluation_count_observed": 0,
+    "interpretation": "PG delta is not observable in this local probe; no write or completion claim was made"
+  },
+  "source_artifact_sha256": {
+    "current_identity_snapshot": "fded2719ca5847e43fa1c9061ea625881ae3966e25081dcaf1d20a6a8994321d",
+    "previous_handoff_plan": "250bc8a8cad288ffb57ac75feccbb206fab30cfe960d0acb1a328c211755106d",
+    "previous_handle_refresh": "03685e984de2378cda6393ba01186a0f7f00e4ba597c1d16335d8ef2982a9110",
+    "previous_synth_recheck": "5a633602a09f04f1d57b179bf1df9933b5add9fb333dd42a1b15fa8530582cd2"
+  },
+  "mutations": {
+    "remote_supervisor_or_runner_restart": false,
+    "remote_task_submission": false,
+    "remote_large_artifact_download": false,
+    "remote_large_artifact_delete": false,
+    "postgresql_write": false,
+    "prohibited_32_gpu2_gpu3_touched": false
+  },
+  "next_action": "Use restored listeners for one bounded exact-delta query when needed; analysis_pending_unique=0, so no analysis recovery is authorized in this observation."
+}
