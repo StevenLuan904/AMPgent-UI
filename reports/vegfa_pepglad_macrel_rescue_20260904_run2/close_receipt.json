@@ -1,0 +1,85 @@
+{
+  "schema_version": "ampgent.vegfa-pepglad-macrel-rescue-close.1",
+  "target_key": "vegfa",
+  "source": "PepGLAD",
+  "operator_id": "vegfa-pepglad-macrel-rescue-1aa-v1",
+  "generation": 4,
+  "seed": 20260904,
+  "proposal_count": 12,
+  "pg_exact": {
+    "potential_child_hashes_checked": 24,
+    "pg_existing_child_hashes": 0,
+    "pg_new_proposals": 12,
+    "historical_edit_keys_checked": 0,
+    "historical_replay_count": 0
+  },
+  "parent_lineage": {
+    "parent_identity_kind": "scored_proposal",
+    "parent_run_id": "",
+    "parent_candidate_ids": [],
+    "parent_count": 4,
+    "parent_proposal_count": 12,
+    "source_proposal_ids_are_full_hashes": true,
+    "calibration_reference_run_id": "98170454-be7f-5ab2-8add-979b9f11ddad",
+    "superseded_generation_audit": "reports/vegfa_pepglad_macrel_rescue_20260904_run1"
+  },
+  "formal12": {
+    "complete": 12,
+    "display_eligible": 11,
+    "toxinpred3_non_toxin": 12,
+    "macrel_low": 12,
+    "guruprasad_le_50": 11,
+    "calibrated_activity_support_ge_2": 0,
+    "excellent": 0,
+    "failure_summary": {
+      "activity_support_below_2": 12,
+      "guruprasad_above_50": 1,
+      "toxinpred3_failed": 0,
+      "macrel_high": 0
+    }
+  },
+  "challenger": {
+    "hemopi2_reviewed": 12,
+    "hemopi2_no_conflict": 11,
+    "hemopi2_conflict": 1,
+    "apex": {
+      "applicability_status": "runtime_unavailable",
+      "conflict_status": "not_assessed"
+    },
+    "peptiverse": {
+      "applicability_status": "runtime_unavailable",
+      "conflict_status": "not_assessed"
+    }
+  },
+  "qd": {
+    "archive_cells": 2160,
+    "quality_eligible": 0,
+    "new_cell": 0,
+    "incumbent_replacement": 0,
+    "quality_gate_failed": 12,
+    "archive_contribution": 0
+  },
+  "materialization": {
+    "candidate_count": 0,
+    "evaluation_count": 0,
+    "tool_call_count": 0,
+    "materialization_allowed": false,
+    "reason": "display_and_calibrated_support_intersection_is_empty"
+  },
+  "structure_queue": {
+    "count": 0,
+    "dispatch_allowed": false,
+    "reason": "no_display_support_qd_contributor"
+  },
+  "source_receipt_sha256": {
+    "generation": "44dae82a53d79f94fba068437cdc6dbe670b2843d078a982819eaf1992f857b1",
+    "score_all": "950e30d79794ee04cd6b5c83fa2bc886a56c58e1338c32a8cbda74f3f732096c",
+    "score_all_candidate_scores": "29a506dde2ce7cbed3353685a1a604d6d84553648cd1023b8380dcae3c5a1bd4",
+    "calibration_csv": "69a77518e108c18b3750c65536b7d94cfc40025f25383c40c73aabba92f736f8",
+    "challenger_review_csv": "c7ab3d47f8b95497eac15cb26a5a3841cb6b7b90575c6e305e18dff7290753c2",
+    "qd_summary_payload": "03ff4ab8a3f03e5ed66764077bd0d3e0c376c70776d58a733f084a08b4a7cd17"
+  },
+  "historical_runs_modified": false,
+  "gpu_rosetta_md_submitted": false,
+  "next_operator": "Do not repeat N-terminal WW replacement; preserve WW and test a non-core Macrel-risk edit or a low-hemolysis support-positive PepFlow/PepMLM parent under the same hard gates."
+}
