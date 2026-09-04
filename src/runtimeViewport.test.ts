@@ -19,13 +19,14 @@ describe('readable runtime viewport selection', () => {
       ...Array.from({ length: 8 }, (_, index) => node(`event-${index + 1}`, 'event_group', `2026-09-04T00:00:${String(index + 1).padStart(2, '0')}Z`)),
       ...Array.from({ length: 12 }, (_, index) => node(`tool-${index + 1}`, 'batch_group', `2026-09-04T00:01:${String(index + 1).padStart(2, '0')}Z`)),
       ...Array.from({ length: 4 }, (_, index) => node(`generation-${index + 1}`, 'generation', `2026-09-04T00:02:${String(index + 1).padStart(2, '0')}Z`)),
+      node('summary-1', 'tool_summary_group', '', 'pending'),
     ]
     const selected = selectReadableRuntimeNodeIds(nodes)
     expect(selected).toHaveLength(9)
     expect(selected.filter((id) => id.startsWith('event-'))).toHaveLength(3)
-    expect(selected.filter((id) => id.startsWith('tool-'))).toHaveLength(4)
+    expect(selected.filter((id) => id.startsWith('tool-'))).toHaveLength(3)
     expect(selected.filter((id) => id.startsWith('generation-'))).toHaveLength(2)
-    expect(selected).toEqual(expect.arrayContaining(['event-1', 'event-2', 'event-3', 'tool-1', 'tool-2', 'tool-3', 'tool-4', 'generation-1', 'generation-2']))
+    expect(selected).toEqual(expect.arrayContaining(['event-1', 'event-2', 'event-3', 'tool-1', 'tool-2', 'tool-3', 'generation-1', 'generation-2', 'summary-1']))
   })
 
   it('keeps an expanded aggregate and nearby members in the readable window', () => {

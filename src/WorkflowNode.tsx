@@ -94,7 +94,7 @@ export function WorkflowNode({ data }: NodeProps<StageNode>) {
   const isStructure = stage.kind === 'structure'
   const isRuntime = Boolean(stage.runtime)
   const runtimeType = stage.runtime?.node_type ?? 'stage'
-  const isRuntimeGroup = runtimeType === 'tool_group' || runtimeType === 'event_group' || runtimeType === 'batch_group'
+  const isRuntimeGroup = runtimeType === 'tool_group' || runtimeType === 'event_group' || runtimeType === 'batch_group' || runtimeType === 'tool_summary_group'
   const runtimeTitle = stage.runtime?.tool_name
     ? `${runtimeTermDescriptions[stage.runtime.tool_name] ?? '工具调用事实'} 原始键：${stage.runtime.tool_name}`
     : stage.runtime?.raw_label ? `原始键：${stage.runtime.raw_label}` : termDescriptions[stage.id]
@@ -145,7 +145,7 @@ export function WorkflowNode({ data }: NodeProps<StageNode>) {
         <span>{stage.current.toLocaleString()} / {stage.total.toLocaleString()}</span>
         {(!isRuntime || hasEvidenceDistribution) && <span className={`evidence-chip ${stage.provenance}`}>{hasEvidenceDistribution ? '结果分布' : '暂无结果'}</span>}
       </div>
-      {isRuntimeGroup && onToggleGroup && <button className="node-group-toggle" onClick={(event) => { event.stopPropagation(); onToggleGroup(stage.id) }}><span>{stage.runtime?.expanded ? '收起明细' : `展开 ${(stage.runtime?.child_ids?.length ?? 0) + (stage.runtime?.event_ids?.length ?? 0)} 项观测`}</span><ChevronRight /></button>}
+      {isRuntimeGroup && onToggleGroup && <button className="node-group-toggle" onClick={(event) => { event.stopPropagation(); onToggleGroup(stage.id) }}><span>{stage.runtime?.expanded ? '收起明细' : runtimeType === 'tool_summary_group' ? `展开 ${stage.runtime?.child_ids?.length ?? 0} 个工具汇总` : `展开 ${(stage.runtime?.child_ids?.length ?? 0) + (stage.runtime?.event_ids?.length ?? 0)} 项观测`}</span><ChevronRight /></button>}
       <div className="progress-track"><i style={{ width: `${progress}%` }} /></div>
       <Handle type="source" position={Position.Right} className="flow-handle" />
     </div>

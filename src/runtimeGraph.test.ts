@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildRuntimeGraph, countActivityRetries, countOpenActivities, deriveLifecycleToolCalls, displayEventContext, displayEventName, displayEventSemanticName, displayObservedEventName, displayToolName, layoutColumnsForWidth, runtimeActivitySummary, runtimeCallSummary, runtimeRetrySummary } from './runtimeGraph'
+import { buildRuntimeGraph, countActivityRetries, countOpenActivities, deriveLifecycleToolCalls, deriveToolSummaryGaps, displayEventContext, displayEventName, displayEventSemanticName, displayObservedEventName, displayToolName, layoutColumnsForWidth, runtimeActivitySummary, runtimeCallSummary, runtimeObservationSummary, runtimeRetrySummary } from './runtimeGraph'
 import type { NodeDetail, RunDetail, ToolAttempt } from './types'
 
 const call = (id: string, toolName: string, queuedAt: string, overrides: Partial<ToolAttempt> = {}): ToolAttempt => ({
@@ -52,6 +52,12 @@ describe('buildRuntimeGraph', () => {
     expect(displayToolName('v38-metric-mic_potency')).toBe('MIC 活性预测')
     expect(displayToolName('v38-metric-physicochemical_developability')).toBe('理化可开发性评估')
     expect(displayToolName('untrusted-internal-tool-key')).toBe('未命名工具')
+  })
+
+  it('separates materialized tools from lifecycle observations when summary coverage exists', () => {
+    expect(runtimeObservationSummary(199, 195, true)).toBe('图中观测 199 · 工具明细 195 · 生命周期观测 4')
+    expect(runtimeObservationSummary(3, 0, true)).toBe('图中观测 3 · 工具明细 0 · 生命周期观测 3')
+    expect(runtimeObservationSummary(3, 0, false)).toBe('调用 3')
   })
 
   it('maps persisted event keys to distinct scientific labels and keeps unknown events neutral', () => {
@@ -265,6 +271,94 @@ describe('buildRuntimeGraph', () => {
     expect(runtimeCallSummary(0, 8)).toBe('调用 0/8（已映射）')
     expect(runtimeCallSummary(8, 8)).toBe('调用 8')
     expect(runtimeCallSummary(8, 3)).toBe('调用 8')
+  })
+
+  it('derives only positive tool summary gaps by exact tool and status', () => {
+    const materialized = [
+      call('summary-1', 'tool-a', '2026-09-04T00:00:00Z', { status: 'succeeded' }),
+      call('summary-2', 'tool-a', '2026-09-04T00:00:01Z', { status: 'failed' }),
+    ]
+    expect(deriveToolSummaryGaps({ 'tool-a': { succeeded: 3, failed: 1 }, 'tool-b': { succeeded: 2 } }, materialized)).toEqual([
+      expect.objectContaining({ tool_name: 'tool-a', summary_count: 4, materialized_count: 2, missing_count: 2, status_counts: { succeeded: 3, failed: 1 } }),
+      expect.objectContaining({ tool_name: 'tool-b', summary_count: 2, materialized_count: 0, missing_count: 2 }),
+    ])
+    expect(deriveToolSummaryGaps({ 'tool-a': { succeeded: 1 } }, materialized)).toEqual([])
+  })
+
+  it('merges equivalent summary status keys before subtracting materialized calls', () => {
+    const materialized = [call('summary-duplicate', 'tool-a', '2026-09-04T00:00:00Z', { status: 'succeeded' })]
+    const gaps = deriveToolSummaryGaps({ 'tool-a': { SUCCEEDED: 1, ' succeeded ': 1 } }, materialized)
+    expect(gaps[0]).toMatchObject({ summary_count: 2, materialized_count: 1, missing_count: 1, status_counts: { succeeded: 2 } })
+  })
+
+  it('adds a folded summary-only batch for missing calls without creating edges', () => {
+    const observed = call('summary-materialized', 'tool-a', '2026-09-04T00:00:00Z')
+    const summaryDetail = { ...detail(), tool_summary: { 'tool-a': { succeeded: 2 }, 'unknown-internal-tool': { failed: 3 } } }
+    const result = buildRuntimeGraph(summaryDetail, { worker: nodeDetail([observed]) })
+    const group = result.nodes.find((node) => node.id === 'tool-summary-group')
+    expect(group).toMatchObject({ label: '工具汇总 · 5 项统计', status: 'pending', insight: { verdict: '仅汇总统计', reason: '数据库仅提供汇总计数；逐次记录、时间与依赖缺失' }, runtime: { summary_only: true, child_ids: ['tool-summary:tool-a', 'tool-summary:unknown-internal-tool'] } })
+    expect(group?.insight.facts).toEqual(expect.arrayContaining([
+      { label: '状态构成', value: '已完成 2 · 失败 3' },
+      { label: '统计覆盖', value: '总量 5 · 已有逐次 1 · 缺少逐次 4 · 展开 0/2 个工具' },
+    ]))
+    expect(group?.runtime?.summary_tools?.find((tool) => tool.tool_name === 'unknown-internal-tool')?.display_name).toBe('未命名工具')
+    expect(result.edges.some((edge) => edge.source.startsWith('tool-summary:') || edge.target.startsWith('tool-summary:'))).toBe(false)
+    expect(result.stats).toMatchObject({ toolSummaryRecords: 5, toolSummaryMaterialized: 1, toolSummaryMissing: 4 })
+  })
+
+  it('expands each missing summary tool as its own auditable summary card', () => {
+    const summaryDetail = { ...detail(), tool_summary: { 'tool-a': { succeeded: 2 }, 'tool-b': { running: 1, failed: 1 } } }
+    const result = buildRuntimeGraph(summaryDetail, {}, { expandedGroups: new Set(['tool-summary-group']) })
+    expect(result.nodes.map((node) => node.id)).toEqual(expect.arrayContaining(['tool-summary-group', 'tool-summary:tool-a', 'tool-summary:tool-b']))
+    expect(result.nodes.find((node) => node.id === 'tool-summary:tool-b')?.insight.facts).toEqual(expect.arrayContaining([
+      { label: '状态构成', value: '进行中 1 · 失败 1' },
+      { label: '统计总量', value: '2' },
+      { label: '逐次明细', value: '已有 0 · 缺少 2' },
+    ]))
+    expect(result.edges).toHaveLength(0)
+  })
+
+  it('omits the summary batch when all summary states are materialized', () => {
+    const summaryDetail = { ...detail(), tool_summary: { 'tool-a': { succeeded: 1, failed: 1 } } }
+    const result = buildRuntimeGraph(summaryDetail, { worker: nodeDetail([
+      call('summary-success', 'tool-a', '2026-09-04T00:00:00Z', { status: 'succeeded' }),
+      call('summary-failed', 'tool-a', '2026-09-04T00:00:01Z', { status: 'failed' }),
+    ]) })
+    expect(result.nodes.some((node) => node.runtime?.node_type === 'tool_summary_group')).toBe(false)
+    expect(result.stats).toMatchObject({ toolSummaryRecords: 2, toolSummaryMaterialized: 2, toolSummaryMissing: 0 })
+  })
+
+  it('reports statistical coverage separately from materialized calls for the observed run shape', () => {
+    const materializedTools = ['v38-metric-mic_potency', 'v38-metric-mic_potency_amp_read', 'v38-metric-hemolysis_risk', 'v38-metric-toxicity_risk', 'v38-metric-physicochemical_developability']
+    const missingTools = ['autoresearch-frozen-action-executor', 'autoresearch-multi-front-archive', 'autoresearch-multi-front-rule-planner', 'autoresearch-replay-bundle']
+    const materialized = materializedTools.flatMap((toolName) => Array.from({ length: 39 }, (_, index) => call(`${toolName}-${index}`, toolName, `2026-09-04T00:${String(Math.floor(index / 60)).padStart(2, '0')}:${String(index % 60).padStart(2, '0')}Z`)))
+    const toolSummary = Object.fromEntries([
+      ...materializedTools.map((toolName) => [toolName, { succeeded: 39 }]),
+      [missingTools[0], { succeeded: 40 }],
+      ...missingTools.slice(1).map((toolName) => [toolName, { succeeded: 39 }]),
+    ])
+    const result = buildRuntimeGraph({ ...detail(), tool_summary: toolSummary }, { worker: nodeDetail(materialized) })
+    expect(result.stats).toMatchObject({ toolSummaryRecords: 352, toolSummaryMaterialized: 195, toolSummaryMissing: 157 })
+    expect(result.nodes.find((node) => node.id === 'tool-summary-group')?.label).toBe('工具汇总 · 157 项统计')
+    expect(result.edges.filter((edge) => edge.source.startsWith('tool-summary') || edge.target.startsWith('tool-summary'))).toHaveLength(0)
+  })
+
+  it('places summary evidence in its own lane instead of the timed tool lane', () => {
+    const candidate = { id: 'candidate-summary', sequence: 'KKLL', length: 4, proposal_rank: 1, cohort: 'exploration', pareto_front: null, reasons: [], metrics: [], generation: 1 }
+    const result = buildRuntimeGraph({ ...detail([{ sequence_no: 1, type: 'run.started', actor: 'worker', payload: {}, occurred_at: '2026-09-04T00:00:00Z' }], [candidate]), tool_summary: { 'tool-a': { succeeded: 2 } } }, { worker: nodeDetail([call('summary-a', 'tool-a', '2026-09-04T00:00:01Z')]) })
+    const toolY = result.positions['call:summary-a']?.y
+    const candidateY = result.positions['candidate:candidate-summary']?.y
+    const summaryY = result.positions['tool-summary-group']?.y
+    expect(toolY).toBeDefined()
+    expect(candidateY).toBeDefined()
+    expect(summaryY).toBeDefined()
+    const eventY = result.positions['event:1']?.y
+    expect(eventY).toBeDefined()
+    expect(summaryY).toBeLessThan(eventY)
+    expect(eventY).toBeLessThan(toolY)
+    expect(toolY).toBeLessThan(candidateY)
+    expect(summaryY).toBeLessThan(candidateY)
+    expect(summaryY).not.toBe(toolY)
   })
 
   it('builds observed call/event nodes and reports missing dependency contract', () => {

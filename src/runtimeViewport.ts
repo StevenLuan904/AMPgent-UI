@@ -10,11 +10,13 @@ export type RuntimeNodePositions = Readonly<Record<string, RuntimeNodePosition>>
 const eventTypes = new Set(['lifecycle_event', 'event_group'])
 const toolTypes = new Set(['tool_call', 'tool_group', 'batch_group'])
 const candidateTypes = new Set(['generation'])
+const summaryTypes = new Set(['tool_summary_group', 'tool_summary'])
 
 function laneFor(node: ReadableRuntimeNode) {
   const type = node.runtime?.node_type
   if (eventTypes.has(type ?? '')) return 'events'
   if (toolTypes.has(type ?? '')) return 'tools'
+  if (summaryTypes.has(type ?? '')) return 'summary'
   if (candidateTypes.has(type ?? '')) return 'candidates'
   return null
 }
@@ -64,7 +66,7 @@ export function selectReadableRuntimeNodeIds(nodes: ReadonlyArray<ReadableRuntim
   if (!eligible.length || limit <= 0) return []
   const target = Math.min(10, Math.max(6, limit), eligible.length)
   const selected = new Set<string>()
-  const quotas: Array<[string, number]> = [['events', 3], ['tools', 4], ['candidates', 2]]
+  const quotas: Array<[string, number]> = [['events', 3], ['tools', 3], ['candidates', 2], ['summary', 1]]
 
   for (const [lane, quota] of quotas) {
     eligible.filter((node) => laneFor(node) === lane).sort((left, right) => readableOrder(left, right, positions)).slice(0, quota).forEach((node) => selected.add(node.id))

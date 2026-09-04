@@ -4,6 +4,7 @@ import type {
   GraphStage,
   NodeDetail,
   RunDetail,
+  RuntimeSummaryTool,
   TimelineEvent,
   ToolAttempt,
 } from './types'
@@ -21,6 +22,9 @@ export interface RuntimeGraphStats {
   cycles: number
   unfinished: number
   generations: number
+  toolSummaryRecords: number
+  toolSummaryMaterialized: number
+  toolSummaryMissing: number
 }
 
 export interface RuntimeGraphModel {
@@ -50,6 +54,8 @@ export interface RuntimeGraphOptions {
 }
 
 type Sources = Record<string, NodeDetail | undefined>
+
+export interface ToolSummaryGap extends RuntimeSummaryTool {}
 
 const callStatuses = new Set(['succeeded', 'completed'])
 const activeStatuses = new Set(['running', 'started', 'queued', 'submitted'])
@@ -88,6 +94,64 @@ function statusLabel(status: string) {
   if (status === 'cancelled') return '已取消'
   if (status === 'stopped') return '已停止'
   return !status || status === 'pending' ? '待观测' : status
+}
+
+type ToolSummaryRow = RuntimeSummaryTool
+
+function normalizedSummaryStatus(status: string) {
+  return status.trim().toLowerCase()
+}
+
+function summaryStatusLabel(status: string) {
+  const known = new Set(['queued', 'submitted', 'started', 'running', 'progress', 'succeeded', 'completed', 'failed', 'cancelled', 'stopped'])
+  return known.has(status) ? statusLabel(status) : '未识别状态'
+}
+
+function toolSummaryRows(toolSummary: RunDetail['tool_summary'] | undefined, calls: ToolAttempt[]) {
+  const materialized = new Map<string, number>()
+  for (const call of calls) {
+    // Lifecycle-only observations are evidence of an event, not a materialized
+    // ToolAttempt row and must not consume run-level summary counts.
+    if (call.tool_name.startsWith('observed_lifecycle:')) continue
+    const key = `${call.tool_name}\u0000${normalizedSummaryStatus(call.status)}`
+    materialized.set(key, (materialized.get(key) ?? 0) + 1)
+  }
+  const rows: ToolSummaryRow[] = []
+  for (const [toolName, statusCountsValue] of Object.entries(toolSummary ?? {})) {
+    if (!statusCountsValue || typeof statusCountsValue !== 'object') continue
+    const normalizedCounts = new Map<string, number>()
+    let summaryCount = 0
+    for (const [rawStatus, rawCount] of Object.entries(statusCountsValue)) {
+      if (typeof rawCount !== 'number' || !Number.isInteger(rawCount) || rawCount < 0) continue
+      const status = normalizedSummaryStatus(rawStatus)
+      normalizedCounts.set(status, (normalizedCounts.get(status) ?? 0) + rawCount)
+      summaryCount += rawCount
+    }
+    const statusCounts = Object.fromEntries(normalizedCounts)
+    const materializedCount = [...normalizedCounts.entries()].reduce((total, [status, count]) => total + Math.min(count, materialized.get(`${toolName}\u0000${status}`) ?? 0), 0)
+    const missingCount = Math.max(0, summaryCount - materializedCount)
+    if (summaryCount > 0) rows.push({
+      tool_name: toolName,
+      display_name: displayToolName(toolName),
+      summary_count: summaryCount,
+      materialized_count: materializedCount,
+      missing_count: missingCount,
+      status_counts: statusCounts,
+    })
+  }
+  return rows
+}
+
+export function deriveToolSummaryGaps(toolSummary: RunDetail['tool_summary'] | undefined, calls: ToolAttempt[]) {
+  return toolSummaryRows(toolSummary, calls).filter((row) => row.missing_count > 0)
+}
+
+function toolSummaryCoverage(toolSummary: RunDetail['tool_summary'] | undefined, calls: ToolAttempt[]) {
+  return toolSummaryRows(toolSummary, calls).reduce((coverage, row) => ({
+    total: coverage.total + row.summary_count,
+    materialized: coverage.materialized + row.materialized_count,
+    missing: coverage.missing + row.missing_count,
+  }), { total: 0, materialized: 0, missing: 0 })
 }
 
 function collectCalls(sources: Sources, lifecycleEvents: TimelineEvent[] = []) {
@@ -591,6 +655,13 @@ export function runtimeCallSummary(observedCalls: number, authoritativeToolRecor
   return `调用 ${observed}/${total}（已映射）`
 }
 
+export function runtimeObservationSummary(observedCalls: number, materializedToolCalls: number, hasToolSummary: boolean) {
+  if (!hasToolSummary) return runtimeCallSummary(observedCalls)
+  const observed = Number.isInteger(observedCalls) && observedCalls >= 0 ? observedCalls : 0
+  const materialized = Number.isInteger(materializedToolCalls) && materializedToolCalls >= 0 ? materializedToolCalls : 0
+  return `图中观测 ${observed} · 工具明细 ${materialized} · 生命周期观测 ${Math.max(0, observed - materialized)}`
+}
+
 export function runtimeActivitySummary(runStatus: string, openActivities: number) {
   const normalizedCount = Number.isInteger(openActivities) && openActivities >= 0 ? openActivities : 0
   return normalizedCount === 0 && runStatus === 'running'
@@ -902,6 +973,92 @@ function runtimeGroupNode(groupedCalls: ToolAttempt[], groupedEvents: TimelineEv
   }
 }
 
+function summaryStatusBreakdown(tools: RuntimeSummaryTool[]) {
+  const counts = new Map<string, number>()
+  for (const tool of tools) for (const [status, count] of Object.entries(tool.status_counts)) {
+    counts.set(summaryStatusLabel(status), (counts.get(summaryStatusLabel(status)) ?? 0) + count)
+  }
+  return [...counts.entries()].map(([label, count]) => `${label} ${count}`).join(' · ') || '未返回状态'
+}
+
+function summaryOperationComposition(tools: RuntimeSummaryTool[]) {
+  return tools.map((tool) => `${tool.display_name} ${tool.summary_count}`).join(' · ')
+}
+
+function toolSummaryGroupNode(tools: RuntimeSummaryTool[], expanded: boolean): GraphStage {
+  const summaryCount = tools.reduce((total, tool) => total + tool.summary_count, 0)
+  const materializedCount = tools.reduce((total, tool) => total + tool.materialized_count, 0)
+  const missingCount = tools.reduce((total, tool) => total + tool.missing_count, 0)
+  const groupId = 'tool-summary-group'
+  return {
+    id: groupId,
+    label: `工具汇总 · ${summaryCount} 项统计`,
+    kind: 'tool',
+    group: 'observed',
+    status: 'pending',
+    current: summaryCount,
+    total: summaryCount,
+    provenance: 'derived',
+    insight: {
+      grade: 'neutral',
+      verdict: '仅汇总统计',
+      reason: '数据库仅提供汇总计数；逐次记录、时间与依赖缺失',
+      facts: [
+        { label: '操作构成', value: summaryOperationComposition(tools) },
+        { label: '状态构成', value: summaryStatusBreakdown(tools) },
+        { label: '统计覆盖', value: `总量 ${summaryCount} · 已有逐次 ${materializedCount} · 缺少逐次 ${missingCount} · 展开 ${expanded ? tools.length : 0}/${tools.length} 个工具` },
+      ],
+      source: 'observer_summary',
+    },
+    runtime: {
+      node_type: 'tool_summary_group',
+      source_id: groupId,
+      observed_at: null,
+      child_ids: tools.map((tool) => `tool-summary:${encodeURIComponent(tool.tool_name)}`),
+      grouping_basis: '数据库工具状态汇总；按工具与状态核对逐次记录',
+      expanded,
+      status_breakdown: summaryStatusBreakdown(tools),
+      summary_tools: tools,
+      summary_only: true,
+      explicit_relation_count: 0,
+    },
+  }
+}
+
+function toolSummaryNode(tool: RuntimeSummaryTool): GraphStage {
+  return {
+    id: `tool-summary:${encodeURIComponent(tool.tool_name)}`,
+    label: tool.display_name,
+    kind: 'tool',
+    group: 'observed',
+    status: 'pending',
+    current: tool.summary_count,
+    total: tool.summary_count,
+    provenance: 'derived',
+    insight: {
+      grade: 'neutral',
+      verdict: '仅汇总',
+      reason: '数据库仅提供汇总计数；逐次记录、时间与依赖缺失',
+      facts: [
+        { label: '状态构成', value: Object.entries(tool.status_counts).map(([status, count]) => `${summaryStatusLabel(status)} ${count}`).join(' · ') },
+        { label: '统计总量', value: String(tool.summary_count) },
+        { label: '逐次明细', value: `已有 ${tool.materialized_count} · 缺少 ${tool.missing_count}` },
+      ],
+      source: 'observer_summary',
+    },
+    runtime: {
+      node_type: 'tool_summary',
+      source_id: tool.tool_name,
+      observed_at: null,
+      tool_name: tool.tool_name,
+      raw_label: tool.tool_name,
+      summary_tools: [tool],
+      summary_only: true,
+      explicit_relation_count: 0,
+    },
+  }
+}
+
 function generationNode(generation: number, count: number): GraphStage {
   return {
     id: `generation:${generation}`,
@@ -991,8 +1148,8 @@ export function layoutColumnsForWidth(availableWidth: number | undefined) {
 
 function computePositions(nodes: GraphStage[], requestedColumns?: number, availableWidth?: number) {
   const positions: Record<string, { x: number; y: number }> = {}
-  const laneByType: Record<string, number> = { lifecycle_event: 0, event_group: 0, tool_group: 1, batch_group: 1, tool_call: 1, generation: 2 }
-  const laneItems: GraphStage[][] = [[], [], []]
+  const laneByType: Record<string, number> = { tool_summary_group: 0, tool_summary: 0, lifecycle_event: 1, event_group: 1, tool_group: 2, batch_group: 2, tool_call: 2, generation: 3 }
+  const laneItems: GraphStage[][] = [[], [], [], []]
   // buildRuntimeGraph emits a bucket followed by its expanded members. Keep
   // that order inside each lane: it preserves chronological bucket order and
   // keeps an expanded batch local instead of re-scattering its members by a
@@ -1010,7 +1167,7 @@ function computePositions(nodes: GraphStage[], requestedColumns?: number, availa
     // affordance; their rendered height is materially larger than a plain
     // node. Reserve that real card footprint before placing the next lane.
     if (node.runtime?.expanded) return 260
-    if (['tool_group', 'event_group', 'batch_group'].includes(node.runtime?.node_type ?? '')) return 260
+    if (['tool_group', 'event_group', 'batch_group', 'tool_summary_group'].includes(node.runtime?.node_type ?? '')) return 260
     return 180
   }
   const laneRowHeights = laneItems.map((items, lane) => {
@@ -1024,11 +1181,10 @@ function computePositions(nodes: GraphStage[], requestedColumns?: number, availa
   const laneY: number[] = []
   let nextLaneY = 150
   for (let lane = 0; lane < laneItems.length; lane += 1) {
+    if (!laneRowHeights[lane].length) continue
     laneY[lane] = nextLaneY
     const occupiedHeight = laneRowHeights[lane].reduce((total, height) => total + height, 0)
       + Math.max(0, laneRowHeights[lane].length - 1) * rowGap
-    // An empty lane contributes no card row. Keeping only the inter-lane gap
-    // prevents a missing tool lane from becoming a large blank band.
     nextLaneY += occupiedHeight + laneGap
   }
   laneItems.forEach((items, lane) => {
@@ -1147,8 +1303,11 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
     const displayBatchLabel = aggregateSemanticLabel(bucket.calls, bucket.events) ?? '混合观测组'
     return [runtimeGroupNode(bucket.calls, bucket.events, expanded, groupId, groupingBasis, displayBatchLabel), ...(expanded ? [...bucket.calls.map(callNode), ...bucket.events.map(eventNode)] : [])]
   })
+  const summaryGaps = deriveToolSummaryGaps(detail.tool_summary, Object.values(calls))
+  const summaryCoverage = toolSummaryCoverage(detail.tool_summary, Object.values(calls))
   const nodes = [
     ...callNodes,
+    ...(summaryGaps.length ? [toolSummaryGroupNode(summaryGaps, expandedGroups.has('tool-summary-group')), ...(expandedGroups.has('tool-summary-group') ? summaryGaps.map(toolSummaryNode) : [])] : []),
     ...detail.candidates.map(candidateNode),
   ]
   const countsByGeneration = new Map<number, number>()
@@ -1332,6 +1491,9 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
     cycles: detectCycles(nodes.map((node) => node.id), edges),
     unfinished: Object.values(calls).filter((call) => !callStatuses.has(call.status) && !stoppedStatuses.has(call.status)).length,
     generations: countsByGeneration.size,
+    toolSummaryRecords: summaryCoverage.total,
+    toolSummaryMaterialized: summaryCoverage.materialized,
+    toolSummaryMissing: summaryCoverage.missing,
   }
   return { nodes, edges, positions: computePositions(nodes, options.layoutColumns, options.availableWidth), calls, events, toolGroups, sourceFetch: options.sourceFetch, gaps, stats }
 }

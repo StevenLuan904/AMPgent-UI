@@ -52,7 +52,7 @@ export interface GraphStage {
 }
 
 export interface RuntimeNodeMeta {
-  node_type: 'tool_call' | 'tool_group' | 'event_group' | 'batch_group' | 'lifecycle_event' | 'generation'
+  node_type: 'tool_call' | 'tool_group' | 'event_group' | 'batch_group' | 'tool_summary_group' | 'tool_summary' | 'lifecycle_event' | 'generation'
   source_id: string
   observed_at: string | null
   actor?: string
@@ -67,6 +67,17 @@ export interface RuntimeNodeMeta {
   status_breakdown?: string
   observed_span?: string
   raw_label?: string
+  summary_tools?: RuntimeSummaryTool[]
+  summary_only?: boolean
+}
+
+export interface RuntimeSummaryTool {
+  tool_name: string
+  display_name: string
+  summary_count: number
+  materialized_count: number
+  missing_count: number
+  status_counts: Record<string, number>
 }
 
 export interface CandidateMetric {

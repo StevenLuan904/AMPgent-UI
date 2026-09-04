@@ -562,23 +562,23 @@ button:focus-visible { outline: 2px solid #315be8; outline-offset: 2px; }
 .node-group-toggle:hover { border-color: #9fb1dd; background: #eef2fb; }
 .node-group-toggle:focus-visible, .group-toggle:focus-visible { outline: 2px solid #315fd6; outline-offset: 2px; }
 .node-group-toggle svg { width: 12px; height: 12px; transition: transform .18s ease; }
-.runtime-tool_group .node-group-toggle svg, .runtime-event_group .node-group-toggle svg, .runtime-batch_group .node-group-toggle svg { transform: rotate(0deg); }
-.runtime-tool_group .node-group-toggle:hover svg, .runtime-event_group .node-group-toggle:hover svg, .runtime-batch_group .node-group-toggle:hover svg { transform: translateX(2px); }
-.runtime-tool_group .node-verdict b, .runtime-event_group .node-verdict b, .runtime-batch_group .node-verdict b { color: #536993; }
+.runtime-tool_group .node-group-toggle svg, .runtime-event_group .node-group-toggle svg, .runtime-batch_group .node-group-toggle svg, .runtime-tool_summary_group .node-group-toggle svg { transform: rotate(0deg); }
+.runtime-tool_group .node-group-toggle:hover svg, .runtime-event_group .node-group-toggle:hover svg, .runtime-batch_group .node-group-toggle:hover svg, .runtime-tool_summary_group .node-group-toggle:hover svg { transform: translateX(2px); }
+.runtime-tool_group .node-verdict b, .runtime-event_group .node-verdict b, .runtime-batch_group .node-verdict b, .runtime-tool_summary_group .node-verdict b { color: #536993; }
 .workflow-node.is-runtime-node .node-title { font-size: 15px; }
 .workflow-node.is-runtime-node .node-facts small { font-size: 13px; }
 .workflow-node.is-runtime-node .node-facts strong { font-size: 14px; }
 .workflow-node.is-runtime-node .node-verdict > b { font-size: 13px; }
 .workflow-node.is-runtime-node .node-meta { font-size: 12px; }
 .workflow-node.is-runtime-node .evidence-chip { font-size: 11px; }
-.runtime-tool_group, .runtime-event_group, .runtime-batch_group { border: 1px solid #cfd8e5; }
-.runtime-tool_group, .runtime-event_group, .runtime-batch_group { position: relative; z-index: 2; box-shadow: 0 7px 16px rgba(47,66,113,.10); }
+.runtime-tool_group, .runtime-event_group, .runtime-batch_group, .runtime-tool_summary_group { border: 1px solid #cfd8e5; }
+.runtime-tool_group, .runtime-event_group, .runtime-batch_group, .runtime-tool_summary_group { position: relative; z-index: 2; box-shadow: 0 7px 16px rgba(47,66,113,.10); }
 .workflow-node.is-runtime-node, .workflow-node.is-runtime-node.node-pending { background: #fff; }
-.runtime-tool_group.runtime-group-expanded::before, .runtime-tool_group.runtime-group-expanded::after, .runtime-event_group.runtime-group-expanded::before, .runtime-event_group.runtime-group-expanded::after, .runtime-batch_group.runtime-group-expanded::before, .runtime-batch_group.runtime-group-expanded::after { display: none; }
-.runtime-tool_group::before, .runtime-tool_group::after, .runtime-event_group::before, .runtime-event_group::after, .runtime-batch_group::before, .runtime-batch_group::after { content: ""; position: absolute; z-index: -1; inset: 10px -12px -12px 10px; border: 1px solid #d4dce9; border-radius: 12px; background: linear-gradient(180deg, #ffffff, #fbfcfd); box-shadow: 0 5px 11px rgba(41,55,92,.09), inset 0 1px 0 #fff; pointer-events: none; }
-.runtime-tool_group::after, .runtime-event_group::after, .runtime-batch_group::after { inset: 20px -23px -23px 20px; background: linear-gradient(180deg, #ffffff, #fafbfd); box-shadow: 0 4px 9px rgba(41,55,92,.07), inset 0 1px 0 #fff; }
-.runtime-tool_call { border: 1px solid #d7dee8; }
-.runtime-tool_group, .runtime-tool_call { animation: batchReveal .18s ease-out; }
+.runtime-tool_group.runtime-group-expanded::before, .runtime-tool_group.runtime-group-expanded::after, .runtime-event_group.runtime-group-expanded::before, .runtime-event_group.runtime-group-expanded::after, .runtime-batch_group.runtime-group-expanded::before, .runtime-batch_group.runtime-group-expanded::after, .runtime-tool_summary_group.runtime-group-expanded::before, .runtime-tool_summary_group.runtime-group-expanded::after { display: none; }
+.runtime-tool_group::before, .runtime-tool_group::after, .runtime-event_group::before, .runtime-event_group::after, .runtime-batch_group::before, .runtime-batch_group::after, .runtime-tool_summary_group::before, .runtime-tool_summary_group::after { content: ""; position: absolute; z-index: -1; inset: 10px -12px -12px 10px; border: 1px solid #d4dce9; border-radius: 12px; background: linear-gradient(180deg, #ffffff, #fbfcfd); box-shadow: 0 5px 11px rgba(41,55,92,.09), inset 0 1px 0 #fff; pointer-events: none; }
+.runtime-tool_group::after, .runtime-event_group::after, .runtime-batch_group::after, .runtime-tool_summary_group::after { inset: 20px -23px -23px 20px; background: linear-gradient(180deg, #ffffff, #fafbfd); box-shadow: 0 4px 9px rgba(41,55,92,.07), inset 0 1px 0 #fff; }
+.runtime-tool_call, .runtime-tool_summary { border: 1px solid #d7dee8; }
+.runtime-tool_group, .runtime-tool_call, .runtime-tool_summary_group, .runtime-tool_summary { animation: batchReveal .18s ease-out; }
 .runtime-lifecycle_event { border: 1px solid #d7dee8; }
 .runtime-generation { border: 1px solid #d7dee8; }
 .runtime-group-list { display: grid; gap: 5px; margin-top: 10px; }
