@@ -169,3 +169,27 @@ def test_run2_close_receipt_records_negative_gate_without_materialization() -> N
     assert receipt["qd"]["quality_eligible"] == 0
     assert receipt["materialization"]["candidate_count"] == 0
     assert receipt["structure_queue"]["count"] == 0
+
+
+def test_v1_challenger_runtime_failure_is_not_a_pass() -> None:
+    receipt_path = Path(
+        "reports/vegfa_pepglad_macrel_rescue_20260904_v1/challenger/runtime_failure_receipt.json"
+    )
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    assert receipt["receipt_status"] == "failed_before_receipt"
+    assert receipt["error_category"] == "worker_execution_not_authorized"
+    assert receipt["hemopi2_receipt_valid"] is False
+    assert receipt["no_model_values_recorded"] is True
+
+
+def test_v1_close_receipt_records_successful_challenger_and_zero_qd() -> None:
+    receipt_path = Path(
+        "reports/vegfa_pepglad_macrel_rescue_20260904_v1/close_receipt.json"
+    )
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    assert receipt["challenger"]["hemopi2_status"] == "reviewed"
+    assert receipt["challenger"]["hemopi2_reviewed"] == 12
+    assert receipt["challenger"]["hemopi2_no_conflict"] == 10
+    assert receipt["challenger"]["hemopi2_conflict"] == 2
+    assert receipt["qd"]["quality_eligible"] == 0
+    assert receipt["materialization"]["candidate_count"] == 0

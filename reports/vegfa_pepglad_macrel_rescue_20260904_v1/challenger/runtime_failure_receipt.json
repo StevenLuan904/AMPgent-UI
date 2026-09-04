@@ -1,0 +1,16 @@
+{
+  "schema_version": "ampgent.vegfa-pepglad-macrel-rescue-challenger-runtime-failure.1",
+  "target_key": "vegfa",
+  "operator_id": "vegfa-pepglad-macrel-rescue-1aa-v1",
+  "input_csv": "reports/vegfa_pepglad_macrel_rescue_20260904_v1/calibration/candidate_scores_calibrated.csv",
+  "output_scope": "formal12",
+  "reviewed_candidate_count": 0,
+  "receipt_status": "failed_before_receipt",
+  "runtime": "var/validator-runtimes/hemopi2-v26-py311/Scripts/python.exe",
+  "worker": "src/pepagent/hemopi2_v27_worker.py",
+  "error_category": "worker_execution_not_authorized",
+  "error": "v27 smoke is not authorized by the current execution status",
+  "hemopi2_receipt_valid": false,
+  "no_model_values_recorded": true,
+  "historical_runs_modified": false
+}

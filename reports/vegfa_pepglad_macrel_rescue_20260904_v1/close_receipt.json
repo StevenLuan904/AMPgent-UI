@@ -1,0 +1,55 @@
+{
+  "schema_version": "ampgent.vegfa-pepglad-macrel-rescue-close.1",
+  "target_key": "vegfa",
+  "source": "PepGLAD",
+  "operator_id": "vegfa-pepglad-macrel-rescue-1aa-v1",
+  "generation": 4,
+  "proposal_count": 12,
+  "pg_exact": {
+    "pg_new_proposals": 12,
+    "historical_replay_count": 0,
+    "candidate_materialized": 0
+  },
+  "formal12": {
+    "complete": 12,
+    "display_eligible": 7,
+    "calibrated_activity_support_ge_2": 0,
+    "excellent": 0
+  },
+  "challenger": {
+    "hemopi2_status": "reviewed",
+    "hemopi2_reviewed": 12,
+    "hemopi2_no_conflict": 10,
+    "hemopi2_conflict": 2,
+    "hemopi2_runtime_error_category": null,
+    "apex": {
+      "applicability_status": "runtime_unavailable",
+      "conflict_status": "not_assessed"
+    },
+    "peptiverse": {
+      "applicability_status": "runtime_unavailable",
+      "conflict_status": "not_assessed"
+    }
+  },
+  "qd": {
+    "archive_cells": 2160,
+    "quality_eligible": 0,
+    "new_cell": 0,
+    "incumbent_replacement": 0,
+    "quality_gate_failed": 12,
+    "summary_payload_sha256": "c5651de8ad9627f99d0e801a2033172693b9325266dbb73f2880066235365d19"
+  },
+  "materialization": {
+    "candidate_count": 0,
+    "evaluation_count": 0,
+    "tool_call_count": 0,
+    "allowed": false,
+    "reason": "calibrated_activity_support_intersection_empty"
+  },
+  "structure_queue": {
+    "count": 0,
+    "dispatch_allowed": false
+  },
+  "historical_runs_modified": false,
+  "gpu_rosetta_md_submitted": false
+}
