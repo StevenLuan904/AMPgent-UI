@@ -1,0 +1,127 @@
+{
+  "schema_version": "ampgent.source-batch-continuation-selection.1",
+  "selected_batch": "reports/gyrA_pepflow_qd_neighbor_20260904",
+  "selection_basis": "highest_valid_fixed_2160_cell_qd_contribution",
+  "capacity_snapshot": {
+    "captured_at": "2026-09-04T17:55:40+08:00",
+    "reachable_gpu_count": 0,
+    "idle_gpu_count": 0,
+    "remote_probe_performed": false
+  },
+  "comparison": {
+    "reports/gyrA_pepflow_generation5_20260904": {
+      "proposals": 12,
+      "formal12": 12,
+      "display": 12,
+      "calibrated_support_ge_2": 7,
+      "challenger_reviewed": 12,
+      "challenger_no_conflict": 2,
+      "qd_quality_eligible": 7,
+      "qd_new_cell": 4,
+      "qd_replacement": 0,
+      "materialized": 4
+    },
+    "reports/gyrA_pepflow_qd_neighbor_20260904": {
+      "proposals": 12,
+      "formal12": 12,
+      "display": 11,
+      "calibrated_support_ge_2": 9,
+      "challenger_reviewed": 12,
+      "challenger_no_conflict": 11,
+      "qd_quality_eligible": 8,
+      "qd_new_cell": 8,
+      "qd_replacement": 0,
+      "materialized": 8
+    },
+    "reports/pbp2a_pepflow_same_domain_20260904": {
+      "proposals": 12,
+      "formal12": 12,
+      "display": 10,
+      "calibrated_support_ge_2": 12,
+      "challenger_reviewed": 12,
+      "challenger_no_conflict": 11,
+      "qd_quality_eligible": 10,
+      "qd_new_cell": 0,
+      "qd_replacement": 5,
+      "materialized": 5
+    }
+  },
+  "selected_evidence": {
+    "proposal_count": 12,
+    "historical_sequence_gate_pass_count": 12,
+    "score_all": {
+      "formal12_count": 12,
+      "display_count": 11,
+      "toxinpred3_non_toxin_count": 12,
+      "macrel_low_count": 12,
+      "guruprasad_le_50_count": 11,
+      "hydrophobic_run_or_fraction_hard_gate": false,
+      "source_csv_sha256": "e00605f15553e1ccce3cab76113669c71784bb7969b17a61562266a1e01672ac",
+      "candidate_scores_sha256": "05b80ab68537450a391fc7b876e350f5e1f2d2961daf73973e890dd97885d681"
+    },
+    "activity_calibration": {
+      "support_ge_2_count": 9,
+      "excellent_count": 8,
+      "receipt": "calibration_receipt.json"
+    },
+    "hemopi2_challenger": {
+      "reviewed": 12,
+      "no_conflict": 11,
+      "conflict": 1,
+      "challenger_is_not_a_primary_hard_gate": true
+    },
+    "shadow": {
+      "apex": "runtime_unavailable",
+      "peptiverse": "runtime_unavailable",
+      "missing_verified_runtimes": ["apex", "peptiverse"]
+    },
+    "qd": {
+      "cell_count": 2160,
+      "quality_eligible": 8,
+      "new_cell": 8,
+      "replacement": 0,
+      "contribution_count": 8,
+      "archive_relative_novelty": 1.0,
+      "receipt": "quality_diversity.json"
+    },
+    "materialization": {
+      "run_id": "e405720e-7087-5765-9dde-6148aee0c7aa",
+      "candidate_count": 8,
+      "evaluation_count": 136,
+      "tool_call_id": "e4e3a373-4e8f-450d-962b-3e1fab0c4526",
+      "historical_runs_modified": false
+    },
+    "structure": {
+      "candidate_count": 8,
+      "decoys_per_candidate": 5,
+      "status": "prepared_not_dispatched",
+      "dispatch_allowed": false,
+      "pool_a_admitted_count": 0
+    }
+  },
+  "postgresql": {
+    "status": "evidence_verification_unavailable",
+    "short_preflight": "reachable",
+    "readback": "timeout",
+    "identity_binding_required": "run_id+candidate_id+model_release_key",
+    "identity_binding_verified": false,
+    "replay_verified": false,
+    "drift_verified": false,
+    "writes_attempted": 0,
+    "writes_completed": 0,
+    "reason": "existing_receipt_is_preserved; live exact readback timed out; no new persistence or replay was attempted",
+    "recovery_action": "retry exact readback only when the local PG service is responsive"
+  },
+  "scientific_increment": {
+    "status": "none_new",
+    "reason": "selected existing QD contribution; no new scoring, candidate materialization, structure, Rosetta, MD, or GPU work"
+  },
+  "source_artifacts": {
+    "proposals": "proposals.csv",
+    "score_all": "score_all/receipt.json",
+    "challenger": "challenger/receipt.json",
+    "qd": "quality_diversity.json",
+    "close": "close_receipt.json",
+    "coarse5": "coarse5_prepared_receipt.json"
+  }
+}
