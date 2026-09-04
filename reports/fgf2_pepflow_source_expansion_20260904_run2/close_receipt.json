@@ -1,0 +1,69 @@
+{
+  "schema_version": "ampgent.fgf2-pepflow-source-expansion-close.1",
+  "target_key": "fgf2",
+  "source": "PepFlow",
+  "operator_id": "fgf2-pepflow-source-expansion-1aa-v1",
+  "generation": 4,
+  "primary_calibration_reference_run_id": "eb85d014-e7b3-5f6c-acab-34ac580b30e1",
+  "primary_calibration_provenance": "frozen FGF2 branch reference used by the prior FGF2 PepFlow cohort",
+  "sensitivity_calibrations": {
+    "2b8f5096-5e59-5e27-a53d-692adadebd82": {
+      "support_ge_2": 2,
+      "role": "later PepGLAD materialized small-sample sensitivity"
+    },
+    "1ff62322-46ce-5422-8e40-a328b729b984": {
+      "support_ge_2": 4,
+      "role": "single PepMLM increment sensitivity"
+    }
+  },
+  "stage_counts": {
+    "proposal": 12,
+    "formal12": 12,
+    "display": 12,
+    "primary_support_ge_2": 10,
+    "primary_excellent": 10,
+    "challenger_reviewed": 12,
+    "challenger_no_conflict": 11,
+    "challenger_conflict": 1,
+    "qd_quality_eligible": 10,
+    "qd_new_cell": 3,
+    "qd_replacement": 0,
+    "materialized_candidate": 3,
+    "inserted_evaluation": 51,
+    "prepared_coarse5": 3,
+    "pool_a_admitted": 0
+  },
+  "primary_calibration_result": "admission_domain",
+  "challenger_shadow": {
+    "hemopi2": "reviewed",
+    "apex": "runtime_unavailable",
+    "peptiverse": "runtime_unavailable"
+  },
+  "materialization": {
+    "run_id": "14243750-1769-5590-93de-42659c18fe67",
+    "tool_call_id": "9c22488d-140a-4593-b24c-a1357e203abd",
+    "replay_count": 0,
+    "historical_runs_modified": false
+  },
+  "coarse5": {
+    "status": "prepared_not_dispatched",
+    "dispatch_allowed": false,
+    "median_dg_gate": -30,
+    "queue_sha256": "9214679fae87e2b12b23ea7f14c522f61766eee3afbc4dfb57f384745184496c"
+  },
+  "preserved_runtime_diagnostic": {
+    "status": "wrong_registry_runtime_boundary",
+    "path": "score_all/receipt.json",
+    "formal12": 0,
+    "display": 0,
+    "overwritten": false
+  },
+  "artifact_sha256s": {
+    "generation_receipt": "144992f80466816506a1a3f9d16b98db29c212f3fc3ab3c3472da0e82d978907",
+    "primary_calibration": "3af8d288f46f31e1bec2e825025ff4db11ac2815b2d6b559788663d48706e006",
+    "primary_challenger": "426bcde23eb237407025fa9e7a641e5e5931f3ca76b43b5abd468079b0914ef5",
+    "primary_qd": "b67986c1acde94b3e850e03b29d50189e03f582a9ec9c25e44e5cb3956a04a02",
+    "materialization": "608533864ce7feddfb6227668be4fbcacedd60da437e46cfe523d08474d9535e"
+  },
+  "receipt_payload_sha256": "f550c8b9034cf847dcb7f86500cfecb7db91c3f1245b87d9107e8840ad2d6c37"
+}

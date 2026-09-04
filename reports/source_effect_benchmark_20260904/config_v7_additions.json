@@ -1,0 +1,26 @@
+{
+  "benchmark_id": "ampgent_source_effect_benchmark_v7_20260904",
+  "observed_at_utc": "2026-09-04T06:30:00Z",
+  "specs": [
+    {
+      "label": "FGF2 PepFlow source expansion",
+      "source": "PepFlow",
+      "target_key": "fgf2",
+      "run_id": "14243750-1769-5590-93de-42659c18fe67",
+      "score_path": "reports/fgf2_pepflow_source_expansion_20260904_run2/candidate_scores_calibrated.csv",
+      "materialized_score_path": "reports/fgf2_pepflow_source_expansion_20260904_run2/materialization_input/candidate_scores.csv",
+      "proposal_path": "reports/fgf2_pepflow_source_expansion_20260904_run2/proposals.csv",
+      "challenger_path": "reports/fgf2_pepflow_source_expansion_20260904_run2/challenger_primary_eb85/challenger_review.csv",
+      "materialized_challenger_path": "reports/fgf2_pepflow_source_expansion_20260904_run2/materialization_input/challenger_review.csv",
+      "materialization_path": "reports/fgf2_pepflow_source_expansion_20260904_run2/materialization_receipt.json",
+      "qd_path": "reports/fgf2_pepflow_source_expansion_20260904_run2/qd_primary_eb85/qd_summary.json",
+      "pool_a_admitted_count": 0,
+      "candidate_id_kind": "authoritative_uuid_from_pg_run_readback",
+      "calibration_reference_run_id": "eb85d014-e7b3-5f6c-acab-34ac580b30e1",
+      "sensitivity_calibration_support_ge_2": {
+        "2b8f5096-5e59-5e27-a53d-692adadebd82": 2,
+        "1ff62322-46ce-5422-8e40-a328b729b984": 4
+      }
+    }
+  ]
+}

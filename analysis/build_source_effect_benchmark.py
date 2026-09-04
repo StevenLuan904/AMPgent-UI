@@ -475,6 +475,12 @@ def _record(spec: dict[str, Any], base: Path) -> list[dict[str, Any]]:
                 "target_key": spec["target_key"],
                 "run_id": spec.get("run_id"),
                 "source_artifact_id": spec.get("source_artifact_id"),
+                "calibration_reference_run_id": spec.get(
+                    "calibration_reference_run_id"
+                ),
+                "sensitivity_calibration_support_ge_2": spec.get(
+                    "sensitivity_calibration_support_ge_2"
+                ),
                 "identity_basis": (
                     f"artifact_id={spec['source_artifact_id']} + sequence_sha256"
                     if spec.get("source_scope") == "artifact"

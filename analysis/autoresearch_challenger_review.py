@@ -97,7 +97,11 @@ def run(args: argparse.Namespace) -> None:
         summary.append(
             {
                 "branch_key": branch_key,
-                "excellent_candidate_count": len(branch_rows),
+                "excellent_candidate_count": sum(
+                    row.get("excellent_sequence_stage_calibrated", "").lower()
+                    == "true"
+                    for row in branch_rows
+                ),
                 "challenger_no_conflict_count": sum(
                     row["challenger_conflict_status"] == "no_conflict"
                     for row in branch_rows
