@@ -1,0 +1,157 @@
+{
+  "plugin": {
+    "name": "toxicity_risk",
+    "parameters": {}
+  },
+  "contract": {
+    "default_trust": "soft",
+    "maximum_trust": "soft",
+    "reliability": "R3-minus-not-assay-matched",
+    "provider": "external",
+    "outputs": {
+      "toxinpred3_ml_score": [
+        "toxinpred3_ml_score",
+        "dimensionless",
+        "numeric"
+      ],
+      "toxinpred3_hybrid_score": [
+        "toxinpred3_hybrid_score",
+        "dimensionless",
+        "numeric"
+      ],
+      "toxinpred3_label": [
+        "toxinpred3_label",
+        null,
+        "text"
+      ]
+    }
+  },
+  "candidate_count": 2,
+  "status": "complete",
+  "records": [
+    {
+      "candidate_id": "proposal-f4c0cfee15fb7d3992eb",
+      "sequence": "SGNTPKNNTGGGHTGGNKSWG",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "toxinpred3_ml_score",
+          "numeric_value": 0.195,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_hybrid_score",
+          "numeric_value": 0.195,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_label",
+          "numeric_value": null,
+          "text_value": "Non-Toxin",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-f4c0cfee15fb7d3992eb",
+        "sequence": "SGNTPKNNTGGGHTGGNKSWG",
+        "status": "success",
+        "toxinpred3_ml_score": "0.195",
+        "toxinpred3_hybrid_score": "0.195",
+        "toxinpred3_label": "Non-Toxin",
+        "toxinpred3_positive_motif_match": "false",
+        "toxinpred3_negative_motif_match": "false",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-4fd085009c506b8c7049",
+      "sequence": "SGNTPKNNTGGKHTGGNGSWG",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "toxinpred3_ml_score",
+          "numeric_value": 0.25,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_hybrid_score",
+          "numeric_value": 0.25,
+          "text_value": null,
+          "unit": "dimensionless"
+        },
+        {
+          "metric_name": "toxinpred3_label",
+          "numeric_value": null,
+          "text_value": "Non-Toxin",
+          "unit": null
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-4fd085009c506b8c7049",
+        "sequence": "SGNTPKNNTGGKHTGGNGSWG",
+        "status": "success",
+        "toxinpred3_ml_score": "0.25",
+        "toxinpred3_hybrid_score": "0.25",
+        "toxinpred3_label": "Non-Toxin",
+        "toxinpred3_positive_motif_match": "false",
+        "toxinpred3_negative_motif_match": "false",
+        "error": ""
+      }
+    }
+  ],
+  "raw_rows": [
+    {
+      "candidate_id": "proposal-f4c0cfee15fb7d3992eb",
+      "sequence": "SGNTPKNNTGGGHTGGNKSWG",
+      "status": "success",
+      "toxinpred3_ml_score": "0.195",
+      "toxinpred3_hybrid_score": "0.195",
+      "toxinpred3_label": "Non-Toxin",
+      "toxinpred3_positive_motif_match": "false",
+      "toxinpred3_negative_motif_match": "false",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-4fd085009c506b8c7049",
+      "sequence": "SGNTPKNNTGGKHTGGNGSWG",
+      "status": "success",
+      "toxinpred3_ml_score": "0.25",
+      "toxinpred3_hybrid_score": "0.25",
+      "toxinpred3_label": "Non-Toxin",
+      "toxinpred3_positive_motif_match": "false",
+      "toxinpred3_negative_motif_match": "false",
+      "error": ""
+    }
+  ],
+  "stdout_tail": "",
+  "stderr_tail": "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\var\\metric-runtimes\\toxinpred3-py39\\lib\\site-packages\\sklearn\\base.py:329: UserWarning: Trying to unpickle estimator ExtraTreeClassifier from version 1.2.2 when using version 1.0.2. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:\nhttps://scikit-learn.org/stable/modules/model_persistence.html#security-maintainability-limitations\n  warnings.warn(\nD:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\var\\metric-runtimes\\toxinpred3-py39\\lib\\site-packages\\sklearn\\base.py:329: UserWarning: Trying to unpickle estimator ExtraTreesClassifier from version 1.2.2 when using version 1.0.2. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:\nhttps://scikit-learn.org/stable/modules/model_persistence.html#security-maintainability-limitations\n  warnings.warn(\nD:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\var\\metric-runtimes\\toxinpred3-py39\\lib\\site-packages\\sklearn\\base.py:450: UserWarning: X does not have valid feature names, but ExtraTreesClassifier was fitted with feature names\n  warnings.warn(\n",
+  "model_uri": "git+https://github.com/raghavagps/toxinpred3.git@dcdba833cd48cc8a2090ac90f3319fd9bcb87a1c",
+  "weights_sha256": "bacaef2ff40136babe98edcde861ea79d62ea3420a6b1b5d36019fa0ddc2db3b",
+  "limitations": [
+    "Corrected batch runner fixes one-row shape and per-sequence literal MERCI scoring.",
+    "The endpoint is not assay-matched to this project and remains soft evidence."
+  ],
+  "adapter_version": "toxinpred3-corrected-v0.2-dcdba83",
+  "registry_sha256": "7a5152541864e7cec1b94bb5eb9c74d313408b5f4d4781f1565525b577164e55",
+  "command_argv": [
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\var\\metric-runtimes\\toxinpred3-py39\\Scripts\\python.exe",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\src\\pepagent\\model_workers\\toxinpred3_metric_cli.py",
+    "--input",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\reports\\pbp2a_pepflow_qd_neighbor_next_20260904\\score_all\\work\\toxicity_risk\\candidates.csv",
+    "--output",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\reports\\pbp2a_pepflow_qd_neighbor_next_20260904\\score_all\\work\\toxicity_risk\\predictions.csv",
+    "--raw-output-dir",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\reports\\pbp2a_pepflow_qd_neighbor_next_20260904\\score_all\\work\\toxicity_risk\\raw",
+    "--model",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\var\\metric-runtimes\\toxinpred3-src\\model\\unpacked\\toxinpred3.0_model.pkl",
+    "--positive-motifs",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\var\\metric-runtimes\\toxinpred3-src\\motifs\\pos_motif.txt",
+    "--negative-motifs",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\var\\metric-runtimes\\toxinpred3-src\\motifs\\neg_motif.txt",
+    "--threshold",
+    "0.38"
+  ]
+}

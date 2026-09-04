@@ -1,0 +1,227 @@
+{
+  "plugin": {
+    "name": "mic_potency_amp_read",
+    "parameters": {}
+  },
+  "contract": {
+    "default_trust": "soft",
+    "maximum_trust": "soft",
+    "reliability": "R3-generic-mixed-species-no-similarity-isolated-local-test",
+    "provider": "external",
+    "outputs": {
+      "amp_read_log10_mic_um": [
+        "amp_read_log10_mic_um",
+        "log10(umol/L)",
+        "numeric"
+      ],
+      "amp_read_predicted_mic_um": [
+        "amp_read_predicted_mic_um",
+        "umol/L",
+        "numeric"
+      ],
+      "amp_read_cnn_log10_mic_um": [
+        "amp_read_cnn_log10_mic_um",
+        "log10(umol/L)",
+        "numeric"
+      ],
+      "amp_read_transformer_log10_mic_um": [
+        "amp_read_transformer_log10_mic_um",
+        "log10(umol/L)",
+        "numeric"
+      ],
+      "amp_read_attention_log10_mic_um": [
+        "amp_read_attention_log10_mic_um",
+        "log10(umol/L)",
+        "numeric"
+      ],
+      "amp_read_lstm_log10_mic_um": [
+        "amp_read_lstm_log10_mic_um",
+        "log10(umol/L)",
+        "numeric"
+      ]
+    }
+  },
+  "candidate_count": 2,
+  "status": "complete",
+  "records": [
+    {
+      "candidate_id": "proposal-f4c0cfee15fb7d3992eb",
+      "sequence": "SGNTPKNNTGGGHTGGNKSWG",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 1.282114604352522,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 19.147611375404587,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 1.6838048696517944,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 1.651466965675354,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 1.2057864665985107,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 0.5873317718505859,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-f4c0cfee15fb7d3992eb",
+        "sequence": "SGNTPKNNTGGGHTGGNKSWG",
+        "status": "success",
+        "amp_read_log10_mic_um": "1.282114604352522",
+        "amp_read_predicted_mic_um": "19.147611375404587",
+        "amp_read_cnn_log10_mic_um": "1.6838048696517944",
+        "amp_read_transformer_log10_mic_um": "1.651466965675354",
+        "amp_read_attention_log10_mic_um": "1.2057864665985107",
+        "amp_read_lstm_log10_mic_um": "0.5873317718505859",
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "proposal-4fd085009c506b8c7049",
+      "sequence": "SGNTPKNNTGGKHTGGNGSWG",
+      "status": "success",
+      "observations": [
+        {
+          "metric_name": "amp_read_log10_mic_um",
+          "numeric_value": 1.5881007697176646,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_predicted_mic_um",
+          "numeric_value": 38.73475110674847,
+          "text_value": null,
+          "unit": "umol/L"
+        },
+        {
+          "metric_name": "amp_read_cnn_log10_mic_um",
+          "numeric_value": 1.6922699213027954,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_transformer_log10_mic_um",
+          "numeric_value": 1.6860575675964355,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_attention_log10_mic_um",
+          "numeric_value": 1.2145992517471313,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        },
+        {
+          "metric_name": "amp_read_lstm_log10_mic_um",
+          "numeric_value": 1.7594903707504272,
+          "text_value": null,
+          "unit": "log10(umol/L)"
+        }
+      ],
+      "raw": {
+        "candidate_id": "proposal-4fd085009c506b8c7049",
+        "sequence": "SGNTPKNNTGGKHTGGNGSWG",
+        "status": "success",
+        "amp_read_log10_mic_um": "1.5881007697176646",
+        "amp_read_predicted_mic_um": "38.73475110674847",
+        "amp_read_cnn_log10_mic_um": "1.6922699213027954",
+        "amp_read_transformer_log10_mic_um": "1.6860575675964355",
+        "amp_read_attention_log10_mic_um": "1.2145992517471313",
+        "amp_read_lstm_log10_mic_um": "1.7594903707504272",
+        "error": ""
+      }
+    }
+  ],
+  "raw_rows": [
+    {
+      "candidate_id": "proposal-f4c0cfee15fb7d3992eb",
+      "sequence": "SGNTPKNNTGGGHTGGNKSWG",
+      "status": "success",
+      "amp_read_log10_mic_um": "1.282114604352522",
+      "amp_read_predicted_mic_um": "19.147611375404587",
+      "amp_read_cnn_log10_mic_um": "1.6838048696517944",
+      "amp_read_transformer_log10_mic_um": "1.651466965675354",
+      "amp_read_attention_log10_mic_um": "1.2057864665985107",
+      "amp_read_lstm_log10_mic_um": "0.5873317718505859",
+      "error": ""
+    },
+    {
+      "candidate_id": "proposal-4fd085009c506b8c7049",
+      "sequence": "SGNTPKNNTGGKHTGGNGSWG",
+      "status": "success",
+      "amp_read_log10_mic_um": "1.5881007697176646",
+      "amp_read_predicted_mic_um": "38.73475110674847",
+      "amp_read_cnn_log10_mic_um": "1.6922699213027954",
+      "amp_read_transformer_log10_mic_um": "1.6860575675964355",
+      "amp_read_attention_log10_mic_um": "1.2145992517471313",
+      "amp_read_lstm_log10_mic_um": "1.7594903707504272",
+      "error": ""
+    }
+  ],
+  "stdout_tail": "",
+  "stderr_tail": "",
+  "model_uri": "git+https://github.com/MicroResearchLab/AMP-potency-prediction-EvoGradient.git@ec9478b5e0d0aff4f92d6381c5027855390104c4",
+  "weights_sha256": "06a577e36a833d36fad8b2af03f79cef8b3e795269918dcdee263967d197565f",
+  "limitations": [
+    "Generic mixed-species MIC estimate; it is not E. coli-specific or a wet-lab MIC.",
+    "Component predictions are retained and no cross-family consensus is fabricated.",
+    "The local comparison is not similarity-isolated from the released training data."
+  ],
+  "adapter_version": "amp-read-ec9478b-open-weights-cpu-v1",
+  "registry_sha256": "7a5152541864e7cec1b94bb5eb9c74d313408b5f4d4781f1565525b577164e55",
+  "command_argv": [
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\var\\metric-runtimes\\llamp-py39\\Scripts\\python.exe",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\src\\pepagent\\model_workers\\amp_read_metric_cli.py",
+    "--input",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\reports\\pbp2a_pepflow_qd_neighbor_next_20260904\\score_all\\work\\mic_potency_amp_read\\candidates.csv",
+    "--output",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\reports\\pbp2a_pepflow_qd_neighbor_next_20260904\\score_all\\work\\mic_potency_amp_read\\predictions.csv",
+    "--raw-output-dir",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\reports\\pbp2a_pepflow_qd_neighbor_next_20260904\\score_all\\work\\mic_potency_amp_read\\raw",
+    "--upstream-repository",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\var\\metric-runtimes\\amp-read-src",
+    "--cnn",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\var\\metric-runtimes\\amp-read-src\\model\\regression\\CNN.pth",
+    "--cnn-sha256",
+    "da071c6624666e128aae79643dcbe6084fce339711b902a3ba89e4eb3aeee07e",
+    "--transformer",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\var\\metric-runtimes\\amp-read-src\\model\\regression\\Transformer.pth",
+    "--transformer-sha256",
+    "658a354dd0c76c1851516af361ea0899568642c02cc0fab0f6a55a87579fcc44",
+    "--attention",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\var\\metric-runtimes\\amp-read-src\\model\\regression\\Attention.pth",
+    "--attention-sha256",
+    "5dbea063bb56ffe7e903538aab4f4a90688d0f87f89c4ed26851fb649062283a",
+    "--lstm",
+    "D:\\DWorkspace\\yangyang\\皮肤抗菌短肽\\agent-platform\\var\\metric-runtimes\\amp-read-src\\model\\regression\\LSTM.pth",
+    "--lstm-sha256",
+    "6f6d2784149a77fe430125aad612efe20cd3ef4e9b6680b5ec29b10ac99f9594",
+    "--source-sha256",
+    "1bed5830995e9d2f47bcbf64249d7e53ddb90eca83cc5f80b5ab9d6901220ba1",
+    "--device",
+    "cpu"
+  ]
+}
