@@ -394,6 +394,20 @@ export function runtimeRetrySummary(toolRetries: number, activityRetries: number
   return labels
 }
 
+/**
+ * Distinguishes the authoritative run-level tool record count from the
+ * subset currently materialized from node-detail responses. The graph must
+ * not present a partial detail read as the complete call set.
+ */
+export function runtimeCallSummary(observedCalls: number, authoritativeToolRecords?: number) {
+  const observed = Number.isInteger(observedCalls) && observedCalls >= 0 ? observedCalls : 0
+  const total = typeof authoritativeToolRecords === 'number' && Number.isInteger(authoritativeToolRecords) && authoritativeToolRecords >= observed
+    ? authoritativeToolRecords
+    : null
+  if (total === null || total === observed) return `调用 ${observed}`
+  return `调用 ${observed}/${total}（已映射）`
+}
+
 export function runtimeActivitySummary(runStatus: string, openActivities: number) {
   const normalizedCount = Number.isInteger(openActivities) && openActivities >= 0 ? openActivities : 0
   return normalizedCount === 0 && runStatus === 'running'

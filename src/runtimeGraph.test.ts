@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildRuntimeGraph, countActivityRetries, countOpenActivities, runtimeActivitySummary, runtimeRetrySummary } from './runtimeGraph'
+import { buildRuntimeGraph, countActivityRetries, countOpenActivities, runtimeActivitySummary, runtimeCallSummary, runtimeRetrySummary } from './runtimeGraph'
 import type { NodeDetail, RunDetail, ToolAttempt } from './types'
 
 const call = (id: string, toolName: string, queuedAt: string, overrides: Partial<ToolAttempt> = {}): ToolAttempt => ({
@@ -118,6 +118,13 @@ describe('buildRuntimeGraph', () => {
     expect(runtimeActivitySummary('running', 0)).toBe('等待后续活动观测')
     expect(runtimeActivitySummary('running', 2)).toBe('开放活动 2')
     expect(runtimeActivitySummary('succeeded', 0)).toBe('开放活动 0')
+  })
+
+  it('distinguishes materialized calls from the authoritative run record count', () => {
+    expect(runtimeCallSummary(1, 8)).toBe('调用 1/8（已映射）')
+    expect(runtimeCallSummary(0, 8)).toBe('调用 0/8（已映射）')
+    expect(runtimeCallSummary(8, 8)).toBe('调用 8')
+    expect(runtimeCallSummary(8, 3)).toBe('调用 8')
   })
 
   it('builds observed call/event nodes and reports missing dependency contract', () => {
