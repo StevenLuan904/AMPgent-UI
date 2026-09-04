@@ -1,7 +1,7 @@
 {
   "schema_version": "ampgent.source-effect-benchmark.1",
-  "benchmark_id": "ampgent_source_effect_benchmark_v5_20260904",
-  "observed_at_utc": "2026-09-04T05:48:00Z",
+  "benchmark_id": "ampgent_source_effect_benchmark_v6_20260904",
+  "observed_at_utc": "2026-09-04T06:01:33Z",
   "md_observation": {
     "observed_at_utc": "2026-09-03T22:37:49.808096+00:00",
     "observation_basis": "md_current_identity_snapshot_20260904.json plus live supervisor PID probes; no new full-evidence transition observed",
@@ -3451,6 +3451,194 @@
         "qd_path": "reports/vegfa_pepflow_peripheral_rescue_20260904_v1/qd_summary.json",
         "challenger_path": "reports/vegfa_pepflow_peripheral_rescue_20260904_v1/challenger/challenger_review.csv"
       }
+    },
+    {
+      "label": "ANGPT1 PepMLM historical artifact promotion",
+      "source": "PepMLM",
+      "source_scope": "run",
+      "evidence_strength": "run_scoped_observational",
+      "target_key": "angpt1",
+      "run_id": "f54f47a8-f356-53c2-8488-57714683f275",
+      "source_artifact_id": null,
+      "identity_basis": "run_id=f54f47a8-f356-53c2-8488-57714683f275 + sequence_sha256",
+      "candidate_id_kind": "authoritative_uuid_in_close_receipt; score_row_sequence_sha256",
+      "within_group_unique_sequence_sha256": true,
+      "run_materialized_count": 1,
+      "pg_identity": {
+        "run_id": "f54f47a8-f356-53c2-8488-57714683f275",
+        "tool_call_id": "4213295d-9cdb-4e0b-8c29-4b372313b7fb",
+        "materialized_candidate_count": 1,
+        "inserted_evaluation_count": 17,
+        "replay_count": 0,
+        "historical_runs_modified": false
+      },
+      "rates": {
+        "proposal_to_materialized": {
+          "count": 1,
+          "denominator": 1,
+          "rate": 1.0,
+          "ci95": [
+            0.20654931437723745,
+            1.0
+          ]
+        },
+        "proposal_to_formal12": {
+          "count": 1,
+          "denominator": 1,
+          "rate": 1.0,
+          "ci95": [
+            0.20654931437723745,
+            1.0
+          ]
+        },
+        "proposal_to_display": {
+          "count": 1,
+          "denominator": 1,
+          "rate": 1.0,
+          "ci95": [
+            0.20654931437723745,
+            1.0
+          ]
+        },
+        "proposal_to_activity_support_ge_2": {
+          "count": 1,
+          "denominator": 1,
+          "rate": 1.0,
+          "ci95": [
+            0.20654931437723745,
+            1.0
+          ]
+        },
+        "proposal_to_challenger_reviewed": {
+          "count": 1,
+          "denominator": 1,
+          "rate": 1.0,
+          "ci95": [
+            0.20654931437723745,
+            1.0
+          ]
+        },
+        "materialized_to_formal12": {
+          "count": 1,
+          "denominator": 1,
+          "rate": 1.0,
+          "ci95": [
+            0.20654931437723745,
+            1.0
+          ]
+        },
+        "materialized_to_display": {
+          "count": 1,
+          "denominator": 1,
+          "rate": 1.0,
+          "ci95": [
+            0.20654931437723745,
+            1.0
+          ]
+        },
+        "materialized_to_activity_support_ge_2": {
+          "count": 1,
+          "denominator": 1,
+          "rate": 1.0,
+          "ci95": [
+            0.20654931437723745,
+            1.0
+          ]
+        },
+        "materialized_to_excellent": {
+          "count": 1,
+          "denominator": 1,
+          "rate": 1.0,
+          "ci95": [
+            0.20654931437723745,
+            1.0
+          ]
+        },
+        "materialized_to_qd_eligible": {
+          "count": 1,
+          "denominator": 1,
+          "rate": 1.0,
+          "ci95": [
+            0.20654931437723745,
+            1.0
+          ]
+        }
+      },
+      "materialized_cohort": {
+        "candidate_count": 1,
+        "formal12": 1,
+        "display": 1,
+        "activity_support_ge_2": 1,
+        "excellent": 1,
+        "challenger_reviewed": 1,
+        "challenger_no_conflict": 1,
+        "qd_eligible": 1,
+        "qd_new_cell": 1,
+        "qd_replacement": 0
+      },
+      "counts": {
+        "proposal": 1,
+        "materialized": 1,
+        "formal12": 1,
+        "display": 1,
+        "activity_support_ge_2": 1,
+        "excellent": 1,
+        "challenger_reviewed": 1,
+        "challenger_no_conflict": 1,
+        "challenger_conflict": 0,
+        "qd_eligible": 1,
+        "qd_new_cell": 1,
+        "qd_replacement": 0,
+        "rosetta_evaluated_candidates": 0,
+        "rosetta_evaluated_decoys": 0,
+        "rosetta_passed_candidates": 0,
+        "rosetta_pending_candidates": 1,
+        "pool_a_admitted": 0,
+        "md_complete": 0,
+        "md_full_evidence": 0
+      },
+      "challenger": {
+        "apex": "runtime_unavailable",
+        "peptiverse": "runtime_unavailable",
+        "hemopi2_reviewed": 1,
+        "hemopi2_no_conflict": 1
+      },
+      "qd_metrics": {
+        "eligible": 1,
+        "new_cell": 1,
+        "replacement": 0,
+        "best_quality": null,
+        "mean_quality": null,
+        "valid_cell_coverage": 0.000462962962962963,
+        "archive_qd_score": 4.678455,
+        "maximum_cell_concentration": 1.0,
+        "archive_relative_novelty": 1.0,
+        "metric_note": "single-candidate QD fallback uses the recorded actual cell"
+      },
+      "archive_baseline": {
+        "scope": "frozen_archive",
+        "archive_qd_score": 4.678455,
+        "valid_cell_coverage": null,
+        "maximum_cell_concentration": null,
+        "archive_relative_novelty": null,
+        "not_batch_contribution": true
+      },
+      "rosetta": {
+        "evaluated_candidates": 0,
+        "evaluated_decoys": 0,
+        "passed_candidates": 0,
+        "pending_candidates": 1,
+        "status": "not_started"
+      },
+      "mean_delta_phi": null,
+      "evidence": {
+        "score_path": "reports/angpt1_pepmlm_archive_increment_20260904/candidate_scores.csv",
+        "materialized_score_path": "reports/angpt1_pepmlm_archive_increment_20260904/candidate_scores.csv",
+        "proposal_path": "reports/angpt1_pepmlm_archive_increment_20260904/candidate_scores.csv",
+        "materialization_path": "reports/angpt1_pepmlm_archive_increment_20260904/materialization_receipt.json",
+        "qd_path": "reports/angpt1_pepmlm_archive_increment_20260904/qd_receipt.json",
+        "challenger_path": "reports/angpt1_pepmlm_archive_increment_20260904/challenger_review.csv"
+      }
     }
   ],
   "coverage_matrix": {
@@ -3670,12 +3858,14 @@
       "PepMLM:angpt1": {
         "target_key": "angpt1",
         "source": "PepMLM",
-        "record_count": 0,
-        "run_ids": [],
+        "record_count": 1,
+        "run_ids": [
+          "f54f47a8-f356-53c2-8488-57714683f275"
+        ],
         "artifact_ids": [],
-        "materialized_count": 0,
-        "qd_eligible_count": 0,
-        "status": "benchmark_not_recorded"
+        "materialized_count": 1,
+        "qd_eligible_count": 1,
+        "status": "recorded"
       }
     },
     "interpretation": "benchmark_not_recorded means this explicit compact benchmark has no self-contained row; it is not evidence that the source-target pair was never run"
