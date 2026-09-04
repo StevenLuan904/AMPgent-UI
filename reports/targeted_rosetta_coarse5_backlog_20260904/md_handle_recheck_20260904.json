@@ -1,0 +1,43 @@
+{
+  "schema_version": "ampgent.md-handle-recheck.1",
+  "observed_at_utc": "2026-09-04T01:09:34.6859438Z",
+  "scope": "read-only handle and compact evidence recheck",
+  "main_19": {
+    "md_supervisor_pid": 3986807,
+    "analysis_supervisor_pid": 3977733,
+    "md_supervisor_alive": true,
+    "analysis_supervisor_alive": true,
+    "command_identity_verified": true,
+    "connection": "ssh -p 32222 TargetServerDirect",
+    "new_full_evidence": 0
+  },
+  "synth_successor_11": {
+    "listener": "127.0.0.1:32224",
+    "listener_pid": 31396,
+    "remote_probe": "authentication_failed",
+    "error_category": "permission_denied_publickey_password",
+    "remote_scientific_pid_state": "not_reclassified",
+    "last_authoritative_state": "pending=6,running=3,complete=2,failed=0",
+    "remote_write": "not_attempted"
+  },
+  "md_identity_partition": {
+    "union": 486,
+    "launched": 50,
+    "full_evidence": 31,
+    "analysis_pending": 0,
+    "running_or_incomplete": 19,
+    "not_started": 436,
+    "failed": 0,
+    "disjoint_union": true,
+    "launched_equals_full_plus_running": true
+  },
+  "capacity": {
+    "snapshot": "reports/targeted_rosetta_coarse5_backlog_20260904/capacity_snapshot_20260904.json",
+    "idle_gpu_keys": [],
+    "dispatch_allowed": false,
+    "prohibited": ["192.168.99.32:2", "192.168.99.32:3"]
+  },
+  "remote_large_files_read": false,
+  "remote_tasks_modified": false,
+  "restart_performed": false
+}

@@ -1,0 +1,54 @@
+{
+  "authoritative_identity": "run_id+authoritative_candidate_id+target+sequence_sha256+task_key",
+  "csv_sha256": "6a853ad6131c9f3561d9b83cb127362bda5d197d1be6127d4d468ba50e3a47d9",
+  "inputs": {
+    "base_csv": "reports\\targeted_rosetta_coarse5_backlog_20260904\\targeted_rosetta_coarse5_backlog.csv",
+    "base_csv_sha256": "5455c0576eef938bfcdc48811a2ecd99b3f45c75e498be070bf9f86d5f078968",
+    "capacity_snapshot": {
+      "path": "reports\\targeted_rosetta_coarse5_backlog_20260904\\capacity_snapshot_20260904.json",
+      "sha256": "be6e1f6e137beed1a27bd17f91fbf3790fec3a4442785e8e6b88bea465431280"
+    },
+    "md_snapshot": {
+      "path": "reports\\pool_a_md_50ns_expansion_20260903\\md_current_identity_snapshot_20260904.json",
+      "sha256": "fded2719ca5847e43fa1c9061ea625881ae3966e25081dcaf1d20a6a8994321d"
+    },
+    "source_challenger_csv": "reports\\gyrA_pepflow_qd_neighbor_20260904\\challenger\\challenger_review.csv",
+    "source_challenger_sha256": "e65c07ab4a87ffe1509b8fe2f19a2f5289db3c20cbe5f37dc39d8dd07de7714a",
+    "source_close_receipt": "reports\\gyrA_pepflow_qd_neighbor_20260904\\close_receipt.json",
+    "source_close_receipt_sha256": "b244a430c53468c36d593a91b3865f7194599c31172bed8759463cdcd9feb549",
+    "source_queue_csv": "reports\\gyrA_pepflow_qd_neighbor_20260904\\coarse5_prepared_queue.csv",
+    "source_queue_sha256": "37a2880e41a4745ac952d0922c86c2c5183fb732b07f117f95c4189d28ee4278",
+    "source_score_csv": "reports\\gyrA_pepflow_qd_neighbor_20260904\\candidate_scores_calibrated.csv",
+    "source_score_sha256": "9bf391aca9a233571c24e93f1f99ffdbfc4a8e8dc68c5ea75216628b440020e1"
+  },
+  "observed_at_utc": "2026-09-04T01:08:57.693532+00:00",
+  "output_csv": "reports\\targeted_rosetta_coarse5_backlog_20260904\\targeted_rosetta_coarse5_merged_20260904.csv",
+  "output_json": "reports\\targeted_rosetta_coarse5_backlog_20260904\\targeted_rosetta_coarse5_merged_20260904.json",
+  "remote_write": {
+    "performed": false,
+    "reason": "synth authentication boundary; local prepared evidence retained",
+    "status": "not_attempted"
+  },
+  "schema_version": "ampgent.targeted-rosetta-coarse5-merge-receipt.1",
+  "source_scope": "global targeted coarse5 inventory; target-specific only",
+  "summary": {
+    "authoritative_uuid_rows": 9,
+    "base_rows": 1,
+    "excluded_counts": {},
+    "existing_decoys_total": 0,
+    "merged_rows": 9,
+    "prepared_not_dispatched": 8,
+    "proposal_task_key_rows": 0,
+    "remaining_decoys_total": 45,
+    "source_added_rows": 8,
+    "source_rows": 8,
+    "target_counts": {
+      "acea": 0,
+      "angpt1": 0,
+      "fgf2": 0,
+      "gyra": 8,
+      "pbp2a": 1,
+      "vegfa": 0
+    }
+  }
+}
