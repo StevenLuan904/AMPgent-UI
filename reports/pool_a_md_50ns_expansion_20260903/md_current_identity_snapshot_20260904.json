@@ -33,13 +33,15 @@
     "no_md_pg_write_performed": false,
     "bf_exact_ingest_inserted_evaluations": 15
   },
-  "identity_set_hashes": {
+  "identity_set_hashes": null,
+  "previous_identity_set_hashes": {
     "launched": "20c9062474e2fff1b0042027f0bc28412b0744a020bdfcf1f65e03ef86537551",
     "full_evidence": "c4857bfba3951a05b9c7fe6ab4c27c734fd072ac543b049d08eb1ef728f0bcfd",
     "analysis_pending": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
     "running_or_incomplete": "4b11efc4091b121162875931ed1f80a7c64aa6e7de15cb682d410f470f91ddc0",
     "failed": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
   },
+  "identity_set_hashes_unavailable_reason": "The predecessor snapshot persisted only digests, not its full identity lists; the current transition receipt persists the exact five identities and authoritative partition counts.",
   "identity_set_counts": {
     "launched": 50,
     "full_evidence": 36,
