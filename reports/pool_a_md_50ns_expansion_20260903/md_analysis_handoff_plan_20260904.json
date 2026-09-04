@@ -1,0 +1,95 @@
+{
+  "completion_delta": {
+    "interpretation": "current remote state is unobservable; last authoritative receipts recorded alive, so no stop is inferred",
+    "local_pg_relay_performed": false,
+    "local_snapshot_full_evidence_remains": 31,
+    "new_full_evidence_count_observable": false
+  },
+  "current_authoritative_snapshot": {
+    "analysis_pending": 0,
+    "failed": 0,
+    "full_evidence": 31,
+    "identity_union": 486,
+    "launched": 50,
+    "launched_equals_full_plus_running": true,
+    "not_started": 436,
+    "partition_disjoint_union_equals_486": true,
+    "path": "reports\\pool_a_md_50ns_expansion_20260903\\md_current_identity_snapshot_20260904.json",
+    "running_or_incomplete": 19,
+    "sha256": "fded2719ca5847e43fa1c9061ea625881ae3966e25081dcaf1d20a6a8994321d"
+  },
+  "evidence_boundary": "No new full-evidence identity can be claimed while both remote probes are refused; this receipt is an observability/hand-off artifact, not a completion receipt.",
+  "identity_key": "subject_run_id+candidate_id",
+  "last_authoritative_alive_evidence": {
+    "main_pids": [
+      3986807,
+      3977733
+    ],
+    "main_receipt": "reports\\pool_a_md_50ns_expansion_20260903\\md_handle_refresh_20260904.json",
+    "main_receipt_sha256": "03685e984de2378cda6393ba01186a0f7f00e4ba597c1d16335d8ef2982a9110",
+    "synth_pids": [
+      1280301,
+      3311802,
+      3360111,
+      58820,
+      1280316,
+      2060743
+    ],
+    "synth_receipt": "reports\\pool_a_md_50ns_expansion_20260903\\synth-remote-recheck-20260904.json",
+    "synth_receipt_sha256": "5a633602a09f04f1d57b179bf1df9933b5add9fb333dd42a1b15fa8530582cd2"
+  },
+  "observed_at_utc": "2026-09-04T02:52:21.124416+00:00",
+  "read_only_probe": {
+    "main_19": {
+      "endpoint": "ssh -p 32222 TargetServerDirect",
+      "error_category": "connection_refused",
+      "exit_code": 255,
+      "remote_pid_state": "not_reclassified",
+      "requested_pids": [
+        3986807,
+        3977733
+      ],
+      "result": "unobservable"
+    },
+    "no_restart_or_task_mutation": true,
+    "synth_successor_11": {
+      "endpoint": "127.0.0.1:32224 via approved DPAPI+SSH_ASKPASS route",
+      "error_category": "connection_refused_listener_absent",
+      "exit_code": 255,
+      "listener_observed": false,
+      "remote_pid_state": "not_reclassified",
+      "requested_pids": [
+        1280301,
+        3311802,
+        3360111,
+        58820,
+        1280316,
+        2060743
+      ],
+      "result": "unobservable"
+    }
+  },
+  "receipt_payload_sha256": "13e9647402d680c197f58bd0fa214f73e2ba325b4027701aaff301a7b4599d31",
+  "replayable_analysis_handoff": {
+    "eligible_current_analysis_recovery_count": 0,
+    "next_gate": "after either channel recovers, compare exact run_id+candidate_id against full_evidence set; only complete MD rows lacking any of 15 required PG evaluations may be ingested",
+    "remote_large_artifacts_allowed": false,
+    "remote_task_restart_allowed": false,
+    "replay_entrypoint": "analysis/relay_synth_md_receipts.py",
+    "required_metrics": [
+      "interface RMSD",
+      "key contacts",
+      "hydrogen-bond occupancy",
+      "salt-bridge occupancy",
+      "water-bridge occupancy",
+      "departure",
+      "MM/GBSA mean",
+      "MM/GBSA 95% CI",
+      "residue decomposition"
+    ],
+    "source_identity_set": "current_authoritative_snapshot",
+    "status": "prepared_wait_for_observability"
+  },
+  "schema_version": "ampgent.pool-a-md-analysis-handoff.1",
+  "scope": "Pool A target-specific MD 486 identity union"
+}
