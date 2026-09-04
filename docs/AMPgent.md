@@ -26,6 +26,7 @@ AceA、GyrA、PBP2a、VEGFA、FGF2、ANGPT1 各以 50 条 Pool A 短肽作为资
 - Rosetta：每 complex `5 decoy`；以全部 5 个 `dG_separated` 中位数判定；已有 20/200-decoy 结果保留，未完成任务从现有 checkpoint 补到 5，不重算、不删除。
 - Pool S：Pool A 后经完整 MD 与界面/能量分析；仅 S 候选追加独立重复。
 - 计算预测不等于活性、安全、亲和力或药效。
+- Pool A MD 完成仅以单一候选级审计为准：所有必需证据与精确 PostgreSQL receipt 同时闭合，缺项结构化列为 pending。
 
 ## 闭环
 

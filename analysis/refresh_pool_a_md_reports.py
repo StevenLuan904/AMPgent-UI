@@ -114,6 +114,8 @@ def commands(
             str(frontier),
             "--dossiers",
             str(dossiers),
+            "--evidence-root",
+            str(evidence_root),
             "--output",
             str(output_dir / "full_completion_verification.json"),
             "--allow-incomplete",
