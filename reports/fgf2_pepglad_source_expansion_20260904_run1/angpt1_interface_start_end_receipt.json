@@ -1,0 +1,40 @@
+{
+  "schema_version": "ampgent.angpt1-interface-pending-observation.1",
+  "observed_at_utc": "2026-09-04T03:59:04.8020657Z",
+  "remote_endpoint": "ssh -p 32222 TargetServerDirect",
+  "checks": [
+    {
+      "phase": "start",
+      "candidate_id": "1064e16d-f11f-401c-afbb-d6f35120cd90",
+      "target_key": "angpt1",
+      "launch_receipt": "present",
+      "interface_analysis": "missing"
+    },
+    {
+      "phase": "start",
+      "candidate_id": "812c0ad4-ce19-4e57-9043-be380f170cb8",
+      "target_key": "angpt1",
+      "launch_receipt": "present",
+      "interface_analysis": "missing"
+    },
+    {
+      "phase": "end",
+      "candidate_id": "1064e16d-f11f-401c-afbb-d6f35120cd90",
+      "target_key": "angpt1",
+      "launch_receipt": "present",
+      "interface_analysis": "missing"
+    },
+    {
+      "phase": "end",
+      "candidate_id": "812c0ad4-ce19-4e57-9043-be380f170cb8",
+      "target_key": "angpt1",
+      "launch_receipt": "present",
+      "interface_analysis": "missing"
+    }
+  ],
+  "delta": {
+    "interface_files_appeared": 0,
+    "pg_ingest_performed": false,
+    "action": "verified_wait"
+  }
+}

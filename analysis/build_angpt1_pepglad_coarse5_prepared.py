@@ -1,4 +1,4 @@
-"""Build a non-dispatched ANGPT1 PepGLAD coarse-5 queue from PG IDs."""
+"""Build a non-dispatched targeted PepGLAD coarse-5 queue from PG IDs."""
 
 from __future__ import annotations
 
@@ -32,7 +32,15 @@ async def _pg_candidates(run_id: str, hashes: list[str]) -> dict[str, Candidate]
     return result
 
 
-def build(score_csv: Path, qd_json: Path, materialization_json: Path, output_dir: Path) -> dict:
+def build(
+    score_csv: Path,
+    qd_json: Path,
+    materialization_json: Path,
+    output_dir: Path,
+    target_key: str = "angpt1",
+    source: str = "PepGLAD",
+    operator_id: str | None = None,
+) -> dict:
     scores = list(csv.DictReader(score_csv.open(encoding="utf-8-sig", newline="")))
     qd = json.loads(qd_json.read_text(encoding="utf-8"))
     material = json.loads(materialization_json.read_text(encoding="utf-8"))
@@ -45,6 +53,9 @@ def build(score_csv: Path, qd_json: Path, materialization_json: Path, output_dir
     if not selected:
         raise ValueError("no QD contribution available for coarse5 preparation")
     run_id = str(material["operational_run_id"])
+    resolved_operator_id = operator_id or (
+        f"{target_key}-{source.casefold()}-source-expansion-1aa-v1"
+    )
     found = asyncio.run(_pg_candidates(run_id, [row["sequence_sha256"] for row in selected]))
     queue = []
     for row in sorted(selected, key=lambda item: item["sequence"]):
@@ -52,22 +63,25 @@ def build(score_csv: Path, qd_json: Path, materialization_json: Path, output_dir
         candidate = found[digest]
         queue.append(
             {
-                "target_key": "angpt1",
+                "target_key": target_key,
                 "run_id": run_id,
                 "candidate_id": str(candidate.id),
                 "sequence": candidate.sequence,
                 "sequence_sha256": digest,
-                "source": "PepGLAD",
+                "source": source,
+                "operator_id": resolved_operator_id,
                 "qd_cell": contribution_by_hash[digest]["cell_id"],
                 "qd_contribution": contribution_by_hash[digest]["contribution"],
-                "task_key": f"rosetta-coarse5:angpt1:{run_id}:{candidate.id}",
+                "task_key": f"rosetta-coarse5:{target_key}:{run_id}:{candidate.id}",
                 "nstruct": 5,
                 "existing_decoys": 0,
                 "remaining_decoys": 5,
                 "status": "prepared_not_dispatched",
                 "dispatch_allowed": "false",
                 "pool_a_admitted": "false",
-                "median_dg_gate": "< -30 required before Pool A",
+                "median_dg_gate": -30,
+                "rosetta_required": "true",
+                "remote_large_artifact_downloaded": "false",
             }
         )
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -77,20 +91,43 @@ def build(score_csv: Path, qd_json: Path, materialization_json: Path, output_dir
         writer.writeheader()
         writer.writerows(queue)
     receipt = {
-        "schema_version": "ampgent.angpt1-pepglad-coarse5-prepared.1",
-        "target_key": "angpt1",
-        "source": "PepGLAD",
+        "schema_version": (
+            f"ampgent.{target_key}-{source.casefold()}-coarse5-prepared.1"
+        ),
+        "target_key": target_key,
+        "source": source,
+        "operator_id": resolved_operator_id,
         "run_id": run_id,
         "candidate_count": len(queue),
+        "authoritative_candidate_ids": [row["candidate_id"] for row in queue],
         "task_key_count": len({row["task_key"] for row in queue}),
+        "task_key_identity": "target_key+run_id+authoritative_candidate_id",
         "nstruct": 5,
+        "existing_decoys_total": sum(int(row["existing_decoys"]) for row in queue),
+        "remaining_decoys_total": sum(int(row["remaining_decoys"]) for row in queue),
+        "status": "prepared_not_dispatched",
         "dispatch_allowed": False,
         "pool_a_admitted_count": 0,
+        "rosetta_required": True,
+        "median_dg_gate": -30,
         "candidate_scores_sha256": sha256_file(score_csv),
         "qd_sha256": sha256_file(qd_json),
         "materialization_sha256": sha256_file(materialization_json),
         "remote_large_artifact_downloaded": False,
         "remote_file_deleted": False,
+        "pg_readback": {
+            "candidate_count": len(queue),
+            "evaluation_count": int(material.get("inserted_evaluation_count", 0)),
+            "evaluation_count_per_candidate": 17,
+            "tool_call_id": material.get("tool_call_id"),
+            "global_exact_replay_skip_count": int(
+                material.get("global_exact_replay_skip_count", 0)
+            ),
+            "identity_drift_count": int(material.get("identity_drift_count", 0)),
+        },
+        "historical_runs_modified": bool(
+            material.get("historical_runs_modified", False)
+        ),
     }
     receipt["queue_csv_sha256"] = sha256_file(csv_path)
     receipt["receipt_payload_sha256"] = sha256_json(receipt)
@@ -107,9 +144,22 @@ def main() -> None:
     parser.add_argument("--qd-json", type=Path, required=True)
     parser.add_argument("--materialization-json", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--target-key", default="angpt1")
+    parser.add_argument("--source", default="PepGLAD")
+    parser.add_argument("--operator-id")
     args = parser.parse_args()
     print(
-        json.dumps(build(args.score_csv, args.qd_json, args.materialization_json, args.output_dir))
+        json.dumps(
+            build(
+                args.score_csv,
+                args.qd_json,
+                args.materialization_json,
+                args.output_dir,
+                target_key=args.target_key,
+                source=args.source,
+                operator_id=args.operator_id,
+            )
+        )
     )
 
 

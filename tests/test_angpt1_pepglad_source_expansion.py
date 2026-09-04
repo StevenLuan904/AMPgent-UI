@@ -6,7 +6,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "analysis"))
 
-from generate_angpt1_pepglad_source_expansion import build_proposals, sha256_text
+from generate_angpt1_pepglad_source_expansion import (
+    build_proposals,
+    generation_schema_for_target,
+    normalize_target_key,
+    operator_id_for_target,
+    sha256_text,
+)
 
 
 def test_source_expansion_is_one_aa_and_preserves_parent_identity() -> None:
@@ -41,6 +47,51 @@ def test_source_expansion_is_one_aa_and_preserves_parent_identity() -> None:
     assert row["operator_id"] == "acea-pepglad-source-expansion-1aa-v1"
     assert row["parent_candidate_id"] == parent["parent_candidate_id"]
     assert sum(a != b for a, b in zip(row["parent_sequence"], row["sequence"], strict=True)) == 1
+
+
+def test_target_parameter_changes_only_stable_provenance_identity() -> None:
+    parent = {
+        "candidate_id": "00000000-0000-0000-0000-000000000002",
+        "sequence": "ACDEFG",
+        "sequence_sha256": sha256_text("ACDEFG"),
+        "target_key": "FGF2",
+        "display_eligible": "true",
+        "activity_support_count_calibrated": "2",
+        "qd_eligible": "true",
+        "actual_cell_preflight": "q1-h1-m1-l1",
+    }
+    donor = {
+        "donor_candidate_id": "pepglad-row",
+        "donor_fragment": "W",
+        "donor_residue": "W",
+        "donor_artifact": "x",
+        "donor_row_number": "2",
+        "donor_row_sha256": "a",
+    }
+    rows = build_proposals(
+        [parent], [donor], set(), set(), target_key="FGF2", parent_run_id="run", limit=1
+    )
+    assert normalize_target_key("FGF2") == "fgf2"
+    assert rows[0]["target_key"] == "fgf2"
+    assert rows[0]["parent_run_id"] == "run"
+    assert rows[0]["operator_id"] == operator_id_for_target("fgf2")
+    assert generation_schema_for_target("FGF2") == (
+        "ampgent.fgf2-pepglad-source-expansion-generation.1"
+    )
+
+
+def test_explicit_history_inputs_are_supported_for_bounded_replay() -> None:
+    assert "--history-csv" in Path(
+        "analysis/generate_angpt1_pepglad_source_expansion.py"
+    ).read_text(encoding="utf-8")
+
+
+def test_calibration_parent_override_is_available_without_changing_default() -> None:
+    text = Path("analysis/autoresearch_activity_support_calibrate.py").read_text(
+        encoding="utf-8"
+    )
+    assert '"--parent-run-id"' in text
+    assert "PARENT_RUNS[branch.strip().casefold()]" in text
 
 
 def test_acea_source_expansion_receipts_keep_qd_and_shadow_semantics() -> None:

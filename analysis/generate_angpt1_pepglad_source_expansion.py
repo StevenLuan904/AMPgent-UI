@@ -1,4 +1,4 @@
-"""Generate a bounded ANGPT1 PepGLAD one-residue source expansion."""
+"""Generate a bounded, target-parameterized PepGLAD one-residue expansion."""
 
 from __future__ import annotations
 
@@ -17,7 +17,22 @@ from pepagent.db.session import SessionFactory
 from pepagent.handoff_metrics import physicochemical_descriptors
 
 SEED = 20260904
-OPERATOR_ID = "acea-pepglad-source-expansion-1aa-v1"
+TARGET_KEYS = frozenset({"acea", "angpt1", "fgf2", "gyra", "pbp2a", "vegfa"})
+
+
+def normalize_target_key(target_key: str) -> str:
+    normalized = target_key.strip().casefold()
+    if normalized not in TARGET_KEYS:
+        raise ValueError(f"unsupported target-key: {target_key!r}")
+    return normalized
+
+
+def operator_id_for_target(target_key: str) -> str:
+    return f"{normalize_target_key(target_key)}-pepglad-source-expansion-1aa-v1"
+
+
+def generation_schema_for_target(target_key: str) -> str:
+    return f"ampgent.{normalize_target_key(target_key)}-pepglad-source-expansion-generation.1"
 
 
 def sha256_text(value: str) -> str:
@@ -112,21 +127,42 @@ def build_proposals(
     parent_run_id: str,
     limit: int = 12,
 ) -> list[dict[str, str]]:
+    target_key = normalize_target_key(target_key)
+    operator_id = operator_id_for_target(target_key)
     if not donor_rows:
         raise ValueError("no real PepGLAD one-residue donor asset")
     proposals: list[dict[str, str]] = []
     seen = set(history)
     parents = {}
     for row in parent_rows:
-        parent_id = row.get("parent_candidate_id", "").strip()
-        sequence = row.get("parent_sequence", "").strip().upper()
-        parent_sha = row.get("parent_sequence_sha256", "").strip()
+        row_target = (
+            row.get("parent_target_key")
+            or row.get("target_key")
+            or row.get("branch_key")
+            or ""
+        ).strip().casefold()
+        if row_target and row_target != target_key:
+            continue
+        parent_id = (row.get("parent_candidate_id") or row.get("candidate_id") or "").strip()
+        sequence = (row.get("parent_sequence") or row.get("sequence") or "").strip().upper()
+        parent_sha = (row.get("parent_sequence_sha256") or row.get("sequence_sha256") or "").strip()
         if parent_id and sequence and parent_sha:
+            if row.get("display_eligible", "").strip().casefold() == "false":
+                continue
+            support = row.get("activity_support_count_calibrated", "").strip()
+            if support and int(float(support)) < 2:
+                continue
+            if row.get("qd_eligible", "").strip().casefold() == "false":
+                continue
             parents[parent_id] = {
                 "candidate_id": parent_id,
+                "run_id": (row.get("parent_run_id") or parent_run_id).strip(),
                 "sequence": sequence,
                 "sequence_sha256": parent_sha,
-                "qd_cell": row.get("parent_qd_cell", "unresolved"),
+                "qd_cell": row.get(
+                    "parent_qd_cell",
+                    row.get("actual_cell_preflight", row.get("actual_cell", "unresolved")),
+                ),
             }
     for parent in sorted(
         parents.values(), key=lambda row: (row["qd_cell"], row["sequence_sha256"])
@@ -153,9 +189,9 @@ def build_proposals(
                         "target_key": target_key,
                         "generation": "3",
                         "seed": str(SEED),
-                        "operator_id": OPERATOR_ID,
+                        "operator_id": operator_id,
                         "proposal_mode": "pepglad_source_1aa_qd_neighbor",
-                        "parent_run_id": parent_run_id,
+                        "parent_run_id": parent["run_id"],
                         "parent_candidate_id": parent["candidate_id"],
                         "parent_sequence": sequence,
                         "parent_sequence_sha256": parent["sequence_sha256"],
@@ -210,6 +246,12 @@ def main() -> None:
     parser.add_argument("--parent-proposals", type=Path, required=True)
     parser.add_argument("--donor-csv", type=Path, required=True)
     parser.add_argument("--history-root", type=Path, required=True)
+    parser.add_argument(
+        "--history-csv",
+        type=Path,
+        action="append",
+        help="explicit prior-edit CSVs; when supplied, avoids an unbounded recursive scan",
+    )
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--target-key", default="acea")
     parser.add_argument("--parent-run-id", required=True)
@@ -217,7 +259,7 @@ def main() -> None:
     args = parser.parse_args()
     parent_rows = read_rows(args.parent_proposals)
     donor_rows = donors(args.donor_csv)
-    history_paths = sorted(args.history_root.rglob("*.csv"))
+    history_paths = sorted(args.history_csv or args.history_root.rglob("*.csv"))
     edits = prior_edits(history_paths)
     proposals = build_proposals(
         parent_rows,
@@ -240,14 +282,15 @@ def main() -> None:
         writer.writeheader()
         writer.writerows(proposals)
     receipt = {
-        "schema_version": "ampgent.angpt1-pepglad-source-expansion-generation.1",
-        "target_key": args.target_key,
+        "schema_version": generation_schema_for_target(args.target_key),
+        "target_key": normalize_target_key(args.target_key),
         "source": "PepGLAD",
-        "operator_id": OPERATOR_ID,
+        "operator_id": operator_id_for_target(args.target_key),
         "seed": SEED,
         "generation": 3,
         "proposal_count": len(proposals),
         "parent_run_id": args.parent_run_id,
+        "parent_run_ids": sorted({row["parent_run_id"] for row in proposals}),
         "parent_count": len({row["parent_candidate_id"] for row in proposals}),
         "donor_count": len(donor_rows),
         "historical_edit_count": len(edits),

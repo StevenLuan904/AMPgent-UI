@@ -1,0 +1,90 @@
+{
+  "schema_version": "ampgent.fgf2-pepglad-source-expansion-close.1",
+  "observed_at_utc": "2026-09-04T03:59:04.8020657Z",
+  "target_key": "fgf2",
+  "source": "PepGLAD",
+  "operator_id": "fgf2-pepglad-source-expansion-1aa-v1",
+  "generation": {
+    "proposal_count": 12,
+    "pg_new_count": 12,
+    "parent_count": 1,
+    "donor_count": 14,
+    "historical_edit_count": 92,
+    "gpu_rosetta_md_submitted": false
+  },
+  "formal12": {
+    "score_all_complete": 12,
+    "display_eligible": 12,
+    "calibrated_support_ge_2": 12,
+    "excellent": 12,
+    "hemopi2_reviewed": 12,
+    "hemopi2_no_conflict": 12,
+    "apex": "runtime_unavailable/not_assessed",
+    "peptiverse": "runtime_unavailable/not_assessed"
+  },
+  "qd": {
+    "eligible": 12,
+    "empty_cell": 1,
+    "incumbent_replacement": 2,
+    "same_cell_non_elite": 9,
+    "effective_archive_contribution": 3,
+    "historical_run_modified": false
+  },
+  "materialization": {
+    "run_id": "2b8f5096-5e59-5e27-a53d-692adadebd82",
+    "candidate_count": 3,
+    "authoritative_candidate_ids": [
+      "729332fc-9768-480d-810d-2a430da4b967",
+      "4d514008-7799-434e-a554-836d3e163526",
+      "f9a0f1a2-a8b7-4bcc-aef4-62b9bf747f03"
+    ],
+    "evaluation_count": 51,
+    "evaluation_count_per_candidate": 17,
+    "tool_call_id": "3c7f9b24-614c-4ef9-a209-6387f7378e04",
+    "global_exact_replay_skip_count": 0,
+    "identity_drift_count": 0,
+    "historical_runs_modified": false
+  },
+  "coarse5": {
+    "candidate_count": 3,
+    "authoritative_candidate_ids": [
+      "729332fc-9768-480d-810d-2a430da4b967",
+      "4d514008-7799-434e-a554-836d3e163526",
+      "f9a0f1a2-a8b7-4bcc-aef4-62b9bf747f03"
+    ],
+    "task_key_identity": "target_key+run_id+authoritative_candidate_id",
+    "queue_csv_sha256": "6c8f4db0b42e48f47d69e2032d35aef2dc39974ab310c55b606b464feca9c255",
+    "prepared_receipt_payload_sha256": "fffe229f87ceee34e381480b482c666617ebc2677d7c43d9c3649b709c5b89bb",
+    "nstruct": 5,
+    "existing_decoys": 0,
+    "remaining_decoys": 15,
+    "status": "prepared_not_dispatched",
+    "dispatch_allowed": false,
+    "pool_a_admitted": false,
+    "median_dg_gate": -30,
+    "gpu_rosetta_md_submitted": false
+  },
+  "angpt1_pending_observation": {
+    "candidates": 2,
+    "interface_appeared_between_checks": 0,
+    "pg_ingest": false,
+    "action": "verified_wait"
+  },
+  "failed_attempts_preserved": [
+    {
+      "attempt": 1,
+      "error_category": "output_directory_already_exists",
+      "error": "FileExistsError: [WinError 183]",
+      "scientific_stage_reached": "history_scan_before_output_creation"
+    },
+    {
+      "attempt": 2,
+      "error_category": "output_directory_already_exists",
+      "error": "FileExistsError: [WinError 183]",
+      "scientific_stage_reached": "history_scan_before_output_creation"
+    }
+  ],
+  "no_new_generation_after_close": true,
+  "remote_large_artifact_downloaded": false,
+  "historical_runs_modified": false
+}

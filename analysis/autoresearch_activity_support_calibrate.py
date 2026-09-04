@@ -328,7 +328,23 @@ def main() -> None:
     parser.add_argument("--output-csv", type=Path, required=True)
     parser.add_argument("--output-json", type=Path, required=True)
     parser.add_argument("--fallback-calibrated-csv", type=Path, action="append", default=[])
-    asyncio.run(_run(parser.parse_args()))
+    parser.add_argument(
+        "--parent-run-id",
+        action="append",
+        default=[],
+        metavar="BRANCH=UUID",
+        help="override the frozen parent run for one branch without changing defaults",
+    )
+    args = parser.parse_args()
+    for override in args.parent_run_id:
+        try:
+            branch, run_id = override.split("=", 1)
+            PARENT_RUNS[branch.strip().casefold()] = uuid.UUID(run_id.strip())
+        except (ValueError, AttributeError) as error:
+            raise ValueError(
+                f"invalid --parent-run-id {override!r}; expected BRANCH=UUID"
+            ) from error
+    asyncio.run(_run(args))
 
 
 if __name__ == "__main__":
