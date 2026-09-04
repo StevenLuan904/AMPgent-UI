@@ -5,13 +5,13 @@ describe('observer refresh policy', () => {
   it('refreshes active runs more often than terminal runs', () => {
     expect(observerPollingIntervalMs('running')).toBe(30_000)
     expect(observerPollingIntervalMs('submitted')).toBe(30_000)
-    expect(observerPollingIntervalMs('succeeded')).toBe(90_000)
-    expect(observerPollingIntervalMs('failed')).toBe(90_000)
+    expect(observerPollingIntervalMs('succeeded')).toBe(300_000)
+    expect(observerPollingIntervalMs('failed')).toBe(300_000)
   })
 
   it('limits initial stage prefetch and keeps a bounded detail cache TTL', () => {
-    expect(observerInitialPrefetchCount(16)).toBe(2)
-    expect(observerInitialPrefetchCount(2)).toBe(2)
+    expect(observerInitialPrefetchCount(16)).toBe(1)
+    expect(observerInitialPrefetchCount(2)).toBe(1)
     expect(observerInitialPrefetchCount(0)).toBe(0)
     expect(nodeDetailCacheTtlMs).toBe(60_000)
   })
@@ -51,12 +51,14 @@ describe('observer refresh policy', () => {
       { id: 'fourth', status: 'pending', current: 0, total: 0 },
     ]
     const initial = observerCreatePrefetchQueue('run-1', stages)
-    expect(initial.nextIndex).toBe(2)
-    const afterThird = observerNextPrefetchStage(initial, new Set()).queue
-    expect(afterThird.nextIndex).toBe(3)
-    const refreshed = observerMergePrefetchQueue('run-1', stages, afterThird)
-    expect(refreshed.nextIndex).toBe(3)
-    const fourth = observerNextPrefetchStage(refreshed, new Set())
+    expect(initial.nextIndex).toBe(1)
+    const afterSecond = observerNextPrefetchStage(initial, new Set()).queue
+    expect(afterSecond.nextIndex).toBe(2)
+    const refreshed = observerMergePrefetchQueue('run-1', stages, afterSecond)
+    expect(refreshed.nextIndex).toBe(2)
+    const third = observerNextPrefetchStage(refreshed, new Set())
+    expect(third.stageId).toBe('third')
+    const fourth = observerNextPrefetchStage(third.queue, new Set())
     expect(fourth.stageId).toBe('fourth')
     expect(observerPendingPrefetchCount(fourth.queue, new Set())).toBe(0)
   })
@@ -69,7 +71,7 @@ describe('observer refresh policy', () => {
       { id: 'fourth', status: 'pending', current: 0, total: 0 },
     ]
     const queue = observerCreatePrefetchQueue('run-1', stages)
-    const next = observerNextPrefetchStage(queue, new Set(['third']))
+    const next = observerNextPrefetchStage(queue, new Set(['second', 'third']))
     expect(next.stageId).toBe('fourth')
     expect(next.queue.nextIndex).toBe(4)
   })
@@ -95,7 +97,7 @@ describe('observer refresh policy', () => {
       { id: 'second', status: 'pending', current: 0, total: 0 },
       { id: 'third', status: 'pending', current: 0, total: 0 },
     ])
-    const blocked = observerNextPrefetchStage(queue, new Set(), new Set(['third']))
+    const blocked = observerNextPrefetchStage(queue, new Set(), new Set(['second', 'third']))
     expect(blocked.stageId).toBeNull()
     const afterFailure = observerRequeuePrefetchStage({ ...queue, nextIndex: 3 }, 'third')
     expect(afterFailure.nextIndex).toBe(2)

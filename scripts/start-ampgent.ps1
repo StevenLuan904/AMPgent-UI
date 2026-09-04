@@ -8,6 +8,43 @@ $appRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
 $appUrl = "http://127.0.0.1:$UiPort/"
 $apiUrl = "http://127.0.0.1:$ApiPort/healthz"
 $proxiedApiUrl = "http://127.0.0.1:$UiPort/healthz"
+$observerProtocolVersion = 'ampgent-observer/v2'
+$observerServiceVersion = 'observer-only-cache-v2'
+$defaultBackendRoot = Join-Path (Split-Path -Parent $appRoot) 'agent-platform'
+$backendRoot = if ($env:AMPGENT_BACKEND_ROOT) { $env:AMPGENT_BACKEND_ROOT } else { $defaultBackendRoot }
+$observerSourcePath = Join-Path $appRoot 'scripts\observer_only.py'
+$observerRouterPath = Join-Path $backendRoot 'src\pepagent\api\observer.py'
+
+function Get-ObserverSourceFingerprint {
+    if (-not (Test-Path -LiteralPath $observerSourcePath) -or -not (Test-Path -LiteralPath $observerRouterPath)) {
+        return $null
+    }
+    $stream = [System.IO.MemoryStream]::new()
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        foreach ($source in @(
+            @{ Label = 'observer_only.py'; Path = $observerSourcePath },
+            @{ Label = 'pepagent/api/observer.py'; Path = $observerRouterPath }
+        ) | Sort-Object Label) {
+            $labelBytes = [System.Text.Encoding]::UTF8.GetBytes($source.Label)
+            $stream.Write($labelBytes, 0, $labelBytes.Length)
+            $stream.Write([byte[]](0), 0, 1)
+            $contentBytes = [System.IO.File]::ReadAllBytes($source.Path)
+            $stream.Write($contentBytes, 0, $contentBytes.Length)
+            $stream.Write([byte[]](0), 0, 1)
+        }
+        return ([System.BitConverter]::ToString($sha.ComputeHash($stream.ToArray())) -replace '-', '').ToLowerInvariant()
+    }
+    catch {
+        return $null
+    }
+    finally {
+        $sha.Dispose()
+        $stream.Dispose()
+    }
+}
+
+$observerSourceFingerprint = Get-ObserverSourceFingerprint
 
 function Test-AmpgentUi {
     try {
@@ -22,7 +59,7 @@ function Test-AmpgentUi {
 function Test-AmpgentEndpoint([string]$url) {
     try {
         $response = Invoke-RestMethod -Method Get -Uri $url -TimeoutSec 2
-        return $response.status -eq 'ok'
+        return $response.status -eq 'ok' -and $response.mode -eq 'observer-only' -and $response.protocol_version -eq $observerProtocolVersion -and $response.service_version -eq $observerServiceVersion -and $null -ne $observerSourceFingerprint -and $response.source_fingerprint -eq $observerSourceFingerprint
     }
     catch {
         return $false

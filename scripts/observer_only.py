@@ -11,6 +11,8 @@ import base64
 import binascii
 import hashlib
 import hmac
+import importlib
+import inspect
 import json
 import os
 import re
@@ -23,7 +25,34 @@ from typing import Any
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from pepagent.api.observer import router as observer_router
+observer_module = importlib.import_module("pepagent.api.observer")
+observer_router = observer_module.router
+
+OBSERVER_PROTOCOL_VERSION = "ampgent-observer/v2"
+
+
+def compute_observer_source_fingerprint(source_files: list[tuple[str, Path]]) -> str:
+    """Hash the exact source files that define this read-only service.
+
+    Labels are stable rather than absolute paths, so the health response never
+    discloses workspace layout while launchers can reproduce the value locally.
+    """
+    digest = hashlib.sha256()
+    for label, path in sorted(source_files, key=lambda item: item[0]):
+        digest.update(label.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(path.read_bytes())
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
+_observer_module_path = getattr(observer_module, "__file__", None) or inspect.getfile(observer_module)
+OBSERVER_SOURCE_FILES = [
+    ("observer_only.py", Path(__file__).resolve()),
+    ("pepagent/api/observer.py", Path(_observer_module_path).resolve()),
+]
+OBSERVER_SOURCE_FINGERPRINT = compute_observer_source_fingerprint(OBSERVER_SOURCE_FILES)
+OBSERVER_SERVICE_VERSION = "observer-only-cache-v2"
 
 
 @dataclass(frozen=True)
@@ -382,4 +411,10 @@ app.include_router(observer_router)
 
 @app.get("/healthz")
 async def healthz() -> dict[str, str]:
-    return {"status": "ok", "mode": "observer-only"}
+    return {
+        "status": "ok",
+        "mode": "observer-only",
+        "protocol_version": OBSERVER_PROTOCOL_VERSION,
+        "service_version": OBSERVER_SERVICE_VERSION,
+        "source_fingerprint": OBSERVER_SOURCE_FINGERPRINT,
+    }

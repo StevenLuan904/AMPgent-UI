@@ -15,6 +15,10 @@ $backendRoot = (Resolve-Path -LiteralPath $backendRoot).Path
 $pythonPath = if ($env:AMPGENT_PYTHON) { $env:AMPGENT_PYTHON } else { Join-Path $backendRoot '.venv-local\Scripts\python.exe' }
 $healthUrl = "http://127.0.0.1:$ApiPort/healthz"
 $apiModule = if ($FullControlPlane) { 'pepagent.api.main:app' } else { 'observer_only:app' }
+$observerProtocolVersion = 'ampgent-observer/v2'
+$observerServiceVersion = 'observer-only-cache-v2'
+$observerSourcePath = Join-Path $uiRoot 'scripts\observer_only.py'
+$observerRouterPath = Join-Path $backendRoot 'src\pepagent\api\observer.py'
 $databaseHost = '127.0.0.1'
 $databasePort = 55432
 $tunnelScript = Join-Path $backendRoot 'deploy\tunnels\start_019_pepagent_tunnels.ps1'
@@ -22,6 +26,41 @@ $apiProcess = $null
 $ownsApiProcess = $false
 $tunnelProcess = $null
 $ownsTunnelProcess = $false
+
+function Get-ObserverSourceFingerprint {
+    param(
+        [string]$ObserverPath,
+        [string]$RouterPath
+    )
+    if (-not (Test-Path -LiteralPath $ObserverPath) -or -not (Test-Path -LiteralPath $RouterPath)) {
+        return $null
+    }
+    $stream = [System.IO.MemoryStream]::new()
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        foreach ($source in @(
+            @{ Label = 'observer_only.py'; Path = $ObserverPath },
+            @{ Label = 'pepagent/api/observer.py'; Path = $RouterPath }
+        ) | Sort-Object Label) {
+            $labelBytes = [System.Text.Encoding]::UTF8.GetBytes($source.Label)
+            $stream.Write($labelBytes, 0, $labelBytes.Length)
+            $stream.Write([byte[]](0), 0, 1)
+            $contentBytes = [System.IO.File]::ReadAllBytes($source.Path)
+            $stream.Write($contentBytes, 0, $contentBytes.Length)
+            $stream.Write([byte[]](0), 0, 1)
+        }
+        return ([System.BitConverter]::ToString($sha.ComputeHash($stream.ToArray())) -replace '-', '').ToLowerInvariant()
+    }
+    catch {
+        return $null
+    }
+    finally {
+        $sha.Dispose()
+        $stream.Dispose()
+    }
+}
+
+$observerSourceFingerprint = Get-ObserverSourceFingerprint $observerSourcePath $observerRouterPath
 
 function Test-TcpPort {
     param(
@@ -44,14 +83,45 @@ function Test-TcpPort {
     }
 }
 
-function Test-AmpgentApi {
+function Get-AmpgentHealth {
     try {
-        $response = Invoke-RestMethod -Method Get -Uri $healthUrl -TimeoutSec 2
-        return $response.status -eq 'ok'
+        return Invoke-RestMethod -Method Get -Uri $healthUrl -TimeoutSec 2
     }
     catch {
-        return $false
+        return $null
     }
+}
+
+function Test-AmpgentApi {
+    $health = Get-AmpgentHealth
+    if ($null -eq $health -or $health.status -ne 'ok') { return $false }
+    if ($FullControlPlane) { return $true }
+    return $health.mode -eq 'observer-only' -and $health.protocol_version -eq $observerProtocolVersion -and $health.service_version -eq $observerServiceVersion -and $null -ne $observerSourceFingerprint -and $health.source_fingerprint -eq $observerSourceFingerprint
+}
+
+function Stop-StaleObserverApi {
+    $connections = @(Get-NetTCPConnection -LocalAddress '127.0.0.1' -LocalPort $ApiPort -State Listen -ErrorAction SilentlyContinue)
+    $ownerIds = @($connections | Select-Object -ExpandProperty OwningProcess -Unique)
+    $observerProcesses = @()
+    foreach ($ownerId in $ownerIds) {
+        $process = Get-CimInstance Win32_Process -Filter "ProcessId = $ownerId" -ErrorAction SilentlyContinue
+        $commandLine = [string]$process.CommandLine
+        if ($commandLine -match 'observer_only:app' -and $commandLine -match "--port\s+$ApiPort(?:\s|$)") {
+            $observerProcesses += $process
+        }
+    }
+    if (-not $observerProcesses) {
+        throw "数据服务协议不匹配，但端口 $ApiPort 不是可确认的本地 Observer 进程；为保护 PostgreSQL、Temporal 与 worker，未停止任何进程。"
+    }
+    foreach ($process in $observerProcesses) {
+        Write-Host "替换协议不匹配的本地 Observer API 进程：$($process.ProcessId)" -ForegroundColor Yellow
+        Stop-Process -Id ([int]$process.ProcessId) -ErrorAction SilentlyContinue
+    }
+    foreach ($attempt in 1..20) {
+        if (-not (Test-TcpPort -HostName '127.0.0.1' -Port $ApiPort -TimeoutMilliseconds 250)) { return }
+        Start-Sleep -Milliseconds 250
+    }
+    throw "旧 Observer API 进程未能在端口 $ApiPort 退出；未启动替代进程。"
 }
 
 if (-not (Test-Path -LiteralPath $pythonPath)) {
@@ -89,6 +159,11 @@ if (-not (Test-TcpPort -HostName $databaseHost -Port $databasePort)) {
 }
 else {
     Write-Host "复用已存在的只读数据库隧道：127.0.0.1:$databasePort" -ForegroundColor Green
+}
+
+$existingHealth = Get-AmpgentHealth
+if (-not $FullControlPlane -and $null -ne $existingHealth -and -not (Test-AmpgentApi)) {
+    Stop-StaleObserverApi
 }
 
 if (-not (Test-AmpgentApi)) {

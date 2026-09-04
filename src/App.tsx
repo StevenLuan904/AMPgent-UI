@@ -228,9 +228,13 @@ function useRunData(enabled: boolean, apiBase: string) {
   const idlePrefetchTimer = useRef<number | null>(null)
   const alignedStructureCounts = useRef<Record<string, number>>({})
   const runIdentities = useRef<Record<string, RunIdentity>>({})
+  const runsStale = useRef(runs.length > 0)
+  const detailStale = useRef(Boolean(initialCachedDetail))
 
   const reportBackgroundSyncError = useCallback((cause: unknown) => {
     setError(readableDataError(cause, '同步延迟'))
+    runsStale.current = true
+    detailStale.current = true
     setSyncingStale(true)
     setLoading(false)
   }, [])
@@ -241,7 +245,8 @@ function useRunData(enabled: boolean, apiBase: string) {
     try {
       const response = await fetchJsonWithTimeout<RunListResponse>(`${apiBase}/v1/observer/runs?limit=12`, observerListTimeoutMs)
       const payload = response.payload
-      if (observerResponseIsStale(response.cacheState)) setSyncingStale(true)
+      runsStale.current = observerResponseIsStale(response.cacheState)
+      setSyncingStale(runsStale.current || detailStale.current)
       runIdentities.current = Object.fromEntries(payload.runs.map((run) => [run.id, {
         id: run.id,
         temporal_workflow_id: run.temporal_workflow_id,
@@ -280,7 +285,6 @@ function useRunData(enabled: boolean, apiBase: string) {
     try {
       const response = await fetchJsonWithTimeout<NodeDetail>(`${apiBase}/v1/observer/runs/${runId}/nodes/${encodeURIComponent(stageId)}`, observerNodeDetailTimeoutMs)
       const nodeDetail = response.payload
-      if (observerResponseIsStale(response.cacheState) && selectedIdRef.current === runId && epoch === detailEpoch.current) setSyncingStale(true)
       nodeDetailCache.set(cacheKey, { detail: nodeDetail, fetchedAt: Date.now() })
       if (selectedIdRef.current === runId && epoch === detailEpoch.current) {
         setNodeDetails((current) => ({ ...current, [stageId]: nodeDetail }))
@@ -315,6 +319,13 @@ function useRunData(enabled: boolean, apiBase: string) {
       return
     }
     if (runsInFlight.current || detailInFlight.current) {
+      schedulePrefetchPump(2_000)
+      return
+    }
+    // The observer reaches PostgreSQL through a high-latency tunnel. Keep
+    // background node hydration single-flight instead of stacking expensive
+    // stage reads while another node still holds a database connection.
+    if (nodeFetchInFlight.current.size > 0) {
       schedulePrefetchPump(2_000)
       return
     }
@@ -371,7 +382,8 @@ function useRunData(enabled: boolean, apiBase: string) {
         return loadedStageKeys.current.has(cacheKey)
       }).length
       setError(null)
-      setSyncingStale(staleResponse)
+      detailStale.current = staleResponse
+      setSyncingStale(runsStale.current || detailStale.current)
       if (staleResponse) setStaleDetailRevision((revision) => revision + 1)
       setLoading(false)
 
@@ -406,6 +418,7 @@ function useRunData(enabled: boolean, apiBase: string) {
     } catch (cause) {
       if (epoch === detailEpoch.current) {
         setError(readableDataError(cause, '无法连接观察器接口'))
+        detailStale.current = true
         setSyncingStale(true)
       }
     } finally {
@@ -430,6 +443,8 @@ function useRunData(enabled: boolean, apiBase: string) {
     prefetchInFlightStageIds.current.clear()
     if (idlePrefetchTimer.current !== null) window.clearTimeout(idlePrefetchTimer.current)
     setDetail(null)
+    detailStale.current = false
+    setSyncingStale(runsStale.current)
     setNodeDetails({})
     setNodeDetailFetch({ requested: 0, loaded: 0, failed: 0, deferred: 0 })
     setLoading(Boolean(selectedId))
@@ -510,15 +525,17 @@ function useRunData(enabled: boolean, apiBase: string) {
       prefetchQueue.current = null
       prefetchInFlightStageIds.current.clear()
       if (idlePrefetchTimer.current !== null) window.clearTimeout(idlePrefetchTimer.current)
+      const cachedRuns = readObserverCache<RunListResponse>(observerRunListCacheKey(apiBase), apiBase)
+      runsStale.current = Boolean(cachedRuns)
+      if (cachedRuns) setRuns(cachedRuns.payload.runs)
     }
-    const cachedRuns = readObserverCache<RunListResponse>(observerRunListCacheKey(apiBase), apiBase)
-    if (cachedRuns) setRuns(cachedRuns.payload.runs)
     if (!selectedId) return
     const cachedDetail = readObserverCache<RunDetail>(observerRunDetailCacheKey(apiBase, selectedId), apiBase)
     if (cachedDetail && cachedDetail.payload.run.id === selectedId) {
       detailRunIdRef.current = selectedId
       setDetail(cachedDetail.payload)
-      setSyncingStale(true)
+      detailStale.current = true
+      setSyncingStale(runsStale.current || detailStale.current)
       setLoading(false)
       return
     }
@@ -526,7 +543,8 @@ function useRunData(enabled: boolean, apiBase: string) {
     setDetail(null)
     setNodeDetails({})
     setNodeDetailFetch({ requested: 0, loaded: 0, failed: 0, deferred: 0 })
-    setSyncingStale(false)
+    detailStale.current = false
+    setSyncingStale(runsStale.current)
     setLoading(true)
   }, [apiBase, selectedId])
 

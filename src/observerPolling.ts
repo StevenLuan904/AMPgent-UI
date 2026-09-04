@@ -19,11 +19,11 @@ function normalizedApiBase(apiBase: string) {
 }
 
 export function observerPollingIntervalMs(status: string | undefined) {
-  return activeRunStatuses.has(status ?? '') ? 30_000 : 90_000
+  return activeRunStatuses.has(status ?? '') ? 30_000 : 300_000
 }
 
 export function observerInitialPrefetchCount(stageCount: number) {
-  return Math.min(2, Math.max(0, stageCount))
+  return Math.min(1, Math.max(0, stageCount))
 }
 
 export function observerPrefetchRefreshExpired(scope: 'initial' | 'idle') {

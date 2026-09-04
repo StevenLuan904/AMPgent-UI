@@ -38,6 +38,7 @@ def load_observer_module():
     middleware = types.ModuleType("fastapi.middleware")
     observer = types.ModuleType("pepagent.api.observer")
     observer.router = object()
+    observer.__file__ = str(Path(__file__).resolve().parents[2] / "agent-platform" / "src" / "pepagent" / "api" / "observer.py")
     pepagent = types.ModuleType("pepagent")
     pepagent_api = types.ModuleType("pepagent.api")
     sys.modules.update({
@@ -79,6 +80,75 @@ class ObserverCacheTests(unittest.TestCase):
     async def ok_app(self, scope, _receive, send):
         await send({"type": "http.response.start", "status": 200, "headers": [(b"content-type", b"application/json"), (b"set-cookie", b"should-not-persist")]})
         await send({"type": "http.response.body", "body": b'{"runs": []}', "more_body": False})
+
+    async def invoke_async(self, middleware, path, query=b"limit=12"):
+        messages = []
+
+        async def receive():
+            return {"type": "http.request", "body": b"", "more_body": False}
+
+        async def send(message):
+            messages.append(message)
+
+        scope = {"type": "http", "method": "GET", "path": path, "query_string": query}
+        await middleware(scope, receive, send)
+        return messages
+
+    def test_health_contract_exposes_observer_identity(self):
+        health = asyncio.run(self.module.healthz())
+        self.assertEqual(health["status"], "ok")
+        self.assertEqual(health["mode"], "observer-only")
+        self.assertEqual(health["protocol_version"], "ampgent-observer/v2")
+        self.assertEqual(health["service_version"], "observer-only-cache-v2")
+        self.assertRegex(health["source_fingerprint"], r"^[0-9a-f]{64}$")
+
+    def test_source_fingerprint_changes_when_service_source_changes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            observer = root / "observer_only.py"
+            router = root / "observer.py"
+            observer.write_text("observer-v1", encoding="utf-8")
+            router.write_text("router-v1", encoding="utf-8")
+            sources = [("observer_only.py", observer), ("pepagent/api/observer.py", router)]
+            first = self.module.compute_observer_source_fingerprint(sources)
+            observer.write_text("observer-v2", encoding="utf-8")
+            second = self.module.compute_observer_source_fingerprint(sources)
+            self.assertNotEqual(first, second)
+
+    def test_restored_snapshot_is_replaced_by_background_refresh(self):
+        with tempfile.TemporaryDirectory() as directory:
+            old = os.environ.get("AMPGENT_OBSERVER_CACHE_DIR")
+            os.environ["AMPGENT_OBSERVER_CACHE_DIR"] = directory
+            try:
+                async def scenario():
+                    first = self.module.ObserverReadCoalescingMiddleware(self.ok_app)
+                    await self.invoke_async(first, "/v1/observer/runs/run-2")
+
+                    async def refreshed_app(scope, _receive, send):
+                        await send({"type": "http.response.start", "status": 200, "headers": [(b"content-type", b"application/json")]})
+                        await send({"type": "http.response.body", "body": b'{"runs":["refreshed"]}', "more_body": False})
+
+                    second = self.module.ObserverReadCoalescingMiddleware(refreshed_app)
+                    restored = await self.invoke_async(second, "/v1/observer/runs/run-2")
+                    self.assertEqual(dict(restored[0]["headers"])[b"x-ampgent-cache"], b"restored-stale")
+
+                    key = second._cache_key("/v1/observer/runs/run-2", b"limit=12")
+                    for _ in range(20):
+                        await asyncio.sleep(0.01)
+                        cached = second._cache.get(key)
+                        if cached is not None and cached.body == b'{"runs":["refreshed"]}':
+                            break
+                    else:
+                        self.fail("restored snapshot was not replaced by background refresh")
+                    self.assertFalse(cached.restored)
+                    self.assertEqual(cached.body, b'{"runs":["refreshed"]}')
+
+                asyncio.run(scenario())
+            finally:
+                if old is None:
+                    os.environ.pop("AMPGENT_OBSERVER_CACHE_DIR", None)
+                else:
+                    os.environ["AMPGENT_OBSERVER_CACHE_DIR"] = old
 
     def test_snapshot_survives_middleware_restart_and_stale_is_marked(self):
         with tempfile.TemporaryDirectory() as directory:
