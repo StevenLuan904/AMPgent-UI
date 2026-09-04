@@ -47,18 +47,29 @@ def _prepared_queue(root: Path) -> Path:
     return nested if nested.exists() else root / "coarse5_prepared_queue.csv"
 
 
+def _qd_path(root: Path) -> Path:
+    provisional = root / "provisional_qd.json"
+    return provisional if provisional.exists() else root / "quality_diversity.json"
+
+
+def _materialization_input(root: Path) -> Path:
+    singular = root / "materialization_input" / "candidate_scores.csv"
+    return (
+        singular
+        if singular.exists()
+        else root / "materialization_inputs" / "candidate_scores.csv"
+    )
+
+
 def summarize_arm(name: str, root: Path) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     score_root = _score_dir(root)
     scores = _rows(score_root / "candidate_scores.csv")
     calibrated = _rows(root / "candidate_scores_calibrated.csv")
     challenger = _rows(root / "challenger" / "challenger_review.csv")
-    qd = _json(root / "quality_diversity.json")
+    qd = _json(_qd_path(root))
     material = _json(root / "materialization_receipt.json")
     qd_by_hash = {item["candidate_id"]: item for item in qd["contributions"]}
-    selected_hashes = {
-        row["sequence_sha256"]
-        for row in _rows(root / "materialization_inputs" / "candidate_scores.csv")
-    }
+    selected_hashes = {row["sequence_sha256"] for row in _rows(_materialization_input(root))}
     missing_shadows = set(
         _json(root / "challenger" / "receipt.json").get("missing_verified_runtimes", [])
     )
@@ -78,7 +89,9 @@ def summarize_arm(name: str, root: Path) -> tuple[list[dict[str, Any]], dict[str
         "challenger_no_conflict": sum(
             row.get("challenger_conflict_status") == "no_conflict" for row in challenger
         ),
-        "qd_eligible": int(qd["quality_eligible_candidate_count"]),
+        "qd_eligible": int(
+            qd.get("quality_eligible_candidate_count", qd.get("quality_eligible_count", 0))
+        ),
         "qd_new_cell": sum(
             item.get("contribution") == "empty_cell" for item in qd_by_hash.values()
         ),

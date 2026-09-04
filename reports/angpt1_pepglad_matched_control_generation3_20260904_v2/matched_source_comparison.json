@@ -1,0 +1,65 @@
+{
+  "schema_version": "ampgent.angpt1-matched-source-comparison.1",
+  "arms": [
+    {
+      "arm": "PepFlow",
+      "counts": {
+        "proposal": 12,
+        "materialized": 3,
+        "formal12": 12,
+        "display": 10,
+        "support_ge_2": 12,
+        "excellent": 10,
+        "challenger_reviewed": 12,
+        "challenger_no_conflict": 12,
+        "qd_eligible": 10,
+        "qd_new_cell": 3,
+        "qd_replacement": 0,
+        "coarse5_prepared": 3
+      },
+      "materialized_cohort": {
+        "materialized_formal12": 3,
+        "materialized_display": 3,
+        "materialized_support_ge_2": 3,
+        "materialized_challenger_reviewed": 3,
+        "materialized_challenger_no_conflict": 3
+      },
+      "missing_shadow_runtimes": [
+        "apex",
+        "peptiverse"
+      ],
+      "no_weighted_total": true
+    },
+    {
+      "arm": "PepGLAD",
+      "counts": {
+        "proposal": 12,
+        "materialized": 3,
+        "formal12": 12,
+        "display": 11,
+        "support_ge_2": 11,
+        "excellent": 10,
+        "challenger_reviewed": 12,
+        "challenger_no_conflict": 11,
+        "qd_eligible": 10,
+        "qd_new_cell": 3,
+        "qd_replacement": 0,
+        "coarse5_prepared": 3
+      },
+      "materialized_cohort": {
+        "materialized_formal12": 3,
+        "materialized_display": 3,
+        "materialized_support_ge_2": 3,
+        "materialized_challenger_reviewed": 3,
+        "materialized_challenger_no_conflict": 3
+      },
+      "missing_shadow_runtimes": [
+        "apex",
+        "peptiverse"
+      ],
+      "no_weighted_total": true
+    }
+  ],
+  "comparison_csv_sha256": "51dc776d6eef00ee32429a4f220a272eb3e70faed0889a9d206c9cb70fef79a9",
+  "no_weighted_total": true
+}
