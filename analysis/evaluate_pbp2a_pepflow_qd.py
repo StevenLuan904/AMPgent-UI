@@ -33,8 +33,7 @@ def _archive(path: Path) -> list[QualityDiversityCandidate]:
                 sequence=elite["sequence"],
                 behavior=behavior_vector(
                     elite["sequence"],
-                    net_charge=float(behavior["charge_density"])
-                    * float(behavior["length"]),
+                    net_charge=float(behavior["charge_density"]) * float(behavior["length"]),
                     hydrophobicity=float(behavior["hydrophobicity"]),
                     hydrophobic_moment=float(behavior["hydrophobic_moment"]),
                 ),
@@ -54,6 +53,10 @@ def main() -> None:
     parser.add_argument("--candidate-csv", type=Path, required=True)
     parser.add_argument("--archive-json", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--schema-version", default="ampgent.pbp2a-pepflow-same-domain-qd.1")
+    parser.add_argument("--target-key", default="")
+    parser.add_argument("--source", default="")
+    parser.add_argument("--operator-id", default="")
     args = parser.parse_args()
     rows = _read(args.candidate_csv)
     candidates = [candidate_from_score_row(row) for row in rows]
@@ -73,9 +76,7 @@ def main() -> None:
                 "actual_cell_id": contribution.cell_id or "",
                 "contribution": contribution.contribution,
                 "new_cell": str(contribution.contribution == "empty_cell").lower(),
-                "replacement": str(
-                    contribution.contribution == "incumbent_replacement"
-                ).lower(),
+                "replacement": str(contribution.contribution == "incumbent_replacement").lower(),
                 "quality": f"{contribution.quality:.9f}",
                 "incumbent_candidate_id": contribution.incumbent_candidate_id or "",
             }
@@ -88,13 +89,15 @@ def main() -> None:
         writer.writeheader()
         writer.writerows(output_rows)
     payload = {
-        "schema_version": "ampgent.pbp2a-pepflow-same-domain-qd.1",
+        "schema_version": args.schema_version,
+        "target_key": args.target_key,
+        "source": args.source,
+        "operator_id": args.operator_id,
         "candidate_csv_sha256": hashlib.sha256(args.candidate_csv.read_bytes()).hexdigest(),
         "archive_sha256": hashlib.sha256(args.archive_json.read_bytes()).hexdigest(),
         "candidate_count": len(rows),
         "quality_eligible_count": sum(
-            item.contribution
-            in {"empty_cell", "incumbent_replacement", "same_cell_non_elite"}
+            item.contribution in {"empty_cell", "incumbent_replacement", "same_cell_non_elite"}
             for item in state.contributions
         ),
         "new_cell_count": sum(item.contribution == "empty_cell" for item in state.contributions),
