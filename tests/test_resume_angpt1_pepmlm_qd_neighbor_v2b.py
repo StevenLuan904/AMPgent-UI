@@ -104,7 +104,7 @@ def test_all_exact_candidates_are_reused_for_prepared_coarse5(tmp_path: Path) ->
             output_dir=tmp_path,
         )
     )
-    assert result["status"] == "already_materialized_and_coarse5_prepared"
+    assert result["status"] == "already_materialized"
     assert result["decision"] == "prepared_not_dispatched"
     assert result["materializer_called"] is False
     assert result["coarse5_prepared_count"] == 2

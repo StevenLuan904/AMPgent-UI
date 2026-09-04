@@ -393,7 +393,7 @@ async def resume(
             raise ValueError("coarse5 receipt does not contain both authoritative candidates")
         return {
             "schema_version": SCHEMA_VERSION,
-            "status": "already_materialized_and_coarse5_prepared",
+            "status": "already_materialized",
             "decision": "prepared_not_dispatched",
             "materializer_called": False,
             "pg_write_count": 0,
