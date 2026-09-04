@@ -84,14 +84,14 @@ def test_acea_close_records_formal_pg_new_qd_and_prepared_only_queue() -> None:
     assert queue["nstruct"] == 5
     assert queue["dispatch_allowed"] is False
     assert queue["remote_dispatch_submitted"] is False
-    assert backlog["summary"]["rows"] == 50
-    assert backlog["summary"]["target_counts"]["acea"] == 4
+    assert backlog["summary"]["rows"] == 52
+    assert backlog["summary"]["target_counts"]["acea"] == 6
     assert backlog["summary"]["target_counts"]["fgf2"] == 6
     backlog_rows = _csv(BACKLOG / "targeted_rosetta_coarse5_backlog_vnext.csv")
-    assert not any(
+    assert sum(
         row["target_key"] == "acea" and row["source_generation"] == "4"
         for row in backlog_rows
-    )
+    ) == 2
     assert sum(
         row["target_key"] == "fgf2" and row["source_generation"] == "5"
         for row in backlog_rows
@@ -121,8 +121,15 @@ def test_retained_challenger_disagreement_remains_complete_evidence() -> None:
     assert challenger_passes(row, allow_retained_conflict=True) is True
 
 
-def test_acea_current_pg_unavailable_is_proposal_only_and_has_no_uuid() -> None:
+def test_acea_exact_pg_readback_authorizes_two_backlog_identities() -> None:
     eligibility = _json(REPORT / "targeted_backlog_eligibility.json")
-    assert eligibility["effective_status"] == "proposal_only_pending"
-    assert eligibility["authoritative_candidate_ids"] == []
-    assert eligibility["postgresql_status"] == "unavailable"
+    readback = _json(REPORT / "pg_exact_readback_receipt.json")
+    assert eligibility["effective_status"] == "authoritative"
+    assert eligibility["authoritative_candidate_ids"] == readback["candidate_ids"]
+    assert eligibility["postgresql_status"] == "readback_verified"
+    assert eligibility["candidate_count"] == 2
+    assert eligibility["evaluation_count"] == 34
+    assert eligibility["identity_drift"] == 0
+    assert readback["status"] == "readback_verified"
+    assert readback["query_mode"] == "exact_run_id+candidate_id"
+    assert readback["sequence_history_scan"] is False
