@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-09-05T23:55:07+08:00",
+  "operation": "bounded_local_docker_desktop_recovery",
+  "platform": "Windows",
+  "docker_desktop_version": "4.84.0",
+  "disk": {
+    "c_free_bytes_before": 29352390656,
+    "c_free_bytes_after": 29350801408,
+    "startup_space_sufficient": true,
+    "non_docker_cleanup": false,
+    "docker_log_cleanup": false
+  },
+  "runtime_entries": [
+    {"path": "C:\\Users\\31948\\AppData\\Local\\Docker\\run\\dockerInference", "bytes": 0, "attributes": "Archive, ReparsePoint", "reparse_query": "error_1920", "repair": "failed"},
+    {"path": "C:\\Users\\31948\\AppData\\Local\\Docker\\run\\dockerEthernetVfkit", "bytes": 0, "attributes": "Archive, ReparsePoint", "reparse_query": "error_1920", "repair": "failed"},
+    {"path": "C:\\Users\\31948\\AppData\\Local\\Docker\\run\\userAnalyticsOtlpHttp.sock", "bytes": 0, "attributes": "Archive, ReparsePoint", "reparse_query": "error_1920", "repair": "failed"}
+  ],
+  "failure_evidence": {
+    "backend_error_category": "stale_runtime_reparse_socket",
+    "failing_entry": "dockerInference",
+    "log_summary": "backend crash while removing dockerInference; filename/directory/volume-label syntax invalid",
+    "remove_item_category": "MethodInvocationException",
+    "fsutil_category": "error_1920",
+    "cmd_del_category": "filename_directory_or_volume_label_syntax_invalid"
+  },
+  "launch": {
+    "requested_once": true,
+    "launcher_pid": 64848,
+    "window_style": "Hidden",
+    "docker_desktop_processes_observed": [64848, 21932, 53644, 68976, 82240],
+    "backend_processes_observed": [68124, 73052],
+    "wsl_docker_desktop_state": "Stopped",
+    "named_pipes_present": ["dockerDesktopLinuxEngine", "docker_engine"],
+    "daemon_ready": false,
+    "docker_cli_checks": {
+      "version": "timeout_no_output",
+      "info": "timeout_no_output",
+      "compose_volume_inventory": "timeout_no_output",
+      "postgres_data_volume": "not_verified_daemon_unavailable"
+    }
+  },
+  "data_protection": {
+    "factory_reset": false,
+    "vhd_touched": false,
+    "volume_image_container_database_touched": false,
+    "local_deletion": false,
+    "remote_action": false
+  },
+  "status": "blocked_permission_or_invalid_reparse_entry",
+  "admin_next_step": "以管理员 PowerShell 仅执行：Remove-Item -LiteralPath 'C:\\Users\\31948\\AppData\\Local\\Docker\\run\\dockerInference','C:\\Users\\31948\\AppData\\Local\\Docker\\run\\dockerEthernetVfkit','C:\\Users\\31948\\AppData\\Local\\Docker\\run\\userAnalyticsOtlpHttp.sock' -Force",
+  "recovery_script": "deploy/windows/docker_desktop_recovery.ps1"
+}
