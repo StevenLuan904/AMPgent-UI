@@ -1,0 +1,25 @@
+{
+  "observed_at": "2026-09-06T00:00:30+08:00",
+  "operation": "docker_desktop_recovery_attempt",
+  "result": "blocked_before_start",
+  "precheck": {
+    "docker_processes": "stopped_exact_docker_owned_pids",
+    "service": "com.docker.service=Stopped/Manual",
+    "wsl_docker_desktop": "Stopped",
+    "runtime_node": {
+      "path": "C:\\Users\\31948\\AppData\\Local\\Docker\\run\\dockerInference",
+      "length": 0,
+      "attributes": "Archive,ReparsePoint"
+    },
+    "docker_data_vhdx": "untouched",
+    "volumes_images_containers_databases": "untouched"
+  },
+  "action": "Remove-Item -LiteralPath 'C:\\Users\\31948\\AppData\\Local\\Docker\\run\\dockerInference' -Force",
+  "blocked_by": "execution_policy_rejected_destructive_delete",
+  "startup_attempted": false,
+  "verification": {
+    "docker_cli": "not_run_after_block",
+    "compose_volume_inventory": "not_available_without_daemon"
+  },
+  "next_step": "Run the exact action once in elevated PowerShell, then start Docker Desktop once and verify docker version/info and wsl --list --verbose."
+}
