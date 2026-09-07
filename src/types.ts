@@ -70,6 +70,8 @@ export interface RuntimeNodeMeta {
   summary_tools?: RuntimeSummaryTool[]
   summary_only?: boolean
   latest_iteration?: number
+  activity_retry_count?: number
+  max_activity_attempt?: number
   preview_index?: number
   preview_total?: number | null
   population_scope?: 'display_population' | 'generation_population' | 'mixed'

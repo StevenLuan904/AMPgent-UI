@@ -1,7 +1,7 @@
 import type { GraphStage } from './types'
 
 type ReadableRuntimeNode = Pick<GraphStage, 'id' | 'status'> & {
-  runtime?: Pick<NonNullable<GraphStage['runtime']>, 'node_type' | 'observed_at' | 'expanded' | 'child_ids' | 'raw_label'>
+  runtime?: Pick<NonNullable<GraphStage['runtime']>, 'node_type' | 'observed_at' | 'expanded' | 'child_ids' | 'raw_label' | 'activity_retry_count'>
 }
 
 export type RuntimeNodePosition = { x: number; y: number }
@@ -108,24 +108,34 @@ export function selectReadableRuntimeNodeIds(nodes: ReadonlyArray<ReadableRuntim
   if (!eligible.length || limit <= 0) return []
   const target = Math.min(Math.max(5, limit), eligible.length)
   const selected = new Set<string>()
+  const protectedContext = new Set<string>()
   const spatialOrder = [...eligible].sort((left, right) => readableOrder(left, right, positions))
   // Keep one contiguous recent window on the spine. This prevents an old
   // event quota from pulling the readable view back into a table of lanes.
   spatialOrder.slice(-target).forEach((node) => selected.add(node.id))
   const ensureContext = (predicate: (node: ReadableRuntimeNode) => boolean) => {
-    if ([...selected].some((id) => predicate(eligible.find((node) => node.id === id)!))) return
+    const existing = [...selected].find((id) => predicate(eligible.find((node) => node.id === id)!))
+    if (existing) {
+      protectedContext.add(existing)
+      return
+    }
     const candidate = [...eligible].reverse().find(predicate)
     if (!candidate) return
-    const replace = [...selected].sort((left, right) => readableOrder(eligible.find((node) => node.id === left)!, eligible.find((node) => node.id === right)!, positions))[0]
+    const replace = [...selected]
+      .filter((id) => !protectedContext.has(id))
+      .sort((left, right) => readableOrder(eligible.find((node) => node.id === left)!, eligible.find((node) => node.id === right)!, positions))[0]
+    if (!replace) return
     selected.delete(replace)
     selected.add(candidate.id)
+    protectedContext.add(candidate.id)
   }
-  ensureContext((node) => laneFor(node) === 'events')
   ensureContext((node) => node.runtime?.raw_label === 'agent_decision.recorded')
-  ensureContext((node) => laneFor(node) === 'summary')
+  ensureContext((node) => (node.runtime?.activity_retry_count ?? 0) > 0)
   ensureContext((node) => laneFor(node) === 'structure')
+  ensureContext((node) => laneFor(node) === 'summary')
   ensureContext((node) => laneFor(node) === 'population')
   ensureContext((node) => laneFor(node) === 'candidates')
+  ensureContext((node) => laneFor(node) === 'events')
   return [...selected]
 }
 

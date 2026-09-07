@@ -109,6 +109,7 @@ export function WorkflowNode({ data }: NodeProps<StageNode>) {
     .slice(0, isRuntime ? 1 : 2)
   const hasPrimaryVisual = hasStructureEvidence || hasEvidenceDistribution || showsTargets
   const showCompactFacts = compactFacts.length > 0 && (!isRuntime || (!hasPrimaryVisual && !isRuntimeGroup && runtimeType !== 'tool_summary'))
+  const showVerdict = !isRuntimeGroup && !hasEvidenceDistribution
   return (
     <div className={`workflow-node stage-${stage.id} kind-${stage.kind} grade-${stage.insight.grade} node-${stage.status}${isRuntime ? ` is-runtime-node runtime-${runtimeType}${isRuntimeGroup && stage.runtime?.expanded ? ' runtime-group-expanded' : ''}` : ''}${selected ? ' is-selected' : ''}`}>
       <Handle type="target" position={Position.Left} className="flow-handle" />
@@ -117,7 +118,7 @@ export function WorkflowNode({ data }: NodeProps<StageNode>) {
         <span className="node-title" title={runtimeTitle}>{stage.label}</span>
         <span className="node-state-icon">{stage.insight.grade === 'neutral' ? null : stateIcon}</span>
       </div>
-      {!isRuntimeGroup && <div
+      {showVerdict && <div
           className="node-verdict"
           title={stage.insight.source === 'persisted_decision' ? '来自数据库中的智能体决策' : '根据数据库结果生成的节点结论'}
         >

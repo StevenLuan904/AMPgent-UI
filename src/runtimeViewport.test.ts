@@ -74,6 +74,18 @@ describe('readable runtime viewport selection', () => {
     expect(selected).toEqual(expect.arrayContaining(['batch-1', 'member-1', 'member-2', 'event-1', 'generation-1']))
   })
 
+  it('keeps a persisted activity retry visible in a dense recent window', () => {
+    const retry = node('retry-group', 'event_group', '2026-09-04T00:00:02Z', 'stopped')
+    const nodes = [
+      node('decision', 'event_group', '2026-09-04T00:00:01Z'),
+      { ...retry, runtime: { ...retry.runtime, activity_retry_count: 1 } },
+      ...Array.from({ length: 7 }, (_, index) => node(`tool-${index}`, 'tool_group', `2026-09-04T00:00:${String(index + 3).padStart(2, '0')}Z`)),
+      node('population', 'population_summary', ''),
+      node('generation', 'candidate_group', ''),
+    ]
+    expect(selectReadableRuntimeNodeIds(nodes, 6)).toContain('retry-group')
+  })
+
   it('keeps a population summary and a candidate preview group discoverable together', () => {
     const nodes = [
       node('population-summary', 'population_summary', ''),

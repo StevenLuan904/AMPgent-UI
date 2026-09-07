@@ -54,7 +54,7 @@ import { buildRuntimeGraph, candidatePreviewCountLabel, candidatePreviewDenomina
 import { compactReadableRuntimePositions, selectReadableRuntimeNodeIds } from './runtimeViewport'
 import { nodeDetailCacheTtlMs, observerDetailFailureMessage, observerIdlePrefetchDelayMs, observerInitialPrefetchCount, observerInitialPrefetchStages, observerListTimeoutMs, observerInFlightStageIds, observerMergePrefetchQueue, observerNextPrefetchStage, observerNodeDetailCacheKey, observerNodeDetailTimeoutMs, observerPendingPrefetchCount, observerPollingIntervalMs, observerPrefetchQueueMatches, observerPrefetchInFlightKey, observerPrefetchRefreshExpired, observerPrefetchStageOrder, observerRequeuePrefetchStage, observerResponseIsStale, observerRunDetailCacheKey, observerRunDetailTimeoutMs, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion, observerStaleRetryDelayMs, type ObserverPrefetchQueue } from './observerPolling'
 
-const readableViewportMinZoom = 0.75
+const readableViewportMinZoom = 0.68
 
 type RuntimeClusterFrame = { id: string; label: string; left: number; top: number; width: number; height: number }
 
@@ -747,7 +747,6 @@ function GraphView({
   const graphAreaRef = useRef<HTMLDivElement>(null)
   const [graphViewportSize, setGraphViewportSize] = useState({ width: 0, height: 0 })
   const [expandedClusterFrames, setExpandedClusterFrames] = useState<RuntimeClusterFrame[]>([])
-  const hasDeferredNodeDetails = (runtimeGraph.sourceFetch?.deferred ?? 0) > 0
   useEffect(() => {
     const element = graphAreaRef.current
     if (!element) return
@@ -986,7 +985,7 @@ function GraphView({
         padding: 0.2,
         duration: 240,
         minZoom: readableViewportMinZoom,
-        maxZoom: 1,
+        maxZoom: 1.18,
       })
       return true
     } finally {
@@ -1177,7 +1176,7 @@ function GraphView({
         })
       }),
     ]
-  }, [analysisSelection, analysisSnapshot, detail, graphViewportSize.height, graphViewportSize.width, handleToggleGroup, hasDeferredNodeDetails, nodeDetails, persistedDistributions, readableRuntimeNodeIds, readableRuntimeNodeIdSet, readableRuntimePositions, runtimeGraph, selectedStage, selectionMode])
+  }, [analysisSelection, analysisSnapshot, detail, graphViewportSize.height, graphViewportSize.width, handleToggleGroup, nodeDetails, persistedDistributions, readableRuntimeNodeIds, readableRuntimeNodeIdSet, readableRuntimePositions, runtimeGraph, selectedStage, selectionMode])
   const [nodes, setNodes, onNodesChange] = useNodesState<StageNode | LaneNode>(computedNodes)
   useEffect(() => {
     setNodes((current) => {
