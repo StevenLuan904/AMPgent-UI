@@ -689,7 +689,7 @@ function CanvasHeader({ detail, refreshing, syncingStale, detailSyncError, openA
           <span>{formatTime(detail.run.created_at)} 创建</span><i />
           <span>{generationSummary}</span><i />
           <span>候选预览 {candidatePreviewCountLabel(detail.candidates.length, previewTotal)}</span><i />
-          {detail.run.status === 'running' && <><span>活动观测 · {runtimeActivitySummary(detail.run.status, openActivities)}</span><i /></>}
+          {detail.run.status === 'running' && openActivities > 0 && <><span>活动观测 · {runtimeActivitySummary(detail.run.status, openActivities)}</span><i /></>}
           {excludedCandidateCount > 0 && <><span title="历史运行中已存在的生成子代，仅保留审计记录。">{excludedCandidateCount.toLocaleString()} 个历史重放已排除</span><i /></>}
           {detail.counts.admitted > 0 && <><span>{detail.counts.admitted.toLocaleString()} 个进入结构阶段</span><i /></>}
           {detail.branches.length > 0 && <><span>{detail.branches.length} 个靶点</span><i /></>}
@@ -1278,14 +1278,11 @@ function GraphView({
   const handleNodeClick: NodeMouseHandler = (_, node) => {
     if (node.type !== 'stage') return
     markUserInteracted()
-    if (selectionMode) onToggleAnalysis(node.id)
-    else onSelect(node.id)
-  }
-  const handleNodeDoubleClick: NodeMouseHandler = (_, node) => {
     const nodeType = node.type === 'stage' ? (node.data as StageNode['data']).stage.runtime?.node_type : undefined
-    if (nodeType === 'tool_group' || nodeType === 'event_group' || nodeType === 'batch_group') {
+    if (selectionMode) onToggleAnalysis(node.id)
+    else if (nodeType === 'tool_group' || nodeType === 'event_group' || nodeType === 'batch_group') {
       handleToggleGroup(node.id)
-    }
+    } else onSelect(node.id)
   }
   const handleEdgeClick: EdgeMouseHandler = (_, edge) => {
     markUserInteracted()
@@ -1301,7 +1298,6 @@ function GraphView({
         edges={edges}
         nodeTypes={nodeTypes}
         onNodeClick={handleNodeClick}
-        onNodeDoubleClick={handleNodeDoubleClick}
         onEdgeClick={handleEdgeClick}
         onNodesChange={onNodesChange}
         onInit={(instance) => { flowInstance.current = instance; scheduleInitialFit() }}

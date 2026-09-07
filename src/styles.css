@@ -607,6 +607,15 @@ button:focus-visible { outline: 2px solid #315be8; outline-offset: 2px; }
 .runtime-inspector .attempt-name b { font-size: 12px; }
 .runtime-inspector .attempt-name small, .runtime-inspector .attempt-duration { font-size: 11px; }
 .runtime-inspector .runtime-json { max-height: 220px; font-size: 11px; }
+.runtime-inspector .result-distribution.detailed { margin-inline: 14px; }
+.runtime-inspector .result-distribution.detailed figcaption { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.runtime-inspector .result-distribution.detailed figcaption > div:first-child { min-width: 0; }
+.runtime-inspector .result-distribution.detailed figcaption h3,
+.runtime-inspector .result-distribution.detailed figcaption p { white-space: normal; overflow-wrap: anywhere; }
+.runtime-inspector .distribution-statline { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px; }
+.runtime-inspector .distribution-statline > span { min-width: 0; padding-left: 9px; border-left: 1px solid #e0e6ed; }
+.runtime-inspector .distribution-statline small { font-size: 10px; }
+.runtime-inspector .distribution-statline b { font-size: 12px; }
 .edge-inspector { width: 350px; flex-basis: 350px; }
 
 .loading-screen { min-height: 100vh; display: grid; place-content: center; justify-items: center; background: #f7f8fb; color: #252b37; }
