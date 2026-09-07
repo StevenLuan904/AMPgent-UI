@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildRuntimeGraph, candidatePreviewCountLabel, candidatePreviewDenominator, candidatePreviewLabel, countActivityRetries, countOpenActivities, deriveLifecycleToolCalls, deriveToolSummaryGaps, displayEventContext, displayEventName, displayEventSemanticName, displayObservedEventName, displayToolName, distributionKeyForTool, layoutColumnsForWidth, runtimeActivitySummary, runtimeCallSummary, runtimeObservationSummary, runtimeOpenActivityLabel, runtimeRetrySummary } from './runtimeGraph'
+import { buildRuntimeGraph, candidatePreviewCountLabel, candidatePreviewDenominator, candidatePreviewLabel, countActivityRetries, countOpenActivities, deriveLifecycleToolCalls, deriveToolSummaryGaps, displayEventContext, displayEventName, displayEventSemanticName, displayObservedEventName, displayToolName, distributionKeyForTool, layoutColumnsForWidth, nextExpandedRuntimeGroups, runtimeActivitySummary, runtimeCallSummary, runtimeEventWindow, runtimeObservationSummary, runtimeOpenActivityLabel, runtimeRetrySummary } from './runtimeGraph'
 import type { NodeDetail, RunDetail, ToolAttempt } from './types'
 
 const call = (id: string, toolName: string, queuedAt: string, overrides: Partial<ToolAttempt> = {}): ToolAttempt => ({
@@ -350,7 +350,23 @@ describe('buildRuntimeGraph', () => {
   it('uses a precise running summary when no activity boundary is open', () => {
     expect(runtimeActivitySummary('running', 0)).toBe('等待后续活动观测')
     expect(runtimeActivitySummary('running', 2)).toBe('开放活动 2')
+    expect(runtimeActivitySummary('running', 2, true)).toBe('未闭合观测 2 · 更早事件未确认')
+    expect(runtimeActivitySummary('running', 0, true)).toBe('等待后续活动观测 · 更早事件未确认')
     expect(runtimeActivitySummary('succeeded', 0)).toBe('开放活动 0')
+  })
+
+  it('marks the observer event window as incomplete at the known read limit', () => {
+    expect(runtimeEventWindow([])).toEqual({ returned: 0, limit: 32, atLimit: false, mayBeTruncated: false })
+    expect(runtimeEventWindow(Array.from({ length: 31 }, (_, index) => ({ sequence_no: index + 1, type: 'run.note', actor: 'observer', payload: {}, occurred_at: '2026-09-04T00:00:00Z' })))).toMatchObject({ returned: 31, atLimit: false, mayBeTruncated: false })
+    expect(runtimeEventWindow(Array.from({ length: 32 }, (_, index) => ({ sequence_no: index + 1, type: 'run.note', actor: 'observer', payload: {}, occurred_at: '2026-09-04T00:00:00Z' })))).toEqual({ returned: 32, limit: 32, atLimit: true, mayBeTruncated: true })
+  })
+
+  it('keeps only the newly selected runtime cluster expanded', () => {
+    const first = nextExpandedRuntimeGroups(new Set<string>(), 'cluster-a')
+    expect([...first]).toEqual(['cluster-a'])
+    const second = nextExpandedRuntimeGroups(first, 'cluster-b')
+    expect([...second]).toEqual(['cluster-b'])
+    expect([...nextExpandedRuntimeGroups(second, 'cluster-b')]).toEqual([])
   })
 
   it('labels an open persisted activity without implying scheduler failure', () => {
@@ -367,6 +383,7 @@ describe('buildRuntimeGraph', () => {
       { sequence_no: 3, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: 'execution-open-retry', activity_id: 7, attempt: 2, activity_type: 'evaluate_v38_sequence_metric' }, occurred_at: '2026-09-04T00:00:03Z' },
     ]
     expect(runtimeOpenActivityLabel(events)).toBe('正在执行 · 序列指标计算 · 第 2 次尝试')
+    expect(runtimeOpenActivityLabel(events, true)).toBe('未闭合观测 · 序列指标计算 · 第 2 次尝试 · 更早事件未确认')
   })
 
   it('distinguishes materialized calls from the authoritative run record count', () => {

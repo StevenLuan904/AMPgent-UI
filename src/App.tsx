@@ -50,11 +50,15 @@ import {
 import { LaneLabel, WorkflowNode, type LaneNode, type StageNode } from './WorkflowNode'
 import { assertMatchingRunIdentity, type RunIdentity } from './runIdentity'
 import { formatRunTitle } from './runPresentation'
-import { buildRuntimeGraph, candidatePreviewCountLabel, candidatePreviewDenominator, displayObservedEventName, displayToolName, runtimeActivitySummary, runtimeEventStatus, type RuntimeGraphModel } from './runtimeGraph'
+import { buildRuntimeGraph, candidatePreviewCountLabel, candidatePreviewDenominator, displayObservedEventName, displayToolName, nextExpandedRuntimeGroups, runtimeEventStatus, type RuntimeGraphModel } from './runtimeGraph'
 import { compactReadableRuntimePositions, selectReadableRuntimeNodeIds } from './runtimeViewport'
 import { nodeDetailCacheTtlMs, observerDetailFailureMessage, observerIdlePrefetchDelayMs, observerInitialPrefetchCount, observerInitialPrefetchStages, observerListTimeoutMs, observerInFlightStageIds, observerMergePrefetchQueue, observerNextPrefetchStage, observerNodeDetailCacheKey, observerNodeDetailTimeoutMs, observerPendingPrefetchCount, observerPollingIntervalMs, observerPrefetchQueueMatches, observerPrefetchInFlightKey, observerPrefetchRefreshExpired, observerPrefetchStageOrder, observerRequeuePrefetchStage, observerResponseIsStale, observerRunDetailCacheKey, observerRunDetailTimeoutMs, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion, observerStaleListRetryDelayMs, observerStaleRetryDelayMs, type ObserverPrefetchQueue } from './observerPolling'
 
 const readableViewportMinZoom = 0.68
+// A focused cluster may legitimately be wider than the readable spine. Keep
+// this lower bound local to the explicit focus action so the default view
+// remains readable while every revealed member and its frame can be seen.
+const expandedClusterMinZoom = 0.52
 
 type RuntimeClusterFrame = { id: string; label: string; left: number; top: number; width: number; height: number }
 
@@ -655,12 +659,11 @@ function SparkIcon({ icon }: { icon: string }) {
   return icon === 'sequence' ? <Activity /> : <CircleDot />
 }
 
-function CanvasHeader({ detail, refreshing, syncingStale, detailSyncError, openActivities, selectionMode, selectedCount, onRefresh, onToggleSelection }: {
+function CanvasHeader({ detail, refreshing, syncingStale, detailSyncError, selectionMode, selectedCount, onRefresh, onToggleSelection }: {
   detail: RunDetail
   refreshing: boolean
   syncingStale: boolean
   detailSyncError: string | null
-  openActivities: number
   selectionMode: boolean
   selectedCount: number
   onRefresh: () => void
@@ -689,7 +692,6 @@ function CanvasHeader({ detail, refreshing, syncingStale, detailSyncError, openA
           <span>{formatTime(detail.run.created_at)} 创建</span><i />
           <span>{generationSummary}</span><i />
           <span>候选预览 {candidatePreviewCountLabel(detail.candidates.length, previewTotal)}</span><i />
-          {detail.run.status === 'running' && openActivities > 0 && <><span>活动观测 · {runtimeActivitySummary(detail.run.status, openActivities)}</span><i /></>}
           {excludedCandidateCount > 0 && <><span title="历史运行中已存在的生成子代，仅保留审计记录。">{excludedCandidateCount.toLocaleString()} 个历史重放已排除</span><i /></>}
           {detail.counts.admitted > 0 && <><span>{detail.counts.admitted.toLocaleString()} 个进入结构阶段</span><i /></>}
           {detail.branches.length > 0 && <><span>{detail.branches.length} 个靶点</span><i /></>}
@@ -997,11 +999,58 @@ function GraphView({
       if (!clusterNodes.length) return false
       await instance.fitView({
         nodes: clusterNodes.map((node) => ({ id: node.id })),
-        padding: 0.2,
+        // Include room for the dashed frame and card shadows. The readable
+        // spine's zoom floor must not clip a deliberately expanded cluster.
+        padding: 0.32,
         duration: 240,
-        minZoom: readableViewportMinZoom,
+        minZoom: expandedClusterMinZoom,
         maxZoom: 1.35,
       })
+      // React Flow fits its node boxes, while the cluster frame is painted
+      // from DOM bounds. A second bounded pass keeps that frame and every
+      // revealed card inside the actual canvas after animation settles.
+      await new Promise<void>((resolve) => window.requestAnimationFrame(() => window.requestAnimationFrame(() => resolve())))
+      const graphRect = graphAreaRef.current?.getBoundingClientRect()
+      if (graphRect) {
+        const domNodes = new Map(
+          [...document.querySelectorAll<HTMLElement>('.react-flow__node')]
+            .map((element) => [element.getAttribute('data-id'), element] as const),
+        )
+        const rects = clusterNodes
+          .map((node) => domNodes.get(node.id)?.getBoundingClientRect())
+          .filter((rect): rect is DOMRect => Boolean(rect && rect.width > 0 && rect.height > 0))
+        if (rects.length) {
+          const padding = 20
+          const left = Math.min(...rects.map((rect) => rect.left)) - padding
+          const top = Math.min(...rects.map((rect) => rect.top)) - padding
+          const right = Math.max(...rects.map((rect) => rect.right)) + padding
+          const bottom = Math.max(...rects.map((rect) => rect.bottom)) + padding
+          const leftBoundary = graphRect.left + 12
+          const topBoundary = graphRect.top + 12
+          const rightBoundary = graphRect.right - 12
+          const bottomBoundary = graphRect.bottom - 12
+          const viewport = instance.getViewport()
+          const horizontalOverflow = Math.max(0, leftBoundary - left) + Math.max(0, right - rightBoundary)
+          const verticalOverflow = Math.max(0, topBoundary - top) + Math.max(0, bottom - bottomBoundary)
+          if (horizontalOverflow > 0 || verticalOverflow > 0) {
+            const occupiedWidth = Math.max(1, right - left)
+            const occupiedHeight = Math.max(1, bottom - top)
+            const availableWidth = Math.max(1, rightBoundary - leftBoundary)
+            const availableHeight = Math.max(1, bottomBoundary - topBoundary)
+            const correction = Math.min(1, availableWidth / occupiedWidth, availableHeight / occupiedHeight)
+            const zoom = Math.max(expandedClusterMinZoom, viewport.zoom * correction)
+            const centerX = (left + right) / 2
+            const centerY = (top + bottom) / 2
+            const targetCenterX = (leftBoundary + rightBoundary) / 2
+            const targetCenterY = (topBoundary + bottomBoundary) / 2
+            await instance.setViewport({
+              x: viewport.x + (targetCenterX - centerX) - (centerX - graphRect.left - viewport.x) * (zoom / Math.max(0.01, viewport.zoom) - 1),
+              y: viewport.y + (targetCenterY - centerY) - (centerY - graphRect.top - viewport.y) * (zoom / Math.max(0.01, viewport.zoom) - 1),
+              zoom,
+            }, { duration: 0 })
+          }
+        }
+      }
       return true
     } finally {
       programmaticFit.current = false
@@ -1794,6 +1843,9 @@ export default function App() {
   const [persistedDistributions, setPersistedDistributions] = useState<Record<string, ResultDistributionData>>({})
   const [expandedRuntimeGroups, setExpandedRuntimeGroups] = useState<Set<string>>(new Set())
   const [graphAvailableWidth, setGraphAvailableWidth] = useState(0)
+  const toggleRuntimeGroup = useCallback((id: string) => {
+    setExpandedRuntimeGroups((current) => nextExpandedRuntimeGroups(current, id))
+  }, [])
   const structureRun = useMemo(() => data.runs.find((run) => run.structure_record_count > 0) ?? null, [data.runs])
   const runtimeGraph = useMemo(() => data.detail ? buildRuntimeGraph(data.detail, data.nodeDetails, { expandedGroups: expandedRuntimeGroups, availableWidth: graphAvailableWidth, sourceFetch: data.nodeDetailFetch }) : null, [data.detail, data.nodeDetails, data.nodeDetailFetch, expandedRuntimeGroups, graphAvailableWidth])
   useEffect(() => {
@@ -1856,7 +1908,6 @@ export default function App() {
                 refreshing={data.refreshing}
                 syncingStale={data.syncingStale}
                 detailSyncError={data.detailSyncError}
-                openActivities={runtimeGraph?.stats.openActivities ?? 0}
                 selectionMode={selectionMode}
                 selectedCount={analysisSelection.length}
                 onRefresh={data.refresh}
@@ -1879,7 +1930,7 @@ export default function App() {
                 onSelect={(id) => { setSelectedStage(id); setSelectedEdge(null) }}
                 onToggleAnalysis={toggleAnalysisNode}
                 onSelectEdge={(edge) => { setSelectedEdge(edge); setSelectedStage(null) }}
-                onToggleGroup={(id) => setExpandedRuntimeGroups((current) => { const next = new Set(current); if (next.has(id)) next.delete(id); else next.add(id); return next })}
+                onToggleGroup={toggleRuntimeGroup}
                 onAvailableWidthChange={setGraphAvailableWidth}
               />
               {selectionMode && (
@@ -1911,7 +1962,7 @@ export default function App() {
                   ?? distributionForStage(analysisSnapshot, data.detail, distributionKey)
               })()}
               onClose={() => setSelectedStage(null)}
-              onToggleGroup={(id) => setExpandedRuntimeGroups((current) => { const next = new Set(current); if (next.has(id)) next.delete(id); else next.add(id); return next })}
+              onToggleGroup={toggleRuntimeGroup}
             />}
             {selectedEdge && <EdgeInspector graph={runtimeGraph!} edge={selectedEdge} onClose={() => setSelectedEdge(null)} />}
           </>

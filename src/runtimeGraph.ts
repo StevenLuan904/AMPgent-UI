@@ -25,6 +25,14 @@ export interface RuntimeGraphStats {
   toolSummaryRecords: number
   toolSummaryMaterialized: number
   toolSummaryMissing: number
+  eventWindowAtLimit: boolean
+}
+
+export interface RuntimeEventWindow {
+  returned: number
+  limit: number
+  atLimit: boolean
+  mayBeTruncated: boolean
 }
 
 export interface RuntimeGraphModel {
@@ -37,6 +45,20 @@ export interface RuntimeGraphModel {
   sourceFetch?: { requested: number; loaded: number; failed: number; deferred?: number }
   gaps: string[]
   stats: RuntimeGraphStats
+  eventWindow: RuntimeEventWindow
+}
+
+/** The read-only observer currently hard-limits run events to the newest 32 rows. */
+export const runtimeEventWindowLimit = 32
+
+export function runtimeEventWindow(events: TimelineEvent[]): RuntimeEventWindow {
+  const returned = events.length
+  const atLimit = returned >= runtimeEventWindowLimit
+  return { returned, limit: runtimeEventWindowLimit, atLimit, mayBeTruncated: atLimit }
+}
+
+export function nextExpandedRuntimeGroups(current: ReadonlySet<string>, id: string) {
+  return current.has(id) ? new Set<string>() : new Set([id])
 }
 
 export interface RuntimeGraphOptions {
@@ -665,11 +687,13 @@ export function runtimeObservationSummary(observedCalls: number, materializedToo
   return `图中观测 ${observed} · 工具明细 ${materialized} · 生命周期观测 ${Math.max(0, observed - materialized)}`
 }
 
-export function runtimeActivitySummary(runStatus: string, openActivities: number) {
+export function runtimeActivitySummary(runStatus: string, openActivities: number, eventWindowAtLimit = false) {
   const normalizedCount = Number.isInteger(openActivities) && openActivities >= 0 ? openActivities : 0
-  return normalizedCount === 0 && runStatus === 'running'
-    ? '等待后续活动观测'
-    : `开放活动 ${normalizedCount}`
+  if (runStatus === 'running' && normalizedCount === 0) {
+    return eventWindowAtLimit ? '等待后续活动观测 · 更早事件未确认' : '等待后续活动观测'
+  }
+  if (runStatus === 'running' && eventWindowAtLimit) return `未闭合观测 ${normalizedCount} · 更早事件未确认`
+  return `开放活动 ${normalizedCount}`
 }
 
 /**
@@ -677,7 +701,7 @@ export function runtimeActivitySummary(runStatus: string, openActivities: number
  * identity, status, and attempt fields. This is an execution observation,
  * not a scheduler-health or scientific-failure conclusion.
  */
-export function runtimeOpenActivityLabel(events: TimelineEvent[]) {
+export function runtimeOpenActivityLabel(events: TimelineEvent[], eventWindowAtLimit = false) {
   const open = new Map<string, TimelineEvent>()
   for (const event of activityBoundaryEvents(events)) {
     const identity = activityBoundaryIdentity(event)
@@ -698,7 +722,7 @@ export function runtimeOpenActivityLabel(events: TimelineEvent[]) {
   const labelText = labels.size === 1
     ? [...labels.entries()].map(([label, count]) => count > 1 ? `${label} ${count} 项` : label).join('')
     : `${open.size} 项活动`
-  return `正在执行 · ${labelText}${latestAttempt > 1 ? ` · 第 ${latestAttempt} 次尝试` : ''}`
+  return `${eventWindowAtLimit ? '未闭合观测' : '正在执行'} · ${labelText}${latestAttempt > 1 ? ` · 第 ${latestAttempt} 次尝试` : ''}${eventWindowAtLimit ? ' · 更早事件未确认' : ''}`
 }
 
 function latestTerminalActivityEvent(events: TimelineEvent[]) {
@@ -1038,7 +1062,7 @@ function eventOutcomeStatuses(events: TimelineEvent[]) {
   return [...outcomes.values()]
 }
 
-function runtimeGroupNode(groupedCalls: ToolAttempt[], groupedEvents: TimelineEvent[], expanded: boolean, groupId: string, groupingBasis: string, displayBatchLabel: string): GraphStage {
+function runtimeGroupNode(groupedCalls: ToolAttempt[], groupedEvents: TimelineEvent[], expanded: boolean, groupId: string, groupingBasis: string, displayBatchLabel: string, eventWindowAtLimit = false): GraphStage {
   const groupedCallIds = new Set(groupedCalls.map((call) => call.id))
   const associatedEvents = groupedEvents.filter((event) => groupedCallIds.has(text(record(event.payload).tool_call_id)))
   const independentEvents = groupedEvents.filter((event) => !groupedCallIds.has(text(record(event.payload).tool_call_id)))
@@ -1066,7 +1090,7 @@ function runtimeGroupNode(groupedCalls: ToolAttempt[], groupedEvents: TimelineEv
   const executionFactList = executionFacts(groupedEvents)
   const activityRetry = activityRetryStats(groupedEvents)
   const retryEvidence = retryEvidenceEvents(groupedEvents)
-  const openActivityLabel = runtimeOpenActivityLabel(independentEvents)
+  const openActivityLabel = runtimeOpenActivityLabel(independentEvents, eventWindowAtLimit)
   const progressFacts = executionFactList.filter(({ label }) => label === '进度')
   const salientFacts = [
     ...recoveryLabels.map((value) => ({ label: '恢复', value })),
@@ -1508,6 +1532,7 @@ function computePositions(nodes: GraphStage[], requestedColumns?: number, availa
 }
 
 export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, options: RuntimeGraphOptions = {}): RuntimeGraphModel {
+  const eventWindow = runtimeEventWindow(detail.events)
   const calls = collectCalls(sources, detail.events)
   const events = Object.fromEntries([...detail.events].sort((a, b) => a.sequence_no - b.sequence_no).map((event) => [`event:${event.sequence_no}`, event]))
   const orderedCalls = Object.values(calls).sort((left, right) => {
@@ -1631,7 +1656,7 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
     const displayBatchLabel = aggregateSemanticLabel(bucket.calls, bucket.events) ?? '混合观测组'
     const retryEvidence = retryEvidenceEvents(bucket.events)
     const expandedEvents = retryEvidence.length ? retryEvidence : bucket.events
-    return [runtimeGroupNode(bucket.calls, bucket.events, expanded, groupId, groupingBasis, displayBatchLabel), ...(expanded ? [...bucket.calls.map(callNode), ...expandedEvents.map(eventNode)] : [])]
+    return [runtimeGroupNode(bucket.calls, bucket.events, expanded, groupId, groupingBasis, displayBatchLabel, eventWindow.atLimit), ...(expanded ? [...bucket.calls.map(callNode), ...expandedEvents.map(eventNode)] : [])]
   })
   const summaryTools = toolSummaryRows(detail.tool_summary, Object.values(calls))
   const summaryGaps = summaryTools.filter((tool) => tool.missing_count > 0)
@@ -1829,7 +1854,7 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
     const populationTotal = detail.generation_population.baseline_candidate_count + detail.generation_population.descendant_candidate_count
     if (displayTotal !== populationTotal) gaps.push(`接口种群口径不一致：展示 ${displayTotal} 条；基线与新生子代合计 ${populationTotal} 条。`)
   }
-  if (detail.events.length >= 32) gaps.push('接口仅返回最近 32 条事件；历史事件可能未进入本次运行图。')
+  if (eventWindow.atLimit) gaps.push(`事件窗口已达最近 ${eventWindow.limit} 条上限；更早事件未确认。`)
   if (Object.values(sources).some((source) => (source?.calls.length ?? 0) >= 40)) gaps.push('至少一个节点明细只返回 40 次工具调用；完整调用集合缺少分页契约。')
   if (options.sourceFetch && options.sourceFetch.failed > 0) gaps.push(`节点明细仅加载 ${options.sourceFetch.loaded}/${options.sourceFetch.requested} 个；${options.sourceFetch.failed} 个读取失败或超时，当前运行图不完整。`)
   else if (options.sourceFetch && options.sourceFetch.loaded < options.sourceFetch.requested && (options.sourceFetch.deferred ?? 0) > 0) gaps.push(`节点明细已加载 ${options.sourceFetch.loaded}/${options.sourceFetch.requested} 个；其余 ${options.sourceFetch.deferred} 个按需读取，当前运行图仍不完整。`)
@@ -1857,6 +1882,7 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
     toolSummaryRecords: summaryCoverage.total,
     toolSummaryMaterialized: summaryCoverage.materialized,
     toolSummaryMissing: summaryCoverage.missing,
+    eventWindowAtLimit: eventWindow.atLimit,
   }
-  return { nodes, edges, positions: computePositions(nodes, options.layoutColumns, options.availableWidth), calls, events, toolGroups, sourceFetch: options.sourceFetch, gaps, stats }
+  return { nodes, edges, positions: computePositions(nodes, options.layoutColumns, options.availableWidth), calls, events, toolGroups, sourceFetch: options.sourceFetch, gaps, stats, eventWindow }
 }
