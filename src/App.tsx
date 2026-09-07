@@ -91,6 +91,7 @@ import type {
 } from './types'
 
 const nodeTypes = Object.freeze({ stage: WorkflowNode, lane: LaneLabel })
+const runtimeExpandableNodeTypes = new Set(['tool_group', 'event_group', 'batch_group', 'tool_summary_group', 'candidate_group'])
 const connectionStorageKey = 'ampgent.data-service.base.v1'
 const selectedRunStorageKey = 'ampgent.observer.selected-run.v1'
 const defaultApiBase = import.meta.env.VITE_API_BASE ?? ''
@@ -1329,7 +1330,7 @@ function GraphView({
     markUserInteracted()
     const nodeType = node.type === 'stage' ? (node.data as StageNode['data']).stage.runtime?.node_type : undefined
     if (selectionMode) onToggleAnalysis(node.id)
-    else if (nodeType === 'tool_group' || nodeType === 'event_group' || nodeType === 'batch_group') {
+    else if (nodeType && runtimeExpandableNodeTypes.has(nodeType)) {
       handleToggleGroup(node.id)
     } else onSelect(node.id)
   }
@@ -1725,8 +1726,7 @@ function RuntimeInspector({ detail, nodeDetails, graph, nodeId, distribution, on
       ?? Object.values(nodeDetails).find((source) => source.viewers?.[runtimeViewerKey])?.viewers?.[runtimeViewerKey]
       ?? (runtimeViewerKey === '__default__' ? detail.viewer : null)
     : null
-  const groupTypes = new Set(['tool_group', 'event_group', 'batch_group', 'tool_summary_group', 'candidate_group'])
-  const isRuntimeGroup = Boolean(node.runtime?.node_type && groupTypes.has(node.runtime.node_type))
+  const isRuntimeGroup = Boolean(node.runtime?.node_type && runtimeExpandableNodeTypes.has(node.runtime.node_type))
   const isToolSummary = node.runtime?.node_type === 'tool_summary'
   const groupCallIds = isRuntimeGroup ? node.runtime?.child_ids ?? [] : []
   const groupEventIds = isRuntimeGroup ? node.runtime?.event_ids ?? [] : []
