@@ -237,10 +237,17 @@ class ObserverReadCoalescingMiddleware:
     @staticmethod
     def _ttl(path: str) -> float:
         if path == "/v1/observer/runs":
-            return 20.0
+            # The client polls the run list every 45 seconds. Keep a fresh
+            # response slightly longer so a normal poll can read it while the
+            # next stale-while-revalidate cycle is completed in the background.
+            return 50.0
         if "/nodes/" in path:
             return 30.0
-        return 10.0
+        # Run-detail aggregation can take around ten seconds over the remote
+        # PostgreSQL tunnel. A 35-second window gives the client's 3-second
+        # stale retry a useful fresh interval without hiding minute-scale run
+        # progress.
+        return 35.0
 
     @staticmethod
     def _stale_window(path: str) -> float:

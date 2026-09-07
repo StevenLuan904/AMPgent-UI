@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { nodeDetailCacheTtlMs, observerCreatePrefetchQueue, observerDetailFailureMessage, observerIdlePrefetchDelayMs, observerInitialPrefetchCount, observerInitialPrefetchStages, observerInFlightStageIds, observerListTimeoutMs, observerMergePrefetchQueue, observerNextPrefetchStage, observerNodeDetailCacheKey, observerNodeDetailTimeoutMs, observerPendingPrefetchCount, observerPollingIntervalMs, observerPrefetchQueueMatches, observerPrefetchInFlightKey, observerPrefetchRefreshExpired, observerPrefetchStageOrder, observerRequeuePrefetchStage, observerResponseIsStale, observerRunDetailCacheKey, observerRunDetailTimeoutMs, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion, observerStaleRetryDelayMs } from './observerPolling'
+import { nodeDetailCacheTtlMs, observerCreatePrefetchQueue, observerDetailFailureMessage, observerIdlePrefetchDelayMs, observerInitialPrefetchCount, observerInitialPrefetchStages, observerInFlightStageIds, observerListTimeoutMs, observerMergePrefetchQueue, observerNextPrefetchStage, observerNodeDetailCacheKey, observerNodeDetailTimeoutMs, observerPendingPrefetchCount, observerPollingIntervalMs, observerPrefetchQueueMatches, observerPrefetchInFlightKey, observerPrefetchRefreshExpired, observerPrefetchStageOrder, observerRequeuePrefetchStage, observerResponseIsStale, observerRunDetailCacheKey, observerRunDetailTimeoutMs, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion, observerStaleListRetryDelayMs, observerStaleRetryDelayMs } from './observerPolling'
 
 describe('observer refresh policy', () => {
   it('refreshes active runs more often than terminal runs', () => {
@@ -27,6 +27,7 @@ describe('observer refresh policy', () => {
     expect(observerNodeDetailTimeoutMs).toBe(20_000)
     expect(observerIdlePrefetchDelayMs).toBe(8_000)
     expect(observerStaleRetryDelayMs).toBe(3_000)
+    expect(observerStaleListRetryDelayMs).toBe(12_000)
   })
 
   it('treats restored and background-refresh responses as stale, but not fresh hits', () => {

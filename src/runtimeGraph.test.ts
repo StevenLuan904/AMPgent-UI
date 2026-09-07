@@ -632,7 +632,7 @@ describe('buildRuntimeGraph', () => {
     expect(batch).toMatchObject({ status: 'stopped', insight: { grade: 'fair' } })
   })
 
-  it('shows explicit parallel groups and derived overlap without treating either as dependency', () => {
+  it('shows only explicit parallel groups and never infers parallelism from overlapping tool times', () => {
     const explicitA = call('call-1', 'tool-a', '2026-09-04T00:00:00Z', { inputs: { parallel_group_id: 'pg-1' }, finished_at: '2026-09-04T00:00:01Z' })
     const explicitB = call('call-2', 'tool-b', '2026-09-04T00:05:00Z', { inputs: { parallel_group_id: 'pg-1' }, finished_at: '2026-09-04T00:05:01Z' })
     const overlapA = call('call-3', 'tool-c', '2026-09-04T00:10:00Z', { finished_at: '2026-09-04T00:10:05Z' })
@@ -640,9 +640,9 @@ describe('buildRuntimeGraph', () => {
     const result = buildRuntimeGraph(detail(), { worker: nodeDetail([explicitA, explicitB, overlapA, overlapB]) })
     expect(result.edges).toEqual(expect.arrayContaining([
       expect.objectContaining({ label: '并行观测组', relation_kind: 'parallel', provenance: 'database' }),
-      expect.objectContaining({ label: '并行观测组 · 观测', relation_kind: 'parallel', provenance: 'derived' }),
     ]))
-    expect(result.stats.parallelGroups).toBe(2)
+    expect(result.edges.some((edge) => edge.relation_kind === 'parallel' && edge.provenance === 'derived')).toBe(false)
+    expect(result.stats.parallelGroups).toBe(1)
     expect(result.stats.cycles).toBe(0)
   })
 
@@ -811,7 +811,7 @@ describe('buildRuntimeGraph', () => {
     expect(expanded.nodes.filter((node) => node.id.startsWith('event:')).map((node) => node.id)).toEqual(['event:2', 'event:4'])
   })
 
-  it('derives parallel observation edges only from complete overlapping activity intervals', () => {
+  it('does not infer parallelism from complete overlapping activity intervals', () => {
     const execution = 'workflow-run-parallel-activities'
     const events: RunDetail['events'] = [
       { sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 1, activity_type: 'generate_v38_sequence_cell', attempt: 1 }, occurred_at: '2026-09-04T00:00:01Z' },
@@ -822,10 +822,7 @@ describe('buildRuntimeGraph', () => {
     const collapsed = buildRuntimeGraph(detail(events))
     const group = collapsed.nodes.find((node) => node.runtime?.node_type === 'event_group')
     const result = buildRuntimeGraph(detail(events), {}, { expandedGroups: new Set([group!.id]) })
-    expect(result.edges).toEqual(expect.arrayContaining([
-      expect.objectContaining({ source: 'event:1', target: 'event:2', relation_kind: 'parallel', provenance: 'derived', rationale: expect.stringContaining('按持久化活动区间重叠') }),
-    ]))
-    expect(result.edges.find((edge) => edge.relation_kind === 'parallel')?.rationale).toContain('不代表调度依赖')
+    expect(result.edges.some((edge) => edge.relation_kind === 'parallel')).toBe(false)
   })
 
   it('does not infer activity parallelism when either activity lacks a terminal boundary', () => {

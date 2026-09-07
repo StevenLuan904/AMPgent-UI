@@ -680,38 +680,6 @@ function latestTerminalActivityEvent(events: TimelineEvent[]) {
   }).at(-1)
 }
 
-type ActivityInterval = {
-  execution: string
-  logicalActivity: string
-  started: TimelineEvent
-  start: number
-  end: number
-}
-
-function activityIntervals(events: TimelineEvent[]) {
-  const byActivity = new Map<string, TimelineEvent[]>()
-  for (const event of events) {
-    const identity = eventActivityIdentity(event)
-    if (identity) byActivity.set(identity, [...(byActivity.get(identity) ?? []), event])
-  }
-  const intervals: ActivityInterval[] = []
-  for (const activityEvents of byActivity.values()) {
-    const ordered = [...activityEvents].sort((left, right) => left.sequence_no - right.sequence_no)
-    const started = ordered.find((event) => event.type.toLowerCase().split('.').at(-1) === 'started')
-    const start = started ? Date.parse(started.occurred_at) : Number.NaN
-    if (!started || !Number.isFinite(start)) continue
-    const terminal = ordered.filter((event) => isTerminalActivityEvent(event) && Date.parse(event.occurred_at) >= start).at(-1)
-    const end = terminal ? Date.parse(terminal.occurred_at) : Number.NaN
-    if (!terminal || !Number.isFinite(end) || end < start) continue
-    const payload = record(started.payload)
-    const activityId = payload.activity_id
-    const execution = eventExecutionIdentity(started.payload)
-    if (!execution || (typeof activityId !== 'string' && typeof activityId !== 'number')) continue
-    intervals.push({ execution, logicalActivity: `${execution}:activity=${activityId}`, started, start, end })
-  }
-  return intervals
-}
-
 function executionFacts(events: TimelineEvent[]) {
   if (!events.some((event) => eventExecutionIdentity(event.payload))) return []
   const latest = latestTerminalActivityEvent(events)
@@ -1751,7 +1719,7 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
     if (parallelId) explicitParallelBuckets.set(parallelId, [...(explicitParallelBuckets.get(parallelId) ?? []), call])
   }
   const parallelRelationSignatures = new Set<string>()
-  const addParallelGroup = (grouped: ToolAttempt[], provenance: 'database' | 'derived', rationale: string) => {
+  const addParallelGroup = (grouped: ToolAttempt[], rationale: string) => {
     if (grouped.length < 2) return
     const signature = grouped.map((call) => call.id).sort().join('|')
     if (parallelRelationSignatures.has(signature)) return
@@ -1760,8 +1728,8 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
     const anchor = callIdToNode(grouped[0].id)
     for (const call of grouped.slice(1)) {
       const target = callIdToNode(call.id)
-      const edgeLabel = labeled ? null : provenance === 'database' ? '并行观测组' : '并行观测组 · 观测'
-      addEdge(edges, seen, { source: anchor, target, label: edgeLabel, rationale, provenance, relation_kind: 'parallel' })
+      const edgeLabel = labeled ? null : '并行观测组'
+      addEdge(edges, seen, { source: anchor, target, label: edgeLabel, rationale, provenance: 'database', relation_kind: 'parallel' })
       if (anchor !== target) labeled = true
     }
   }
@@ -1782,56 +1750,12 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
     }
   }
   for (const [parallelId, grouped] of explicitParallelBuckets) {
-    addParallelGroup(grouped, 'database', `工具调用字段明确提供 parallel_group_id=${parallelId}；此边表示同组并行观测，不代表调度依赖。`)
+    addParallelGroup(grouped, `工具调用字段明确提供 parallel_group_id=${parallelId}；此边表示同组并行观测，不代表调度依赖。`)
   }
-  const observedIntervals = Object.values(calls).map((call) => ({
-    call,
-    start: Date.parse(call.queued_at),
-    end: Date.parse(call.finished_at ?? call.started_at ?? call.queued_at),
-  })).filter((item) => Number.isFinite(item.start) && Number.isFinite(item.end)).sort((left, right) => left.start - right.start)
-  let overlapGroup: ToolAttempt[] = []
-  let overlapEnd = Number.NEGATIVE_INFINITY
-  const flushOverlapGroup = () => {
-    if (overlapGroup.length > 1) addParallelGroup(overlapGroup, 'derived', '调用时间区间存在重叠；这是观察到的并行区间，不代表后端调度依赖。')
-    overlapGroup = []
-    overlapEnd = Number.NEGATIVE_INFINITY
-  }
-  for (const item of observedIntervals) {
-    if (overlapGroup.length && item.start <= overlapEnd) {
-      overlapGroup.push(item.call)
-      overlapEnd = Math.max(overlapEnd, item.end)
-    } else {
-      flushOverlapGroup()
-      overlapGroup = [item.call]
-      overlapEnd = item.end
-    }
-  }
-  flushOverlapGroup()
   const eventIdToNode = (id: string) => {
     const groupId = groupIdByEvent.get(id)
     if (groupId && !expandedGroups.has(groupId)) return groupId
     return nodeIds.has(id) ? id : null
-  }
-  const activityParallelIntervals = activityIntervals(Object.values(events))
-  for (let leftIndex = 0; leftIndex < activityParallelIntervals.length; leftIndex += 1) {
-    const left = activityParallelIntervals[leftIndex]
-    for (const right of activityParallelIntervals.slice(leftIndex + 1)) {
-      if (left.execution !== right.execution || left.logicalActivity === right.logicalActivity || left.start >= right.end || right.start >= left.end) continue
-      const source = eventIdToNode(`event:${left.started.sequence_no}`)
-      const target = eventIdToNode(`event:${right.started.sequence_no}`)
-      if (!source || !target || source === target) continue
-      const signature = `activity:${[left.logicalActivity, right.logicalActivity].sort().join('|')}`
-      if (parallelRelationSignatures.has(signature)) continue
-      parallelRelationSignatures.add(signature)
-      addEdge(edges, seen, {
-        source,
-        target,
-        label: '并行观测组 · 观测',
-        rationale: '按持久化活动区间重叠；同一 workflow execution 内的 started→terminal 边界完整。这是派生并行观测，不代表调度依赖。',
-        provenance: 'derived',
-        relation_kind: 'parallel',
-      })
-    }
   }
   for (const event of Object.values(events)) {
     const source = eventIdToNode(`event:${event.sequence_no}`)

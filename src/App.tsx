@@ -52,7 +52,7 @@ import { assertMatchingRunIdentity, type RunIdentity } from './runIdentity'
 import { formatRunTitle } from './runPresentation'
 import { buildRuntimeGraph, candidatePreviewCountLabel, candidatePreviewDenominator, displayObservedEventName, displayToolName, runtimeEventStatus, type RuntimeGraphModel } from './runtimeGraph'
 import { compactReadableRuntimePositions, selectReadableRuntimeNodeIds } from './runtimeViewport'
-import { nodeDetailCacheTtlMs, observerDetailFailureMessage, observerIdlePrefetchDelayMs, observerInitialPrefetchCount, observerInitialPrefetchStages, observerListTimeoutMs, observerInFlightStageIds, observerMergePrefetchQueue, observerNextPrefetchStage, observerNodeDetailCacheKey, observerNodeDetailTimeoutMs, observerPendingPrefetchCount, observerPollingIntervalMs, observerPrefetchQueueMatches, observerPrefetchInFlightKey, observerPrefetchRefreshExpired, observerPrefetchStageOrder, observerRequeuePrefetchStage, observerResponseIsStale, observerRunDetailCacheKey, observerRunDetailTimeoutMs, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion, observerStaleRetryDelayMs, type ObserverPrefetchQueue } from './observerPolling'
+import { nodeDetailCacheTtlMs, observerDetailFailureMessage, observerIdlePrefetchDelayMs, observerInitialPrefetchCount, observerInitialPrefetchStages, observerListTimeoutMs, observerInFlightStageIds, observerMergePrefetchQueue, observerNextPrefetchStage, observerNodeDetailCacheKey, observerNodeDetailTimeoutMs, observerPendingPrefetchCount, observerPollingIntervalMs, observerPrefetchQueueMatches, observerPrefetchInFlightKey, observerPrefetchRefreshExpired, observerPrefetchStageOrder, observerRequeuePrefetchStage, observerResponseIsStale, observerRunDetailCacheKey, observerRunDetailTimeoutMs, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion, observerStaleListRetryDelayMs, observerStaleRetryDelayMs, type ObserverPrefetchQueue } from './observerPolling'
 
 const readableViewportMinZoom = 0.68
 
@@ -204,6 +204,7 @@ function useRunData(enabled: boolean, apiBase: string) {
   const [syncingStale, setSyncingStale] = useState(Boolean(initialCachedDetail))
   const [detailSyncError, setDetailSyncError] = useState<string | null>(null)
   const [lastSuccessfulDetailAt, setLastSuccessfulDetailAt] = useState<string | null>(initialCachedDetail?.payload.updated_at ?? null)
+  const [staleListRevision, setStaleListRevision] = useState(0)
   const [staleDetailRevision, setStaleDetailRevision] = useState(0)
   const [nodeDetails, setNodeDetails] = useState<Record<string, NodeDetail>>({})
   const [nodeDetailFetch, setNodeDetailFetch] = useState({ requested: 0, loaded: 0, failed: 0, deferred: 0 })
@@ -244,7 +245,9 @@ function useRunData(enabled: boolean, apiBase: string) {
     try {
       const response = await fetchJsonWithTimeout<RunListResponse>(`${apiBase}/v1/observer/runs?limit=12`, observerListTimeoutMs)
       const payload = response.payload
-      runsStale.current = observerResponseIsStale(response.cacheState)
+      const staleResponse = observerResponseIsStale(response.cacheState)
+      runsStale.current = staleResponse
+      if (staleResponse) setStaleListRevision((revision) => revision + 1)
       setSyncingStale(runsStale.current || detailStale.current)
       runIdentities.current = Object.fromEntries(payload.runs.map((run) => [run.id, {
         id: run.id,
@@ -512,6 +515,14 @@ function useRunData(enabled: boolean, apiBase: string) {
     return () => window.clearTimeout(timer)
   }, [enabled, loadDetail, reportBackgroundSyncError, selectedId, staleDetailRevision, syncingStale])
 
+  useEffect(() => {
+    if (!enabled || !runsStale.current || staleListRevision === 0) return
+    const timer = window.setTimeout(() => {
+      if (!document.hidden && !runsInFlight.current) void loadRuns().catch(reportBackgroundSyncError)
+    }, observerStaleListRetryDelayMs)
+    return () => window.clearTimeout(timer)
+  }, [enabled, loadRuns, reportBackgroundSyncError, staleListRevision])
+
   const retry = useCallback(async () => {
     setError(null)
     setLoading(true)
@@ -741,6 +752,8 @@ function GraphView({
   const scheduleInitialFitRef = useRef<() => void>(() => undefined)
   const pendingClusterFocus = useRef<string | null | undefined>(undefined)
   const clusterFocusTimer = useRef<number | null>(null)
+  const clusterResizeTimer = useRef<number | null>(null)
+  const previousGraphViewportSize = useRef({ width: 0, height: 0 })
   const expandedFrameRaf = useRef<number | null>(null)
   const userInteracted = useRef(false)
   const programmaticFit = useRef(false)
@@ -985,7 +998,7 @@ function GraphView({
         padding: 0.2,
         duration: 240,
         minZoom: readableViewportMinZoom,
-        maxZoom: 1.18,
+        maxZoom: 1.35,
       })
       return true
     } finally {
@@ -1027,6 +1040,7 @@ function GraphView({
   useEffect(() => () => {
     if (initialFitTimer.current !== null) window.clearTimeout(initialFitTimer.current)
     if (clusterFocusTimer.current !== null) window.clearTimeout(clusterFocusTimer.current)
+    if (clusterResizeTimer.current !== null) window.clearTimeout(clusterResizeTimer.current)
     if (expandedFrameRaf.current !== null) window.cancelAnimationFrame(expandedFrameRaf.current)
   }, [])
   useEffect(() => {
@@ -1113,6 +1127,23 @@ function GraphView({
     if (expandedFrameRaf.current !== null) return
     expandedFrameRaf.current = window.requestAnimationFrame(measureExpandedClusterFrames)
   }, [measureExpandedClusterFrames])
+  useEffect(() => {
+    const previous = previousGraphViewportSize.current
+    previousGraphViewportSize.current = graphViewportSize
+    if (!expandedClusterSignature || graphViewportSize.width <= 0 || graphViewportSize.height <= 0) return
+    if (previous.width === 0 || (previous.width === graphViewportSize.width && previous.height === graphViewportSize.height)) return
+    const groupId = expandedClusterSignature.split('|')[0]
+    if (!groupId) return
+    if (clusterResizeTimer.current !== null) window.clearTimeout(clusterResizeTimer.current)
+    clusterResizeTimer.current = window.setTimeout(() => {
+      clusterResizeTimer.current = null
+      void focusExpandedClusterRef.current(groupId).finally(scheduleExpandedClusterMeasure)
+    }, 180)
+    return () => {
+      if (clusterResizeTimer.current !== null) window.clearTimeout(clusterResizeTimer.current)
+      clusterResizeTimer.current = null
+    }
+  }, [expandedClusterSignature, graphViewportSize.height, graphViewportSize.width, scheduleExpandedClusterMeasure])
   useEffect(() => {
     scheduleExpandedClusterMeasure()
     return () => {

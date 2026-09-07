@@ -102,6 +102,12 @@ class ObserverCacheTests(unittest.TestCase):
         self.assertEqual(health["service_version"], "observer-only-cache-v2")
         self.assertRegex(health["source_fingerprint"], r"^[0-9a-f]{64}$")
 
+    def test_cache_ttl_matches_client_polling_cadence(self):
+        middleware = self.module.ObserverReadCoalescingMiddleware(self.ok_app)
+        self.assertEqual(middleware._ttl("/v1/observer/runs"), 50.0)
+        self.assertEqual(middleware._ttl("/v1/observer/runs/run-1"), 35.0)
+        self.assertEqual(middleware._ttl("/v1/observer/runs/run-1/nodes/metric"), 30.0)
+
     def test_source_fingerprint_changes_when_service_source_changes(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
