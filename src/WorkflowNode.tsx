@@ -82,6 +82,9 @@ const runtimeTermDescriptions: Record<string, string> = {
   ampgan: 'AMPGAN v2：用于生成抗菌肽候选的对抗生成模型。',
   hydramp: 'HydrAMP：用于生成并优化抗菌肽候选序列。',
   amp_read: 'AMP read：交叉复核候选短肽的抗菌活性预测。',
+  'v38-metric-mic_potency': 'MIC：估计候选短肽的最小抑菌浓度。',
+  'v38-metric-mic_potency_amp_read': 'AMP read：交叉复核最小抑菌浓度。',
+  'v38-metric-hemolysis_risk': '溶血风险：观察红细胞相容性信号。',
   boltz: 'Boltz 2：预测蛋白质与短肽复合物的三维构象。',
   rosetta: 'Rosetta：采样并评估蛋白质与短肽的界面构象。',
 }

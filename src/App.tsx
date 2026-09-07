@@ -138,6 +138,9 @@ const professionalTermHelp: Record<string, string> = {
   ampgan: 'AMPGAN v2是用于生成抗菌肽候选的对抗生成模型。',
   hydramp: 'HydrAMP用于生成并优化抗菌肽候选序列。',
   amp_read: 'AMP read用于交叉复核候选短肽的抗菌活性预测。',
+  'v38-metric-mic_potency': 'MIC活性预测用于估计最小抑菌浓度。',
+  'v38-metric-mic_potency_amp_read': 'AMP read用于交叉复核最小抑菌浓度。',
+  'v38-metric-hemolysis_risk': '溶血风险评估用于观察红细胞相容性信号。',
   boltz: 'Boltz 2用于预测蛋白质与短肽复合物的三维构象。',
   rosetta: 'Rosetta用于采样并评估蛋白质与短肽的界面构象。',
 }
@@ -824,6 +827,7 @@ function GraphView({
   const layoutSignatureRef = useRef('')
   const scheduleInitialFitRef = useRef<() => void>(() => undefined)
   const pendingClusterFocus = useRef<string | null | undefined>(undefined)
+  const clusterFocusRequestId = useRef(0)
   const clusterFocusTimer = useRef<number | null>(null)
   const clusterResizeTimer = useRef<number | null>(null)
   const previousGraphViewportSize = useRef({ width: 0, height: 0 })
@@ -911,6 +915,7 @@ function GraphView({
     // Neither action should be mistaken for a fresh run or let hydration
     // reclaim the viewport after the user has chosen a reading surface.
     userInteracted.current = true
+    clusterFocusRequestId.current += 1
     pendingClusterFocus.current = isExpanded ? null : id
     if (clusterFocusTimer.current !== null) window.clearTimeout(clusterFocusTimer.current)
     if (initialFitTimer.current !== null) window.clearTimeout(initialFitTimer.current)
@@ -1064,10 +1069,16 @@ function GraphView({
     programmaticFit.current = true
     try {
       await new Promise<void>((resolve) => window.requestAnimationFrame(() => window.requestAnimationFrame(() => resolve())))
-      const clusterNodes = instance.getNodes().filter((node) => clusterIds.has(node.id) && !node.hidden)
+      const visibleStageNodes = instance.getNodes().filter((node) => !node.hidden && node.type === 'stage')
+      const clusterNodes = visibleStageNodes.filter((node) => clusterIds.has(node.id))
       if (!clusterNodes.length) return false
+      // Keep every already-visible mainline context card in the focus bounds.
+      // The cluster remains the visual focus, while an earlier visible event
+      // or batch card can no longer be left half outside the canvas edge.
+      // Hidden history and unloaded members are still excluded.
+      const focusNodes = visibleStageNodes
       await instance.fitView({
-        nodes: clusterNodes.map((node) => ({ id: node.id })),
+        nodes: focusNodes.map((node) => ({ id: node.id })),
         // Include room for the dashed frame and card shadows. The readable
         // spine's zoom floor must not clip a deliberately expanded cluster.
         padding: 0.32,
@@ -1085,7 +1096,7 @@ function GraphView({
           [...document.querySelectorAll<HTMLElement>('.react-flow__node')]
             .map((element) => [element.getAttribute('data-id'), element] as const),
         )
-        const rects = clusterNodes
+        const rects = focusNodes
           .map((node) => domNodes.get(node.id)?.getBoundingClientRect())
           .filter((rect): rect is DOMRect => Boolean(rect && rect.width > 0 && rect.height > 0))
         if (rects.length) {
@@ -1094,8 +1105,9 @@ function GraphView({
           const top = Math.min(...rects.map((rect) => rect.top)) - padding
           const right = Math.max(...rects.map((rect) => rect.right)) + padding
           const bottom = Math.max(...rects.map((rect) => rect.bottom)) + padding
+          const summaryRect = document.querySelector<HTMLElement>('.runtime-history-status')?.getBoundingClientRect()
           const leftBoundary = graphRect.left + 12
-          const topBoundary = graphRect.top + 12
+          const topBoundary = Math.max(graphRect.top + 12, (summaryRect?.bottom ?? graphRect.top) + 10)
           const rightBoundary = graphRect.right - 12
           const bottomBoundary = graphRect.bottom - 12
           const viewport = instance.getViewport()
@@ -1107,7 +1119,11 @@ function GraphView({
             const availableWidth = Math.max(1, rightBoundary - leftBoundary)
             const availableHeight = Math.max(1, bottomBoundary - topBoundary)
             const correction = Math.min(1, availableWidth / occupiedWidth, availableHeight / occupiedHeight)
-            const zoom = Math.max(expandedClusterMinZoom, viewport.zoom * correction)
+            // A focused cluster is allowed to use a smaller zoom than the
+            // default readable spine when its real measured cards plus one
+            // context card cannot fit. Clipping a card is less legible than
+            // a bounded, explicit focus view.
+            const zoom = Math.max(0.36, viewport.zoom * correction)
             const centerX = (left + right) / 2
             const centerY = (top + bottom) / 2
             const targetCenterX = (leftBoundary + rightBoundary) / 2
@@ -1275,12 +1291,19 @@ function GraphView({
     const requested = pendingClusterFocus.current
     if (requested === undefined) return
     pendingClusterFocus.current = undefined
+    const requestId = clusterFocusRequestId.current
     if (clusterFocusTimer.current !== null) window.clearTimeout(clusterFocusTimer.current)
-    clusterFocusTimer.current = window.setTimeout(() => {
+    const retryFocus = (attempt: number) => {
+      if (requestId !== clusterFocusRequestId.current) return
       clusterFocusTimer.current = null
       const focus = requested === null ? fitReadableViewportRef.current() : focusExpandedClusterRef.current(requested)
-      void focus.finally(scheduleExpandedClusterMeasure)
-    }, 140)
+      void focus.then((succeeded) => {
+        if (!succeeded && attempt < 4 && requestId === clusterFocusRequestId.current) {
+          clusterFocusTimer.current = window.setTimeout(() => retryFocus(attempt + 1), 120)
+        }
+      }).finally(scheduleExpandedClusterMeasure)
+    }
+    clusterFocusTimer.current = window.setTimeout(() => retryFocus(0), 140)
     return () => {
       if (clusterFocusTimer.current !== null) window.clearTimeout(clusterFocusTimer.current)
       clusterFocusTimer.current = null
