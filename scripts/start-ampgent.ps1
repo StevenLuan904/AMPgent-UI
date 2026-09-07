@@ -72,12 +72,24 @@ function Start-HiddenProcess(
     [string]$stdoutPath,
     [string]$stderrPath
 ) {
-    Start-Process -FilePath $filePath `
-        -ArgumentList $arguments `
-        -WorkingDirectory $appRoot `
-        -WindowStyle Hidden `
-        -RedirectStandardOutput $stdoutPath `
-        -RedirectStandardError $stderrPath | Out-Null
+    $previousModulePath = $env:PSModulePath
+    $isWindowsPowerShell = [System.IO.Path]::GetFileName($filePath) -ieq 'powershell.exe'
+    if ($isWindowsPowerShell) {
+        $inbox = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\Modules'
+        $segments = @($inbox) + @([string]$env:PSModulePath -split ';')
+        $env:PSModulePath = (@($segments | Where-Object { $_ } | Select-Object -Unique) -join ';')
+    }
+    try {
+        Start-Process -FilePath $filePath `
+            -ArgumentList $arguments `
+            -WorkingDirectory $appRoot `
+            -WindowStyle Hidden `
+            -RedirectStandardOutput $stdoutPath `
+            -RedirectStandardError $stderrPath | Out-Null
+    }
+    finally {
+        $env:PSModulePath = $previousModulePath
+    }
 }
 
 function Wait-Until([scriptblock]$condition, [int]$attempts, [string]$failureMessage) {

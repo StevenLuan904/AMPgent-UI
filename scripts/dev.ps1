@@ -83,6 +83,15 @@ function Test-TcpPort {
     }
 }
 
+function Get-WindowsPowerShellModulePath {
+    # Hidden Windows PowerShell children can inherit a PowerShell 7 module path
+    # from the launcher. Put the Windows inbox modules first so commands such as
+    # ConvertTo-SecureString resolve to the compatible implementation.
+    $inbox = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\Modules'
+    $segments = @($inbox) + @([string]$env:PSModulePath -split ';')
+    return (@($segments | Where-Object { $_ } | Select-Object -Unique) -join ';')
+}
+
 function Get-AmpgentHealth {
     try {
         return Invoke-RestMethod -Method Get -Uri $healthUrl -TimeoutSec 2
@@ -136,10 +145,17 @@ if (-not (Test-TcpPort -HostName $databaseHost -Port $databasePort)) {
     New-Item -ItemType Directory -Force -Path $outputDir | Out-Null
     $tunnelStdoutPath = Join-Path $outputDir 'database-tunnel.out.log'
     $tunnelStderrPath = Join-Path $outputDir 'database-tunnel.err.log'
-    $tunnelProcess = Start-Process -FilePath 'powershell.exe' `
-        -ArgumentList @('-NoLogo', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $tunnelScript) `
-        -WorkingDirectory (Split-Path -Parent $tunnelScript) -WindowStyle Hidden -PassThru `
-        -RedirectStandardOutput $tunnelStdoutPath -RedirectStandardError $tunnelStderrPath
+    $previousModulePath = $env:PSModulePath
+    $env:PSModulePath = Get-WindowsPowerShellModulePath
+    try {
+        $tunnelProcess = Start-Process -FilePath 'powershell.exe' `
+            -ArgumentList @('-NoLogo', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $tunnelScript) `
+            -WorkingDirectory (Split-Path -Parent $tunnelScript) -WindowStyle Hidden -PassThru `
+            -RedirectStandardOutput $tunnelStdoutPath -RedirectStandardError $tunnelStderrPath
+    }
+    finally {
+        $env:PSModulePath = $previousModulePath
+    }
     $ownsTunnelProcess = $true
 
     $tunnelReady = $false

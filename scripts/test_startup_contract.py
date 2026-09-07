@@ -30,6 +30,12 @@ class StartupContractTests(unittest.TestCase):
             self.assertIn("Sort-Object { $_['Label'] }", text)
             self.assertNotIn("Sort-Object Label", text)
 
+    def test_hidden_windows_powershell_children_prefer_inbox_modules(self):
+        for name in ("dev.ps1", "start-ampgent.ps1"):
+            text = self.read(name)
+            self.assertIn("System32\\WindowsPowerShell\\v1.0\\Modules", text)
+            self.assertIn("PSModulePath", text)
+
     def test_dev_only_replaces_a_confirmed_observer_process(self):
         text = self.read("dev.ps1")
         for required in (
