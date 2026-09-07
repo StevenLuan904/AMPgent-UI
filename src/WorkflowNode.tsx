@@ -115,6 +115,7 @@ export function WorkflowNode({ data }: NodeProps<StageNode>) {
   const showVerdict = !isRuntime && !hasEvidenceDistribution
   return (
     <div className={`workflow-node stage-${stage.id} kind-${stage.kind} grade-${stage.insight.grade} node-${stage.status}${isRuntime ? ` is-runtime-node runtime-${runtimeType}${isRuntimeGroup && stage.runtime?.expanded ? ' runtime-group-expanded' : ''}` : ''}${selected ? ' is-selected' : ''}`}>
+      {isRuntimeGroup && <span className="runtime-group-hit-area" aria-hidden="true" />}
       <Handle type="target" position={Position.Left} className="flow-handle" />
       <div className="node-heading">
         <span className="node-icon"><Icon /></span>
