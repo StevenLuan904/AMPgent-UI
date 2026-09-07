@@ -44,14 +44,15 @@
   "event_window": {
     "limit": 32,
     "next_cursor": "opaque-cursor",
-    "has_more": true
+    "has_more": true,
+    "remaining": 2275
   }
 }
 ```
 
 UI 仅在 `has_more=true` 且存在不透明 `next_cursor` 时请求同一详情路径的 `events_cursor` 与 `events_limit` 查询参数；每页仍需返回 `events` 和可选的 `event_window`。游标只用于读取顺序，不进入运行图关系。前端首屏最多自动读取一页，用户点击“加载更早事件”后每次最多再读 4 页，按持久化 `sequence_no` 去重并排序。若服务返回 `remaining`，界面显示“已加载 N 条 · 仍有至少 M 条更早记录”；没有该字段也会明确保留“已达窗口上限”，不会宣称完整历史。任一历史页失败时保留已读内容并继续显示缺口。当服务明确返回 `has_more=false` 时，即使恰好返回 32 条，也不再把它标成可能缺失。
 
-当前相邻 `agent-platform` 工作树包含大量其他未提交改动，本轮未直接修改或提交其 Observer；因此该契约仍需平台侧实现后才会触发真实分页请求。
+平台侧只读实现已在 `agent/observer-event-pagination` 的 `38e20825` 提供该契约：`events_cursor` 按 `sequence_no` 向更早事件翻页，`events_limit` 限制在 1–128，`event_window` 返回 `next_cursor`、`has_more` 与 `remaining`。UI 仍保留旧服务兼容路径；当服务未返回 `event_window` 时不会发送猜测性的分页请求，也不会把最近窗口当成完整历史。
 
 建议后续只读接口提供统一的 `tool_calls`、`tool_call_dependencies`、`candidate_occurrences` 分页集合，并为每条记录返回 `id`、`run_id`、`attempt`、`status`、时间戳、父子关系和证据引用。
 
