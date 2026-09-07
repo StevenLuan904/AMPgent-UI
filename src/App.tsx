@@ -52,6 +52,7 @@ import { assertMatchingRunIdentity, preserveSelectedRunOnListRefresh, type RunId
 import { formatRunTitle } from './runPresentation'
 import { buildRuntimeGraph, candidatePreviewCountLabel, candidatePreviewDenominator, displayObservedEventName, displayToolName, nextExpandedRuntimeGroups, runtimeEventStatus, type RuntimeGraphModel } from './runtimeGraph'
 import { loadObserverEventHistory, mergeObserverDetailEventHistory, observerEventPageMax, shouldFetchOlderObserverEvents } from './observerEvents'
+import { mergeNodeDetailCalls, nodeCallsWindowLabel, observerCallPageLimit, observerNodeCallsUrl } from './observerCalls'
 import { compactReadableRuntimePositions, selectReadableRuntimeNodeIds } from './runtimeViewport'
 import { nodeDetailCacheTtlMs, observerDetailFailureMessage, observerIdlePrefetchDelayMs, observerInitialPrefetchCount, observerInitialPrefetchStages, observerListTimeoutMs, observerInFlightStageIds, observerMergePrefetchQueue, observerNextPrefetchStage, observerNodeDetailCacheKey, observerNodeDetailTimeoutMs, observerPendingPrefetchCount, observerPollingIntervalMs, observerPrefetchQueueMatches, observerPrefetchInFlightKey, observerPrefetchRefreshExpired, observerPrefetchStageOrder, observerRequeuePrefetchStage, observerResponseIsStale, observerRunDetailCacheKey, observerRunDetailTimeoutMs, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion, observerStaleListRetryDelayMs, observerStaleRetryDelayMs, type ObserverPrefetchQueue } from './observerPolling'
 
@@ -293,8 +294,9 @@ function useRunData(enabled: boolean, apiBase: string) {
     if (nodeFetchInFlight.current.has(cacheKey)) return Boolean(cached)
     nodeFetchInFlight.current.add(cacheKey)
     try {
-      const response = await fetchJsonWithTimeout<NodeDetail>(`${apiBase}/v1/observer/runs/${runId}/nodes/${encodeURIComponent(stageId)}`, observerNodeDetailTimeoutMs)
-      const nodeDetail = response.payload
+      const detailUrl = `${apiBase}/v1/observer/runs/${runId}/nodes/${encodeURIComponent(stageId)}`
+      const response = await fetchJsonWithTimeout<NodeDetail>(observerNodeCallsUrl(detailUrl, { limit: observerCallPageLimit }), observerNodeDetailTimeoutMs)
+      const nodeDetail = mergeNodeDetailCalls(cached?.detail, response.payload, 'head')
       nodeDetailCache.set(cacheKey, { detail: nodeDetail, fetchedAt: Date.now() })
       if (selectedIdRef.current === runId && epoch === detailEpoch.current) {
         setNodeDetails((current) => ({ ...current, [stageId]: nodeDetail }))
@@ -307,6 +309,29 @@ function useRunData(enabled: boolean, apiBase: string) {
       if (selectedIdRef.current === runId && epoch === detailEpoch.current && !cached) {
         setNodeDetailFetch((current) => ({ ...current, failed: current.failed + 1 }))
       }
+      return false
+    } finally {
+      nodeFetchInFlight.current.delete(cacheKey)
+    }
+  }, [apiBase])
+
+  const loadOlderNodeCalls = useCallback(async (stageId: string) => {
+    const runId = detailRunIdRef.current
+    const epoch = detailEpoch.current
+    if (!runId) return false
+    const cacheKey = observerNodeDetailCacheKey(apiBase, runId, stageId)
+    const cached = nodeDetailCache.get(cacheKey)
+    const callsWindow = cached?.detail.calls_window
+    if (!cached || !callsWindow?.has_more || !callsWindow.next_cursor || nodeFetchInFlight.current.has(cacheKey)) return false
+    nodeFetchInFlight.current.add(cacheKey)
+    try {
+      const detailUrl = `${apiBase}/v1/observer/runs/${runId}/nodes/${encodeURIComponent(stageId)}`
+      const response = await fetchJsonWithTimeout<NodeDetail>(observerNodeCallsUrl(detailUrl, { cursor: callsWindow.next_cursor, limit: callsWindow.limit ?? observerCallPageLimit }), observerNodeDetailTimeoutMs)
+      const nodeDetail = mergeNodeDetailCalls(cached.detail, response.payload, 'older')
+      nodeDetailCache.set(cacheKey, { detail: nodeDetail, fetchedAt: cached.fetchedAt })
+      if (selectedIdRef.current === runId && epoch === detailEpoch.current) setNodeDetails((current) => ({ ...current, [stageId]: nodeDetail }))
+      return true
+    } catch {
       return false
     } finally {
       nodeFetchInFlight.current.delete(cacheKey)
@@ -624,7 +649,7 @@ function useRunData(enabled: boolean, apiBase: string) {
     return selectedId ? loadDetail(selectedId, true) : undefined
   }, [loadDetail, selectedId])
 
-  return { runs, selectedId, setSelectedId, detail, nodeDetails, nodeDetailFetch, error, loading, refreshing, syncingStale, detailSyncError, lastSuccessfulDetailAt, eventHistoryLoading, loadOlderEvents, retry, refresh }
+  return { runs, selectedId, setSelectedId, detail, nodeDetails, nodeDetailFetch, error, loading, refreshing, syncingStale, detailSyncError, lastSuccessfulDetailAt, eventHistoryLoading, loadOlderEvents, loadOlderNodeCalls, retry, refresh }
 }
 
 function RunList({ runs, selectedId, graphObservedCalls, onSelect }: { runs: RunListItem[]; selectedId: string | null; graphObservedCalls: number | null; onSelect: (id: string) => void }) {
@@ -1513,6 +1538,8 @@ const decisionReasonLabels: Record<string, string> = {
   selected_within_fixed_exploration_budget: '固定探索预算内入选',
 }
 
+const toolRelationLabels: Record<string, string> = { dependency: '依赖', retry: '重试/恢复', fallback: '回退', parallel: '并行观测组', association: '关联' }
+
 function ToolAttemptDisclosure({ call }: { call: ToolAttempt }) {
   const context = call.structure_context?.[0]
   const inputs = recordValue(call.inputs)
@@ -1548,6 +1575,7 @@ function ToolAttemptDisclosure({ call }: { call: ToolAttempt }) {
         <ChevronRight />
       </summary>
       <div className="attempt-body">
+        {!!call.relations?.length && <div className="call-relation-list"><span>数据库显式关系</span>{call.relations.map((relation) => <b key={`${relation.direction}:${relation.related_call_id}:${relation.relation_type}`} title={`原始关系类型：${relation.relation_type}`}>{relation.direction === 'upstream' ? '上游' : '下游'} · {toolRelationLabels[relation.relation_type] ?? '依赖'} · {relation.related_call_id}</b>)}</div>}
         <div className="science-fact-grid">
           {facts.map(([label, value]) => <div key={label}><span>{label}</span><b title={String(value)}>{String(value).replaceAll('_', ' ')}</b></div>)}
         </div>
@@ -1761,7 +1789,8 @@ function EdgeInspector({ graph, edge, onClose }: { graph: RuntimeGraphModel; edg
   )
 }
 
-function RuntimeInspector({ detail, nodeDetails, graph, nodeId, distribution, onClose, onToggleGroup }: { detail: RunDetail; nodeDetails: Record<string, NodeDetail>; graph: RuntimeGraphModel; nodeId: string; distribution?: ResultDistributionData | null; onClose: () => void; onToggleGroup: (id: string) => void }) {
+function RuntimeInspector({ detail, nodeDetails, graph, nodeId, distribution, onClose, onToggleGroup, onLoadOlderCalls }: { detail: RunDetail; nodeDetails: Record<string, NodeDetail>; graph: RuntimeGraphModel; nodeId: string; distribution?: ResultDistributionData | null; onClose: () => void; onToggleGroup: (id: string) => void; onLoadOlderCalls: (stageId: string) => Promise<boolean> }) {
+  const [loadingCallStageId, setLoadingCallStageId] = useState<string | null>(null)
   const node = graph.nodes.find((item) => item.id === nodeId)
   if (!node) return null
   const call = nodeId.startsWith('call:') ? graph.calls[nodeId.slice(5)] : undefined
@@ -1787,6 +1816,9 @@ function RuntimeInspector({ detail, nodeDetails, graph, nodeId, distribution, on
   const groupCandidates = groupCandidateIds.map((id) => detail.candidates.find((candidate) => candidate.id === id)).filter((item): item is CandidatePreview => Boolean(item))
   const summaryTools = node.runtime?.summary_tools ?? []
   const groupExpanded = [...groupCallIds.map((id) => `call:${id}`), ...groupEventIds, ...groupCandidateIds.map((id) => `candidate:${id}`), ...summaryTools.map((item) => `tool-summary:${encodeURIComponent(item.tool_name)}`)].some((id) => graph.nodes.some((item) => item.id === id))
+  const callWindowSources = Object.entries(nodeDetails)
+    .filter(([, source]) => Boolean(source.calls_window) || source.calls.length >= observerCallPageLimit)
+    .map(([stageId, source]) => ({ stageId, source }))
   return (
     <aside className="inspector expanded-inspector runtime-inspector">
       <div className="inspector-header">
@@ -1808,6 +1840,7 @@ function RuntimeInspector({ detail, nodeDetails, graph, nodeId, distribution, on
       {isToolSummary && <section className="inspector-section runtime-group-section"><div className="section-title"><h3>汇总级工具证据</h3><span className="stage-badge pending">仅汇总</span></div><p className="runtime-note">数据库状态汇总；逐次明细未返回。</p><div className="runtime-group-list">{summaryTools.map((item) => <div key={item.tool_name}><span className="attempt-state pending" /><b>汇总数量 {item.summary_count}</b><small>已映射 {item.materialized_count} · 尚缺 {item.missing_count}</small></div>)}</div></section>}
       {isPopulationSummary && <section className="inspector-section"><div className="analysis-kicker"><Layers3 />种群口径</div><p className="runtime-note">数据库汇总计数；候选轨仅展示当前返回预览。</p><div className="fact-grid">{node.insight.facts.map((fact) => <Fact key={fact.label} label={fact.label} value={fact.value} />)}</div></section>}
       {call && <section className="inspector-section"><div className="section-title"><h3>工具调用与证据</h3><span className={`stage-badge ${node.status}`}>{statusText[call.status] ?? call.status}</span></div><ToolAttemptDisclosure call={call} /></section>}
+      {callWindowSources.length > 0 && <section className="inspector-section call-window-section"><div className="section-title"><h3>工具调用窗口</h3><span className="stage-badge pending">按游标</span></div>{callWindowSources.map(({ stageId, source }) => { const label = nodeCallsWindowLabel(source); const window = source.calls_window; return <div className="call-window-row" key={stageId}><span>{stageId}</span><small>{label}</small>{window?.has_more && <button type="button" onClick={async () => { setLoadingCallStageId(stageId); await onLoadOlderCalls(stageId); setLoadingCallStageId(null) }} disabled={loadingCallStageId !== null}>{loadingCallStageId === stageId ? '读取中…' : '加载更早调用'}</button>}</div> })}</section>}
       {event && <section className="inspector-section"><div className="analysis-kicker"><Clock3 />事件 payload</div><div className="runtime-event-meta"><b>{event.actor}</b><span>序号 {event.sequence_no} · {formatTime(event.occurred_at)}</span></div><div className="runtime-raw-key">原始事件键：{event.type}</div><pre className="runtime-json">{JSON.stringify(event.payload, null, 2)}</pre></section>}
       {candidate && <section className="inspector-section"><div className="analysis-kicker"><GitBranch />候选预览记录</div><code className="runtime-sequence">{candidate.sequence}</code><div className="fact-grid"><Fact label="代际" value={candidate.generation ?? '—'} /><Fact label="父候选" value={candidate.parent_id ?? '未返回'} /><Fact label="生成调用" value={candidate.generator_call_id ?? '未返回'} /><Fact label="序列长度" value={candidate.length} /><Fact label="预览范围" value={node.runtime?.preview_index && node.runtime.preview_total !== null ? `${node.runtime.preview_index}/${node.runtime.preview_total}` : node.runtime?.preview_index ? `已返回第 ${node.runtime.preview_index} 条` : '当前返回记录'} /></div>{candidate.reasons.length > 0 && <div className="runtime-reasons"><span>后端返回原因（未用于状态推断）</span>{candidate.reasons.map((reason) => <b key={reason}>{reason}</b>)}</div>}</section>}
       {generation && <section className="inspector-section"><div className="analysis-kicker"><Layers3 />代际分组</div><p className="runtime-note">此节点由候选记录中明确的 <code>generation={generation}</code> 字段聚合而成；它不是预设阶段，也不代表执行依赖。</p></section>}
@@ -2016,6 +2049,7 @@ export default function App() {
               })()}
               onClose={() => setSelectedStage(null)}
               onToggleGroup={toggleRuntimeGroup}
+              onLoadOlderCalls={data.loadOlderNodeCalls}
             />}
             {selectedEdge && <EdgeInspector graph={runtimeGraph!} edge={selectedEdge} onClose={() => setSelectedEdge(null)} />}
           </>

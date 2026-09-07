@@ -247,6 +247,12 @@ export interface ToolArtifact {
   url: string
 }
 
+export interface ToolCallRelation {
+  direction: 'upstream' | 'downstream'
+  related_call_id: string
+  relation_type: string
+}
+
 export interface ToolAttempt {
   id: string
   tool_name: string
@@ -279,6 +285,8 @@ export interface ToolAttempt {
     records: number
   }>
   artifacts: ToolArtifact[]
+  /** Explicit persisted ToolCallDependency records returned by Observer. */
+  relations?: ToolCallRelation[]
 }
 
 export interface MetricSummary {
@@ -301,6 +309,14 @@ export interface NodeDetail {
   generation_quality_gate?: GenerationQualityGate
   narrative: string[]
   calls: ToolAttempt[]
+  /** Optional cursor contract; older Observer responses omit it. */
+  calls_window?: {
+    limit?: number
+    next_cursor?: string | null
+    has_more?: boolean
+    remaining?: number
+    total?: number
+  }
   metrics: Record<string, MetricSummary>
   reasoning: {
     decisions: Array<Record<string, unknown>>

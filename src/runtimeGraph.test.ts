@@ -646,6 +646,32 @@ describe('buildRuntimeGraph', () => {
     expect(expanded.stats.cycles).toBe(0)
   })
 
+  it('draws only persisted node relations and reports unloaded relation endpoints', () => {
+    const upstream = call('call-upstream', 'tool-a', '2026-09-04T00:00:00Z')
+    const downstream = call('call-downstream', 'tool-b', '2026-09-04T00:00:02Z', {
+      relations: [
+        { direction: 'upstream', related_call_id: 'call-upstream', relation_type: 'evaluates_v38_score_all_candidate' },
+        { direction: 'downstream', related_call_id: 'call-not-loaded', relation_type: 'retry' },
+      ],
+    })
+    const result = buildRuntimeGraph(detail(), { worker: nodeDetail([upstream, downstream]) })
+    expect(result.edges).toEqual(expect.arrayContaining([
+      expect.objectContaining({ source: 'call:call-upstream', target: 'call:call-downstream', relation_kind: 'dependency', provenance: 'database' }),
+    ]))
+    expect(result.edges.some((edge) => edge.relation_kind === 'retry')).toBe(false)
+    expect(result.stats.explicitRelations).toBe(2)
+    expect(result.stats.unresolvedRelations).toBe(1)
+    expect(result.gaps.some((gap) => gap.includes('1 条关联调用尚未载入'))).toBe(true)
+  })
+
+  it('does not create a self-edge when a persisted relation is folded into one group', () => {
+    const first = call('call-1', 'tool-a', '2026-09-04T00:00:00Z', { inputs: { batch_id: 'same-batch' } })
+    const second = call('call-2', 'tool-b', '2026-09-04T00:00:01Z', { inputs: { batch_id: 'same-batch' }, relations: [{ direction: 'upstream', related_call_id: 'call-1', relation_type: 'dependency' }] })
+    const result = buildRuntimeGraph(detail(), { worker: nodeDetail([first, second]) })
+    expect(result.edges.some((edge) => edge.source === edge.target)).toBe(false)
+    expect(result.stats.explicitRelations).toBe(1)
+  })
+
   it('preserves dependency edges when a call is folded with its lifecycle event', () => {
     const original = call('call-1', 'tool-a', '2026-09-04T00:00:00Z')
     const dependent = call('call-2', 'tool-b', '2026-09-04T00:00:03Z', { inputs: { depends_on_call_id: 'call-1' } })

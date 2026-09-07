@@ -596,6 +596,14 @@ button:focus-visible { outline: 2px solid #315be8; outline-offset: 2px; }
 .runtime-group-list > div { min-width: 0; min-height: 31px; display: grid; grid-template-columns: 8px 55px minmax(0, 1fr); align-items: center; gap: 7px; padding: 0 8px; border: 1px solid #e6eaf1; border-radius: 6px; background: #fbfcfe; }
 .runtime-group-list b { color: #4c5b73; font-size: 11px; }
 .runtime-group-list small { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #8c96a6; font-size: 11px; }
+.call-window-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 10px; align-items: center; padding: 8px 0; border-top: 1px solid #edf0f4; }
+.call-window-row > span { color: #39465b; font-size: 12px; font-weight: 650; }
+.call-window-row > small { grid-column: 1 / 2; color: #7c8798; font-size: 11px; }
+.call-window-row > button { grid-column: 2; grid-row: 1 / span 2; min-height: 32px; padding: 0 10px; border: 1px solid #d5deec; border-radius: 7px; background: #fff; color: #315be8; font-size: 12px; cursor: pointer; }
+.call-window-row > button:disabled { color: #8c96a6; cursor: wait; }
+.call-relation-list { display: grid; gap: 5px; padding: 9px 0; margin-bottom: 10px; border-bottom: 1px solid #edf0f4; }
+.call-relation-list span { color: #7c8798; font-size: 11px; }
+.call-relation-list b { color: #39465b; font-size: 12px; font-weight: 600; }
 .group-toggle { min-height: 32px; flex: 0 0 auto; padding: 4px 8px; border: 1px solid #d6deee; border-radius: 5px; color: #4964a7; background: #f7f9fd; font-size: 11px; cursor: pointer; }
 .group-toggle:hover { background: #eef2fb; }
 .runtime-reasons { display: grid; gap: 5px; margin-top: 11px; padding: 9px 10px; border-radius: 7px; background: #faf6ee; color: #8a7148; font-size: 11px; line-height: 1.45; }

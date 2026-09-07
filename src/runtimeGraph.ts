@@ -6,6 +6,7 @@ import type {
   RunDetail,
   RuntimeSummaryTool,
   TimelineEvent,
+  ToolCallRelation,
   ToolAttempt,
 } from './types'
 
@@ -26,6 +27,8 @@ export interface RuntimeGraphStats {
   toolSummaryMaterialized: number
   toolSummaryMissing: number
   eventWindowAtLimit: boolean
+  explicitRelations: number
+  unresolvedRelations: number
 }
 
 export interface RuntimeEventWindow {
@@ -254,6 +257,33 @@ function parallelGroupIds(value: unknown) {
 
 function associationIds(value: unknown) {
   return idsForKeys(value, associationKeys)
+}
+
+const persistedRelationKinds = new Set<NonNullable<GraphEdgeDetail['relation_kind']>>(['dependency', 'retry', 'fallback', 'parallel', 'association'])
+
+function persistedRelationKind(value: string): NonNullable<GraphEdgeDetail['relation_kind']> | null {
+  const normalized = value.trim().toLowerCase()
+  if (!normalized) return null
+  // The node contract is a persisted ToolCallDependency. Its relation_type
+  // may be a domain operation such as evaluates_v38_score_all_candidate,
+  // rather than one of the graph presentation kinds. Preserve that raw type
+  // in the rationale while treating the persisted directional record as an
+  // explicit dependency, never as a time-based inference.
+  return persistedRelationKinds.has(normalized as NonNullable<GraphEdgeDetail['relation_kind']>)
+    ? normalized as NonNullable<GraphEdgeDetail['relation_kind']>
+    : 'dependency'
+}
+
+function persistedRelationLabel(kind: NonNullable<GraphEdgeDetail['relation_kind']>) {
+  if (kind === 'dependency') return '依赖'
+  if (kind === 'retry') return '重试/恢复'
+  if (kind === 'fallback') return '回退'
+  if (kind === 'parallel') return '并行观测组'
+  return '关联'
+}
+
+function persistedRelationRationale(relation: ToolCallRelation) {
+  return `节点接口返回的 ToolCallDependency 显式关系（${relation.relation_type}）；方向与相关调用 ID 来自数据库，不按时间或标题推断。`
 }
 
 function lifecycleStatus(event: TimelineEvent) {
@@ -1773,6 +1803,8 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
     return nodeIds.has(`call:${id}`) ? `call:${id}` : id
   }
   const isCallEndpoint = (id: string) => id.startsWith('call:') || id.startsWith('tool-group:') || id.startsWith('batch-group:')
+  let explicitRelationCount = 0
+  let unresolvedRelationCount = 0
   const explicitParallelBuckets = new Map<string, ToolAttempt[]>()
   for (const call of Object.values(calls)) {
     const parallelId = firstParallelGroupId(call)
@@ -1807,6 +1839,30 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
     for (const relation of typedRelations) for (const upstreamId of relation.ids) {
       const target = callIdToNode(upstreamId)
       if (isCallEndpoint(target)) addEdge(edges, seen, { source: target, target: source, label: relation.label, rationale: relation.rationale, provenance: 'database', relation_kind: relation.kind })
+    }
+    for (const relation of call.relations ?? []) {
+      const relationKind = persistedRelationKind(relation.relation_type)
+      if (!relationKind || !relation.related_call_id.trim()) continue
+      explicitRelationCount += 1
+      if (!calls[relation.related_call_id]) {
+        unresolvedRelationCount += 1
+        continue
+      }
+      const related = callIdToNode(relation.related_call_id)
+      if (!isCallEndpoint(related)) {
+        unresolvedRelationCount += 1
+        continue
+      }
+      const sourceNode = relation.direction === 'upstream' ? related : source
+      const targetNode = relation.direction === 'upstream' ? source : related
+      addEdge(edges, seen, {
+        source: sourceNode,
+        target: targetNode,
+        label: persistedRelationLabel(relationKind),
+        rationale: persistedRelationRationale(relation),
+        provenance: 'database',
+        relation_kind: relationKind,
+      })
     }
   }
   for (const [parallelId, grouped] of explicitParallelBuckets) {
@@ -1843,6 +1899,7 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
   if (Object.keys(calls).length && !edges.some((edge) => edge.provenance === 'database' && ['dependency', 'retry', 'fallback'].includes(edge.relation_kind ?? ''))) {
     gaps.push('接口未返回工具调用依赖、重试或回退关系；未按时间顺序补画推断边。')
   }
+  if (unresolvedRelationCount > 0) gaps.push(`已返回 ${explicitRelationCount} 条显式调用关系；${unresolvedRelationCount} 条关联调用尚未载入，暂不绘制边。`)
   if (detail.candidates.length && !detail.candidates.some((candidate) => candidate.parent_id)) {
     gaps.push('候选预览未返回 parent_id；父子代际关系暂不可观测。')
   }
@@ -1861,7 +1918,8 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
   if (eventWindow.mayBeTruncated) gaps.push(eventWindow.remaining !== undefined
     ? `已加载 ${eventWindow.returned} 条；仍有至少 ${eventWindow.remaining} 条更早记录。`
     : `已加载 ${eventWindow.returned} 条；已达最近 ${eventWindow.limit} 条窗口上限，更早记录未确认。`)
-  if (Object.values(sources).some((source) => (source?.calls.length ?? 0) >= 40)) gaps.push('至少一个节点明细只返回 40 次工具调用；完整调用集合缺少分页契约。')
+  if (Object.values(sources).some((source) => (source?.calls.length ?? 0) >= 40 && !source?.calls_window)) gaps.push('至少一个节点明细只返回当前调用窗口；旧接口未提供分页游标。')
+  if (Object.values(sources).some((source) => source?.calls_window?.has_more)) gaps.push('部分节点仍有更早工具调用；可在详情中继续加载。')
   if (options.sourceFetch && options.sourceFetch.failed > 0) gaps.push(`节点明细仅加载 ${options.sourceFetch.loaded}/${options.sourceFetch.requested} 个；${options.sourceFetch.failed} 个读取失败或超时，当前运行图不完整。`)
   else if (options.sourceFetch && options.sourceFetch.loaded < options.sourceFetch.requested && (options.sourceFetch.deferred ?? 0) > 0) gaps.push(`节点明细已加载 ${options.sourceFetch.loaded}/${options.sourceFetch.requested} 个；其余 ${options.sourceFetch.deferred} 个按需读取，当前运行图仍不完整。`)
   else if (options.sourceFetch && options.sourceFetch.loaded < options.sourceFetch.requested) gaps.push(`节点明细正在加载 ${options.sourceFetch.loaded}/${options.sourceFetch.requested} 个；当前运行图仍不完整。`)
@@ -1889,6 +1947,8 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
     toolSummaryMaterialized: summaryCoverage.materialized,
     toolSummaryMissing: summaryCoverage.missing,
     eventWindowAtLimit: eventWindow.mayBeTruncated,
+    explicitRelations: explicitRelationCount,
+    unresolvedRelations: unresolvedRelationCount,
   }
   return { nodes, edges, positions: computePositions(nodes, options.layoutColumns, options.availableWidth), calls, events, toolGroups, sourceFetch: options.sourceFetch, gaps, stats, eventWindow }
 }
