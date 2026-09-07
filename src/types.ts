@@ -340,4 +340,12 @@ export interface RunDetail {
   viewer: ViewerArtifact | null
   viewers: Record<string, ViewerArtifact | null>
   events: TimelineEvent[]
+  /** Optional forward-compatible cursor contract; older Observer payloads omit it. */
+  event_window?: {
+    limit?: number
+    next_cursor?: string | null
+    has_more?: boolean
+    /** Server-reported count of older events not included in this payload. */
+    remaining?: number
+  }
 }

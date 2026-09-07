@@ -33,7 +33,25 @@
 - 当前运行详情没有直接返回完整工具调用集合；前端通过节点明细尽力读取，读取超时则保留事件/候选图并显示缺口。
 - 节点明细缺少统一的 `ToolCallDependency` 返回入口，因此无法观察完整的并行、回退和显式调用依赖。前端只接受 `parent_call_id`、`depends_on_call_id`、`dependency_call_id`、`upstream_call_id`、`previous_call_id`、`input_from_call_id` 及其数组形式；普通 `source`、`call_id` 文本不会被当作依赖。
 - 候选预览当前可能缺少 `parent_id`、`generator_call_id`，此时父子谱系与生成来源不会被推断。
-- 事件列表和节点调用存在分页/截断迹象；前端会在达到已知上限时提示可能缺失历史，而不伪造完整图。
+- 当前 Observer 事件列表仍可能只返回最近窗口；前端会在达到已知上限时提示可能缺失历史，而不伪造完整图。
+
+### 生命周期事件分页（向后兼容草案）
+
+旧版 `GET /v1/observer/runs/{run_id}` 继续只返回 `events`，没有 `event_window` 时，UI 不会猜测是否截断，只将达到 32 条标为“更早事件未确认”。支持分页的 Observer 可在同一响应增加：
+
+```json
+{
+  "event_window": {
+    "limit": 32,
+    "next_cursor": "opaque-cursor",
+    "has_more": true
+  }
+}
+```
+
+UI 仅在 `has_more=true` 且存在不透明 `next_cursor` 时请求同一详情路径的 `events_cursor` 与 `events_limit` 查询参数；每页仍需返回 `events` 和可选的 `event_window`。游标只用于读取顺序，不进入运行图关系。前端首屏最多自动读取一页，用户点击“加载更早事件”后每次最多再读 4 页，按持久化 `sequence_no` 去重并排序。若服务返回 `remaining`，界面显示“已加载 N 条 · 仍有至少 M 条更早记录”；没有该字段也会明确保留“已达窗口上限”，不会宣称完整历史。任一历史页失败时保留已读内容并继续显示缺口。当服务明确返回 `has_more=false` 时，即使恰好返回 32 条，也不再把它标成可能缺失。
+
+当前相邻 `agent-platform` 工作树包含大量其他未提交改动，本轮未直接修改或提交其 Observer；因此该契约仍需平台侧实现后才会触发真实分页请求。
 
 建议后续只读接口提供统一的 `tool_calls`、`tool_call_dependencies`、`candidate_occurrences` 分页集合，并为每条记录返回 `id`、`run_id`、`attempt`、`status`、时间戳、父子关系和证据引用。
 

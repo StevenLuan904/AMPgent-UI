@@ -530,6 +530,11 @@ button:focus-visible { outline: 2px solid #315be8; outline-offset: 2px; }
 .runtime-live-dot { width: 7px; height: 7px; border-radius: 50%; background: #2b9a70; box-shadow: 0 0 0 3px #e8f6f0; }
 .runtime-graph-stats { display: flex; flex-wrap: wrap; gap: 3px 8px; margin-top: 3px; color: #536176; font: 600 11px "DM Mono", monospace; }
 .runtime-graph-summary p { margin: 7px 0 0; color: #9b6a35; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.runtime-history-status { position: absolute; z-index: 7; top: 12px; left: 18px; display: flex; align-items: center; gap: 9px; max-width: min(470px, calc(100% - 36px)); padding: 6px 9px; border: 1px solid #e1d8c9; border-radius: 8px; background: #fff; box-shadow: 0 4px 12px rgba(61,48,30,.07); color: #876942; font-size: 11px; line-height: 1.35; pointer-events: auto; }
+.runtime-history-status span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.runtime-history-status button { flex: 0 0 auto; min-height: 28px; padding: 3px 8px; border: 1px solid #d7c5aa; border-radius: 6px; background: #fffdf9; color: #765629; font-size: 11px; cursor: pointer; }
+.runtime-history-status button:hover:not(:disabled) { background: #f8f0e4; }
+.runtime-history-status button:disabled { cursor: wait; opacity: .65; }
 .workflow-node.kind-tool { border: 1px solid #d7dee8; }
 .workflow-node.kind-tool .node-title { font-family: "DM Mono", monospace; font-size: 10px; }
 .workflow-node.is-runtime-node { min-height: 0; padding: 13px 14px 12px; }

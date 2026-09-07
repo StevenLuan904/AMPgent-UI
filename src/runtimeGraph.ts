@@ -33,6 +33,7 @@ export interface RuntimeEventWindow {
   limit: number
   atLimit: boolean
   mayBeTruncated: boolean
+  remaining?: number
 }
 
 export interface RuntimeGraphModel {
@@ -51,10 +52,13 @@ export interface RuntimeGraphModel {
 /** The read-only observer currently hard-limits run events to the newest 32 rows. */
 export const runtimeEventWindowLimit = 32
 
-export function runtimeEventWindow(events: TimelineEvent[]): RuntimeEventWindow {
+export function runtimeEventWindow(events: TimelineEvent[], metadata?: RunDetail['event_window']): RuntimeEventWindow {
   const returned = events.length
-  const atLimit = returned >= runtimeEventWindowLimit
-  return { returned, limit: runtimeEventWindowLimit, atLimit, mayBeTruncated: atLimit }
+  const limit = Number.isInteger(metadata?.limit) && (metadata?.limit ?? 0) > 0 ? metadata!.limit! : runtimeEventWindowLimit
+  const atLimit = returned >= limit
+  const mayBeTruncated = metadata?.has_more === false ? false : metadata?.has_more === true ? true : atLimit
+  const remaining = Number.isInteger(metadata?.remaining) && (metadata?.remaining ?? 0) > 0 ? metadata?.remaining : undefined
+  return remaining === undefined ? { returned, limit, atLimit, mayBeTruncated } : { returned, limit, atLimit, mayBeTruncated, remaining }
 }
 
 export function nextExpandedRuntimeGroups(current: ReadonlySet<string>, id: string) {
@@ -1532,7 +1536,7 @@ function computePositions(nodes: GraphStage[], requestedColumns?: number, availa
 }
 
 export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, options: RuntimeGraphOptions = {}): RuntimeGraphModel {
-  const eventWindow = runtimeEventWindow(detail.events)
+  const eventWindow = runtimeEventWindow(detail.events, detail.event_window)
   const calls = collectCalls(sources, detail.events)
   const events = Object.fromEntries([...detail.events].sort((a, b) => a.sequence_no - b.sequence_no).map((event) => [`event:${event.sequence_no}`, event]))
   const orderedCalls = Object.values(calls).sort((left, right) => {
@@ -1656,7 +1660,7 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
     const displayBatchLabel = aggregateSemanticLabel(bucket.calls, bucket.events) ?? '混合观测组'
     const retryEvidence = retryEvidenceEvents(bucket.events)
     const expandedEvents = retryEvidence.length ? retryEvidence : bucket.events
-    return [runtimeGroupNode(bucket.calls, bucket.events, expanded, groupId, groupingBasis, displayBatchLabel, eventWindow.atLimit), ...(expanded ? [...bucket.calls.map(callNode), ...expandedEvents.map(eventNode)] : [])]
+    return [runtimeGroupNode(bucket.calls, bucket.events, expanded, groupId, groupingBasis, displayBatchLabel, eventWindow.mayBeTruncated), ...(expanded ? [...bucket.calls.map(callNode), ...expandedEvents.map(eventNode)] : [])]
   })
   const summaryTools = toolSummaryRows(detail.tool_summary, Object.values(calls))
   const summaryGaps = summaryTools.filter((tool) => tool.missing_count > 0)
@@ -1854,7 +1858,9 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
     const populationTotal = detail.generation_population.baseline_candidate_count + detail.generation_population.descendant_candidate_count
     if (displayTotal !== populationTotal) gaps.push(`接口种群口径不一致：展示 ${displayTotal} 条；基线与新生子代合计 ${populationTotal} 条。`)
   }
-  if (eventWindow.atLimit) gaps.push(`事件窗口已达最近 ${eventWindow.limit} 条上限；更早事件未确认。`)
+  if (eventWindow.mayBeTruncated) gaps.push(eventWindow.remaining !== undefined
+    ? `已加载 ${eventWindow.returned} 条；仍有至少 ${eventWindow.remaining} 条更早记录。`
+    : `已加载 ${eventWindow.returned} 条；已达最近 ${eventWindow.limit} 条窗口上限，更早记录未确认。`)
   if (Object.values(sources).some((source) => (source?.calls.length ?? 0) >= 40)) gaps.push('至少一个节点明细只返回 40 次工具调用；完整调用集合缺少分页契约。')
   if (options.sourceFetch && options.sourceFetch.failed > 0) gaps.push(`节点明细仅加载 ${options.sourceFetch.loaded}/${options.sourceFetch.requested} 个；${options.sourceFetch.failed} 个读取失败或超时，当前运行图不完整。`)
   else if (options.sourceFetch && options.sourceFetch.loaded < options.sourceFetch.requested && (options.sourceFetch.deferred ?? 0) > 0) gaps.push(`节点明细已加载 ${options.sourceFetch.loaded}/${options.sourceFetch.requested} 个；其余 ${options.sourceFetch.deferred} 个按需读取，当前运行图仍不完整。`)
@@ -1882,7 +1888,7 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
     toolSummaryRecords: summaryCoverage.total,
     toolSummaryMaterialized: summaryCoverage.materialized,
     toolSummaryMissing: summaryCoverage.missing,
-    eventWindowAtLimit: eventWindow.atLimit,
+    eventWindowAtLimit: eventWindow.mayBeTruncated,
   }
   return { nodes, edges, positions: computePositions(nodes, options.layoutColumns, options.availableWidth), calls, events, toolGroups, sourceFetch: options.sourceFetch, gaps, stats, eventWindow }
 }

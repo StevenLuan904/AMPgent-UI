@@ -359,6 +359,8 @@ describe('buildRuntimeGraph', () => {
     expect(runtimeEventWindow([])).toEqual({ returned: 0, limit: 32, atLimit: false, mayBeTruncated: false })
     expect(runtimeEventWindow(Array.from({ length: 31 }, (_, index) => ({ sequence_no: index + 1, type: 'run.note', actor: 'observer', payload: {}, occurred_at: '2026-09-04T00:00:00Z' })))).toMatchObject({ returned: 31, atLimit: false, mayBeTruncated: false })
     expect(runtimeEventWindow(Array.from({ length: 32 }, (_, index) => ({ sequence_no: index + 1, type: 'run.note', actor: 'observer', payload: {}, occurred_at: '2026-09-04T00:00:00Z' })))).toEqual({ returned: 32, limit: 32, atLimit: true, mayBeTruncated: true })
+    expect(runtimeEventWindow(Array.from({ length: 32 }, (_, index) => ({ sequence_no: index + 1, type: 'run.note', actor: 'observer', payload: {}, occurred_at: '2026-09-04T00:00:00Z' })), { limit: 32, has_more: false, next_cursor: null })).toEqual({ returned: 32, limit: 32, atLimit: true, mayBeTruncated: false })
+    expect(runtimeEventWindow(Array.from({ length: 32 }, (_, index) => ({ sequence_no: index + 1, type: 'run.note', actor: 'observer', payload: {}, occurred_at: '2026-09-04T00:00:00Z' })), { limit: 32, has_more: true, next_cursor: 'older', remaining: 2248 })).toEqual({ returned: 32, limit: 32, atLimit: true, mayBeTruncated: true, remaining: 2248 })
   })
 
   it('keeps only the newly selected runtime cluster expanded', () => {

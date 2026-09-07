@@ -51,6 +51,7 @@ import { LaneLabel, WorkflowNode, type LaneNode, type StageNode } from './Workfl
 import { assertMatchingRunIdentity, type RunIdentity } from './runIdentity'
 import { formatRunTitle } from './runPresentation'
 import { buildRuntimeGraph, candidatePreviewCountLabel, candidatePreviewDenominator, displayObservedEventName, displayToolName, nextExpandedRuntimeGroups, runtimeEventStatus, type RuntimeGraphModel } from './runtimeGraph'
+import { loadObserverEventHistory, observerEventPageMax, shouldFetchOlderObserverEvents } from './observerEvents'
 import { compactReadableRuntimePositions, selectReadableRuntimeNodeIds } from './runtimeViewport'
 import { nodeDetailCacheTtlMs, observerDetailFailureMessage, observerIdlePrefetchDelayMs, observerInitialPrefetchCount, observerInitialPrefetchStages, observerListTimeoutMs, observerInFlightStageIds, observerMergePrefetchQueue, observerNextPrefetchStage, observerNodeDetailCacheKey, observerNodeDetailTimeoutMs, observerPendingPrefetchCount, observerPollingIntervalMs, observerPrefetchQueueMatches, observerPrefetchInFlightKey, observerPrefetchRefreshExpired, observerPrefetchStageOrder, observerRequeuePrefetchStage, observerResponseIsStale, observerRunDetailCacheKey, observerRunDetailTimeoutMs, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion, observerStaleListRetryDelayMs, observerStaleRetryDelayMs, type ObserverPrefetchQueue } from './observerPolling'
 
@@ -209,12 +210,14 @@ function useRunData(enabled: boolean, apiBase: string) {
   const [syncingStale, setSyncingStale] = useState(Boolean(initialCachedDetail))
   const [detailSyncError, setDetailSyncError] = useState<string | null>(null)
   const [lastSuccessfulDetailAt, setLastSuccessfulDetailAt] = useState<string | null>(initialCachedDetail?.payload.updated_at ?? null)
+  const [eventHistoryLoading, setEventHistoryLoading] = useState(false)
   const [staleListRevision, setStaleListRevision] = useState(0)
   const [staleDetailRevision, setStaleDetailRevision] = useState(0)
   const [nodeDetails, setNodeDetails] = useState<Record<string, NodeDetail>>({})
   const [nodeDetailFetch, setNodeDetailFetch] = useState({ requested: 0, loaded: 0, failed: 0, deferred: 0 })
   const runsInFlight = useRef(false)
   const detailInFlight = useRef(false)
+  const eventHistoryInFlight = useRef(false)
   const pendingDetailRunId = useRef<string | null>(null)
   const detailEpoch = useRef(0)
   const previousSelectedId = useRef(selectedId)
@@ -356,6 +359,29 @@ function useRunData(enabled: boolean, apiBase: string) {
       if (observerPrefetchQueueMatches(prefetchQueue.current, queue.runId, queue.epoch ?? -1)) schedulePrefetchPump()
     })
   }, [apiBase, loadNodeDetail, schedulePrefetchPump])
+
+  const loadOlderEvents = useCallback(async () => {
+    const current = detailRef.current
+    const runId = detailRunIdRef.current
+    if (!current || !runId || eventHistoryInFlight.current || !shouldFetchOlderObserverEvents(current.event_window)) return
+    eventHistoryInFlight.current = true
+    setEventHistoryLoading(true)
+    const epoch = detailEpoch.current
+    try {
+      const detailUrl = `${apiBase}/v1/observer/runs/${runId}`
+      const history = await loadObserverEventHistory(
+        detailUrl,
+        { payload: current },
+        (pageUrl) => fetchJsonWithTimeout<Pick<RunDetail, 'events' | 'event_window'>>(pageUrl, observerRunDetailTimeoutMs),
+        () => false,
+        observerEventPageMax,
+      )
+      if (epoch === detailEpoch.current && detailRunIdRef.current === runId && history.pagesLoaded > 1) setDetail(history.payload)
+    } finally {
+      eventHistoryInFlight.current = false
+      setEventHistoryLoading(false)
+    }
+  }, [apiBase])
   prefetchPumpRef.current = prefetchPump
 
   const loadDetail = useCallback(async (runId: string, quiet = false) => {
@@ -368,9 +394,16 @@ function useRunData(enabled: boolean, apiBase: string) {
     if (!quiet) setLoading(true)
     else setRefreshing(true)
     try {
-      const response = await fetchJsonWithTimeout<RunDetail>(`${apiBase}/v1/observer/runs/${runId}`, observerRunDetailTimeoutMs)
-      const payload = response.payload
-      const staleResponse = observerResponseIsStale(response.cacheState)
+      const detailUrl = `${apiBase}/v1/observer/runs/${runId}`
+      const response = await fetchJsonWithTimeout<RunDetail>(detailUrl, observerRunDetailTimeoutMs)
+      const history = await loadObserverEventHistory(
+        detailUrl,
+        response,
+        (pageUrl) => fetchJsonWithTimeout(pageUrl, observerRunDetailTimeoutMs),
+        (cacheState) => observerResponseIsStale(cacheState ?? null),
+      )
+      const payload = history.payload
+      const staleResponse = observerResponseIsStale(history.cacheState)
       assertMatchingRunIdentity(runIdentities.current[runId] ?? { id: runId }, payload.run)
       if (epoch !== detailEpoch.current) return
       const stages = payload.graph?.nodes ?? []
@@ -585,7 +618,7 @@ function useRunData(enabled: boolean, apiBase: string) {
     return selectedId ? loadDetail(selectedId, true) : undefined
   }, [loadDetail, selectedId])
 
-  return { runs, selectedId, setSelectedId, detail, nodeDetails, nodeDetailFetch, error, loading, refreshing, syncingStale, detailSyncError, lastSuccessfulDetailAt, retry, refresh }
+  return { runs, selectedId, setSelectedId, detail, nodeDetails, nodeDetailFetch, error, loading, refreshing, syncingStale, detailSyncError, lastSuccessfulDetailAt, eventHistoryLoading, loadOlderEvents, retry, refresh }
 }
 
 function RunList({ runs, selectedId, graphObservedCalls, onSelect }: { runs: RunListItem[]; selectedId: string | null; graphObservedCalls: number | null; onSelect: (id: string) => void }) {
@@ -730,6 +763,8 @@ function GraphView({
   onSelectEdge,
   onToggleGroup,
   onAvailableWidthChange,
+  onLoadOlderEvents,
+  eventHistoryLoading,
 }: {
   detail: RunDetail
   nodeDetails: Record<string, NodeDetail>
@@ -745,6 +780,8 @@ function GraphView({
   onSelectEdge: (edge: GraphEdgeDetail) => void
   onToggleGroup: (id: string) => void
   onAvailableWidthChange: (width: number) => void
+  onLoadOlderEvents: () => void
+  eventHistoryLoading: boolean
 }) {
   const flowInstance = useRef<ReactFlowInstance<LaneNode | StageNode, Edge> | null>(null)
   const currentFitRunId = useRef(detail.run.id)
@@ -922,7 +959,7 @@ function GraphView({
         await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()))
         const currentViewport = instance.getViewport()
         const currentGraphRect = graphAreaRef.current?.getBoundingClientRect()
-        const summaryRect = document.querySelector<HTMLElement>('.runtime-graph-summary')?.getBoundingClientRect()
+        const summaryRect = document.querySelector<HTMLElement>('.runtime-history-status')?.getBoundingClientRect()
         const screenRects = readableNodes
           .map((node) => domNodes.get(node.id)?.getBoundingClientRect())
           .filter((rect): rect is DOMRect => Boolean(rect && rect.width > 0 && rect.height > 0))
@@ -1111,7 +1148,7 @@ function GraphView({
     }
     const frame = window.requestAnimationFrame(applyChineseControlLabels)
     return () => window.cancelAnimationFrame(frame)
-  }, [detail.run.id])
+  }, [detail.run.id, runtimeGraph.nodes.length])
   useEffect(() => {
     // Establish one readable initial window per run. Selecting a node, loading
     // more details, resizing the inspector, or expanding a group must not
@@ -1375,6 +1412,14 @@ function GraphView({
           <span>{frame.label}</span>
         </div>
       ))}
+      {runtimeGraph.eventWindow.mayBeTruncated && (
+        <div className="runtime-history-status" role="status">
+          <span>{runtimeGraph.eventWindow.remaining !== undefined
+            ? `已加载 ${runtimeGraph.eventWindow.returned} 条 · 仍有至少 ${runtimeGraph.eventWindow.remaining} 条更早记录`
+            : `已加载 ${runtimeGraph.eventWindow.returned} 条 · 已达最近 ${runtimeGraph.eventWindow.limit} 条窗口上限`}</span>
+          {shouldFetchOlderObserverEvents(detail.event_window) && <button type="button" onClick={onLoadOlderEvents} disabled={eventHistoryLoading}>{eventHistoryLoading ? '正在加载…' : '加载更早事件'}</button>}
+        </div>
+      )}
       <button className="runtime-fit-button" aria-label="回到可读视图" title="回到可读视图" onClick={() => { void fitReadableViewport() }}>可读视图</button>
     </div>
   )
@@ -1932,6 +1977,8 @@ export default function App() {
                 onSelectEdge={(edge) => { setSelectedEdge(edge); setSelectedStage(null) }}
                 onToggleGroup={toggleRuntimeGroup}
                 onAvailableWidthChange={setGraphAvailableWidth}
+                onLoadOlderEvents={data.loadOlderEvents}
+                eventHistoryLoading={data.eventHistoryLoading}
               />
               {selectionMode && (
                 <div className="analysis-selection-bar">
