@@ -40,7 +40,7 @@ import { AnalysisDashboard } from './analysis/AnalysisDashboard'
 import { loadAnalysisSnapshot, type AnalysisSnapshot } from './analysis/dataKernel'
 import { EvidenceDashboard } from './analysis/EvidenceDashboard'
 import { MoleculeViewer } from './MoleculeViewer'
-import { candidateGenerationLabel, formatGenerationPopulation } from './generationPopulation'
+import { candidateGenerationLabel } from './generationPopulation'
 import { formatQualityGateRule, qualityGateCountSteps, qualityGateStatusLabel } from './generationQualityGate'
 import {
   distributionForStage,
@@ -50,10 +50,10 @@ import {
 import { LaneLabel, WorkflowNode, type LaneNode, type StageNode } from './WorkflowNode'
 import { assertMatchingRunIdentity, preserveSelectedRunOnListRefresh, type RunIdentity } from './runIdentity'
 import { formatRunTitle } from './runPresentation'
-import { buildRuntimeGraph, candidatePreviewCountLabel, candidatePreviewDenominator, displayObservedEventName, displayToolName, nextExpandedRuntimeGroups, runtimeEventStatus, type RuntimeGraphModel } from './runtimeGraph'
+import { buildRuntimeGraph, displayObservedEventName, displayToolName, nextExpandedRuntimeGroups, runtimeEventStatus, type RuntimeGraphModel } from './runtimeGraph'
 import { loadObserverEventHistory, mergeObserverDetailEventHistory, observerEventPageMax, shouldFetchOlderObserverEvents } from './observerEvents'
 import { mergeNodeDetailCalls, nodeCallsWindowLabel, observerCallPageLimit, observerNodeCallsUrl } from './observerCalls'
-import { compactReadableRuntimePositions, expandedClusterLayoutRevision, selectReadableRuntimeNodeIds, shouldRefocusExpandedCluster } from './runtimeViewport'
+import { compactReadableRuntimePositions, expandedClusterLayoutRevision, expandedFocusNodeIds, selectReadableRuntimeNodeIds, shouldRefocusExpandedCluster } from './runtimeViewport'
 import { nodeDetailCacheTtlMs, observerDetailFailureMessage, observerDetailRequestAction, observerIdlePrefetchDelayMs, observerInitialPrefetchCount, observerInitialPrefetchStages, observerListTimeoutMs, observerInFlightStageIds, observerMergePrefetchQueue, observerNextPrefetchStage, observerNodeDetailCacheKey, observerNodeDetailTimeoutMs, observerPendingPrefetchCount, observerPollingIntervalMs, observerPrefetchQueueMatches, observerPrefetchInFlightKey, observerPrefetchRefreshExpired, observerPrefetchStageOrder, observerRequeuePrefetchStage, observerResponseIsStale, observerRunDetailCacheKey, observerRunDetailTimeoutMs, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion, observerVisibilityRefreshNeeded, type ObserverPrefetchQueue } from './observerPolling'
 
 const readableViewportMinZoom = 0.68
@@ -740,12 +740,6 @@ function CanvasHeader({ detail, refreshing, syncingStale, detailSyncError, selec
   onToggleSelection: () => void
 }) {
   const isStructureReview = (detail.counts.boltz_poses ?? 0) > 0 || (detail.counts.rosetta_decoys ?? 0) > 0
-  const displayCandidateCount = detail.display_population?.candidate_count ?? detail.counts.candidates
-  const previewTotal = candidatePreviewDenominator(detail)
-  const excludedCandidateCount = detail.display_population?.excluded_candidate_count ?? detail.counts.excluded_candidates ?? detail.candidate_exclusions?.length ?? 0
-  const generationSummary = detail.generation_population
-    ? formatGenerationPopulation(detail.generation_population)
-    : `${displayCandidateCount.toLocaleString()} 个候选`
   const scientificStatus = detail.run.scientific_run_status?.status ?? detail.run.status
   const temporalObservability = detail.run.temporal_observability
   const schedulerHealth = temporalObservability ? schedulerHealthPresentation(temporalObservability) : null
@@ -759,13 +753,7 @@ function CanvasHeader({ detail, refreshing, syncingStale, detailSyncError, selec
         <div className="eyebrow"><span>{detailSyncError ? '数据同步中断' : isAcceptanceFixture ? '验收数据' : syncingStale ? '正在同步' : '科学运行'}</span></div>
         <h1>{isStructureReview ? '短肽结构证据复核' : '序列优先的短肽设计'}</h1>
         <div className="round-meta">
-          <span>{formatTime(detail.run.created_at)} 创建</span><i />
-          <span>{generationSummary}</span><i />
-          <span>候选预览 {candidatePreviewCountLabel(detail.candidates.length, previewTotal)}</span><i />
-          {excludedCandidateCount > 0 && <><span title="历史运行中已存在的生成子代，仅保留审计记录。">{excludedCandidateCount.toLocaleString()} 个历史重放已排除</span><i /></>}
-          {detail.counts.admitted > 0 && <><span>{detail.counts.admitted.toLocaleString()} 个进入结构阶段</span><i /></>}
-          {detail.branches.length > 0 && <><span>{detail.branches.length} 个靶点</span><i /></>}
-          {(detail.counts.boltz_poses > 0 || detail.counts.rosetta_decoys > 0) && <span>{detail.counts.boltz_poses.toLocaleString()} 个复合物构象 · {detail.counts.rosetta_decoys.toLocaleString()} 个界面精修样本</span>}
+          <span>{formatTime(detail.run.created_at)} 创建</span>
         </div>
       </div>
       <div className="header-actions">
@@ -799,8 +787,6 @@ function GraphView({
   onSelectEdge,
   onToggleGroup,
   onAvailableWidthChange,
-  onLoadOlderEvents,
-  eventHistoryLoading,
 }: {
   detail: RunDetail
   nodeDetails: Record<string, NodeDetail>
@@ -816,8 +802,6 @@ function GraphView({
   onSelectEdge: (edge: GraphEdgeDetail) => void
   onToggleGroup: (id: string) => void
   onAvailableWidthChange: (width: number) => void
-  onLoadOlderEvents: () => void
-  eventHistoryLoading: boolean
 }) {
   const flowInstance = useRef<ReactFlowInstance<LaneNode | StageNode, Edge> | null>(null)
   const currentFitRunId = useRef(detail.run.id)
@@ -877,7 +861,12 @@ function GraphView({
     const expandedClusterIds = runtimeGraph.nodes
       .filter((node) => node.runtime?.expanded && ['tool_group', 'event_group', 'batch_group', 'tool_summary_group', 'candidate_group'].includes(node.runtime.node_type))
       .flatMap((group) => runtimeChildNodeIds(runtimeGraph.nodes, group))
-    const visibleIds = [...new Set([...selected, ...expandedClusterIds])]
+    const expandedContextIds = runtimeGraph.nodes
+      .filter((node) => node.runtime?.expanded && !['tool_call', 'candidate_preview', 'tool_summary'].includes(node.runtime.node_type))
+      .flatMap(() => runtimeGraph.nodes
+        .filter((node) => !['tool_call', 'candidate_preview', 'tool_summary', 'tool_summary_group'].includes(node.runtime?.node_type ?? ''))
+        .map((node) => node.id))
+    const visibleIds = [...new Set([...selected, ...expandedClusterIds, ...expandedContextIds])]
     return visibleIds.filter((id) => {
       const node = runtimeGraph.nodes.find((candidate) => candidate.id === id)
       if (expandedSummaryGroup && ['candidate_group', 'candidate_preview', 'generation', 'population_summary'].includes(node?.runtime?.node_type ?? '')) return false
@@ -911,6 +900,14 @@ function GraphView({
     }),
   ].join('|'), [graphViewportSize.height, graphViewportSize.width, readableRuntimeNodeIds, readableRuntimePositions])
   const readableRuntimeNodeIdSet = useMemo(() => new Set(readableRuntimeNodeIds), [readableRuntimeNodeIds])
+  const expandedFocusNodeIdSet = useMemo(() => {
+    const expandedGroup = runtimeGraph.nodes.find((node) => node.runtime?.expanded && ['tool_group', 'event_group', 'batch_group', 'candidate_group'].includes(node.runtime.node_type))
+    if (!expandedGroup) return null
+    const clusterIds = new Set(runtimeChildNodeIds(runtimeGraph.nodes, expandedGroup))
+    clusterIds.add(expandedGroup.id)
+    const contextRadius = graphViewportSize.width > 2000 ? 2 : 1
+    return new Set(expandedFocusNodeIds(readableRuntimeNodeIds, readableRuntimePositions, clusterIds, contextRadius))
+  }, [graphViewportSize.width, readableRuntimeNodeIds, readableRuntimePositions, runtimeGraph.nodes])
   layoutSignatureRef.current = readableLayoutSignature
   const markUserInteracted = useCallback(() => {
     if (!programmaticFit.current) userInteracted.current = true
@@ -1085,7 +1082,9 @@ function GraphView({
       // Fit only the revealed cluster. Adjacent mainline cards remain as
       // lightweight reading context but must not force the scientific detail
       // cards down to an unreadable zoom.
-      const focusNodes = clusterNodes
+      const contextRadius = (graphAreaRef.current?.clientWidth ?? 0) > 2000 ? 2 : 1
+      const focusNodeIds = expandedFocusNodeIds(readableRuntimeNodeIds, readableRuntimePositions, clusterIds, contextRadius)
+      const focusNodes = visibleStageNodes.filter((node) => focusNodeIds.includes(node.id))
       const graphRect = graphAreaRef.current?.getBoundingClientRect()
       if (graphRect) {
         const domNodes = new Map(
@@ -1126,6 +1125,9 @@ function GraphView({
           const availableHeight = Math.max(1, bottomBoundary - topBoundary)
           const zoom = Math.min(1.35, Math.max(expandedClusterMinZoom, Math.min(availableWidth / occupiedWidth, availableHeight / occupiedHeight)))
           await instance.setViewport({
+            // Leave room for the equal right/down stack offset of the nearest
+            // context card; otherwise a card just outside the focus surface
+            // can leak its rear border through the canvas edge.
             x: leftBoundary - graphRect.left + (availableWidth - occupiedWidth * zoom) / 2 - left * zoom,
             y: topBoundary - graphRect.top + (availableHeight - occupiedHeight * zoom) / 2 - top * zoom,
             zoom,
@@ -1140,7 +1142,7 @@ function GraphView({
     } finally {
       programmaticFit.current = false
     }
-  }, [runtimeGraph.nodes])
+  }, [readableRuntimeNodeIdSet, readableRuntimeNodeIds, readableRuntimePositions, runtimeGraph.nodes])
   const fitReadableViewportRef = useRef(fitReadableViewport)
   fitReadableViewportRef.current = fitReadableViewport
   const focusExpandedClusterRef = useRef(focusExpandedCluster)
@@ -1223,10 +1225,6 @@ function GraphView({
     .sort()
     .join('|'), [runtimeGraph.nodes])
   expandedClusterActive.current = Boolean(expandedClusterSignature)
-  const expandedClusterNodeIdSet = useMemo(() => {
-    const group = runtimeGraph.nodes.find((node) => node.runtime?.expanded)
-    return group ? new Set(runtimeChildNodeIds(runtimeGraph.nodes, group)) : null
-  }, [expandedClusterSignature, runtimeGraph.nodes])
   const measureExpandedClusterFrames = useCallback(() => {
     expandedFrameRaf.current = null
     const graphRect = graphAreaRef.current?.getBoundingClientRect()
@@ -1343,13 +1341,17 @@ function GraphView({
         const runtimeDistribution = distributionKey
           ? persistedDistributions[distributionKey] ?? distributionForStage(analysisSnapshot, detail, distributionKey)
           : undefined
-        return ({
+      return ({
       id: stage.id,
       type: 'stage',
+          className: expandedFocusNodeIdSet && !expandedFocusNodeIdSet.has(stage.id) ? 'runtime-context-outside' : undefined,
           position: basePosition,
       initialWidth: 280,
       initialHeight: stage.kind === 'structure' || stage.runtime?.has_viewer ? 250 : stage.id === 'targets' ? 224 : ['tool_group', 'event_group', 'batch_group', 'tool_summary_group', 'candidate_group'].includes(stage.runtime?.node_type ?? '') ? 214 : 156,
-      hidden: !readableRuntimeNodeIdSet.has(stage.id) || Boolean(expandedClusterNodeIdSet && !expandedClusterNodeIdSet.has(stage.id)),
+      // Expanded clusters add local members to the readable surface; context
+      // cards remain mounted and visible so expansion never turns the graph
+      // into an isolated detail sheet.
+      hidden: !readableRuntimeNodeIdSet.has(stage.id),
       data: {
         stage,
         branches: detail.branches,
@@ -1365,7 +1367,7 @@ function GraphView({
         })
       }),
     ]
-  }, [analysisSelection, analysisSnapshot, detail, expandedClusterNodeIdSet, graphViewportSize.height, graphViewportSize.width, handleToggleGroup, nodeDetails, persistedDistributions, readableRuntimeNodeIds, readableRuntimeNodeIdSet, readableRuntimePositions, runtimeGraph, selectedStage, selectionMode])
+  }, [analysisSelection, analysisSnapshot, detail, expandedFocusNodeIdSet, graphViewportSize.height, graphViewportSize.width, handleToggleGroup, nodeDetails, persistedDistributions, readableRuntimeNodeIds, readableRuntimeNodeIdSet, readableRuntimePositions, runtimeGraph, selectedStage, selectionMode])
   const [nodes, setNodes, onNodesChange] = useNodesState<StageNode | LaneNode>(computedNodes)
   useEffect(() => {
     setNodes((current) => {
@@ -1455,27 +1457,14 @@ function GraphView({
       }]
     })
   }, [readableRuntimeNodeIds, readableRuntimePositions, runtimeGraph.edges, runtimeGraph.nodes])
-  const expandedClusterBoundaryEdge = useMemo(() => {
-    if (!expandedClusterNodeIdSet) return null
-    return runtimeGraph.edges.find((edge) => {
-      const sourceInCluster = expandedClusterNodeIdSet.has(edge.source)
-      const targetInCluster = expandedClusterNodeIdSet.has(edge.target)
-      return sourceInCluster !== targetInCluster && (sourceInCluster || targetInCluster)
-    }) ?? null
-  }, [expandedClusterNodeIdSet, runtimeGraph.edges])
   const visibleGraphEdges = useMemo(() => {
-    const visibleRuntimeEdges = runtimeGraph.edges.filter((edge) => {
-      if (!expandedClusterNodeIdSet) return readableRuntimeNodeIdSet.has(edge.source) && readableRuntimeNodeIdSet.has(edge.target)
-      const sourceInCluster = expandedClusterNodeIdSet.has(edge.source)
-      const targetInCluster = expandedClusterNodeIdSet.has(edge.target)
-      return (sourceInCluster && targetInCluster) || edge === expandedClusterBoundaryEdge
-    })
+    const edgeSurface = expandedFocusNodeIdSet ?? readableRuntimeNodeIdSet
+    const visibleRuntimeEdges = runtimeGraph.edges.filter((edge) => edgeSurface.has(edge.source) && edgeSurface.has(edge.target))
     const visibleReadingEdges = readablePresentationEdges.filter((edge) => {
-      if (!expandedClusterNodeIdSet) return true
-      return expandedClusterNodeIdSet.has(edge.source) && expandedClusterNodeIdSet.has(edge.target)
+      return edgeSurface.has(edge.source) && edgeSurface.has(edge.target)
     })
     return [...visibleRuntimeEdges, ...visibleReadingEdges]
-  }, [expandedClusterBoundaryEdge, expandedClusterNodeIdSet, readablePresentationEdges, readableRuntimeNodeIdSet, runtimeGraph.edges])
+  }, [expandedFocusNodeIdSet, readablePresentationEdges, readableRuntimeNodeIdSet, runtimeGraph.edges])
   const edges = useMemo<Edge[]>(() => visibleGraphEdges.map((edge, index) => {
     const source = stageById[edge.source] as GraphStage | undefined
     const active = source?.status === 'completed' || source?.status === 'running'
@@ -1492,8 +1481,7 @@ function GraphView({
       id: `${edge.source}-${edge.target}-${index}`,
       source: edge.source,
       target: edge.target,
-      type: 'smoothstep',
-      pathOptions: { offset: 22, stepPosition: 0.55 },
+      type: 'default',
       animated: source?.status === 'running' && isCausal,
       label: edge.provenance === 'derived' && !isParallel && !isSequence ? undefined : edge.label ?? undefined,
       labelStyle: { fill: '#536176', fontSize: 11, fontWeight: 600 },
@@ -1563,14 +1551,6 @@ function GraphView({
           <span>{frame.label}</span>
         </div>
       ))}
-      {runtimeGraph.eventWindow.mayBeTruncated && (
-        <div className="runtime-history-status" role="status">
-          <span>{runtimeGraph.eventWindow.remaining !== undefined
-            ? `已加载 ${runtimeGraph.eventWindow.returned} 条 · 仍有至少 ${runtimeGraph.eventWindow.remaining} 条更早记录`
-            : `已加载 ${runtimeGraph.eventWindow.returned} 条 · 已达最近 ${runtimeGraph.eventWindow.limit} 条窗口上限`}</span>
-          {shouldFetchOlderObserverEvents(detail.event_window) && <button type="button" onClick={onLoadOlderEvents} disabled={eventHistoryLoading}>{eventHistoryLoading ? '正在加载…' : '加载更早事件'}</button>}
-        </div>
-      )}
       <button className="runtime-fit-button" aria-label="回到可读视图" title="回到可读视图" onClick={() => { void fitReadableViewport() }}>可读视图</button>
     </div>
   )
@@ -1909,7 +1889,7 @@ function EdgeInspector({ graph, edge, onClose }: { graph: RuntimeGraphModel; edg
   )
 }
 
-function RuntimeInspector({ detail, nodeDetails, graph, nodeId, distribution, onClose, onToggleGroup, onLoadOlderCalls }: { detail: RunDetail; nodeDetails: Record<string, NodeDetail>; graph: RuntimeGraphModel; nodeId: string; distribution?: ResultDistributionData | null; onClose: () => void; onToggleGroup: (id: string) => void; onLoadOlderCalls: (stageId: string) => Promise<boolean> }) {
+function RuntimeInspector({ detail, nodeDetails, graph, nodeId, distribution, onClose, onToggleGroup, onLoadOlderCalls, onLoadOlderEvents, eventHistoryLoading }: { detail: RunDetail; nodeDetails: Record<string, NodeDetail>; graph: RuntimeGraphModel; nodeId: string; distribution?: ResultDistributionData | null; onClose: () => void; onToggleGroup: (id: string) => void; onLoadOlderCalls: (stageId: string) => Promise<boolean>; onLoadOlderEvents: () => void; eventHistoryLoading: boolean }) {
   const [loadingCallStageId, setLoadingCallStageId] = useState<string | null>(null)
   const node = graph.nodes.find((item) => item.id === nodeId)
   if (!node) return null
@@ -1957,6 +1937,7 @@ function RuntimeInspector({ detail, nodeDetails, graph, nodeId, distribution, on
       </section>}
       {node.runtime?.viewer_key && <p className="runtime-note runtime-viewer-note">结构证据映射：{node.runtime.viewer_mapping_basis ?? '后端 viewer 键'} · {node.runtime.viewer_key}</p>}
       {isRuntimeGroup && <section className="inspector-section runtime-group-section"><div className="section-title"><h3>{node.runtime?.node_type === 'tool_summary_group' ? '汇总工具明细' : node.runtime?.node_type === 'candidate_group' ? '代际预览明细' : '聚合明细'}</h3><button className="group-toggle" onClick={() => onToggleGroup(node.id)}>{groupExpanded ? '收起明细' : '展开明细'}</button></div><p className="runtime-note">{node.runtime?.node_type === 'tool_summary_group' ? '数据库状态汇总；逐次明细按工具与状态核对。' : node.runtime?.node_type === 'candidate_group' ? '按候选记录中明确的 generation 字段分组。' : '默认显示批次或连续观测的汇总事实；展开后可按时间查看工具调用与生命周期事件。'}</p><code className="runtime-raw-key">聚合依据：{node.runtime?.grouping_basis ?? '候选记录 generation 字段'}</code>{node.runtime?.viewer_key && <p className="runtime-note">结构证据：{node.runtime.viewer_mapping_basis ?? '后端 viewer 键'} · {node.runtime.viewer_key}</p>}<div className="runtime-group-list">{summaryTools.map((item) => <div key={item.tool_name}><span className="attempt-state pending" /><b>{item.display_name}</b><small>汇总 {item.summary_count} · 已映射 {item.materialized_count} · 尚缺 {item.missing_count}</small></div>)}{groupCalls.map((item) => <div key={item.id}><span className={`attempt-state ${item.status}`} /><b>尝试 {item.attempt}</b><small>{statusText[item.status] ?? item.status}</small></div>)}{groupEvents.map((item) => { const status = runtimeEventStatus(item); return <div key={`event:${item.sequence_no}`}><span className={`attempt-state ${status}`} /><b>事件 {item.sequence_no}</b><small>{readableEventType(item.type, item.payload)} · {statusText[status]} · {formatTime(item.occurred_at)}</small></div> })}{groupCandidates.map((item) => <div key={item.id}><span className="attempt-state pending" /><b>候选预览 {item.proposal_rank === null ? item.id.slice(0, 8) : `#${item.proposal_rank}`}</b><small>{item.length} 个氨基酸 · {item.parent_id ? '有父候选' : '未返回父候选'}</small></div>)}</div></section>}
+      {graph.eventWindow.mayBeTruncated && <details className="inspector-section runtime-provenance event-history-disclosure"><summary>事件历史 · 按游标读取 <ChevronRight /></summary><div className="detail-content"><button type="button" className="group-toggle" onClick={onLoadOlderEvents} disabled={eventHistoryLoading}>{eventHistoryLoading ? '读取中…' : '加载历史事件'}</button></div></details>}
       {isToolSummary && <section className="inspector-section runtime-group-section"><div className="section-title"><h3>汇总级工具证据</h3><span className="stage-badge pending">仅汇总</span></div><p className="runtime-note">数据库状态汇总；逐次明细未返回。</p><div className="runtime-group-list">{summaryTools.map((item) => <div key={item.tool_name}><span className="attempt-state pending" /><b>汇总数量 {item.summary_count}</b><small>已映射 {item.materialized_count} · 尚缺 {item.missing_count}</small></div>)}</div></section>}
       {isPopulationSummary && <section className="inspector-section"><div className="analysis-kicker"><Layers3 />种群口径</div><p className="runtime-note">数据库汇总计数；候选轨仅展示当前返回预览。</p><div className="fact-grid">{node.insight.facts.map((fact) => <Fact key={fact.label} label={fact.label} value={fact.value} />)}</div></section>}
       {call && <section className="inspector-section"><div className="section-title"><h3>工具调用与证据</h3><span className={`stage-badge ${node.status}`}>{statusText[call.status] ?? call.status}</span></div><ToolAttemptDisclosure call={call} /></section>}
@@ -2136,8 +2117,6 @@ export default function App() {
                 onSelectEdge={(edge) => { setSelectedEdge(edge); setSelectedStage(null) }}
                 onToggleGroup={toggleRuntimeGroup}
                 onAvailableWidthChange={setGraphAvailableWidth}
-                onLoadOlderEvents={data.loadOlderEvents}
-                eventHistoryLoading={data.eventHistoryLoading}
               />
               {selectionMode && (
                 <div className="analysis-selection-bar">
@@ -2170,6 +2149,8 @@ export default function App() {
               onClose={() => setSelectedStage(null)}
               onToggleGroup={toggleRuntimeGroup}
               onLoadOlderCalls={data.loadOlderNodeCalls}
+              onLoadOlderEvents={data.loadOlderEvents}
+              eventHistoryLoading={data.eventHistoryLoading}
             />}
             {selectedEdge && <EdgeInspector graph={runtimeGraph!} edge={selectedEdge} onClose={() => setSelectedEdge(null)} />}
           </>

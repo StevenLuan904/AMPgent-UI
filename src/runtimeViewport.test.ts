@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { compactReadableRuntimePositions, expandedClusterLayoutRevision, selectReadableRuntimeNodeIds, shouldRefocusExpandedCluster } from './runtimeViewport'
+import { compactReadableRuntimePositions, expandedClusterLayoutRevision, expandedFocusNodeIds, selectReadableRuntimeNodeIds, shouldRefocusExpandedCluster } from './runtimeViewport'
 import type { GraphStage, RuntimeNodeMeta } from './types'
 
 const node = (id: string, node_type: RuntimeNodeMeta['node_type'], observed_at: string, status: GraphStage['status'] = 'completed', expanded = false) => ({
@@ -76,6 +76,27 @@ describe('readable runtime viewport selection', () => {
     expect(selectReadableRuntimeNodeIds(nodes)).toEqual(['event-1', 'tool-1', 'generation-1'])
   })
 
+  it('focuses an expanded cluster with only its nearest workflow context', () => {
+    const positions = {
+      decision: { x: 190, y: 220 },
+      group: { x: 520, y: 220 },
+      childA: { x: 835, y: 110 },
+      childB: { x: 835, y: 300 },
+      recovery: { x: 1150, y: 220 },
+      population: { x: 1465, y: 220 },
+    }
+    expect(expandedFocusNodeIds(
+      ['decision', 'group', 'childA', 'childB', 'recovery', 'population'],
+      positions,
+      new Set(['group', 'childA', 'childB']),
+    )).toEqual(expect.arrayContaining(['decision', 'group', 'childA', 'childB', 'recovery']))
+    expect(expandedFocusNodeIds(
+      ['decision', 'group', 'childA', 'childB', 'recovery', 'population'],
+      positions,
+      new Set(['group', 'childA', 'childB']),
+    )).not.toContain('population')
+  })
+
   it('preserves context across dense multi-lane runs without growing the fit set', () => {
     const nodes = [
       ...Array.from({ length: 8 }, (_, index) => node(`event-${index + 1}`, 'event_group', `2026-09-04T00:00:${String(index + 1).padStart(2, '0')}Z`)),
@@ -86,7 +107,7 @@ describe('readable runtime viewport selection', () => {
     const selected = selectReadableRuntimeNodeIds(nodes)
     expect(selected).toHaveLength(7)
     expect(selected.filter((id) => id.startsWith('event-'))).toHaveLength(1)
-    expect(selected.filter((id) => id.startsWith('tool-'))).toHaveLength(1)
+    expect(selected.filter((id) => id.startsWith('tool-'))).toHaveLength(2)
     expect(selected.filter((id) => id.startsWith('generation-'))).toHaveLength(4)
     expect(selected).toEqual(expect.arrayContaining(['event-8', 'tool-12', 'generation-1', 'generation-2', 'generation-3', 'generation-4']))
   })
@@ -113,6 +134,31 @@ describe('readable runtime viewport selection', () => {
       node('generation', 'candidate_group', ''),
     ]
     expect(selectReadableRuntimeNodeIds(nodes, 6)).toContain('retry-group')
+  })
+
+  it('keeps an operational replay bundle out of the folded scientific spine', () => {
+    const nodes = [
+      node('decision', 'event_group', '2026-09-04T00:00:01Z'),
+      { ...node('replay', 'tool_call', '2026-09-04T00:00:02Z'), runtime: { node_type: 'tool_call' as const, observed_at: '2026-09-04T00:00:02Z', expanded: false, raw_label: 'autoresearch-replay-bundle' } },
+      node('metric', 'tool_group', '2026-09-04T00:00:03Z'),
+      node('population', 'population_summary', ''),
+      node('generation', 'candidate_group', ''),
+    ]
+    expect(selectReadableRuntimeNodeIds(nodes, 5)).not.toContain('replay')
+    expect(selectReadableRuntimeNodeIds(nodes, 5)).toEqual(expect.arrayContaining(['decision', 'metric', 'population', 'generation']))
+  })
+
+  it('keeps a real metric distribution node visible without promoting the audit summary', () => {
+    const nodes = [
+      node('decision', 'event_group', '2026-09-04T00:00:01Z'),
+      { ...node('mic', 'tool_group', '2026-09-04T00:00:02Z'), runtime: { ...node('mic', 'tool_group', '2026-09-04T00:00:02Z').runtime, distribution_key: 'mic' } },
+      node('summary', 'tool_summary_group', '', 'pending'),
+      node('population', 'population_summary', ''),
+      node('generation', 'candidate_group', ''),
+    ]
+    const selected = selectReadableRuntimeNodeIds(nodes, 5)
+    expect(selected).toContain('mic')
+    expect(selected).not.toContain('summary')
   })
 
   it('keeps a population summary and a candidate preview group discoverable together', () => {

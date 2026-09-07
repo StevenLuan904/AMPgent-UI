@@ -1,7 +1,7 @@
 import type { GraphStage } from './types'
 
 type ReadableRuntimeNode = Pick<GraphStage, 'id' | 'status'> & {
-  runtime?: Pick<NonNullable<GraphStage['runtime']>, 'node_type' | 'observed_at' | 'expanded' | 'child_ids' | 'raw_label' | 'activity_retry_count'>
+  runtime?: Pick<NonNullable<GraphStage['runtime']>, 'node_type' | 'observed_at' | 'expanded' | 'child_ids' | 'raw_label' | 'activity_retry_count' | 'distribution_key'>
 }
 
 export type RuntimeNodePosition = { x: number; y: number }
@@ -82,6 +82,34 @@ export function compactReadableRuntimePositions(
   return output
 }
 
+/**
+ * Keeps an expanded cluster readable while preserving a small amount of
+ * workflow context. The rest of the selected spine stays mounted and can be
+ * reached by panning; it must not force the expanded evidence back to a tiny
+ * full-workflow fit.
+ */
+export function expandedFocusNodeIds(
+  readableIds: ReadonlyArray<string>,
+  positions: RuntimeNodePositions,
+  clusterIds: ReadonlySet<string>,
+  contextRadius = 1,
+) {
+  const ordered = readableIds
+    .filter((id) => positions[id])
+    .sort((left, right) => positions[left].x - positions[right].x || positions[left].y - positions[right].y || left.localeCompare(right))
+  const clusterIndexes = ordered
+    .map((id, index) => clusterIds.has(id) ? index : -1)
+    .filter((index) => index >= 0)
+  if (!clusterIndexes.length) return []
+  const first = Math.min(...clusterIndexes)
+  const last = Math.max(...clusterIndexes)
+  const context = [
+    ...ordered.slice(Math.max(0, first - contextRadius), first),
+    ...ordered.slice(last + 1, last + 1 + contextRadius),
+  ]
+  return [...new Set([...ordered.filter((id) => clusterIds.has(id)), ...context])]
+}
+
 const eventTypes = new Set(['lifecycle_event', 'event_group'])
 const toolTypes = new Set(['tool_call', 'tool_group', 'batch_group'])
 const structureTypes = new Set(['structure_evidence'])
@@ -98,6 +126,14 @@ function laneFor(node: ReadableRuntimeNode) {
   if (populationTypes.has(type ?? '')) return 'population'
   if (candidateTypes.has(type ?? '')) return 'candidates'
   return null
+}
+
+export function isReadableRuntimeNode(node: ReadableRuntimeNode) {
+  const rawLabel = node.runtime?.raw_label?.toLowerCase() ?? ''
+  // Replay bundles are operational evidence, not a scientific decision or
+  // result. Keep them in the graph/detail view, but do not spend a folded
+  // main-spine slot on them.
+  return !(node.runtime?.node_type === 'tool_call' && /replay[-_.]?bundle/.test(rawLabel))
 }
 
 function observedTime(node: ReadableRuntimeNode) {
@@ -144,7 +180,7 @@ export function selectReadableRuntimeNodeIds(nodes: ReadonlyArray<ReadableRuntim
     limit = positions
     positions = undefined
   }
-  const eligible = nodes.filter((node) => laneFor(node) !== null)
+  const eligible = nodes.filter((node) => laneFor(node) !== null && isReadableRuntimeNode(node) && !summaryTypes.has(node.runtime?.node_type ?? ''))
   if (!eligible.length || limit <= 0) return []
   const target = Math.min(Math.max(5, limit), eligible.length)
   const selected = new Set<string>()
@@ -171,8 +207,8 @@ export function selectReadableRuntimeNodeIds(nodes: ReadonlyArray<ReadableRuntim
   }
   ensureContext((node) => node.runtime?.raw_label === 'agent_decision.recorded')
   ensureContext((node) => (node.runtime?.activity_retry_count ?? 0) > 0)
+  ensureContext((node) => Boolean(node.runtime?.distribution_key) && !summaryTypes.has(node.runtime?.node_type ?? ''))
   ensureContext((node) => laneFor(node) === 'structure')
-  ensureContext((node) => laneFor(node) === 'summary')
   ensureContext((node) => laneFor(node) === 'population')
   ensureContext((node) => laneFor(node) === 'candidates')
   ensureContext((node) => laneFor(node) === 'events')

@@ -52,7 +52,7 @@ export interface RuntimeGraphModel {
   eventWindow: RuntimeEventWindow
 }
 
-/** The read-only observer currently hard-limits run events to the newest 32 rows. */
+/** Default page size used when an Observer response omits event-window metadata. */
 export const runtimeEventWindowLimit = 32
 
 export function runtimeEventWindow(events: TimelineEvent[], metadata?: RunDetail['event_window']): RuntimeEventWindow {
@@ -723,10 +723,8 @@ export function runtimeObservationSummary(observedCalls: number, materializedToo
 
 export function runtimeActivitySummary(runStatus: string, openActivities: number, eventWindowAtLimit = false) {
   const normalizedCount = Number.isInteger(openActivities) && openActivities >= 0 ? openActivities : 0
-  if (runStatus === 'running' && normalizedCount === 0) {
-    return eventWindowAtLimit ? '等待后续活动观测 · 更早事件未确认' : '等待后续活动观测'
-  }
-  if (runStatus === 'running' && eventWindowAtLimit) return `未闭合观测 ${normalizedCount} · 更早事件未确认`
+  if (runStatus === 'running' && normalizedCount === 0) return '等待后续活动观测'
+  if (runStatus === 'running' && eventWindowAtLimit) return `未闭合观测 ${normalizedCount}`
   return `开放活动 ${normalizedCount}`
 }
 
@@ -756,7 +754,7 @@ export function runtimeOpenActivityLabel(events: TimelineEvent[], eventWindowAtL
   const labelText = labels.size === 1
     ? [...labels.entries()].map(([label, count]) => count > 1 ? `${label} ${count} 项` : label).join('')
     : `${open.size} 项活动`
-  return `${eventWindowAtLimit ? '未闭合观测' : '正在执行'} · ${labelText}${latestAttempt > 1 ? ` · 第 ${latestAttempt} 次尝试` : ''}${eventWindowAtLimit ? ' · 更早事件未确认' : ''}`
+  return `${eventWindowAtLimit ? '未闭合观测' : '正在执行'} · ${labelText}${latestAttempt > 1 ? ` · 第 ${latestAttempt} 次尝试` : ''}`
 }
 
 function latestTerminalActivityEvent(events: TimelineEvent[]) {
@@ -1915,9 +1913,7 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
     const populationTotal = detail.generation_population.baseline_candidate_count + detail.generation_population.descendant_candidate_count
     if (displayTotal !== populationTotal) gaps.push(`接口种群口径不一致：展示 ${displayTotal} 条；基线与新生子代合计 ${populationTotal} 条。`)
   }
-  if (eventWindow.mayBeTruncated) gaps.push(eventWindow.remaining !== undefined
-    ? `已加载 ${eventWindow.returned} 条；仍有至少 ${eventWindow.remaining} 条更早记录。`
-    : `已加载 ${eventWindow.returned} 条；已达最近 ${eventWindow.limit} 条窗口上限，更早记录未确认。`)
+  if (eventWindow.mayBeTruncated) gaps.push('事件历史仅返回当前页；可在详情中继续读取。')
   if (Object.values(sources).some((source) => (source?.calls.length ?? 0) >= 40 && !source?.calls_window)) gaps.push('至少一个节点明细只返回当前调用窗口；旧接口未提供分页游标。')
   if (Object.values(sources).some((source) => source?.calls_window?.has_more)) gaps.push('部分节点仍有更早工具调用；可在详情中继续加载。')
   if (options.sourceFetch && options.sourceFetch.failed > 0) gaps.push(`节点明细仅加载 ${options.sourceFetch.loaded}/${options.sourceFetch.requested} 个；${options.sourceFetch.failed} 个读取失败或超时，当前运行图不完整。`)

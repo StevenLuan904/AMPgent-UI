@@ -89,6 +89,12 @@ const runtimeTermDescriptions: Record<string, string> = {
   rosetta: 'Rosetta：采样并评估蛋白质与短肽的界面构象。',
 }
 
+function compactRuntimeTitle(label: string) {
+  return label
+    .replace(/^智能体决策已记录(?=\s*·)/, '智能体决策')
+    .replace(/(\d+)\s*次调用/g, '$1次')
+}
+
 export function WorkflowNode({ data }: NodeProps<StageNode>) {
   const { stage, branches, viewer, selected, distribution, onToggleGroup } = data
   const progress = stage.total > 0 ? Math.min(100, Math.round((stage.current / stage.total) * 100)) : 0
@@ -109,6 +115,11 @@ export function WorkflowNode({ data }: NodeProps<StageNode>) {
   const compactFacts = stage.insight.facts
     .filter((fact) => !/^(0\s*\/\s*0|0\/0|暂无结果|—)$/.test(String(fact.value).trim()))
     .filter((fact) => !isRuntime || !['序号', '运行参与者', '语义'].includes(fact.label))
+    // Runtime titles already carry an explicit round/generation when the
+    // backend supplied it. Do not render that same persisted fact twice.
+    .filter((fact) => !(isRuntime
+      && ['代际', '轮次', '尝试'].includes(fact.label)
+      && stage.label.includes(String(fact.value))))
     .slice(0, isRuntime ? 1 : 2)
   const hasPrimaryVisual = hasStructureEvidence || hasEvidenceDistribution || showsTargets
   const showCompactFacts = compactFacts.length > 0 && (!isRuntime || (!hasPrimaryVisual && !isRuntimeGroup && runtimeType !== 'tool_summary'))
@@ -116,13 +127,14 @@ export function WorkflowNode({ data }: NodeProps<StageNode>) {
   // the same verdict or generation inside the card makes one observation
   // look like two independent facts.
   const showVerdict = !isRuntime && !hasEvidenceDistribution
+  const visibleTitle = isRuntime ? compactRuntimeTitle(stage.label) : stage.label
   return (
     <div className={`workflow-node stage-${stage.id} kind-${stage.kind} grade-${stage.insight.grade} node-${stage.status}${isRuntime ? ` is-runtime-node runtime-${runtimeType}${isRuntimeGroup && stage.runtime?.expanded ? ' runtime-group-expanded' : ''}` : ''}${selected ? ' is-selected' : ''}`}>
       {isRuntimeGroup && <span className="runtime-group-hit-area" aria-hidden="true" />}
       <Handle type="target" position={Position.Left} className="flow-handle" />
       <div className="node-heading">
         <span className="node-icon"><Icon /></span>
-        <span className="node-title" title={runtimeTitle}>{stage.label}</span>
+        <span className="node-title" title={runtimeTitle}>{visibleTitle}</span>
         <span className="node-state-icon">{stage.insight.grade === 'neutral' ? null : stateIcon}</span>
       </div>
       {showVerdict && <div

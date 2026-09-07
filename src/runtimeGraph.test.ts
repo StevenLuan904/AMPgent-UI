@@ -350,8 +350,8 @@ describe('buildRuntimeGraph', () => {
   it('uses a precise running summary when no activity boundary is open', () => {
     expect(runtimeActivitySummary('running', 0)).toBe('等待后续活动观测')
     expect(runtimeActivitySummary('running', 2)).toBe('开放活动 2')
-    expect(runtimeActivitySummary('running', 2, true)).toBe('未闭合观测 2 · 更早事件未确认')
-    expect(runtimeActivitySummary('running', 0, true)).toBe('等待后续活动观测 · 更早事件未确认')
+    expect(runtimeActivitySummary('running', 2, true)).toBe('未闭合观测 2')
+    expect(runtimeActivitySummary('running', 0, true)).toBe('等待后续活动观测')
     expect(runtimeActivitySummary('succeeded', 0)).toBe('开放活动 0')
   })
 
@@ -385,7 +385,7 @@ describe('buildRuntimeGraph', () => {
       { sequence_no: 3, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: 'execution-open-retry', activity_id: 7, attempt: 2, activity_type: 'evaluate_v38_sequence_metric' }, occurred_at: '2026-09-04T00:00:03Z' },
     ]
     expect(runtimeOpenActivityLabel(events)).toBe('正在执行 · 序列指标计算 · 第 2 次尝试')
-    expect(runtimeOpenActivityLabel(events, true)).toBe('未闭合观测 · 序列指标计算 · 第 2 次尝试 · 更早事件未确认')
+    expect(runtimeOpenActivityLabel(events, true)).toBe('未闭合观测 · 序列指标计算 · 第 2 次尝试')
   })
 
   it('distinguishes materialized calls from the authoritative run record count', () => {
