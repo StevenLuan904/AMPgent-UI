@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { assertMatchingRunIdentity } from './runIdentity'
+import { assertMatchingRunIdentity, preserveSelectedRunOnListRefresh } from './runIdentity'
 
 const identity = {
   id: 'postgres-run',
@@ -8,6 +8,13 @@ const identity = {
 }
 
 describe('运行三元身份校验', () => {
+  it('列表刷新时保留用户当前选择，即使深链运行不在最近列表', () => {
+    expect(preserveSelectedRunOnListRefresh('deep-linked-run', ['newest-run'])).toBe('deep-linked-run')
+    expect(preserveSelectedRunOnListRefresh('user-selected-run', [])).toBe('user-selected-run')
+    expect(preserveSelectedRunOnListRefresh(null, ['newest-run'])).toBe('newest-run')
+    expect(preserveSelectedRunOnListRefresh(null, [])).toBeNull()
+  })
+
   it('接受完全一致的 PostgreSQL 与 Temporal 身份', () => {
     expect(() => assertMatchingRunIdentity(identity, { ...identity, workflow_id: 'temporal-workflow' })).not.toThrow()
   })

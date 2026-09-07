@@ -5,6 +5,11 @@ export interface RunIdentity {
   workflow_id?: string | null
 }
 
+/** Keep an explicit user selection stable across list refreshes. */
+export function preserveSelectedRunOnListRefresh(currentId: string | null, listedRunIds: string[]) {
+  return currentId ?? listedRunIds[0] ?? null
+}
+
 export function assertMatchingRunIdentity(expected: RunIdentity, actual: RunIdentity) {
   if (actual.id !== expected.id) {
     throw new Error('运行身份校验失败：PostgreSQL 运行编号不一致')

@@ -48,7 +48,7 @@ import {
   type ResultDistributionData,
 } from './ResultDistribution'
 import { LaneLabel, WorkflowNode, type LaneNode, type StageNode } from './WorkflowNode'
-import { assertMatchingRunIdentity, type RunIdentity } from './runIdentity'
+import { assertMatchingRunIdentity, preserveSelectedRunOnListRefresh, type RunIdentity } from './runIdentity'
 import { formatRunTitle } from './runPresentation'
 import { buildRuntimeGraph, candidatePreviewCountLabel, candidatePreviewDenominator, displayObservedEventName, displayToolName, nextExpandedRuntimeGroups, runtimeEventStatus, type RuntimeGraphModel } from './runtimeGraph'
 import { loadObserverEventHistory, mergeObserverDetailEventHistory, observerEventPageMax, shouldFetchOlderObserverEvents } from './observerEvents'
@@ -271,7 +271,7 @@ function useRunData(enabled: boolean, apiBase: string) {
         // A valid deep link may point to an older run outside the recent-list page.
         // Keep it and let the authoritative detail endpoint validate it; an invalid
         // link then fails honestly instead of silently showing another run.
-        const next = requestedRunId ?? (current && payload.runs.some((run) => run.id === current) ? current : payload.runs[0]?.id ?? null)
+        const next = preserveSelectedRunOnListRefresh(current, payload.runs.map((run) => run.id))
         if (next) window.localStorage.setItem(selectedRunStorageKey, next)
         return next
       })
