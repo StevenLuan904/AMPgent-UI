@@ -7,6 +7,46 @@ type ReadableRuntimeNode = Pick<GraphStage, 'id' | 'status'> & {
 export type RuntimeNodePosition = { x: number; y: number }
 export type RuntimeNodePositions = Readonly<Record<string, RuntimeNodePosition>>
 
+export type ExpandedClusterLayoutMember = {
+  id: string
+  position?: RuntimeNodePosition
+  width?: number
+  height?: number
+}
+
+/**
+ * Produces a stable revision for the visible members of an expanded cluster.
+ * The revision intentionally includes measured dimensions: React Flow can
+ * first mount a fallback-sized card and measure its real distribution later.
+ */
+export function expandedClusterLayoutRevision(
+  groupId: string,
+  members: ReadonlyArray<ExpandedClusterLayoutMember>,
+) {
+  return `${groupId}|${[...members]
+    .sort((left, right) => left.id.localeCompare(right.id))
+    .map((member) => [
+      member.id,
+      member.position ? `${Math.round(member.position.x)},${Math.round(member.position.y)}` : 'unplaced',
+      Math.round(member.width ?? 0),
+      Math.round(member.height ?? 0),
+    ].join(':'))
+    .join('|')}`
+}
+
+/**
+ * A cluster needs another bounded focus pass only when its real layout
+ * changed. A scientist who has panned or zoomed after the last pass owns the
+ * viewport, so hydration must not take it back.
+ */
+export function shouldRefocusExpandedCluster(
+  previousRevision: string | null,
+  nextRevision: string,
+  userMovedViewport: boolean,
+) {
+  return Boolean(nextRevision) && nextRevision !== previousRevision && !userMovedViewport
+}
+
 /**
  * Compresses only the selected reading surface. Hidden historical nodes keep
  * their original layout, but no longer reserve empty columns in the opening

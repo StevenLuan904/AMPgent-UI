@@ -53,14 +53,14 @@ import { formatRunTitle } from './runPresentation'
 import { buildRuntimeGraph, candidatePreviewCountLabel, candidatePreviewDenominator, displayObservedEventName, displayToolName, nextExpandedRuntimeGroups, runtimeEventStatus, type RuntimeGraphModel } from './runtimeGraph'
 import { loadObserverEventHistory, mergeObserverDetailEventHistory, observerEventPageMax, shouldFetchOlderObserverEvents } from './observerEvents'
 import { mergeNodeDetailCalls, nodeCallsWindowLabel, observerCallPageLimit, observerNodeCallsUrl } from './observerCalls'
-import { compactReadableRuntimePositions, selectReadableRuntimeNodeIds } from './runtimeViewport'
+import { compactReadableRuntimePositions, expandedClusterLayoutRevision, selectReadableRuntimeNodeIds, shouldRefocusExpandedCluster } from './runtimeViewport'
 import { nodeDetailCacheTtlMs, observerDetailFailureMessage, observerIdlePrefetchDelayMs, observerInitialPrefetchCount, observerInitialPrefetchStages, observerListTimeoutMs, observerInFlightStageIds, observerMergePrefetchQueue, observerNextPrefetchStage, observerNodeDetailCacheKey, observerNodeDetailTimeoutMs, observerPendingPrefetchCount, observerPollingIntervalMs, observerPrefetchQueueMatches, observerPrefetchInFlightKey, observerPrefetchRefreshExpired, observerPrefetchStageOrder, observerRequeuePrefetchStage, observerResponseIsStale, observerRunDetailCacheKey, observerRunDetailTimeoutMs, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion, observerStaleListRetryDelayMs, observerStaleRetryDelayMs, type ObserverPrefetchQueue } from './observerPolling'
 
 const readableViewportMinZoom = 0.68
 // A focused cluster may legitimately be wider than the readable spine. Keep
 // this lower bound local to the explicit focus action so the default view
 // remains readable while every revealed member and its frame can be seen.
-const expandedClusterMinZoom = 0.52
+const expandedClusterMinZoom = 0.9
 
 type RuntimeClusterFrame = { id: string; label: string; left: number; top: number; width: number; height: number }
 
@@ -829,6 +829,12 @@ function GraphView({
   const pendingClusterFocus = useRef<string | null | undefined>(undefined)
   const clusterFocusRequestId = useRef(0)
   const clusterFocusTimer = useRef<number | null>(null)
+  const expandedClusterFocusTimer = useRef<number | null>(null)
+  const expandedClusterFocusInFlight = useRef(false)
+  const expandedClusterFocusedRevision = useRef<string | null>(null)
+  const expandedClusterLayoutRevisionRef = useRef('')
+  const expandedClusterActive = useRef(false)
+  const clusterFocusUserMoved = useRef(false)
   const clusterResizeTimer = useRef<number | null>(null)
   const previousGraphViewportSize = useRef({ width: 0, height: 0 })
   const expandedFrameRaf = useRef<number | null>(null)
@@ -915,6 +921,8 @@ function GraphView({
     // Neither action should be mistaken for a fresh run or let hydration
     // reclaim the viewport after the user has chosen a reading surface.
     userInteracted.current = true
+    clusterFocusUserMoved.current = false
+    expandedClusterFocusedRevision.current = null
     clusterFocusRequestId.current += 1
     pendingClusterFocus.current = isExpanded ? null : id
     if (clusterFocusTimer.current !== null) window.clearTimeout(clusterFocusTimer.current)
@@ -924,7 +932,7 @@ function GraphView({
   }, [onToggleGroup, runtimeGraph.nodes])
   const fitReadableViewport = useCallback(async () => {
     const instance = flowInstance.current
-    if (!instance) return false
+    if (!instance || expandedClusterActive.current) return false
     const readableIds = new Set(readableRuntimeNodeIds)
     if (!instance.getNodes().some((node) => readableIds.has(node.id))) return false
     programmaticFit.current = true
@@ -1076,19 +1084,6 @@ function GraphView({
       // lightweight reading context but must not force the scientific detail
       // cards down to an unreadable zoom.
       const focusNodes = clusterNodes
-      await instance.fitView({
-        nodes: focusNodes.map((node) => ({ id: node.id })),
-        // Include room for the dashed frame and card shadows. The readable
-        // spine's zoom floor must not clip a deliberately expanded cluster.
-        padding: 0.32,
-        duration: 240,
-        minZoom: expandedClusterMinZoom,
-        maxZoom: 1.35,
-      })
-      // React Flow fits its node boxes, while the cluster frame is painted
-      // from DOM bounds. A second bounded pass keeps that frame and every
-      // revealed card inside the actual canvas after animation settles.
-      await new Promise<void>((resolve) => window.requestAnimationFrame(() => window.requestAnimationFrame(() => resolve())))
       const graphRect = graphAreaRef.current?.getBoundingClientRect()
       if (graphRect) {
         const domNodes = new Map(
@@ -1099,40 +1094,44 @@ function GraphView({
           .map((node) => domNodes.get(node.id)?.getBoundingClientRect())
           .filter((rect): rect is DOMRect => Boolean(rect && rect.width > 0 && rect.height > 0))
         if (rects.length) {
-          const padding = 20
-          const left = Math.min(...rects.map((rect) => rect.left)) - padding
-          const top = Math.min(...rects.map((rect) => rect.top)) - padding
-          const right = Math.max(...rects.map((rect) => rect.right)) + padding
-          const bottom = Math.max(...rects.map((rect) => rect.bottom)) + padding
+          const currentViewport = instance.getViewport()
+          const currentZoom = Math.max(0.01, currentViewport.zoom)
+          const measuredBounds = focusNodes.map((node) => {
+            const element = domNodes.get(node.id)
+            const rect = element?.getBoundingClientRect()
+            const width = rect && rect.width > 0 ? rect.width / currentZoom : node.measured?.width ?? 280
+            const height = rect && rect.height > 0 ? rect.height / currentZoom : node.measured?.height ?? 156
+            return {
+              left: node.position.x,
+              top: node.position.y,
+              right: node.position.x + width,
+              bottom: node.position.y + height,
+            }
+          })
+          const worldPadding = 28 / currentZoom
+          const left = Math.min(...measuredBounds.map((rect) => rect.left)) - worldPadding
+          const top = Math.min(...measuredBounds.map((rect) => rect.top)) - worldPadding
+          const right = Math.max(...measuredBounds.map((rect) => rect.right)) + worldPadding
+          const bottom = Math.max(...measuredBounds.map((rect) => rect.bottom)) + worldPadding
           const summaryRect = document.querySelector<HTMLElement>('.runtime-history-status')?.getBoundingClientRect()
           const leftBoundary = graphRect.left + 12
           const topBoundary = Math.max(graphRect.top + 12, (summaryRect?.bottom ?? graphRect.top) + 10)
           const rightBoundary = graphRect.right - 12
           const bottomBoundary = graphRect.bottom - 12
-          const viewport = instance.getViewport()
-          const horizontalOverflow = Math.max(0, leftBoundary - left) + Math.max(0, right - rightBoundary)
-          const verticalOverflow = Math.max(0, topBoundary - top) + Math.max(0, bottom - bottomBoundary)
-          if (horizontalOverflow > 0 || verticalOverflow > 0) {
-            const occupiedWidth = Math.max(1, right - left)
-            const occupiedHeight = Math.max(1, bottom - top)
-            const availableWidth = Math.max(1, rightBoundary - leftBoundary)
-            const availableHeight = Math.max(1, bottomBoundary - topBoundary)
-            const correction = Math.min(1, availableWidth / occupiedWidth, availableHeight / occupiedHeight)
-            // A focused cluster is allowed to use a smaller zoom than the
-            // default readable spine when its real measured cards plus one
-            // context card cannot fit. Clipping a card is less legible than
-            // a bounded, explicit focus view.
-            const zoom = Math.max(0.36, viewport.zoom * correction)
-            const centerX = (left + right) / 2
-            const centerY = (top + bottom) / 2
-            const targetCenterX = (leftBoundary + rightBoundary) / 2
-            const targetCenterY = (topBoundary + bottomBoundary) / 2
-            await instance.setViewport({
-              x: viewport.x + (targetCenterX - centerX) - (centerX - graphRect.left - viewport.x) * (zoom / Math.max(0.01, viewport.zoom) - 1),
-              y: viewport.y + (targetCenterY - centerY) - (centerY - graphRect.top - viewport.y) * (zoom / Math.max(0.01, viewport.zoom) - 1),
-              zoom,
-            }, { duration: 0 })
-          }
+          const occupiedWidth = Math.max(1, right - left)
+          const occupiedHeight = Math.max(1, bottom - top)
+          const availableWidth = Math.max(1, rightBoundary - leftBoundary)
+          const availableHeight = Math.max(1, bottomBoundary - topBoundary)
+          const zoom = Math.min(1.35, Math.max(expandedClusterMinZoom, Math.min(availableWidth / occupiedWidth, availableHeight / occupiedHeight)))
+          await instance.setViewport({
+            x: leftBoundary - graphRect.left + (availableWidth - occupiedWidth * zoom) / 2 - left * zoom,
+            y: topBoundary - graphRect.top + (availableHeight - occupiedHeight * zoom) / 2 - top * zoom,
+            zoom,
+          }, { duration: 240 })
+          // React Flow can finish its own measurement one frame after the
+          // explicit bounds pass. A bounded correction keeps the dashed frame
+          // inside the real canvas without another full-graph fit.
+          await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()))
         }
       }
       return true
@@ -1146,7 +1145,7 @@ function GraphView({
   focusExpandedClusterRef.current = focusExpandedCluster
   const scheduleInitialFit = useCallback(() => {
     const signature = layoutSignatureRef.current
-    if (!signature || userInteracted.current || initialFitInFlight.current || initialFitAttempts.current >= 8 || lastFittedLayoutSignature.current === signature) return
+    if (!signature || expandedClusterActive.current || userInteracted.current || initialFitInFlight.current || initialFitAttempts.current >= 8 || lastFittedLayoutSignature.current === signature) return
     if (!flowInstance.current) {
       initialFitPending.current = true
       return
@@ -1175,6 +1174,7 @@ function GraphView({
   useEffect(() => () => {
     if (initialFitTimer.current !== null) window.clearTimeout(initialFitTimer.current)
     if (clusterFocusTimer.current !== null) window.clearTimeout(clusterFocusTimer.current)
+    if (expandedClusterFocusTimer.current !== null) window.clearTimeout(expandedClusterFocusTimer.current)
     if (clusterResizeTimer.current !== null) window.clearTimeout(clusterResizeTimer.current)
     if (expandedFrameRaf.current !== null) window.cancelAnimationFrame(expandedFrameRaf.current)
   }, [])
@@ -1206,6 +1206,10 @@ function GraphView({
     initialFitPending.current = true
     if (initialFitTimer.current !== null) window.clearTimeout(initialFitTimer.current)
     userInteracted.current = false
+    clusterFocusUserMoved.current = false
+    expandedClusterFocusedRevision.current = null
+    if (expandedClusterFocusTimer.current !== null) window.clearTimeout(expandedClusterFocusTimer.current)
+    expandedClusterFocusTimer.current = null
     scheduleInitialFit()
   }, [detail.run.id, scheduleInitialFit])
   useEffect(() => {
@@ -1216,6 +1220,11 @@ function GraphView({
     .map((node) => node.id)
     .sort()
     .join('|'), [runtimeGraph.nodes])
+  expandedClusterActive.current = Boolean(expandedClusterSignature)
+  const expandedClusterNodeIdSet = useMemo(() => {
+    const group = runtimeGraph.nodes.find((node) => node.runtime?.expanded)
+    return group ? new Set(runtimeChildNodeIds(runtimeGraph.nodes, group)) : null
+  }, [expandedClusterSignature, runtimeGraph.nodes])
   const measureExpandedClusterFrames = useCallback(() => {
     expandedFrameRaf.current = null
     const graphRect = graphAreaRef.current?.getBoundingClientRect()
@@ -1270,6 +1279,7 @@ function GraphView({
     const groupId = expandedClusterSignature.split('|')[0]
     if (!groupId) return
     if (clusterResizeTimer.current !== null) window.clearTimeout(clusterResizeTimer.current)
+    if (clusterFocusUserMoved.current) return
     clusterResizeTimer.current = window.setTimeout(() => {
       clusterResizeTimer.current = null
       void focusExpandedClusterRef.current(groupId).finally(scheduleExpandedClusterMeasure)
@@ -1296,7 +1306,11 @@ function GraphView({
       if (requestId !== clusterFocusRequestId.current) return
       clusterFocusTimer.current = null
       const focus = requested === null ? fitReadableViewportRef.current() : focusExpandedClusterRef.current(requested)
+      const revisionAtStart = expandedClusterLayoutRevisionRef.current
       void focus.then((succeeded) => {
+        if (succeeded && requested !== null && revisionAtStart === expandedClusterLayoutRevisionRef.current && !clusterFocusUserMoved.current) {
+          expandedClusterFocusedRevision.current = revisionAtStart
+        }
         if (!succeeded && attempt < 4 && requestId === clusterFocusRequestId.current) {
           clusterFocusTimer.current = window.setTimeout(() => retryFocus(attempt + 1), 120)
         }
@@ -1333,7 +1347,7 @@ function GraphView({
           position: basePosition,
       initialWidth: 280,
       initialHeight: stage.kind === 'structure' || stage.runtime?.has_viewer ? 250 : stage.id === 'targets' ? 224 : ['tool_group', 'event_group', 'batch_group', 'tool_summary_group', 'candidate_group'].includes(stage.runtime?.node_type ?? '') ? 214 : 156,
-      hidden: !readableRuntimeNodeIdSet.has(stage.id),
+      hidden: !readableRuntimeNodeIdSet.has(stage.id) || Boolean(expandedClusterNodeIdSet && !expandedClusterNodeIdSet.has(stage.id)),
       data: {
         stage,
         branches: detail.branches,
@@ -1349,7 +1363,7 @@ function GraphView({
         })
       }),
     ]
-  }, [analysisSelection, analysisSnapshot, detail, graphViewportSize.height, graphViewportSize.width, handleToggleGroup, nodeDetails, persistedDistributions, readableRuntimeNodeIds, readableRuntimeNodeIdSet, readableRuntimePositions, runtimeGraph, selectedStage, selectionMode])
+  }, [analysisSelection, analysisSnapshot, detail, expandedClusterNodeIdSet, graphViewportSize.height, graphViewportSize.width, handleToggleGroup, nodeDetails, persistedDistributions, readableRuntimeNodeIds, readableRuntimeNodeIdSet, readableRuntimePositions, runtimeGraph, selectedStage, selectionMode])
   const [nodes, setNodes, onNodesChange] = useNodesState<StageNode | LaneNode>(computedNodes)
   useEffect(() => {
     setNodes((current) => {
@@ -1357,6 +1371,66 @@ function GraphView({
       return computedNodes.map((node) => ({ ...node, measured: measuredById.get(node.id) ?? node.measured }))
     })
   }, [computedNodes, setNodes])
+  const expandedClusterLayoutRevisionValue = useMemo(() => {
+    const expandedGroups = runtimeGraph.nodes.filter((node) => node.runtime?.expanded)
+    return expandedGroups.map((group) => {
+      const members = runtimeChildNodeIds(runtimeGraph.nodes, group).map((id) => {
+        const flowNode = nodes.find((node) => node.id === id)
+        return {
+          id,
+          position: readableRuntimePositions[id] ?? runtimeGraph.positions[id],
+          width: flowNode?.measured?.width,
+          height: flowNode?.measured?.height,
+        }
+      })
+      return expandedClusterLayoutRevision(group.id, members)
+    }).sort().join('||')
+  }, [nodes, readableRuntimePositions, runtimeGraph.nodes, runtimeGraph.positions])
+  expandedClusterLayoutRevisionRef.current = expandedClusterLayoutRevisionValue
+  useEffect(() => {
+    const revision = expandedClusterLayoutRevisionValue
+    if (!expandedClusterSignature || !revision) {
+      expandedClusterFocusedRevision.current = null
+      if (expandedClusterFocusTimer.current !== null) window.clearTimeout(expandedClusterFocusTimer.current)
+      expandedClusterFocusTimer.current = null
+      return
+    }
+    if (!shouldRefocusExpandedCluster(expandedClusterFocusedRevision.current, revision, clusterFocusUserMoved.current)) return
+    const groupId = expandedClusterSignature.split('|')[0]
+    if (!groupId) return
+    if (expandedClusterFocusTimer.current !== null) window.clearTimeout(expandedClusterFocusTimer.current)
+    let attempts = 0
+    const runFocus = () => {
+      expandedClusterFocusTimer.current = null
+      if (clusterFocusUserMoved.current || expandedClusterFocusedRevision.current === revision) return
+      if (expandedClusterLayoutRevisionRef.current !== revision) return
+      if (expandedClusterFocusInFlight.current) {
+        if (attempts < 6) expandedClusterFocusTimer.current = window.setTimeout(runFocus, 120)
+        return
+      }
+      attempts += 1
+      expandedClusterFocusInFlight.current = true
+      void focusExpandedClusterRef.current(groupId).then((succeeded) => {
+        expandedClusterFocusInFlight.current = false
+        const latestRevision = expandedClusterLayoutRevisionRef.current
+        if (succeeded && latestRevision === revision && !clusterFocusUserMoved.current) {
+          expandedClusterFocusedRevision.current = revision
+          return
+        }
+        if (!clusterFocusUserMoved.current && attempts < 6) {
+          // Hydration can add a member while the first focus animation is in
+          // flight. Re-run against the current measured cluster, but stop
+          // after a bounded number of settling passes.
+          expandedClusterFocusTimer.current = window.setTimeout(runFocus, 160)
+        }
+      }).finally(scheduleExpandedClusterMeasure)
+    }
+    expandedClusterFocusTimer.current = window.setTimeout(runFocus, 220)
+    return () => {
+      if (expandedClusterFocusTimer.current !== null) window.clearTimeout(expandedClusterFocusTimer.current)
+      expandedClusterFocusTimer.current = null
+    }
+  }, [expandedClusterLayoutRevisionValue, expandedClusterSignature, scheduleExpandedClusterMeasure])
   const stageById = useMemo(() => Object.fromEntries(runtimeGraph.nodes.map((node) => [node.id, node])), [runtimeGraph.nodes])
   const readablePresentationEdges = useMemo<GraphEdgeDetail[]>(() => {
     const ordered = readableRuntimeNodeIds
@@ -1379,10 +1453,27 @@ function GraphView({
       }]
     })
   }, [readableRuntimeNodeIds, readableRuntimePositions, runtimeGraph.edges, runtimeGraph.nodes])
-  const visibleGraphEdges = useMemo(() => [
-    ...runtimeGraph.edges.filter((edge) => readableRuntimeNodeIdSet.has(edge.source) && readableRuntimeNodeIdSet.has(edge.target)),
-    ...readablePresentationEdges,
-  ], [readablePresentationEdges, readableRuntimeNodeIdSet, runtimeGraph.edges])
+  const expandedClusterBoundaryEdge = useMemo(() => {
+    if (!expandedClusterNodeIdSet) return null
+    return runtimeGraph.edges.find((edge) => {
+      const sourceInCluster = expandedClusterNodeIdSet.has(edge.source)
+      const targetInCluster = expandedClusterNodeIdSet.has(edge.target)
+      return sourceInCluster !== targetInCluster && (sourceInCluster || targetInCluster)
+    }) ?? null
+  }, [expandedClusterNodeIdSet, runtimeGraph.edges])
+  const visibleGraphEdges = useMemo(() => {
+    const visibleRuntimeEdges = runtimeGraph.edges.filter((edge) => {
+      if (!expandedClusterNodeIdSet) return readableRuntimeNodeIdSet.has(edge.source) && readableRuntimeNodeIdSet.has(edge.target)
+      const sourceInCluster = expandedClusterNodeIdSet.has(edge.source)
+      const targetInCluster = expandedClusterNodeIdSet.has(edge.target)
+      return (sourceInCluster && targetInCluster) || edge === expandedClusterBoundaryEdge
+    })
+    const visibleReadingEdges = readablePresentationEdges.filter((edge) => {
+      if (!expandedClusterNodeIdSet) return true
+      return expandedClusterNodeIdSet.has(edge.source) && expandedClusterNodeIdSet.has(edge.target)
+    })
+    return [...visibleRuntimeEdges, ...visibleReadingEdges]
+  }, [expandedClusterBoundaryEdge, expandedClusterNodeIdSet, readablePresentationEdges, readableRuntimeNodeIdSet, runtimeGraph.edges])
   const edges = useMemo<Edge[]>(() => visibleGraphEdges.map((edge, index) => {
     const source = stageById[edge.source] as GraphStage | undefined
     const active = source?.status === 'completed' || source?.status === 'running'
@@ -1441,7 +1532,12 @@ function GraphView({
         onEdgeClick={handleEdgeClick}
         onNodesChange={onNodesChange}
         onInit={(instance) => { flowInstance.current = instance; scheduleInitialFit() }}
-        onMoveStart={() => { if (!programmaticFit.current) userInteracted.current = true }}
+        onMoveStart={() => {
+          if (!programmaticFit.current) {
+            userInteracted.current = true
+            if (expandedClusterSignature) clusterFocusUserMoved.current = true
+          }
+        }}
         onMove={() => { scheduleExpandedClusterMeasure() }}
         fitViewOptions={{ padding: 0.12, minZoom: readableViewportMinZoom, maxZoom: 1 }}
         defaultViewport={{ x: 22, y: 68, zoom: 0.9 }}

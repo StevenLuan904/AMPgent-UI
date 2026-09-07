@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { compactReadableRuntimePositions, selectReadableRuntimeNodeIds } from './runtimeViewport'
+import { compactReadableRuntimePositions, expandedClusterLayoutRevision, selectReadableRuntimeNodeIds, shouldRefocusExpandedCluster } from './runtimeViewport'
 import type { GraphStage, RuntimeNodeMeta } from './types'
 
 const node = (id: string, node_type: RuntimeNodeMeta['node_type'], observed_at: string, status: GraphStage['status'] = 'completed', expanded = false) => ({
@@ -9,6 +9,35 @@ const node = (id: string, node_type: RuntimeNodeMeta['node_type'], observed_at: 
 })
 
 describe('readable runtime viewport selection', () => {
+  it('creates a new focus revision when members are hydrated or measured differently', () => {
+    const initial = expandedClusterLayoutRevision('tool-summary-group', [
+      { id: 'tool-a', position: { x: 520, y: 110 }, width: 280, height: 156 },
+    ])
+    const hydrated = expandedClusterLayoutRevision('tool-summary-group', [
+      { id: 'tool-a', position: { x: 520, y: 110 }, width: 280, height: 156 },
+      { id: 'tool-b', position: { x: 850, y: 110 }, width: 280, height: 156 },
+    ])
+    const remeasured = expandedClusterLayoutRevision('tool-summary-group', [
+      { id: 'tool-a', position: { x: 520, y: 110 }, width: 280, height: 214 },
+      { id: 'tool-b', position: { x: 850, y: 110 }, width: 280, height: 156 },
+    ])
+    expect(hydrated).not.toBe(initial)
+    expect(remeasured).not.toBe(hydrated)
+    expect(shouldRefocusExpandedCluster(initial, hydrated, false)).toBe(true)
+    expect(shouldRefocusExpandedCluster(hydrated, remeasured, false)).toBe(true)
+  })
+
+  it('does not reclaim the viewport after a scientist pans or zooms', () => {
+    const previous = expandedClusterLayoutRevision('tool-summary-group', [
+      { id: 'tool-a', position: { x: 520, y: 110 }, width: 280, height: 156 },
+    ])
+    const next = expandedClusterLayoutRevision('tool-summary-group', [
+      { id: 'tool-a', position: { x: 520, y: 110 }, width: 280, height: 214 },
+    ])
+    expect(shouldRefocusExpandedCluster(previous, next, true)).toBe(false)
+    expect(shouldRefocusExpandedCluster(previous, previous, false)).toBe(false)
+  })
+
   it('removes columns occupied only by hidden records', () => {
     const compact = compactReadableRuntimePositions(
       ['decision', 'recovery', 'population'],
