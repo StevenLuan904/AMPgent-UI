@@ -54,7 +54,7 @@ import { buildRuntimeGraph, candidatePreviewCountLabel, candidatePreviewDenomina
 import { loadObserverEventHistory, mergeObserverDetailEventHistory, observerEventPageMax, shouldFetchOlderObserverEvents } from './observerEvents'
 import { mergeNodeDetailCalls, nodeCallsWindowLabel, observerCallPageLimit, observerNodeCallsUrl } from './observerCalls'
 import { compactReadableRuntimePositions, expandedClusterLayoutRevision, selectReadableRuntimeNodeIds, shouldRefocusExpandedCluster } from './runtimeViewport'
-import { nodeDetailCacheTtlMs, observerDetailFailureMessage, observerIdlePrefetchDelayMs, observerInitialPrefetchCount, observerInitialPrefetchStages, observerListTimeoutMs, observerInFlightStageIds, observerMergePrefetchQueue, observerNextPrefetchStage, observerNodeDetailCacheKey, observerNodeDetailTimeoutMs, observerPendingPrefetchCount, observerPollingIntervalMs, observerPrefetchQueueMatches, observerPrefetchInFlightKey, observerPrefetchRefreshExpired, observerPrefetchStageOrder, observerRequeuePrefetchStage, observerResponseIsStale, observerRunDetailCacheKey, observerRunDetailTimeoutMs, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion, observerStaleListRetryDelayMs, observerStaleRetryDelayMs, type ObserverPrefetchQueue } from './observerPolling'
+import { nodeDetailCacheTtlMs, observerDetailFailureMessage, observerDetailRequestAction, observerIdlePrefetchDelayMs, observerInitialPrefetchCount, observerInitialPrefetchStages, observerListTimeoutMs, observerInFlightStageIds, observerMergePrefetchQueue, observerNextPrefetchStage, observerNodeDetailCacheKey, observerNodeDetailTimeoutMs, observerPendingPrefetchCount, observerPollingIntervalMs, observerPrefetchQueueMatches, observerPrefetchInFlightKey, observerPrefetchRefreshExpired, observerPrefetchStageOrder, observerRequeuePrefetchStage, observerResponseIsStale, observerRunDetailCacheKey, observerRunDetailTimeoutMs, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion, observerVisibilityRefreshNeeded, type ObserverPrefetchQueue } from './observerPolling'
 
 const readableViewportMinZoom = 0.68
 // A focused cluster may legitimately be wider than the readable spine. Keep
@@ -215,14 +215,14 @@ function useRunData(enabled: boolean, apiBase: string) {
   const [detailSyncError, setDetailSyncError] = useState<string | null>(null)
   const [lastSuccessfulDetailAt, setLastSuccessfulDetailAt] = useState<string | null>(initialCachedDetail?.payload.updated_at ?? null)
   const [eventHistoryLoading, setEventHistoryLoading] = useState(false)
-  const [staleListRevision, setStaleListRevision] = useState(0)
-  const [staleDetailRevision, setStaleDetailRevision] = useState(0)
   const [nodeDetails, setNodeDetails] = useState<Record<string, NodeDetail>>({})
   const [nodeDetailFetch, setNodeDetailFetch] = useState({ requested: 0, loaded: 0, failed: 0, deferred: 0 })
   const runsInFlight = useRef(false)
   const detailInFlight = useRef(false)
+  const detailInFlightRunId = useRef<string | null>(null)
   const eventHistoryInFlight = useRef(false)
   const pendingDetailRunId = useRef<string | null>(null)
+  const wasDocumentHidden = useRef(document.hidden)
   const detailEpoch = useRef(0)
   const previousSelectedId = useRef(selectedId)
   const previousApiBase = useRef(apiBase)
@@ -259,7 +259,6 @@ function useRunData(enabled: boolean, apiBase: string) {
       const payload = response.payload
       const staleResponse = observerResponseIsStale(response.cacheState)
       runsStale.current = staleResponse
-      if (staleResponse) setStaleListRevision((revision) => revision + 1)
       setSyncingStale(runsStale.current || detailStale.current)
       runIdentities.current = Object.fromEntries(payload.runs.map((run) => [run.id, {
         id: run.id,
@@ -417,11 +416,16 @@ function useRunData(enabled: boolean, apiBase: string) {
 
   const loadDetail = useCallback(async (runId: string, quiet = false) => {
     if (quiet && eventHistoryInFlight.current && detailRunIdRef.current === runId) return
-    if (detailInFlight.current) {
+    const requestAction = observerDetailRequestAction(detailInFlight.current, runId, detailInFlightRunId.current)
+    if (requestAction === 'skip') return
+    if (requestAction === 'after-current') {
+      // A selection change during an older request is the only queued case.
+      // Refresh timers for the same run are discarded instead of chaining.
       pendingDetailRunId.current = runId
       return
     }
     detailInFlight.current = true
+    detailInFlightRunId.current = runId
     const epoch = detailEpoch.current
     if (!quiet) setLoading(true)
     else setRefreshing(true)
@@ -463,7 +467,6 @@ function useRunData(enabled: boolean, apiBase: string) {
       setError(null)
       detailStale.current = staleResponse
       setSyncingStale(runsStale.current || detailStale.current)
-      if (staleResponse) setStaleDetailRevision((revision) => revision + 1)
       setLoading(false)
 
       const orderedStages = observerPrefetchStageOrder(stages)
@@ -508,13 +511,14 @@ function useRunData(enabled: boolean, apiBase: string) {
       }
     } finally {
       detailInFlight.current = false
+      detailInFlightRunId.current = null
       if (epoch === detailEpoch.current) {
         setLoading(false)
         setRefreshing(false)
       }
       const pendingRunId = pendingDetailRunId.current
       pendingDetailRunId.current = null
-      if (pendingRunId && pendingRunId !== runId) void loadDetail(pendingRunId)
+      if (pendingRunId && pendingRunId !== runId && selectedIdRef.current === pendingRunId) void loadDetail(pendingRunId)
     }
   }, [apiBase, loadNodeDetail, schedulePrefetchPump])
 
@@ -580,20 +584,18 @@ function useRunData(enabled: boolean, apiBase: string) {
   }, [detail?.run.status, enabled, loadDetail, reportBackgroundSyncError, selectedId])
 
   useEffect(() => {
-    if (!enabled || !selectedId || !syncingStale || staleDetailRevision === 0) return
-    const timer = window.setTimeout(() => {
-      if (!document.hidden && !detailInFlight.current) void loadDetail(selectedId, true).catch(reportBackgroundSyncError)
-    }, observerStaleRetryDelayMs)
-    return () => window.clearTimeout(timer)
-  }, [enabled, loadDetail, reportBackgroundSyncError, selectedId, staleDetailRevision, syncingStale])
-
-  useEffect(() => {
-    if (!enabled || !runsStale.current || staleListRevision === 0) return
-    const timer = window.setTimeout(() => {
-      if (!document.hidden && !runsInFlight.current) void loadRuns().catch(reportBackgroundSyncError)
-    }, observerStaleListRetryDelayMs)
-    return () => window.clearTimeout(timer)
-  }, [enabled, loadRuns, reportBackgroundSyncError, staleListRevision])
+    if (!enabled) return
+    const onVisibilityChange = () => {
+      const wasHidden = wasDocumentHidden.current
+      wasDocumentHidden.current = document.hidden
+      if (!observerVisibilityRefreshNeeded(document.hidden, wasHidden)) return
+      void loadRuns().catch(reportBackgroundSyncError)
+      const runId = selectedIdRef.current
+      if (runId) void loadDetail(runId, true).catch(reportBackgroundSyncError)
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange)
+  }, [enabled, loadDetail, loadRuns, reportBackgroundSyncError])
 
   const retry = useCallback(async () => {
     setError(null)

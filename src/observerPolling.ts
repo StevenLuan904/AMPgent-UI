@@ -27,6 +27,23 @@ export function observerPollingIntervalMs(status: string | undefined) {
   return activeRunStatuses.has(status ?? '') ? 30_000 : 300_000
 }
 
+export type ObserverDetailRequestAction = 'start' | 'skip' | 'after-current'
+
+/**
+ * A refresh timer must never create a second request for the same run. A run
+ * switch is the only case that may be remembered, and it is started once the
+ * old request has settled so two expensive detail aggregations never overlap.
+ */
+export function observerDetailRequestAction(inFlight: boolean, requestedRunId: string, inFlightRunId: string | null): ObserverDetailRequestAction {
+  if (!inFlight) return 'start'
+  return requestedRunId === inFlightRunId ? 'skip' : 'after-current'
+}
+
+/** Resume a single refresh only on a real hidden -> visible transition. */
+export function observerVisibilityRefreshNeeded(isHidden: boolean, wasHidden: boolean) {
+  return !isHidden && wasHidden
+}
+
 export function observerInitialPrefetchCount(stageCount: number) {
   return Math.min(1, Math.max(0, stageCount))
 }

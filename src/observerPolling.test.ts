@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { nodeDetailCacheTtlMs, observerCreatePrefetchQueue, observerDetailFailureMessage, observerIdlePrefetchDelayMs, observerInitialPrefetchCount, observerInitialPrefetchStages, observerInFlightStageIds, observerListTimeoutMs, observerMergePrefetchQueue, observerNextPrefetchStage, observerNodeDetailCacheKey, observerNodeDetailTimeoutMs, observerPendingPrefetchCount, observerPollingIntervalMs, observerPrefetchQueueMatches, observerPrefetchInFlightKey, observerPrefetchRefreshExpired, observerPrefetchStageOrder, observerRequeuePrefetchStage, observerResponseIsStale, observerRunDetailCacheKey, observerRunDetailTimeoutMs, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion, observerStaleListRetryDelayMs, observerStaleRetryDelayMs } from './observerPolling'
+import { nodeDetailCacheTtlMs, observerCreatePrefetchQueue, observerDetailFailureMessage, observerDetailRequestAction, observerIdlePrefetchDelayMs, observerInitialPrefetchCount, observerInitialPrefetchStages, observerInFlightStageIds, observerListTimeoutMs, observerMergePrefetchQueue, observerNextPrefetchStage, observerNodeDetailCacheKey, observerNodeDetailTimeoutMs, observerPendingPrefetchCount, observerPollingIntervalMs, observerPrefetchQueueMatches, observerPrefetchInFlightKey, observerPrefetchRefreshExpired, observerPrefetchStageOrder, observerRequeuePrefetchStage, observerResponseIsStale, observerRunDetailCacheKey, observerRunDetailTimeoutMs, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion, observerStaleListRetryDelayMs, observerStaleRetryDelayMs, observerVisibilityRefreshNeeded } from './observerPolling'
 
 describe('observer refresh policy', () => {
   it('refreshes active runs more often than terminal runs', () => {
@@ -7,6 +7,18 @@ describe('observer refresh policy', () => {
     expect(observerPollingIntervalMs('submitted')).toBe(30_000)
     expect(observerPollingIntervalMs('succeeded')).toBe(300_000)
     expect(observerPollingIntervalMs('failed')).toBe(300_000)
+  })
+
+  it('skips same-run detail refreshes and waits for a run switch to settle', () => {
+    expect(observerDetailRequestAction(false, 'run-a', null)).toBe('start')
+    expect(observerDetailRequestAction(true, 'run-a', 'run-a')).toBe('skip')
+    expect(observerDetailRequestAction(true, 'run-b', 'run-a')).toBe('after-current')
+  })
+
+  it('refreshes once after a hidden tab becomes visible', () => {
+    expect(observerVisibilityRefreshNeeded(true, false)).toBe(false)
+    expect(observerVisibilityRefreshNeeded(false, false)).toBe(false)
+    expect(observerVisibilityRefreshNeeded(false, true)).toBe(true)
   })
 
   it('limits initial stage prefetch and keeps a bounded detail cache TTL', () => {
