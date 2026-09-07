@@ -225,12 +225,12 @@ button:focus-visible { outline: 2px solid #315be8; outline-offset: 2px; }
 .result-distribution { margin: 0; color: #334155; }
 .result-distribution.compact { height: 73px; padding: 7px 0 0; border-top: 1px solid #edf0f4; }
 .distribution-mini-label, .distribution-mini-axis { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.distribution-mini-label span { color: #7d8798; font-size: 8px; }
-.distribution-mini-label b { color: #334155; font: 600 8px "DM Mono", monospace; }
+.distribution-mini-label span { color: #68758a; font-size: 11px; font-weight: 600; }
+.distribution-mini-label b { color: #334155; font: 600 10px "DM Mono", monospace; }
 .distribution-mini-plot { position: relative; height: 40px; overflow: visible; }
 .distribution-mini-plot .distribution-stat-marker { width: 4px; }
 .result-distribution.compact svg { display: block; width: 100%; height: 40px; overflow: visible; }
-.distribution-mini-axis { margin-top: -7px; color: #9aa3b1; font: 500 7px "DM Mono", monospace; }
+.distribution-mini-axis { margin-top: -7px; color: #7f8a9c; font: 600 9px "DM Mono", monospace; }
 .distribution-axis { stroke: #cdd5df; stroke-width: 1; }
 .distribution-grid { stroke: #eef2f6; stroke-width: 1; }
 .distribution-area { fill: rgba(74, 123, 232, .13); }
@@ -597,6 +597,8 @@ button:focus-visible { outline: 2px solid #315be8; outline-offset: 2px; }
 .runtime-fit-button { position: absolute; z-index: 6; left: 72px; bottom: 14px; min-height: 32px; padding: 0 10px; border: 1px solid #d6deea; border-radius: 6px; color: #4a5b78; background: #fff; box-shadow: 0 2px 7px rgba(32,47,76,.08); font-size: 12px; cursor: pointer; }
 .runtime-fit-button:hover { border-color: #9eafd0; color: #2c4c92; }
 .runtime-fit-button:focus-visible { outline: 2px solid #315fd6; outline-offset: 2px; }
+.runtime-expanded-cluster-frame { position: absolute; z-index: 1; pointer-events: none; border: 1px dashed #a9b9da; border-radius: 15px; background: rgba(242,246,253,.18); box-shadow: inset 0 0 0 1px rgba(169,185,218,.2), 0 8px 18px rgba(72,91,136,.07); transition: left .24s ease, top .24s ease, width .24s ease, height .24s ease; animation: runtimeClusterFocus .28s ease-out; }
+.runtime-expanded-cluster-frame span { position: absolute; left: 10px; top: -11px; max-width: min(260px, calc(100% - 20px)); padding: 2px 7px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border: 1px dashed #b8c5df; border-radius: 999px; color: #667da9; background: #fff; font-size: 11px; line-height: 16px; }
 .runtime-inspector.expanded-inspector { width: 390px; flex-basis: 390px; }
 .runtime-inspector .inspector-header { min-height: 78px; padding: 16px 17px 13px 19px; }
 .runtime-inspector .inspector-section { padding: 14px 19px; }
@@ -631,6 +633,7 @@ button:focus-visible { outline: 2px solid #315be8; outline-offset: 2px; }
 @keyframes slideIn { from { opacity: 0; transform: translateX(14px); } }
 @keyframes breathe { 50% { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(26,36,57,.18); } }
 @keyframes batchReveal { from { opacity: .45; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes runtimeClusterFocus { from { opacity: 0; transform: scale(.985); } to { opacity: 1; transform: scale(1); } }
 
 @media (max-width: 1450px) {
   .sidebar { width: 270px; flex-basis: 270px; }

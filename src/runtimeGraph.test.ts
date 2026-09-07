@@ -85,6 +85,7 @@ describe('buildRuntimeGraph', () => {
     expect(distributionKeyForTool('v38-metric-physicochemical_developability')).toBe('developability')
     expect(distributionKeyForTool('v38-metric-toxicity_risk')).toBe('toxicity')
     expect(distributionKeyForTool('v38-metric-boltz_pose')).toBeUndefined()
+    expect(distributionKeyForTool('autoresearch-frozen-action-executor')).toBe('candidate_pool')
     const result = buildRuntimeGraph({ ...detail(), display_population: { candidate_count: 1, candidate_record_count: 1, excluded_candidate_count: 0, exclusion_reason: 'historical_exact_replay' } }, { mic: nodeDetail([call('mic-call', 'v38-metric-mic_potency', '2026-09-04T00:00:00Z')]) })
     expect(result.nodes.find((item) => item.id === 'call:mic-call')?.runtime).toMatchObject({ evidence_key: 'mic', distribution_key: 'mic' })
     expect(result.nodes.find((item) => item.id === 'call:mic-call')?.runtime?.viewer_key).toBeUndefined()
@@ -762,12 +763,14 @@ describe('buildRuntimeGraph', () => {
       { sequence_no: 4, type: 'activity.succeeded', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 7, activity_type: 'generate_v38_sequence_cell', attempt: 2, completed: 8, expected: 8 }, occurred_at: '2026-09-04T00:00:04Z' },
     ]))
     const group = result.nodes.find((node) => node.runtime?.node_type === 'event_group')
+    expect(group?.label).toBe('活动重试 · 第 2 次完成')
     expect(group?.insight.facts.slice(0, 3)).toEqual([
       { label: '最近活动', value: '序列生成' },
       { label: '活动重试', value: '1 个活动 · 最高第 2 次' },
       { label: '进度', value: '8/8' },
     ])
     expect(group?.insight.facts.some(({ label }) => label === '活动尝试')).toBe(false)
+    expect(group?.runtime).toMatchObject({ activity_retry_count: 1, max_activity_attempt: 2, distribution_key: 'candidate_pool' })
     expect(result.stats.retries).toBe(0)
   })
 
@@ -781,7 +784,7 @@ describe('buildRuntimeGraph', () => {
     expect(group?.insight.facts.some(({ label }) => label === '活动尝试' || label === '活动重试')).toBe(false)
   })
 
-  it('labels expanded activity boundaries with type, lifecycle state, and persisted attempt', () => {
+  it('keeps an expanded retry concise by showing terminal attempt evidence only', () => {
     const execution = 'workflow-run-expanded-activity'
     const events = [
       { sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 3, activity_type: 'generate_v38_sequence_cell', attempt: 2 }, occurred_at: '2026-09-04T00:00:01Z' },
@@ -789,9 +792,23 @@ describe('buildRuntimeGraph', () => {
     ] as RunDetail['events']
     const group = buildRuntimeGraph(detail(events)).nodes.find((node) => node.runtime?.node_type === 'event_group')
     const expanded = buildRuntimeGraph(detail(events), {}, { expandedGroups: new Set([group!.id]) })
-    expect(expanded.nodes.find((node) => node.id === 'event:1')).toMatchObject({ label: '序列生成 · 开始 · 第 2 次尝试' })
+    expect(expanded.nodes.find((node) => node.id === 'event:1')).toBeUndefined()
     expect(expanded.nodes.find((node) => node.id === 'event:2')).toMatchObject({ label: '序列生成 · 成功 · 第 2 次尝试' })
     expect(expanded.nodes.find((node) => node.id === 'event:2')?.insight.facts).toEqual(expect.arrayContaining([{ label: '尝试', value: '第 2 次尝试' }]))
+  })
+
+  it('shows each persisted terminal attempt for the latest retried activity', () => {
+    const execution = 'workflow-run-retry-evidence'
+    const events = [
+      { sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 5, activity_type: 'evaluate_v38_sequence_metric', attempt: 1 }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'activity.failed', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 5, activity_type: 'evaluate_v38_sequence_metric', attempt: 1 }, occurred_at: '2026-09-04T00:00:02Z' },
+      { sequence_no: 3, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 5, activity_type: 'evaluate_v38_sequence_metric', attempt: 2 }, occurred_at: '2026-09-04T00:00:03Z' },
+      { sequence_no: 4, type: 'activity.failed', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 5, activity_type: 'evaluate_v38_sequence_metric', attempt: 2 }, occurred_at: '2026-09-04T00:00:04Z' },
+    ] as RunDetail['events']
+    const group = buildRuntimeGraph(detail(events)).nodes.find((node) => node.runtime?.node_type === 'event_group')
+    const expanded = buildRuntimeGraph(detail(events), {}, { expandedGroups: new Set([group!.id]) })
+    expect(group?.runtime?.event_ids).toEqual(['event:2', 'event:4'])
+    expect(expanded.nodes.filter((node) => node.id.startsWith('event:')).map((node) => node.id)).toEqual(['event:2', 'event:4'])
   })
 
   it('derives parallel observation edges only from complete overlapping activity intervals', () => {
@@ -927,5 +944,28 @@ describe('buildRuntimeGraph', () => {
     expect(groupPosition).toBeDefined()
     expect(wrappedMemberPosition.y - groupPosition.y).toBeGreaterThanOrEqual(224)
     expect(wrappedMemberPosition.y - groupPosition.y).toBeLessThan(420)
+  })
+
+  it('pushes later spine nodes past an expanded cluster span', () => {
+    const calls = Array.from({ length: 6 }, (_, index) => call(
+      `cluster-call-${index + 1}`,
+      `tool-${index + 1}`,
+      `2026-09-04T00:00:${String(index).padStart(2, '0')}Z`,
+      { inputs: { batch_id: 'cluster-batch' } },
+    ))
+    const detailWithTail = detail([
+      { sequence_no: 1, type: 'run.started', actor: 'worker', payload: {}, occurred_at: '2026-09-04T00:00:00Z' },
+      { sequence_no: 2, type: 'agent_decision.recorded', actor: 'worker', payload: { iteration_no: 2 }, occurred_at: '2026-09-04T00:01:00Z' },
+    ])
+    const collapsed = buildRuntimeGraph(detailWithTail, { worker: nodeDetail(calls) })
+    const group = collapsed.nodes.find((node) => node.runtime?.child_ids?.length === calls.length)
+    expect(group).toBeDefined()
+    const expanded = buildRuntimeGraph(detailWithTail, { worker: nodeDetail(calls) }, { expandedGroups: new Set([group!.id]) })
+    const groupX = expanded.positions[group!.id].x
+    const lastChildX = Math.max(...calls.map((item) => expanded.positions[`call:${item.id}`].x))
+    const tail = expanded.nodes.find((node) => node.runtime?.raw_label === 'agent_decision.recorded')
+    expect(tail).toBeDefined()
+    expect(expanded.positions[tail!.id].x).toBeGreaterThan(lastChildX)
+    expect(lastChildX).toBeGreaterThan(groupX)
   })
 })

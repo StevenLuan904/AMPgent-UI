@@ -29,7 +29,6 @@ import {
   FlaskConical,
   GitBranch,
   Layers3,
-  PanelLeftClose,
   Route,
   RefreshCw,
   ScanSearch,
@@ -51,11 +50,26 @@ import {
 import { LaneLabel, WorkflowNode, type LaneNode, type StageNode } from './WorkflowNode'
 import { assertMatchingRunIdentity, type RunIdentity } from './runIdentity'
 import { formatRunTitle } from './runPresentation'
-import { buildRuntimeGraph, candidatePreviewCountLabel, candidatePreviewDenominator, displayEventContext, displayObservedEventName, displayToolName, runtimeEventStatus, type RuntimeGraphModel } from './runtimeGraph'
-import { compactReadableRuntimePositions, readableRuntimeNodeCount, selectReadableRuntimeNodeIds } from './runtimeViewport'
+import { buildRuntimeGraph, candidatePreviewCountLabel, candidatePreviewDenominator, displayObservedEventName, displayToolName, runtimeEventStatus, type RuntimeGraphModel } from './runtimeGraph'
+import { compactReadableRuntimePositions, selectReadableRuntimeNodeIds } from './runtimeViewport'
 import { nodeDetailCacheTtlMs, observerDetailFailureMessage, observerIdlePrefetchDelayMs, observerInitialPrefetchCount, observerInitialPrefetchStages, observerListTimeoutMs, observerInFlightStageIds, observerMergePrefetchQueue, observerNextPrefetchStage, observerNodeDetailCacheKey, observerNodeDetailTimeoutMs, observerPendingPrefetchCount, observerPollingIntervalMs, observerPrefetchQueueMatches, observerPrefetchInFlightKey, observerPrefetchRefreshExpired, observerPrefetchStageOrder, observerRequeuePrefetchStage, observerResponseIsStale, observerRunDetailCacheKey, observerRunDetailTimeoutMs, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion, observerStaleRetryDelayMs, type ObserverPrefetchQueue } from './observerPolling'
 
 const readableViewportMinZoom = 0.75
+
+type RuntimeClusterFrame = { id: string; label: string; left: number; top: number; width: number; height: number }
+
+function runtimeChildNodeIds(nodes: GraphStage[], group: GraphStage) {
+  const nodeIds = new Set(nodes.map((node) => node.id))
+  const rawIds = [...(group.runtime?.child_ids ?? []), ...(group.runtime?.event_ids ?? [])]
+  const resolved = rawIds.flatMap((rawId) => {
+    const candidates = rawId.startsWith('event:') || rawId.startsWith('call:') || rawId.startsWith('candidate:') || rawId.startsWith('tool-summary:')
+      ? [rawId]
+      : [`call:${rawId}`, `event:${rawId}`, `candidate:${rawId}`, `tool-summary:${rawId}`, `tool-summary:${encodeURIComponent(rawId)}`, rawId]
+    const match = candidates.find((candidate) => nodeIds.has(candidate))
+    return match ? [match] : []
+  })
+  return [...new Set([group.id, ...resolved])]
+}
 import { schedulerHealthDescription, schedulerHealthPresentation } from './schedulerHealth'
 import type {
   CandidatePreview,
@@ -657,7 +671,7 @@ function CanvasHeader({ detail, refreshing, syncingStale, detailSyncError, selec
   return (
     <header className="canvas-header">
       <div className="canvas-title-block">
-        <div className="eyebrow"><span>{detailSyncError ?? (syncingStale ? '上次读取 · 正在同步' : isAcceptanceFixture ? '验收数据 · 只读夹具' : '轮次 · 正式科学运行')}</span></div>
+        <div className="eyebrow"><span>{detailSyncError ? '数据同步中断' : isAcceptanceFixture ? '验收数据' : syncingStale ? '正在同步' : '科学运行'}</span></div>
         <h1>{isStructureReview ? '短肽结构证据复核' : '序列优先的短肽设计'}</h1>
         <div className="round-meta">
           <span>{formatTime(detail.run.created_at)} 创建</span><i />
@@ -689,9 +703,6 @@ function GraphView({
   detail,
   nodeDetails,
   runtimeGraph,
-  authoritativeToolRecords,
-  syncingStale,
-  detailSyncError,
   analysisSnapshot,
   persistedDistributions,
   selectedStage,
@@ -707,9 +718,6 @@ function GraphView({
   detail: RunDetail
   nodeDetails: Record<string, NodeDetail>
   runtimeGraph: RuntimeGraphModel
-  authoritativeToolRecords?: number
-  syncingStale: boolean
-  detailSyncError: string | null
   analysisSnapshot: AnalysisSnapshot | null
   persistedDistributions: Record<string, ResultDistributionData>
   selectedStage: string | null
@@ -731,10 +739,14 @@ function GraphView({
   const lastFittedLayoutSignature = useRef<string | null>(null)
   const layoutSignatureRef = useRef('')
   const scheduleInitialFitRef = useRef<() => void>(() => undefined)
+  const pendingClusterFocus = useRef<string | null | undefined>(undefined)
+  const clusterFocusTimer = useRef<number | null>(null)
+  const expandedFrameRaf = useRef<number | null>(null)
   const userInteracted = useRef(false)
   const programmaticFit = useRef(false)
   const graphAreaRef = useRef<HTMLDivElement>(null)
   const [graphViewportSize, setGraphViewportSize] = useState({ width: 0, height: 0 })
+  const [expandedClusterFrames, setExpandedClusterFrames] = useState<RuntimeClusterFrame[]>([])
   const hasDeferredNodeDetails = (runtimeGraph.sourceFetch?.deferred ?? 0) > 0
   useEffect(() => {
     const element = graphAreaRef.current
@@ -759,12 +771,17 @@ function GraphView({
     const smallExpandedCandidateGroup = runtimeGraph.nodes.some((node) => node.runtime?.node_type === 'candidate_group'
       && node.runtime.expanded
       && (node.runtime.child_ids?.length ?? 0) <= 3)
+    const hasObservedActivityRetry = runtimeGraph.nodes.some((node) => (node.runtime?.activity_retry_count ?? 0) > 0)
     const expandedSummaryGroup = runtimeGraph.nodes.find((node) => node.runtime?.node_type === 'tool_summary_group' && node.runtime.expanded)
     const readableLimit = expandedSummaryGroup
       ? Math.min(14, (expandedSummaryGroup.runtime?.child_ids?.length ?? 0) + 4)
-      : smallExpandedCandidateGroup ? 8 : graphViewportSize.width > 2100 ? 7 : 5
+      : smallExpandedCandidateGroup ? 8 : graphViewportSize.width > 2100 ? 7 : hasObservedActivityRetry ? 6 : 5
     const selected = selectReadableRuntimeNodeIds(runtimeGraph.nodes, runtimeGraph.positions, readableLimit)
-    return selected.filter((id) => {
+    const expandedClusterIds = runtimeGraph.nodes
+      .filter((node) => node.runtime?.expanded && ['tool_group', 'event_group', 'batch_group', 'tool_summary_group', 'candidate_group'].includes(node.runtime.node_type))
+      .flatMap((group) => runtimeChildNodeIds(runtimeGraph.nodes, group))
+    const visibleIds = [...new Set([...selected, ...expandedClusterIds])]
+    return visibleIds.filter((id) => {
       const node = runtimeGraph.nodes.find((candidate) => candidate.id === id)
       if (expandedSummaryGroup && ['candidate_group', 'candidate_preview', 'generation', 'population_summary'].includes(node?.runtime?.node_type ?? '')) return false
       if (node?.runtime?.node_type !== 'tool_summary') return true
@@ -802,14 +819,19 @@ function GraphView({
     if (!programmaticFit.current) userInteracted.current = true
   }, [])
   const handleToggleGroup = useCallback((id: string) => {
-    // Expanding a batch changes the scientific reading surface. Allow one
-    // automatic refit so the revealed cluster is immediately legible.
-    userInteracted.current = false
-    lastFittedLayoutSignature.current = null
-    initialFitAttempts.current = 0
-    initialFitPending.current = true
+    const group = runtimeGraph.nodes.find((node) => node.id === id)
+    const isExpanded = Boolean(group?.runtime?.expanded)
+    // Group toggles are explicit user navigation. Expansion focuses the
+    // revealed cluster; collapse returns to the bounded scientific spine.
+    // Neither action should be mistaken for a fresh run or let hydration
+    // reclaim the viewport after the user has chosen a reading surface.
+    userInteracted.current = true
+    pendingClusterFocus.current = isExpanded ? null : id
+    if (clusterFocusTimer.current !== null) window.clearTimeout(clusterFocusTimer.current)
+    if (initialFitTimer.current !== null) window.clearTimeout(initialFitTimer.current)
+    initialFitPending.current = false
     onToggleGroup(id)
-  }, [onToggleGroup])
+  }, [onToggleGroup, runtimeGraph.nodes])
   const fitReadableViewport = useCallback(async () => {
     const instance = flowInstance.current
     if (!instance) return false
@@ -948,8 +970,33 @@ function GraphView({
       programmaticFit.current = false
     }
   }, [readableRuntimeNodeIds])
+  const focusExpandedCluster = useCallback(async (groupId: string) => {
+    const instance = flowInstance.current
+    if (!instance) return false
+    const group = runtimeGraph.nodes.find((node) => node.id === groupId)
+    if (!group) return false
+    const clusterIds = new Set(runtimeChildNodeIds(runtimeGraph.nodes, group))
+    programmaticFit.current = true
+    try {
+      await new Promise<void>((resolve) => window.requestAnimationFrame(() => window.requestAnimationFrame(() => resolve())))
+      const clusterNodes = instance.getNodes().filter((node) => clusterIds.has(node.id) && !node.hidden)
+      if (!clusterNodes.length) return false
+      await instance.fitView({
+        nodes: clusterNodes.map((node) => ({ id: node.id })),
+        padding: 0.2,
+        duration: 240,
+        minZoom: readableViewportMinZoom,
+        maxZoom: 1,
+      })
+      return true
+    } finally {
+      programmaticFit.current = false
+    }
+  }, [runtimeGraph.nodes])
   const fitReadableViewportRef = useRef(fitReadableViewport)
   fitReadableViewportRef.current = fitReadableViewport
+  const focusExpandedClusterRef = useRef(focusExpandedCluster)
+  focusExpandedClusterRef.current = focusExpandedCluster
   const scheduleInitialFit = useCallback(() => {
     const signature = layoutSignatureRef.current
     if (!signature || userInteracted.current || initialFitInFlight.current || initialFitAttempts.current >= 8 || lastFittedLayoutSignature.current === signature) return
@@ -980,6 +1027,8 @@ function GraphView({
   scheduleInitialFitRef.current = scheduleInitialFit
   useEffect(() => () => {
     if (initialFitTimer.current !== null) window.clearTimeout(initialFitTimer.current)
+    if (clusterFocusTimer.current !== null) window.clearTimeout(clusterFocusTimer.current)
+    if (expandedFrameRaf.current !== null) window.cancelAnimationFrame(expandedFrameRaf.current)
   }, [])
   useEffect(() => {
     const applyChineseControlLabels = () => {
@@ -1014,12 +1063,85 @@ function GraphView({
   useEffect(() => {
     scheduleInitialFit()
   }, [readableLayoutSignature, scheduleInitialFit])
+  const expandedClusterSignature = useMemo(() => runtimeGraph.nodes
+    .filter((node) => node.runtime?.expanded)
+    .map((node) => node.id)
+    .sort()
+    .join('|'), [runtimeGraph.nodes])
+  const measureExpandedClusterFrames = useCallback(() => {
+    expandedFrameRaf.current = null
+    const graphRect = graphAreaRef.current?.getBoundingClientRect()
+    if (!graphRect) return
+    const domNodes = new Map(
+      [...document.querySelectorAll<HTMLElement>('.react-flow__node')]
+        .map((element) => [element.getAttribute('data-id'), element] as const),
+    )
+    const nextFrames = runtimeGraph.nodes
+      .filter((node) => node.runtime?.expanded)
+      .flatMap<RuntimeClusterFrame>((group) => {
+        const rects = runtimeChildNodeIds(runtimeGraph.nodes, group)
+          .map((id) => domNodes.get(id)?.getBoundingClientRect())
+          .filter((rect): rect is DOMRect => Boolean(rect && rect.width > 0 && rect.height > 0))
+        if (!rects.length) return []
+        const padding = 20
+        const left = Math.min(...rects.map((rect) => rect.left)) - padding
+        const top = Math.min(...rects.map((rect) => rect.top)) - padding
+        const right = Math.max(...rects.map((rect) => rect.right)) + padding
+        const bottom = Math.max(...rects.map((rect) => rect.bottom)) + padding
+        return [{
+          id: group.id,
+          label: group.label,
+          left: left - graphRect.left,
+          top: top - graphRect.top,
+          width: right - left,
+          height: bottom - top,
+        }]
+      })
+    setExpandedClusterFrames((previous) => {
+      const same = previous.length === nextFrames.length
+        && previous.every((frame, index) => {
+          const next = nextFrames[index]
+          return next && frame.id === next.id
+            && Math.abs(frame.left - next.left) < 0.5
+            && Math.abs(frame.top - next.top) < 0.5
+            && Math.abs(frame.width - next.width) < 0.5
+            && Math.abs(frame.height - next.height) < 0.5
+        })
+      return same ? previous : nextFrames
+    })
+  }, [runtimeGraph.nodes])
+  const scheduleExpandedClusterMeasure = useCallback(() => {
+    if (expandedFrameRaf.current !== null) return
+    expandedFrameRaf.current = window.requestAnimationFrame(measureExpandedClusterFrames)
+  }, [measureExpandedClusterFrames])
+  useEffect(() => {
+    scheduleExpandedClusterMeasure()
+    return () => {
+      if (expandedFrameRaf.current !== null) window.cancelAnimationFrame(expandedFrameRaf.current)
+      expandedFrameRaf.current = null
+    }
+  }, [expandedClusterSignature, graphViewportSize.height, graphViewportSize.width, readableLayoutSignature, scheduleExpandedClusterMeasure])
+  useEffect(() => {
+    const requested = pendingClusterFocus.current
+    if (requested === undefined) return
+    pendingClusterFocus.current = undefined
+    if (clusterFocusTimer.current !== null) window.clearTimeout(clusterFocusTimer.current)
+    clusterFocusTimer.current = window.setTimeout(() => {
+      clusterFocusTimer.current = null
+      const focus = requested === null ? fitReadableViewportRef.current() : focusExpandedClusterRef.current(requested)
+      void focus.finally(scheduleExpandedClusterMeasure)
+    }, 140)
+    return () => {
+      if (clusterFocusTimer.current !== null) window.clearTimeout(clusterFocusTimer.current)
+      clusterFocusTimer.current = null
+    }
+  }, [expandedClusterSignature, scheduleExpandedClusterMeasure])
   const computedNodes = useMemo<Array<StageNode | LaneNode>>(() => {
     const readablePositions = readableRuntimeNodeIds.map((id) => readableRuntimePositions[id]).filter(Boolean)
     const mainY = Math.min(...readablePositions.map((position) => position.y), 220)
     const firstSpineX = Math.min(...readablePositions.map((position) => position.x), 190)
     const laneNodes: LaneNode[] = [
-      { id: 'lane:main', type: 'lane', position: { x: Math.max(0, firstSpineX - 150), y: mainY }, initialWidth: 132, initialHeight: 47, data: { index: '01', label: '运行主线', description: hasDeferredNodeDetails ? '批次展开完整观测' : '按持久化观测顺序' }, draggable: false, selectable: false },
+      { id: 'lane:main', type: 'lane', position: { x: Math.max(0, firstSpineX - 150), y: mainY }, initialWidth: 132, initialHeight: 47, data: { index: '01', label: '运行主线' }, draggable: false, selectable: false },
     ]
     return [
       ...laneNodes,
@@ -1115,15 +1237,9 @@ function GraphView({
       labelBgBorderRadius: 5,
       data: { detail: edge },
       markerEnd: isCausal || isSequence ? { type: MarkerType.ArrowClosed, width: isSequence ? 8 : 11, height: isSequence ? 8 : 11, color: stroke } : undefined,
-      style: { stroke, strokeWidth: isSelected ? 2.6 : isCausal ? 2.2 : isSequence ? 1.9 : isAssociation ? 1.2 : 1.7, strokeDasharray: isParallel ? '3 5' : isSequence ? '4 6' : isAssociation || edge.provenance === 'derived' ? '4 5' : undefined },
+      style: { stroke, strokeWidth: isSelected ? 2.6 : isCausal ? 2.2 : isSequence ? 2 : isAssociation ? 1.2 : 1.7, strokeDasharray: isParallel ? '3 5' : isAssociation || (edge.provenance === 'derived' && !isSequence) ? '4 5' : undefined },
     }
   }), [selectedEdge, stageById, visibleGraphEdges])
-  const runtimeRoundContext = [...new Set(detail.events.flatMap((event) => displayEventContext(event.payload)))].slice(-2).join(' · ')
-  const runtimeCoverageCapsule = [
-    statusText[detail.run.status] ?? detail.run.status,
-    runtimeRoundContext || '轮次信息未返回',
-    `候选 ${candidatePreviewCountLabel(detail.candidates.length, candidatePreviewDenominator(detail))}`,
-  ]
   const graphRenderKey = `${detail.run.id}:${runtimeGraph.nodes.filter((node) => node.runtime?.expanded).map((node) => node.id).sort().join(',')}`
   const handleNodeClick: NodeMouseHandler = (_, node) => {
     if (node.type !== 'stage') return
@@ -1156,6 +1272,7 @@ function GraphView({
         onNodesChange={onNodesChange}
         onInit={(instance) => { flowInstance.current = instance; scheduleInitialFit() }}
         onMoveStart={() => { if (!programmaticFit.current) userInteracted.current = true }}
+        onMove={() => { scheduleExpandedClusterMeasure() }}
         fitViewOptions={{ padding: 0.12, minZoom: readableViewportMinZoom, maxZoom: 1 }}
         defaultViewport={{ x: 22, y: 68, zoom: 0.9 }}
         minZoom={0.2}
@@ -1167,12 +1284,18 @@ function GraphView({
         <Background variant={BackgroundVariant.Dots} gap={26} size={1} color="#e8ebf1" />
         <Controls showInteractive={false} showFitView={false} position="bottom-left" />
       </ReactFlow>
+      {expandedClusterFrames.map((frame) => (
+        <div
+          key={frame.id}
+          className="runtime-expanded-cluster-frame"
+          data-cluster-id={frame.id}
+          style={{ left: frame.left, top: frame.top, width: frame.width, height: frame.height }}
+          aria-hidden="true"
+        >
+          <span>{frame.label}</span>
+        </div>
+      ))}
       <button className="runtime-fit-button" aria-label="回到可读视图" title="回到可读视图" onClick={() => { void fitReadableViewport() }}>可读视图</button>
-      <div className="runtime-graph-summary" role="status">
-        <div className="runtime-graph-summary-head"><span className="runtime-live-dot" /><b>{detailSyncError ?? (syncingStale ? '上次读取 · 正在同步' : detail.source === 'postgresql' ? '真实运行图' : '验收运行图')}</b></div>
-        <div className="runtime-graph-stats">{runtimeCoverageCapsule.map((label) => <span key={label}>{label}</span>)}</div>
-        <small className="runtime-graph-nav">{readableRuntimeNodeCount(runtimeGraph.nodes) > readableRuntimeNodeIds.length ? `科学主线 ${readableRuntimeNodeIds.length} 节点 · 批次可展开` : '科学主线已完整显示'}</small>
-      </div>
     </div>
   )
 }
@@ -1716,9 +1839,6 @@ export default function App() {
                 detail={data.detail}
                 nodeDetails={data.nodeDetails}
                 runtimeGraph={runtimeGraph!}
-                authoritativeToolRecords={data.runs.find((run) => run.id === data.selectedId)?.tool_call_count}
-                syncingStale={data.syncingStale}
-                detailSyncError={data.detailSyncError}
                  analysisSnapshot={analysisSnapshot}
                  persistedDistributions={persistedDistributions}
                 selectedStage={selectedStage}
@@ -1745,7 +1865,6 @@ export default function App() {
                   <button className="build-analysis" disabled={!analysisSelection.length} onClick={() => { setActiveView('analysis'); setSelectionMode(false) }}>生成分析卡片</button>
                 </div>
               )}
-              {!selectionMode && <div className="canvas-footnote"><PanelLeftClose />拖拽画布 · 点击节点 · 按运行状态自动刷新</div>}
             </main>
             {selectedStage && <RuntimeInspector
               detail={data.detail}

@@ -730,12 +730,32 @@ function executionFacts(events: TimelineEvent[]) {
   return facts
 }
 
-function activityAttemptFacts(events: TimelineEvent[]) {
+function activityRetryStats(events: TimelineEvent[]) {
   const attempts = activityAttemptsByIdentity(events)
   const retriedActivities = [...attempts.values()].filter((attempt) => attempt > 1)
-  if (!retriedActivities.length) return []
-  const maxAttempt = Math.max(...attempts.values())
-  return [{ label: '活动重试', value: `${retriedActivities.length} 个活动 · 最高第 ${maxAttempt} 次` }]
+  return {
+    count: retriedActivities.length,
+    maxAttempt: attempts.size ? Math.max(...attempts.values()) : 1,
+  }
+}
+
+function retryEvidenceEvents(events: TimelineEvent[]) {
+  const attempts = activityAttemptsByIdentity(events)
+  const retried = [...attempts.entries()].filter(([, attempt]) => attempt > 1)
+  if (!retried.length) return []
+  const latestIdentity = retried
+    .map(([identity]) => ({
+      identity,
+      observedAt: Math.max(...events.filter((event) => activityLogicalIdentity(event) === identity).map((event) => Date.parse(event.occurred_at)).filter(Number.isFinite)),
+    }))
+    .sort((left, right) => right.observedAt - left.observedAt)[0]?.identity
+  if (!latestIdentity) return []
+  return activityBoundaryEvents(events).filter((event) => activityLogicalIdentity(event) === latestIdentity && isTerminalActivityEvent(event))
+}
+
+function activityAttemptFacts(events: TimelineEvent[]) {
+  const retry = activityRetryStats(events)
+  return retry.count ? [{ label: '活动重试', value: `${retry.count} 个活动 · 最高第 ${retry.maxAttempt} 次` }] : []
 }
 
 function eventNode(event: TimelineEvent): GraphStage {
@@ -743,6 +763,7 @@ function eventNode(event: TimelineEvent): GraphStage {
   const status = runtimeEventStatus(event)
   const baseEventName = displayObservedEventName(event.type, event.payload)
   const eventName = activityAttemptLabel(event) ? `${baseEventName} · ${activityAttemptLabel(event)}` : baseEventName
+  const distributionKey = distributionKeyForActivity(record(event.payload).activity_type, event.payload)
   return {
     id: `event:${event.sequence_no}`,
     label: recoveryLabel ?? eventName,
@@ -772,6 +793,7 @@ function eventNode(event: TimelineEvent): GraphStage {
       actor: event.actor,
       explicit_relation_count: 0,
       raw_label: event.type,
+      ...(distributionKey ? { evidence_key: distributionKey, distribution_key: distributionKey } : {}),
       parallel_group_id: parallelGroupIds(event.payload)[0],
     },
   }
@@ -871,6 +893,17 @@ export function distributionKeyForTool(toolName: string | undefined) {
   if (normalized === 'v38-metric-hemolysis_risk' || normalized.endsWith(':hemolysis_risk') || normalized.endsWith('-hemolysis_risk')) return 'hemolysis'
   if (normalized === 'v38-metric-toxicity_risk' || normalized.endsWith(':toxicity_risk') || normalized.endsWith('-toxicity_risk')) return 'toxicity'
   if (normalized === 'v38-metric-physicochemical_developability' || normalized.endsWith(':physicochemical_developability') || normalized.endsWith('-physicochemical_developability')) return 'developability'
+  if (normalized.includes('generator') || normalized.includes('action-executor') || normalized.includes('sequence-generation')) return 'candidate_pool'
+  return undefined
+}
+
+function distributionKeyForActivity(activityType: unknown, payload: unknown) {
+  const normalized = text(activityType).trim().toLowerCase()
+  const context = record(payload)
+  const logicalStage = text(context.logical_stage).trim().toLowerCase()
+  const displayCategory = text(context.display_category).trim().toLowerCase()
+  if (normalized.includes('generate') || normalized.includes('materialize') || logicalStage.includes('generation') || displayCategory === 'generation') return 'candidate_pool'
+  if (normalized.includes('evaluate') || normalized.includes('score') || logicalStage.includes('metric') || displayCategory === 'evaluation') return 'mic'
   return undefined
 }
 
@@ -1034,6 +1067,8 @@ function runtimeGroupNode(groupedCalls: ToolAttempt[], groupedEvents: TimelineEv
       : '时间范围不完整'
   const recoveryLabels = [...new Set(groupedEvents.map(recoveryAttemptLabel).filter((value): value is string => Boolean(value)))]
   const executionFactList = executionFacts(groupedEvents)
+  const activityRetry = activityRetryStats(groupedEvents)
+  const retryEvidence = retryEvidenceEvents(groupedEvents)
   const progressFacts = executionFactList.filter(({ label }) => label === '进度')
   const salientFacts = [
     ...recoveryLabels.map((value) => ({ label: '恢复', value })),
@@ -1044,6 +1079,9 @@ function runtimeGroupNode(groupedCalls: ToolAttempt[], groupedEvents: TimelineEv
   ]
   const runtimeType = groupedEvents.length && !groupedCalls.length ? 'event_group' : groupedEvents.length ? 'batch_group' : 'tool_group'
   const distributionKeys = [...new Set(groupedCalls.map((call) => distributionKeyForTool(call.tool_name)).filter((key): key is NonNullable<ReturnType<typeof distributionKeyForTool>> => Boolean(key)))]
+  const eventDistributionKeys = [...new Set(groupedEvents.map((event) => distributionKeyForActivity(record(event.payload).activity_type, event.payload)).filter((key): key is NonNullable<ReturnType<typeof distributionKeyForActivity>> => Boolean(key)))]
+  const availableDistributionKeys = [...new Set([...distributionKeys, ...eventDistributionKeys])]
+  const primaryDistributionKey = availableDistributionKeys.includes('mic') ? 'mic' : availableDistributionKeys[0]
   const countLabel = groupedCalls.length && eventStatuses.length ? `${groupedCalls.length} 次调用 · ${eventStatuses.length} 项活动` : groupedCalls.length ? `${groupedCalls.length} 次调用` : `${eventStatuses.length} 项活动`
   const cardConclusion = groupingBasis.startsWith('后端执行字段')
     ? '同一执行标识下的已观测活动'
@@ -1054,9 +1092,14 @@ function runtimeGroupNode(groupedCalls: ToolAttempt[], groupedEvents: TimelineEv
         : groupingBasis.startsWith('同工具 + 状态')
           ? '同工具同状态的展示聚合'
           : '连续观测聚合'
+  const latestRetryOutcome = latestTerminalActivityEvent(groupedEvents)
+  const retryOutcomeStatus = latestRetryOutcome ? runtimeEventStatus(latestRetryOutcome) : status
+  const retryTitle = activityRetry.count > 0
+    ? `活动重试 · 第 ${activityRetry.maxAttempt} 次${retryOutcomeStatus === 'stopped' ? '失败' : retryOutcomeStatus === 'completed' ? '完成' : '进行中'}`
+    : null
   return {
     id: groupId,
-    label: `${displayBatchLabel} · ${countLabel}`,
+    label: retryTitle ?? `${displayBatchLabel} · ${countLabel}`,
     kind: 'tool',
     group: 'observed',
     status,
@@ -1080,17 +1123,19 @@ function runtimeGroupNode(groupedCalls: ToolAttempt[], groupedEvents: TimelineEv
        node_type: runtimeType,
        source_id: groupId,
        tool_name: groupedCalls[0]?.tool_name,
-       observed_at: observedDates[0] ?? null,
+       observed_at: retryTitle ? observedDates.at(-1) ?? null : observedDates[0] ?? null,
        child_ids: groupedCalls.map((call) => call.id),
-       event_ids: groupedEvents.map((event) => `event:${event.sequence_no}`),
+       event_ids: (retryEvidence.length ? retryEvidence : groupedEvents).map((event) => `event:${event.sequence_no}`),
        grouping_basis: groupingBasis,
        expanded,
        status_breakdown: statusText,
        observed_span: observedSpanText,
       raw_label: groupedCalls[0]?.tool_name ?? groupedEvents[0]?.type,
-      ...(distributionKeys.length === 1 ? { evidence_key: distributionKeys[0], distribution_key: distributionKeys[0] } : {}),
+      ...(primaryDistributionKey ? { evidence_key: primaryDistributionKey, distribution_key: primaryDistributionKey } : {}),
       candidate_count: groupedCalls.length,
       explicit_relation_count: 0,
+      activity_retry_count: activityRetry.count,
+      max_activity_attempt: activityRetry.maxAttempt,
       parallel_group_id: parallelGroupIdsForBucket.length === 1 ? parallelGroupIdsForBucket[0] : undefined,
     },
   }
@@ -1119,6 +1164,8 @@ function toolSummaryGroupNode(tools: RuntimeSummaryTool[], coverage: { total: nu
     ? 'stopped'
     : Object.entries(statusCounts).some(([key, count]) => count > 0 && ['queued', 'running', 'pending'].includes(key)) ? 'running' : 'completed'
   const iterationLabel = latestIteration === null ? null : `第 ${latestIteration} 轮`
+  const distributionKeys = tools.map((tool) => distributionKeyForTool(tool.tool_name)).filter((key): key is NonNullable<ReturnType<typeof distributionKeyForTool>> => Boolean(key))
+  const primaryDistributionKey = distributionKeys.includes('mic') ? 'mic' : distributionKeys[0]
   return {
     id: groupId,
     label: iterationLabel ? `迭代工具链 · ${iterationLabel}` : `工具链汇总 · ${summaryCount} 次`,
@@ -1152,6 +1199,7 @@ function toolSummaryGroupNode(tools: RuntimeSummaryTool[], coverage: { total: nu
       summary_only: true,
       latest_iteration: latestIteration ?? undefined,
       explicit_relation_count: 0,
+      ...(primaryDistributionKey ? { evidence_key: primaryDistributionKey, distribution_key: primaryDistributionKey } : {}),
     },
   }
 }
@@ -1160,6 +1208,7 @@ function toolSummaryNode(tool: RuntimeSummaryTool): GraphStage {
   const status: GraphStage['status'] = Object.entries(tool.status_counts).some(([key, count]) => count > 0 && ['failed', 'cancelled', 'stopped'].includes(key))
     ? 'stopped'
     : Object.entries(tool.status_counts).some(([key, count]) => count > 0 && ['queued', 'running', 'pending'].includes(key)) ? 'running' : 'completed'
+  const distributionKey = distributionKeyForTool(tool.tool_name)
   return {
     id: `tool-summary:${encodeURIComponent(tool.tool_name)}`,
     label: tool.display_name,
@@ -1189,6 +1238,7 @@ function toolSummaryNode(tool: RuntimeSummaryTool): GraphStage {
       summary_tools: [tool],
       summary_only: true,
       explicit_relation_count: 0,
+      ...(distributionKey ? { evidence_key: distributionKey, distribution_key: distributionKey } : {}),
     },
   }
 }
@@ -1409,6 +1459,19 @@ function computePositions(nodes: GraphStage[], requestedColumns?: number, availa
     nextColumn += 1
   }
   const groupById = new Map(nodes.filter((node) => node.runtime?.expanded).map((node) => [node.id, node] as const))
+  const expandedClusters = [...groupById.values()].flatMap((group) => {
+    const childIds = [...(group.runtime?.child_ids ?? []), ...(group.runtime?.event_ids ?? [])]
+    const baseColumn = columnByNode.get(group.id)
+    if (baseColumn === undefined || !childIds.length) return []
+    const clusterColumns = group.runtime?.node_type === 'tool_summary_group' ? 3 : childIds.length <= 3 ? 1 : maximumColumns
+    return [{ groupId: group.id, baseColumn, clusterColumns }]
+  })
+  // An expanded cluster occupies the columns immediately after its group.
+  // Shift later spine nodes by that occupied span so the local fan-out never
+  // sits underneath the next scientific step.
+  const shiftedColumn = (baseColumn: number) => baseColumn + expandedClusters
+    .filter(({ baseColumn: clusterColumn }) => clusterColumn < baseColumn)
+    .reduce((total, { clusterColumns }) => total + clusterColumns, 0)
   for (const [childId, groupId] of groupMembers) {
     const groupColumn = columnByNode.get(groupId)
     if (groupColumn === undefined) continue
@@ -1416,7 +1479,7 @@ function computePositions(nodes: GraphStage[], requestedColumns?: number, availa
     const childIds = group ? [...(group.runtime?.child_ids ?? []), ...(group.runtime?.event_ids ?? [])] : []
     const index = childIds.indexOf(childId.startsWith('tool-summary:') ? childId : childId.replace(/^call:/, '').replace(/^event:/, '').replace(/^candidate:/, ''))
     const clusterColumns = group?.runtime?.node_type === 'tool_summary_group' ? 3 : childIds.length <= 3 ? 1 : maximumColumns
-    columnByNode.set(childId, groupColumn + 1 + Math.max(0, index) % clusterColumns)
+    columnByNode.set(childId, shiftedColumn(groupColumn) + 1 + Math.max(0, index) % clusterColumns)
   }
   const place = (node: GraphStage, column: number, row = 0) => {
     const isSummary = node.runtime?.node_type === 'tool_summary' && !groupMembers.has(node.id)
@@ -1427,7 +1490,9 @@ function computePositions(nodes: GraphStage[], requestedColumns?: number, availa
     const parallelMembers = parallelGroup ? ordered.filter((candidate) => candidate.runtime?.parallel_group_id === parallelGroup) : []
     const parallelIndex = parallelGroup ? parallelMembers.findIndex((candidate) => candidate.id === node.id) : 0
     const parallelOffset = parallelMembers.length > 1 ? parallelIndex - (parallelMembers.length - 1) / 2 : 0
-    positions[node.id] = { x: 190 + (columnByNode.get(node.id) ?? 0) * 315, y: mainY + parallelOffset * 170 }
+    const baseColumn = columnByNode.get(node.id) ?? 0
+    const isExpandedChild = groupMembers.has(node.id)
+    positions[node.id] = { x: 190 + (isExpandedChild ? baseColumn : shiftedColumn(baseColumn)) * 315, y: mainY + parallelOffset * 170 }
   }
   for (const node of nodes.filter((candidate) => groupMembers.has(candidate.id))) {
     const groupId = groupMembers.get(node.id)
@@ -1565,7 +1630,9 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
     const expanded = expandedGroups.has(groupId)
     const groupingBasis = bucket.basis
     const displayBatchLabel = aggregateSemanticLabel(bucket.calls, bucket.events) ?? '混合观测组'
-    return [runtimeGroupNode(bucket.calls, bucket.events, expanded, groupId, groupingBasis, displayBatchLabel), ...(expanded ? [...bucket.calls.map(callNode), ...bucket.events.map(eventNode)] : [])]
+    const retryEvidence = retryEvidenceEvents(bucket.events)
+    const expandedEvents = retryEvidence.length ? retryEvidence : bucket.events
+    return [runtimeGroupNode(bucket.calls, bucket.events, expanded, groupId, groupingBasis, displayBatchLabel), ...(expanded ? [...bucket.calls.map(callNode), ...expandedEvents.map(eventNode)] : [])]
   })
   const summaryTools = toolSummaryRows(detail.tool_summary, Object.values(calls))
   const summaryGaps = summaryTools.filter((tool) => tool.missing_count > 0)
