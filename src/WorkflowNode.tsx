@@ -109,7 +109,10 @@ export function WorkflowNode({ data }: NodeProps<StageNode>) {
     .slice(0, isRuntime ? 1 : 2)
   const hasPrimaryVisual = hasStructureEvidence || hasEvidenceDistribution || showsTargets
   const showCompactFacts = compactFacts.length > 0 && (!isRuntime || (!hasPrimaryVisual && !isRuntimeGroup && runtimeType !== 'tool_summary'))
-  const showVerdict = !isRuntimeGroup && !hasEvidenceDistribution
+  // Runtime titles already carry the persisted event/tool meaning. Repeating
+  // the same verdict or generation inside the card makes one observation
+  // look like two independent facts.
+  const showVerdict = !isRuntime && !hasEvidenceDistribution
   return (
     <div className={`workflow-node stage-${stage.id} kind-${stage.kind} grade-${stage.insight.grade} node-${stage.status}${isRuntime ? ` is-runtime-node runtime-${runtimeType}${isRuntimeGroup && stage.runtime?.expanded ? ' runtime-group-expanded' : ''}` : ''}${selected ? ' is-selected' : ''}`}>
       <Handle type="target" position={Position.Left} className="flow-handle" />

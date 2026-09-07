@@ -672,6 +672,35 @@ export function runtimeActivitySummary(runStatus: string, openActivities: number
     : `开放活动 ${normalizedCount}`
 }
 
+/**
+ * Labels an activity boundary that is still open using only persisted
+ * identity, status, and attempt fields. This is an execution observation,
+ * not a scheduler-health or scientific-failure conclusion.
+ */
+export function runtimeOpenActivityLabel(events: TimelineEvent[]) {
+  const open = new Map<string, TimelineEvent>()
+  for (const event of activityBoundaryEvents(events)) {
+    const identity = activityBoundaryIdentity(event)
+    if (!identity) continue
+    const suffix = event.type.toLowerCase().split('.').at(-1)
+    if (suffix === 'started' || suffix === 'running') open.set(identity, event)
+    else if (['succeeded', 'completed', 'failed', 'cancelled'].includes(suffix ?? '')) open.delete(identity)
+  }
+  if (!open.size) return null
+  const labels = new Map<string, number>()
+  let latestAttempt = 1
+  for (const event of open.values()) {
+    const payload = record(event.payload)
+    const label = displayActivityType(text(payload.activity_type)) ?? '活动'
+    labels.set(label, (labels.get(label) ?? 0) + 1)
+    latestAttempt = Math.max(latestAttempt, integerField(payload.attempt) ?? 1)
+  }
+  const labelText = labels.size === 1
+    ? [...labels.entries()].map(([label, count]) => count > 1 ? `${label} ${count} 项` : label).join('')
+    : `${open.size} 项活动`
+  return `正在执行 · ${labelText}${latestAttempt > 1 ? ` · 第 ${latestAttempt} 次尝试` : ''}`
+}
+
 function latestTerminalActivityEvent(events: TimelineEvent[]) {
   return events.filter(isTerminalActivityEvent).sort((left, right) => {
     const leftTime = Date.parse(left.occurred_at)
@@ -1037,6 +1066,7 @@ function runtimeGroupNode(groupedCalls: ToolAttempt[], groupedEvents: TimelineEv
   const executionFactList = executionFacts(groupedEvents)
   const activityRetry = activityRetryStats(groupedEvents)
   const retryEvidence = retryEvidenceEvents(groupedEvents)
+  const openActivityLabel = runtimeOpenActivityLabel(independentEvents)
   const progressFacts = executionFactList.filter(({ label }) => label === '进度')
   const salientFacts = [
     ...recoveryLabels.map((value) => ({ label: '恢复', value })),
@@ -1065,9 +1095,10 @@ function runtimeGroupNode(groupedCalls: ToolAttempt[], groupedEvents: TimelineEv
   const retryTitle = activityRetry.count > 0
     ? `活动重试 · 第 ${activityRetry.maxAttempt} 次${retryOutcomeStatus === 'stopped' ? '失败' : retryOutcomeStatus === 'completed' ? '完成' : '进行中'}`
     : null
+  const primaryLabel = openActivityLabel ?? retryTitle ?? `${displayBatchLabel} · ${countLabel}`
   return {
     id: groupId,
-    label: retryTitle ?? `${displayBatchLabel} · ${countLabel}`,
+    label: primaryLabel,
     kind: 'tool',
     group: 'observed',
     status,
@@ -1077,7 +1108,7 @@ function runtimeGroupNode(groupedCalls: ToolAttempt[], groupedEvents: TimelineEv
     insight: {
       grade,
        verdict: countLabel,
-       reason: cardConclusion,
+      reason: openActivityLabel ?? cardConclusion,
       facts: [
           ...salientFacts,
           ...(operationSummary ? [{ label: '操作构成', value: operationSummary }] : []),

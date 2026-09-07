@@ -50,7 +50,7 @@ import {
 import { LaneLabel, WorkflowNode, type LaneNode, type StageNode } from './WorkflowNode'
 import { assertMatchingRunIdentity, type RunIdentity } from './runIdentity'
 import { formatRunTitle } from './runPresentation'
-import { buildRuntimeGraph, candidatePreviewCountLabel, candidatePreviewDenominator, displayObservedEventName, displayToolName, runtimeEventStatus, type RuntimeGraphModel } from './runtimeGraph'
+import { buildRuntimeGraph, candidatePreviewCountLabel, candidatePreviewDenominator, displayObservedEventName, displayToolName, runtimeActivitySummary, runtimeEventStatus, type RuntimeGraphModel } from './runtimeGraph'
 import { compactReadableRuntimePositions, selectReadableRuntimeNodeIds } from './runtimeViewport'
 import { nodeDetailCacheTtlMs, observerDetailFailureMessage, observerIdlePrefetchDelayMs, observerInitialPrefetchCount, observerInitialPrefetchStages, observerListTimeoutMs, observerInFlightStageIds, observerMergePrefetchQueue, observerNextPrefetchStage, observerNodeDetailCacheKey, observerNodeDetailTimeoutMs, observerPendingPrefetchCount, observerPollingIntervalMs, observerPrefetchQueueMatches, observerPrefetchInFlightKey, observerPrefetchRefreshExpired, observerPrefetchStageOrder, observerRequeuePrefetchStage, observerResponseIsStale, observerRunDetailCacheKey, observerRunDetailTimeoutMs, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion, observerStaleListRetryDelayMs, observerStaleRetryDelayMs, type ObserverPrefetchQueue } from './observerPolling'
 
@@ -655,11 +655,12 @@ function SparkIcon({ icon }: { icon: string }) {
   return icon === 'sequence' ? <Activity /> : <CircleDot />
 }
 
-function CanvasHeader({ detail, refreshing, syncingStale, detailSyncError, selectionMode, selectedCount, onRefresh, onToggleSelection }: {
+function CanvasHeader({ detail, refreshing, syncingStale, detailSyncError, openActivities, selectionMode, selectedCount, onRefresh, onToggleSelection }: {
   detail: RunDetail
   refreshing: boolean
   syncingStale: boolean
   detailSyncError: string | null
+  openActivities: number
   selectionMode: boolean
   selectedCount: number
   onRefresh: () => void
@@ -688,6 +689,7 @@ function CanvasHeader({ detail, refreshing, syncingStale, detailSyncError, selec
           <span>{formatTime(detail.run.created_at)} 创建</span><i />
           <span>{generationSummary}</span><i />
           <span>候选预览 {candidatePreviewCountLabel(detail.candidates.length, previewTotal)}</span><i />
+          {detail.run.status === 'running' && <><span>活动观测 · {runtimeActivitySummary(detail.run.status, openActivities)}</span><i /></>}
           {excludedCandidateCount > 0 && <><span title="历史运行中已存在的生成子代，仅保留审计记录。">{excludedCandidateCount.toLocaleString()} 个历史重放已排除</span><i /></>}
           {detail.counts.admitted > 0 && <><span>{detail.counts.admitted.toLocaleString()} 个进入结构阶段</span><i /></>}
           {detail.branches.length > 0 && <><span>{detail.branches.length} 个靶点</span><i /></>}
@@ -1266,8 +1268,10 @@ function GraphView({
       labelBgPadding: [6, 4],
       labelBgBorderRadius: 5,
       data: { detail: edge },
-      markerEnd: isCausal || isSequence ? { type: MarkerType.ArrowClosed, width: isSequence ? 8 : 11, height: isSequence ? 8 : 11, color: stroke } : undefined,
-      style: { stroke, strokeWidth: isSelected ? 2.6 : isCausal ? 2.2 : isSequence ? 2 : isAssociation ? 1.2 : 1.7, strokeDasharray: isParallel ? '3 5' : isAssociation || (edge.provenance === 'derived' && !isSequence) ? '4 5' : undefined },
+      // Sequence edges are a reading aid only. Without a backend relation
+      // field they must not resemble a causal dependency arrow.
+      markerEnd: isCausal ? { type: MarkerType.ArrowClosed, width: 11, height: 11, color: stroke } : undefined,
+      style: { stroke, strokeWidth: isSelected ? 2.6 : isCausal ? 2.2 : isSequence ? 1.4 : isAssociation ? 1.2 : 1.7, strokeDasharray: isParallel ? '3 5' : isSequence ? '7 7' : isAssociation || (edge.provenance === 'derived' && !isSequence) ? '4 5' : undefined },
     }
   }), [selectedEdge, stageById, visibleGraphEdges])
   const graphRenderKey = `${detail.run.id}:${runtimeGraph.nodes.filter((node) => node.runtime?.expanded).map((node) => node.id).sort().join(',')}`
@@ -1856,6 +1860,7 @@ export default function App() {
                 refreshing={data.refreshing}
                 syncingStale={data.syncingStale}
                 detailSyncError={data.detailSyncError}
+                openActivities={runtimeGraph?.stats.openActivities ?? 0}
                 selectionMode={selectionMode}
                 selectedCount={analysisSelection.length}
                 onRefresh={data.refresh}

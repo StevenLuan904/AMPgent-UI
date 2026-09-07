@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildRuntimeGraph, candidatePreviewCountLabel, candidatePreviewDenominator, candidatePreviewLabel, countActivityRetries, countOpenActivities, deriveLifecycleToolCalls, deriveToolSummaryGaps, displayEventContext, displayEventName, displayEventSemanticName, displayObservedEventName, displayToolName, distributionKeyForTool, layoutColumnsForWidth, runtimeActivitySummary, runtimeCallSummary, runtimeObservationSummary, runtimeRetrySummary } from './runtimeGraph'
+import { buildRuntimeGraph, candidatePreviewCountLabel, candidatePreviewDenominator, candidatePreviewLabel, countActivityRetries, countOpenActivities, deriveLifecycleToolCalls, deriveToolSummaryGaps, displayEventContext, displayEventName, displayEventSemanticName, displayObservedEventName, displayToolName, distributionKeyForTool, layoutColumnsForWidth, runtimeActivitySummary, runtimeCallSummary, runtimeObservationSummary, runtimeOpenActivityLabel, runtimeRetrySummary } from './runtimeGraph'
 import type { NodeDetail, RunDetail, ToolAttempt } from './types'
 
 const call = (id: string, toolName: string, queuedAt: string, overrides: Partial<ToolAttempt> = {}): ToolAttempt => ({
@@ -351,6 +351,22 @@ describe('buildRuntimeGraph', () => {
     expect(runtimeActivitySummary('running', 0)).toBe('等待后续活动观测')
     expect(runtimeActivitySummary('running', 2)).toBe('开放活动 2')
     expect(runtimeActivitySummary('succeeded', 0)).toBe('开放活动 0')
+  })
+
+  it('labels an open persisted activity without implying scheduler failure', () => {
+    const events: RunDetail['events'] = [
+      { sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: 'execution-open', activity_id: 7, attempt: 1, activity_type: 'evaluate_v38_sequence_metric' }, occurred_at: '2026-09-04T00:00:01Z' },
+    ]
+    expect(runtimeOpenActivityLabel(events)).toBe('正在执行 · 序列指标计算')
+  })
+
+  it('keeps an open retry attempt distinct from a failed prior attempt', () => {
+    const events: RunDetail['events'] = [
+      { sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: 'execution-open-retry', activity_id: 7, attempt: 1, activity_type: 'evaluate_v38_sequence_metric' }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'activity.failed', actor: 'observer-writer', payload: { workflow_run_id: 'execution-open-retry', activity_id: 7, attempt: 1, activity_type: 'evaluate_v38_sequence_metric' }, occurred_at: '2026-09-04T00:00:02Z' },
+      { sequence_no: 3, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: 'execution-open-retry', activity_id: 7, attempt: 2, activity_type: 'evaluate_v38_sequence_metric' }, occurred_at: '2026-09-04T00:00:03Z' },
+    ]
+    expect(runtimeOpenActivityLabel(events)).toBe('正在执行 · 序列指标计算 · 第 2 次尝试')
   })
 
   it('distinguishes materialized calls from the authoritative run record count', () => {
