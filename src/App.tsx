@@ -1072,11 +1072,10 @@ function GraphView({
       const visibleStageNodes = instance.getNodes().filter((node) => !node.hidden && node.type === 'stage')
       const clusterNodes = visibleStageNodes.filter((node) => clusterIds.has(node.id))
       if (!clusterNodes.length) return false
-      // Keep every already-visible mainline context card in the focus bounds.
-      // The cluster remains the visual focus, while an earlier visible event
-      // or batch card can no longer be left half outside the canvas edge.
-      // Hidden history and unloaded members are still excluded.
-      const focusNodes = visibleStageNodes
+      // Fit only the revealed cluster. Adjacent mainline cards remain as
+      // lightweight reading context but must not force the scientific detail
+      // cards down to an unreadable zoom.
+      const focusNodes = clusterNodes
       await instance.fitView({
         nodes: focusNodes.map((node) => ({ id: node.id })),
         // Include room for the dashed frame and card shadows. The readable
