@@ -1,11 +1,46 @@
 import type { GraphStage } from './types'
 
 type ReadableRuntimeNode = Pick<GraphStage, 'id' | 'status'> & {
-  runtime?: Pick<NonNullable<GraphStage['runtime']>, 'node_type' | 'observed_at' | 'expanded' | 'child_ids'>
+  runtime?: Pick<NonNullable<GraphStage['runtime']>, 'node_type' | 'observed_at' | 'expanded' | 'child_ids' | 'raw_label'>
 }
 
 export type RuntimeNodePosition = { x: number; y: number }
 export type RuntimeNodePositions = Readonly<Record<string, RuntimeNodePosition>>
+
+/**
+ * Compresses only the selected reading surface. Hidden historical nodes keep
+ * their original layout, but no longer reserve empty columns in the opening
+ * view. Nodes that intentionally share a source column remain a vertical
+ * parallel or expanded-batch cluster.
+ */
+export function compactReadableRuntimePositions(
+  ids: ReadonlyArray<string>,
+  positions: RuntimeNodePositions,
+  options: { xStart?: number; xGap?: number; singleY?: number; clusterCenterY?: number; rowGap?: number } = {},
+) {
+  const xStart = options.xStart ?? 190
+  const xGap = options.xGap ?? 330
+  const singleY = options.singleY ?? 220
+  const clusterCenterY = options.clusterCenterY ?? 300
+  const rowGap = options.rowGap ?? 190
+  const positioned = ids
+    .map((id) => ({ id, position: positions[id] }))
+    .filter((item): item is { id: string; position: RuntimeNodePosition } => Boolean(item.position))
+  const columns = [...new Set(positioned.map(({ position }) => position.x))].sort((left, right) => left - right)
+  const output: Record<string, RuntimeNodePosition> = {}
+  columns.forEach((sourceX, columnIndex) => {
+    const members = positioned
+      .filter(({ position }) => position.x === sourceX)
+      .sort((left, right) => left.position.y - right.position.y || left.id.localeCompare(right.id))
+    members.forEach(({ id }, rowIndex) => {
+      const y = members.length === 1
+        ? singleY
+        : clusterCenterY + (rowIndex - (members.length - 1) / 2) * rowGap
+      output[id] = { x: xStart + columnIndex * xGap, y }
+    })
+  })
+  return output
+}
 
 const eventTypes = new Set(['lifecycle_event', 'event_group'])
 const toolTypes = new Set(['tool_call', 'tool_group', 'batch_group'])
@@ -86,6 +121,8 @@ export function selectReadableRuntimeNodeIds(nodes: ReadonlyArray<ReadableRuntim
     selected.add(candidate.id)
   }
   ensureContext((node) => laneFor(node) === 'events')
+  ensureContext((node) => node.runtime?.raw_label === 'agent_decision.recorded')
+  ensureContext((node) => laneFor(node) === 'summary')
   ensureContext((node) => laneFor(node) === 'structure')
   ensureContext((node) => laneFor(node) === 'population')
   ensureContext((node) => laneFor(node) === 'candidates')

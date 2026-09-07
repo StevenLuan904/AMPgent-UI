@@ -108,7 +108,7 @@ export function WorkflowNode({ data }: NodeProps<StageNode>) {
     .filter((fact) => !isRuntime || !['序号', '运行参与者', '语义'].includes(fact.label))
     .slice(0, isRuntime ? 1 : 2)
   const hasPrimaryVisual = hasStructureEvidence || hasEvidenceDistribution || showsTargets
-  const showCompactFacts = compactFacts.length > 0 && (!isRuntime || (!hasPrimaryVisual && !isRuntimeGroup))
+  const showCompactFacts = compactFacts.length > 0 && (!isRuntime || (!hasPrimaryVisual && !isRuntimeGroup && runtimeType !== 'tool_summary'))
   return (
     <div className={`workflow-node stage-${stage.id} kind-${stage.kind} grade-${stage.insight.grade} node-${stage.status}${isRuntime ? ` is-runtime-node runtime-${runtimeType}${isRuntimeGroup && stage.runtime?.expanded ? ' runtime-group-expanded' : ''}` : ''}${selected ? ' is-selected' : ''}`}>
       <Handle type="target" position={Position.Left} className="flow-handle" />
@@ -153,7 +153,7 @@ export function WorkflowNode({ data }: NodeProps<StageNode>) {
         <span>{`${stage.current.toLocaleString()} / ${stage.total.toLocaleString()}`}</span>
         <span className={`evidence-chip ${stage.provenance}`}>{hasEvidenceDistribution ? '结果分布' : '暂无结果'}</span>
       </div>}
-      {isRuntimeGroup && onToggleGroup && <button className="node-group-toggle" onClick={(event) => { event.stopPropagation(); onToggleGroup(stage.id) }}><span>{stage.runtime?.expanded ? '收起明细' : runtimeType === 'tool_summary_group' ? `展开 ${stage.runtime?.child_ids?.length ?? 0} 个工具汇总` : runtimeType === 'candidate_group' ? `展开 ${stage.runtime?.child_ids?.length ?? 0} 条预览` : `展开 ${(stage.runtime?.child_ids?.length ?? 0) + (stage.runtime?.event_ids?.length ?? 0)} 项观测`}</span><ChevronRight /></button>}
+      {isRuntimeGroup && onToggleGroup && <button className="node-group-toggle" onClick={(event) => { event.stopPropagation(); onToggleGroup(stage.id) }}><span>{stage.runtime?.expanded ? '收起明细' : runtimeType === 'tool_summary_group' ? `展开 ${stage.runtime?.child_ids?.length ?? 0} 类工具 · ${stage.total} 次调用` : runtimeType === 'candidate_group' ? `展开 ${stage.runtime?.child_ids?.length ?? 0} 条预览` : `展开 ${(stage.runtime?.child_ids?.length ?? 0) + (stage.runtime?.event_ids?.length ?? 0)} 项观测`}</span><ChevronRight /></button>}
       {!isRuntime && <div className="progress-track"><i style={{ width: `${progress}%` }} /></div>}
       <Handle type="source" position={Position.Right} className="flow-handle" />
     </div>

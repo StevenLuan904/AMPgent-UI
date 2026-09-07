@@ -377,18 +377,33 @@ describe('buildRuntimeGraph', () => {
     expect(gaps[0]).toMatchObject({ summary_count: 2, materialized_count: 1, missing_count: 1, status_counts: { succeeded: 2 } })
   })
 
-  it('adds a folded summary-only batch for missing calls without creating edges', () => {
+  it('adds a folded tool-chain batch for authoritative summary calls', () => {
     const observed = call('summary-materialized', 'tool-a', '2026-09-04T00:00:00Z')
     const summaryDetail = { ...detail(), tool_summary: { 'tool-a': { succeeded: 2 }, 'unknown-internal-tool': { failed: 3 } } }
     const result = buildRuntimeGraph(summaryDetail, { worker: nodeDetail([observed]) })
     const group = result.nodes.find((node) => node.id === 'tool-summary-group')
-    expect(group).toMatchObject({ label: '尚缺逐次明细 · 4 项', status: 'pending', current: 1, total: 5, insight: { verdict: '仅汇总统计', reason: '仅有工具状态汇总' }, runtime: { summary_only: true, child_ids: ['tool-summary:tool-a', 'tool-summary:unknown-internal-tool'] } })
+    expect(group).toMatchObject({ label: '工具链汇总 · 5 次', status: 'stopped', current: 5, total: 5, insight: { verdict: '2 类工具 · 5 次调用', reason: '运行工具调用汇总' }, runtime: { summary_only: true, child_ids: ['tool-summary:tool-a', 'tool-summary:unknown-internal-tool'] } })
     expect(group?.insight.facts).toEqual(expect.arrayContaining([
-      { label: '统计覆盖', value: '总量 5 · 已有逐次 1 · 缺少逐次 4' },
+      { label: '调用规模', value: '2 类工具 · 5 次' },
     ]))
     expect(group?.runtime?.summary_tools?.find((tool) => tool.tool_name === 'unknown-internal-tool')?.display_name).toBe('未命名工具')
     expect(result.edges.some((edge) => edge.source.startsWith('tool-summary:') || edge.target.startsWith('tool-summary:'))).toBe(false)
     expect(result.stats).toMatchObject({ toolSummaryRecords: 5, toolSummaryMaterialized: 1, toolSummaryMissing: 4 })
+  })
+
+  it('surfaces the latest explicit iteration on the folded tool chain', () => {
+    const summaryDetail = {
+      ...detail([{ sequence_no: 1, type: 'agent_decision.recorded', actor: 'agent', payload: { iteration_no: 39 }, occurred_at: '2026-09-04T00:00:10Z' }]),
+      tool_summary: { 'tool-a': { succeeded: 39 }, 'tool-b': { succeeded: 39 } },
+    }
+    const result = buildRuntimeGraph(summaryDetail)
+    expect(result.nodes.find((node) => node.id === 'tool-summary-group')).toMatchObject({
+      label: '迭代工具链 · 第 39 轮',
+      status: 'completed',
+      current: 78,
+      total: 78,
+      runtime: { latest_iteration: 39, observed_at: '2026-09-04T00:00:10Z' },
+    })
   })
 
   it('expands each missing summary tool as its own auditable summary card', () => {
@@ -401,7 +416,9 @@ describe('buildRuntimeGraph', () => {
       { label: '统计总量', value: '2' },
       { label: '逐次明细', value: '已有 0 · 缺少 2' },
     ]))
-    expect(result.edges).toHaveLength(0)
+    expect(result.edges.filter((edge) => edge.source === 'tool-summary-group')).toEqual([
+      expect.objectContaining({ target: 'tool-summary:tool-a', relation_kind: 'grouping' }),
+    ])
   })
 
   it('omits the summary batch when all summary states are materialized', () => {
@@ -425,14 +442,14 @@ describe('buildRuntimeGraph', () => {
     ])
     const result = buildRuntimeGraph({ ...detail(), tool_summary: toolSummary }, { worker: nodeDetail(materialized) })
     expect(result.stats).toMatchObject({ toolSummaryRecords: 352, toolSummaryMaterialized: 195, toolSummaryMissing: 157 })
-    expect(result.nodes.find((node) => node.id === 'tool-summary-group')).toMatchObject({ label: '尚缺逐次明细 · 157 项', current: 195, total: 352 })
+    expect(result.nodes.find((node) => node.id === 'tool-summary-group')).toMatchObject({ label: '工具链汇总 · 352 次', current: 352, total: 352 })
     expect(result.nodes.find((node) => node.id === 'tool-summary-group')?.insight.facts).toEqual(expect.arrayContaining([
-      { label: '统计覆盖', value: '总量 352 · 已有逐次 195 · 缺少逐次 157' },
+      { label: '调用规模', value: '9 类工具 · 352 次' },
     ]))
     expect(result.edges.filter((edge) => edge.source.startsWith('tool-summary') || edge.target.startsWith('tool-summary'))).toHaveLength(0)
   })
 
-  it('places summary evidence on a separate audit rail instead of the main spine', () => {
+  it('places the tool-chain summary on the main scientific spine', () => {
     const candidate = { id: 'candidate-summary', sequence: 'KKLL', length: 4, proposal_rank: 1, cohort: 'exploration', pareto_front: null, reasons: [], metrics: [], generation: 1 }
     const result = buildRuntimeGraph({ ...detail([{ sequence_no: 1, type: 'run.started', actor: 'worker', payload: {}, occurred_at: '2026-09-04T00:00:00Z' }], [candidate]), tool_summary: { 'tool-a': { succeeded: 2 } } }, { worker: nodeDetail([call('summary-a', 'tool-a', '2026-09-04T00:00:01Z')]) })
     const toolY = result.positions['call:summary-a']?.y
@@ -443,10 +460,10 @@ describe('buildRuntimeGraph', () => {
     expect(summaryY).toBeDefined()
     const eventY = result.positions['event:1']?.y
     expect(eventY).toBeDefined()
-    expect(summaryY).toBeGreaterThan(candidateY)
+    expect(summaryY).toBe(candidateY)
     expect(eventY).toBe(toolY)
     expect(toolY).toBe(candidateY)
-    expect(summaryY).not.toBe(toolY)
+    expect(summaryY).toBe(toolY)
   })
 
   it('builds observed call/event nodes and reports missing dependency contract', () => {

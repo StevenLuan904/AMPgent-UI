@@ -6,6 +6,7 @@ import {
   Controls,
   MarkerType,
   ReactFlow,
+  useNodesState,
   type Edge,
   type EdgeMouseHandler,
   type NodeMouseHandler,
@@ -51,7 +52,7 @@ import { LaneLabel, WorkflowNode, type LaneNode, type StageNode } from './Workfl
 import { assertMatchingRunIdentity, type RunIdentity } from './runIdentity'
 import { formatRunTitle } from './runPresentation'
 import { buildRuntimeGraph, candidatePreviewCountLabel, candidatePreviewDenominator, displayEventContext, displayObservedEventName, displayToolName, runtimeEventStatus, type RuntimeGraphModel } from './runtimeGraph'
-import { readableRuntimeNodeCount, selectReadableRuntimeNodeIds } from './runtimeViewport'
+import { compactReadableRuntimePositions, readableRuntimeNodeCount, selectReadableRuntimeNodeIds } from './runtimeViewport'
 import { nodeDetailCacheTtlMs, observerDetailFailureMessage, observerIdlePrefetchDelayMs, observerInitialPrefetchCount, observerInitialPrefetchStages, observerListTimeoutMs, observerInFlightStageIds, observerMergePrefetchQueue, observerNextPrefetchStage, observerNodeDetailCacheKey, observerNodeDetailTimeoutMs, observerPendingPrefetchCount, observerPollingIntervalMs, observerPrefetchQueueMatches, observerPrefetchInFlightKey, observerPrefetchRefreshExpired, observerPrefetchStageOrder, observerRequeuePrefetchStage, observerResponseIsStale, observerRunDetailCacheKey, observerRunDetailTimeoutMs, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion, observerStaleRetryDelayMs, type ObserverPrefetchQueue } from './observerPolling'
 
 const readableViewportMinZoom = 0.75
@@ -734,7 +735,6 @@ function GraphView({
   const programmaticFit = useRef(false)
   const graphAreaRef = useRef<HTMLDivElement>(null)
   const [graphViewportSize, setGraphViewportSize] = useState({ width: 0, height: 0 })
-  const [measuredLayoutVersion, setMeasuredLayoutVersion] = useState(0)
   const hasDeferredNodeDetails = (runtimeGraph.sourceFetch?.deferred ?? 0) > 0
   useEffect(() => {
     const element = graphAreaRef.current
@@ -753,26 +753,49 @@ function GraphView({
     observer.observe(element)
     return () => observer.disconnect()
   }, [onAvailableWidthChange])
-  // Summary-only evidence is an audit rail, not part of the readable decision
-  // spine. Its authoritative coverage remains in the compact header and its
-  // card is reachable by panning or selecting the audit node.
+  // The aggregate tool chain is a first-class scientific loop summary. Its
+  // per-tool children stay folded until requested.
   const readableRuntimeNodeIds = useMemo(() => {
     const smallExpandedCandidateGroup = runtimeGraph.nodes.some((node) => node.runtime?.node_type === 'candidate_group'
       && node.runtime.expanded
       && (node.runtime.child_ids?.length ?? 0) <= 3)
-    const readableLimit = smallExpandedCandidateGroup ? 8 : graphViewportSize.width > 2100 ? 7 : 5
+    const expandedSummaryGroup = runtimeGraph.nodes.find((node) => node.runtime?.node_type === 'tool_summary_group' && node.runtime.expanded)
+    const readableLimit = expandedSummaryGroup
+      ? Math.min(14, (expandedSummaryGroup.runtime?.child_ids?.length ?? 0) + 4)
+      : smallExpandedCandidateGroup ? 8 : graphViewportSize.width > 2100 ? 7 : 5
     const selected = selectReadableRuntimeNodeIds(runtimeGraph.nodes, runtimeGraph.positions, readableLimit)
-    return selected.filter((id) => runtimeGraph.nodes.find((node) => node.id === id)?.runtime?.node_type !== 'tool_summary_group'
-      && runtimeGraph.nodes.find((node) => node.id === id)?.runtime?.node_type !== 'tool_summary')
+    return selected.filter((id) => {
+      const node = runtimeGraph.nodes.find((candidate) => candidate.id === id)
+      if (expandedSummaryGroup && ['candidate_group', 'candidate_preview', 'generation', 'population_summary'].includes(node?.runtime?.node_type ?? '')) return false
+      if (node?.runtime?.node_type !== 'tool_summary') return true
+      return Boolean(expandedSummaryGroup?.runtime?.child_ids?.includes(id))
+    })
   }, [graphViewportSize.width, runtimeGraph.nodes, runtimeGraph.positions])
+  const readableRuntimePositions = useMemo(() => {
+    const compact = compactReadableRuntimePositions(readableRuntimeNodeIds, runtimeGraph.positions)
+    const expandedSummary = runtimeGraph.nodes.find((node) => node.runtime?.node_type === 'tool_summary_group' && node.runtime.expanded)
+    if (!expandedSummary || !readableRuntimeNodeIds.includes(expandedSummary.id)) return compact
+    const childIds = (expandedSummary.runtime?.child_ids ?? []).filter((id) => readableRuntimeNodeIds.includes(id))
+    const leadingIds = readableRuntimeNodeIds
+      .filter((id) => id !== expandedSummary.id && !childIds.includes(id) && runtimeGraph.nodes.find((node) => node.id === id)?.runtime?.node_type !== 'population_summary')
+      .sort((left, right) => (runtimeGraph.positions[left]?.x ?? 0) - (runtimeGraph.positions[right]?.x ?? 0))
+    const groupX = 190 + leadingIds.length * 330
+    leadingIds.forEach((id, index) => { compact[id] = { x: 190 + index * 330, y: 300 } })
+    compact[expandedSummary.id] = { x: groupX, y: 300 }
+    childIds.forEach((id, index) => {
+      compact[id] = { x: groupX + 330 + (index % 3) * 330, y: 110 + Math.floor(index / 3) * 190 }
+    })
+    const populationId = readableRuntimeNodeIds.find((id) => runtimeGraph.nodes.find((node) => node.id === id)?.runtime?.node_type === 'population_summary')
+    if (populationId) compact[populationId] = { x: groupX + 4 * 330, y: 300 }
+    return compact
+  }, [readableRuntimeNodeIds, runtimeGraph.nodes, runtimeGraph.positions])
   const readableLayoutSignature = useMemo(() => [
     `${graphViewportSize.width}x${graphViewportSize.height}`,
     ...readableRuntimeNodeIds.map((id) => {
-      const position = runtimeGraph.positions[id]
+      const position = readableRuntimePositions[id]
       return `${id}:${position ? `${Math.round(position.x)},${Math.round(position.y)}` : 'unplaced'}`
     }),
-    `measured:${measuredLayoutVersion}`,
-  ].join('|'), [graphViewportSize.height, graphViewportSize.width, measuredLayoutVersion, readableRuntimeNodeIds, runtimeGraph.positions])
+  ].join('|'), [graphViewportSize.height, graphViewportSize.width, readableRuntimeNodeIds, readableRuntimePositions])
   const readableRuntimeNodeIdSet = useMemo(() => new Set(readableRuntimeNodeIds), [readableRuntimeNodeIds])
   layoutSignatureRef.current = readableLayoutSignature
   const markUserInteracted = useCallback(() => {
@@ -991,18 +1014,17 @@ function GraphView({
   useEffect(() => {
     scheduleInitialFit()
   }, [readableLayoutSignature, scheduleInitialFit])
-  const nodes = useMemo<Array<StageNode | LaneNode>>(() => {
-    const mainY = Math.min(...runtimeGraph.nodes
-      .filter((stage) => !['tool_summary_group', 'tool_summary'].includes(stage.runtime?.node_type ?? ''))
-      .map((stage) => runtimeGraph.positions[stage.id]?.y ?? 220))
-    const firstSpineX = Math.min(...readableRuntimeNodeIds.map((id) => runtimeGraph.positions[id]?.x ?? 190))
+  const computedNodes = useMemo<Array<StageNode | LaneNode>>(() => {
+    const readablePositions = readableRuntimeNodeIds.map((id) => readableRuntimePositions[id]).filter(Boolean)
+    const mainY = Math.min(...readablePositions.map((position) => position.y), 220)
+    const firstSpineX = Math.min(...readablePositions.map((position) => position.x), 190)
     const laneNodes: LaneNode[] = [
       { id: 'lane:main', type: 'lane', position: { x: Math.max(0, firstSpineX - 150), y: mainY }, initialWidth: 132, initialHeight: 47, data: { index: '01', label: '运行主线', description: hasDeferredNodeDetails ? '批次展开完整观测' : '按持久化观测顺序' }, draggable: false, selectable: false },
     ]
     return [
       ...laneNodes,
       ...runtimeGraph.nodes.map((stage): StageNode => {
-        const basePosition = runtimeGraph.positions[stage.id] ?? { x: 0, y: 0 }
+        const basePosition = readableRuntimePositions[stage.id] ?? runtimeGraph.positions[stage.id] ?? { x: 0, y: 0 }
         const viewerKey = stage.runtime?.viewer_key
         const runtimeViewer = viewerKey
           ? detail.viewers?.[viewerKey] ?? Object.values(nodeDetails).find((source) => source.node_id === viewerKey)?.viewer ?? Object.values(nodeDetails).find((source) => source.viewers?.[viewerKey])?.viewers?.[viewerKey] ?? null
@@ -1033,12 +1055,20 @@ function GraphView({
         })
       }),
     ]
-  }, [analysisSelection, analysisSnapshot, detail, graphViewportSize.height, graphViewportSize.width, handleToggleGroup, hasDeferredNodeDetails, nodeDetails, persistedDistributions, readableRuntimeNodeIdSet, runtimeGraph, selectedStage, selectionMode])
+  }, [analysisSelection, analysisSnapshot, detail, graphViewportSize.height, graphViewportSize.width, handleToggleGroup, hasDeferredNodeDetails, nodeDetails, persistedDistributions, readableRuntimeNodeIds, readableRuntimeNodeIdSet, readableRuntimePositions, runtimeGraph, selectedStage, selectionMode])
+  const [nodes, setNodes, onNodesChange] = useNodesState<StageNode | LaneNode>(computedNodes)
+  useEffect(() => {
+    setNodes((current) => {
+      const measuredById = new Map(current.map((node) => [node.id, node.measured] as const))
+      return computedNodes.map((node) => ({ ...node, measured: measuredById.get(node.id) ?? node.measured }))
+    })
+  }, [computedNodes, setNodes])
   const stageById = useMemo(() => Object.fromEntries(runtimeGraph.nodes.map((node) => [node.id, node])), [runtimeGraph.nodes])
   const readablePresentationEdges = useMemo<GraphEdgeDetail[]>(() => {
     const ordered = readableRuntimeNodeIds
-      .map((id) => ({ id, position: runtimeGraph.positions[id] }))
+      .map((id) => ({ id, position: readableRuntimePositions[id] }))
       .filter((item): item is { id: string; position: { x: number; y: number } } => Boolean(item.position))
+      .filter((item) => runtimeGraph.nodes.find((node) => node.id === item.id)?.runtime?.node_type !== 'tool_summary')
       .sort((left, right) => left.position.x - right.position.x || left.position.y - right.position.y)
     return ordered.slice(1).flatMap((target, index) => {
       const source = ordered[index]
@@ -1054,7 +1084,7 @@ function GraphView({
         relation_kind: 'sequence' as const,
       }]
     })
-  }, [readableRuntimeNodeIds, runtimeGraph.edges, runtimeGraph.positions])
+  }, [readableRuntimeNodeIds, readableRuntimePositions, runtimeGraph.edges, runtimeGraph.nodes])
   const visibleGraphEdges = useMemo(() => [
     ...runtimeGraph.edges.filter((edge) => readableRuntimeNodeIdSet.has(edge.source) && readableRuntimeNodeIdSet.has(edge.target)),
     ...readablePresentationEdges,
@@ -1094,6 +1124,7 @@ function GraphView({
     runtimeRoundContext || '轮次信息未返回',
     `候选 ${candidatePreviewCountLabel(detail.candidates.length, candidatePreviewDenominator(detail))}`,
   ]
+  const graphRenderKey = `${detail.run.id}:${runtimeGraph.nodes.filter((node) => node.runtime?.expanded).map((node) => node.id).sort().join(',')}`
   const handleNodeClick: NodeMouseHandler = (_, node) => {
     if (node.type !== 'stage') return
     markUserInteracted()
@@ -1115,16 +1146,14 @@ function GraphView({
   return (
     <div className="graph-area" ref={graphAreaRef}>
       <ReactFlow
-        key={detail.run.id}
+        key={graphRenderKey}
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
         onNodeClick={handleNodeClick}
         onNodeDoubleClick={handleNodeDoubleClick}
         onEdgeClick={handleEdgeClick}
-        onNodesChange={(changes) => {
-            if (changes.some((change) => change.type === 'dimensions')) setMeasuredLayoutVersion((version) => version + 1)
-        }}
+        onNodesChange={onNodesChange}
         onInit={(instance) => { flowInstance.current = instance; scheduleInitialFit() }}
         onMoveStart={() => { if (!programmaticFit.current) userInteracted.current = true }}
         fitViewOptions={{ padding: 0.12, minZoom: readableViewportMinZoom, maxZoom: 1 }}

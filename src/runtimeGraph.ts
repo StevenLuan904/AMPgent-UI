@@ -1108,26 +1108,33 @@ function summaryOperationComposition(tools: RuntimeSummaryTool[]) {
   return tools.map((tool) => `${tool.display_name} ${tool.summary_count}`).join(' · ')
 }
 
-function toolSummaryGroupNode(tools: RuntimeSummaryTool[], coverage: { total: number; materialized: number; missing: number }, expanded: boolean): GraphStage {
+function toolSummaryGroupNode(tools: RuntimeSummaryTool[], coverage: { total: number; materialized: number; missing: number }, expanded: boolean, latestIteration: number | null, observedAt: string | null): GraphStage {
   const summaryCount = coverage.total
-  const materializedCount = coverage.materialized
-  const missingCount = coverage.missing
   const groupId = 'tool-summary-group'
+  const statusCounts = tools.reduce<Record<string, number>>((result, tool) => {
+    for (const [status, count] of Object.entries(tool.status_counts)) result[status] = (result[status] ?? 0) + count
+    return result
+  }, {})
+  const status: GraphStage['status'] = Object.entries(statusCounts).some(([key, count]) => count > 0 && ['failed', 'cancelled', 'stopped'].includes(key))
+    ? 'stopped'
+    : Object.entries(statusCounts).some(([key, count]) => count > 0 && ['queued', 'running', 'pending'].includes(key)) ? 'running' : 'completed'
+  const iterationLabel = latestIteration === null ? null : `第 ${latestIteration} 轮`
   return {
     id: groupId,
-    label: `尚缺逐次明细 · ${missingCount} 项`,
+    label: iterationLabel ? `迭代工具链 · ${iterationLabel}` : `工具链汇总 · ${summaryCount} 次`,
     kind: 'tool',
     group: 'observed',
-    status: 'pending',
-    current: materializedCount,
+    status,
+    current: summaryCount,
     total: summaryCount,
-    provenance: 'derived',
+    provenance: 'database',
     insight: {
       grade: 'neutral',
-      verdict: '仅汇总统计',
-       reason: '仅有工具状态汇总',
+      verdict: `${tools.length} 类工具 · ${summaryCount} 次调用`,
+      reason: iterationLabel ? `${iterationLabel}运行观测` : '运行工具调用汇总',
        facts: [
-         { label: '统计覆盖', value: `总量 ${summaryCount} · 已有逐次 ${materializedCount} · 缺少逐次 ${missingCount}` },
+         ...(iterationLabel ? [{ label: '最近轮次', value: iterationLabel }] : []),
+         { label: '调用规模', value: `${tools.length} 类工具 · ${summaryCount} 次` },
          { label: '操作构成', value: summaryOperationComposition(tools) },
          { label: '状态构成', value: summaryStatusBreakdown(tools) },
       ],
@@ -1136,32 +1143,36 @@ function toolSummaryGroupNode(tools: RuntimeSummaryTool[], coverage: { total: nu
     runtime: {
       node_type: 'tool_summary_group',
       source_id: groupId,
-      observed_at: null,
+      observed_at: observedAt,
       child_ids: tools.map((tool) => `tool-summary:${encodeURIComponent(tool.tool_name)}`),
       grouping_basis: '数据库工具状态汇总；按工具与状态核对逐次记录',
       expanded,
       status_breakdown: summaryStatusBreakdown(tools),
       summary_tools: tools,
       summary_only: true,
+      latest_iteration: latestIteration ?? undefined,
       explicit_relation_count: 0,
     },
   }
 }
 
 function toolSummaryNode(tool: RuntimeSummaryTool): GraphStage {
+  const status: GraphStage['status'] = Object.entries(tool.status_counts).some(([key, count]) => count > 0 && ['failed', 'cancelled', 'stopped'].includes(key))
+    ? 'stopped'
+    : Object.entries(tool.status_counts).some(([key, count]) => count > 0 && ['queued', 'running', 'pending'].includes(key)) ? 'running' : 'completed'
   return {
     id: `tool-summary:${encodeURIComponent(tool.tool_name)}`,
     label: tool.display_name,
     kind: 'tool',
     group: 'observed',
-    status: 'pending',
+    status,
     current: tool.materialized_count,
     total: tool.summary_count,
     provenance: 'derived',
     insight: {
       grade: 'neutral',
-      verdict: '仅汇总',
-       reason: '仅有工具状态汇总',
+      verdict: summaryStatusBreakdown([tool]),
+       reason: `${tool.summary_count} 次调用`,
       facts: [
         { label: '状态构成', value: Object.entries(tool.status_counts).map(([status, count]) => `${summaryStatusLabel(status)} ${count}`).join(' · ') },
         { label: '统计总量', value: String(tool.summary_count) },
@@ -1367,11 +1378,11 @@ function computePositions(nodes: GraphStage[], requestedColumns?: number, availa
     if (!group.runtime?.expanded || !childIds.length) continue
     for (const childId of childIds) {
       const prefix = group.runtime.node_type === 'candidate_group' ? 'candidate:' : 'call:'
-      const nodeId = childId.startsWith('event:') || childId.startsWith('call:') || childId.startsWith('candidate:') ? childId : `${prefix}${childId}`
+      const nodeId = childId.startsWith('event:') || childId.startsWith('call:') || childId.startsWith('candidate:') || childId.startsWith('tool-summary:') ? childId : `${prefix}${childId}`
       groupMembers.set(nodeId, group.id)
     }
   }
-  const summaryNodes = nodes.filter((node) => ['tool_summary_group', 'tool_summary'].includes(node.runtime?.node_type ?? ''))
+  const summaryNodes = nodes.filter((node) => node.runtime?.node_type === 'tool_summary')
   const mainNodes = nodes.filter((node) => !summaryNodes.includes(node) && !groupMembers.has(node.id))
   const observedTime = (node: GraphStage) => {
     const value = node.runtime?.observed_at ? Date.parse(node.runtime.observed_at) : Number.NaN
@@ -1403,12 +1414,12 @@ function computePositions(nodes: GraphStage[], requestedColumns?: number, availa
     if (groupColumn === undefined) continue
     const group = groupById.get(groupId)
     const childIds = group ? [...(group.runtime?.child_ids ?? []), ...(group.runtime?.event_ids ?? [])] : []
-    const index = childIds.indexOf(childId.replace(/^call:/, '').replace(/^event:/, '').replace(/^candidate:/, ''))
-    const clusterColumns = childIds.length <= 3 ? 1 : maximumColumns
+    const index = childIds.indexOf(childId.startsWith('tool-summary:') ? childId : childId.replace(/^call:/, '').replace(/^event:/, '').replace(/^candidate:/, ''))
+    const clusterColumns = group?.runtime?.node_type === 'tool_summary_group' ? 3 : childIds.length <= 3 ? 1 : maximumColumns
     columnByNode.set(childId, groupColumn + 1 + Math.max(0, index) % clusterColumns)
   }
   const place = (node: GraphStage, column: number, row = 0) => {
-    const isSummary = ['tool_summary_group', 'tool_summary'].includes(node.runtime?.node_type ?? '')
+    const isSummary = node.runtime?.node_type === 'tool_summary' && !groupMembers.has(node.id)
     positions[node.id] = { x: 190 + column * 315, y: isSummary ? auditY + row * 190 : mainY + row * 190 }
   }
   for (const node of ordered) {
@@ -1422,13 +1433,13 @@ function computePositions(nodes: GraphStage[], requestedColumns?: number, availa
     const groupId = groupMembers.get(node.id)
     const group = groupId ? groupById.get(groupId) : undefined
     const childIds = group ? [...(group.runtime?.child_ids ?? []), ...(group.runtime?.event_ids ?? [])] : []
-    const childIndex = childIds.indexOf(node.id.replace(/^call:/, '').replace(/^event:/, '').replace(/^candidate:/, ''))
-    const clusterColumns = childIds.length <= 3 ? 1 : maximumColumns
+    const childIndex = childIds.indexOf(node.id.startsWith('tool-summary:') ? node.id : node.id.replace(/^call:/, '').replace(/^event:/, '').replace(/^candidate:/, ''))
+    const clusterColumns = group?.runtime?.node_type === 'tool_summary_group' ? 3 : childIds.length <= 3 ? 1 : maximumColumns
     place(node, columnByNode.get(node.id) ?? 0, Math.floor(Math.max(0, childIndex) / clusterColumns) + 1)
   }
   // Summary-only evidence is a separate audit rail. It never consumes a
   // timeline column and has no execution edge.
-  summaryNodes.forEach((node, index) => place(node, index, 0))
+  summaryNodes.filter((node) => !groupMembers.has(node.id)).forEach((node, index) => place(node, index, 0))
   return positions
 }
 
@@ -1556,8 +1567,14 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
     const displayBatchLabel = aggregateSemanticLabel(bucket.calls, bucket.events) ?? '混合观测组'
     return [runtimeGroupNode(bucket.calls, bucket.events, expanded, groupId, groupingBasis, displayBatchLabel), ...(expanded ? [...bucket.calls.map(callNode), ...bucket.events.map(eventNode)] : [])]
   })
-  const summaryGaps = deriveToolSummaryGaps(detail.tool_summary, Object.values(calls))
+  const summaryTools = toolSummaryRows(detail.tool_summary, Object.values(calls))
+  const summaryGaps = summaryTools.filter((tool) => tool.missing_count > 0)
   const summaryCoverage = toolSummaryCoverage(detail.tool_summary, Object.values(calls))
+  const explicitIterations = detail.events
+    .map((event) => Number(event.payload.iteration_no))
+    .filter((value) => Number.isInteger(value) && value >= 0)
+  const latestIteration = explicitIterations.length ? Math.max(...explicitIterations) : null
+  const latestObservedAt = detail.events.reduce<string | null>((latest, event) => !latest || Date.parse(event.occurred_at) > Date.parse(latest) ? event.occurred_at : latest, null)
   const previewTotal = candidatePreviewDenominator(detail)
   const populationSummary = populationSummaryNode(detail, previewTotal)
   const candidatesByGeneration = new Map<number, CandidatePreview[]>()
@@ -1577,7 +1594,7 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
   const structureEvidenceNodes = viewerEntriesForRun.map(([key, artifact]) => structureEvidenceNode(key, artifact))
   const nodes = [
     ...callNodes,
-    ...(summaryGaps.length ? [toolSummaryGroupNode(summaryGaps, summaryCoverage, expandedGroups.has('tool-summary-group')), ...(expandedGroups.has('tool-summary-group') ? summaryGaps.map(toolSummaryNode) : [])] : []),
+    ...(summaryGaps.length ? [toolSummaryGroupNode(summaryTools, summaryCoverage, expandedGroups.has('tool-summary-group'), latestIteration, latestObservedAt), ...(expandedGroups.has('tool-summary-group') ? summaryTools.map(toolSummaryNode) : [])] : []),
     ...structureEvidenceNodes,
     ...(populationSummary ? [populationSummary] : []),
     ...ungroupedCandidates.map((candidate) => candidateNode(candidate, previewIndexById.get(candidate.id) ?? 1, previewTotal)),
@@ -1617,7 +1634,8 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
     const members = [...(group.runtime?.child_ids ?? []), ...(group.runtime?.event_ids ?? [])]
     let labeled = false
     for (const member of members) {
-      const target = member.startsWith('event:') || member.startsWith('call:') || member.startsWith('candidate:')
+      if (group.runtime?.node_type === 'tool_summary_group' && labeled) continue
+      const target = member.startsWith('event:') || member.startsWith('call:') || member.startsWith('candidate:') || member.startsWith('tool-summary:')
         ? member
         : group.runtime?.node_type === 'candidate_group' ? `candidate:${member}` : `call:${member}`
       if (!nodeIds.has(target)) continue

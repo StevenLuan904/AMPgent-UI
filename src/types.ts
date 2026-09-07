@@ -69,6 +69,7 @@ export interface RuntimeNodeMeta {
   raw_label?: string
   summary_tools?: RuntimeSummaryTool[]
   summary_only?: boolean
+  latest_iteration?: number
   preview_index?: number
   preview_total?: number | null
   population_scope?: 'display_population' | 'generation_population' | 'mixed'

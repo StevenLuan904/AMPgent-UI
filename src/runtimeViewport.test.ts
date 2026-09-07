@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { selectReadableRuntimeNodeIds } from './runtimeViewport'
+import { compactReadableRuntimePositions, selectReadableRuntimeNodeIds } from './runtimeViewport'
 import type { GraphStage, RuntimeNodeMeta } from './types'
 
 const node = (id: string, node_type: RuntimeNodeMeta['node_type'], observed_at: string, status: GraphStage['status'] = 'completed', expanded = false) => ({
@@ -9,6 +9,39 @@ const node = (id: string, node_type: RuntimeNodeMeta['node_type'], observed_at: 
 })
 
 describe('readable runtime viewport selection', () => {
+  it('removes columns occupied only by hidden records', () => {
+    const compact = compactReadableRuntimePositions(
+      ['decision', 'recovery', 'population'],
+      {
+        decision: { x: 190, y: 220 },
+        hidden: { x: 505, y: 220 },
+        recovery: { x: 1765, y: 220 },
+        population: { x: 3340, y: 220 },
+      },
+    )
+    expect(compact).toEqual({
+      decision: { x: 190, y: 220 },
+      recovery: { x: 520, y: 220 },
+      population: { x: 850, y: 220 },
+    })
+  })
+
+  it('preserves a shared-column batch as an evenly spaced vertical cluster', () => {
+    const compact = compactReadableRuntimePositions(
+      ['batch', 'member-a', 'member-b', 'member-c'],
+      {
+        batch: { x: 190, y: 220 },
+        'member-a': { x: 505, y: 410 },
+        'member-b': { x: 505, y: 600 },
+        'member-c': { x: 505, y: 790 },
+      },
+    )
+    expect(compact.batch).toEqual({ x: 190, y: 220 })
+    expect(compact['member-a'].x).toBe(520)
+    expect(compact['member-b'].y - compact['member-a'].y).toBe(190)
+    expect(compact['member-c'].y - compact['member-b'].y).toBe(190)
+  })
+
   it('keeps a small graph complete', () => {
     const nodes = [node('event-1', 'event_group', '2026-09-04T00:00:01Z'), node('tool-1', 'tool_group', '2026-09-04T00:00:02Z'), node('generation-1', 'generation', '2026-09-04T00:00:03Z')]
     expect(selectReadableRuntimeNodeIds(nodes)).toEqual(['event-1', 'tool-1', 'generation-1'])
