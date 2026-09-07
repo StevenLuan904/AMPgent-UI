@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { nodeDetailCacheTtlMs, observerCreatePrefetchQueue, observerDetailFailureMessage, observerIdlePrefetchDelayMs, observerInitialPrefetchCount, observerInFlightStageIds, observerListTimeoutMs, observerMergePrefetchQueue, observerNextPrefetchStage, observerNodeDetailCacheKey, observerNodeDetailTimeoutMs, observerPendingPrefetchCount, observerPollingIntervalMs, observerPrefetchQueueMatches, observerPrefetchInFlightKey, observerPrefetchRefreshExpired, observerPrefetchStageOrder, observerRequeuePrefetchStage, observerResponseIsStale, observerRunDetailCacheKey, observerRunDetailTimeoutMs, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion, observerStaleRetryDelayMs } from './observerPolling'
+import { nodeDetailCacheTtlMs, observerCreatePrefetchQueue, observerDetailFailureMessage, observerIdlePrefetchDelayMs, observerInitialPrefetchCount, observerInitialPrefetchStages, observerInFlightStageIds, observerListTimeoutMs, observerMergePrefetchQueue, observerNextPrefetchStage, observerNodeDetailCacheKey, observerNodeDetailTimeoutMs, observerPendingPrefetchCount, observerPollingIntervalMs, observerPrefetchQueueMatches, observerPrefetchInFlightKey, observerPrefetchRefreshExpired, observerPrefetchStageOrder, observerRequeuePrefetchStage, observerResponseIsStale, observerRunDetailCacheKey, observerRunDetailTimeoutMs, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion, observerStaleRetryDelayMs } from './observerPolling'
 
 describe('observer refresh policy', () => {
   it('refreshes active runs more often than terminal runs', () => {
@@ -46,6 +46,17 @@ describe('observer refresh policy', () => {
     const completed = { status: 'pending', current: 2, total: 4, id: 'progress' }
     const running = { status: 'running', current: 0, total: 1, id: 'active' }
     expect(observerPrefetchStageOrder([pending, completed, running]).map((stage) => stage.id)).toEqual(['active', 'progress', 'empty'])
+  })
+
+  it('puts explicit structure channels in the first read batch even when pending', () => {
+    const stages = [
+      { id: 'mic', kind: 'model', status: 'running', current: 1, total: 2 },
+      { id: 'boltz', kind: 'structure', status: 'pending', current: 0, total: 0 },
+      { id: 'rosetta', kind: 'structure', status: 'pending', current: 0, total: 0 },
+      { id: 'tail', kind: 'data', status: 'pending', current: 0, total: 0 },
+    ]
+    expect(observerPrefetchStageOrder(stages).slice(0, 3).map((stage) => stage.id)).toEqual(['boltz', 'rosetta', 'mic'])
+    expect(observerInitialPrefetchStages(stages).map((stage) => stage.id)).toEqual(['boltz', 'rosetta'])
   })
 
   it('keeps the idle queue cursor across same-run detail refreshes', () => {

@@ -52,7 +52,7 @@ export interface GraphStage {
 }
 
 export interface RuntimeNodeMeta {
-  node_type: 'tool_call' | 'tool_group' | 'event_group' | 'batch_group' | 'tool_summary_group' | 'tool_summary' | 'lifecycle_event' | 'generation' | 'population_summary' | 'candidate_group' | 'candidate_preview'
+  node_type: 'tool_call' | 'tool_group' | 'event_group' | 'batch_group' | 'tool_summary_group' | 'tool_summary' | 'lifecycle_event' | 'generation' | 'population_summary' | 'candidate_group' | 'candidate_preview' | 'structure_evidence'
   source_id: string
   observed_at: string | null
   actor?: string
@@ -72,6 +72,16 @@ export interface RuntimeNodeMeta {
   preview_index?: number
   preview_total?: number | null
   population_scope?: 'display_population' | 'generation_population' | 'mixed'
+  has_viewer?: boolean
+  /** Explicit backend/source key used to retrieve structure evidence. */
+  viewer_key?: string
+  /** Why viewer_key was selected; shown in inspector, never inferred from UI text. */
+  viewer_mapping_basis?: '后端 viewer 键' | '后端节点 viewer' | '限定工具名映射'
+  /** Stable evidence source key, independent from any structure viewer key. */
+  evidence_key?: string
+  /** Metric/result distribution lookup key, independent from viewer_key. */
+  distribution_key?: string
+  parallel_group_id?: string
 }
 
 export interface RuntimeSummaryTool {
@@ -303,6 +313,8 @@ export interface NodeDetail {
     records: number
     seeds: number
   }>
+  viewer?: ViewerArtifact | null
+  viewers?: Record<string, ViewerArtifact | null>
 }
 
 export interface RunDetail {

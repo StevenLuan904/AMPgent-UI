@@ -23,10 +23,10 @@ describe('readable runtime viewport selection', () => {
     ]
     const selected = selectReadableRuntimeNodeIds(nodes)
     expect(selected).toHaveLength(7)
-    expect(selected.filter((id) => id.startsWith('event-'))).toHaveLength(2)
-    expect(selected.filter((id) => id.startsWith('tool-'))).toHaveLength(2)
-    expect(selected.filter((id) => id.startsWith('generation-'))).toHaveLength(2)
-    expect(selected).toEqual(expect.arrayContaining(['event-1', 'event-2', 'tool-1', 'tool-2', 'generation-1', 'generation-2', 'summary-1']))
+    expect(selected.filter((id) => id.startsWith('event-'))).toHaveLength(1)
+    expect(selected.filter((id) => id.startsWith('tool-'))).toHaveLength(1)
+    expect(selected.filter((id) => id.startsWith('generation-'))).toHaveLength(4)
+    expect(selected).toEqual(expect.arrayContaining(['event-8', 'tool-12', 'generation-1', 'generation-2', 'generation-3', 'generation-4']))
   })
 
   it('keeps an expanded aggregate and nearby members in the readable window', () => {
@@ -51,6 +51,18 @@ describe('readable runtime viewport selection', () => {
     ]
     const selected = selectReadableRuntimeNodeIds(nodes)
     expect(selected).toEqual(expect.arrayContaining(['population-summary', 'generation-1']))
+  })
+
+  it('keeps explicit structure evidence discoverable with the result context', () => {
+    const nodes = [
+      node('structure-evidence:boltz', 'structure_evidence', ''),
+      node('population-summary', 'population_summary', ''),
+      node('generation-1', 'candidate_group', ''),
+      node('event-1', 'event_group', '2026-09-04T00:00:01Z'),
+      node('tool-1', 'tool_group', '2026-09-04T00:00:02Z'),
+    ]
+    const selected = selectReadableRuntimeNodeIds(nodes)
+    expect(selected).toEqual(expect.arrayContaining(['structure-evidence:boltz', 'population-summary', 'generation-1']))
   })
 
   it('includes every member of a small expanded candidate group when requested', () => {
@@ -84,7 +96,7 @@ describe('readable runtime viewport selection', () => {
       'candidate-late': { x: 1730, y: 720 },
     }
     const selected = selectReadableRuntimeNodeIds(nodes, positions, 6)
-    expect(selected).toEqual(expect.arrayContaining(['candidate-early', 'generation-summary']))
-    expect(selected).not.toContain('candidate-late')
+    expect(selected).toContain('candidate-late')
+    expect(selected).not.toContain('candidate-early')
   })
 })

@@ -171,7 +171,7 @@ button:focus-visible { outline: 2px solid #315be8; outline-offset: 2px; }
 .workflow-node.node-pending { color: #848c9a; background: #fbfcfd; }
 .workflow-node.node-stopped:not(.is-selected) { border-color: #e1e4e9; }
 .lane-label { width: 132px; display: flex; align-items: flex-start; gap: 8px; padding: 5px 8px 5px 0; color: #536889; background: rgba(255,255,255,.94); font-size: 13px; font-weight: 700; letter-spacing: .02em; }
-.lane-label > span { color: #a1a9b6; font: 600 10px "DM Mono", monospace; padding-top: 1px; }
+.lane-label > span { color: #a1a9b6; font: 600 12px "DM Mono", monospace; padding-top: 1px; }
 .lane-label > div { min-width: 0; display: grid; gap: 3px; }
 .lane-label b { font: inherit; }
 .lane-label small { color: #8995a9; font-size: 11px; font-weight: 500; line-height: 1.3; letter-spacing: 0; }
@@ -184,12 +184,12 @@ button:focus-visible { outline: 2px solid #315be8; outline-offset: 2px; }
 .node-icon svg { width: 16px; }
 .node-running .node-icon { color: #116a99; background: #e6f5f8; }
 .node-completed .node-icon { color: #3954a9; background: #edf0fb; }
-.node-title { flex: 1; font-size: 13px; font-weight: 650; color: #252b36; }
+.node-title { flex: 1; min-width: 0; font-size: 13px; font-weight: 650; color: #252b36; }
 .node-state-icon { width: 18px; display: grid; place-items: center; color: #1aa275; }
 .node-state-icon svg { width: 15px; }
 .node-stopped .node-state-icon { color: #989fab; }
 .node-verdict { min-height: 29px; margin-top: 9px; display: flex; align-items: center; gap: 8px; border-top: 1px solid #edf0f4; border-bottom: 1px solid #edf0f4; }
-.node-verdict > b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #4a5568; font-size: 10px; font-weight: 550; }
+.node-verdict > b { min-width: 0; color: #4a5568; font-size: 10px; font-weight: 550; line-height: 1.35; }
 .workflow-node.stage-candidate_pool:has(.node-quality-gate) { min-height: 198px; }
 .node-quality-gate { min-height: 31px; margin-top: 7px; padding: 0 7px; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 7px; border: 1px solid #e2e7ef; border-radius: 6px; background: #fafbfd; }
 .node-quality-gate > span { display: inline-flex; align-items: center; gap: 4px; color: #71809a; font-size: 8px; font-weight: 700; white-space: nowrap; }
@@ -207,7 +207,7 @@ button:focus-visible { outline: 2px solid #315be8; outline-offset: 2px; }
 .node-facts { min-height: 47px; padding: 8px 0 3px; display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; }
 .node-facts > span { min-width: 0; display: grid; gap: 3px; align-content: center; }
 .node-facts small { color: #929bac; font-size: 8px; }
-.node-facts strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #2f394b; font: 550 10px "DM Mono", monospace; }
+.node-facts strong { color: #2f394b; font: 550 10px "DM Mono", monospace; line-height: 1.25; overflow-wrap: anywhere; }
 .flow-handle { width: 8px !important; height: 8px !important; border: 1px solid white !important; background: #141925 !important; }
 .node-pending .flow-handle, .node-stopped .flow-handle { background: #c4cad4 !important; }
 .node-meta { height: 18px; display: flex; justify-content: space-between; align-items: center; margin-top: 7px; color: #657083; font-family: "DM Mono", monospace; font-size: 9px; }
@@ -519,21 +519,22 @@ button:focus-visible { outline: 2px solid #315be8; outline-offset: 2px; }
 .provenance-note span { display: grid; gap: 4px; font-size: 8px; line-height: 1.5; }
 .provenance-note b { color: #4d596d; }
 .react-flow__edge-text { fill: #65728a; font: 600 8px Inter, sans-serif; letter-spacing: .01em; }
+.react-flow__edge-path { stroke-linecap: round; }
 .react-flow__edge-textbg { fill: rgba(255,255,255,.94); rx: 5; ry: 5; }
 .react-flow__edge { cursor: pointer; }
 .react-flow__edge:hover path { stroke: #5872c6 !important; stroke-width: 1.8 !important; }
 
-.runtime-graph-summary { position: absolute; z-index: 5; top: 10px; left: 16px; right: 16px; width: auto; padding: 8px 12px; border: 1px solid #dbe2ee; border-radius: 9px; background: rgba(255,255,255,.96); box-shadow: 0 8px 24px rgba(27,42,73,.08); backdrop-filter: blur(10px); pointer-events: none; }
+.runtime-graph-summary { position: absolute; z-index: 5; top: 12px; right: 20px; width: min(430px, calc(100% - 40px)); padding: 6px 9px; border: 1px solid #dbe2ee; border-radius: 9px; background: #fff; box-shadow: 0 5px 14px rgba(27,42,73,.06); pointer-events: none; }
 .runtime-graph-summary-head { display: flex; align-items: center; gap: 7px; color: #2e3f61; font-size: 12px; }
 .runtime-graph-summary-head small { margin-left: auto; color: #8792a5; font: 500 11px "DM Mono", monospace; }
 .runtime-live-dot { width: 7px; height: 7px; border-radius: 50%; background: #2b9a70; box-shadow: 0 0 0 3px #e8f6f0; }
-.runtime-graph-stats { display: flex; flex-wrap: wrap; gap: 5px 12px; margin-top: 7px; color: #6b778b; font: 500 11px "DM Mono", monospace; }
+.runtime-graph-stats { display: flex; flex-wrap: wrap; gap: 3px 8px; margin-top: 3px; color: #536176; font: 600 11px "DM Mono", monospace; }
 .runtime-graph-summary p { margin: 7px 0 0; color: #9b6a35; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .workflow-node.kind-tool { border: 1px solid #d7dee8; }
 .workflow-node.kind-tool .node-title { font-family: "DM Mono", monospace; font-size: 10px; }
-.workflow-node.is-runtime-node { min-height: 135px; }
-.workflow-node.is-runtime-node .node-verdict { min-height: 24px; }
-.workflow-node.is-runtime-node .node-facts { min-height: 39px; }
+.workflow-node.is-runtime-node { min-height: 0; padding: 13px 14px 12px; }
+.workflow-node.is-runtime-node .node-verdict { min-height: 30px; margin-top: 7px; }
+.workflow-node.is-runtime-node .node-facts { min-height: 34px; padding-bottom: 0; grid-template-columns: minmax(0, 1fr); }
 .run-list-empty { min-height: 86px; margin: 0 13px; padding: 13px 11px; display: flex; align-items: flex-start; gap: 9px; border: 1px dashed #d9dfe9; border-radius: 8px; color: #8a94a5; }
 .run-list-empty svg { width: 16px; flex: 0 0 auto; margin-top: 2px; color: #a3adbc; }
 .run-list-empty span { min-width: 0; display: grid; gap: 5px; }
@@ -551,7 +552,7 @@ button:focus-visible { outline: 2px solid #315be8; outline-offset: 2px; }
 .runtime-sequence { display: block; margin: 13px 0; padding: 10px; border: 1px solid #e3e8f0; border-radius: 7px; color: #3a4e83; background: #fafbfe; font: 500 11px/1.6 "DM Mono", monospace; overflow-wrap: anywhere; }
 .runtime-note, .runtime-provenance > p { color: #606d81; font-size: 11px; line-height: 1.7; }
 .runtime-provenance ul { margin: 10px 0 0; padding-left: 17px; color: #9b6a35; font-size: 11px; line-height: 1.65; }
-.runtime-graph-legend { display: flex; flex-wrap: wrap; gap: 7px 12px; margin-top: 9px; color: #7d899c; font-size: 11px; }
+.runtime-graph-legend { display: none; }
 .runtime-graph-legend span { display: inline-flex; align-items: center; gap: 5px; }
 .runtime-graph-nav { color: #6377a8; }
 .legend-dot, .legend-line { display: inline-block; flex: 0 0 auto; }
@@ -567,9 +568,11 @@ button:focus-visible { outline: 2px solid #315be8; outline-offset: 2px; }
 .runtime-tool_group .node-group-toggle:hover svg, .runtime-event_group .node-group-toggle:hover svg, .runtime-batch_group .node-group-toggle:hover svg, .runtime-tool_summary_group .node-group-toggle:hover svg, .runtime-candidate_group .node-group-toggle:hover svg { transform: translateX(2px); }
 .runtime-tool_group .node-verdict b, .runtime-event_group .node-verdict b, .runtime-batch_group .node-verdict b, .runtime-tool_summary_group .node-verdict b, .runtime-candidate_group .node-verdict b { color: #536993; }
 .workflow-node.is-runtime-node .node-title { font-size: 15px; }
+.workflow-node.is-runtime-node .node-title { white-space: normal; line-height: 1.25; overflow-wrap: anywhere; }
+.workflow-node.is-runtime-node .node-heading { height: auto; min-height: 34px; align-items: flex-start; }
 .workflow-node.is-runtime-node .node-facts small { font-size: 13px; }
 .workflow-node.is-runtime-node .node-facts strong { font-size: 14px; }
-.workflow-node.is-runtime-node .node-verdict > b { font-size: 13px; }
+.workflow-node.is-runtime-node .node-verdict > b { display: -webkit-box; overflow: hidden; font-size: 13px; white-space: normal; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .workflow-node.is-runtime-node .node-meta { font-size: 12px; }
 .workflow-node.is-runtime-node .evidence-chip { font-size: 11px; }
 .runtime-tool_group, .runtime-event_group, .runtime-batch_group, .runtime-tool_summary_group, .runtime-candidate_group { border: 1px solid #cfd8e5; }

@@ -34,7 +34,7 @@ export function observerPrefetchRefreshExpired(scope: 'initial' | 'idle') {
   return scope === 'initial'
 }
 
-type PrefetchStage = { status: string; current: number; total: number }
+type PrefetchStage = { status: string; current: number; total: number; kind?: string }
 export type ObserverPrefetchStage = PrefetchStage & { id: string }
 export type ObserverPrefetchQueue = { runId: string; orderedStageIds: string[]; nextIndex: number; retryCounts?: Record<string, number>; epoch?: number }
 
@@ -44,11 +44,27 @@ export function observerStageProgressScore(stage: PrefetchStage) {
   return 0
 }
 
+function observerStageStructurePriority(stage: PrefetchStage & { id?: string }) {
+  return stage.kind === 'structure' || stage.id === 'boltz' || stage.id === 'rosetta' ? 1 : 0
+}
+
 export function observerPrefetchStageOrder<T extends PrefetchStage>(stages: T[]) {
   return stages
     .map((stage, index) => ({ stage, index }))
-    .sort((left, right) => observerStageProgressScore(right.stage) - observerStageProgressScore(left.stage) || left.index - right.index)
+    .sort((left, right) => observerStageStructurePriority(right.stage) - observerStageStructurePriority(left.stage)
+      || observerStageProgressScore(right.stage) - observerStageProgressScore(left.stage)
+      || left.index - right.index)
     .map(({ stage }) => stage)
+}
+
+/** Structure evidence is read in the first batch even when its stage is pending. */
+export function observerInitialPrefetchStages<T extends ObserverPrefetchStage>(stages: T[]) {
+  const ordered = observerPrefetchStageOrder(stages)
+  const initial = ordered.slice(0, observerInitialPrefetchCount(ordered.length))
+  const structure = ordered.filter((stage) => observerStageStructurePriority(stage) > 0)
+  const unique = new Map<string, T>()
+  for (const stage of [...structure, ...initial]) unique.set(stage.id, stage)
+  return [...unique.values()]
 }
 
 /**

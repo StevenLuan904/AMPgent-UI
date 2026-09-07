@@ -1,7 +1,7 @@
 import type { GraphStage } from './types'
 
 type ReadableRuntimeNode = Pick<GraphStage, 'id' | 'status'> & {
-  runtime?: Pick<NonNullable<GraphStage['runtime']>, 'node_type' | 'observed_at' | 'expanded'>
+  runtime?: Pick<NonNullable<GraphStage['runtime']>, 'node_type' | 'observed_at' | 'expanded' | 'child_ids'>
 }
 
 export type RuntimeNodePosition = { x: number; y: number }
@@ -9,6 +9,7 @@ export type RuntimeNodePositions = Readonly<Record<string, RuntimeNodePosition>>
 
 const eventTypes = new Set(['lifecycle_event', 'event_group'])
 const toolTypes = new Set(['tool_call', 'tool_group', 'batch_group'])
+const structureTypes = new Set(['structure_evidence'])
 const candidateTypes = new Set(['generation', 'candidate_group', 'candidate_preview'])
 const populationTypes = new Set(['population_summary'])
 const summaryTypes = new Set(['tool_summary_group', 'tool_summary'])
@@ -17,6 +18,7 @@ function laneFor(node: ReadableRuntimeNode) {
   const type = node.runtime?.node_type
   if (eventTypes.has(type ?? '')) return 'events'
   if (toolTypes.has(type ?? '')) return 'tools'
+  if (structureTypes.has(type ?? '')) return 'structure'
   if (summaryTypes.has(type ?? '')) return 'summary'
   if (populationTypes.has(type ?? '')) return 'population'
   if (candidateTypes.has(type ?? '')) return 'candidates'
@@ -39,12 +41,15 @@ function readableOrder(left: ReadableRuntimeNode, right: ReadableRuntimeNode, po
       || leftPosition.y - rightPosition.y
       || readableSemanticOrder(left, right)
   }
-  return readableSemanticOrder(left, right)
+  return observedTime(left) - observedTime(right)
+    || Number(Boolean(right.runtime?.expanded)) - Number(Boolean(left.runtime?.expanded))
+    || (left.status === 'running' ? -1 : 0) - (right.status === 'running' ? -1 : 0)
+    || left.id.localeCompare(right.id)
 }
 
 function readableSemanticOrder(left: ReadableRuntimeNode, right: ReadableRuntimeNode) {
   return Number(Boolean(right.runtime?.expanded)) - Number(Boolean(left.runtime?.expanded))
-    || observedTime(left) - observedTime(right)
+    || observedTime(right) - observedTime(left)
     || (left.status === 'running' ? -1 : 0) - (right.status === 'running' ? -1 : 0)
     || left.id.localeCompare(right.id)
 }
@@ -66,19 +71,24 @@ export function selectReadableRuntimeNodeIds(nodes: ReadonlyArray<ReadableRuntim
   }
   const eligible = nodes.filter((node) => laneFor(node) !== null)
   if (!eligible.length || limit <= 0) return []
-  const target = Math.min(Math.max(6, limit), eligible.length)
+  const target = Math.min(Math.max(5, limit), eligible.length)
   const selected = new Set<string>()
-  const hasPopulationSummary = eligible.some((node) => laneFor(node) === 'population')
-  const quotas: Array<[string, number]> = [['events', 2], ['tools', 2], ['candidates', hasPopulationSummary ? 1 : 2], ['population', hasPopulationSummary ? 1 : 0], ['summary', 1]]
-
-  for (const [lane, quota] of quotas) {
-    eligible.filter((node) => laneFor(node) === lane).sort((left, right) => readableOrder(left, right, positions)).slice(0, quota).forEach((node) => selected.add(node.id))
+  const spatialOrder = [...eligible].sort((left, right) => readableOrder(left, right, positions))
+  // Keep one contiguous recent window on the spine. This prevents an old
+  // event quota from pulling the readable view back into a table of lanes.
+  spatialOrder.slice(-target).forEach((node) => selected.add(node.id))
+  const ensureContext = (predicate: (node: ReadableRuntimeNode) => boolean) => {
+    if ([...selected].some((id) => predicate(eligible.find((node) => node.id === id)!))) return
+    const candidate = [...eligible].reverse().find(predicate)
+    if (!candidate) return
+    const replace = [...selected].sort((left, right) => readableOrder(eligible.find((node) => node.id === left)!, eligible.find((node) => node.id === right)!, positions))[0]
+    selected.delete(replace)
+    selected.add(candidate.id)
   }
-  if (selected.size < target) {
-    eligible.sort((left, right) => readableOrder(left, right, positions)).forEach((node) => {
-      if (selected.size < target) selected.add(node.id)
-    })
-  }
+  ensureContext((node) => laneFor(node) === 'events')
+  ensureContext((node) => laneFor(node) === 'structure')
+  ensureContext((node) => laneFor(node) === 'population')
+  ensureContext((node) => laneFor(node) === 'candidates')
   return [...selected]
 }
 

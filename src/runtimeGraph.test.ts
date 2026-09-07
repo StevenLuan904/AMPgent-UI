@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildRuntimeGraph, candidatePreviewCountLabel, candidatePreviewDenominator, candidatePreviewLabel, countActivityRetries, countOpenActivities, deriveLifecycleToolCalls, deriveToolSummaryGaps, displayEventContext, displayEventName, displayEventSemanticName, displayObservedEventName, displayToolName, layoutColumnsForWidth, runtimeActivitySummary, runtimeCallSummary, runtimeObservationSummary, runtimeRetrySummary } from './runtimeGraph'
+import { buildRuntimeGraph, candidatePreviewCountLabel, candidatePreviewDenominator, candidatePreviewLabel, countActivityRetries, countOpenActivities, deriveLifecycleToolCalls, deriveToolSummaryGaps, displayEventContext, displayEventName, displayEventSemanticName, displayObservedEventName, displayToolName, distributionKeyForTool, layoutColumnsForWidth, runtimeActivitySummary, runtimeCallSummary, runtimeObservationSummary, runtimeRetrySummary } from './runtimeGraph'
 import type { NodeDetail, RunDetail, ToolAttempt } from './types'
 
 const call = (id: string, toolName: string, queuedAt: string, overrides: Partial<ToolAttempt> = {}): ToolAttempt => ({
@@ -52,6 +52,48 @@ describe('buildRuntimeGraph', () => {
     expect(displayToolName('v38-metric-mic_potency')).toBe('MIC 活性预测')
     expect(displayToolName('v38-metric-physicochemical_developability')).toBe('理化可开发性评估')
     expect(displayToolName('untrusted-internal-tool-key')).toBe('未命名工具')
+  })
+
+  it('maps structure evidence through an explicit viewer key without using the card label', () => {
+    const artifact = { candidate_id: 'candidate-1', sequence: 'KKLL', target_id: 'target-1', target_name: 'target', lane: 'native', seed: 1, artifact_sha256: 'b'.repeat(64), media_type: 'model/mmcif', artifact_url: '/viewer/boltz.cif' }
+    const result = buildRuntimeGraph({ ...detail(), viewers: { boltz: artifact } }, { structure: nodeDetail([call('structure-call', 'v38-metric-boltz_pose', '2026-09-04T00:00:00Z')]) })
+    const node = result.nodes.find((item) => item.id === 'call:structure-call')
+    expect(node?.runtime).toMatchObject({ has_viewer: true, viewer_key: 'boltz', viewer_mapping_basis: '限定工具名映射' })
+    expect(result.nodes.find((item) => item.id === 'call:structure-call')?.runtime?.viewer_key).not.toBe('结构证据')
+  })
+
+  it('materializes standalone structure evidence when only the run viewer is available', () => {
+    const artifact = { candidate_id: 'candidate-1', sequence: 'KKLL', target_id: 'target-1', target_name: 'target', lane: 'native', seed: 1, artifact_sha256: 'b'.repeat(64), media_type: 'model/mmcif', artifact_url: '/viewer/boltz.cif' }
+    const result = buildRuntimeGraph({ ...detail(), viewers: { boltz: artifact } })
+    const structure = result.nodes.find((item) => item.runtime?.node_type === 'structure_evidence')
+    expect(structure).toMatchObject({ id: 'structure-evidence:boltz', label: 'Boltz 结构证据', kind: 'structure', provenance: 'database', runtime: { viewer_key: 'boltz', has_viewer: true, node_type: 'structure_evidence' } })
+    expect(result.edges.some((edge) => edge.source === structure?.id || edge.target === structure?.id)).toBe(false)
+  })
+
+  it('deduplicates repeated viewer aliases by artifact hash and associates them with population evidence', () => {
+    const artifact = { candidate_id: 'candidate-1', sequence: 'KKLL', target_id: 'target-1', target_name: 'target', lane: 'native', seed: 1, artifact_sha256: 'b'.repeat(64), media_type: 'model/mmcif', artifact_url: '/viewer/boltz.cif' }
+    const result = buildRuntimeGraph({ ...detail(), viewers: { boltz: artifact, rosetta: { ...artifact, artifact_url: '/viewer/rosetta.cif' } }, display_population: { candidate_count: 1, candidate_record_count: 1, excluded_candidate_count: 0, exclusion_reason: 'historical_exact_replay' } })
+    expect(result.nodes.filter((node) => node.runtime?.node_type === 'structure_evidence')).toHaveLength(1)
+    expect(result.edges).toEqual(expect.arrayContaining([expect.objectContaining({ source: 'population-summary', relation_kind: 'association', label: '同轮次证据', provenance: 'derived' })]))
+    expect(result.edges.find((edge) => edge.label === '同轮次证据')?.rationale).toContain('不表示生成、依赖或执行先后')
+  })
+
+  it('keeps numeric distribution lookup independent from structure viewer lookup', () => {
+    expect(distributionKeyForTool('v38-metric-mic_potency')).toBe('mic')
+    expect(distributionKeyForTool('v38-metric-mic_potency_amp_read')).toBe('amp_read')
+    expect(distributionKeyForTool('v38-metric-hemolysis_risk')).toBe('hemolysis')
+    expect(distributionKeyForTool('v38-metric-physicochemical_developability')).toBe('developability')
+    expect(distributionKeyForTool('v38-metric-toxicity_risk')).toBe('toxicity')
+    expect(distributionKeyForTool('v38-metric-boltz_pose')).toBeUndefined()
+    const result = buildRuntimeGraph({ ...detail(), display_population: { candidate_count: 1, candidate_record_count: 1, excluded_candidate_count: 0, exclusion_reason: 'historical_exact_replay' } }, { mic: nodeDetail([call('mic-call', 'v38-metric-mic_potency', '2026-09-04T00:00:00Z')]) })
+    expect(result.nodes.find((item) => item.id === 'call:mic-call')?.runtime).toMatchObject({ evidence_key: 'mic', distribution_key: 'mic' })
+    expect(result.nodes.find((item) => item.id === 'call:mic-call')?.runtime?.viewer_key).toBeUndefined()
+  })
+
+  it('does not map an unrelated tool to a structure viewer', () => {
+    const artifact = { candidate_id: 'candidate-1', sequence: 'KKLL', target_id: 'target-1', target_name: 'target', lane: 'native', seed: 1, artifact_sha256: 'b'.repeat(64), media_type: 'model/mmcif', artifact_url: '/viewer/boltz.cif' }
+    const result = buildRuntimeGraph({ ...detail(), viewers: { boltz: artifact } }, { worker: nodeDetail([call('plain-call', 'candidate-score', '2026-09-04T00:00:00Z')]) })
+    expect(result.nodes.find((item) => item.id === 'call:plain-call')?.runtime?.has_viewer).toBeUndefined()
   })
 
   it('separates materialized tools from lifecycle observations when summary coverage exists', () => {
@@ -117,6 +159,7 @@ describe('buildRuntimeGraph', () => {
     expect(expanded.nodes.slice(-2).map((node) => node.id)).toEqual(['generation:2', 'candidate:candidate-3'])
     expect(expanded.nodes.find((node) => node.id === 'candidate:candidate-3')).toMatchObject({ current: 1, total: 0, runtime: { node_type: 'candidate_preview', preview_index: 3, preview_total: 108 } })
     expect(expanded.edges).toEqual(expect.arrayContaining([expect.objectContaining({ source: 'call:call-generator', target: 'candidate:candidate-3', relation_kind: 'association' })]))
+    expect(expanded.edges).toEqual(expect.arrayContaining([expect.objectContaining({ source: 'generation:2', target: 'candidate:candidate-3', relation_kind: 'grouping', provenance: 'database' })]))
     expect(expanded.edges).not.toEqual(expect.arrayContaining([expect.objectContaining({ relation_kind: 'lineage' })]))
   })
 
@@ -339,10 +382,9 @@ describe('buildRuntimeGraph', () => {
     const summaryDetail = { ...detail(), tool_summary: { 'tool-a': { succeeded: 2 }, 'unknown-internal-tool': { failed: 3 } } }
     const result = buildRuntimeGraph(summaryDetail, { worker: nodeDetail([observed]) })
     const group = result.nodes.find((node) => node.id === 'tool-summary-group')
-    expect(group).toMatchObject({ label: '尚缺逐次明细 · 4 项', status: 'pending', current: 1, total: 5, insight: { verdict: '仅汇总统计', reason: '数据库仅提供汇总计数；逐次记录、时间与依赖缺失' }, runtime: { summary_only: true, child_ids: ['tool-summary:tool-a', 'tool-summary:unknown-internal-tool'] } })
+    expect(group).toMatchObject({ label: '尚缺逐次明细 · 4 项', status: 'pending', current: 1, total: 5, insight: { verdict: '仅汇总统计', reason: '仅有工具状态汇总' }, runtime: { summary_only: true, child_ids: ['tool-summary:tool-a', 'tool-summary:unknown-internal-tool'] } })
     expect(group?.insight.facts).toEqual(expect.arrayContaining([
-      { label: '状态构成', value: '已完成 2 · 失败 3' },
-      { label: '统计覆盖', value: '总量 5 · 已有逐次 1 · 缺少逐次 4 · 展开 0/2 个缺口工具' },
+      { label: '统计覆盖', value: '总量 5 · 已有逐次 1 · 缺少逐次 4' },
     ]))
     expect(group?.runtime?.summary_tools?.find((tool) => tool.tool_name === 'unknown-internal-tool')?.display_name).toBe('未命名工具')
     expect(result.edges.some((edge) => edge.source.startsWith('tool-summary:') || edge.target.startsWith('tool-summary:'))).toBe(false)
@@ -385,12 +427,12 @@ describe('buildRuntimeGraph', () => {
     expect(result.stats).toMatchObject({ toolSummaryRecords: 352, toolSummaryMaterialized: 195, toolSummaryMissing: 157 })
     expect(result.nodes.find((node) => node.id === 'tool-summary-group')).toMatchObject({ label: '尚缺逐次明细 · 157 项', current: 195, total: 352 })
     expect(result.nodes.find((node) => node.id === 'tool-summary-group')?.insight.facts).toEqual(expect.arrayContaining([
-      { label: '统计覆盖', value: '总量 352 · 已有逐次 195 · 缺少逐次 157 · 展开 0/4 个缺口工具' },
+      { label: '统计覆盖', value: '总量 352 · 已有逐次 195 · 缺少逐次 157' },
     ]))
     expect(result.edges.filter((edge) => edge.source.startsWith('tool-summary') || edge.target.startsWith('tool-summary'))).toHaveLength(0)
   })
 
-  it('places summary evidence in its own lane instead of the timed tool lane', () => {
+  it('places summary evidence on a separate audit rail instead of the main spine', () => {
     const candidate = { id: 'candidate-summary', sequence: 'KKLL', length: 4, proposal_rank: 1, cohort: 'exploration', pareto_front: null, reasons: [], metrics: [], generation: 1 }
     const result = buildRuntimeGraph({ ...detail([{ sequence_no: 1, type: 'run.started', actor: 'worker', payload: {}, occurred_at: '2026-09-04T00:00:00Z' }], [candidate]), tool_summary: { 'tool-a': { succeeded: 2 } } }, { worker: nodeDetail([call('summary-a', 'tool-a', '2026-09-04T00:00:01Z')]) })
     const toolY = result.positions['call:summary-a']?.y
@@ -401,10 +443,9 @@ describe('buildRuntimeGraph', () => {
     expect(summaryY).toBeDefined()
     const eventY = result.positions['event:1']?.y
     expect(eventY).toBeDefined()
-    expect(summaryY).toBeLessThan(eventY)
-    expect(eventY).toBeLessThan(toolY)
-    expect(toolY).toBeLessThan(candidateY)
-    expect(summaryY).toBeLessThan(candidateY)
+    expect(summaryY).toBeGreaterThan(candidateY)
+    expect(eventY).toBe(toolY)
+    expect(toolY).toBe(candidateY)
     expect(summaryY).not.toBe(toolY)
   })
 
@@ -454,7 +495,7 @@ describe('buildRuntimeGraph', () => {
       { sequence_no: 1, type: 'v38.multitarget_structure.persisted', actor: 'worker', payload: { tool_call_id: 'call-1' }, occurred_at: '2026-09-04T00:00:01Z' },
     ]), { worker: nodeDetail([observed]) })
     const group = result.nodes.find((node) => node.runtime?.node_type === 'batch_group')
-    expect(group).toMatchObject({ status: 'completed', label: 'Boltz 2 · 1 项活动' })
+    expect(group).toMatchObject({ status: 'completed', label: 'Boltz 2 · 1 次调用' })
     expect(group?.runtime?.event_ids).toEqual(['event:1'])
     const expanded = buildRuntimeGraph(detail([
       { sequence_no: 1, type: 'v38.multitarget_structure.persisted', actor: 'worker', payload: { tool_call_id: 'call-1' }, occurred_at: '2026-09-04T00:00:01Z' },
@@ -474,12 +515,13 @@ describe('buildRuntimeGraph', () => {
     expect(result.nodes.some((node) => node.runtime?.event_ids?.length === 2 && node.insight.verdict === '1 次调用')).toBe(true)
   })
 
-  it('uses a concise Chinese role on event cards while retaining the raw actor in runtime metadata', () => {
+  it('keeps event cards concise while retaining the raw actor in runtime metadata', () => {
     const result = buildRuntimeGraph(detail([
       { sequence_no: 1, type: 'run.started', actor: 'v38-workflow-observer-writer', payload: {}, occurred_at: '2026-09-04T00:00:01Z' },
     ]))
     const event = result.nodes.find((node) => node.id === 'event:1')
-    expect(event?.insight.reason).toContain('观察器记录器')
+    expect(event?.insight.reason).toBe('运行开始')
+    expect(event?.insight.facts.some((fact) => fact.label === '序号')).toBe(true)
     expect(event?.insight.reason).not.toContain('v38-workflow-observer-writer')
     expect(event?.runtime?.actor).toBe('v38-workflow-observer-writer')
   })
@@ -492,6 +534,10 @@ describe('buildRuntimeGraph', () => {
     expect(result.nodes.map((node) => node.id)).toContain('tool-group:ampgan:call-1')
     expect(result.nodes.find((node) => node.id === 'tool-group:ampgan:call-1')?.runtime).toMatchObject({ expanded: true })
     expect(result.calls).toEqual({ 'call-1': first, 'call-2': second })
+    expect(result.edges).toEqual(expect.arrayContaining([
+      expect.objectContaining({ source: 'tool-group:ampgan:call-1', target: 'call:call-1', relation_kind: 'grouping', provenance: 'database' }),
+      expect.objectContaining({ source: 'tool-group:ampgan:call-1', target: 'call:call-2', relation_kind: 'grouping', provenance: 'database' }),
+    ]))
   })
 
   it('uses an explicit batch identity across different tools and keeps batches separate', () => {
@@ -605,7 +651,7 @@ describe('buildRuntimeGraph', () => {
     const group = result.nodes.find((node) => node.runtime?.node_type === 'batch_group')
     expect(group?.runtime?.child_ids).toEqual(['call-1', 'call-2'])
     expect(group?.runtime?.event_ids).toEqual(['event:1', 'event:2'])
-    expect(group?.label).toBe('混合观测组 · 4 项活动')
+    expect(group?.label).toBe('混合观测组 · 2 次调用 · 2 项活动')
   })
 
   it('folds real lifecycle boundaries by exact workflow execution and uses the latest boundary as activity status', () => {
@@ -824,9 +870,9 @@ describe('buildRuntimeGraph', () => {
     const result = buildRuntimeGraph(detail(events), { worker: nodeDetail([call('call-1', 'boltz', '2026-09-04T00:00:10Z')]) })
     const eventPositions = events.map((_, index) => result.positions[`event:${index + 1}`].y)
     const toolPosition = result.positions['call:call-1'].y
-    expect(eventPositions.slice(0, 5)).toEqual([150, 150, 150, 150, 150])
-    expect(new Set(eventPositions)).toEqual(new Set([150]))
-    expect(toolPosition).toBeGreaterThan(Math.max(...eventPositions) + 170)
+    expect(eventPositions.slice(0, 5)).toEqual([220, 220, 220, 220, 220])
+    expect(new Set(eventPositions)).toEqual(new Set([220]))
+    expect(toolPosition).toBe(220)
   })
 
   it('does not reserve a full empty tool row between events and candidates', () => {
@@ -863,6 +909,6 @@ describe('buildRuntimeGraph', () => {
     const wrappedMemberPosition = result.positions['call:call-6']
     expect(groupPosition).toBeDefined()
     expect(wrappedMemberPosition.y - groupPosition.y).toBeGreaterThanOrEqual(224)
-    expect(wrappedMemberPosition.y - groupPosition.y).toBeLessThan(300)
+    expect(wrappedMemberPosition.y - groupPosition.y).toBeLessThan(420)
   })
 })

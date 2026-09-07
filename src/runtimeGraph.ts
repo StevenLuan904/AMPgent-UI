@@ -415,6 +415,7 @@ function displayEventState(type: string) {
 export function displayToolName(toolName: string) {
   if (toolLabels[toolName]) return toolLabels[toolName]
   const normalized = toolName.toLowerCase()
+  if (normalized.startsWith('observed_lifecycle:')) return '生命周期观测'
   if (/v38[-_.]?generate.*ampgan|ampgan.*generate/.test(normalized)) return 'AMPGAN v2 生成'
   if (/v38[-_.]?generate.*hydramp|hydramp.*generate/.test(normalized)) return 'HydrAMP 生成'
   if (/boltz|multitarget.*structure/.test(normalized)) return 'Boltz 2 结构预测'
@@ -458,12 +459,14 @@ const eventSemanticLabels: Record<string, string> = {
 
 /** Stable scientific subject used for aggregate display; raw event type stays in metadata. */
 export function displayEventSemanticName(type: string) {
-  if (eventSemanticLabels[type]) return eventSemanticLabels[type]
   const normalized = type.toLowerCase()
+  if (/operational\.call|tool_call\./.test(normalized)) return `工具调用 · ${displayEventState(type)}`
+  if (eventSemanticLabels[type]) return eventSemanticLabels[type]
   if (/multitarget.*structure/.test(normalized)) return '结构证据'
   if (/scored.*lineage|lineage.*scored/.test(normalized)) return '评分谱系'
   if (/operational_run/.test(normalized)) return '运行记录'
-  if (/operational\.call/.test(normalized)) return '工具调用'
+  if (/operational\.call/.test(normalized)) return `工具调用 · ${displayEventState(type)}`
+  if (/tool_call\./.test(normalized)) return `工具调用 · ${displayEventState(type)}`
   return '未命名事件'
 }
 
@@ -752,7 +755,7 @@ function eventNode(event: TimelineEvent): GraphStage {
     insight: {
       grade: recoveryLabel ? 'okay' : status === 'completed' ? 'good' : status === 'stopped' ? 'bad' : status === 'running' ? 'okay' : 'neutral',
       verdict: recoveryLabel ? '已调度' : statusLabel(status),
-      reason: `${displayActor(event.actor)} · 序号 ${event.sequence_no}`,
+      reason: recoveryLabel ? '恢复调度已记录' : baseEventName,
       facts: [
         { label: '语义', value: baseEventName },
         ...displayEventContext(event.payload).map((value) => ({ label: value.endsWith('轮') ? '轮次' : '代际', value })),
@@ -769,6 +772,7 @@ function eventNode(event: TimelineEvent): GraphStage {
       actor: event.actor,
       explicit_relation_count: 0,
       raw_label: event.type,
+      parallel_group_id: parallelGroupIds(event.payload)[0],
     },
   }
 }
@@ -805,6 +809,106 @@ function callNode(call: ToolAttempt): GraphStage {
       attempt: call.attempt,
       explicit_relation_count: 0,
       raw_label: call.tool_name,
+      ...(distributionKeyForTool(call.tool_name) ? {
+        evidence_key: distributionKeyForTool(call.tool_name),
+        distribution_key: distributionKeyForTool(call.tool_name),
+      } : {}),
+      parallel_group_id: parallelGroupIds(call.inputs)[0],
+    },
+  }
+}
+
+type ViewerEntry = [key: string, artifact: NonNullable<RunDetail['viewer']>]
+
+function viewerEntries(detail: RunDetail, sources: Sources) {
+  const entries: ViewerEntry[] = []
+  const artifactHashes = new Set<string>()
+  const addEntry = (key: string, artifact: NonNullable<RunDetail['viewer']> | null | undefined) => {
+    if (!artifact || entries.some(([entryKey]) => entryKey === key)) return
+    if (artifact.artifact_sha256 && artifactHashes.has(artifact.artifact_sha256)) return
+    if (artifact.artifact_sha256) artifactHashes.add(artifact.artifact_sha256)
+    entries.push([key, artifact])
+  }
+  for (const [key, artifact] of Object.entries(detail.viewers ?? {})) {
+    addEntry(key, artifact)
+  }
+  addEntry('__default__', detail.viewer)
+  for (const source of Object.values(sources)) {
+    for (const [key, artifact] of Object.entries(source?.viewers ?? {})) {
+      addEntry(key, artifact)
+    }
+    if (source?.node_id) addEntry(source.node_id, source.viewer)
+  }
+  return entries
+}
+
+function viewerMappingForTool(toolName: string, sourceNodeId: string | undefined, entries: ViewerEntry[]) {
+  const normalizedTool = toolName.toLowerCase()
+  const directSource = sourceNodeId && entries.find(([key]) => key === sourceNodeId)
+  if (directSource) return { key: directSource[0], basis: '后端节点 viewer' as const }
+  const directTool = entries.find(([key]) => key !== '__default__' && key.toLowerCase() === normalizedTool)
+  if (directTool) return { key: directTool[0], basis: '后端 viewer 键' as const }
+  // Historical payloads do not always expose the source node key. The only
+  // permitted compatibility mapping is an explicit Boltz/Rosetta tool name;
+  // generic labels and UI text never participate in this decision.
+  const allowedToolFamily = /(^|[-_.:])(boltz|rosetta)([-_.:]|$)/.exec(normalizedTool)?.[2]
+  if (!allowedToolFamily) return undefined
+  const familyEntry = entries.find(([key]) => key !== '__default__' && key.toLowerCase().includes(allowedToolFamily))
+  if (familyEntry) return { key: familyEntry[0], basis: '限定工具名映射' as const }
+  const defaultEntry = entries.find(([key]) => key === '__default__')
+  return defaultEntry ? { key: defaultEntry[0], basis: '限定工具名映射' as const } : undefined
+}
+
+/**
+ * Maps only the persisted metric tool identities that have a corresponding
+ * ResultDistribution key. This is deliberately separate from viewer_key:
+ * structure artifacts and numeric result artifacts are different evidence.
+ */
+export function distributionKeyForTool(toolName: string | undefined) {
+  const normalized = toolName?.trim().toLowerCase() ?? ''
+  if (normalized === 'v38-metric-mic_potency_amp_read' || normalized.endsWith(':mic_potency_amp_read') || normalized.endsWith('-mic_potency_amp_read')) return 'amp_read'
+  if (normalized === 'v38-metric-mic_potency' || normalized.endsWith(':mic_potency') || normalized.endsWith('-mic_potency')) return 'mic'
+  if (normalized === 'v38-metric-hemolysis_risk' || normalized.endsWith(':hemolysis_risk') || normalized.endsWith('-hemolysis_risk')) return 'hemolysis'
+  if (normalized === 'v38-metric-toxicity_risk' || normalized.endsWith(':toxicity_risk') || normalized.endsWith('-toxicity_risk')) return 'toxicity'
+  if (normalized === 'v38-metric-physicochemical_developability' || normalized.endsWith(':physicochemical_developability') || normalized.endsWith('-physicochemical_developability')) return 'developability'
+  return undefined
+}
+
+function structureEvidenceNode(key: string, artifact: NonNullable<RunDetail['viewer']>): GraphStage {
+  const normalizedKey = key.toLowerCase()
+  const label = normalizedKey.includes('boltz')
+    ? 'Boltz 结构证据'
+    : normalizedKey.includes('rosetta')
+      ? 'Rosetta 结构证据'
+      : '结构证据'
+  return {
+    id: `structure-evidence:${encodeURIComponent(key)}`,
+    label,
+    kind: 'structure',
+    group: 'structure',
+    status: 'completed',
+    current: 1,
+    total: 1,
+    provenance: 'database',
+    insight: {
+      grade: 'good',
+      verdict: '结构已记录',
+      reason: '后端返回结构 viewer 证据',
+      facts: [
+        ...(artifact.target_name ? [{ label: '靶点', value: artifact.target_name }] : []),
+        ...(artifact.media_type ? [{ label: '格式', value: artifact.media_type }] : []),
+      ],
+      source: 'observer_summary',
+    },
+    runtime: {
+      node_type: 'structure_evidence',
+      source_id: key,
+      observed_at: null,
+      raw_label: key,
+      has_viewer: true,
+      viewer_key: key,
+      viewer_mapping_basis: '后端 viewer 键',
+      explicit_relation_count: 0,
     },
   }
 }
@@ -825,6 +929,7 @@ function observedSpan(calls: ToolAttempt[]) {
 function operationComposition(calls: ToolAttempt[]) {
   const counts = new Map<string, number>()
   for (const call of calls) {
+    if (call.tool_name.startsWith('observed_lifecycle:')) continue
     const name = call.activity_type ? displayActivityType(call.activity_type) ?? displayToolName(call.tool_name) : displayToolName(call.tool_name)
     counts.set(name, (counts.get(name) ?? 0) + 1)
   }
@@ -861,6 +966,7 @@ function eventContextFacts(events: TimelineEvent[]) {
 function aggregateSemanticLabel(calls: ToolAttempt[], events: TimelineEvent[]) {
   const callIds = new Set(calls.map((call) => call.id))
   const materializedCalls = calls.filter((call) => !call.tool_name.startsWith('observed_lifecycle:'))
+  if (!materializedCalls.length && calls.length > 0 && !events.length) return '生命周期观测'
   const callLabels = materializedCalls
     .map((call) => call.activity_type ? displayActivityType(call.activity_type) ?? displayToolName(call.tool_name) : displayToolName(call.tool_name))
     .filter((label) => label !== '未命名工具')
@@ -915,12 +1021,17 @@ function runtimeGroupNode(groupedCalls: ToolAttempt[], groupedEvents: TimelineEv
   const grade = hasActive ? 'okay' : hasStopped && hasCompleted ? 'fair' : hasStopped ? 'bad' : statuses.length > 0 && statuses.every((item) => callStatuses.has(item)) ? 'good' : 'neutral'
   const retryCount = relationCount(groupedCalls, retryIds)
   const fallbackCount = relationCount(groupedCalls, fallbackIds)
+  const parallelGroupIdsForBucket = [...new Set(groupedCalls.flatMap((call) => parallelGroupIds(call.inputs)))]
   const total = groupedCalls.length + eventStatuses.length
   const operationSummary = [operationComposition(groupedCalls), eventComposition(independentEvents), associatedEvents.length ? `关联事件 ${associatedEvents.length}` : ''].filter(Boolean).join(' · ')
   const statusSummary = statuses.map(statusLabel).reduce((counts, item) => counts.set(item, (counts.get(item) ?? 0) + 1), new Map<string, number>())
   const statusText = [...statusSummary.entries()].map(([label, count]) => `${label} ${count}`).join(' · ')
   const observedDates = [...groupedCalls.map((call) => observedAt(call)), ...groupedEvents.map((event) => event.occurred_at)].filter((value): value is string => Boolean(value)).sort()
-  const observedSpanText = observedDates.length > 1 ? `时间跨度 ${Math.max(0, Math.round((Date.parse(observedDates.at(-1)!) - Date.parse(observedDates[0])) / 1000))} 秒` : '时间范围不完整'
+  const observedSpanText = groupingBasis.startsWith('同工具 + 状态')
+    ? '分散观测 · 不合并时间段'
+    : observedDates.length > 1
+      ? `时间跨度 ${Math.max(0, Math.round((Date.parse(observedDates.at(-1)!) - Date.parse(observedDates[0])) / 1000))} 秒`
+      : '时间范围不完整'
   const recoveryLabels = [...new Set(groupedEvents.map(recoveryAttemptLabel).filter((value): value is string => Boolean(value)))]
   const executionFactList = executionFacts(groupedEvents)
   const progressFacts = executionFactList.filter(({ label }) => label === '进度')
@@ -932,10 +1043,20 @@ function runtimeGroupNode(groupedCalls: ToolAttempt[], groupedEvents: TimelineEv
     ...progressFacts,
   ]
   const runtimeType = groupedEvents.length && !groupedCalls.length ? 'event_group' : groupedEvents.length ? 'batch_group' : 'tool_group'
+  const distributionKeys = [...new Set(groupedCalls.map((call) => distributionKeyForTool(call.tool_name)).filter((key): key is NonNullable<ReturnType<typeof distributionKeyForTool>> => Boolean(key)))]
   const countLabel = groupedCalls.length && eventStatuses.length ? `${groupedCalls.length} 次调用 · ${eventStatuses.length} 项活动` : groupedCalls.length ? `${groupedCalls.length} 次调用` : `${eventStatuses.length} 项活动`
+  const cardConclusion = groupingBasis.startsWith('后端执行字段')
+    ? '同一执行标识下的已观测活动'
+    : groupingBasis.startsWith('后端字段')
+      ? '同一结构化批次的已观测操作'
+      : groupingBasis.startsWith('事件关联字段')
+        ? '同一工具调用的关联观测'
+        : groupingBasis.startsWith('同工具 + 状态')
+          ? '同工具同状态的展示聚合'
+          : '连续观测聚合'
   return {
     id: groupId,
-    label: `${displayBatchLabel} · ${total} 项活动`,
+    label: `${displayBatchLabel} · ${countLabel}`,
     kind: 'tool',
     group: 'observed',
     status,
@@ -945,13 +1066,13 @@ function runtimeGroupNode(groupedCalls: ToolAttempt[], groupedEvents: TimelineEv
     insight: {
       grade,
        verdict: countLabel,
-       reason: groupingBasis.startsWith('后端执行字段') ? '持久化执行标识 · 同次活动汇总' : groupingBasis.startsWith('后端字段') ? '结构化批次字段 · 同批操作汇总' : groupingBasis.startsWith('事件关联字段') ? '事件关联字段 · 同一工具调用观测汇总' : '连续同类观测汇总 · 不代表执行因果',
-       facts: [
+       reason: cardConclusion,
+      facts: [
           ...salientFacts,
-          { label: '操作构成', value: operationSummary },
-          { label: '状态', value: statusText },
-          { label: '时间', value: observedSpanText },
-          { label: '关系', value: `重试 ${retryCount} · 回退 ${fallbackCount}` },
+          ...(operationSummary ? [{ label: '操作构成', value: operationSummary }] : []),
+          ...(statusText ? [{ label: '状态', value: statusText }] : []),
+          ...(observedSpanText ? [{ label: '时间', value: observedSpanText }] : []),
+          ...((retryCount > 0 || fallbackCount > 0) ? [{ label: '关系', value: `重试 ${retryCount} · 回退 ${fallbackCount}` }] : []),
        ],
       source: 'observer_summary',
     },
@@ -966,9 +1087,11 @@ function runtimeGroupNode(groupedCalls: ToolAttempt[], groupedEvents: TimelineEv
        expanded,
        status_breakdown: statusText,
        observed_span: observedSpanText,
-       raw_label: groupedCalls[0]?.tool_name ?? groupedEvents[0]?.type,
-       candidate_count: groupedCalls.length,
+      raw_label: groupedCalls[0]?.tool_name ?? groupedEvents[0]?.type,
+      ...(distributionKeys.length === 1 ? { evidence_key: distributionKeys[0], distribution_key: distributionKeys[0] } : {}),
+      candidate_count: groupedCalls.length,
       explicit_relation_count: 0,
+      parallel_group_id: parallelGroupIdsForBucket.length === 1 ? parallelGroupIdsForBucket[0] : undefined,
     },
   }
 }
@@ -1002,11 +1125,11 @@ function toolSummaryGroupNode(tools: RuntimeSummaryTool[], coverage: { total: nu
     insight: {
       grade: 'neutral',
       verdict: '仅汇总统计',
-      reason: '数据库仅提供汇总计数；逐次记录、时间与依赖缺失',
-      facts: [
-        { label: '操作构成', value: summaryOperationComposition(tools) },
-        { label: '状态构成', value: summaryStatusBreakdown(tools) },
-        { label: '统计覆盖', value: `总量 ${summaryCount} · 已有逐次 ${materializedCount} · 缺少逐次 ${missingCount} · 展开 ${expanded ? tools.length : 0}/${tools.length} 个缺口工具` },
+       reason: '仅有工具状态汇总',
+       facts: [
+         { label: '统计覆盖', value: `总量 ${summaryCount} · 已有逐次 ${materializedCount} · 缺少逐次 ${missingCount}` },
+         { label: '操作构成', value: summaryOperationComposition(tools) },
+         { label: '状态构成', value: summaryStatusBreakdown(tools) },
       ],
       source: 'observer_summary',
     },
@@ -1038,7 +1161,7 @@ function toolSummaryNode(tool: RuntimeSummaryTool): GraphStage {
     insight: {
       grade: 'neutral',
       verdict: '仅汇总',
-      reason: '数据库仅提供汇总计数；逐次记录、时间与依赖缺失',
+       reason: '仅有工具状态汇总',
       facts: [
         { label: '状态构成', value: Object.entries(tool.status_counts).map(([status, count]) => `${summaryStatusLabel(status)} ${count}`).join(' · ') },
         { label: '统计总量', value: String(tool.summary_count) },
@@ -1089,9 +1212,7 @@ function populationSummaryNode(detail: RunDetail, previewTotal: number | null): 
   ]
   if (generation) {
     facts.push(
-      { label: '基线候选', value: String(generation.baseline_candidate_count) },
-      { label: '新生子代', value: String(generation.descendant_candidate_count) },
-      { label: '最高代', value: `第 ${generation.max_generation} 代` },
+      { label: '种群计数', value: `基线 ${generation.baseline_candidate_count} · 新生 ${generation.descendant_candidate_count} · 最高第 ${generation.max_generation} 代` },
     )
   }
   if (display && display.excluded_candidate_count > 0) {
@@ -1117,7 +1238,9 @@ function populationSummaryNode(detail: RunDetail, previewTotal: number | null): 
     insight: {
       grade: 'neutral',
       verdict: '权威种群计数',
-      reason: '数据库返回的种群计数；候选轨显示当前预览。',
+      reason: generation
+        ? `基线 ${generation.baseline_candidate_count} · 新生 ${generation.descendant_candidate_count} · 最高第 ${generation.max_generation} 代`
+        : `可展示候选 ${total} 条`,
       facts,
       source: 'observer_summary',
     },
@@ -1128,6 +1251,8 @@ function populationSummaryNode(detail: RunDetail, previewTotal: number | null): 
       candidate_count: previewCount,
       preview_total: previewTotal,
       population_scope: scope,
+      evidence_key: 'candidate_pool',
+      distribution_key: 'candidate_pool',
       explicit_relation_count: 0,
     },
   }
@@ -1183,10 +1308,11 @@ function candidateNode(candidate: CandidatePreview, previewIndex: number, previe
     insight: {
       grade: 'neutral',
       verdict: '已记录',
-      reason: `${candidate.sequence.slice(0, 18)}${candidate.sequence.length > 18 ? '…' : ''} · ${candidate.length} 个氨基酸`,
+      reason: candidate.sequence,
       facts: [
-        { label: '预览记录', value: candidatePreviewLabel(previewIndex, previewTotal) },
         { label: '代际', value: candidate.generation === undefined ? '—' : `第 ${candidate.generation} 代` },
+        { label: '长度', value: `${candidate.length} 个残基` },
+        { label: '预览记录', value: candidatePreviewLabel(previewIndex, previewTotal) },
         { label: '来源', value: candidate.generator_call_id ? '工具调用' : '未返回' },
       ],
       source: 'observer_summary',
@@ -1234,69 +1360,75 @@ export function layoutColumnsForWidth(availableWidth: number | undefined) {
 
 function computePositions(nodes: GraphStage[], requestedColumns?: number, availableWidth?: number) {
   const positions: Record<string, { x: number; y: number }> = {}
-  const laneByType: Record<string, number> = { tool_summary_group: 0, tool_summary: 0, lifecycle_event: 1, event_group: 1, tool_group: 2, batch_group: 2, tool_call: 2, generation: 3, candidate_group: 3, candidate_preview: 3, population_summary: 3 }
-  const laneItems: GraphStage[][] = [[], [], [], []]
-  // buildRuntimeGraph emits a bucket followed by its expanded members. Keep
-  // that order inside each lane: it preserves chronological bucket order and
-  // keeps an expanded batch local instead of re-scattering its members by a
-  // second global sort.
-  nodes.forEach((node) => {
-    const lane = laneByType[node.runtime?.node_type ?? 'generation'] ?? 2
-    laneItems[lane].push(node)
-  })
   const maximumColumns = Math.max(1, Math.min(7, Math.round(requestedColumns ?? layoutColumnsForWidth(availableWidth))))
-  // Timeline lanes are intentionally horizontal in their folded state. A
-  // large number of observed calls must extend the time band, not push the
-  // population lane many screen-heights below it. Expanded groups are the
-  // exception: their local members use a bounded grid so one group remains
-  // compact and readable.
-  const laneColumns = laneItems.map((items, lane) => {
-    const hasExpandedGroup = items.some((node) => node.runtime?.expanded)
-    const horizontalTimeline = lane === 1 || (lane === 2 && !hasExpandedGroup)
-    if (horizontalTimeline) return Math.max(items.length, 1)
-    return items.length <= maximumColumns ? Math.max(items.length, 1) : maximumColumns
-  })
-  // Keep the four factual lanes discoverable in a readable viewport. The
-  // values mirror the rendered runtime cards and are accumulated per lane row.
-  const rowGap = 24
-  const laneGap = 8
-  const nodeHeight = (node: GraphStage) => {
-    // Group cards include operation/status/time facts and a visible expand
-    // affordance; their rendered height is materially larger than a plain
-    // node. Reserve that real card footprint before placing the next lane.
-    // WorkflowNode reserves 260px for every runtime group, including expanded
-    // groups. Match that rendered footprint so the next lane cannot overlap a
-    // card whose measured height is not available to this pure layout pass.
-    if (node.runtime?.expanded) return 260
-    if (['tool_group', 'event_group', 'batch_group', 'tool_summary_group', 'candidate_group'].includes(node.runtime?.node_type ?? '')) return 260
-    return 180
-  }
-  const laneRowHeights = laneItems.map((items, lane) => {
-    const columns = laneColumns[lane]
-    const rowHeights: number[] = []
-    for (let index = 0; index < items.length; index += columns) {
-      rowHeights.push(Math.max(...items.slice(index, index + columns).map(nodeHeight)))
+  const groupMembers = new Map<string, string>()
+  for (const group of nodes) {
+    const childIds = [...(group.runtime?.child_ids ?? []), ...(group.runtime?.event_ids ?? [])]
+    if (!group.runtime?.expanded || !childIds.length) continue
+    for (const childId of childIds) {
+      const prefix = group.runtime.node_type === 'candidate_group' ? 'candidate:' : 'call:'
+      const nodeId = childId.startsWith('event:') || childId.startsWith('call:') || childId.startsWith('candidate:') ? childId : `${prefix}${childId}`
+      groupMembers.set(nodeId, group.id)
     }
-    return rowHeights
-  })
-  const laneY: number[] = []
-  let nextLaneY = 150
-  for (let lane = 0; lane < laneItems.length; lane += 1) {
-    if (!laneRowHeights[lane].length) continue
-    laneY[lane] = nextLaneY
-    const occupiedHeight = laneRowHeights[lane].reduce((total, height) => total + height, 0)
-      + Math.max(0, laneRowHeights[lane].length - 1) * rowGap
-    nextLaneY += occupiedHeight + laneGap
   }
-  laneItems.forEach((items, lane) => {
-    const columns = laneColumns[lane]
-    items.forEach((node, index) => {
-      const row = Math.floor(index / columns)
-      const column = index % columns
-      const rowOffset = laneRowHeights[lane].slice(0, row).reduce((total, height) => total + height + rowGap, 0)
-      positions[node.id] = { x: 155 + column * 315, y: laneY[lane] + rowOffset }
-    })
-  })
+  const summaryNodes = nodes.filter((node) => ['tool_summary_group', 'tool_summary'].includes(node.runtime?.node_type ?? ''))
+  const mainNodes = nodes.filter((node) => !summaryNodes.includes(node) && !groupMembers.has(node.id))
+  const observedTime = (node: GraphStage) => {
+    const value = node.runtime?.observed_at ? Date.parse(node.runtime.observed_at) : Number.NaN
+    return Number.isFinite(value) ? value : Number.MAX_SAFE_INTEGER
+  }
+  const ordered = [...mainNodes].sort((left, right) => observedTime(left) - observedTime(right) || left.id.localeCompare(right.id))
+  // The default canvas is a decision spine, not a four-row table. Evidence
+  // types remain in metadata and details; only explicit parallel groups get
+  // a vertical branch. Summary-only evidence is placed on a separate audit
+  // rail below the spine and never controls the readable viewport.
+  const mainY = 220
+  const auditY = 660
+  const columnByNode = new Map<string, number>()
+  const firstColumnByParallelGroup = new Map<string, number>()
+  let nextColumn = 0
+  for (const node of ordered) {
+    const parallelGroup = node.runtime?.parallel_group_id
+    if (parallelGroup && firstColumnByParallelGroup.has(parallelGroup)) {
+      columnByNode.set(node.id, firstColumnByParallelGroup.get(parallelGroup)!)
+      continue
+    }
+    columnByNode.set(node.id, nextColumn)
+    if (parallelGroup) firstColumnByParallelGroup.set(parallelGroup, nextColumn)
+    nextColumn += 1
+  }
+  const groupById = new Map(nodes.filter((node) => node.runtime?.expanded).map((node) => [node.id, node] as const))
+  for (const [childId, groupId] of groupMembers) {
+    const groupColumn = columnByNode.get(groupId)
+    if (groupColumn === undefined) continue
+    const group = groupById.get(groupId)
+    const childIds = group ? [...(group.runtime?.child_ids ?? []), ...(group.runtime?.event_ids ?? [])] : []
+    const index = childIds.indexOf(childId.replace(/^call:/, '').replace(/^event:/, '').replace(/^candidate:/, ''))
+    const clusterColumns = childIds.length <= 3 ? 1 : maximumColumns
+    columnByNode.set(childId, groupColumn + 1 + Math.max(0, index) % clusterColumns)
+  }
+  const place = (node: GraphStage, column: number, row = 0) => {
+    const isSummary = ['tool_summary_group', 'tool_summary'].includes(node.runtime?.node_type ?? '')
+    positions[node.id] = { x: 190 + column * 315, y: isSummary ? auditY + row * 190 : mainY + row * 190 }
+  }
+  for (const node of ordered) {
+    const parallelGroup = node.runtime?.parallel_group_id
+    const parallelMembers = parallelGroup ? ordered.filter((candidate) => candidate.runtime?.parallel_group_id === parallelGroup) : []
+    const parallelIndex = parallelGroup ? parallelMembers.findIndex((candidate) => candidate.id === node.id) : 0
+    const parallelOffset = parallelMembers.length > 1 ? parallelIndex - (parallelMembers.length - 1) / 2 : 0
+    positions[node.id] = { x: 190 + (columnByNode.get(node.id) ?? 0) * 315, y: mainY + parallelOffset * 170 }
+  }
+  for (const node of nodes.filter((candidate) => groupMembers.has(candidate.id))) {
+    const groupId = groupMembers.get(node.id)
+    const group = groupId ? groupById.get(groupId) : undefined
+    const childIds = group ? [...(group.runtime?.child_ids ?? []), ...(group.runtime?.event_ids ?? [])] : []
+    const childIndex = childIds.indexOf(node.id.replace(/^call:/, '').replace(/^event:/, '').replace(/^candidate:/, ''))
+    const clusterColumns = childIds.length <= 3 ? 1 : maximumColumns
+    place(node, columnByNode.get(node.id) ?? 0, Math.floor(Math.max(0, childIndex) / clusterColumns) + 1)
+  }
+  // Summary-only evidence is a separate audit rail. It never consumes a
+  // timeline column and has no execution edge.
+  summaryNodes.forEach((node, index) => place(node, index, 0))
   return positions
 }
 
@@ -1331,6 +1463,24 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
       fallbackBases.push('工具名 + 连续相邻观测时间')
     }
   }
+  // Large unkeyed runs can contain dozens of repeated metric calls spread
+  // across iterations. A display aggregate keeps the folded graph readable;
+  // it is explicitly not a batch or a causal execution group. Expansion still
+  // exposes every materialized attempt in the original observation set.
+  const displayAggregateBuckets = new Map<string, ToolAttempt[]>()
+  for (const call of orderedCalls) {
+    if (callBatchIdentity(call)) continue
+    const key = `${call.tool_name}\u0000${call.status}`
+    displayAggregateBuckets.set(key, [...(displayAggregateBuckets.get(key) ?? []), call])
+  }
+  const displayAggregateGroups = [...displayAggregateBuckets.entries()]
+    .filter(([, grouped]) => grouped.length >= 4)
+    .map(([key, grouped]) => ({
+      key: `display:${key}`,
+      grouped,
+      basis: '同工具 + 状态的展示聚合（无显式批次，不表达因果）',
+    }))
+  const displayAggregateCallIds = new Set(displayAggregateGroups.flatMap(({ grouped }) => grouped.map((call) => call.id)))
   const explicitGroups = [...explicitBuckets.entries()].map(([identity, grouped]) => ({
     key: identity,
     grouped: grouped.sort((left, right) => (Date.parse(observedAt(left) ?? '') - Date.parse(observedAt(right) ?? '')) || left.id.localeCompare(right.id)),
@@ -1338,8 +1488,10 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
       ? `事件关联字段 tool_call_id=${identity.slice('observed_tool_call_id='.length)}`
       : `后端字段 ${identity}`,
   }))
-  const fallbackGroupRecords = fallbackGroups.map((grouped, index) => ({ key: `fallback:${grouped[0].id}`, grouped, basis: fallbackBases[index] }))
-  const callGroupRecords = [...explicitGroups, ...fallbackGroupRecords].sort((left, right) => {
+  const fallbackGroupRecords = fallbackGroups
+    .map((grouped, index) => ({ key: `fallback:${grouped[0].id}`, grouped: grouped.filter((call) => !displayAggregateCallIds.has(call.id)), basis: fallbackBases[index] }))
+    .filter(({ grouped }) => grouped.length > 0)
+  const callGroupRecords = [...explicitGroups, ...displayAggregateGroups, ...fallbackGroupRecords].sort((left, right) => {
     const leftTime = Date.parse(observedAt(left.grouped[0]) ?? '')
     const rightTime = Date.parse(observedAt(right.grouped[0]) ?? '')
     return (Number.isFinite(leftTime) ? leftTime : Number.MAX_SAFE_INTEGER) - (Number.isFinite(rightTime) ? rightTime : Number.MAX_SAFE_INTEGER) || left.grouped[0].id.localeCompare(right.grouped[0].id)
@@ -1421,13 +1573,26 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
       ? candidates.map((candidate) => candidateNode(candidate, previewIndexById.get(candidate.id) ?? 1, previewTotal))
       : []),
   ])
+  const viewerEntriesForRun = viewerEntries(detail, sources)
+  const structureEvidenceNodes = viewerEntriesForRun.map(([key, artifact]) => structureEvidenceNode(key, artifact))
   const nodes = [
     ...callNodes,
     ...(summaryGaps.length ? [toolSummaryGroupNode(summaryGaps, summaryCoverage, expandedGroups.has('tool-summary-group')), ...(expandedGroups.has('tool-summary-group') ? summaryGaps.map(toolSummaryNode) : [])] : []),
+    ...structureEvidenceNodes,
     ...(populationSummary ? [populationSummary] : []),
     ...ungroupedCandidates.map((candidate) => candidateNode(candidate, previewIndexById.get(candidate.id) ?? 1, previewTotal)),
     ...generationPreviewNodes,
   ]
+  const sourceNodeByCallId = new Map<string, string>()
+  for (const source of Object.values(sources)) {
+    if (!source) continue
+    for (const call of source?.calls ?? []) sourceNodeByCallId.set(call.id, source.node_id)
+  }
+  for (const node of nodes) {
+    if (!node.runtime?.tool_name) continue
+    const mapping = viewerMappingForTool(node.runtime.tool_name, sourceNodeByCallId.get(node.runtime.source_id), viewerEntriesForRun)
+    if (mapping) node.runtime = { ...node.runtime, has_viewer: true, viewer_key: mapping.key, viewer_mapping_basis: mapping.basis }
+  }
   const countsByGeneration = new Map<number, number>()
   for (const candidate of detail.candidates) {
     if (candidate.generation === undefined) continue
@@ -1437,6 +1602,36 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
   const nodeIds = new Set(nodes.map((node) => node.id))
   const edges: GraphEdgeDetail[] = []
   const seen = new Set<string>()
+  for (const structureNode of nodes.filter((node) => node.runtime?.node_type === 'structure_evidence')) {
+    if (!nodeIds.has('population-summary')) continue
+    addEdge(edges, seen, {
+      source: 'population-summary',
+      target: structureNode.id,
+      label: '同轮次证据',
+      rationale: '同一运行同时返回种群汇总与结构 viewer；这是证据关联，不表示生成、依赖或执行先后。',
+      provenance: 'derived',
+      relation_kind: 'association',
+    })
+  }
+  for (const group of nodes.filter((node) => node.runtime?.expanded)) {
+    const members = [...(group.runtime?.child_ids ?? []), ...(group.runtime?.event_ids ?? [])]
+    let labeled = false
+    for (const member of members) {
+      const target = member.startsWith('event:') || member.startsWith('call:') || member.startsWith('candidate:')
+        ? member
+        : group.runtime?.node_type === 'candidate_group' ? `candidate:${member}` : `call:${member}`
+      if (!nodeIds.has(target)) continue
+      addEdge(edges, seen, {
+        source: group.id,
+        target,
+        label: labeled ? null : '批次明细',
+        rationale: `依据数据库返回的${group.runtime?.grouping_basis ?? '批次成员字段'}展开；表示同组观测，不表示执行依赖。`,
+        provenance: 'database',
+        relation_kind: 'grouping',
+      })
+      labeled = true
+    }
+  }
   const bucketNodeId = (bucket: { key: string; calls: ToolAttempt[]; events: TimelineEvent[] }) => {
     if (bucket.calls.length + bucket.events.length > 1) return groupIdFor(bucket)
     if (bucket.calls[0]) return `call:${bucket.calls[0].id}`

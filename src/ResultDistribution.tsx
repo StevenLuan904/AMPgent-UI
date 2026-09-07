@@ -135,10 +135,22 @@ export function distributionForStage(snapshot: AnalysisSnapshot | null, detail: 
       direction: 'neutral',
     }
   }
+  if (stageId === 'candidate_pool' && detail.candidates.length) {
+    return { label: '候选序列长度', unit: '残基', values: detail.candidates.map((candidate) => candidate.length), source: `${detail.candidates.length.toLocaleString()} 条候选预览`, direction: 'neutral' }
+  }
+  const metric = metricByStage[stageId]
+  if (metric) {
+    const previewValues = finite(detail.candidates.flatMap((candidate) => candidate.metrics
+      .filter((item) => item.name === metric.key)
+      .map((item) => item.value)))
+      .map((value) => metric.transform ? metric.transform(value) : value)
+    if (previewValues.length) {
+      return { label: metric.label, unit: metric.unit, values: previewValues, source: `${previewValues.length.toLocaleString()} 条候选预览`, direction: metric.direction }
+    }
+  }
   const runSnapshot = snapshot?.run.id === detail.run.id ? snapshot : null
   if (!runSnapshot) return null
 
-  const metric = metricByStage[stageId]
   if (metric) {
     const values = finite(runSnapshot.candidates.map((candidate) => candidate.metrics[metric.key]?.value))
       .map((value) => metric.transform ? metric.transform(value) : value)
