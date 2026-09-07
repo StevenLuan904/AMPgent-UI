@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { loadObserverEventHistory, mergeObserverEventPage, observerEventPageUrl, shouldFetchOlderObserverEvents } from './observerEvents'
+import { loadObserverEventHistory, mergeObserverDetailEventHistory, mergeObserverEventPage, observerEventPageUrl, shouldFetchOlderObserverEvents } from './observerEvents'
 import type { RunDetail } from './types'
 
 const event = (sequence_no: number): RunDetail['events'][number] => ({
@@ -26,6 +26,21 @@ describe('observer event history contract', () => {
 
   it('merges pages by persisted sequence and removes overlap', () => {
     expect(mergeObserverEventPage([event(4), event(5)], [event(2), event(4), event(3)])).toEqual([event(2), event(3), event(4), event(5)])
+  })
+
+  it('preserves older pages and their continuation cursor across head-window refreshes', () => {
+    const run = (id: string, events: RunDetail['events'], event_window: RunDetail['event_window']) => ({
+      run: { id },
+      events,
+      event_window,
+    } as RunDetail)
+    const current = run('run-1', [event(1), event(2), event(3), event(4)], { limit: 2, has_more: true, next_cursor: '1', remaining: 1 })
+    const fresh = run('run-1', [event(4), event(5)], { limit: 2, has_more: true, next_cursor: '4', remaining: 4 })
+    const merged = mergeObserverDetailEventHistory(fresh, current)
+
+    expect(merged.events.map((item) => item.sequence_no)).toEqual([1, 2, 3, 4, 5])
+    expect(merged.event_window).toEqual(current.event_window)
+    expect(mergeObserverDetailEventHistory(run('run-2', [event(9)], undefined), current).events).toEqual([event(9)])
   })
 
   it('loads explicit older pages, stops at has_more=false, and leaves legacy payloads untouched', async () => {
@@ -70,6 +85,21 @@ describe('observer event history contract', () => {
     expect(result.nextCursor).toBe('older-2')
     expect(result.remaining).toBe(62)
     expect(result.payload.event_window?.has_more).toBe(true)
+  })
+
+  it('can refresh only the latest window without repeating an older-page request', async () => {
+    const initial = { payload: { ...detail([event(6)], { limit: 2, has_more: true, next_cursor: 'older-1', remaining: 5 }) } as RunDetail, cacheState: null }
+    let requested = 0
+    const result = await loadObserverEventHistory(
+      'http://observer.test/v1/observer/runs/run-1',
+      initial,
+      async () => { requested += 1; return { payload: detail([]) } },
+      () => false,
+      0,
+    )
+    expect(requested).toBe(0)
+    expect(result.pagesLoaded).toBe(1)
+    expect(result.hasMore).toBe(true)
   })
 
   it('supports an explicit continuation batch without claiming history is complete', async () => {

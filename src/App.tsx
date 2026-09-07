@@ -51,7 +51,7 @@ import { LaneLabel, WorkflowNode, type LaneNode, type StageNode } from './Workfl
 import { assertMatchingRunIdentity, type RunIdentity } from './runIdentity'
 import { formatRunTitle } from './runPresentation'
 import { buildRuntimeGraph, candidatePreviewCountLabel, candidatePreviewDenominator, displayObservedEventName, displayToolName, nextExpandedRuntimeGroups, runtimeEventStatus, type RuntimeGraphModel } from './runtimeGraph'
-import { loadObserverEventHistory, observerEventPageMax, shouldFetchOlderObserverEvents } from './observerEvents'
+import { loadObserverEventHistory, mergeObserverDetailEventHistory, observerEventPageMax, shouldFetchOlderObserverEvents } from './observerEvents'
 import { compactReadableRuntimePositions, selectReadableRuntimeNodeIds } from './runtimeViewport'
 import { nodeDetailCacheTtlMs, observerDetailFailureMessage, observerIdlePrefetchDelayMs, observerInitialPrefetchCount, observerInitialPrefetchStages, observerListTimeoutMs, observerInFlightStageIds, observerMergePrefetchQueue, observerNextPrefetchStage, observerNodeDetailCacheKey, observerNodeDetailTimeoutMs, observerPendingPrefetchCount, observerPollingIntervalMs, observerPrefetchQueueMatches, observerPrefetchInFlightKey, observerPrefetchRefreshExpired, observerPrefetchStageOrder, observerRequeuePrefetchStage, observerResponseIsStale, observerRunDetailCacheKey, observerRunDetailTimeoutMs, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion, observerStaleListRetryDelayMs, observerStaleRetryDelayMs, type ObserverPrefetchQueue } from './observerPolling'
 
@@ -376,7 +376,10 @@ function useRunData(enabled: boolean, apiBase: string) {
         () => false,
         observerEventPageMax,
       )
-      if (epoch === detailEpoch.current && detailRunIdRef.current === runId && history.pagesLoaded > 1) setDetail(history.payload)
+      if (epoch === detailEpoch.current && detailRunIdRef.current === runId && history.pagesLoaded > 1) {
+        detailRef.current = history.payload
+        setDetail(history.payload)
+      }
     } finally {
       eventHistoryInFlight.current = false
       setEventHistoryLoading(false)
@@ -385,6 +388,7 @@ function useRunData(enabled: boolean, apiBase: string) {
   prefetchPumpRef.current = prefetchPump
 
   const loadDetail = useCallback(async (runId: string, quiet = false) => {
+    if (quiet && eventHistoryInFlight.current && detailRunIdRef.current === runId) return
     if (detailInFlight.current) {
       pendingDetailRunId.current = runId
       return
@@ -401,14 +405,16 @@ function useRunData(enabled: boolean, apiBase: string) {
         response,
         (pageUrl) => fetchJsonWithTimeout(pageUrl, observerRunDetailTimeoutMs),
         (cacheState) => observerResponseIsStale(cacheState ?? null),
+        quiet ? 0 : 1,
       )
-      const payload = history.payload
+      const sameRun = detailRunIdRef.current === runId
+      const payload = sameRun ? mergeObserverDetailEventHistory(history.payload, detailRef.current) : history.payload
       const staleResponse = observerResponseIsStale(history.cacheState)
       assertMatchingRunIdentity(runIdentities.current[runId] ?? { id: runId }, payload.run)
       if (epoch !== detailEpoch.current) return
       const stages = payload.graph?.nodes ?? []
-      const sameRun = detailRunIdRef.current === runId
       detailRunIdRef.current = runId
+      detailRef.current = payload
       setDetail(payload)
       setDetailSyncError(null)
       if (!staleResponse) {

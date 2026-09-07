@@ -25,6 +25,21 @@ export function mergeObserverEventPage(current: TimelineEvent[], next: TimelineE
   return [...bySequence.values()].sort((left, right) => left.sequence_no - right.sequence_no)
 }
 
+/** Keep already-read older pages when a periodic refresh only returns the head window. */
+export function mergeObserverDetailEventHistory(fresh: RunDetail, current: RunDetail | null) {
+  if (!current || fresh.run.id !== current.run.id || !current.events.length) return fresh
+  const currentOldest = Math.min(...current.events.map((event) => event.sequence_no))
+  const freshOldest = fresh.events.length ? Math.min(...fresh.events.map((event) => event.sequence_no)) : Number.POSITIVE_INFINITY
+  if (currentOldest >= freshOldest) return fresh
+  return {
+    ...fresh,
+    events: mergeObserverEventPage(fresh.events, current.events),
+    // Lifecycle events are append-only. The current window belongs to the
+    // oldest retained page and therefore owns the continuation cursor.
+    event_window: current.event_window ?? fresh.event_window,
+  }
+}
+
 export async function loadObserverEventHistory(
   detailUrl: string,
   initial: { payload: RunDetail; cacheState?: string | null },
@@ -37,7 +52,7 @@ export async function loadObserverEventHistory(
   let cursorWindow = payload.event_window
   const seenCursors = new Set<string>()
   let pagesLoaded = 1
-  const pageLimit = Math.max(1, Math.min(observerEventPageMax, Math.floor(maxPages)))
+  const pageLimit = Math.max(0, Math.min(observerEventPageMax, Math.floor(maxPages)))
   for (let page = 0; page < pageLimit && shouldFetchOlderObserverEvents(cursorWindow); page += 1) {
     const cursor = cursorWindow.next_cursor
     if (seenCursors.has(cursor)) break
