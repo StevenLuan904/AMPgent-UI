@@ -69,6 +69,15 @@ def test_migration_is_expand_only_and_views_keep_subject_and_producer_separate()
     assert "CREATE VIEW scientific_run_timeline_v1" in source
     assert "CREATE VIEW scientific_run_lineage_v1" in source
     assert "CREATE VIEW scientific_operational_evidence_v1" in source
+    assert "CREATE VIEW scientific_family_aggregate_v1" in source
+    for count_name in (
+        "candidate_count",
+        "score_all_evidence_count",
+        "challenger_evidence_count",
+        "rosetta_evidence_count",
+        "md_evidence_count",
+    ):
+        assert count_name in source
     assert "CREATE VIEW scientific_evidence_mismatches_v1" in source
     assert "CREATE VIEW scientific_evidence_validity_v1" in source
     assert "subject_run_id" in source

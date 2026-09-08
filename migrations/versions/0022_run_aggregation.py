@@ -520,8 +520,49 @@ def upgrade() -> None:
         """
     )
 
+    op.execute(
+        """
+        CREATE VIEW scientific_family_aggregate_v1 AS
+        WITH phase_counts AS (
+          SELECT subject_run_id,
+            count(*) FILTER (WHERE phase_code='score_all') score_all_evidence_count,
+            count(*) FILTER (WHERE phase_code='challenger') challenger_evidence_count,
+            count(*) FILTER (WHERE phase_code='qd_lineage') qd_lineage_evidence_count,
+            count(*) FILTER (WHERE phase_code='boltz') boltz_evidence_count,
+            count(*) FILTER (WHERE phase_code='rosetta') rosetta_evidence_count,
+            count(*) FILTER (WHERE phase_code='md') md_evidence_count,
+            count(*) FILTER (WHERE phase_code='pool_s') pool_s_evidence_count
+          FROM scientific_evidence_validity_v1 GROUP BY subject_run_id
+        )
+        SELECT aggregate.run_group_id,aggregate.root_run_id,
+          CASE WHEN bool_and(r.run_group_id IS NOT NULL)
+            THEN 'explicit_run_group' ELSE 'unresolved_singleton' END grouping_status,
+          count(*) run_count,
+          count(*) FILTER (WHERE aggregate.run_is_explicitly_invalidated)
+            invalidated_run_count,
+          sum(aggregate.candidate_count) candidate_count,
+          sum(aggregate.evidence_count) evidence_count,
+          sum(COALESCE(phase.score_all_evidence_count,0)) score_all_evidence_count,
+          sum(COALESCE(phase.challenger_evidence_count,0)) challenger_evidence_count,
+          sum(COALESCE(phase.qd_lineage_evidence_count,0)) qd_lineage_evidence_count,
+          sum(COALESCE(phase.boltz_evidence_count,0)) boltz_evidence_count,
+          sum(COALESCE(phase.rosetta_evidence_count,0)) rosetta_evidence_count,
+          sum(COALESCE(phase.md_evidence_count,0)) md_evidence_count,
+          sum(COALESCE(phase.pool_s_evidence_count,0)) pool_s_evidence_count,
+          sum(aggregate.unresolved_evidence_count) unresolved_evidence_count,
+          sum(aggregate.invalidated_evidence_count) invalidated_evidence_count,
+          sum(aggregate.producer_tool_call_count) producer_tool_call_count,
+          sum(aggregate.autoresearch_action_count) autoresearch_action_count
+        FROM scientific_run_aggregate_v1 aggregate
+        JOIN experiment_runs r ON r.id=aggregate.run_id
+        LEFT JOIN phase_counts phase ON phase.subject_run_id=aggregate.run_id
+        GROUP BY aggregate.run_group_id,aggregate.root_run_id
+        """
+    )
+
 
 def downgrade() -> None:
+    op.execute("DROP VIEW scientific_family_aggregate_v1")
     op.execute("DROP VIEW scientific_run_aggregate_v1")
     op.execute("DROP VIEW scientific_run_timeline_v1")
     op.execute("DROP VIEW scientific_evidence_validity_v1")
