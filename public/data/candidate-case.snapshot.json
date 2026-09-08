@@ -1,0 +1,2163 @@
+{
+  "schemaVersion": "ampgent-candidate-case.1",
+  "generatedAt": "2026-08-27T11:19:14.912834Z",
+  "source": "postgresql_read_only_with_frozen_metrics",
+  "run": {
+    "id": "57afecc7-22e9-4efb-9051-acb11234013d",
+    "status": "cancelled",
+    "updatedAt": "2026-08-20T02:32:06.177769+00:00"
+  },
+  "candidate": {
+    "id": "90cf4c9a-955b-4674-804f-f124384c9f56",
+    "sequence": "LRWWKLLAEAAAWWWEWWWWWW",
+    "originSet": [
+      "hydramp"
+    ],
+    "proposalRank": 43,
+    "admission": {
+      "paretoFront": 1,
+      "reasons": [
+        "selected_by_deterministic_nonweighted_pareto_front"
+      ],
+      "status": "mature_core",
+      "structureEligible": true
+    },
+    "metrics": {
+      "amp_read_log10_mic_um": {
+        "limitations": [
+          "handoff reliability: R3-generic-mixed-species-no-similarity-isolated-local-test",
+          "configured trust: soft",
+          "Generic mixed-species MIC estimate; it is not E. coli-specific or a wet-lab MIC.",
+          "Component predictions are retained and no cross-family consensus is fabricated.",
+          "The local comparison is not similarity-isolated from the released training data."
+        ],
+        "outOfDomain": false,
+        "status": "succeeded",
+        "text": null,
+        "toolCallId": "1b6dd87f-1aab-4ade-a438-0bf1ef3e1ebf",
+        "unit": "log10(umol/L)",
+        "value": 1.0864980480440998
+      },
+      "hydrophobic_moment_eisenberg": {
+        "limitations": [
+          "handoff reliability: descriptor-R2",
+          "configured trust: descriptor"
+        ],
+        "outOfDomain": false,
+        "status": "succeeded",
+        "text": null,
+        "toolCallId": "4d4a4936-1eec-40d2-89cc-d9cadfa3c521",
+        "unit": "dimensionless",
+        "value": 0.36281016664641824
+      },
+      "hydrophobic_ratio_modlamp": {
+        "limitations": [
+          "handoff reliability: descriptor-R2",
+          "configured trust: descriptor"
+        ],
+        "outOfDomain": false,
+        "status": "succeeded",
+        "text": null,
+        "toolCallId": "4d4a4936-1eec-40d2-89cc-d9cadfa3c521",
+        "unit": "fraction",
+        "value": 0.3181818181818182
+      },
+      "llamp_log10_mic_um": {
+        "limitations": [
+          "handoff reliability: R3-author-test-not-similarity-isolated",
+          "configured trust: soft",
+          "E. coli species-conditioned output is a soft estimate, not a wet-lab MIC.",
+          "The author test is not sequence-similarity isolated from training data.",
+          "The PolyForm Noncommercial license limits this runtime to noncommercial research."
+        ],
+        "outOfDomain": false,
+        "status": "succeeded",
+        "text": null,
+        "toolCallId": "2100ac2e-7a4a-4ef5-8084-bbb6eab1d309",
+        "unit": "log10(umol/L)",
+        "value": 1.1185107231140137
+      },
+      "macrel_amp_probability": {
+        "limitations": [
+          "handoff reliability: R3-not-locked",
+          "configured trust: soft",
+          "Macrel is one soft generic AMP/hemolysis classifier; HemoPI2 is not yet active.",
+          "Model assets match the two hashes locked in the handoff, but this is not assay calibration."
+        ],
+        "outOfDomain": false,
+        "status": "succeeded",
+        "text": null,
+        "toolCallId": "9ad628da-5cf2-4f01-a07a-3f46798c94d1",
+        "unit": "fraction",
+        "value": 0.327
+      },
+      "macrel_hemolysis_label": {
+        "limitations": [
+          "handoff reliability: R3-not-locked",
+          "configured trust: soft",
+          "Macrel is one soft generic AMP/hemolysis classifier; HemoPI2 is not yet active.",
+          "Model assets match the two hashes locked in the handoff, but this is not assay calibration."
+        ],
+        "outOfDomain": false,
+        "status": "succeeded",
+        "text": "low",
+        "toolCallId": "9ad628da-5cf2-4f01-a07a-3f46798c94d1",
+        "unit": null,
+        "value": null
+      },
+      "macrel_hemolysis_probability": {
+        "limitations": [
+          "handoff reliability: R3-not-locked",
+          "configured trust: soft",
+          "Macrel is one soft generic AMP/hemolysis classifier; HemoPI2 is not yet active.",
+          "Model assets match the two hashes locked in the handoff, but this is not assay calibration."
+        ],
+        "outOfDomain": false,
+        "status": "succeeded",
+        "text": null,
+        "toolCallId": "9ad628da-5cf2-4f01-a07a-3f46798c94d1",
+        "unit": "fraction",
+        "value": 0.238
+      },
+      "maximum_hydrophobic_run": {
+        "limitations": [
+          "handoff reliability: descriptor-R2",
+          "configured trust: descriptor"
+        ],
+        "outOfDomain": false,
+        "status": "succeeded",
+        "text": null,
+        "toolCallId": "4d4a4936-1eec-40d2-89cc-d9cadfa3c521",
+        "unit": "residues",
+        "value": 6.0
+      },
+      "net_charge_ph7_4": {
+        "limitations": [
+          "handoff reliability: descriptor-R2",
+          "configured trust: descriptor"
+        ],
+        "outOfDomain": false,
+        "status": "succeeded",
+        "text": null,
+        "toolCallId": "4d4a4936-1eec-40d2-89cc-d9cadfa3c521",
+        "unit": "elementary_charge",
+        "value": -0.01
+      },
+      "toxinpred3_hybrid_score": {
+        "limitations": [
+          "handoff reliability: R3-minus-not-assay-matched",
+          "configured trust: soft",
+          "Corrected batch runner fixes one-row shape and per-sequence literal MERCI scoring.",
+          "The endpoint is not assay-matched to this project and remains soft evidence."
+        ],
+        "outOfDomain": false,
+        "status": "succeeded",
+        "text": null,
+        "toolCallId": "e7915059-4753-42be-a36b-74b365754641",
+        "unit": "dimensionless",
+        "value": 0.095
+      },
+      "toxinpred3_label": {
+        "limitations": [
+          "handoff reliability: R3-minus-not-assay-matched",
+          "configured trust: soft",
+          "Corrected batch runner fixes one-row shape and per-sequence literal MERCI scoring.",
+          "The endpoint is not assay-matched to this project and remains soft evidence."
+        ],
+        "outOfDomain": false,
+        "status": "succeeded",
+        "text": "Non-Toxin",
+        "toolCallId": "e7915059-4753-42be-a36b-74b365754641",
+        "unit": null,
+        "value": null
+      }
+    },
+    "metricContext": {
+      "macrel_amp_probability": {
+        "value": 0.327,
+        "favorablePercentile": 23,
+        "cohortSize": 773,
+        "direction": "higher"
+      },
+      "llamp_log10_mic_um": {
+        "value": 1.1185107231140137,
+        "favorablePercentile": 70,
+        "cohortSize": 773,
+        "direction": "lower"
+      },
+      "macrel_hemolysis_probability": {
+        "value": 0.238,
+        "favorablePercentile": 83,
+        "cohortSize": 773,
+        "direction": "lower"
+      },
+      "toxinpred3_hybrid_score": {
+        "value": 0.095,
+        "favorablePercentile": 68,
+        "cohortSize": 773,
+        "direction": "lower"
+      }
+    },
+    "compositionContext": [
+      {
+        "residue": "A",
+        "candidateCount": 4,
+        "candidateFraction": 0.18182,
+        "structureEligibleFraction": 0.09502,
+        "backgroundFraction": 0.0797,
+        "log2Enrichment": 0.2439
+      },
+      {
+        "residue": "C",
+        "candidateCount": 0,
+        "candidateFraction": 0.0,
+        "structureEligibleFraction": 0.02112,
+        "backgroundFraction": 0.02768,
+        "log2Enrichment": -0.3623
+      },
+      {
+        "residue": "D",
+        "candidateCount": 0,
+        "candidateFraction": 0.0,
+        "structureEligibleFraction": 0.06637,
+        "backgroundFraction": 0.02204,
+        "log2Enrichment": 1.5837
+      },
+      {
+        "residue": "E",
+        "candidateCount": 2,
+        "candidateFraction": 0.09091,
+        "structureEligibleFraction": 0.06486,
+        "backgroundFraction": 0.01833,
+        "log2Enrichment": 1.8164
+      },
+      {
+        "residue": "F",
+        "candidateCount": 0,
+        "candidateFraction": 0.0,
+        "structureEligibleFraction": 0.03318,
+        "backgroundFraction": 0.0446,
+        "log2Enrichment": -0.4159
+      },
+      {
+        "residue": "G",
+        "candidateCount": 0,
+        "candidateFraction": 0.0,
+        "structureEligibleFraction": 0.03922,
+        "backgroundFraction": 0.06552,
+        "log2Enrichment": -0.7345
+      },
+      {
+        "residue": "H",
+        "candidateCount": 0,
+        "candidateFraction": 0.0,
+        "structureEligibleFraction": 0.01961,
+        "backgroundFraction": 0.0141,
+        "log2Enrichment": 0.506
+      },
+      {
+        "residue": "I",
+        "candidateCount": 0,
+        "candidateFraction": 0.0,
+        "structureEligibleFraction": 0.02413,
+        "backgroundFraction": 0.05669,
+        "log2Enrichment": -1.2093
+      },
+      {
+        "residue": "K",
+        "candidateCount": 1,
+        "candidateFraction": 0.04545,
+        "structureEligibleFraction": 0.10558,
+        "backgroundFraction": 0.1608,
+        "log2Enrichment": -0.6176
+      },
+      {
+        "residue": "L",
+        "candidateCount": 3,
+        "candidateFraction": 0.13636,
+        "structureEligibleFraction": 0.13122,
+        "backgroundFraction": 0.14426,
+        "log2Enrichment": -0.1493
+      },
+      {
+        "residue": "M",
+        "candidateCount": 0,
+        "candidateFraction": 0.0,
+        "structureEligibleFraction": 0.03771,
+        "backgroundFraction": 0.02998,
+        "log2Enrichment": 0.3371
+      },
+      {
+        "residue": "N",
+        "candidateCount": 0,
+        "candidateFraction": 0.0,
+        "structureEligibleFraction": 0.04223,
+        "backgroundFraction": 0.01692,
+        "log2Enrichment": 1.3216
+      },
+      {
+        "residue": "P",
+        "candidateCount": 0,
+        "candidateFraction": 0.0,
+        "structureEligibleFraction": 0.01961,
+        "backgroundFraction": 0.02248,
+        "log2Enrichment": -0.166
+      },
+      {
+        "residue": "Q",
+        "candidateCount": 0,
+        "candidateFraction": 0.0,
+        "structureEligibleFraction": 0.02262,
+        "backgroundFraction": 0.01069,
+        "log2Enrichment": 1.104
+      },
+      {
+        "residue": "R",
+        "candidateCount": 1,
+        "candidateFraction": 0.04545,
+        "structureEligibleFraction": 0.08899,
+        "backgroundFraction": 0.09187,
+        "log2Enrichment": -0.0548
+      },
+      {
+        "residue": "S",
+        "candidateCount": 0,
+        "candidateFraction": 0.0,
+        "structureEligibleFraction": 0.03167,
+        "backgroundFraction": 0.02894,
+        "log2Enrichment": 0.1418
+      },
+      {
+        "residue": "T",
+        "candidateCount": 0,
+        "candidateFraction": 0.0,
+        "structureEligibleFraction": 0.01659,
+        "backgroundFraction": 0.01744,
+        "log2Enrichment": -0.0313
+      },
+      {
+        "residue": "V",
+        "candidateCount": 0,
+        "candidateFraction": 0.0,
+        "structureEligibleFraction": 0.03771,
+        "backgroundFraction": 0.04764,
+        "log2Enrichment": -0.3304
+      },
+      {
+        "residue": "W",
+        "candidateCount": 11,
+        "candidateFraction": 0.5,
+        "structureEligibleFraction": 0.08597,
+        "backgroundFraction": 0.08415,
+        "log2Enrichment": 0.0224
+      },
+      {
+        "residue": "Y",
+        "candidateCount": 0,
+        "candidateFraction": 0.0,
+        "structureEligibleFraction": 0.01659,
+        "backgroundFraction": 0.01618,
+        "log2Enrichment": 0.0768
+      }
+    ]
+  },
+  "targets": [
+    {
+      "order": 1,
+      "name": "DNA gyrase subunit A",
+      "organism": "Escherichia coli K-12 MG1655",
+      "accession": "NP_416734.1",
+      "sequence": "MSDLAREITPVNIEEELKSSYLDYAMSVIVGRALPDVRDGLKPVHRRVLYAMNVLGNDWNKAYKKSARVVGDVIGKYHPHGDSAVYDTIVRMAQPFSLRYMLVDGQGNFGSIDGDSAAAMRYTEIRLAKIAHELMADLEKETVDFVDNYDGTEKIPDVMPTKIPNLLVNGSSGIAVGMATNIPPHNLTEVINGCLAYIDDEDISIEGLMEHIPGPDFPTAAIINGRRGIEEAYRTGRGKVYIRARAEVEVDAKTGRETIIVHEIPYQVNKARLIEKIAELVKEKRVEGISALRDESDKDGMRIVIEVKRDAVGEVVLNNLYSQTQLQVSFGINMVALHHGQPKIMNLKDIIAAFVRHRREVVTRRTIFELRKARDRAHILEALAVALANIDPIIELIRHAPTPAEAKTALVANPWQLGNVAAMLERAGDDAARPEWLEPEFGVRDGLYYLTEQQAQAILDLRLQKLTGLEHEKLLDEYKELLDQIAELLRILGSADRLMEVIREELELVREQFGDKRRTEITANSADINLEDLITQEDVVVTLSHQGYVKYQPLSEYEAQRRGGKGKSAARIKEEDFIDRLLVANTHDHILCFSSRGRVYSMKVYQLPEATRGARGRPIVNLLPLEQDERITAILPVTEFEEGVKVFMATANGTVKKTVLTEFNRLRTAGKVAIKLVDGDELIGVDLTSGEDEVMLFSAEGKVVRFKESSVRAMGCNTTGVRGIRLGEGDKVVSLIVPRGDGAILTATQNGYGKRTAVAEYPTKSRATKGVISIKVTERNGLVVGAVQVDDCDQIMMITDAGTLVRTRVSEISIVGRNTQGVILIRTAEDENVVGLQRVAEPVDEEDLDTIDGSAAEGDDEIAPEVDVDDEPEEE",
+      "sequenceLength": 875,
+      "status": "frozen",
+      "pockets": [
+        {
+          "name": "LEI-800 GyrA allosteric pocket",
+          "type": "allosteric_surface_pocket",
+          "functionalRole": "A horseshoe-like hydrophobic pocket on the DNA-binding surface, distinct from fluoroquinolones.",
+          "evidenceGrade": "A",
+          "evidenceScore": 0.94,
+          "conditioningPriority": "primary",
+          "conditioningEnabled": true,
+          "residueIndices": [
+            40,
+            41,
+            42,
+            45,
+            88,
+            91,
+            92,
+            96,
+            97,
+            98,
+            102,
+            111,
+            112,
+            165,
+            169,
+            170,
+            171,
+            172,
+            266,
+            267,
+            268,
+            269
+          ],
+          "limitations": [
+            "The ligand also contacts DNA; monomer-only peptide prediction changes the pocket geometry.",
+            "Evidence is for a small hydrophobic molecule, not a peptide."
+          ],
+          "evidence": [
+            {
+              "sourceType": "UniProtKB_Swiss-Prot",
+              "sourceAccession": "P0AES4",
+              "confidence": 0.96,
+              "method": null,
+              "resolutionAngstrom": null
+            },
+            {
+              "sourceType": "RCSB_PDB",
+              "sourceAccession": "8QQI",
+              "confidence": 0.94,
+              "method": "ELECTRON MICROSCOPY",
+              "resolutionAngstrom": 2.9
+            }
+          ]
+        },
+        {
+          "name": "GyrA fluoroquinolone cleavage-complex site",
+          "type": "composite_protein_dna_site",
+          "functionalRole": "Stabilizes the cleaved GyrA-DNA intermediate and blocks religation.",
+          "evidenceGrade": "A",
+          "evidenceScore": 0.95,
+          "conditioningPriority": "secondary",
+          "conditioningEnabled": false,
+          "residueIndices": [
+            83,
+            87,
+            121,
+            122
+          ],
+          "limitations": [
+            "This is not a pocket on an isolated GyrA monomer.",
+            "Peptide conditioning requires explicit DNA and both GyrA chains; current MVP input does not encode that complex."
+          ],
+          "evidence": [
+            {
+              "sourceType": "RCSB_PDB",
+              "sourceAccession": "9GGQ",
+              "confidence": 0.95,
+              "method": "ELECTRON MICROSCOPY",
+              "resolutionAngstrom": 2.6
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "order": 2,
+      "name": "PBP2a family beta-lactam-resistant peptidoglycan transpeptidase, partial",
+      "organism": "Staphylococcus epidermidis",
+      "accession": "WP_308061015.1",
+      "sequence": "AIEDKNFKQVYKDSSYISKSDNGEVEMTERPIKIYNSLGVKDINIQDRKIKKVSKNKKRVDAQYKIKTNYGNIDRNVQFNFVKEDGMWKLDWDHSVIIPGMQKDQSIHIENLKSERGKILDRNNVELANTGTAYEIGIVPKNVSKKDYKAIAKELSISEDYIKQQMDQNWVQDDTFVPLKTVKKMDEYLSDFAKKFHLTTNETESRNYPLGKATSHLLGYVGPINSEELKQKEYKGYKDDAVIGKKGLEKLYDKKLQHEDGYRVTIVDDNSNTIAHTLIEKKKKDGKDIQLTIDAKVQKSIYNNMKNDYGSGTAIHPQTGELLALVSTPSYDVYPFMYGMSNEEYNKLTEDKKEPLLNKFQITTSPGSTQKILTAMIGLNNKTLDDKTSYKIDGKGWQKDKSWGGYNVTRYEVVNGNIDLKQAIESSDNIFFARVALELGSKKFEKGMKKLGVGEDIPSDYPFYNAQISNKNLDNEILLADSGYGQGEILINPVQILSIYSALENNGNINAPHLLKDTKNKVWKKNIISKENINLLTDGMQQVVNKTHKEDIYRSYANLIGKSGTAELKMKQGETGRQIGWFISYDKDNPNMMMAINVKDVQDKGMASYNAKISGKVYDELYENGNKKYDIDE",
+      "sequenceLength": 633,
+      "status": "frozen",
+      "pockets": [
+        {
+          "name": "PBP2a transpeptidase active site",
+          "type": "enzyme_active_site",
+          "functionalRole": "Catalytic Ser403 performs DD-transpeptidation and is acylated by beta-lactams.",
+          "evidenceGrade": "B",
+          "evidenceScore": 0.9,
+          "conditioningPriority": "secondary",
+          "conditioningEnabled": true,
+          "residueIndices": [
+            365,
+            367,
+            368,
+            371,
+            411,
+            412,
+            426,
+            427,
+            429,
+            484,
+            485,
+            486,
+            547,
+            548,
+            562,
+            563,
+            564,
+            565,
+            566,
+            567,
+            578,
+            606,
+            607
+          ],
+          "limitations": [
+            "The active site is normally closed/narrow and beta-lactam inhibition is covalent.",
+            "Rosetta scores cannot model the beta-lactam acylation mechanism as peptide affinity."
+          ],
+          "evidence": [
+            {
+              "sourceType": "RCSB_PDB",
+              "sourceAccession": "3ZFZ",
+              "confidence": 0.9,
+              "method": "X-RAY DIFFRACTION",
+              "resolutionAngstrom": 2.25
+            }
+          ]
+        },
+        {
+          "name": "PBP2a ceftaroline/muramate allosteric domain",
+          "type": "allosteric_surface_site",
+          "functionalRole": "Binding propagates a long-range conformational change that opens the transpeptidase active site.",
+          "evidenceGrade": "B",
+          "evidenceScore": 0.88,
+          "conditioningPriority": "primary",
+          "conditioningEnabled": true,
+          "residueIndices": [
+            69,
+            70,
+            109,
+            110,
+            111,
+            112,
+            113,
+            114,
+            115,
+            116,
+            130,
+            131,
+            204,
+            205,
+            206,
+            221,
+            222,
+            223,
+            238,
+            240,
+            242,
+            258,
+            259,
+            262,
+            263,
+            271,
+            272,
+            273,
+            274,
+            337,
+            338
+          ],
+          "limitations": [
+            "Structure is S. aureus PBP2a, transferred to the sequence-identical S. epidermidis partial protein.",
+            "The allosteric region is broad and conformational; use an ensemble, not a single residue centroid."
+          ],
+          "evidence": [
+            {
+              "sourceType": "RCSB_PDB",
+              "sourceAccession": "3ZFZ",
+              "confidence": 0.88,
+              "method": "X-RAY DIFFRACTION",
+              "resolutionAngstrom": 2.25
+            },
+            {
+              "sourceType": "peer_reviewed_article",
+              "sourceAccession": "PMCID:PMC3800995",
+              "confidence": 0.86,
+              "method": null,
+              "resolutionAngstrom": null
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "structure": {
+    "boltzRuns": [
+      {
+        "seed": 20270380,
+        "target": "DNA gyrase subunit A",
+        "lane": "native",
+        "confidenceScore": 0.45441505312919617,
+        "complexPlddt": 0.4649654030799866,
+        "iptm": 0.41221359372138977,
+        "pairIptm": 0.18911269307136536,
+        "ptm": 0.29757723212242126,
+        "residuePlddt": [
+          {
+            "position": 1,
+            "residue": "L",
+            "value": 43.06
+          },
+          {
+            "position": 2,
+            "residue": "R",
+            "value": 50.84
+          },
+          {
+            "position": 3,
+            "residue": "W",
+            "value": 52.2
+          },
+          {
+            "position": 4,
+            "residue": "W",
+            "value": 54.77
+          },
+          {
+            "position": 5,
+            "residue": "K",
+            "value": 60.56
+          },
+          {
+            "position": 6,
+            "residue": "L",
+            "value": 60.46
+          },
+          {
+            "position": 7,
+            "residue": "L",
+            "value": 62.39
+          },
+          {
+            "position": 8,
+            "residue": "A",
+            "value": 63.07
+          },
+          {
+            "position": 9,
+            "residue": "E",
+            "value": 63.09
+          },
+          {
+            "position": 10,
+            "residue": "A",
+            "value": 61.78
+          },
+          {
+            "position": 11,
+            "residue": "A",
+            "value": 63.17
+          },
+          {
+            "position": 12,
+            "residue": "A",
+            "value": 66.97
+          },
+          {
+            "position": 13,
+            "residue": "W",
+            "value": 62.83
+          },
+          {
+            "position": 14,
+            "residue": "W",
+            "value": 63.31
+          },
+          {
+            "position": 15,
+            "residue": "W",
+            "value": 62.15
+          },
+          {
+            "position": 16,
+            "residue": "E",
+            "value": 66.79
+          },
+          {
+            "position": 17,
+            "residue": "W",
+            "value": 63.33
+          },
+          {
+            "position": 18,
+            "residue": "W",
+            "value": 62.91
+          },
+          {
+            "position": 19,
+            "residue": "W",
+            "value": 64.95
+          },
+          {
+            "position": 20,
+            "residue": "W",
+            "value": 62.99
+          },
+          {
+            "position": 21,
+            "residue": "W",
+            "value": 57.28
+          },
+          {
+            "position": 22,
+            "residue": "W",
+            "value": 51.83
+          }
+        ],
+        "artifact": {
+          "candidate_id": "90cf4c9a-955b-4674-804f-f124384c9f56",
+          "sequence": "LRWWKLLAEAAAWWWEWWWWWW",
+          "target_id": "be410449-e780-4f2d-99e3-3929ed69a2ca",
+          "target_name": "DNA gyrase subunit A",
+          "lane": "native",
+          "seed": 20270380,
+          "artifact_sha256": "3778cfe3b8b0bee228de012fa67c2f479a59f219f83a06f45b91e0e3a40301a8",
+          "media_type": "chemical/x-cif",
+          "artifact_url": "/v1/observer/artifacts/3778cfe3b8b0bee228de012fa67c2f479a59f219f83a06f45b91e0e3a40301a8"
+        }
+      },
+      {
+        "seed": 20270381,
+        "target": "DNA gyrase subunit A",
+        "lane": "native",
+        "confidenceScore": 0.4171102046966553,
+        "complexPlddt": 0.43392717838287354,
+        "iptm": 0.3498423397541046,
+        "pairIptm": 0.16117329895496368,
+        "ptm": 0.2956562042236328,
+        "residuePlddt": [
+          {
+            "position": 1,
+            "residue": "L",
+            "value": 32.34
+          },
+          {
+            "position": 2,
+            "residue": "R",
+            "value": 39.37
+          },
+          {
+            "position": 3,
+            "residue": "W",
+            "value": 39.94
+          },
+          {
+            "position": 4,
+            "residue": "W",
+            "value": 42.26
+          },
+          {
+            "position": 5,
+            "residue": "K",
+            "value": 43.48
+          },
+          {
+            "position": 6,
+            "residue": "L",
+            "value": 45.85
+          },
+          {
+            "position": 7,
+            "residue": "L",
+            "value": 43.71
+          },
+          {
+            "position": 8,
+            "residue": "A",
+            "value": 42.77
+          },
+          {
+            "position": 9,
+            "residue": "E",
+            "value": 43.35
+          },
+          {
+            "position": 10,
+            "residue": "A",
+            "value": 42.77
+          },
+          {
+            "position": 11,
+            "residue": "A",
+            "value": 44.8
+          },
+          {
+            "position": 12,
+            "residue": "A",
+            "value": 45.71
+          },
+          {
+            "position": 13,
+            "residue": "W",
+            "value": 44.52
+          },
+          {
+            "position": 14,
+            "residue": "W",
+            "value": 45.13
+          },
+          {
+            "position": 15,
+            "residue": "W",
+            "value": 46.19
+          },
+          {
+            "position": 16,
+            "residue": "E",
+            "value": 44.9
+          },
+          {
+            "position": 17,
+            "residue": "W",
+            "value": 46.58
+          },
+          {
+            "position": 18,
+            "residue": "W",
+            "value": 47.71
+          },
+          {
+            "position": 19,
+            "residue": "W",
+            "value": 46.24
+          },
+          {
+            "position": 20,
+            "residue": "W",
+            "value": 43.92
+          },
+          {
+            "position": 21,
+            "residue": "W",
+            "value": 44.97
+          },
+          {
+            "position": 22,
+            "residue": "W",
+            "value": 41.89
+          }
+        ],
+        "artifact": {
+          "candidate_id": "90cf4c9a-955b-4674-804f-f124384c9f56",
+          "sequence": "LRWWKLLAEAAAWWWEWWWWWW",
+          "target_id": "be410449-e780-4f2d-99e3-3929ed69a2ca",
+          "target_name": "DNA gyrase subunit A",
+          "lane": "native",
+          "seed": 20270381,
+          "artifact_sha256": "20b72ba630a8e6d86209fbdab2a09de6b2c744bcb956cd1673d7b5182dd239f1",
+          "media_type": "chemical/x-cif",
+          "artifact_url": "/v1/observer/artifacts/20b72ba630a8e6d86209fbdab2a09de6b2c744bcb956cd1673d7b5182dd239f1"
+        }
+      }
+    ],
+    "rosettaRuns": [
+      {
+        "seed": 20270380,
+        "target": "DNA gyrase subunit A",
+        "lane": "native",
+        "decoyCount": 16,
+        "scores": [
+          {
+            "dG_separated": -51.1759974456632,
+            "dSASA_int": 1991.7980787659624,
+            "interface_hbonds": 1.0,
+            "packstat": 0.29880359047597477,
+            "peptide_score": -29.255069868809407,
+            "total_score": 469.81133474186663
+          },
+          {
+            "dG_separated": -60.81645443028083,
+            "dSASA_int": 2339.8319741557652,
+            "interface_hbonds": 1.0,
+            "packstat": 0.3183672673443155,
+            "peptide_score": -18.370122257428555,
+            "total_score": 539.9841738204275
+          },
+          {
+            "dG_separated": -60.19569657811297,
+            "dSASA_int": 2225.797280462928,
+            "interface_hbonds": 2.0,
+            "packstat": 0.4067357327117829,
+            "peptide_score": -41.14074419738855,
+            "total_score": 494.5950866391832
+          },
+          {
+            "dG_separated": -56.56664599303457,
+            "dSASA_int": 2329.6461007718062,
+            "interface_hbonds": 2.0,
+            "packstat": 0.31295746283435627,
+            "peptide_score": -28.674804454892655,
+            "total_score": 483.21029296175203
+          },
+          {
+            "dG_separated": -58.33789384730562,
+            "dSASA_int": 2367.3689258216536,
+            "interface_hbonds": 3.0,
+            "packstat": 0.3530007966175736,
+            "peptide_score": -10.683625691226286,
+            "total_score": 513.714881760399
+          },
+          {
+            "dG_separated": -53.67213870025694,
+            "dSASA_int": 2152.756926783048,
+            "interface_hbonds": 0.0,
+            "packstat": 0.31257112546104915,
+            "peptide_score": -25.183875434811014,
+            "total_score": 535.2066834503303
+          },
+          {
+            "dG_separated": -46.50948606129464,
+            "dSASA_int": 2001.9397448992233,
+            "interface_hbonds": 4.0,
+            "packstat": 0.4002377342342688,
+            "peptide_score": -17.351909125806316,
+            "total_score": 551.4658023551681
+          },
+          {
+            "dG_separated": -57.63726345163326,
+            "dSASA_int": 2241.9115641377607,
+            "interface_hbonds": 1.0,
+            "packstat": 0.34931509572426594,
+            "peptide_score": -28.443169497421835,
+            "total_score": 479.2877943374925
+          },
+          {
+            "dG_separated": -53.42435530311167,
+            "dSASA_int": 2073.6966144752637,
+            "interface_hbonds": 1.0,
+            "packstat": 0.3114260317896951,
+            "peptide_score": -44.29510965665627,
+            "total_score": 476.7366042452741
+          },
+          {
+            "dG_separated": -50.66073508095292,
+            "dSASA_int": 2061.580422452635,
+            "interface_hbonds": 2.0,
+            "packstat": 0.4111206921085885,
+            "peptide_score": -28.859542394069848,
+            "total_score": 541.1105457010199
+          },
+          {
+            "dG_separated": -58.46627606384783,
+            "dSASA_int": 2351.735298065802,
+            "interface_hbonds": 2.0,
+            "packstat": 0.37179835241103426,
+            "peptide_score": -1.547399669347306,
+            "total_score": 507.79882448282365
+          },
+          {
+            "dG_separated": -57.23051216198269,
+            "dSASA_int": 2446.806725697078,
+            "interface_hbonds": 1.0,
+            "packstat": 0.42120677403859563,
+            "peptide_score": -2.034585608460769,
+            "total_score": 536.2191344576131
+          },
+          {
+            "dG_separated": -64.22448562620673,
+            "dSASA_int": 2581.3837430033973,
+            "interface_hbonds": 2.0,
+            "packstat": 0.39702784120687734,
+            "peptide_score": -27.515547278476596,
+            "total_score": 480.7228939734783
+          },
+          {
+            "dG_separated": -35.92682339090993,
+            "dSASA_int": 2019.5287542218016,
+            "interface_hbonds": 2.0,
+            "packstat": 0.3248434622430386,
+            "peptide_score": -19.473911983301797,
+            "total_score": 522.6121152035631
+          },
+          {
+            "dG_separated": -56.2725487844051,
+            "dSASA_int": 2410.626647593691,
+            "interface_hbonds": 4.0,
+            "packstat": 0.4178397098236374,
+            "peptide_score": -9.78705705682589,
+            "total_score": 611.8121956220017
+          },
+          {
+            "dG_separated": -25.011836562657095,
+            "dSASA_int": 2328.2643042104537,
+            "interface_hbonds": 0.0,
+            "packstat": 0.4091632580939329,
+            "peptide_score": 30.745442312416962,
+            "total_score": 805.6449282845903
+          }
+        ],
+        "artifact": {
+          "candidate_id": "90cf4c9a-955b-4674-804f-f124384c9f56",
+          "sequence": "LRWWKLLAEAAAWWWEWWWWWW",
+          "target_id": "be410449-e780-4f2d-99e3-3929ed69a2ca",
+          "target_name": "DNA gyrase subunit A",
+          "lane": "native",
+          "seed": 20270380,
+          "artifact_sha256": "46b0ecbba5ecda240cad069392b6f85589d4435e10dbe1579b8438fea725337d",
+          "media_type": "chemical/x-pdb",
+          "artifact_url": "/v1/observer/artifacts/46b0ecbba5ecda240cad069392b6f85589d4435e10dbe1579b8438fea725337d"
+        }
+      },
+      {
+        "seed": 20270381,
+        "target": "DNA gyrase subunit A",
+        "lane": "native",
+        "decoyCount": 16,
+        "scores": [
+          {
+            "dG_separated": -68.06910978045937,
+            "dSASA_int": 4033.706623723708,
+            "interface_hbonds": 5.0,
+            "packstat": 0.5594741547141441,
+            "peptide_score": 42.23037965160004,
+            "total_score": 804.1818289000367
+          },
+          {
+            "dG_separated": -25.94229055247331,
+            "dSASA_int": 3977.6521168479735,
+            "interface_hbonds": 3.0,
+            "packstat": 0.47425065497714247,
+            "peptide_score": 109.81598487256694,
+            "total_score": 989.5624974607617
+          },
+          {
+            "dG_separated": -87.84591053980557,
+            "dSASA_int": 4273.192155447545,
+            "interface_hbonds": 8.0,
+            "packstat": 0.5003799077767708,
+            "peptide_score": 37.42572782815711,
+            "total_score": 878.6968907690281
+          },
+          {
+            "dG_separated": -74.5174394545877,
+            "dSASA_int": 4201.369343453855,
+            "interface_hbonds": 1.0,
+            "packstat": 0.4945417676731542,
+            "peptide_score": 43.85406933590813,
+            "total_score": 851.4805907547367
+          },
+          {
+            "dG_separated": -87.1230198539763,
+            "dSASA_int": 4216.4873078644405,
+            "interface_hbonds": 7.0,
+            "packstat": 0.44985815266173235,
+            "peptide_score": 20.930721686397114,
+            "total_score": 766.9475721619527
+          },
+          {
+            "dG_separated": -102.27148370068267,
+            "dSASA_int": 4389.449366923908,
+            "interface_hbonds": 4.0,
+            "packstat": 0.5088463281086039,
+            "peptide_score": -3.678293157565462,
+            "total_score": 650.5722446173457
+          },
+          {
+            "dG_separated": 164.6574889074243,
+            "dSASA_int": 4401.021923791127,
+            "interface_hbonds": 5.0,
+            "packstat": 0.507103852107216,
+            "peptide_score": 184.67399038265705,
+            "total_score": 1747.4347288442261
+          },
+          {
+            "dG_separated": -66.62089485852857,
+            "dSASA_int": 4124.512156382354,
+            "interface_hbonds": 7.0,
+            "packstat": 0.4950339032310501,
+            "peptide_score": 32.606266924133884,
+            "total_score": 770.5391624663699
+          },
+          {
+            "dG_separated": -56.11125727106378,
+            "dSASA_int": 3978.084066445295,
+            "interface_hbonds": 5.0,
+            "packstat": 0.5199303663062593,
+            "peptide_score": 74.58797494932637,
+            "total_score": 841.7390039276693
+          },
+          {
+            "dG_separated": -75.38015502651069,
+            "dSASA_int": 4198.100365035927,
+            "interface_hbonds": 6.0,
+            "packstat": 0.4940662578249953,
+            "peptide_score": 30.491390579742784,
+            "total_score": 838.7800992251425
+          },
+          {
+            "dG_separated": -84.24820684646988,
+            "dSASA_int": 4448.983594906987,
+            "interface_hbonds": 3.0,
+            "packstat": 0.5386712949204705,
+            "peptide_score": 3.2526874214437105,
+            "total_score": 719.3514630257699
+          },
+          {
+            "dG_separated": -54.777451495963305,
+            "dSASA_int": 4016.8014964582117,
+            "interface_hbonds": 2.0,
+            "packstat": 0.5154413423817115,
+            "peptide_score": 93.75304623262929,
+            "total_score": 833.2267867250087
+          },
+          {
+            "dG_separated": 16.689442991014175,
+            "dSASA_int": 3882.9525374316004,
+            "interface_hbonds": 5.0,
+            "packstat": 0.5024217597070871,
+            "peptide_score": 93.91654731827963,
+            "total_score": 890.3639266583516
+          },
+          {
+            "dG_separated": -58.41295765439429,
+            "dSASA_int": 4355.490177630081,
+            "interface_hbonds": 7.0,
+            "packstat": 0.4492768854287131,
+            "peptide_score": 53.462398929315064,
+            "total_score": 776.782291235711
+          },
+          {
+            "dG_separated": -38.573843516498755,
+            "dSASA_int": 4304.9743296307015,
+            "interface_hbonds": 6.0,
+            "packstat": 0.5079724849032298,
+            "peptide_score": 69.95537899773836,
+            "total_score": 1029.6506222593068
+          },
+          {
+            "dG_separated": -60.284590757470596,
+            "dSASA_int": 4157.554512584583,
+            "interface_hbonds": 8.0,
+            "packstat": 0.4623447835694931,
+            "peptide_score": 50.468823763319236,
+            "total_score": 884.1112967467377
+          }
+        ],
+        "artifact": {
+          "candidate_id": "90cf4c9a-955b-4674-804f-f124384c9f56",
+          "sequence": "LRWWKLLAEAAAWWWEWWWWWW",
+          "target_id": "be410449-e780-4f2d-99e3-3929ed69a2ca",
+          "target_name": "DNA gyrase subunit A",
+          "lane": "native",
+          "seed": 20270381,
+          "artifact_sha256": "02ef2e76ccc00fb8797da580f206336324c32791d9ec4b07db17cd1db45b9299",
+          "media_type": "chemical/x-pdb",
+          "artifact_url": "/v1/observer/artifacts/02ef2e76ccc00fb8797da580f206336324c32791d9ec4b07db17cd1db45b9299"
+        }
+      }
+    ],
+    "contactMap": {
+      "distanceThresholdAngstrom": 5.0,
+      "source": "boltz_native_pose_heavy_atom_minimum_distance",
+      "peptideResidues": [
+        {
+          "position": 1,
+          "residue": "L"
+        },
+        {
+          "position": 2,
+          "residue": "R"
+        },
+        {
+          "position": 3,
+          "residue": "W"
+        },
+        {
+          "position": 4,
+          "residue": "W"
+        },
+        {
+          "position": 5,
+          "residue": "K"
+        },
+        {
+          "position": 6,
+          "residue": "L"
+        },
+        {
+          "position": 7,
+          "residue": "L"
+        },
+        {
+          "position": 8,
+          "residue": "A"
+        },
+        {
+          "position": 9,
+          "residue": "E"
+        },
+        {
+          "position": 10,
+          "residue": "A"
+        },
+        {
+          "position": 11,
+          "residue": "A"
+        },
+        {
+          "position": 12,
+          "residue": "A"
+        },
+        {
+          "position": 13,
+          "residue": "W"
+        },
+        {
+          "position": 14,
+          "residue": "W"
+        },
+        {
+          "position": 15,
+          "residue": "W"
+        },
+        {
+          "position": 16,
+          "residue": "E"
+        },
+        {
+          "position": 17,
+          "residue": "W"
+        },
+        {
+          "position": 18,
+          "residue": "W"
+        },
+        {
+          "position": 19,
+          "residue": "W"
+        },
+        {
+          "position": 20,
+          "residue": "W"
+        },
+        {
+          "position": 21,
+          "residue": "W"
+        },
+        {
+          "position": 22,
+          "residue": "W"
+        }
+      ],
+      "targetResidues": [
+        {
+          "position": 91,
+          "residue": "ARG",
+          "closestDistance": 3.69
+        },
+        {
+          "position": 92,
+          "residue": "MET",
+          "closestDistance": 3.1
+        },
+        {
+          "position": 96,
+          "residue": "PHE",
+          "closestDistance": 2.83
+        },
+        {
+          "position": 98,
+          "residue": "LEU",
+          "closestDistance": 3.48
+        },
+        {
+          "position": 100,
+          "residue": "TYR",
+          "closestDistance": 3.13
+        },
+        {
+          "position": 101,
+          "residue": "MET",
+          "closestDistance": 4.59
+        },
+        {
+          "position": 102,
+          "residue": "LEU",
+          "closestDistance": 2.55
+        },
+        {
+          "position": 103,
+          "residue": "VAL",
+          "closestDistance": 4.18
+        },
+        {
+          "position": 104,
+          "residue": "ASP",
+          "closestDistance": 2.54
+        },
+        {
+          "position": 105,
+          "residue": "GLY",
+          "closestDistance": 3.91
+        },
+        {
+          "position": 106,
+          "residue": "GLN",
+          "closestDistance": 2.7
+        },
+        {
+          "position": 108,
+          "residue": "ASN",
+          "closestDistance": 4.16
+        },
+        {
+          "position": 110,
+          "residue": "GLY",
+          "closestDistance": 3.68
+        },
+        {
+          "position": 111,
+          "residue": "SER",
+          "closestDistance": 2.45
+        },
+        {
+          "position": 112,
+          "residue": "ILE",
+          "closestDistance": 2.93
+        },
+        {
+          "position": 113,
+          "residue": "ASP",
+          "closestDistance": 4.87
+        },
+        {
+          "position": 114,
+          "residue": "GLY",
+          "closestDistance": 4.69
+        },
+        {
+          "position": 124,
+          "residue": "GLU",
+          "closestDistance": 4.76
+        },
+        {
+          "position": 155,
+          "residue": "ILE",
+          "closestDistance": 2.59
+        },
+        {
+          "position": 156,
+          "residue": "PRO",
+          "closestDistance": 4.87
+        },
+        {
+          "position": 157,
+          "residue": "ASP",
+          "closestDistance": 2.44
+        },
+        {
+          "position": 158,
+          "residue": "VAL",
+          "closestDistance": 4.09
+        },
+        {
+          "position": 159,
+          "residue": "MET",
+          "closestDistance": 2.82
+        },
+        {
+          "position": 160,
+          "residue": "PRO",
+          "closestDistance": 3.14
+        },
+        {
+          "position": 164,
+          "residue": "PRO",
+          "closestDistance": 4.12
+        },
+        {
+          "position": 165,
+          "residue": "ASN",
+          "closestDistance": 2.54
+        },
+        {
+          "position": 168,
+          "residue": "VAL",
+          "closestDistance": 3.35
+        },
+        {
+          "position": 169,
+          "residue": "ASN",
+          "closestDistance": 3.62
+        },
+        {
+          "position": 178,
+          "residue": "MET",
+          "closestDistance": 2.8
+        },
+        {
+          "position": 266,
+          "residue": "TYR",
+          "closestDistance": 2.64
+        },
+        {
+          "position": 267,
+          "residue": "GLN",
+          "closestDistance": 2.91
+        },
+        {
+          "position": 268,
+          "residue": "VAL",
+          "closestDistance": 4.52
+        }
+      ],
+      "distances": [
+        [
+          17.41,
+          14.49,
+          8.96,
+          4.63,
+          7.15,
+          8.8,
+          8.59,
+          12.02,
+          13.76,
+          16.82,
+          20.04,
+          22.79,
+          23.83,
+          24.94,
+          24.17,
+          28.06,
+          29.39,
+          17.14,
+          6.65,
+          7.23,
+          2.44,
+          6.59,
+          7.58,
+          9.25,
+          14.59,
+          11.9,
+          12.36,
+          13.29,
+          8.58,
+          29.39,
+          25.93,
+          30.86
+        ],
+        [
+          20.39,
+          16.96,
+          12.27,
+          7.97,
+          8.09,
+          10.21,
+          7.11,
+          11.99,
+          13.45,
+          16.1,
+          19.19,
+          22.98,
+          25.13,
+          26.72,
+          26.68,
+          30.22,
+          31.15,
+          14.74,
+          8.02,
+          8.33,
+          2.52,
+          4.7,
+          6.11,
+          5.31,
+          8.16,
+          9.41,
+          8.47,
+          10.94,
+          9.27,
+          29.7,
+          25.5,
+          31.02
+        ],
+        [
+          18.49,
+          14.99,
+          10.45,
+          7.31,
+          3.13,
+          5.77,
+          4.11,
+          8.97,
+          11.14,
+          13.43,
+          16.4,
+          20.58,
+          22.97,
+          24.65,
+          25.71,
+          28.53,
+          28.97,
+          11.77,
+          2.59,
+          4.87,
+          2.65,
+          4.09,
+          2.82,
+          4.7,
+          8.58,
+          6.17,
+          6.43,
+          7.49,
+          2.8,
+          27.57,
+          23.0,
+          28.6
+        ],
+        [
+          20.01,
+          16.5,
+          13.31,
+          9.84,
+          9.72,
+          11.17,
+          6.82,
+          11.17,
+          10.73,
+          13.65,
+          15.73,
+          20.45,
+          23.04,
+          24.94,
+          25.01,
+          28.51,
+          29.23,
+          10.52,
+          9.07,
+          9.98,
+          5.45,
+          4.65,
+          5.14,
+          3.14,
+          4.12,
+          5.21,
+          3.84,
+          7.32,
+          9.71,
+          26.26,
+          21.93,
+          27.86
+        ],
+        [
+          17.5,
+          14.17,
+          10.55,
+          7.05,
+          8.73,
+          9.82,
+          6.92,
+          10.21,
+          10.31,
+          13.41,
+          15.93,
+          19.76,
+          21.62,
+          23.29,
+          22.78,
+          26.62,
+          27.61,
+          11.66,
+          11.15,
+          12.02,
+          6.67,
+          7.08,
+          7.78,
+          6.55,
+          9.22,
+          8.63,
+          6.48,
+          9.27,
+          10.69,
+          25.53,
+          21.68,
+          27.3
+        ],
+        [
+          14.94,
+          11.42,
+          6.93,
+          3.48,
+          3.22,
+          4.59,
+          3.88,
+          6.67,
+          7.68,
+          10.52,
+          13.61,
+          17.1,
+          19.17,
+          20.84,
+          21.06,
+          24.4,
+          25.24,
+          10.32,
+          7.29,
+          9.73,
+          6.7,
+          8.35,
+          7.02,
+          7.93,
+          10.01,
+          8.07,
+          6.11,
+          6.79,
+          5.4,
+          23.94,
+          19.82,
+          25.13
+        ],
+        [
+          15.81,
+          12.3,
+          9.92,
+          7.25,
+          7.45,
+          7.53,
+          2.76,
+          6.93,
+          5.76,
+          8.9,
+          11.31,
+          15.47,
+          18.05,
+          19.96,
+          20.41,
+          23.65,
+          24.26,
+          6.99,
+          10.23,
+          12.73,
+          8.66,
+          7.74,
+          3.79,
+          4.36,
+          5.84,
+          2.54,
+          3.37,
+          3.62,
+          7.06,
+          21.62,
+          17.27,
+          23.0
+        ],
+        [
+          15.46,
+          12.34,
+          9.29,
+          8.58,
+          9.86,
+          9.88,
+          6.47,
+          9.07,
+          6.9,
+          10.64,
+          11.6,
+          16.14,
+          17.96,
+          19.85,
+          19.19,
+          23.06,
+          23.94,
+          8.25,
+          13.42,
+          15.54,
+          10.68,
+          10.68,
+          8.8,
+          8.09,
+          7.87,
+          7.67,
+          3.35,
+          6.12,
+          11.41,
+          20.84,
+          17.19,
+          22.97
+        ],
+        [
+          12.23,
+          9.16,
+          5.84,
+          4.35,
+          7.92,
+          8.61,
+          5.6,
+          7.57,
+          6.68,
+          9.86,
+          12.16,
+          14.85,
+          15.98,
+          17.55,
+          16.79,
+          20.72,
+          21.81,
+          9.78,
+          13.45,
+          15.33,
+          10.26,
+          12.58,
+          11.07,
+          10.72,
+          10.53,
+          10.29,
+          5.77,
+          8.37,
+          11.58,
+          20.27,
+          16.96,
+          22.12
+        ],
+        [
+          11.16,
+          7.89,
+          5.67,
+          6.27,
+          7.42,
+          5.95,
+          2.55,
+          4.18,
+          3.49,
+          6.54,
+          9.02,
+          11.69,
+          13.43,
+          15.26,
+          15.49,
+          18.76,
+          19.52,
+          7.19,
+          13.64,
+          16.69,
+          12.61,
+          13.71,
+          10.28,
+          11.68,
+          11.32,
+          9.41,
+          6.48,
+          5.34,
+          9.64,
+          17.98,
+          14.19,
+          19.3
+        ],
+        [
+          12.9,
+          9.47,
+          7.44,
+          8.9,
+          10.42,
+          9.04,
+          5.34,
+          5.89,
+          3.25,
+          7.07,
+          7.49,
+          11.71,
+          13.43,
+          15.5,
+          15.13,
+          18.7,
+          19.39,
+          4.76,
+          16.13,
+          19.12,
+          14.63,
+          14.96,
+          11.78,
+          11.71,
+          9.08,
+          8.3,
+          3.62,
+          5.54,
+          12.52,
+          15.97,
+          12.42,
+          18.07
+        ],
+        [
+          11.77,
+          9.58,
+          5.86,
+          10.16,
+          12.5,
+          11.33,
+          7.61,
+          8.18,
+          5.27,
+          9.14,
+          9.54,
+          13.11,
+          13.53,
+          15.17,
+          13.52,
+          17.85,
+          18.98,
+          7.71,
+          18.38,
+          21.06,
+          16.15,
+          16.67,
+          14.11,
+          13.75,
+          11.74,
+          11.25,
+          6.75,
+          8.52,
+          15.03,
+          16.23,
+          13.79,
+          18.88
+        ],
+        [
+          8.37,
+          6.51,
+          2.83,
+          3.6,
+          7.5,
+          6.46,
+          5.51,
+          7.48,
+          6.42,
+          8.73,
+          10.18,
+          11.07,
+          10.82,
+          12.21,
+          10.94,
+          15.03,
+          16.26,
+          9.57,
+          15.01,
+          17.22,
+          13.22,
+          15.96,
+          14.16,
+          15.37,
+          14.37,
+          13.61,
+          9.25,
+          10.39,
+          11.61,
+          15.44,
+          13.17,
+          17.42
+        ],
+        [
+          8.97,
+          3.1,
+          4.06,
+          10.28,
+          12.54,
+          10.48,
+          6.65,
+          4.23,
+          2.54,
+          3.91,
+          2.7,
+          4.16,
+          6.95,
+          9.22,
+          10.26,
+          13.47,
+          12.98,
+          5.89,
+          19.64,
+          22.57,
+          18.51,
+          19.46,
+          15.76,
+          16.67,
+          14.46,
+          12.77,
+          8.54,
+          8.42,
+          15.09,
+          10.04,
+          5.91,
+          11.11
+        ],
+        [
+          11.09,
+          7.88,
+          6.17,
+          12.82,
+          15.01,
+          13.02,
+          9.09,
+          8.26,
+          5.26,
+          7.97,
+          5.46,
+          10.02,
+          10.43,
+          12.2,
+          10.45,
+          14.46,
+          15.37,
+          7.78,
+          21.71,
+          24.73,
+          20.32,
+          20.84,
+          17.52,
+          17.66,
+          14.64,
+          13.96,
+          9.16,
+          10.14,
+          17.54,
+          9.74,
+          7.68,
+          13.6
+        ],
+        [
+          9.61,
+          9.01,
+          4.95,
+          12.0,
+          15.69,
+          13.54,
+          10.98,
+          10.42,
+          7.96,
+          10.59,
+          9.4,
+          11.34,
+          9.87,
+          10.85,
+          7.83,
+          12.64,
+          14.07,
+          10.45,
+          22.99,
+          25.39,
+          20.07,
+          21.72,
+          19.72,
+          19.68,
+          17.16,
+          16.41,
+          11.58,
+          12.87,
+          19.42,
+          12.35,
+          11.86,
+          15.35
+        ],
+        [
+          3.69,
+          3.85,
+          4.4,
+          13.76,
+          16.03,
+          12.42,
+          10.48,
+          8.02,
+          7.67,
+          8.83,
+          9.06,
+          6.75,
+          3.96,
+          4.59,
+          4.9,
+          7.29,
+          8.76,
+          11.74,
+          23.56,
+          26.56,
+          22.91,
+          24.08,
+          20.8,
+          21.42,
+          19.14,
+          18.01,
+          13.35,
+          13.81,
+          18.98,
+          10.29,
+          9.54,
+          12.34
+        ],
+        [
+          9.51,
+          6.96,
+          6.99,
+          15.91,
+          18.08,
+          15.31,
+          12.12,
+          9.71,
+          7.15,
+          8.73,
+          4.51,
+          5.88,
+          6.68,
+          8.73,
+          7.39,
+          10.78,
+          11.36,
+          9.63,
+          25.33,
+          28.34,
+          24.48,
+          25.22,
+          21.34,
+          21.67,
+          18.41,
+          17.07,
+          12.52,
+          12.51,
+          20.71,
+          5.6,
+          3.23,
+          7.99
+        ],
+        [
+          11.91,
+          9.7,
+          9.06,
+          17.87,
+          20.3,
+          17.81,
+          14.37,
+          12.36,
+          9.88,
+          11.75,
+          8.38,
+          10.02,
+          8.92,
+          10.28,
+          7.6,
+          11.7,
+          12.76,
+          12.07,
+          27.39,
+          30.37,
+          26.03,
+          26.63,
+          23.26,
+          23.28,
+          20.11,
+          19.17,
+          14.37,
+          15.01,
+          22.97,
+          8.68,
+          8.86,
+          12.64
+        ],
+        [
+          7.94,
+          8.62,
+          5.6,
+          14.39,
+          17.86,
+          14.1,
+          13.38,
+          12.4,
+          12.12,
+          13.95,
+          11.06,
+          11.67,
+          8.38,
+          8.06,
+          4.56,
+          8.74,
+          10.24,
+          14.74,
+          25.78,
+          28.15,
+          23.89,
+          25.87,
+          23.57,
+          24.02,
+          22.43,
+          21.59,
+          16.85,
+          17.54,
+          21.55,
+          9.53,
+          10.82,
+          12.65
+        ],
+        [
+          8.32,
+          8.6,
+          10.17,
+          19.75,
+          21.91,
+          18.2,
+          16.1,
+          12.71,
+          11.33,
+          11.88,
+          8.28,
+          4.66,
+          3.68,
+          2.45,
+          2.93,
+          4.87,
+          4.69,
+          13.83,
+          29.11,
+          32.39,
+          28.86,
+          29.82,
+          25.9,
+          26.69,
+          23.48,
+          21.89,
+          17.66,
+          16.96,
+          24.46,
+          2.77,
+          2.91,
+          4.52
+        ],
+        [
+          12.53,
+          11.34,
+          12.32,
+          21.66,
+          23.89,
+          20.65,
+          17.92,
+          14.97,
+          12.53,
+          13.12,
+          7.42,
+          8.95,
+          7.67,
+          7.87,
+          6.26,
+          9.31,
+          9.93,
+          12.83,
+          31.09,
+          34.19,
+          30.27,
+          30.19,
+          26.31,
+          25.92,
+          21.6,
+          20.71,
+          16.49,
+          16.58,
+          26.44,
+          2.64,
+          4.58,
+          8.41
+        ]
+      ]
+    },
+    "coverage": {
+      "plannedBoltzPoses": 12,
+      "observedBoltzPoses": 2,
+      "plannedRosettaDecoys": 192,
+      "observedRosettaDecoys": 32
+    }
+  },
+  "review": {
+    "status": "not_formed",
+    "reason": "run_cancelled_before_final_portfolio",
+    "candidateDecisionAvailable": true,
+    "finalPortfolioAvailable": false
+  },
+  "transportSha256": "34df422c73a10f8a6b3b79f8b088e0424816f2e794d71245391dbb06534da9ee"
+}

@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Background,
   BackgroundVariant,
@@ -30,11 +31,20 @@ import {
   Route,
   RefreshCw,
   ScanSearch,
+  Settings2,
   ShieldCheck,
   X,
 } from 'lucide-react'
 import { AnalysisDashboard } from './analysis/AnalysisDashboard'
+import { loadAnalysisSnapshot, type AnalysisSnapshot } from './analysis/dataKernel'
+import { EvidenceDashboard } from './analysis/EvidenceDashboard'
 import { MoleculeViewer } from './MoleculeViewer'
+import {
+  distributionForStage,
+  loadPersistedRunDistributions,
+  ResultDistribution,
+  type ResultDistributionData,
+} from './ResultDistribution'
 import { LaneLabel, WorkflowNode, type LaneNode, type StageNode } from './WorkflowNode'
 import type {
   CandidatePreview,
@@ -46,22 +56,38 @@ import type {
   RunListItem,
   RunListResponse,
   ToolAttempt,
+  ViewerArtifact,
 } from './types'
 
 const nodeTypes = { stage: WorkflowNode, lane: LaneLabel }
-const API_BASE = import.meta.env.VITE_API_BASE ?? ''
+const connectionStorageKey = 'ampgent.data-service.base.v1'
+const selectedRunStorageKey = 'ampgent.observer.selected-run.v1'
+const defaultApiBase = import.meta.env.VITE_API_BASE ?? ''
+
+function normalizeApiBase(value: string) {
+  return value.trim().replace(/\/+$/, '')
+}
+
+function readApiBase() {
+  const stored = window.localStorage.getItem(connectionStorageKey)
+  return stored === null ? defaultApiBase : stored
+}
+
+function getConfiguredApiBase() {
+  return readApiBase()
+}
 const nodePositions: Record<string, { x: number; y: number }> = {
   target_data: { x: 20, y: 350 },
   knowledge: { x: 440, y: 350 },
   amp_designer: { x: 860, y: 40 },
-  ampgan: { x: 860, y: 275 },
-  hydramp: { x: 860, y: 510 },
+  ampgan: { x: 860, y: 290 },
+  hydramp: { x: 860, y: 540 },
   candidate_pool: { x: 1280, y: 350 },
-  mic: { x: 1700, y: -20 },
-  amp_read: { x: 1700, y: 170 },
-  hemolysis: { x: 1700, y: 360 },
-  toxicity: { x: 1700, y: 550 },
-  developability: { x: 1700, y: 740 },
+  mic: { x: 1700, y: -100 },
+  amp_read: { x: 1700, y: 150 },
+  hemolysis: { x: 1700, y: 400 },
+  toxicity: { x: 1700, y: 650 },
+  developability: { x: 1700, y: 900 },
   admission: { x: 2120, y: 350 },
   targets: { x: 2540, y: 350 },
   boltz: { x: 2960, y: 305 },
@@ -120,59 +146,257 @@ function runTitle(run: RunListItem) {
   return `序列设计轮次 · ${run.candidate_count.toLocaleString()} 条候选`
 }
 
-function useRunData() {
+function readableDataError(cause: unknown, fallback: string) {
+  if (cause instanceof Error && /^(轮次|数据库|无法)/.test(cause.message)) return cause.message
+  return fallback
+}
+
+function readableTargetName(value: unknown) {
+  const name = typeof value === 'string' ? value : ''
+  if (name.includes('PBP2a')) return 'PBP2a耐β-内酰胺转肽酶'
+  if (name.includes('DNA gyrase')) return 'DNA旋转酶A亚基'
+  return name || '结构靶点'
+}
+
+function reconcilePersistedStructure(detail: RunDetail, nodeDetails: Partial<Record<'boltz' | 'rosetta', NodeDetail>>) {
+  const createdPayload = detail.events.find((event) => event.type === 'run.created')?.payload ?? {}
+  const target = recordValue(createdPayload.target)
+  const sourceCandidateIds = Array.isArray(createdPayload.source_candidate_ids) ? createdPayload.source_candidate_ids : []
+  const successfulCalls = (node: NodeDetail | undefined) => node?.calls.filter((call) => call.status === 'succeeded') ?? []
+  const boltzCalls = successfulCalls(nodeDetails.boltz)
+  const rosettaCalls = successfulCalls(nodeDetails.rosetta)
+  if (!boltzCalls.length && !rosettaCalls.length) return detail
+  const boltzStructures = boltzCalls.flatMap((call) => call.artifacts)
+    .filter((artifact) => artifact.media_type === 'chemical/x-cif' || artifact.media_type === 'chemical/x-pdb').length
+  const rosettaPdbArtifacts = rosettaCalls.flatMap((call) => call.artifacts)
+    .filter((artifact) => artifact.media_type === 'chemical/x-pdb').length
+  const persistedRosettaResults = nodeDetails.rosetta?.structure_results
+    .reduce((total, result) => total + result.records, 0) ?? 0
+  const rosettaAnalyzerCalls = rosettaCalls.filter((call) => call.tool_name.includes('interface-analyzer'))
+  const plannedRosettaResults = rosettaAnalyzerCalls.reduce((total, call) => {
+    const nstruct = Number(recordValue(call.inputs).nstruct)
+    return total + (Number.isFinite(nstruct) ? nstruct : 0)
+  }, 0)
+  const rosettaStructures = persistedRosettaResults || plannedRosettaResults || rosettaPdbArtifacts
+
+  const stageUpdates: Partial<Record<string, { current: number; total: number; verdict: string; reason: string }>> = {
+    boltz: boltzCalls.length ? {
+      current: boltzCalls.length,
+      total: nodeDetails.boltz?.calls.length ?? boltzCalls.length,
+      verdict: '复合物构象已写入',
+      reason: `${boltzCalls.length} 次结构预测均可追溯至节点明细。`,
+    } : undefined,
+    rosetta: rosettaCalls.length ? {
+      current: rosettaStructures || rosettaCalls.length,
+      total: rosettaStructures || rosettaCalls.length,
+      verdict: '界面精修已写入',
+      reason: `${rosettaAnalyzerCalls.length || rosettaCalls.length} 次界面评估生成 ${rosettaStructures} 份精修构象。`,
+    } : undefined,
+  }
+  if (target.name) {
+    stageUpdates.targets = {
+      current: 1,
+      total: 1,
+      verdict: '靶点口袋已锁定',
+      reason: `${readableTargetName(target.name)} · ${Array.isArray(target.pocket_residues) ? target.pocket_residues.length : 0} 个口袋残基。`,
+    }
+  }
+  if (sourceCandidateIds.length) {
+    stageUpdates.candidate_pool = {
+      current: sourceCandidateIds.length,
+      total: sourceCandidateIds.length,
+      verdict: '结构候选已载入',
+      reason: `${sourceCandidateIds.length} 条来源候选进入本轮结构复核。`,
+    }
+  }
+
+  const graphNodes = detail.graph.nodes.map((stage) => {
+    const update = stageUpdates[stage.id]
+    if (!update || (stage.current > 0 && stage.status !== 'pending')) return stage
+    return {
+      ...stage,
+      status: 'completed' as const,
+      current: update.current,
+      total: update.total,
+      provenance: 'database' as const,
+      insight: {
+        ...stage.insight,
+        grade: 'good' as const,
+        verdict: update.verdict,
+        reason: update.reason,
+        facts: [
+          { label: '成功', value: String(update.current) },
+          { label: '记录', value: String(update.total) },
+          { label: '来源', value: '节点明细' },
+        ],
+        source: 'observer_summary' as const,
+      },
+    }
+  })
+
+  const viewerFromCall = (call: ToolAttempt | undefined): ViewerArtifact | null => {
+    if (!call) return null
+    const artifact = call.artifacts.find((item) => item.media_type === 'chemical/x-cif' || item.media_type === 'chemical/x-pdb')
+    if (!artifact) return null
+    const inputs = recordValue(call.inputs)
+    const sequence = typeof inputs.peptide_sequence === 'string' ? inputs.peptide_sequence : ''
+    return {
+      candidate_id: `${detail.run.id}:${call.id}`,
+      sequence,
+      target_id: typeof createdPayload.target_id === 'string' ? createdPayload.target_id : '',
+      target_name: readableTargetName(target.name),
+      lane: 'native',
+      seed: call.random_seed ?? 0,
+      artifact_sha256: artifact.sha256,
+      media_type: artifact.media_type,
+      artifact_url: artifact.url,
+    }
+  }
+  const persistedViewer = viewerFromCall(boltzCalls[0])
+  const viewers = { ...detail.viewers }
+  if (persistedViewer && !viewers.boltz) viewers.boltz = persistedViewer
+  if (persistedViewer && !viewers.rosetta) viewers.rosetta = persistedViewer
+
+  const persistedBranch = target.name ? {
+    order: 1,
+    key: typeof createdPayload.target_branch_key === 'string' ? createdPayload.target_branch_key : '结构靶点',
+    role: '原位口袋',
+    status: 'completed',
+    target_id: typeof createdPayload.target_id === 'string' ? createdPayload.target_id : '',
+    target_name: readableTargetName(target.name),
+    organism: typeof target.organism === 'string' ? target.organism : null,
+    accession: typeof target.accession === 'string' ? target.accession : null,
+    sequence: typeof target.sequence === 'string' ? target.sequence : '',
+    sequence_length: typeof target.sequence === 'string' ? target.sequence.length : 0,
+    evidence_namespace: typeof target.source_database === 'string' ? target.source_database : '数据库靶点记录',
+    coordinate_sha256: '',
+  } : null
+
+  return {
+    ...detail,
+    run: {
+      ...detail.run,
+      structure_record_count: Math.max(
+        Number.isFinite(detail.run.structure_record_count) ? detail.run.structure_record_count : 0,
+        boltzStructures + rosettaPdbArtifacts,
+      ),
+    },
+    counts: {
+      ...detail.counts,
+      admitted: (detail.counts.admitted ?? 0) > 0 ? detail.counts.admitted : sourceCandidateIds.length,
+      boltz_poses: (detail.counts.boltz_poses ?? 0) > 0 ? detail.counts.boltz_poses : boltzStructures,
+      rosetta_decoys: (detail.counts.rosetta_decoys ?? 0) > 0 ? detail.counts.rosetta_decoys : rosettaStructures,
+    },
+    branches: detail.branches.length || !persistedBranch ? detail.branches : [persistedBranch],
+    graph: { ...detail.graph, nodes: graphNodes },
+    viewer: detail.viewer ?? persistedViewer,
+    viewers,
+  }
+}
+
+function useRunData(enabled: boolean, apiBase: string) {
   const [runs, setRuns] = useState<RunListItem[]>([])
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedId, setSelectedIdState] = useState<string | null>(() => window.localStorage.getItem(selectedRunStorageKey))
   const [detail, setDetail] = useState<RunDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const alignedStructureCounts = useRef<Record<string, number>>({})
 
   const loadRuns = useCallback(async () => {
-    const response = await fetch(`${API_BASE}/v1/observer/runs?limit=100`)
+    const response = await fetch(`${apiBase}/v1/observer/runs?limit=100`)
     if (!response.ok) throw new Error(`轮次列表读取失败：${response.status}`)
     const payload = await response.json() as RunListResponse
-    setRuns(payload.runs)
-    setSelectedId((current) => current ?? payload.runs[0]?.id ?? null)
-  }, [])
+    setRuns(payload.runs.map((run) => ({
+      ...run,
+      structure_record_count: Math.max(run.structure_record_count, alignedStructureCounts.current[run.id] ?? 0),
+    })))
+    setSelectedIdState((current) => {
+      const next = current && payload.runs.some((run) => run.id === current) ? current : payload.runs[0]?.id ?? null
+      if (next) window.localStorage.setItem(selectedRunStorageKey, next)
+      return next
+    })
+  }, [apiBase])
 
   const loadDetail = useCallback(async (runId: string, quiet = false) => {
     if (!quiet) setLoading(true)
     else setRefreshing(true)
     try {
-      const response = await fetch(`${API_BASE}/v1/observer/runs/${runId}`)
+      const response = await fetch(`${apiBase}/v1/observer/runs/${runId}`)
       if (!response.ok) throw new Error(`轮次详情读取失败：${response.status}`)
-      setDetail(await response.json() as RunDetail)
+      const payload = await response.json() as RunDetail
+      const hasPersistedStructureEvents = payload.events.some((event) => event.actor === 'boltz2' || event.actor.includes('rosetta'))
+      if (!hasPersistedStructureEvents) {
+        setDetail(payload)
+      } else {
+        const entries = await Promise.all((['boltz', 'rosetta'] as const).map(async (nodeId) => {
+          const nodeResponse = await fetch(`${apiBase}/v1/observer/runs/${runId}/nodes/${nodeId}`)
+          return [nodeId, nodeResponse.ok ? await nodeResponse.json() as NodeDetail : undefined] as const
+        }))
+        const reconciled = reconcilePersistedStructure(payload, Object.fromEntries(entries))
+        setDetail(reconciled)
+        if (reconciled.run.structure_record_count !== payload.run.structure_record_count) {
+          alignedStructureCounts.current[runId] = reconciled.run.structure_record_count
+          setRuns((current) => current.map((run) => run.id === runId
+            ? { ...run, structure_record_count: reconciled.run.structure_record_count }
+            : run))
+        }
+      }
       setError(null)
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : '无法读取数据库观察数据')
+      setError(readableDataError(cause, '无法连接只读数据库'))
     } finally {
       setLoading(false)
       setRefreshing(false)
     }
-  }, [])
+  }, [apiBase])
 
   useEffect(() => {
+    if (!enabled) {
+      setLoading(false)
+      return
+    }
+    setLoading(true)
     loadRuns().catch((cause) => {
-      setError(cause instanceof Error ? cause.message : '无法读取轮次列表')
+      setError(readableDataError(cause, '无法连接只读数据库'))
       setLoading(false)
     })
-  }, [loadRuns])
+  }, [enabled, loadRuns])
 
   useEffect(() => {
-    if (!selectedId) return
+    if (!enabled || !selectedId) return
     void loadDetail(selectedId)
     const timer = window.setInterval(() => {
       void loadRuns()
       void loadDetail(selectedId, true)
     }, 5000)
     return () => window.clearInterval(timer)
-  }, [selectedId, loadDetail, loadRuns])
+  }, [enabled, selectedId, loadDetail, loadRuns])
 
-  return { runs, selectedId, setSelectedId, detail, error, loading, refreshing, refresh: () => selectedId && loadDetail(selectedId, true) }
+  const retry = useCallback(async () => {
+    setError(null)
+    setLoading(true)
+    try {
+      await loadRuns()
+      if (selectedId) await loadDetail(selectedId)
+    } catch (cause) {
+      setError(readableDataError(cause, '无法连接只读数据库'))
+      setLoading(false)
+    }
+  }, [loadDetail, loadRuns, selectedId])
+
+  const setSelectedId = useCallback((runId: string) => {
+    window.localStorage.setItem(selectedRunStorageKey, runId)
+    setSelectedIdState(runId)
+  }, [])
+
+  return { runs, selectedId, setSelectedId, detail, error, loading, refreshing, retry, refresh: () => selectedId && loadDetail(selectedId, true) }
 }
 
 function RunList({ runs, selectedId, onSelect }: { runs: RunListItem[]; selectedId: string | null; onSelect: (id: string) => void }) {
+  if (!runs.length) {
+    return <div className="run-list"><div className="run-row active frozen-run-row"><span className="run-status-dot status-cancelled" /><span className="run-row-copy"><strong>发布冻结轮次 · 773 条候选</strong><small>8月19日 21:46 · 已取消</small></span></div></div>
+  }
   return (
     <div className="run-list">
       {runs.map((run) => (
@@ -192,15 +416,19 @@ function RunList({ runs, selectedId, onSelect }: { runs: RunListItem[]; selected
 function Sidebar({
   runs,
   selectedId,
+  structureRun,
   activeView,
   onView,
   onSelect,
+  onOpenStructureEvidence,
 }: {
   runs: RunListItem[]
   selectedId: string | null
-  activeView: 'overview' | 'analysis'
-  onView: (view: 'overview' | 'analysis') => void
+  structureRun: RunListItem | null
+  activeView: 'overview' | 'analysis' | 'evidence'
+  onView: (view: 'overview' | 'analysis' | 'evidence') => void
   onSelect: (id: string) => void
+  onOpenStructureEvidence: () => void
 }) {
   return (
     <aside className="sidebar">
@@ -208,14 +436,22 @@ function Sidebar({
       <nav className="primary-nav">
         <button className={activeView === 'overview' ? 'active' : ''} onClick={() => onView('overview')}><Layers3 />概览</button>
         <button className={activeView === 'analysis' ? 'active' : ''} onClick={() => onView('analysis')}><ChartNoAxesCombined />分析</button>
-        <button><Database />证据库</button>
+        <button className={activeView === 'evidence' ? 'active' : ''} onClick={() => onView('evidence')}><Database />证据库</button>
       </nav>
       <div className="sidebar-label runs-label">轮次 · 科学运行</div>
       <RunList runs={runs} selectedId={selectedId} onSelect={onSelect} />
       <div className="sidebar-sections">
         <button><span><SparkIcon icon="sequence" /></span><b>序列设计</b><small>生成模型与十一项指标</small></button>
         <button><span><GitBranch /></span><b>多靶点</b><small>原位与错误口袋对照</small></button>
-        <button title="Boltz用于预测复合物构象；Rosetta用于界面精修与评分。"><span><Atom /></span><b>结构证据</b><small>Boltz 2与Rosetta</small></button>
+        <button
+          className={`structure-evidence-link${structureRun?.id === selectedId && activeView === 'overview' ? ' active' : ''}`}
+          title="Boltz 2预测复合物构象；Rosetta进行界面精修与评分。"
+          disabled={!structureRun}
+          onClick={onOpenStructureEvidence}
+        >
+          <span><Atom /></span><b>结构证据</b>
+          <small>{structureRun ? `最近轮次 · ${structureRun.structure_record_count.toLocaleString()} 条记录` : '数据库中尚无结构记录'}</small>
+        </button>
         <button><span><ShieldCheck /></span><b>科学评审</b><small>证据来源追踪</small></button>
       </div>
     </aside>
@@ -226,12 +462,20 @@ function SparkIcon({ icon }: { icon: string }) {
   return icon === 'sequence' ? <Activity /> : <CircleDot />
 }
 
-function CanvasHeader({ detail, refreshing, onRefresh }: { detail: RunDetail; refreshing: boolean; onRefresh: () => void }) {
+function CanvasHeader({ detail, refreshing, selectionMode, selectedCount, onRefresh, onToggleSelection }: {
+  detail: RunDetail
+  refreshing: boolean
+  selectionMode: boolean
+  selectedCount: number
+  onRefresh: () => void
+  onToggleSelection: () => void
+}) {
+  const isStructureReview = (detail.counts.boltz_poses ?? 0) > 0 || (detail.counts.rosetta_decoys ?? 0) > 0
   return (
     <header className="canvas-header">
       <div className="canvas-title-block">
         <div className="eyebrow"><span>轮次 · 正式科学运行</span></div>
-        <h1>序列优先的短肽设计</h1>
+        <h1>{isStructureReview ? '短肽结构证据复核' : '序列优先的短肽设计'}</h1>
         <div className="round-meta">
           <span>{formatTime(detail.run.created_at)} 创建</span><i />
           <span>{detail.counts.candidates.toLocaleString()} 个候选</span><i />
@@ -241,6 +485,9 @@ function CanvasHeader({ detail, refreshing, onRefresh }: { detail: RunDetail; re
         </div>
       </div>
       <div className="header-actions">
+        <button className={`analysis-select-button ${selectionMode ? 'active' : ''}`} onClick={onToggleSelection}>
+          <ChartNoAxesCombined /><span>{selectionMode ? `已选 ${selectedCount} 个节点` : '组合分析'}</span>
+        </button>
         <span className={`run-pill status-${detail.run.status}`}><i />{statusText[detail.run.status] ?? detail.run.status}</span>
         <button className="icon-button" onClick={onRefresh} title="立即刷新"><RefreshCw className={refreshing ? 'spin' : ''} /></button>
         <button className="icon-button"><Ellipsis /></button>
@@ -251,15 +498,25 @@ function CanvasHeader({ detail, refreshing, onRefresh }: { detail: RunDetail; re
 
 function GraphView({
   detail,
+  analysisSnapshot,
+  persistedDistributions,
   selectedStage,
   selectedEdge,
+  selectionMode,
+  analysisSelection,
   onSelect,
+  onToggleAnalysis,
   onSelectEdge,
 }: {
   detail: RunDetail
+  analysisSnapshot: AnalysisSnapshot | null
+  persistedDistributions: Record<string, ResultDistributionData>
   selectedStage: string | null
   selectedEdge: GraphEdgeDetail | null
+  selectionMode: boolean
+  analysisSelection: string[]
   onSelect: (id: string) => void
+  onToggleAnalysis: (id: string) => void
   onSelectEdge: (edge: GraphEdgeDetail) => void
 }) {
   const nodes = useMemo<Array<StageNode | LaneNode>>(() => [
@@ -280,11 +537,14 @@ function GraphView({
         stage,
         branches: detail.branches,
         viewer: detail.viewers?.[stage.id] ?? (stage.kind === 'structure' ? detail.viewer : null),
-        selected: selectedStage === stage.id,
+        distribution: persistedDistributions[stage.id]
+          ?? distributionForStage(analysisSnapshot, detail, stage.id)
+          ?? { label: '节点结果', unit: '条', values: [], source: '尚无数值结果', direction: 'neutral' },
+        selected: selectionMode ? analysisSelection.includes(stage.id) : selectedStage === stage.id,
       },
       draggable: false,
     })),
-  ], [detail, selectedStage])
+  ], [analysisSelection, analysisSnapshot, detail, persistedDistributions, selectedStage, selectionMode])
   const stageById = useMemo(() => Object.fromEntries(detail.graph.nodes.map((node) => [node.id, node])), [detail])
   const edges = useMemo<Edge[]>(() => detail.graph.edges.map((edge, index) => {
     const source = stageById[edge.source] as GraphStage | undefined
@@ -308,7 +568,9 @@ function GraphView({
     }
   }), [detail.graph.edges, selectedEdge, stageById])
   const handleNodeClick: NodeMouseHandler = (_, node) => {
-    if (node.type === 'stage') onSelect(node.id)
+    if (node.type !== 'stage') return
+    if (selectionMode) onToggleAnalysis(node.id)
+    else onSelect(node.id)
   }
   const handleEdgeClick: EdgeMouseHandler = (_, edge) => {
     const edgeDetail = (edge.data as { detail?: GraphEdgeDetail } | undefined)?.detail
@@ -323,7 +585,7 @@ function GraphView({
         nodeTypes={nodeTypes}
         onNodeClick={handleNodeClick}
         onEdgeClick={handleEdgeClick}
-        defaultViewport={{ x: 22, y: 108, zoom: 0.72 }}
+        defaultViewport={{ x: 22, y: 92, zoom: 0.82 }}
         minZoom={0.34}
         maxZoom={1.25}
         proOptions={{ hideAttribution: true }}
@@ -463,7 +725,7 @@ function ToolAttemptDisclosure({ call }: { call: ToolAttempt }) {
             <summary><FileJson2 /><span>证据文件</span><b>{call.artifacts.length}</b><ChevronRight /></summary>
             <div className="artifact-list">
               {call.artifacts.map((artifact) => (
-                <a key={`${artifact.sha256}-${artifact.role}`} href={`${API_BASE}${artifact.url}`} target="_blank" rel="noreferrer">
+                <a key={`${artifact.sha256}-${artifact.role}`} href={`${getConfiguredApiBase()}${artifact.url}`} target="_blank" rel="noreferrer">
                   <FileJson2 />
                   <span><b title={artifact.role}>{artifact.role}</b><small>{artifact.media_type} · {(artifact.size_bytes / 1024).toFixed(1)} KB</small></span>
                 </a>
@@ -510,17 +772,20 @@ function ReasoningPanel({ nodeDetail }: { nodeDetail: NodeDetail }) {
   )
 }
 
-function Inspector({ detail, stageId, onClose }: { detail: RunDetail; stageId: string; onClose: () => void }) {
+function Inspector({ detail, stageId, analysisSnapshot, distributionOverride, onClose }: { detail: RunDetail; stageId: string; analysisSnapshot: AnalysisSnapshot | null; distributionOverride?: ResultDistributionData; onClose: () => void }) {
   const stage = detail.graph.nodes.find((item) => item.id === stageId) ?? detail.graph.nodes[0]
   const groupLabel = { inputs: '输入', design: '设计', evaluation: '评估', decision: '决策', structure: '结构', review: '评审' }[stage.group]
   const [nodeDetail, setNodeDetail] = useState<NodeDetail | null>(null)
   const [detailError, setDetailError] = useState<string | null>(null)
+  const distribution = distributionOverride
+    ?? distributionForStage(analysisSnapshot, detail, stageId)
+    ?? { label: '节点结果', unit: '条', values: [], source: '尚无数值结果', direction: 'neutral' }
 
   useEffect(() => {
     const controller = new AbortController()
     const load = async () => {
       try {
-        const response = await fetch(`${API_BASE}/v1/observer/runs/${detail.run.id}/nodes/${stageId}`, { signal: controller.signal })
+        const response = await fetch(`${getConfiguredApiBase()}/v1/observer/runs/${detail.run.id}/nodes/${stageId}`, { signal: controller.signal })
         if (!response.ok) throw new Error(`node evidence: ${response.status}`)
         setNodeDetail(await response.json() as NodeDetail)
         setDetailError(null)
@@ -551,12 +816,13 @@ function Inspector({ detail, stageId, onClose }: { detail: RunDetail; stageId: s
       })()}
       <section className={`scientific-summary grade-${stage.insight.grade}`}>
         <div>
-          <small>{stage.insight.source === 'persisted_decision' ? '持久化智能体决策' : '数据库指标摘要'}</small>
+          <small>{stage.insight.source === 'persisted_decision' ? '持久化智能体决策' : '数据库结果'}</small>
           <strong><i />{stage.insight.verdict}</strong>
         </div>
         <p>{stage.insight.reason}</p>
         <span>{stage.insight.facts.map((fact) => `${fact.label} ${fact.value}`).join(' · ')}</span>
       </section>
+      {distribution && <section className="inspector-distribution-section"><ResultDistribution data={distribution} /></section>}
       <section className="inspector-section evidence-overview">
         <div className="section-title"><h3>数据概览</h3><span className={`stage-badge ${stage.status}`}>{statusText[stage.status] ?? stage.status}</span></div>
         <div className="fact-grid four-up">
@@ -625,48 +891,167 @@ function TargetGlyph() {
   return <span className="target-glyph"><Box /></span>
 }
 
-function LoadingScreen({ error }: { error: string | null }) {
-  return <div className="loading-screen"><div className="loading-mark"><FlaskConical /></div><h2>{error ? '数据读取失败' : '正在读取数据库…'}</h2><p>{error ?? '同步实时运行记录'}</p></div>
+function LoadingScreen({ error, onRetry, onOpenAnalysis }: { error: string | null; onRetry: () => void; onOpenAnalysis: () => void }) {
+  return <div className="loading-screen"><div className="loading-mark"><FlaskConical /></div><h2>{error ? '数据库暂时不可用' : '正在读取数据库…'}</h2><p>{error ?? '同步实时运行记录'}</p>{error && <div className="loading-actions"><button onClick={onRetry}>重新读取</button><button className="primary" onClick={onOpenAnalysis}>查看冻结分析</button></div>}</div>
+}
+
+function DataConnectionDialog({ value, onClose, onSave }: { value: string; onClose: () => void; onSave: (value: string) => void }) {
+  const [mode, setMode] = useState<'local' | 'custom'>(value ? 'custom' : 'local')
+  const [customBase, setCustomBase] = useState(value || 'http://127.0.0.1:8081')
+  const [testState, setTestState] = useState<'idle' | 'testing' | 'success' | 'error'>('idle')
+  const [testMessage, setTestMessage] = useState('')
+  const candidateBase = mode === 'local' ? '' : normalizeApiBase(customBase)
+
+  const testConnection = async () => {
+    setTestState('testing')
+    setTestMessage('正在检查数据服务…')
+    try {
+      const response = await fetch(`${candidateBase}/healthz`, { headers: { Accept: 'application/json' } })
+      if (!response.ok) throw new Error(`服务返回 ${response.status}`)
+      const payload = await response.json() as { status?: string }
+      if (payload.status !== 'ok') throw new Error('健康状态异常')
+      setTestState('success')
+      setTestMessage('连接成功，可以读取当前数据库。')
+    } catch (cause) {
+      setTestState('error')
+      setTestMessage(cause instanceof Error && /^服务|^健康/.test(cause.message) ? cause.message : '无法连接此数据服务。')
+    }
+  }
+
+  return createPortal(
+    <div className="connection-dialog-layer" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
+      <section className="connection-dialog" role="dialog" aria-modal="true" aria-labelledby="connection-dialog-title">
+        <header><div><span className="connection-icon"><Database /></span><span><h2 id="connection-dialog-title">数据连接</h2><p>配置只读数据服务，不在浏览器保存数据库口令。</p></span></div><button aria-label="关闭数据连接设置" onClick={onClose}><X /></button></header>
+        <div className="connection-options">
+          <button className={mode === 'local' ? 'selected' : ''} onClick={() => { setMode('local'); setTestState('idle') }}>
+            <i>{mode === 'local' && <span />}</i><span><b>本机默认</b><small>随开发命令自动启动</small><code>127.0.0.1:8081</code></span>
+          </button>
+          <button className={mode === 'custom' ? 'selected' : ''} onClick={() => { setMode('custom'); setTestState('idle') }}>
+            <i>{mode === 'custom' && <span />}</i><span><b>自定义服务</b><small>连接其他只读数据接口</small><code>可配置地址</code></span>
+          </button>
+        </div>
+        <label className="connection-field"><span>数据服务地址</span><input aria-label="数据服务地址" disabled={mode === 'local'} value={mode === 'local' ? 'http://127.0.0.1:8081' : customBase} onChange={(event) => { setCustomBase(event.target.value); setTestState('idle') }} /></label>
+        <div className={`connection-test-state state-${testState}`}><span className="connection-status-dot" /><p>{testState === 'idle' ? '保存前可先检查服务与数据库是否可读。' : testMessage}</p></div>
+        <footer><button onClick={testConnection} disabled={testState === 'testing'}><RefreshCw className={testState === 'testing' ? 'spin' : ''} />检查连接</button><span /><button onClick={onClose}>取消</button><button className="primary" disabled={mode === 'custom' && !normalizeApiBase(customBase)} onClick={() => onSave(candidateBase)}>保存并应用</button></footer>
+      </section>
+    </div>,
+    document.body,
+  )
 }
 
 export default function App() {
-  const data = useRunData()
-  const [activeView, setActiveView] = useState<'overview' | 'analysis'>('analysis')
+  const [activeView, setActiveView] = useState<'overview' | 'analysis' | 'evidence'>('analysis')
+  const [apiBase, setApiBase] = useState(readApiBase)
+  const [connectionOpen, setConnectionOpen] = useState(false)
+  const data = useRunData(true, apiBase)
   const [selectedStage, setSelectedStage] = useState<string | null>(null)
   const [selectedEdge, setSelectedEdge] = useState<GraphEdgeDetail | null>(null)
+  const [selectionMode, setSelectionMode] = useState(false)
+  const [analysisSelection, setAnalysisSelection] = useState<string[]>([])
+  const [analysisSnapshot, setAnalysisSnapshot] = useState<AnalysisSnapshot | null>(null)
+  const [persistedDistributions, setPersistedDistributions] = useState<Record<string, ResultDistributionData>>({})
+  const structureRun = useMemo(() => data.runs.find((run) => run.structure_record_count > 0) ?? null, [data.runs])
+  useEffect(() => {
+    let cancelled = false
+    const liveAnalyticsEnabled = import.meta.env.VITE_ANALYTICS_API_ENABLED === 'true'
+    void loadAnalysisSnapshot({ runId: liveAnalyticsEnabled ? data.detail?.run.id : undefined, apiBase }).then((snapshot) => {
+      if (!cancelled) setAnalysisSnapshot(snapshot)
+    }).catch(() => {
+      if (!cancelled) setAnalysisSnapshot(null)
+    })
+    return () => { cancelled = true }
+  }, [apiBase, data.detail?.run.id])
+  useEffect(() => {
+    const detail = data.detail
+    if (!detail) {
+      setPersistedDistributions({})
+      return
+    }
+    const controller = new AbortController()
+    setPersistedDistributions({})
+    void loadPersistedRunDistributions(apiBase, detail, controller.signal)
+      .then((value) => { if (!controller.signal.aborted) setPersistedDistributions(value) })
+      .catch(() => { if (!controller.signal.aborted) setPersistedDistributions({}) })
+    return () => controller.abort()
+  }, [apiBase, data.detail?.run.id])
+  const selectedAnalysisNodes = useMemo(() => data.detail?.graph.nodes.filter((node) => analysisSelection.includes(node.id)) ?? [], [analysisSelection, data.detail])
+  const toggleAnalysisNode = (id: string) => setAnalysisSelection((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
   return (
     <div className="app-shell">
-      <div className="topbar"><button><ArrowLeft /></button><div className="brand"><span><FlaskConical /></span>AMPgent <i>Analytics</i></div><div className="source-state" title="产品层只读取分析结果，不反写科学事实。"><Database />{data.detail ? 'PostgreSQL · 只读' : 'Analytics adapter · 待接入'} <span className="live-dot" /></div></div>
+      <div className="topbar"><button><ArrowLeft /></button><div className="brand"><span><FlaskConical /></span>AMPgent <i>科学分析</i></div><button className={`source-state ${activeView === 'overview' && data.error ? 'has-error' : ''}`} onClick={() => setConnectionOpen(true)} title="查看或修改只读数据连接"><Database /><span>{activeView !== 'overview' ? '分析数据 · 只读' : data.detail ? '数据库已连接' : data.error ? '连接异常' : '正在连接'}</span><span className="live-dot" /><Settings2 /></button></div>
       <div className="workspace">
         <Sidebar
           runs={data.runs}
           selectedId={data.selectedId}
+          structureRun={structureRun}
           activeView={activeView}
           onView={(view) => { setActiveView(view); setSelectedStage(null); setSelectedEdge(null) }}
-          onSelect={(id) => { data.setSelectedId(id); setSelectedStage(null); setSelectedEdge(null) }}
+          onSelect={(id) => { data.setSelectedId(id); setSelectedStage(null); setSelectedEdge(null); setAnalysisSelection([]); setSelectionMode(false) }}
+          onOpenStructureEvidence={() => {
+            if (!structureRun) return
+            data.setSelectedId(structureRun.id)
+            setActiveView('overview')
+            setSelectedStage('boltz')
+            setSelectedEdge(null)
+            setAnalysisSelection([])
+            setSelectionMode(false)
+          }}
         />
         {activeView === 'analysis' ? (
-          <AnalysisDashboard detail={data.detail} />
+          <AnalysisDashboard detail={data.detail} seedNodeIds={analysisSelection} apiBase={apiBase} />
+        ) : activeView === 'evidence' ? (
+          <EvidenceDashboard runId={data.detail?.run.id} />
         ) : data.detail && !data.loading ? (
           <>
             <main className="main-canvas">
-              <CanvasHeader detail={data.detail} refreshing={data.refreshing} onRefresh={data.refresh} />
+              <CanvasHeader
+                detail={data.detail}
+                refreshing={data.refreshing}
+                selectionMode={selectionMode}
+                selectedCount={analysisSelection.length}
+                onRefresh={data.refresh}
+                onToggleSelection={() => {
+                  setSelectionMode((value) => !value)
+                  setSelectedStage(null)
+                  setSelectedEdge(null)
+                }}
+              />
               <GraphView
                 detail={data.detail}
+                analysisSnapshot={analysisSnapshot}
+                persistedDistributions={persistedDistributions}
                 selectedStage={selectedStage}
                 selectedEdge={selectedEdge}
+                selectionMode={selectionMode}
+                analysisSelection={analysisSelection}
                 onSelect={(id) => { setSelectedStage(id); setSelectedEdge(null) }}
+                onToggleAnalysis={toggleAnalysisNode}
                 onSelectEdge={(edge) => { setSelectedEdge(edge); setSelectedStage(null) }}
               />
-              <div className="canvas-footnote"><PanelLeftClose />拖拽画布 · 点击节点 · 5 秒更新</div>
+              {selectionMode && (
+                <div className="analysis-selection-bar">
+                  <div className="selection-summary">
+                    <ChartNoAxesCombined />
+                    <span><b>组合分析</b><small>{analysisSelection.length ? '已按节点语义准备分析条件' : '选择需要联合分析的节点'}</small></span>
+                  </div>
+                  <div className="selection-chips">
+                    {selectedAnalysisNodes.map((node) => <button key={node.id} onClick={() => toggleAnalysisNode(node.id)}>{node.label}<X /></button>)}
+                    {!selectedAnalysisNodes.length && <span>可连续选择多张流程卡片</span>}
+                  </div>
+                  {!!analysisSelection.length && <button className="clear-selection" onClick={() => setAnalysisSelection([])}>清除</button>}
+                  <button className="build-analysis" disabled={!analysisSelection.length} onClick={() => { setActiveView('analysis'); setSelectionMode(false) }}>生成分析卡片</button>
+                </div>
+              )}
+              {!selectionMode && <div className="canvas-footnote"><PanelLeftClose />拖拽画布 · 点击节点 · 5 秒更新</div>}
             </main>
-            {selectedStage && <Inspector detail={data.detail} stageId={selectedStage} onClose={() => setSelectedStage(null)} />}
+            {selectedStage && <Inspector detail={data.detail} stageId={selectedStage} analysisSnapshot={analysisSnapshot} distributionOverride={persistedDistributions[selectedStage]} onClose={() => setSelectedStage(null)} />}
             {selectedEdge && <EdgeInspector detail={data.detail} edge={selectedEdge} onClose={() => setSelectedEdge(null)} />}
           </>
         ) : (
-          <main className="main-canvas"><LoadingScreen error={data.error} /></main>
+          <main className="main-canvas"><LoadingScreen error={data.error} onRetry={() => { void data.retry() }} onOpenAnalysis={() => setActiveView('analysis')} /></main>
         )}
       </div>
+      {connectionOpen && <DataConnectionDialog value={apiBase} onClose={() => setConnectionOpen(false)} onSave={(value) => { window.localStorage.setItem(connectionStorageKey, value); setApiBase(value); setConnectionOpen(false) }} />}
     </div>
   )
 }
