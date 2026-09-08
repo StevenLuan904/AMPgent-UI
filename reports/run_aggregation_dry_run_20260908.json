@@ -1,0 +1,44 @@
+{
+  "schema_version": "ampgent.run-aggregation-dry-run.1",
+  "status": "bounded_plan_only_no_production_write",
+  "source_audit": "reports/run_aggregation_audit_20260908.json",
+  "migration": "0022_run_aggregation",
+  "planned": {
+    "explicit_parent_run_lineage_edges": 236,
+    "scientific_roots": 0,
+    "run_groups": 0,
+    "run_group_members": 0,
+    "evidence_attachments": 0,
+    "run_invalidation_events": 0,
+    "evidence_invalidation_events": 0
+  },
+  "why_zero_for_groups_and_attachments": "No explicit reviewed UUID manifest was supplied; ambiguous historical relationships remain unresolved.",
+  "unresolved": {
+    "evaluation_subject_run_mismatch": 60,
+    "candidate_parent_outside_run_ancestry": 55407,
+    "structure_candidate_run_mismatch": 1581,
+    "autoresearch_lineage_cross_run": 144,
+    "metric_delta_cross_candidate_run": 1728
+  },
+  "ordering": [
+    "generation",
+    "score_all",
+    "challenger",
+    "qd_lineage",
+    "boltz",
+    "rosetta",
+    "md",
+    "pool_s"
+  ],
+  "production_apply": {
+    "performed": false,
+    "reason": "Emergency resource constraint: do not connect or apply while .19/.2 availability is unstable.",
+    "required_before_apply": [
+      "fresh schema-only backup receipt",
+      "active-writer and lock snapshot",
+      "Alembic version recheck",
+      "single-transaction migration",
+      "readback counts and view probes"
+    ]
+  }
+}

@@ -43,6 +43,15 @@ class ExperimentRun(Base, TimestampMixin):
             "formal_submission_key",
             name="uq_experiment_runs_formal_submission_key",
         ),
+        CheckConstraint(
+            "(phase_code IS NULL AND phase_ordinal IS NULL) OR "
+            "(phase_code IS NOT NULL AND phase_ordinal >= 0 AND phase_code IN "
+            "('generation','score_all','challenger','qd_lineage','boltz','rosetta',"
+            "'md','pool_s','unclassified'))",
+            name="ck_experiment_run_phase_pair",
+        ),
+        Index("ix_experiment_run_group", "run_group_id"),
+        Index("ix_experiment_run_root", "root_run_id"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -54,11 +63,88 @@ class ExperimentRun(Base, TimestampMixin):
     temporal_workflow_id: Mapped[str | None] = mapped_column(String(255), unique=True)
     temporal_run_id: Mapped[str | None] = mapped_column(String(255))
     parent_run_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("experiment_runs.id"))
+    run_group_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("scientific_run_groups.id"))
+    root_run_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("experiment_runs.id"))
+    phase_code: Mapped[str | None] = mapped_column(String(32))
+    phase_ordinal: Mapped[int | None] = mapped_column(Integer)
+    aggregation_basis: Mapped[str | None] = mapped_column(String(64))
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     target: Mapped[Target] = relationship()
     candidates: Mapped[list["Candidate"]] = relationship(back_populates="run")
+
+
+class ScientificRoot(Base):
+    """Explicit scientific root; never inferred from title, target, sequence, or time."""
+
+    __tablename__ = "scientific_roots"
+    __table_args__ = (
+        UniqueConstraint("root_key", name="uq_scientific_root_key"),
+        UniqueConstraint("root_run_id", name="uq_scientific_root_run"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    root_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    root_run_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("experiment_runs.id"), nullable=False)
+    contract_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class ScientificRunGroup(Base):
+    """Explicit family of runs sharing one declared scientific root."""
+
+    __tablename__ = "scientific_run_groups"
+    __table_args__ = (
+        UniqueConstraint("group_key", name="uq_scientific_run_group_key"),
+        UniqueConstraint("root_run_id", name="uq_scientific_run_group_root"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    group_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    scientific_root_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("scientific_roots.id"), nullable=False
+    )
+    root_run_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("experiment_runs.id"), nullable=False)
+    contract_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class RunLineageEdge(Base):
+    """Typed explicit relationship between runs; initial backfill uses parent_run_id only."""
+
+    __tablename__ = "run_lineage_edges"
+    __table_args__ = (
+        UniqueConstraint("edge_sha256", name="uq_run_lineage_edge_sha256"),
+        UniqueConstraint(
+            "parent_run_id", "child_run_id", "relation_type", name="uq_run_lineage_identity"
+        ),
+        CheckConstraint("parent_run_id <> child_run_id", name="ck_run_lineage_not_self"),
+        CheckConstraint("relation_ordinal > 0", name="ck_run_lineage_positive_ordinal"),
+        Index("ix_run_lineage_child", "child_run_id"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    parent_run_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("experiment_runs.id"), nullable=False
+    )
+    child_run_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("experiment_runs.id"), nullable=False
+    )
+    relation_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    relation_ordinal: Mapped[int] = mapped_column(Integer, nullable=False)
+    binding_basis: Mapped[str] = mapped_column(String(64), nullable=False)
+    edge_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
 
 
 class ExperimentRunTargetBranch(Base):
@@ -284,6 +370,143 @@ class ToolCallDependency(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+
+class RunEvidenceAttachment(Base):
+    """Exact subject/producer binding for post-hoc or cross-run evidence."""
+
+    __tablename__ = "run_evidence_attachments"
+    __table_args__ = (
+        UniqueConstraint("attachment_sha256", name="uq_run_evidence_attachment_sha256"),
+        CheckConstraint(
+            "phase_code IN ('generation','score_all','challenger','qd_lineage',"
+            "'boltz','rosetta','md','pool_s','unclassified')",
+            name="ck_run_evidence_attachment_phase",
+        ),
+        CheckConstraint("phase_order >= 0", name="ck_run_evidence_phase_order"),
+        CheckConstraint("evidence_ordinal > 0", name="ck_run_evidence_positive_ordinal"),
+        Index(
+            "ix_run_evidence_subject_timeline",
+            "subject_run_id",
+            "phase_order",
+            "evidence_ordinal",
+        ),
+        Index("ix_run_evidence_candidate", "subject_candidate_id", "phase_order"),
+        Index("ix_run_evidence_producer", "producer_run_id"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    subject_run_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("experiment_runs.id"), nullable=False
+    )
+    subject_candidate_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("candidates.id"))
+    producer_run_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("experiment_runs.id"), nullable=False
+    )
+    tool_call_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tool_calls.id"), nullable=False)
+    phase_code: Mapped[str] = mapped_column(String(32), nullable=False)
+    phase_order: Mapped[int] = mapped_column(Integer, nullable=False)
+    evidence_ordinal: Mapped[int] = mapped_column(Integer, nullable=False)
+    evidence_role: Mapped[str] = mapped_column(String(64), nullable=False)
+    binding_basis: Mapped[str] = mapped_column(String(64), nullable=False)
+    attachment_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class RunInvalidationEvent(Base):
+    """Append-only explicit invalidation/reinstatement; run failure alone is not invalidation."""
+
+    __tablename__ = "run_invalidation_events"
+    __table_args__ = (
+        UniqueConstraint("event_sha256", name="uq_run_invalidation_event_sha256"),
+        UniqueConstraint("run_id", "event_ordinal", name="uq_run_invalidation_event_ordinal"),
+        CheckConstraint("event_ordinal > 0", name="ck_run_invalidation_positive_ordinal"),
+        CheckConstraint(
+            "event_type IN ('invalidate','reinstate')", name="ck_run_invalidation_event_type"
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    run_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("experiment_runs.id"), nullable=False)
+    event_ordinal: Mapped[int] = mapped_column(Integer, nullable=False)
+    event_type: Mapped[str] = mapped_column(String(16), nullable=False)
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    decision_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("agent_decisions.id"))
+    event_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class EvidenceInvalidationEvent(Base):
+    """Append-only validity history for an explicitly identified evidence record."""
+
+    __tablename__ = "evidence_invalidation_events"
+    __table_args__ = (
+        UniqueConstraint("event_sha256", name="uq_evidence_invalidation_event_sha256"),
+        UniqueConstraint(
+            "record_kind",
+            "record_id",
+            "event_ordinal",
+            name="uq_evidence_invalidation_event_ordinal",
+        ),
+        CheckConstraint("event_ordinal > 0", name="ck_evidence_invalidation_positive_ordinal"),
+        CheckConstraint(
+            "event_type IN ('invalidate','reinstate')",
+            name="ck_evidence_invalidation_event_type",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    subject_run_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("experiment_runs.id"), nullable=False
+    )
+    subject_candidate_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("candidates.id"))
+    record_kind: Mapped[str] = mapped_column(String(64), nullable=False)
+    record_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    event_ordinal: Mapped[int] = mapped_column(Integer, nullable=False)
+    event_type: Mapped[str] = mapped_column(String(16), nullable=False)
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    decision_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("agent_decisions.id"))
+    event_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class AutoResearchScorerInvocation(Base):
+    """Append-only raw scorer invocation ledger for replayable score-all rounds."""
+
+    __tablename__ = "autoresearch_scorer_invocations"
+    __table_args__ = (
+        UniqueConstraint(
+            "run_id",
+            "candidate_id",
+            "metric_name",
+            "ordinal",
+            name="uq_autoresearch_scorer_invocation_slot",
+        ),
+        CheckConstraint("ordinal > 0", name="autoresearch_scorer_invocation_positive_ordinal"),
+        Index("ix_autoresearch_scorer_invocation_tool_call", "tool_call_id"),
+        Index("ix_autoresearch_scorer_invocation_run_ordinal", "run_id", "ordinal"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    run_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("experiment_runs.id"), nullable=False)
+    candidate_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("candidates.id"), nullable=False)
+    parent_candidate_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("candidates.id"))
+    parent_sequence_sha256: Mapped[str | None] = mapped_column(String(64))
+    metric_name: Mapped[str] = mapped_column(String(128), nullable=False)
+    model_release_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    tool_call_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tool_calls.id"), nullable=False)
+    called_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    ordinal: Mapped[int] = mapped_column(Integer, nullable=False)
+    raw_invocation_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
 
 
 class AgentDecision(Base):

@@ -1,0 +1,32 @@
+{
+  "schema_version": "ampgent.run-aggregation-contract.1",
+  "identity_rules": {
+    "run_family": "Only experiment_runs.parent_run_id or an explicit UUID manifest may connect runs.",
+    "candidate_subject": "Evidence is attached to the authoritative candidates.id and its exact candidates.run_id.",
+    "producer": "The producer experiment run and ToolCall remain distinct from the scientific subject run.",
+    "forbidden_inference": [
+      "title",
+      "target",
+      "sequence",
+      "created_at",
+      "storage_uri"
+    ]
+  },
+  "phase_order": {
+    "generation": 10,
+    "score_all": 20,
+    "challenger": 30,
+    "qd_lineage": 40,
+    "boltz": 50,
+    "rosetta": 60,
+    "md": 70,
+    "pool_s": 80,
+    "unclassified": 900
+  },
+  "historical_policy": {
+    "scientific_rows_are_immutable": true,
+    "failed_is_invalidated": false,
+    "ambiguous_relationships_remain_unresolved": true,
+    "evidence_only_run_for_posthoc_evidence": false
+  }
+}

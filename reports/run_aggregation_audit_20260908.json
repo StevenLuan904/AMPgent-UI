@@ -1,0 +1,55 @@
+{
+  "schema_version": "ampgent.run-aggregation-audit.1",
+  "status": "read_only_audit_complete_production_apply_deferred_network_constraint",
+  "authority": "production PostgreSQL through the approved 127.0.0.1:55432 tunnel before it was closed",
+  "alembic_version": "0021_autoresearch_scorer_invocation_ledger",
+  "counts": {
+    "experiment_runs": 1467,
+    "candidates": 211709,
+    "evaluations": 3575334,
+    "tool_calls": 15032,
+    "artifacts": 109101,
+    "multitarget_structure_evidence_records": 2023,
+    "lifecycle_events": 846011
+  },
+  "explicit_parent_forest": {
+    "roots": 1231,
+    "children": 236,
+    "distinct_parents": 154,
+    "maximum_depth": 16,
+    "cycles_or_unreachable": 0
+  },
+  "anomalies": {
+    "candidate_parent_cross_run": 55559,
+    "candidate_parent_outside_run_ancestry": 55407,
+    "evaluation_producer_run_differs_from_candidate_run": 737433,
+    "evaluation_subject_run_null": 1765875,
+    "evaluation_subject_run_mismatch": 60,
+    "failed_or_cancelled_run_candidate_rows": 73691,
+    "failed_or_cancelled_run_evaluation_rows": 1189545,
+    "structure_candidate_run_mismatch": 1581,
+    "tool_calls_without_evidence_artifact": 4460,
+    "artifacts_without_reference": 9003,
+    "autoresearch_lineage_cross_run": 144,
+    "metric_delta_cross_candidate_run": 1728
+  },
+  "interpretation": {
+    "evaluation_candidate_foreign_key_is_exact_subject_identity": true,
+    "cross_run_tool_producer_can_be_valid_operational_evidence": true,
+    "null_subject_run_can_be_derived_from_candidate_foreign_key": true,
+    "subject_run_mismatch_requires_manual_resolution": true,
+    "failed_or_cancelled_is_not_implicit_invalidation": true,
+    "global_sequence_duplicates_are_not_merge_keys": true
+  },
+  "production_mutations": {
+    "schema_migration": false,
+    "backfill": false,
+    "scientific_row_update": false
+  },
+  "connection_closeout": {
+    "last_read_only_query_completed": true,
+    "open_database_connections_from_this_task": 0,
+    "local_port_55432_listening": false,
+    "reconnect_loop_enabled": false
+  }
+}
