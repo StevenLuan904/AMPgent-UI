@@ -243,6 +243,7 @@ async def persist(evidence: dict[str, Any], source_commit: str) -> dict[str, Any
     from pepagent.db.repository import ExperimentRepository
     from pepagent.db.session import SessionFactory
     from pepagent.provenance.hashing import sha256_json
+    from pepagent.run_evidence import evidence_stage, logical_evidence_prefix
 
     item_identity = evidence["identity"]
     candidate_id = uuid.UUID(item_identity["candidate_id"])
@@ -293,6 +294,12 @@ async def persist(evidence: dict[str, Any], source_commit: str) -> dict[str, Any
             or TARGET_BY_ACCESSION.get(accession) != item_identity["target_key"]
         ):
             raise ValueError("candidate PostgreSQL identity drifted")
+        logical_stage = evidence_stage(
+            tool_name=evidence["tool_name"], evidence_family=evidence["family"]
+        )
+        logical_path = logical_evidence_prefix(
+            run_id, stage=logical_stage, candidate_id=candidate_id
+        )
         existing_rows = (
             await session.execute(
                 select(
@@ -327,10 +334,17 @@ async def persist(evidence: dict[str, Any], source_commit: str) -> dict[str, Any
             evidence["tool_name"],
             evidence["tool_version"],
             environment_sha,
-            {"candidate_id": str(candidate_id), "files": evidence["files"]},
+            {
+                "candidate_id": str(candidate_id),
+                "subject_run_id": str(run_id),
+                "logical_evidence_path": logical_path,
+                "files": evidence["files"],
+            },
             {
                 "model_release_key": evidence["release"],
                 "database_binding": "subject_run_id+candidate_id+model_release_key",
+                "logical_stage": logical_stage,
+                "logical_evidence_path": logical_path,
             },
             {"metric_count": len(missing_metrics), "files": evidence["files"]},
         )
@@ -359,7 +373,13 @@ async def persist(evidence: dict[str, Any], source_commit: str) -> dict[str, Any
                     "status": "succeeded",
                     "out_of_domain": False,
                     "limitations_json": evidence["raw"].get("limitations", []),
-                    "raw_json": {"files": evidence["files"], "details": details},
+                    "raw_json": {
+                        "subject_run_id": str(run_id),
+                        "logical_stage": logical_stage,
+                        "logical_evidence_path": logical_path,
+                        "files": evidence["files"],
+                        "details": details,
+                    },
                 }
             )
         result = await session.execute(

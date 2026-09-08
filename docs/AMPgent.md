@@ -11,6 +11,7 @@ AceA、GyrA、PBP2a、VEGFA、FGF2、ANGPT1 各以 50 条 Pool A 作为资源均
 - PostgreSQL：Candidate、Evaluation、谱系、决策、科学运行状态权威源；Temporal 仅调度。
 - 对象存储/获准远端目录：结构、decoy、轨迹、checkpoint、日志；本机仅代码、冻结配置、紧凑收据。
 - 身份：`run_id + authoritative candidate_id`；必要时附 `sequence_sha256/model_release_key/tool_call_id`；不按序列跨 run 猜父本。
+- 证据按科学阶段而非入库时间归档：`generation→score-all→challenger→QD/lineage→Boltz→Rosetta→MD→Pool S`；后补 Rosetta/MD 追加到原 `run_id/candidate_id`，禁止复制 Candidate 或创建 evidence-only ExperimentRun。物理 CAS 可保持内容寻址，逻辑路径固定为 `runs/<run_id>/candidates/<candidate_id>/evidence/<stage>/`。
 
 ## 硬门与闭环
 

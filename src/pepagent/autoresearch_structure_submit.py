@@ -25,6 +25,7 @@ from pepagent.db.session import SessionFactory
 from pepagent.domain.enums import CandidateStatus, RunStatus
 from pepagent.domain.schemas import ExperimentSpec, PocketCatalogSpec, TargetSpec
 from pepagent.provenance.hashing import sha256_json, sha256_text
+from pepagent.run_evidence import require_existing_posthoc_runs
 from pepagent.settings import get_settings
 
 WORKFLOW_TYPE = "CandidateStructureValidationWorkflow"
@@ -456,9 +457,8 @@ async def reserve_structure_formal_plan(
                 )
             )
         )
-        if existing and len(existing) != len(plan.branches):
-            raise ValueError("structure formal reservation is partially present")
-        created = not existing
+        require_existing_posthoc_runs(len(existing), len(plan.branches))
+        created = False
         by_id = {run.id: run for run in existing}
         repository = ExperimentRepository(session)
         for branch in plan.branches:

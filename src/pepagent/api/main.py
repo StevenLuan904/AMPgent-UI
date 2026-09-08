@@ -9,7 +9,7 @@ from typing import Annotated
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from temporalio.client import Client
 
@@ -34,6 +34,12 @@ from pepagent.db.models import (
 from pepagent.db.repository import ExperimentRepository
 from pepagent.db.session import get_session
 from pepagent.domain.schemas import CandidateRecord, ExperimentSpec
+from pepagent.run_evidence import (
+    LOGICAL_STAGE_ORDER,
+    evidence_stage,
+    logical_evidence_prefix,
+    order_tool_calls,
+)
 from pepagent.settings import get_settings
 from pepagent.storage.object_store import ContentAddressedObjectStore
 
@@ -160,16 +166,32 @@ async def get_run_evidence(run_id: uuid.UUID, session: SessionDep) -> dict:
     run = await session.get(ExperimentRun, run_id)
     if run is None:
         raise HTTPException(status_code=404, detail="run not found")
-    calls = list(
-        await session.scalars(
-            select(ToolCall).where(ToolCall.run_id == run_id).order_by(ToolCall.queued_at)
+    evaluations = list(
+        await session.execute(
+            select(Evaluation, Candidate)
+            .join(Candidate, Evaluation.candidate_id == Candidate.id)
+            .where(
+                or_(
+                    Evaluation.subject_run_id == run_id,
+                    (Evaluation.subject_run_id.is_(None)) & (Candidate.run_id == run_id),
+                )
+            )
+            .order_by(Candidate.proposal_rank, Evaluation.metric_name, Evaluation.id)
         )
     )
+    attached_call_ids = {evaluation.tool_call_id for evaluation, _ in evaluations}
+    calls = list(
+        await session.scalars(
+            select(ToolCall).where(
+                or_(ToolCall.run_id == run_id, ToolCall.id.in_(attached_call_ids))
+            )
+        )
+    )
+    call_ids = {call.id for call in calls}
     dependencies = list(
         await session.scalars(
             select(ToolCallDependency)
-            .join(ToolCall, ToolCallDependency.child_tool_call_id == ToolCall.id)
-            .where(ToolCall.run_id == run_id)
+            .where(ToolCallDependency.child_tool_call_id.in_(call_ids))
             .order_by(
                 ToolCallDependency.child_tool_call_id,
                 ToolCallDependency.parent_tool_call_id,
@@ -177,6 +199,10 @@ async def get_run_evidence(run_id: uuid.UUID, session: SessionDep) -> dict:
             )
         )
     )
+    calls = order_tool_calls(calls, dependencies)
+    candidate_ids_by_call: dict[uuid.UUID, set[uuid.UUID]] = {}
+    for evaluation, candidate in evaluations:
+        candidate_ids_by_call.setdefault(evaluation.tool_call_id, set()).add(candidate.id)
     call_payloads: list[dict] = []
     for call in calls:
         artifacts = list(
@@ -187,9 +213,20 @@ async def get_run_evidence(run_id: uuid.UUID, session: SessionDep) -> dict:
                 .order_by(EvidenceArtifact.role)
             )
         )
+        stage = evidence_stage(tool_name=call.tool_name)
+        subject_candidates = sorted(candidate_ids_by_call.get(call.id, set()), key=str)
+        logical_candidate = subject_candidates[0] if len(subject_candidates) == 1 else None
         call_payloads.append(
             {
                 "id": call.id,
+                "source_tool_call_run_id": call.run_id,
+                "subject_run_id": run_id,
+                "logical_stage": stage,
+                "logical_stage_order": LOGICAL_STAGE_ORDER[stage],
+                "logical_evidence_path": logical_evidence_prefix(
+                    run_id, stage=stage, candidate_id=logical_candidate
+                ),
+                "subject_candidate_ids": subject_candidates,
                 "tool_name": call.tool_name,
                 "tool_version": call.tool_version,
                 "model_uri": call.model_uri,
@@ -215,14 +252,6 @@ async def get_run_evidence(run_id: uuid.UUID, session: SessionDep) -> dict:
                 ],
             }
         )
-    evaluations = list(
-        await session.execute(
-            select(Evaluation, Candidate)
-            .join(Candidate, Evaluation.candidate_id == Candidate.id)
-            .where(Candidate.run_id == run_id)
-            .order_by(Candidate.proposal_rank, Evaluation.metric_name)
-        )
-    )
     decisions = list(
         await session.scalars(
             select(AgentDecision)
@@ -245,6 +274,7 @@ async def get_run_evidence(run_id: uuid.UUID, session: SessionDep) -> dict:
     return {
         "run_id": run_id,
         "spec_sha256": run.spec_sha256,
+        "ordering": "dependency_then_scientific_stage; persistence_time_is_not_semantic_order",
         "tool_calls": call_payloads,
         "dependencies": [
             {
@@ -260,6 +290,20 @@ async def get_run_evidence(run_id: uuid.UUID, session: SessionDep) -> dict:
                 "candidate_id": candidate.id,
                 "candidate_sequence_sha256": candidate.sequence_sha256,
                 "tool_call_id": evaluation.tool_call_id,
+                "subject_run_id": evaluation.subject_run_id or candidate.run_id,
+                "source_candidate_run_id": candidate.run_id,
+                "logical_stage": evidence_stage(
+                    metric_name=evaluation.metric_name,
+                    evidence_family=evaluation.evidence_family,
+                ),
+                "logical_evidence_path": logical_evidence_prefix(
+                    run_id,
+                    stage=evidence_stage(
+                        metric_name=evaluation.metric_name,
+                        evidence_family=evaluation.evidence_family,
+                    ),
+                    candidate_id=candidate.id,
+                ),
                 "metric_name": evaluation.metric_name,
                 "numeric_value": evaluation.numeric_value,
                 "text_value": evaluation.text_value,

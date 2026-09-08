@@ -19,6 +19,7 @@ from sqlalchemy import bindparam, text
 from pepagent.db.models import Evaluation
 from pepagent.db.repository import ExperimentRepository
 from pepagent.db.session import SessionFactory
+from pepagent.run_evidence import logical_evidence_prefix
 
 TOOL_NAME = "autoresearch-rosetta-receipt-ingest"
 TOOL_VERSION = "2026.09.02-v3-coarse5"
@@ -248,11 +249,18 @@ async def ingest(validated: list[dict[str, Any]], source_sha: str) -> dict[str, 
                     {
                         "nstruct": batch[0][0]["nstruct"],
                         "primary_aggregation": batch[0][0]["primary_aggregation"],
+                        "subject_run_id": run_id,
+                        "logical_stage": "rosetta",
                     },
                     {"validated_candidate_count": len(batch)},
                     model_uri="rosetta://InterfaceAnalyzer/ref2015",
                 )
                 for item, missing in batch:
+                    logical_path = logical_evidence_prefix(
+                        run_id,
+                        stage="rosetta",
+                        candidate_id=item["candidate_id"],
+                    )
                     raw = {
                         "schema_version": "ampgent.rosetta-receipt-ingest.1",
                         "receipt_path": item["receipt_path"],
@@ -261,12 +269,23 @@ async def ingest(validated: list[dict[str, Any]], source_sha: str) -> dict[str, 
                         "nstruct": item["nstruct"],
                         "primary_aggregation": item["primary_aggregation"],
                         "pool_a_strict_dg_lt_minus_30": item["primary"] < -30.0,
+                        "subject_run_id": run_id,
+                        "logical_stage": "rosetta",
+                        "logical_evidence_path": logical_path,
                     }
                     for metric, value in missing:
                         session.add(
                             Evaluation(
                                 candidate_id=uuid.UUID(item["candidate_id"]),
                                 tool_call_id=call.id,
+                                subject_run_id=uuid.UUID(run_id),
+                                evidence_role="primary",
+                                evidence_family="structure",
+                                model_release_key=(
+                                    f"rosetta_interfaceanalyzer_ref2015_nstruct{item['nstruct']}"
+                                ),
+                                applicability_status="applicable",
+                                conflict_status="not_assessed",
                                 metric_name=metric,
                                 numeric_value=value,
                                 text_value=None,
