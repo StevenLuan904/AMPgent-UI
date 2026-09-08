@@ -166,6 +166,12 @@ async def get_run_evidence(run_id: uuid.UUID, session: SessionDep) -> dict:
     run = await session.get(ExperimentRun, run_id)
     if run is None:
         raise HTTPException(status_code=404, detail="run not found")
+    original_candidates = list(
+        await session.scalars(select(Candidate).where(Candidate.run_id == run_id))
+    )
+    originals_by_id = {candidate.id: candidate for candidate in original_candidates}
+    original_candidate_ids = [str(candidate.id) for candidate in original_candidates]
+    copied_source_id = Candidate.metadata_json["source_candidate_id"].astext
     evaluations = list(
         await session.execute(
             select(Evaluation, Candidate)
@@ -174,6 +180,8 @@ async def get_run_evidence(run_id: uuid.UUID, session: SessionDep) -> dict:
                 or_(
                     Evaluation.subject_run_id == run_id,
                     (Evaluation.subject_run_id.is_(None)) & (Candidate.run_id == run_id),
+                    (Evaluation.subject_run_id.is_(None))
+                    & copied_source_id.in_(original_candidate_ids),
                 )
             )
             .order_by(Candidate.proposal_rank, Evaluation.metric_name, Evaluation.id)
@@ -201,8 +209,22 @@ async def get_run_evidence(run_id: uuid.UUID, session: SessionDep) -> dict:
     )
     calls = order_tool_calls(calls, dependencies)
     candidate_ids_by_call: dict[uuid.UUID, set[uuid.UUID]] = {}
+    logical_candidate_ids: dict[uuid.UUID, uuid.UUID] = {}
     for evaluation, candidate in evaluations:
-        candidate_ids_by_call.setdefault(evaluation.tool_call_id, set()).add(candidate.id)
+        logical_candidate_id = candidate.id
+        source_candidate_id = candidate.metadata_json.get("source_candidate_id")
+        if source_candidate_id:
+            try:
+                source_uuid = uuid.UUID(str(source_candidate_id))
+            except ValueError:
+                source_uuid = None
+            original = originals_by_id.get(source_uuid) if source_uuid else None
+            if original is not None and original.sequence_sha256 == candidate.sequence_sha256:
+                logical_candidate_id = original.id
+        logical_candidate_ids[candidate.id] = logical_candidate_id
+        candidate_ids_by_call.setdefault(evaluation.tool_call_id, set()).add(
+            logical_candidate_id
+        )
     call_payloads: list[dict] = []
     for call in calls:
         artifacts = list(
@@ -287,7 +309,8 @@ async def get_run_evidence(run_id: uuid.UUID, session: SessionDep) -> dict:
         "evaluations": [
             {
                 "id": evaluation.id,
-                "candidate_id": candidate.id,
+                "candidate_id": logical_candidate_ids[candidate.id],
+                "stored_candidate_id": candidate.id,
                 "candidate_sequence_sha256": candidate.sequence_sha256,
                 "tool_call_id": evaluation.tool_call_id,
                 "subject_run_id": evaluation.subject_run_id or candidate.run_id,
@@ -302,7 +325,7 @@ async def get_run_evidence(run_id: uuid.UUID, session: SessionDep) -> dict:
                         metric_name=evaluation.metric_name,
                         evidence_family=evaluation.evidence_family,
                     ),
-                    candidate_id=candidate.id,
+                    candidate_id=logical_candidate_ids[candidate.id],
                 ),
                 "metric_name": evaluation.metric_name,
                 "numeric_value": evaluation.numeric_value,
