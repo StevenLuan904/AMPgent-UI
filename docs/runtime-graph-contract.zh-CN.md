@@ -1,0 +1,73 @@
+# 运行图数据契约（只读）
+
+运行图不是阶段模板的渲染结果，而是对观察器接口返回事实的可视化。前端 `buildRuntimeGraph` 只接受本次运行的详情、节点明细和候选记录，任何未返回的关系都不补画。
+
+## 当前已使用的事实入口
+
+- `GET /v1/observer/runs/{run_id}`：运行状态、生命周期 `events`、候选预览 `candidates`，以及仅用于兼容读取节点明细的 `graph.nodes`。
+- 同一响应中的 `generation_population` 与 `display_population` 是种群汇总事实；`candidates` 只是本次返回的候选预览。预览卡显示 `n/候选总数`，不得用预览条数代替完整种群计数；`candidate_record_count` 仅用于审计，不改变展示分母。
+- `GET /v1/observer/runs/{run_id}/nodes/{node_id}`：节点范围内的 `calls`、证据文件与工具调用参数；返回的每个 `ToolAttempt` 生成一个工具调用节点。
+- 候选记录的 `generation` 生成代际分组节点；`parent_id` 与 `generator_call_id` 若存在，分别生成父子谱系和生成来源边。
+- 事件 payload 或工具调用 `inputs`/`parameters` 中明确出现的调用、事件标识，才生成数据库显式关系边。
+
+## 关系与状态语义
+
+`provenance=database` 表示关系直接来自接口字段；`provenance=derived` 只表示候选按已持久化代际字段分组或调用区间重叠观测，不代表执行依赖。未完成状态按接口状态映射为进行中、待观测或已停止。前端不会按时间顺序自动连接相邻节点，也不会把失败的读取当作成功结果。
+
+`relation_kind=dependency` 仅来自显式依赖白名单；`retry` 仅来自 `retry_of_call_id`、`retried_call_id`、`recovery_of_call_id` 及数组形式；`fallback` 仅来自 `fallback_from_call_id` 及数组形式。它们不根据时间、attempt 数字、失败文本或相邻位置猜测，并且只有 dependency 进入循环检测。`relation_kind=parallel` 只有后端显式 `parallel_group_id`（`provenance=database`）或已返回的 queued/finished 区间重叠（`provenance=derived`）两类来源；后者只称“并行观测组”，不宣称调度依赖。
+
+`relation_kind=sequence` 只用于串联同一运行中已返回的工作流执行簇与恢复调度事件，来源是持久化时间及事件序号。它表示“随后观测到”，不表示依赖、重试、回退或触发；不参与循环检测，也不计入重试统计。
+
+生命周期事件只有在持久化 `attempt > 1` 时才形成“活动重试”事实；首次尝试不占运行摘要。活动重试事实不会自动生成跨执行的 `retry` 边。同一工作流执行中，只有两个活动都具有完整且相互重叠的 `started → terminal` 时间区间时，才派生 `relation_kind=parallel`；它表示并行观测，不代表调度依赖。
+
+运行图统计区分 `toolRetries`（工具调用记录中的 `attempt > 1`）与 `activityRetries`（按 `workflow_run_id + activity_id` 去重后最大持久化 `attempt > 1`）。顶部摘要只显示非零类别；显式 `relation_kind=retry` 边是结构化关系，独立于上述重试事实统计。`recovery_attempt` 只表示恢复调度次数，不计入任一重试类别。
+
+开放活动按 `workflow_run_id + activity_id + attempt` 的最新生命周期边界计数；缺少任一身份字段的事件不进入计数。运行仍为进行中但开放活动为零时，摘要显示“等待后续活动观测”，不据此推断停滞或失败，也不创建占位节点。
+
+生命周期状态映射：`.started`、`.running`、`.progress` → 进行中；`.created`、`.succeeded`、`.completed`、`.persisted`、`.materialized`、`.recorded`、`.accepted`、`.rejected` → 已完成；`.failed`、`.cancelled` → 已停止；其余后缀 → 待观测。原始事件键仍保存在节点详情中。
+
+恢复调度事件只把“调度记录已写入”显示为已调度，不代表后续执行成功；`recovery_attempt` 只用于显示恢复次数，不计作工具重试。
+
+## 已确认的接口缺口
+
+### 生成轮次与后补证据的身份
+
+侧栏只有在 Observer 明确返回以下字段时才聚合生成轮次：`root_generation_run_id`、由根运行返回的 `member_run_ids`，或后补证据运行同时声明 `run_role=evidence + source_run_id`。`display_round` 只作为后端提供的显示标签，不单独构成身份。UI 不根据 Rosetta、Boltz、MD、评分名称、标题、序列或时间相近关系猜测根轮次。
+
+旧接口缺少这些字段时，运行继续逐条显示；后补证据不会被错误地当作独立生成运行的科学结论。后端若要提供轮次聚合，应在 `/v1/observer/runs` 列表行加入上述显式身份字段，并在详情中保留成员运行的证据来源。
+
+- 当前运行详情没有直接返回完整工具调用集合；前端通过节点明细尽力读取，读取超时则保留事件/候选图并显示缺口。
+- 节点明细缺少统一的 `ToolCallDependency` 返回入口，因此无法观察完整的并行、回退和显式调用依赖。前端只接受 `parent_call_id`、`depends_on_call_id`、`dependency_call_id`、`upstream_call_id`、`previous_call_id`、`input_from_call_id` 及其数组形式；普通 `source`、`call_id` 文本不会被当作依赖。
+- 候选预览当前可能缺少 `parent_id`、`generator_call_id`，此时父子谱系与生成来源不会被推断。
+- 当前 Observer 事件列表仍可能只返回最近窗口；前端会在达到已知上限时提示可能缺失历史，而不伪造完整图。
+
+### 生命周期事件分页（向后兼容草案）
+
+旧版 `GET /v1/observer/runs/{run_id}` 继续只返回 `events`，没有 `event_window` 时，UI 不会猜测是否截断，只将达到 32 条标为“更早事件未确认”。支持分页的 Observer 可在同一响应增加：
+
+```json
+{
+  "event_window": {
+    "limit": 32,
+    "next_cursor": "opaque-cursor",
+    "has_more": true,
+    "remaining": 2275
+  }
+}
+```
+
+UI 仅在 `has_more=true` 且存在不透明 `next_cursor` 时请求同一详情路径的 `events_cursor` 与 `events_limit` 查询参数；每页仍需返回 `events` 和可选的 `event_window`。游标只用于读取顺序，不进入运行图关系。前端首屏最多自动读取一页，用户点击“加载更早事件”后每次最多再读 4 页，按持久化 `sequence_no` 去重并排序。若服务返回 `remaining`，界面显示“已加载 N 条 · 仍有至少 M 条更早记录”；没有该字段也会明确保留“已达窗口上限”，不会宣称完整历史。任一历史页失败时保留已读内容并继续显示缺口。当服务明确返回 `has_more=false` 时，即使恰好返回 32 条，也不再把它标成可能缺失。
+
+平台侧只读实现已在 `agent/observer-event-pagination` 的 `38e20825` 提供该契约：`events_cursor` 按 `sequence_no` 向更早事件翻页，`events_limit` 限制在 1–128，`event_window` 返回 `next_cursor`、`has_more` 与 `remaining`。UI 仍保留旧服务兼容路径；当服务未返回 `event_window` 时不会发送猜测性的分页请求，也不会把最近窗口当成完整历史。
+
+建议后续只读接口提供统一的 `tool_calls`、`tool_call_dependencies`、`candidate_occurrences` 分页集合，并为每条记录返回 `id`、`run_id`、`attempt`、`status`、时间戳、父子关系和证据引用。
+
+## 可读聚合与关系分层
+
+- 显式 `batch_id`、`iteration`、`generation`、`action_plan`/`action_plan_id` 或共同父调用字段提供批次身份时，前端先按该身份在整次运行内全局分桶，再按最早观测时间排序；同一批次可跨工具、跨节点和非相邻记录聚合。卡面只显示中文批次序号和操作构成，原始身份留在详情中。
+- 缺少上述字段时，同名工具不会跨整次运行合并。仅当调用在观测序列中连续相邻、且相邻观测时间差不超过 5 分钟时，才生成一个可展开的“观测批次”节点；这只是阅读折叠，不是数据库批次或 iteration 事实。每条原始调用仍保存在 `calls` 中，展开后按“第 N 次尝试”显示。
+- 位置按 `started_at`/`queued_at` 等观测时间排序并按事实类型分层；这不是执行依赖。依赖边只来自结构化依赖字段。事件 payload 的 `tool_call_id` 只画“关联”边，候选 `parent_id` 是“父子谱系”，`generation` 是“代际分组”，后两者不进入执行循环检测。
+- 生命周期事件若携带与工具调用一致的显式批次身份，或通过 `tool_call_id` 精确指向同一调用，可与对应调用进入同一折叠观测簇；展开后仍保留每条事件和调用。没有这些字段时，只能把连续、相邻、同事件类型与角色的记录标为“连续同类观测组”，不得宣称真实实验批次或因果关系。单条记录不人为包装成聚合簇。
+- 生命周期事件带有 `workflow_run_id` 时，同一工作流执行进入一个可展开的“第 N 次执行”观测簇；`activity_id + attempt` 标识同一活动，活动状态取其最新边界事件，避免把已经成功或失败的活动继续标为进行中。不同 `workflow_run_id` 绝不合并。
+- `candidate` 节点只表示候选记录存在，默认中性；前端不从 `reasons` 文本猜淘汰或质量。只有后端显式 decision/status/quality gate 契约补齐后，才可显示相应结论。
+- 有明确 `generation` 的候选预览按代际聚成 `candidate_group`，折叠卡只表达该代返回的预览数量；展开后才显示 `candidate_preview` 个体。没有代际字段的候选保持独立记录，不按时间或序号补分组。种群汇总节点与候选预览分开，只有显式 `parent_id`/`generator_call_id` 且个体可见时才画谱系或来源关联。

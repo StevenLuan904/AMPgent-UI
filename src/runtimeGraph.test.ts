@@ -1,0 +1,1086 @@
+import { describe, expect, it } from 'vitest'
+import { buildRuntimeGraph, candidatePreviewCountLabel, candidatePreviewDenominator, candidatePreviewLabel, countActivityRetries, countOpenActivities, deriveLifecycleToolCalls, deriveToolSummaryGaps, displayEventContext, displayEventName, displayEventSemanticName, displayObservedEventName, displayToolName, distributionKeyForTool, layoutColumnsForWidth, nextExpandedRuntimeGroups, runtimeActivitySummary, runtimeCallSummary, runtimeEventWindow, runtimeObservationSummary, runtimeOpenActivityLabel, runtimeRetrySummary } from './runtimeGraph'
+import type { NodeDetail, RunDetail, ToolAttempt } from './types'
+
+const call = (id: string, toolName: string, queuedAt: string, overrides: Partial<ToolAttempt> = {}): ToolAttempt => ({
+  id,
+  tool_name: toolName,
+  tool_version: 'test.1',
+  status: 'succeeded',
+  attempt: 1,
+  queued_at: queuedAt,
+  started_at: queuedAt,
+  finished_at: new Date(Date.parse(queuedAt) + 10_000).toISOString(),
+  duration_seconds: 10,
+  random_seed: null,
+  model_uri: null,
+  weights_sha256: null,
+  environment_sha256: 'e'.repeat(64),
+  input_sha256: 'i'.repeat(64),
+  output_sha256: 'o'.repeat(64),
+  inputs: {},
+  parameters: {},
+  error: null,
+  artifacts: [],
+  ...overrides,
+})
+
+const detail = (events: RunDetail['events'] = [], candidates: RunDetail['candidates'] = []): RunDetail => ({
+  source: 'postgresql',
+  read_only: true,
+  updated_at: '2026-09-04T00:00:00Z',
+  run: { id: 'run-1', name: 'test', kind: 'test', schema_version: null, status: 'running', created_at: '2026-09-04T00:00:00Z', started_at: null, finished_at: null, candidate_count: candidates.length, tool_call_count: 0, structure_record_count: 0, spec_sha256: 's'.repeat(64) },
+  counts: {},
+  branches: [],
+  admission: {},
+  tool_summary: {},
+  structure_counts: {},
+  checkpoints: [],
+  graph: { nodes: [{ id: 'legacy', label: '不应作为运行节点', kind: 'model', group: 'design', status: 'pending', current: 0, total: 0, provenance: 'missing', insight: { grade: 'neutral', verdict: '—', reason: '—', facts: [], source: 'observer_summary' } }], edges: [] },
+  candidates,
+  viewer: null,
+  viewers: {},
+  events,
+})
+
+const nodeDetail = (calls: ToolAttempt[]): NodeDetail => ({ source: 'postgresql', read_only: true, node_id: 'dynamic', narrative: [], calls, metrics: {}, reasoning: { decisions: [], status_counts: {}, reason_counts: {}, considered: 0, admitted: 0 }, structure_results: [] })
+
+describe('buildRuntimeGraph', () => {
+  it('maps persisted tool keys to concise Chinese labels and keeps unknown keys neutral', () => {
+    expect(displayToolName('autoresearch-frozen-action-executor')).toBe('冻结动作执行')
+    expect(displayToolName('autoresearch-multi-front-rule-planner')).toBe('多前沿规则规划')
+    expect(displayToolName('v38-metric-mic_potency')).toBe('MIC 活性预测')
+    expect(displayToolName('v38-metric-physicochemical_developability')).toBe('理化可开发性评估')
+    expect(displayToolName('untrusted-internal-tool-key')).toBe('未命名工具')
+  })
+
+  it('maps structure evidence through an explicit viewer key without using the card label', () => {
+    const artifact = { candidate_id: 'candidate-1', sequence: 'KKLL', target_id: 'target-1', target_name: 'target', lane: 'native', seed: 1, artifact_sha256: 'b'.repeat(64), media_type: 'model/mmcif', artifact_url: '/viewer/boltz.cif' }
+    const result = buildRuntimeGraph({ ...detail(), viewers: { boltz: artifact } }, { structure: nodeDetail([call('structure-call', 'v38-metric-boltz_pose', '2026-09-04T00:00:00Z')]) })
+    const node = result.nodes.find((item) => item.id === 'call:structure-call')
+    expect(node?.runtime).toMatchObject({ has_viewer: true, viewer_key: 'boltz', viewer_mapping_basis: '限定工具名映射' })
+    expect(result.nodes.find((item) => item.id === 'call:structure-call')?.runtime?.viewer_key).not.toBe('结构证据')
+  })
+
+  it('materializes standalone structure evidence when only the run viewer is available', () => {
+    const artifact = { candidate_id: 'candidate-1', sequence: 'KKLL', target_id: 'target-1', target_name: 'target', lane: 'native', seed: 1, artifact_sha256: 'b'.repeat(64), media_type: 'model/mmcif', artifact_url: '/viewer/boltz.cif' }
+    const result = buildRuntimeGraph({ ...detail(), viewers: { boltz: artifact } })
+    const structure = result.nodes.find((item) => item.runtime?.node_type === 'structure_evidence')
+    expect(structure).toMatchObject({ id: 'structure-evidence:boltz', label: 'Boltz 结构证据', kind: 'structure', provenance: 'database', runtime: { viewer_key: 'boltz', has_viewer: true, node_type: 'structure_evidence' } })
+    expect(result.edges.some((edge) => edge.source === structure?.id || edge.target === structure?.id)).toBe(false)
+  })
+
+  it('recovers a Boltz structure card from a persisted CIF artifact when viewer indexes are empty', () => {
+    const artifact = {
+      role: 'engine_output_2', sha256: 'c'.repeat(64), size_bytes: 461944,
+      media_type: 'chemical/x-cif', url: '/v1/observer/artifacts/' + 'c'.repeat(64),
+    }
+    const source = nodeDetail([call('boltz-call', 'boltz2', '2026-09-04T00:00:00Z', {
+      inputs: { peptide_sequence: 'KKLL', target_id: 'target-1', seed: 7 },
+      artifacts: [artifact],
+    })])
+    source.node_id = 'boltz'
+    const result = buildRuntimeGraph({ ...detail(), viewers: { boltz: null, rosetta: null } }, { boltz: source })
+    const structure = result.nodes.find((node) => node.runtime?.node_type === 'structure_evidence')
+    expect(structure).toMatchObject({
+      id: 'structure-evidence:boltz',
+      runtime: { viewer_key: 'boltz', viewer_artifact: { artifact_sha256: 'c'.repeat(64), artifact_url: expect.stringContaining('/v1/observer/artifacts/') } },
+    })
+    expect(result.nodes.filter((node) => node.runtime?.node_type === 'structure_evidence')).toHaveLength(1)
+  })
+
+  it('does not promote a raw Rosetta PDB when the explicit viewer index is empty', () => {
+    const source = nodeDetail([call('rosetta-call', 'rosetta', '2026-09-04T00:00:00Z', {
+      artifacts: [{ role: 'engine_output', sha256: 'r'.repeat(64), size_bytes: 12, media_type: 'chemical/x-pdb', url: '/v1/observer/artifacts/' + 'r'.repeat(64) }],
+    })])
+    source.node_id = 'rosetta'
+    const result = buildRuntimeGraph({ ...detail(), viewers: { boltz: null, rosetta: null } }, { rosetta: source })
+    expect(result.nodes.some((node) => node.id === 'structure-evidence:rosetta')).toBe(false)
+  })
+
+  it('deduplicates repeated viewer aliases by artifact hash and associates them with population evidence', () => {
+    const artifact = { candidate_id: 'candidate-1', sequence: 'KKLL', target_id: 'target-1', target_name: 'target', lane: 'native', seed: 1, artifact_sha256: 'b'.repeat(64), media_type: 'model/mmcif', artifact_url: '/viewer/boltz.cif' }
+    const result = buildRuntimeGraph({ ...detail(), viewers: { boltz: artifact, rosetta: { ...artifact, artifact_url: '/viewer/rosetta.cif' } }, display_population: { candidate_count: 1, candidate_record_count: 1, excluded_candidate_count: 0, exclusion_reason: 'historical_exact_replay' } })
+    expect(result.nodes.filter((node) => node.runtime?.node_type === 'structure_evidence')).toHaveLength(1)
+    expect(result.edges).toEqual(expect.arrayContaining([expect.objectContaining({ source: 'population-summary', relation_kind: 'association', label: '同轮次证据', provenance: 'derived' })]))
+    expect(result.edges.find((edge) => edge.label === '同轮次证据')?.rationale).toContain('不表示生成、依赖或执行先后')
+  })
+
+  it('keeps numeric distribution lookup independent from structure viewer lookup', () => {
+    expect(distributionKeyForTool('v38-metric-mic_potency')).toBe('mic')
+    expect(distributionKeyForTool('v38-metric-mic_potency_amp_read')).toBe('amp_read')
+    expect(distributionKeyForTool('v38-metric-hemolysis_risk')).toBe('hemolysis')
+    expect(distributionKeyForTool('v38-metric-physicochemical_developability')).toBe('developability')
+    expect(distributionKeyForTool('v38-metric-toxicity_risk')).toBe('toxicity')
+    expect(distributionKeyForTool('v38-metric-boltz_pose')).toBeUndefined()
+    expect(distributionKeyForTool('autoresearch-frozen-action-executor')).toBe('candidate_pool')
+    const result = buildRuntimeGraph({ ...detail(), display_population: { candidate_count: 1, candidate_record_count: 1, excluded_candidate_count: 0, exclusion_reason: 'historical_exact_replay' } }, { mic: nodeDetail([call('mic-call', 'v38-metric-mic_potency', '2026-09-04T00:00:00Z')]) })
+    expect(result.nodes.find((item) => item.id === 'call:mic-call')?.runtime).toMatchObject({ evidence_key: 'mic', distribution_key: 'mic' })
+    expect(result.nodes.find((item) => item.id === 'call:mic-call')?.runtime?.viewer_key).toBeUndefined()
+  })
+
+  it('keeps repeated metric calls as independent distribution-bearing cards', () => {
+    const calls = Array.from({ length: 5 }, (_, index) => call(
+      `mic-${index}`,
+      'v38-metric-mic_potency',
+      `2026-09-04T00:00:0${index}Z`,
+    ))
+    const result = buildRuntimeGraph(detail(), { worker: nodeDetail(calls) })
+    expect(result.nodes.filter((node) => node.runtime?.node_type === 'tool_group')).toHaveLength(0)
+    expect(result.nodes.filter((node) => node.runtime?.node_type === 'tool_call').map((node) => node.id)).toEqual(
+      calls.map((item) => `call:${item.id}`),
+    )
+    expect(result.nodes.filter((node) => node.runtime?.distribution_key === 'mic')).toHaveLength(5)
+  })
+
+  it('keeps real detail.graph metric evidence as independent scientific cards', () => {
+    const metricNode = {
+      id: 'mic', label: '最小抑菌浓度预测', kind: 'model' as const, group: 'evaluation' as const,
+      status: 'completed' as const, current: 39, total: 39, provenance: 'database' as const,
+      insight: { grade: 'good' as const, verdict: '已完成', reason: '数据库返回的指标节点', facts: [{ label: '覆盖', value: '39/39' }], source: 'observer_summary' as const },
+    }
+    const result = buildRuntimeGraph({ ...detail(), graph: { nodes: [metricNode], edges: [] } })
+    expect(result.nodes.find((node) => node.id === 'mic')).toMatchObject({
+      label: '最小抑菌浓度预测',
+      runtime: { node_type: 'scientific_stage', distribution_key: 'mic', grouping_basis: '数据库 detail.graph 科学节点' },
+    })
+  })
+
+  it('does not map an unrelated tool to a structure viewer', () => {
+    const artifact = { candidate_id: 'candidate-1', sequence: 'KKLL', target_id: 'target-1', target_name: 'target', lane: 'native', seed: 1, artifact_sha256: 'b'.repeat(64), media_type: 'model/mmcif', artifact_url: '/viewer/boltz.cif' }
+    const result = buildRuntimeGraph({ ...detail(), viewers: { boltz: artifact } }, { worker: nodeDetail([call('plain-call', 'candidate-score', '2026-09-04T00:00:00Z')]) })
+    expect(result.nodes.find((item) => item.id === 'call:plain-call')?.runtime?.has_viewer).toBeUndefined()
+  })
+
+  it('separates materialized tools from lifecycle observations when summary coverage exists', () => {
+    expect(runtimeObservationSummary(199, 195, true)).toBe('图中观测 199 · 工具明细 195 · 生命周期观测 4')
+    expect(runtimeObservationSummary(3, 0, true)).toBe('图中观测 3 · 工具明细 0 · 生命周期观测 3')
+    expect(runtimeObservationSummary(3, 0, false)).toBe('调用 3')
+  })
+
+  it('maps persisted event keys to distinct scientific labels and keeps unknown events neutral', () => {
+    expect(displayEventName('agent_decision.recorded')).toBe('智能体决策已记录')
+    expect(displayEventName('autoresearch.action.recorded')).toBe('生成动作已记录')
+    expect(displayEventName('autoresearch.archive.updated')).toBe('多前沿归档已更新')
+    expect(displayEventName('autoresearch.checkpoint.recorded')).toBe('迭代检查点已记录')
+    expect(displayEventName('v38.sequence_metric.persisted')).toBe('序列指标已持久化')
+    expect(displayEventName('opaque.internal.event')).toBe('未命名事件 · 事件')
+    expect(displayEventSemanticName('autoresearch.archive.updated')).toBe('多前沿归档')
+    expect(displayEventSemanticName('autoresearch.action.recorded')).toBe('生成动作')
+    expect(displayEventSemanticName('opaque.internal.event')).toBe('未命名事件')
+  })
+
+  it('uses persisted activity type for lifecycle event labels, with a neutral fallback for unknown types', () => {
+    expect(displayObservedEventName('activity.started', { activity_type: 'evaluate_v38_sequence_metric' })).toBe('序列指标计算 · 开始')
+    expect(displayObservedEventName('activity.succeeded', { activity_type: 'evaluate_v38_sequence_metric' })).toBe('序列指标计算 · 成功')
+    expect(displayObservedEventName('activity.failed', { activity_type: 'opaque_activity' })).toBe('活动 · 失败')
+    expect(displayObservedEventName('activity.started', {})).toBe('活动 · 开始')
+  })
+
+  it('renders only explicit iteration and generation context without inferring it', () => {
+    expect(displayEventContext({ iteration_no: 39, generation: 4 })).toEqual(['第 39 轮', '第 4 代'])
+    expect(displayObservedEventName('agent_decision.recorded', { iteration_no: 39 })).toBe('智能体决策已记录 · 第 39 轮')
+    expect(displayObservedEventName('autoresearch.action.recorded', { generation: 4 })).toBe('生成动作已记录 · 第 4 代')
+    expect(displayEventContext({ iteration_no: 'not-a-number', generation: -1 })).toEqual([])
+    expect(displayObservedEventName('agent_decision.recorded', { iteration_no: 'not-a-number' })).toBe('智能体决策已记录')
+  })
+
+  it('separates authoritative population counts from candidate preview scope', () => {
+    const candidates = [
+      { id: 'candidate-1', sequence: 'KKLL', length: 4, proposal_rank: 1, cohort: 'exploration', pareto_front: null, reasons: [], metrics: [], generation: 1 },
+      { id: 'candidate-2', sequence: 'KLLK', length: 4, proposal_rank: 2, cohort: 'exploration', pareto_front: null, reasons: [], metrics: [], generation: 1 },
+      { id: 'candidate-3', sequence: 'LLKK', length: 4, proposal_rank: 3, cohort: 'exploration', pareto_front: null, reasons: [], metrics: [], generation: 2, parent_id: 'candidate-1', generator_call_id: 'call-generator' },
+    ]
+    const scopedDetail = {
+      ...detail([], candidates),
+      counts: { candidates: 114 },
+      display_population: { candidate_count: 108, candidate_record_count: 114, excluded_candidate_count: 6, exclusion_reason: 'historical_exact_replay' as const },
+      generation_population: { baseline_candidate_count: 0, descendant_candidate_count: 129, max_generation: 40 },
+    }
+    expect(candidatePreviewDenominator(scopedDetail)).toBe(108)
+    expect(candidatePreviewLabel(2, 108)).toBe('2/108')
+    expect(candidatePreviewCountLabel(3, 108)).toBe('3/108 条')
+    const collapsed = buildRuntimeGraph(scopedDetail)
+    expect(collapsed.nodes.find((node) => node.id === 'population-summary')).toMatchObject({ label: '种群汇总', current: 3, total: 108, runtime: { node_type: 'population_summary' } })
+    expect(collapsed.nodes.find((node) => node.id === 'generation:1')).toMatchObject({ label: '第 1 代预览 · 2 条', current: 2, total: 0, runtime: { node_type: 'candidate_group', child_ids: ['candidate-1', 'candidate-2'], expanded: false } })
+    expect(collapsed.nodes.some((node) => node.id === 'candidate:candidate-1')).toBe(false)
+    expect(collapsed.nodes.find((node) => node.id === 'generation:1')?.insight.facts).toEqual(expect.arrayContaining([{ label: '预览记录', value: '2/108 条' }]))
+    expect(collapsed.gaps).toContain('候选预览已返回 3/108 条；其余候选未进入运行图。')
+    expect(collapsed.gaps).toContain('接口种群口径不一致：展示 108 条；基线与新生子代合计 129 条。')
+    expect(collapsed.nodes.find((node) => node.id === 'population-summary')?.insight.facts).toEqual(expect.arrayContaining([{ label: '数据状态', value: '接口计数不一致' }]))
+    expect(collapsed.gaps).not.toContain('候选预览未返回 parent_id；父子代际关系暂不可观测。')
+    expect(collapsed.edges).not.toEqual(expect.arrayContaining([expect.objectContaining({ relation_kind: 'lineage' })]))
+
+    const expanded = buildRuntimeGraph(scopedDetail, { worker: nodeDetail([call('call-generator', 'hydramp', '2026-09-04T00:00:00Z')]) }, { expandedGroups: new Set(['generation:2']) })
+    expect(expanded.nodes.slice(-2).map((node) => node.id)).toEqual(['generation:2', 'candidate:candidate-3'])
+    expect(expanded.nodes.find((node) => node.id === 'candidate:candidate-3')).toMatchObject({ current: 1, total: 0, runtime: { node_type: 'candidate_preview', preview_index: 3, preview_total: 108 } })
+    expect(expanded.edges).toEqual(expect.arrayContaining([expect.objectContaining({ source: 'call:call-generator', target: 'candidate:candidate-3', relation_kind: 'association' })]))
+    expect(expanded.edges).toEqual(expect.arrayContaining([expect.objectContaining({ source: 'generation:2', target: 'candidate:candidate-3', relation_kind: 'grouping', provenance: 'database' })]))
+    expect(expanded.edges).not.toEqual(expect.arrayContaining([expect.objectContaining({ relation_kind: 'lineage' })]))
+  })
+
+  it('uses a backend display count only when available and keeps excluded records out of the denominator', () => {
+    const candidate = { id: 'candidate-missing-scope', sequence: 'KKLL', length: 4, proposal_rank: null, cohort: 'exploration', pareto_front: null, reasons: [], metrics: [] }
+    expect(candidatePreviewDenominator({ ...detail([], [candidate]), counts: {}, run: { ...detail().run, candidate_count: 7 } })).toBe(7)
+    expect(candidatePreviewDenominator({ ...detail([], [candidate]), counts: { candidates: 7 }, display_population: { candidate_count: 0, candidate_record_count: 7, excluded_candidate_count: 7, exclusion_reason: 'historical_exact_replay' } })).toBe(0)
+    expect(candidatePreviewLabel(1, 0)).toBe('已返回第 1 条')
+    expect(candidatePreviewLabel(4, 3)).toBe('已返回第 4 条')
+    expect(candidatePreviewCountLabel(1, 0)).toBe('已返回 1 条')
+    expect(buildRuntimeGraph({ ...detail([], [candidate]), counts: {}, run: { ...detail().run, candidate_count: Number.NaN } }).nodes.find((node) => node.id === 'candidate:candidate-missing-scope')?.insight.facts).toEqual(expect.arrayContaining([{ label: '预览记录', value: '已返回第 1 条' }]))
+  })
+
+  it('materializes explicit lifecycle tool_call_id observations and deduplicates node-detail calls', () => {
+    const events: RunDetail['events'] = [
+      { sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: 'workflow-coverage', activity_id: 8, attempt: 1, status: 'started', activity_type: 'evaluate_v38_sequence_metric', tool_call_id: 'call-explicit' }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'activity.succeeded', actor: 'observer-writer', payload: { workflow_run_id: 'workflow-coverage', activity_id: 8, attempt: 1, status: 'succeeded', activity_type: 'evaluate_v38_sequence_metric', tool_call_id: 'call-explicit' }, occurred_at: '2026-09-04T00:00:03Z' },
+    ]
+    const synthesized = deriveLifecycleToolCalls(events)
+    expect(synthesized).toHaveLength(1)
+    expect(synthesized[0]).toMatchObject({ id: 'call-explicit', status: 'succeeded', attempt: 1, attempt_observed: true, activity_type: 'evaluate_v38_sequence_metric' })
+
+    const materialized = call('call-explicit', 'v38-metric-mic_potency', '2026-09-04T00:00:01Z', { status: 'succeeded', attempt: 1 })
+    const result = buildRuntimeGraph(detail(events), { worker: nodeDetail([materialized]) })
+    expect(Object.keys(result.calls)).toEqual(['call-explicit'])
+    expect(result.stats.observedCalls).toBe(1)
+    expect(result.nodes.some((node) => node.runtime?.event_ids?.includes('event:1'))).toBe(true)
+  })
+
+  it('keeps adjacent event-only tool_call_ids in separate observation groups', () => {
+    const events: RunDetail['events'] = [
+      { sequence_no: 1, type: 'tool_call.succeeded', actor: 'worker', payload: { tool_call_id: 'event-call-1', status: 'succeeded' }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'tool_call.succeeded', actor: 'worker', payload: { tool_call_id: 'event-call-2', status: 'succeeded' }, occurred_at: '2026-09-04T00:00:02Z' },
+    ]
+    const result = buildRuntimeGraph(detail(events))
+    const groups = result.nodes.filter((node) => node.runtime?.node_type === 'batch_group')
+    expect(groups).toHaveLength(2)
+    expect(groups.map((node) => node.runtime?.child_ids)).toEqual(expect.arrayContaining([['event-call-1'], ['event-call-2']]))
+    expect(groups.every((node) => node.runtime?.grouping_basis?.startsWith('事件关联字段 tool_call_id='))).toBe(true)
+  })
+
+  it('wraps an expanded dense batch into local rows instead of one long horizontal strip', () => {
+    const calls = Array.from({ length: 36 }, (_, index) => call(
+      `dense-call-${index}`,
+      index % 2 === 0 ? 'hydramp' : 'ampgan',
+      `2026-09-04T00:00:${String(index).padStart(2, '0')}Z`,
+      { inputs: { batch_id: 'dense-batch' } },
+    ))
+    const source = { worker: nodeDetail(calls) }
+    const collapsed = buildRuntimeGraph(detail(), source)
+    const group = collapsed.nodes.find((node) => node.runtime?.node_type === 'tool_group')
+    expect(group).toBeDefined()
+    expect(collapsed.nodes.filter((node) => node.id.startsWith('call:dense-call-'))).toHaveLength(0)
+
+    const expanded = buildRuntimeGraph(detail(), source, { expandedGroups: new Set([group!.id]) })
+    const childPositions = calls.map((item) => expanded.positions[`call:${item.id}`])
+    expect(childPositions.every(Boolean)).toBe(true)
+    expect(new Set(childPositions.map((position) => position.y)).size).toBeGreaterThan(1)
+    expect(Math.max(...childPositions.map((position) => position.x)) - Math.min(...childPositions.map((position) => position.x))).toBeLessThan(1_500)
+    const generationPosition = expanded.positions['generation:1']
+    if (generationPosition) {
+      expect(generationPosition.y).toBeGreaterThan(Math.max(...childPositions.map((position) => position.y)))
+    }
+  })
+
+  it('selects readable responsive columns without reading browser globals', () => {
+    expect(layoutColumnsForWidth(1610)).toBe(5)
+    expect(layoutColumnsForWidth(2310)).toBe(7)
+    expect(layoutColumnsForWidth(undefined)).toBe(5)
+  })
+
+  it('uses the supplied layout width to reduce dense rows at a wide viewport', () => {
+    const calls = Array.from({ length: 36 }, (_, index) => call(
+      `wide-call-${index}`,
+      'hydramp',
+      `2026-09-04T00:00:${String(index).padStart(2, '0')}Z`,
+      { inputs: { batch_id: 'wide-batch' } },
+    ))
+    const source = { worker: nodeDetail(calls) }
+    const collapsed = buildRuntimeGraph(detail(), source, { availableWidth: 1610 })
+    const group = collapsed.nodes.find((node) => node.runtime?.child_ids?.length === 36)
+    expect(group).toBeDefined()
+    const narrow = buildRuntimeGraph(detail(), source, { availableWidth: 1610, expandedGroups: new Set([group!.id]) })
+    const wide = buildRuntimeGraph(detail(), source, { availableWidth: 2310, expandedGroups: new Set([group!.id]) })
+    const narrowRows = new Set(calls.map((item) => narrow.positions[`call:${item.id}`].y)).size
+    const wideRows = new Set(calls.map((item) => wide.positions[`call:${item.id}`].y)).size
+    expect(narrowRows).toBe(8)
+    expect(wideRows).toBe(6)
+    expect(Math.max(...calls.map((item) => wide.positions[`call:${item.id}`].x)) - Math.min(...calls.map((item) => wide.positions[`call:${item.id}`].x))).toBeLessThan(2_000)
+  })
+
+  it('counts an associated lifecycle event once in the folded call summary', () => {
+    const events: RunDetail['events'] = [
+      { sequence_no: 1, type: 'tool_call.started', actor: 'worker', payload: { tool_call_id: 'event-call-one', status: 'started' }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'tool_call.succeeded', actor: 'worker', payload: { tool_call_id: 'event-call-one', status: 'succeeded' }, occurred_at: '2026-09-04T00:00:02Z' },
+    ]
+    const result = buildRuntimeGraph(detail(events))
+    const group = result.nodes.find((node) => node.runtime?.node_type === 'batch_group')
+    expect(group?.insight.verdict).toBe('1 次调用')
+    expect(group?.insight.facts.find((fact) => fact.label === '操作构成')?.value).toContain('关联事件 2')
+    expect(result.stats.observedCalls).toBe(1)
+  })
+
+  it('uses explicit lifecycle dependency fields without inferring from event order', () => {
+    const upstream = call('call-upstream', 'ampgan', '2026-09-04T00:00:00Z')
+    const events: RunDetail['events'] = [{
+      sequence_no: 1,
+      type: 'activity.succeeded',
+      actor: 'observer-writer',
+      payload: { workflow_run_id: 'workflow-dependency', activity_id: 2, attempt: 1, status: 'succeeded', tool_call_id: 'call-downstream', parent_call_id: 'call-upstream' },
+      occurred_at: '2026-09-04T00:00:02Z',
+    }]
+    const result = buildRuntimeGraph(detail(events), { worker: nodeDetail([upstream]) })
+    expect(result.edges).toEqual(expect.arrayContaining([
+      expect.objectContaining({ source: 'call:call-upstream', relation_kind: 'dependency', provenance: 'database' }),
+    ]))
+  })
+
+  it('separates tool-only retries from activity-only retries', () => {
+    const toolRetry = call('tool-retry', 'ampgan', '2026-09-04T00:00:00Z', { attempt: 2 })
+    const activityEvents: RunDetail['events'] = [
+      { sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: 'workflow-activity-retry', activity_id: 1, attempt: 1 }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'activity.failed', actor: 'observer-writer', payload: { workflow_run_id: 'workflow-activity-retry', activity_id: 1, attempt: 1 }, occurred_at: '2026-09-04T00:00:02Z' },
+      { sequence_no: 3, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: 'workflow-activity-retry', activity_id: 1, attempt: 2 }, occurred_at: '2026-09-04T00:00:03Z' },
+    ]
+    const toolOnly = buildRuntimeGraph(detail(), { worker: nodeDetail([toolRetry]) })
+    const activityOnly = buildRuntimeGraph(detail(activityEvents))
+    expect(toolOnly.stats).toMatchObject({ toolRetries: 1, activityRetries: 0, retries: 1 })
+    expect(activityOnly.stats).toMatchObject({ toolRetries: 0, activityRetries: 1, retries: 0 })
+    expect(runtimeRetrySummary(toolOnly.stats.toolRetries, toolOnly.stats.activityRetries)).toEqual(['工具重试 1'])
+    expect(runtimeRetrySummary(activityOnly.stats.toolRetries, activityOnly.stats.activityRetries)).toEqual(['活动重试 1'])
+  })
+
+  it('deduplicates multiple persisted retry attempts for one activity', () => {
+    const events: RunDetail['events'] = [
+      { sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: 'workflow-multiple-attempts', activity_id: 9, attempt: 2 }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: 'workflow-multiple-attempts', activity_id: 9, attempt: 3 }, occurred_at: '2026-09-04T00:00:02Z' },
+    ]
+    expect(countActivityRetries(events)).toBe(1)
+    expect(buildRuntimeGraph(detail(events)).stats.activityRetries).toBe(1)
+  })
+
+  it('shows both retry categories, while neither category stays absent', () => {
+    const activityEvents: RunDetail['events'] = [
+      { sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: 'workflow-both-retries', activity_id: 1, attempt: 1 }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: 'workflow-both-retries', activity_id: 1, attempt: 2 }, occurred_at: '2026-09-04T00:00:02Z' },
+    ]
+    const both = buildRuntimeGraph(detail(activityEvents), { worker: nodeDetail([call('tool-retry', 'ampgan', '2026-09-04T00:00:00Z', { attempt: 2 })]) })
+    const neither = buildRuntimeGraph(detail([{ sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: 'workflow-no-retries', activity_id: 1, attempt: 1 }, occurred_at: '2026-09-04T00:00:01Z' }]))
+    expect(both.stats).toMatchObject({ toolRetries: 1, activityRetries: 1 })
+    expect(runtimeRetrySummary(both.stats.toolRetries, both.stats.activityRetries)).toEqual(['活动重试 1', '工具重试 1'])
+    expect(neither.stats).toMatchObject({ toolRetries: 0, activityRetries: 0, retries: 0 })
+    expect(runtimeRetrySummary(neither.stats.toolRetries, neither.stats.activityRetries)).toEqual([])
+  })
+
+  it('does not count recovery scheduling as either retry category', () => {
+    const events: RunDetail['events'] = [{ sequence_no: 1, type: 'mvp_human.autoresearch.recovery_scheduled', actor: 'mvp-human-controller', payload: { recovery_attempt: 4 }, occurred_at: '2026-09-04T00:00:01Z' }]
+    const result = buildRuntimeGraph(detail(events))
+    expect(countActivityRetries(events)).toBe(0)
+    expect(result.stats).toMatchObject({ toolRetries: 0, activityRetries: 0, retries: 0 })
+    expect(runtimeRetrySummary(result.stats.toolRetries, result.stats.activityRetries)).toEqual([])
+  })
+
+  it('counts completed and failed activities as closed, while isolating attempts', () => {
+    const execution = 'workflow-run-open-activity'
+    const events: RunDetail['events'] = [
+      { sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 1, attempt: 1 }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'activity.succeeded', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 1, attempt: 1 }, occurred_at: '2026-09-04T00:00:02Z' },
+      { sequence_no: 3, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 1, attempt: 2 }, occurred_at: '2026-09-04T00:00:03Z' },
+      { sequence_no: 4, type: 'activity.failed', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 2, attempt: 1 }, occurred_at: '2026-09-04T00:00:04Z' },
+      { sequence_no: 5, type: 'activity.running', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 3, attempt: 1 }, occurred_at: '2026-09-04T00:00:05Z' },
+    ]
+    expect(countOpenActivities(events)).toBe(2)
+    expect(buildRuntimeGraph(detail(events)).stats.openActivities).toBe(2)
+  })
+
+  it('does not count activities or recovery scheduling without the complete activity identity', () => {
+    const events: RunDetail['events'] = [
+      { sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: 'workflow-run-missing-attempt', activity_id: 1 }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'activity.started', actor: 'observer-writer', payload: { activity_id: 2, attempt: 1 }, occurred_at: '2026-09-04T00:00:02Z' },
+      { sequence_no: 3, type: 'mvp_human.autoresearch.recovery_scheduled', actor: 'mvp-human-controller', payload: { workflow_run_id: 'workflow-run-missing-attempt', recovery_attempt: 4 }, occurred_at: '2026-09-04T00:00:03Z' },
+    ]
+    expect(countOpenActivities(events)).toBe(0)
+    expect(buildRuntimeGraph(detail(events)).stats.openActivities).toBe(0)
+  })
+
+  it('uses a precise running summary when no activity boundary is open', () => {
+    expect(runtimeActivitySummary('running', 0)).toBe('等待后续活动观测')
+    expect(runtimeActivitySummary('running', 2)).toBe('开放活动 2')
+    expect(runtimeActivitySummary('running', 2, true)).toBe('未闭合观测 2')
+    expect(runtimeActivitySummary('running', 0, true)).toBe('等待后续活动观测')
+    expect(runtimeActivitySummary('succeeded', 0)).toBe('开放活动 0')
+  })
+
+  it('marks the observer event window as incomplete at the known read limit', () => {
+    expect(runtimeEventWindow([])).toEqual({ returned: 0, limit: 32, atLimit: false, mayBeTruncated: false })
+    expect(runtimeEventWindow(Array.from({ length: 31 }, (_, index) => ({ sequence_no: index + 1, type: 'run.note', actor: 'observer', payload: {}, occurred_at: '2026-09-04T00:00:00Z' })))).toMatchObject({ returned: 31, atLimit: false, mayBeTruncated: false })
+    expect(runtimeEventWindow(Array.from({ length: 32 }, (_, index) => ({ sequence_no: index + 1, type: 'run.note', actor: 'observer', payload: {}, occurred_at: '2026-09-04T00:00:00Z' })))).toEqual({ returned: 32, limit: 32, atLimit: true, mayBeTruncated: true })
+    expect(runtimeEventWindow(Array.from({ length: 32 }, (_, index) => ({ sequence_no: index + 1, type: 'run.note', actor: 'observer', payload: {}, occurred_at: '2026-09-04T00:00:00Z' })), { limit: 32, has_more: false, next_cursor: null })).toEqual({ returned: 32, limit: 32, atLimit: true, mayBeTruncated: false })
+    expect(runtimeEventWindow(Array.from({ length: 32 }, (_, index) => ({ sequence_no: index + 1, type: 'run.note', actor: 'observer', payload: {}, occurred_at: '2026-09-04T00:00:00Z' })), { limit: 32, has_more: true, next_cursor: 'older', remaining: 2248 })).toEqual({ returned: 32, limit: 32, atLimit: true, mayBeTruncated: true, remaining: 2248 })
+  })
+
+  it('keeps only the newly selected runtime cluster expanded', () => {
+    const first = nextExpandedRuntimeGroups(new Set<string>(), 'cluster-a')
+    expect([...first]).toEqual(['cluster-a'])
+    const second = nextExpandedRuntimeGroups(first, 'cluster-b')
+    expect([...second]).toEqual(['cluster-b'])
+    expect([...nextExpandedRuntimeGroups(second, 'cluster-b')]).toEqual([])
+  })
+
+  it('labels an open persisted activity without implying scheduler failure', () => {
+    const events: RunDetail['events'] = [
+      { sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: 'execution-open', activity_id: 7, attempt: 1, activity_type: 'evaluate_v38_sequence_metric' }, occurred_at: '2026-09-04T00:00:01Z' },
+    ]
+    expect(runtimeOpenActivityLabel(events)).toBe('正在执行 · 序列指标计算')
+  })
+
+  it('keeps an open retry attempt distinct from a failed prior attempt', () => {
+    const events: RunDetail['events'] = [
+      { sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: 'execution-open-retry', activity_id: 7, attempt: 1, activity_type: 'evaluate_v38_sequence_metric' }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'activity.failed', actor: 'observer-writer', payload: { workflow_run_id: 'execution-open-retry', activity_id: 7, attempt: 1, activity_type: 'evaluate_v38_sequence_metric' }, occurred_at: '2026-09-04T00:00:02Z' },
+      { sequence_no: 3, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: 'execution-open-retry', activity_id: 7, attempt: 2, activity_type: 'evaluate_v38_sequence_metric' }, occurred_at: '2026-09-04T00:00:03Z' },
+    ]
+    expect(runtimeOpenActivityLabel(events)).toBe('正在执行 · 序列指标计算 · 第 2 次尝试')
+    expect(runtimeOpenActivityLabel(events, true)).toBe('未闭合观测 · 序列指标计算 · 第 2 次尝试')
+  })
+
+  it('distinguishes materialized calls from the authoritative run record count', () => {
+    expect(runtimeCallSummary(1, 8)).toBe('调用 1/8（已映射）')
+    expect(runtimeCallSummary(0, 8)).toBe('调用 0/8（已映射）')
+    expect(runtimeCallSummary(8, 8)).toBe('调用 8')
+    expect(runtimeCallSummary(8, 3)).toBe('调用 8')
+  })
+
+  it('derives only positive tool summary gaps by exact tool and status', () => {
+    const materialized = [
+      call('summary-1', 'tool-a', '2026-09-04T00:00:00Z', { status: 'succeeded' }),
+      call('summary-2', 'tool-a', '2026-09-04T00:00:01Z', { status: 'failed' }),
+    ]
+    expect(deriveToolSummaryGaps({ 'tool-a': { succeeded: 3, failed: 1 }, 'tool-b': { succeeded: 2 } }, materialized)).toEqual([
+      expect.objectContaining({ tool_name: 'tool-a', summary_count: 4, materialized_count: 2, missing_count: 2, status_counts: { succeeded: 3, failed: 1 } }),
+      expect.objectContaining({ tool_name: 'tool-b', summary_count: 2, materialized_count: 0, missing_count: 2 }),
+    ])
+    expect(deriveToolSummaryGaps({ 'tool-a': { succeeded: 1 } }, materialized)).toEqual([])
+  })
+
+  it('merges equivalent summary status keys before subtracting materialized calls', () => {
+    const materialized = [call('summary-duplicate', 'tool-a', '2026-09-04T00:00:00Z', { status: 'succeeded' })]
+    const gaps = deriveToolSummaryGaps({ 'tool-a': { SUCCEEDED: 1, ' succeeded ': 1 } }, materialized)
+    expect(gaps[0]).toMatchObject({ summary_count: 2, materialized_count: 1, missing_count: 1, status_counts: { succeeded: 2 } })
+  })
+
+  it('adds a folded tool-chain batch for authoritative summary calls', () => {
+    const observed = call('summary-materialized', 'tool-a', '2026-09-04T00:00:00Z')
+    const summaryDetail = { ...detail(), tool_summary: { 'tool-a': { succeeded: 2 }, 'unknown-internal-tool': { failed: 3 } } }
+    const result = buildRuntimeGraph(summaryDetail, { worker: nodeDetail([observed]) })
+    const group = result.nodes.find((node) => node.id === 'tool-summary-group')
+    expect(group).toMatchObject({ label: '逐次明细缺口 · 4 项', status: 'stopped', current: 1, total: 5, insight: { verdict: '统计 5 · 已映射 1', reason: '数据库工具状态汇总' }, runtime: { summary_only: true, child_ids: ['tool-summary:tool-a', 'tool-summary:unknown-internal-tool'] } })
+    expect(group?.insight.facts).toEqual(expect.arrayContaining([
+      { label: '统计总量', value: '5 项' },
+      { label: '逐次明细', value: '已有 1 · 尚缺 4' },
+    ]))
+    expect(group?.runtime?.summary_tools?.find((tool) => tool.tool_name === 'unknown-internal-tool')?.display_name).toBe('未命名工具')
+    expect(result.edges.some((edge) => edge.source.startsWith('tool-summary:') || edge.target.startsWith('tool-summary:'))).toBe(false)
+    expect(result.stats).toMatchObject({ toolSummaryRecords: 5, toolSummaryMaterialized: 1, toolSummaryMissing: 4 })
+  })
+
+  it('surfaces the latest explicit iteration on the folded tool chain', () => {
+    const summaryDetail = {
+      ...detail([{ sequence_no: 1, type: 'agent_decision.recorded', actor: 'agent', payload: { iteration_no: 39 }, occurred_at: '2026-09-04T00:00:10Z' }]),
+      tool_summary: { 'tool-a': { succeeded: 39 }, 'tool-b': { succeeded: 39 } },
+    }
+    const result = buildRuntimeGraph(summaryDetail)
+    expect(result.nodes.find((node) => node.id === 'tool-summary-group')).toMatchObject({
+      label: '逐次明细缺口 · 78 项',
+      status: 'completed',
+      current: 0,
+      total: 78,
+      runtime: { latest_iteration: 39, observed_at: '2026-09-04T00:00:10Z' },
+    })
+  })
+
+  it('expands each missing summary tool as its own auditable summary card', () => {
+    const summaryDetail = { ...detail(), tool_summary: { 'tool-a': { succeeded: 2 }, 'tool-b': { running: 1, failed: 1 } } }
+    const result = buildRuntimeGraph(summaryDetail, {}, { expandedGroups: new Set(['tool-summary-group']) })
+    expect(result.nodes.map((node) => node.id)).toEqual(expect.arrayContaining(['tool-summary-group', 'tool-summary:tool-a', 'tool-summary:tool-b']))
+    expect(result.nodes.find((node) => node.id === 'tool-summary:tool-b')).toMatchObject({ current: 0, total: 2 })
+    expect(result.nodes.find((node) => node.id === 'tool-summary:tool-b')?.insight.facts).toEqual(expect.arrayContaining([
+      { label: '状态构成', value: '进行中 1 · 失败 1' },
+      { label: '统计总量', value: '2' },
+      { label: '逐次明细', value: '已有 0 · 缺少 2' },
+    ]))
+    expect(result.edges.filter((edge) => edge.source === 'tool-summary-group')).toEqual([
+      expect.objectContaining({ target: 'tool-summary:tool-a', relation_kind: 'grouping' }),
+    ])
+  })
+
+  it('omits the summary batch when all summary states are materialized', () => {
+    const summaryDetail = { ...detail(), tool_summary: { 'tool-a': { succeeded: 1, failed: 1 } } }
+    const result = buildRuntimeGraph(summaryDetail, { worker: nodeDetail([
+      call('summary-success', 'tool-a', '2026-09-04T00:00:00Z', { status: 'succeeded' }),
+      call('summary-failed', 'tool-a', '2026-09-04T00:00:01Z', { status: 'failed' }),
+    ]) })
+    expect(result.nodes.some((node) => node.runtime?.node_type === 'tool_summary_group')).toBe(false)
+    expect(result.stats).toMatchObject({ toolSummaryRecords: 2, toolSummaryMaterialized: 2, toolSummaryMissing: 0 })
+  })
+
+  it('reports statistical coverage separately from materialized calls for the observed run shape', () => {
+    const materializedTools = ['v38-metric-mic_potency', 'v38-metric-mic_potency_amp_read', 'v38-metric-hemolysis_risk', 'v38-metric-toxicity_risk', 'v38-metric-physicochemical_developability']
+    const missingTools = ['autoresearch-frozen-action-executor', 'autoresearch-multi-front-archive', 'autoresearch-multi-front-rule-planner', 'autoresearch-replay-bundle']
+    const materialized = materializedTools.flatMap((toolName) => Array.from({ length: 39 }, (_, index) => call(`${toolName}-${index}`, toolName, `2026-09-04T00:${String(Math.floor(index / 60)).padStart(2, '0')}:${String(index % 60).padStart(2, '0')}Z`)))
+    const toolSummary = Object.fromEntries([
+      ...materializedTools.map((toolName) => [toolName, { succeeded: 39 }]),
+      [missingTools[0], { succeeded: 40 }],
+      ...missingTools.slice(1).map((toolName) => [toolName, { succeeded: 39 }]),
+    ])
+    const result = buildRuntimeGraph({ ...detail(), tool_summary: toolSummary }, { worker: nodeDetail(materialized) })
+    expect(result.stats).toMatchObject({ toolSummaryRecords: 352, toolSummaryMaterialized: 195, toolSummaryMissing: 157 })
+    expect(result.nodes.find((node) => node.id === 'tool-summary-group')).toMatchObject({ label: '逐次明细缺口 · 157 项', current: 195, total: 352 })
+    expect(result.nodes.find((node) => node.id === 'tool-summary-group')?.insight.facts).toEqual(expect.arrayContaining([
+      { label: '统计总量', value: '352 项' },
+      { label: '逐次明细', value: '已有 195 · 尚缺 157' },
+    ]))
+    expect(result.edges.filter((edge) => edge.source.startsWith('tool-summary') || edge.target.startsWith('tool-summary'))).toHaveLength(0)
+  })
+
+  it('places the tool-chain summary on a separate audit rail', () => {
+    const candidate = { id: 'candidate-summary', sequence: 'KKLL', length: 4, proposal_rank: 1, cohort: 'exploration', pareto_front: null, reasons: [], metrics: [], generation: 1 }
+    const result = buildRuntimeGraph({ ...detail([{ sequence_no: 1, type: 'run.started', actor: 'worker', payload: {}, occurred_at: '2026-09-04T00:00:00Z' }], [candidate]), tool_summary: { 'tool-a': { succeeded: 2 } } }, { worker: nodeDetail([call('summary-a', 'tool-a', '2026-09-04T00:00:01Z')]) })
+    const toolY = result.positions['call:summary-a']?.y
+    const candidateY = result.positions['generation:1']?.y
+    const summaryY = result.positions['tool-summary-group']?.y
+    expect(toolY).toBeDefined()
+    expect(candidateY).toBeDefined()
+    expect(summaryY).toBeDefined()
+    const eventY = result.positions['event:1']?.y
+    expect(eventY).toBeDefined()
+    expect(summaryY).toBeGreaterThan(toolY ?? 0)
+    expect(summaryY).not.toBe(candidateY)
+    expect(eventY).toBe(toolY)
+    expect(toolY).toBe(candidateY)
+  })
+
+  it('builds observed call/event nodes and reports missing dependency contract', () => {
+    const first = call('call-1', 'ampgan', '2026-09-04T00:00:00Z', { attempt: 2 })
+    const second = call('call-2', 'ampgan', '2026-09-04T00:00:01Z', { status: 'running', finished_at: null })
+    const result = buildRuntimeGraph(detail([{ sequence_no: 1, type: 'tool_call.started', actor: 'worker', payload: { tool_call_id: 'call-1' }, occurred_at: '2026-09-04T00:00:00Z' }]), { worker: nodeDetail([first, second]) })
+
+    expect(result.nodes.map((node) => node.id)).toEqual(expect.arrayContaining(['tool-group:ampgan:call-1']))
+    expect(result.nodes.find((node) => node.id === 'tool-group:ampgan:call-1')?.runtime?.event_ids).toEqual(['event:1'])
+    expect(result.nodes.map((node) => node.id)).not.toEqual(expect.arrayContaining(['call:call-1', 'call:call-2']))
+    expect(result.stats).toMatchObject({ observedCalls: 2, observedEvents: 1, repeatedTools: 1, retries: 1, unfinished: 1 })
+    const expanded = buildRuntimeGraph(detail([{ sequence_no: 1, type: 'tool_call.started', actor: 'worker', payload: { tool_call_id: 'call-1' }, occurred_at: '2026-09-04T00:00:00Z' }]), { worker: nodeDetail([first, second]) }, { expandedGroups: new Set(['tool-group:ampgan:call-1']) })
+    expect(expanded.edges).toEqual(expect.arrayContaining([expect.objectContaining({ source: 'event:1', target: 'call:call-1', provenance: 'database', relation_kind: 'association' })]))
+    expect(result.gaps).toContain('接口未返回工具调用依赖、重试或回退关系；未按时间顺序补画推断边。')
+    expect(result.gaps).toContain('详情中的固定拓扑摘要仅用于兼容核对，未纳入运行图；当前图仅使用真实事件、工具调用、候选与显式关系。')
+  })
+
+  it('preserves explicit dependency cycles instead of flattening them', () => {
+    const first = call('call-1', 'tool-a', '2026-09-04T00:00:00Z', { inputs: { parent_call_id: 'call-2' } })
+    const second = call('call-2', 'tool-b', '2026-09-04T00:00:01Z', { inputs: { parent_call_id: 'call-1' } })
+    const result = buildRuntimeGraph(detail(), { worker: nodeDetail([first, second]) })
+    expect(result.edges).toEqual(expect.arrayContaining([
+      expect.objectContaining({ source: 'call:call-1', target: 'call:call-2', provenance: 'database', relation_kind: 'dependency' }),
+      expect.objectContaining({ source: 'call:call-2', target: 'call:call-1', provenance: 'database', relation_kind: 'dependency' }),
+    ]))
+    expect(result.stats.cycles).toBeGreaterThan(0)
+  })
+
+  it('groups only adjacent same-tool observations and keeps candidates neutral', () => {
+    const first = call('call-1', 'ampgan', '2026-09-04T00:00:00Z')
+    const second = call('call-2', 'ampgan', '2026-09-04T00:00:01Z')
+    const interleaved = call('call-3', 'rosetta', '2026-09-04T00:00:02Z')
+    const later = call('call-4', 'ampgan', '2026-09-04T00:00:03Z', { inputs: { source: 'call-1', call_id: 'call-2' } })
+    const candidate = { id: 'candidate-1', sequence: 'KKLL', length: 4, proposal_rank: 1, cohort: 'exploration', pareto_front: null, reasons: ['rejected by an external note'], metrics: [] }
+    const result = buildRuntimeGraph(detail([], [candidate]), { worker: nodeDetail([first, second, interleaved, later]) })
+
+    expect(Object.keys(result.toolGroups)).toEqual(['tool-group:ampgan:call-1'])
+    expect(result.toolGroups['tool-group:ampgan:call-1']).toEqual(['call-1', 'call-2'])
+    expect(result.nodes.find((node) => node.id === 'candidate:candidate-1')).toMatchObject({ status: 'completed', insight: { grade: 'neutral', verdict: '已记录' } })
+    expect(result.edges).not.toEqual(expect.arrayContaining([expect.objectContaining({ source: 'call:call-2', target: 'call:call-4' })]))
+  })
+
+  it('keeps association edges out of dependency cycle detection and maps persisted events to completed', () => {
+    const observed = call('call-1', 'boltz', '2026-09-04T00:00:00Z')
+    const result = buildRuntimeGraph(detail([
+      { sequence_no: 1, type: 'v38.multitarget_structure.persisted', actor: 'worker', payload: { tool_call_id: 'call-1' }, occurred_at: '2026-09-04T00:00:01Z' },
+    ]), { worker: nodeDetail([observed]) })
+    const group = result.nodes.find((node) => node.runtime?.node_type === 'batch_group')
+    expect(group).toMatchObject({ status: 'completed', label: 'Boltz 2 · 1 次调用' })
+    expect(group?.runtime?.event_ids).toEqual(['event:1'])
+    const expanded = buildRuntimeGraph(detail([
+      { sequence_no: 1, type: 'v38.multitarget_structure.persisted', actor: 'worker', payload: { tool_call_id: 'call-1' }, occurred_at: '2026-09-04T00:00:01Z' },
+    ]), { worker: nodeDetail([observed]) }, { expandedGroups: new Set([group!.id]) })
+    expect(expanded.nodes.find((node) => node.id === 'event:1')).toMatchObject({ status: 'completed', label: '结构证据 · 已持久化' })
+    expect(expanded.edges).toEqual(expect.arrayContaining([expect.objectContaining({ relation_kind: 'association', label: '关联' })]))
+    expect(result.stats.cycles).toBe(0)
+  })
+
+  it('does not draw a folded association self-loop when event and call share a cluster', () => {
+    const observed = call('call-1', 'boltz', '2026-09-04T00:00:00Z')
+    const result = buildRuntimeGraph(detail([
+      { sequence_no: 1, type: 'tool_call.completed', actor: 'worker', payload: { tool_call_id: 'call-1' }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'tool_call.succeeded', actor: 'worker', payload: { tool_call_id: 'call-1' }, occurred_at: '2026-09-04T00:00:02Z' },
+    ]), { worker: nodeDetail([observed]) })
+    expect(result.edges.some((edge) => edge.source === edge.target)).toBe(false)
+    expect(result.nodes.some((node) => node.runtime?.event_ids?.length === 2 && node.insight.verdict === '1 次调用')).toBe(true)
+  })
+
+  it('keeps event cards concise while retaining the raw actor in runtime metadata', () => {
+    const result = buildRuntimeGraph(detail([
+      { sequence_no: 1, type: 'run.started', actor: 'v38-workflow-observer-writer', payload: {}, occurred_at: '2026-09-04T00:00:01Z' },
+    ]))
+    const event = result.nodes.find((node) => node.id === 'event:1')
+    expect(event?.insight.reason).toBe('运行开始')
+    expect(event?.insight.facts.some((fact) => fact.label === '序号')).toBe(true)
+    expect(event?.insight.reason).not.toContain('v38-workflow-observer-writer')
+    expect(event?.runtime?.actor).toBe('v38-workflow-observer-writer')
+  })
+
+  it('can expand an aggregate without changing its source-of-truth calls', () => {
+    const first = call('call-1', 'ampgan', '2026-09-04T00:00:00Z')
+    const second = call('call-2', 'ampgan', '2026-09-04T00:00:01Z')
+    const result = buildRuntimeGraph(detail(), { worker: nodeDetail([first, second]) }, { expandedGroups: new Set(['tool-group:ampgan:call-1']) })
+    expect(result.nodes.map((node) => node.id)).toEqual(expect.arrayContaining(['call:call-1', 'call:call-2']))
+    expect(result.nodes.map((node) => node.id)).toContain('tool-group:ampgan:call-1')
+    expect(result.nodes.find((node) => node.id === 'tool-group:ampgan:call-1')?.runtime).toMatchObject({ expanded: true })
+    expect(result.calls).toEqual({ 'call-1': first, 'call-2': second })
+    expect(result.edges).toEqual(expect.arrayContaining([
+      expect.objectContaining({ source: 'tool-group:ampgan:call-1', target: 'call:call-1', relation_kind: 'grouping', provenance: 'database' }),
+      expect.objectContaining({ source: 'tool-group:ampgan:call-1', target: 'call:call-2', relation_kind: 'grouping', provenance: 'database' }),
+    ]))
+  })
+
+  it('uses an explicit batch identity across different tools and keeps batches separate', () => {
+    const generated = call('call-1', 'ampgan', '2026-09-04T00:00:00Z', { inputs: { batch_id: 'batch-a' } })
+    const scored = call('call-2', 'amp_read', '2026-09-04T00:20:00Z', { inputs: { batch_id: 'batch-a' } })
+    const otherBatch = call('call-3', 'ampgan', '2026-09-04T00:21:00Z', { inputs: { batch_id: 'batch-b' } })
+    const result = buildRuntimeGraph(detail(), { worker: nodeDetail([generated, scored, otherBatch]) })
+    const groups = Object.values(result.toolGroups)
+    expect(groups).toHaveLength(1)
+    expect(groups[0]).toEqual(['call-1', 'call-2'])
+    const group = result.nodes.find((node) => node.runtime?.node_type === 'tool_group')
+    expect(group?.insight.facts[0]).toMatchObject({ label: '操作构成', value: expect.stringContaining('AMPGAN v2 1') })
+    expect(group?.insight.facts[0].value).toContain('AMP read 1')
+  })
+
+  it('uses a persisted event semantic as the aggregate title instead of a sequence number', () => {
+    const result = buildRuntimeGraph(detail([
+      { sequence_no: 1, type: 'autoresearch.archive.updated', actor: 'observer', payload: {}, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'autoresearch.archive.updated', actor: 'observer', payload: {}, occurred_at: '2026-09-04T00:00:02Z' },
+      { sequence_no: 3, type: 'autoresearch.archive.updated', actor: 'observer', payload: {}, occurred_at: '2026-09-04T00:00:03Z' },
+    ]))
+    const group = result.nodes.find((node) => node.runtime?.node_type === 'event_group')
+    expect(group?.label).toBe('多前沿归档 · 3 项活动')
+    expect(group?.label).not.toContain('观测组')
+  })
+
+  it('uses mixed observation wording when an explicitly grouped batch has no common semantic', () => {
+    const result = buildRuntimeGraph(detail([
+      { sequence_no: 1, type: 'autoresearch.archive.updated', actor: 'observer', payload: { batch_id: 'batch-mixed' }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'autoresearch.action.recorded', actor: 'observer', payload: { batch_id: 'batch-mixed' }, occurred_at: '2026-09-04T00:00:02Z' },
+    ]))
+    const group = result.nodes.find((node) => node.runtime?.node_type === 'event_group')
+    expect(group?.label).toBe('混合观测组 · 2 项活动')
+  })
+
+  it('keeps retry and fallback relations distinct from explicit dependencies', () => {
+    const original = call('call-1', 'tool-a', '2026-09-04T00:00:00Z')
+    const retried = call('call-2', 'tool-a', '2026-09-04T00:00:02Z', { inputs: { retry_of_call_id: 'call-1' } })
+    const fallback = call('call-3', 'tool-b', '2026-09-04T00:00:04Z', { inputs: { fallback_from_call_id: 'call-1' } })
+    const dependent = call('call-4', 'tool-c', '2026-09-04T00:00:06Z', { inputs: { depends_on_call_id: 'call-1' } })
+    const sources = { worker: nodeDetail([original, retried, fallback, dependent]) }
+    const result = buildRuntimeGraph(detail(), sources)
+    const group = result.nodes.find((node) => node.id === 'tool-group:tool-a:call-1')
+    expect(group?.insight.facts.find((fact) => fact.label === '关系')?.value).toBe('重试 1 · 回退 0')
+    expect(result.edges).toEqual(expect.arrayContaining([
+      expect.objectContaining({ source: 'tool-group:tool-a:call-1', target: 'call:call-3', label: '回退', relation_kind: 'fallback', provenance: 'database' }),
+      expect.objectContaining({ source: 'tool-group:tool-a:call-1', target: 'call:call-4', label: '依赖', relation_kind: 'dependency', provenance: 'database' }),
+    ]))
+    const expanded = buildRuntimeGraph(detail(), sources, { expandedGroups: new Set(['tool-group:tool-a:call-1']) })
+    expect(expanded.edges).toEqual(expect.arrayContaining([
+      expect.objectContaining({ source: 'call:call-1', target: 'call:call-2', label: '重试/恢复', relation_kind: 'retry', provenance: 'database' }),
+    ]))
+    expect(expanded.stats.cycles).toBe(0)
+  })
+
+  it('draws only persisted node relations and reports unloaded relation endpoints', () => {
+    const upstream = call('call-upstream', 'tool-a', '2026-09-04T00:00:00Z')
+    const downstream = call('call-downstream', 'tool-b', '2026-09-04T00:00:02Z', {
+      relations: [
+        { direction: 'upstream', related_call_id: 'call-upstream', relation_type: 'evaluates_v38_score_all_candidate' },
+        { direction: 'downstream', related_call_id: 'call-not-loaded', relation_type: 'retry' },
+      ],
+    })
+    const result = buildRuntimeGraph(detail(), { worker: nodeDetail([upstream, downstream]) })
+    expect(result.edges).toEqual(expect.arrayContaining([
+      expect.objectContaining({ source: 'call:call-upstream', target: 'call:call-downstream', relation_kind: 'dependency', provenance: 'database' }),
+    ]))
+    expect(result.edges.some((edge) => edge.relation_kind === 'retry')).toBe(false)
+    expect(result.stats.explicitRelations).toBe(2)
+    expect(result.stats.unresolvedRelations).toBe(1)
+    expect(result.gaps.some((gap) => gap.includes('1 条关联调用尚未载入'))).toBe(true)
+  })
+
+  it('does not create a self-edge when a persisted relation is folded into one group', () => {
+    const first = call('call-1', 'tool-a', '2026-09-04T00:00:00Z', { inputs: { batch_id: 'same-batch' } })
+    const second = call('call-2', 'tool-b', '2026-09-04T00:00:01Z', { inputs: { batch_id: 'same-batch' }, relations: [{ direction: 'upstream', related_call_id: 'call-1', relation_type: 'dependency' }] })
+    const result = buildRuntimeGraph(detail(), { worker: nodeDetail([first, second]) })
+    expect(result.edges.some((edge) => edge.source === edge.target)).toBe(false)
+    expect(result.stats.explicitRelations).toBe(1)
+  })
+
+  it('preserves dependency edges when a call is folded with its lifecycle event', () => {
+    const original = call('call-1', 'tool-a', '2026-09-04T00:00:00Z')
+    const dependent = call('call-2', 'tool-b', '2026-09-04T00:00:03Z', { inputs: { depends_on_call_id: 'call-1' } })
+    const result = buildRuntimeGraph(detail([
+      { sequence_no: 1, type: 'tool_call.completed', actor: 'worker', payload: { tool_call_id: 'call-1' }, occurred_at: '2026-09-04T00:00:01Z' },
+    ]), { worker: nodeDetail([original, dependent]) })
+    const folded = result.nodes.find((node) => node.runtime?.node_type === 'batch_group')
+    expect(folded).toBeDefined()
+    expect(result.edges).toEqual(expect.arrayContaining([
+      expect.objectContaining({ source: folded!.id, target: 'call:call-2', relation_kind: 'dependency', provenance: 'database' }),
+    ]))
+  })
+
+  it('marks a terminal partially failed batch as stopped instead of pending', () => {
+    const succeeded = call('call-1', 'tool-a', '2026-09-04T00:00:00Z', { inputs: { batch_id: 'batch-terminal' } })
+    const failed = call('call-2', 'tool-b', '2026-09-04T00:00:01Z', { inputs: { batch_id: 'batch-terminal' }, status: 'failed', error: 'failed', finished_at: '2026-09-04T00:00:02Z' })
+    const result = buildRuntimeGraph(detail(), { worker: nodeDetail([succeeded, failed]) })
+    const batch = result.nodes.find((node) => node.runtime?.child_ids?.length === 2)
+    expect(batch).toMatchObject({ status: 'stopped', insight: { grade: 'fair' } })
+  })
+
+  it('shows only explicit parallel groups and never infers parallelism from overlapping tool times', () => {
+    const explicitA = call('call-1', 'tool-a', '2026-09-04T00:00:00Z', { inputs: { parallel_group_id: 'pg-1' }, finished_at: '2026-09-04T00:00:01Z' })
+    const explicitB = call('call-2', 'tool-b', '2026-09-04T00:05:00Z', { inputs: { parallel_group_id: 'pg-1' }, finished_at: '2026-09-04T00:05:01Z' })
+    const overlapA = call('call-3', 'tool-c', '2026-09-04T00:10:00Z', { finished_at: '2026-09-04T00:10:05Z' })
+    const overlapB = call('call-4', 'tool-d', '2026-09-04T00:10:02Z', { finished_at: '2026-09-04T00:10:06Z' })
+    const result = buildRuntimeGraph(detail(), { worker: nodeDetail([explicitA, explicitB, overlapA, overlapB]) })
+    expect(result.edges).toEqual(expect.arrayContaining([
+      expect.objectContaining({ label: '并行观测组', relation_kind: 'parallel', provenance: 'database' }),
+    ]))
+    expect(result.edges.some((edge) => edge.relation_kind === 'parallel' && edge.provenance === 'derived')).toBe(false)
+    expect(result.stats.parallelGroups).toBe(1)
+    expect(result.stats.cycles).toBe(0)
+  })
+
+  it('groups non-adjacent lifecycle events across event types only with explicit batch identity', () => {
+    const result = buildRuntimeGraph(detail([
+      { sequence_no: 1, type: 'tool_call.started', actor: 'worker', payload: { batch_id: 'batch-1' }, occurred_at: '2026-09-04T00:00:00Z' },
+      { sequence_no: 2, type: 'candidate.scored', actor: 'scorer', payload: { batch_id: 'batch-2' }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 3, type: 'tool_call.completed', actor: 'worker', payload: { batch_id: 'batch-1' }, occurred_at: '2026-09-04T00:00:02Z' },
+    ]))
+    const groups = result.nodes.filter((node) => node.runtime?.node_type === 'event_group')
+    expect(groups).toHaveLength(1)
+    expect(groups[0].runtime?.event_ids).toEqual(['event:1', 'event:3'])
+    expect(result.nodes.map((node) => node.id)).toContain('event:2')
+    expect(result.nodes.map((node) => node.id)).not.toContain('event:1')
+  })
+
+  it('folds explicit batch calls and lifecycle events into one cross-tool observation cluster', () => {
+    const first = call('call-1', 'ampgan', '2026-09-04T00:00:00Z', { inputs: { batch_id: 'batch-z' } })
+    const second = call('call-2', 'amp_read', '2026-09-04T00:05:00Z', { inputs: { batch_id: 'batch-z' } })
+    const result = buildRuntimeGraph(detail([
+      { sequence_no: 1, type: 'tool_call.started', actor: 'worker', payload: { batch_id: 'batch-z' }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'candidate.scored', actor: 'scorer', payload: { batch_id: 'batch-z' }, occurred_at: '2026-09-04T00:05:01Z' },
+    ]), { worker: nodeDetail([first, second]) })
+    const group = result.nodes.find((node) => node.runtime?.node_type === 'batch_group')
+    expect(group?.runtime?.child_ids).toEqual(['call-1', 'call-2'])
+    expect(group?.runtime?.event_ids).toEqual(['event:1', 'event:2'])
+    expect(group?.label).toBe('混合观测组 · 2 次调用 · 2 项活动')
+  })
+
+  it('folds real lifecycle boundaries by exact workflow execution and uses the latest boundary as activity status', () => {
+    const execution = 'workflow-run-a'
+    const activity = (sequence_no: number, type: string, activity_id: number, activity_type: string) => ({
+      sequence_no,
+      type,
+      actor: 'observer-writer',
+      payload: { workflow_run_id: execution, activity_id, attempt: 1, activity_type },
+      occurred_at: new Date(Date.parse('2026-09-04T00:00:00Z') + sequence_no * 1_000).toISOString(),
+    })
+    const result = buildRuntimeGraph(detail([
+      activity(1, 'activity.started', 1, 'plan_autoresearch_actions'),
+      activity(2, 'activity.succeeded', 1, 'plan_autoresearch_actions'),
+      activity(3, 'activity.started', 2, 'persist_autoresearch_action_plan'),
+      activity(4, 'activity.succeeded', 2, 'persist_autoresearch_action_plan'),
+    ]))
+    const executionGroup = result.nodes.find((node) => node.runtime?.node_type === 'event_group')
+    expect(executionGroup).toMatchObject({
+      label: '混合观测组 · 2 项活动',
+      status: 'completed',
+      current: 2,
+      total: 2,
+      runtime: { event_ids: ['event:1', 'event:2', 'event:3', 'event:4'] },
+    })
+    expect(executionGroup?.insight.facts.find((fact) => fact.label === '操作构成')?.value).toContain('生成规划 1')
+    expect(executionGroup?.insight.facts.find((fact) => fact.label === '操作构成')?.value).toContain('规划持久化 1')
+    const expanded = buildRuntimeGraph(detail([
+      activity(1, 'activity.started', 1, 'plan_autoresearch_actions'),
+      activity(2, 'activity.succeeded', 1, 'plan_autoresearch_actions'),
+    ]), {}, { expandedGroups: new Set(['batch-group:workflow_run_id%3Dworkflow-run-a']) })
+    expect(expanded.nodes.find((node) => node.id === 'event:1')?.label).toBe('生成规划 · 开始 · 第 1 次尝试')
+    expect(expanded.nodes.find((node) => node.id === 'event:2')?.label).toBe('生成规划 · 成功 · 第 1 次尝试')
+  })
+
+  it('keeps separate workflow executions in separate expandable groups', () => {
+    const events = ['workflow-run-a', 'workflow-run-b'].flatMap((workflow_run_id, runIndex) => [
+      { sequence_no: runIndex * 2 + 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id, activity_id: 1, attempt: 1 }, occurred_at: `2026-09-04T00:00:0${runIndex * 2 + 1}Z` },
+      { sequence_no: runIndex * 2 + 2, type: 'activity.failed', actor: 'observer-writer', payload: { workflow_run_id, activity_id: 1, attempt: 1 }, occurred_at: `2026-09-04T00:00:0${runIndex * 2 + 2}Z` },
+    ])
+    const result = buildRuntimeGraph(detail(events))
+    const groups = result.nodes.filter((node) => node.runtime?.node_type === 'event_group')
+    expect(groups).toHaveLength(2)
+    expect(groups.every((node) => node.status === 'stopped' && node.total === 1)).toBe(true)
+  })
+
+  it('links execution clusters and recovery records only as non-causal observation order', () => {
+    const events: RunDetail['events'] = [
+      { sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: 'workflow-run-a', activity_id: 1, attempt: 1 }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'activity.failed', actor: 'observer-writer', payload: { workflow_run_id: 'workflow-run-a', activity_id: 1, attempt: 1 }, occurred_at: '2026-09-04T00:00:02Z' },
+      { sequence_no: 3, type: 'mvp_human.autoresearch.recovery_scheduled', actor: 'mvp-human-controller', payload: { recovery_attempt: 2 }, occurred_at: '2026-09-04T00:00:03Z' },
+      { sequence_no: 4, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: 'workflow-run-b', activity_id: 1, attempt: 1 }, occurred_at: '2026-09-04T00:00:04Z' },
+      { sequence_no: 5, type: 'activity.succeeded', actor: 'observer-writer', payload: { workflow_run_id: 'workflow-run-b', activity_id: 1, attempt: 1 }, occurred_at: '2026-09-04T00:00:05Z' },
+    ]
+    const result = buildRuntimeGraph(detail(events))
+    const first = result.nodes.find((node) => node.runtime?.event_ids?.includes('event:1'))
+    const recovery = result.nodes.find((node) => node.label === '第 2 次恢复调度')
+    const second = result.nodes.find((node) => node.runtime?.event_ids?.includes('event:4'))
+    expect(first).toBeDefined()
+    expect(recovery).toBeDefined()
+    expect(second).toBeDefined()
+    expect(result.edges).toEqual(expect.arrayContaining([
+      expect.objectContaining({ source: first!.id, target: recovery!.id, relation_kind: 'sequence', provenance: 'derived', label: '观测先后' }),
+      expect.objectContaining({ source: recovery!.id, target: second!.id, relation_kind: 'sequence', provenance: 'derived' }),
+    ]))
+    expect(result.stats.retries).toBe(0)
+    expect(result.stats.cycles).toBe(0)
+  })
+
+  it('shows an explicit recovery attempt without inferring a retry or fallback', () => {
+    const result = buildRuntimeGraph(detail([{
+      sequence_no: 1,
+      type: 'mvp_human.autoresearch.recovery_scheduled',
+      actor: 'mvp-human-controller',
+      payload: { recovery_attempt: 4, error_category: 'WorkerTimeout' },
+      occurred_at: '2026-09-04T00:00:01Z',
+    }]))
+    const event = result.nodes.find((node) => node.id === 'event:1')
+    expect(event).toMatchObject({ label: '第 4 次恢复调度', status: 'completed', insight: { verdict: '已调度' } })
+    expect(event?.insight.facts).toEqual(expect.arrayContaining([{ label: '恢复', value: '第 4 次恢复调度' }]))
+    expect(result.stats.retries).toBe(0)
+    expect(result.edges).toHaveLength(0)
+  })
+
+  it('shows persisted activity attempts and counts only attempt greater than one as activity retries', () => {
+    const execution = 'workflow-run-activity-retry'
+    const result = buildRuntimeGraph(detail([
+      { sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 7, activity_type: 'generate_v38_sequence_cell', attempt: 1, completed: 0, expected: 8 }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'activity.failed', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 7, activity_type: 'generate_v38_sequence_cell', attempt: 1, completed: 3, expected: 8, error_category: 'timeout' }, occurred_at: '2026-09-04T00:00:02Z' },
+      { sequence_no: 3, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 7, activity_type: 'generate_v38_sequence_cell', attempt: 2, completed: 0, expected: 8 }, occurred_at: '2026-09-04T00:00:03Z' },
+      { sequence_no: 4, type: 'activity.succeeded', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 7, activity_type: 'generate_v38_sequence_cell', attempt: 2, completed: 8, expected: 8 }, occurred_at: '2026-09-04T00:00:04Z' },
+    ]))
+    const group = result.nodes.find((node) => node.runtime?.node_type === 'event_group')
+    expect(group?.label).toBe('活动重试 · 第 2 次完成')
+    expect(group?.insight.facts.slice(0, 3)).toEqual([
+      { label: '最近活动', value: '序列生成' },
+      { label: '活动重试', value: '1 个活动 · 最高第 2 次' },
+      { label: '进度', value: '8/8' },
+    ])
+    expect(group?.insight.facts.some(({ label }) => label === '活动尝试')).toBe(false)
+    expect(group?.runtime).toMatchObject({ activity_retry_count: 1, max_activity_attempt: 2, distribution_key: 'candidate_pool' })
+    expect(result.stats.retries).toBe(0)
+  })
+
+  it('omits the activity attempt summary when all persisted attempts are first attempts', () => {
+    const execution = 'workflow-run-first-attempt-only'
+    const result = buildRuntimeGraph(detail([
+      { sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 1, activity_type: 'generate_v38_sequence_cell', attempt: 1 }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'activity.succeeded', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 1, activity_type: 'generate_v38_sequence_cell', attempt: 1 }, occurred_at: '2026-09-04T00:00:02Z' },
+    ]))
+    const group = result.nodes.find((node) => node.runtime?.node_type === 'event_group')
+    expect(group?.insight.facts.some(({ label }) => label === '活动尝试' || label === '活动重试')).toBe(false)
+  })
+
+  it('keeps an expanded retry concise by showing terminal attempt evidence only', () => {
+    const execution = 'workflow-run-expanded-activity'
+    const events = [
+      { sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 3, activity_type: 'generate_v38_sequence_cell', attempt: 2 }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'activity.succeeded', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 3, activity_type: 'generate_v38_sequence_cell', attempt: 2 }, occurred_at: '2026-09-04T00:00:02Z' },
+    ] as RunDetail['events']
+    const group = buildRuntimeGraph(detail(events)).nodes.find((node) => node.runtime?.node_type === 'event_group')
+    const expanded = buildRuntimeGraph(detail(events), {}, { expandedGroups: new Set([group!.id]) })
+    expect(expanded.nodes.find((node) => node.id === 'event:1')).toBeUndefined()
+    expect(expanded.nodes.find((node) => node.id === 'event:2')).toMatchObject({ label: '序列生成 · 成功 · 第 2 次尝试' })
+    expect(expanded.nodes.find((node) => node.id === 'event:2')?.insight.facts).toEqual(expect.arrayContaining([{ label: '尝试', value: '第 2 次尝试' }]))
+  })
+
+  it('shows each persisted terminal attempt for the latest retried activity', () => {
+    const execution = 'workflow-run-retry-evidence'
+    const events = [
+      { sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 5, activity_type: 'evaluate_v38_sequence_metric', attempt: 1 }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'activity.failed', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 5, activity_type: 'evaluate_v38_sequence_metric', attempt: 1 }, occurred_at: '2026-09-04T00:00:02Z' },
+      { sequence_no: 3, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 5, activity_type: 'evaluate_v38_sequence_metric', attempt: 2 }, occurred_at: '2026-09-04T00:00:03Z' },
+      { sequence_no: 4, type: 'activity.failed', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 5, activity_type: 'evaluate_v38_sequence_metric', attempt: 2 }, occurred_at: '2026-09-04T00:00:04Z' },
+    ] as RunDetail['events']
+    const group = buildRuntimeGraph(detail(events)).nodes.find((node) => node.runtime?.node_type === 'event_group')
+    const expanded = buildRuntimeGraph(detail(events), {}, { expandedGroups: new Set([group!.id]) })
+    expect(group?.runtime?.event_ids).toEqual(['event:2', 'event:4'])
+    expect(expanded.nodes.filter((node) => node.id.startsWith('event:')).map((node) => node.id)).toEqual(['event:2', 'event:4'])
+  })
+
+  it('does not infer parallelism from complete overlapping activity intervals', () => {
+    const execution = 'workflow-run-parallel-activities'
+    const events: RunDetail['events'] = [
+      { sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 1, activity_type: 'generate_v38_sequence_cell', attempt: 1 }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 2, activity_type: 'score_v38_multitarget_rosetta', attempt: 1 }, occurred_at: '2026-09-04T00:00:03Z' },
+      { sequence_no: 3, type: 'activity.succeeded', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 1, activity_type: 'generate_v38_sequence_cell', attempt: 1 }, occurred_at: '2026-09-04T00:00:05Z' },
+      { sequence_no: 4, type: 'activity.failed', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 2, activity_type: 'score_v38_multitarget_rosetta', attempt: 1 }, occurred_at: '2026-09-04T00:00:07Z' },
+    ]
+    const collapsed = buildRuntimeGraph(detail(events))
+    const group = collapsed.nodes.find((node) => node.runtime?.node_type === 'event_group')
+    const result = buildRuntimeGraph(detail(events), {}, { expandedGroups: new Set([group!.id]) })
+    expect(result.edges.some((edge) => edge.relation_kind === 'parallel')).toBe(false)
+  })
+
+  it('does not infer activity parallelism when either activity lacks a terminal boundary', () => {
+    const execution = 'workflow-run-incomplete-activities'
+    const events: RunDetail['events'] = [
+      { sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 1, activity_type: 'generate_v38_sequence_cell', attempt: 1 }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 2, activity_type: 'score_v38_multitarget_rosetta', attempt: 1 }, occurred_at: '2026-09-04T00:00:03Z' },
+      { sequence_no: 3, type: 'activity.succeeded', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 2, activity_type: 'score_v38_multitarget_rosetta', attempt: 1 }, occurred_at: '2026-09-04T00:00:07Z' },
+    ]
+    const result = buildRuntimeGraph(detail(events), {}, { expandedGroups: new Set(['batch-group:workflow_run_id%3Dworkflow-run-incomplete-activities']) })
+    expect(result.edges.some((edge) => edge.relation_kind === 'parallel' && edge.provenance === 'derived')).toBe(false)
+  })
+
+  it('reports the latest failed activity boundary in a workflow execution cluster', () => {
+    const execution = 'workflow-run-failed'
+    const result = buildRuntimeGraph(detail([
+      { sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 1, attempt: 1, activity_type: 'generate_v38_sequence_cell', completed: 0, expected: 8 }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'activity.failed', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 1, attempt: 1, activity_type: 'generate_v38_sequence_cell', error_type: 'ActivityError', completed: 3, expected: 8 }, occurred_at: '2026-09-04T00:00:02Z' },
+    ]))
+    const group = result.nodes.find((node) => node.runtime?.node_type === 'event_group')
+    expect(group?.status).toBe('stopped')
+    expect(group?.insight.facts).toEqual(expect.arrayContaining([
+      { label: '停止位置', value: '序列生成' },
+      { label: '错误类别', value: '活动执行错误' },
+      { label: '进度', value: '3/8' },
+    ]))
+  })
+
+  it('reports partial completion from the latest terminal activity boundary', () => {
+    const execution = 'workflow-run-partial'
+    const result = buildRuntimeGraph(detail([
+      { sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 1, attempt: 1, activity_type: 'score_v38_multitarget_rosetta', completed: 0, expected: 12 }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'activity.succeeded', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 1, attempt: 1, activity_type: 'score_v38_multitarget_rosetta', completed: 7, expected: 12 }, occurred_at: '2026-09-04T00:00:02Z' },
+    ]))
+    const group = result.nodes.find((node) => node.runtime?.node_type === 'event_group')
+    expect(group?.insight.facts).toEqual(expect.arrayContaining([
+      { label: '最近活动', value: 'Rosetta 界面评分' },
+      { label: '进度', value: '7/12' },
+    ]))
+    expect(group?.insight.facts.some((fact) => fact.label === '错误类别')).toBe(false)
+  })
+
+  it('does not fabricate execution facts when the latest terminal boundary omits them', () => {
+    const execution = 'workflow-run-missing-facts'
+    const result = buildRuntimeGraph(detail([
+      { sequence_no: 1, type: 'activity.started', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 1, attempt: 1, activity_type: 'unknown_activity', completed: 0, expected: 4 }, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 2, type: 'activity.failed', actor: 'observer-writer', payload: { workflow_run_id: execution, activity_id: 1, attempt: 1 }, occurred_at: '2026-09-04T00:00:02Z' },
+    ]))
+    const group = result.nodes.find((node) => node.runtime?.node_type === 'event_group')
+    expect(group).toBeDefined()
+    expect(group?.insight.facts.some((fact) => ['停止位置', '错误类别', '进度'].includes(fact.label))).toBe(false)
+  })
+
+  it('uses continuous same-type observation groups only as an explicitly derived fallback', () => {
+    const result = buildRuntimeGraph(detail([
+      { sequence_no: 1, type: 'candidate.scored', actor: 'scorer', payload: {}, occurred_at: '2026-09-04T00:00:00Z' },
+      { sequence_no: 2, type: 'candidate.scored', actor: 'scorer', payload: {}, occurred_at: '2026-09-04T00:00:01Z' },
+      { sequence_no: 3, type: 'run.started', actor: 'worker', payload: {}, occurred_at: '2026-09-04T00:00:02Z' },
+      { sequence_no: 4, type: 'candidate.scored', actor: 'scorer', payload: {}, occurred_at: '2026-09-04T00:10:00Z' },
+    ]))
+    const group = result.nodes.find((node) => node.runtime?.node_type === 'event_group')
+    expect(group?.runtime?.event_ids).toEqual(['event:1', 'event:2'])
+    expect(group?.runtime?.grouping_basis).toContain('连续同类观测')
+    expect(result.nodes.map((node) => node.id)).toContain('event:4')
+  })
+
+  it('starts each lane after its actual rows instead of a fixed y offset', () => {
+    const eventTypes = ['run.started', 'run.completed', 'run.failed', 'run.cancelled', 'run.progress', 'candidate.scored', 'candidate.created', 'candidate.rejected', 'tool_call.started']
+    const events = eventTypes.map((type, index) => ({
+      sequence_no: index + 1,
+      type,
+      actor: `actor-${index}`,
+      payload: {},
+      occurred_at: new Date(Date.parse('2026-09-04T00:00:00Z') + index * 1_000).toISOString(),
+    }))
+    const result = buildRuntimeGraph(detail(events), { worker: nodeDetail([call('call-1', 'boltz', '2026-09-04T00:00:10Z')]) })
+    const eventPositions = events.map((_, index) => result.positions[`event:${index + 1}`].y)
+    const toolPosition = result.positions['call:call-1'].y
+    expect(eventPositions.slice(0, 5)).toEqual([220, 220, 220, 220, 220])
+    expect(new Set(eventPositions)).toEqual(new Set([220]))
+    expect(toolPosition).toBe(220)
+  })
+
+  it('does not reserve a full empty tool row between events and candidates', () => {
+    const candidate = { id: 'candidate-1', sequence: 'KKLL', length: 4, proposal_rank: 1, cohort: 'exploration', pareto_front: null, reasons: [], metrics: [], generation: 1 }
+    const result = buildRuntimeGraph(detail([
+      { sequence_no: 1, type: 'run.started', actor: 'worker', payload: {}, occurred_at: '2026-09-04T00:00:00Z' },
+    ], [candidate]))
+    const eventY = result.positions['event:1'].y
+    const candidateY = result.positions['generation:1'].y
+    expect(candidateY - eventY).toBeLessThanOrEqual(280)
+  })
+
+  it('keeps a dense folded tool timeline horizontal so it does not push candidates down', () => {
+    const calls = Array.from({ length: 117 }, (_, index) => call(
+      `timeline-call-${index + 1}`,
+      `tool-${index + 1}`,
+      `2026-09-04T00:${String(Math.floor(index / 60)).padStart(2, '0')}:${String(index % 60).padStart(2, '0')}Z`,
+    ))
+    const candidate = { id: 'timeline-candidate', sequence: 'KKLL', length: 4, proposal_rank: 1, cohort: 'exploration', pareto_front: null, reasons: [], metrics: [], generation: 1 }
+    const result = buildRuntimeGraph(detail([], [candidate]), { worker: nodeDetail(calls) })
+    const toolY = result.positions['call:timeline-call-117'].y
+    const candidateY = result.positions['generation:1'].y
+    expect(candidateY - toolY).toBeLessThanOrEqual(280)
+    expect(new Set(calls.map((item) => result.positions[`call:${item.id}`].y)).size).toBe(1)
+  })
+
+  it('reserves a taller local row step for expanded aggregate members', () => {
+    const calls = Array.from({ length: 6 }, (_, index) => call(`call-${index + 1}`, `tool-${index + 1}`, `2026-09-04T00:00:${String(index).padStart(2, '0')}Z`, { inputs: { batch_id: 'batch-local' } }))
+    const collapsed = buildRuntimeGraph(detail(), { worker: nodeDetail(calls) })
+    const group = collapsed.nodes.find((node) => node.runtime?.child_ids?.length === 6)
+    expect(group).toBeDefined()
+    const result = buildRuntimeGraph(detail(), { worker: nodeDetail(calls) }, { expandedGroups: new Set([group!.id]) })
+    const groupPosition = result.positions[group!.id]
+    const wrappedMemberPosition = result.positions['call:call-6']
+    expect(groupPosition).toBeDefined()
+    expect(wrappedMemberPosition.y - groupPosition.y).toBeGreaterThanOrEqual(224)
+    expect(wrappedMemberPosition.y - groupPosition.y).toBeLessThan(420)
+  })
+
+  it('pushes later spine nodes past an expanded cluster span', () => {
+    const calls = Array.from({ length: 6 }, (_, index) => call(
+      `cluster-call-${index + 1}`,
+      `tool-${index + 1}`,
+      `2026-09-04T00:00:${String(index).padStart(2, '0')}Z`,
+      { inputs: { batch_id: 'cluster-batch' } },
+    ))
+    const detailWithTail = detail([
+      { sequence_no: 1, type: 'run.started', actor: 'worker', payload: {}, occurred_at: '2026-09-04T00:00:00Z' },
+      { sequence_no: 2, type: 'agent_decision.recorded', actor: 'worker', payload: { iteration_no: 2 }, occurred_at: '2026-09-04T00:01:00Z' },
+    ])
+    const collapsed = buildRuntimeGraph(detailWithTail, { worker: nodeDetail(calls) })
+    const group = collapsed.nodes.find((node) => node.runtime?.child_ids?.length === calls.length)
+    expect(group).toBeDefined()
+    const expanded = buildRuntimeGraph(detailWithTail, { worker: nodeDetail(calls) }, { expandedGroups: new Set([group!.id]) })
+    const groupX = expanded.positions[group!.id].x
+    const lastChildX = Math.max(...calls.map((item) => expanded.positions[`call:${item.id}`].x))
+    const tail = expanded.nodes.find((node) => node.runtime?.raw_label === 'agent_decision.recorded')
+    expect(tail).toBeDefined()
+    expect(expanded.positions[tail!.id].x).toBeGreaterThan(lastChildX)
+    expect(lastChildX).toBeGreaterThan(groupX)
+  })
+})
