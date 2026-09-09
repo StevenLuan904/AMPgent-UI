@@ -22,6 +22,17 @@ export interface RunListItem {
   excluded_candidate_count?: number
   tool_call_count: number
   structure_record_count: number
+  /** Explicit root run for a generator round; never inferred from title or evidence names. */
+  root_generation_run_id?: string | null
+  /** Explicit member run ids for a generator round, including evidence-only members. */
+  member_run_ids?: string[] | null
+  /** Optional backend display label for the authoritative generator round. */
+  display_round?: string | null
+  /** Explicit source relation for a post-generation evidence run. */
+  source_run_id?: string | null
+  /** Backend-declared role; UI never derives this from tool names. */
+  run_role?: 'generator' | 'evidence' | 'member' | string | null
+  authoritative_candidate_id?: string | null
 }
 
 export interface RunListResponse {

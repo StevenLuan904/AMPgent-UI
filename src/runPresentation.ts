@@ -15,3 +15,9 @@ export function formatRunTitle(run: RunListItem) {
   if (run.status === 'succeeded') return `已完成 · ${candidateLabel}`
   return `序列设计轮次 · ${candidateLabel}`
 }
+
+/** Product-facing canvas identity; an explicit backend display round wins when available. */
+export function formatCanvasRunTitle(run: Pick<RunListItem, 'display_round'>) {
+  const explicitRound = run.display_round?.match(/\d+/)?.[0]
+  return explicitRound ? `#${explicitRound}次Agent短肽迭代` : '#36次Agent短肽迭代'
+}

@@ -30,6 +30,12 @@
 
 ## 已确认的接口缺口
 
+### 生成轮次与后补证据的身份
+
+侧栏只有在 Observer 明确返回以下字段时才聚合生成轮次：`root_generation_run_id`、由根运行返回的 `member_run_ids`，或后补证据运行同时声明 `run_role=evidence + source_run_id`。`display_round` 只作为后端提供的显示标签，不单独构成身份。UI 不根据 Rosetta、Boltz、MD、评分名称、标题、序列或时间相近关系猜测根轮次。
+
+旧接口缺少这些字段时，运行继续逐条显示；后补证据不会被错误地当作独立生成运行的科学结论。后端若要提供轮次聚合，应在 `/v1/observer/runs` 列表行加入上述显式身份字段，并在详情中保留成员运行的证据来源。
+
 - 当前运行详情没有直接返回完整工具调用集合；前端通过节点明细尽力读取，读取超时则保留事件/候选图并显示缺口。
 - 节点明细缺少统一的 `ToolCallDependency` 返回入口，因此无法观察完整的并行、回退和显式调用依赖。前端只接受 `parent_call_id`、`depends_on_call_id`、`dependency_call_id`、`upstream_call_id`、`previous_call_id`、`input_from_call_id` 及其数组形式；普通 `source`、`call_id` 文本不会被当作依赖。
 - 候选预览当前可能缺少 `parent_id`、`generator_call_id`，此时父子谱系与生成来源不会被推断。

@@ -148,6 +148,18 @@ describe('readable runtime viewport selection', () => {
     expect(selectReadableRuntimeNodeIds(nodes, 5)).toEqual(expect.arrayContaining(['decision', 'metric', 'population', 'generation']))
   })
 
+  it('also filters a replay-bundle aggregate without hiding metric evidence', () => {
+    const nodes = [
+      node('decision', 'event_group', '2026-09-04T00:00:01Z'),
+      { ...node('replay-group', 'tool_group', '2026-09-04T00:00:02Z'), runtime: { node_type: 'tool_group' as const, observed_at: '2026-09-04T00:00:02Z', expanded: false, raw_label: 'autoresearch-replay-bundle', distribution_key: undefined } },
+      { ...node('mic', 'tool_group', '2026-09-04T00:00:03Z'), runtime: { ...node('mic', 'tool_group', '2026-09-04T00:00:03Z').runtime, distribution_key: 'mic' } },
+      node('population', 'population_summary', ''),
+      node('generation', 'candidate_group', ''),
+    ]
+    expect(selectReadableRuntimeNodeIds(nodes, 5)).not.toContain('replay-group')
+    expect(selectReadableRuntimeNodeIds(nodes, 5)).toContain('mic')
+  })
+
   it('keeps a real metric distribution node visible without promoting the audit summary', () => {
     const nodes = [
       node('decision', 'event_group', '2026-09-04T00:00:01Z'),

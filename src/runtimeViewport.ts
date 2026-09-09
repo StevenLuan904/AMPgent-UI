@@ -133,7 +133,8 @@ export function isReadableRuntimeNode(node: ReadableRuntimeNode) {
   // Replay bundles are operational evidence, not a scientific decision or
   // result. Keep them in the graph/detail view, but do not spend a folded
   // main-spine slot on them.
-  return !(node.runtime?.node_type === 'tool_call' && /replay[-_.]?bundle/.test(rawLabel))
+  return !(['tool_call', 'tool_group', 'batch_group'].includes(node.runtime?.node_type ?? '')
+    && /replay[-_.]?bundle/.test(rawLabel))
 }
 
 function observedTime(node: ReadableRuntimeNode) {

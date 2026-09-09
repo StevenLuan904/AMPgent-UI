@@ -48,19 +48,19 @@ import {
   type ResultDistributionData,
 } from './ResultDistribution'
 import { LaneLabel, WorkflowNode, type LaneNode, type StageNode } from './WorkflowNode'
-import { assertMatchingRunIdentity, preserveSelectedRunOnListRefresh, type RunIdentity } from './runIdentity'
-import { formatRunTitle } from './runPresentation'
+import { assertMatchingRunIdentity, groupRunsByAuthoritativeRound, preserveSelectedRunOnListRefresh, type AuthoritativeRunRound, type RunIdentity } from './runIdentity'
+import { formatCanvasRunTitle, formatRunTitle } from './runPresentation'
 import { buildRuntimeGraph, displayObservedEventName, displayToolName, nextExpandedRuntimeGroups, runtimeEventStatus, type RuntimeGraphModel } from './runtimeGraph'
 import { loadObserverEventHistory, mergeObserverDetailEventHistory, observerEventPageMax, shouldFetchOlderObserverEvents } from './observerEvents'
 import { mergeNodeDetailCalls, nodeCallsWindowLabel, observerCallPageLimit, observerNodeCallsUrl } from './observerCalls'
-import { compactReadableRuntimePositions, expandedClusterLayoutRevision, expandedFocusNodeIds, selectReadableRuntimeNodeIds, shouldRefocusExpandedCluster } from './runtimeViewport'
+import { compactReadableRuntimePositions, expandedClusterLayoutRevision, selectReadableRuntimeNodeIds, shouldRefocusExpandedCluster } from './runtimeViewport'
 import { nodeDetailCacheTtlMs, observerDetailFailureMessage, observerDetailRequestAction, observerIdlePrefetchDelayMs, observerInitialPrefetchCount, observerInitialPrefetchStages, observerListTimeoutMs, observerInFlightStageIds, observerMergePrefetchQueue, observerNextPrefetchStage, observerNodeDetailCacheKey, observerNodeDetailTimeoutMs, observerPendingPrefetchCount, observerPollingIntervalMs, observerPrefetchQueueMatches, observerPrefetchInFlightKey, observerPrefetchRefreshExpired, observerPrefetchStageOrder, observerRequeuePrefetchStage, observerResponseIsStale, observerRunDetailCacheKey, observerRunDetailTimeoutMs, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion, observerVisibilityRefreshNeeded, type ObserverPrefetchQueue } from './observerPolling'
 
 const readableViewportMinZoom = 0.68
 // A focused cluster may legitimately be wider than the readable spine. Keep
 // this lower bound local to the explicit focus action so the default view
 // remains readable while every revealed member and its frame can be seen.
-const expandedClusterMinZoom = 0.9
+const expandedClusterMinZoom = 0.75
 
 type RuntimeClusterFrame = { id: string; label: string; left: number; top: number; width: number; height: number }
 
@@ -657,6 +657,34 @@ function useRunData(enabled: boolean, apiBase: string) {
   return { runs, selectedId, setSelectedId, detail, nodeDetails, nodeDetailFetch, error, loading, refreshing, syncingStale, detailSyncError, lastSuccessfulDetailAt, eventHistoryLoading, loadOlderEvents, loadOlderNodeCalls, retry, refresh }
 }
 
+function runRoleLabel(run: RunListItem) {
+  if (run.run_role === 'generator') return '生成运行'
+  if (run.run_role === 'evidence') return '后补证据'
+  if (run.run_role === 'member') return '关联运行'
+  return null
+}
+
+function RunRow({ run, selectedId, graphObservedCalls, onSelect, nested = false }: { run: RunListItem; selectedId: string | null; graphObservedCalls: number | null; onSelect: (id: string) => void; nested?: boolean }) {
+  const role = runRoleLabel(run)
+  return <button key={run.id} className={`run-row${nested ? ' nested' : ''} ${run.id === selectedId ? 'active' : ''}`} onClick={() => onSelect(run.id)}>
+    <span className={`run-status-dot status-${run.status}`} />
+    <span className="run-row-copy">
+      <strong>{formatRunTitle(run)}</strong>
+      <small title="列表统计来自运行记录；是否已映射到运行图以当前详情为准.">{role ? `${role} · ` : ''}{formatTime(run.created_at)} · {run.tool_call_count} 条工具记录{run.id === selectedId && run.tool_call_count > 0 && graphObservedCalls === 0 ? ' · 尚未映射到运行图' : ''}</small>
+    </span>
+    <ChevronRight />
+  </button>
+}
+
+function AuthoritativeRoundGroup({ group, selectedId, graphObservedCalls, onSelect }: { group: AuthoritativeRunRound; selectedId: string | null; graphObservedCalls: number | null; onSelect: (id: string) => void }) {
+  const label = group.displayRound ? `生成轮次 · ${group.displayRound}` : '生成轮次'
+  const basis = group.basis === 'source_run_id' ? '后端 source_run_id' : group.basis === 'member_run_ids' ? '后端 member_run_ids' : '后端 root_generation_run_id'
+  return <section className="run-round-group" data-round-key={group.key}>
+    <div className="run-round-group-header" title={`分组依据：${basis}`}><span className="run-round-marker" /><span><b>{label}</b><small>{group.runs.length} 条关联运行</small></span></div>
+    <div className="run-round-members">{group.runs.map((run) => <RunRow key={run.id} run={run} nested selectedId={selectedId} graphObservedCalls={graphObservedCalls} onSelect={onSelect} />)}</div>
+  </section>
+}
+
 function RunList({ runs, selectedId, graphObservedCalls, onSelect }: { runs: RunListItem[]; selectedId: string | null; graphObservedCalls: number | null; onSelect: (id: string) => void }) {
   if (!runs.length) {
     return <div className="run-list"><div className="run-list-empty"><Database /><span><b>暂无可用运行数据</b><small>观察器接口未返回可展示的 PostgreSQL 运行记录。</small></span></div></div>
@@ -664,16 +692,9 @@ function RunList({ runs, selectedId, graphObservedCalls, onSelect }: { runs: Run
   return (
     <div className="run-list">
       {!runs.some((run) => run.id === selectedId) && selectedId && <div className="run-list-missing"><b>当前运行不在最近列表</b><small>仍以 URL 指定的 PostgreSQL run id 读取详情，不会高亮其他运行。</small></div>}
-      {runs.map((run) => (
-        <button key={run.id} className={`run-row ${run.id === selectedId ? 'active' : ''}`} onClick={() => onSelect(run.id)}>
-          <span className={`run-status-dot status-${run.status}`} />
-          <span className="run-row-copy">
-                <strong>{formatRunTitle(run)}</strong>
-            <small title="列表统计来自运行记录；是否已映射到运行图以当前详情为准.">{formatTime(run.created_at)} · {run.tool_call_count} 条工具记录{run.id === selectedId && run.tool_call_count > 0 && graphObservedCalls === 0 ? ' · 尚未映射到运行图' : ''}</small>
-          </span>
-          <ChevronRight />
-        </button>
-      ))}
+      {groupRunsByAuthoritativeRound(runs).map((item) => 'runs' in item
+        ? <AuthoritativeRoundGroup key={item.key} group={item} selectedId={selectedId} graphObservedCalls={graphObservedCalls} onSelect={onSelect} />
+        : <RunRow key={item.id} run={item} selectedId={selectedId} graphObservedCalls={graphObservedCalls} onSelect={onSelect} />)}
     </div>
   )
 }
@@ -739,7 +760,6 @@ function CanvasHeader({ detail, refreshing, syncingStale, detailSyncError, selec
   onRefresh: () => void
   onToggleSelection: () => void
 }) {
-  const isStructureReview = (detail.counts.boltz_poses ?? 0) > 0 || (detail.counts.rosetta_decoys ?? 0) > 0
   const scientificStatus = detail.run.scientific_run_status?.status ?? detail.run.status
   const temporalObservability = detail.run.temporal_observability
   const schedulerHealth = temporalObservability ? schedulerHealthPresentation(temporalObservability) : null
@@ -751,7 +771,7 @@ function CanvasHeader({ detail, refreshing, syncingStale, detailSyncError, selec
     <header className="canvas-header">
       <div className="canvas-title-block">
         <div className="eyebrow"><span>{detailSyncError ? '数据同步中断' : isAcceptanceFixture ? '验收数据' : syncingStale ? '正在同步' : '科学运行'}</span></div>
-        <h1>{isStructureReview ? '短肽结构证据复核' : '序列优先的短肽设计'}</h1>
+        <h1>{formatCanvasRunTitle(detail.run)}</h1>
         <div className="round-meta">
           <span>{formatTime(detail.run.created_at)} 创建</span>
         </div>
@@ -824,6 +844,7 @@ function GraphView({
   const clusterResizeTimer = useRef<number | null>(null)
   const previousGraphViewportSize = useRef({ width: 0, height: 0 })
   const expandedFrameRaf = useRef<number | null>(null)
+  const expandedFrameLoop = useRef<number | null>(null)
   const userInteracted = useRef(false)
   const programmaticFit = useRef(false)
   const graphAreaRef = useRef<HTMLDivElement>(null)
@@ -861,12 +882,7 @@ function GraphView({
     const expandedClusterIds = runtimeGraph.nodes
       .filter((node) => node.runtime?.expanded && ['tool_group', 'event_group', 'batch_group', 'tool_summary_group', 'candidate_group'].includes(node.runtime.node_type))
       .flatMap((group) => runtimeChildNodeIds(runtimeGraph.nodes, group))
-    const expandedContextIds = runtimeGraph.nodes
-      .filter((node) => node.runtime?.expanded && !['tool_call', 'candidate_preview', 'tool_summary'].includes(node.runtime.node_type))
-      .flatMap(() => runtimeGraph.nodes
-        .filter((node) => !['tool_call', 'candidate_preview', 'tool_summary', 'tool_summary_group'].includes(node.runtime?.node_type ?? ''))
-        .map((node) => node.id))
-    const visibleIds = [...new Set([...selected, ...expandedClusterIds, ...expandedContextIds])]
+    const visibleIds = [...new Set([...selected, ...expandedClusterIds])]
     return visibleIds.filter((id) => {
       const node = runtimeGraph.nodes.find((candidate) => candidate.id === id)
       if (expandedSummaryGroup && ['candidate_group', 'candidate_preview', 'generation', 'population_summary'].includes(node?.runtime?.node_type ?? '')) return false
@@ -903,10 +919,10 @@ function GraphView({
   const expandedFocusNodeIdSet = useMemo(() => {
     const expandedGroup = runtimeGraph.nodes.find((node) => node.runtime?.expanded && ['tool_group', 'event_group', 'batch_group', 'candidate_group'].includes(node.runtime.node_type))
     if (!expandedGroup) return null
-    const clusterIds = new Set(runtimeChildNodeIds(runtimeGraph.nodes, expandedGroup))
-    clusterIds.add(expandedGroup.id)
-    const contextRadius = graphViewportSize.width > 2000 ? 2 : 1
-    return new Set(expandedFocusNodeIds(readableRuntimeNodeIds, readableRuntimePositions, clusterIds, contextRadius))
+    // The readable window is the spine plus the expanded members. Fitting
+    // only immediate neighbours leaves a half-card at the viewport edge and
+    // makes the surrounding scientific context look disconnected.
+    return new Set(readableRuntimeNodeIds)
   }, [graphViewportSize.width, readableRuntimeNodeIds, readableRuntimePositions, runtimeGraph.nodes])
   layoutSignatureRef.current = readableLayoutSignature
   const markUserInteracted = useCallback(() => {
@@ -1082,8 +1098,7 @@ function GraphView({
       // Fit only the revealed cluster. Adjacent mainline cards remain as
       // lightweight reading context but must not force the scientific detail
       // cards down to an unreadable zoom.
-      const contextRadius = (graphAreaRef.current?.clientWidth ?? 0) > 2000 ? 2 : 1
-      const focusNodeIds = expandedFocusNodeIds(readableRuntimeNodeIds, readableRuntimePositions, clusterIds, contextRadius)
+      const focusNodeIds = readableRuntimeNodeIds
       const focusNodes = visibleStageNodes.filter((node) => focusNodeIds.includes(node.id))
       const graphRect = graphAreaRef.current?.getBoundingClientRect()
       if (graphRect) {
@@ -1296,6 +1311,35 @@ function GraphView({
       expandedFrameRaf.current = null
     }
   }, [expandedClusterSignature, graphViewportSize.height, graphViewportSize.width, readableLayoutSignature, scheduleExpandedClusterMeasure])
+  // Keep the visual cluster boundary tied to the live screen-space boxes. A
+  // short-lived rAF loop is intentional while a cluster is open: React Flow
+  // moves nodes through transforms during drag, pan, zoom, and fit animation,
+  // so a one-shot measurement can visibly lag behind the cards.
+  useEffect(() => {
+    if (!expandedClusterSignature) return
+    let frame = 0
+    const resizeObserver = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => {
+      scheduleExpandedClusterMeasure()
+    })
+    const graphArea = graphAreaRef.current
+    if (resizeObserver && graphArea) {
+      resizeObserver.observe(graphArea)
+      graphArea.querySelectorAll<HTMLElement>('.react-flow__node').forEach((node) => resizeObserver.observe(node))
+    }
+    const measureContinuously = () => {
+      scheduleExpandedClusterMeasure()
+      frame = window.requestAnimationFrame(measureContinuously)
+      expandedFrameLoop.current = frame
+    }
+    frame = window.requestAnimationFrame(measureContinuously)
+    expandedFrameLoop.current = frame
+    return () => {
+      window.cancelAnimationFrame(frame)
+      if (expandedFrameLoop.current !== null) window.cancelAnimationFrame(expandedFrameLoop.current)
+      expandedFrameLoop.current = null
+      resizeObserver?.disconnect()
+    }
+  }, [expandedClusterSignature, scheduleExpandedClusterMeasure])
   useEffect(() => {
     const requested = pendingClusterFocus.current
     if (requested === undefined) return
@@ -1363,7 +1407,7 @@ function GraphView({
         selected: selectionMode ? analysisSelection.includes(stage.id) : selectedStage === stage.id,
         onToggleGroup: handleToggleGroup,
       },
-      draggable: false,
+      draggable: Boolean(expandedClusterSignature),
         })
       }),
     ]
@@ -1390,6 +1434,10 @@ function GraphView({
       return expandedClusterLayoutRevision(group.id, members)
     }).sort().join('||')
   }, [nodes, readableRuntimePositions, runtimeGraph.nodes, runtimeGraph.positions])
+  const handleReactFlowNodesChange = useCallback((changes: Parameters<typeof onNodesChange>[0]) => {
+    onNodesChange(changes)
+    scheduleExpandedClusterMeasure()
+  }, [onNodesChange, scheduleExpandedClusterMeasure])
   expandedClusterLayoutRevisionRef.current = expandedClusterLayoutRevisionValue
   useEffect(() => {
     const revision = expandedClusterLayoutRevisionValue
@@ -1520,7 +1568,14 @@ function GraphView({
         nodeTypes={nodeTypes}
         onNodeClick={handleNodeClick}
         onEdgeClick={handleEdgeClick}
-        onNodesChange={onNodesChange}
+        onNodesChange={handleReactFlowNodesChange}
+        onNodeDragStart={() => {
+          markUserInteracted()
+          if (expandedClusterSignature) clusterFocusUserMoved.current = true
+          scheduleExpandedClusterMeasure()
+        }}
+        onNodeDrag={() => scheduleExpandedClusterMeasure()}
+        onNodeDragStop={() => scheduleExpandedClusterMeasure()}
         onInit={(instance) => { flowInstance.current = instance; scheduleInitialFit() }}
         onMoveStart={() => {
           if (!programmaticFit.current) {
@@ -2061,7 +2116,7 @@ export default function App() {
   const toggleAnalysisNode = (id: string) => setAnalysisSelection((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
   return (
     <div className="app-shell">
-      <div className="topbar"><button><ArrowLeft /></button><div className="brand"><span><FlaskConical /></span>AMPgent <i>科学分析</i></div><button className={`source-state ${activeView === 'overview' && (data.error || data.detailSyncError) ? 'has-error' : ''}`} onClick={() => setConnectionOpen(true)} title="查看或修改只读数据连接"><Database /><span>{activeView !== 'overview' ? '分析数据 · 只读' : data.detailSyncError ?? (data.syncingStale ? '上次读取 · 正在同步' : data.detail && data.detail.run.id === data.selectedId ? data.detail.source === 'postgresql' ? '数据库已连接' : '验收数据 · 只读夹具' : data.error ? '观察器不可用' : data.runs.length > 0 ? '轮次已读取 · 正在读取详情' : '正在连接')}</span><span className="live-dot" /><Settings2 /></button></div>
+      <div className="topbar"><button><ArrowLeft /></button><div className="brand"><span><FlaskConical /></span><b>AMPgent</b><i>Agent推动的短肽设计</i></div><button className={`source-state ${activeView === 'overview' && (data.error || data.detailSyncError) ? 'has-error' : ''}`} onClick={() => setConnectionOpen(true)} title="查看或修改只读数据连接"><Database /><span>{activeView !== 'overview' ? '分析数据 · 只读' : data.detailSyncError ?? (data.syncingStale ? '上次读取 · 正在同步' : data.detail && data.detail.run.id === data.selectedId ? data.detail.source === 'postgresql' ? '数据库已连接' : '验收数据 · 只读夹具' : data.error ? '观察器不可用' : data.runs.length > 0 ? '轮次已读取 · 正在读取详情' : '正在连接')}</span><span className="live-dot" /><Settings2 /></button></div>
       <div className="workspace">
         <Sidebar
           runs={data.runs}

@@ -1223,21 +1223,22 @@ function toolSummaryGroupNode(tools: RuntimeSummaryTool[], coverage: { total: nu
   const primaryDistributionKey = distributionKeys.includes('mic') ? 'mic' : distributionKeys[0]
   return {
     id: groupId,
-    label: iterationLabel ? `迭代工具链 · ${iterationLabel}` : `工具链汇总 · ${summaryCount} 次`,
+    label: `逐次明细缺口 · ${coverage.missing} 项`,
     kind: 'tool',
     group: 'observed',
     status,
-    current: summaryCount,
+    current: coverage.materialized,
     total: summaryCount,
     provenance: 'database',
     insight: {
       grade: 'neutral',
-      verdict: `${tools.length} 类工具 · ${summaryCount} 次调用`,
-      reason: iterationLabel ? `${iterationLabel}运行观测` : '运行工具调用汇总',
+      verdict: `统计 ${summaryCount} · 已映射 ${coverage.materialized}`,
+      reason: iterationLabel ? `数据库工具状态汇总 · ${iterationLabel}` : '数据库工具状态汇总',
        facts: [
          ...(iterationLabel ? [{ label: '最近轮次', value: iterationLabel }] : []),
-         { label: '调用规模', value: `${tools.length} 类工具 · ${summaryCount} 次` },
-         { label: '操作构成', value: summaryOperationComposition(tools) },
+         { label: '统计总量', value: `${summaryCount} 项` },
+         { label: '逐次明细', value: `已有 ${coverage.materialized} · 尚缺 ${coverage.missing}` },
+         ...(tools.length ? [{ label: '缺口工具', value: summaryOperationComposition(tools) }] : []),
          { label: '状态构成', value: summaryStatusBreakdown(tools) },
       ],
       source: 'observer_summary',
@@ -1487,7 +1488,7 @@ function computePositions(nodes: GraphStage[], requestedColumns?: number, availa
       groupMembers.set(nodeId, group.id)
     }
   }
-  const summaryNodes = nodes.filter((node) => node.runtime?.node_type === 'tool_summary')
+  const summaryNodes = nodes.filter((node) => ['tool_summary', 'tool_summary_group'].includes(node.runtime?.node_type ?? ''))
   const mainNodes = nodes.filter((node) => !summaryNodes.includes(node) && !groupMembers.has(node.id))
   const observedTime = (node: GraphStage) => {
     const value = node.runtime?.observed_at ? Date.parse(node.runtime.observed_at) : Number.NaN
@@ -1537,7 +1538,7 @@ function computePositions(nodes: GraphStage[], requestedColumns?: number, availa
     columnByNode.set(childId, shiftedColumn(groupColumn) + 1 + Math.max(0, index) % clusterColumns)
   }
   const place = (node: GraphStage, column: number, row = 0) => {
-    const isSummary = node.runtime?.node_type === 'tool_summary' && !groupMembers.has(node.id)
+    const isSummary = ['tool_summary', 'tool_summary_group'].includes(node.runtime?.node_type ?? '') && !groupMembers.has(node.id)
     positions[node.id] = { x: 190 + column * 315, y: isSummary ? auditY + row * 190 : mainY + row * 190 }
   }
   for (const node of ordered) {
@@ -1717,7 +1718,7 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
   const structureEvidenceNodes = viewerEntriesForRun.map(([key, artifact]) => structureEvidenceNode(key, artifact))
   const nodes = [
     ...callNodes,
-    ...(summaryGaps.length ? [toolSummaryGroupNode(summaryTools, summaryCoverage, expandedGroups.has('tool-summary-group'), latestIteration, latestObservedAt), ...(expandedGroups.has('tool-summary-group') ? summaryTools.map(toolSummaryNode) : [])] : []),
+    ...(summaryGaps.length ? [toolSummaryGroupNode(summaryGaps, summaryCoverage, expandedGroups.has('tool-summary-group'), latestIteration, latestObservedAt), ...(expandedGroups.has('tool-summary-group') ? summaryGaps.map(toolSummaryNode) : [])] : []),
     ...structureEvidenceNodes,
     ...(populationSummary ? [populationSummary] : []),
     ...ungroupedCandidates.map((candidate) => candidateNode(candidate, previewIndexById.get(candidate.id) ?? 1, previewTotal)),

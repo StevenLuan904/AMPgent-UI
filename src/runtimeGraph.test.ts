@@ -418,9 +418,10 @@ describe('buildRuntimeGraph', () => {
     const summaryDetail = { ...detail(), tool_summary: { 'tool-a': { succeeded: 2 }, 'unknown-internal-tool': { failed: 3 } } }
     const result = buildRuntimeGraph(summaryDetail, { worker: nodeDetail([observed]) })
     const group = result.nodes.find((node) => node.id === 'tool-summary-group')
-    expect(group).toMatchObject({ label: '工具链汇总 · 5 次', status: 'stopped', current: 5, total: 5, insight: { verdict: '2 类工具 · 5 次调用', reason: '运行工具调用汇总' }, runtime: { summary_only: true, child_ids: ['tool-summary:tool-a', 'tool-summary:unknown-internal-tool'] } })
+    expect(group).toMatchObject({ label: '逐次明细缺口 · 4 项', status: 'stopped', current: 1, total: 5, insight: { verdict: '统计 5 · 已映射 1', reason: '数据库工具状态汇总' }, runtime: { summary_only: true, child_ids: ['tool-summary:tool-a', 'tool-summary:unknown-internal-tool'] } })
     expect(group?.insight.facts).toEqual(expect.arrayContaining([
-      { label: '调用规模', value: '2 类工具 · 5 次' },
+      { label: '统计总量', value: '5 项' },
+      { label: '逐次明细', value: '已有 1 · 尚缺 4' },
     ]))
     expect(group?.runtime?.summary_tools?.find((tool) => tool.tool_name === 'unknown-internal-tool')?.display_name).toBe('未命名工具')
     expect(result.edges.some((edge) => edge.source.startsWith('tool-summary:') || edge.target.startsWith('tool-summary:'))).toBe(false)
@@ -434,9 +435,9 @@ describe('buildRuntimeGraph', () => {
     }
     const result = buildRuntimeGraph(summaryDetail)
     expect(result.nodes.find((node) => node.id === 'tool-summary-group')).toMatchObject({
-      label: '迭代工具链 · 第 39 轮',
+      label: '逐次明细缺口 · 78 项',
       status: 'completed',
-      current: 78,
+      current: 0,
       total: 78,
       runtime: { latest_iteration: 39, observed_at: '2026-09-04T00:00:10Z' },
     })
@@ -478,14 +479,15 @@ describe('buildRuntimeGraph', () => {
     ])
     const result = buildRuntimeGraph({ ...detail(), tool_summary: toolSummary }, { worker: nodeDetail(materialized) })
     expect(result.stats).toMatchObject({ toolSummaryRecords: 352, toolSummaryMaterialized: 195, toolSummaryMissing: 157 })
-    expect(result.nodes.find((node) => node.id === 'tool-summary-group')).toMatchObject({ label: '工具链汇总 · 352 次', current: 352, total: 352 })
+    expect(result.nodes.find((node) => node.id === 'tool-summary-group')).toMatchObject({ label: '逐次明细缺口 · 157 项', current: 195, total: 352 })
     expect(result.nodes.find((node) => node.id === 'tool-summary-group')?.insight.facts).toEqual(expect.arrayContaining([
-      { label: '调用规模', value: '9 类工具 · 352 次' },
+      { label: '统计总量', value: '352 项' },
+      { label: '逐次明细', value: '已有 195 · 尚缺 157' },
     ]))
     expect(result.edges.filter((edge) => edge.source.startsWith('tool-summary') || edge.target.startsWith('tool-summary'))).toHaveLength(0)
   })
 
-  it('places the tool-chain summary on the main scientific spine', () => {
+  it('places the tool-chain summary on a separate audit rail', () => {
     const candidate = { id: 'candidate-summary', sequence: 'KKLL', length: 4, proposal_rank: 1, cohort: 'exploration', pareto_front: null, reasons: [], metrics: [], generation: 1 }
     const result = buildRuntimeGraph({ ...detail([{ sequence_no: 1, type: 'run.started', actor: 'worker', payload: {}, occurred_at: '2026-09-04T00:00:00Z' }], [candidate]), tool_summary: { 'tool-a': { succeeded: 2 } } }, { worker: nodeDetail([call('summary-a', 'tool-a', '2026-09-04T00:00:01Z')]) })
     const toolY = result.positions['call:summary-a']?.y
@@ -496,10 +498,10 @@ describe('buildRuntimeGraph', () => {
     expect(summaryY).toBeDefined()
     const eventY = result.positions['event:1']?.y
     expect(eventY).toBeDefined()
-    expect(summaryY).toBe(candidateY)
+    expect(summaryY).toBeGreaterThan(toolY ?? 0)
+    expect(summaryY).not.toBe(candidateY)
     expect(eventY).toBe(toolY)
     expect(toolY).toBe(candidateY)
-    expect(summaryY).toBe(toolY)
   })
 
   it('builds observed call/event nodes and reports missing dependency contract', () => {

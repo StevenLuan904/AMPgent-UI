@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatRunTitle } from './runPresentation'
+import { formatCanvasRunTitle, formatRunTitle } from './runPresentation'
 import type { RunListItem } from './types'
 
 function run(status: RunListItem['status'], baseline: number): RunListItem {
@@ -20,6 +20,11 @@ function run(status: RunListItem['status'], baseline: number): RunListItem {
 }
 
 describe('运行列表标题', () => {
+  it('使用显式轮次，否则显示产品指定的 Agent 迭代标题', () => {
+    expect(formatCanvasRunTitle({ display_round: '第 39 轮' })).toBe('#39次Agent短肽迭代')
+    expect(formatCanvasRunTitle({ display_round: null })).toBe('#36次Agent短肽迭代')
+  })
+
   it('把运行失败与候选科学性质分开表达', () => {
     expect(formatRunTitle(run('failed', 0))).toBe('运行异常终止 · 尚无可展示候选')
   })
