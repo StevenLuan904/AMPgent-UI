@@ -789,15 +789,12 @@ function SparkIcon({ icon }: { icon: string }) {
   return icon === 'sequence' ? <Activity /> : <CircleDot />
 }
 
-function CanvasHeader({ detail, refreshing, syncingStale, detailSyncError, selectionMode, selectedCount, onRefresh, onToggleSelection }: {
+function CanvasHeader({ detail, refreshing, syncingStale, detailSyncError, onRefresh }: {
   detail: RunDetail
   refreshing: boolean
   syncingStale: boolean
   detailSyncError: string | null
-  selectionMode: boolean
-  selectedCount: number
   onRefresh: () => void
-  onToggleSelection: () => void
 }) {
   const scientificStatus = detail.run.scientific_run_status?.status ?? detail.run.status
   const temporalObservability = detail.run.temporal_observability
@@ -816,9 +813,6 @@ function CanvasHeader({ detail, refreshing, syncingStale, detailSyncError, selec
         </div>
       </div>
       <div className="header-actions">
-        <button className={`analysis-select-button ${selectionMode ? 'active' : ''}`} onClick={onToggleSelection}>
-          <ChartNoAxesCombined /><span>{selectionMode ? `已选 ${selectedCount} 个节点` : '组合分析'}</span>
-        </button>
         <span className={`run-pill status-${scientificStatus}`} title="科学运行状态来自权威数据库。"><i />{statusText[scientificStatus] ?? scientificStatus}</span>
         {schedulerHealth && <span className={`observability-pill tone-${schedulerHealth.tone}`} title={schedulerHealthTitle}>{schedulerHealth.label}</span>}
         <button className={`icon-button ${detailSyncError ? 'retry-detail-button' : ''}`} onClick={onRefresh} title={detailSyncError ? '重试详情读取' : '立即刷新'} aria-label={detailSyncError ? '重试详情' : '立即刷新'}>
@@ -839,10 +833,7 @@ function GraphView({
   persistedDistributions,
   selectedStage,
   selectedEdge,
-  selectionMode,
-  analysisSelection,
   onSelect,
-  onToggleAnalysis,
   onSelectEdge,
   onToggleGroup,
   onAvailableWidthChange,
@@ -854,10 +845,7 @@ function GraphView({
   persistedDistributions: Record<string, ResultDistributionData>
   selectedStage: string | null
   selectedEdge: GraphEdgeDetail | null
-  selectionMode: boolean
-  analysisSelection: string[]
   onSelect: (id: string) => void
-  onToggleAnalysis: (id: string) => void
   onSelectEdge: (edge: GraphEdgeDetail) => void
   onToggleGroup: (id: string) => void
   onAvailableWidthChange: (width: number) => void
@@ -1486,14 +1474,14 @@ function GraphView({
           ?? distributionForStage(analysisSnapshot, detail, stage.id)
           ?? runtimeDistribution
           ?? { label: '节点结果', unit: '条', values: [], source: '尚无数值结果', direction: 'neutral' },
-        selected: selectionMode ? analysisSelection.includes(stage.id) : selectedStage === stage.id,
+        selected: selectedStage === stage.id,
         onToggleGroup: handleToggleGroup,
       },
       draggable: Boolean(expandedClusterSignature),
         })
       }),
     ]
-  }, [analysisSelection, analysisSnapshot, detail, expandedFocusNodeIdSet, graphViewportSize.height, graphViewportSize.width, handleToggleGroup, nodeDetails, persistedDistributions, readableRuntimeNodeIds, readableRuntimeNodeIdSet, readableRuntimePositions, runtimeGraph, selectedStage, selectionMode])
+  }, [analysisSnapshot, detail, expandedFocusNodeIdSet, graphViewportSize.height, graphViewportSize.width, handleToggleGroup, nodeDetails, persistedDistributions, readableRuntimeNodeIds, readableRuntimeNodeIdSet, readableRuntimePositions, runtimeGraph, selectedStage])
   const [nodes, setNodes, onNodesChange] = useNodesState<StageNode | LaneNode>(computedNodes)
   useEffect(() => {
     setNodes((current) => {
@@ -1634,8 +1622,7 @@ function GraphView({
     markUserInteracted()
     if (expandedClusterSignature) clusterFocusUserMoved.current = true
     const nodeType = node.type === 'stage' ? (node.data as StageNode['data']).stage.runtime?.node_type : undefined
-    if (selectionMode) onToggleAnalysis(node.id)
-    else if (nodeType && runtimeExpandableNodeTypes.has(nodeType)) {
+    if (nodeType && runtimeExpandableNodeTypes.has(nodeType)) {
       handleToggleGroup(node.id)
     } else onSelect(node.id)
   }
@@ -2164,8 +2151,6 @@ export default function App() {
   const data = useRunData(true, apiBase)
   const [selectedStage, setSelectedStage] = useState<string | null>(null)
   const [selectedEdge, setSelectedEdge] = useState<GraphEdgeDetail | null>(null)
-  const [selectionMode, setSelectionMode] = useState(false)
-  const [analysisSelection, setAnalysisSelection] = useState<string[]>([])
   const [analysisSnapshot, setAnalysisSnapshot] = useState<AnalysisSnapshot | null>(null)
   const [persistedDistributions, setPersistedDistributions] = useState<Record<string, ResultDistributionData>>({})
   const [expandedRuntimeGroups, setExpandedRuntimeGroups] = useState<Set<string>>(new Set())
@@ -2199,8 +2184,6 @@ export default function App() {
     // widget; missing artifact storage must remain an explicit user action.
     setPersistedDistributions({})
   }, [apiBase, data.detail?.run.id])
-  const selectedAnalysisNodes = useMemo(() => runtimeGraph?.nodes.filter((node) => analysisSelection.includes(node.id)) ?? [], [analysisSelection, runtimeGraph])
-  const toggleAnalysisNode = (id: string) => setAnalysisSelection((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
   return (
     <div className="app-shell">
       <div className="topbar"><button><ArrowLeft /></button><div className="brand"><span><FlaskConical /></span><b>AMPgent</b><i>Agent推动的短肽设计</i></div><button className={`source-state ${activeView === 'overview' && (data.error || data.detailSyncError) ? 'has-error' : ''}`} onClick={() => setConnectionOpen(true)} title="查看或修改只读数据连接"><Database /><span>{activeView !== 'overview' ? '分析数据 · 只读' : data.detailSyncError ?? (data.syncingStale ? '上次读取 · 正在同步' : data.detail && data.detail.run.id === data.selectedId ? data.detail.source === 'postgresql' ? '数据库已连接' : '验收数据 · 只读夹具' : data.error ? '观察器不可用' : data.runs.length > 0 ? '轮次已读取 · 正在读取详情' : '正在连接')}</span><span className="live-dot" /><Settings2 /></button></div>
@@ -2214,19 +2197,17 @@ export default function App() {
           structureRun={structureRun}
           activeView={activeView}
           onView={(view) => { setActiveView(view); setSelectedStage(null); setSelectedEdge(null) }}
-          onSelect={(id) => { data.setSelectedId(id); setSelectedStage(null); setSelectedEdge(null); setAnalysisSelection([]); setSelectionMode(false) }}
+          onSelect={(id) => { data.setSelectedId(id); setSelectedStage(null); setSelectedEdge(null) }}
           onOpenStructureEvidence={() => {
             if (!structureRun) return
             data.setSelectedId(structureRun.id)
             setActiveView('overview')
             setSelectedStage('boltz')
             setSelectedEdge(null)
-            setAnalysisSelection([])
-            setSelectionMode(false)
           }}
         />
         {activeView === 'analysis' ? (
-          <AnalysisDashboard detail={data.detail} seedNodeIds={analysisSelection} apiBase={apiBase} />
+          <AnalysisDashboard detail={data.detail} seedNodeIds={[]} apiBase={apiBase} />
         ) : activeView === 'evidence' ? (
           <EvidenceDashboard runId={data.detail?.run.id} />
         ) : data.detail && data.detail.run.id === data.selectedId && !data.loading ? (
@@ -2237,45 +2218,21 @@ export default function App() {
                 refreshing={data.refreshing}
                 syncingStale={data.syncingStale}
                 detailSyncError={data.detailSyncError}
-                selectionMode={selectionMode}
-                selectedCount={analysisSelection.length}
                 onRefresh={data.refresh}
-                onToggleSelection={() => {
-                  setSelectionMode((value) => !value)
-                  setSelectedStage(null)
-                  setSelectedEdge(null)
-                }}
               />
               <GraphView
                 detail={data.detail}
                 nodeDetails={data.nodeDetails}
                 runtimeGraph={runtimeGraph!}
                  analysisSnapshot={analysisSnapshot}
-                 persistedDistributions={persistedDistributions}
+                persistedDistributions={persistedDistributions}
                 selectedStage={selectedStage}
                 selectedEdge={selectedEdge}
-                selectionMode={selectionMode}
-                analysisSelection={analysisSelection}
                 onSelect={(id) => { setSelectedStage(id); setSelectedEdge(null) }}
-                onToggleAnalysis={toggleAnalysisNode}
                 onSelectEdge={(edge) => { setSelectedEdge(edge); setSelectedStage(null) }}
                 onToggleGroup={toggleRuntimeGroup}
                 onAvailableWidthChange={setGraphAvailableWidth}
               />
-              {selectionMode && (
-                <div className="analysis-selection-bar">
-                  <div className="selection-summary">
-                    <ChartNoAxesCombined />
-                    <span><b>组合分析</b><small>{analysisSelection.length ? '已按节点语义准备分析条件' : '选择需要联合分析的节点'}</small></span>
-                  </div>
-                  <div className="selection-chips">
-                    {selectedAnalysisNodes.map((node) => <button key={node.id} onClick={() => toggleAnalysisNode(node.id)}>{node.label}<X /></button>)}
-                    {!selectedAnalysisNodes.length && <span>可连续选择多张流程卡片</span>}
-                  </div>
-                  {!!analysisSelection.length && <button className="clear-selection" onClick={() => setAnalysisSelection([])}>清除</button>}
-                  <button className="build-analysis" disabled={!analysisSelection.length} onClick={() => { setActiveView('analysis'); setSelectionMode(false) }}>生成分析卡片</button>
-                </div>
-              )}
             </main>
             {selectedStage && <RuntimeInspector
               detail={data.detail}
