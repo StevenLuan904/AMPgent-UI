@@ -9,6 +9,7 @@ import type {
   ToolCallRelation,
   ToolAttempt,
 } from './types'
+import { autoCardLayout } from './autoCardLayout'
 
 export interface RuntimeGraphStats {
   observedCalls: number
@@ -432,7 +433,7 @@ const toolLabels: Record<string, string> = {
   'autoresearch-frozen-action-executor': '冻结动作执行',
   'autoresearch-multi-front-archive': '多前沿归档',
   'autoresearch-multi-front-rule-planner': '多前沿规则规划',
-  'autoresearch-replay-bundle': '重放证据包',
+  'autoresearch-replay-bundle': '历史回放记录',
   'v38-metric-hemolysis_risk': '溶血风险评估',
   'v38-metric-mic_potency': 'MIC 活性预测',
   'v38-metric-mic_potency_amp_read': 'AMP read 活性复核',
@@ -1549,93 +1550,13 @@ export function layoutColumnsForWidth(availableWidth: number | undefined) {
   return Math.max(5, Math.min(7, Math.round((availableWidth as number) / 315)))
 }
 
-function computePositions(nodes: GraphStage[], requestedColumns?: number, availableWidth?: number) {
-  const positions: Record<string, { x: number; y: number }> = {}
-  const maximumColumns = Math.max(1, Math.min(7, Math.round(requestedColumns ?? layoutColumnsForWidth(availableWidth))))
-  const groupMembers = new Map<string, string>()
-  for (const group of nodes) {
-    const childIds = [...(group.runtime?.child_ids ?? []), ...(group.runtime?.event_ids ?? [])]
-    if (!group.runtime?.expanded || !childIds.length) continue
-    for (const childId of childIds) {
-      const prefix = group.runtime.node_type === 'candidate_group' ? 'candidate:' : 'call:'
-      const nodeId = childId.startsWith('event:') || childId.startsWith('call:') || childId.startsWith('candidate:') || childId.startsWith('tool-summary:') ? childId : `${prefix}${childId}`
-      groupMembers.set(nodeId, group.id)
-    }
-  }
-  const summaryNodes = nodes.filter((node) => ['tool_summary', 'tool_summary_group'].includes(node.runtime?.node_type ?? ''))
-  const mainNodes = nodes.filter((node) => !summaryNodes.includes(node) && !groupMembers.has(node.id))
-  const observedTime = (node: GraphStage) => {
-    const value = node.runtime?.observed_at ? Date.parse(node.runtime.observed_at) : Number.NaN
-    return Number.isFinite(value) ? value : Number.MAX_SAFE_INTEGER
-  }
-  const ordered = [...mainNodes].sort((left, right) => observedTime(left) - observedTime(right) || left.id.localeCompare(right.id))
-  // The default canvas is a decision spine, not a four-row table. Evidence
-  // types remain in metadata and details; only explicit parallel groups get
-  // a vertical branch. Summary-only evidence is placed on a separate audit
-  // rail below the spine and never controls the readable viewport.
-  const mainY = 220
-  const auditY = 660
-  const columnByNode = new Map<string, number>()
-  const firstColumnByParallelGroup = new Map<string, number>()
-  let nextColumn = 0
-  for (const node of ordered) {
-    const parallelGroup = node.runtime?.parallel_group_id
-    if (parallelGroup && firstColumnByParallelGroup.has(parallelGroup)) {
-      columnByNode.set(node.id, firstColumnByParallelGroup.get(parallelGroup)!)
-      continue
-    }
-    columnByNode.set(node.id, nextColumn)
-    if (parallelGroup) firstColumnByParallelGroup.set(parallelGroup, nextColumn)
-    nextColumn += 1
-  }
-  const groupById = new Map(nodes.filter((node) => node.runtime?.expanded).map((node) => [node.id, node] as const))
-  const expandedClusters = [...groupById.values()].flatMap((group) => {
-    const childIds = [...(group.runtime?.child_ids ?? []), ...(group.runtime?.event_ids ?? [])]
-    const baseColumn = columnByNode.get(group.id)
-    if (baseColumn === undefined || !childIds.length) return []
-    const clusterColumns = group.runtime?.node_type === 'tool_summary_group' ? 3 : childIds.length <= 3 ? 1 : maximumColumns
-    return [{ groupId: group.id, baseColumn, clusterColumns }]
+function computePositions(nodes: GraphStage[], edges: GraphEdgeDetail[], requestedColumns?: number, availableWidth?: number) {
+  return autoCardLayout(nodes, edges, {}, {
+    availableWidth,
+    maxColumns: Math.max(1, Math.min(7, Math.round(requestedColumns ?? layoutColumnsForWidth(availableWidth)))),
+    clusterGap: 24,
+    rowGap: 20,
   })
-  // An expanded cluster occupies the columns immediately after its group.
-  // Shift later spine nodes by that occupied span so the local fan-out never
-  // sits underneath the next scientific step.
-  const shiftedColumn = (baseColumn: number) => baseColumn + expandedClusters
-    .filter(({ baseColumn: clusterColumn }) => clusterColumn < baseColumn)
-    .reduce((total, { clusterColumns }) => total + clusterColumns, 0)
-  for (const [childId, groupId] of groupMembers) {
-    const groupColumn = columnByNode.get(groupId)
-    if (groupColumn === undefined) continue
-    const group = groupById.get(groupId)
-    const childIds = group ? [...(group.runtime?.child_ids ?? []), ...(group.runtime?.event_ids ?? [])] : []
-    const index = childIds.indexOf(childId.startsWith('tool-summary:') ? childId : childId.replace(/^call:/, '').replace(/^event:/, '').replace(/^candidate:/, ''))
-    const clusterColumns = group?.runtime?.node_type === 'tool_summary_group' ? 3 : childIds.length <= 3 ? 1 : maximumColumns
-    columnByNode.set(childId, shiftedColumn(groupColumn) + 1 + Math.max(0, index) % clusterColumns)
-  }
-  const place = (node: GraphStage, column: number, row = 0) => {
-    const isSummary = ['tool_summary', 'tool_summary_group'].includes(node.runtime?.node_type ?? '') && !groupMembers.has(node.id)
-    positions[node.id] = { x: 190 + column * 315, y: isSummary ? auditY + row * 190 : mainY + row * 190 }
-  }
-  for (const node of ordered) {
-    const parallelGroup = node.runtime?.parallel_group_id
-    const parallelMembers = parallelGroup ? ordered.filter((candidate) => candidate.runtime?.parallel_group_id === parallelGroup) : []
-    const parallelIndex = parallelGroup ? parallelMembers.findIndex((candidate) => candidate.id === node.id) : 0
-    const parallelOffset = parallelMembers.length > 1 ? parallelIndex - (parallelMembers.length - 1) / 2 : 0
-    const baseColumn = columnByNode.get(node.id) ?? 0
-    const isExpandedChild = groupMembers.has(node.id)
-    positions[node.id] = { x: 190 + (isExpandedChild ? baseColumn : shiftedColumn(baseColumn)) * 315, y: mainY + parallelOffset * 170 }
-  }
-  for (const node of nodes.filter((candidate) => groupMembers.has(candidate.id))) {
-    const groupId = groupMembers.get(node.id)
-    const group = groupId ? groupById.get(groupId) : undefined
-    const childIds = group ? [...(group.runtime?.child_ids ?? []), ...(group.runtime?.event_ids ?? [])] : []
-    const childIndex = childIds.indexOf(node.id.startsWith('tool-summary:') ? node.id : node.id.replace(/^call:/, '').replace(/^event:/, '').replace(/^candidate:/, ''))
-    const clusterColumns = group?.runtime?.node_type === 'tool_summary_group' ? 3 : childIds.length <= 3 ? 1 : maximumColumns
-    place(node, columnByNode.get(node.id) ?? 0, Math.floor(Math.max(0, childIndex) / clusterColumns) + 1)
-  }
-  // Summary-only evidence is a separate audit rail. It never consumes a
-  // timeline column and has no execution edge.
-  summaryNodes.filter((node) => !groupMembers.has(node.id)).forEach((node, index) => place(node, index, 0))
-  return positions
 }
 
 export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, options: RuntimeGraphOptions = {}): RuntimeGraphModel {
@@ -2033,5 +1954,5 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
     explicitRelations: explicitRelationCount,
     unresolvedRelations: unresolvedRelationCount,
   }
-  return { nodes, edges, positions: computePositions(nodes, options.layoutColumns, options.availableWidth), calls, events, toolGroups, sourceFetch: options.sourceFetch, gaps, stats, eventWindow }
+  return { nodes, edges, positions: computePositions(nodes, edges, options.layoutColumns, options.availableWidth), calls, events, toolGroups, sourceFetch: options.sourceFetch, gaps, stats, eventWindow }
 }

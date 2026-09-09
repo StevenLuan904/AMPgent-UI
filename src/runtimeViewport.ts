@@ -185,7 +185,7 @@ export function selectReadableRuntimeNodeIds(nodes: ReadonlyArray<ReadableRuntim
   }
   const eligible = nodes.filter((node) => laneFor(node) !== null && isReadableRuntimeNode(node) && !summaryTypes.has(node.runtime?.node_type ?? ''))
   if (!eligible.length || limit <= 0) return []
-  const target = Math.min(Math.max(5, limit), eligible.length)
+  const target = Math.min(Math.max(3, limit), eligible.length)
   const selected = new Set<string>()
   const protectedContext = new Set<string>()
   const spatialOrder = [...eligible].sort((left, right) => readableOrder(left, right, positions))

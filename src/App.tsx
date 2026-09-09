@@ -21,7 +21,6 @@ import {
   ChartNoAxesCombined,
   ChevronRight,
   Clock3,
-  CircleDot,
   Database,
   Ellipsis,
   FileJson2,
@@ -34,11 +33,12 @@ import {
   ScanSearch,
   Settings2,
   ShieldCheck,
+  Star,
   X,
 } from 'lucide-react'
 import { AnalysisDashboard } from './analysis/AnalysisDashboard'
 import { loadAnalysisSnapshot, type AnalysisSnapshot } from './analysis/dataKernel'
-import { EvidenceDashboard } from './analysis/EvidenceDashboard'
+import { BestPeptideDashboard } from './analysis/BestPeptideDashboard'
 import { MoleculeViewer } from './MoleculeViewer'
 import { candidateGenerationLabel } from './generationPopulation'
 import { formatQualityGateRule, qualityGateCountSteps, qualityGateStatusLabel } from './generationQualityGate'
@@ -48,12 +48,13 @@ import {
   type ResultDistributionData,
 } from './ResultDistribution'
 import { LaneLabel, WorkflowNode, type LaneNode, type StageNode } from './WorkflowNode'
+import { autoCardLayout } from './autoCardLayout'
 import { assertMatchingRunIdentity, groupRunsByAuthoritativeRound, preserveSelectedRunOnListRefresh, type AuthoritativeRunRound, type RunIdentity } from './runIdentity'
 import { formatCanvasRunTitle, formatRunSummary, formatRunTitle } from './runPresentation'
 import { buildRuntimeGraph, displayObservedEventName, displayToolName, nextExpandedRuntimeGroups, runtimeEventStatus, type RuntimeGraphModel } from './runtimeGraph'
 import { loadObserverEventHistory, mergeObserverDetailEventHistory, observerEventPageMax, shouldFetchOlderObserverEvents } from './observerEvents'
 import { mergeNodeDetailCalls, nodeCallsWindowLabel, observerCallPageLimit, observerNodeCallsUrl } from './observerCalls'
-import { compactReadableRuntimePositions, expandedClusterLayoutRevision, selectReadableRuntimeNodeIds, shouldRefocusExpandedCluster } from './runtimeViewport'
+import { expandedClusterLayoutRevision, selectReadableRuntimeNodeIds, shouldRefocusExpandedCluster } from './runtimeViewport'
 import { nodeDetailCacheTtlMs, observerDetailFailureMessage, observerDetailRequestAction, observerIdlePrefetchDelayMs, observerInitialPrefetchCount, observerInitialPrefetchStages, observerListTimeoutMs, observerInFlightStageIds, observerMergePrefetchQueue, observerNextPrefetchStage, observerNodeDetailCacheKey, observerNodeDetailTimeoutMs, observerPendingPrefetchCount, observerPollingIntervalMs, observerPrefetchQueueMatches, observerPrefetchInFlightKey, observerPrefetchRefreshExpired, observerPrefetchStageOrder, observerRequeuePrefetchStage, observerResponseIsStale, observerRunDetailCacheKey, observerRunDetailTimeoutMs, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion, observerVisibilityRefreshNeeded, type ObserverPrefetchQueue } from './observerPolling'
 
 const readableViewportMinZoom = 0.8
@@ -734,28 +735,15 @@ function RunList({ runs, selectedId, page, loadingMore, onLoadMore, onSelect }: 
   )
 }
 
-function Sidebar({
-  runs,
-  selectedId,
-  runsPage,
-  runsLoadingMore,
-  loadMoreRuns,
-  structureRun,
-  activeView,
-  onView,
-  onSelect,
-  onOpenStructureEvidence,
-}: {
+function Sidebar({ runs, selectedId, runsPage, runsLoadingMore, loadMoreRuns, activeView, onView, onSelect }: {
   runs: RunListItem[]
   selectedId: string | null
   runsPage?: RunListResponse['page']
   runsLoadingMore: boolean
   loadMoreRuns: () => void
-  structureRun: RunListItem | null
-  activeView: 'overview' | 'analysis' | 'evidence'
-  onView: (view: 'overview' | 'analysis' | 'evidence') => void
+  activeView: 'overview' | 'analysis' | 'best'
+  onView: (view: 'overview' | 'analysis' | 'best') => void
   onSelect: (id: string) => void
-  onOpenStructureEvidence: () => void
 }) {
   return (
     <aside className="sidebar">
@@ -763,30 +751,12 @@ function Sidebar({
       <nav className="primary-nav">
         <button className={activeView === 'overview' ? 'active' : ''} onClick={() => onView('overview')}><Layers3 />概览</button>
         <button className={activeView === 'analysis' ? 'active' : ''} onClick={() => onView('analysis')}><ChartNoAxesCombined />分析</button>
-        <button className={activeView === 'evidence' ? 'active' : ''} onClick={() => onView('evidence')}><Database />证据库</button>
+        <button className={activeView === 'best' ? 'active' : ''} onClick={() => onView('best')}><Star />最佳短肽</button>
       </nav>
       <div className="sidebar-label runs-label">轮次 · 科学运行</div>
       <RunList runs={runs} selectedId={selectedId} page={runsPage} loadingMore={runsLoadingMore} onLoadMore={loadMoreRuns} onSelect={onSelect} />
-      <div className="sidebar-sections">
-        <button><span><SparkIcon icon="sequence" /></span><b>序列设计</b><small>生成模型与十一项指标</small></button>
-        <button><span><GitBranch /></span><b>多靶点</b><small>原位与错误口袋对照</small></button>
-        <button
-          className={`structure-evidence-link${structureRun?.id === selectedId && activeView === 'overview' ? ' active' : ''}`}
-          title="Boltz 2预测复合物构象；Rosetta进行界面精修与评分。"
-          disabled={!structureRun}
-          onClick={onOpenStructureEvidence}
-        >
-          <span><Atom /></span><b>结构证据</b>
-          <small>{structureRun ? `最近轮次 · ${structureRun.structure_record_count.toLocaleString()} 条记录` : '数据库中尚无结构记录'}</small>
-        </button>
-        <button><span><ShieldCheck /></span><b>科学评审</b><small>证据来源追踪</small></button>
-      </div>
     </aside>
   )
-}
-
-function SparkIcon({ icon }: { icon: string }) {
-  return icon === 'sequence' ? <Activity /> : <CircleDot />
 }
 
 function CanvasHeader({ detail, refreshing, syncingStale, detailSyncError, onRefresh }: {
@@ -871,12 +841,26 @@ function GraphView({
   const clusterResizeTimer = useRef<number | null>(null)
   const previousGraphViewportSize = useRef({ width: 0, height: 0 })
   const expandedFrameRaf = useRef<number | null>(null)
-  const expandedFrameLoop = useRef<number | null>(null)
   const userInteracted = useRef(false)
   const programmaticFit = useRef(false)
   const graphAreaRef = useRef<HTMLDivElement>(null)
   const [graphViewportSize, setGraphViewportSize] = useState({ width: 0, height: 0 })
   const [expandedClusterFrames, setExpandedClusterFrames] = useState<RuntimeClusterFrame[]>([])
+  const [nodes, setNodes, onNodesChange] = useNodesState<StageNode | LaneNode>([])
+  const measuredCardDimensions = useRef<Record<string, { width?: number; height?: number }>>({})
+  const [measuredCardRevision, setMeasuredCardRevision] = useState(0)
+  useEffect(() => {
+    const next = Object.fromEntries(nodes
+      .filter((node) => node.id !== 'lane:main' && node.measured)
+      .map((node) => [node.id, { width: node.measured?.width, height: node.measured?.height }]))
+    const previous = measuredCardDimensions.current
+    const ids = [...new Set([...Object.keys(previous), ...Object.keys(next)])]
+    const changed = ids.some((id) => previous[id]?.width !== next[id]?.width || previous[id]?.height !== next[id]?.height)
+    if (changed) {
+      measuredCardDimensions.current = next
+      setMeasuredCardRevision((revision) => revision + 1)
+    }
+  }, [nodes])
   useEffect(() => {
     const element = graphAreaRef.current
     if (!element) return
@@ -904,7 +888,7 @@ function GraphView({
     const expandedSummaryGroup = runtimeGraph.nodes.find((node) => node.runtime?.node_type === 'tool_summary_group' && node.runtime.expanded)
     const readableLimit = expandedSummaryGroup
       ? Math.min(14, (expandedSummaryGroup.runtime?.child_ids?.length ?? 0) + 4)
-      : smallExpandedCandidateGroup ? 8 : graphViewportSize.width > 2100 ? 7 : 5
+      : smallExpandedCandidateGroup ? 8 : graphViewportSize.width > 2100 ? 7 : graphViewportSize.width > 0 && graphViewportSize.width < 1400 ? 3 : 5
     const selected = selectReadableRuntimeNodeIds(runtimeGraph.nodes, runtimeGraph.positions, readableLimit)
     const metricIds = new Set(['mic', 'amp_read', 'hemolysis', 'toxicity', 'developability'])
     const preferredMetric = ['mic', 'amp_read', 'hemolysis', 'toxicity', 'developability']
@@ -954,23 +938,21 @@ function GraphView({
     })
   }, [graphViewportSize.width, runtimeGraph.nodes, runtimeGraph.positions])
   const readableRuntimePositions = useMemo(() => {
-    const compact = compactReadableRuntimePositions(readableRuntimeNodeIds, runtimeGraph.positions)
-    const expandedSummary = runtimeGraph.nodes.find((node) => node.runtime?.node_type === 'tool_summary_group' && node.runtime.expanded)
-    if (!expandedSummary || !readableRuntimeNodeIds.includes(expandedSummary.id)) return compact
-    const childIds = (expandedSummary.runtime?.child_ids ?? []).filter((id) => readableRuntimeNodeIds.includes(id))
-    const leadingIds = readableRuntimeNodeIds
-      .filter((id) => id !== expandedSummary.id && !childIds.includes(id) && runtimeGraph.nodes.find((node) => node.id === id)?.runtime?.node_type !== 'population_summary')
-      .sort((left, right) => (runtimeGraph.positions[left]?.x ?? 0) - (runtimeGraph.positions[right]?.x ?? 0))
-    const groupX = 190 + leadingIds.length * 330
-    leadingIds.forEach((id, index) => { compact[id] = { x: 190 + index * 330, y: 300 } })
-    compact[expandedSummary.id] = { x: groupX, y: 300 }
-    childIds.forEach((id, index) => {
-      compact[id] = { x: groupX + 330 + (index % 3) * 330, y: 110 + Math.floor(index / 3) * 190 }
+    const visibleNodes = runtimeGraph.nodes.filter((node) => readableRuntimeNodeIds.includes(node.id))
+    const hasExpandedGroup = runtimeGraph.nodes.some((node) => node.runtime?.expanded)
+    const layoutNodes = hasExpandedGroup ? runtimeGraph.nodes : visibleNodes
+    const layoutIds = new Set(layoutNodes.map((node) => node.id))
+    const layoutEdges = runtimeGraph.edges.filter((edge) => layoutIds.has(edge.source) && layoutIds.has(edge.target))
+    const measured = measuredCardDimensions.current
+    const layout = autoCardLayout(layoutNodes, layoutEdges, measured, {
+      availableWidth: graphViewportSize.width,
+      expandedGroups: new Set(layoutNodes.filter((node) => node.runtime?.expanded).map((node) => node.id)),
+      previousPositions: runtimeGraph.positions,
+      clusterGap: 24,
+      rowGap: 20,
     })
-    const populationId = readableRuntimeNodeIds.find((id) => runtimeGraph.nodes.find((node) => node.id === id)?.runtime?.node_type === 'population_summary')
-    if (populationId) compact[populationId] = { x: groupX + 4 * 330, y: 300 }
-    return compact
-  }, [readableRuntimeNodeIds, runtimeGraph.nodes, runtimeGraph.positions])
+    return layout
+  }, [graphViewportSize.width, measuredCardRevision, readableRuntimeNodeIds, runtimeGraph.edges, runtimeGraph.nodes, runtimeGraph.positions])
   const readableLayoutSignature = useMemo(() => [
     `${graphViewportSize.width}x${graphViewportSize.height}`,
     ...readableRuntimeNodeIds.map((id) => {
@@ -1374,13 +1356,11 @@ function GraphView({
       expandedFrameRaf.current = null
     }
   }, [expandedClusterSignature, graphViewportSize.height, graphViewportSize.width, readableLayoutSignature, scheduleExpandedClusterMeasure])
-  // Keep the visual cluster boundary tied to the live screen-space boxes. A
-  // short-lived rAF loop is intentional while a cluster is open: React Flow
-  // moves nodes through transforms during drag, pan, zoom, and fit animation,
-  // so a one-shot measurement can visibly lag behind the cards.
+  // Keep the visual cluster boundary tied to live screen-space boxes. The
+  // observer and one-frame scheduler cover resize, drag, pan, zoom, and fit
+  // changes without an unbounded animation-frame loop.
   useEffect(() => {
     if (!expandedClusterSignature) return
-    let frame = 0
     const resizeObserver = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => {
       scheduleExpandedClusterMeasure()
     })
@@ -1389,17 +1369,8 @@ function GraphView({
       resizeObserver.observe(graphArea)
       graphArea.querySelectorAll<HTMLElement>('.react-flow__node').forEach((node) => resizeObserver.observe(node))
     }
-    const measureContinuously = () => {
-      scheduleExpandedClusterMeasure()
-      frame = window.requestAnimationFrame(measureContinuously)
-      expandedFrameLoop.current = frame
-    }
-    frame = window.requestAnimationFrame(measureContinuously)
-    expandedFrameLoop.current = frame
+    scheduleExpandedClusterMeasure()
     return () => {
-      window.cancelAnimationFrame(frame)
-      if (expandedFrameLoop.current !== null) window.cancelAnimationFrame(expandedFrameLoop.current)
-      expandedFrameLoop.current = null
       resizeObserver?.disconnect()
     }
   }, [expandedClusterSignature, scheduleExpandedClusterMeasure])
@@ -1454,7 +1425,7 @@ function GraphView({
       type: 'stage',
           className: expandedFocusNodeIdSet && !expandedFocusNodeIdSet.has(stage.id) ? 'runtime-context-outside' : undefined,
           position: basePosition,
-      initialWidth: 280,
+      initialWidth: graphViewportSize.width > 2100 ? 312 : 296,
       initialHeight: stage.kind === 'structure' || stage.runtime?.has_viewer ? 250 : stage.id === 'targets' ? 224 : ['tool_group', 'event_group', 'batch_group', 'tool_summary_group', 'candidate_group'].includes(stage.runtime?.node_type ?? '') ? 214 : 156,
       // Expanded clusters add local members to the readable surface; context
       // cards remain mounted and visible so expansion never turns the graph
@@ -1482,11 +1453,22 @@ function GraphView({
       }),
     ]
   }, [analysisSnapshot, detail, expandedFocusNodeIdSet, graphViewportSize.height, graphViewportSize.width, handleToggleGroup, nodeDetails, persistedDistributions, readableRuntimeNodeIds, readableRuntimeNodeIdSet, readableRuntimePositions, runtimeGraph, selectedStage])
-  const [nodes, setNodes, onNodesChange] = useNodesState<StageNode | LaneNode>(computedNodes)
   useEffect(() => {
     setNodes((current) => {
       const measuredById = new Map(current.map((node) => [node.id, node.measured] as const))
-      return computedNodes.map((node) => ({ ...node, measured: measuredById.get(node.id) ?? node.measured }))
+      const next = computedNodes.map((node) => ({ ...node, measured: measuredById.get(node.id) ?? node.measured }))
+      const same = current.length === next.length && current.every((node, index) => {
+        const candidate = next[index]
+        return candidate
+          && node.id === candidate.id
+          && node.position.x === candidate.position.x
+          && node.position.y === candidate.position.y
+          && node.hidden === candidate.hidden
+          && node.measured?.width === candidate.measured?.width
+          && node.measured?.height === candidate.measured?.height
+          && node.data === candidate.data
+      })
+      return same ? current : next
     })
   }, [computedNodes, setNodes])
   const expandedClusterLayoutRevisionValue = useMemo(() => {
@@ -2145,7 +2127,7 @@ function DataConnectionDialog({ value, onClose, onSave }: { value: string; onClo
 }
 
 export default function App() {
-  const [activeView, setActiveView] = useState<'overview' | 'analysis' | 'evidence'>('overview')
+  const [activeView, setActiveView] = useState<'overview' | 'analysis' | 'best'>('overview')
   const [apiBase, setApiBase] = useState(readApiBase)
   const [connectionOpen, setConnectionOpen] = useState(false)
   const data = useRunData(true, apiBase)
@@ -2158,7 +2140,6 @@ export default function App() {
   const toggleRuntimeGroup = useCallback((id: string) => {
     setExpandedRuntimeGroups((current) => nextExpandedRuntimeGroups(current, id))
   }, [])
-  const structureRun = useMemo(() => data.runs.find((run) => run.structure_record_count > 0) ?? null, [data.runs])
   const runtimeGraph = useMemo(() => data.detail ? buildRuntimeGraph(data.detail, data.nodeDetails, { expandedGroups: expandedRuntimeGroups, availableWidth: graphAvailableWidth, sourceFetch: data.nodeDetailFetch }) : null, [data.detail, data.nodeDetails, data.nodeDetailFetch, expandedRuntimeGroups, graphAvailableWidth])
   useEffect(() => {
     setExpandedRuntimeGroups(new Set())
@@ -2194,22 +2175,14 @@ export default function App() {
           runsPage={data.runsPage}
           runsLoadingMore={data.runsLoadingMore}
           loadMoreRuns={data.loadMoreRuns}
-          structureRun={structureRun}
           activeView={activeView}
           onView={(view) => { setActiveView(view); setSelectedStage(null); setSelectedEdge(null) }}
           onSelect={(id) => { data.setSelectedId(id); setSelectedStage(null); setSelectedEdge(null) }}
-          onOpenStructureEvidence={() => {
-            if (!structureRun) return
-            data.setSelectedId(structureRun.id)
-            setActiveView('overview')
-            setSelectedStage('boltz')
-            setSelectedEdge(null)
-          }}
         />
         {activeView === 'analysis' ? (
           <AnalysisDashboard detail={data.detail} seedNodeIds={[]} apiBase={apiBase} />
-        ) : activeView === 'evidence' ? (
-          <EvidenceDashboard runId={data.detail?.run.id} />
+        ) : activeView === 'best' ? (
+          <BestPeptideDashboard runId={data.detail?.run.id} />
         ) : data.detail && data.detail.run.id === data.selectedId && !data.loading ? (
           <>
             <main className="main-canvas">

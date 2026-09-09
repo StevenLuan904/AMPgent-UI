@@ -605,6 +605,26 @@
 /* Tables keep one readable rhythm across the dashboard and evidence views. */
 .analysis-page table th { height: 34px; font-size: 11px; line-height: 1.25; }
 .analysis-page table td { min-height: 40px; font-size: 12px; line-height: 1.35; }
+
+.best-peptide-table-card { margin: 0 34px 18px; overflow: hidden; border: 1px solid #e0e6ef; border-radius: 12px; background: #fff; }
+.best-peptide-table-card > header { height: 58px; padding: 0 15px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e9edf2; }
+.best-peptide-table-card > header > div { display: flex; align-items: center; gap: 9px; }
+.best-peptide-table-card > header svg { width: 16px; color: #4d8069; }
+.best-peptide-table-card > header span { display: grid; gap: 3px; color: #466079; font-size: 8px; }
+.best-peptide-table-card > header b { color: #36445c; font-size: 10px; }
+.best-peptide-table-card > header small { color: #98a2b0; font-size: 7px; }
+.best-peptide-table-card > header > span { padding: 4px 7px; border-radius: 5px; color: #4b7b66; background: #edf7f2; font-weight: 650; }
+.best-peptide-table-scroll { overflow-x: auto; }
+.best-peptide-table-card table { width: 100%; min-width: 820px; border-collapse: collapse; }
+.best-peptide-table-card th { height: 34px; padding: 0 16px; color: #7f8b9d; background: #fafbfd; font-size: 9px; text-align: left; white-space: nowrap; }
+.best-peptide-table-card td { height: 55px; padding: 6px 16px; border-top: 1px solid #eff2f5; color: #526178; font-size: 10px; white-space: nowrap; }
+.best-peptide-table-card td:first-child { width: 27%; }
+.best-peptide-table-card td:first-child code { display: block; max-width: 260px; overflow: hidden; color: #2e568d; font: 600 11px "DM Mono", monospace; text-overflow: ellipsis; }
+.best-peptide-table-card td small { display: block; margin-top: 3px; color: #8d98a8; font-size: 9px; }
+.best-peptide-yes, .best-peptide-no { display: inline-flex; padding: 3px 7px; border-radius: 999px; font-size: 9px; font-weight: 650; }
+.best-peptide-yes { color: #3d795e; background: #edf7f1; }
+.best-peptide-no { color: #8b6d55; background: #fbf3eb; }
+@media (max-width: 900px) { .best-peptide-table-card { margin-inline: 16px; } }
 .analysis-provenance-bar { margin: 0 22px 22px; }
 .analysis-provenance-bar > div, .analysis-provenance-bar p { font-size: 9px; }
 .compact-orchestration { min-height: 44px; margin: 7px 22px 0; padding: 6px 10px; }
