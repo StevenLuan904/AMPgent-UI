@@ -149,7 +149,7 @@ if (-not (Test-TcpPort -HostName $databaseHost -Port $databasePort)) {
     $env:PSModulePath = Get-WindowsPowerShellModulePath
     try {
         $tunnelProcess = Start-Process -FilePath 'powershell.exe' `
-            -ArgumentList @('-NoLogo', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $tunnelScript) `
+            -ArgumentList @('-NoLogo', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $tunnelScript, '-DatabaseOnly') `
             -WorkingDirectory (Split-Path -Parent $tunnelScript) -WindowStyle Hidden -PassThru `
             -RedirectStandardOutput $tunnelStdoutPath -RedirectStandardError $tunnelStderrPath
     }

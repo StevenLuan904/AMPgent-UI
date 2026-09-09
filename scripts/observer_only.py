@@ -75,7 +75,7 @@ class ObserverReadCoalescingMiddleware:
     content type before storage.
     """
 
-    cache_version = 1
+    cache_version = 2
     max_entry_bytes = 4_000_000
     max_file_bytes = 6_000_000
     max_entries = 64
@@ -131,6 +131,7 @@ class ObserverReadCoalescingMiddleware:
             stored_at = time.time()
             envelope = {
                 "version": self.cache_version,
+                "source_fingerprint": OBSERVER_SOURCE_FINGERPRINT,
                 "method": "GET",
                 "path": path,
                 "query": query_string.decode("utf-8", errors="replace"),
@@ -171,7 +172,7 @@ class ObserverReadCoalescingMiddleware:
                     envelope = json.load(handle)
                 stored_at = float(envelope.get("stored_at"))
                 path = str(envelope.get("path") or "")
-                if size > self.max_file_bytes or envelope.get("version") != self.cache_version or not self._persistable_path(path) or now - stored_at > self.persistent_max_age:
+                if size > self.max_file_bytes or envelope.get("version") != self.cache_version or envelope.get("source_fingerprint") != OBSERVER_SOURCE_FINGERPRINT or not self._persistable_path(path) or now - stored_at > self.persistent_max_age:
                     file.unlink(missing_ok=True)
                     continue
                 entries.append((file, stored_at, size))
@@ -202,7 +203,7 @@ class ObserverReadCoalescingMiddleware:
                 envelope = json.load(handle)
             stored_at = float(envelope["stored_at"])
             expected_query = query_string.decode("utf-8", errors="replace")
-            if envelope.get("version") != self.cache_version or envelope.get("method") != "GET" or envelope.get("path") != path or envelope.get("query") != expected_query:
+            if envelope.get("version") != self.cache_version or envelope.get("source_fingerprint") != OBSERVER_SOURCE_FINGERPRINT or envelope.get("method") != "GET" or envelope.get("path") != path or envelope.get("query") != expected_query:
                 file.unlink(missing_ok=True)
                 return
             age = max(0.0, time.time() - stored_at)
