@@ -106,6 +106,7 @@ export function WorkflowNode({ data }: NodeProps<StageNode>) {
   const hasStructureEvidence = isStructure || Boolean(stage.runtime?.has_viewer)
   const isCandidatePreview = runtimeType === 'candidate_group' || runtimeType === 'candidate_preview'
   const isRuntimeGroup = runtimeType === 'tool_group' || runtimeType === 'event_group' || runtimeType === 'batch_group' || runtimeType === 'tool_summary_group' || runtimeType === 'candidate_group'
+  const isScientificStage = runtimeType === 'scientific_stage'
   const runtimeTitle = stage.runtime?.tool_name
     ? `${runtimeTermDescriptions[stage.runtime.tool_name] ?? '工具调用事实'} 原始键：${stage.runtime.tool_name}`
     : stage.runtime?.raw_label ? `原始键：${stage.runtime.raw_label}` : termDescriptions[stage.id]
@@ -122,7 +123,7 @@ export function WorkflowNode({ data }: NodeProps<StageNode>) {
       && stage.label.includes(String(fact.value))))
     .slice(0, isRuntime ? 1 : 2)
   const hasPrimaryVisual = hasStructureEvidence || hasEvidenceDistribution || showsTargets
-  const showCompactFacts = compactFacts.length > 0 && (!isRuntime || (!hasPrimaryVisual && !isRuntimeGroup && runtimeType !== 'tool_summary'))
+  const showCompactFacts = compactFacts.length > 0 && (!isRuntime || isScientificStage || (!hasPrimaryVisual && !isRuntimeGroup && runtimeType !== 'tool_summary'))
   // Runtime titles already carry the persisted event/tool meaning. Repeating
   // the same verdict or generation inside the card makes one observation
   // look like two independent facts.
@@ -150,7 +151,7 @@ export function WorkflowNode({ data }: NodeProps<StageNode>) {
           <b>{qualityGateNodeSummary(qualityGate)}</b>
         </div>
       )}
-      {hasStructureEvidence && viewer && <MoleculeViewer key={viewer.artifact_sha256} artifact={viewer} compact autoRotate />}
+      {hasStructureEvidence && viewer && <MoleculeViewer key={viewer.artifact_sha256} artifact={viewer} compact interactive={false} />}
       {distribution && (!isRuntime || hasEvidenceDistribution) && <ResultDistribution data={distribution} compact />}
       {showsTargets ? (
         <div className="node-targets">
@@ -171,7 +172,7 @@ export function WorkflowNode({ data }: NodeProps<StageNode>) {
       ) : null}
       {!isRuntime && <div className="node-meta">
         <span>{`${stage.current.toLocaleString()} / ${stage.total.toLocaleString()}`}</span>
-        <span className={`evidence-chip ${stage.provenance}`}>{hasEvidenceDistribution ? '结果分布' : '暂无结果'}</span>
+        {hasEvidenceDistribution && <span className={`evidence-chip ${stage.provenance}`}>结果分布</span>}
       </div>}
       {isRuntimeGroup && onToggleGroup && <button className="node-group-toggle" onClick={(event) => { event.stopPropagation(); onToggleGroup(stage.id) }}><span>{stage.runtime?.expanded ? '收起明细' : runtimeType === 'tool_summary_group' ? `展开 ${stage.runtime?.child_ids?.length ?? 0} 类工具 · ${stage.total} 次调用` : runtimeType === 'candidate_group' ? `展开 ${stage.runtime?.child_ids?.length ?? 0} 条预览` : `展开 ${(stage.runtime?.child_ids?.length ?? 0) + (stage.runtime?.event_ids?.length ?? 0)} 项观测`}</span><ChevronRight /></button>}
       {!isRuntime && <div className="progress-track"><i style={{ width: `${progress}%` }} /></div>}

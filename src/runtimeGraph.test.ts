@@ -91,6 +91,33 @@ describe('buildRuntimeGraph', () => {
     expect(result.nodes.find((item) => item.id === 'call:mic-call')?.runtime?.viewer_key).toBeUndefined()
   })
 
+  it('keeps repeated metric calls as independent distribution-bearing cards', () => {
+    const calls = Array.from({ length: 5 }, (_, index) => call(
+      `mic-${index}`,
+      'v38-metric-mic_potency',
+      `2026-09-04T00:00:0${index}Z`,
+    ))
+    const result = buildRuntimeGraph(detail(), { worker: nodeDetail(calls) })
+    expect(result.nodes.filter((node) => node.runtime?.node_type === 'tool_group')).toHaveLength(0)
+    expect(result.nodes.filter((node) => node.runtime?.node_type === 'tool_call').map((node) => node.id)).toEqual(
+      calls.map((item) => `call:${item.id}`),
+    )
+    expect(result.nodes.filter((node) => node.runtime?.distribution_key === 'mic')).toHaveLength(5)
+  })
+
+  it('keeps real detail.graph metric evidence as independent scientific cards', () => {
+    const metricNode = {
+      id: 'mic', label: '最小抑菌浓度预测', kind: 'model' as const, group: 'evaluation' as const,
+      status: 'completed' as const, current: 39, total: 39, provenance: 'database' as const,
+      insight: { grade: 'good' as const, verdict: '已完成', reason: '数据库返回的指标节点', facts: [{ label: '覆盖', value: '39/39' }], source: 'observer_summary' as const },
+    }
+    const result = buildRuntimeGraph({ ...detail(), graph: { nodes: [metricNode], edges: [] } })
+    expect(result.nodes.find((node) => node.id === 'mic')).toMatchObject({
+      label: '最小抑菌浓度预测',
+      runtime: { node_type: 'scientific_stage', distribution_key: 'mic', grouping_basis: '数据库 detail.graph 科学节点' },
+    })
+  })
+
   it('does not map an unrelated tool to a structure viewer', () => {
     const artifact = { candidate_id: 'candidate-1', sequence: 'KKLL', target_id: 'target-1', target_name: 'target', lane: 'native', seed: 1, artifact_sha256: 'b'.repeat(64), media_type: 'model/mmcif', artifact_url: '/viewer/boltz.cif' }
     const result = buildRuntimeGraph({ ...detail(), viewers: { boltz: artifact } }, { worker: nodeDetail([call('plain-call', 'candidate-score', '2026-09-04T00:00:00Z')]) })

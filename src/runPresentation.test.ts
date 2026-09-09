@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatCanvasRunTitle, formatRunTitle } from './runPresentation'
+import { formatCanvasRunTitle, formatRunSummary, formatRunTitle } from './runPresentation'
 import type { RunListItem } from './types'
 
 function run(status: RunListItem['status'], baseline: number): RunListItem {
@@ -26,10 +26,13 @@ describe('运行列表标题', () => {
   })
 
   it('把运行失败与候选科学性质分开表达', () => {
-    expect(formatRunTitle(run('failed', 0))).toBe('运行异常终止 · 尚无可展示候选')
+    expect(formatRunTitle(run('failed', 0))).toBe('运行异常终止')
+    expect(formatRunSummary(run('failed', 0))).toBe('候选 0')
   })
 
-  it('保留运行中基线候选口径', () => {
-    expect(formatRunTitle(run('running', 768))).toBe('正在运行 · 768 条基线候选')
+  it('将运行状态与科学计数拆开显示', () => {
+    expect(formatRunTitle(run('running', 768))).toBe('正在运行')
+    expect(formatRunSummary(run('running', 768))).toBe('候选 768')
+    expect(formatRunSummary({ ...run('succeeded', 768), round_summary: { evaluation_count: 46711, operation_type_count: 10, scientific_card_count: 11 } })).toBe('候选 768 · 评估 46,711 · 科学操作 10')
   })
 })

@@ -74,11 +74,6 @@ export function mergeNodeDetailCalls(existing: NodeDetail | undefined, incoming:
 
 export function nodeCallsWindowLabel(detail: NodeDetail | undefined) {
   const window = detail?.calls_window
-  if (!window) return detail && detail.calls.length >= observerCallPageLimit ? '仅当前窗口' : null
-  if (window.has_more) {
-    return window.remaining === undefined
-      ? `已载入 ${detail?.calls.length ?? 0} 条 · 仍有更早调用`
-      : `已载入 ${detail?.calls.length ?? 0}/${window.total ?? '—'} 条 · 仍有 ${window.remaining} 条更早调用`
-  }
-  return window.total === undefined ? `已载入 ${detail?.calls.length ?? 0} 条` : `已载入全部 ${window.total} 条调用`
+  if (!window) return detail && detail.calls.length >= observerCallPageLimit ? '当前窗口 · 可继续读取' : null
+  return window.has_more ? '当前窗口 · 可继续读取' : '窗口已读完'
 }

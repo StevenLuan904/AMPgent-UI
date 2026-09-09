@@ -950,6 +950,38 @@ export function distributionKeyForTool(toolName: string | undefined) {
   return undefined
 }
 
+const scientificMetricKeys = new Set(['mic', 'amp_read', 'hemolysis', 'toxicity', 'developability'])
+
+function isScientificMetricTool(toolName: string | undefined) {
+  return scientificMetricKeys.has(distributionKeyForTool(toolName) ?? '')
+}
+
+function scientificEvidenceNodes(detail: RunDetail) {
+  const metricIds = scientificMetricKeys
+  return detail.graph.nodes
+    .filter((stage) => stage.provenance === 'database')
+    .filter((stage) => {
+      if (stage.id === 'candidate_pool') return false
+      if (stage.id === 'target_data' || stage.id === 'targets') return detail.branches.length > 0
+      if (stage.id === 'boltz' || stage.id === 'rosetta') return Object.keys(detail.structure_counts[stage.id === 'boltz' ? 'boltz_pose' : 'rosetta_decoy'] ?? {}).length > 0
+      return stage.current > 0 || (metricIds.has(stage.id) && stage.total > 0)
+    })
+    .map((stage): GraphStage => ({
+      ...stage,
+      runtime: {
+        ...(stage.runtime ?? {}),
+        node_type: 'scientific_stage',
+        source_id: stage.id,
+        observed_at: null,
+        raw_label: stage.id,
+        distribution_key: stage.id,
+        evidence_key: stage.id,
+        grouping_basis: '数据库 detail.graph 科学节点',
+        explicit_relation_count: 0,
+      },
+    }))
+}
+
 function distributionKeyForActivity(activityType: unknown, payload: unknown) {
   const normalized = text(activityType).trim().toLowerCase()
   const context = record(payload)
@@ -1588,7 +1620,18 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
       activeFallback = null
       continue
     }
-    const sameObservedSegment = Boolean(activeFallback && previousCall?.tool_name === call.tool_name && Number.isFinite(gap) && gap >= 0 && gap <= 5 * 60 * 1000)
+    // Metric calls keep their own cards so the real distribution remains
+    // inspectable. Operational/repeated calls may still use the bounded
+    // observation aggregate below; this is never a causal grouping.
+    const isMetricCall = isScientificMetricTool(call.tool_name)
+    const previousIsMetricCall = Boolean(previousCall && isScientificMetricTool(previousCall.tool_name))
+    const sameObservedSegment = Boolean(activeFallback
+      && !isMetricCall
+      && !previousIsMetricCall
+      && previousCall?.tool_name === call.tool_name
+      && Number.isFinite(gap)
+      && gap >= 0
+      && gap <= 5 * 60 * 1000)
     if (sameObservedSegment) activeFallback!.push(call)
     else {
       activeFallback = [call]
@@ -1602,7 +1645,7 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
   // exposes every materialized attempt in the original observation set.
   const displayAggregateBuckets = new Map<string, ToolAttempt[]>()
   for (const call of orderedCalls) {
-    if (callBatchIdentity(call)) continue
+    if (callBatchIdentity(call) || isScientificMetricTool(call.tool_name)) continue
     const key = `${call.tool_name}\u0000${call.status}`
     displayAggregateBuckets.set(key, [...(displayAggregateBuckets.get(key) ?? []), call])
   }
@@ -1636,9 +1679,10 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
     const explicitIdentity = explicitBatchIdentity(event.payload)
     const relatedCallId = associationIds(event.payload).find((id) => calls[id])
     const linkedRecord = relatedCallId ? callRecordById.get(relatedCallId) : undefined
+    const metricLinkedRecord = linkedRecord?.grouped.some((call) => isScientificMetricTool(call.tool_name))
     const executionIdentity = eventExecutionIdentity(event.payload)
-    const key = explicitIdentity ?? linkedRecord?.key ?? executionIdentity
-    const basis = explicitIdentity ? `后端字段 ${explicitIdentity}` : linkedRecord ? `后端关联字段 tool_call_id=${relatedCallId}` : executionIdentity ? `后端执行字段 ${executionIdentity}` : null
+    const key = explicitIdentity ?? (!metricLinkedRecord ? linkedRecord?.key : undefined) ?? executionIdentity
+    const basis = explicitIdentity ? `后端字段 ${explicitIdentity}` : (!metricLinkedRecord && linkedRecord) ? `后端关联字段 tool_call_id=${relatedCallId}` : executionIdentity ? `后端执行字段 ${executionIdentity}` : null
     if (key && basis) {
       const existing = eventGroups.get(key) ?? { key, grouped: [], basis }
       existing.grouped.push(event)
@@ -1716,9 +1760,11 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
   ])
   const viewerEntriesForRun = viewerEntries(detail, sources)
   const structureEvidenceNodes = viewerEntriesForRun.map(([key, artifact]) => structureEvidenceNode(key, artifact))
+  const scientificNodes = scientificEvidenceNodes(detail)
   const nodes = [
     ...callNodes,
     ...(summaryGaps.length ? [toolSummaryGroupNode(summaryGaps, summaryCoverage, expandedGroups.has('tool-summary-group'), latestIteration, latestObservedAt), ...(expandedGroups.has('tool-summary-group') ? summaryGaps.map(toolSummaryNode) : [])] : []),
+    ...scientificNodes,
     ...structureEvidenceNodes,
     ...(populationSummary ? [populationSummary] : []),
     ...ungroupedCandidates.map((candidate) => candidateNode(candidate, previewIndexById.get(candidate.id) ?? 1, previewTotal)),
@@ -1914,7 +1960,9 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
     const populationTotal = detail.generation_population.baseline_candidate_count + detail.generation_population.descendant_candidate_count
     if (displayTotal !== populationTotal) gaps.push(`接口种群口径不一致：展示 ${displayTotal} 条；基线与新生子代合计 ${populationTotal} 条。`)
   }
-  if (eventWindow.mayBeTruncated) gaps.push('事件历史仅返回当前页；可在详情中继续读取。')
+  // Event pagination is intentionally exposed only from the selected-node
+  // inspector.  Keeping it out of the graph gap list prevents a transient
+  // page boundary from becoming permanent canvas copy.
   if (Object.values(sources).some((source) => (source?.calls.length ?? 0) >= 40 && !source?.calls_window)) gaps.push('至少一个节点明细只返回当前调用窗口；旧接口未提供分页游标。')
   if (Object.values(sources).some((source) => source?.calls_window?.has_more)) gaps.push('部分节点仍有更早工具调用；可在详情中继续加载。')
   if (options.sourceFetch && options.sourceFetch.failed > 0) gaps.push(`节点明细仅加载 ${options.sourceFetch.loaded}/${options.sourceFetch.requested} 个；${options.sourceFetch.failed} 个读取失败或超时，当前运行图不完整。`)

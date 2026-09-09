@@ -544,6 +544,7 @@ button:focus-visible { outline: 2px solid #315be8; outline-offset: 2px; }
 .runtime-history-status button:hover:not(:disabled) { background: #f8f0e4; }
 .runtime-history-status button:disabled { cursor: wait; opacity: .65; }
 .workflow-node.kind-tool { border: 1px solid #d7dee8; }
+.workflow-node.kind-structure .mini-molstar-shell { pointer-events: none; }
 .workflow-node.kind-tool .node-title { font-family: "DM Mono", monospace; font-size: 10px; }
 .workflow-node.is-runtime-node { min-height: 0; padding: 13px 14px 12px; }
 .workflow-node.is-runtime-node .node-verdict { min-height: 30px; margin-top: 7px; }
@@ -553,6 +554,9 @@ button:focus-visible { outline: 2px solid #315be8; outline-offset: 2px; }
 .run-list-empty span { min-width: 0; display: grid; gap: 5px; }
 .run-list-empty b { color: #667287; font-size: 10px; }
 .run-list-empty small { color: #9aa3b1; font-size: 8px; line-height: 1.5; }
+.run-list-more { min-height: 34px; margin: 4px 4px 0; border: 1px solid #d9e1ef; border-radius: 7px; color: #4964a7; background: #fff; font-size: 11px; cursor: pointer; }
+.run-list-more:hover:not(:disabled) { background: #f5f8ff; border-color: #b8c8e8; }
+.run-list-more:disabled { color: #9aa3b1; cursor: wait; }
 .run-list-missing { margin: 0 9px 8px; padding: 8px 9px; display: grid; gap: 3px; border: 1px solid #eadfca; border-radius: 7px; background: #fffaf1; color: #8a6f3f; }
 .run-list-missing b { font-size: 9px; }
 .run-list-missing small { color: #aa936f; font-size: 8px; line-height: 1.4; }
@@ -594,8 +598,10 @@ button:focus-visible { outline: 2px solid #315be8; outline-offset: 2px; }
 .runtime-tool_group > *:not(.runtime-group-hit-area):not(.flow-handle), .runtime-event_group > *:not(.runtime-group-hit-area):not(.flow-handle), .runtime-batch_group > *:not(.runtime-group-hit-area):not(.flow-handle), .runtime-tool_summary_group > *:not(.runtime-group-hit-area):not(.flow-handle), .runtime-candidate_group > *:not(.runtime-group-hit-area):not(.flow-handle) { position: relative; z-index: 1; }
 .workflow-node.is-runtime-node, .workflow-node.is-runtime-node.node-pending { background: #fff; }
 .runtime-tool_group.runtime-group-expanded::before, .runtime-tool_group.runtime-group-expanded::after, .runtime-event_group.runtime-group-expanded::before, .runtime-event_group.runtime-group-expanded::after, .runtime-batch_group.runtime-group-expanded::before, .runtime-batch_group.runtime-group-expanded::after, .runtime-tool_summary_group.runtime-group-expanded::before, .runtime-tool_summary_group.runtime-group-expanded::after, .runtime-candidate_group.runtime-group-expanded::before, .runtime-candidate_group.runtime-group-expanded::after { display: none; }
-.runtime-tool_group::before, .runtime-tool_group::after, .runtime-event_group::before, .runtime-event_group::after, .runtime-batch_group::before, .runtime-batch_group::after, .runtime-tool_summary_group::before, .runtime-tool_summary_group::after, .runtime-candidate_group::before, .runtime-candidate_group::after { content: ""; position: absolute; z-index: -1; inset: 0; border: 1px solid #d4dce9; border-radius: 12px; background: linear-gradient(180deg, #ffffff, #fbfcfd); box-shadow: 0 5px 11px rgba(41,55,92,.09), inset 0 1px 0 #fff; pointer-events: none; transform: translate(10px, 10px); }
-.runtime-tool_group::after, .runtime-event_group::after, .runtime-batch_group::after, .runtime-tool_summary_group::after, .runtime-candidate_group::after { background: linear-gradient(180deg, #ffffff, #fafbfd); box-shadow: 0 4px 9px rgba(41,55,92,.07), inset 0 1px 0 #fff; transform: translate(20px, 20px); }
+.runtime-tool_group::before, .runtime-tool_group::after, .runtime-event_group::before, .runtime-event_group::after, .runtime-batch_group::before, .runtime-batch_group::after, .runtime-tool_summary_group::before, .runtime-tool_summary_group::after, .runtime-candidate_group::before, .runtime-candidate_group::after { content: ""; position: absolute; z-index: -1; inset: 0; border: 1px solid #d4dce9; border-radius: 12px; background: linear-gradient(180deg, #ffffff, #fbfcfd); box-shadow: 0 6px 13px rgba(41,55,92,.12), inset 0 1px 0 #fff; pointer-events: none; transform: translate(12px, 12px); }
+.runtime-tool_group::after, .runtime-event_group::after, .runtime-batch_group::after, .runtime-tool_summary_group::after, .runtime-candidate_group::after { background: linear-gradient(180deg, #ffffff, #fafbfd); box-shadow: 0 5px 11px rgba(41,55,92,.09), inset 0 1px 0 #fff; transform: translate(24px, 24px); }
+.runtime-context-outside { opacity: .34; pointer-events: none; }
+.runtime-context-outside .runtime-tool_group, .runtime-context-outside .runtime-event_group, .runtime-context-outside .runtime-batch_group, .runtime-context-outside .runtime-tool_summary_group, .runtime-context-outside .runtime-candidate_group { box-shadow: 0 2px 6px rgba(47,66,113,.05); }
 .runtime-context-outside .runtime-tool_group::before, .runtime-context-outside .runtime-tool_group::after, .runtime-context-outside .runtime-event_group::before, .runtime-context-outside .runtime-event_group::after, .runtime-context-outside .runtime-batch_group::before, .runtime-context-outside .runtime-batch_group::after, .runtime-context-outside .runtime-candidate_group::before, .runtime-context-outside .runtime-candidate_group::after { display: none; }
 .runtime-tool_call, .runtime-tool_summary, .runtime-candidate_preview { border: 1px solid #d7dee8; }
 .runtime-tool_group, .runtime-tool_call, .runtime-tool_summary_group, .runtime-tool_summary, .runtime-candidate_group, .runtime-candidate_preview { animation: batchReveal .18s ease-out; }
@@ -784,13 +790,13 @@ button:focus-visible { outline: 2px solid #315be8; outline-offset: 2px; }
 .runtime-tool_group::before, .runtime-event_group::before, .runtime-batch_group::before,
 .runtime-tool_summary_group::before, .runtime-candidate_group::before {
   border-color: #d3ddea;
-  transform: translate(11px, 11px);
+  transform: translate(12px, 12px);
   box-shadow: 0 8px 18px rgba(41, 55, 92, .10);
 }
 .runtime-tool_group::after, .runtime-event_group::after, .runtime-batch_group::after,
 .runtime-tool_summary_group::after, .runtime-candidate_group::after {
   border-color: #e0e6ef;
-  transform: translate(22px, 22px);
+  transform: translate(24px, 24px);
   box-shadow: 0 6px 13px rgba(41, 55, 92, .07);
 }
 .runtime-expanded-cluster-frame {

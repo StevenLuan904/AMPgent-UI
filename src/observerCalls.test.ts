@@ -61,9 +61,8 @@ describe('observer node call pagination', () => {
   })
 
   it('is honest for legacy windows and explicit pagination', () => {
-    expect(nodeCallsWindowLabel(detail(Array.from({ length: 40 }, (_, index) => call(String(index)))))).toBe('仅当前窗口')
-    expect(nodeCallsWindowLabel(detail([call('one')], { limit: 40, next_cursor: 'next', has_more: true, remaining: 39, total: 40 }))).toBe('已载入 1/40 条 · 仍有 39 条更早调用')
-    expect(nodeCallsWindowLabel(detail([call('one')], { limit: 40, next_cursor: null, has_more: false, remaining: 0, total: 1 }))).toBe('已载入全部 1 条调用')
+    expect(nodeCallsWindowLabel(detail(Array.from({ length: 40 }, (_, index) => call(String(index)))))).toBe('当前窗口 · 可继续读取')
+    expect(nodeCallsWindowLabel(detail([call('one')], { limit: 40, next_cursor: 'next', has_more: true, remaining: 39, total: 40 }))).toBe('当前窗口 · 可继续读取')
+    expect(nodeCallsWindowLabel(detail([call('one')], { limit: 40, next_cursor: null, has_more: false, remaining: 0, total: 1 }))).toBe('窗口已读完')
   })
 })
-

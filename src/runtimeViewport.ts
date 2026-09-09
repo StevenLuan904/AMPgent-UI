@@ -113,6 +113,7 @@ export function expandedFocusNodeIds(
 const eventTypes = new Set(['lifecycle_event', 'event_group'])
 const toolTypes = new Set(['tool_call', 'tool_group', 'batch_group'])
 const structureTypes = new Set(['structure_evidence'])
+const scientificTypes = new Set(['scientific_stage'])
 const candidateTypes = new Set(['generation', 'candidate_group', 'candidate_preview'])
 const populationTypes = new Set(['population_summary'])
 const summaryTypes = new Set(['tool_summary_group', 'tool_summary'])
@@ -122,6 +123,7 @@ function laneFor(node: ReadableRuntimeNode) {
   if (eventTypes.has(type ?? '')) return 'events'
   if (toolTypes.has(type ?? '')) return 'tools'
   if (structureTypes.has(type ?? '')) return 'structure'
+  if (scientificTypes.has(type ?? '')) return 'tools'
   if (summaryTypes.has(type ?? '')) return 'summary'
   if (populationTypes.has(type ?? '')) return 'population'
   if (candidateTypes.has(type ?? '')) return 'candidates'

@@ -33,12 +33,27 @@ export interface RunListItem {
   /** Backend-declared role; UI never derives this from tool names. */
   run_role?: 'generator' | 'evidence' | 'member' | string | null
   authoritative_candidate_id?: string | null
+  /** Backend summary for the authoritative generator round; never inferred by UI. */
+  round_summary?: {
+    evaluation_count?: number | null
+    operation_type_count?: number | null
+    scientific_card_count?: number | null
+    scientific_card_types?: string[] | null
+  } | null
 }
 
 export interface RunListResponse {
   source: string
   read_only: boolean
   runs: RunListItem[]
+  page?: {
+    total_rounds?: number
+    readable_rounds?: number
+    offset?: number
+    limit?: number
+    order?: 'informative' | 'recent' | string
+    next_offset?: number | null
+  }
 }
 
 export interface GraphStage {
@@ -63,7 +78,7 @@ export interface GraphStage {
 }
 
 export interface RuntimeNodeMeta {
-  node_type: 'tool_call' | 'tool_group' | 'event_group' | 'batch_group' | 'tool_summary_group' | 'tool_summary' | 'lifecycle_event' | 'generation' | 'population_summary' | 'candidate_group' | 'candidate_preview' | 'structure_evidence'
+  node_type: 'tool_call' | 'tool_group' | 'event_group' | 'batch_group' | 'tool_summary_group' | 'tool_summary' | 'lifecycle_event' | 'scientific_stage' | 'generation' | 'population_summary' | 'candidate_group' | 'candidate_preview' | 'structure_evidence'
   source_id: string
   observed_at: string | null
   actor?: string

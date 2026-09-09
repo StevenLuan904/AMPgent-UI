@@ -49,14 +49,14 @@ import {
 } from './ResultDistribution'
 import { LaneLabel, WorkflowNode, type LaneNode, type StageNode } from './WorkflowNode'
 import { assertMatchingRunIdentity, groupRunsByAuthoritativeRound, preserveSelectedRunOnListRefresh, type AuthoritativeRunRound, type RunIdentity } from './runIdentity'
-import { formatCanvasRunTitle, formatRunTitle } from './runPresentation'
+import { formatCanvasRunTitle, formatRunSummary, formatRunTitle } from './runPresentation'
 import { buildRuntimeGraph, displayObservedEventName, displayToolName, nextExpandedRuntimeGroups, runtimeEventStatus, type RuntimeGraphModel } from './runtimeGraph'
 import { loadObserverEventHistory, mergeObserverDetailEventHistory, observerEventPageMax, shouldFetchOlderObserverEvents } from './observerEvents'
 import { mergeNodeDetailCalls, nodeCallsWindowLabel, observerCallPageLimit, observerNodeCallsUrl } from './observerCalls'
 import { compactReadableRuntimePositions, expandedClusterLayoutRevision, selectReadableRuntimeNodeIds, shouldRefocusExpandedCluster } from './runtimeViewport'
 import { nodeDetailCacheTtlMs, observerDetailFailureMessage, observerDetailRequestAction, observerIdlePrefetchDelayMs, observerInitialPrefetchCount, observerInitialPrefetchStages, observerListTimeoutMs, observerInFlightStageIds, observerMergePrefetchQueue, observerNextPrefetchStage, observerNodeDetailCacheKey, observerNodeDetailTimeoutMs, observerPendingPrefetchCount, observerPollingIntervalMs, observerPrefetchQueueMatches, observerPrefetchInFlightKey, observerPrefetchRefreshExpired, observerPrefetchStageOrder, observerRequeuePrefetchStage, observerResponseIsStale, observerRunDetailCacheKey, observerRunDetailTimeoutMs, observerRunListCacheKey, observerSnapshotCacheMaxBytes, observerSnapshotCacheTtlMs, observerSnapshotCacheVersion, observerVisibilityRefreshNeeded, type ObserverPrefetchQueue } from './observerPolling'
 
-const readableViewportMinZoom = 0.68
+const readableViewportMinZoom = 0.8
 // A focused cluster may legitimately be wider than the readable spine. Keep
 // this lower bound local to the explicit focus action so the default view
 // remains readable while every revealed member and its frame can be seen.
@@ -205,7 +205,10 @@ function useRunData(enabled: boolean, apiBase: string) {
   const requestedRunId = new URLSearchParams(window.location.search).get('run')
   const initialSelectedId = requestedRunId ?? window.localStorage.getItem(selectedRunStorageKey)
   const initialCachedDetail = initialSelectedId ? readObserverCache<RunDetail>(observerRunDetailCacheKey(apiBase, initialSelectedId), apiBase) : null
-  const [runs, setRuns] = useState<RunListItem[]>(() => readObserverCache<RunListResponse>(observerRunListCacheKey(apiBase), apiBase)?.payload.runs ?? [])
+  const cachedRunList = readObserverCache<RunListResponse>(observerRunListCacheKey(apiBase), apiBase)
+  const [runs, setRuns] = useState<RunListItem[]>(() => cachedRunList?.payload.runs ?? [])
+  const [runsPage, setRunsPage] = useState<RunListResponse['page']>(() => cachedRunList?.payload.page)
+  const [runsLoadingMore, setRunsLoadingMore] = useState(false)
   const [selectedId, setSelectedIdState] = useState<string | null>(initialSelectedId)
   const [detail, setDetail] = useState<RunDetail | null>(initialCachedDetail?.payload ?? null)
   const [error, setError] = useState<string | null>(null)
@@ -218,6 +221,10 @@ function useRunData(enabled: boolean, apiBase: string) {
   const [nodeDetails, setNodeDetails] = useState<Record<string, NodeDetail>>({})
   const [nodeDetailFetch, setNodeDetailFetch] = useState({ requested: 0, loaded: 0, failed: 0, deferred: 0 })
   const runsInFlight = useRef(false)
+  const runsRef = useRef(runs)
+  const runsPageRef = useRef(runsPage)
+  runsRef.current = runs
+  runsPageRef.current = runsPage
   const detailInFlight = useRef(false)
   const detailInFlightRunId = useRef<string | null>(null)
   const eventHistoryInFlight = useRef(false)
@@ -251,37 +258,61 @@ function useRunData(enabled: boolean, apiBase: string) {
     setLoading(false)
   }, [])
 
-  const loadRuns = useCallback(async () => {
+  const loadRuns = useCallback(async ({ append = false }: { append?: boolean } = {}) => {
     if (runsInFlight.current) return
+    const offset = append ? runsPageRef.current?.next_offset : 0
+    // A legacy Observer response may omit page metadata entirely.  Do not
+    // turn that absence into an unbounded append request; pagination remains
+    // an explicit capability of the newer contract only.
+    if (append && typeof offset !== 'number') return
     runsInFlight.current = true
+    if (append) setRunsLoadingMore(true)
     try {
-      const response = await fetchJsonWithTimeout<RunListResponse>(`${apiBase}/v1/observer/runs?limit=12`, observerListTimeoutMs)
+      const query = new URLSearchParams({ limit: '24', order: 'informative' })
+      if (typeof offset === 'number' && offset > 0) query.set('offset', String(offset))
+      const response = await fetchJsonWithTimeout<RunListResponse>(`${apiBase}/v1/observer/runs?${query.toString()}`, observerListTimeoutMs)
       const payload = response.payload
       const staleResponse = observerResponseIsStale(response.cacheState)
       runsStale.current = staleResponse
       setSyncingStale(runsStale.current || detailStale.current)
-      runIdentities.current = Object.fromEntries(payload.runs.map((run) => [run.id, {
+      const mergedById = new Map<string, RunListItem>()
+      const existingRuns = runsRef.current
+      const preserveLoadedTail = Boolean(payload.page && !append && existingRuns.length > payload.runs.length)
+      for (const run of (append || preserveLoadedTail ? [...existingRuns, ...payload.runs] : payload.runs)) mergedById.set(run.id, run)
+      const mergedRuns = [...mergedById.values()]
+      const nextOffset = payload.page?.next_offset === null
+        ? null
+        : typeof payload.page?.next_offset === 'number'
+          ? Math.max(payload.page.next_offset, mergedRuns.length)
+          : undefined
+      const mergedPage = payload.page ? { ...payload.page, ...(nextOffset === undefined ? {} : { next_offset: nextOffset }) } : undefined
+      const mergedPayload = { ...payload, runs: mergedRuns, ...(mergedPage ? { page: mergedPage } : {}) }
+      runIdentities.current = Object.fromEntries(mergedRuns.map((run) => [run.id, {
         id: run.id,
         temporal_workflow_id: run.temporal_workflow_id,
         temporal_run_id: run.temporal_run_id,
       }]))
-      setRuns(payload.runs.map((run) => ({
+      setRuns(mergedRuns.map((run) => ({
         ...run,
         structure_record_count: Math.max(run.structure_record_count, alignedStructureCounts.current[run.id] ?? 0),
       })))
-      if (!observerResponseIsStale(response.cacheState)) writeObserverCache(observerRunListCacheKey(apiBase), apiBase, payload)
+      setRunsPage(mergedPage)
+      if (!observerResponseIsStale(response.cacheState)) writeObserverCache(observerRunListCacheKey(apiBase), apiBase, mergedPayload)
       setSelectedIdState((current) => {
         // A valid deep link may point to an older run outside the recent-list page.
         // Keep it and let the authoritative detail endpoint validate it; an invalid
         // link then fails honestly instead of silently showing another run.
-        const next = preserveSelectedRunOnListRefresh(current, payload.runs.map((run) => run.id))
+        const next = preserveSelectedRunOnListRefresh(current, mergedRuns.map((run) => run.id))
         if (next) window.localStorage.setItem(selectedRunStorageKey, next)
         return next
       })
     } finally {
       runsInFlight.current = false
+      if (append) setRunsLoadingMore(false)
     }
   }, [apiBase])
+
+  const loadMoreRuns = useCallback(() => loadRuns({ append: true }), [loadRuns])
 
   const loadNodeDetail = useCallback(async (runId: string, stageId: string, epoch: number, options: { refreshExpired?: boolean } = {}) => {
     const cacheKey = observerNodeDetailCacheKey(apiBase, runId, stageId)
@@ -625,7 +656,10 @@ function useRunData(enabled: boolean, apiBase: string) {
       if (idlePrefetchTimer.current !== null) window.clearTimeout(idlePrefetchTimer.current)
       const cachedRuns = readObserverCache<RunListResponse>(observerRunListCacheKey(apiBase), apiBase)
       runsStale.current = Boolean(cachedRuns)
-      if (cachedRuns) setRuns(cachedRuns.payload.runs)
+      if (cachedRuns) {
+        setRuns(cachedRuns.payload.runs)
+        setRunsPage(cachedRuns.payload.page)
+      }
     }
     if (!selectedId) return
     const cachedDetail = readObserverCache<RunDetail>(observerRunDetailCacheKey(apiBase, selectedId), apiBase)
@@ -654,7 +688,7 @@ function useRunData(enabled: boolean, apiBase: string) {
     return selectedId ? loadDetail(selectedId, true) : undefined
   }, [loadDetail, selectedId])
 
-  return { runs, selectedId, setSelectedId, detail, nodeDetails, nodeDetailFetch, error, loading, refreshing, syncingStale, detailSyncError, lastSuccessfulDetailAt, eventHistoryLoading, loadOlderEvents, loadOlderNodeCalls, retry, refresh }
+  return { runs, runsPage, runsLoadingMore, loadMoreRuns, selectedId, setSelectedId, detail, nodeDetails, nodeDetailFetch, error, loading, refreshing, syncingStale, detailSyncError, lastSuccessfulDetailAt, eventHistoryLoading, loadOlderEvents, loadOlderNodeCalls, retry, refresh }
 }
 
 function runRoleLabel(run: RunListItem) {
@@ -664,28 +698,28 @@ function runRoleLabel(run: RunListItem) {
   return null
 }
 
-function RunRow({ run, selectedId, graphObservedCalls, onSelect, nested = false }: { run: RunListItem; selectedId: string | null; graphObservedCalls: number | null; onSelect: (id: string) => void; nested?: boolean }) {
+function RunRow({ run, selectedId, onSelect, nested = false }: { run: RunListItem; selectedId: string | null; onSelect: (id: string) => void; nested?: boolean }) {
   const role = runRoleLabel(run)
   return <button key={run.id} className={`run-row${nested ? ' nested' : ''} ${run.id === selectedId ? 'active' : ''}`} onClick={() => onSelect(run.id)}>
     <span className={`run-status-dot status-${run.status}`} />
     <span className="run-row-copy">
       <strong>{formatRunTitle(run)}</strong>
-      <small title="列表统计来自运行记录；是否已映射到运行图以当前详情为准.">{role ? `${role} · ` : ''}{formatTime(run.created_at)} · {run.tool_call_count} 条工具记录{run.id === selectedId && run.tool_call_count > 0 && graphObservedCalls === 0 ? ' · 尚未映射到运行图' : ''}</small>
+      <small>{role ? `${role} · ` : ''}{formatRunSummary(run)}</small>
     </span>
     <ChevronRight />
   </button>
 }
 
-function AuthoritativeRoundGroup({ group, selectedId, graphObservedCalls, onSelect }: { group: AuthoritativeRunRound; selectedId: string | null; graphObservedCalls: number | null; onSelect: (id: string) => void }) {
+function AuthoritativeRoundGroup({ group, selectedId, onSelect }: { group: AuthoritativeRunRound; selectedId: string | null; onSelect: (id: string) => void }) {
   const label = group.displayRound ? `生成轮次 · ${group.displayRound}` : '生成轮次'
   const basis = group.basis === 'source_run_id' ? '后端 source_run_id' : group.basis === 'member_run_ids' ? '后端 member_run_ids' : '后端 root_generation_run_id'
   return <section className="run-round-group" data-round-key={group.key}>
     <div className="run-round-group-header" title={`分组依据：${basis}`}><span className="run-round-marker" /><span><b>{label}</b><small>{group.runs.length} 条关联运行</small></span></div>
-    <div className="run-round-members">{group.runs.map((run) => <RunRow key={run.id} run={run} nested selectedId={selectedId} graphObservedCalls={graphObservedCalls} onSelect={onSelect} />)}</div>
+    <div className="run-round-members">{group.runs.map((run) => <RunRow key={run.id} run={run} nested selectedId={selectedId} onSelect={onSelect} />)}</div>
   </section>
 }
 
-function RunList({ runs, selectedId, graphObservedCalls, onSelect }: { runs: RunListItem[]; selectedId: string | null; graphObservedCalls: number | null; onSelect: (id: string) => void }) {
+function RunList({ runs, selectedId, page, loadingMore, onLoadMore, onSelect }: { runs: RunListItem[]; selectedId: string | null; page?: RunListResponse['page']; loadingMore: boolean; onLoadMore: () => void; onSelect: (id: string) => void }) {
   if (!runs.length) {
     return <div className="run-list"><div className="run-list-empty"><Database /><span><b>暂无可用运行数据</b><small>观察器接口未返回可展示的 PostgreSQL 运行记录。</small></span></div></div>
   }
@@ -693,8 +727,9 @@ function RunList({ runs, selectedId, graphObservedCalls, onSelect }: { runs: Run
     <div className="run-list">
       {!runs.some((run) => run.id === selectedId) && selectedId && <div className="run-list-missing"><b>当前运行不在最近列表</b><small>仍以 URL 指定的 PostgreSQL run id 读取详情，不会高亮其他运行。</small></div>}
       {groupRunsByAuthoritativeRound(runs).map((item) => 'runs' in item
-        ? <AuthoritativeRoundGroup key={item.key} group={item} selectedId={selectedId} graphObservedCalls={graphObservedCalls} onSelect={onSelect} />
-        : <RunRow key={item.id} run={item} selectedId={selectedId} graphObservedCalls={graphObservedCalls} onSelect={onSelect} />)}
+        ? <AuthoritativeRoundGroup key={item.key} group={item} selectedId={selectedId} onSelect={onSelect} />
+        : <RunRow key={item.id} run={item} selectedId={selectedId} onSelect={onSelect} />)}
+      {typeof page?.next_offset === 'number' && <button className="run-list-more" type="button" onClick={onLoadMore} disabled={loadingMore}>{loadingMore ? '正在读取…' : '加载更多轮次'}</button>}
     </div>
   )
 }
@@ -702,7 +737,9 @@ function RunList({ runs, selectedId, graphObservedCalls, onSelect }: { runs: Run
 function Sidebar({
   runs,
   selectedId,
-  graphObservedCalls,
+  runsPage,
+  runsLoadingMore,
+  loadMoreRuns,
   structureRun,
   activeView,
   onView,
@@ -711,7 +748,9 @@ function Sidebar({
 }: {
   runs: RunListItem[]
   selectedId: string | null
-  graphObservedCalls: number | null
+  runsPage?: RunListResponse['page']
+  runsLoadingMore: boolean
+  loadMoreRuns: () => void
   structureRun: RunListItem | null
   activeView: 'overview' | 'analysis' | 'evidence'
   onView: (view: 'overview' | 'analysis' | 'evidence') => void
@@ -727,7 +766,7 @@ function Sidebar({
         <button className={activeView === 'evidence' ? 'active' : ''} onClick={() => onView('evidence')}><Database />证据库</button>
       </nav>
       <div className="sidebar-label runs-label">轮次 · 科学运行</div>
-      <RunList runs={runs} selectedId={selectedId} graphObservedCalls={graphObservedCalls} onSelect={onSelect} />
+      <RunList runs={runs} selectedId={selectedId} page={runsPage} loadingMore={runsLoadingMore} onLoadMore={loadMoreRuns} onSelect={onSelect} />
       <div className="sidebar-sections">
         <button><span><SparkIcon icon="sequence" /></span><b>序列设计</b><small>生成模型与十一项指标</small></button>
         <button><span><GitBranch /></span><b>多靶点</b><small>原位与错误口袋对照</small></button>
@@ -877,12 +916,37 @@ function GraphView({
     const expandedSummaryGroup = runtimeGraph.nodes.find((node) => node.runtime?.node_type === 'tool_summary_group' && node.runtime.expanded)
     const readableLimit = expandedSummaryGroup
       ? Math.min(14, (expandedSummaryGroup.runtime?.child_ids?.length ?? 0) + 4)
-      : smallExpandedCandidateGroup ? 8 : graphViewportSize.width > 2100 ? 7 : hasObservedActivityRetry ? 6 : 5
+      : smallExpandedCandidateGroup ? 8 : graphViewportSize.width > 2100 ? 7 : 5
     const selected = selectReadableRuntimeNodeIds(runtimeGraph.nodes, runtimeGraph.positions, readableLimit)
+    const metricIds = new Set(['mic', 'amp_read', 'hemolysis', 'toxicity', 'developability'])
+    const preferredMetric = ['mic', 'amp_read', 'hemolysis', 'toxicity', 'developability']
+      .map((id) => runtimeGraph.nodes.find((node) => node.id === id)?.id)
+      .find((id): id is string => Boolean(id))
+    const selectedMetricIndex = selected.findIndex((id) => metricIds.has(id))
+    // A distribution card is scientific context, not a random log entry. Keep
+    // one deterministic core metric in the opening window and leave the other
+    // real metric cards at their database-derived positions for panning.
+    if (preferredMetric && selectedMetricIndex >= 0 && selected[selectedMetricIndex] !== preferredMetric) {
+      selected[selectedMetricIndex] = preferredMetric
+    }
+    const scientificEvidenceIds = runtimeGraph.nodes
+      .filter((node) => node.runtime?.node_type === 'scientific_stage' && node.runtime.distribution_key)
+      .sort((left, right) => {
+        const priority = ['mic', 'amp_read', 'hemolysis', 'toxicity', 'developability']
+        return priority.indexOf(left.runtime?.distribution_key ?? '') - priority.indexOf(right.runtime?.distribution_key ?? '')
+      })
+      // Keep the readable window scientific but bounded.  The remaining
+      // metric cards stay mounted at their real positions for horizontal
+      // exploration; they must not force the opening view to shrink.
+      // selectReadableRuntimeNodeIds already protects one real distribution
+      // card.  Add only one more on a wide canvas; otherwise the opening
+      // view would fit a metric table instead of a readable workflow spine.
+      .slice(0, graphViewportSize.width > 2100 ? 1 : 0)
+      .map((node) => node.id)
     const expandedClusterIds = runtimeGraph.nodes
       .filter((node) => node.runtime?.expanded && ['tool_group', 'event_group', 'batch_group', 'tool_summary_group', 'candidate_group'].includes(node.runtime.node_type))
       .flatMap((group) => runtimeChildNodeIds(runtimeGraph.nodes, group))
-    const visibleIds = [...new Set([...selected, ...expandedClusterIds])]
+    const visibleIds = [...new Set([...selected, ...scientificEvidenceIds, ...expandedClusterIds])]
     return visibleIds.filter((id) => {
       const node = runtimeGraph.nodes.find((candidate) => candidate.id === id)
       if (expandedSummaryGroup && ['candidate_group', 'candidate_preview', 'generation', 'population_summary'].includes(node?.runtime?.node_type ?? '')) return false
@@ -948,7 +1012,7 @@ function GraphView({
   const fitReadableViewport = useCallback(async () => {
     const instance = flowInstance.current
     if (!instance || expandedClusterActive.current) return false
-    const readableIds = new Set(readableRuntimeNodeIds)
+      const readableIds = new Set(['lane:main', ...readableRuntimeNodeIds])
     if (!instance.getNodes().some((node) => readableIds.has(node.id))) return false
     programmaticFit.current = true
     try {
@@ -1395,11 +1459,17 @@ function GraphView({
       // Expanded clusters add local members to the readable surface; context
       // cards remain mounted and visible so expansion never turns the graph
       // into an isolated detail sheet.
-      hidden: !readableRuntimeNodeIdSet.has(stage.id),
+      // Keep the surrounding workflow mounted and visible while a cluster is
+      // open. Context cards are softened by CSS and the readable viewport
+      // still focuses the selected scientific spine; they are never removed
+      // from the graph with display:none/hidden.
+      hidden: expandedClusterSignature ? false : !readableRuntimeNodeIdSet.has(stage.id),
       data: {
         stage,
         branches: detail.branches,
-        viewer: detail.viewers?.[stage.id] ?? runtimeViewer ?? (stage.kind === 'structure' ? detail.viewer : null),
+        viewer: (readableRuntimeNodeIdSet.has(stage.id) || selectedStage === stage.id)
+          ? detail.viewers?.[stage.id] ?? runtimeViewer ?? (stage.kind === 'structure' ? detail.viewer : null)
+          : null,
         distribution: persistedDistributions[stage.id]
           ?? distributionForStage(analysisSnapshot, detail, stage.id)
           ?? runtimeDistribution
@@ -1529,6 +1599,9 @@ function GraphView({
       id: `${edge.source}-${edge.target}-${index}`,
       source: edge.source,
       target: edge.target,
+      // React Flow's default edge renderer is the smooth Bezier path. Keep
+      // this explicit so relation styling never falls back to orthogonal
+      // step edges when the graph gains new relation kinds.
       type: 'default',
       animated: source?.status === 'running' && isCausal,
       label: edge.provenance === 'derived' && !isParallel && !isSequence ? undefined : edge.label ?? undefined,
@@ -1547,6 +1620,7 @@ function GraphView({
   const handleNodeClick: NodeMouseHandler = (_, node) => {
     if (node.type !== 'stage') return
     markUserInteracted()
+    if (expandedClusterSignature) clusterFocusUserMoved.current = true
     const nodeType = node.type === 'stage' ? (node.data as StageNode['data']).stage.runtime?.node_type : undefined
     if (selectionMode) onToggleAnalysis(node.id)
     else if (nodeType && runtimeExpandableNodeTypes.has(nodeType)) {
@@ -1555,6 +1629,7 @@ function GraphView({
   }
   const handleEdgeClick: EdgeMouseHandler = (_, edge) => {
     markUserInteracted()
+    if (expandedClusterSignature) clusterFocusUserMoved.current = true
     const edgeDetail = (edge.data as { detail?: GraphEdgeDetail } | undefined)?.detail
     if (edgeDetail) onSelectEdge(edgeDetail)
   }
@@ -2121,7 +2196,9 @@ export default function App() {
         <Sidebar
           runs={data.runs}
           selectedId={data.selectedId}
-          graphObservedCalls={runtimeGraph?.stats.observedCalls ?? null}
+          runsPage={data.runsPage}
+          runsLoadingMore={data.runsLoadingMore}
+          loadMoreRuns={data.loadMoreRuns}
           structureRun={structureRun}
           activeView={activeView}
           onView={(view) => { setActiveView(view); setSelectedStage(null); setSelectedEdge(null) }}

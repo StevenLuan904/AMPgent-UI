@@ -232,9 +232,8 @@ export function MoleculeViewer({
           }, 80)
         }
         if (!cancelled) setState('ready')
-      } catch (error) {
+      } catch {
         if (!cancelled) {
-          console.error('Unable to load structure artifact', error)
           setState('error')
         }
       }
@@ -261,7 +260,7 @@ export function MoleculeViewer({
       <div ref={host} className="molstar-host" />
       {!artifact && <div className="viewer-empty">此轮次尚无可读取的结构文件</div>}
       {artifact && state === 'loading' && <div className="viewer-state">正在验证并载入结构…</div>}
-      {artifact && state === 'error' && <div className="viewer-state viewer-error">结构载入失败</div>}
+      {artifact && state === 'error' && <div className="viewer-state viewer-error">结构文件暂不可读</div>}
       {artifact && state === 'ready' && !compact && (
         <div className="viewer-tag" title="口袋采用三色透明表面，短肽采用双色序列着色。">
           <span className="live-dot" /> Mol* · {artifact.lane === 'native' ? '原位界面' : '对照界面'}
