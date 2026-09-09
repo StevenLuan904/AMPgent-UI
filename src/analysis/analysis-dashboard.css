@@ -548,6 +548,60 @@
 .analysis-card.presentation-compact .ternary-labels text,
 .analysis-card.presentation-compact .forest-residue-label { font-size: 10px; }
 
+/* 与流程工作台共用的透明实验面板。 */
+.analysis-page {
+  border: 1px solid rgba(255,255,255,.78);
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 78% 0, rgba(65,137,234,.08), transparent 32%),
+    rgba(248,251,251,.66);
+  box-shadow: 0 18px 48px rgba(43,67,77,.07), inset 0 1px 0 rgba(255,255,255,.84);
+  backdrop-filter: blur(24px) saturate(1.14);
+  -webkit-backdrop-filter: blur(24px) saturate(1.14);
+}
+.analysis-page-header {
+  border-bottom-color: rgba(113,141,157,.16);
+  background: rgba(255,255,255,.48);
+  backdrop-filter: blur(20px) saturate(1.16);
+  -webkit-backdrop-filter: blur(20px) saturate(1.16);
+}
+.analysis-heading h1 { color: #172a35; font-weight: 650; }
+.analysis-heading > p { color: #71818c; font-size: 12px; }
+.analysis-eyebrow { color: #3f78c5; }
+.analysis-header-actions button, .fixture-badge,
+.query-composer, .card-library-popover {
+  border-color: rgba(111,140,157,.21);
+  background: rgba(255,255,255,.69);
+  box-shadow: 0 12px 28px rgba(43,68,80,.07), inset 0 1px 0 rgba(255,255,255,.88);
+  backdrop-filter: blur(18px) saturate(1.16);
+  -webkit-backdrop-filter: blur(18px) saturate(1.16);
+}
+.analysis-card {
+  border-color: rgba(108,138,156,.26);
+  background: rgba(255,255,255,.80);
+  box-shadow: 0 16px 38px rgba(43,68,80,.09), 0 2px 7px rgba(43,68,80,.04), inset 0 1px 0 rgba(255,255,255,.9);
+  backdrop-filter: blur(20px) saturate(1.13);
+  -webkit-backdrop-filter: blur(20px) saturate(1.13);
+}
+.analysis-card-header { border-bottom-color: rgba(112,140,157,.15); background: rgba(255,255,255,.54); }
+.analysis-card-header h2 { color: #203440; font-size: 13px; font-weight: 650; }
+.analysis-card-header p { color: #73838e; font-size: 11px; }
+.analysis-card-body { background: rgba(255,255,255,.50); }
+.quality-stat, .quality-callout, .conflict-note,
+.evidence-summary-grid > div, .evidence-identity-card, .evidence-warning-card,
+.evidence-table-card, .result-distribution.detailed {
+  border-color: rgba(110,140,157,.21);
+  background: rgba(255,255,255,.70);
+  box-shadow: 0 10px 25px rgba(43,68,80,.055), inset 0 1px 0 rgba(255,255,255,.84);
+}
+.evidence-table-card th, .evidence-table-pagination { background: rgba(242,247,248,.72); }
+.candidate-table th { background: rgba(241,247,248,.72); }
+.analysis-chart-host canvas { filter: saturate(.93) contrast(1.02); }
+
+@media (max-width: 1450px) {
+  .analysis-page { border-radius: 17px; }
+}
+
 /* Tables keep one readable rhythm across the dashboard and evidence views. */
 .analysis-page table th { height: 34px; font-size: 11px; line-height: 1.25; }
 .analysis-page table td { min-height: 40px; font-size: 12px; line-height: 1.35; }
