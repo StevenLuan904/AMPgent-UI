@@ -1,46 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { CheckCircle2, ChevronLeft, ChevronRight, FlaskConical, RefreshCw, ShieldCheck, Star } from 'lucide-react'
 import { loadAnalysisSnapshot, type AnalysisSnapshot, type SnapshotCandidate } from './dataKernel'
+import { bestPeptideMetricKeys, compareBestPeptides, displayMetric, maturityLabel } from './bestPeptideRules'
 import './analysis-dashboard.css'
-
-const activityKeys = ['macrel_amp_probability', 'amp_read_log10_mic_um', 'llamp_log10_mic_um', 'activity']
-const safetyKeys = ['macrel_hemolysis_probability', 'toxinpred3_hybrid_score', 'safety']
-
-function value(candidate: SnapshotCandidate, keys: string[]) {
-  for (const key of keys) {
-    const metric = candidate.metrics[key]
-    if (metric?.value !== null && metric?.value !== undefined && metric.status === 'succeeded') return metric.value
-  }
-  return null
-}
-
-function displayValue(candidate: SnapshotCandidate, keys: string[], digits = 3) {
-  const metric = keys.map((key) => candidate.metrics[key]).find((item) => item?.value !== null && item?.value !== undefined && item.status === 'succeeded')
-  if (!metric) return '未评估'
-  return `${Number(metric.value).toFixed(digits)}${metric.unit ? ` ${metric.unit}` : ''}`
-}
-
-function maturityRank(status: string) {
-  return status === 'mature_core' ? 0 : status === 'candidate_pool' ? 1 : status === 'safety_pass' ? 2 : status === 'rejected' ? 4 : 3
-}
-
-function compareCandidates(left: SnapshotCandidate, right: SnapshotCandidate) {
-  const leftActivity = value(left, activityKeys)
-  const rightActivity = value(right, activityKeys)
-  const activityKey = activityKeys.find((key) => left.metrics[key]?.value !== null || right.metrics[key]?.value !== null)
-  const activityOrder = activityKey === 'macrel_amp_probability'
-    ? (rightActivity === null ? 1 : leftActivity === null ? -1 : rightActivity - leftActivity)
-    : (leftActivity === null ? 1 : rightActivity === null ? -1 : leftActivity - rightActivity)
-  const leftSafety = value(left, safetyKeys)
-  const rightSafety = value(right, safetyKeys)
-  return maturityRank(left.admission.status) - maturityRank(right.admission.status)
-    || (left.admission.paretoFront ?? Number.MAX_SAFE_INTEGER) - (right.admission.paretoFront ?? Number.MAX_SAFE_INTEGER)
-    || activityOrder
-    || (leftSafety === null ? 1 : rightSafety === null ? -1 : leftSafety - rightSafety)
-    || Number(right.admission.structureEligible) - Number(left.admission.structureEligible)
-    || (left.proposalRank === null ? 1 : right.proposalRank === null ? -1 : left.proposalRank - right.proposalRank)
-    || left.id.localeCompare(right.id)
-}
 
 function sourceLabel(candidate: SnapshotCandidate) {
   return candidate.originSet.length ? candidate.originSet.join('、') : '未评估'
@@ -66,7 +28,7 @@ export function BestPeptideDashboard({ runId }: { runId?: string }) {
     return () => { cancelled = true }
   }, [revision, runId])
 
-  const candidates = useMemo(() => snapshot ? [...snapshot.candidates].sort(compareCandidates) : [], [snapshot])
+  const candidates = useMemo(() => snapshot ? [...snapshot.candidates].sort(compareBestPeptides) : [], [snapshot])
   const pageCount = Math.max(1, Math.ceil(candidates.length / pageSize))
   const safePage = Math.min(page, pageCount - 1)
   const visibleCandidates = candidates.slice(safePage * pageSize, (safePage + 1) * pageSize)
@@ -89,17 +51,18 @@ export function BestPeptideDashboard({ runId }: { runId?: string }) {
       ) : (
         <>
           <div className="best-peptide-table-card">
-            <header><div><CheckCircle2 /><span><b>候选短肽列表</b><small>排序依据：成熟度 · Pareto · 活性 · 安全性 · 结构资格</small></span></div><span>只读</span></header>
-            <div className="best-peptide-table-scroll"><table><thead><tr><th>序列</th><th>来源</th><th>活性</th><th>安全性</th><th>净电荷</th><th>结构资格</th><th>成熟度</th></tr></thead><tbody>
+            <header><div><CheckCircle2 /><span><b>候选短肽列表</b><small>排序依据：成熟度 · Pareto · 结构资格 · 提案排名</small></span></div><span>只读</span></header>
+            <div className="best-peptide-table-scroll"><table><thead><tr><th>序列</th><th>来源</th><th>Macrel 抗菌概率</th><th>Macrel 溶血风险</th><th>毒性风险</th><th>净电荷</th><th>结构资格</th><th>成熟度</th></tr></thead><tbody>
               {visibleCandidates.map((candidate) => (
                 <tr key={candidate.id}>
                   <td><code>{candidate.sequence}</code><small>{candidate.proposalRank === null ? '无提案排名' : `提案 #${candidate.proposalRank}`}</small></td>
                   <td>{sourceLabel(candidate)}</td>
-                  <td>{displayValue(candidate, activityKeys)}</td>
-                  <td>{displayValue(candidate, safetyKeys)}</td>
-                  <td>{displayValue(candidate, ['net_charge_ph7_4'], 2)}</td>
+                  <td>{displayMetric(candidate, bestPeptideMetricKeys.activity)}</td>
+                  <td>{displayMetric(candidate, bestPeptideMetricKeys.hemolysis)}</td>
+                  <td>{displayMetric(candidate, bestPeptideMetricKeys.toxicity)}</td>
+                  <td>{displayMetric(candidate, bestPeptideMetricKeys.netCharge, 2)}</td>
                   <td><span className={candidate.admission.structureEligible ? 'best-peptide-yes' : 'best-peptide-no'}>{candidate.admission.structureEligible ? '合格' : '未合格'}</span></td>
-                  <td><b>{candidate.admission.status}</b>{candidate.admission.paretoFront !== null && <small>Pareto #{candidate.admission.paretoFront}</small>}</td>
+                  <td><b>{maturityLabel(candidate.admission.status)}</b>{candidate.admission.paretoFront !== null && <small>Pareto #{candidate.admission.paretoFront}</small>}</td>
                 </tr>
               ))}
             </tbody></table></div>
