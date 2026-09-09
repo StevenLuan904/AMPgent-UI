@@ -151,7 +151,8 @@ export function WorkflowNode({ data }: NodeProps<StageNode>) {
           <b>{qualityGateNodeSummary(qualityGate)}</b>
         </div>
       )}
-      {hasStructureEvidence && viewer && <MoleculeViewer key={viewer.artifact_sha256} artifact={viewer} compact interactive={false} />}
+      {hasStructureEvidence && viewer && stage.runtime?.viewer_key !== 'rosetta' && <MoleculeViewer key={viewer.artifact_sha256} artifact={viewer} compact interactive={false} />}
+      {hasStructureEvidence && viewer && stage.runtime?.viewer_key === 'rosetta' && <div className="structure-unavailable-chip" title="Rosetta 结构文件由只读接口返回，但当前制品不可读取；打开详情可重试。">结构文件暂不可读</div>}
       {distribution && (!isRuntime || hasEvidenceDistribution) && <ResultDistribution data={distribution} compact />}
       {showsTargets ? (
         <div className="node-targets">

@@ -133,10 +133,17 @@ export function MoleculeViewer({
     const load = async () => {
       setState('loading')
       try {
-        await plugin.clear()
+        // Mol* logs failed downloads from its internal XHR layer directly to
+        // the browser console. Probe the read-only artifact first so an
+        // unavailable optional Rosetta artifact becomes a visible card state
+        // instead of an unhandled console error; successful artifacts still
+        // go through the normal Mol* loader below.
         const artifactUrl = artifact.artifact_url.startsWith('/')
           ? new URL(artifact.artifact_url, window.location.origin).toString()
           : artifact.artifact_url
+        const probe = await fetch(artifactUrl)
+        if (!probe.ok) throw new Error(`结构文件响应 ${probe.status}`)
+        await plugin.clear()
         const data = await plugin.builders.data.download(
           { url: artifactUrl, isBinary: false },
           { state: { isGhost: true } },
@@ -205,30 +212,8 @@ export function MoleculeViewer({
             plugin.managers.camera.focusSpheres(
               [pocket, peptide],
               (component: any) => component.cell?.obj?.data?.boundary?.sphere,
-              { minRadius: 7, extraRadius: compact ? 2 : 3, durationMs: 0 },
+              { minRadius: 7, extraRadius: compact ? 4 : 6, durationMs: 0 },
             )
-            window.setTimeout(() => {
-              const snapshot = plugin.canvas3d?.camera.getSnapshot()
-              if (!snapshot) return
-              const direction = [
-                snapshot.position[0] - snapshot.target[0],
-                snapshot.position[1] - snapshot.target[1],
-                snapshot.position[2] - snapshot.target[2],
-              ]
-              const rolledUp = [
-                direction[1] * snapshot.up[2] - direction[2] * snapshot.up[1],
-                direction[2] * snapshot.up[0] - direction[0] * snapshot.up[2],
-                direction[0] * snapshot.up[1] - direction[1] * snapshot.up[0],
-              ]
-              const length = Math.hypot(...rolledUp) || 1
-              const aspectRatio = (host.current?.clientWidth ?? 1) / Math.max(host.current?.clientHeight ?? 1, 1)
-              const zoomScale = compact ? 0.76 : aspectRatio < 2 ? 0.78 : aspectRatio < 3 ? 0.62 : 0.44
-              plugin.managers.camera.setSnapshot({
-                up: rolledUp.map((value) => value / length),
-                position: snapshot.target.map((value: number, index: number) => value + direction[index] * zoomScale),
-                radius: snapshot.radius * zoomScale,
-              }, 0)
-            }, 60)
           }, 80)
         }
         if (!cancelled) setState('ready')

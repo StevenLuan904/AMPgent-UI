@@ -895,6 +895,37 @@ function callNode(call: ToolAttempt): GraphStage {
 
 type ViewerEntry = [key: string, artifact: NonNullable<RunDetail['viewer']>]
 
+function structureViewerKey(value: string) {
+  const normalized = value.toLowerCase()
+  if (normalized === 'boltz' || /(^|[-_.:])boltz([-_.:]|$)/.test(normalized)) return 'boltz'
+  if (normalized === 'rosetta' || /(^|[-_.:])rosetta([-_.:]|$)/.test(normalized)) return 'rosetta'
+  return null
+}
+
+function structureArtifactViewer(source: NodeDetail, artifact: NodeDetail['calls'][number]['artifacts'][number]) {
+  const sourceKey = structureViewerKey(source.node_id)
+    ?? structureViewerKey(source.calls.find((call) => structureViewerKey(call.tool_name))?.tool_name ?? '')
+  // A raw call artifact is only a safe compact fallback for Boltz CIF. A
+  // Rosetta PDB may be an audit file that is not publicly readable; it enters
+  // the graph only when the Observer's explicit viewer index provides a
+  // non-null artifact.
+  if (sourceKey !== 'boltz' || !artifact.sha256 || !artifact.url || !/(?:cif|mmcif)/i.test(artifact.media_type)) return null
+  const call = source.calls.find((item) => item.artifacts.some((candidate) => candidate.sha256 === artifact.sha256))
+  const inputs = record(call?.inputs)
+  const target = record(inputs.target_sequence)
+  return {
+    candidate_id: text(inputs.candidate_id),
+    sequence: text(inputs.peptide_sequence) || text(inputs.sequence),
+    target_id: text(inputs.target_id) || source.node_id,
+    target_name: text(inputs.target_name) || text(target.name) || 'Boltz 结构结果',
+    lane: 'native',
+    seed: integerField(inputs.seed) ?? 0,
+    artifact_sha256: artifact.sha256,
+    media_type: artifact.media_type,
+    artifact_url: artifact.url,
+  } satisfies NonNullable<RunDetail['viewer']>
+}
+
 function viewerEntries(detail: RunDetail, sources: Sources) {
   const entries: ViewerEntry[] = []
   const artifactHashes = new Set<string>()
@@ -909,10 +940,17 @@ function viewerEntries(detail: RunDetail, sources: Sources) {
   }
   addEntry('__default__', detail.viewer)
   for (const source of Object.values(sources)) {
+    if (!source) continue
     for (const [key, artifact] of Object.entries(source?.viewers ?? {})) {
       addEntry(key, artifact)
     }
-    if (source?.node_id) addEntry(source.node_id, source.viewer)
+    if (source.node_id) addEntry(source.node_id, source.viewer)
+    for (const call of source.calls ?? []) {
+      for (const artifact of call.artifacts ?? []) {
+        const viewer = structureArtifactViewer(source, artifact)
+        if (viewer) addEntry(structureViewerKey(source.node_id) ?? source.node_id, viewer)
+      }
+    }
   }
   return entries
 }
@@ -963,7 +1001,10 @@ function scientificEvidenceNodes(detail: RunDetail) {
     .filter((stage) => {
       if (stage.id === 'candidate_pool') return false
       if (stage.id === 'target_data' || stage.id === 'targets') return detail.branches.length > 0
-      if (stage.id === 'boltz' || stage.id === 'rosetta') return Object.keys(detail.structure_counts[stage.id === 'boltz' ? 'boltz_pose' : 'rosetta_decoy'] ?? {}).length > 0
+      // Boltz/Rosetta cards are materialized from persisted CIF/PDB
+      // artifacts below. An empty legacy structure_counts map must not turn
+      // into a fake pending stage or a duplicate generic tool card.
+      if (stage.id === 'boltz' || stage.id === 'rosetta') return false
       return stage.current > 0 || (metricIds.has(stage.id) && stage.total > 0)
     })
     .map((stage): GraphStage => ({
@@ -1025,6 +1066,7 @@ function structureEvidenceNode(key: string, artifact: NonNullable<RunDetail['vie
       raw_label: key,
       has_viewer: true,
       viewer_key: key,
+      viewer_artifact: artifact,
       viewer_mapping_basis: '后端 viewer 键',
       explicit_relation_count: 0,
     },
@@ -1960,14 +2002,10 @@ export function buildRuntimeGraph(detail: RunDetail, sources: Sources = {}, opti
     const populationTotal = detail.generation_population.baseline_candidate_count + detail.generation_population.descendant_candidate_count
     if (displayTotal !== populationTotal) gaps.push(`接口种群口径不一致：展示 ${displayTotal} 条；基线与新生子代合计 ${populationTotal} 条。`)
   }
-  // Event pagination is intentionally exposed only from the selected-node
-  // inspector.  Keeping it out of the graph gap list prevents a transient
-  // page boundary from becoming permanent canvas copy.
+  // Pagination is an interaction capability, not a canvas fact.  Keep cursor
+  // state out of graph.gaps so a transient page boundary never becomes
+  // permanent copy on the main workflow or its inspector summary.
   if (Object.values(sources).some((source) => (source?.calls.length ?? 0) >= 40 && !source?.calls_window)) gaps.push('至少一个节点明细只返回当前调用窗口；旧接口未提供分页游标。')
-  if (Object.values(sources).some((source) => source?.calls_window?.has_more)) gaps.push('部分节点仍有更早工具调用；可在详情中继续加载。')
-  if (options.sourceFetch && options.sourceFetch.failed > 0) gaps.push(`节点明细仅加载 ${options.sourceFetch.loaded}/${options.sourceFetch.requested} 个；${options.sourceFetch.failed} 个读取失败或超时，当前运行图不完整。`)
-  else if (options.sourceFetch && options.sourceFetch.loaded < options.sourceFetch.requested && (options.sourceFetch.deferred ?? 0) > 0) gaps.push(`节点明细已加载 ${options.sourceFetch.loaded}/${options.sourceFetch.requested} 个；其余 ${options.sourceFetch.deferred} 个按需读取，当前运行图仍不完整。`)
-  else if (options.sourceFetch && options.sourceFetch.loaded < options.sourceFetch.requested) gaps.push(`节点明细正在加载 ${options.sourceFetch.loaded}/${options.sourceFetch.requested} 个；当前运行图仍不完整。`)
   if (detail.graph.nodes.length) gaps.push('详情中的固定拓扑摘要仅用于兼容核对，未纳入运行图；当前图仅使用真实事件、工具调用、候选与显式关系。')
   else gaps.push('运行详情未提供阶段摘要；无法核对旧版兼容数据。')
 

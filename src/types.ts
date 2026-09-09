@@ -104,6 +104,9 @@ export interface RuntimeNodeMeta {
   has_viewer?: boolean
   /** Explicit backend/source key used to retrieve structure evidence. */
   viewer_key?: string
+  /** Materialized structure artifact from a node call when the legacy viewer
+   * index is empty. The artifact remains keyed by its persisted SHA. */
+  viewer_artifact?: ViewerArtifact
   /** Why viewer_key was selected; shown in inspector, never inferred from UI text. */
   viewer_mapping_basis?: '后端 viewer 键' | '后端节点 viewer' | '限定工具名映射'
   /** Stable evidence source key, independent from any structure viewer key. */

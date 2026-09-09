@@ -943,10 +943,21 @@ function GraphView({
       // view would fit a metric table instead of a readable workflow spine.
       .slice(0, graphViewportSize.width > 2100 ? 1 : 0)
       .map((node) => node.id)
+    const structureEvidenceIds = runtimeGraph.nodes
+      .filter((node) => node.runtime?.node_type === 'structure_evidence')
+      .sort((left, right) => {
+        const priority = (node: GraphStage) => node.runtime?.viewer_key?.toLowerCase() === 'boltz' ? 0 : 1
+        return priority(left) - priority(right) || left.id.localeCompare(right.id)
+      })
+      // Keep the real Boltz thumbnail discoverable on the compact viewport;
+      // the wider viewport can additionally expose Rosetta when its artifact
+      // is available. Other structure evidence remains mounted for panning.
+      .slice(0, graphViewportSize.width > 2100 ? 2 : 1)
+      .map((node) => node.id)
     const expandedClusterIds = runtimeGraph.nodes
       .filter((node) => node.runtime?.expanded && ['tool_group', 'event_group', 'batch_group', 'tool_summary_group', 'candidate_group'].includes(node.runtime.node_type))
       .flatMap((group) => runtimeChildNodeIds(runtimeGraph.nodes, group))
-    const visibleIds = [...new Set([...selected, ...scientificEvidenceIds, ...expandedClusterIds])]
+    const visibleIds = [...new Set([...selected, ...scientificEvidenceIds, ...structureEvidenceIds, ...expandedClusterIds])]
     return visibleIds.filter((id) => {
       const node = runtimeGraph.nodes.find((candidate) => candidate.id === id)
       if (expandedSummaryGroup && ['candidate_group', 'candidate_preview', 'generation', 'population_summary'].includes(node?.runtime?.node_type ?? '')) return false
@@ -1445,6 +1456,7 @@ function GraphView({
         const runtimeViewer = viewerKey
           ? detail.viewers?.[viewerKey] ?? Object.values(nodeDetails).find((source) => source.node_id === viewerKey)?.viewer ?? Object.values(nodeDetails).find((source) => source.viewers?.[viewerKey])?.viewers?.[viewerKey] ?? null
           : null
+        const resolvedViewer = stage.runtime?.viewer_artifact ?? runtimeViewer
         const distributionKey = stage.runtime?.distribution_key ?? stage.runtime?.evidence_key
         const runtimeDistribution = distributionKey
           ? persistedDistributions[distributionKey] ?? distributionForStage(analysisSnapshot, detail, distributionKey)
@@ -1468,7 +1480,7 @@ function GraphView({
         stage,
         branches: detail.branches,
         viewer: (readableRuntimeNodeIdSet.has(stage.id) || selectedStage === stage.id)
-          ? detail.viewers?.[stage.id] ?? runtimeViewer ?? (stage.kind === 'structure' ? detail.viewer : null)
+          ? detail.viewers?.[stage.id] ?? resolvedViewer ?? (stage.kind === 'structure' ? detail.viewer : null)
           : null,
         distribution: persistedDistributions[stage.id]
           ?? distributionForStage(analysisSnapshot, detail, stage.id)
@@ -2030,12 +2042,12 @@ function RuntimeInspector({ detail, nodeDetails, graph, nodeId, distribution, on
   const isPopulationSummary = node.runtime?.node_type === 'population_summary'
   const isStructureEvidence = node.runtime?.node_type === 'structure_evidence'
   const runtimeViewerKey = node.runtime?.viewer_key
-  const runtimeViewer = runtimeViewerKey
+  const runtimeViewer = node.runtime?.viewer_artifact ?? (runtimeViewerKey
     ? detail.viewers?.[runtimeViewerKey]
       ?? Object.values(nodeDetails).find((source) => source.node_id === runtimeViewerKey)?.viewer
       ?? Object.values(nodeDetails).find((source) => source.viewers?.[runtimeViewerKey])?.viewers?.[runtimeViewerKey]
       ?? (runtimeViewerKey === '__default__' ? detail.viewer : null)
-    : null
+    : null)
   const isRuntimeGroup = Boolean(node.runtime?.node_type && runtimeExpandableNodeTypes.has(node.runtime.node_type))
   const isToolSummary = node.runtime?.node_type === 'tool_summary'
   const groupCallIds = isRuntimeGroup ? node.runtime?.child_ids ?? [] : []
@@ -2067,15 +2079,15 @@ function RuntimeInspector({ detail, nodeDetails, graph, nodeId, distribution, on
       </section>}
       {node.runtime?.viewer_key && <p className="runtime-note runtime-viewer-note">结构证据映射：{node.runtime.viewer_mapping_basis ?? '后端 viewer 键'} · {node.runtime.viewer_key}</p>}
       {isRuntimeGroup && <section className="inspector-section runtime-group-section"><div className="section-title"><h3>{node.runtime?.node_type === 'tool_summary_group' ? '汇总工具明细' : node.runtime?.node_type === 'candidate_group' ? '代际预览明细' : '聚合明细'}</h3><button className="group-toggle" onClick={() => onToggleGroup(node.id)}>{groupExpanded ? '收起明细' : '展开明细'}</button></div><p className="runtime-note">{node.runtime?.node_type === 'tool_summary_group' ? '数据库状态汇总；逐次明细按工具与状态核对。' : node.runtime?.node_type === 'candidate_group' ? '按候选记录中明确的 generation 字段分组。' : '默认显示批次或连续观测的汇总事实；展开后可按时间查看工具调用与生命周期事件。'}</p><code className="runtime-raw-key">聚合依据：{node.runtime?.grouping_basis ?? '候选记录 generation 字段'}</code>{node.runtime?.viewer_key && <p className="runtime-note">结构证据：{node.runtime.viewer_mapping_basis ?? '后端 viewer 键'} · {node.runtime.viewer_key}</p>}<div className="runtime-group-list">{summaryTools.map((item) => <div key={item.tool_name}><span className="attempt-state pending" /><b>{item.display_name}</b><small>汇总 {item.summary_count} · 已映射 {item.materialized_count} · 尚缺 {item.missing_count}</small></div>)}{groupCalls.map((item) => <div key={item.id}><span className={`attempt-state ${item.status}`} /><b>尝试 {item.attempt}</b><small>{statusText[item.status] ?? item.status}</small></div>)}{groupEvents.map((item) => { const status = runtimeEventStatus(item); return <div key={`event:${item.sequence_no}`}><span className={`attempt-state ${status}`} /><b>事件 {item.sequence_no}</b><small>{readableEventType(item.type, item.payload)} · {statusText[status]} · {formatTime(item.occurred_at)}</small></div> })}{groupCandidates.map((item) => <div key={item.id}><span className="attempt-state pending" /><b>候选预览 {item.proposal_rank === null ? item.id.slice(0, 8) : `#${item.proposal_rank}`}</b><small>{item.length} 个氨基酸 · {item.parent_id ? '有父候选' : '未返回父候选'}</small></div>)}</div></section>}
-      {graph.eventWindow.mayBeTruncated && <details className="inspector-section runtime-provenance event-history-disclosure"><summary>事件历史 · 按游标读取 <ChevronRight /></summary><div className="detail-content"><button type="button" className="group-toggle" onClick={onLoadOlderEvents} disabled={eventHistoryLoading}>{eventHistoryLoading ? '读取中…' : '加载历史事件'}</button></div></details>}
+      {graph.eventWindow.mayBeTruncated && <details className="inspector-section runtime-provenance event-history-disclosure"><summary>事件历史 <ChevronRight /></summary><div className="detail-content"><button type="button" className="group-toggle" onClick={onLoadOlderEvents} disabled={eventHistoryLoading}>{eventHistoryLoading ? '读取中…' : '继续读取'}</button></div></details>}
       {isToolSummary && <section className="inspector-section runtime-group-section"><div className="section-title"><h3>汇总级工具证据</h3><span className="stage-badge pending">仅汇总</span></div><p className="runtime-note">数据库状态汇总；逐次明细未返回。</p><div className="runtime-group-list">{summaryTools.map((item) => <div key={item.tool_name}><span className="attempt-state pending" /><b>汇总数量 {item.summary_count}</b><small>已映射 {item.materialized_count} · 尚缺 {item.missing_count}</small></div>)}</div></section>}
       {isPopulationSummary && <section className="inspector-section"><div className="analysis-kicker"><Layers3 />种群口径</div><p className="runtime-note">数据库汇总计数；候选轨仅展示当前返回预览。</p><div className="fact-grid">{node.insight.facts.map((fact) => <Fact key={fact.label} label={fact.label} value={fact.value} />)}</div></section>}
       {call && <section className="inspector-section"><div className="section-title"><h3>工具调用与证据</h3><span className={`stage-badge ${node.status}`}>{statusText[call.status] ?? call.status}</span></div><ToolAttemptDisclosure call={call} /></section>}
-      {callWindowSources.length > 0 && <section className="inspector-section call-window-section"><div className="section-title"><h3>工具调用窗口</h3><span className="stage-badge pending">按游标</span></div>{callWindowSources.map(({ stageId, source }) => { const label = nodeCallsWindowLabel(source); const window = source.calls_window; return <div className="call-window-row" key={stageId}><span>{stageId}</span><small>{label}</small>{window?.has_more && <button type="button" onClick={async () => { setLoadingCallStageId(stageId); await onLoadOlderCalls(stageId); setLoadingCallStageId(null) }} disabled={loadingCallStageId !== null}>{loadingCallStageId === stageId ? '读取中…' : '加载更早调用'}</button>}</div> })}</section>}
+      {!isStructureEvidence && callWindowSources.length > 0 && <section className="inspector-section call-window-section"><div className="section-title"><h3>工具调用窗口</h3><span className="stage-badge pending">按游标</span></div>{callWindowSources.map(({ stageId, source }) => { const label = nodeCallsWindowLabel(source); const window = source.calls_window; return <div className="call-window-row" key={stageId}><span>{stageId}</span><small>{label}</small>{window?.has_more && <button type="button" onClick={async () => { setLoadingCallStageId(stageId); await onLoadOlderCalls(stageId); setLoadingCallStageId(null) }} disabled={loadingCallStageId !== null}>{loadingCallStageId === stageId ? '读取中…' : '加载更早调用'}</button>}</div> })}</section>}
       {event && <section className="inspector-section"><div className="analysis-kicker"><Clock3 />事件 payload</div><div className="runtime-event-meta"><b>{event.actor}</b><span>序号 {event.sequence_no} · {formatTime(event.occurred_at)}</span></div><div className="runtime-raw-key">原始事件键：{event.type}</div><pre className="runtime-json">{JSON.stringify(event.payload, null, 2)}</pre></section>}
       {candidate && <section className="inspector-section"><div className="analysis-kicker"><GitBranch />候选预览记录</div><code className="runtime-sequence">{candidate.sequence}</code><div className="fact-grid"><Fact label="代际" value={candidate.generation ?? '—'} /><Fact label="父候选" value={candidate.parent_id ?? '未返回'} /><Fact label="生成调用" value={candidate.generator_call_id ?? '未返回'} /><Fact label="序列长度" value={candidate.length} /><Fact label="预览范围" value={node.runtime?.preview_index && node.runtime.preview_total !== null ? `${node.runtime.preview_index}/${node.runtime.preview_total}` : node.runtime?.preview_index ? `已返回第 ${node.runtime.preview_index} 条` : '当前返回记录'} /></div>{candidate.reasons.length > 0 && <div className="runtime-reasons"><span>后端返回原因（未用于状态推断）</span>{candidate.reasons.map((reason) => <b key={reason}>{reason}</b>)}</div>}</section>}
       {generation && <section className="inspector-section"><div className="analysis-kicker"><Layers3 />代际分组</div><p className="runtime-note">此节点由候选记录中明确的 <code>generation={generation}</code> 字段聚合而成；它不是预设阶段，也不代表执行依赖。</p></section>}
-      {isToolSummary || node.runtime?.node_type === 'tool_summary_group' || isPopulationSummary ? <details className="inspector-section runtime-provenance detail-disclosure"><summary><Database />图构造契约 <span>数据缺口 {graph.gaps.length} 项</span><ChevronRight /></summary><div className="detail-content"><p>可见节点来自本次运行详情返回的真实记录与显式字段。</p><ul>{graph.gaps.slice(0, 5).map((gap) => <li key={gap}>{gap}</li>)}</ul></div></details> : <section className="inspector-section runtime-provenance"><div className="analysis-kicker"><Database />图构造契约</div><p>可见节点来自本次运行详情返回的工具调用、生命周期事件、候选记录和显式字段。未返回的依赖关系不在图中补画；关联边不表示因果。</p><ul>{graph.gaps.slice(0, 5).map((gap) => <li key={gap}>{gap}</li>)}</ul></section>}
+      {!isStructureEvidence && (isToolSummary || node.runtime?.node_type === 'tool_summary_group' || isPopulationSummary ? <details className="inspector-section runtime-provenance detail-disclosure"><summary><Database />图构造契约 <span>数据缺口 {graph.gaps.length} 项</span><ChevronRight /></summary><div className="detail-content"><p>可见节点来自本次运行详情返回的真实记录与显式字段。</p><ul>{graph.gaps.slice(0, 5).map((gap) => <li key={gap}>{gap}</li>)}</ul></div></details> : <section className="inspector-section runtime-provenance"><div className="analysis-kicker"><Database />图构造契约</div><p>可见节点来自本次运行详情返回的工具调用、生命周期事件、候选记录和显式字段。未返回的依赖关系不在图中补画；关联边不表示因果。</p><ul>{graph.gaps.slice(0, 5).map((gap) => <li key={gap}>{gap}</li>)}</ul></section>)}
     </aside>
   )
 }

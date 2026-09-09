@@ -229,6 +229,7 @@ button:focus-visible { outline: 2px solid #315be8; outline-offset: 2px; }
 .mini-molstar-shell { height: 94px; margin-top: 9px; border-radius: 8px; border-color: #e1e6ee; background: #fff; pointer-events: none; }
 .mini-molstar-shell .msp-viewport-controls, .mini-molstar-shell .msp-logo, .mini-molstar-shell .msp-toast-container { display: none !important; }
 .mini-molstar-shell .viewer-state, .mini-molstar-shell .viewer-empty { font-size: 8px; color: #8b95a5; }
+.structure-unavailable-chip { min-height: 34px; margin-top: 9px; display: grid; place-items: center; border: 1px solid #e4e8ef; border-radius: 8px; color: #8b95a5; background: #fff; font-size: 11px; }
 .kind-structure .node-facts { min-height: 42px; padding-top: 7px; }
 .result-distribution { margin: 0; color: #334155; }
 .result-distribution.compact { height: 73px; padding: 7px 0 0; border-top: 1px solid #edf0f4; }
@@ -600,7 +601,7 @@ button:focus-visible { outline: 2px solid #315be8; outline-offset: 2px; }
 .runtime-tool_group.runtime-group-expanded::before, .runtime-tool_group.runtime-group-expanded::after, .runtime-event_group.runtime-group-expanded::before, .runtime-event_group.runtime-group-expanded::after, .runtime-batch_group.runtime-group-expanded::before, .runtime-batch_group.runtime-group-expanded::after, .runtime-tool_summary_group.runtime-group-expanded::before, .runtime-tool_summary_group.runtime-group-expanded::after, .runtime-candidate_group.runtime-group-expanded::before, .runtime-candidate_group.runtime-group-expanded::after { display: none; }
 .runtime-tool_group::before, .runtime-tool_group::after, .runtime-event_group::before, .runtime-event_group::after, .runtime-batch_group::before, .runtime-batch_group::after, .runtime-tool_summary_group::before, .runtime-tool_summary_group::after, .runtime-candidate_group::before, .runtime-candidate_group::after { content: ""; position: absolute; z-index: -1; inset: 0; border: 1px solid #d4dce9; border-radius: 12px; background: linear-gradient(180deg, #ffffff, #fbfcfd); box-shadow: 0 6px 13px rgba(41,55,92,.12), inset 0 1px 0 #fff; pointer-events: none; transform: translate(12px, 12px); }
 .runtime-tool_group::after, .runtime-event_group::after, .runtime-batch_group::after, .runtime-tool_summary_group::after, .runtime-candidate_group::after { background: linear-gradient(180deg, #ffffff, #fafbfd); box-shadow: 0 5px 11px rgba(41,55,92,.09), inset 0 1px 0 #fff; transform: translate(24px, 24px); }
-.runtime-context-outside { opacity: .34; pointer-events: none; }
+.runtime-context-outside { opacity: .42; pointer-events: auto; }
 .runtime-context-outside .runtime-tool_group, .runtime-context-outside .runtime-event_group, .runtime-context-outside .runtime-batch_group, .runtime-context-outside .runtime-tool_summary_group, .runtime-context-outside .runtime-candidate_group { box-shadow: 0 2px 6px rgba(47,66,113,.05); }
 .runtime-context-outside .runtime-tool_group::before, .runtime-context-outside .runtime-tool_group::after, .runtime-context-outside .runtime-event_group::before, .runtime-context-outside .runtime-event_group::after, .runtime-context-outside .runtime-batch_group::before, .runtime-context-outside .runtime-batch_group::after, .runtime-context-outside .runtime-candidate_group::before, .runtime-context-outside .runtime-candidate_group::after { display: none; }
 .runtime-tool_call, .runtime-tool_summary, .runtime-candidate_preview { border: 1px solid #d7dee8; }
@@ -790,12 +791,14 @@ button:focus-visible { outline: 2px solid #315be8; outline-offset: 2px; }
 .runtime-tool_group::before, .runtime-event_group::before, .runtime-batch_group::before,
 .runtime-tool_summary_group::before, .runtime-candidate_group::before {
   border-color: #d3ddea;
+  background-color: #fff;
   transform: translate(12px, 12px);
   box-shadow: 0 8px 18px rgba(41, 55, 92, .10);
 }
 .runtime-tool_group::after, .runtime-event_group::after, .runtime-batch_group::after,
 .runtime-tool_summary_group::after, .runtime-candidate_group::after {
   border-color: #e0e6ef;
+  background-color: #fff;
   transform: translate(24px, 24px);
   box-shadow: 0 6px 13px rgba(41, 55, 92, .07);
 }

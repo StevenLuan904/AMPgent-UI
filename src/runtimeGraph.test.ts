@@ -70,6 +70,34 @@ describe('buildRuntimeGraph', () => {
     expect(result.edges.some((edge) => edge.source === structure?.id || edge.target === structure?.id)).toBe(false)
   })
 
+  it('recovers a Boltz structure card from a persisted CIF artifact when viewer indexes are empty', () => {
+    const artifact = {
+      role: 'engine_output_2', sha256: 'c'.repeat(64), size_bytes: 461944,
+      media_type: 'chemical/x-cif', url: '/v1/observer/artifacts/' + 'c'.repeat(64),
+    }
+    const source = nodeDetail([call('boltz-call', 'boltz2', '2026-09-04T00:00:00Z', {
+      inputs: { peptide_sequence: 'KKLL', target_id: 'target-1', seed: 7 },
+      artifacts: [artifact],
+    })])
+    source.node_id = 'boltz'
+    const result = buildRuntimeGraph({ ...detail(), viewers: { boltz: null, rosetta: null } }, { boltz: source })
+    const structure = result.nodes.find((node) => node.runtime?.node_type === 'structure_evidence')
+    expect(structure).toMatchObject({
+      id: 'structure-evidence:boltz',
+      runtime: { viewer_key: 'boltz', viewer_artifact: { artifact_sha256: 'c'.repeat(64), artifact_url: expect.stringContaining('/v1/observer/artifacts/') } },
+    })
+    expect(result.nodes.filter((node) => node.runtime?.node_type === 'structure_evidence')).toHaveLength(1)
+  })
+
+  it('does not promote a raw Rosetta PDB when the explicit viewer index is empty', () => {
+    const source = nodeDetail([call('rosetta-call', 'rosetta', '2026-09-04T00:00:00Z', {
+      artifacts: [{ role: 'engine_output', sha256: 'r'.repeat(64), size_bytes: 12, media_type: 'chemical/x-pdb', url: '/v1/observer/artifacts/' + 'r'.repeat(64) }],
+    })])
+    source.node_id = 'rosetta'
+    const result = buildRuntimeGraph({ ...detail(), viewers: { boltz: null, rosetta: null } }, { rosetta: source })
+    expect(result.nodes.some((node) => node.id === 'structure-evidence:rosetta')).toBe(false)
+  })
+
   it('deduplicates repeated viewer aliases by artifact hash and associates them with population evidence', () => {
     const artifact = { candidate_id: 'candidate-1', sequence: 'KKLL', target_id: 'target-1', target_name: 'target', lane: 'native', seed: 1, artifact_sha256: 'b'.repeat(64), media_type: 'model/mmcif', artifact_url: '/viewer/boltz.cif' }
     const result = buildRuntimeGraph({ ...detail(), viewers: { boltz: artifact, rosetta: { ...artifact, artifact_url: '/viewer/rosetta.cif' } }, display_population: { candidate_count: 1, candidate_record_count: 1, excluded_candidate_count: 0, exclusion_reason: 'historical_exact_replay' } })
