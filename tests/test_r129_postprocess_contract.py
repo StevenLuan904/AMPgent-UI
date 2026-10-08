@@ -69,3 +69,18 @@ def test_append_archive_rejects_metadata_misjoin():
     raw[1]["conditional_ppl"] = "99"
     with pytest.raises(ValueError, match="metric mismatch"):
         validate_append_only_archive(previous, raw, previous + raw, expected, aliases)
+
+
+def test_append_archive_allows_derived_selection_flag_recompute():
+    previous, raw, expected, aliases = _archive_fixture()
+    previous[0]["fixed_cell_selected"] = "True"
+    successor_old = dict(previous[0], fixed_cell_selected="False")
+    result = validate_append_only_archive(previous, raw, [successor_old] + raw, expected, aliases)
+    assert result["successor_count"] == 5
+
+
+def test_append_archive_rejects_old_sequence_or_score_change():
+    previous, raw, expected, aliases = _archive_fixture()
+    changed = dict(previous[0], sequence="BBB", quality="-99")
+    with pytest.raises(ValueError, match="changed"):
+        validate_append_only_archive(previous, raw, [changed] + raw, expected, aliases)

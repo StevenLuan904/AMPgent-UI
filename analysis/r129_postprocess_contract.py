@@ -121,7 +121,14 @@ def validate_append_only_archive(
     if len(successor_rows) != len(previous_rows) + len(raw_proposals):
         raise ValueError("append-only archive length must be previous + raw proposals")
 
-    if successor_rows[: len(previous_rows)] != previous_rows:
+    def stable_row(row: dict) -> dict:
+        # Selection flags are a derived snapshot and may be recomputed when a
+        # new candidate replaces an incumbent; all scientific/provenance fields
+        # remain append-only and therefore compare strictly.
+        return {key: value for key, value in row.items() if key != "fixed_cell_selected"}
+
+    old_snapshot = successor_rows[: len(previous_rows)]
+    if [stable_row(row) for row in old_snapshot] != [stable_row(row) for row in previous_rows]:
         raise ValueError("append-only archive changed or dropped previous rows")
     if successor_rows[len(previous_rows) :] != raw_proposals:
         raise ValueError("append-only archive does not append all raw proposals")
