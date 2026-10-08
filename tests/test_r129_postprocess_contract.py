@@ -1,5 +1,5 @@
 import pytest
-from analysis.r129_postprocess_contract import apply_dual_support, select_one_per_cell, numeric_stats
+from analysis.r129_postprocess_contract import apply_dual_support, select_one_per_cell, numeric_stats, validate_append_only_archive
 
 def _row(aid="a", cell="q1", q="-1"):
     return {"action_id":aid,"candidate_id":aid,"cell_id":cell,"quality":q,"archive_status":"eligible","fixed_cell_selected":"False","ood_status":"unknown_not_assessed"}
@@ -37,3 +37,35 @@ def test_tie_preserves_existing_selected():
     out,summary=select_one_per_cell(prior,[_row("new","q1","-1")])
     assert [r["candidate_id"] for r in out if r["fixed_cell_selected"]=="True"]==["incumbent"]
     assert summary["replacement_cells"]==[]
+
+
+def _archive_fixture():
+    previous = [{"candidate_id": "old", "target": "acea", "sequence": "AAA"}]
+    raw = [
+        {"candidate_id": "a1", "action_id": "a1", "target": "acea", "seed": "1", "conditional_nll": "1.25", "conditional_ppl": "3.5"},
+        {"candidate_id": "v1", "action_id": "v1", "target": "vegfa", "seed": "2", "conditional_nll": "1.25", "conditional_ppl": "3.5"},
+        {"candidate_id": "a2", "action_id": "a2", "target": "acea", "seed": "3", "conditional_nll": "2.25", "conditional_ppl": "4.5"},
+        {"candidate_id": "v2", "action_id": "v2", "target": "vegfa", "seed": "4", "conditional_nll": "2.25", "conditional_ppl": "4.5"},
+    ]
+    expected = [{"action_id": r["action_id"], "target": r["target"], "seed": r["seed"], "conditional_nll": r["conditional_nll"], "conditional_ppl": r["conditional_ppl"]} for r in raw]
+    aliases = [{"raw_candidate_id": "a1", "canonical_candidate_id": "a1", "duplicate_of": None}, {"raw_candidate_id": "v1", "canonical_candidate_id": "a1", "duplicate_of": "a1"}, {"raw_candidate_id": "a2", "canonical_candidate_id": "a2", "duplicate_of": None}, {"raw_candidate_id": "v2", "canonical_candidate_id": "a2", "duplicate_of": "a2"}]
+    return previous, raw, expected, aliases
+
+
+def test_append_archive_keeps_raw_alias_rows():
+    previous, raw, expected, aliases = _archive_fixture()
+    result = validate_append_only_archive(previous, raw, previous + raw, expected, aliases)
+    assert result["raw_proposal_count"] == 4 and result["successor_count"] == 5
+
+
+def test_append_archive_rejects_unique_only_successor():
+    previous, raw, expected, aliases = _archive_fixture()
+    with pytest.raises(ValueError, match="length"):
+        validate_append_only_archive(previous, raw, previous + raw[:2], expected, aliases)
+
+
+def test_append_archive_rejects_metadata_misjoin():
+    previous, raw, expected, aliases = _archive_fixture()
+    raw[1]["conditional_ppl"] = "99"
+    with pytest.raises(ValueError, match="metric mismatch"):
+        validate_append_only_archive(previous, raw, previous + raw, expected, aliases)

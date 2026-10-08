@@ -102,3 +102,65 @@ def numeric_stats(rows: list[dict], columns: dict[str, tuple[str, str, str]]) ->
                 item["worst_id"] = next(r["candidate_id"] for r,v in observed if v == worst)
         out[name] = item
     return out
+
+
+def validate_append_only_archive(
+    previous_rows: list[dict],
+    raw_proposals: list[dict],
+    successor_rows: list[dict],
+    expected_actions: list[dict],
+    aliases: list[dict] | None = None,
+) -> dict:
+    """Validate an archive append without collapsing raw aliases.
+
+    ``successor_rows`` must contain every previous row followed by every raw
+    proposal.  The four proposal identities are checked against the frozen
+    action metadata, including source NLL/PPL; alias declarations are checked
+    against the raw proposal IDs and must not silently create extra rows.
+    """
+    if len(successor_rows) != len(previous_rows) + len(raw_proposals):
+        raise ValueError("append-only archive length must be previous + raw proposals")
+
+    if successor_rows[: len(previous_rows)] != previous_rows:
+        raise ValueError("append-only archive changed or dropped previous rows")
+    if successor_rows[len(previous_rows) :] != raw_proposals:
+        raise ValueError("append-only archive does not append all raw proposals")
+
+    expected = {str(row["action_id"]): row for row in expected_actions}
+    actual = {str(row.get("action_id", row.get("candidate_id", ""))): row for row in raw_proposals}
+    if len(actual) != len(raw_proposals):
+        raise ValueError("raw proposals contain duplicate action IDs")
+    if set(actual) != set(expected):
+        raise ValueError("raw proposal action IDs do not match frozen actions")
+    for action_id, frozen in expected.items():
+        row = actual[action_id]
+        for key in ("target", "seed"):
+            if str(row.get(key)) != str(frozen.get(key)):
+                raise ValueError(f"raw proposal metadata mismatch: {action_id}:{key}")
+        for key in ("conditional_nll", "conditional_ppl"):
+            try:
+                if not math.isfinite(float(row[key])) or not math.isclose(float(row[key]), float(frozen[key]), rel_tol=1e-6, abs_tol=1e-8):
+                    raise ValueError(f"raw proposal metric mismatch: {action_id}:{key}")
+            except (KeyError, TypeError, ValueError) as exc:
+                if isinstance(exc, ValueError) and str(exc).startswith("raw proposal metric mismatch"):
+                    raise
+                raise ValueError(f"raw proposal metric missing/nonfinite: {action_id}:{key}") from exc
+
+    if aliases is not None:
+        raw_ids = set(actual)
+        for alias in aliases:
+            raw_id = str(alias.get("raw_candidate_id", ""))
+            canonical_id = str(alias.get("canonical_candidate_id", ""))
+            if raw_id not in raw_ids or canonical_id not in raw_ids:
+                raise ValueError("alias references a non-raw candidate")
+            if raw_id == canonical_id and alias.get("duplicate_of") not in (None, "", "null"):
+                raise ValueError("canonical alias cannot have duplicate_of")
+            if raw_id != canonical_id and str(alias.get("duplicate_of", "")) != canonical_id:
+                raise ValueError("alias duplicate_of does not name its canonical raw row")
+    return {
+        "previous_count": len(previous_rows),
+        "raw_proposal_count": len(raw_proposals),
+        "successor_count": len(successor_rows),
+        "raw_action_ids": sorted(actual),
+        "alias_count": len(aliases or []),
+    }
