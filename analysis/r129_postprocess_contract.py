@@ -130,7 +130,7 @@ def validate_append_only_archive(
     old_snapshot = successor_rows[: len(previous_rows)]
     if [stable_row(row) for row in old_snapshot] != [stable_row(row) for row in previous_rows]:
         raise ValueError("append-only archive changed or dropped previous rows")
-    if successor_rows[len(previous_rows) :] != raw_proposals:
+    if [stable_row(row) for row in successor_rows[len(previous_rows) :]] != [stable_row(row) for row in raw_proposals]:
         raise ValueError("append-only archive does not append all raw proposals")
 
     expected = {str(row["action_id"]): row for row in expected_actions}

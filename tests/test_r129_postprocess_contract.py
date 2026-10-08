@@ -75,7 +75,9 @@ def test_append_archive_allows_derived_selection_flag_recompute():
     previous, raw, expected, aliases = _archive_fixture()
     previous[0]["fixed_cell_selected"] = "True"
     successor_old = dict(previous[0], fixed_cell_selected="False")
-    result = validate_append_only_archive(previous, raw, [successor_old] + raw, expected, aliases)
+    raw[0]["fixed_cell_selected"] = "False"
+    successor_new = dict(raw[0], fixed_cell_selected="True")
+    result = validate_append_only_archive(previous, raw, [successor_old, successor_new] + raw[1:], expected, aliases)
     assert result["successor_count"] == 5
 
 
@@ -84,3 +86,15 @@ def test_append_archive_rejects_old_sequence_or_score_change():
     changed = dict(previous[0], sequence="BBB", quality="-99")
     with pytest.raises(ValueError, match="changed"):
         validate_append_only_archive(previous, raw, [changed] + raw, expected, aliases)
+
+
+def test_append_archive_selection_helper_replacement_snapshot():
+    previous, raw, expected, aliases = _archive_fixture()
+    previous[0].update(cell_id="q1", quality="-1", archive_status="eligible", fixed_cell_selected="True")
+    raw[0].update(cell_id="q1", quality="-0.5", archive_status="eligible", fixed_cell_selected="False")
+    selected, summary = select_one_per_cell(previous, [raw[0]])
+    assert summary["replacement_cells"] == ["q1"]
+    successor_old = dict(previous[0], fixed_cell_selected="False")
+    successor_new = dict(raw[0], fixed_cell_selected="True")
+    result = validate_append_only_archive(previous, raw, [successor_old, successor_new] + raw[1:], expected, aliases)
+    assert result["successor_count"] == 5
