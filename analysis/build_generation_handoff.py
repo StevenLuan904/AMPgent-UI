@@ -24,6 +24,8 @@ def main() -> None:
     rows = []
     for target in ("acea", "vegfa"):
         req = json.loads((d / f"{tag}_{target}_request.json").read_text(encoding="utf-8"))
+        if int(req.get("proposal_round", -1)) != args.round:
+            raise ValueError(f"request proposal_round does not match --round for {target}")
         out_path = d / f"{tag}_{target}_output.json"
         out = json.loads(out_path.read_text(encoding="utf-8"))
         plans = {p["action_id"]: p for p in req["action_plans"]}
@@ -59,16 +61,21 @@ def main() -> None:
         w = csv.DictWriter(f, fieldnames=fields)
         w.writeheader(); w.writerows(rows)
 
+    archive_exists = args.archive.exists()
+    oldseq = set()
+    if archive_exists:
+        with args.archive.open(newline="", encoding="utf-8-sig") as f:
+            oldseq = {r.get("sequence") for r in csv.DictReader(f)}
     canonical = {}
     aliases = []
     for row in rows:
-        key = (row["target"], row["sequence"])
+        key = row["sequence"]
         cid = canonical.setdefault(key, row["candidate_id"])
         aliases.append({"raw_candidate_id": row["candidate_id"], "canonical_unique_candidate_id": cid,
                         "target": row["target"], "sequence": row["sequence"],
                         "within_batch_duplicate": cid != row["candidate_id"],
-                        "historical_replay": False})
-    score_rows = [r for r in rows if r["candidate_id"] == canonical[(r["target"], r["sequence"])] ]
+                        "historical_replay": (row["sequence"] in oldseq) if archive_exists else None})
+    score_rows = [r for r in rows if r["candidate_id"] == canonical[r["sequence"]]]
     score_path = d / f"{tag}_generated_score_input.csv"
     score_fields = ["candidate_id", "action_id", "authoritative_candidate_id", "target", "sequence",
                     "parent_candidate_id", "parent_sequence", "parent_generation", "lineage_generation",
@@ -80,18 +87,16 @@ def main() -> None:
     (d / f"{tag}_raw_to_unique_alias_map.json").write_text(json.dumps({"raw_count": len(rows),
         "unique_count": len(score_rows), "aliases": aliases}, indent=2, sort_keys=True), encoding="utf-8")
 
-    historical = []
-    if args.archive.exists():
-        with args.archive.open(newline="", encoding="utf-8-sig") as f:
-            old = list(csv.DictReader(f))
-        oldseq = {r.get("sequence") for r in old}
-        for r in rows:
-            historical.append({"candidate_id": r["candidate_id"], "target": r["target"],
-                               "sequence": r["sequence"], "historical_sequence_match": r["sequence"] in oldseq})
+    historical = [{"candidate_id": r["candidate_id"], "target": r["target"],
+                   "sequence": r["sequence"], "historical_sequence_match": (r["sequence"] in oldseq) if archive_exists else None}
+                  for r in rows]
     (d / f"{tag}_historical_duplicate_audit.json").write_text(json.dumps({"archive": str(args.archive),
-        "archive_exists": args.archive.exists(), "raw_count": len(rows), "unique_count": len(score_rows),
+        "archive_exists": archive_exists, "historical_check_status": "checked" if archive_exists else "unavailable",
+        "raw_count": len(rows), "unique_count": len(score_rows),
         "within_batch_duplicate_count": len(rows)-len(score_rows), "rows": historical}, indent=2, sort_keys=True), encoding="utf-8")
     claims = [json.loads((d / f"{tag}_{t}_claim.json").read_text(encoding="utf-8")) for t in ("acea", "vegfa")]
+    if any(int(c.get("proposal_round", -1)) != args.round for c in claims):
+        raise ValueError("claim proposal_round does not match --round")
     (d / f"{tag}_generation_terminal_receipt.json").write_text(json.dumps({"round": args.round, "claims": claims,
         "raw_output_paths": [str(d / f"{tag}_acea_output.json"), str(d / f"{tag}_vegfa_output.json")],
         "raw_output_sha256": {"acea": sha256(d / f"{tag}_acea_output.json"), "vegfa": sha256(d / f"{tag}_vegfa_output.json")}}, indent=2, sort_keys=True), encoding="utf-8")
