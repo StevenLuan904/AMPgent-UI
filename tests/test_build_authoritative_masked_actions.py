@@ -521,3 +521,38 @@ def test_builder_preserves_cross_target_canonical_parent_provenance(tmp_path):
     )
     assert freeze["source_artifacts"]["target_manifest"].endswith("manifest.json")
     assert freeze["remote_source_root"] == "remote/src/r143"
+
+
+def test_builder_rejects_conflicting_supplemental_generation_payload(tmp_path):
+    case = _case(tmp_path, round_number=144, selected_masks=((15,), (19,)))
+    supplemental = tmp_path / "supplemental.json"
+    supplemental.write_text(
+        json.dumps(
+            {
+                "own_parent_generation_calls": [
+                    {
+                        "id": "call-a",
+                        "status": "completed",
+                        "input": {"parent_action_plans": [{"action_id": "different-payload"}]},
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="supplemental generation payload conflicts"):
+        build_actions(
+            preflight_path=case["preflight"],
+            generation_readback_path=case["history"],
+            supplemental_generation_readback_path=supplemental,
+            archive_path=case["archive"],
+            expected_baseline_path=case["archive"],
+            output_dir=case["output"],
+            selections=case["selections"],
+            target_manifest_path=case["manifest"],
+            round_number=144,
+            campaign_id="campaign-test",
+            run_id="run-test",
+            root_id="root-test",
+            model_revision="rev-test",
+        )

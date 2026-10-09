@@ -95,7 +95,10 @@ def _archive_authoritative_id(row: dict[str, str]) -> str | None:
     and leave the newer alias column blank.  This fallback is only an in-memory
     builder adapter; the original archive remains the successor baseline.
     """
-    return row.get("authoritative_candidate_id") or row.get("candidate_id") or None
+    # Append-only archives can carry a duplicated lineage alias while the
+    # occurrence-level candidate_id remains the unique target-specific key.
+    # Prefer that concrete key when present; retain the alias as provenance.
+    return row.get("candidate_id") or row.get("authoritative_candidate_id") or None
 
 
 def _parent_delta_phi_semantics(row: dict[str, str]) -> str:
@@ -119,7 +122,10 @@ def _origin_action(
     matches = [
         plan
         for plan in _action_plans(call)
-        if plan.get("action_id") == _archive_authoritative_id(archive_row)
+        if plan.get("action_id") in {
+            _archive_authoritative_id(archive_row),
+            archive_row.get("authoritative_candidate_id"),
+        }
     ]
     if len(matches) != 1:
         raise ValueError(
@@ -222,6 +228,7 @@ def build_actions(
     target_manifest_path: Path,
     round_number: int,
     runtime_context_path: Path | None = None,
+    supplemental_generation_readback_path: Path | None = None,
     campaign_id: str | None = None,
     run_id: str | None = None,
     root_id: str | None = None,
@@ -232,6 +239,11 @@ def build_actions(
 ) -> dict[str, Any]:
     preflight = json.loads(preflight_path.read_text(encoding="utf-8"))
     readback = json.loads(generation_readback_path.read_text(encoding="utf-8"))
+    supplemental_readback = (
+        json.loads(supplemental_generation_readback_path.read_text(encoding="utf-8"))
+        if supplemental_generation_readback_path is not None
+        else {}
+    )
     manifest = json.loads(target_manifest_path.read_text(encoding="utf-8"))
     archive = _read_archive(archive_path)
     if archive_path.resolve() != expected_baseline_path.resolve():
@@ -271,11 +283,47 @@ def build_actions(
         for row in archive
         if (key := _archive_authoritative_id(row)) is not None
     }
+    rows_by_authoritative_target = {
+        (row.get("authoritative_candidate_id"), row.get("target")): row
+        for row in archive
+        if row.get("authoritative_candidate_id") and row.get("target")
+    }
     generation_calls = readback.get("successful_generation_calls")
     if generation_calls is None:
         generation_calls = [
             call for call in readback.get("calls", []) if call.get("status") == "completed"
         ]
+    if not generation_calls:
+        # PG parent-history preflights expose the same completed call records
+        # under this explicit key; preserve the authoritative machine readback
+        # instead of reconstructing calls from action labels.
+        generation_calls = [
+            call
+            for call in readback.get("own_parent_generation_calls", [])
+            if call.get("status") == "completed"
+        ]
+    # A parent-preflight may carry the latest completed parent calls while the
+    # broader generation ledger carries older calls.  Merge the machine records
+    # by id so both sources can resolve the frozen parents without hand-built
+    # identity substitutions.
+    supplemental_calls = [
+        call
+        for call in (
+            list(preflight.get("own_parent_generation_calls", []))
+            + list(supplemental_readback.get("own_parent_generation_calls", []))
+        )
+        if call.get("status") == "completed"
+    ]
+    merged_calls = {call.get("id"): call for call in generation_calls if call.get("id")}
+    for supplemental in supplemental_calls:
+        call_id = supplemental.get("id")
+        if not call_id:
+            continue
+        existing = merged_calls.get(call_id)
+        if existing is not None and existing != supplemental:
+            raise ValueError(f"supplemental generation payload conflicts for call id: {call_id}")
+        merged_calls[call_id] = supplemental
+    generation_calls = list(merged_calls.values())
     calls = {
         materialized["id"]: materialized
         for call in generation_calls
@@ -305,11 +353,28 @@ def build_actions(
         if target not in target_manifest or target not in TARGET_UUID:
             raise ValueError(f"unsupported target in selection: {target!r}")
         archive_row = rows_by_id.get(authoritative_id)
+        if archive_row is None or archive_row.get("target") != target:
+            archive_row = rows_by_authoritative_target.get((authoritative_id, target))
+        if archive_row is None:
+            # Some append-only archives retain one authoritative parent row
+            # (often AceA) while the paired target reuses the same sequence.
+            # Resolve that target from exact sequence/generation/typed-parent
+            # identity; never synthesize a target-specific lineage label.
+            identity_hint = resolve_self_identity(preflight, authoritative_id)
+            candidates = [
+                row
+                for row in archive
+                if row.get("sequence") == identity_hint["sequence"]
+                and int(row.get("generation", -1)) == int(identity_hint["generation"])
+                and row.get("parent_typed_uuid") == identity_hint["parent_id"]
+            ]
+            if len(candidates) == 1:
+                archive_row = candidates[0]
         if archive_row is None:
             raise ValueError(f"archive row missing authoritative id: {authoritative_id}")
         identity = resolve_self_identity(preflight, authoritative_id)
-        if archive_row.get("candidate_id") != authoritative_id:
-            raise ValueError("archive candidate_id is not the authoritative selection id")
+        if archive_row.get("authoritative_candidate_id") not in (None, "", authoritative_id):
+            raise ValueError("archive authoritative id does not match selection")
         if archive_row.get("sequence") != identity["sequence"]:
             raise ValueError("archive sequence does not match preflight self identity")
         if int(archive_row.get("generation", -1)) != int(identity["generation"]):
@@ -416,6 +481,10 @@ def build_actions(
         "expected_baseline": str(expected_baseline_path),
         "target_manifest": str(target_manifest_path),
     }
+    if supplemental_generation_readback_path is not None:
+        source_artifacts["supplemental_generation_readback"] = str(
+            supplemental_generation_readback_path
+        )
     if runtime_context_path is not None:
         source_artifacts.update(
             {
@@ -583,6 +652,7 @@ def main() -> None:
     parser.add_argument("--target-manifest", type=Path, required=True)
     parser.add_argument("--selections", type=Path, required=True)
     parser.add_argument("--runtime-context", type=Path)
+    parser.add_argument("--supplemental-generation-readback", type=Path)
     parser.add_argument("--round", type=int, required=True)
     parser.add_argument("--campaign-id")
     parser.add_argument("--run-id")
@@ -605,6 +675,7 @@ def main() -> None:
                 target_manifest_path=args.target_manifest,
                 round_number=args.round,
                 runtime_context_path=args.runtime_context,
+                supplemental_generation_readback_path=args.supplemental_generation_readback,
                 campaign_id=args.campaign_id,
                 run_id=args.run_id,
                 root_id=args.root_id,
