@@ -35,6 +35,17 @@ def _action_plans(call: dict[str, Any]) -> list[dict[str, Any]]:
     return plans
 
 
+def _materialize_generation_call(call: dict[str, Any]) -> dict[str, Any]:
+    """Accept PG readback calls whose input/parameters are JSON strings."""
+    materialized = dict(call)
+    for field in ("input", "parameters"):
+        if field not in materialized and f"{field}_json" in materialized:
+            raw = materialized[f"{field}_json"]
+            if isinstance(raw, str):
+                materialized[field] = json.loads(raw)
+    return materialized
+
+
 def _positions(plan: dict[str, Any], *, source: str) -> tuple[int, ...]:
     values = plan.get("mutation_positions")
     if not isinstance(values, list) or not values:
@@ -52,14 +63,16 @@ def _normalize_selected_mask(selection: dict[str, Any]) -> list[int]:
     raw = selection.get("masks", selection.get("mask"))
     if not isinstance(raw, list):
         raw = [raw]
-    if not raw or any(isinstance(value, bool) for value in raw):
+    if not raw:
+        raise ValueError("masked substitution requires at least one position")
+    if any(isinstance(value, bool) for value in raw):
         raise ValueError(f"selection has no mask array: {selection!r}")
     try:
         positions = [int(value) for value in raw]
     except (TypeError, ValueError) as error:
         raise ValueError(f"selection mask is not integer-valued: {selection!r}") from error
-    if len(positions) < 2:
-        raise ValueError("masked substitution requires a complete paired-position array")
+    if not positions:
+        raise ValueError("masked substitution requires at least one position")
     if len(set(positions)) != len(positions) or positions != sorted(positions):
         raise ValueError("selection masks must be sorted and unique")
     return positions
@@ -252,10 +265,16 @@ def build_actions(
         for row in archive
         if (key := _archive_authoritative_id(row)) is not None
     }
+    generation_calls = readback.get("successful_generation_calls")
+    if generation_calls is None:
+        generation_calls = [
+            call for call in readback.get("calls", []) if call.get("status") == "completed"
+        ]
     calls = {
-        call["id"]: call
-        for call in readback.get("successful_generation_calls", [])
+        materialized["id"]: materialized
+        for call in generation_calls
         if call.get("status") == "completed"
+        for materialized in [_materialize_generation_call(call)]
     }
     if not calls:
         raise ValueError("generation history has no successful completed calls")
@@ -330,8 +349,8 @@ def build_actions(
             "action_seed": seed,
             "seed": seed,
             "rationale": (
-                f"frozen r{round_number} joint two-position action; model chooses "
-                "canonical residues; no replacement specified"
+                f"frozen r{round_number} masked action; model chooses canonical "
+                "residues; no replacement specified"
             ),
             "target_sequence": target_row["sequence"],
             "top_k": 12,
@@ -415,7 +434,12 @@ def build_actions(
         "tested_parent_action_plans_exact_parent_uuid_and_full_tuple": True,
         "zero_downstream_is_legal": True,
         "sibling_history_not_borrowed": True,
-        "selected_actions_are_joint_masks": True,
+        "selected_actions_are_joint_masks": all(
+            len(action["mutation_positions"]) > 1 for action in actions
+        ),
+        "selected_actions_are_nonempty_masks": all(
+            len(action["mutation_positions"]) >= 1 for action in actions
+        ),
         "baseline_matches_explicit_expected_input": baseline_path.resolve()
         == expected_baseline_path.resolve(),
         "canonical_worker_action_sha_after_payload_assembly": True,
@@ -485,7 +509,7 @@ def build_actions(
             "seed_order": [action["seed"] for action in actions],
             "selected_mask_arrays": [action["mutation_positions"] for action in actions],
             "selection_reason": (
-                "paired complete-position exploration; no amino-acid replacement "
+                "paired-target masked exploration; no amino-acid replacement "
                 "is pre-specified"
             ),
         },

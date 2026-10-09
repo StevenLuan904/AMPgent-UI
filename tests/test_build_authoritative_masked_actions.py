@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from analysis.build_authoritative_masked_actions import build_actions
+from analysis.build_authoritative_masked_actions import build_actions, _normalize_selected_mask
 from analysis.generation_call_registration_helper import canonical_action_sha256
 
 TARGETS = {
@@ -254,7 +254,6 @@ def test_builder_is_round_and_mask_parameterized(tmp_path, round_number, masks):
     )
     assert freeze["assertions"]["baseline_matches_explicit_expected_input"] is True
     assert freeze["remote_generation_root"] == f"remote/gen/{round_number}"
-
     for target in ("acea", "vegfa"):
         request_path = case["output"] / f"r{round_number}_{target}_request.json"
         request = json.loads(request_path.read_text(encoding="utf-8"))
@@ -263,6 +262,48 @@ def test_builder_is_round_and_mask_parameterized(tmp_path, round_number, masks):
         assert request["frozen"]["remote_source_root"] == f"remote/src/{round_number}"
         for action in request["action_plans"]:
             assert action["action_sha256"] == canonical_action_sha256(action)
+
+
+def test_builder_accepts_singleton_mask_for_both_targets(tmp_path):
+    case = _case(tmp_path, round_number=137, selected_masks=((17,), (18,)))
+    receipt = build_actions(
+        preflight_path=case["preflight"],
+        generation_readback_path=case["history"],
+        archive_path=case["archive"],
+        expected_baseline_path=case["archive"],
+        output_dir=case["output"],
+        selections=case["selections"],
+        target_manifest_path=case["manifest"],
+        round_number=137,
+        campaign_id="campaign-test",
+        run_id="run-test",
+        root_id="root-test",
+        model_revision="rev-test",
+    )
+    assert receipt["action_count"] == 4
+    rows = list(csv.DictReader((case["output"] / "r137_actions.csv").open(encoding="utf-8")))
+    assert {tuple(json.loads(row["mutation_positions"])) for row in rows} == {(17,), (18,)}
+    freeze = json.loads((case["output"] / "r137_freeze.json").read_text(encoding="utf-8"))
+    assert freeze["assertions"]["selected_actions_are_joint_masks"] is False
+    assert freeze["assertions"]["selected_actions_are_nonempty_masks"] is True
+    for target in ("acea", "vegfa"):
+        request = json.loads(
+            (case["output"] / f"r137_{target}_request.json").read_text(encoding="utf-8")
+        )
+        assert [plan["mutation_positions"] for plan in request["action_plans"]] == [[17], [18]]
+
+
+@pytest.mark.parametrize(
+    "selection, message",
+    [
+        ({"mask": []}, "at least one position"),
+        ({"mask": [17, 17]}, "sorted and unique"),
+        ({"mask": [18, 17]}, "sorted and unique"),
+    ],
+)
+def test_singleton_mask_validation_rejects_empty_or_invalid(selection, message):
+    with pytest.raises(ValueError, match=message):
+        _normalize_selected_mask(selection)
 
 
 def test_builder_rejects_baseline_or_paired_target_mismatch(tmp_path):
