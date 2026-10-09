@@ -55,6 +55,11 @@ def registrations(spec):
 async def main(spec_path: Path, receipt: Path | None, output: Path, execute: bool):
     spec = json.loads(spec_path.read_text(encoding="utf-8"))
     regs = registrations(spec)
+    for reg in regs:
+        inp = reg["input_json"]
+        for field in ("input_path", "source_path"):
+            if not os.path.isfile(inp[field]):
+                raise FileNotFoundError(f"registered scorer {field} does not exist: {inp[field]}")
     if {x["input_json"]["batch_kind"] for x in regs} != {"formal12", "amplify"}:
         raise ValueError("spec must contain exactly formal12 and amplify batches")
     if len(regs) != 2:
