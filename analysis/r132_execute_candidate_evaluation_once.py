@@ -35,6 +35,40 @@ def norm(x):
     return x if isinstance(x, dict) else json.loads(x)
 
 
+def validate_scorer_bindings(plan, run_id, candidate_ids):
+    """Validate optional formal12/AMPlify ToolCall bindings in a plan.
+
+    Legacy plans omit this field and retain their historical import behavior.
+    New plans must bind every evaluation to one of two distinct batch calls;
+    database status/run/input checks are performed again inside the transaction.
+    """
+    raw = plan.get("scorer_call_bindings")
+    if raw is None:
+        return {}
+    if not isinstance(raw, list) or len(raw) != 2:
+        raise RuntimeError("scorer bindings must contain exactly formal12 and amplify")
+    bindings = {}
+    kinds = set()
+    expected = set(candidate_ids)
+    for item in raw:
+        call_id = item.get("tool_call_id")
+        kind = item.get("batch_kind")
+        ids = item.get("candidate_ids")
+        if not isinstance(call_id, str) or not isinstance(kind, str) or kind not in {"formal12", "amplify"}:
+            raise RuntimeError("invalid scorer binding identity")
+        if call_id in bindings or kind in kinds or ids is None or set(ids) != expected:
+            raise RuntimeError("scorer binding candidate/kind drift")
+        bindings[call_id] = {"batch_kind": kind, "candidate_ids": list(ids)}
+        kinds.add(kind)
+    if kinds != {"formal12", "amplify"}:
+        raise RuntimeError("scorer bindings must cover formal12 and amplify")
+    for ev in plan.get("evaluations", []):
+        scorer_id = ev.get("scorer_tool_call_id", ev.get("tool_call_id"))
+        if scorer_id not in bindings:
+            raise RuntimeError("evaluation scorer ToolCall binding missing or foreign")
+    return bindings
+
+
 def plan_context(p):
     """Return plan-derived identity and count settings; keep r132 defaults."""
     tc = p.get("score_import_tool_call", {})
@@ -77,6 +111,7 @@ def plan_context(p):
     if any(count != expected_per_candidate for count in counts.values()):
         raise RuntimeError("evaluation per-candidate guard failed")
     candidate_ids = {x["id"] for x in candidates}
+    scorer_bindings = validate_scorer_bindings(p, run, candidate_ids)
     generator_ids = set(p["transaction_guards"]["generator_calls"])
     candidate_by_id = {x["id"]: x for x in candidates}
     if any(x.get("generator_tool_call_id") not in generator_ids for x in candidates):
@@ -103,6 +138,7 @@ def plan_context(p):
         "root": root,
         "round": round_name,
         "evaluations_per_candidate": expected_per_candidate,
+        "scorer_bindings": scorer_bindings,
     }
 
 
@@ -177,6 +213,20 @@ async def main(plan_path, receipt_path, execute=False):
                     or spec.get("scientific_root_id") != root_id
                 ):
                     raise RuntimeError("run/root mismatch")
+                scorer_bindings = ctx["scorer_bindings"]
+                for scorer_id, binding in scorer_bindings.items():
+                    scorer = await c.fetchrow(
+                        "select id::text,run_id::text,status,input_json from tool_calls where id=$1::uuid",
+                        scorer_id,
+                    )
+                    if not scorer or scorer["run_id"] != run_id or scorer["status"] != "completed":
+                        raise RuntimeError(f"scorer ToolCall is not completed in this run: {scorer_id}")
+                    scorer_input = norm(scorer["input_json"])
+                    if (
+                        scorer_input.get("batch_kind") != binding["batch_kind"]
+                        or scorer_input.get("candidate_ids") != binding["candidate_ids"]
+                    ):
+                        raise RuntimeError(f"scorer ToolCall candidate mapping mismatch: {scorer_id}")
                 for gid in p["transaction_guards"]["generator_calls"]:
                     g = await c.fetchrow(
                         "select id::text,run_id::text,tool_name,status from tool_calls where id=$1::uuid",
@@ -292,12 +342,15 @@ async def main(plan_path, receipt_path, execute=False):
                             )
                     for ev in p["evaluations"]:
                         cid = by[ev["authoritative_candidate_id"]]
+                        scorer_id = ev.get("scorer_tool_call_id", ev.get("tool_call_id", imp))
+                        if scorer_bindings and scorer_id not in scorer_bindings:
+                            raise RuntimeError("evaluation references unapproved scorer ToolCall")
                         olde = await c.fetchrow(
                             "select id::text,candidate_id::text,tool_call_id::text,metric_name,status from evaluations where id=$1::uuid"
                             + (" for update" if execute else ""),
                             ev["id"],
                         )
-                        expected = (cid, imp, ev["metric_name"], ev["status"])
+                        expected = (cid, scorer_id, ev["metric_name"], ev["status"])
                         if (
                             olde
                             and (
@@ -322,7 +375,7 @@ async def main(plan_path, receipt_path, execute=False):
                                 "insert into evaluations (id,candidate_id,tool_call_id,metric_name,numeric_value,text_value,unit,status,out_of_domain,limitations_json,raw_json,subject_run_id,evidence_role,evidence_family,model_release_key,applicability_status,conflict_status) values ($1::uuid,$2::uuid,$3::uuid,$4,$5,$6,$7,$8,$9,$10::jsonb,$11::jsonb,$12::uuid,$13,$14,$15,$16,$17)",
                                 ev["id"],
                                 cid,
-                                imp,
+                                scorer_id,
                                 ev["metric_name"],
                                 ev["numeric_value"],
                                 ev["text_value"],

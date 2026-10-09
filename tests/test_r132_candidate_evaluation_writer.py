@@ -66,3 +66,37 @@ def test_validate_plan_rejects_round_request_mismatch():
     plan["score_import_tool_call"]["input_json"]["round"] = "r133"
     with pytest.raises(RuntimeError, match="round"):
         validate_plan(plan)
+
+
+def test_validate_plan_accepts_explicit_formal_and_amplify_bindings():
+    plan = deepcopy(json.loads(PLAN.read_text(encoding="utf-8")))
+    formal = "74b91dd5-2028-5d00-b1a8-3ce84b6bc14c"
+    amplify = "08d7aa76-090b-5dde-978e-dd21ad733e78"
+    ids = [x["id"] for x in plan["candidates"]]
+    plan["scorer_call_bindings"] = [
+        {"tool_call_id": formal, "batch_kind": "formal12", "candidate_ids": ids},
+        {"tool_call_id": amplify, "batch_kind": "amplify", "candidate_ids": ids},
+    ]
+    for index, evaluation in enumerate(plan["evaluations"]):
+        evaluation["scorer_tool_call_id"] = amplify if index % 16 == 12 else formal
+    assert validate_plan(plan)["evaluations"]
+
+
+def test_validate_plan_rejects_foreign_scorer_binding():
+    plan = deepcopy(json.loads(PLAN.read_text(encoding="utf-8")))
+    ids = [x["id"] for x in plan["candidates"]]
+    plan["scorer_call_bindings"] = [
+        {
+            "tool_call_id": "74b91dd5-2028-5d00-b1a8-3ce84b6bc14c",
+            "batch_kind": "formal12",
+            "candidate_ids": ids,
+        },
+        {
+            "tool_call_id": "08d7aa76-090b-5dde-978e-dd21ad733e78",
+            "batch_kind": "amplify",
+            "candidate_ids": ids,
+        },
+    ]
+    plan["evaluations"][0]["scorer_tool_call_id"] = "00000000-0000-0000-0000-000000000000"
+    with pytest.raises(RuntimeError, match="binding"):
+        validate_plan(plan)
