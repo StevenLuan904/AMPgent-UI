@@ -293,6 +293,81 @@ def test_builder_accepts_singleton_mask_for_both_targets(tmp_path):
         assert [plan["mutation_positions"] for plan in request["action_plans"]] == [[17], [18]]
 
 
+def test_builder_accepts_pg_input_json_dict(tmp_path):
+    case = _case(tmp_path, round_number=138, selected_masks=((9,), (10,)))
+    history = json.loads(case["history"].read_text(encoding="utf-8"))
+    for call in history["successful_generation_calls"]:
+        call["input_json"] = call.pop("input")
+    case["history"].write_text(json.dumps(history), encoding="utf-8")
+
+    receipt = build_actions(
+        preflight_path=case["preflight"],
+        generation_readback_path=case["history"],
+        archive_path=case["archive"],
+        expected_baseline_path=case["archive"],
+        output_dir=case["output"],
+        selections=case["selections"],
+        target_manifest_path=case["manifest"],
+        round_number=138,
+        campaign_id="campaign-test",
+        run_id="run-test",
+        root_id="root-test",
+        model_revision="rev-test",
+    )
+    assert receipt["action_count"] == 4
+
+
+def test_builder_accepts_pg_input_and_parameters_json_dicts(tmp_path):
+    case = _case(tmp_path, round_number=139, selected_masks=((9, 12), (10, 13)))
+    history = json.loads(case["history"].read_text(encoding="utf-8"))
+    for call in history["successful_generation_calls"]:
+        call["input_json"] = call.pop("input")
+        call["parameters_json"] = call.pop("parameters")
+    case["history"].write_text(json.dumps(history), encoding="utf-8")
+
+    receipt = build_actions(
+        preflight_path=case["preflight"],
+        generation_readback_path=case["history"],
+        archive_path=case["archive"],
+        expected_baseline_path=case["archive"],
+        output_dir=case["output"],
+        selections=case["selections"],
+        target_manifest_path=case["manifest"],
+        round_number=139,
+        campaign_id="campaign-test",
+        run_id="run-test",
+        root_id="root-test",
+        model_revision="rev-test",
+    )
+    assert receipt["action_count"] == 4
+
+
+def test_builder_rejects_wrong_typed_parent_in_pg_input_json(tmp_path):
+    case = _case(tmp_path, round_number=140)
+    history = json.loads(case["history"].read_text(encoding="utf-8"))
+    origin = history["successful_generation_calls"][0]
+    for field in ("input", "parameters"):
+        origin[field]["parent_action_plans"][0]["parent_typed_uuid"] = "wrong-typed-parent"
+    with case["history"].open("w", encoding="utf-8") as handle:
+        json.dump(history, handle)
+
+    with pytest.raises(ValueError, match="self origin parent_typed_uuid"):
+        build_actions(
+            preflight_path=case["preflight"],
+            generation_readback_path=case["history"],
+            archive_path=case["archive"],
+            expected_baseline_path=case["archive"],
+            output_dir=case["output"],
+            selections=case["selections"],
+            target_manifest_path=case["manifest"],
+            round_number=140,
+            campaign_id="campaign-test",
+            run_id="run-test",
+            root_id="root-test",
+            model_revision="rev-test",
+        )
+
+
 @pytest.mark.parametrize(
     "selection, message",
     [
