@@ -1,5 +1,6 @@
 import json
 import sys
+from copy import deepcopy
 from pathlib import Path
 
 import pytest
@@ -34,3 +35,34 @@ def test_norm_handles_jsonb_string_and_object():
     payload = {"target": "acea", "rank": 1}
     assert norm(payload) == payload
     assert norm(json.dumps(payload)) == payload
+
+
+def test_validate_plan_accepts_two_unique_candidates_with_four_raw_occurrences():
+    plan = json.loads(PLAN.read_text(encoding="utf-8"))
+    plan = deepcopy(plan)
+    plan["candidates"] = plan["candidates"][:2]
+    ids = {x["authoritative_candidate_id"] for x in plan["candidates"]}
+    plan["evaluations"] = [x for x in plan["evaluations"] if x["authoritative_candidate_id"] in ids]
+    occurrences = []
+    for rank, source in enumerate(plan["candidate_occurrences"], start=1):
+        occurrence = deepcopy(source)
+        candidate = plan["candidates"][(rank - 1) % 2]
+        occurrence["candidate_id"] = candidate["id"]
+        occurrence["parent_candidate_id"] = candidate["parent_id"]
+        occurrence["sequence"] = candidate["sequence"]
+        occurrence["sequence_sha256"] = candidate["sequence_sha256"]
+        occurrence["occurrence_rank"] = rank
+        occurrences.append(occurrence)
+    plan["candidate_occurrences"] = occurrences
+    checked = validate_plan(plan)
+    assert len(checked["candidates"]) == 2
+    assert len(checked["evaluations"]) == 32
+    assert len(checked["candidate_occurrences"]) == 4
+
+
+def test_validate_plan_rejects_round_request_mismatch():
+    plan = json.loads(PLAN.read_text(encoding="utf-8"))
+    plan = deepcopy(plan)
+    plan["score_import_tool_call"]["input_json"]["round"] = "r133"
+    with pytest.raises(RuntimeError, match="round"):
+        validate_plan(plan)

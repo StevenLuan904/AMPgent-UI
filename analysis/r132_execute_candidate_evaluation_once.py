@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 import platform
+import re
 import socket
 import sys
 from datetime import UTC, datetime
@@ -34,37 +35,103 @@ def norm(x):
     return x if isinstance(x, dict) else json.loads(x)
 
 
-def validate_plan(p):
-    if (
-        p.get("plan_status") != "complete_scores_pending_root_import"
-        or p["run_id"] != RUN
-        or p["campaign_id"] != CAMPAIGN
-    ):
+def plan_context(p):
+    """Return plan-derived identity and count settings; keep r132 defaults."""
+    tc = p.get("score_import_tool_call", {})
+    inp = tc.get("input_json", {})
+    run = p.get("run_id")
+    campaign = p.get("campaign_id")
+    round_name = inp.get("round")
+    root = p.get("scientific_root_id") or ROOT
+    if not run or not campaign or not isinstance(round_name, str):
         raise RuntimeError("plan identity/status guard failed")
-    if (
-        len(p["candidates"]) != 4
-        or len(p["evaluations"]) != 64
-        or len(p["candidate_occurrences"]) != 4
-    ):
+    if not re.fullmatch(r"r\d+", round_name):
+        raise RuntimeError("plan round guard failed")
+    if inp.get("run_id") != run or inp.get("campaign_id") != campaign:
+        raise RuntimeError("plan input identity guard failed")
+    if inp.get("source_artifacts") != p.get("source_artifacts"):
+        raise RuntimeError("plan source-artifact identity guard failed")
+    if f"import_{round_name}_" not in tc.get("tool_name", ""):
+        raise RuntimeError("plan tool/round guard failed")
+    expected_per_candidate = p.get("evaluations_per_candidate", 16)
+    if not isinstance(expected_per_candidate, int) or expected_per_candidate != 16:
+        raise RuntimeError("evaluation cardinality guard failed")
+    candidates = p.get("candidates", [])
+    evaluations = p.get("evaluations", [])
+    occurrences = p.get("candidate_occurrences", [])
+    if len(evaluations) != len(candidates) * expected_per_candidate:
         raise RuntimeError("plan count guard failed")
     if len(set(p["transaction_guards"]["generator_calls"])) != 2:
         raise RuntimeError("distinct generator guard failed")
-    return p
+    candidate_keys = {x["authoritative_candidate_id"] for x in candidates}
+    if len(candidate_keys) != len(candidates) or any(
+        not x.startswith(f"{round_name}-") for x in candidate_keys
+    ):
+        raise RuntimeError("candidate round/uniqueness guard failed")
+    counts = {x: 0 for x in candidate_keys}
+    for evaluation in evaluations:
+        key = evaluation.get("authoritative_candidate_id")
+        if key not in counts:
+            raise RuntimeError("evaluation candidate guard failed")
+        counts[key] += 1
+    if any(count != expected_per_candidate for count in counts.values()):
+        raise RuntimeError("evaluation per-candidate guard failed")
+    candidate_ids = {x["id"] for x in candidates}
+    generator_ids = set(p["transaction_guards"]["generator_calls"])
+    candidate_by_id = {x["id"]: x for x in candidates}
+    if any(x.get("generator_tool_call_id") not in generator_ids for x in candidates):
+        raise RuntimeError("candidate generator-call guard failed")
+    for occurrence in occurrences:
+        if occurrence["candidate_id"] not in candidate_ids:
+            raise RuntimeError("occurrence candidate guard failed")
+        if occurrence["tool_call_id"] not in generator_ids:
+            raise RuntimeError("occurrence generator-call guard failed")
+        candidate = candidate_by_id[occurrence["candidate_id"]]
+        if (
+            occurrence["run_id"] != run
+            or occurrence["parent_candidate_id"] != candidate["parent_id"]
+            or occurrence["sequence"] != candidate["sequence"]
+            or occurrence["sequence_sha256"] != candidate["sequence_sha256"]
+        ):
+            raise RuntimeError("occurrence target/candidate guard failed")
+        action_id = occurrence.get("metadata_json", {}).get("action_id", "")
+        if not action_id.startswith(f"{round_name}-"):
+            raise RuntimeError("occurrence round guard failed")
+    return p, {
+        "run": run,
+        "campaign": campaign,
+        "root": root,
+        "round": round_name,
+        "evaluations_per_candidate": expected_per_candidate,
+    }
+
+
+def validate_plan(p):
+    """Validate and return the plan for the legacy r132 test/API."""
+    validated, _ = plan_context(p)
+    if validated.get("plan_status") != "complete_scores_pending_root_import":
+        raise RuntimeError("plan identity/status guard failed")
+    return validated
 
 
 async def main(plan_path, receipt_path, execute=False):
     p = validate_plan(json.loads(plan_path.read_text(encoding="utf-8")))
+    _, ctx = plan_context(p)
+    run_id = ctx["run"]
+    campaign_id = ctx["campaign"]
+    root_id = ctx["root"]
+    round_name = ctx["round"]
     tc = p["score_import_tool_call"]
     imp = tc["id"]
     runtime = {
-        "runtime_descriptor_kind": "r132_atomic_import_runtime",
+        "runtime_descriptor_kind": f"{round_name}_atomic_import_runtime",
         "host": socket.gethostname(),
         "platform": platform.platform(),
         "python": sys.version.split()[0],
         "interpreter": sys.executable,
         "operation": tc["tool_name"],
-        "campaign_id": CAMPAIGN,
-        "run_id": RUN,
+        "campaign_id": campaign_id,
+        "run_id": run_id,
     }
     inp = dict(tc["input_json"])
     inp["runtime_descriptor"] = runtime
@@ -82,8 +149,9 @@ async def main(plan_path, receipt_path, execute=False):
         .database_url.replace(":55432/", ":55433/")
         .replace("postgresql+asyncpg://", "postgresql://", 1)
     )
-    if execute and os.environ.get("R132_IMPORT_APPROVED") != "1":
-        raise RuntimeError("--execute requires R132_IMPORT_APPROVED=1")
+    approval_env = f"{round_name.upper()}_IMPORT_APPROVED"
+    if execute and os.environ.get(approval_env) != "1":
+        raise RuntimeError(f"--execute requires {approval_env}=1")
     async with asyncpg.create_pool(
         dsn, min_size=1, max_size=1, timeout=10, command_timeout=45
     ) as pool:
@@ -95,18 +163,18 @@ async def main(plan_path, receipt_path, execute=False):
                     await c.execute("set transaction read only")
                 await c.execute(
                     "select pg_advisory_xact_lock(hashtextextended($1,0))",
-                    f"{CAMPAIGN}:r132:score-import",
+                    f"{campaign_id}:{round_name}:score-import",
                 )
                 run = await c.fetchrow(
                     "select id::text,spec_json from experiment_runs where id=$1::uuid"
                     + (" for update" if execute else ""),
-                    RUN,
+                    run_id,
                 )
                 spec = norm(run["spec_json"]) if run else {}
                 if (
                     not run
-                    or spec.get("root_campaign_id") != CAMPAIGN
-                    or spec.get("scientific_root_id") != ROOT
+                    or spec.get("root_campaign_id") != campaign_id
+                    or spec.get("scientific_root_id") != root_id
                 ):
                     raise RuntimeError("run/root mismatch")
                 for gid in p["transaction_guards"]["generator_calls"]:
@@ -116,7 +184,7 @@ async def main(plan_path, receipt_path, execute=False):
                     )
                     if (
                         not g
-                        or g["run_id"] != RUN
+                        or g["run_id"] != run_id
                         or g["tool_name"] != "pepmlm.generate"
                         or g["status"] != "completed"
                     ):
@@ -129,7 +197,7 @@ async def main(plan_path, receipt_path, execute=False):
                     )
                     if (
                         not par
-                        or par["run_id"] != RUN
+                        or par["run_id"] != run_id
                         or par["sequence"] != cand["parent_sequence"]
                         or int(par["generation"]) != cand["parent_generation"]
                         or par["status"] != "generated"
@@ -145,7 +213,7 @@ async def main(plan_path, receipt_path, execute=False):
                 )
                 if old:
                     if (
-                        old["run_id"] != RUN
+                        old["run_id"] != run_id
                         or old["idempotency_key"] != tc["idempotency_key"]
                         or old["output_sha256"] != oh
                     ):
@@ -155,9 +223,9 @@ async def main(plan_path, receipt_path, execute=False):
                     await c.execute(
                         "insert into tool_calls (id,run_id,tool_name,tool_version,environment_sha256,idempotency_key,input_sha256,input_json,parameters_json,status,attempt,queued_at,started_at,finished_at,output_sha256) values ($1::uuid,$2::uuid,$3,$4,$5,$6,$7,$8::jsonb,$9::jsonb,$10,1,$11,$11,$11,$12)",
                         imp,
-                        RUN,
+                        run_id,
                         tc["tool_name"],
-                        "r132-score-import.v1",
+                        f"{round_name}-score-import.v1",
                         digest(runtime),
                         tc["idempotency_key"],
                         ih,
@@ -175,7 +243,7 @@ async def main(plan_path, receipt_path, execute=False):
                             cand["id"],
                         )
                         expected = (
-                            RUN,
+                            run_id,
                             cand["sequence"],
                             cand["sequence_sha256"],
                             cand["generation"],
@@ -213,7 +281,7 @@ async def main(plan_path, receipt_path, execute=False):
                             await c.execute(
                                 "insert into candidates (id,run_id,sequence,sequence_sha256,generation,parent_id,status,generator_call_id,metadata_json) values ($1::uuid,$2::uuid,$3,$4,$5,$6::uuid,$7,$8::uuid,$9::jsonb)",
                                 cand["id"],
-                                RUN,
+                                run_id,
                                 cand["sequence"],
                                 cand["sequence_sha256"],
                                 cand["generation"],
@@ -263,7 +331,7 @@ async def main(plan_path, receipt_path, execute=False):
                                 False,
                                 json.dumps(ev.get("limitations", [])),
                                 json.dumps(raw),
-                                RUN,
+                                run_id,
                                 ev.get("evidence_role"),
                                 ev.get("evidence_family"),
                                 ev.get("model_release_key"),
@@ -313,14 +381,19 @@ async def main(plan_path, receipt_path, execute=False):
                             )
                 counts = await c.fetchrow(
                     "select (select count(*) from tool_calls where run_id=$1::uuid) toolcalls,(select count(*) from candidates where run_id=$1::uuid) candidates,(select count(*) from evaluations where subject_run_id=$1::uuid) evaluations,(select count(*) from candidate_occurrences where run_id=$1::uuid) occurrences",
-                    RUN,
+                    run_id,
                 )
     rec = {
         "executed": execute,
         "result": result,
         "tool_call_id": imp,
         "counts": dict(counts),
-        "planned": {"candidates": 4, "evaluations": 64, "occurrences": 4},
+        "planned": {
+            "candidates": len(p["candidates"]),
+            "evaluations": len(p["evaluations"]),
+            "occurrences": len(p["candidate_occurrences"]),
+            "round": round_name,
+        },
         "counts_as_scorer_invocation": False,
     }
     receipt_path.write_text(json.dumps(rec, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
