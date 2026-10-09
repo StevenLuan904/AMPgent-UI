@@ -32,6 +32,10 @@ def digest(value):
     return hashlib.sha256(json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
+def db_time(value):
+    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+
 def dsn():
     return get_settings().database_url.replace(":55432/", ":55433/").replace("postgresql+asyncpg://", "postgresql://", 1)
 
@@ -120,7 +124,7 @@ async def main(spec_path: Path, receipt: Path | None, output: Path, execute: boo
                 if execute and receipt:
                     for update in result.get("lifecycle_updates", []):
                         if update["status"] == "running":
-                            command = await conn.execute("update tool_calls set status='running',started_at=$2::timestamptz,parameters_json=coalesce(parameters_json,'{}'::jsonb)||$3::jsonb where id=$1::uuid and run_id=$4::uuid and status in ('queued','running')", update["tool_call_id"], update["started_at"], json.dumps(update["parameters_json_patch"]), spec["run_id"])
+                            command = await conn.execute("update tool_calls set status='running',started_at=$2::timestamptz,parameters_json=coalesce(parameters_json,'{}'::jsonb)||$3::jsonb where id=$1::uuid and run_id=$4::uuid and status in ('queued','running')", update["tool_call_id"], db_time(update["started_at"]), json.dumps(update["parameters_json_patch"]), spec["run_id"])
                             if command != "UPDATE 1":
                                 old = await conn.fetchrow("select status,started_at::text from tool_calls where id=$1::uuid and run_id=$2::uuid", update["tool_call_id"], spec["run_id"])
                                 old_started = datetime.fromisoformat(old["started_at"].replace("Z", "+00:00")) if old and old["started_at"] else None
@@ -128,7 +132,7 @@ async def main(spec_path: Path, receipt: Path | None, output: Path, execute: boo
                                 if not old or old["status"] != "running" or old_started != new_started:
                                     raise RuntimeError(f"start lifecycle conflict for {update['tool_call_id']}")
                         else:
-                            command = await conn.execute("update tool_calls set status=$2,started_at=$3::timestamptz,finished_at=$4::timestamptz,output_sha256=$5,error_json=$6::jsonb,parameters_json=coalesce(parameters_json,'{}'::jsonb)||$7::jsonb where id=$1::uuid and run_id=$8::uuid and status in ('queued','running')", update["tool_call_id"], update["status"], update["started_at"], update["finished_at"], update["output_sha256"], json.dumps(update["error_json"]) if update["error_json"] else None, json.dumps(update["parameters_json_patch"]), spec["run_id"])
+                            command = await conn.execute("update tool_calls set status=$2,started_at=$3::timestamptz,finished_at=$4::timestamptz,output_sha256=$5,error_json=$6::jsonb,parameters_json=coalesce(parameters_json,'{}'::jsonb)||$7::jsonb where id=$1::uuid and run_id=$8::uuid and status in ('queued','running')", update["tool_call_id"], update["status"], db_time(update["started_at"]), db_time(update["finished_at"]), update["output_sha256"], json.dumps(update["error_json"]) if update["error_json"] else None, json.dumps(update["parameters_json_patch"]), spec["run_id"])
                             if command != "UPDATE 1":
                                 old = await conn.fetchrow("select status,started_at::text,finished_at::text,output_sha256,error_json::text from tool_calls where id=$1::uuid and run_id=$2::uuid", update["tool_call_id"], spec["run_id"])
                                 expected_error = json.dumps(update["error_json"], sort_keys=True) if update["error_json"] else None

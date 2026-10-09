@@ -63,9 +63,18 @@ def validate_scorer_bindings(plan, run_id, candidate_ids):
     if kinds != {"formal12", "amplify"}:
         raise RuntimeError("scorer bindings must cover formal12 and amplify")
     for ev in plan.get("evaluations", []):
-        scorer_id = ev.get("scorer_tool_call_id", ev.get("tool_call_id"))
+        scorer_id = ev.get("scorer_tool_call_id")
+        status = ev.get("status")
+        unsupported = status in {"unsupported", "unavailable", "not_assessed"}
+        if unsupported:
+            if scorer_id is not None:
+                raise RuntimeError("unsupported evaluation must not claim scorer execution")
+            continue
         if scorer_id not in bindings:
             raise RuntimeError("evaluation scorer ToolCall binding missing or foreign")
+        expected_kind = "amplify" if ev.get("evidence_family") == "amp_likelihood" or str(ev.get("model_release_key", "")).startswith("amplify-") else "formal12"
+        if bindings[scorer_id]["batch_kind"] != expected_kind:
+            raise RuntimeError("evaluation scorer ToolCall kind does not match evidence")
     return bindings
 
 
@@ -111,7 +120,8 @@ def plan_context(p):
     if any(count != expected_per_candidate for count in counts.values()):
         raise RuntimeError("evaluation per-candidate guard failed")
     candidate_ids = {x["id"] for x in candidates}
-    scorer_bindings = validate_scorer_bindings(p, run, candidate_ids)
+    candidate_labels = {x["authoritative_candidate_id"] for x in candidates}
+    scorer_bindings = validate_scorer_bindings(p, run, candidate_labels)
     generator_ids = set(p["transaction_guards"]["generator_calls"])
     candidate_by_id = {x["id"]: x for x in candidates}
     if any(x.get("generator_tool_call_id") not in generator_ids for x in candidates):
