@@ -41,8 +41,9 @@ def test_cli_global_unique_aliases_failed_amp_and_old_flag_replacement(tmp_path,
         fields = list(dict.fromkeys(k for row in rows for k in row));
         with path.open("w", newline="", encoding="utf-8") as f:
             w = csv.DictWriter(f, fieldnames=fields); w.writeheader(); w.writerows(rows)
-    raw = [{"action_id": i, "sequence": s, "target": t, "seed": str(n), "conditional_nll": "1.0", "conditional_ppl": "2.0"} for n, (i, s, t) in enumerate(zip(ids, seqs, targets))]
-    actions = [{"action_id": i, "lineage_generation": "2", "parent_lineage_generation": "1", "parent_authoritative_candidate_id": "", "parent_sequence": "", "mutation_positions": "[1]"} for i in ids]
+    raw = [{"action_id": i, "sequence": s, "target": t, "seed": str(n), "conditional_nll": str(1.0 + n), "conditional_ppl": str(2.0 + n)} for n, (i, s, t) in enumerate(zip(ids, seqs, targets))]
+    generations = [("11", "10"), ("10", "9"), ("11", "10"), ("10", "9")]
+    actions = [{"action_id": i, "lineage_generation": child, "parent_lineage_generation": parent, "parent_authoritative_candidate_id": "", "parent_sequence": "", "mutation_positions": "[1]"} for i, (child, parent) in zip(ids, generations)]
     def formal(seq):
         return {"candidate_id": "formal-" + seq[0], "sequence": seq, "target": "acea", "formal_12_complete": "True", "display_eligible": "True", "llamp_log10_mic_um": "1", "amp_read_log10_mic_um": "1", "macrel_amp_probability": ".2", "macrel_hemolysis_probability": ".1", "toxinpred3_hybrid_score": "0", "guruprasad_instability_index": "2", "maximum_hydrophobic_run": "3", "net_charge_ph7_4": "5", "hydrophobic_ratio_modlamp": ".2", "hydrophobic_moment_eisenberg": ".2", "toxinpred3_label": "Toxin" if seq.startswith("C") else "Non-Toxin", "macrel_hemolysis_label": "high" if seq.startswith("C") else "low"}
     formals = [formal(s) for s in sorted(set(seqs))]
@@ -55,7 +56,12 @@ def test_cli_global_unique_aliases_failed_amp_and_old_flag_replacement(tmp_path,
     summary = json.loads((out_dir / "replay_summary.json").read_text())
     assert summary["raw_count"] == 5 and summary["unique_count"] == 4
     assert summary["stats_all_unique"]["llamp_log10_mic_um"]["n"] == 3
+    assert summary["batch_quality_eligible"] == 2
     assert summary["qd"]["replacement_cells"] == ["q5-h1-m2-l2"]
     rows = list(csv.DictReader((out_dir / "final_enriched_authoritative.csv").open(encoding="utf-8-sig")))
     assert len(rows) == 4 and sum(r["amplify_status"] == "missing_or_failed" for r in rows) == 1
     assert summary["label_counts"]["toxinpred3"]["Toxin"] == 1
+    toxin = next(r for r in rows if r["sequence"].startswith("C"))
+    assert toxin["display_hard_gate"] == "False" and toxin["quality_eligible"] == "false"
+    assert [r["generation"] for r in rows] == ["11", "10", "11", "10"]
+    assert {r["conditional_nll"] for r in rows} == {"1.0", "2.0", "3.0", "4.0"}

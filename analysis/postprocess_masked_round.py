@@ -98,7 +98,15 @@ def main() -> None:
         for key in numeric_fields:
             try: finite = finite and __import__('math').isfinite(float(x.get(key, "")))
             except (TypeError, ValueError): finite = False
-        x["all_finite"] = str(finite); x["formal12"] = str(str(x.get("formal_12_complete", "")).lower() == "true" and finite); x["display_hard_gate"] = str(x.get("display_eligible", "")).lower() == "true"
+        labels_present = bool(str(x.get("toxinpred3_label", "")).strip()) and bool(str(x.get("macrel_hemolysis_label", "")).strip())
+        formal_complete = str(x.get("formal_12_complete", "")).lower() == "true" and finite and labels_present
+        try: guru_safe = float(x.get("guruprasad_instability_index", "")) <= 50
+        except (TypeError, ValueError): guru_safe = False
+        try: hemolysis_safe = float(x.get("macrel_hemolysis_probability", "")) <= 0.5
+        except (TypeError, ValueError): hemolysis_safe = False
+        toxin_safe = str(x.get("toxinpred3_label", "")).strip().lower() == "non-toxin"
+        macrel_safe = str(x.get("macrel_hemolysis_label", "")).strip().lower() == "low"
+        x["all_finite"] = str(finite); x["formal12"] = str(formal_complete); x["formal_labels_complete"] = str(labels_present); x["display_hard_gate"] = str(formal_complete and toxin_safe and macrel_safe and hemolysis_safe and guru_safe)
         x["quality"] = -max(float(x["llamp_log10_mic_um"]), float(x["amp_read_log10_mic_um"])) if finite else ""
         cell, desc = _cell(x); x["cell_id"] = cell or "unresolved"; x.update({k: str(v) for k, v in desc.items()})
         ar, amp_status = resolve_amplify(amp_by_id, amp_by_seq, canonical_action, s.get("candidate_id", ""), x["sequence"], x["target"])
@@ -119,7 +127,7 @@ def main() -> None:
     calibrated = cal_fanned
     batch = apply_dual_support(score_rows, calibrated)
     for x in batch:
-        x["archive_status"] = "duplicate_alias" if x.get("duplicate_of") else ("historical_replay" if x["history_replay"] == "True" else ("eligible" if x["formal12"] == "True" and x["display_hard_gate"] and int(x["dual_reference_support_min"]) >= 2 and x["cell_id"] != "unresolved" else "pending_support_or_gate"))
+        x["archive_status"] = "duplicate_alias" if x.get("duplicate_of") else ("historical_replay" if x["history_replay"] == "True" else ("eligible" if x["formal12"] == "True" and x["display_hard_gate"] == "True" and int(x["dual_reference_support_min"]) >= 2 and x["cell_id"] != "unresolved" else "pending_support_or_gate"))
         x["quality_eligible"] = str(x["archive_status"] == "eligible")
         x["support_basis"] = "r113_frozen_dual_domain"
         parent = join_exact_parent(prior, x["parent_candidate_id"], x["parent_sequence"])
