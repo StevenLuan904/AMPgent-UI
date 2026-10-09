@@ -1,5 +1,5 @@
 import pytest
-from analysis.r129_postprocess_contract import apply_dual_support, select_one_per_cell, numeric_stats, validate_append_only_archive
+from analysis.r129_postprocess_contract import apply_dual_support, select_one_per_cell, numeric_stats, synchronize_selected_outputs, validate_append_only_archive
 
 def _row(aid="a", cell="q1", q="-1"):
     return {"action_id":aid,"candidate_id":aid,"cell_id":cell,"quality":q,"archive_status":"eligible","fixed_cell_selected":"False","ood_status":"unknown_not_assessed"}
@@ -18,6 +18,26 @@ def test_selection_clears_old_incumbent_and_keeps_one():
     out,summary=select_one_per_cell(prior,[_row("new","q1","-0.5")])
     assert [r["candidate_id"] for r in out if r["fixed_cell_selected"]=="True"]==["new"]
     assert summary["replacement_cells"]==["q1"]
+
+def test_sync_uses_archive_winner_when_batch_flag_is_stale():
+    old = dict(_row("old", "q1", "-1.2"), fixed_cell_selected="True")
+    new = dict(_row("new", "q1", "-1.0"), fixed_cell_selected="False", support_count="2", formal12="True", display_hard_gate="True")
+    selected, _ = select_one_per_cell([old], [new])
+    synced, summary = synchronize_selected_outputs([new], selected)
+    assert synced[0]["fixed_cell_selected"] == "True"
+    assert synced[0]["quality_eligible"] == "true"
+    assert summary["support_count_distribution"] == {"2": 1}
+
+def test_sync_preserves_parent_delta_semantics_when_child_q_is_lower():
+    incumbent = dict(_row("incumbent", "q3-h1-m3", "-1.3036971581493937"), fixed_cell_selected="True")
+    child = dict(_row("child", "q3-h1-m3", "-1.1608902215957642"), fixed_cell_selected="False", support_count="2", formal12="True", display_hard_gate="True", parent_cell_id="q3-h1-m2", parent_quality="-1.151755452156067", parent_delta_objectives='{"quality":-0.009134769439697266}')
+    selected, summary = select_one_per_cell([incumbent], [child])
+    synced, _ = synchronize_selected_outputs([child], selected)
+    assert float(child["quality"]) < float(child["parent_quality"])
+    assert float(child["quality"]) > float(incumbent["quality"])
+    assert summary["replacement_cells"] == ["q3-h1-m3"]
+    assert synced[0]["parent_delta_objectives"] == '{"quality":-0.009134769439697266}'
+    assert synced[0]["fixed_cell_selected"] == "True"
 
 def test_linear_quantiles_and_singleton():
     rows=[{"candidate_id":str(i),"x":str(i),"ood_status":"unknown_not_assessed"} for i in range(4)]

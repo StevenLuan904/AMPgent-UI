@@ -104,6 +104,37 @@ def numeric_stats(rows: list[dict], columns: dict[str, tuple[str, str, str]]) ->
     return out
 
 
+def synchronize_selected_outputs(batch: list[dict], selected_archive: list[dict]) -> tuple[list[dict], dict]:
+    """Project final selector flags/gates onto outputs by exact candidate ID."""
+    by_id = {str(row.get("candidate_id")): row for row in selected_archive}
+    if len(by_id) != len(selected_archive):
+        raise ValueError("duplicate candidate_id in selected archive")
+    out = []
+    support_counts = defaultdict(int)
+    for row in batch:
+        cid = str(row.get("candidate_id"))
+        archive_row = by_id.get(cid)
+        if archive_row is None:
+            raise ValueError(f"candidate missing from selected archive: {cid}")
+        item = dict(row)
+        item["fixed_cell_selected"] = archive_row.get("fixed_cell_selected", "False")
+        support_raw = item.get("support_count", archive_row.get("support_count", ""))
+        if support_raw in (None, ""):
+            support_raw = item.get("dual_reference_support_min", archive_row.get("dual_reference_support_min", ""))
+        try:
+            support = int(float(support_raw))
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"missing/non-numeric support_count: {cid}") from exc
+        item["support_count"] = str(support)
+        formal = str(item.get("formal12", item.get("formal_12_complete", ""))).lower() == "true"
+        display = str(item.get("display_hard_gate", item.get("display_eligible", ""))).lower() == "true"
+        cell = item.get("cell_id", archive_row.get("cell_id", ""))
+        item["quality_eligible"] = str(formal and display and support >= 2 and cell not in (None, "", "unresolved")).lower()
+        support_counts[str(support)] += 1
+        out.append(item)
+    return out, {"support_count_distribution": dict(support_counts), "batch_count": len(out)}
+
+
 def validate_append_only_archive(
     previous_rows: list[dict],
     raw_proposals: list[dict],
