@@ -46,11 +46,15 @@ def build(args):
     run_id = str(freeze.get("run_id", args.run_id))
     campaign = str(freeze.get("campaign_id", args.campaign_id))
     remote = str(freeze.get("remote_source_root", "")).rstrip("/")
+    if not remote or "/runs/" not in remote or campaign not in remote or label not in remote:
+        raise RuntimeError("freeze remote_source_root must be nonempty and bind /runs/, campaign, and current round")
     raw = rows(rd / args.raw)
     enriched = rows(rd / args.enriched)
     scores = rows(rd / args.scores)
     amps = rows(rd / args.amps)
     aliases = read_json(rd / args.aliases).get("aliases", [])
+    if any(truth(x.get("historical_replay")) for x in aliases):
+        raise RuntimeError("historical replay occurrence requires rejected-occurrence contract; no canonical candidate may be created")
     registration = read_json(rd / args.registration)
     generation = read_json(rd / args.generation)
     scorer_regs = registration.get("scorer_registrations", [])
@@ -76,6 +80,15 @@ def build(args):
     canonical_sequences = {x["sequence"] for x in first.values()}
     if raw_sequences != canonical_sequences:
         raise RuntimeError("alias map does not cover all global unique sequences")
+    registered_order = None
+    if isinstance(registration.get("input_json"), dict):
+        registered_order = registration["input_json"].get("candidate_ids")
+    if registered_order is None and scorer_regs and all(isinstance(x.get("candidate_ids"), list) for x in scorer_regs):
+        registered_order = scorer_regs[0]["candidate_ids"]
+    if registered_order is not None:
+        expected_order = [x["canonical_unique_candidate_id"] for x in first.values()]
+        if list(registered_order) != expected_order:
+            raise RuntimeError("scorer candidate order differs from registration input_json candidate_ids")
 
     alias_by_raw = {x["raw_candidate_id"]: x for x in aliases}
     enriched_by_action = {x["action_id"]: x for x in enriched}
@@ -109,7 +122,7 @@ def build(args):
             plugin, release = PROV[metric]
             evaluations.append({
                 "id": str(uuid.uuid5(ROOT, f"{campaign}:{label}:evaluation:{canonical}:{metric}")),
-                "candidate_id": cid, "subject_run_id": run_id, "tool_call_id": import_id,
+                "candidate_id": cid, "subject_run_id": run_id, "tool_call_id": formal_tc,
                 "authoritative_candidate_id": canonical, "metric_name": metric,
                 "numeric_value": None if metric in TEXT else float(score[metric]),
                 "text_value": score[metric] if metric in TEXT else None, "unit": UNITS[metric],
@@ -138,7 +151,7 @@ def build(args):
             })
         evaluations.append({
             "id": str(uuid.uuid5(ROOT, f"{campaign}:{label}:evaluation:{canonical}:AMPlify")),
-            "candidate_id": cid, "subject_run_id": run_id, "tool_call_id": import_id,
+            "candidate_id": cid, "subject_run_id": run_id, "tool_call_id": amp_tc,
             "authoritative_candidate_id": canonical, "metric_name": "amplify_probability",
             "numeric_value": float(amp["amplify_probability"]), "text_value": amp["amplify_label"],
             "unit": "probability", "status": "succeeded", "scorer_tool_call_id": amp_tc, "evidence_role": "shadow",
@@ -166,6 +179,9 @@ def build(args):
         "enriched": str(rd / args.enriched), "formal_scores": str(rd / args.scores),
         "amplify_scores": str(rd / args.amps), "calibration": str(rd / args.calibration),
         "prior_archive": args.prior_archive, "prior_B": args.prior_B, "remote_root": remote,
+        "remote_final_source": remote, "remote_enriched": remote + "/final_enriched_authoritative.csv",
+        "remote_formal": remote + "/score_all_r116_runner_local_unique/candidate_scores.csv",
+        "remote_amplify": remote + "/amplify_scores.csv", "remote_manifest": remote + "/r" + label[1:] + "_source_manifest.json",
     }
     inp = {"campaign_id": campaign, "run_id": run_id, "round": label, "source_artifacts": source_artifacts,
            "counts_as_scorer_invocation": False, "candidate_authoritative_ids": [x["authoritative_candidate_id"] for x in candidates],
@@ -194,7 +210,8 @@ def build(args):
                           "evaluations_per_candidate": {x["id"]: sum(y["candidate_id"] == x["id"] for y in evaluations) for x in candidates},
                           "occurrence_count": len(occurrences) == len(raw),
                           "occurrences_per_target": {t: sum(x["opaque_arm_label"] == t for x in occurrences) for t in TARGET_UUID},
-                          "global_unique_sequence_count": len(raw_sequences) == len(first), "no_model_or_pg_write": True},
+                          "global_unique_sequence_count": len(raw_sequences) == len(first),
+                          "scorer_candidate_order_checked": registered_order is not None, "no_model_or_pg_write": True},
         "policy": {"formal12_plus_amp_soft_plus_3_unavailable_per_unique": True, "amp_soft_not_gate": True,
                    "support_admission_threshold": 2, "historical_archive_immutable": True, "ood": "unknown_not_assessed"},
     }
@@ -208,7 +225,7 @@ if __name__ == "__main__":
     parser.add_argument("--round-dir", required=True)
     parser.add_argument("--round-label", required=True)
     parser.add_argument("--output", required=True)
-    parser.add_argument("--freeze", default="r143_freeze.json")
+    parser.add_argument("--freeze", required=True)
     parser.add_argument("--raw", required=True)
     parser.add_argument("--enriched", required=True)
     parser.add_argument("--scores", required=True)
