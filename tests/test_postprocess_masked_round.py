@@ -3,7 +3,7 @@ import json
 import sys
 from pathlib import Path
 
-from analysis.postprocess_masked_round import main, occurrence_aliases, resolve_amplify
+from analysis.postprocess_masked_round import main, occurrence_aliases, resolve_amplify, validate_prior_archive
 from analysis.r129_postprocess_contract import validate_generation_pair
 
 
@@ -27,6 +27,17 @@ def test_amplify_missing_is_explicit_not_default_success():
 def test_mixed_parent_generations_are_checked_per_action():
     validate_generation_pair(9, 10)
     validate_generation_pair(10, 11)
+
+
+def test_prior_archive_contract_rejects_wrong_generation():
+    prior = [{"sequence": "A", "cell_id": "q1", "fixed_cell_selected": "True"}]
+    try:
+        validate_prior_archive(prior, expected_raw=2, expected_unique=2, expected_cells=2, provenance="r140-v2")
+    except ValueError as exc:
+        assert "prior archive contract mismatch" in str(exc)
+        assert "r140-v2" in str(exc)
+    else:
+        raise AssertionError("wrong prior archive must fail before postprocess")
 
 
 def test_cli_global_unique_aliases_failed_amp_and_old_flag_replacement(tmp_path, monkeypatch):

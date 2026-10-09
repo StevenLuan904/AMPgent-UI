@@ -56,6 +56,22 @@ def resolve_amplify(amp_by_id: dict, amp_by_seq: dict, action_id: str, scorer_id
     return row, "success"
 
 
+def validate_prior_archive(prior: list[dict], expected_raw: int | None = None, expected_unique: int | None = None, expected_cells: int | None = None, provenance: str = "") -> None:
+    """Fail early when a round is accidentally based on the wrong archive generation."""
+    checks = []
+    if expected_raw is not None and len(prior) != expected_raw:
+        checks.append(f"raw={len(prior)} expected={expected_raw}")
+    unique = len({r.get("sequence", "") for r in prior})
+    if expected_unique is not None and unique != expected_unique:
+        checks.append(f"unique={unique} expected={expected_unique}")
+    selected_cells = {r.get("cell_id", "") for r in prior if str(r.get("fixed_cell_selected", "")).lower() == "true"}
+    if expected_cells is not None and len(selected_cells) != expected_cells:
+        checks.append(f"cells={len(selected_cells)} expected={expected_cells}")
+    if checks:
+        where = f" provenance={provenance}" if provenance else ""
+        raise ValueError("prior archive contract mismatch:" + "; ".join(checks) + where)
+
+
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("--round-dir", type=Path, required=True)
@@ -65,6 +81,10 @@ def main() -> None:
     p.add_argument("--amplify-csv", type=Path, required=True)
     p.add_argument("--support-calibrated-csv", type=Path, required=True)
     p.add_argument("--prior-archive", type=Path, required=True)
+    p.add_argument("--expected-prior-raw", type=int)
+    p.add_argument("--expected-prior-unique", type=int)
+    p.add_argument("--expected-prior-cells", type=int)
+    p.add_argument("--prior-provenance", default="")
     p.add_argument("--output-dir", type=Path, required=True)
     p.add_argument("--compare-archive", type=Path)
     args = p.parse_args()
@@ -78,6 +98,7 @@ def main() -> None:
     amp_by_id = {r.get("candidate_id", ""): r for r in amp_rows}
     amp_by_seq = {r.get("sequence", ""): r for r in amp_rows}
     prior = read_csv(args.prior_archive)
+    validate_prior_archive(prior, args.expected_prior_raw, args.expected_prior_unique, args.expected_prior_cells, args.prior_provenance or str(args.prior_archive))
     prior_sequences = {r.get("sequence", "") for r in prior}
     aliases_by_action = {r["raw_action_id"]: r for r in occurrence_aliases(raw_rows)}
     score_rows = []
