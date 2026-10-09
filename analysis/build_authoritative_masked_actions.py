@@ -73,13 +73,38 @@ def _read_archive(path: Path) -> list[dict[str, str]]:
     return rows
 
 
+def _archive_authoritative_id(row: dict[str, str]) -> str | None:
+    """Resolve the archive identity without rewriting the source archive.
+
+    Older append-only exports carry the authoritative label in ``candidate_id``
+    and leave the newer alias column blank.  This fallback is only an in-memory
+    builder adapter; the original archive remains the successor baseline.
+    """
+    return row.get("authoritative_candidate_id") or row.get("candidate_id") or None
+
+
+def _parent_delta_phi_semantics(row: dict[str, str]) -> str:
+    raw = row.get("parent_delta_phi")
+    if not raw:
+        return "unavailable_missing_qd_axes"
+    try:
+        value = json.loads(raw)
+    except (TypeError, json.JSONDecodeError):
+        return "unavailable_invalid_qd_axes"
+    if isinstance(value, dict) and {
+        "charge_density", "hydrophobicity", "moment", "length"
+    }.issubset(value):
+        return "qd_axes_charge_density_hydrophobicity_moment_length"
+    return "unavailable_missing_qd_axes"
+
+
 def _origin_action(
     *, identity: dict[str, Any], call: dict[str, Any], archive_row: dict[str, str]
 ) -> dict[str, Any]:
     matches = [
         plan
         for plan in _action_plans(call)
-        if plan.get("action_id") == archive_row.get("authoritative_candidate_id")
+        if plan.get("action_id") == _archive_authoritative_id(archive_row)
     ]
     if len(matches) != 1:
         raise ValueError(
@@ -222,7 +247,11 @@ def build_actions(
         )
     )
     target_manifest = {row["target_key"]: row for row in manifest["targets"]}
-    rows_by_id = {row.get("authoritative_candidate_id"): row for row in archive}
+    rows_by_id = {
+        key: row
+        for row in archive
+        if (key := _archive_authoritative_id(row)) is not None
+    }
     calls = {
         call["id"]: call
         for call in readback.get("successful_generation_calls", [])
@@ -317,7 +346,7 @@ def build_actions(
             "archive_action_id": archive_row["action_id"],
             "archive_quality": archive_row.get("quality"),
             "archive_parent_delta_phi": archive_row.get("parent_delta_phi"),
-            "archive_parent_delta_phi_semantics": "legacy_objectives_not_qd_axes",
+            "archive_parent_delta_phi_semantics": _parent_delta_phi_semantics(archive_row),
             "archive_parent_delta_objectives": archive_row.get("parent_delta_objectives"),
             "parent_qd_axes": {
                 "charge_density": archive_row.get("charge_density"),

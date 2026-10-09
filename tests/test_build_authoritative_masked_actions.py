@@ -299,3 +299,43 @@ def test_builder_rejects_baseline_or_paired_target_mismatch(tmp_path):
             root_id="root-test",
             model_revision="rev-test",
         )
+
+
+def test_builder_uses_candidate_fallback_and_real_phi_semantics(tmp_path):
+    case = _case(tmp_path)
+    rows = list(csv.DictReader(case["archive"].open(encoding="utf-8")))
+    for index, row in enumerate(rows):
+        row["authoritative_candidate_id"] = ""
+        row["parent_delta_phi"] = (
+            json.dumps(
+                {"charge_density": 0.1, "hydrophobicity": 0.2, "moment": 0.3, "length": 20}
+            )
+            if index == 0
+            else ""
+        )
+    with case["archive"].open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=rows[0].keys())
+        writer.writeheader()
+        writer.writerows(rows)
+    receipt = build_actions(
+        preflight_path=case["preflight"],
+        generation_readback_path=case["history"],
+        archive_path=case["archive"],
+        expected_baseline_path=case["archive"],
+        output_dir=case["output"],
+        selections=case["selections"],
+        target_manifest_path=case["manifest"],
+        round_number=207,
+        campaign_id="campaign-test",
+        run_id="run-test",
+        root_id="root-test",
+        model_revision="rev-test",
+    )
+    assert receipt["action_count"] == 4
+    freeze = json.loads((case["output"] / "r207_freeze.json").read_text(encoding="utf-8"))
+    semantics = {
+        action["archive_parent_delta_phi_semantics"]
+        for action in freeze["actions"]
+    }
+    assert "qd_axes_charge_density_hydrophobicity_moment_length" in semantics
+    assert "unavailable_missing_qd_axes" in semantics
