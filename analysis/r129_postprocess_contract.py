@@ -129,7 +129,10 @@ def synchronize_selected_outputs(batch: list[dict], selected_archive: list[dict]
         formal = str(item.get("formal12", item.get("formal_12_complete", ""))).lower() == "true"
         display = str(item.get("display_hard_gate", item.get("display_eligible", ""))).lower() == "true"
         cell = item.get("cell_id", archive_row.get("cell_id", ""))
-        item["quality_eligible"] = str(formal and display and support >= 2 and cell not in (None, "", "unresolved")).lower()
+        if str(item.get("archive_status", "")) in {"duplicate_alias", "historical_replay"}:
+            item["quality_eligible"] = "False"
+        else:
+            item["quality_eligible"] = str(formal and display and support >= 2 and cell not in (None, "", "unresolved")).lower()
         support_counts[str(support)] += 1
         out.append(item)
     return out, {"support_count_distribution": dict(support_counts), "batch_count": len(out)}
@@ -137,9 +140,15 @@ def synchronize_selected_outputs(batch: list[dict], selected_archive: list[dict]
 
 def compute_parent_deltas(child: dict, parent: dict) -> dict:
     """Compute QD-axis and objective deltas from an exact joined parent row."""
-    phi = {key: float(child[key]) - float(parent[key]) for key in ("charge_density", "hydrophobicity", "moment", "length")}
-    objectives = {key: float(child[key]) - float(parent[key]) for key in ("quality", "macrel_hemolysis_probability", "toxinpred3_hybrid_score", "guruprasad_instability_index")}
-    if not all(math.isfinite(v) for v in (*phi.values(), *objectives.values())):
+    def delta(key):
+        try:
+            value = float(child[key]) - float(parent[key])
+            return value if math.isfinite(value) else None
+        except (KeyError, TypeError, ValueError):
+            return None
+    phi = {key: delta(key) for key in ("charge_density", "hydrophobicity", "moment", "length")}
+    objectives = {key: delta(key) for key in ("quality", "macrel_hemolysis_probability", "toxinpred3_hybrid_score", "guruprasad_instability_index")}
+    if not all(v is not None and math.isfinite(v) for v in (*phi.values(), *objectives.values())):
         status = "unknown_nonfinite"
     elif all(v == 0 for v in objectives.values()):
         status = "equal"
