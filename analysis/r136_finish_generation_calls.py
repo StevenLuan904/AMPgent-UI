@@ -1,5 +1,8 @@
 """Persist the real terminal claims for the already-registered r136 calls."""
 
+# This lifecycle adapter keeps audited SQL and receipt fields verbatim.
+# ruff: noqa: E501, I001, ASYNC240
+
 from __future__ import annotations
 
 import argparse
