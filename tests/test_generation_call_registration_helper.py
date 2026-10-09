@@ -7,6 +7,7 @@ import pytest
 from analysis.generation_call_registration_helper import (
     assert_db_input_matches_request,
     build_registration_input,
+    resolve_self_identity,
 )
 
 ROOT = Path(__file__).parents[1]
@@ -92,3 +93,45 @@ def test_db_action_mutation_is_rejected(tmp_path):
     mutated["action_ids"][0] = "r129-forged-action"
     with pytest.raises(ValueError, match="DB input mismatch at action_ids"):
         assert_db_input_matches_request(mutated, path, **_kwargs())
+
+
+def test_resolve_self_identity_never_uses_parent_id_or_typo():
+    preflight = {
+        "candidates": [
+            {
+                "id": "candidate-uuid",
+                "sequence": "RHFKGDRTYWVLEALAVRHKK",
+                "generation": 11,
+                "parent_id": "parent-uuid",
+                "generator_call_id": "call-uuid",
+                "metadata": {
+                    "authoritative_candidate_id": "r129-acea-r127rhfk-mask16-seed2026209002"
+                },
+            }
+        ]
+    }
+    resolved = resolve_self_identity(
+        preflight, "r129-acea-r127rhfk-mask16-seed2026209002"
+    )
+    assert resolved["candidate_id"] == "candidate-uuid"
+    assert resolved["candidate_id"] != resolved["parent_id"]
+    with pytest.raises(ValueError, match="resolve uniquely"):
+        resolve_self_identity(preflight, "r129-acea-r127rhfk-mask16-seed2026209003")
+
+
+def test_resolve_self_identity_allows_unresolved_root_parent():
+    preflight = {
+        "candidates": [
+            {
+                "id": "root-candidate",
+                "sequence": "RHFKGDRTYWVLEALAVRHKK",
+                "generation": 11,
+                "parent_id": None,
+                "generator_call_id": "call-uuid",
+                "metadata": {"authoritative_candidate_id": "external-root"},
+            }
+        ]
+    }
+    resolved = resolve_self_identity(preflight, "external-root")
+    assert resolved["candidate_id"] == "root-candidate"
+    assert resolved["parent_id"] is None

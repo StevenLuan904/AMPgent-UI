@@ -22,6 +22,48 @@ TARGET_MANIFEST = (
 )
 
 
+def resolve_self_identity(preflight: dict, authoritative_candidate_id: str) -> dict:
+    """Resolve a candidate's own PG identity from machine preflight rows.
+
+    The authoritative lineage label is only a lookup key.  The returned UUID,
+    sequence, generation, parent and generator call are copied from the row;
+    callers must never substitute ``parent_id`` for the candidate's ``id``.
+    """
+    rows = preflight.get("candidates") if isinstance(preflight, dict) else None
+    if not isinstance(rows, list) or not authoritative_candidate_id:
+        raise ValueError("preflight candidates and authoritative id are required")
+    matches = [
+        row
+        for row in rows
+        if isinstance(row, dict)
+        and isinstance(row.get("metadata"), dict)
+        and row["metadata"].get("authoritative_candidate_id")
+        == authoritative_candidate_id
+    ]
+    if len(matches) != 1:
+        raise ValueError(
+            f"authoritative candidate must resolve uniquely: {authoritative_candidate_id!r}"
+        )
+    row = matches[0]
+    required = ("id", "sequence", "generation", "parent_id", "generator_call_id")
+    if any(key not in row for key in required):
+        raise ValueError(f"candidate row missing identity fields: {authoritative_candidate_id!r}")
+    nonempty_fields = ("id", "sequence", "generation", "generator_call_id")
+    if any(row.get(key) in (None, "") for key in nonempty_fields):
+        raise ValueError(f"candidate row missing identity fields: {authoritative_candidate_id!r}")
+    if row["id"] == row["parent_id"]:
+        raise ValueError("candidate id must not be its parent id")
+    return {
+        "authoritative_candidate_id": authoritative_candidate_id,
+        "candidate_id": row["id"],
+        "sequence": row["sequence"],
+        "generation": row["generation"],
+        "parent_id": row["parent_id"],
+        "generator_call_id": row["generator_call_id"],
+        "metadata": row["metadata"],
+    }
+
+
 def file_sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
