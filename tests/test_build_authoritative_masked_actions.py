@@ -482,3 +482,42 @@ def test_builder_uses_candidate_fallback_and_real_phi_semantics(tmp_path):
     }
     assert "qd_axes_charge_density_hydrophobicity_moment_length" in semantics
     assert "unavailable_missing_qd_axes" in semantics
+
+
+def test_builder_preserves_cross_target_canonical_parent_provenance(tmp_path):
+    """r143-shaped paired arms keep one typed parent identity across two targets."""
+    case = _case(tmp_path, round_number=143, selected_masks=((15,), (19,)))
+    receipt = build_actions(
+        preflight_path=case["preflight"],
+        generation_readback_path=case["history"],
+        archive_path=case["archive"],
+        expected_baseline_path=case["archive"],
+        output_dir=case["output"],
+        selections=case["selections"],
+        target_manifest_path=case["manifest"],
+        round_number=143,
+        campaign_id="campaign-test",
+        run_id="run-test",
+        root_id="root-test",
+        model_revision="rev-test",
+        remote_generation_root="remote/gen/r143",
+        remote_source_root="remote/src/r143",
+    )
+    assert receipt["action_count"] == 4
+    requests = {
+        target: json.loads(
+            (case["output"] / f"r143_{target}_request.json").read_text(encoding="utf-8")
+        )
+        for target in ("acea", "vegfa")
+    }
+    paired = [requests[target]["action_plans"][0] for target in ("acea", "vegfa")]
+    assert {row["target"] for row in paired} == {"acea", "vegfa"}
+    assert {row["parent_typed_uuid"] for row in paired} == {"own-a"}
+    assert {row["parent_sequence"] for row in paired} == {TARGETS["acea"][:-2]}
+    assert {row["parent_lineage_generation"] for row in paired} == {3}
+    assert len({row["action_id"] for row in paired}) == 2
+    freeze = json.loads(
+        (case["output"] / "r143_freeze.json").read_text(encoding="utf-8")
+    )
+    assert freeze["source_artifacts"]["target_manifest"].endswith("manifest.json")
+    assert freeze["remote_source_root"] == "remote/src/r143"
