@@ -7,6 +7,7 @@ import pytest
 from analysis.generation_call_registration_helper import (
     assert_db_input_matches_request,
     build_registration_input,
+    canonical_action_sha256,
     resolve_self_identity,
 )
 
@@ -23,6 +24,7 @@ def _request(tmp_path: Path, round_no=130, mutate=None) -> Path:
     actions = [
         {
             "action_id": f"r{round_no}-acea-a",
+            "action_kind": "masked_substitution",
             "target": "acea",
             "proposal_round": round_no,
             "parent_typed_uuid": "05aadda8-1d95-5257-9bea-d7e60bca17a3",
@@ -31,6 +33,7 @@ def _request(tmp_path: Path, round_no=130, mutate=None) -> Path:
         },
         {
             "action_id": f"r{round_no}-acea-b",
+            "action_kind": "masked_substitution",
             "target": "acea",
             "proposal_round": round_no,
             "parent_typed_uuid": "ec46a0b3-2419-5ae7-8f52-bcaca3ca6ac2",
@@ -45,6 +48,8 @@ def _request(tmp_path: Path, round_no=130, mutate=None) -> Path:
         "target_identity": {"sequence_sha256": target["sequence_sha256"]},
         "action_plans": actions,
     }
+    for action in actions:
+        action["action_sha256"] = canonical_action_sha256(action)
     if mutate:
         mutate(data)
     out = tmp_path / f"round{round_no}_acea_request.json"
@@ -135,3 +140,39 @@ def test_resolve_self_identity_allows_unresolved_root_parent():
     resolved = resolve_self_identity(preflight, "external-root")
     assert resolved["candidate_id"] == "root-candidate"
     assert resolved["parent_id"] is None
+
+
+def test_canonical_action_sha_rejects_stale_declared_hash():
+    action = {
+        "action_id": "r134-test",
+        "action_kind": "masked_substitution",
+        "target": "acea",
+        "proposal_round": 134,
+        "parent_typed_uuid": "candidate-uuid",
+        "parent_sequence": "RHFKGDRTYWVLEALAVRHKK",
+        "parent_lineage_generation": 11,
+        "lineage_generation": 12,
+        "mutation_positions": [10],
+        "action_seed": 2026214002,
+    }
+    action["action_sha256"] = canonical_action_sha256(action)
+    assert canonical_action_sha256(action) == action["action_sha256"]
+    action["rationale"] = "changed"
+    assert canonical_action_sha256(action) != action["action_sha256"]
+
+
+def test_worker_unsupported_or_missing_action_kind_is_rejected(tmp_path):
+    def missing(data):
+        data["action_plans"][0].pop("action_kind", None)
+
+    with pytest.raises(ValueError, match="action_kind"):
+        build_registration_input(_request(tmp_path, mutate=missing), **_kwargs())
+
+    def unsupported(data):
+        data["action_plans"][0]["action_kind"] = "not_a_worker_action"
+        data["action_plans"][0]["action_sha256"] = canonical_action_sha256(
+            data["action_plans"][0]
+        )
+
+    with pytest.raises(ValueError, match="action_kind"):
+        build_registration_input(_request(tmp_path, mutate=unsupported), **_kwargs())

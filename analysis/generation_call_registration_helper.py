@@ -68,6 +68,14 @@ def file_sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def canonical_action_sha256(action: dict) -> str:
+    """Return the exact canonical payload hash used by the CPU worker."""
+    payload = dict(action)
+    payload.pop("action_sha256", None)
+    encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+
+
 def build_registration_input(
     request_path: Path,
     *,
@@ -101,6 +109,14 @@ def build_registration_input(
     if any(not x for x in action_ids) or len(action_ids) != len(set(action_ids)):
         raise ValueError("duplicate or missing action_id in request")
     for action in actions:
+        action_kind = action.get("action_kind") or action.get("kind")
+        if action_kind not in {
+            "masked_substitution",
+            "controlled_crossover",
+            "de_novo",
+            "unchanged_control",
+        } or action.get("action_kind") != action_kind:
+            raise ValueError(f"unsupported or missing action_kind: {action.get('action_id')}")
         required = (
             "action_id",
             "target",
@@ -115,6 +131,9 @@ def build_registration_input(
             raise ValueError(f"action/request identity mismatch: {action.get('action_id')}")
         if not action["parent_typed_uuid"] or not action["parent_sequence"]:
             raise ValueError(f"action parent unresolved: {action.get('action_id')}")
+        declared_sha = action.get("action_sha256")
+        if not declared_sha or declared_sha != canonical_action_sha256(action):
+            raise ValueError(f"action canonical SHA mismatch: {action.get('action_id')}")
     request_sha = file_sha256(request_path)
     return {
         "campaign_id": campaign_id,
