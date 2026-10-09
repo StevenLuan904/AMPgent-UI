@@ -44,6 +44,9 @@ def registrations(spec):
             source_path=item["source_path"], candidate_rows=item["candidate_rows"],
             model_release_key=item["model_release_key"], source_artifact_sha256=item["source_artifact_sha256"],
             attempt=item.get("attempt", 1),
+            model_uri=item.get("model_uri"),
+            weights_sha256=item.get("weights_sha256"),
+            environment_sha256=item.get("environment_sha256"),
         )
         for item in spec["batches"]
     ]
@@ -83,8 +86,19 @@ async def main(spec_path: Path, receipt: Path | None, output: Path, execute: boo
                 run_spec = run["spec_json"] if isinstance(run["spec_json"], dict) else json.loads(run["spec_json"])
                 if run_spec.get("root_campaign_id") != spec["campaign_id"] or run_spec.get("scientific_root_id") != spec["root_id"]:
                     raise RuntimeError("run/root identity mismatch")
+                nullability = {
+                    row["column_name"]: row["is_nullable"] == "YES"
+                    for row in await conn.fetch(
+                        "select column_name,is_nullable from information_schema.columns where table_name='tool_calls' and column_name = any($1::text[])",
+                        ["model_uri", "weights_sha256", "environment_sha256"],
+                    )
+                }
                 rows = []
                 for reg in regs:
+                    inp = reg["input_json"]
+                    for field in ("model_uri", "weights_sha256", "environment_sha256"):
+                        if inp.get(field) is None and nullability.get(field) is False:
+                            raise RuntimeError(f"tool_calls.{field} is NOT NULL but the runtime manifest supplied no value")
                     old = await conn.fetchrow("select id::text,run_id::text,tool_name,status,idempotency_key,input_sha256 from tool_calls where id=$1::uuid", reg["id"])
                     if old:
                         if old["run_id"] != spec["run_id"] or old["idempotency_key"] != reg["idempotency_key"] or old["input_sha256"] != reg["input_sha256"]:
@@ -94,16 +108,32 @@ async def main(spec_path: Path, receipt: Path | None, output: Path, execute: boo
                         now = datetime.now(UTC)
                         inp = reg["input_json"]
                         params = reg["parameters_json"]
-                        await conn.execute("insert into tool_calls (id,run_id,tool_name,tool_version,model_uri,weights_sha256,environment_sha256,idempotency_key,input_sha256,input_json,parameters_json,status,attempt,queued_at,started_at) values ($1::uuid,$2::uuid,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11::jsonb,'queued',1,$12,null)", reg["id"], spec["run_id"], reg["tool_name"], reg["tool_version"], inp["model_release_key"], inp["source_artifact_sha256"], digest({"round": spec["round"], "batch_kind": inp["batch_kind"]}), reg["idempotency_key"], reg["input_sha256"], json.dumps(inp), json.dumps(params), now)
+                        await conn.execute("insert into tool_calls (id,run_id,tool_name,tool_version,model_uri,weights_sha256,environment_sha256,idempotency_key,input_sha256,input_json,parameters_json,status,attempt,queued_at,started_at) values ($1::uuid,$2::uuid,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11::jsonb,'queued',$12,$13,null)", reg["id"], spec["run_id"], reg["tool_name"], reg["tool_version"], inp["model_uri"], inp["weights_sha256"], inp["environment_sha256"], reg["idempotency_key"], reg["input_sha256"], json.dumps(inp), json.dumps(params), inp["attempt"], now)
                         rows.append({"id": reg["id"], "status": "queued", "result": "inserted"})
                     else:
                         rows.append({"id": reg["id"], "status": "absent", "result": "validated_not_executed"})
                 if execute and receipt:
                     for update in result.get("lifecycle_updates", []):
                         if update["status"] == "running":
-                            await conn.execute("update tool_calls set status='running',started_at=$2::timestamptz,parameters_json=coalesce(parameters_json,'{}'::jsonb)||$3::jsonb where id=$1::uuid and run_id=$4::uuid and status in ('queued','running')", update["tool_call_id"], update["started_at"], json.dumps(update["parameters_json_patch"]), spec["run_id"])
+                            command = await conn.execute("update tool_calls set status='running',started_at=$2::timestamptz,parameters_json=coalesce(parameters_json,'{}'::jsonb)||$3::jsonb where id=$1::uuid and run_id=$4::uuid and status in ('queued','running')", update["tool_call_id"], update["started_at"], json.dumps(update["parameters_json_patch"]), spec["run_id"])
+                            if command != "UPDATE 1":
+                                old = await conn.fetchrow("select status,started_at::text from tool_calls where id=$1::uuid and run_id=$2::uuid", update["tool_call_id"], spec["run_id"])
+                                old_started = datetime.fromisoformat(old["started_at"].replace("Z", "+00:00")) if old and old["started_at"] else None
+                                new_started = datetime.fromisoformat(update["started_at"].replace("Z", "+00:00"))
+                                if not old or old["status"] != "running" or old_started != new_started:
+                                    raise RuntimeError(f"start lifecycle conflict for {update['tool_call_id']}")
                         else:
-                            await conn.execute("update tool_calls set status=$2,started_at=$3::timestamptz,finished_at=$4::timestamptz,output_sha256=$5,error_json=$6::jsonb,parameters_json=coalesce(parameters_json,'{}'::jsonb)||$7::jsonb where id=$1::uuid and run_id=$8::uuid and status in ('queued','running')", update["tool_call_id"], update["status"], update["started_at"], update["finished_at"], update["output_sha256"], json.dumps(update["error_json"]) if update["error_json"] else None, json.dumps(update["parameters_json_patch"]), spec["run_id"])
+                            command = await conn.execute("update tool_calls set status=$2,started_at=$3::timestamptz,finished_at=$4::timestamptz,output_sha256=$5,error_json=$6::jsonb,parameters_json=coalesce(parameters_json,'{}'::jsonb)||$7::jsonb where id=$1::uuid and run_id=$8::uuid and status in ('queued','running')", update["tool_call_id"], update["status"], update["started_at"], update["finished_at"], update["output_sha256"], json.dumps(update["error_json"]) if update["error_json"] else None, json.dumps(update["parameters_json_patch"]), spec["run_id"])
+                            if command != "UPDATE 1":
+                                old = await conn.fetchrow("select status,started_at::text,finished_at::text,output_sha256,error_json::text from tool_calls where id=$1::uuid and run_id=$2::uuid", update["tool_call_id"], spec["run_id"])
+                                expected_error = json.dumps(update["error_json"], sort_keys=True) if update["error_json"] else None
+                                old_started = datetime.fromisoformat(old["started_at"].replace("Z", "+00:00")) if old and old["started_at"] else None
+                                old_finished = datetime.fromisoformat(old["finished_at"].replace("Z", "+00:00")) if old and old["finished_at"] else None
+                                new_started = datetime.fromisoformat(update["started_at"].replace("Z", "+00:00"))
+                                new_finished = datetime.fromisoformat(update["finished_at"].replace("Z", "+00:00"))
+                                old_error = json.dumps(json.loads(old["error_json"]), sort_keys=True) if old and old["error_json"] else None
+                                if not old or old["status"] != update["status"] or old_started != new_started or old_finished != new_finished or old["output_sha256"] != update["output_sha256"] or old_error != expected_error:
+                                    raise RuntimeError(f"terminal lifecycle conflict for {update['tool_call_id']}")
                 result["readback"] = [dict(x) for x in await conn.fetch("select id::text,run_id::text,tool_name,status,queued_at,started_at,finished_at,input_sha256,output_sha256 from tool_calls where id=any($1::uuid[]) order by id", [x["id"] for x in regs])]
                 result["counts"] = dict(await conn.fetchrow("select count(*) toolcalls,count(*) filter(where status='running') running from tool_calls where run_id=$1::uuid", spec["run_id"]))
                 result["rows"] = rows

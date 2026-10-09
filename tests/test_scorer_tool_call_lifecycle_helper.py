@@ -49,6 +49,25 @@ def test_builds_two_distinct_batch_calls_with_ordered_ids():
     assert deterministic_batch_tool_call_id(ROOT, RUN, "formal12", "r136") == formal["id"]
 
 
+def test_provenance_fields_are_explicit_and_not_derived_from_source():
+    reg = build_batch_registration(
+        root_id=ROOT, run_id=RUN, campaign_id="campaign", round_name="r136", batch_kind="formal12",
+        input_path="in.csv", source_path="receipt.json", candidate_rows=rows(), model_release_key="release",
+        source_artifact_sha256=SHA, model_uri="registry://score/v1", weights_sha256="b" * 64,
+        environment_sha256="c" * 64,
+    )
+    assert reg["input_json"]["weights_sha256"] == "b" * 64
+    assert reg["input_json"]["environment_sha256"] == "c" * 64
+    assert reg["input_json"]["source_artifact_sha256"] == SHA
+
+
+def test_missing_optional_provenance_stays_null():
+    reg = registration()
+    assert reg["input_json"]["model_uri"] is None
+    assert reg["input_json"]["weights_sha256"] is None
+    assert reg["input_json"]["environment_sha256"] is None
+
+
 def test_round_and_attempt_are_part_of_identity():
     first = deterministic_batch_tool_call_id(ROOT, RUN, "formal12", "r136", 1)
     second_round = deterministic_batch_tool_call_id(ROOT, RUN, "formal12", "r137", 1)

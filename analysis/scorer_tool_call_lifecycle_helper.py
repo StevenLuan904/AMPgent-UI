@@ -87,6 +87,9 @@ def build_batch_registration(
     model_release_key: str,
     source_artifact_sha256: str,
     attempt: int = 1,
+    model_uri: str | None = None,
+    weights_sha256: str | None = None,
+    environment_sha256: str | None = None,
 ) -> dict[str, Any]:
     """Build a queued ToolCall-shaped payload; does not write it."""
     if batch_kind not in BATCHES:
@@ -111,6 +114,9 @@ def build_batch_registration(
         "source_path": source_path,
         "source_artifact_sha256": source_artifact_sha256.lower(),
         "model_release_key": model_release_key,
+        "model_uri": model_uri,
+        "weights_sha256": weights_sha256,
+        "environment_sha256": environment_sha256,
         "candidate_ids": [row["candidate_id"] for row in rows],
         "candidate_rows": rows,
         "candidate_count": len(rows),
@@ -121,6 +127,9 @@ def build_batch_registration(
         "input_path": input_path,
         "source_path": source_path,
         "model_release_key": model_release_key,
+        "model_uri": model_uri,
+        "weights_sha256": weights_sha256,
+        "environment_sha256": environment_sha256,
         "source_artifact_sha256": source_artifact_sha256.lower(),
         "counts_as_scorer_invocation": True,
     }
