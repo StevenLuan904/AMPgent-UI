@@ -43,6 +43,8 @@ def _materialize_generation_call(call: dict[str, Any]) -> dict[str, Any]:
             raw = materialized[f"{field}_json"]
             if isinstance(raw, str):
                 materialized[field] = json.loads(raw)
+            elif isinstance(raw, dict):
+                materialized[field] = raw
     return materialized
 
 
@@ -130,7 +132,11 @@ def _origin_action(
     # Historical action ``parent_id`` is the authoritative archive label;
     # typed identity is carried by ``parent_typed_uuid``.  Check both against
     # their respective machine-resolved sources rather than conflating them.
-    if plan.get("parent_id") not in (None, archive_row.get("parent_candidate_id")):
+    if plan.get("parent_id") not in (
+        None,
+        archive_row.get("parent_candidate_id"),
+        identity.get("parent_id"),
+    ):
         raise ValueError("self origin parent_id does not match archive parent label")
     if plan.get("parent_sequence") != archive_row.get("parent_sequence"):
         raise ValueError("self origin parent sequence does not match archive")

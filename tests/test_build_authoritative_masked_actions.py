@@ -368,6 +368,33 @@ def test_builder_rejects_wrong_typed_parent_in_pg_input_json(tmp_path):
         )
 
 
+def test_builder_accepts_verified_typed_parent_id_in_origin_plan(tmp_path):
+    case = _case(tmp_path, round_number=141, selected_masks=((9,), (10,)))
+    history = json.loads(case["history"].read_text(encoding="utf-8"))
+    for call in history["successful_generation_calls"]:
+        for field in ("input", "parameters"):
+            plans = call[field]["parent_action_plans"]
+            if plans and plans[0]["action_id"] == "parent-a":
+                plans[0]["parent_id"] = "ancestor-uuid-a"
+    case["history"].write_text(json.dumps(history), encoding="utf-8")
+
+    receipt = build_actions(
+        preflight_path=case["preflight"],
+        generation_readback_path=case["history"],
+        archive_path=case["archive"],
+        expected_baseline_path=case["archive"],
+        output_dir=case["output"],
+        selections=case["selections"],
+        target_manifest_path=case["manifest"],
+        round_number=141,
+        campaign_id="campaign-test",
+        run_id="run-test",
+        root_id="root-test",
+        model_revision="rev-test",
+    )
+    assert receipt["action_count"] == 4
+
+
 @pytest.mark.parametrize(
     "selection, message",
     [
