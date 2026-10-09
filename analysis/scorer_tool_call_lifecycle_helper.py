@@ -178,3 +178,31 @@ def validate_terminal_receipt(registration: dict[str, Any], receipt: dict[str, A
         "error_json": {"terminal_receipt": dict(receipt)} if receipt["status"] == "failed" else None,
         "parameters_json_patch": {"actual_execution": dict(receipt), "counts_as_scorer_invocation": True},
     }
+
+
+def validate_start_receipt(registration: dict[str, Any], receipt: dict[str, Any]) -> dict[str, Any]:
+    """Validate evidence that a registered batch was actually started.
+
+    This is intentionally separate from terminal validation: a queued record is
+    not evidence that a scorer process ran, and callers must provide the real
+    process start time and input identity before transitioning it to running.
+    """
+    if receipt.get("tool_call_id") != registration["id"]:
+        raise ValueError("start receipt ToolCall ID mismatch")
+    if receipt.get("batch_kind") != registration["input_json"]["batch_kind"]:
+        raise ValueError("start receipt batch kind mismatch")
+    if receipt.get("status") != "running":
+        raise ValueError("start receipt status must be running")
+    started, _ = _timestamp(receipt.get("started_at"))
+    if receipt.get("request_sha256") != registration["input_sha256"]:
+        raise ValueError("start receipt request_sha256 does not match registered input_sha256")
+    if receipt.get("candidate_ids") != registration["input_json"]["candidate_ids"]:
+        raise ValueError("start receipt candidate IDs/order drifted")
+    process_id = receipt.get("pid", receipt.get("process_id"))
+    if process_id is not None and (isinstance(process_id, bool) or not isinstance(process_id, int) or process_id <= 0):
+        raise ValueError("pid must be a positive integer when supplied")
+    return {
+        "status": "running",
+        "started_at": started,
+        "parameters_json_patch": {"actual_start": dict(receipt), "counts_as_scorer_invocation": True},
+    }

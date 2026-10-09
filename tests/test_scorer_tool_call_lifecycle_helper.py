@@ -7,6 +7,7 @@ import pytest
 from analysis.scorer_tool_call_lifecycle_helper import (
     build_batch_registration,
     deterministic_batch_tool_call_id,
+    validate_start_receipt,
     validate_terminal_receipt,
 )
 
@@ -110,6 +111,19 @@ def test_failed_receipt_is_terminal_but_nonzero():
         "error_category": "runtime_unavailable", "terminal_artifact_path": "/tmp/stderr.log",
     }
     assert validate_terminal_receipt(reg, receipt)["status"] == "failed"
+
+
+def test_start_receipt_requires_real_start_evidence():
+    reg = registration()
+    receipt = {
+        "tool_call_id": reg["id"], "batch_kind": "formal12", "status": "running", "pid": 1234,
+        "started_at": "2026-10-09T03:00:00Z", "request_sha256": reg["input_sha256"],
+        "candidate_ids": ["c-1", "c-2"],
+    }
+    assert validate_start_receipt(reg, receipt)["status"] == "running"
+    receipt["request_sha256"] = "f" * 64
+    with pytest.raises(ValueError, match="request_sha256"):
+        validate_start_receipt(reg, receipt)
 
 
 def test_terminal_timestamps_require_timezone_and_monotonic_order():
