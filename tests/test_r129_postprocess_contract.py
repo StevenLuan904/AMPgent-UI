@@ -1,5 +1,5 @@
 import pytest
-from analysis.r129_postprocess_contract import apply_dual_support, select_one_per_cell, numeric_stats, synchronize_selected_outputs, validate_append_only_archive
+from analysis.r129_postprocess_contract import apply_dual_support, select_one_per_cell, numeric_stats, synchronize_selected_outputs, validate_append_only_archive, compute_parent_deltas, join_exact_parent, validate_generation_pair
 
 def _row(aid="a", cell="q1", q="-1"):
     return {"action_id":aid,"candidate_id":aid,"cell_id":cell,"quality":q,"archive_status":"eligible","fixed_cell_selected":"False","ood_status":"unknown_not_assessed"}
@@ -57,6 +57,33 @@ def test_tie_preserves_existing_selected():
     out,summary=select_one_per_cell(prior,[_row("new","q1","-1")])
     assert [r["candidate_id"] for r in out if r["fixed_cell_selected"]=="True"]==["incumbent"]
     assert summary["replacement_cells"]==[]
+
+def test_parent_delta_uses_child_and_exact_parent_not_inherited_metadata():
+    parent={"charge_density":"1","hydrophobicity":".2","moment":".3","length":"21","quality":"-1.2","macrel_hemolysis_probability":".2","toxinpred3_hybrid_score":".1","guruprasad_instability_index":"10"}
+    child={"charge_density":".9","hydrophobicity":".2","moment":".4","length":"21","quality":"-1.1","macrel_hemolysis_probability":".1","toxinpred3_hybrid_score":".1","guruprasad_instability_index":"10","parent_delta_objectives":"{\"quality\":-99}"}
+    d=compute_parent_deltas(child,parent)
+    assert d["parent_delta_phi"]["charge_density"] == pytest.approx(-.1)
+    assert d["parent_delta_objectives"]["quality"] == pytest.approx(.1)
+    assert d["parent_domination_status"] == "child_dominates_parent"
+
+def test_exact_parent_join_rejects_same_sequence_wrong_id_and_missing():
+    rows=[{"candidate_id":"right","sequence":"SEQ"},{"candidate_id":"wrong","sequence":"SEQ"}]
+    assert join_exact_parent(rows,"right","SEQ")["candidate_id"] == "right"
+    assert join_exact_parent(rows,"missing","SEQ") is None
+
+def test_parent_delta_classifies_tradeoff_equal_and_nonfinite():
+    p={"charge_density":"1","hydrophobicity":".2","moment":".3","length":"21","quality":"-1","macrel_hemolysis_probability":".2","toxinpred3_hybrid_score":".1","guruprasad_instability_index":"10"}
+    equal=dict(p)
+    assert compute_parent_deltas(equal,p)["parent_domination_status"] == "equal"
+    trade=dict(p, quality="-0.9", macrel_hemolysis_probability=".3")
+    assert compute_parent_deltas(trade,p)["parent_domination_status"] == "tradeoff"
+    nonfinite=dict(p, quality="nan")
+    assert compute_parent_deltas(nonfinite,p)["parent_domination_status"] == "unknown_nonfinite"
+
+def test_generation_pair_contract_rejects_off_by_one():
+    validate_generation_pair(9, 10)
+    with pytest.raises(ValueError, match="not parent generation"):
+        validate_generation_pair(9, 11)
 
 
 def _archive_fixture():

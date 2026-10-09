@@ -135,6 +135,41 @@ def synchronize_selected_outputs(batch: list[dict], selected_archive: list[dict]
     return out, {"support_count_distribution": dict(support_counts), "batch_count": len(out)}
 
 
+def compute_parent_deltas(child: dict, parent: dict) -> dict:
+    """Compute QD-axis and objective deltas from an exact joined parent row."""
+    phi = {key: float(child[key]) - float(parent[key]) for key in ("charge_density", "hydrophobicity", "moment", "length")}
+    objectives = {key: float(child[key]) - float(parent[key]) for key in ("quality", "macrel_hemolysis_probability", "toxinpred3_hybrid_score", "guruprasad_instability_index")}
+    if not all(math.isfinite(v) for v in (*phi.values(), *objectives.values())):
+        status = "unknown_nonfinite"
+    elif all(v == 0 for v in objectives.values()):
+        status = "equal"
+    elif objectives["quality"] >= 0 and all(objectives[k] <= 0 for k in objectives if k != "quality") and any(v != 0 for v in objectives.values()):
+        status = "child_dominates_parent"
+    elif objectives["quality"] <= 0 and all(objectives[k] >= 0 for k in objectives if k != "quality") and any(v != 0 for v in objectives.values()):
+        status = "parent_dominates_child"
+    else:
+        status = "tradeoff"
+    return {"parent_delta_phi": phi, "parent_delta_objectives": objectives, "parent_domination_status": status}
+
+
+def join_exact_parent(parent_rows: list[dict], parent_label: str, parent_sequence: str) -> dict | None:
+    """Resolve a parent only when both authoritative label and sequence match."""
+    matches = [r for r in parent_rows if str(r.get("sequence", "")) == str(parent_sequence) and str(r.get("candidate_id", "")) == str(parent_label)]
+    if len(matches) > 1:
+        raise ValueError(f"duplicate exact parent identity: {parent_label}/{parent_sequence}")
+    return matches[0] if matches else None
+
+
+def validate_generation_pair(parent_generation: str | int, child_generation: str | int) -> None:
+    """Require a masked child to be exactly one generation after its parent."""
+    try:
+        parent, child = int(parent_generation), int(child_generation)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("generation must be integer-like") from exc
+    if child != parent + 1:
+        raise ValueError(f"child generation {child} is not parent generation {parent}+1")
+
+
 def validate_append_only_archive(
     previous_rows: list[dict],
     raw_proposals: list[dict],
