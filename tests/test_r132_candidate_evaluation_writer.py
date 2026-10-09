@@ -9,7 +9,11 @@ import pytest
 # this test self-contained when pytest is invoked without an editable install.
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
-from analysis.r132_execute_candidate_evaluation_once import norm, validate_plan
+from analysis.r132_execute_candidate_evaluation_once import (
+    norm,
+    resolve_evaluation_tool_call,
+    validate_plan,
+)
 
 PLAN = Path("reports/acea_vegfa_lineage2_round132_20261009/r132_candidate_evaluation_plan.json")
 
@@ -104,3 +108,31 @@ def test_validate_plan_rejects_foreign_scorer_binding():
     plan["evaluations"][0]["scorer_tool_call_id"] = "00000000-0000-0000-0000-000000000000"
     with pytest.raises(RuntimeError, match="binding"):
         validate_plan(plan)
+
+
+def test_resolve_scorer_bindings_for_primary_amp_and_unavailable_rows():
+    formal = "74b91dd5-2028-5d00-b1a8-3ce84b6bc14c"
+    amplify = "c70ef38b-b8d7-55d8-9a9a-6c76536423e5"
+    bindings = {
+        formal: {"batch_kind": "formal12"},
+        amplify: {"batch_kind": "amplify"},
+    }
+    for _ in range(12):
+        assert resolve_evaluation_tool_call(
+            {"status": "succeeded", "evidence_family": "score_all", "scorer_tool_call_id": formal},
+            bindings,
+            "import",
+        ) == formal
+    assert resolve_evaluation_tool_call(
+        {
+            "status": "succeeded",
+            "evidence_family": "amp_likelihood",
+            "scorer_tool_call_id": amplify,
+        },
+        bindings,
+        "import",
+    ) == amplify
+    for _ in range(3):
+        assert resolve_evaluation_tool_call(
+            {"status": "unsupported"}, bindings, "import"
+        ) == "import"

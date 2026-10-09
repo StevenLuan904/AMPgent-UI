@@ -78,6 +78,22 @@ def validate_scorer_bindings(plan, run_id, candidate_ids):
     return bindings
 
 
+def resolve_evaluation_tool_call(evaluation, bindings, import_id):
+    """Resolve the immutable evidence ToolCall for one evaluation."""
+    status = evaluation.get("status")
+    if status in {"unsupported", "unavailable", "not_assessed"}:
+        if evaluation.get("scorer_tool_call_id") is not None:
+            raise RuntimeError("unsupported evaluation must not claim scorer execution")
+        return evaluation.get("tool_call_id") or import_id
+    scorer_id = evaluation.get("scorer_tool_call_id")
+    if not bindings or scorer_id not in bindings:
+        return evaluation.get("tool_call_id") or import_id
+    expected_kind = "amplify" if evaluation.get("evidence_family") == "amp_likelihood" or str(evaluation.get("model_release_key", "")).startswith("amplify-") else "formal12"
+    if bindings[scorer_id]["batch_kind"] != expected_kind:
+        raise RuntimeError("evaluation scorer ToolCall kind does not match evidence")
+    return scorer_id
+
+
 def plan_context(p):
     """Return plan-derived identity and count settings; keep r132 defaults."""
     tc = p.get("score_import_tool_call", {})
@@ -352,9 +368,7 @@ async def main(plan_path, receipt_path, execute=False):
                             )
                     for ev in p["evaluations"]:
                         cid = by[ev["authoritative_candidate_id"]]
-                        scorer_id = ev.get("scorer_tool_call_id", ev.get("tool_call_id", imp))
-                        if scorer_bindings and scorer_id not in scorer_bindings:
-                            raise RuntimeError("evaluation references unapproved scorer ToolCall")
+                        scorer_id = resolve_evaluation_tool_call(ev, scorer_bindings, imp)
                         olde = await c.fetchrow(
                             "select id::text,candidate_id::text,tool_call_id::text,metric_name,status from evaluations where id=$1::uuid"
                             + (" for update" if execute else ""),
